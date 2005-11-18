@@ -1711,7 +1711,6 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 	struct squashfs_dir_header dirh;
 	char buffer[sizeof(struct squashfs_dir_entry) + SQUASHFS_NAME_LEN];
 	struct squashfs_dir_entry *dire = (struct squashfs_dir_entry *) buffer;
-	int sorted = sblk->s_major == 2 && sblk->s_minor >= 1;
 
 	TRACE("Entered squashfs_lookup [%llx:%x]\n", next_block, next_offset);
 
@@ -1773,7 +1772,7 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 
 			length += dire->size + 1;
 
-			if (sorted && name[0] < dire->name[0])
+			if (name[0] < dire->name[0])
 				goto exit_loop;
 
 			if ((len == dire->size + 1) && !strncmp(name,
