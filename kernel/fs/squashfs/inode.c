@@ -1857,7 +1857,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.0prerelease (2005/10/11) "
+	printk(KERN_INFO "squashfs: version 3.0prerelease (2005/11/20) "
 		"Phillip Lougher\n");
 
 	if (!(stream.workspace = vmalloc(zlib_inflate_workspacesize()))) {
