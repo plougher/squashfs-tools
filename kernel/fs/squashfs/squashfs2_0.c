@@ -20,7 +20,6 @@
  *
  * squashfs2_0.c
  */
-#define CONFIG_SQUASHFS_2_0_COMPATIBILITY
 
 #include <linux/types.h>
 #include <linux/squashfs_fs.h>
@@ -45,7 +44,8 @@
 
 #include "squashfs.h"
 static int squashfs_readdir_2(struct file *file, void *dirent, filldir_t filldir);
-static struct dentry *squashfs_lookup_2(struct inode *i, struct dentry *dentry);
+static struct dentry *squashfs_lookup_2(struct inode *, struct dentry *,
+				struct nameidata *);
 
 static struct file_operations squashfs_dir_ops_2 = {
 	.read = generic_read_dir,
@@ -631,7 +631,8 @@ failed_read:
 }
 
 
-static struct dentry *squashfs_lookup_2(struct inode *i, struct dentry *dentry)
+static struct dentry *squashfs_lookup_2(struct inode *i, struct dentry *dentry,
+				struct nameidata *nd)
 {
 	const unsigned char *name = dentry->d_name.name;
 	int len = dentry->d_name.len;

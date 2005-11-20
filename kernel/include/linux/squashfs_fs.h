@@ -24,6 +24,10 @@
  * squashfs_fs.h
  */
 
+#ifndef CONFIG_SQUASHFS_2_0_COMPATIBILITY
+#define CONFIG_SQUASHFS_2_0_COMPATIBILITY
+#endif
+
 #define SQUASHFS_MAJOR			3
 #define SQUASHFS_MINOR			0
 #define SQUASHFS_MAGIC			0x73717368
