@@ -51,6 +51,7 @@ struct squashfs_sb_info {
 	unsigned int		*uid;
 	unsigned int		*guid;
 	long long		*fragment_index;
+	unsigned int		*fragment_index_2;
 	unsigned int		read_size;
 	char			*read_data;
 	char			*read_page;
@@ -65,5 +66,6 @@ struct squashfs_sb_info {
 	long long		(*read_blocklist)(struct inode *inode, int \
 				index, int readahead_blks, char *block_list, \
 				unsigned short **block_p, unsigned int *bsize);
+	int			(*read_fragment_index_table)(struct super_block *s);
 };
 #endif

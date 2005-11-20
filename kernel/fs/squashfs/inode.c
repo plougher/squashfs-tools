@@ -98,7 +98,7 @@ SQSH_EXTERN struct address_space_operations squashfs_aops_4K = {
 	.readpage = squashfs_readpage4K
 };
 
-SQSH_EXTERN struct file_operations squashfs_dir_ops = {
+static struct file_operations squashfs_dir_ops = {
 	.read = generic_read_dir,
 	.readdir = squashfs_readdir
 };
@@ -394,7 +394,7 @@ out:
 }
 
 
-SQSH_EXTERN int get_fragment_location(struct super_block *s, unsigned int fragment,
+static int get_fragment_location(struct super_block *s, unsigned int fragment,
 				long long *fragment_start_block,
 				unsigned int *fragment_size)
 {
@@ -522,7 +522,7 @@ out:
 
 
 static struct inode *squashfs_new_inode(struct super_block *s,
-		struct squashfs_base_inode_header *inodeb, unsigned int ino)
+		struct squashfs_base_inode_header *inodeb)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
@@ -554,8 +554,6 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 	long long block = SQUASHFS_INODE_BLK(inode) +
 		sblk->inode_table_start;
 	unsigned int offset = SQUASHFS_INODE_OFFSET(inode);
-	unsigned int ino = SQUASHFS_MK_VFS_INODE(block
-		- sblk->inode_table_start, offset);
 	long long next_block;
 	unsigned int next_offset;
 	union squashfs_inode_header id, sid;
@@ -604,7 +602,7 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 					inodep->fragment, &frag_blk, &frag_size))
 				goto failed_read;
 				
-			if((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
+			if((i = squashfs_new_inode(s, inodeb)) == NULL)
 				goto failed_read1;
 
 			i->i_nlink = 1;
@@ -660,7 +658,7 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 					inodep->fragment, &frag_blk, &frag_size))
 				goto failed_read;
 				
-			if((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
+			if((i = squashfs_new_inode(s, inodeb)) == NULL)
 				goto failed_read1;
 
 			i->i_nlink = inodep->nlink;
@@ -708,7 +706,7 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 						&next_offset))
 					goto failed_read;
 
-			if((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
+			if((i = squashfs_new_inode(s, inodeb)) == NULL)
 				goto failed_read1;
 
 			i->i_nlink = inodep->nlink;
@@ -749,7 +747,7 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 						&next_offset))
 					goto failed_read;
 
-			if((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
+			if((i = squashfs_new_inode(s, inodeb)) == NULL)
 				goto failed_read1;
 
 			i->i_nlink = inodep->nlink;
@@ -796,7 +794,7 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 						&next_offset))
 					goto failed_read;
 
-			if((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
+			if((i = squashfs_new_inode(s, inodeb)) == NULL)
 				goto failed_read1;
 
 			i->i_nlink = inodep->nlink;
@@ -832,7 +830,7 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 						&next_offset))
 					goto failed_read;
 
-			if ((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
+			if ((i = squashfs_new_inode(s, inodeb)) == NULL)
 				goto failed_read1;
 
 			i->i_nlink = inodep->nlink;
@@ -866,7 +864,7 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 						&next_offset))
 					goto failed_read;
 
-			if ((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
+			if ((i = squashfs_new_inode(s, inodeb)) == NULL)
 				goto failed_read1;
 
 			i->i_nlink = inodep->nlink;
@@ -892,12 +890,52 @@ failed_read1:
 }
 
 
+static int read_fragment_index_table(struct super_block *s)
+{
+	struct squashfs_sb_info *msblk = s->s_fs_info;
+	struct squashfs_super_block *sblk = &msblk->sblk;
+
+	/* Allocate fragment index table */
+	if (!(msblk->fragment_index = kmalloc(SQUASHFS_FRAGMENT_INDEX_BYTES
+					(sblk->fragments), GFP_KERNEL))) {
+		ERROR("Failed to allocate uid/gid table\n");
+		return 0;
+	}
+   
+	if (SQUASHFS_FRAGMENT_INDEX_BYTES(sblk->fragments) &&
+					!squashfs_read_data(s, (char *)
+					msblk->fragment_index,
+					sblk->fragment_table_start,
+					SQUASHFS_FRAGMENT_INDEX_BYTES
+					(sblk->fragments) |
+					SQUASHFS_COMPRESSED_BIT_BLOCK, NULL)) {
+		ERROR("unable to read fragment index table\n");
+		return 0;
+	}
+
+	if (msblk->swap) {
+		int i;
+		unsigned int fragment;
+
+		for (i = 0; i < SQUASHFS_FRAGMENT_INDEXES(sblk->fragments);
+									i++) {
+			SQUASHFS_SWAP_FRAGMENT_INDEXES((&fragment),
+						&msblk->fragment_index[i], 1);
+			msblk->fragment_index[i] = fragment;
+		}
+	}
+
+	return 1;
+}
+
+
 static int supported_squashfs_filesystem(struct squashfs_sb_info *msblk, int silent)
 {
 	struct squashfs_super_block *sblk = &msblk->sblk;
 
 	msblk->iget = squashfs_iget;
 	msblk->read_blocklist = read_blocklist;
+	msblk->read_fragment_index_table = read_fragment_index_table;
 
 	if (sblk->s_major == 1) {
 		if (!squashfs_1_0_supported(msblk)) {
@@ -1060,7 +1098,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 					((sblk->no_uids + sblk->no_guids) *
 					 sizeof(unsigned int)) |
 					SQUASHFS_COMPRESSED_BIT_BLOCK, NULL)) {
-			SERROR("unable to read uid/gid table\n");
+			ERROR("unable to read uid/gid table\n");
 			goto failed_mount;
 		}
 
@@ -1071,7 +1109,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 					((sblk->no_uids + sblk->no_guids) *
 					 sizeof(unsigned int)) |
 					SQUASHFS_COMPRESSED_BIT_BLOCK, NULL)) {
-			SERROR("unable to read uid/gid table\n");
+			ERROR("unable to read uid/gid table\n");
 			goto failed_mount;
 		}
 
@@ -1094,34 +1132,8 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	msblk->next_fragment = 0;
 
 	/* Allocate fragment index table */
-	if (!(msblk->fragment_index = kmalloc(SQUASHFS_FRAGMENT_INDEX_BYTES
-					(sblk->fragments), GFP_KERNEL))) {
-		ERROR("Failed to allocate uid/gid table\n");
+	if (msblk->read_fragment_index_table(s) == 0)
 		goto failed_mount;
-	}
-   
-	if (SQUASHFS_FRAGMENT_INDEX_BYTES(sblk->fragments) &&
-					!squashfs_read_data(s, (char *)
-					msblk->fragment_index,
-					sblk->fragment_table_start,
-					SQUASHFS_FRAGMENT_INDEX_BYTES
-					(sblk->fragments) |
-					SQUASHFS_COMPRESSED_BIT_BLOCK, NULL)) {
-		SERROR("unable to read fragment index table\n");
-		goto failed_mount;
-	}
-
-	if (msblk->swap) {
-		int i;
-		unsigned int fragment;
-
-		for (i = 0; i < SQUASHFS_FRAGMENT_INDEXES(sblk->fragments);
-									i++) {
-			SQUASHFS_SWAP_FRAGMENT_INDEXES((&fragment),
-						&msblk->fragment_index[i], 1);
-			msblk->fragment_index[i] = fragment;
-		}
-	}
 
 allocate_root:
 	if ((root = (msblk->iget)(s, sblk->root_inode)) == NULL)
@@ -1143,6 +1155,7 @@ failed_mount:
 	kfree(msblk->read_page);
 	kfree(msblk->read_data);
 	kfree(msblk->block_cache);
+	kfree(msblk->fragment_index_2);
 	kfree(s->s_fs_info);
 	s->s_fs_info = NULL;
 	return -EINVAL;
@@ -1824,6 +1837,7 @@ static void squashfs_put_super(struct super_block *s)
 		kfree(sbi->read_page);
 		kfree(sbi->uid);
 		kfree(sbi->fragment_index);
+		kfree(sbi->fragment_index_2);
 		kfree(s->s_fs_info);
 		s->s_fs_info = NULL;
 	}
@@ -1843,7 +1857,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.0prerelease (2005/11/16) "
+	printk(KERN_INFO "squashfs: version 3.0prerelease (2005/10/11) "
 		"Phillip Lougher\n");
 
 	if (!(stream.workspace = vmalloc(zlib_inflate_workspacesize()))) {
