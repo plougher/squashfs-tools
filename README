@@ -1,6 +1,6 @@
-This is the initial import of Squashfs 3.0.  This is a prerelease
-of 3.0, and so backwards compatibility with older versions (1.x, 2.x)
-is not supported, and mksquashfs will not append to filesystems.
+This is a prerelease of 3.0, backwards compatibility with 1.x filesystems
+is not supported.  Mounting of Squashfs 2.x filesystems does work.
+Mksquashfs will not append to filesystems.
 
 The kernel code is for linux 2.6.x and should work on all recent
 versions of the 2.6 kernel.  The kernel files should be applied to
