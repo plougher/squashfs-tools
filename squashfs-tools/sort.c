@@ -38,18 +38,26 @@
 #include "global.h"
 
 #ifdef SQUASHFS_TRACE
-#define TRACE(s, args...)		printf("mksquashfs: "s, ## args)
+#define TRACE(s, args...)		do { \
+						printf("mksquashfs: "s, ## args); \
+					} while(0)
 #else
 #define TRACE(s, args...)
 #endif
 
-#define INFO(s, args...)		if(!silent) printf("mksquashfs: "s, ## args)
-#define ERROR(s, args...)		fprintf(stderr, s, ## args)
-#define EXIT_MKSQUASHFS()		exit(1)
-#define BAD_ERROR(s, args...)		{\
-					fprintf(stderr, "FATAL ERROR:" s, ##args);\
-					EXIT_MKSQUASHFS();\
-					}
+#define INFO(s, args...)		do { \
+						if(!silent) printf("mksquashfs: "s, ## args); \
+					} while(0)
+#define ERROR(s, args...)		do { \
+						fprintf(stderr, s, ## args); \
+					} while(0)
+#define EXIT_MKSQUASHFS()		do { \
+						exit(1); \
+					} while(0)
+#define BAD_ERROR(s, args...)		do {\
+						fprintf(stderr, "FATAL ERROR:" s, ##args);\
+						EXIT_MKSQUASHFS();\
+					} while(0);
 
 int mkisofs_style = -1;
 

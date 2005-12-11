@@ -34,7 +34,14 @@ extern int add_file(long long, int, unsigned int *, int, unsigned int, int, int)
 #include <string.h>
 #include <zlib.h>
 #include <sys/mman.h>
+
+#ifdef BYTE_ORDER
+#define __BYTE_ORDER BYTE_ORDER
+#define __BIG_ENDIAN BIG_ENDIAN
+#define __LITTLE_ENDIAN LITTLE_ENDIAN
+#else
 #include <endian.h>
+#endif
 
 #include <squashfs_fs.h>
 #include "read_fs.h"
@@ -43,12 +50,16 @@ extern int add_file(long long, int, unsigned int *, int, unsigned int, int, int)
 #include <stdlib.h>
 
 #ifdef SQUASHFS_TRACE
-#define TRACE(s, args...)		printf("mksquashfs: "s, ## args)
+#define TRACE(s, args...)		do { \
+						printf("mksquashfs: "s, ## args); \
+					} while(0)
 #else
 #define TRACE(s, args...)
 #endif
 
-#define ERROR(s, args...)		fprintf(stderr, s, ## args)
+#define ERROR(s, args...)		do { \
+						fprintf(stderr, s, ## args); \
+					} while(0)
 
 int swap;
 
@@ -58,7 +69,7 @@ int read_block(int fd, long long start, long long *next, unsigned char *block, s
 	int offset = 2;
 	
 	if(swap) {
-		read_bytes(fd, start, 2, block);
+		read_bytes(fd, start, 2, (char *) block);
 		((unsigned char *) &c_byte)[1] = block[0];
 		((unsigned char *) &c_byte)[0] = block[1]; 
 	} else 
@@ -67,14 +78,14 @@ int read_block(int fd, long long start, long long *next, unsigned char *block, s
 	if(SQUASHFS_CHECK_DATA(sBlk->flags))
 		offset = 3;
 	if(SQUASHFS_COMPRESSED(c_byte)) {
-		unsigned char buffer[SQUASHFS_METADATA_SIZE];
+		char buffer[SQUASHFS_METADATA_SIZE];
 		int res;
-		long bytes = SQUASHFS_METADATA_SIZE;
+		unsigned long bytes = SQUASHFS_METADATA_SIZE;
 
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
 		read_bytes(fd, start + offset, c_byte, buffer);
 
-		if((res = uncompress(block, &bytes, (const char *) buffer, c_byte)) != Z_OK) {
+		if((res = uncompress(block, &bytes, (const unsigned char *) buffer, c_byte)) != Z_OK) {
 			if(res == Z_MEM_ERROR)
 				ERROR("zlib::uncompress failed, not enough memory\n");
 			else if(res == Z_BUF_ERROR)
@@ -88,7 +99,7 @@ int read_block(int fd, long long start, long long *next, unsigned char *block, s
 		return bytes;
 	} else {
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
-		read_bytes(fd, start + offset, c_byte, block);
+		read_bytes(fd, start + offset, c_byte, (char *) block);
 		if(next)
 			*next = start + offset + c_byte;
 		return c_byte;
@@ -421,7 +432,7 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk, squashfs_fragment_en
 		read_bytes(fd, sBlk->fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments), (char *) fragment_table_index);
 
 	for(i = 0; i < indexes; i++) {
-		int length = read_block(fd, fragment_table_index[i], NULL, ((char *) *fragment_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
+		int length = read_block(fd, fragment_table_index[i], NULL, ((unsigned char *) *fragment_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
 		TRACE("Read fragment table block %d, from 0x%x, length %d\n", i, fragment_table_index[i], length);
 	}
 

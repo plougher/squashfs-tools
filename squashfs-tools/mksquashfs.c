@@ -22,6 +22,7 @@
  */
 
 #define TRUE 1
+
 #include <pwd.h>
 #include <grp.h>
 #include <time.h>
@@ -34,18 +35,27 @@
 #include <dirent.h>
 #include <string.h>
 #include <zlib.h>
-#include <endian.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <setjmp.h>
 #include <sys/mman.h>
+
+#ifdef BYTE_ORDER
+#define __BYTE_ORDER BYTE_ORDER
+#define __BIG_ENDIAN BIG_ENDIAN
+#define __LITTLE_ENDIAN LITTLE_ENDIAN
+#else
+#include <endian.h>
+#endif
 
 #include <squashfs_fs.h>
 #include "mksquashfs.h"
 #include "global.h"
 
 #ifdef SQUASHFS_TRACE
-#define TRACE(s, args...)		printf("mksquashfs: "s, ## args)
+#define TRACE(s, args...)		do { \
+						printf("mksquashfs: "s, ## args); \
+					} while(0)
 #else
 #define TRACE(s, args...)
 #endif
@@ -237,7 +247,7 @@ int sorted = 0;
  * to duplicate buffer read helper functions.
  */
 struct duplicate_buffer_handle {
-	unsigned char	*ptr;
+	char	*ptr;
 	long long	start;
 };
 
@@ -254,7 +264,7 @@ extern long long read_filesystem(char *root_name, int fd, squashfs_super_block *
 int get_sorted_inode(squashfs_inode *inode, struct stat *buf);
 int read_sort_file(char *filename, int source, char *source_path[]);
 void sort_files_and_write(int source, char *source_path[]);
-struct file_info *duplicate(unsigned char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, int bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes);
+struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, int bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes);
 struct dir_info *dir_scan1(char *, int (_readdir)(char *, char *, struct dir_info *));
 
 #define FALSE 0
@@ -306,7 +316,7 @@ unsigned int mangle(char *d, char *s, int size, int block_size, int uncompressed
 	unsigned long c_byte = block_size << 1;
 	unsigned int res;
 
-	if(!uncompressed && (res = compress2(d, &c_byte, s, size, 9)) != Z_OK) {
+	if(!uncompressed && (res = compress2((unsigned char *) d, &c_byte, (unsigned char *) s, size, 9)) != Z_OK) {
 		if(res == Z_MEM_ERROR)
 			BAD_ERROR("zlib::compress failed, not enough memory\n");
 		else if(res == Z_BUF_ERROR)
@@ -703,7 +713,7 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, int by
 
 void scan2_init_dir(struct directory *dir)
 {
-	if((dir->buff = (char *)malloc(SQUASHFS_METADATA_SIZE)) == NULL) {
+	if((dir->buff = malloc(SQUASHFS_METADATA_SIZE)) == NULL) {
 		BAD_ERROR("Out of memory allocating directory buffer\n");
 	}
 
@@ -718,7 +728,7 @@ void scan2_init_dir(struct directory *dir)
 
 void add_dir(squashfs_inode inode, unsigned int inode_number, char *name, int type, struct directory *dir)
 {
-	char *buff;
+	unsigned char *buff;
 	squashfs_dir_entry idir, *idirp;
 	unsigned int start_block = inode >> 16;
 	unsigned int offset = inode & 0xffff;
@@ -730,7 +740,7 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name, int ty
 	}
 
 	if(dir->p + sizeof(squashfs_dir_entry) + size + sizeof(squashfs_dir_header) >= dir->buff + dir->size) {
-		if((buff = (char *) realloc(dir->buff, dir->size += SQUASHFS_METADATA_SIZE)) == NULL)  {
+		if((buff = realloc(dir->buff, dir->size += SQUASHFS_METADATA_SIZE)) == NULL)  {
 			BAD_ERROR("Out of memory reallocating directory buffer\n");
 		}
 
@@ -906,12 +916,12 @@ char *get_fragment(char *buffer, struct fragment *fragment)
 
 	if(SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size)) {
 		int res;
-		long bytes = block_size;
+		unsigned long bytes = block_size;
 		char cbuffer[block_size];
 
 		read_bytes(fd, disk_fragment->start_block, size, cbuffer);
 
-		if((res = uncompress(buffer, &bytes, (const char *) cbuffer, size)) != Z_OK) {
+		if((res = uncompress((unsigned char *) buffer, &bytes, (const unsigned char *) cbuffer, size)) != Z_OK) {
 			if(res == Z_MEM_ERROR)
 				BAD_ERROR("zlib::uncompress failed, not enough memory\n");
 			else if(res == Z_BUF_ERROR)
@@ -929,7 +939,7 @@ char *get_fragment(char *buffer, struct fragment *fragment)
 void write_fragment()
 {
 	int compressed_size;
-	unsigned char buffer[block_size << 1];
+	char buffer[block_size << 1];
 
 	if(fragment_size == 0)
 		return;
@@ -1024,16 +1034,16 @@ long long write_fragment_table()
 }
 
 
-unsigned char *read_from_buffer(struct duplicate_buffer_handle *handle, unsigned int avail_bytes)
+char *read_from_buffer(struct duplicate_buffer_handle *handle, unsigned int avail_bytes)
 {
-	unsigned char *v = handle->ptr;
+	char *v = handle->ptr;
 	handle->ptr += avail_bytes;	
 	return v;
 }
 
 
 char read_from_file_buffer[SQUASHFS_FILE_MAX_SIZE];
-unsigned char *read_from_file(struct duplicate_buffer_handle *handle, unsigned int avail_bytes)
+char *read_from_file(struct duplicate_buffer_handle *handle, unsigned int avail_bytes)
 {
 	read_bytes(fd, handle->start, avail_bytes, read_from_file_buffer);
 	handle->start += avail_bytes;
@@ -1044,7 +1054,7 @@ unsigned char *read_from_file(struct duplicate_buffer_handle *handle, unsigned i
 /*
  * Compute 16 bit BSD checksum over the data
  */
-unsigned short get_checksum(unsigned char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *handle, int l)
+unsigned short get_checksum(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *handle, int l)
 {
 	unsigned short chksum = 0;
 	unsigned int bytes = 0;
@@ -1054,7 +1064,7 @@ unsigned short get_checksum(unsigned char *(get_next_file_block)(struct duplicat
 	while(l) {
 		bytes = l > SQUASHFS_FILE_MAX_SIZE ? SQUASHFS_FILE_MAX_SIZE : l;
 		l -= bytes;
-		b = get_next_file_block(&position, bytes);
+		b = (unsigned char *) get_next_file_block(&position, bytes);
 		while(bytes--) {
 			chksum = (chksum & 1) ? (chksum >> 1) | 0x8000 : chksum >> 1;
 			chksum += *b++;
@@ -1096,7 +1106,7 @@ void add_file(long long start, int file_bytes, unsigned int *block_listp, int bl
 char cached_fragment[SQUASHFS_FILE_SIZE];
 int cached_frag1 = -1;
 
-struct file_info *duplicate(unsigned char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, int bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes)
+struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, int bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes)
 {
 	unsigned short checksum = get_checksum(get_next_file_block, file_start, bytes);
 	struct duplicate_buffer_handle handle = { frag_data, 0 };
@@ -1106,11 +1116,11 @@ struct file_info *duplicate(unsigned char *(get_next_file_block)(struct duplicat
 
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
 		if(bytes == dupl_ptr->bytes && frag_bytes == dupl_ptr->fragment->size && fragment_checksum == dupl_ptr->fragment_checksum) {
-			unsigned char buffer1[SQUASHFS_FILE_MAX_SIZE];
+			char buffer1[SQUASHFS_FILE_MAX_SIZE];
 			unsigned int dup_bytes = dupl_ptr->bytes;
 			long long dup_start = dupl_ptr->start;
 			struct duplicate_buffer_handle position = *file_start;
-			unsigned char *buffer;
+			char *buffer;
 			while(dup_bytes) {
 				int avail_bytes = dup_bytes > SQUASHFS_FILE_MAX_SIZE ? SQUASHFS_FILE_MAX_SIZE : dup_bytes;
 
@@ -2233,7 +2243,7 @@ restore_filesystem:
 	}
 
 	if(!nopad && (i = bytes & (4096 - 1))) {
-		unsigned char temp[4096] = {0};
+		char temp[4096] = {0};
 		write_bytes(fd, bytes, 4096 - i, temp);
 	}
 
