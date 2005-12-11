@@ -50,7 +50,6 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page);
 static int squashfs_readpage(struct file *file, struct page *page);
 static int squashfs_readpage4K(struct file *file, struct page *page);
 static int squashfs_readdir(struct file *, void *, filldir_t);
-static void squashfs_put_super(struct super_block *s);
 static struct inode *squashfs_alloc_inode(struct super_block *sb);
 static void squashfs_destroy_inode(struct inode *inode);
 static int init_inodecache(void);
