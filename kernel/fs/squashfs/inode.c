@@ -524,14 +524,13 @@ static struct inode *squashfs_new_inode(struct super_block *s,
 		struct squashfs_base_inode_header *inodeb)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
 	struct inode *i = new_inode(s);
 
 	if (i) {
 		i->i_ino = inodeb->inode_number;
-		i->i_mtime.tv_sec = sblk->mkfs_time;
-		i->i_atime.tv_sec = sblk->mkfs_time;
-		i->i_ctime.tv_sec = sblk->mkfs_time;
+		i->i_mtime.tv_sec = inodeb->mtime;
+		i->i_atime.tv_sec = inodeb->mtime;
+		i->i_ctime.tv_sec = inodeb->mtime;
 		i->i_uid = msblk->uid[inodeb->uid];
 		i->i_mode = inodeb->mode;
 		i->i_size = 0;
@@ -608,9 +607,6 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 			i->i_size = inodep->file_size;
 			i->i_fop = &generic_ro_fops;
 			i->i_mode |= S_IFREG;
-			i->i_mtime.tv_sec = inodep->mtime;
-			i->i_atime.tv_sec = inodep->mtime;
-			i->i_ctime.tv_sec = inodep->mtime;
 			i->i_blocks = ((i->i_size - 1) >> 9) + 1;
 			i->i_blksize = PAGE_CACHE_SIZE;
 			SQUASHFS_I(i)->u.s1.fragment_start_block = frag_blk;
@@ -664,9 +660,6 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 			i->i_size = inodep->file_size;
 			i->i_fop = &generic_ro_fops;
 			i->i_mode |= S_IFREG;
-			i->i_mtime.tv_sec = inodep->mtime;
-			i->i_atime.tv_sec = inodep->mtime;
-			i->i_ctime.tv_sec = inodep->mtime;
 			i->i_blocks = ((i->i_size - 1) >> 9) + 1;
 			i->i_blksize = PAGE_CACHE_SIZE;
 			SQUASHFS_I(i)->u.s1.fragment_start_block = frag_blk;
@@ -713,9 +706,6 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 			i->i_op = &squashfs_dir_inode_ops;
 			i->i_fop = &squashfs_dir_ops;
 			i->i_mode |= S_IFDIR;
-			i->i_mtime.tv_sec = inodep->mtime;
-			i->i_atime.tv_sec = inodep->mtime;
-			i->i_ctime.tv_sec = inodep->mtime;
 			SQUASHFS_I(i)->start_block = inodep->start_block;
 			SQUASHFS_I(i)->offset = inodep->offset;
 			SQUASHFS_I(i)->u.s2.directory_index_count = 0;
@@ -754,9 +744,6 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 			i->i_op = &squashfs_dir_inode_ops;
 			i->i_fop = &squashfs_dir_ops;
 			i->i_mode |= S_IFDIR;
-			i->i_mtime.tv_sec = inodep->mtime;
-			i->i_atime.tv_sec = inodep->mtime;
-			i->i_ctime.tv_sec = inodep->mtime;
 			SQUASHFS_I(i)->start_block = inodep->start_block;
 			SQUASHFS_I(i)->offset = inodep->offset;
 			SQUASHFS_I(i)->u.s2.directory_index_start = next_block;
