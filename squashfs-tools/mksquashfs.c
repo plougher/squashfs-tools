@@ -528,7 +528,7 @@ unsigned int get_guid(squashfs_uid uid, squashfs_uid guid)
 }
 
 
-int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, int byte_size, long long start_block, unsigned int offset, unsigned int *block_list, struct fragment *fragment, struct directory *dir_in)
+int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long long byte_size, long long start_block, unsigned int offset, unsigned int *block_list, struct fragment *fragment, struct directory *dir_in)
 {
 	struct stat *buf = &dir_ent->inode->buf;
 	squashfs_inode_header inode_header;
@@ -563,7 +563,7 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, int by
 			SQUASHFS_SWAP_REG_INODE_HEADER(reg, inodep);
 			SQUASHFS_SWAP_INTS(block_list, inodep->block_list, offset);
 		}
-		TRACE("File inode, file_size %d, start_block %llx, blocks %d, fragment %d, offset %d, size %d\n", byte_size,
+		TRACE("File inode, file_size %d, start_block %llx, blocks %d, fragment %d, offset %d, size %d\n", (int) byte_size,
 			start_block, offset, fragment->index, fragment->offset, fragment->size);
 		for(i = 0; i < offset; i++)
 			TRACE("Block %d, size %d\n", i, block_list[i]);
@@ -588,7 +588,7 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, int by
 			SQUASHFS_SWAP_LREG_INODE_HEADER(reg, inodep);
 			SQUASHFS_SWAP_INTS(block_list, inodep->block_list, offset);
 		}
-		TRACE("Long file inode, file_size %d, start_block %llx, blocks %d, fragment %d, offset %d, size %d, nlink %d\n", byte_size,
+		TRACE("Long file inode, file_size %lld, start_block %llx, blocks %d, fragment %d, offset %d, size %d, nlink %d\n", byte_size,
 			start_block, offset, fragment->index, fragment->offset, fragment->size, nlink);
 		for(i = 0; i < offset; i++)
 			TRACE("Block %d, size %d\n", i, block_list[i]);
@@ -629,7 +629,7 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, int by
 			memcpy(((squashfs_dir_index *)p)->name, index[i].name, index[i].index.size + 1);
 			p += sizeof(squashfs_dir_index) + index[i].index.size + 1;
 		}
-		TRACE("Long directory inode, file_size %d, start_block %llx, offset %x, nlink %d\n", byte_size,
+		TRACE("Long directory inode, file_size %d, start_block %llx, offset %x, nlink %d\n", (int) byte_size,
 			start_block, offset, dir_ent->dir->directory_count + 2);
 	}
 	else if(type == SQUASHFS_DIR_TYPE) {
@@ -647,7 +647,7 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, int by
 			memcpy(inode, dir, sizeof(*dir));
 		else
 			SQUASHFS_SWAP_DIR_INODE_HEADER(dir, inode);
-		TRACE("Directory inode, file_size %d, start_block %llx, offset %x, nlink %d\n", byte_size,
+		TRACE("Directory inode, file_size %d, start_block %llx, offset %x, nlink %d\n", (int) byte_size,
 			start_block, offset, dir_ent->dir->directory_count + 2);
 	}
 	else if(type == SQUASHFS_CHRDEV_TYPE || type == SQUASHFS_BLKDEV_TYPE) {
@@ -1191,7 +1191,8 @@ int write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, i
 	unsigned int blocks = (read_size + block_size - 1) >> block_log;
 	unsigned int block_list[blocks], *block_listp = block_list;
 	char buff[block_size], *c_buffer;
-	int allocated_blocks = blocks, i, bbytes, whole_file = 1;
+	int i, bbytes, whole_file = 1;
+	long long allocated_blocks = blocks;
 	struct fragment *fragment;
 	struct file_info *dupl_ptr = NULL;
 	struct duplicate_buffer_handle handle;
@@ -1214,10 +1215,10 @@ int write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, i
 
 	do {
 		if((c_buffer = (char *) malloc((allocated_blocks + 1) << block_log)) == NULL) {
-			TRACE("Out of memory allocating write_file buffer, allocated_blocks %d, blocks %d\n", allocated_blocks, blocks);
+			TRACE("Out of memory allocating write_file buffer, allocated_blocks %d, blocks %d\n", (int) allocated_blocks, blocks);
 			whole_file = 0;
 			if((allocated_blocks << (block_log - 1)) < MINALLOCBYTES)
-				BAD_ERROR("Out of memory allocating write_file buffer, could not allocate %d blocks (%d Kbytes)\n", allocated_blocks, allocated_blocks << (block_log - 10));
+				BAD_ERROR("Out of memory allocating write_file buffer, could not allocate %d blocks (%d Kbytes)\n", (int) allocated_blocks, (int) allocated_blocks << (block_log - 10));
 			allocated_blocks >>= 1;
 		}
 	} while(!c_buffer);
