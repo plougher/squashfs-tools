@@ -800,6 +800,7 @@ int read_super(squashfs_super_block *sBlk, char *source)
 	if(sBlk->s_major != SQUASHFS_MAJOR || sBlk->s_minor > SQUASHFS_MINOR) {
 		ERROR("Major/Minor mismatch, filesystem on %s is (%d:%d)\n",
 				source, sBlk->s_major, sBlk->s_minor);
+		ERROR("This a prerelease of Unsquashfs.  I only support Squashfs 3.0 filesystems\n");
 		goto failed_mount;
 	}
 
