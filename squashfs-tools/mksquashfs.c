@@ -40,7 +40,7 @@
 #include <setjmp.h>
 #include <sys/mman.h>
 
-#ifdef BYTE_ORDER
+#ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
 #define __BIG_ENDIAN BIG_ENDIAN
 #define __LITTLE_ENDIAN LITTLE_ENDIAN
@@ -1788,7 +1788,7 @@ void add_old_root_entry(char *name, squashfs_inode inode, int type)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.0prerelease (2005/12/11)\n");\
+	printf("mksquashfs version 3.0prerelease (2005/12/27)\n");\
 	printf("copyright (C) 2005 Phillip Lougher (phillip@lougher.demon.co.uk)\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
