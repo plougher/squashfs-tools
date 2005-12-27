@@ -35,7 +35,7 @@ extern int add_file(long long, int, unsigned int *, int, unsigned int, int, int)
 #include <zlib.h>
 #include <sys/mman.h>
 
-#ifdef BYTE_ORDER
+#ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
 #define __BIG_ENDIAN BIG_ENDIAN
 #define __LITTLE_ENDIAN LITTLE_ENDIAN
