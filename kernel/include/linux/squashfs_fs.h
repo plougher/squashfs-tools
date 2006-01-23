@@ -172,6 +172,30 @@
 
 #define SQUASHFS_MARKER_BYTE		0xff
 
+/* meta index cache */
+#define SQUASHFS_META_INDEXES	(SQUASHFS_METADATA_SIZE / sizeof(unsigned int))
+#define SQUASHFS_META_ENTRIES	31
+#define SQUASHFS_META_NUMBER	8
+#define SQUASHFS_SLOTS		4
+
+struct meta_entry {
+	long long		data_block;
+	unsigned int		index_block;
+	unsigned short		offset;
+	unsigned short		pad;
+};
+
+struct meta_index {
+	unsigned int		inode_number;
+	unsigned int		offset;
+	unsigned short		entries;
+	unsigned short		skip;
+	unsigned short		locked;
+	unsigned short		pad;
+	struct meta_entry	meta_entry[SQUASHFS_META_ENTRIES];
+};
+
+
 /*
  * definitions for structures on disk
  */

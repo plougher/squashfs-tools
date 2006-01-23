@@ -977,6 +977,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	init_MUTEX(&msblk->read_page_mutex);
 	init_MUTEX(&msblk->block_cache_mutex);
 	init_MUTEX(&msblk->fragment_mutex);
+	init_MUTEX(&msblk->meta_index_mutex);
 	
 	init_waitqueue_head(&msblk->waitq);
 	init_waitqueue_head(&msblk->fragment_wait_queue);
@@ -1061,13 +1062,10 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	/* Allocate read_page block */
-	if (sblk->block_size > PAGE_CACHE_SIZE) {
-		if (!(msblk->read_page = kmalloc(sblk->block_size, GFP_KERNEL))) {
-			ERROR("Failed to allocate read_page block\n");
-			goto failed_mount;
-		}
-	} else
-		msblk->read_page = NULL;
+	if (!(msblk->read_page = kmalloc(sblk->block_size, GFP_KERNEL))) {
+		ERROR("Failed to allocate read_page block\n");
+		goto failed_mount;
+	}
 
 	/* Allocate uid and gid tables */
 	if (!(msblk->uid = kmalloc((sblk->no_uids + sblk->no_guids) *
@@ -1187,8 +1185,8 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 		if (!(bytes = squashfs_get_cached_block(inode->i_sb, NULL,
 				block, offset, PAGE_CACHE_SIZE, &block,
 				&offset))) {
-			/*ERROR("Unable to read symbolic link [%llx:%x]\n", block,
-					offset);*/
+			ERROR("Unable to read symbolic link [%llx:%x]\n", block,
+					offset);
 			goto skip_read;
 		}
 	}
@@ -1216,60 +1214,262 @@ skip_read:
 }
 
 
+struct meta_index *locate_meta_index(struct inode *inode, int index, int offset)
+{
+	struct meta_index *meta = NULL;
+	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	int i;
+
+	down(&msblk->meta_index_mutex);
+
+	TRACE("locate_meta_index: index %d, offset %d\n", index, offset);
+
+	if(msblk->meta_index == NULL)
+		goto not_allocated;
+
+	for (i = 0; i < SQUASHFS_META_NUMBER; i ++)
+		if (msblk->meta_index[i].inode_number == inode->i_ino &&
+				msblk->meta_index[i].offset >= offset &&
+				msblk->meta_index[i].offset <= index &&
+				msblk->meta_index[i].locked == 0) {
+			TRACE("locate_meta_index: entry %d, offset %d\n", i,
+					msblk->meta_index[i].offset);
+			meta = &msblk->meta_index[i];
+			offset = meta->offset;
+		}
+
+	if (meta)
+		meta->locked = 1;
+
+not_allocated:
+	up(&msblk->meta_index_mutex);
+
+	return meta;
+}
+
+
+struct meta_index *empty_meta_index(struct inode *inode, int offset, int skip)
+{
+	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	struct meta_index *meta = NULL;
+	int i;
+
+	down(&msblk->meta_index_mutex);
+
+	TRACE("empty_meta_index: offset %d, skip %d\n", offset, skip);
+
+	if(msblk->meta_index == NULL) {
+		if (!(msblk->meta_index = kmalloc(sizeof(struct meta_index) *
+					SQUASHFS_META_NUMBER, GFP_KERNEL))) {
+			ERROR("Failed to allocate meta_index\n");
+			goto failed;
+		}
+		for(i = 0; i < SQUASHFS_META_NUMBER; i++) {
+			msblk->meta_index[i].inode_number = 0;
+			msblk->meta_index[i].locked = 0;
+		}
+		msblk->next_meta_index = 0;
+	}
+
+	for(i = SQUASHFS_META_NUMBER; i &&
+			msblk->meta_index[msblk->next_meta_index].locked; i --)
+		msblk->next_meta_index = (msblk->next_meta_index + 1) %
+			SQUASHFS_META_NUMBER;
+
+	if(i == 0) {
+		TRACE("empty_meta_index: failed!\n");
+		goto failed;
+	}
+
+	TRACE("empty_meta_index: returned meta entry %d, %p\n",
+			msblk->next_meta_index,
+			&msblk->meta_index[msblk->next_meta_index]);
+
+	meta = &msblk->meta_index[msblk->next_meta_index];
+	msblk->next_meta_index = (msblk->next_meta_index + 1) %
+			SQUASHFS_META_NUMBER;
+
+	meta->inode_number = inode->i_ino;
+	meta->offset = offset;
+	meta->skip = skip;
+	meta->entries = 0;
+	meta->locked = 1;
+
+failed:
+	up(&msblk->meta_index_mutex);
+	return meta;
+}
+
+
+void release_meta_index(struct inode *inode, struct meta_index *meta)
+{
+	meta->locked = 0;
+}
+
+
+static int read_block_index(struct super_block *s, int blocks, char *block_list,
+		long long *start_block, int *offset)
+{
+	struct squashfs_sb_info *msblk = s->s_fs_info;
+	unsigned int *block_listp;
+	int block = 0;
+	
+	if (msblk->swap) {
+		char sblock_list[blocks << 2];
+
+		if (!squashfs_get_cached_block(s, sblock_list, *start_block,
+				*offset, blocks << 2, start_block, offset)) {
+			ERROR("Unable to read block list [%llx:%x]\n",
+				*start_block, *offset);
+			goto failure;
+		}
+		SQUASHFS_SWAP_INTS(((unsigned int *)block_list),
+				((unsigned int *)sblock_list), blocks);
+	} else
+		if (!squashfs_get_cached_block(s, block_list, *start_block,
+				*offset, blocks << 2, start_block, offset)) {
+			ERROR("Unable to read block list [%llx:%x]\n",
+				*start_block, *offset);
+			goto failure;
+		}
+
+	for (block_listp = (unsigned int *) block_list; blocks;
+				block_listp++, blocks --)
+		block += SQUASHFS_COMPRESSED_SIZE_BLOCK(*block_listp);
+
+	return block;
+
+failure:
+	return -1;
+}
+
+
 #define SIZE 256
+
+static inline int calculate_skip(int blocks) {
+	int skip = (blocks - 1) / ((SQUASHFS_SLOTS * SQUASHFS_META_ENTRIES + 1) * SQUASHFS_META_INDEXES);
+	return skip >= 7 ? 7 : skip + 1;
+}
+
+
+static int get_meta_index(struct inode *inode, int index,
+		long long *index_block, int *index_offset,
+		long long *data_block, char *block_list)
+{
+	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	struct squashfs_super_block *sblk = &msblk->sblk;
+	int skip = calculate_skip(i_size_read(inode) >> sblk->block_log);
+	int offset = 0;
+	struct meta_index *meta;
+	struct meta_entry *meta_entry;
+	long long cur_index_block = SQUASHFS_I(inode)->u.s1.block_list_start;
+	int cur_offset = SQUASHFS_I(inode)->offset;
+	long long cur_data_block = SQUASHFS_I(inode)->start_block;
+	int i;
+ 
+	index /= SQUASHFS_META_INDEXES * skip;
+
+	while ( offset < index ) {
+		meta = locate_meta_index(inode, index, offset + 1);
+
+		if (meta == NULL) {
+			if ((meta = empty_meta_index(inode, offset + 1,
+							skip)) == NULL)
+				goto all_done;
+		} else {
+			offset = index < meta->offset + meta->entries ? index :
+				meta->offset + meta->entries - 1;
+			meta_entry = &meta->meta_entry[offset - meta->offset];
+			cur_index_block = meta_entry->index_block + sblk->inode_table_start;
+			cur_offset = meta_entry->offset;
+			cur_data_block = meta_entry->data_block;
+			TRACE("get_meta_index: offset %d, meta->offset %d, "
+				"meta->entries %d\n", offset, meta->offset,
+				meta->entries);
+			TRACE("get_meta_index: index_block 0x%llx, offset 0x%x"
+				" data_block 0x%llx\n", cur_index_block,
+				cur_offset, cur_data_block);
+		}
+
+		for (i = meta->offset + meta->entries; i <= index &&
+				i < meta->offset + SQUASHFS_META_ENTRIES; i++) {
+			int blocks = skip * SQUASHFS_META_INDEXES;
+
+			while (blocks) {
+				int block = blocks > (SIZE >> 2) ? (SIZE >> 2) :
+					blocks;
+				int res = read_block_index(inode->i_sb, block,
+					block_list, &cur_index_block,
+					&cur_offset);
+
+				if (res == -1)
+					goto failed;
+
+				cur_data_block += res;
+				blocks -= block;
+			}
+
+			meta_entry = &meta->meta_entry[i - meta->offset];
+			meta_entry->index_block = cur_index_block - sblk->inode_table_start;
+			meta_entry->offset = cur_offset;
+			meta_entry->data_block = cur_data_block;
+			meta->entries ++;
+			offset ++;
+		}
+
+		TRACE("get_meta_index: meta->offset %d, meta->entries %d\n",
+				meta->offset, meta->entries);
+
+		release_meta_index(inode, meta);
+	}
+
+all_done:
+	*index_block = cur_index_block;
+	*index_offset = cur_offset;
+	*data_block = cur_data_block;
+
+	return offset * SQUASHFS_META_INDEXES * skip;
+
+failed:
+	release_meta_index(inode, meta);
+	return -1;
+}
+
 
 static long long read_blocklist(struct inode *inode, int index,
 				int readahead_blks, char *block_list,
 				unsigned short **block_p, unsigned int *bsize)
 {
-	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
-	unsigned int *block_listp;
-	int i = 0;
-	long long block_ptr = SQUASHFS_I(inode)->u.s1.block_list_start;
-	int offset = SQUASHFS_I(inode)->offset;
-	long long block = SQUASHFS_I(inode)->start_block;
+	long long block_ptr;
+	int offset;
+	long long block;
+	int res = get_meta_index(inode, index, &block_ptr, &offset, &block,
+		block_list);
 
-	while ( 1 ) {
-		int blocks = (index + readahead_blks - i);
-		if (blocks > (SIZE >> 2)) {
-			if ((index - i) <= (SIZE >> 2))
-				blocks = index - i;
-			else
-				blocks = SIZE >> 2;
-		}
+	TRACE("read_blocklist: res %d, index %d, block_ptr 0x%llx, offset"
+		       " 0x%x, block 0x%llx\n", res, index, block_ptr, offset,
+		       block);
 
-		if (msblk->swap) {
-			unsigned char sblock_list[SIZE];
+	if(res == -1)
+		goto failure;
 
-			if (!squashfs_get_cached_block(inode->i_sb, (char *)
-					sblock_list, block_ptr,
-					offset, blocks << 2, &block_ptr,
-					&offset)) {
-				ERROR("Unable to read block list [%llx:%x]\n",
-					block_ptr, offset);
-				goto failure;
-			}
-			SQUASHFS_SWAP_INTS(((unsigned int *)block_list),
-					((unsigned int *)sblock_list), blocks);
-		} else
-			if (!squashfs_get_cached_block(inode->i_sb, (char *)
-					block_list, block_ptr, offset,
-					blocks << 2, &block_ptr,
-					&offset)) {
-				ERROR("Unable to read block list [%llx:%x]\n",
-					block_ptr, offset);
-				goto failure;
-			}
+	index -= res;
 
-		for (block_listp = (unsigned int *) block_list; i < index &&
-					blocks; i++, block_listp++, blocks --)
-			block += SQUASHFS_COMPRESSED_SIZE_BLOCK(*block_listp);
-
-		if (blocks >= readahead_blks)
-			break;
+	while ( index ) {
+		int blocks = index > (SIZE >> 2) ? (SIZE >> 2) : index;
+		int res = read_block_index(inode->i_sb, blocks, block_list,
+			&block_ptr, &offset);
+		if (res == -1)
+			goto failure;
+		block += res;
+		index -= blocks;
 	}
 
-	*bsize = *block_listp;
+	if (read_block_index(inode->i_sb, 1, block_list,
+			&block_ptr, &offset) == -1)
+		goto failure;
+	*bsize = *((unsigned int *) block_list);
+
 	return block;
 
 failure:
@@ -1588,7 +1788,7 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 			size = 2;
 			i_ino = SQUASHFS_I(i)->u.s2.parent_inode;
 		}
-		TRACE("Calling filldir(%x, %s, %d, %d)\n",
+		TRACE("Calling filldir(%x, %s, %d, %d, %d, %d)\n",
 				(unsigned int) dirent, name, size, (int)
 				file->f_pos, i_ino,
 				squashfs_filetype_table[1]);
@@ -1824,6 +2024,7 @@ static void squashfs_put_super(struct super_block *s)
 		kfree(sbi->uid);
 		kfree(sbi->fragment_index);
 		kfree(sbi->fragment_index_2);
+		kfree(sbi->meta_index);
 		kfree(s->s_fs_info);
 		s->s_fs_info = NULL;
 	}

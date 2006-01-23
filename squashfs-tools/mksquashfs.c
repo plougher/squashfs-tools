@@ -211,7 +211,7 @@ struct old_root_entry_info *old_root_entry;
 
 /* in memory file info */
 struct file_info {
-	unsigned int		bytes;
+	long long		bytes;
 	unsigned short		checksum;
 	long long		start;
 	unsigned int		*block_list;
@@ -264,7 +264,7 @@ extern long long read_filesystem(char *root_name, int fd, squashfs_super_block *
 int get_sorted_inode(squashfs_inode *inode, struct stat *buf);
 int read_sort_file(char *filename, int source, char *source_path[]);
 void sort_files_and_write(int source, char *source_path[]);
-struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, int bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes);
+struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, long long bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes);
 struct dir_info *dir_scan1(char *, int (_readdir)(char *, char *, struct dir_info *));
 
 #define FALSE 0
@@ -1054,7 +1054,7 @@ char *read_from_file(struct duplicate_buffer_handle *handle, unsigned int avail_
 /*
  * Compute 16 bit BSD checksum over the data
  */
-unsigned short get_checksum(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *handle, int l)
+unsigned short get_checksum(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *handle, long long l)
 {
 	unsigned short chksum = 0;
 	unsigned int bytes = 0;
@@ -1106,7 +1106,7 @@ void add_file(long long start, int file_bytes, unsigned int *block_listp, int bl
 char cached_fragment[SQUASHFS_FILE_SIZE];
 int cached_frag1 = -1;
 
-struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, int bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes)
+struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, long long bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes)
 {
 	unsigned short checksum = get_checksum(get_next_file_block, file_start, bytes);
 	struct duplicate_buffer_handle handle = { frag_data, 0 };
@@ -1117,7 +1117,7 @@ struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
 		if(bytes == dupl_ptr->bytes && frag_bytes == dupl_ptr->fragment->size && fragment_checksum == dupl_ptr->fragment_checksum) {
 			char buffer1[SQUASHFS_FILE_MAX_SIZE];
-			unsigned int dup_bytes = dupl_ptr->bytes;
+			long long dup_bytes = dupl_ptr->bytes;
 			long long dup_start = dupl_ptr->start;
 			struct duplicate_buffer_handle position = *file_start;
 			char *buffer;
@@ -1144,7 +1144,7 @@ struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_
 				}
 
 				if(frag_bytes == 0 || memcmp(frag_data, fragment_buffer1, frag_bytes) == 0) {
-					TRACE("Found duplicate file, start 0x%x, size %d, checksum 0x%x, fragment %d, size %d, offset %d, checksum 0x%x\n", dupl_ptr->start,
+					TRACE("Found duplicate file, start 0x%llx, size %lld, checksum 0x%x, fragment %d, size %d, offset %d, checksum 0x%x\n", dupl_ptr->start,
 						dupl_ptr->bytes, dupl_ptr->checksum, dupl_ptr->fragment->index, frag_bytes, dupl_ptr->fragment->offset, fragment_checksum);
 					*block_list = dupl_ptr->block_list;
 					*start = dupl_ptr->start;
@@ -1163,11 +1163,8 @@ struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_
 	dupl_ptr->checksum = checksum;
 	dupl_ptr->start = *start;
 	dupl_ptr->fragment_checksum = fragment_checksum;
-	if((dupl_ptr->block_list = (unsigned int *) malloc(blocks * sizeof(unsigned int))) == NULL) {
-		BAD_ERROR("Out of memory allocating block_list\n");
-	}
-	
-	memcpy(dupl_ptr->block_list, *block_list, blocks * sizeof(unsigned int));
+	dupl_ptr->block_list = *block_list;
+
 	dup_files ++;
 	if(bytes) {
 		dupl_ptr->next = dupl[checksum];
@@ -1184,19 +1181,20 @@ struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_
 #define MINALLOCBYTES (1024 * 1024)
 int write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, int *duplicate_file)
 {
-	long long start;
-	unsigned int frag_bytes, file, file_bytes = 0, block = 0;
-	unsigned int c_byte;
-	long long read_size = (size > SQUASHFS_MAX_FILE_SIZE) ? SQUASHFS_MAX_FILE_SIZE : size;
-	unsigned int blocks = (read_size + block_size - 1) >> block_log;
-	unsigned int block_list[blocks], *block_listp = block_list;
-	char buff[block_size], *c_buffer;
-	int i, bbytes, whole_file = 1;
-	long long allocated_blocks = blocks;
+	int block = 0, i, file, whole_file = 1, status;
+	unsigned int c_byte, frag_bytes;
+	long long bbytes, file_bytes = 0, start;
+	char buff[block_size], *c_buffer = NULL, *filename = dir_ent->pathname;
 	struct fragment *fragment;
 	struct file_info *dupl_ptr = NULL;
 	struct duplicate_buffer_handle handle;
-	char *filename = dir_ent->pathname;
+	long long read_size = (size > SQUASHFS_MAX_FILE_SIZE) ? SQUASHFS_MAX_FILE_SIZE : size;
+	int blocks = (read_size + block_size - 1) >> block_log, allocated_blocks = blocks;
+	unsigned int *block_list, *block_listp;
+
+	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL)
+		BAD_ERROR("Out of memory allocating block_list\n");
+	block_listp = block_list;
 
 	if(!no_fragments && (read_size < block_size || always_use_fragments)) {
 		allocated_blocks = blocks = read_size >> block_log;
@@ -1208,17 +1206,16 @@ int write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, i
 		ERROR("file %s truncated to %lld bytes\n", filename, SQUASHFS_MAX_FILE_SIZE);
 
 	total_bytes += read_size;
-	if((file = open(filename, O_RDONLY)) == -1) {
-		perror("Error in opening file, skipping...");
-		return FALSE;
-	}
+	if((file = open(filename, O_RDONLY)) == -1)
+		goto read_err;
 
 	do {
-		if((c_buffer = (char *) malloc((allocated_blocks + 1) << block_log)) == NULL) {
-			TRACE("Out of memory allocating write_file buffer, allocated_blocks %d, blocks %d\n", (int) allocated_blocks, blocks);
+		long long bytes = (((long long) allocated_blocks) + 1) << block_log;
+		if(bytes != ((size_t) bytes) || (c_buffer = (char *) malloc(bytes)) == NULL) {
+			TRACE("Out of memory allocating write_file buffer, allocated_blocks %ld, blocks %d\n", allocated_blocks, blocks);
 			whole_file = 0;
-			if((allocated_blocks << (block_log - 1)) < MINALLOCBYTES)
-				BAD_ERROR("Out of memory allocating write_file buffer, could not allocate %d blocks (%d Kbytes)\n", (int) allocated_blocks, (int) allocated_blocks << (block_log - 10));
+			if(bytes < MINALLOCBYTES)
+				BAD_ERROR("Out of memory allocating write_file buffer, could not allocate %ld blocks (%d Kbytes)\n", allocated_blocks, allocated_blocks << (block_log - 10));
 			allocated_blocks >>= 1;
 		}
 	} while(!c_buffer);
@@ -1272,13 +1269,17 @@ wr_inode:
 	free(c_buffer);
 	file_count ++;
 	if(dir_ent->inode->nlink == 1 && read_size < ((long long) (1<<30) - 1))
-		return create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
+		status = create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
 	else
-		return create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
+		status = create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
+	if(duplicate_checking == FALSE || *duplicate_file == TRUE)
+		free(block_list);
+	return status;
 
 read_err:
 	perror("Error in reading file, skipping...");
 	free(c_buffer);
+	free(block_list);
 	return FALSE;
 }
 

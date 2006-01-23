@@ -327,9 +327,15 @@ char *read_fragment(unsigned int fragment)
 int write_file(char *pathname, unsigned int fragment, unsigned int frag_bytes, unsigned int offset,
 unsigned int blocks, long long start, char *block_ptr, unsigned int mode)
 {
-	unsigned int block_list[blocks], file_fd, bytes, i;
+	unsigned int file_fd, bytes, i;
+	unsigned int *block_list;
 
 	TRACE("write_file: regular file, blocks %d\n", blocks);
+
+	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL) {
+		ERROR("write_file: unable to malloc block list\n");
+		return FALSE;
+	}
 
 	if(swap) {
 		unsigned int sblock_list[blocks];
@@ -341,6 +347,7 @@ unsigned int blocks, long long start, char *block_ptr, unsigned int mode)
 	if((file_fd = open(pathname, O_CREAT | O_WRONLY, (mode_t) mode)) == -1) {
 		ERROR("write_file: failed to create file %s, because %s\n", pathname,
 			strerror(errno));
+		free(block_list);
 		return FALSE;
 	}
 
@@ -375,6 +382,7 @@ unsigned int blocks, long long start, char *block_ptr, unsigned int mode)
 
 failure:
 	close(file_fd);
+	free(block_list);
 	return FALSE;
 }
 		

@@ -718,7 +718,7 @@ static struct dentry *squashfs_lookup_2(struct inode *i, struct dentry *dentry,
 					dire->offset);
 
 				TRACE("calling squashfs_iget for directory "
-					"entry %s, inode %x:%x, %d\n", name,
+					"entry %s, inode %x:%x, %lld\n", name,
 					dirh.start_block, dire->offset, ino);
 
 				inode = (msblk->iget)(i->i_sb, ino);

@@ -48,6 +48,7 @@ struct squashfs_sb_info {
 	struct squashfs_fragment_cache	*fragment;
 	int			next_cache;
 	int			next_fragment;
+	int			next_meta_index;
 	unsigned int		*uid;
 	unsigned int		*guid;
 	long long		*fragment_index;
@@ -59,8 +60,10 @@ struct squashfs_sb_info {
 	struct semaphore	read_page_mutex;
 	struct semaphore	block_cache_mutex;
 	struct semaphore	fragment_mutex;
+	struct semaphore	meta_index_mutex;
 	wait_queue_head_t	waitq;
 	wait_queue_head_t	fragment_wait_queue;
+	struct meta_index	*meta_index;
 	struct inode		*(*iget)(struct super_block *s,  squashfs_inode_t \
 				inode);
 	long long		(*read_blocklist)(struct inode *inode, int \
