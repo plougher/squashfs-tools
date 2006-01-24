@@ -4,7 +4,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2002, 2003, 2004, 2005
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006
  * Phillip Lougher <phillip@lougher.demon.co.uk>
  *
  * This program is free software; you can redistribute it and/or
