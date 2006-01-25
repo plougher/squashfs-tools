@@ -22,7 +22,7 @@
  */
 
 extern void read_bytes(int, long long, int, char *);
-extern int add_file(long long, int, unsigned int *, int, unsigned int, int, int);
+extern int add_file(long long, long long, unsigned int *, int, unsigned int, int, int);
 
 #define TRUE 1
 #define FALSE 0
@@ -114,24 +114,25 @@ int scan_inode_table(int fd, long long start, long long end, long long root_inod
 		int *file_count, int *sym_count, int *dev_count, int *dir_count, int *fifo_count, int *sock_count)
 {
 	unsigned char *cur_ptr;
-	int bytes = 0, size = 0, files = 0;
+	int bytes = 0, size = 0, files = 0, byte;
 	squashfs_reg_inode_header inode;
 	unsigned int directory_start_block;
 
-	TRACE("scan_inode_table: start 0x%x, end 0x%x, root_inode_start 0x%x\n", start, end, root_inode_start);
+	TRACE("scan_inode_table: start 0x%llx, end 0x%llx, root_inode_start 0x%llx\n", start, end, root_inode_start);
 	while(start < end) {
 		if(start == root_inode_start) {
-			TRACE("scan_inode_table: read compressed block 0x%x containing root inode\n", start);
+			TRACE("scan_inode_table: read compressed block 0x%llx containing root inode\n", start);
 			*root_inode_block = bytes;
 		}
 		if((size - bytes < SQUASHFS_METADATA_SIZE) &&
 				((*inode_table = realloc(*inode_table, size += SQUASHFS_METADATA_SIZE)) == NULL))
 			return FALSE;
-		TRACE("scan_inode_table: reading block 0x%x\n", start);
-		if((bytes += read_block(fd, start, &start, *inode_table + bytes, sBlk)) == 0) {
+		TRACE("scan_inode_table: reading block 0x%llx\n", start);
+		if((byte = read_block(fd, start, &start, *inode_table + bytes, sBlk)) == 0) {
 			free(*inode_table);
 			return FALSE;
 		}
+		bytes += byte;
 	}
 
 	/*
@@ -184,10 +185,11 @@ int scan_inode_table(int fd, long long start, long long end, long long root_inod
 				int blocks = inode.fragment == SQUASHFS_INVALID_FRAG ? (inode.file_size
 					+ sBlk->block_size - 1) >> sBlk->block_log : inode.file_size >>
 					sBlk->block_log;
-				int file_bytes = 0, i, start = inode.start_block;
+				long long file_bytes = 0;
+				int i, start = inode.start_block;
 				unsigned int block_list[blocks];
 
-				TRACE("scan_inode_table: regular file, file_size %d, blocks %d\n", inode.file_size, blocks);
+				TRACE("scan_inode_table: regular file, file_size %lld, blocks %d\n", inode.file_size, blocks);
 
 				cur_ptr += sizeof(inode);
 				if(swap) {
@@ -465,7 +467,7 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk, c
 
 	printf("Scanning existing filesystem...\n");
 
-	if(read_fragment_table(fd,  sBlk, fragment_table) == 0)
+	if(read_fragment_table(fd, sBlk, fragment_table) == 0)
 		goto error;
 
 	if((files = scan_inode_table(fd, start, end, root_inode_start, root_inode_offset, sBlk, &inode, &inode_table,

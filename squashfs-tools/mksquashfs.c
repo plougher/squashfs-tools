@@ -1076,7 +1076,7 @@ unsigned short get_checksum(char *(get_next_file_block)(struct duplicate_buffer_
 
 
 int cached_frag = -1;
-void add_file(long long start, int file_bytes, unsigned int *block_listp, int blocks, unsigned int fragment, int offset, int bytes)
+void add_file(long long start, long long file_bytes, unsigned int *block_listp, int blocks, unsigned int fragment, int offset, int bytes)
 {
 	struct fragment *frg;
 	struct file_info *dupl_ptr;
