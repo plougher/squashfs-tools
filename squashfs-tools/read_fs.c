@@ -114,7 +114,7 @@ int scan_inode_table(int fd, long long start, long long end, long long root_inod
 		int *file_count, int *sym_count, int *dev_count, int *dir_count, int *fifo_count, int *sock_count)
 {
 	unsigned char *cur_ptr;
-	int bytes = 0, size = 0, files = 0, byte;
+	int byte, bytes = 0, size = 0, files = 0;
 	squashfs_reg_inode_header inode;
 	unsigned int directory_start_block;
 
@@ -309,11 +309,11 @@ int read_super(int fd, squashfs_super_block *sBlk, int *be, char *source)
 
 	/* Check the MAJOR & MINOR versions */
 	if(sBlk->s_major != SQUASHFS_MAJOR || sBlk->s_minor > SQUASHFS_MINOR) {
-		if(sBlk->s_major == 1)
-			ERROR("Filesystem on %s is a SQUASHFS 1.x filesystem.  Appending\nto SQUASHFS 1.x filesystems is not supported.  Please convert it to a SQUASHFS 2.1 filesystem...n", source);
+		if(sBlk->s_major < 3)
+			ERROR("Filesystem on %s is a SQUASHFS %d.%d filesystem.  Appending\nto SQUASHFS %d.%d filesystems is not supported.  Please convert it to a SQUASHFS 3.0 filesystem\n", source, sBlk->s_major, sBlk->s_minor, sBlk->s_major, sBlk->s_minor);
 		else
-			ERROR("Major/Minor mismatch, filesystem on %s is (%d:%d), I support (%d: <= %d)\n",
-				source, sBlk->s_major, sBlk->s_minor, SQUASHFS_MAJOR, SQUASHFS_MINOR);
+			ERROR("Major/Minor mismatch, filesystem on %s is %d.%d, I support 3.0\n",
+				source, sBlk->s_major, sBlk->s_minor);
 		goto failed_mount;
 	}
 
@@ -351,25 +351,26 @@ failed_mount:
 
 
 unsigned char *squashfs_readdir(int fd, int root_entries, unsigned int directory_start_block, int offset, int size,
-		unsigned int *last_directory_block, squashfs_super_block *sBlk, void (push_directory_entry)(char *, squashfs_inode, int))
+		unsigned int *last_directory_block, squashfs_super_block *sBlk, void (push_directory_entry)(char *, squashfs_inode, int, int))
 {
 	squashfs_dir_header dirh;
 	char buffer[sizeof(squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1];
 	squashfs_dir_entry *dire = (squashfs_dir_entry *) buffer;
 	unsigned char *directory_table = NULL;
-	int bytes = 0, dir_count;
+	int byte, bytes = 0, dir_count;
 	long long start = sBlk->directory_table_start + directory_start_block, last_start_block; 
 
 	size += offset;
 	if((directory_table = malloc((size + SQUASHFS_METADATA_SIZE * 2 - 1) & ~(SQUASHFS_METADATA_SIZE - 1))) == NULL)
 		return NULL;
 	while(bytes < size) {
-		TRACE("squashfs_readdir: reading block 0x%x, bytes read so far %d\n", start, bytes);
+		TRACE("squashfs_readdir: reading block 0x%llx, bytes read so far %d\n", start, bytes);
 		last_start_block = start;
-		if((bytes += read_block(fd, start, &start, directory_table + bytes, sBlk)) == 0) {
+		if((byte = read_block(fd, start, &start, directory_table + bytes, sBlk)) == 0) {
 			free(directory_table);
 			return NULL;
 		}
+		bytes += byte;
 	}
 
 	if(!root_entries)
@@ -400,7 +401,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries, unsigned int directory
 			memcpy(dire->name, directory_table + bytes, dire->size + 1);
 			dire->name[dire->size + 1] = '\0';
 			TRACE("squashfs_readdir: pushing directory entry %s, inode %x:%x, type 0x%x\n", dire->name, dirh.start_block, dire->offset, dire->type);
-			push_directory_entry(dire->name, SQUASHFS_MKINODE(dirh.start_block, dire->offset), dire->type);
+			push_directory_entry(dire->name, SQUASHFS_MKINODE(dirh.start_block, dire->offset), dire->inode_number, dire->type);
 			bytes += dire->size + 1;
 		}
 	}
@@ -416,7 +417,7 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk, squashfs_fragment_en
 	int i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk->fragments);
 	squashfs_fragment_index fragment_table_index[indexes];
 
-	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes from 0x%x\n", sBlk->fragments, indexes, sBlk->fragment_table_start);
+	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes from 0x%llx\n", sBlk->fragments, indexes, sBlk->fragment_table_start);
 	if(sBlk->fragments == 0)
 		return 1;
 
@@ -435,7 +436,7 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk, squashfs_fragment_en
 
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fd, fragment_table_index[i], NULL, ((unsigned char *) *fragment_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
-		TRACE("Read fragment table block %d, from 0x%x, length %d\n", i, fragment_table_index[i], length);
+		TRACE("Read fragment table block %d, from 0x%llx, length %d\n", i, fragment_table_index[i], length);
 	}
 
 	if(swap) {
@@ -451,13 +452,14 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk, squashfs_fragment_en
 
 
 long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk, char **cinode_table,
-		char **data_cache, char **cdirectory_table, char **directory_data_cache, unsigned int *last_directory_block,
-		unsigned int *inode_dir_offset, unsigned int *inode_dir_file_size, unsigned int *root_inode_size,
-		unsigned int *inode_dir_start_block, int *file_count, int *sym_count, int *dev_count, int *dir_count,
-		int *fifo_count, int *sock_count, squashfs_uid *uids, unsigned short *uid_count, squashfs_uid *guids,
-		unsigned short *guid_count, long long *uncompressed_file, unsigned int *uncompressed_inode,
-		unsigned int *uncompressed_directory, void (push_directory_entry)(char *, squashfs_inode, int),
-		squashfs_fragment_entry **fragment_table)
+		char **data_cache, char **cdirectory_table, char **directory_data_cache,
+		unsigned int *last_directory_block, unsigned int *inode_dir_offset, unsigned int *inode_dir_file_size,
+		unsigned int *root_inode_size, unsigned int *inode_dir_start_block, int *file_count, int *sym_count,
+		int *dev_count, int *dir_count, int *fifo_count, int *sock_count, squashfs_uid *uids,
+		unsigned short *uid_count, squashfs_uid *guids, unsigned short *guid_count,
+		long long *uncompressed_file, unsigned int *uncompressed_inode, unsigned int *uncompressed_directory,
+		unsigned int *inode_dir_inode_number, unsigned int *inode_dir_parent_inode,
+		void (push_directory_entry)(char *, squashfs_inode, int, int), squashfs_fragment_entry **fragment_table)
 {
 	unsigned char *inode_table = NULL, *directory_table;
 	long long start = sBlk->inode_table_start, end = sBlk->directory_table_start, root_inode_start = start +
@@ -486,10 +488,14 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk, c
 			*inode_dir_start_block = inode.dir.start_block;
 			*inode_dir_offset = inode.dir.offset;
 			*inode_dir_file_size = inode.dir.file_size;
+			*inode_dir_inode_number = inode.dir.inode_number;
+			*inode_dir_parent_inode = inode.dir.parent_inode;
 		} else {
 			*inode_dir_start_block = inode.ldir.start_block;
 			*inode_dir_offset = inode.ldir.offset;
 			*inode_dir_file_size = inode.ldir.file_size;
+			*inode_dir_inode_number = inode.ldir.inode_number;
+			*inode_dir_parent_inode = inode.ldir.parent_inode;
 		}
 
 		if((directory_table = squashfs_readdir(fd, !root_name, *inode_dir_start_block, *inode_dir_offset,

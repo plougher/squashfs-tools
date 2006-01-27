@@ -194,6 +194,7 @@ squashfs_fragment_entry *fragment_table = NULL;
 /* current inode number for directories and non directories */
 unsigned int dir_inode_no = 1;
 unsigned int inode_no = 0;
+unsigned int root_inode_number = 0;
 
 /* list of source dirs/files */
 int source = 0;
@@ -251,15 +252,17 @@ struct duplicate_buffer_handle {
 	long long	start;
 };
 
-void add_old_root_entry(char *name, squashfs_inode inode, int type);
+void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int type);
 extern int read_super(int fd, squashfs_super_block *sBlk, int *be, char *source);
 extern long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk, char **cinode_table,
-		char **data_cache, char **cdirectory_table, char **directory_data_cache, unsigned int *last_directory_block,
-		unsigned int *inode_dir_offset, unsigned int *inode_dir_file_size, unsigned int *root_inode_size,
-		unsigned int *inode_dir_start_block, int *file_count, int *sym_count, int *dev_count, int *dir_count,
-		int *fifo_count, int *sock_count, squashfs_uid *uids, unsigned short *uid_count, squashfs_uid *guids,
-		unsigned short *guid_count, long long *uncompressed_file, unsigned int *uncompressed_inode,
-		unsigned int *uncompressed_directory, void (push_directory_entry)(char *, squashfs_inode, int),
+		char **data_cache, char **cdirectory_table, char **directory_data_cache,
+		unsigned int *last_directory_block, unsigned int *inode_dir_offset, unsigned int *inode_dir_file_size,
+		unsigned int *root_inode_size, unsigned int *inode_dir_start_block, int *file_count, int *sym_count,
+		int *dev_count, int *dir_count, int *fifo_count, int *sock_count, squashfs_uid *uids,
+		unsigned short *uid_count, squashfs_uid *guids, unsigned short *guid_count,
+		long long *uncompressed_file, unsigned int *uncompressed_inode, unsigned int *uncompressed_directory,
+		unsigned int *inode_dir_inode_number, unsigned int *inode_dir_parent_inode,
+		void (push_directory_entry)(char *, squashfs_inode, int, int),
 		squashfs_fragment_entry **fragment_table);
 int get_sorted_inode(squashfs_inode *inode, struct stat *buf);
 int read_sort_file(char *filename, int source, char *source_path[]);
@@ -1559,7 +1562,7 @@ void dir_scan(squashfs_inode *inode, char *pathname, int (_readdir)(char *, char
 	dir_ent->our_dir = NULL;
 	dir_ent->data = NULL;
 	inode_info->nlink = 1;
-	inode_info->inode_number = dir_inode_no++;
+	inode_info->inode_number = root_inode_number ? root_inode_number : dir_inode_no++;
 	dir_info->dir_ent = dir_ent;
 
 	if(pathname[0] == '\0') {
@@ -1776,7 +1779,7 @@ int add_exclude(char *path)
 }
 
 
-void add_old_root_entry(char *name, squashfs_inode inode, int type)
+void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int type)
 {
 	if((old_root_entry = (struct old_root_entry_info *) realloc(old_root_entry, sizeof(struct old_root_entry_info)
 				* (old_root_entries + 1))) == NULL)
@@ -1784,6 +1787,7 @@ void add_old_root_entry(char *name, squashfs_inode inode, int type)
 
 	strcpy(old_root_entry[old_root_entries].name, name);
 	old_root_entry[old_root_entries].inode = inode;
+	old_root_entry[old_root_entries].inode_number = inode_number;
 	old_root_entry[old_root_entries++].type = type;
 }
 
@@ -2072,8 +2076,9 @@ printOptions:
 		bytes = sizeof(squashfs_super_block);
 	} else {
 		unsigned int last_directory_block, inode_dir_offset, inode_dir_file_size, root_inode_size,
-		inode_dir_start_block, uncompressed_data, compressed_data;
-		unsigned root_inode_start = SQUASHFS_INODE_BLK(sBlk.root_inode), root_inode_offset =
+		inode_dir_start_block, uncompressed_data, compressed_data, inode_dir_inode_number,
+		inode_dir_parent_inode;
+		unsigned int root_inode_start = SQUASHFS_INODE_BLK(sBlk.root_inode), root_inode_offset =
 		SQUASHFS_INODE_OFFSET(sBlk.root_inode);
 
 		be = orig_be;
@@ -2091,7 +2096,8 @@ printOptions:
 				&inode_dir_file_size, &root_inode_size, &inode_dir_start_block,
 				&file_count, &sym_count, &dev_count, &dir_count, &fifo_count, &sock_count,
 				(squashfs_uid *) uids, &uid_count, (squashfs_uid *) guids, &guid_count,
-				&total_bytes, &total_inode_bytes, &total_directory_bytes, add_old_root_entry, &fragment_table)) == 0) {
+				&total_bytes, &total_inode_bytes, &total_directory_bytes, &inode_dir_inode_number,
+				&inode_dir_parent_inode, add_old_root_entry, &fragment_table)) == 0) {
 			ERROR("Failed to read existing filesystem - will not overwrite - ABORTING!\n");
 			exit(1);
 		}
@@ -2144,14 +2150,18 @@ printOptions:
 		cache_size = root_inode_offset + root_inode_size;
 		directory_cache_size = inode_dir_offset + inode_dir_file_size;
 		if(root_name) {
+			root_inode_number = inode_dir_parent_inode;
+			dir_inode_no = sBlk.inodes + 2;
 			directory_bytes = last_directory_block;
 			directory_cache_bytes = uncompressed_data;
 			memmove(directory_data_cache, directory_data_cache + compressed_data, uncompressed_data);
 			cache_bytes = root_inode_offset + root_inode_size;
-			add_old_root_entry(root_name, sBlk.root_inode, SQUASHFS_DIR_TYPE);
+			add_old_root_entry(root_name, sBlk.root_inode, inode_dir_inode_number, SQUASHFS_DIR_TYPE);
 			total_directory_bytes += compressed_data;
 			dir_count ++;
 		} else {
+			root_inode_number = inode_dir_inode_number;
+			dir_inode_no = sBlk.inodes;
 			directory_bytes = inode_dir_start_block;
 			directory_cache_bytes = inode_dir_offset;
 			cache_bytes = root_inode_offset;
