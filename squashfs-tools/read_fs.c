@@ -187,11 +187,62 @@ int scan_inode_table(int fd, long long start, long long end, long long root_inod
 					sBlk->block_log;
 				long long file_bytes = 0;
 				int i, start = inode.start_block;
-				unsigned int block_list[blocks];
+				unsigned int *block_list;
 
 				TRACE("scan_inode_table: regular file, file_size %lld, blocks %d\n", inode.file_size, blocks);
 
+				if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL) {
+					ERROR("Out of memory in block list malloc\n");
+					goto failed;
+				}
+
 				cur_ptr += sizeof(inode);
+				if(swap) {
+					unsigned int sblock_list[blocks];
+					memcpy(sblock_list, cur_ptr, blocks * sizeof(unsigned int));
+					SQUASHFS_SWAP_INTS(block_list, sblock_list, blocks);
+				} else
+					memcpy(block_list, cur_ptr, blocks * sizeof(unsigned int));
+
+				*uncompressed_file += inode.file_size;
+				(*file_count) ++;
+
+				for(i = 0; i < blocks; i++)
+					file_bytes += SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
+
+	                        add_file(start, file_bytes, block_list, blocks, inode.fragment, inode.offset, frag_bytes);
+				cur_ptr += blocks * sizeof(unsigned int);
+				break;
+			}	
+			case SQUASHFS_LREG_TYPE: {
+				squashfs_lreg_inode_header inode;
+				int frag_bytes;
+				int blocks;
+				long long file_bytes = 0;
+				int i, start;
+				unsigned int *block_list;
+
+				if(swap) {
+					squashfs_lreg_inode_header sinodep;
+					memcpy(&sinodep, cur_ptr, sizeof(sinodep));
+					SQUASHFS_SWAP_LREG_INODE_HEADER(&inode, &sinodep);
+				} else
+					memcpy(&inode, cur_ptr, sizeof(inode));
+
+				TRACE("scan_inode_table: extended regular file, file_size %lld, blocks %d\n", inode.file_size, blocks);
+
+				cur_ptr += sizeof(inode);
+				frag_bytes = inode.fragment == SQUASHFS_INVALID_FRAG ? 0 : inode.file_size % sBlk->block_size;
+				blocks = inode.fragment == SQUASHFS_INVALID_FRAG ? (inode.file_size
+					+ sBlk->block_size - 1) >> sBlk->block_log : inode.file_size >>
+					sBlk->block_log;
+				start = inode.start_block;
+
+				if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL) {
+					ERROR("Out of memory in block list malloc\n");
+					goto failed;
+				}
+
 				if(swap) {
 					unsigned int sblock_list[blocks];
 					memcpy(sblock_list, cur_ptr, blocks * sizeof(unsigned int));
@@ -279,12 +330,16 @@ int scan_inode_table(int fd, long long start, long long end, long long root_inod
 				break;
 		 	default:
 				ERROR("Unknown inode type %d in scan_inode_table!\n", inode.inode_type);
-				free(*inode_table);
-				return FALSE;
+				goto failed;
 		}
 	}
 	
 	return files;
+
+
+failed:
+	free(*inode_table);
+	return FALSE;
 }
 
 
@@ -487,13 +542,13 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk, c
 		if(inode.base.inode_type == SQUASHFS_DIR_TYPE) {
 			*inode_dir_start_block = inode.dir.start_block;
 			*inode_dir_offset = inode.dir.offset;
-			*inode_dir_file_size = inode.dir.file_size;
+			*inode_dir_file_size = inode.dir.file_size - 3;
 			*inode_dir_inode_number = inode.dir.inode_number;
 			*inode_dir_parent_inode = inode.dir.parent_inode;
 		} else {
 			*inode_dir_start_block = inode.ldir.start_block;
 			*inode_dir_offset = inode.ldir.offset;
-			*inode_dir_file_size = inode.ldir.file_size;
+			*inode_dir_file_size = inode.ldir.file_size - 3;
 			*inode_dir_inode_number = inode.ldir.inode_number;
 			*inode_dir_parent_inode = inode.ldir.parent_inode;
 		}

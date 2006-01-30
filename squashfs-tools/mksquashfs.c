@@ -1085,7 +1085,8 @@ void add_file(long long start, long long file_bytes, unsigned int *block_listp, 
 	struct file_info *dupl_ptr;
 	char *datap;
 	struct duplicate_buffer_handle handle;
-	
+	unsigned int *block_list = block_listp;
+
 	if(!duplicate_checking)
 		return;
 
@@ -1102,6 +1103,8 @@ void add_file(long long start, long long file_bytes, unsigned int *block_listp, 
 	handle.start = start;
 	if((dupl_ptr = duplicate(read_from_file, &handle, file_bytes, &block_listp, &start, blocks, &frg, datap, bytes)) != NULL)
 		dupl_ptr->fragment = frg;
+	else
+		free(block_list);
 	cached_frag = fragment;
 }
 
@@ -2020,7 +2023,6 @@ printOptions:
 		}
 
 		if(!delete) {
-			BAD_ERROR("APPENDING NOT SUPPORTED...\n");
 		        if(read_super(fd, &sBlk, &orig_be, argv[source + 1]) == 0) {
 				if(S_ISREG(buf.st_mode)) { /* reopen truncating file */
 					close(fd);
