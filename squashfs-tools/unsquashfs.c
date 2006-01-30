@@ -121,6 +121,8 @@ int read_bytes(long long byte, int bytes, char *buff)
 {
 	off_t off = byte;
 
+	TRACE("read_bytes: reading from position 0x%llx, bytes %d\n", byte, bytes);
+
 	if(lseek(fd, off, SEEK_SET) == -1) {
 		ERROR("Lseek failed because %s\b", strerror(errno));
 		return FALSE;
@@ -142,12 +144,14 @@ int read_block(long long start, long long *next, char *block, squashfs_super_blo
 	
 	if(swap) {
 		if(read_bytes(start, 2, block) == FALSE)
-			return FALSE;
+			goto failed;
 		((unsigned char *) &c_byte)[1] = block[0];
 		((unsigned char *) &c_byte)[0] = block[1]; 
 	} else 
 		if(read_bytes(start, 2, (char *)&c_byte) == FALSE)
-			return FALSE;
+			goto failed;
+
+	TRACE("read_block: block @0x%llx, %d %s bytes\n", start, SQUASHFS_COMPRESSED_SIZE(c_byte), SQUASHFS_COMPRESSED(c_byte) ? "compressed" : "uncompressed");
 
 	if(SQUASHFS_CHECK_DATA(sBlk->flags))
 		offset = 3;
@@ -158,7 +162,7 @@ int read_block(long long start, long long *next, char *block, squashfs_super_blo
 
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
 		if(read_bytes(start + offset, c_byte, buffer) == FALSE)
-			return FALSE;
+			goto failed;
 
 		if((res = uncompress((unsigned char *) block, &bytes, (const unsigned char *) buffer, c_byte)) != Z_OK) {
 			if(res == Z_MEM_ERROR)
@@ -167,7 +171,7 @@ int read_block(long long start, long long *next, char *block, squashfs_super_blo
 				ERROR("zlib::uncompress failed, not enough room in output buffer\n");
 			else
 				ERROR("zlib::uncompress failed, unknown error %d\n", res);
-			return 0;
+			goto failed;
 		}
 		if(next)
 			*next = start + offset + c_byte;
@@ -175,11 +179,14 @@ int read_block(long long start, long long *next, char *block, squashfs_super_blo
 	} else {
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
 		if(read_bytes(start + offset, c_byte, block) == FALSE)
-			return FALSE;
+			goto failed;
 		if(next)
 			*next = start + offset + c_byte;
 		return c_byte;
 	}
+
+failed:
+	return FALSE;
 }
 
 
@@ -188,6 +195,8 @@ int read_data_block(long long start, unsigned int size, char *block)
 	int res;
 	unsigned long bytes = block_size;
 	int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(size);
+
+	TRACE("read_data_block: block @0x%llx, %d %s bytes\n", start, SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte), SQUASHFS_COMPRESSED_BLOCK(c_byte) ? "compressed" : "uncompressed");
 
 	if(SQUASHFS_COMPRESSED_BLOCK(size)) {
 		if(read_bytes(start, c_byte, data) == FALSE)
@@ -279,7 +288,7 @@ void read_fragment_table(squashfs_super_block *sBlk)
 	int i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk->fragments);
 	squashfs_fragment_index fragment_table_index[indexes];
 
-	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes from 0x%x\n", sBlk->fragments, indexes, sBlk->fragment_table_start);
+	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes from 0x%llx\n", sBlk->fragments, indexes, sBlk->fragment_table_start);
 	if(sBlk->fragments == 0)
 		return;
 
@@ -296,7 +305,7 @@ void read_fragment_table(squashfs_super_block *sBlk)
 
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fragment_table_index[i], NULL, ((char *) fragment_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
-		TRACE("Read fragment table block %d, from 0x%x, length %d\n", i, fragment_table_index[i], length);
+		TRACE("Read fragment table block %d, from 0x%llx, length %d\n", i, fragment_table_index[i], length);
 	}
 
 	if(swap) {
@@ -311,6 +320,8 @@ void read_fragment_table(squashfs_super_block *sBlk)
 
 char *read_fragment(unsigned int fragment)
 {
+	TRACE("read_fragment: reading fragment %d\n", fragment);
+
 	if(cached_frag == SQUASHFS_INVALID_FRAG || fragment != cached_frag) {
 		squashfs_fragment_entry *fragment_entry = &fragment_table[fragment];
 		if(read_data_block(fragment_entry->start_block, fragment_entry->size, fragment_data) == 0) {
@@ -354,12 +365,12 @@ unsigned int blocks, long long start, char *block_ptr, unsigned int mode)
 
 	for(i = 0; i < blocks; i++) {
 		if((bytes = read_data_block(start, block_list[i], file_data)) == 0) {
-			ERROR("write_file: failed to read data block %llx\n", start);
+			ERROR("write_file: failed to read data block 0x%llx\n", start);
 			goto failure;
 		}
 
 		if(write(file_fd, file_data, bytes) < bytes) {
-			ERROR("write_file: failed to write data block %llx\n", start);
+			ERROR("write_file: failed to write data block 0x%llx\n", start);
 			goto failure;
 		}
 
@@ -373,7 +384,7 @@ unsigned int blocks, long long start, char *block_ptr, unsigned int mode)
 			goto failure;
 
 		if(write(file_fd, fragment_data + offset, frag_bytes) < frag_bytes) {
-			ERROR("write_file: failed to write fragment %xd\n", fragment);
+			ERROR("write_file: failed to write fragment %d\n", fragment);
 			goto failure;
 		}
 	}
@@ -395,7 +406,7 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset, 
 	char *block_ptr;
 	int bytes = lookup_entry(inode_table_hash, start), file_fd;
 
-	TRACE("create_inode: pathname %s, start 0x%llx, offset 0x%x\n", pathname, start, offset);
+	TRACE("create_inode: pathname %s, start 0x%llx, offset %d\n", pathname, start, offset);
 
 	if(bytes == -1) {
 		ERROR("create_inode: inode block 0x%llx out of range!\n", start);
@@ -543,7 +554,7 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset, 
 					inodep->inode_type == SQUASHFS_CHRDEV_TYPE ? "character" : "block",
 					pathname, strerror(errno));
 			break;
-		}
+			}
 		case SQUASHFS_FIFO_TYPE:
 			TRACE("create_inode: fifo\n");
 
@@ -564,7 +575,7 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset, 
 			ERROR("Unknown inode type %d in create_inode_table!\n", header.base.inode_type);
 			return FALSE;
 	}
-	
+
 	created_inode[header.base.inode_number - 1] = strdup(pathname);
 
 	return TRUE;
@@ -620,10 +631,10 @@ struct dir *squashfs_openddir(unsigned int block_start, unsigned int offset, squ
 	struct dir_ent *new_dir;
 	struct dir *dir;
 
-	TRACE("squashfs_opendir: inode start block 0x%x, offset 0x%x\n", block_start, offset);
+	TRACE("squashfs_opendir: inode start block %d, offset %d\n", block_start, offset);
 
 	if(bytes == -1) {
-		ERROR("squashfs_opendir: block  0x%llx not found!\n", start);
+		ERROR("squashfs_opendir: inode block %d not found!\n", block_start);
 		return NULL;
 	}
 	block_ptr = inode_table + bytes + offset;
@@ -661,7 +672,7 @@ struct dir *squashfs_openddir(unsigned int block_start, unsigned int offset, squ
 	bytes = lookup_entry(directory_table_hash, start);
 
 	if(bytes == -1) {
-		ERROR("squashfs_opendir: block 0x%llx not found!\n", start);
+		ERROR("squashfs_opendir: directory block %d not found!\n", block_start);
 		return NULL;
 	}
 	bytes += offset;
@@ -680,16 +691,16 @@ struct dir *squashfs_openddir(unsigned int block_start, unsigned int offset, squ
 	dir->mtime = header.dir.mtime;
 	dir->dirs = NULL;
 
- 	while(bytes < size) {			
+	while(bytes < size) {			
 		if(swap) {
 			squashfs_dir_header sdirh;
 			memcpy(&sdirh, directory_table + bytes, sizeof(sdirh));
 			SQUASHFS_SWAP_DIR_HEADER(&dirh, &sdirh);
 		} else
 			memcpy(&dirh, directory_table + bytes, sizeof(dirh));
-
+	
 		dir_count = dirh.count + 1;
-		TRACE("squashfs_opendir: Read directory header @ byte position 0x%x, 0x%x directory entries\n", bytes, dir_count);
+		TRACE("squashfs_opendir: Read directory header @ byte position %d, %d directory entries\n", bytes, dir_count);
 		bytes += sizeof(dirh);
 
 		while(dir_count--) {
@@ -703,7 +714,7 @@ struct dir *squashfs_openddir(unsigned int block_start, unsigned int offset, squ
 
 			memcpy(dire->name, directory_table + bytes, dire->size + 1);
 			dire->name[dire->size + 1] = '\0';
-			TRACE("squashfs_opendir: directory entry %s, inode %x:%x, type 0x%x\n", dire->name, dirh.start_block, dire->offset, dire->type);
+			TRACE("squashfs_opendir: directory entry %s, inode %d:%d, type %d\n", dire->name, dirh.start_block, dire->offset, dire->type);
 			if((dir->dir_count % DIR_ENT_SIZE) == 0) {
 				if((new_dir = realloc(dir->dirs, (dir->dir_count + DIR_ENT_SIZE) * sizeof(struct dir_ent))) == NULL) {
 					ERROR("squashfs_opendir: realloc failed!\n");
@@ -755,7 +766,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, s
 	char *name, pathname[1024];
 
 	if(dir == NULL) {
-		ERROR("dir_scan: Failed to read directory %s (0x%x:0x%x)\n", parent_name, start_block, offset);
+		ERROR("dir_scan: Failed to read directory %s (%x:%x)\n", parent_name, start_block, offset);
 		return FALSE;
 	}
 
@@ -765,11 +776,13 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, s
 	}
 
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
-		TRACE("dir_scan: name %s, start_block 0x%x, offset 0x%x, type 0x%x\n", name, start_block, offset, type);
+		TRACE("dir_scan: name %s, start_block %d, offset %d, type %d\n", name, start_block, offset, type);
 
 		strcat(strcat(strcpy(pathname, parent_name), "/"), name);
+
 		if(lsonly || info)
 			printf("%s\n", pathname);
+
 		if(type == SQUASHFS_DIR_TYPE)
 			dir_scan(pathname, start_block, offset, sBlk);
 		else
@@ -832,10 +845,10 @@ int read_super(squashfs_super_block *sBlk, char *source)
 	TRACE("\tNumber of inodes %d\n", sBlk->inodes);
 	TRACE("\tNumber of uids %d\n", sBlk->no_uids);
 	TRACE("\tNumber of gids %d\n", sBlk->no_guids);
-	TRACE("sBlk->inode_table_start %llx\n", sBlk->inode_table_start);
-	TRACE("sBlk->directory_table_start %llx\n", sBlk->directory_table_start);
-	TRACE("sBlk->uid_start %llx\n", sBlk->uid_start);
-	TRACE("sBlk->fragment_table_start %llx\n", sBlk->fragment_table_start);
+	TRACE("sBlk->inode_table_start 0x%llx\n", sBlk->inode_table_start);
+	TRACE("sBlk->directory_table_start 0x%llx\n", sBlk->directory_table_start);
+	TRACE("sBlk->uid_start 0x%llx\n", sBlk->uid_start);
+	TRACE("sBlk->fragment_table_start 0x%llx\n", sBlk->fragment_table_start);
 	TRACE("\n");
 
 	return TRUE;
