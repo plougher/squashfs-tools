@@ -2163,7 +2163,7 @@ printOptions:
 			dir_count ++;
 		} else {
 			root_inode_number = inode_dir_inode_number;
-			dir_inode_no = sBlk.inodes;
+			dir_inode_no = sBlk.inodes + 1;
 			directory_bytes = inode_dir_start_block;
 			directory_cache_bytes = inode_dir_offset;
 			cache_bytes = root_inode_offset;
