@@ -1532,7 +1532,8 @@ struct dir_ent *scan2_readdir(struct directory *dir, struct dir_info *dir_info)
 
 void scan1_freedir(struct dir_info *dir)
 {
-	closedir(dir->linuxdir);
+	if(dir->pathname[0] != '\0')
+		closedir(dir->linuxdir);
 }
 
 
@@ -1796,7 +1797,7 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int 
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.0prerelease (2006/1/24)\n");\
+	printf("mksquashfs version 3.0prerelease (2006/2/7)\n");\
 	printf("copyright (C) 2006 Phillip Lougher (phillip@lougher.demon.co.uk)\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
