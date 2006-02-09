@@ -51,6 +51,7 @@
 #include <squashfs_fs.h>
 #include "mksquashfs.h"
 #include "global.h"
+#include "sort.h"
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)		do { \
@@ -129,36 +130,6 @@ struct directory {
 	struct cached_dir_index	*index;
 	unsigned char		*index_count_p;
 	unsigned int		inode_number;
-};
-
-struct dir_info {
-	char			*pathname;
-	unsigned int		count;
-	unsigned int		directory_count;
-	unsigned int		current_count;
-	unsigned int		byte_count;
-	char			dir_is_ldir;
-	struct dir_ent		*dir_ent;
-	struct dir_ent		**list;
-	DIR			*linuxdir;
-};
-
-struct dir_ent {
-	char			*name;
-	char			*pathname;
-	struct inode_info	*inode;
-	struct dir_info		*dir;
-	struct dir_info		*our_dir;
-	struct old_root_entry_info *data;
-};
-
-struct inode_info {
-	unsigned int		nlink;
-	struct stat		buf;
-	squashfs_inode		inode;
-	unsigned int		type;
-	unsigned int		inode_number;
-	struct inode_info	*next;
 };
 
 struct inode_info *inode_info[INODE_HASH_SIZE];
@@ -266,7 +237,7 @@ extern long long read_filesystem(char *root_name, int fd, squashfs_super_block *
 		squashfs_fragment_entry **fragment_table);
 int get_sorted_inode(squashfs_inode *inode, struct stat *buf);
 int read_sort_file(char *filename, int source, char *source_path[]);
-void sort_files_and_write(int source, char *source_path[]);
+void sort_files_and_write(struct dir_info *dir);
 struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, long long bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes);
 struct dir_info *dir_scan1(char *, int (_readdir)(char *, char *, struct dir_info *));
 
@@ -1581,6 +1552,8 @@ void dir_scan(squashfs_inode *inode, char *pathname, int (_readdir)(char *, char
 		perror(buffer);
 		return;
 	}
+	if(sorted)
+		sort_files_and_write(dir_info);
 	dir_scan2(inode, dir_info);
 }
 
@@ -1650,11 +1623,8 @@ int dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 			switch(buf->st_mode & S_IFMT) {
 				case S_IFREG:
 					squashfs_type = SQUASHFS_FILE_TYPE;
-					if(!sorted) {
-						result = write_file(inode, dir_ent, buf->st_size, &duplicate_file);
-						INFO("file %s, uncompressed size %lld bytes, %s\n", filename, buf->st_size, duplicate_file ? "DUPLICATE" : "");
-					} else
-						result = get_sorted_inode(inode, buf);
+					result = write_file(inode, dir_ent, buf->st_size, &duplicate_file);
+					INFO("file %s, uncompressed size %lld bytes, %s\n", filename, buf->st_size, duplicate_file ? "DUPLICATE" : "");
 					break;
 
 				case S_IFDIR:
@@ -1701,7 +1671,8 @@ int dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 					ERROR("%s unrecognised file type, mode is %x\n", filename, buf->st_mode);
 					result = FALSE;
 				}
-			dir_ent->inode->inode = *inode;
+			if(result)
+				dir_ent->inode->inode = *inode;
 			dir_ent->inode->type = squashfs_type;
 		 } else {
 			*inode = dir_ent->inode->inode;
@@ -1797,7 +1768,7 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int 
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.0prerelease (2006/2/7)\n");\
+	printf("mksquashfs version 3.0prerelease (2006/2/9)\n");\
 	printf("copyright (C) 2006 Phillip Lougher (phillip@lougher.demon.co.uk)\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -2185,9 +2156,6 @@ printOptions:
 		perror("Cannot stat source directory");
 		EXIT_MKSQUASHFS();
 	}
-
-	if(sorted)
-		sort_files_and_write(source, source_path);
 
 	if(delete && !keep_as_directory && source == 1 && S_ISDIR(buf.st_mode))
 		dir_scan(&inode, source_path[0], scan1_readdir);

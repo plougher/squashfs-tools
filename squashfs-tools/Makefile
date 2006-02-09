@@ -7,13 +7,13 @@ all: mksquashfs unsquashfs
 mksquashfs: mksquashfs.o read_fs.o sort.o
 	$(CC) mksquashfs.o read_fs.o sort.o -lz -o $@
 
-mksquashfs.o: mksquashfs.c mksquashfs.h
+mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h
 
-read_fs.o: read_fs.c read_fs.h
+read_fs.o: read_fs.c squashfs_fs.h read_fs.h global.h
 
-sort.o: sort.c
+sort.o: sort.c squashfs_fs.h global.h sort.h
 
 unsquashfs: unsquashfs.o
 	$(CC) unsquashfs.o -lz -o $@
 
-unsquashfs.o: unsquashfs.c
+unsquashfs.o: unsquashfs.c squashfs_fs.h read_fs.h global.h

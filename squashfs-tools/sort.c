@@ -36,6 +36,7 @@
 
 #include <squashfs_fs.h>
 #include "global.h"
+#include "sort.h"
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)		do { \
@@ -71,10 +72,7 @@ struct sort_info {
 struct sort_info *sort_info_list[65536];
 
 struct priority_entry {
-	char *filename;
-	long long size;
-	ino_t st_ino;
-	dev_t st_dev;
+	struct dir_ent *dir;
 	struct priority_entry *next;
 };
 
@@ -90,8 +88,7 @@ struct sorted_inode_entry {
 struct sorted_inode_entry *sorted_inode_list[65536];
 
 extern int silent;
-extern int excluded(char *filename, struct stat *buf);
-extern squashfs_inode write_file(squashfs_inode *inode, char *filename, long long size, int *c_size);
+extern squashfs_inode write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, int *c_size);
 
 
 int add_to_sorted_inode_list(squashfs_inode inode, dev_t st_dev, ino_t st_ino)
@@ -131,7 +128,7 @@ int get_sorted_inode(squashfs_inode *inode, struct stat *buf)
 }
 
 
-int add_priority_list(char *filename, struct stat *buf, int priority)
+int add_priority_list(struct dir_ent *dir, int priority)
 {
 	struct priority_entry *new_priority_entry;
 
@@ -141,10 +138,7 @@ int add_priority_list(char *filename, struct stat *buf, int priority)
 		return FALSE;
 	}
 
-	new_priority_entry->filename = strdup(filename);
-	new_priority_entry->size = buf->st_size;
-	new_priority_entry->st_dev = buf->st_dev;
-	new_priority_entry->st_ino = buf->st_ino;
+	new_priority_entry->dir = dir;;
 	new_priority_entry->next = priority_list[priority];
 	priority_list[priority] = new_priority_entry;
 	return TRUE;
@@ -230,53 +224,33 @@ re_read:
 		BAD_ERROR(" Ambiguous sortlist entry \"%s\"\n\nIt maps to more than one source entry!  Please use an absolute path.\n", path);
 
 error:
-	BAD_ERROR(" Cannot stat sortlist entry \"%s\"\nThis is probably because you're using the wrong \
-file\npath relative to the source directories.  A sortlist entry should be\neither absolute (starting with \
-'/') start with './' or '../' (taken to be\nrelative to $PWD), otherwise it \
-is assumed the entry is relative to one\nof the source directories, i.e. with \"mksquashfs test test.sqsh\",\nthe sortlist \
-entry \"file\" is assumed to be inside the directory test.\n", path);
+        fprintf(stderr, "Cannot stat sortlist entry \"%s\"\n", path);
+        fprintf(stderr, "This is probably because you're using the wrong file\n");
+        fprintf(stderr, "path relative to the source directories\n");
+        return FALSE;
 }
 
 
-void generate_file_priorities(char *pathname, int priority, struct stat *buf)
+void generate_file_priorities(struct dir_info *dir, int priority, struct stat *buf)
 {
-	char filename[8192];
-	DIR *linuxdir;
-	struct dirent *d_name;
-	
-	priority = get_priority(pathname, buf, priority);
+	priority = get_priority(dir->pathname, buf, priority);
 
-	if((linuxdir = opendir(pathname)) == NULL) {
-		ERROR("Could not open %s, skipping...\n", pathname);
-		return;
-	}
-	
-	while((d_name = readdir(linuxdir)) != NULL) {
-		if(strcmp(d_name->d_name, ".") == 0 || strcmp(d_name->d_name, "..") == 0)
-			continue;
-		strcat(strcat(strcpy(filename, pathname), "/"), d_name->d_name);
-
-		if(lstat(filename, buf) == -1) {
-			char buffer[8192];
-			sprintf(buffer, "Cannot stat dir/file %s, ignoring", filename);
-			perror(buffer);
-			continue;
-		}
-
-		if(excluded(filename, buf))
+	while(dir->current_count < dir->count) {
+		struct dir_ent *dir_ent = dir->list[dir->current_count++];
+		struct stat *buf = &dir_ent->inode->buf;
+		if(dir_ent->data)
 			continue;
 
 		switch(buf->st_mode & S_IFMT) {
 			case S_IFREG:
-				add_priority_list(filename, buf, get_priority(filename, buf, priority));
+				add_priority_list(dir_ent, get_priority(dir_ent->pathname, buf, priority));
 				break;
 			case S_IFDIR:
-				generate_file_priorities(filename, priority, buf);
+				generate_file_priorities(dir_ent->dir, priority, buf);
 				break;
 		}
 	}
-
-	closedir(linuxdir);
+	dir->current_count = 0;
 }
 
 
@@ -300,40 +274,25 @@ int read_sort_file(char *filename, int source, char *source_path[])
 }
 
 
-void sort_files_and_write(int source, char *source_path[])
+void sort_files_and_write(struct dir_info *dir)
 {
-	struct stat buf;
 	int i;
 	struct priority_entry *entry;
 	squashfs_inode inode;
 	int duplicate_file;
 
-	for(i = 0; i < source; i++) {
-		if(lstat(source_path[i], &buf) == -1) {
-			char buffer[8192];
-			sprintf(buffer, "Cannot stat dir/file %s, ignoring", source_path[i]);
-			perror(buffer);
-			continue;
-		}
-
-		if(excluded(source_path[i], &buf))
-			continue;
-
-		switch(buf.st_mode & S_IFMT) {
-			case S_IFREG:
-				add_priority_list(source_path[i], &buf, get_priority(source_path[i], &buf, 0));
-				break;
-			case S_IFDIR:
-				generate_file_priorities(source_path[i], 0, &buf);
-				break;
-		}
-	}
+	generate_file_priorities(dir, 0, &dir->dir_ent->inode->buf);
 
 	for(i = 65535; i >= 0; i--)
 		for(entry = priority_list[i]; entry; entry = entry->next) {
-			TRACE("%d: %s\n", i - 32768, entry->filename);
-			write_file(&inode, entry->filename, entry->size, &duplicate_file);
-			INFO("file %s, uncompressed size %lld bytes, %s\n", entry->filename, entry->size, duplicate_file ? "DUPLICATE" : "");
-			add_to_sorted_inode_list(inode, entry->st_dev, entry->st_ino);
+			TRACE("%d: %s\n", i - 32768, entry->dir->pathname);
+			if(write_file(&inode, entry->dir, entry->dir->inode->buf.st_size,
+							&duplicate_file)) {
+				INFO("file %s, uncompressed size %lld bytes, %s\n",
+					entry->dir->pathname, entry->dir->inode->buf.st_size,
+					duplicate_file ? "DUPLICATE" : "");
+				entry->dir->inode->inode = inode;
+				entry->dir->inode->type = SQUASHFS_FILE_TYPE;
+			}
 		}
 }
