@@ -78,54 +78,8 @@ struct priority_entry {
 
 struct priority_entry *priority_list[65536];
 
-struct sorted_inode_entry {
-	squashfs_inode inode;
-	ino_t	st_ino;
-	dev_t	st_dev;
-	struct sorted_inode_entry *next;
-};
-
-struct sorted_inode_entry *sorted_inode_list[65536];
-
 extern int silent;
 extern squashfs_inode write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, int *c_size);
-
-
-int add_to_sorted_inode_list(squashfs_inode inode, dev_t st_dev, ino_t st_ino)
-{
-	int hash = st_ino & 0xffff;
-	struct sorted_inode_entry *new_sorted_inode_entry;
-
-	if((new_sorted_inode_entry = malloc(sizeof(struct sorted_inode_entry))) == NULL) {
-		ERROR("Out of memory allocating sorted inode entry\n");
-		return FALSE;
-	}
-
-	new_sorted_inode_entry->inode = inode;
-	new_sorted_inode_entry->st_ino = st_ino;
-	new_sorted_inode_entry->st_dev = st_dev;
-	new_sorted_inode_entry->next = sorted_inode_list[hash];
-	sorted_inode_list[hash] = new_sorted_inode_entry;
-
-	return TRUE;
-}
-
-	
-int get_sorted_inode(squashfs_inode *inode, struct stat *buf)
-{
-	int hash = buf->st_ino & 0xffff;
-	struct sorted_inode_entry *sorted_inode_entry;
-
-	for(sorted_inode_entry = sorted_inode_list[hash]; sorted_inode_entry; sorted_inode_entry = sorted_inode_entry->next)
-		if(buf->st_ino == sorted_inode_entry->st_ino && buf->st_dev == sorted_inode_entry->st_dev)
-			break;
-
-	if(sorted_inode_entry) {
-		*inode = sorted_inode_entry->inode;
-		return 1;
-	} else
-		return 0;
-}
 
 
 int add_priority_list(struct dir_ent *dir, int priority)
@@ -286,13 +240,18 @@ void sort_files_and_write(struct dir_info *dir)
 	for(i = 65535; i >= 0; i--)
 		for(entry = priority_list[i]; entry; entry = entry->next) {
 			TRACE("%d: %s\n", i - 32768, entry->dir->pathname);
-			if(write_file(&inode, entry->dir, entry->dir->inode->buf.st_size,
+			if(entry->dir->inode->inode == SQUASHFS_INVALID_BLK) {
+				if(write_file(&inode, entry->dir, entry->dir->inode->buf.st_size,
 							&duplicate_file)) {
-				INFO("file %s, uncompressed size %lld bytes, %s\n",
-					entry->dir->pathname, entry->dir->inode->buf.st_size,
-					duplicate_file ? "DUPLICATE" : "");
-				entry->dir->inode->inode = inode;
-				entry->dir->inode->type = SQUASHFS_FILE_TYPE;
-			}
+					INFO("file %s, uncompressed size %lld bytes %s\n",
+						entry->dir->pathname,
+						entry->dir->inode->buf.st_size,
+						duplicate_file ? "DUPLICATE" : "");
+					entry->dir->inode->inode = inode;
+					entry->dir->inode->type = SQUASHFS_FILE_TYPE;
+				}
+			} else
+				INFO("file %s, uncompressed size %lld bytes LINK\n",
+					entry->dir->pathname, entry->dir->inode->buf.st_size);
 		}
 }

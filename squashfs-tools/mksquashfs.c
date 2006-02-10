@@ -1624,7 +1624,7 @@ int dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 				case S_IFREG:
 					squashfs_type = SQUASHFS_FILE_TYPE;
 					result = write_file(inode, dir_ent, buf->st_size, &duplicate_file);
-					INFO("file %s, uncompressed size %lld bytes, %s\n", filename, buf->st_size, duplicate_file ? "DUPLICATE" : "");
+					INFO("file %s, uncompressed size %lld bytes %s\n", filename, buf->st_size, duplicate_file ? "DUPLICATE" : "");
 					break;
 
 				case S_IFDIR:
@@ -1677,6 +1677,27 @@ int dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 		 } else {
 			*inode = dir_ent->inode->inode;
 			squashfs_type = dir_ent->inode->type;
+			switch(squashfs_type) {
+				case SQUASHFS_FILE_TYPE:
+					if(!sorted)
+						INFO("file %s, uncompressed size %lld bytes LINK\n", filename, buf->st_size);
+					break;
+				case SQUASHFS_SYMLINK_TYPE:
+					INFO("symbolic link %s inode 0x%llx LINK\n", dir_name, *inode);
+					break;
+				case SQUASHFS_CHRDEV_TYPE:
+					INFO("character device %s inode 0x%llx LINK\n", dir_name, *inode);
+					break;
+				caseSQUASHFS_BLKDEV_TYPE:
+					INFO("block device %s inode 0x%llx LINK\n", dir_name, *inode);
+					break;
+				case SQUASHFS_FIFO_TYPE:
+					INFO("fifo %s inode 0x%llx LINK\n", dir_name, *inode);
+					break;
+				case SQUASHFS_SOCKET_TYPE:
+					INFO("unix domain socket %s inode 0x%llx LINK\n", dir_name, *inode);
+					break;
+			}
 			result = TRUE;
 		}
 		
