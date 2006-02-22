@@ -901,7 +901,7 @@ static int read_fragment_index_table(struct super_block *s)
 
 	if (msblk->swap) {
 		int i;
-		unsigned int fragment;
+		long long fragment;
 
 		for (i = 0; i < SQUASHFS_FRAGMENT_INDEXES(sblk->fragments);
 									i++) {
@@ -2044,7 +2044,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.0prerelease (2006/1/24) "
+	printk(KERN_INFO "squashfs: version 3.0prerelease (2006/2/22)) "
 		"Phillip Lougher\n");
 
 	if (!(stream.workspace = vmalloc(zlib_inflate_workspacesize()))) {
