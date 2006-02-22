@@ -476,9 +476,8 @@ SQSH_EXTERN struct squashfs_fragment_cache *get_cached_fragment(struct super_blo
 				SQUASHFS_CACHED_FRAGMENTS;
 			
 			if (msblk->fragment[i].data == NULL)
-				if (!(msblk->fragment[i].data = kmalloc
-						(SQUASHFS_FILE_MAX_SIZE,
-						 GFP_KERNEL))) {
+				if (!(msblk->fragment[i].data = SQUASHFS_ALLOC
+						(SQUASHFS_FILE_MAX_SIZE))) {
 					ERROR("Failed to allocate fragment "
 							"cache block\n");
 					up(&msblk->fragment_mutex);
@@ -2016,7 +2015,7 @@ static void squashfs_put_super(struct super_block *s)
 					kfree(sbi->block_cache[i].data);
 		if (sbi->fragment)
 			for (i = 0; i < SQUASHFS_CACHED_FRAGMENTS; i++) 
-				kfree(sbi->fragment[i].data);
+				SQUASHFS_FREE(sbi->fragment[i].data);
 		kfree(sbi->fragment);
 		kfree(sbi->block_cache);
 		kfree(sbi->read_data);

@@ -28,6 +28,18 @@
 #define CONFIG_SQUASHFS_2_0_COMPATIBILITY
 #endif
 
+#ifdef CONFIG_SQUASHFS_VMALLOC
+#define SQUASHFS_ALLOC(a)		vmalloc(a)
+#define SQUASHFS_FREE(a)		vfree(a)
+#else
+#define SQUASHFS_ALLOC(a)		kmalloc(a, GFP_KERNEL)
+#define SQUASHFS_FREE(a)		kfree(a)
+#endif
+#ifdef CONFIG_SQUASHFS_FRAGMENT_CACHE_SIZE
+#define SQUASHFS_CACHED_FRAGMENTS	CONFIG_SQUASHFS_FRAGMENT_CACHE_SIZE
+#else
+#define SQUASHFS_CACHED_FRAGMENTS	3
+#endif
 #define SQUASHFS_MAJOR			3
 #define SQUASHFS_MINOR			0
 #define SQUASHFS_MAGIC			0x73717368
@@ -159,8 +171,6 @@
 
 #define SQUASHFS_FRAGMENT_INDEX_BYTES(A)	(SQUASHFS_FRAGMENT_INDEXES(A) *\
 						sizeof(long long))
-
-#define SQUASHFS_CACHED_FRAGMENTS	3
 
 /* cached data constants for filesystem */
 #define SQUASHFS_CACHED_BLKS		8
