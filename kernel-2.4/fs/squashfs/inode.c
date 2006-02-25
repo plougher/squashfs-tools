@@ -802,8 +802,7 @@ static struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode
 			i->i_mode |= (inodeb->inode_type ==
 					SQUASHFS_CHRDEV_TYPE) ?  S_IFCHR :
 					S_IFBLK;
-			init_special_inode(i, i->i_mode,
-					old_decode_dev(inodep->rdev));
+			init_special_inode(i, i->i_mode, inodep->rdev);
 
 			TRACE("Device inode %x:%x, rdev %x\n",
 					SQUASHFS_INODE_BLK(inode), offset,
