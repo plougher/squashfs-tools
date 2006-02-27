@@ -21,6 +21,7 @@
  * mksquashfs.c
  */
 
+#define FALSE 0
 #define TRUE 1
 
 #include <pwd.h>
@@ -54,23 +55,33 @@
 #include "sort.h"
 
 #ifdef SQUASHFS_TRACE
-#define TRACE(s, args...)		do { \
-						printf("mksquashfs: "s, ## args); \
-					} while(0)
+#define TRACE(s, args...)	do { \
+					printf("mksquashfs: "s, ## args); \
+				} while(0)
 #else
 #define TRACE(s, args...)
 #endif
 
-#define INFO(s, args...)		do { if(!silent) printf("mksquashfs: "s, ## args); } while(0)
-#define ERROR(s, args...)		do { fprintf(stderr, s, ## args); } while(0)
-#define EXIT_MKSQUASHFS()		do { if(restore)\
-					restorefs();\
-					exit(1); } while(0)
-#define BAD_ERROR(s, args...)		do {\
+#define INFO(s, args...)	do {\
+					 if(!silent)\
+						printf("mksquashfs: "s, ## args);\
+				} while(0)
+#define ERROR(s, args...)	do {\
+					fprintf(stderr, s, ## args);\
+				} while(0)
+#define EXIT_MKSQUASHFS()	do {\
+					if(restore)\
+						restorefs();\
+					if(delete && destination_file && !block_device)\
+						unlink(destination_file);\
+					exit(1);\
+				} while(0)
+#define BAD_ERROR(s, args...)	do {\
 					fprintf(stderr, "FATAL ERROR:" s, ##args);\
 					EXIT_MKSQUASHFS();\
-					} while(0)
+				} while(0)
 
+int delete = FALSE;
 long long total_compressed = 0, total_uncompressed = 0;
 int fd;
 
@@ -215,6 +226,9 @@ int block_device = 0;
 /* flag indicating whether files are sorted using sort list(s) */
 int sorted = 0;
 
+/* save destination file name for deleting on error */
+char *destination_file = NULL;
+
 /* structure to used to pass in a pointer or an integer
  * to duplicate buffer read helper functions.
  */
@@ -240,8 +254,6 @@ int read_sort_file(char *filename, int source, char *source_path[]);
 void sort_files_and_write(struct dir_info *dir);
 struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, long long bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes);
 struct dir_info *dir_scan1(char *, int (_readdir)(char *, char *, struct dir_info *));
-
-#define FALSE 0
 
 #define MKINODE(A)	((squashfs_inode)(((squashfs_inode) inode_bytes << 16) + (((char *)A) - data_cache)))
 
@@ -282,6 +294,12 @@ void sighandler()
 		ERROR("Interrupt again to quit\n");
 		interrupted ++;
 	}
+}
+
+
+void sighandler2()
+{
+	EXIT_MKSQUASHFS();
 }
 
 
@@ -376,10 +394,6 @@ void read_bytes(int fd, long long byte, int bytes, char *buff)
 void write_bytes(int fd, long long byte, int bytes, char *buff)
 {
 	off_t off = byte;
-/*
-	if(off + bytes > ((long long)1<<32) - 1 )
-		BAD_ERROR("Filesystem greater than maximum size 2^32 - 1\n");
-*/
 
 	if(lseek(fd, off, SEEK_SET) == -1) {
 		perror("Lseek on destination failed");
@@ -524,8 +538,6 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 
 		inode = get_inode(sizeof(*reg) + offset * sizeof(unsigned int));
 		inodep = (squashfs_reg_inode_header *) inode;
-		/*reg->atime = buf.st_mtime;
-		reg->ctime = buf.st_mtime;*/
 		reg->file_size = byte_size;
 		reg->start_block = start_block;
 		reg->fragment = fragment->index;
@@ -548,8 +560,6 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 
 		inode = get_inode(sizeof(*reg) + offset * sizeof(unsigned int));
 		inodep = (squashfs_lreg_inode_header *) inode;
-		/*reg->atime = buf.st_mtime;
-		reg->ctime = buf.st_mtime;*/
 		reg->nlink = nlink;
 		reg->file_size = byte_size;
 		reg->start_block = start_block;
@@ -581,8 +591,6 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 		inode = get_inode(sizeof(*dir) + i_size);
 		inodep = (squashfs_ldir_inode_header *) inode;
 		dir->inode_type = SQUASHFS_LDIR_TYPE;
-		/*dir->atime = buf.st_mtime;
-		dir->ctime = buf.st_mtime;*/
 		dir->nlink = dir_ent->dir->directory_count + 2;
 		dir->file_size = byte_size;
 		dir->offset = offset;
@@ -610,8 +618,6 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 		squashfs_dir_inode_header *dir = &inode_header.dir;
 
 		inode = get_inode(sizeof(*dir));
-		/*dir->atime = buf.st_mtime;
-		dir->ctime = buf.st_mtime;*/
 		dir->nlink = dir_ent->dir->directory_count + 2;
 		dir->file_size = byte_size;
 		dir->offset = offset;
@@ -1476,10 +1482,6 @@ int scan1_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 	if((d_name = readdir(dir->linuxdir)) != NULL) {
 		strcpy(dir_name, d_name->d_name);
 		strcat(strcat(strcpy(pathname, dir->pathname), "/"), d_name->d_name);
-#if 0
-		if(strcmp(dir_name, "..") == 0)
-			printf("%s %lld\n", pathname, d_name->d_ino);
-#endif
 		return 1;
 	}
 
@@ -1719,7 +1721,7 @@ unsigned int slog(unsigned int block)
 {
 	int i;
 
-	for(i = 9; i <= 16; i++)
+	for(i = 12; i <= 16; i++)
 		if(block == (1 << i))
 			return i;
 	return 0;
@@ -1789,7 +1791,7 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int 
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.0prerelease (2006/2/9)\n");\
+	printf("mksquashfs version 3.0prerelease (2006/2/25)\n");\
 	printf("copyright (C) 2006 Phillip Lougher (phillip@lougher.demon.co.uk)\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -1801,11 +1803,11 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int 
 	printf("GNU General Public License for more details.\n");
 int main(int argc, char *argv[])
 {
-	struct stat buf;
+	struct stat buf, source_buf;
 	int i;
 	squashfs_super_block sBlk;
 	char *b, *root_name = NULL;
-	int be, nopad = FALSE, delete = FALSE, keep_as_directory = FALSE, orig_be;
+	int be, nopad = FALSE, keep_as_directory = FALSE, orig_be;
 	squashfs_inode inode;
 
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -1832,7 +1834,7 @@ int main(int argc, char *argv[])
 			}
 
 			if((block_log = slog(block_size)) == 0) {
-				ERROR("%s: -b block size not power of two or not between 512 and 64K\n", argv[0]);
+				ERROR("%s: -b block size not power of two or not between 4096 and 64K\n", argv[0]);
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-ef") == 0) {
@@ -1984,6 +1986,13 @@ printOptions:
 		}
 	}
 
+        for(i = 0; i < source; i++)
+                if(stat(source_path[i], &source_buf) == -1) {
+                        fprintf(stderr, "Cannot stat source directory \"%s\" because %s\n", source_path[i], strerror(errno));
+                        EXIT_MKSQUASHFS();
+                }
+
+	destination_file = argv[source + 1];
 	if(stat(argv[source + 1], &buf) == -1) {
 		if(errno == ENOENT) { /* Does not exist */
 			if((fd = open(argv[source + 1], O_CREAT | O_TRUNC | O_RDWR, S_IRWXU)) == -1) {
@@ -2015,19 +2024,16 @@ printOptions:
 			exit(1);
 		}
 
-		if(!delete) {
-		        if(read_super(fd, &sBlk, &orig_be, argv[source + 1]) == 0) {
-				if(S_ISREG(buf.st_mode)) { /* reopen truncating file */
-					close(fd);
-			                if((fd = open(argv[source + 1], O_TRUNC  | O_RDWR)) == -1) {
-						perror("Could not open regular file for writing as destination");
-						exit(1);
-					}
-				}
-				delete = TRUE;
-			}
+	}
 
+	if(!delete) {
+	        if(read_super(fd, &sBlk, &orig_be, argv[source + 1]) == 0) {
+			ERROR("Failed to read existing filesystem - will not overwrite - ABORTING!\n");
+			EXIT_MKSQUASHFS();
 		}
+	} else  {
+		signal(SIGTERM, sighandler2);
+		signal(SIGINT, sighandler2);
 	}
 
 	/* process the exclude files - must be done afer destination file has been possibly created */
@@ -2037,7 +2043,7 @@ printOptions:
 			char filename[16385];
 			if((fd = fopen(argv[++i], "r")) == NULL) {
 				perror("Could not open exclude file...");
-				exit(1);
+				EXIT_MKSQUASHFS();
 			}
 			while(fscanf(fd, "%16384[^\n]\n", filename) != EOF)
 				add_exclude(filename);
@@ -2050,7 +2056,7 @@ printOptions:
 	if(i != argc) {
 		if(++i == argc) {
 			ERROR("%s: -e missing arguments\n", argv[0]);
-			exit(1);
+			EXIT_MKSQUASHFS();
 		}
 		while(i < argc && add_exclude(argv[i++]));
 	}
@@ -2094,7 +2100,7 @@ printOptions:
 				&total_bytes, &total_inode_bytes, &total_directory_bytes, &inode_dir_inode_number,
 				&inode_dir_parent_inode, add_old_root_entry, &fragment_table)) == 0) {
 			ERROR("Failed to read existing filesystem - will not overwrite - ABORTING!\n");
-			exit(1);
+			EXIT_MKSQUASHFS();
 		}
 		if((fragments = sBlk.fragments))
 			fragment_table = (squashfs_fragment_entry *) realloc((char *) fragment_table, ((fragments + FRAG_SIZE - 1) & ~(FRAG_SIZE - 1)) * sizeof(squashfs_fragment_entry)); 
@@ -2173,14 +2179,9 @@ printOptions:
 
 	block_offset = check_data ? 3 : 2;
 
-	if(stat(source_path[0], &buf) == -1) {
-		perror("Cannot stat source directory");
-		EXIT_MKSQUASHFS();
-	}
-
-	if(delete && !keep_as_directory && source == 1 && S_ISDIR(buf.st_mode))
+	if(delete && !keep_as_directory && source == 1 && S_ISDIR(source_buf.st_mode))
 		dir_scan(&inode, source_path[0], scan1_readdir);
-	else if(!keep_as_directory && source == 1 && S_ISDIR(buf.st_mode))
+	else if(!keep_as_directory && source == 1 && S_ISDIR(source_buf.st_mode))
 		dir_scan(&inode, source_path[0], scan1_single_readdir);
 	else
 		dir_scan(&inode, "", scan1_encomp_readdir);
