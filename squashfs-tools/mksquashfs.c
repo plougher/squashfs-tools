@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006
- * Phillip Lougher <phillip@lougher.demon.co.uk>
+ * Phillip Lougher <phillip@lougher.org.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -1791,8 +1791,8 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int 
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.0prerelease (2006/2/25)\n");\
-	printf("copyright (C) 2006 Phillip Lougher (phillip@lougher.demon.co.uk)\n\n"); \
+	printf("mksquashfs version 3.0 (2006/03/15)\n");\
+	printf("copyright (C) 2006 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
 	printf("as published by the Free Software Foundation; either version 2,\n");\
@@ -1842,9 +1842,7 @@ int main(int argc, char *argv[])
 				ERROR("%s: -ef missing filename\n", argv[0]);
 				exit(1);
 			}
-		} else if(strcmp(argv[i], "-2.0") == 0)
-			ERROR("Not supported\n");
-		else if(strcmp(argv[i], "-no-duplicates") == 0)
+		} else if(strcmp(argv[i], "-no-duplicates") == 0)
 			duplicate_checking = FALSE;
 
 		else if(strcmp(argv[i], "-no-fragments") == 0)
@@ -1952,7 +1950,6 @@ printOptions:
 			ERROR("-version\t\tprint version, licence and copyright message\n");
 			ERROR("-info\t\t\tprint files written to filesystem\n");
 			ERROR("-b <block_size>\t\tset data block to <block_size>.  Default %d bytes\n", SQUASHFS_FILE_SIZE);
-			ERROR("-2.0\t\t\tcreate a 2.0 filesystem\n");
 			ERROR("-noI\t\t\tdo not compress inode table\n");
 			ERROR("-noD\t\t\tdo not compress data blocks\n");
 			ERROR("-noF\t\t\tdo not compress fragment blocks\n");

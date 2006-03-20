@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006
- *  Phillip Lougher <phillip@lougher.demon.co.uk>
+ *  Phillip Lougher <phillip@lougher.org.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -822,7 +822,7 @@ int read_super(squashfs_super_block *sBlk, char *source)
 	if(sBlk->s_major != SQUASHFS_MAJOR || sBlk->s_minor > SQUASHFS_MINOR) {
 		ERROR("Major/Minor mismatch, filesystem on %s is (%d:%d)\n",
 				source, sBlk->s_major, sBlk->s_minor);
-		ERROR("This a prerelease of Unsquashfs.  I only support Squashfs 3.0 filesystems\n");
+		ERROR("I only support Squashfs 3.0 filesystems!  Later releases will support older Squashfs filesystems\n");
 		goto failed_mount;
 	}
 
@@ -859,8 +859,8 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.0prerelease (2006/1/24)\n");\
-	printf("copyright (C) 2006 Phillip Lougher (phillip@lougher.demon.co.uk)\n\n"); \
+	printf("unsquashfs version 1.0 (2006/03/15)\n");\
+	printf("copyright (C) 2006 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
 	printf("as published by the Free Software Foundation; either version 2,\n");\

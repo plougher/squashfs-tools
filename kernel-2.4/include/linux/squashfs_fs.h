@@ -5,7 +5,7 @@
  * Squashfs
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006
- * Phillip Lougher <phillip@lougher.demon.co.uk>
+ * Phillip Lougher <phillip@lougher.org.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -650,7 +650,7 @@ struct squashfs_dir_inode_header_1 {
 			sizeof(struct squashfs_reg_inode_header_1));\
 	SQUASHFS_SWAP((s)->mtime, d, 24, 32);\
 	SQUASHFS_SWAP((s)->start_block, d, 56, 32);\
-	SQUASHFS_SWAP((s)->file_size, d, 88, SQUASHFS_MAX_FILE_SIZE_LOG);\
+	SQUASHFS_SWAP((s)->file_size, d, 88, 32);\
 }
 
 #define SQUASHFS_SWAP_DIR_INODE_HEADER_1(s, d) {\
@@ -806,7 +806,7 @@ struct squashfs_fragment_entry_2 {
 	SQUASHFS_SWAP((s)->start_block, d, 64, 32);\
 	SQUASHFS_SWAP((s)->fragment, d, 96, 32);\
 	SQUASHFS_SWAP((s)->offset, d, 128, 32);\
-	SQUASHFS_SWAP((s)->file_size, d, 160, SQUASHFS_MAX_FILE_SIZE_LOG);\
+	SQUASHFS_SWAP((s)->file_size, d, 160, 32);\
 }
 
 #define SQUASHFS_SWAP_DIR_INODE_HEADER_2(s, d) {\
