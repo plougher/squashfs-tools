@@ -1,8 +1,7 @@
-This is an updated pre-release of 3.0, a new set of patches for
-linux 2.4 have been added, and the previous feature limitations
-have been removed.  Squashfs 3.0 can now mount 2.x filesystems,
-append to 3.0 filesystems, and file sorting is working again.  A release
-will probably be made very soon.
+CVS is currently in sync with the current Squashfs 3.0 release.  Downloading
+the 3.0 release tarball from squashfs.sourceforge.net wil give you
+the documentation and prepared patches for various 2.4 and 2.6 kernels in
+addition to the code available in CVS!
 
 Squashfs 3.0 is a major improvement to Squashfs.  Squashfs 3.0 offers the
 following improvements to Squashfs 2.x.
