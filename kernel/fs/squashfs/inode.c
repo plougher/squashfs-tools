@@ -26,6 +26,7 @@
 #include <linux/module.h>
 #include <linux/errno.h>
 #include <linux/slab.h>
+#include <linux/zlib.h>
 #include <linux/fs.h>
 #include <linux/smp_lock.h>
 #include <linux/slab.h>
@@ -36,7 +37,6 @@
 #include <linux/init.h>
 #include <linux/dcache.h>
 #include <linux/wait.h>
-#include <linux/zlib.h>
 #include <linux/blkdev.h>
 #include <linux/vmalloc.h>
 #include <asm/uaccess.h>
@@ -64,7 +64,7 @@ static struct super_block *squashfs_get_sb(struct file_system_type *, int,
 				const char *, void *);
 
 
-static z_stream stream;
+/*static z_stream stream;*/
 
 static struct file_system_type squashfs_fs_type = {
 	.owner = THIS_MODULE,
@@ -249,20 +249,20 @@ SQSH_EXTERN unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 	if (compressed) {
 		int zlib_err;
 
-		stream.next_in = c_buffer;
-		stream.avail_in = c_byte;
-		stream.next_out = buffer;
-		stream.avail_out = msblk->read_size;
+		msblk->stream.next_in = c_buffer;
+		msblk->stream.avail_in = c_byte;
+		msblk->stream.next_out = buffer;
+		msblk->stream.avail_out = msblk->read_size;
 
-		if (((zlib_err = zlib_inflateInit(&stream)) != Z_OK) ||
-				((zlib_err = zlib_inflate(&stream, Z_FINISH))
+		if (((zlib_err = zlib_inflateInit(&msblk->stream)) != Z_OK) ||
+				((zlib_err = zlib_inflate(&msblk->stream, Z_FINISH))
 				 != Z_STREAM_END) || ((zlib_err =
-				zlib_inflateEnd(&stream)) != Z_OK)) {
+				zlib_inflateEnd(&msblk->stream)) != Z_OK)) {
 			ERROR("zlib_fs returned unexpected result 0x%x\n",
 				zlib_err);
 			bytes = 0;
 		} else
-			bytes = stream.total_out;
+			bytes = msblk->stream.total_out;
 		
 		up(&msblk->read_data_mutex);
 	}
@@ -967,6 +967,10 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 	memset(s->s_fs_info, 0, sizeof(struct squashfs_sb_info));
 	msblk = s->s_fs_info;
+	if (!(msblk->stream.workspace = vmalloc(zlib_inflate_workspacesize()))) {
+		ERROR("Failed to allocate zlib workspace\n");
+		goto failure;
+	}
 	sblk = &msblk->sblk;
 	
 	msblk->devblksize = sb_min_blocksize(s, BLOCK_SIZE);
@@ -1139,6 +1143,7 @@ failed_mount:
 	kfree(msblk->read_data);
 	kfree(msblk->block_cache);
 	kfree(msblk->fragment_index_2);
+	vfree(msblk->stream.workspace);
 	kfree(s->s_fs_info);
 	s->s_fs_info = NULL;
 	return -EINVAL;
@@ -2024,6 +2029,7 @@ static void squashfs_put_super(struct super_block *s)
 		kfree(sbi->fragment_index);
 		kfree(sbi->fragment_index_2);
 		kfree(sbi->meta_index);
+		vfree(sbi->stream.workspace);
 		kfree(s->s_fs_info);
 		s->s_fs_info = NULL;
 	}
@@ -2043,20 +2049,11 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.0 (2006/03/15) "
+	printk(KERN_INFO "squashfs: version 3.0-test (2006/05/17) "
 		"Phillip Lougher\n");
 
-	if (!(stream.workspace = vmalloc(zlib_inflate_workspacesize()))) {
-		ERROR("Failed to allocate zlib workspace\n");
+	if ((err = register_filesystem(&squashfs_fs_type)))
 		destroy_inodecache();
-		err = -ENOMEM;
-		goto out;
-	}
-
-	if ((err = register_filesystem(&squashfs_fs_type))) {
-		vfree(stream.workspace);
-		destroy_inodecache();
-	}
 
 out:
 	return err;
@@ -2065,7 +2062,6 @@ out:
 
 static void __exit exit_squashfs_fs(void)
 {
-	vfree(stream.workspace);
 	unregister_filesystem(&squashfs_fs_type);
 	destroy_inodecache();
 }

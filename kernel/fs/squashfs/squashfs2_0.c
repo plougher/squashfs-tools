@@ -26,6 +26,7 @@
 #include <linux/module.h>
 #include <linux/errno.h>
 #include <linux/slab.h>
+#include <linux/zlib.h>
 #include <linux/fs.h>
 #include <linux/smp_lock.h>
 #include <linux/slab.h>

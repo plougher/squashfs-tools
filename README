@@ -1,7 +1,12 @@
-CVS is currently in sync with the current Squashfs 3.0 release.  Downloading
-the 3.0 release tarball from squashfs.sourceforge.net wil give you
-the documentation and prepared patches for various 2.4 and 2.6 kernels in
-addition to the code available in CVS!
+CVS status:
+
+CVS is in sync with Squashfs 3.0.  It additionally has a bug fix in the 2.6
+kernel code to fix a rare race condition when multiple Squashfs filesystems
+are mounted.  If you're mounting multiple filesystems, and they are accessed
+simultaneously, it is strongly recommended that you use the CVS fixes.  This
+fix will be contained in a new release soon.
+
+Description:
 
 Squashfs 3.0 is a major improvement to Squashfs.  Squashfs 3.0 offers the
 following improvements to Squashfs 2.x.
