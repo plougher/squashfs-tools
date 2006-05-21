@@ -277,9 +277,17 @@ void read_uids_guids(squashfs_super_block *sBlk)
 
 	guid_table = uid_table + sBlk->no_uids;
 
-	if(read_bytes(sBlk->uid_start, (sBlk->no_uids + sBlk->no_guids) * sizeof(unsigned int), (char *) uid_table) ==
+	if(swap) {
+		unsigned int suid_table[sBlk->no_uids + sBlk->no_guids];
+
+		if(read_bytes(sBlk->uid_start, (sBlk->no_uids + sBlk->no_guids) * sizeof(unsigned int), (char *) suid_table) ==
 			FALSE)
-		EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
+			EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
+		SQUASHFS_SWAP_INTS(uid_table, suid_table, sBlk->no_uids + sBlk->no_guids);
+	} else
+		if(read_bytes(sBlk->uid_start, (sBlk->no_uids + sBlk->no_guids) * sizeof(unsigned int), (char *) uid_table) ==
+			FALSE)
+			EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
 }
 
 
@@ -859,7 +867,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.0 (2006/03/15)\n");\
+	printf("unsquashfs version 1.0 (2006/05/21)\n");\
 	printf("copyright (C) 2006 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
