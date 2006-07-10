@@ -1,10 +1,14 @@
 CVS status:
 
-CVS is in sync with Squashfs 3.0.  It additionally has a bug fix in the 2.6
-kernel code to fix a rare race condition when multiple Squashfs filesystems
-are mounted.  If you're mounting multiple filesystems, and they are accessed
-simultaneously, it is strongly recommended that you use the CVS fixes.  This
-fix will be contained in a new release soon.
+CVS reflects the official release of 3.0 with the following alterations.
+CVS has a couple of updates to Unsquashfs, and a new parallelised
+version of Mksquashfs (in squashfs-tools/par_mksquashfs).  An annoucement
+of the new parallel Mksquashfs will be made very soon, this will detail
+the improvements, some examples of the speedups present, and usage
+instructions.  As you're reading this, you've managed to look at CVS
+before the announcement has been made :-)  If you want to play with
+the new Mksquashfs then please do so, but you're currently on your own
+with regards to documentation!
 
 Description:
 
