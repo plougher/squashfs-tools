@@ -767,11 +767,37 @@ void squashfs_closedir(struct dir *dir)
 }
 
 
-int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, squashfs_super_block *sBlk)
+char *get_component(char *target, char *targname)
+{
+	while(*target == '/')
+		*target ++;
+
+	while(*target != '/' && *target!= '\0')
+		*targname ++ = *target ++;
+
+	*targname = '\0';
+
+	return target;
+}
+
+
+int matches(char *targname, char *name)
+{
+	if(*targname == '\0' || strcmp(targname, name) == 0)
+		return TRUE;
+
+	return FALSE;
+}
+
+
+int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, squashfs_super_block *sBlk, char *target)
 {
 	struct dir *dir = squashfs_openddir(start_block, offset, sBlk);
 	unsigned int type;
 	char *name, pathname[1024];
+	char targname[1024];
+
+	target = get_component(target, targname);
 
 	if(dir == NULL) {
 		ERROR("dir_scan: Failed to read directory %s (%x:%x)\n", parent_name, start_block, offset);
@@ -786,13 +812,17 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, s
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
 		TRACE("dir_scan: name %s, start_block %d, offset %d, type %d\n", name, start_block, offset, type);
 
+
+		if(!matches(targname, name))
+			continue;
+
 		strcat(strcat(strcpy(pathname, parent_name), "/"), name);
 
 		if(lsonly || info)
 			printf("%s\n", pathname);
 
 		if(type == SQUASHFS_DIR_TYPE)
-			dir_scan(pathname, start_block, offset, sBlk);
+			dir_scan(pathname, start_block, offset, sBlk, target);
 		else
 			if(!lsonly)
 				create_inode(pathname, start_block, offset, sBlk);
@@ -867,7 +897,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.0 (2006/05/21)\n");\
+	printf("unsquashfs version 1.1 (2006/07/09)\n");\
 	printf("copyright (C) 2006 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -882,6 +912,7 @@ int main(int argc, char *argv[])
 	squashfs_super_block sBlk;
 	char *dest = "squashfs-root";
 	int i, version = FALSE;
+	char *target = "";
 
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
@@ -903,7 +934,7 @@ int main(int argc, char *argv[])
 	if(i == argc) {
 		if(!version) {
 options:
-			ERROR("SYNTAX: %s [-ls | -dest] filesystem\n", argv[0]);
+			ERROR("SYNTAX: %s [-ls | -dest] filesystem [directory or filename to be extracted]\n", argv[0]);
 			ERROR("\t-version\t\tprint version, licence and copyright information\n");
 			ERROR("\t-info\t\t\tprint files as they are unsquashed\n");
 			ERROR("\t-ls\t\t\tlist filesystem only\n");
@@ -911,6 +942,9 @@ options:
 		}
 		exit(1);
 	}
+
+	if((i + 1) < argc)
+		target = argv[i + 1];
 
 	if((fd = open(argv[i], O_RDONLY)) == -1) {
 		ERROR("Could not open %s, because %s\n", argv[i], strerror(errno));
@@ -940,7 +974,7 @@ options:
 	uncompress_inode_table(sBlk.inode_table_start, sBlk.directory_table_start, &sBlk);
 	uncompress_directory_table(sBlk.directory_table_start, sBlk.fragment_table_start, &sBlk);
 
-	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode), SQUASHFS_INODE_OFFSET(sBlk.root_inode), &sBlk);
+	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode), SQUASHFS_INODE_OFFSET(sBlk.root_inode), &sBlk, target);
 
 	if(!lsonly) {
 		printf("\n");
