@@ -2,13 +2,7 @@ CVS status:
 
 CVS reflects the official release of 3.0 with the following alterations.
 CVS has a couple of updates to Unsquashfs, and a new parallelised
-version of Mksquashfs (in squashfs-tools/par_mksquashfs).  An annoucement
-of the new parallel Mksquashfs will be made very soon, this will detail
-the improvements, some examples of the speedups present, and usage
-instructions.  As you're reading this, you've managed to look at CVS
-before the announcement has been made :-)  If you want to play with
-the new Mksquashfs then please do so, but you're currently on your own
-with regards to documentation!
+version of Mksquashfs (in squashfs-tools/par_mksquashfs).
 
 Description:
 
