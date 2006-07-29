@@ -69,7 +69,8 @@ struct hash_table_entry {
 	struct hash_table_entry *next;
 };
 
-int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0, dev_count = 0, fifo_count = 0;
+int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
+	dev_count = 0, fifo_count = 0;
 char *inode_table = NULL, *directory_table = NULL;
 struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
 int fd;
@@ -82,6 +83,7 @@ char *data;
 unsigned int block_size;
 int lsonly = FALSE, info = FALSE;
 char **created_inode;
+int root_process;
 
 #define CALCULATE_HASH(start)	(start & 0xffff)
 
@@ -109,7 +111,8 @@ int lookup_entry(struct hash_table_entry *hash_table[], int start)
 	int hash = CALCULATE_HASH(start);
 	struct hash_table_entry *hash_table_entry;
 
-	for(hash_table_entry = hash_table[hash]; hash_table_entry; hash_table_entry = hash_table_entry->next)
+	for(hash_table_entry = hash_table[hash]; hash_table_entry;
+				hash_table_entry = hash_table_entry->next)
 		if(hash_table_entry->start == start)
 			return hash_table_entry->bytes;
 
@@ -137,7 +140,8 @@ int read_bytes(long long byte, int bytes, char *buff)
 }
 
 
-int read_block(long long start, long long *next, char *block, squashfs_super_block *sBlk)
+int read_block(long long start, long long *next, char *block,
+squashfs_super_block *sBlk)
 {
 	unsigned short c_byte;
 	int offset = 2;
@@ -164,7 +168,8 @@ int read_block(long long start, long long *next, char *block, squashfs_super_blo
 		if(read_bytes(start + offset, c_byte, buffer) == FALSE)
 			goto failed;
 
-		if((res = uncompress((unsigned char *) block, &bytes, (const unsigned char *) buffer, c_byte)) != Z_OK) {
+		if((res = uncompress((unsigned char *) block, &bytes,
+		(const unsigned char *) buffer, c_byte)) != Z_OK) {
 			if(res == Z_MEM_ERROR)
 				ERROR("zlib::uncompress failed, not enough memory\n");
 			else if(res == Z_BUF_ERROR)
@@ -202,7 +207,8 @@ int read_data_block(long long start, unsigned int size, char *block)
 		if(read_bytes(start, c_byte, data) == FALSE)
 			return 0;
 
-		if((res = uncompress((unsigned char *) block, &bytes, (const unsigned char *) data, c_byte)) != Z_OK) {
+		if((res = uncompress((unsigned char *) block, &bytes,
+		(const unsigned char *) data, c_byte)) != Z_OK) {
 			if(res == Z_MEM_ERROR)
 				ERROR("zlib::uncompress failed, not enough memory\n");
 			else if(res == Z_BUF_ERROR)
@@ -222,13 +228,15 @@ int read_data_block(long long start, unsigned int size, char *block)
 }
 
 
-void uncompress_inode_table(long long start, long long end, squashfs_super_block *sBlk)
+void uncompress_inode_table(long long start, long long end,
+squashfs_super_block *sBlk)
 {
 	int size = 0, bytes = 0, res;
 
 	while(start < end) {
 		if((size - bytes < SQUASHFS_METADATA_SIZE) &&
-				((inode_table = realloc(inode_table, size += SQUASHFS_METADATA_SIZE)) == NULL))
+				((inode_table = realloc(inode_table, size +=
+				SQUASHFS_METADATA_SIZE)) == NULL))
 			EXIT_UNSQUASH("uncompress_inode_table: out of memory in realloc\n");
 		TRACE("uncompress_inode_table: reading block 0x%llx\n", start);
 		add_entry(inode_table_hash, start, bytes);
@@ -241,8 +249,8 @@ void uncompress_inode_table(long long start, long long end, squashfs_super_block
 }
 
 
-int set_attributes(char *pathname, unsigned int mode, unsigned int uid, unsigned int guid,
-unsigned int mtime, unsigned int set_mode)
+int set_attributes(char *pathname, unsigned int mode, unsigned int uid,
+unsigned int guid, unsigned int mtime, unsigned int set_mode)
 {
 	struct utimbuf times = { (time_t) mtime, (time_t) mtime };
 
@@ -251,12 +259,7 @@ unsigned int mtime, unsigned int set_mode)
 		return FALSE;
 	}
 
-	if(set_mode && chmod(pathname, (mode_t) mode) == -1) {
-		ERROR("set_attributes: failed to change mode %s, because %s\n", pathname, strerror(errno));
-		return FALSE;
-	}
-
-	if(geteuid() == 0) {
+	if(root_process) {
 		uid_t uid_value = (uid_t) uid_table[uid];
 		uid_t guid_value = guid == SQUASHFS_GUIDS ? uid_value : (uid_t) guid_table[guid];
 
@@ -264,6 +267,12 @@ unsigned int mtime, unsigned int set_mode)
 			ERROR("set_attributes: failed to change uid and gids on %s, because %s\n", pathname, strerror(errno));
 			return FALSE;
 		}
+	} else
+		mode &= ~07000;
+
+	if((set_mode || (mode & 07000)) && chmod(pathname, (mode_t) mode) == -1) {
+		ERROR("set_attributes: failed to change mode %s, because %s\n", pathname, strerror(errno));
+		return FALSE;
 	}
 
 	return TRUE;
@@ -280,13 +289,15 @@ void read_uids_guids(squashfs_super_block *sBlk)
 	if(swap) {
 		unsigned int suid_table[sBlk->no_uids + sBlk->no_guids];
 
-		if(read_bytes(sBlk->uid_start, (sBlk->no_uids + sBlk->no_guids) * sizeof(unsigned int), (char *) suid_table) ==
-			FALSE)
+		if(read_bytes(sBlk->uid_start, (sBlk->no_uids + sBlk->no_guids)
+				* sizeof(unsigned int), (char *) suid_table) ==
+				FALSE)
 			EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
 		SQUASHFS_SWAP_INTS(uid_table, suid_table, sBlk->no_uids + sBlk->no_guids);
 	} else
-		if(read_bytes(sBlk->uid_start, (sBlk->no_uids + sBlk->no_guids) * sizeof(unsigned int), (char *) uid_table) ==
-			FALSE)
+		if(read_bytes(sBlk->uid_start, (sBlk->no_uids + sBlk->no_guids)
+				* sizeof(unsigned int), (char *) uid_table) ==
+				FALSE)
 			EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
 }
 
@@ -297,10 +308,13 @@ void read_fragment_table(squashfs_super_block *sBlk)
 	squashfs_fragment_index fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes from 0x%llx\n", sBlk->fragments, indexes, sBlk->fragment_table_start);
+
 	if(sBlk->fragments == 0)
 		return;
 
-	if((fragment_table = (squashfs_fragment_entry *) malloc(sBlk->fragments * sizeof(squashfs_fragment_entry))) == NULL)
+	if((fragment_table = (squashfs_fragment_entry *)
+			malloc(sBlk->fragments *
+			sizeof(squashfs_fragment_entry))) == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate fragment table\n");
 
 	if(swap) {
@@ -312,7 +326,8 @@ void read_fragment_table(squashfs_super_block *sBlk)
 		read_bytes(sBlk->fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments), (char *) fragment_table_index);
 
 	for(i = 0; i < indexes; i++) {
-		int length = read_block(fragment_table_index[i], NULL, ((char *) fragment_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
+		int length = read_block(fragment_table_index[i], NULL,
+		((char *) fragment_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
 		TRACE("Read fragment table block %d, from 0x%llx, length %d\n", i, fragment_table_index[i], length);
 	}
 
@@ -344,8 +359,9 @@ char *read_fragment(unsigned int fragment)
 }
 
 
-int write_file(char *pathname, unsigned int fragment, unsigned int frag_bytes, unsigned int offset,
-unsigned int blocks, long long start, char *block_ptr, unsigned int mode)
+int write_file(char *pathname, unsigned int fragment, unsigned int frag_bytes,
+unsigned int offset, unsigned int blocks, long long start, char *block_ptr,
+unsigned int mode)
 {
 	unsigned int file_fd, bytes, i;
 	unsigned int *block_list;
@@ -364,7 +380,7 @@ unsigned int blocks, long long start, char *block_ptr, unsigned int mode)
 	} else
 		memcpy(block_list, block_ptr, blocks * sizeof(unsigned int));
 
-	if((file_fd = open(pathname, O_CREAT | O_WRONLY, (mode_t) mode)) == -1) {
+	if((file_fd = open(pathname, O_CREAT | O_WRONLY, (mode_t) mode & 0777)) == -1) {
 		ERROR("write_file: failed to create file %s, because %s\n", pathname,
 			strerror(errno));
 		free(block_list);
@@ -407,7 +423,8 @@ failure:
 }
 		
 
-int create_inode(char *pathname, unsigned int start_block, unsigned int offset, squashfs_super_block *sBlk)
+int create_inode(char *pathname, unsigned int start_block, unsigned int offset,
+squashfs_super_block *sBlk)
 {
 	long long start = sBlk->inode_table_start + start_block;
 	squashfs_inode_header header;
@@ -454,17 +471,20 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset, 
 			} else
 				memcpy(inode, block_ptr, sizeof(*inode));
 
-			frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ? 0 : inode->file_size % sBlk->block_size;
+			frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ?
+				0 : inode->file_size % sBlk->block_size;
 			offset = inode->offset;
-			blocks = inode->fragment == SQUASHFS_INVALID_FRAG ? (inode->file_size
-				+ sBlk->block_size - 1) >> sBlk->block_log : inode->file_size >>
+			blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
+				(inode->file_size + sBlk->block_size - 1) >>
+				sBlk->block_log : inode->file_size >>
 				sBlk->block_log;
 			start = inode->start_block;
 
 			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", inode->file_size, blocks);
 
-			if(write_file(pathname, inode->fragment, frag_bytes, offset, blocks, start,
-					block_ptr + sizeof(*inode), inode->mode)) {
+			if(write_file(pathname, inode->fragment, frag_bytes,
+					offset, blocks, start, block_ptr +
+					sizeof(*inode), inode->mode)) {
 				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, FALSE);
 				file_count ++;
 			}
@@ -484,17 +504,20 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset, 
 			} else
 				memcpy(inode, block_ptr, sizeof(*inode));
 
-			frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ? 0 : inode->file_size % sBlk->block_size;
+			frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ?
+				0 : inode->file_size % sBlk->block_size;
 			offset = inode->offset;
-			blocks = inode->fragment == SQUASHFS_INVALID_FRAG ? (inode->file_size
-				+ sBlk->block_size - 1) >> sBlk->block_log : inode->file_size >>
+			blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
+				(inode->file_size + sBlk->block_size - 1) >>
+				sBlk->block_log : inode->file_size >>
 				sBlk->block_log;
 			start = inode->start_block;
 
 			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", inode->file_size, blocks);
 
-			if(write_file(pathname, inode->fragment, frag_bytes, offset, blocks, start,
-					block_ptr + sizeof(*inode), inode->mode)) {
+			if(write_file(pathname, inode->fragment, frag_bytes,
+					offset, blocks, start, block_ptr +
+					sizeof(*inode), inode->mode)) {
 				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, FALSE);
 				file_count ++;
 			}
@@ -522,9 +545,11 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset, 
 				break;
 			}
 
-			if(geteuid() == 0) {
+			if(root_process) {
 				uid_t uid_value = (uid_t) uid_table[inodep->uid];
-				uid_t guid_value = inodep->guid == SQUASHFS_GUIDS ? uid_value : (uid_t) guid_table[inodep->guid];
+				uid_t guid_value = inodep->guid ==
+					SQUASHFS_GUIDS ? uid_value : (uid_t)
+					guid_table[inodep->guid];
 
 				if(lchown(pathname, uid_value, guid_value) == -1)
 					ERROR("create_inode: failed to change uid and gids on %s, because %s\n", pathname, strerror(errno));
@@ -546,10 +571,11 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset, 
 
 			TRACE("create_inode: dev, rdev 0x%x\n", inodep->rdev);
 
-			if(geteuid() == 0) {
-				if(mknod(pathname, inodep->inode_type == SQUASHFS_CHRDEV_TYPE ? S_IFCHR : S_IFBLK,
-							makedev((inodep->rdev >> 8) & 0xff, inodep->rdev & 0xff))
-							== -1) {
+			if(root_process) {
+				if(mknod(pathname, inodep->inode_type ==
+					SQUASHFS_CHRDEV_TYPE ?  S_IFCHR :
+					S_IFBLK, makedev((inodep->rdev >> 8)
+					& 0xff, inodep->rdev & 0xff)) == -1) {
 					ERROR("create_inode: failed to create %s device %s, because %s\n",
 						inodep->inode_type == SQUASHFS_CHRDEV_TYPE ? "character" : "block",
 						pathname, strerror(errno));
@@ -590,12 +616,15 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset, 
 }
 
 
-void uncompress_directory_table(long long start, long long end, squashfs_super_block *sBlk)
+void uncompress_directory_table(long long start, long long end,
+squashfs_super_block *sBlk)
 {
 	int bytes = 0, size = 0, res;
 
 	while(start < end) {
-		if(size - bytes < SQUASHFS_METADATA_SIZE && (directory_table = realloc(directory_table, size += SQUASHFS_METADATA_SIZE)) == NULL)
+		if(size - bytes < SQUASHFS_METADATA_SIZE && (directory_table =
+				realloc(directory_table, size +=
+				SQUASHFS_METADATA_SIZE)) == NULL)
 			EXIT_UNSQUASH("uncompress_directory_table: out of memory in realloc\n");
 		TRACE("uncompress_directory_table: reading block 0x%llx\n", start);
 		add_entry(directory_table_hash, start, bytes);
@@ -626,7 +655,8 @@ struct dir {
 };
 
 
-struct dir *squashfs_openddir(unsigned int block_start, unsigned int offset, squashfs_super_block *sBlk)
+struct dir *squashfs_openddir(unsigned int block_start, unsigned int offset,
+squashfs_super_block *sBlk)
 {
 	squashfs_dir_header dirh;
 	char buffer[sizeof(squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1];
@@ -745,7 +775,8 @@ struct dir *squashfs_openddir(unsigned int block_start, unsigned int offset, squ
 }
 
 
-int squashfs_readdir(struct dir *dir, char **name, unsigned int *start_block, unsigned int *offset, unsigned int *type)
+int squashfs_readdir(struct dir *dir, char **name, unsigned int *start_block,
+unsigned int *offset, unsigned int *type)
 {
 	if(dir->cur_entry == dir->dir_count)
 		return FALSE;
@@ -790,7 +821,8 @@ int matches(char *targname, char *name)
 }
 
 
-int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, squashfs_super_block *sBlk, char *target)
+int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
+squashfs_super_block *sBlk, char *target)
 {
 	struct dir *dir = squashfs_openddir(start_block, offset, sBlk);
 	unsigned int type;
@@ -828,7 +860,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, s
 				create_inode(pathname, start_block, offset, sBlk);
 	}
 
-	!lsonly && set_attributes(parent_name, dir->mode, dir->uid, dir->guid, dir->mtime, TRUE);
+	!lsonly && set_attributes(parent_name, dir->mode, dir->uid, dir->guid, dir->mtime, FALSE);
 
 	squashfs_closedir(dir);
 	dir_count ++;
@@ -886,8 +918,7 @@ int read_super(squashfs_super_block *sBlk, char *source)
 	TRACE("sBlk->inode_table_start 0x%llx\n", sBlk->inode_table_start);
 	TRACE("sBlk->directory_table_start 0x%llx\n", sBlk->directory_table_start);
 	TRACE("sBlk->uid_start 0x%llx\n", sBlk->uid_start);
-	TRACE("sBlk->fragment_table_start 0x%llx\n", sBlk->fragment_table_start);
-	TRACE("\n");
+	TRACE("sBlk->fragment_table_start 0x%llx\n\n", sBlk->fragment_table_start);
 
 	return TRUE;
 
@@ -897,7 +928,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.1 (2006/07/09)\n");\
+	printf("unsquashfs version 1.2 (2006/07/29)\n");\
 	printf("copyright (C) 2006 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -914,6 +945,9 @@ int main(int argc, char *argv[])
 	int i, version = FALSE;
 	char *target = "";
 
+	if(root_process = geteuid() == 0)
+		umask(0);
+	
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
@@ -984,5 +1018,5 @@ options:
 		printf("created %d devices\n", dev_count);
 		printf("created %d fifos\n", fifo_count);
 	}
-
+	return 0;
 }
