@@ -1792,7 +1792,7 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	struct squashfs_super_block *sblk = &msblk->sblk;
 	long long next_block = SQUASHFS_I(i)->start_block +
 		sblk->directory_table_start;
-	int next_offset = SQUASHFS_I(i)->offset, length = 0, dirs_read = 0,
+	int next_offset = SQUASHFS_I(i)->offset, length = 0,
 		dir_count;
 	struct squashfs_dir_header dirh;
 	struct squashfs_dir_entry *dire;
@@ -1830,7 +1830,6 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 				goto finish;
 		}
 		file->f_pos += size;
-		dirs_read++;
 	}
 
 	length = get_dir_index_using_offset(i->i_sb, &next_block, &next_offset,
@@ -1911,13 +1910,12 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 				goto finish;
 			}
 			file->f_pos = length;
-			dirs_read++;
 		}
 	}
 
 finish:
 	kfree(dire);
-	return dirs_read;
+	return 0;
 
 failed_read:
 	ERROR("Unable to read directory block [%llx:%x]\n", next_block,
@@ -2082,7 +2080,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.1-test (2006/30/29) "
+	printk(KERN_INFO "squashfs: version 3.1-test (2006/08/01) "
 		"Phillip Lougher\n");
 
 	if ((err = register_filesystem(&squashfs_fs_type)))

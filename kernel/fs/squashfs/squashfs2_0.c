@@ -534,7 +534,7 @@ static int squashfs_readdir_2(struct file *file, void *dirent, filldir_t filldir
 	struct squashfs_super_block *sblk = &msblk->sblk;
 	long long next_block = SQUASHFS_I(i)->start_block +
 		sblk->directory_table_start;
-	int next_offset = SQUASHFS_I(i)->offset, length = 0, dirs_read = 0,
+	int next_offset = SQUASHFS_I(i)->offset, length = 0,
 		dir_count;
 	struct squashfs_dir_header_2 dirh;
 	char buffer[sizeof(struct squashfs_dir_entry_2) + SQUASHFS_NAME_LEN + 1];
@@ -619,12 +619,11 @@ static int squashfs_readdir_2(struct file *file, void *dirent, filldir_t filldir
 				goto finish;
 			}
 			file->f_pos = length;
-			dirs_read++;
 		}
 	}
 
 finish:
-	return dirs_read;
+	return 0;
 
 failed_read:
 	ERROR("Unable to read directory block [%llx:%x]\n", next_block,
