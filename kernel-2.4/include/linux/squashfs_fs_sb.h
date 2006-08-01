@@ -24,6 +24,7 @@
  */
 
 #include <linux/squashfs_fs.h>
+#include <linux/zlib.h>
 
 struct squashfs_cache {
 	long long	block;
@@ -64,10 +65,11 @@ struct squashfs_sb_info {
 	wait_queue_head_t	waitq;
 	wait_queue_head_t	fragment_wait_queue;
 	struct meta_index	*meta_index;
-	struct inode		*(*iget)(struct super_block *s,  squashfs_inode_t \
+	z_stream		stream;
+	struct inode		*(*iget)(struct super_block *s,  squashfs_inode_t
 				inode);
-	long long		(*read_blocklist)(struct inode *inode, int \
-				index, int readahead_blks, char *block_list, \
+	long long		(*read_blocklist)(struct inode *inode, int
+				index, int readahead_blks, char *block_list,
 				unsigned short **block_p, unsigned int *bsize);
 	int			(*read_fragment_index_table)(struct super_block *s);
 };
