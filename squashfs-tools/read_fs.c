@@ -186,7 +186,8 @@ int scan_inode_table(int fd, long long start, long long end, long long root_inod
 					+ sBlk->block_size - 1) >> sBlk->block_log : inode.file_size >>
 					sBlk->block_log;
 				long long file_bytes = 0;
-				int i, start = inode.start_block;
+				int i;
+				long long start = inode.start_block;
 				unsigned int *block_list;
 
 				TRACE("scan_inode_table: regular file, file_size %lld, blocks %d\n", inode.file_size, blocks);
@@ -219,7 +220,8 @@ int scan_inode_table(int fd, long long start, long long end, long long root_inod
 				int frag_bytes;
 				int blocks;
 				long long file_bytes = 0;
-				int i, start;
+				int i;
+				long long start;
 				unsigned int *block_list;
 
 				if(swap) {
