@@ -448,6 +448,9 @@ squashfs_super_block *sBlk)
 
 	if(created_inode[header.base.inode_number - 1]) {
 		TRACE("create_inode: hard link\n");
+		if(force)
+			unlink(pathname);
+
 		if(link(created_inode[header.base.inode_number - 1], pathname) == -1) {
 			ERROR("create_inode: failed to create hardlink, because %s\n", strerror(errno));
 			return FALSE;
