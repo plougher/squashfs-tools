@@ -81,7 +81,7 @@ char *fragment_data;
 char *file_data;
 char *data;
 unsigned int block_size;
-int lsonly = FALSE, info = FALSE;
+int lsonly = FALSE, info = FALSE, force = FALSE;
 char **created_inode;
 int root_process;
 
@@ -380,7 +380,7 @@ unsigned int mode)
 	} else
 		memcpy(block_list, block_ptr, blocks * sizeof(unsigned int));
 
-	if((file_fd = open(pathname, O_CREAT | O_WRONLY, (mode_t) mode & 0777)) == -1) {
+	if((file_fd = open(pathname, O_CREAT | O_WRONLY | (force ? O_TRUNC : 0), (mode_t) mode & 0777)) == -1) {
 		ERROR("write_file: failed to create file %s, because %s\n", pathname,
 			strerror(errno));
 		free(block_list);
@@ -485,7 +485,7 @@ squashfs_super_block *sBlk)
 			if(write_file(pathname, inode->fragment, frag_bytes,
 					offset, blocks, start, block_ptr +
 					sizeof(*inode), inode->mode)) {
-				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, FALSE);
+				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, force);
 				file_count ++;
 			}
 			break;
@@ -518,7 +518,7 @@ squashfs_super_block *sBlk)
 			if(write_file(pathname, inode->fragment, frag_bytes,
 					offset, blocks, start, block_ptr +
 					sizeof(*inode), inode->mode)) {
-				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, FALSE);
+				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, force);
 				file_count ++;
 			}
 			break;
@@ -538,6 +538,9 @@ squashfs_super_block *sBlk)
 
 			strncpy(name, block_ptr + sizeof(squashfs_symlink_inode_header), inodep->symlink_size);
 			name[inodep->symlink_size] = '\0';
+
+			if(force)
+				unlink(pathname);
 
 			if(symlink(name, pathname) == -1) {
 				ERROR("create_inode: failed to create symlink %s, because %s\n", pathname,
@@ -572,6 +575,9 @@ squashfs_super_block *sBlk)
 			TRACE("create_inode: dev, rdev 0x%x\n", inodep->rdev);
 
 			if(root_process) {
+				if(force)
+					unlink(pathname);
+
 				if(mknod(pathname, inodep->inode_type ==
 					SQUASHFS_CHRDEV_TYPE ?  S_IFCHR :
 					S_IFBLK, makedev((inodep->rdev >> 8)
@@ -591,6 +597,9 @@ squashfs_super_block *sBlk)
 			}
 		case SQUASHFS_FIFO_TYPE:
 			TRACE("create_inode: fifo\n");
+
+			if(force)
+				unlink(pathname);
 
 			if(mknod(pathname, S_IFIFO, 0) == -1) {
 				ERROR("create_inode: failed to create fifo %s, because %s\n",
@@ -836,7 +845,7 @@ squashfs_super_block *sBlk, char *target)
 		return FALSE;
 	}
 
-	if(!lsonly && mkdir(parent_name, (mode_t) dir->mode) == -1) {
+	if(!lsonly && mkdir(parent_name, (mode_t) dir->mode) == -1 && (!force || errno != EEXIST)) {
 		ERROR("dir_scan: failed to open directory %s, because %s\n", parent_name, strerror(errno));
 		return FALSE;
 	}
@@ -860,7 +869,7 @@ squashfs_super_block *sBlk, char *target)
 				create_inode(pathname, start_block, offset, sBlk);
 	}
 
-	!lsonly && set_attributes(parent_name, dir->mode, dir->uid, dir->guid, dir->mtime, FALSE);
+	!lsonly && set_attributes(parent_name, dir->mode, dir->uid, dir->guid, dir->mtime, force);
 
 	squashfs_closedir(dir);
 	dir_count ++;
@@ -928,7 +937,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.2 (2006/07/29)\n");\
+	printf("unsquashfs version 1.2 (2006/08/04)\n");\
 	printf("copyright (C) 2006 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -951,28 +960,30 @@ int main(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-version") == 0) {
+		if(strcmp(argv[i], "-version") == 0 || strcmp(argv[i], "-v") == 0) {
 			VERSION();
 			version = TRUE;
-		} else if(strcmp(argv[i], "-info") == 0)
+		} else if(strcmp(argv[i], "-info") == 0 || strcmp(argv[i], "-i") == 0)
 			info = TRUE;
-		else if(strcmp(argv[i], "-ls") == 0)
+		else if(strcmp(argv[i], "-ls") == 0 || strcmp(argv[i], "-l") == 0)
 			lsonly = TRUE;
-		else if(strcmp(argv[i], "-dest") == 0) {
+		else if(strcmp(argv[i], "-dest") == 0 || strcmp(argv[i], "-d") == 0) {
 			if(++i == argc)
 				goto options;
 			dest = argv[i];
-		}
+		} else if(strcmp(argv[i], "-force") == 0 || strcmp(argv[i], "-f") == 0)
+			force = TRUE;
 	}
 
 	if(i == argc) {
 		if(!version) {
 options:
-			ERROR("SYNTAX: %s [-ls | -dest] filesystem [directory or filename to be extracted]\n", argv[0]);
-			ERROR("\t-version\t\tprint version, licence and copyright information\n");
-			ERROR("\t-info\t\t\tprint files as they are unsquashed\n");
-			ERROR("\t-ls\t\t\tlist filesystem only\n");
-			ERROR("\t-dest <pathname>\tunsquash to <pathname>, default \"squashfs-root\"\n");
+			ERROR("SYNTAX: %s [options] filesystem [directory or file to extract]\n", argv[0]);
+			ERROR("\t-v[ersion]\t\tprint version, licence and copyright information\n");
+			ERROR("\t-i[nfo]\t\t\tprint files as they are unsquashed\n");
+			ERROR("\t-l[s]\t\t\tlist filesystem only\n");
+			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, default \"squashfs-root\"\n");
+			ERROR("\t-f[orce]\t\tif file already exists then overwrite\n");
 		}
 		exit(1);
 	}
