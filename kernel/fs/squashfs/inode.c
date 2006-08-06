@@ -1610,10 +1610,10 @@ static int squashfs_readpage4K(struct file *file, struct page *page)
 	struct inode *inode = page->mapping->host;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
-	unsigned char *block_list;
+	unsigned char *block_list = NULL;
 	long long block;
 	unsigned int bsize, bytes = 0;
- 	void *pageaddr;
+ 	void *pageaddr = NULL;
 	
 	TRACE("Entered squashfs_readpage4K, page index %lx, start block %llx\n",
 					page->index,
