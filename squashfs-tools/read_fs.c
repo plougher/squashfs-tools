@@ -458,7 +458,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries, unsigned int directory
 			memcpy(dire->name, directory_table + bytes, dire->size + 1);
 			dire->name[dire->size + 1] = '\0';
 			TRACE("squashfs_readdir: pushing directory entry %s, inode %x:%x, type 0x%x\n", dire->name, dirh.start_block, dire->offset, dire->type);
-			push_directory_entry(dire->name, SQUASHFS_MKINODE(dirh.start_block, dire->offset), dire->inode_number, dire->type);
+			push_directory_entry(dire->name, SQUASHFS_MKINODE(dirh.start_block, dire->offset), dirh.inode_number + dire->inode_number, dire->type);
 			bytes += dire->size + 1;
 		}
 	}

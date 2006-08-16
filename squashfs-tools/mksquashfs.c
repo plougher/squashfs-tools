@@ -985,7 +985,7 @@ long long write_fragment_table()
 	}
 
 	for(i = 0; i < meta_blocks; i++) {
-		int avail_bytes = i == meta_blocks - 1 ? frag_bytes % SQUASHFS_METADATA_SIZE : SQUASHFS_METADATA_SIZE;
+		int avail_bytes = frag_bytes > SQUASHFS_METADATA_SIZE ? SQUASHFS_METADATA_SIZE : frag_bytes;
 		c_byte = mangle(cbuffer + block_offset, buffer + i * SQUASHFS_METADATA_SIZE , avail_bytes, SQUASHFS_METADATA_SIZE, noF, 0);
 		if(!swap)
 			memcpy(cbuffer, &c_byte, sizeof(unsigned short));
@@ -997,6 +997,7 @@ long long write_fragment_table()
 		compressed_size = SQUASHFS_COMPRESSED_SIZE(c_byte) + block_offset;
 		write_bytes(fd, bytes, compressed_size, cbuffer);
 		bytes += compressed_size;
+		frag_bytes -= avail_bytes;
 	}
 
 	if(!swap)
@@ -1791,7 +1792,7 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int 
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.0 (2006/03/15)\n");\
+	printf("mksquashfs version 3.1 (serial) (2006/08/16)\n");\
 	printf("copyright (C) 2006 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
