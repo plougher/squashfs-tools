@@ -53,8 +53,6 @@ static long long read_blocklist(struct inode *inode, int index,
 				int readahead_blks, char *block_list,
 				unsigned short **block_p, unsigned int *bsize);
 
-/*static z_stream stream;*/
-
 static DECLARE_FSTYPE_DEV(squashfs_fs_type, "squashfs", squashfs_read_super);
 
 static unsigned char squashfs_filetype_table[] = {
@@ -2009,7 +2007,7 @@ static void squashfs_put_super(struct super_block *s)
 static int __init init_squashfs_fs(void)
 {
 
-	printk(KERN_INFO "squashfs: version 3.1-test (2006/08/01) "
+	printk(KERN_INFO "squashfs: version 3.1 (2006/08/15) "
 		"Phillip Lougher\n");
 
 	return register_filesystem(&squashfs_fs_type);

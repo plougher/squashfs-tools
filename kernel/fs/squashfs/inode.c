@@ -63,9 +63,6 @@ static long long read_blocklist(struct inode *inode, int index,
 static struct super_block *squashfs_get_sb(struct file_system_type *, int,
 				const char *, void *);
 
-
-/*static z_stream stream;*/
-
 static struct file_system_type squashfs_fs_type = {
 	.owner = THIS_MODULE,
 	.name = "squashfs",
@@ -1610,10 +1607,10 @@ static int squashfs_readpage4K(struct file *file, struct page *page)
 	struct inode *inode = page->mapping->host;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
-	unsigned char *block_list = NULL;
+	unsigned char *block_list;
 	long long block;
 	unsigned int bsize, bytes = 0;
- 	void *pageaddr = NULL;
+ 	void *pageaddr;
 	
 	TRACE("Entered squashfs_readpage4K, page index %lx, start block %llx\n",
 					page->index,
@@ -1622,11 +1619,14 @@ static int squashfs_readpage4K(struct file *file, struct page *page)
 	if (page->index >= ((i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
 					PAGE_CACHE_SHIFT)) {
 		pageaddr = kmap_atomic(page, KM_USER0);
+		block_list = NULL;
 		goto skip_read;
 	}
 
 	if (!(block_list = kmalloc(SIZE, GFP_KERNEL))) {
 		ERROR("Failed to allocate block_list\n");
+		pageaddr = kmap_atomic(page, KM_USER0);
+		block_list = NULL;
 		goto skip_read;
 	}
 
@@ -1920,6 +1920,7 @@ finish:
 failed_read:
 	ERROR("Unable to read directory block [%llx:%x]\n", next_block,
 		next_offset);
+	kfree(dire);
 	return 0;
 }
 
@@ -2080,7 +2081,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.1-test (2006/08/01) "
+	printk(KERN_INFO "squashfs: version 3.1 (2006/08/15) "
 		"Phillip Lougher\n");
 
 	if ((err = register_filesystem(&squashfs_fs_type)))
