@@ -2024,6 +2024,6 @@ EXPORT_NO_SYMBOLS;
 
 module_init(init_squashfs_fs);
 module_exit(exit_squashfs_fs);
-MODULE_DESCRIPTION("squashfs, a compressed read-only filesystem");
+MODULE_DESCRIPTION("squashfs 3.1, a compressed read-only filesystem");
 MODULE_AUTHOR("Phillip Lougher <phillip@lougher.org.uk>");
 MODULE_LICENSE("GPL");
