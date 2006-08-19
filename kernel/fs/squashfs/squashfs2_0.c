@@ -486,12 +486,18 @@ static int get_dir_index_using_name(struct super_block *s, long long
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
 	int i, length = 0;
-	char buffer[sizeof(struct squashfs_dir_index_2) + SQUASHFS_NAME_LEN + 1];
-	struct squashfs_dir_index_2 *index = (struct squashfs_dir_index_2 *) buffer;
-	char str[SQUASHFS_NAME_LEN + 1];
+	struct squashfs_dir_index_2 *index;
+	char *str;
 
 	TRACE("Entered get_dir_index_using_name, i_count %d\n", i_count);
 
+	if (!(str = kmalloc(sizeof(struct squashfs_dir_index) +
+		(SQUASHFS_NAME_LEN + 1) * 2, GFP_KERNEL))) {
+		ERROR("Failed to allocate squashfs_dir_index\n");
+		goto failure;
+	}
+
+	index = (struct squashfs_dir_index_2 *) (str + SQUASHFS_NAME_LEN + 1);
 	strncpy(str, name, size);
 	str[size] = '\0';
 
@@ -523,6 +529,8 @@ static int get_dir_index_using_name(struct super_block *s, long long
 	}
 
 	*next_offset = (length + *next_offset) % SQUASHFS_METADATA_SIZE;
+	kfree(str);
+failure:
 	return length;
 }
 
@@ -537,10 +545,15 @@ static int squashfs_readdir_2(struct file *file, void *dirent, filldir_t filldir
 	int next_offset = SQUASHFS_I(i)->offset, length = 0,
 		dir_count;
 	struct squashfs_dir_header_2 dirh;
-	char buffer[sizeof(struct squashfs_dir_entry_2) + SQUASHFS_NAME_LEN + 1];
-	struct squashfs_dir_entry_2 *dire = (struct squashfs_dir_entry_2 *) buffer;
+	struct squashfs_dir_entry_2 *dire;
 
 	TRACE("Entered squashfs_readdir_2 [%llx:%x]\n", next_block, next_offset);
+
+	if (!(dire = kmalloc(sizeof(struct squashfs_dir_entry) +
+		SQUASHFS_NAME_LEN + 1, GFP_KERNEL))) {
+		ERROR("Failed to allocate squashfs_dir_entry\n");
+		goto finish;
+	}
 
 	length = get_dir_index_using_offset(i->i_sb, &next_block, &next_offset,
 				SQUASHFS_I(i)->u.s2.directory_index_start,
@@ -623,11 +636,13 @@ static int squashfs_readdir_2(struct file *file, void *dirent, filldir_t filldir
 	}
 
 finish:
+	kfree(dire);
 	return 0;
 
 failed_read:
 	ERROR("Unable to read directory block [%llx:%x]\n", next_block,
 		next_offset);
+	kfree(dire);
 	return 0;
 }
 
@@ -645,11 +660,16 @@ static struct dentry *squashfs_lookup_2(struct inode *i, struct dentry *dentry,
 	int next_offset = SQUASHFS_I(i)->offset, length = 0,
 				dir_count;
 	struct squashfs_dir_header_2 dirh;
-	char buffer[sizeof(struct squashfs_dir_entry_2) + SQUASHFS_NAME_LEN];
-	struct squashfs_dir_entry_2 *dire = (struct squashfs_dir_entry_2 *) buffer;
+	struct squashfs_dir_entry_2 *dire;
 	int sorted = sblk->s_major == 2 && sblk->s_minor >= 1;
 
-	TRACE("Entered squashfs_lookup [%llx:%x]\n", next_block, next_offset);
+	TRACE("Entered squashfs_lookup_2 [%llx:%x]\n", next_block, next_offset);
+
+	if (!(dire = kmalloc(sizeof(struct squashfs_dir_entry) +
+		SQUASHFS_NAME_LEN + 1, GFP_KERNEL))) {
+		ERROR("Failed to allocate squashfs_dir_entry\n");
+		goto exit_loop;
+	}
 
 	if (len > SQUASHFS_NAME_LEN)
 		goto exit_loop;
@@ -730,6 +750,7 @@ static struct dentry *squashfs_lookup_2(struct inode *i, struct dentry *dentry,
 	}
 
 exit_loop:
+	kfree(dire);
 	d_add(dentry, inode);
 	return ERR_PTR(0);
 
