@@ -49,7 +49,7 @@ static inline struct squashfs_inode_info *SQUASHFS_I(struct inode *inode)
 #define SQSH_EXTERN
 extern unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 				long long index, unsigned int length,
-				long long *next_index);
+				long long *next_index, int srclength);
 extern int squashfs_get_cached_block(struct super_block *s, char *buffer,
 				long long block, unsigned int offset,
 				int length, long long *next_block,
@@ -59,6 +59,7 @@ extern void release_cached_fragment(struct squashfs_sb_info *msblk, struct
 extern struct squashfs_fragment_cache *get_cached_fragment(struct super_block
 					*s, long long start_block,
 					int length);
+extern struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode, unsigned int inode_number);
 extern struct address_space_operations squashfs_symlink_aops;
 extern struct address_space_operations squashfs_aops;
 extern struct address_space_operations squashfs_aops_4K;

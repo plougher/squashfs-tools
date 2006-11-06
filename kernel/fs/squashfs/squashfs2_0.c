@@ -78,7 +78,7 @@ static int read_fragment_index_table_2(struct super_block *s)
 					sblk->fragment_table_start,
 					SQUASHFS_FRAGMENT_INDEX_BYTES_2
 					(sblk->fragments) |
-					SQUASHFS_COMPRESSED_BIT_BLOCK, NULL)) {
+					SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, SQUASHFS_FRAGMENT_INDEX_BYTES_2(sblk->fragments))) {
 		ERROR("unable to read fragment index table\n");
 		return 0;
 	}
@@ -135,42 +135,35 @@ out:
 }
 
 
-static struct inode *squashfs_new_inode(struct super_block *s,
+static void squashfs_new_inode(struct squashfs_sb_info *msblk, struct inode *i,
 		struct squashfs_base_inode_header_2 *inodeb, unsigned int ino)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
-	struct inode *i = new_inode(s);
 
-	if (i) {
-		i->i_ino = ino;
-		i->i_mtime.tv_sec = sblk->mkfs_time;
-		i->i_atime.tv_sec = sblk->mkfs_time;
-		i->i_ctime.tv_sec = sblk->mkfs_time;
-		i->i_uid = msblk->uid[inodeb->uid];
-		i->i_mode = inodeb->mode;
-		i->i_nlink = 1;
-		i->i_size = 0;
-		if (inodeb->guid == SQUASHFS_GUIDS)
-			i->i_gid = i->i_uid;
-		else
-			i->i_gid = msblk->guid[inodeb->guid];
-	}
-
-	return i;
+	i->i_ino = ino;
+	i->i_mtime.tv_sec = sblk->mkfs_time;
+	i->i_atime.tv_sec = sblk->mkfs_time;
+	i->i_ctime.tv_sec = sblk->mkfs_time;
+	i->i_uid = msblk->uid[inodeb->uid];
+	i->i_mode = inodeb->mode;
+	i->i_nlink = 1;
+	i->i_size = 0;
+	if (inodeb->guid == SQUASHFS_GUIDS)
+		i->i_gid = i->i_uid;
+	else
+		i->i_gid = msblk->guid[inodeb->guid];
 }
 
 
-static struct inode *squashfs_iget_2(struct super_block *s, squashfs_inode_t inode)
+static int squashfs_read_inode_2(struct inode *i, squashfs_inode_t inode)
 {
-	struct inode *i;
+	struct super_block *s = i->i_sb;
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
 	unsigned int block = SQUASHFS_INODE_BLK(inode) +
 		sblk->inode_table_start;
 	unsigned int offset = SQUASHFS_INODE_OFFSET(inode);
-	unsigned int ino = SQUASHFS_MK_VFS_INODE(block
-		- sblk->inode_table_start, offset);
+	unsigned int ino = i->i_ino;
 	long long next_block;
 	unsigned int next_offset;
 	union squashfs_inode_header_2 id, sid;
@@ -191,6 +184,8 @@ static struct inode *squashfs_iget_2(struct super_block *s, squashfs_inode_t ino
 					offset, sizeof(*inodeb), &next_block,
 					&next_offset))
 			goto failed_read;
+
+	squashfs_new_inode(msblk, i, inodeb, ino);
 
 	switch(inodeb->inode_type) {
 		case SQUASHFS_FILE_TYPE: {
@@ -219,9 +214,6 @@ static struct inode *squashfs_iget_2(struct super_block *s, squashfs_inode_t ino
 					inodep->fragment, &frag_blk, &frag_size))
 				goto failed_read;
 				
-			if((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
-				goto failed_read1;
-
 			i->i_size = inodep->file_size;
 			i->i_fop = &generic_ro_fops;
 			i->i_mode |= S_IFREG;
@@ -266,9 +258,6 @@ static struct inode *squashfs_iget_2(struct super_block *s, squashfs_inode_t ino
 						&next_offset))
 					goto failed_read;
 
-			if((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
-				goto failed_read1;
-
 			i->i_size = inodep->file_size;
 			i->i_op = &squashfs_dir_inode_ops_2;
 			i->i_fop = &squashfs_dir_ops_2;
@@ -305,9 +294,6 @@ static struct inode *squashfs_iget_2(struct super_block *s, squashfs_inode_t ino
 						sizeof(*inodep), &next_block,
 						&next_offset))
 					goto failed_read;
-
-			if((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
-				goto failed_read1;
 
 			i->i_size = inodep->file_size;
 			i->i_op = &squashfs_dir_inode_ops_2;
@@ -352,9 +338,6 @@ static struct inode *squashfs_iget_2(struct super_block *s, squashfs_inode_t ino
 						&next_offset))
 					goto failed_read;
 
-			if((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
-				goto failed_read1;
-
 			i->i_size = inodep->symlink_size;
 			i->i_op = &page_symlink_inode_operations;
 			i->i_data.a_ops = &squashfs_symlink_aops;
@@ -387,9 +370,6 @@ static struct inode *squashfs_iget_2(struct super_block *s, squashfs_inode_t ino
 						&next_offset))
 					goto failed_read;
 
-			if ((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
-				goto failed_read1;
-
 			i->i_mode |= (inodeb->inode_type ==
 					SQUASHFS_CHRDEV_TYPE) ?  S_IFCHR :
 					S_IFBLK;
@@ -403,8 +383,6 @@ static struct inode *squashfs_iget_2(struct super_block *s, squashfs_inode_t ino
 		 }
 		 case SQUASHFS_FIFO_TYPE:
 		 case SQUASHFS_SOCKET_TYPE: {
-			if ((i = squashfs_new_inode(s, inodeb, ino)) == NULL)
-				goto failed_read1;
 
 			i->i_mode |= (inodeb->inode_type == SQUASHFS_FIFO_TYPE)
 							? S_IFIFO : S_IFSOCK;
@@ -417,14 +395,13 @@ static struct inode *squashfs_iget_2(struct super_block *s, squashfs_inode_t ino
 			goto failed_read1;
 	}
 	
-	insert_inode_hash(i);
-	return i;
+	return 1;
 
 failed_read:
 	ERROR("Unable to read inode [%x:%x]\n", block, offset);
 
 failed_read1:
-	return NULL;
+	return 0;
 }
 
 
@@ -737,12 +714,14 @@ static struct dentry *squashfs_lookup_2(struct inode *i, struct dentry *dentry,
 				squashfs_inode_t ino =
 					SQUASHFS_MKINODE(dirh.start_block,
 					dire->offset);
+				unsigned int inode_number = SQUASHFS_MK_VFS_INODE(dirh.start_block,
+					dire->offset);
 
 				TRACE("calling squashfs_iget for directory "
 					"entry %s, inode %x:%x, %lld\n", name,
 					dirh.start_block, dire->offset, ino);
 
-				inode = (msblk->iget)(i->i_sb, ino);
+				inode = squashfs_iget(i->i_sb, ino, inode_number);
 
 				goto exit_loop;
 			}
@@ -765,7 +744,7 @@ int squashfs_2_0_supported(struct squashfs_sb_info *msblk)
 {
 	struct squashfs_super_block *sblk = &msblk->sblk;
 
-	msblk->iget = squashfs_iget_2;
+	msblk->read_inode = squashfs_read_inode_2;
 	msblk->read_fragment_index_table = read_fragment_index_table_2;
 
 	sblk->bytes_used = sblk->bytes_used_2;
