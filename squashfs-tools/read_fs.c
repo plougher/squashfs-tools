@@ -380,14 +380,14 @@ int read_super(int fd, squashfs_super_block *sBlk, int *be, char *source)
 	*be = swap;
 #endif
 
-	printf("Found a valid SQUASHFS superblock on %s.\n", source);
+	printf("Found a valid %s%s SQUASHFS superblock on %s.\n", SQUASHFS_EXPORTABLE(sBlk->flags) ? "exportable " : "", *be ? "big endian" : "little endian", source);
 	printf("\tInodes are %scompressed\n", SQUASHFS_UNCOMPRESSED_INODES(sBlk->flags) ? "un" : "");
 	printf("\tData is %scompressed\n", SQUASHFS_UNCOMPRESSED_DATA(sBlk->flags) ? "un" : "");
 	printf("\tFragments are %scompressed\n", SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk->flags) ? "un" : "");
-	printf("\tCheck data is %s present in the filesystem\n", SQUASHFS_CHECK_DATA(sBlk->flags) ? "" : "not");
-	printf("\tFragments are %s present in the filesystem\n", SQUASHFS_NO_FRAGMENTS(sBlk->flags) ? "not" : "");
-	printf("\tAlways_use_fragments option is %s specified\n", SQUASHFS_ALWAYS_FRAGMENTS(sBlk->flags) ? "" : "not");
-	printf("\tDuplicates are %s removed\n", SQUASHFS_DUPLICATES(sBlk->flags) ? "" : "not");
+	printf("\tCheck data is %spresent in the filesystem\n", SQUASHFS_CHECK_DATA(sBlk->flags) ? "" : "not ");
+	printf("\tFragments are %spresent in the filesystem\n", SQUASHFS_NO_FRAGMENTS(sBlk->flags) ? "not " : "");
+	printf("\tAlways_use_fragments option is %sspecified\n", SQUASHFS_ALWAYS_FRAGMENTS(sBlk->flags) ? "" : "not ");
+	printf("\tDuplicates are %sremoved\n", SQUASHFS_DUPLICATES(sBlk->flags) ? "" : "not ");
 	printf("\tFilesystem size %.2f Kbytes (%.2f Mbytes)\n", sBlk->bytes_used / 1024.0, sBlk->bytes_used / (1024.0 * 1024.0));
 	printf("\tBlock size %d\n", sBlk->block_size);
 	printf("\tNumber of fragments %d\n", sBlk->fragments);
@@ -398,6 +398,7 @@ int read_super(int fd, squashfs_super_block *sBlk, int *be, char *source)
 	TRACE("sBlk->directory_table_start %llx\n", sBlk->directory_table_start);
 	TRACE("sBlk->uid_start %llx\n", sBlk->uid_start);
 	TRACE("sBlk->fragment_table_start %llx\n", sBlk->fragment_table_start);
+	TRACE("sBlk->lookup_table_start %xllx\n", sBlk->lookup_table_start);
 	printf("\n");
 
 	return TRUE;
@@ -452,7 +453,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries, unsigned int directory
 				memcpy(&sdire, directory_table + bytes, sizeof(sdire));
 				SQUASHFS_SWAP_DIR_ENTRY(dire, &sdire);
 			} else
-				memcpy(dire, directory_table + bytes, sizeof(dire));
+				memcpy(dire, directory_table + bytes, sizeof(*dire));
 			bytes += sizeof(*dire);
 
 			memcpy(dire->name, directory_table + bytes, dire->size + 1);
@@ -508,6 +509,49 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk, squashfs_fragment_en
 }
 
 
+int read_inode_lookup_table(int fd, squashfs_super_block *sBlk, squashfs_inode **inode_lookup_table)
+{
+	int lookup_bytes = SQUASHFS_LOOKUP_BYTES(sBlk->inodes);
+	int indexes = SQUASHFS_LOOKUP_BLOCKS(sBlk->inodes);
+	long long index[indexes];
+	int i;
+
+	if(sBlk->lookup_table_start == SQUASHFS_INVALID_BLK)
+		return 1;
+
+	if((*inode_lookup_table = malloc(lookup_bytes)) == NULL) {
+		ERROR("Failed to allocate inode lookup table\n");
+		return 0;
+	}
+
+	if(swap) {
+		long long sindex[indexes];
+
+		read_bytes(fd, sBlk->lookup_table_start, SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), (char *) sindex);
+		SQUASHFS_SWAP_FRAGMENT_INDEXES(index, sindex, indexes);
+	} else
+		read_bytes(fd, sBlk->lookup_table_start, SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), (char *) index);
+
+	for(i = 0; i <  indexes; i++) {
+		int length = read_block(fd, index[i], NULL, ((unsigned char *) *inode_lookup_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
+		TRACE("Read inode lookup table block %d, from 0x%llx, length %d\n", i, index[i], length);
+	}
+
+	if(swap) {
+		squashfs_inode_t sinode;
+		for(i = 0; i < sBlk->inodes; i++) {
+			SQUASHFS_SWAP_INODE_T((&sinode), (&(*inode_lookup_table)[i]));
+			memcpy((char *) &(*inode_lookup_table)[i], (char *) &sinode, sizeof(squashfs_inode_t));
+		}
+	}
+
+	for(i = 0; i < sBlk->inodes; i++)
+		printf("inode number %d = 0x%llx\n", i + 1, (*inode_lookup_table)[i]);
+
+	return 1;
+}
+
+
 long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk, char **cinode_table,
 		char **data_cache, char **cdirectory_table, char **directory_data_cache,
 		unsigned int *last_directory_block, unsigned int *inode_dir_offset, unsigned int *inode_dir_file_size,
@@ -516,7 +560,8 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk, c
 		unsigned short *uid_count, squashfs_uid *guids, unsigned short *guid_count,
 		long long *uncompressed_file, unsigned int *uncompressed_inode, unsigned int *uncompressed_directory,
 		unsigned int *inode_dir_inode_number, unsigned int *inode_dir_parent_inode,
-		void (push_directory_entry)(char *, squashfs_inode, int, int), squashfs_fragment_entry **fragment_table)
+		void (push_directory_entry)(char *, squashfs_inode, int, int), squashfs_fragment_entry **fragment_table,
+		squashfs_inode **inode_lookup_table)
 {
 	unsigned char *inode_table = NULL, *directory_table;
 	long long start = sBlk->inode_table_start, end = sBlk->directory_table_start, root_inode_start = start +
@@ -527,6 +572,9 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk, c
 	printf("Scanning existing filesystem...\n");
 
 	if(read_fragment_table(fd, sBlk, fragment_table) == 0)
+		goto error;
+
+	if(read_inode_lookup_table(fd, sBlk, inode_lookup_table) == 0)
 		goto error;
 
 	if((files = scan_inode_table(fd, start, end, root_inode_start, root_inode_offset, sBlk, &inode, &inode_table,
