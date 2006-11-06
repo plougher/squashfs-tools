@@ -71,11 +71,6 @@ struct sort_info {
 
 struct sort_info *sort_info_list[65536];
 
-struct priority_entry {
-	struct dir_ent *dir;
-	struct priority_entry *next;
-};
-
 struct priority_entry *priority_list[65536];
 
 extern int silent;
@@ -234,8 +229,6 @@ void sort_files_and_write(struct dir_info *dir)
 	struct priority_entry *entry;
 	squashfs_inode inode;
 	int duplicate_file;
-
-	generate_file_priorities(dir, 0, &dir->dir_ent->inode->buf);
 
 	for(i = 65535; i >= 0; i--)
 		for(entry = priority_list[i]; entry; entry = entry->next) {

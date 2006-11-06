@@ -40,13 +40,16 @@
 #include <signal.h>
 #include <setjmp.h>
 #include <sys/mman.h>
+#include <pthread.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
 #define __BIG_ENDIAN BIG_ENDIAN
 #define __LITTLE_ENDIAN LITTLE_ENDIAN
+#include <sys/sysctl.h>
 #else
 #include <endian.h>
+#include <sys/sysinfo.h>
 #endif
 
 #include <squashfs_fs.h>
@@ -146,7 +149,7 @@ struct directory {
 struct inode_info *inode_info[INODE_HASH_SIZE];
 
 /* hash tables used to do fast duplicate searches in duplicate check */
-struct file_info *dupl[65536], *frag_dups[65536];
+struct file_info *dupl[65536];
 int dup_files = 0;
 
 /* list of exclude dirs/files */
@@ -162,7 +165,7 @@ int excluded(char *filename, struct stat *buf);
 
 /* fragment block data structures */
 int fragments = 0;
-char fragment_data[SQUASHFS_FILE_SIZE];
+struct file_buffer *fragment_data = NULL;
 int fragment_size = 0;
 struct fragment {
 	unsigned int		index;
@@ -171,6 +174,7 @@ struct fragment {
 };
 #define FRAG_SIZE 32768
 squashfs_fragment_entry *fragment_table = NULL;
+int fragments_outstanding = 0;
 
 
 /* current inode number for directories and non directories */
@@ -194,13 +198,15 @@ struct old_root_entry_info *old_root_entry;
 
 /* in memory file info */
 struct file_info {
+	long long		file_size;
 	long long		bytes;
 	unsigned short		checksum;
+	unsigned short		fragment_checksum;
 	long long		start;
 	unsigned int		*block_list;
 	struct file_info	*next;
 	struct fragment		*fragment;
-	unsigned short		fragment_checksum;
+	char			checksum_flag;
 };
 
 /* count of how many times SIGINT or SIGQUIT has been sent */
@@ -219,6 +225,7 @@ unsigned int sinode_bytes, scache_bytes, sdirectory_bytes,
 	sdir_count, sfifo_count, ssock_count, sdup_files;
 int sfragments;
 int restore = 0;
+int threads;
 
 /* flag whether destination file is a block device */
 int block_device = 0;
@@ -229,13 +236,66 @@ int sorted = 0;
 /* save destination file name for deleting on error */
 char *destination_file = NULL;
 
-/* structure to used to pass in a pointer or an integer
- * to duplicate buffer read helper functions.
- */
-struct duplicate_buffer_handle {
-	char	*ptr;
-	long long	start;
+/* data allocator status struct.  Allocators are used to keep
+  track of memory buffers passed between different threads */
+struct allocator {
+	int		max_buffers;
+	int		count;
+	int		buffer_size;
+	pthread_mutex_t	mutex;
+	pthread_cond_t	wait;
 };
+
+/* struct describing a memory buffer passed between threads */
+struct file_buffer {
+	struct allocator	*allocator;
+	void			(*release)(int);
+	int			release_data;
+	long long		block;
+	int			size;
+	int			c_byte;
+	unsigned int		block_order;
+	int			fragment;
+	int			error;
+	struct file_buffer	*next;
+	char			data[0];
+};
+
+/* struct describing queues used to pass data between threads */
+struct queue {
+	int			size;
+	int			readp;
+	int			writep;
+	pthread_mutex_t		mutex;
+	pthread_cond_t		empty;
+	pthread_cond_t		full;
+	void			**data;
+};
+
+/* describes the list of blocks in a file which is a possible
+   duplicate.  For each block, it indicates whether the block is
+   in memory or on disk */
+struct buffer_list {
+	long long start;
+	int size;
+	struct file_buffer *read_buffer;
+};
+
+struct allocator *reader_buffer, *writer_buffer, *fragment_buffer;
+struct queue *to_reader, *from_reader, *to_writer, *from_writer, *from_deflate, *to_frag;
+pthread_t *thread, *deflator_thread, *frag_deflator_thread;
+pthread_mutex_t	fragment_mutex;
+pthread_cond_t fragment_waiting;
+pthread_mutex_t	pos_mutex;
+
+/* user options that control parallelisation */
+int processors = -1;
+/* default size of output buffer in Mbytes */
+#define WRITER_BUFFER_DEFAULT 512
+/* default size of input buffer in Mbytes */
+#define READER_BUFFER_DEFAULT 64
+int writer_buffer_size;
+int reader_buffer_size;
 
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int type);
 extern int read_super(int fd, squashfs_super_block *sBlk, int *be, char *source);
@@ -249,18 +309,166 @@ extern long long read_filesystem(char *root_name, int fd, squashfs_super_block *
 		unsigned int *inode_dir_inode_number, unsigned int *inode_dir_parent_inode,
 		void (push_directory_entry)(char *, squashfs_inode, int, int),
 		squashfs_fragment_entry **fragment_table);
-int get_sorted_inode(squashfs_inode *inode, struct stat *buf);
-int read_sort_file(char *filename, int source, char *source_path[]);
-void sort_files_and_write(struct dir_info *dir);
-struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, long long bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes);
+extern int read_sort_file(char *filename, int source, char *source_path[]);
+extern void sort_files_and_write(struct dir_info *dir);
+struct file_info *duplicate(long long file_size, long long bytes, unsigned int **block_list, long long *start, struct fragment **fragment, struct file_buffer *file_buffer, struct buffer_list *buffer_list, int blocks, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag);
 struct dir_info *dir_scan1(char *, int (_readdir)(char *, char *, struct dir_info *));
+struct file_info *add_non_dup(long long file_size, long long bytes, unsigned int *block_list, long long start, struct fragment *fragment, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag);
+extern void generate_file_priorities(struct dir_info *dir, int priority, struct stat *buf);
+extern struct priority_entry *priority_list[65536];
+
+
+struct allocator *alloc_init(int buffer_size, int max_buffers)
+{
+	struct allocator *allocator = malloc(sizeof(struct allocator));
+
+	if(allocator == NULL)
+		return NULL;
+
+	allocator->max_buffers = max_buffers;
+	allocator->buffer_size = buffer_size;
+	allocator->count = 0;
+	pthread_mutex_init(&allocator->mutex, NULL);
+	pthread_cond_init(&allocator->wait, NULL);
+
+	return allocator;
+}
+
+
+struct file_buffer *alloc_get(struct allocator *allocator)
+{
+	struct file_buffer *file_buffer;
+	
+	pthread_mutex_lock(&allocator->mutex);
+
+	while(allocator->count == allocator->max_buffers)
+		pthread_cond_wait(&allocator->wait, &allocator->mutex);
+
+	if((file_buffer = malloc(sizeof(struct file_buffer) + allocator->buffer_size)) == NULL)
+		goto failed;
+
+	file_buffer->release = NULL;
+	file_buffer->allocator = allocator;
+	allocator->count ++;
+
+failed:
+	pthread_mutex_unlock(&allocator->mutex);
+	return file_buffer;
+}
+
+
+struct file_buffer *alloc_get_2(struct allocator *allocator, void (*release)(int), int release_data)
+{
+	struct file_buffer *file_buffer = alloc_get(allocator);
+
+	if(file_buffer) {
+		file_buffer->release = release;
+		file_buffer->release_data = release_data;
+	}
+	return file_buffer;
+}
+
+
+void alloc_free(struct file_buffer *file_buffer)
+{
+	struct allocator *allocator;
+
+	if(file_buffer == NULL)
+		return;
+
+	allocator = file_buffer->allocator;
+
+	if(file_buffer->release)
+		file_buffer->release(file_buffer->release_data);
+
+	pthread_mutex_lock(&allocator->mutex);
+	free(file_buffer);
+	if(allocator->count == 0)
+		ERROR("alloc_free: freeing buffer for empty allocator!\n");
+	else
+		allocator->count --;
+	pthread_cond_signal(&allocator->wait);
+	pthread_mutex_unlock(&allocator->mutex);
+}
+
+
+struct queue *queue_init(int size)
+{
+	struct queue *queue = malloc(sizeof(struct queue));
+
+	if(queue == NULL)
+		return NULL;
+
+	if((queue->data = malloc(sizeof(void *) * (size + 1))) == NULL) {
+		free(queue);
+		return NULL;
+	}
+
+	queue->size = size + 1;
+	queue->readp = queue->writep = 0;
+	pthread_mutex_init(&queue->mutex, NULL);
+	pthread_cond_init(&queue->empty, NULL);
+	pthread_cond_init(&queue->full, NULL);
+
+	return queue;
+}
+
+
+void queue_put(struct queue *queue, void *data)
+{
+	int nextp;
+
+	pthread_mutex_lock(&queue->mutex);
+
+	while((nextp = (queue->writep + 1) % queue->size) == queue->readp)
+		pthread_cond_wait(&queue->full, &queue->mutex);
+
+	queue->data[queue->writep] = data;
+	queue->writep = nextp;
+	pthread_cond_signal(&queue->empty);
+	pthread_mutex_unlock(&queue->mutex);
+}
+
+
+void *queue_get(struct queue *queue)
+{
+	void *data;
+	pthread_mutex_lock(&queue->mutex);
+
+	while(queue->readp == queue->writep)
+		pthread_cond_wait(&queue->empty, &queue->mutex);
+
+	data = queue->data[queue->readp];
+	queue->readp = (queue->readp + 1) % queue->size;
+	pthread_cond_signal(&queue->full);
+	pthread_mutex_unlock(&queue->mutex);
+
+	return data;
+}
+
 
 #define MKINODE(A)	((squashfs_inode)(((squashfs_inode) inode_bytes << 16) + (((char *)A) - data_cache)))
 
 
+inline void waitforthread(int i)
+{
+	TRACE("Waiting for thread %d\n", i);
+	while(thread[i] != 0)
+		sched_yield();
+}
+
+
 void restorefs()
 {
+	int i;
+
 	ERROR("Exiting - restoring original filesystem!\n\n");
+
+	for(i = 0; i < 2 + processors * 2; i++)
+		pthread_kill(thread[i], SIGUSR1);
+	for(i = 0; i < 2 + processors * 2; i++)
+		waitforthread(i);
+	TRACE("All threads in signal handler\n");
 	bytes = sbytes;
 	memcpy(data_cache, sdata_cache, cache_bytes = scache_bytes);
 	memcpy(directory_data_cache, sdirectory_data_cache, directory_cache_bytes = sdirectory_cache_bytes);
@@ -287,12 +495,13 @@ void restorefs()
 
 void sighandler()
 {
-	if(interrupted == 1)
+	if(++interrupted > 2)
+		return;
+	if(interrupted == 2)
 		restorefs();
 	else {
 		ERROR("Interrupting will restore original filesystem!\n");
 		ERROR("Interrupt again to quit\n");
-		interrupted ++;
 	}
 }
 
@@ -303,27 +512,94 @@ void sighandler2()
 }
 
 
-unsigned int mangle(char *d, char *s, int size, int block_size, int uncompressed, int data_block)
+void sigusr1_handler()
 {
-	unsigned long c_byte = block_size << 1;
-	unsigned int res;
+	int i;
+	sigset_t sigmask;
+	pthread_t thread_id = pthread_self();
 
-	if(!uncompressed && (res = compress2((unsigned char *) d, &c_byte, (unsigned char *) s, size, 9)) != Z_OK) {
-		if(res == Z_MEM_ERROR)
-			BAD_ERROR("zlib::compress failed, not enough memory\n");
-		else if(res == Z_BUF_ERROR)
-			BAD_ERROR("zlib::compress failed, not enough room in output buffer\n");
+	for(i = 0; i < (2 + processors * 2) && thread[i] != thread_id; i++);
+	thread[i] = (pthread_t) 0;
+
+	TRACE("Thread %d(%p) in sigusr1_handler\n", i, thread_id);
+
+	sigemptyset(&sigmask);
+	sigaddset(&sigmask, SIGINT);
+	sigaddset(&sigmask, SIGQUIT);
+	sigaddset(&sigmask, SIGUSR1);
+	while(1) {
+		sigsuspend(&sigmask);
+		TRACE("After wait in sigusr1_handler :(\n");
+	}
+}
+
+
+unsigned int mangle2(z_stream **strm, char *d, char *s, int size, int block_size, int uncompressed, int data_block)
+{
+	unsigned long c_byte;
+	unsigned int res;
+	z_stream *stream = *strm;
+
+	if(uncompressed)
+		goto notcompressed;
+
+	if(stream == NULL) {
+		if((stream = *strm = malloc(sizeof(z_stream))) == NULL)
+			BAD_ERROR("mangle::compress failed, not enough memory\n");
+
+		stream->zalloc = Z_NULL;
+		stream->zfree = Z_NULL;
+		stream->opaque = 0;
+
+		if((res = deflateInit(stream, 9)) != Z_OK) {
+			if(res == Z_MEM_ERROR)
+				BAD_ERROR("zlib::compress failed, not enough memory\n");
+			else if(res == Z_STREAM_ERROR)
+				BAD_ERROR("zlib::compress failed, not a valid compression level\n");
+			else if(res == Z_VERSION_ERROR)
+				BAD_ERROR("zlib::compress failed, incorrect zlib version\n");
+			else
+				BAD_ERROR("zlib::compress failed, unknown error %d\n", res);
+		}
+	} else if((res = deflateReset(stream)) != Z_OK) {
+		if(res == Z_STREAM_ERROR)
+			BAD_ERROR("zlib::compress failed, stream state inconsistent\n");
 		else
 			BAD_ERROR("zlib::compress failed, unknown error %d\n", res);
-		return 0;
 	}
 
-	if(uncompressed || c_byte >= size) {
+	stream->next_in = (unsigned char *) s;
+	stream->avail_in = size;
+	stream->next_out = (unsigned char *) d;
+	stream->avail_out = block_size;
+
+	res = deflate(stream, Z_FINISH);
+	if(res != Z_STREAM_END && res != Z_OK) {
+		if(res == Z_STREAM_ERROR)
+			BAD_ERROR("zlib::compress failed, stream state inconsistent\n");
+		else if(res == Z_BUF_ERROR)
+			BAD_ERROR("zlib::compress failed, no progress possible\n");
+		else
+			BAD_ERROR("zlib::compress failed, unknown error %d\n", res);
+	}
+
+	c_byte = stream->total_out;
+
+	if(res != Z_STREAM_END || c_byte >= size) {
+notcompressed:
 		memcpy(d, s, size);
 		return size | (data_block ? SQUASHFS_COMPRESSED_BIT_BLOCK : SQUASHFS_COMPRESSED_BIT);
 	}
 
 	return (unsigned int) c_byte;
+}
+
+
+unsigned int mangle(char *d, char *s, int size, int block_size, int uncompressed, int data_block)
+{
+	static z_stream *stream = NULL;
+
+	return mangle2(&stream, d, s, size, block_size, uncompressed, data_block);
 }
 
 
@@ -379,6 +655,7 @@ void read_bytes(int fd, long long byte, int bytes, char *buff)
 {
 	off_t off = byte;
 
+	pthread_mutex_lock(&pos_mutex);
 	if(lseek(fd, off, SEEK_SET) == -1) {
 		perror("Lseek on destination failed");
 		EXIT_MKSQUASHFS();
@@ -388,12 +665,16 @@ void read_bytes(int fd, long long byte, int bytes, char *buff)
 		perror("Read on destination failed");
 		EXIT_MKSQUASHFS();
 	}
+	pthread_mutex_unlock(&pos_mutex);
 }
 
 
 void write_bytes(int fd, long long byte, int bytes, char *buff)
 {
 	off_t off = byte;
+
+	if(interrupted < 2)
+		pthread_mutex_lock(&pos_mutex);
 
 	if(lseek(fd, off, SEEK_SET) == -1) {
 		perror("Lseek on destination failed");
@@ -404,6 +685,9 @@ void write_bytes(int fd, long long byte, int bytes, char *buff)
 		perror("Write on destination failed");
 		EXIT_MKSQUASHFS();
 	}
+	
+	if(interrupted < 2)
+		pthread_mutex_unlock(&pos_mutex);
 }
 
 
@@ -889,10 +1173,23 @@ failed:
 }
 
 
-char *get_fragment(char *buffer, struct fragment *fragment)
+char *get_fragment(char *buffer, struct fragment *fragment, int *cached_fragment)
 {
-	squashfs_fragment_entry *disk_fragment = &fragment_table[fragment->index];
-	int size = SQUASHFS_COMPRESSED_SIZE_BLOCK(disk_fragment->size);
+	squashfs_fragment_entry *disk_fragment;
+	int size;
+
+	if(fragment->index == *cached_fragment || fragment->index == SQUASHFS_INVALID_FRAG)
+		return buffer + fragment->offset;
+
+	if(fragment_data && fragment->index == fragments)
+		return fragment_data->data + fragment->offset;
+
+	pthread_mutex_lock(&fragment_mutex);
+	while(fragment_table[fragment->index].pending)
+		pthread_cond_wait(&fragment_waiting, &fragment_mutex);
+	pthread_mutex_unlock(&fragment_mutex);
+	disk_fragment = &fragment_table[fragment->index];
+	size = SQUASHFS_COMPRESSED_SIZE_BLOCK(disk_fragment->size);
 
 	if(SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size)) {
 		int res;
@@ -912,53 +1209,74 @@ char *get_fragment(char *buffer, struct fragment *fragment)
 	} else
 		read_bytes(fd, disk_fragment->start_block, size, buffer);
 
+	*cached_fragment = fragment->index;
 	return buffer + fragment->offset;
 }
 
 	
+void ensure_fragments_flushed()
+{
+	pthread_mutex_lock(&fragment_mutex);
+	while(fragments_outstanding)
+		pthread_cond_wait(&fragment_waiting, &fragment_mutex);
+	pthread_mutex_unlock(&fragment_mutex);
+}
+
+
 void write_fragment()
 {
-	int compressed_size;
-	char buffer[block_size << 1];
-
 	if(fragment_size == 0)
 		return;
 
-	if(fragments % FRAG_SIZE == 0)
-		if((fragment_table = (squashfs_fragment_entry *) realloc(fragment_table, (fragments + FRAG_SIZE) * sizeof(squashfs_fragment_entry))) == NULL)
+	pthread_mutex_lock(&fragment_mutex);
+	if(fragments % FRAG_SIZE == 0) {
+		if((fragment_table = (squashfs_fragment_entry *) realloc(fragment_table, (fragments + FRAG_SIZE) * sizeof(squashfs_fragment_entry))) == NULL) {
+			pthread_mutex_unlock(&fragment_mutex);
 			BAD_ERROR("Out of memory in fragment table\n");
-	fragment_table[fragments].size = mangle(buffer, fragment_data, fragment_size, block_size, noF, 1);
-	fragment_table[fragments].start_block = bytes;
-	compressed_size = SQUASHFS_COMPRESSED_SIZE_BLOCK(fragment_table[fragments].size);
-	write_bytes(fd, bytes, compressed_size, buffer);
-	bytes += compressed_size;
-	total_uncompressed += fragment_size;
-	total_compressed += compressed_size;
-	TRACE("Writing fragment %d, uncompressed size %d, compressed size %d\n",fragments, fragment_size, compressed_size);
+		}
+	}
+	fragment_data->size = fragment_size;
+	fragment_data->block = fragments;
+	fragment_table[fragments].pending = TRUE;
+	fragments_outstanding ++;
+	queue_put(to_frag, fragment_data);
 	fragments ++;
 	fragment_size = 0;
+	pthread_mutex_unlock(&fragment_mutex);
+}
+
+void frag_release(int block)
+{
+	pthread_mutex_lock(&fragment_mutex);
+	fragment_table[block].pending = FALSE;
+	pthread_cond_signal(&fragment_waiting);
+	pthread_mutex_unlock(&fragment_mutex);
 }
 
 
 static struct fragment empty_fragment = {SQUASHFS_INVALID_FRAG, 0, 0};
-struct fragment *get_and_fill_fragment(char *buff, int size)
+struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
 {
 	struct fragment *ffrg;
+	
 
-	if(size == 0)
+	if(file_buffer == NULL || file_buffer->size == 0)
 		return &empty_fragment;
 
-	if(fragment_size + size > block_size)
+	if(fragment_size + file_buffer->size > block_size)
 		write_fragment();
 
 	if((ffrg = (struct fragment *) malloc(sizeof(struct fragment))) == NULL)
 		BAD_ERROR("Out of memory in fragment block allocation!\n");
 
+	if(fragment_size == 0)
+		fragment_data = alloc_get(fragment_buffer);
+
 	ffrg->index = fragments;
 	ffrg->offset = fragment_size;
-	ffrg->size = size;
-	memcpy(fragment_data + fragment_size, buff, size);
-	fragment_size += size;
+	ffrg->size = file_buffer->size;
+	memcpy(fragment_data->data + fragment_size, file_buffer->data, file_buffer->size);
+	fragment_size += file_buffer->size;
 
 	return ffrg;
 }
@@ -1015,19 +1333,10 @@ long long write_fragment_table()
 }
 
 
-char *read_from_buffer(struct duplicate_buffer_handle *handle, unsigned int avail_bytes)
-{
-	char *v = handle->ptr;
-	handle->ptr += avail_bytes;	
-	return v;
-}
-
-
 char read_from_file_buffer[SQUASHFS_FILE_MAX_SIZE];
-char *read_from_file(struct duplicate_buffer_handle *handle, unsigned int avail_bytes)
+char *read_from_disk(long long start, unsigned int avail_bytes)
 {
-	read_bytes(fd, handle->start, avail_bytes, read_from_file_buffer);
-	handle->start += avail_bytes;
+	read_bytes(fd, start, avail_bytes, read_from_file_buffer);
 	return read_from_file_buffer;
 }
 
@@ -1035,38 +1344,92 @@ char *read_from_file(struct duplicate_buffer_handle *handle, unsigned int avail_
 /*
  * Compute 16 bit BSD checksum over the data
  */
-unsigned short get_checksum(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *handle, long long l)
+unsigned short get_checksum(char *buff, int bytes, unsigned short chksum)
 {
-	unsigned short chksum = 0;
-	unsigned int bytes = 0;
-	unsigned char *b;
-	struct duplicate_buffer_handle position = *handle;
+	unsigned char *b = (unsigned char *) buff;
 
-	while(l) {
-		bytes = l > SQUASHFS_FILE_MAX_SIZE ? SQUASHFS_FILE_MAX_SIZE : l;
-		l -= bytes;
-		b = (unsigned char *) get_next_file_block(&position, bytes);
-		while(bytes--) {
-			chksum = (chksum & 1) ? (chksum >> 1) | 0x8000 : chksum >> 1;
-			chksum += *b++;
-		}
+	while(bytes --) {
+		chksum = (chksum & 1) ? (chksum >> 1) | 0x8000 : chksum >> 1;
+		chksum += *b++;
 	}
 
 	return chksum;
 }
 
 
+unsigned short get_checksum_disk(long long start, long long l)
+{
+	unsigned short chksum = 0;
+	unsigned int bytes;
+
+	while(l) {
+		bytes = l > SQUASHFS_FILE_MAX_SIZE ? SQUASHFS_FILE_MAX_SIZE : l;
+		l -= bytes;
+		chksum = get_checksum(read_from_disk(start, bytes), bytes, chksum);
+		start += bytes;
+	}
+
+	return chksum;
+}
+
+
+unsigned short get_checksum_buffer(struct buffer_list *buffer_list, unsigned int blocks)
+{
+	unsigned short chksum = 0;
+	int block;
+
+	for(block = 0; block < blocks; block ++) {
+		struct buffer_list *b = &buffer_list[block];
+
+		if(b->read_buffer)
+			chksum = get_checksum(b->read_buffer->data, b->read_buffer->size, chksum);
+		else
+			chksum = get_checksum(read_from_disk(b->start, b->size), b->size, chksum);
+	}
+
+	return chksum;
+}
+
+
+unsigned short get_checksum_mem(char *buff, int bytes)
+{
+	return get_checksum(buff, bytes, 0);
+}
+
+
+unsigned short get_checksum_mem_buffer(struct file_buffer *file_buffer)
+{
+	if(file_buffer == NULL)
+		return 0;
+	else
+		return get_checksum(file_buffer->data, file_buffer->size, 0);
+}
+
+
 int cached_frag = -1;
-void add_file(long long start, long long file_bytes, unsigned int *block_listp, int blocks, unsigned int fragment, int offset, int bytes)
+char fragdata[SQUASHFS_FILE_MAX_SIZE];
+#define DUP_HASH(a) (a & 0xffff)
+void add_file(long long start, long long file_size, long long file_bytes, unsigned int *block_listp, int blocks, unsigned int fragment, int offset, int bytes)
 {
 	struct fragment *frg;
-	struct file_info *dupl_ptr;
 	char *datap;
-	struct duplicate_buffer_handle handle;
 	unsigned int *block_list = block_listp;
+	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
 
-	if(!duplicate_checking)
+	if(!duplicate_checking || file_size == 0)
 		return;
+
+	for(; dupl_ptr; dupl_ptr = dupl_ptr->next) {
+		if(file_size != dupl_ptr->file_size)
+			continue;
+		if(blocks != 0 && start != dupl_ptr->start)
+			continue;
+		if(fragment != dupl_ptr->fragment->index)
+			continue;
+		if(fragment != SQUASHFS_INVALID_FRAG && (offset != dupl_ptr->fragment->offset || bytes != dupl_ptr->fragment->size))
+			continue;
+		return;
+	}
 
 	if((frg = (struct fragment *) malloc(sizeof(struct fragment))) == NULL)
 		BAD_ERROR("Out of memory in fragment block allocation!\n");
@@ -1074,60 +1437,112 @@ void add_file(long long start, long long file_bytes, unsigned int *block_listp, 
 	frg->index = fragment;
 	frg->offset = offset;
 	frg->size = bytes;
-	if(fragment == cached_frag || fragment == SQUASHFS_INVALID_FRAG)
-		datap = fragment_data + offset;
-	else
-		datap = get_fragment(fragment_data, frg);
-	handle.start = start;
-	if((dupl_ptr = duplicate(read_from_file, &handle, file_bytes, &block_listp, &start, blocks, &frg, datap, bytes)) != NULL)
-		dupl_ptr->fragment = frg;
-	else
-		free(block_list);
-	cached_frag = fragment;
-}
 
+	add_non_dup(file_size, file_bytes, block_list, start, frg, 0, 0, FALSE);
+}
 
 char cached_fragment[SQUASHFS_FILE_SIZE];
 int cached_frag1 = -1;
 
-struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_handle *, unsigned int), struct duplicate_buffer_handle *file_start, long long bytes, unsigned int **block_list, long long *start, int blocks, struct fragment **fragment, char *frag_data, int frag_bytes)
+int pre_duplicate(long long file_size)
 {
-	unsigned short checksum = get_checksum(get_next_file_block, file_start, bytes);
-	struct duplicate_buffer_handle handle = { frag_data, 0 };
-	unsigned short fragment_checksum = get_checksum(read_from_buffer, &handle, frag_bytes);
-	struct file_info *dupl_ptr = bytes ? dupl[checksum] : frag_dups[fragment_checksum];
-
+	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
 
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
-		if(bytes == dupl_ptr->bytes && frag_bytes == dupl_ptr->fragment->size && fragment_checksum == dupl_ptr->fragment_checksum) {
-			char buffer1[SQUASHFS_FILE_MAX_SIZE];
-			long long dup_bytes = dupl_ptr->bytes;
-			long long dup_start = dupl_ptr->start;
-			struct duplicate_buffer_handle position = *file_start;
-			char *buffer;
-			while(dup_bytes) {
-				int avail_bytes = dup_bytes > SQUASHFS_FILE_MAX_SIZE ? SQUASHFS_FILE_MAX_SIZE : dup_bytes;
+		if(dupl_ptr->file_size == file_size)
+			return TRUE;
 
-				buffer = get_next_file_block(&position, avail_bytes);
-				read_bytes(fd, dup_start, avail_bytes, buffer1);
-				if(memcmp(buffer, buffer1, avail_bytes) != 0)
-					break;
-				dup_bytes -= avail_bytes;
-				dup_start += avail_bytes;
+	return FALSE;
+}
+
+
+int pre_duplicate_frag(long long file_size, unsigned short checksum)
+{
+	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
+
+	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
+		if(dupl_ptr->file_size == file_size) {
+			if(dupl_ptr->checksum_flag == FALSE) {
+				dupl_ptr->checksum = get_checksum_disk(dupl_ptr->start, dupl_ptr->bytes);
+				dupl_ptr->fragment_checksum = get_checksum_mem(get_fragment(cached_fragment, dupl_ptr->fragment, &cached_frag1), file_size);
+				dupl_ptr->checksum_flag = TRUE;
 			}
-			if(dup_bytes == 0) {
-				char *fragment_buffer1;
-				
-				if(dupl_ptr->fragment->index == fragments || dupl_ptr->fragment->index == SQUASHFS_INVALID_FRAG)
-					fragment_buffer1 = fragment_data + dupl_ptr->fragment->offset;
-				else if(dupl_ptr->fragment->index == cached_frag1)
-					fragment_buffer1 = cached_fragment + dupl_ptr->fragment->offset;
-				else {
-					fragment_buffer1 = get_fragment(cached_fragment, dupl_ptr->fragment);
-					cached_frag1 = dupl_ptr->fragment->index;
-				}
+			if(dupl_ptr->fragment_checksum == checksum)
+				return TRUE;
+		}
 
-				if(frag_bytes == 0 || memcmp(frag_data, fragment_buffer1, frag_bytes) == 0) {
+	return FALSE;
+}
+
+
+struct file_info *add_non_dup(long long file_size, long long bytes, unsigned int *block_list, long long start, struct fragment *fragment, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag)
+{
+	struct file_info *dupl_ptr;
+
+	if((dupl_ptr = (struct file_info *) malloc(sizeof(struct file_info))) == NULL) {
+		BAD_ERROR("Out of memory in dup_files allocation!\n");
+	}
+
+	dupl_ptr->file_size = file_size;
+	dupl_ptr->bytes = bytes;
+	dupl_ptr->block_list = block_list;
+	dupl_ptr->start = start;
+	dupl_ptr->fragment = fragment;
+	dupl_ptr->checksum = checksum;
+	dupl_ptr->fragment_checksum = fragment_checksum;
+	dupl_ptr->checksum_flag = checksum_flag;
+	dupl_ptr->next = dupl[DUP_HASH(file_size)];
+	dupl[DUP_HASH(file_size)] = dupl_ptr;
+	dup_files ++;
+
+	return dupl_ptr;
+}
+
+
+struct file_info *duplicate(long long file_size, long long bytes, unsigned int **block_list, long long *start, struct fragment **fragment, struct file_buffer *file_buffer, struct buffer_list *buffer_list, int blocks, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag)
+{
+	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
+	int frag_bytes = file_buffer ? file_buffer->size : 0;
+
+	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
+		if(file_size == dupl_ptr->file_size && bytes == dupl_ptr->bytes && frag_bytes == dupl_ptr->fragment->size) {
+			char buffer2[SQUASHFS_FILE_MAX_SIZE];
+			long long dup_start = dupl_ptr->start;
+			char *buffer;
+			int block;
+
+			if(checksum_flag == FALSE) {
+				checksum = get_checksum_buffer(buffer_list, blocks);
+				fragment_checksum = get_checksum_mem_buffer(file_buffer);
+				checksum_flag = TRUE;
+			}
+
+			if(dupl_ptr->checksum_flag == FALSE) {
+				dupl_ptr->checksum = get_checksum_disk(dupl_ptr->start, dupl_ptr->bytes);
+				dupl_ptr->fragment_checksum = get_checksum_mem(get_fragment(cached_fragment, dupl_ptr->fragment, &cached_frag1), frag_bytes);
+				dupl_ptr->checksum_flag = TRUE;
+			}
+
+			if(checksum != dupl_ptr->checksum || fragment_checksum != dupl_ptr->fragment_checksum)
+				continue;
+
+			for(block = 0; block < blocks; block ++) {
+				struct buffer_list *b = &buffer_list[block];
+
+				if(b->read_buffer)
+					buffer = b->read_buffer->data;
+				else
+					buffer = read_from_disk(b->start, b->size);
+
+				read_bytes(fd, dup_start, b->size, buffer2);
+				if(memcmp(buffer, buffer2, b->size) != 0)
+					break;
+				dup_start += b->size;
+			}
+			if(block == blocks) {
+				char *fragment_buffer1 = get_fragment(cached_fragment, dupl_ptr->fragment, &cached_frag1);
+
+				if(frag_bytes == 0 || memcmp(file_buffer->data, fragment_buffer1, frag_bytes) == 0) {
 					TRACE("Found duplicate file, start 0x%llx, size %lld, checksum 0x%x, fragment %d, size %d, offset %d, checksum 0x%x\n", dupl_ptr->start,
 						dupl_ptr->bytes, dupl_ptr->checksum, dupl_ptr->fragment->index, frag_bytes, dupl_ptr->fragment->offset, fragment_checksum);
 					*block_list = dupl_ptr->block_list;
@@ -1139,132 +1554,517 @@ struct file_info *duplicate(char *(get_next_file_block)(struct duplicate_buffer_
 		}
 
 
-	if((dupl_ptr = (struct file_info *) malloc(sizeof(struct file_info))) == NULL) {
-		BAD_ERROR("Out of memory in dup_files allocation!\n");
-	}
-
-	dupl_ptr->bytes = bytes;
-	dupl_ptr->checksum = checksum;
-	dupl_ptr->start = *start;
-	dupl_ptr->fragment_checksum = fragment_checksum;
-	dupl_ptr->block_list = *block_list;
-
-	dup_files ++;
-	if(bytes) {
-		dupl_ptr->next = dupl[checksum];
-		dupl[checksum] = dupl_ptr;
-	} else {
-		dupl_ptr->next = frag_dups[fragment_checksum];
-		frag_dups[fragment_checksum] = dupl_ptr;
-	}
-
-	return dupl_ptr;
+	return add_non_dup(file_size, bytes, *block_list, *start, *fragment, checksum, fragment_checksum, checksum_flag);
 }
 
 
-#define MINALLOCBYTES (1024 * 1024)
-int write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, int *duplicate_file)
+void reader_read_file(struct dir_ent *dir_ent)
 {
-	int block = 0, i, file, whole_file = 1, status;
-	unsigned int c_byte, frag_bytes;
-	long long bbytes, file_bytes = 0, start;
-	char buff[block_size], *c_buffer = NULL, *filename = dir_ent->pathname;
+	struct stat *buf = &dir_ent->inode->buf;
+	int count;
+	int blocks = (buf->st_size + block_size - 1) >> block_log;
+	int frag_block = !no_fragments && (always_use_fragments ||
+		(buf->st_size < block_size)) ? buf->st_size >> block_log : -1;
+	int file;
+	static int block_order = 0;
+	struct file_buffer *file_buffer;
+
+	if(buf->st_size == 0 || dir_ent->inode->read)
+		return;
+
+	if((file = open(dir_ent->pathname, O_RDONLY)) == -1)
+		goto read_err;
+
+	for(count = 0; count < blocks; count ++) {
+		file_buffer = alloc_get(reader_buffer);
+
+		if((file_buffer->size = read(file, file_buffer->data, block_size)) == -1) {
+			close(file);
+			goto read_err2;
+		}
+		file_buffer->block = count;
+		file_buffer->block_order = block_order ++;
+		file_buffer->error = FALSE;
+		if(file_buffer->fragment = count == frag_block)
+			queue_put(from_deflate, file_buffer);
+		else
+			queue_put(from_reader, file_buffer);
+	}
+
+	close(file);
+	dir_ent->inode->read = TRUE;
+
+	return;
+
+read_err:
+	file_buffer = alloc_get(reader_buffer);
+read_err2:
+	file_buffer->block_order = block_order ++;
+	file_buffer->error = TRUE;
+	queue_put(from_deflate, file_buffer);
+}
+
+
+void reader_scan(struct dir_info *dir) {
+	int i;
+
+	for(i = 0; i < dir->count; i++) {
+		struct dir_ent *dir_ent = dir->list[i];
+		struct stat *buf = &dir_ent->inode->buf;
+		if(dir_ent->data)
+			continue;
+
+		switch(buf->st_mode & S_IFMT) {
+			case S_IFREG:
+				reader_read_file(dir_ent);
+				break;
+			case S_IFDIR:
+				reader_scan(dir_ent->dir);
+				break;
+		}
+	}
+}
+
+
+void *reader(void *arg)
+{
+	int oldstate;
+
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldstate);
+
+	if(!sorted)
+		reader_scan(queue_get(to_reader));
+	else {
+		int i;
+		struct priority_entry *entry;
+
+		queue_get(to_reader);
+		for(i = 65535; i >= 0; i--)
+			for(entry = priority_list[i]; entry; entry = entry->next)
+				reader_read_file(entry->dir);
+	}
+}
+
+
+void *writer(void *arg)
+{
+	int write_error = FALSE;
+	int oldstate;
+
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldstate);
+
+	while(1) {
+		struct file_buffer *file_buffer = queue_get(to_writer);
+		off_t off;
+
+		if(file_buffer == NULL) {
+			queue_put(from_writer, write_error ? (void *) &write_error : NULL);
+			continue;
+		}
+
+		off = file_buffer->block;
+
+		pthread_mutex_lock(&pos_mutex);
+
+		if(!write_error && lseek(fd, off, SEEK_SET) == -1) {
+			perror("Lseek on destination failed");
+			write_error = TRUE;
+		}
+
+		if(!write_error && write(fd, file_buffer->data, file_buffer->size) == -1) {
+			perror("Write on destination failed");
+			write_error = TRUE;
+		}
+		pthread_mutex_unlock(&pos_mutex);
+
+		alloc_free(file_buffer);
+	}
+}
+
+
+void *deflator(void *arg)
+{
+	z_stream *stream = NULL;
+	int oldstate;
+
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldstate);
+
+	while(1) {
+		struct file_buffer *file_buffer = queue_get(from_reader);
+		struct file_buffer *write_buffer = alloc_get(writer_buffer);
+
+		write_buffer->c_byte = mangle2(&stream, write_buffer->data, file_buffer->data, file_buffer->size, block_size, noD, 1);
+		write_buffer->block = file_buffer->block;
+		write_buffer->block_order = file_buffer->block_order;
+		write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->c_byte);
+		write_buffer->fragment = FALSE;
+		write_buffer->error = FALSE;
+		alloc_free(file_buffer);
+		queue_put(from_deflate, write_buffer);
+	}
+}
+
+
+void *frag_deflator(void *arg)
+{
+	z_stream *stream = NULL;
+	int oldstate;
+
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldstate);
+
+	while(1) {
+		int c_byte, compressed_size;
+		struct file_buffer *file_buffer = queue_get(to_frag);
+		struct file_buffer *write_buffer = alloc_get_2(writer_buffer, frag_release, file_buffer->block);
+
+		c_byte = mangle2(&stream, write_buffer->data, file_buffer->data, file_buffer->size, block_size, noF, 1);
+		compressed_size = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
+		pthread_mutex_lock(&fragment_mutex);
+		fragment_table[file_buffer->block].size = c_byte;
+		fragment_table[file_buffer->block].start_block = bytes;
+		write_buffer->size = compressed_size;
+		write_buffer->block = bytes;
+		queue_put(to_writer, write_buffer);
+		bytes += compressed_size;
+		total_uncompressed += file_buffer->size;
+		total_compressed += compressed_size;
+		TRACE("Writing fragment %d, uncompressed size %d, compressed size %d\n", file_buffer->block, file_buffer->size, compressed_size);
+		fragments_outstanding --;
+		pthread_cond_signal(&fragment_waiting);
+		pthread_mutex_unlock(&fragment_mutex);
+		alloc_free(file_buffer);
+	}
+}
+
+
+#define HASH_ENTRIES		256
+#define BLOCK_HASH(a)		(a % HASH_ENTRIES)
+struct file_buffer		*block_hash[HASH_ENTRIES];
+
+void push_buffer(struct file_buffer *file_buffer)
+{
+	int hash = BLOCK_HASH(file_buffer->block_order);
+
+	file_buffer->next = block_hash[hash];
+	block_hash[hash] = file_buffer;
+}
+
+
+struct file_buffer *get_file_buffer(struct queue *queue)
+{
+	static unsigned int block_order = 0;
+	int hash = BLOCK_HASH(block_order);
+	struct file_buffer *file_buffer = block_hash[hash], *prev = NULL;
+
+	for(;file_buffer; prev = file_buffer, file_buffer = file_buffer->next)
+		if(file_buffer->block_order == block_order)
+			break;
+
+	if(file_buffer) {
+		if(prev)
+			prev->next = file_buffer->next;
+		else
+			block_hash[hash] = file_buffer->next;
+	} else {
+		while(1) {
+			file_buffer = queue_get(queue);
+			if(file_buffer->block_order == block_order)
+				break;
+			push_buffer(file_buffer);
+		}
+	}
+
+	block_order ++;
+
+	return file_buffer;
+}
+
+
+int write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent, int *duplicate_file)
+{
+	file_count ++;
+	*duplicate_file = FALSE;
+	return dir_ent->inode->nlink == 1 ?
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, 0, 0, 0, NULL, &empty_fragment, NULL) :
+		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, 0, 0, 0, NULL, &empty_fragment, NULL);
+}
+
+
+int write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent, int size, int *duplicate_file, struct file_buffer *file_buffer, unsigned short checksum)
+{
+	int file;
+	struct file_info *dupl_ptr;
 	struct fragment *fragment;
-	struct file_info *dupl_ptr = NULL;
-	struct duplicate_buffer_handle handle;
-	long long read_size = (size > SQUASHFS_MAX_FILE_SIZE) ? SQUASHFS_MAX_FILE_SIZE : size;
-	int blocks = (read_size + block_size - 1) >> block_log, allocated_blocks = blocks;
-	unsigned int *block_list, *block_listp;
+	unsigned int *block_listp = NULL;
+	long long start = 0;
 
-	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL)
-		BAD_ERROR("Out of memory allocating block_list\n");
-	block_listp = block_list;
+	dupl_ptr = duplicate(size, 0, &block_listp, &start, &fragment, file_buffer, NULL, 0, 0, checksum, TRUE);
 
-	if(!no_fragments && (read_size < block_size || always_use_fragments)) {
-		allocated_blocks = blocks = read_size >> block_log;
+	if(dupl_ptr) {
+		*duplicate_file = FALSE;
+		fragment = get_and_fill_fragment(file_buffer);
+		dupl_ptr->fragment = fragment;
+	} else
+		*duplicate_file = TRUE;
+
+	alloc_free(file_buffer);
+
+	total_bytes += size;
+	file_count ++;
+
+	return dir_ent->inode->nlink == 1 ?
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL) :
+		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, size, 0, 0, NULL, fragment, NULL);
+}
+
+
+int write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size, int *duplicate_file)
+{
+	struct fragment *fragment;
+	unsigned short checksum;
+	struct file_buffer *file_buffer = get_file_buffer(from_deflate);
+
+	if(file_buffer->size != size)
+		printf("bug\n");
+
+	if(file_buffer->error) {
+		alloc_free(file_buffer);
+		return FALSE;
+	}
+
+	checksum = get_checksum_mem_buffer(file_buffer);
+
+	if(pre_duplicate_frag(size, checksum))
+		return write_file_frag_dup(inode, dir_ent, size, duplicate_file, file_buffer, checksum);
+		
+	fragment = get_and_fill_fragment(file_buffer);
+
+	alloc_free(file_buffer);
+
+	if(duplicate_checking)
+		add_non_dup(size, 0, NULL, 0, fragment, 0, checksum, TRUE);
+
+	total_bytes += size;
+	file_count ++;
+
+	*duplicate_file = FALSE;
+
+	return dir_ent->inode->nlink == 1 ?
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL) :
+		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, size, 0, 0, NULL, fragment, NULL);
+}
+
+
+int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size)
+{
+	int block, status;
+	unsigned int c_byte, frag_bytes;
+	long long bbytes, file_bytes, start;
+	struct fragment *fragment;
+	struct file_info *dupl_ptr;
+	int blocks = (read_size + block_size - 1) >> block_log;
+	unsigned int *block_list;
+	struct file_buffer *read_buffer;
+
+	if(!no_fragments && always_use_fragments) {
+		blocks = read_size >> block_log;
 		frag_bytes = read_size % block_size;
 	} else
 		frag_bytes = 0;
 
-	if(size > read_size)
-		ERROR("file %s truncated to %lld bytes\n", filename, SQUASHFS_MAX_FILE_SIZE);
+	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL)
+		BAD_ERROR("Out of memory allocating block_list\n");
 
-	total_bytes += read_size;
-	if((file = open(filename, O_RDONLY)) == -1)
-		goto read_err;
+	ensure_fragments_flushed();
 
-	do {
-		long long bytes = (((long long) allocated_blocks) + 1) << block_log;
-		if(bytes != ((size_t) bytes) || (c_buffer = (char *) malloc(bytes)) == NULL) {
-			TRACE("Out of memory allocating write_file buffer, allocated_blocks %ld, blocks %d\n", allocated_blocks, blocks);
-			whole_file = 0;
-			if(bytes < MINALLOCBYTES)
-				BAD_ERROR("Out of memory allocating write_file buffer, could not allocate %ld blocks (%d Kbytes)\n", allocated_blocks, allocated_blocks << (block_log - 10));
-			allocated_blocks >>= 1;
-		}
-	} while(!c_buffer);
-
-	for(start = bytes; block < blocks; file_bytes += bbytes) {
-		for(i = 0, bbytes = 0; (i < allocated_blocks) && (block < blocks); i++) {
-			int available_bytes = read_size - (block * block_size) > block_size ? block_size : read_size - (block * block_size);
-			if(read(file, buff, available_bytes) == -1)
-				goto read_err;
-			c_byte = mangle(c_buffer + bbytes, buff, available_bytes, block_size, noD, 1);
-			block_list[block ++] = c_byte;
-			bbytes += SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
-		}
-		if(!whole_file) {
-			write_bytes(fd, bytes, bbytes, c_buffer);
-			bytes += bbytes;
-		}
-	}
-
-	if(frag_bytes != 0)
-		if(read(file, buff, frag_bytes) == -1)
+	file_bytes = 0;
+	start = bytes;
+	for(block = 0; block < blocks; block ++) {
+		read_buffer = get_file_buffer(from_deflate);
+		if(read_buffer->error)
 			goto read_err;
 
-	close(file);
-	if(whole_file) {
-		handle.ptr = c_buffer;
-		if(duplicate_checking && (dupl_ptr = duplicate(read_from_buffer, &handle, file_bytes, &block_listp, &start, blocks, &fragment, buff, frag_bytes)) == NULL) {
-			*duplicate_file = TRUE;
-			goto wr_inode;
-		}
-		write_bytes(fd, bytes, file_bytes, c_buffer);
-		bytes += file_bytes;
-	} else {
-		handle.start = start;
-		if(duplicate_checking && (dupl_ptr = duplicate(read_from_file, &handle, file_bytes, &block_listp, &start, blocks, &fragment, buff, frag_bytes)) == NULL) {
-			bytes = start;
-			if(!block_device)
-				ftruncate(fd, bytes);
-			*duplicate_file = TRUE;
-			goto wr_inode;
-		}
+		block_list[block] = read_buffer->c_byte;
+		read_buffer->block = bytes;
+		bytes += read_buffer->size;
+		file_bytes += read_buffer->size;
+		queue_put(to_writer, read_buffer);
 	}
 
-	fragment = get_and_fill_fragment(buff, frag_bytes);
+	if(frag_bytes != 0) {
+		read_buffer = get_file_buffer(from_deflate);
+		if(read_buffer->size != frag_bytes)
+			printf("bug\n");
+		if(read_buffer->error)
+			goto read_err;
+	} else
+		read_buffer = NULL;
+
+	fragment = get_and_fill_fragment(read_buffer);
+	alloc_free(read_buffer);
+
 	if(duplicate_checking)
-		dupl_ptr->fragment = fragment;
-
-	*duplicate_file = FALSE;
-
-wr_inode:
-	free(c_buffer);
+		add_non_dup(read_size, file_bytes, block_list, start, fragment, 0, 0, FALSE);
 	file_count ++;
+	total_bytes += read_size;
 	if(dir_ent->inode->nlink == 1 && read_size < ((long long) (1<<30) - 1))
-		status = create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
+		status = create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_list, fragment, NULL);
 	else
-		status = create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
-	if(duplicate_checking == FALSE || *duplicate_file == TRUE)
+		status = create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_list, fragment, NULL);
+	if(duplicate_checking == FALSE)
 		free(block_list);
 	return status;
 
 read_err:
 	perror("Error in reading file, skipping...");
-	free(c_buffer);
+	if(block) {
+		queue_put(to_writer, NULL);
+		if(queue_get(from_writer) != 0)
+			EXIT_MKSQUASHFS();
+		bytes = start;
+		if(!block_device)
+			ftruncate(fd, bytes);
+	}
 	free(block_list);
+	alloc_free(read_buffer);
 	return FALSE;
+}
+
+
+int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size, int *duplicate_file)
+{
+	int block, status, thresh;
+	unsigned int c_byte, frag_bytes;
+	long long bbytes, file_bytes, start;
+	struct fragment *fragment;
+	struct file_info *dupl_ptr;
+	int blocks = (read_size + block_size - 1) >> block_log;
+	unsigned int *block_list, *block_listp;
+	struct file_buffer *read_buffer;
+	struct file_data *file_data;
+	struct buffer_list *buffer_list;
+
+	if(!no_fragments && always_use_fragments) {
+		blocks = read_size >> block_log;
+		frag_bytes = read_size % block_size;
+	} else
+		frag_bytes = 0;
+
+	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL)
+		BAD_ERROR("Out of memory allocating block_list\n");
+	block_listp = block_list;
+
+	if((buffer_list = malloc(blocks * sizeof(struct buffer_list))) == NULL)
+		BAD_ERROR("Out of memory allocating file block list\n");
+
+	ensure_fragments_flushed();
+
+	file_bytes = 0;
+	start = bytes;
+	thresh = blocks > (writer_buffer_size - processors) ? blocks - (writer_buffer_size - processors): 0;
+	for(block = 0; block < blocks; block ++) {
+		read_buffer = get_file_buffer(from_deflate);
+		if(read_buffer->error)
+			goto read_err;
+
+		block_list[block] = read_buffer->c_byte;
+		read_buffer->block = bytes;
+		bytes += read_buffer->size;
+		file_bytes += read_buffer->size;
+
+		if(block < thresh) {
+			buffer_list[block].read_buffer = NULL;
+			queue_put(to_writer, read_buffer);
+		} else
+			buffer_list[block].read_buffer = read_buffer;
+		buffer_list[block].start = read_buffer->block;
+		buffer_list[block].size = read_buffer->size;
+	}
+
+	if(frag_bytes != 0) {
+		read_buffer = get_file_buffer(from_deflate);
+		if(read_buffer->size != frag_bytes)
+			printf("bug\n");
+		if(read_buffer->error)
+			goto read_err;
+	} else
+		read_buffer = NULL;
+
+	queue_put(to_writer, NULL);
+	if(queue_get(from_writer) != 0)
+		EXIT_MKSQUASHFS();
+
+	dupl_ptr = duplicate(read_size, file_bytes, &block_listp, &start, &fragment, read_buffer, buffer_list, blocks, 0, 0, FALSE);
+
+	if(dupl_ptr) {
+		*duplicate_file = FALSE;
+		for(block = thresh; block < blocks; block ++)
+			queue_put(to_writer, buffer_list[block].read_buffer);
+		fragment = get_and_fill_fragment(read_buffer);
+		dupl_ptr->fragment = fragment;
+	} else {
+		*duplicate_file = TRUE;
+		for(block = thresh; block < blocks; block ++)
+			alloc_free(buffer_list[block].read_buffer);
+		bytes = buffer_list[0].start;
+		if(thresh && !block_device)
+			ftruncate(fd, bytes);
+	}
+
+	alloc_free(read_buffer);
+	free(buffer_list);
+	file_count ++;
+	total_bytes += read_size;
+
+	if(dir_ent->inode->nlink == 1 && read_size < ((long long) (1<<30) - 1))
+		status = create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
+	else
+		status = create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
+	if(*duplicate_file == TRUE)
+		free(block_list);
+	return status;
+
+read_err:
+	perror("Error in reading file, skipping...");
+	if(block && thresh) {
+		queue_put(to_writer, NULL);
+		if(queue_get(from_writer) != 0)
+			EXIT_MKSQUASHFS();
+		bytes = start;
+		if(!block_device)
+			ftruncate(fd, bytes);
+	}
+	for(blocks = thresh; blocks < block; blocks ++)
+		alloc_free(buffer_list[blocks].read_buffer);
+	free(buffer_list);
+	free(block_list);
+	alloc_free(read_buffer);
+	return FALSE;
+}
+
+
+int write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, int *duplicate_file)
+{
+	long long read_size = (size > SQUASHFS_MAX_FILE_SIZE) ? SQUASHFS_MAX_FILE_SIZE : size;
+
+	if(size > read_size)
+		ERROR("file %s truncated to %lld bytes\n", dir_ent->pathname, SQUASHFS_MAX_FILE_SIZE);
+
+	if(read_size == 0)
+		return write_file_empty(inode, dir_ent, duplicate_file);
+
+	if(!no_fragments && (read_size < block_size))
+		return write_file_frag(inode, dir_ent, read_size, duplicate_file);
+
+	if(pre_duplicate(read_size))
+		return write_file_blocks_dup(inode, dir_ent, read_size, duplicate_file);
+
+	*duplicate_file = FALSE;
+	return write_file_blocks(inode, dir_ent, read_size);
 }
 
 
@@ -1334,6 +2134,7 @@ struct inode_info *lookup_inode(struct stat *buf)
 		BAD_ERROR("Out of memory in inode hash table entry allocation\n");
 
 	memcpy(&inode->buf, buf, sizeof(struct stat));
+	inode->read = FALSE;
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
 	if((buf->st_mode & S_IFMT) == S_IFDIR)
@@ -1556,6 +2357,9 @@ void dir_scan(squashfs_inode *inode, char *pathname, int (_readdir)(char *, char
 		return;
 	}
 	if(sorted)
+		generate_file_priorities(dir_info, 0, &dir_info->dir_ent->inode->buf);
+	queue_put(to_reader, dir_info);
+	if(sorted)
 		sort_files_and_write(dir_info);
 	dir_scan2(inode, dir_info);
 }
@@ -1691,7 +2495,7 @@ int dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 				case SQUASHFS_CHRDEV_TYPE:
 					INFO("character device %s inode 0x%llx LINK\n", dir_name, *inode);
 					break;
-				caseSQUASHFS_BLKDEV_TYPE:
+				case SQUASHFS_BLKDEV_TYPE:
 					INFO("block device %s inode 0x%llx LINK\n", dir_name, *inode);
 					break;
 				case SQUASHFS_FIFO_TYPE:
@@ -1791,8 +2595,76 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int 
 }
 
 
+void initialise_threads()
+{
+	int i;
+	sigset_t sigmask, old_mask;
+
+	sigemptyset(&sigmask);
+	sigaddset(&sigmask, SIGINT);
+	sigaddset(&sigmask, SIGQUIT);
+	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
+		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
+
+	signal(SIGUSR1, sigusr1_handler);
+
+	if(processors == -1) {
+#ifndef linux
+		int mib[2];
+		size_t len = sizeof(processors);
+
+		mib[0] = CTL_HW;
+#ifdef HW_AVAILCPU
+		mib[1] = HW_AVAILCPU;
+#else
+		mib[1] = HW_NCPU;
+#endif
+
+		if(sysctl(mib, 2, &processors, &len, NULL, 0) == -1) {
+			ERROR("Failed to get number of available processors.  Defaulting to 1\n");
+			processors = 1;
+		}
+#else
+		processors = get_nprocs();
+#endif
+	}
+
+	if((thread = malloc((2 + processors * 2) * sizeof(pthread_t))) == NULL)
+		BAD_ERROR("Out of memory allocating thread descriptors\n");
+	deflator_thread = &thread[2];
+	frag_deflator_thread = &deflator_thread[processors];
+
+	to_reader = queue_init(1);
+	from_reader = queue_init(reader_buffer_size);
+	to_writer = queue_init(writer_buffer_size);
+	from_writer = queue_init(1);
+	from_deflate = queue_init(reader_buffer_size);
+	to_frag = queue_init(processors * 2);
+	reader_buffer = alloc_init(SQUASHFS_FILE_MAX_SIZE, reader_buffer_size);
+	writer_buffer = alloc_init(SQUASHFS_FILE_MAX_SIZE, writer_buffer_size);
+	fragment_buffer = alloc_init(SQUASHFS_FILE_MAX_SIZE, processors * 2);
+	pthread_create(&thread[0], NULL, reader, NULL);
+	pthread_create(&thread[1], NULL, writer, NULL);
+	pthread_mutex_init(&fragment_mutex, NULL);
+	pthread_cond_init(&fragment_waiting, NULL);
+
+	for(i = 0; i < processors; i++) {
+		if(pthread_create(&deflator_thread[i], NULL, deflator, NULL) != 0 )
+			BAD_ERROR("Failed to create thread\n");
+		if(pthread_create(&frag_deflator_thread[i], NULL, frag_deflator, NULL) != 0)
+			BAD_ERROR("Failed to create thread\n");
+	}
+
+	printf("Parallel mksquashfs: Using %d processor%s\n", processors,
+			processors == 1 ? "" : "s");
+
+	if(sigprocmask(SIG_SETMASK, &old_mask, NULL) == -1)
+		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
+}
+
+
 #define VERSION() \
-	printf("mksquashfs version 3.1 (serial) (2006/08/16)\n");\
+	printf("mksquashfs version 3.1-r2 (2006/08/30)\n");\
 	printf("copyright (C) 2006 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -1810,6 +2682,7 @@ int main(int argc, char *argv[])
 	char *b, *root_name = NULL;
 	int be, nopad = FALSE, keep_as_directory = FALSE, orig_be;
 	squashfs_inode inode;
+	int readb_mbytes = READER_BUFFER_DEFAULT, writeb_mbytes = WRITER_BUFFER_DEFAULT;
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 	be = TRUE;
@@ -1828,7 +2701,34 @@ int main(int argc, char *argv[])
 	source_path = argv + 1;
 	source = i - 2;
 	for(; i < argc; i++) {
-		if(strcmp(argv[i], "-b") == 0) {
+		if(strcmp(argv[i], "-processors") == 0) {
+			if((++i == argc) || (processors = strtol(argv[i], &b, 10), *b != '\0')) {
+				ERROR("%s: -processors missing or invalid processor number\n", argv[0]);
+				exit(1);
+			}
+			if(processors < 1) {
+				ERROR("%s: -processors should be 1 or larger\n", argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-read_queue") == 0) {
+			if((++i == argc) || (readb_mbytes = strtol(argv[i], &b, 10), *b != '\0')) {
+				ERROR("%s: -read_queue missing or invalid queue size\n", argv[0]);
+				exit(1);
+			}
+			if(readb_mbytes < 1) {
+				ERROR("%s: -read_queue should be 1 megabyte or larger\n", argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-write_queue") == 0) {
+			if((++i == argc) || (writeb_mbytes = strtol(argv[i], &b, 10), *b != '\0')) {
+				ERROR("%s: -write_queue missing or invalid queue size\n", argv[0]);
+				exit(1);
+			}
+			if(writeb_mbytes < 1) {
+				ERROR("%s: -write_queue should be 1 megabyte or larger\n", argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-b") == 0) {
 			if((++i == argc) || (block_size = strtol(argv[i], &b, 10), *b !='\0')) {
 				ERROR("%s: -b missing or invalid block size\n", argv[0]);
 				exit(1);
@@ -1951,6 +2851,9 @@ printOptions:
 			ERROR("-version\t\tprint version, licence and copyright message\n");
 			ERROR("-info\t\t\tprint files written to filesystem\n");
 			ERROR("-b <block_size>\t\tset data block to <block_size>.  Default %d bytes\n", SQUASHFS_FILE_SIZE);
+			ERROR("-processors <number>\tUse <number> processors.  By default will use number of\n\t\t\tprocessors available\n");
+			ERROR("-read-queue <size>\tSet input queue to <size> Mbytes.  Default %d Mbytes\n", READER_BUFFER_DEFAULT);
+			ERROR("-write-queue <size>\tSet output queue to <size> Mbytes.  Default %d Mbytes\n", WRITER_BUFFER_DEFAULT);
 			ERROR("-noI\t\t\tdo not compress inode table\n");
 			ERROR("-noD\t\t\tdo not compress data blocks\n");
 			ERROR("-noF\t\t\tdo not compress fragment blocks\n");
@@ -1983,6 +2886,9 @@ printOptions:
 			exit(1);
 		}
 	}
+
+	reader_buffer_size = readb_mbytes << (20 - block_log);
+	writer_buffer_size = writeb_mbytes << (20 - block_log);
 
         for(i = 0; i < source; i++)
                 if(stat(source_path[i], &source_buf) == -1) {
@@ -2068,6 +2974,8 @@ printOptions:
 			break;
 		else if(strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "-root-becomes") == 0 || strcmp(argv[i], "-ef") == 0)
 			i++;
+
+	initialise_threads();
 
 	if(delete) {
 		printf("Creating %s %d.%d filesystem on %s, block size %d.\n",
@@ -2196,6 +3104,13 @@ printOptions:
 restore_filesystem:
 	write_fragment();
 	sBlk.fragments = fragments;
+	if(interrupted < 2) {
+		ensure_fragments_flushed();
+		queue_put(to_writer, NULL);
+		if(queue_get(from_writer) != 0)
+			EXIT_MKSQUASHFS();
+	}
+
 	sBlk.inode_table_start = write_inodes();
 	sBlk.directory_table_start = write_directories();
 	sBlk.fragment_table_start = write_fragment_table();

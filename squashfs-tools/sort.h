@@ -51,6 +51,12 @@ struct inode_info {
 	squashfs_inode		inode;
 	unsigned int		type;
 	unsigned int		inode_number;
+	char			read;
 	struct inode_info	*next;
+};
+
+struct priority_entry {
+	struct dir_ent *dir;
+	struct priority_entry *next;
 };
 #endif

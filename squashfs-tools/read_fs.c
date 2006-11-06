@@ -22,7 +22,7 @@
  */
 
 extern void read_bytes(int, long long, int, char *);
-extern int add_file(long long, long long, unsigned int *, int, unsigned int, int, int);
+extern int add_file(long long, long long, long long, unsigned int *, int, unsigned int, int, int);
 
 #define TRUE 1
 #define FALSE 0
@@ -211,7 +211,7 @@ int scan_inode_table(int fd, long long start, long long end, long long root_inod
 				for(i = 0; i < blocks; i++)
 					file_bytes += SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
 
-	                        add_file(start, file_bytes, block_list, blocks, inode.fragment, inode.offset, frag_bytes);
+	                        add_file(start, inode.file_size, file_bytes, block_list, blocks, inode.fragment, inode.offset, frag_bytes);
 				cur_ptr += blocks * sizeof(unsigned int);
 				break;
 			}	
@@ -258,7 +258,7 @@ int scan_inode_table(int fd, long long start, long long end, long long root_inod
 				for(i = 0; i < blocks; i++)
 					file_bytes += SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
 
-	                        add_file(start, file_bytes, block_list, blocks, inode.fragment, inode.offset, frag_bytes);
+	                        add_file(start, inode.file_size, file_bytes, block_list, blocks, inode.fragment, inode.offset, frag_bytes);
 				cur_ptr += blocks * sizeof(unsigned int);
 				break;
 			}	

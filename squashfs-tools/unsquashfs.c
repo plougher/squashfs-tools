@@ -940,7 +940,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.2 (2006/08/04)\n");\
+	printf("unsquashfs version 1.2 (2006/08/19)\n");\
 	printf("copyright (C) 2006 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
