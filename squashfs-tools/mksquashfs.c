@@ -21,8 +21,6 @@
  * mksquashfs.c
  */
 
-#define DEBUG
-
 #define FALSE 0
 #define TRUE 1
 
@@ -2701,7 +2699,9 @@ long long write_inode_lookup_table()
 	if((inode_lookup_table = realloc(inode_lookup_table, lookup_bytes)) == NULL)
 		BAD_ERROR("Out of memory in write_inode_table\n");
 
+#ifdef DEBUG
 	memset(((char *) inode_lookup_table) + slookup_bytes, 0xff, lookup_bytes - slookup_bytes);
+#endif
 
 #ifdef DEBUG
 	printf("inode_count %d\n", inode_count);
@@ -2742,7 +2742,7 @@ long long write_inode_lookup_table()
 
 			
 #define VERSION() \
-	printf("mksquashfs version 3.2 (2006/10/26)\n");\
+	printf("mksquashfs version 3.2-alpha (2006/11/06)\n");\
 	printf("copyright (C) 2006 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
