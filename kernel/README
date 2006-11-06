@@ -1,0 +1,2 @@
+These files are compatible with kernels up to 2.6.17.  They will not compile on
+2.6.18 or 2.6.19.
