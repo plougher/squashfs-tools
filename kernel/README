@@ -1,2 +1,7 @@
-These files are compatible with kernels up to 2.6.17.  They will not compile on
-2.6.18 or 2.6.19.
+These files should compile on linux 2.6.17 and earlier without change.
+
+For kernel 2.6.18 and 2.6.18.x, please apply the 2.6.18-patch.  This should be
+applied in this directory using "patch -p1 < 2.6.18-patch".
+
+For kernel 2.6.19-rcx, please apply the 2.6.19-patch.  This should be
+applied in this directory using "patch -p1 < 2.6.19-patch".
