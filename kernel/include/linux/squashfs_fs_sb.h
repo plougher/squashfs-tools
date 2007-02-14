@@ -3,7 +3,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007
  * Phillip Lougher <phillip@lougher.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -53,8 +53,6 @@ struct squashfs_sb_info {
 	unsigned int		*guid;
 	long long		*fragment_index;
 	unsigned int		*fragment_index_2;
-	unsigned int		read_size;
-	char			*read_data;
 	char			*read_page;
 	struct semaphore	read_data_mutex;
 	struct semaphore	read_page_mutex;

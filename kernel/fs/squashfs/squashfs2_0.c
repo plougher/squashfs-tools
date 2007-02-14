@@ -1,7 +1,7 @@
 /*
  * Squashfs - a compressed read only filesystem for Linux
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007
  * Phillip Lougher <phillip@lougher.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -192,7 +192,7 @@ static int squashfs_read_inode_2(struct inode *i, squashfs_inode_t inode)
 			struct squashfs_reg_inode_header_2 *inodep = &id.reg;
 			struct squashfs_reg_inode_header_2 *sinodep = &sid.reg;
 			long long frag_blk;
-			unsigned int frag_size;
+			unsigned int frag_size = 0;
 				
 			if (msblk->swap) {
 				if (!squashfs_get_cached_block(s, (char *)
