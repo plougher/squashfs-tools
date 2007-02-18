@@ -64,6 +64,8 @@ struct squashfs_sb_info {
 	struct meta_index	*meta_index;
 	z_stream		stream;
 	long long		*inode_lookup_table;
+	atomic_t		unused_cache_blks;
+	atomic_t		unused_frag_blks;
 	int			(*read_inode)(struct inode *i,  squashfs_inode_t \
 				inode);
 	long long		(*read_blocklist)(struct inode *inode, int \

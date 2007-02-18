@@ -1,6 +1,7 @@
 CVS status:
 
-CVS reflects squashfs3.2-r2.
+CVS reflects squashfs3.2-r2 plus
+	code updated to use wait_event()
 
 kernel-2.4 code is still squashfs3.1-r2.  Support for 2.4 kernels was
 experimentally dropped in squashfs3.2.

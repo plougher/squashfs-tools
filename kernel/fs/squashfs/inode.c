@@ -357,25 +357,19 @@ SQSH_EXTERN int squashfs_get_cached_block(struct super_block *s, char *buffer,
 
 		if (i == SQUASHFS_CACHED_BLKS) {
 			/* read inode header block */
-			for (i = msblk->next_cache, n = SQUASHFS_CACHED_BLKS;
-					n ; n --, i = (i + 1) %
-					SQUASHFS_CACHED_BLKS)
-				if (msblk->block_cache[i].block !=
-							SQUASHFS_USED_BLK)
-					break;
-
-			if (n == 0) {
-				wait_queue_t wait;
-
-				init_waitqueue_entry(&wait, current);
-				add_wait_queue(&msblk->waitq, &wait);
-				set_current_state(TASK_UNINTERRUPTIBLE);
- 				mutex_unlock(&msblk->block_cache_mutex);
-				schedule();
-				set_current_state(TASK_RUNNING);
-				remove_wait_queue(&msblk->waitq, &wait);
+			if (atomic_read(&msblk->unused_cache_blks) == 0) {
+				mutex_lock(&msblk->block_cache_mutex);
+				wait_event(msblk->waitq, atomic_read(&msblk->unused_cache_blks));
 				continue;
 			}
+
+			i = msblk->next_cache;
+			for (n = 0; n < SQUASHFS_CACHED_BLKS; n++) {
+				if (msblk->block_cache[i].block != SQUASHFS_USED_BLK)
+					break;
+				i = (i + 1) % SQUASHFS_CACHED_BLKS;
+			}
+
 			msblk->next_cache = (i + 1) % SQUASHFS_CACHED_BLKS;
 
 			if (msblk->block_cache[i].block ==
@@ -391,6 +385,7 @@ SQSH_EXTERN int squashfs_get_cached_block(struct super_block *s, char *buffer,
 			}
 	
 			msblk->block_cache[i].block = SQUASHFS_USED_BLK;
+			atomic_dec(&msblk->unused_cache_blks);
 			mutex_unlock(&msblk->block_cache_mutex);
 
 			msblk->block_cache[i].length = squashfs_read_data(s,
@@ -400,6 +395,7 @@ SQSH_EXTERN int squashfs_get_cached_block(struct super_block *s, char *buffer,
 						block, offset);
 				mutex_lock(&msblk->block_cache_mutex);
 				msblk->block_cache[i].block = SQUASHFS_INVALID_BLK;
+				atomic_inc(&msblk->unused_cache_blks);
 				kfree(msblk->block_cache[i].data);
 				wake_up(&msblk->waitq);
 				mutex_unlock(&msblk->block_cache_mutex);
@@ -407,9 +403,10 @@ SQSH_EXTERN int squashfs_get_cached_block(struct super_block *s, char *buffer,
 			}
 
 			mutex_lock(&msblk->block_cache_mutex);
-			wake_up(&msblk->waitq);
 			msblk->block_cache[i].block = block;
 			msblk->block_cache[i].next_index = next_index;
+			atomic_inc(&msblk->unused_cache_blks);
+			wake_up(&msblk->waitq);
 			TRACE("Read cache block [%llx:%x]\n", block, offset);
 		}
 
@@ -455,7 +452,6 @@ out:
 	return 0;
 }
 
-
 static int get_fragment_location(struct super_block *s, unsigned int fragment,
 				long long *fragment_start_block,
 				unsigned int *fragment_size)
@@ -497,7 +493,10 @@ SQSH_EXTERN void release_cached_fragment(struct squashfs_sb_info *msblk, struct
 {
 	mutex_lock(&msblk->fragment_mutex);
 	fragment->locked --;
-	wake_up(&msblk->fragment_wait_queue);
+	if (fragment->locked == 0) {
+		atomic_inc(&msblk->unused_frag_blks);
+		wake_up(&msblk->fragment_wait_queue);
+	}
 	mutex_unlock(&msblk->fragment_mutex);
 }
 
@@ -517,25 +516,19 @@ SQSH_EXTERN struct squashfs_fragment_cache *get_cached_fragment(struct super_blo
 				msblk->fragment[i].block != start_block; i++);
 
 		if (i == SQUASHFS_CACHED_FRAGMENTS) {
-			for (i = msblk->next_fragment, n =
-				SQUASHFS_CACHED_FRAGMENTS; n &&
-				msblk->fragment[i].locked; n--, i = (i + 1) %
-				SQUASHFS_CACHED_FRAGMENTS);
-
-			if (n == 0) {
-				wait_queue_t wait;
-
-				init_waitqueue_entry(&wait, current);
-				add_wait_queue(&msblk->fragment_wait_queue,
-									&wait);
-				set_current_state(TASK_UNINTERRUPTIBLE);
+			if (atomic_read(&msblk->unused_frag_blks) == 0) {
 				mutex_unlock(&msblk->fragment_mutex);
-				schedule();
-				set_current_state(TASK_RUNNING);
-				remove_wait_queue(&msblk->fragment_wait_queue,
-									&wait);
+				wait_event(msblk->fragment_wait_queue, atomic_read(&msblk->unused_frag_blks));
 				continue;
 			}
+
+			i = msblk->next_fragment;
+			for (n = 0; n < SQUASHFS_CACHED_FRAGMENTS; n++) {
+				if (msblk->fragment[i].locked == 0)
+					break;
+				i = (i + 1) % SQUASHFS_CACHED_FRAGMENTS;
+			}
+
 			msblk->next_fragment = (msblk->next_fragment + 1) %
 				SQUASHFS_CACHED_FRAGMENTS;
 			
@@ -548,6 +541,7 @@ SQSH_EXTERN struct squashfs_fragment_cache *get_cached_fragment(struct super_blo
 					goto out;
 				}
 
+			atomic_dec(&msblk->unused_frag_blks);
 			msblk->fragment[i].block = SQUASHFS_INVALID_BLK;
 			msblk->fragment[i].locked = 1;
 			mutex_unlock(&msblk->fragment_mutex);
@@ -558,7 +552,8 @@ SQSH_EXTERN struct squashfs_fragment_cache *get_cached_fragment(struct super_blo
 				ERROR("Unable to read fragment cache block "
 							"[%llx]\n", start_block);
 				msblk->fragment[i].locked = 0;
-				smp_mb();
+				atomic_inc(&msblk->unused_frag_blks);
+				wake_up(&msblk->fragment_wait_queue);
 				goto out;
 			}
 
@@ -1215,6 +1210,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		msblk->block_cache[i].block = SQUASHFS_INVALID_BLK;
 
 	msblk->next_cache = 0;
+	atomic_set(&msblk->unused_cache_blks, SQUASHFS_CACHED_BLKS);
 
 	/* Allocate read_page block */
 	if (!(msblk->read_page = kmalloc(sblk->block_size, GFP_KERNEL))) {
@@ -1269,6 +1265,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	msblk->next_fragment = 0;
+	atomic_set(&msblk->unused_frag_blks, SQUASHFS_CACHED_FRAGMENTS);
 
 	/* Allocate and read fragment index table */
 	if (msblk->read_fragment_index_table(s) == 0)
@@ -2257,7 +2254,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.2-r2 (2007/01/15) "
+	printk(KERN_INFO "squashfs: version 3.2-r2-CVS (2007/02/18) "
 		"Phillip Lougher\n");
 
 	if ((err = register_filesystem(&squashfs_fs_type)))
@@ -2324,6 +2321,6 @@ static void destroy_inodecache(void)
 
 module_init(init_squashfs_fs);
 module_exit(exit_squashfs_fs);
-MODULE_DESCRIPTION("squashfs 3.2-r2, a compressed read-only filesystem");
+MODULE_DESCRIPTION("squashfs 3.2-r2-CVS, a compressed read-only filesystem");
 MODULE_AUTHOR("Phillip Lougher <phillip@lougher.org.uk>");
 MODULE_LICENSE("GPL");
