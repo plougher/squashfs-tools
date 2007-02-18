@@ -54,11 +54,11 @@ struct squashfs_sb_info {
 	long long		*fragment_index;
 	unsigned int		*fragment_index_2;
 	char			*read_page;
-	struct semaphore	read_data_mutex;
-	struct semaphore	read_page_mutex;
-	struct semaphore	block_cache_mutex;
-	struct semaphore	fragment_mutex;
-	struct semaphore	meta_index_mutex;
+	struct mutex		read_data_mutex;
+	struct mutex		read_page_mutex;
+	struct mutex		block_cache_mutex;
+	struct mutex		fragment_mutex;
+	struct mutex		meta_index_mutex;
 	wait_queue_head_t	waitq;
 	wait_queue_head_t	fragment_wait_queue;
 	struct meta_index	*meta_index;

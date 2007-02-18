@@ -21,27 +21,12 @@
  * squashfs2_0.c
  */
 
-#include <linux/types.h>
 #include <linux/squashfs_fs.h>
 #include <linux/module.h>
-#include <linux/errno.h>
-#include <linux/slab.h>
 #include <linux/zlib.h>
 #include <linux/fs.h>
-#include <linux/smp_lock.h>
-#include <linux/slab.h>
 #include <linux/squashfs_fs_sb.h>
 #include <linux/squashfs_fs_i.h>
-#include <linux/buffer_head.h>
-#include <linux/vfs.h>
-#include <linux/init.h>
-#include <linux/dcache.h>
-#include <linux/wait.h>
-#include <linux/zlib.h>
-#include <linux/blkdev.h>
-#include <linux/vmalloc.h>
-#include <asm/uaccess.h>
-#include <asm/semaphore.h>
 
 #include "squashfs.h"
 static int squashfs_readdir_2(struct file *file, void *dirent, filldir_t filldir);
@@ -221,7 +206,6 @@ static int squashfs_read_inode_2(struct inode *i, squashfs_inode_t inode)
 			i->i_atime.tv_sec = inodep->mtime;
 			i->i_ctime.tv_sec = inodep->mtime;
 			i->i_blocks = ((i->i_size - 1) >> 9) + 1;
-			i->i_blksize = PAGE_CACHE_SIZE;
 			SQUASHFS_I(i)->u.s1.fragment_start_block = frag_blk;
 			SQUASHFS_I(i)->u.s1.fragment_size = frag_size;
 			SQUASHFS_I(i)->u.s1.fragment_offset = inodep->offset;
