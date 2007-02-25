@@ -1,7 +1,7 @@
 /*
  * Create a squashfs filesystem.  This is a highly compressed read only filesystem.
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007
  * Phillip Lougher <phillip@lougher.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -39,8 +39,11 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <setjmp.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
 #include <sys/mman.h>
 #include <pthread.h>
+#include <math.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -87,13 +90,16 @@
 int delete = FALSE;
 long long total_compressed = 0, total_uncompressed = 0;
 int fd;
+int cur_uncompressed = 0, estimated_uncompressed = 0;
+int columns;
 
 /* filesystem flags for building */
 int duplicate_checking = 1, noF = 0, no_fragments = 0, always_use_fragments = 0;
 int noI = 0, noD = 0, check_data = 0;
 int swap, silent = TRUE;
 long long global_uid = -1, global_gid = -1;
-int exportable = FALSE;
+int exportable = TRUE;
+int progress = TRUE;
 
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
@@ -225,11 +231,7 @@ long long sbytes, stotal_bytes;
 unsigned int sinode_bytes, scache_bytes, sdirectory_bytes,
 	sdirectory_cache_bytes, suid_count, sguid_count,
 	stotal_inode_bytes, stotal_directory_bytes,
-#ifdef DEBUG
 	sinode_count = 0, sfile_count, ssym_count, sdev_count,
-#else
-	sinode_count, sfile_count, ssym_count, sdev_count,
-#endif
 	sdir_count, sfifo_count, ssock_count, sdup_files;
 int sfragments;
 int restore = 0;
@@ -470,6 +472,9 @@ void restorefs()
 {
 	int i;
 
+	if(thread == NULL || thread[0] == 0)
+		return;
+
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
 	for(i = 0; i < 2 + processors * 2; i++)
@@ -539,6 +544,18 @@ void sigusr1_handler()
 		sigsuspend(&sigmask);
 		TRACE("After wait in sigusr1_handler :(\n");
 	}
+}
+
+
+void sigwinch_handler()
+{
+	struct winsize winsize;
+
+	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
+		printf("TIOCGWINSZ ioctl failed, defaulting to 80 columns\n");
+		columns = 80;
+	} else
+		columns = winsize.ws_col;
 }
 
 
@@ -1805,6 +1822,30 @@ struct file_buffer *get_file_buffer(struct queue *queue)
 }
 
 
+int progress_bar(long long current, long long max, int columns)
+{
+	int max_digits = ceil(log10(max));
+	int used = max_digits * 2 + 10;
+	int hashes = (current * (columns - used)) / max;
+	int spaces = columns - used - hashes;
+
+	if(!progress || columns - used < 0)
+		return;
+
+	printf("\r[");
+
+	while (hashes --)
+		putchar('=');
+
+	while(spaces --)
+		putchar(' ');
+
+	printf("] %*lld/%*lld", max_digits, current, max_digits, max);
+	printf(" %3lld%%", current * 100 / max);
+	fflush(stdout);
+}
+
+
 int write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent, int *duplicate_file)
 {
 	file_count ++;
@@ -1837,6 +1878,8 @@ int write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent, int size
 	total_bytes += size;
 	file_count ++;
 
+	progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
+
 	return dir_ent->inode->nlink == 1 ?
 		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL) :
 		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, size, 0, 0, NULL, fragment, NULL);
@@ -1848,9 +1891,6 @@ int write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size, in
 	struct fragment *fragment;
 	unsigned short checksum;
 	struct file_buffer *file_buffer = get_file_buffer(from_deflate);
-
-	if(file_buffer->size != size)
-		printf("bug\n");
 
 	if(file_buffer->error) {
 		alloc_free(file_buffer);
@@ -1873,6 +1913,8 @@ int write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size, in
 	file_count ++;
 
 	*duplicate_file = FALSE;
+
+	progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
 
 	return dir_ent->inode->nlink == 1 ?
 		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL) :
@@ -1914,14 +1956,14 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 		bytes += read_buffer->size;
 		file_bytes += read_buffer->size;
 		queue_put(to_writer, read_buffer);
+		progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
 	}
 
 	if(frag_bytes != 0) {
 		read_buffer = get_file_buffer(from_deflate);
-		if(read_buffer->size != frag_bytes)
-			printf("bug\n");
 		if(read_buffer->error)
 			goto read_err;
+		progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
 	} else
 		read_buffer = NULL;
 
@@ -2004,12 +2046,11 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 			buffer_list[block].read_buffer = read_buffer;
 		buffer_list[block].start = read_buffer->block;
 		buffer_list[block].size = read_buffer->size;
+		progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
 	}
 
 	if(frag_bytes != 0) {
 		read_buffer = get_file_buffer(from_deflate);
-		if(read_buffer->size != frag_bytes)
-			printf("bug\n");
 		if(read_buffer->error)
 			goto read_err;
 	} else
@@ -2415,6 +2456,9 @@ struct dir_info *dir_scan1(char *pathname, int (_readdir)(char *, char *, struct
 		if(excluded(filename, &buf))
 			continue;
 
+		if((buf.st_mode & S_IFMT) == S_IFREG)
+			estimated_uncompressed += (buf.st_size + block_size - 1) >> block_log;
+
 		if((buf.st_mode & S_IFMT) == S_IFDIR) {
 			if((sub_dir = dir_scan1(filename, scan1_readdir)) == NULL)
 				continue;
@@ -2692,28 +2736,17 @@ long long write_inode_lookup_table()
 {
 	int i, inode_number, lookup_bytes = SQUASHFS_LOOKUP_BYTES(inode_count);
 	char cbuffer[(SQUASHFS_METADATA_SIZE << 2) + 2];
-#ifdef DEBUG
-	int slookup_bytes = SQUASHFS_LOOKUP_BYTES(sinode_count);
-#endif
+
+	if(inode_count == sinode_count)
+		goto skip_inode_hash_table;
 
 	if((inode_lookup_table = realloc(inode_lookup_table, lookup_bytes)) == NULL)
 		BAD_ERROR("Out of memory in write_inode_table\n");
-
-#ifdef DEBUG
-	memset(((char *) inode_lookup_table) + slookup_bytes, 0xff, lookup_bytes - slookup_bytes);
-#endif
-
-#ifdef DEBUG
-	printf("inode_count %d\n", inode_count);
-	printf("dir_inode_no + inode_no %d\n", dir_inode_no + inode_no);
-#endif
 
 	for(i = 0; i < INODE_HASH_SIZE; i ++) {
 		struct inode_info *inode = inode_info[i];
 
 		for(inode = inode_info[i]; inode; inode = inode->next) {
-			if(inode->inode == SQUASHFS_INVALID_BLK)
-				BAD_ERROR("Inode disk location unknown in write_inode_lookup_table()!\n");
 
 			inode_number = inode->type == SQUASHFS_DIR_TYPE ?
 				inode->inode_number : inode->inode_number + dir_inode_no;
@@ -2723,27 +2756,17 @@ long long write_inode_lookup_table()
 			else
 				SQUASHFS_SWAP_LONG_LONGS((&inode->inode), &inode_lookup_table[inode_number - 1], 1);
 
-#ifdef DEBUG
-			printf("inode_lookup_table[%d] = 0x%llx inode_number %d type %d\n", inode_number - 1, inode->inode, inode_number, inode->type);
-#endif
 		}
 	}
 
-#ifdef DEBUG
-	for(i = 0; i < inode_count; i++) {
-		printf("inode_lookup_table[%d] = 0x%llx inode_number %d\n", i, inode_lookup_table[i], i + 1);
-		if(inode_lookup_table[i] == SQUASHFS_INVALID_BLK)
-			printf("BUG at inode %d\n", i + 1);
-	}
-#endif
-
+skip_inode_hash_table:
 	return generic_write_table(lookup_bytes, (char *) inode_lookup_table, 0);
 }
 
 			
 #define VERSION() \
-	printf("mksquashfs version 3.2-alpha (2006/11/06)\n");\
-	printf("copyright (C) 2006 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
+	printf("mksquashfs version 3.2-r2 (2007/01/15)\n");\
+	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
 	printf("as published by the Free Software Foundation; either version 2,\n");\
@@ -2754,6 +2777,7 @@ long long write_inode_lookup_table()
 	printf("GNU General Public License for more details.\n");
 int main(int argc, char *argv[])
 {
+	struct winsize winsize;
 	struct stat buf, source_buf;
 	int i;
 	squashfs_super_block sBlk;
@@ -2779,8 +2803,10 @@ int main(int argc, char *argv[])
 	source_path = argv + 1;
 	source = i - 2;
 	for(; i < argc; i++) {
-		if(strcmp(argv[i], "-exportable") == 0)
-			exportable = TRUE;
+		if(strcmp(argv[i], "-no-progress") == 0)
+			progress = FALSE;
+		else if(strcmp(argv[i], "-no-exports") == 0)
+			exportable = FALSE;
 		else if(strcmp(argv[i], "-processors") == 0) {
 			if((++i == argc) || (processors = strtol(argv[i], &b, 10), *b != '\0')) {
 				ERROR("%s: -processors missing or invalid processor number\n", argv[0]);
@@ -2930,7 +2956,8 @@ printOptions:
 			ERROR("\nOptions are\n");
 			ERROR("-version\t\tprint version, licence and copyright message\n");
 			ERROR("-info\t\t\tprint files written to filesystem\n");
-			ERROR("-exportable\t\tmake the filesystem exportable via NFS\n");
+			ERROR("-no-exports\t\tdon't make the filesystem exportable via NFS\n");
+			ERROR("-no-progress\t\tdon't display the progress bar\n");
 			ERROR("-b <block_size>\t\tset data block to <block_size>.  Default %d bytes\n", SQUASHFS_FILE_SIZE);
 			ERROR("-processors <number>\tUse <number> processors.  By default will use number of\n\t\t\tprocessors available\n");
 			ERROR("-read-queue <size>\tSet input queue to <size> Mbytes.  Default %d Mbytes\n", READER_BUFFER_DEFAULT);
@@ -3166,6 +3193,15 @@ printOptions:
 #endif
 
 	block_offset = check_data ? 3 : 2;
+
+	if(progress) {
+		if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
+			printf("TIOCGWINZ ioctl failed, defaulting to 80 columns\n");
+			columns = 80;
+		} else
+			columns = winsize.ws_col;
+		signal(SIGWINCH, sigwinch_handler);
+	}
 
 	if(delete && !keep_as_directory && source == 1 && S_ISDIR(source_buf.st_mode))
 		dir_scan(&inode, source_path[0], scan1_readdir);

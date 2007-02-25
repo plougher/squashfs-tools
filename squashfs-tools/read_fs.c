@@ -1,7 +1,7 @@
 /*
  * Read a squashfs filesystem.  This is a highly compressed read only filesystem.
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007
  * Phillip Lougher <phillip@lougher.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -544,9 +544,6 @@ int read_inode_lookup_table(int fd, squashfs_super_block *sBlk, squashfs_inode *
 			memcpy((char *) &(*inode_lookup_table)[i], (char *) &sinode, sizeof(squashfs_inode_t));
 		}
 	}
-
-	for(i = 0; i < sBlk->inodes; i++)
-		printf("inode number %d = 0x%llx\n", i + 1, (*inode_lookup_table)[i]);
 
 	return 1;
 }
