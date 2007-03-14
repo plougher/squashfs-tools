@@ -39,6 +39,17 @@ typedef struct squashfs_dir_header squashfs_dir_header;
 typedef struct squashfs_fragment_entry squashfs_fragment_entry;
 typedef union squashfs_inode_header squashfs_inode_header;
 
+#ifdef CONFIG_SQUASHFS_1_0_COMPATIBILITY
+typedef struct squashfs_dir_index_1 squashfs_dir_index_1;
+typedef struct squashfs_base_inode_header_1 squashfs_base_inode_header_1;
+typedef struct squashfs_ipc_inode_header_1 squashfs_ipc_inode_header_1;
+typedef struct squashfs_dev_inode_header_1 squashfs_dev_inode_header_1;
+typedef struct squashfs_symlink_inode_header_1 squashfs_symlink_inode_header_1;
+typedef struct squashfs_reg_inode_header_1 squashfs_reg_inode_header_1;
+typedef struct squashfs_dir_inode_header_1 squashfs_dir_inode_header_1;
+typedef union squashfs_inode_header_1 squashfs_inode_header_1;
+#endif
+
 #ifdef CONFIG_SQUASHFS_2_0_COMPATIBILITY
 typedef struct squashfs_dir_index_2 squashfs_dir_index_2;
 typedef struct squashfs_base_inode_header_2 squashfs_base_inode_header_2;

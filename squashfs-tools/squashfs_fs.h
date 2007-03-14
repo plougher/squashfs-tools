@@ -629,6 +629,15 @@ struct squashfs_dir_inode_header_1 {
 	unsigned int		start_block:24;
 } __attribute__  ((packed));
 
+union squashfs_inode_header_1 {
+	struct squashfs_base_inode_header_1	base;
+	struct squashfs_dev_inode_header_1	dev;
+	struct squashfs_symlink_inode_header_1	symlink;
+	struct squashfs_reg_inode_header_1	reg;
+	struct squashfs_dir_inode_header_1	dir;
+	struct squashfs_ipc_inode_header_1	ipc;
+};
+
 #define SQUASHFS_SWAP_BASE_INODE_CORE_1(s, d, n) \
 	SQUASHFS_MEMSET(s, d, n);\
 	SQUASHFS_SWAP((s)->inode_type, d, 0, 4);\
