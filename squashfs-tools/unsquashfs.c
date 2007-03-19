@@ -49,6 +49,7 @@
 #include "global.h"
 
 #include <stdlib.h>
+#include <time.h>
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)		do { \
@@ -1518,6 +1519,47 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, c
 }
 
 
+void squashfs_stat(char *source)
+{
+	time_t mkfs_time = (time_t) sBlk.mkfs_time;
+	char *mkfs_str = ctime(&mkfs_time);
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+	printf("Found a valid %s endian SQUASHFS %d:%d superblock on %s.\n", swap ? "little" : "big", sBlk.s_major, sBlk.s_minor, source);
+#else
+	printf("Found a valid %s endian SQUASHFS %d:%d superblock on %s.\n", swap ? "big" : "little", sBlk.s_major, sBlk.s_minor, source);
+#endif
+	printf("Creation or last append time %s", mkfs_str ? mkfs_str : "failed to get time\n");
+	printf("Filesystem is %sexportable via NFS\n", SQUASHFS_EXPORTABLE(sBlk.flags) ? "" : "not ");
+
+	printf("Inodes are %scompressed\n", SQUASHFS_UNCOMPRESSED_INODES(sBlk.flags) ? "un" : "");
+	printf("Data is %scompressed\n", SQUASHFS_UNCOMPRESSED_DATA(sBlk.flags) ? "un" : "");
+	if(sBlk.s_major > 1 && !SQUASHFS_NO_FRAGMENTS(sBlk.flags))
+		printf("Fragments are %scompressed\n", SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.flags) ? "un" : "");
+	printf("Check data is %spresent in the filesystem\n", SQUASHFS_CHECK_DATA(sBlk.flags) ? "" : "not ");
+	if(sBlk.s_major > 1) {
+		printf("Fragments are %spresent in the filesystem\n", SQUASHFS_NO_FRAGMENTS(sBlk.flags) ? "not " : "");
+		printf("Always_use_fragments option is %sspecified\n", SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags) ? "" : "not ");
+	} else
+		printf("Fragments are not supported by the filesystem\n");
+
+	printf("Duplicates are %sremoved\n", SQUASHFS_DUPLICATES(sBlk.flags) ? "" : "not ");
+	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", sBlk.bytes_used / 1024.0, sBlk.bytes_used / (1024.0 * 1024.0));
+	printf("Block size %d\n", sBlk.block_size);
+	if(sBlk.s_major > 1)
+		printf("Number of fragments %d\n", sBlk.fragments);
+	printf("Number of inodes %d\n", sBlk.inodes);
+	printf("Number of uids %d\n", sBlk.no_uids);
+	printf("Number of gids %d\n", sBlk.no_guids);
+
+	TRACE("sBlk.inode_table_start 0x%llx\n", sBlk.inode_table_start);
+	TRACE("sBlk.directory_table_start 0x%llx\n", sBlk.directory_table_start);
+	TRACE("sBlk.uid_start 0x%llx\n", sBlk.uid_start);
+	if(sBlk.s_major > 1)
+		TRACE("sBlk.fragment_table_start 0x%llx\n\n", sBlk.fragment_table_start);
+}
+
+
 int read_super(char *source)
 {
 	read_bytes(SQUASHFS_START, sizeof(squashfs_super_block), (char *) &sBlk);
@@ -1573,35 +1615,6 @@ int read_super(char *source)
 		goto failed_mount;
 	}
 
-#if __BYTE_ORDER == __BIG_ENDIAN
-	TRACE("Found a valid %s endian SQUASHFS %d:%d superblock on %s.\n", swap ? "little" : "big", sBlk.s_major, sBlk.s_minor, source);
-#else
-	TRACE("Found a valid %s endian SQUASHFS %d:%d superblock on %s.\n", swap ? "big" : "little", sBlk.s_major, sBlk.s_minor, source);
-#endif
-
-	TRACE("\tInodes are %scompressed\n", SQUASHFS_UNCOMPRESSED_INODES(sBlk.flags) ? "un" : "");
-	TRACE("\tData is %scompressed\n", SQUASHFS_UNCOMPRESSED_DATA(sBlk.flags) ? "un" : "");
-	if(sBlk.s_major > 1)
-		TRACE("\tFragments are %scompressed\n", SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.flags) ? "un" : "");
-	TRACE("\tCheck data is %s present in the filesystem\n", SQUASHFS_CHECK_DATA(sBlk.flags) ? "" : "not");
-	if(sBlk.s_major > 1) {
-		TRACE("\tFragments are %s present in the filesystem\n", SQUASHFS_NO_FRAGMENTS(sBlk.flags) ? "not" : "");
-		TRACE("\tAlways_use_fragments option is %s specified\n", SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags) ? "" : "not");
-		TRACE("\tDuplicates are %s removed\n", SQUASHFS_DUPLICATES(sBlk.flags) ? "" : "not");
-	}
-	TRACE("\tFilesystem size %.2f Kbytes (%.2f Mbytes)\n", sBlk.bytes_used / 1024.0, sBlk.bytes_used / (1024.0 * 1024.0));
-	TRACE("\tBlock size %d\n", sBlk.block_size);
-	if(sBlk.s_major > 1)
-		TRACE("\tNumber of fragments %d\n", sBlk.fragments);
-	TRACE("\tNumber of inodes %d\n", sBlk.inodes);
-	TRACE("\tNumber of uids %d\n", sBlk.no_uids);
-	TRACE("\tNumber of gids %d\n", sBlk.no_guids);
-	TRACE("sBlk.inode_table_start 0x%llx\n", sBlk.inode_table_start);
-	TRACE("sBlk.directory_table_start 0x%llx\n", sBlk.directory_table_start);
-	TRACE("sBlk.uid_start 0x%llx\n", sBlk.uid_start);
-	if(sBlk.s_major > 1)
-		TRACE("sBlk.fragment_table_start 0x%llx\n\n", sBlk.fragment_table_start);
-
 	return TRUE;
 
 failed_mount:
@@ -1610,7 +1623,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.4-cvs (2007/03/13)\n");\
+	printf("unsquashfs version 1.4-cvs (2007/03/18)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -1623,7 +1636,7 @@ failed_mount:
 int main(int argc, char *argv[])
 {
 	char *dest = "squashfs-root";
-	int i, version = FALSE;
+	int i, stat_sys = FALSE, version = FALSE;
 	char *target = "";
 
 	if(root_process = geteuid() == 0)
@@ -1645,6 +1658,10 @@ int main(int argc, char *argv[])
 			dest = argv[i];
 		} else if(strcmp(argv[i], "-force") == 0 || strcmp(argv[i], "-f") == 0)
 			force = TRUE;
+		else if(strcmp(argv[i], "-stat") == 0 || strcmp(argv[i], "-s") == 0)
+			stat_sys = TRUE;
+		else
+			goto options;
 	}
 
 	if(i == argc) {
@@ -1670,6 +1687,11 @@ options:
 
 	if(read_super(argv[i]) == FALSE)
 		exit(1);
+
+	if(stat_sys) {
+		squashfs_stat(argv[i]);
+		exit(0);
+	}
 
 	block_size = sBlk.block_size;
 
