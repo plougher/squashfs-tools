@@ -1543,7 +1543,10 @@ void squashfs_stat(char *source)
 	} else
 		printf("Fragments are not supported by the filesystem\n");
 
-	printf("Duplicates are %sremoved\n", SQUASHFS_DUPLICATES(sBlk.flags) ? "" : "not ");
+	if(sBlk.s_major > 1)
+		printf("Duplicates are %sremoved\n", SQUASHFS_DUPLICATES(sBlk.flags) ? "" : "not ");
+	else
+		printf("Duplicates are removed\n");
 	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", sBlk.bytes_used / 1024.0, sBlk.bytes_used / (1024.0 * 1024.0));
 	printf("Block size %d\n", sBlk.block_size);
 	if(sBlk.s_major > 1)
@@ -1623,7 +1626,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.4-cvs (2007/03/18)\n");\
+	printf("unsquashfs version 1.4-cvs (2007/03/19)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -1673,6 +1676,7 @@ options:
 			ERROR("\t-l[s]\t\t\tlist filesystem only\n");
 			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, default \"squashfs-root\"\n");
 			ERROR("\t-f[orce]\t\tif file already exists then overwrite\n");
+			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
 		}
 		exit(1);
 	}
