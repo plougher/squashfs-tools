@@ -74,7 +74,7 @@ struct sort_info *sort_info_list[65536];
 struct priority_entry *priority_list[65536];
 
 extern int silent;
-extern squashfs_inode write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, int *c_size);
+extern write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, int *c_size);
 
 
 int add_priority_list(struct dir_ent *dir, int priority)
@@ -234,15 +234,14 @@ void sort_files_and_write(struct dir_info *dir)
 		for(entry = priority_list[i]; entry; entry = entry->next) {
 			TRACE("%d: %s\n", i - 32768, entry->dir->pathname);
 			if(entry->dir->inode->inode == SQUASHFS_INVALID_BLK) {
-				if(write_file(&inode, entry->dir, entry->dir->inode->buf.st_size,
-							&duplicate_file)) {
-					INFO("file %s, uncompressed size %lld bytes %s\n",
-						entry->dir->pathname,
-						entry->dir->inode->buf.st_size,
-						duplicate_file ? "DUPLICATE" : "");
-					entry->dir->inode->inode = inode;
-					entry->dir->inode->type = SQUASHFS_FILE_TYPE;
-				}
+				write_file(&inode, entry->dir, entry->dir->inode->buf.st_size,
+							&duplicate_file);
+				INFO("file %s, uncompressed size %lld bytes %s\n",
+					entry->dir->pathname,
+					entry->dir->inode->buf.st_size,
+					duplicate_file ? "DUPLICATE" : "");
+				entry->dir->inode->inode = inode;
+				entry->dir->inode->type = SQUASHFS_FILE_TYPE;
 			} else
 				INFO("file %s, uncompressed size %lld bytes LINK\n",
 					entry->dir->pathname, entry->dir->inode->buf.st_size);

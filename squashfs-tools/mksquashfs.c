@@ -323,6 +323,7 @@ extern int read_sort_file(char *filename, int source, char *source_path[]);
 extern void sort_files_and_write(struct dir_info *dir);
 struct file_info *duplicate(long long file_size, long long bytes, unsigned int **block_list, long long *start, struct fragment **fragment, struct file_buffer *file_buffer, struct buffer_list *buffer_list, int blocks, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag);
 struct dir_info *dir_scan1(char *, int (_readdir)(char *, char *, struct dir_info *));
+void dir_scan2(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes, unsigned int *block_list, long long start, struct fragment *fragment, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag);
 extern void generate_file_priorities(struct dir_info *dir, int priority, struct stat *buf);
 extern struct priority_entry *priority_list[65536];
@@ -958,13 +959,13 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 		char buff[65536];
 
 		if((byte = readlink(filename, buff, 65536)) == -1) {
-			perror("Error in reading symbolic link, skipping...");
-			return FALSE;
+			ERROR("Failed to read symlink %d, creating empty symlink\n", filename);
+			byte = 0;
 		}
 
 		if(byte == 65536) {
-			ERROR("Symlink is greater than 65536 bytes! skipping...");
-			return FALSE;
+			ERROR("Symlink %d is greater than 65536 bytes! Creating empty symlink\n", filename);
+			byte = 0;
 		}
 
 		inode = get_inode(sizeof(*symlink) + byte);
@@ -989,7 +990,7 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 			SQUASHFS_SWAP_IPC_INODE_HEADER(ipc, inode);
 		TRACE("ipc inode, type %s, nlink %d\n", type == SQUASHFS_FIFO_TYPE ? "fifo" : "socket", nlink);
 	} else
-		return FALSE;
+		BAD_ERROR("Unrecognised inode %d in create_inode\n");
 
 	*i_no = MKINODE(inode);
 	inode_count ++;
@@ -1088,7 +1089,7 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name, int ty
 }
 
 
-int write_dir(squashfs_inode *inode, struct dir_info *dir_info, struct directory *dir)
+void write_dir(squashfs_inode *inode, struct dir_info *dir_info, struct directory *dir)
 {
 	unsigned int dir_size = dir->p - dir->buff;
 	int data_space = (directory_cache_size - directory_cache_bytes);
@@ -1153,13 +1154,10 @@ int write_dir(squashfs_inode *inode, struct dir_info *dir_info, struct directory
 		directory_cache_bytes -= SQUASHFS_METADATA_SIZE;
 	}
 
-	if(dir_info->dir_is_ldir) {
-		if(create_inode(inode, dir_info->dir_ent, SQUASHFS_LDIR_TYPE, dir_size + 3, directory_block, directory_offset, NULL, NULL, dir) == FALSE)
-			return FALSE;
-	} else {
-		if(create_inode(inode, dir_info->dir_ent, SQUASHFS_DIR_TYPE, dir_size + 3, directory_block, directory_offset, NULL, NULL, NULL) == FALSE)
-			return FALSE;
-	}
+	if(dir_info->dir_is_ldir)
+		create_inode(inode, dir_info->dir_ent, SQUASHFS_LDIR_TYPE, dir_size + 3, directory_block, directory_offset, NULL, NULL, dir);
+	else
+		create_inode(inode, dir_info->dir_ent, SQUASHFS_DIR_TYPE, dir_size + 3, directory_block, directory_offset, NULL, NULL, NULL);
 
 #ifdef SQUASHFS_TRACE
 	if(!swap) {
@@ -1191,7 +1189,7 @@ int write_dir(squashfs_inode *inode, struct dir_info *dir_info, struct directory
 #endif
 	dir_count ++;
 
-	return TRUE;
+	return;
 
 failed:
 	BAD_ERROR("Out of memory in directory table reallocation!\n");
@@ -1846,17 +1844,18 @@ int progress_bar(long long current, long long max, int columns)
 }
 
 
-int write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent, int *duplicate_file)
+void write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent, int *duplicate_file)
 {
 	file_count ++;
 	*duplicate_file = FALSE;
-	return dir_ent->inode->nlink == 1 ?
-		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, 0, 0, 0, NULL, &empty_fragment, NULL) :
+	if(dir_ent->inode->nlink == 1)
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, 0, 0, 0, NULL, &empty_fragment, NULL);
+	else
 		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, 0, 0, 0, NULL, &empty_fragment, NULL);
 }
 
 
-int write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent, int size, int *duplicate_file, struct file_buffer *file_buffer, unsigned short checksum)
+void write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent, int size, int *duplicate_file, struct file_buffer *file_buffer, unsigned short checksum)
 {
 	int file;
 	struct file_info *dupl_ptr;
@@ -1880,8 +1879,9 @@ int write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent, int size
 
 	progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
 
-	return dir_ent->inode->nlink == 1 ?
-		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL) :
+	if(dir_ent->inode->nlink == 1)
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL);
+	else
 		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, size, 0, 0, NULL, fragment, NULL);
 }
 
@@ -1899,8 +1899,10 @@ int write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size, in
 
 	checksum = get_checksum_mem_buffer(file_buffer);
 
-	if(pre_duplicate_frag(size, checksum))
-		return write_file_frag_dup(inode, dir_ent, size, duplicate_file, file_buffer, checksum);
+	if(pre_duplicate_frag(size, checksum)) {
+		write_file_frag_dup(inode, dir_ent, size, duplicate_file, file_buffer, checksum);
+		return;
+	}
 		
 	fragment = get_and_fill_fragment(file_buffer);
 
@@ -1916,15 +1918,18 @@ int write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size, in
 
 	progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
 
-	return dir_ent->inode->nlink == 1 ?
-		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL) :
+	if(dir_ent->inode->nlink == 1)
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL);
+	else
 		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, size, 0, 0, NULL, fragment, NULL);
+
+	return TRUE;
 }
 
 
-int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size)
+int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size, int *duplicate_file)
 {
-	int block, status;
+	int block;
 	unsigned int c_byte, frag_bytes;
 	long long bbytes, file_bytes, start;
 	struct fragment *fragment;
@@ -1932,6 +1937,8 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 	int blocks = (read_size + block_size - 1) >> block_log;
 	unsigned int *block_list;
 	struct file_buffer *read_buffer;
+
+	*duplicate_file = FALSE;
 
 	if(!no_fragments && always_use_fragments) {
 		blocks = read_size >> block_log;
@@ -1974,16 +1981,18 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 		add_non_dup(read_size, file_bytes, block_list, start, fragment, 0, 0, FALSE);
 	file_count ++;
 	total_bytes += read_size;
+
 	if(dir_ent->inode->nlink == 1 && read_size < ((long long) (1<<30) - 1))
-		status = create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_list, fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_list, fragment, NULL);
 	else
-		status = create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_list, fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_list, fragment, NULL);
+
 	if(duplicate_checking == FALSE)
 		free(block_list);
-	return status;
+
+	return TRUE;
 
 read_err:
-	perror("Error in reading file, skipping...");
 	if(block) {
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
@@ -2000,7 +2009,7 @@ read_err:
 
 int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size, int *duplicate_file)
 {
-	int block, status, thresh;
+	int block, thresh;
 	unsigned int c_byte, frag_bytes;
 	long long bbytes, file_bytes, start;
 	struct fragment *fragment;
@@ -2083,15 +2092,16 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 	total_bytes += read_size;
 
 	if(dir_ent->inode->nlink == 1 && read_size < ((long long) (1<<30) - 1))
-		status = create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
 	else
-		status = create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
+
 	if(*duplicate_file == TRUE)
 		free(block_list);
-	return status;
+
+	return TRUE;
 
 read_err:
-	perror("Error in reading file, skipping...");
 	if(block && thresh) {
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
@@ -2109,24 +2119,27 @@ read_err:
 }
 
 
-int write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, int *duplicate_file)
+void write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, int *duplicate_file)
 {
+	int status = TRUE;
 	long long read_size = (size > SQUASHFS_MAX_FILE_SIZE) ? SQUASHFS_MAX_FILE_SIZE : size;
 
 	if(size > read_size)
 		ERROR("file %s truncated to %lld bytes\n", dir_ent->pathname, SQUASHFS_MAX_FILE_SIZE);
 
 	if(read_size == 0)
-		return write_file_empty(inode, dir_ent, duplicate_file);
+		write_file_empty(inode, dir_ent, duplicate_file);
+	else if(!no_fragments && (read_size < block_size))
+		status = write_file_frag(inode, dir_ent, read_size, duplicate_file);
+	else if(pre_duplicate(read_size))
+		status = write_file_blocks_dup(inode, dir_ent, read_size, duplicate_file);
+	else
+		status = write_file_blocks(inode, dir_ent, read_size, duplicate_file);
 
-	if(!no_fragments && (read_size < block_size))
-		return write_file_frag(inode, dir_ent, read_size, duplicate_file);
-
-	if(pre_duplicate(read_size))
-		return write_file_blocks_dup(inode, dir_ent, read_size, duplicate_file);
-
-	*duplicate_file = FALSE;
-	return write_file_blocks(inode, dir_ent, read_size);
+	if(status == FALSE) {
+		ERROR("Failed to read file %s, creating empty file\n", dir_ent->pathname);
+		write_file_empty(inode, dir_ent, duplicate_file);
+	}
 }
 
 
@@ -2448,11 +2461,21 @@ struct dir_info *dir_scan1(char *pathname, int (_readdir)(char *, char *, struct
 			continue;
 
 		if(lstat(filename, &buf) == -1) {
-			char buffer[8192];
-			sprintf(buffer, "Cannot stat dir/file %s, ignoring", filename);
-			perror(buffer);
+			ERROR("Cannot stat dir/file %s because %s, ignoring", filename, strerror(errno));
 			continue;
 		}
+
+		if((buf.st_mode & S_IFMT) != S_IFREG &&
+			(buf.st_mode & S_IFMT) != S_IFDIR &&
+			(buf.st_mode & S_IFMT) != S_IFLNK &&
+			(buf.st_mode & S_IFMT) != S_IFCHR &&
+			(buf.st_mode & S_IFMT) != S_IFBLK &&
+			(buf.st_mode & S_IFMT) != S_IFIFO &&
+			(buf.st_mode & S_IFMT) != S_IFSOCK) {
+			ERROR("File %s has unrecognised filetype %d, ignoring\n", filename, buf.st_mode & S_IFMT);
+			continue;
+		}
+
 		if(excluded(filename, &buf))
 			continue;
 
@@ -2476,11 +2499,9 @@ error:
 	return dir;
 }
 
-
-int dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
+void dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 {
 	int squashfs_type;
-	int result = FALSE;
 	int duplicate_file;
 	char *pathname = dir_info->pathname;
 	struct directory dir;
@@ -2499,56 +2520,57 @@ int dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 			switch(buf->st_mode & S_IFMT) {
 				case S_IFREG:
 					squashfs_type = SQUASHFS_FILE_TYPE;
-					result = write_file(inode, dir_ent, buf->st_size, &duplicate_file);
+					write_file(inode, dir_ent, buf->st_size, &duplicate_file);
 					INFO("file %s, uncompressed size %lld bytes %s\n", filename, buf->st_size, duplicate_file ? "DUPLICATE" : "");
 					break;
 
 				case S_IFDIR:
 					squashfs_type = SQUASHFS_DIR_TYPE;
-					result = dir_scan2(inode, dir_ent->dir);
+					dir_scan2(inode, dir_ent->dir);
 					break;
 
 				case S_IFLNK:
 					squashfs_type = SQUASHFS_SYMLINK_TYPE;
-					result = create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
+					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
 					INFO("symbolic link %s inode 0x%llx\n", dir_name, *inode);
 					sym_count ++;
 					break;
 
 				case S_IFCHR:
 					squashfs_type = SQUASHFS_CHRDEV_TYPE;
-					result = create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
+					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
 					INFO("character device %s inode 0x%llx\n", dir_name, *inode);
 					dev_count ++;
 					break;
 
 				case S_IFBLK:
 					squashfs_type = SQUASHFS_BLKDEV_TYPE;
-					result = create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
+					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
 					INFO("block device %s inode 0x%llx\n", dir_name, *inode);
 					dev_count ++;
 					break;
 
 				case S_IFIFO:
 					squashfs_type = SQUASHFS_FIFO_TYPE;
-					result = create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
+					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
 					INFO("fifo %s inode 0x%llx\n", dir_name, *inode);
 					fifo_count ++;
 					break;
 
 				case S_IFSOCK:
 					squashfs_type = SQUASHFS_SOCKET_TYPE;
-					result = create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
+					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
 					INFO("unix domain socket %s inode 0x%llx\n", dir_name, *inode);
 					sock_count ++;
 					break;
 
+#if 0
 			 	default:
 					ERROR("%s unrecognised file type, mode is %x\n", filename, buf->st_mode);
 					result = FALSE;
-				}
-			if(result)
-				dir_ent->inode->inode = *inode;
+#endif
+			}
+			dir_ent->inode->inode = *inode;
 			dir_ent->inode->type = squashfs_type;
 		 } else {
 			*inode = dir_ent->inode->inode;
@@ -2574,20 +2596,15 @@ int dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 					INFO("unix domain socket %s inode 0x%llx LINK\n", dir_name, *inode);
 					break;
 			}
-			result = TRUE;
 		}
 		
-
-		if(result)
-			add_dir(*inode, inode_number, dir_name, squashfs_type, &dir);
+		add_dir(*inode, inode_number, dir_name, squashfs_type, &dir);
 	}
 
-	result = write_dir(inode, dir_info, &dir);
+	write_dir(inode, dir_info, &dir);
 	INFO("directory %s inode 0x%llx\n", pathname, *inode);
 
 	scan2_freedir(&dir);
-
-	return result;
 }
 
 
@@ -2765,7 +2782,7 @@ skip_inode_hash_table:
 
 			
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2 (2007/01/15)\n");\
+	printf("mksquashfs version 3.2-r2-CVS (2007/04/11)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3319,7 +3336,8 @@ restore_filesystem:
 	printf("Number of uids %d\n", uid_count);
 
 	for(i = 0; i < uid_count; i++) {
-		struct passwd *user = getpwuid(uids[i]);
+		int uid = uids[i];
+		struct passwd *user = getpwuid(uid);
 		printf("\t%s (%d)\n", user == NULL ? "unknown" : user->pw_name, uids[i]);
 	}
 
