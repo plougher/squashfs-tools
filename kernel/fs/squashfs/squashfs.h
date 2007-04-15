@@ -62,7 +62,6 @@ extern struct squashfs_fragment_cache *get_cached_fragment(struct super_block
 extern struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode, unsigned int inode_number);
 extern const struct address_space_operations squashfs_symlink_aops;
 extern const struct address_space_operations squashfs_aops;
-extern const struct address_space_operations squashfs_aops_4K;
 extern struct inode_operations squashfs_dir_inode_ops;
 #else
 #define SQSH_EXTERN static

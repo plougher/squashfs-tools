@@ -212,10 +212,7 @@ static int squashfs_read_inode_2(struct inode *i, squashfs_inode_t inode)
 			SQUASHFS_I(i)->start_block = inodep->start_block;
 			SQUASHFS_I(i)->u.s1.block_list_start = next_block;
 			SQUASHFS_I(i)->offset = next_offset;
-			if (sblk->block_size > 4096)
-				i->i_data.a_ops = &squashfs_aops;
-			else
-				i->i_data.a_ops = &squashfs_aops_4K;
+			i->i_data.a_ops = &squashfs_aops;
 
 			TRACE("File inode %x:%x, start_block %x, "
 					"block_list_start %llx, offset %x\n",
