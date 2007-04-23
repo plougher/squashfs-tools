@@ -258,6 +258,7 @@ struct allocator {
 
 /* struct describing a memory buffer passed between threads */
 struct file_buffer {
+	long long		file_size;
 	struct allocator	*allocator;
 	void			(*release)(int);
 	int			release_data;
@@ -1596,48 +1597,86 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 
 void reader_read_file(struct dir_ent *dir_ent)
 {
-	struct stat *buf = &dir_ent->inode->buf;
-	int count;
-	int blocks = (buf->st_size + block_size - 1) >> block_log;
-	int frag_block = !no_fragments && (always_use_fragments ||
-		(buf->st_size < block_size)) ? buf->st_size >> block_log : -1;
-	int file;
-	static int block_order = 0;
+	struct stat *buf = &dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
+	static int block_order = 0;
+	int blocks, byte, count, expected, file, frag_block;
+	long long bytes, read_size;
 
-	if(buf->st_size == 0 || dir_ent->inode->read)
+	if(dir_ent->inode->read)
 		return;
+
+	dir_ent->inode->read = TRUE;
+again:
+	bytes = 0;
+	count = 0;
+	file_buffer = NULL;
+	read_size = buf->st_size;
+	blocks = (read_size + block_size - 1) >> block_log;
+	frag_block = !no_fragments && (always_use_fragments ||
+		(read_size < block_size)) ? read_size >> block_log : -1;
 
 	if((file = open(dir_ent->pathname, O_RDONLY)) == -1)
 		goto read_err;
 
-	for(count = 0; count < blocks; count ++) {
+	do {
+		expected = read_size - ((long long) count * block_size) > block_size ? block_size : read_size - ((long long) count * block_size);
+
+		if(file_buffer)
+			queue_put(from_reader, file_buffer);
 		file_buffer = alloc_get(reader_buffer);
 
-		if((file_buffer->size = read(file, file_buffer->data, block_size)) == -1) {
-			close(file);
-			goto read_err2;
-		}
-		file_buffer->block = count;
+		byte = file_buffer->size = read(file, file_buffer->data, block_size);
+
 		file_buffer->block_order = block_order ++;
+		file_buffer->file_size = read_size;
+
+		if(byte != expected)
+			goto restat;
+
+		file_buffer->block = count;
 		file_buffer->error = FALSE;
-		if(file_buffer->fragment = count == frag_block)
-			queue_put(from_deflate, file_buffer);
-		else
-			queue_put(from_reader, file_buffer);
+
+		bytes += byte;
+		count ++;
+	} while(count < blocks);
+
+	if(read_size != bytes)
+		goto restat;
+
+	if(expected == block_size) {
+		char buffer;
+
+		if(read(file, &buffer, 1) == 1)
+			goto restat;
 	}
 
+	if(file_buffer->fragment = file_buffer->block == frag_block)
+		queue_put(from_deflate, file_buffer);
+	else
+		queue_put(from_reader, file_buffer);
+
 	close(file);
-	dir_ent->inode->read = TRUE;
 
 	return;
 
 read_err:
 	file_buffer = alloc_get(reader_buffer);
-read_err2:
 	file_buffer->block_order = block_order ++;
+read_err2:
 	file_buffer->error = TRUE;
 	queue_put(from_deflate, file_buffer);
+	return;
+restat:
+	fstat(file, &buf2);
+	close(file);
+	if(read_size != buf2.st_size) {
+		memcpy(buf, &buf2, sizeof(struct stat));
+		file_buffer->error = 2;
+		queue_put(from_deflate, file_buffer);
+		goto again;
+	}
+	goto read_err2;
 }
 
 
@@ -1733,6 +1772,7 @@ void *deflator(void *arg)
 		struct file_buffer *write_buffer = alloc_get(writer_buffer);
 
 		write_buffer->c_byte = mangle2(&stream, write_buffer->data, file_buffer->data, file_buffer->size, block_size, noD, 1);
+		write_buffer->file_size = file_buffer->file_size;
 		write_buffer->block = file_buffer->block;
 		write_buffer->block_order = file_buffer->block_order;
 		write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->c_byte);
@@ -1886,16 +1926,10 @@ void write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent, int siz
 }
 
 
-int write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size, int *duplicate_file)
+void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size, struct file_buffer *file_buffer, int *duplicate_file)
 {
 	struct fragment *fragment;
 	unsigned short checksum;
-	struct file_buffer *file_buffer = get_file_buffer(from_deflate);
-
-	if(file_buffer->error) {
-		alloc_free(file_buffer);
-		return FALSE;
-	}
 
 	checksum = get_checksum_mem_buffer(file_buffer);
 
@@ -1923,11 +1957,11 @@ int write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size, in
 	else
 		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, size, 0, 0, NULL, fragment, NULL);
 
-	return TRUE;
+	return;
 }
 
 
-int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size, int *duplicate_file)
+int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size, struct file_buffer *reader_buffer, int *duplicate_file)
 {
 	int block;
 	unsigned int c_byte, frag_bytes;
@@ -1937,6 +1971,7 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 	int blocks = (read_size + block_size - 1) >> block_log;
 	unsigned int *block_list;
 	struct file_buffer *read_buffer;
+	int status;
 
 	*duplicate_file = FALSE;
 
@@ -1954,9 +1989,14 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 	file_bytes = 0;
 	start = bytes;
 	for(block = 0; block < blocks; block ++) {
-		read_buffer = get_file_buffer(from_deflate);
-		if(read_buffer->error)
-			goto read_err;
+		if(reader_buffer) {
+			read_buffer = reader_buffer;
+			reader_buffer = NULL;
+		} else {
+			read_buffer = get_file_buffer(from_deflate);
+			if(read_buffer->error)
+				goto read_err;
+		}
 
 		block_list[block] = read_buffer->c_byte;
 		read_buffer->block = bytes;
@@ -1990,9 +2030,11 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 	if(duplicate_checking == FALSE)
 		free(block_list);
 
-	return TRUE;
+	return 0;
 
 read_err:
+	cur_uncompressed -= block;
+	status = read_buffer->error;
 	if(block) {
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
@@ -2003,11 +2045,11 @@ read_err:
 	}
 	free(block_list);
 	alloc_free(read_buffer);
-	return FALSE;
+	return status;
 }
 
 
-int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size, int *duplicate_file)
+int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size, struct file_buffer *reader_buffer, int *duplicate_file)
 {
 	int block, thresh;
 	unsigned int c_byte, frag_bytes;
@@ -2019,6 +2061,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 	struct file_buffer *read_buffer;
 	struct file_data *file_data;
 	struct buffer_list *buffer_list;
+	int status;
 
 	if(!no_fragments && always_use_fragments) {
 		blocks = read_size >> block_log;
@@ -2039,9 +2082,14 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 	start = bytes;
 	thresh = blocks > (writer_buffer_size - processors) ? blocks - (writer_buffer_size - processors): 0;
 	for(block = 0; block < blocks; block ++) {
-		read_buffer = get_file_buffer(from_deflate);
-		if(read_buffer->error)
-			goto read_err;
+		if(reader_buffer) {
+			read_buffer = reader_buffer;
+			reader_buffer = NULL;
+		 } else {
+			read_buffer = get_file_buffer(from_deflate);
+			if(read_buffer->error)
+				goto read_err;
+		}
 
 		block_list[block] = read_buffer->c_byte;
 		read_buffer->block = bytes;
@@ -2099,9 +2147,11 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 	if(*duplicate_file == TRUE)
 		free(block_list);
 
-	return TRUE;
+	return 0;
 
 read_err:
+	cur_uncompressed -= block;
+	status = read_buffer->error;
 	if(block && thresh) {
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
@@ -2115,28 +2165,40 @@ read_err:
 	free(buffer_list);
 	free(block_list);
 	alloc_free(read_buffer);
-	return FALSE;
+	return status;
 }
 
 
-void write_file(squashfs_inode *inode, struct dir_ent *dir_ent, long long size, int *duplicate_file)
+void write_file(squashfs_inode *inode, struct dir_ent *dir_ent, int *duplicate_file)
 {
-	int status = TRUE;
-	long long read_size = (size > SQUASHFS_MAX_FILE_SIZE) ? SQUASHFS_MAX_FILE_SIZE : size;
+	int status;
+	struct file_buffer *read_buffer;
+	long long read_size;
 
-	if(size > read_size)
-		ERROR("file %s truncated to %lld bytes\n", dir_ent->pathname, SQUASHFS_MAX_FILE_SIZE);
+again:
+	read_buffer = get_file_buffer(from_deflate);
+	if(status = read_buffer->error) {
+		alloc_free(read_buffer);
+		goto file_err;
+	}
+	
+	read_size = read_buffer->file_size;
 
-	if(read_size == 0)
+	if(read_size == 0) {
 		write_file_empty(inode, dir_ent, duplicate_file);
-	else if(!no_fragments && (read_size < block_size))
-		status = write_file_frag(inode, dir_ent, read_size, duplicate_file);
+		alloc_free(read_buffer);
+	} else if(!no_fragments && (read_size < block_size))
+		write_file_frag(inode, dir_ent, read_size, read_buffer, duplicate_file);
 	else if(pre_duplicate(read_size))
-		status = write_file_blocks_dup(inode, dir_ent, read_size, duplicate_file);
+		status = write_file_blocks_dup(inode, dir_ent, read_size, read_buffer, duplicate_file);
 	else
-		status = write_file_blocks(inode, dir_ent, read_size, duplicate_file);
+		status = write_file_blocks(inode, dir_ent, read_size, read_buffer, duplicate_file);
 
-	if(status == FALSE) {
+file_err:
+	if(status == 2) {
+		ERROR("File %s changed size while reading filesystem, attempting to re-read\n", dir_ent->pathname);
+		goto again;
+	} else if(status == 1) {
 		ERROR("Failed to read file %s, creating empty file\n", dir_ent->pathname);
 		write_file_empty(inode, dir_ent, duplicate_file);
 	}
@@ -2520,7 +2582,7 @@ void dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 			switch(buf->st_mode & S_IFMT) {
 				case S_IFREG:
 					squashfs_type = SQUASHFS_FILE_TYPE;
-					write_file(inode, dir_ent, buf->st_size, &duplicate_file);
+					write_file(inode, dir_ent, &duplicate_file);
 					INFO("file %s, uncompressed size %lld bytes %s\n", filename, buf->st_size, duplicate_file ? "DUPLICATE" : "");
 					break;
 
@@ -2782,7 +2844,7 @@ skip_inode_hash_table:
 
 			
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2-CVS (2007/04/11)\n");\
+	printf("mksquashfs version 3.2-r2-CVS (2007/04/22)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
