@@ -354,7 +354,7 @@ SQSH_EXTERN int squashfs_get_cached_block(struct super_block *s, void *buffer,
 		if (i == SQUASHFS_CACHED_BLKS) {
 			/* read inode header block */
 			if (atomic_read(&msblk->unused_cache_blks) == 0) {
-				mutex_lock(&msblk->block_cache_mutex);
+				mutex_unlock(&msblk->block_cache_mutex);
 				wait_event(msblk->waitq, atomic_read(&msblk->unused_cache_blks));
 				continue;
 			}
