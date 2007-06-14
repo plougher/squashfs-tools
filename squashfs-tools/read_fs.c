@@ -367,9 +367,9 @@ int read_super(int fd, squashfs_super_block *sBlk, int *be, char *source)
 	/* Check the MAJOR & MINOR versions */
 	if(sBlk->s_major != SQUASHFS_MAJOR || sBlk->s_minor > SQUASHFS_MINOR) {
 		if(sBlk->s_major < 3)
-			ERROR("Filesystem on %s is a SQUASHFS %d.%d filesystem.  Appending\nto SQUASHFS %d.%d filesystems is not supported.  Please convert it to a SQUASHFS 3.0 filesystem\n", source, sBlk->s_major, sBlk->s_minor, sBlk->s_major, sBlk->s_minor);
+			ERROR("Filesystem on %s is a SQUASHFS %d.%d filesystem.  Appending\nto SQUASHFS %d.%d filesystems is not supported.  Please convert it to a SQUASHFS 3 filesystem\n", source, sBlk->s_major, sBlk->s_minor, sBlk->s_major, sBlk->s_minor);
 		else
-			ERROR("Major/Minor mismatch, filesystem on %s is %d.%d, I support 3.0\n",
+			ERROR("Filesystem on %s is %d.%d, which is a later filesystem version than I support\n",
 				source, sBlk->s_major, sBlk->s_minor);
 		goto failed_mount;
 	}

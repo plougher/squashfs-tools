@@ -1605,16 +1605,15 @@ int read_super(char *source)
 			s_ops.create_inode = create_inode_2;
 			s_ops.read_block_list = read_block_list;
 		}
-	} else if(sBlk.s_major == 3 && sBlk.s_minor == 0) {
+	} else if(sBlk.s_major == 3 && sBlk.s_minor <= 1) {
 		s_ops.squashfs_opendir = squashfs_opendir;
 		s_ops.read_fragment = read_fragment;
 		s_ops.read_fragment_table = read_fragment_table;
 		s_ops.create_inode = create_inode;
 		s_ops.read_block_list = read_block_list;
 	} else {
-		ERROR("Major/Minor mismatch, filesystem on %s is (%d:%d)\n",
-				source, sBlk.s_major, sBlk.s_minor);
-		ERROR("I support Squashfs 1,x 2.x and 3.x filesystems!\n");
+		ERROR("Filesystem on %s is (%d:%d), ", source, sBlk.s_major, sBlk.s_minor);
+		ERROR("which is a later filesystem version than I support!\n");
 		goto failed_mount;
 	}
 
@@ -1626,7 +1625,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.4-CVS (2007/03/19)\n");\
+	printf("unsquashfs version 1.4-CVS (2007/05/25)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\

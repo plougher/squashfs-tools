@@ -1478,7 +1478,7 @@ void add_file(long long start, long long file_size, long long file_bytes, unsign
 	add_non_dup(file_size, file_bytes, block_list, start, frg, 0, 0, FALSE);
 }
 
-char cached_fragment[SQUASHFS_FILE_SIZE];
+char cached_fragment[SQUASHFS_FILE_MAX_SIZE];
 int cached_frag1 = -1;
 
 int pre_duplicate(long long file_size)
@@ -1536,6 +1536,7 @@ struct file_info *add_non_dup(long long file_size, long long bytes, unsigned int
 }
 
 
+char buffer2[SQUASHFS_FILE_MAX_SIZE];
 struct file_info *duplicate(long long file_size, long long bytes, unsigned int **block_list, long long *start, struct fragment **fragment, struct file_buffer *file_buffer, struct buffer_list *buffer_list, int blocks, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag)
 {
 	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
@@ -1543,7 +1544,6 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
 		if(file_size == dupl_ptr->file_size && bytes == dupl_ptr->bytes && frag_bytes == dupl_ptr->fragment->size) {
-			char buffer2[SQUASHFS_FILE_MAX_SIZE];
 			long long dup_start = dupl_ptr->start;
 			char *buffer;
 			int block;
@@ -2674,7 +2674,7 @@ unsigned int slog(unsigned int block)
 {
 	int i;
 
-	for(i = 12; i <= 16; i++)
+	for(i = 12; i <= 20; i++)
 		if(block == (1 << i))
 			return i;
 	return 0;
@@ -2788,9 +2788,9 @@ void initialise_threads()
 	from_writer = queue_init(1);
 	from_deflate = queue_init(reader_buffer_size);
 	to_frag = queue_init(processors * 2);
-	reader_buffer = alloc_init(SQUASHFS_FILE_MAX_SIZE, reader_buffer_size);
-	writer_buffer = alloc_init(SQUASHFS_FILE_MAX_SIZE, writer_buffer_size);
-	fragment_buffer = alloc_init(SQUASHFS_FILE_MAX_SIZE, processors * 2);
+	reader_buffer = alloc_init(block_size, reader_buffer_size);
+	writer_buffer = alloc_init(block_size, writer_buffer_size);
+	fragment_buffer = alloc_init(block_size, processors * 2);
 	pthread_create(&thread[0], NULL, reader, NULL);
 	pthread_create(&thread[1], NULL, writer, NULL);
 	pthread_mutex_init(&fragment_mutex, NULL);
@@ -2844,7 +2844,7 @@ skip_inode_hash_table:
 
 			
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2-CVS (2007/04/22)\n");\
+	printf("mksquashfs version 3.2-r2-CVS (2007/05/25)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -2864,6 +2864,7 @@ int main(int argc, char *argv[])
 	int be, nopad = FALSE, keep_as_directory = FALSE, orig_be;
 	squashfs_inode inode;
 	int readb_mbytes = READER_BUFFER_DEFAULT, writeb_mbytes = WRITER_BUFFER_DEFAULT;
+	int s_minor;
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 	be = TRUE;
@@ -2914,13 +2915,21 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-b") == 0) {
-			if((++i == argc) || (block_size = strtol(argv[i], &b, 10), *b !='\0')) {
-				ERROR("%s: -b missing or invalid block size\n", argv[0]);
+			if(++i == argc) {
+				ERROR("%s: -b missing block size\n", argv[0]);
 				exit(1);
 			}
-
+			block_size = strtol(argv[i], &b, 10);
+			if(*b == 'm' || *b == 'M')
+				block_size *= 1048576;
+			else if(*b == 'k' || *b == 'K')
+				block_size *= 1024;
+			else if(*b != '\0') {
+				ERROR("%s: -b invalid block size\n", argv[0]);
+				exit(1);
+			}
 			if((block_log = slog(block_size)) == 0) {
-				ERROR("%s: -b block size not power of two or not between 4096 and 64K\n", argv[0]);
+				ERROR("%s: -b block size not power of two or not between 4096 and 1Mbyte\n", argv[0]);
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-ef") == 0) {
@@ -3077,6 +3086,11 @@ printOptions:
 	reader_buffer_size = readb_mbytes << (20 - block_log);
 	writer_buffer_size = writeb_mbytes << (20 - block_log);
 
+	if(block_size <= 65536)
+		s_minor = 0;
+	else
+		s_minor = SQUASHFS_MINOR;
+
         for(i = 0; i < source; i++)
                 if(stat(source_path[i], &source_buf) == -1) {
                         fprintf(stderr, "Cannot stat source directory \"%s\" because %s\n", source_path[i], strerror(errno));
@@ -3117,15 +3131,8 @@ printOptions:
 
 	}
 
-	if(!delete) {
-	        if(read_super(fd, &sBlk, &orig_be, argv[source + 1]) == 0) {
-			ERROR("Failed to read existing filesystem - will not overwrite - ABORTING!\n");
-			EXIT_MKSQUASHFS();
-		}
-	} else  {
-		signal(SIGTERM, sighandler2);
-		signal(SIGINT, sighandler2);
-	}
+	signal(SIGTERM, sighandler2);
+	signal(SIGINT, sighandler2);
 
 	/* process the exclude files - must be done afer destination file has been possibly created */
 	for(i = source + 2; i < argc; i++)
@@ -3162,21 +3169,15 @@ printOptions:
 		else if(strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "-root-becomes") == 0 || strcmp(argv[i], "-ef") == 0)
 			i++;
 
-	initialise_threads();
-
-	if(delete) {
-		printf("Creating %s %d.%d filesystem on %s, block size %d.\n",
-				be ? "big endian" : "little endian", SQUASHFS_MAJOR, SQUASHFS_MINOR, argv[source + 1], block_size);
-		bytes = sizeof(squashfs_super_block);
-	} else {
-		unsigned int last_directory_block, inode_dir_offset, inode_dir_file_size, root_inode_size,
-		inode_dir_start_block, uncompressed_data, compressed_data, inode_dir_inode_number,
-		inode_dir_parent_inode;
-		unsigned int root_inode_start = SQUASHFS_INODE_BLK(sBlk.root_inode), root_inode_offset =
-		SQUASHFS_INODE_OFFSET(sBlk.root_inode);
+	if(!delete) {
+	        if(read_super(fd, &sBlk, &orig_be, argv[source + 1]) == 0) {
+			ERROR("Failed to read existing filesystem - will not overwrite - ABORTING!\n");
+			EXIT_MKSQUASHFS();
+		}
 
 		be = orig_be;
 		block_log = slog(block_size = sBlk.block_size);
+		s_minor = sBlk.s_minor;
 		noI = SQUASHFS_UNCOMPRESSED_INODES(sBlk.flags);
 		noD = SQUASHFS_UNCOMPRESSED_DATA(sBlk.flags);
 		noF = SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.flags);
@@ -3185,7 +3186,21 @@ printOptions:
 		always_use_fragments = SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags);
 		duplicate_checking = SQUASHFS_DUPLICATES(sBlk.flags);
 		exportable = SQUASHFS_EXPORTABLE(sBlk.flags);
-		
+	}
+
+	initialise_threads();
+
+	if(delete) {
+		printf("Creating %s %d.%d filesystem on %s, block size %d.\n",
+				be ? "big endian" : "little endian", SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
+		bytes = sizeof(squashfs_super_block);
+	} else {
+		unsigned int last_directory_block, inode_dir_offset, inode_dir_file_size, root_inode_size,
+		inode_dir_start_block, uncompressed_data, compressed_data, inode_dir_inode_number,
+		inode_dir_parent_inode;
+		unsigned int root_inode_start = SQUASHFS_INODE_BLK(sBlk.root_inode), root_inode_offset =
+		SQUASHFS_INODE_OFFSET(sBlk.root_inode);
+
 		if((bytes = read_filesystem(root_name, fd, &sBlk, &inode_table, &data_cache,
 				&directory_table, &directory_data_cache, &last_directory_block, &inode_dir_offset,
 				&inode_dir_file_size, &root_inode_size, &inode_dir_start_block,
@@ -3200,7 +3215,7 @@ printOptions:
 			fragment_table = (squashfs_fragment_entry *) realloc((char *) fragment_table, ((fragments + FRAG_SIZE - 1) & ~(FRAG_SIZE - 1)) * sizeof(squashfs_fragment_entry)); 
 
 		printf("Appending to existing %s %d.%d filesystem on %s, block size %d\n", be ? "big endian" :
-			"little endian", SQUASHFS_MAJOR, SQUASHFS_MINOR, argv[source + 1], block_size);
+			"little endian", SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
 		printf("All -be, -le, -b, -noI, -noD, -noF, -check_data, no-duplicates, no-fragments, -always-use-fragments and -exportable options ignored\n");
 		printf("\nIf appending is not wanted, please re-run with -noappend specified!\n\n");
 
@@ -3292,7 +3307,7 @@ printOptions:
 	sBlk.inodes = inode_count;
 	sBlk.s_magic = SQUASHFS_MAGIC;
 	sBlk.s_major = SQUASHFS_MAJOR;
-	sBlk.s_minor = SQUASHFS_MINOR;
+	sBlk.s_minor = s_minor;
 	sBlk.block_size = block_size;
 	sBlk.block_log = block_log;
 	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, check_data, noF, no_fragments, always_use_fragments, duplicate_checking, exportable);
