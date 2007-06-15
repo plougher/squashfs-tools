@@ -178,13 +178,17 @@ SQSH_EXTERN unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
-	struct buffer_head *bh[((SQUASHFS_FILE_MAX_SIZE - 1) >>
-			msblk->devblksize_log2) + 2];
+	struct buffer_head **bh;
 	unsigned int offset = index & ((1 << msblk->devblksize_log2) - 1);
 	unsigned int cur_index = index >> msblk->devblksize_log2;
 	int bytes, avail_bytes, b = 0, k = 0;
 	unsigned int compressed;
 	unsigned int c_byte = length;
+
+	bh = kmalloc(((sblk->block_size >> msblk->devblksize_log2) + 1) *
+								sizeof(struct buffer_head *), GFP_KERNEL);
+	if (bh == NULL)
+		goto read_failure;
 
 	if (c_byte) {
 		bytes = msblk->devblksize - offset;
@@ -318,6 +322,8 @@ SQSH_EXTERN unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 	if (next_index)
 		*next_index = index + c_byte + (length ? 0 :
 				(SQUASHFS_CHECK_DATA(msblk->sblk.flags) ? 3 : 2));
+
+	kfree(bh);
 	return bytes;
 
 release_mutex:
@@ -329,6 +335,7 @@ block_release:
 
 read_failure:
 	ERROR("sb_bread failed reading block 0x%x\n", cur_index);
+	kfree(bh);
 	return 0;
 }
 
@@ -521,7 +528,7 @@ struct squashfs_fragment_cache *get_cached_fragment(struct super_block *s,
 				SQUASHFS_CACHED_FRAGMENTS;
 			
 			if (msblk->fragment[i].data == NULL) {
-				msblk->fragment[i].data = SQUASHFS_ALLOC(SQUASHFS_FILE_MAX_SIZE);
+				msblk->fragment[i].data = vmalloc(sblk->block_size);
 				if (msblk->fragment[i].data == NULL) {
 					ERROR("Failed to allocate fragment cache block\n");
 					mutex_unlock(&msblk->fragment_mutex);
@@ -2055,7 +2062,7 @@ static void squashfs_put_super(struct super_block *s)
 					kfree(sbi->block_cache[i].data);
 		if (sbi->fragment)
 			for (i = 0; i < SQUASHFS_CACHED_FRAGMENTS; i++) 
-				SQUASHFS_FREE(sbi->fragment[i].data);
+				vfree(sbi->fragment[i].data);
 		kfree(sbi->fragment);
 		kfree(sbi->block_cache);
 		kfree(sbi->read_page);
@@ -2084,7 +2091,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.2-r2-CVS (2007/03/29) "
+	printk(KERN_INFO "squashfs: version 3.2-r2-CVS (2007/06/15) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
