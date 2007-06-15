@@ -37,7 +37,7 @@
 #endif
 #define SQUASHFS_CACHED_FRAGMENTS	CONFIG_SQUASHFS_FRAGMENT_CACHE_SIZE	
 #define SQUASHFS_MAJOR			3
-#define SQUASHFS_MINOR			0
+#define SQUASHFS_MINOR			1
 #define SQUASHFS_MAGIC			0x73717368
 #define SQUASHFS_MAGIC_SWAP		0x68737173
 #define SQUASHFS_START			0
@@ -47,10 +47,10 @@
 #define SQUASHFS_METADATA_LOG		13
 
 /* default size of data blocks */
-#define SQUASHFS_FILE_SIZE		65536
-#define SQUASHFS_FILE_LOG		16
+#define SQUASHFS_FILE_SIZE		131072
+#define SQUASHFS_FILE_LOG		17
 
-#define SQUASHFS_FILE_MAX_SIZE		65536
+#define SQUASHFS_FILE_MAX_SIZE		1048576
 
 /* Max number of uids and gids */
 #define SQUASHFS_UIDS			256
@@ -628,6 +628,15 @@ struct squashfs_dir_inode_header_1 {
 	unsigned int		mtime;
 	unsigned int		start_block:24;
 } __attribute__  ((packed));
+
+union squashfs_inode_header_1 {
+	struct squashfs_base_inode_header_1	base;
+	struct squashfs_dev_inode_header_1	dev;
+	struct squashfs_symlink_inode_header_1	symlink;
+	struct squashfs_reg_inode_header_1	reg;
+	struct squashfs_dir_inode_header_1	dir;
+	struct squashfs_ipc_inode_header_1	ipc;
+};
 
 #define SQUASHFS_SWAP_BASE_INODE_CORE_1(s, d, n) \
 	SQUASHFS_MEMSET(s, d, n);\
