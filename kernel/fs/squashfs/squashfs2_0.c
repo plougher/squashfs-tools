@@ -148,7 +148,8 @@ static int squashfs_read_inode_2(struct inode *i, squashfs_inode_t inode)
 	unsigned int block = SQUASHFS_INODE_BLK(inode) +
 		sblk->inode_table_start;
 	unsigned int offset = SQUASHFS_INODE_OFFSET(inode);
-	unsigned int ino = i->i_ino;
+	unsigned int ino = SQUASHFS_MK_VFS_INODE(block -
+		sblk->inode_table_start, offset);
 	long long next_block;
 	unsigned int next_offset;
 	union squashfs_inode_header_2 id, sid;
