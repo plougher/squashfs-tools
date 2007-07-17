@@ -1143,6 +1143,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		TRACE("sblk->fragment_table_start %llx\n", sblk->fragment_table_start);
 	TRACE("sblk->uid_start %llx\n", sblk->uid_start);
 
+	s->s_maxbytes = MAX_LFS_FILESIZE;
 	s->s_flags |= MS_RDONLY;
 	s->s_op = &squashfs_super_ops;
 
@@ -2091,7 +2092,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.2-r2-CVS (2007/06/15) "
+	printk(KERN_INFO "squashfs: version 3.2-r2-CVS (2007/07/15) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
