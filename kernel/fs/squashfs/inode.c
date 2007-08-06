@@ -562,6 +562,8 @@ struct squashfs_fragment_cache *get_cached_fragment(struct super_block *s,
 			break;
 		}
 
+		if (msblk->fragment[i].locked == 0)
+			msblk->unused_frag_blks --;
 		msblk->fragment[i].locked++;
 		mutex_unlock(&msblk->fragment_mutex);
 		TRACE("Got fragment %d, start block %lld, locked %d\n", i,
