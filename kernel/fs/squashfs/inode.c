@@ -1695,14 +1695,14 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		goto out;
 	}
 
-	block_list = kmalloc(SIZE, GFP_KERNEL);
-	if (block_list == NULL) {
-		ERROR("Failed to allocate block_list\n");
-		goto error_out;
-	}
-
 	if (SQUASHFS_I(inode)->u.s1.fragment_start_block == SQUASHFS_INVALID_BLK
 					|| index < (i_size_read(inode) >> sblk->block_log)) {
+		block_list = kmalloc(SIZE, GFP_KERNEL);
+		if (block_list == NULL) {
+			ERROR("Failed to allocate block_list\n");
+			goto error_out;
+		}
+
 		block = (msblk->read_blocklist)(inode, index, 1, block_list, NULL, &bsize);
 		if (block == 0)
 			goto error_out;
@@ -1726,6 +1726,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			ERROR("Unable to read page, block %llx, size %x\n",
 					SQUASHFS_I(inode)->u.s1.fragment_start_block,
 					(int) SQUASHFS_I(inode)->u.s1.fragment_size);
+			block_list = NULL;
 			goto error_out;
 		}
 		bytes = SQUASHFS_I(inode)->u.s1.fragment_offset +
@@ -1764,12 +1765,12 @@ skip_page:
 	}
 
 	if (SQUASHFS_I(inode)->u.s1.fragment_start_block == SQUASHFS_INVALID_BLK
-					|| index < (i_size_read(inode) >> sblk->block_log))
+					|| index < (i_size_read(inode) >> sblk->block_log)) {
 		mutex_unlock(&msblk->read_page_mutex);
-	else
+		kfree(block_list);
+	} else
 		release_cached_fragment(msblk, fragment);
 
-	kfree(block_list);
 	return 0;
 
 error_out:
