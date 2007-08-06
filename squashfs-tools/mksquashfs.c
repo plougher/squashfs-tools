@@ -100,6 +100,7 @@ int swap, silent = TRUE;
 long long global_uid = -1, global_gid = -1;
 int exportable = TRUE;
 int progress = TRUE;
+int sparse_files = FALSE;
 
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
@@ -1759,6 +1760,25 @@ void *writer(void *arg)
 }
 
 
+int all_zero(struct file_buffer *file_buffer)
+{
+	int i;
+	long entries = file_buffer->size / sizeof(long);
+	long *p = (long *) file_buffer->data;
+
+	for(i = 0; i < entries && p[i] == 0; i++);
+
+	if(i == entries) {
+		for(i = file_buffer->size & ~(sizeof(long) - 1); i < file_buffer->size &&
+						file_buffer->data[i] == 0; i++);
+
+		return i == file_buffer->size;
+	}
+
+	return 0;
+}
+
+
 void *deflator(void *arg)
 {
 	z_stream *stream = NULL;
@@ -1771,7 +1791,10 @@ void *deflator(void *arg)
 		struct file_buffer *file_buffer = queue_get(from_reader);
 		struct file_buffer *write_buffer = alloc_get(writer_buffer);
 
-		write_buffer->c_byte = mangle2(&stream, write_buffer->data, file_buffer->data, file_buffer->size, block_size, noD, 1);
+		if(sparse_files && all_zero(file_buffer)) 
+			write_buffer->c_byte = 0;
+		else
+			write_buffer->c_byte = mangle2(&stream, write_buffer->data, file_buffer->data, file_buffer->size, block_size, noD, 1);
 		write_buffer->file_size = file_buffer->file_size;
 		write_buffer->block = file_buffer->block;
 		write_buffer->block_order = file_buffer->block_order;
@@ -1999,10 +2022,13 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 		}
 
 		block_list[block] = read_buffer->c_byte;
-		read_buffer->block = bytes;
-		bytes += read_buffer->size;
-		file_bytes += read_buffer->size;
-		queue_put(to_writer, read_buffer);
+		if(read_buffer->c_byte) {
+			bytes += read_buffer->size;
+			file_bytes += read_buffer->size;
+			read_buffer->block = bytes;
+			queue_put(to_writer, read_buffer);
+		} else
+			alloc_free(read_buffer);
 		progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
 	}
 
@@ -2092,15 +2118,20 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 		}
 
 		block_list[block] = read_buffer->c_byte;
-		read_buffer->block = bytes;
-		bytes += read_buffer->size;
-		file_bytes += read_buffer->size;
 
-		if(block < thresh) {
+		if(read_buffer->c_byte) {
+			read_buffer->block = bytes;
+			bytes += read_buffer->size;
+			file_bytes += read_buffer->size;
+			if(block < thresh) {
+				buffer_list[block].read_buffer = NULL;
+				queue_put(to_writer, read_buffer);
+			} else
+				buffer_list[block].read_buffer = read_buffer;
+		} else {
 			buffer_list[block].read_buffer = NULL;
-			queue_put(to_writer, read_buffer);
-		} else
-			buffer_list[block].read_buffer = read_buffer;
+			alloc_free(read_buffer);
+		}
 		buffer_list[block].start = read_buffer->block;
 		buffer_list[block].size = read_buffer->size;
 		progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
@@ -2844,7 +2875,7 @@ skip_inode_hash_table:
 
 			
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2-CVS (2007/05/25)\n");\
+	printf("mksquashfs version 3.2-r2-CVS (2007/08/05)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
