@@ -1676,7 +1676,8 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	struct squashfs_super_block *sblk = &msblk->sblk;
 	unsigned char *block_list;
 	long long block;
-	unsigned int bsize, i, bytes, byte_offset = 0;
+	unsigned int bsize, i;
+	int bytes;
 	int index = page->index >> (sblk->block_log - PAGE_CACHE_SHIFT);
  	void *pageaddr;
 	struct squashfs_fragment_cache *fragment = NULL;
@@ -1685,6 +1686,8 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	int mask = (1 << (sblk->block_log - PAGE_CACHE_SHIFT)) - 1;
 	int start_index = page->index & ~mask;
 	int end_index = start_index | mask;
+	int file_end = i_size_read(inode) >> sblk->block_log;
+	int sparse = 0;
 
 	TRACE("Entered squashfs_readpage, page index %lx, start block %llx\n",
 					page->index, SQUASHFS_I(inode)->start_block);
@@ -1696,7 +1699,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	}
 
 	if (SQUASHFS_I(inode)->u.s1.fragment_start_block == SQUASHFS_INVALID_BLK
-					|| index < (i_size_read(inode) >> sblk->block_log)) {
+					|| index < file_end) {
 		block_list = kmalloc(SIZE, GFP_KERNEL);
 		if (block_list == NULL) {
 			ERROR("Failed to allocate block_list\n");
@@ -1707,15 +1710,21 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		if (block == 0)
 			goto error_out;
 
-		mutex_lock(&msblk->read_page_mutex);
+		if (bsize == 0) { /* hole */
+			bytes = index == file_end ?
+				(i_size_read(inode) & (sblk->block_size - 1)) : sblk->block_size;
+			sparse = 1;
+		} else {
+			mutex_lock(&msblk->read_page_mutex);
 		
-		bytes = squashfs_read_data(inode->i_sb, msblk->read_page, block, bsize,
-			NULL, sblk->block_size);
+			bytes = squashfs_read_data(inode->i_sb, msblk->read_page, block,
+				bsize, NULL, sblk->block_size);
 
-		if (bytes == 0) {
-			ERROR("Unable to read page, block %llx, size %x\n", block, bsize);
-			mutex_unlock(&msblk->read_page_mutex);
-			goto error_out;
+			if (bytes == 0) {
+				ERROR("Unable to read page, block %llx, size %x\n", block, bsize);
+				mutex_unlock(&msblk->read_page_mutex);
+				goto error_out;
+			}
 		}
 	} else {
 		fragment = get_cached_fragment(inode->i_sb,
@@ -1729,19 +1738,16 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			block_list = NULL;
 			goto error_out;
 		}
-		bytes = SQUASHFS_I(inode)->u.s1.fragment_offset +
-					(i_size_read(inode) & (sblk->block_size - 1));
-		byte_offset = SQUASHFS_I(inode)->u.s1.fragment_offset;
-		data_ptr = fragment->data;
+		bytes = i_size_read(inode) & (sblk->block_size - 1);
+		data_ptr = fragment->data + SQUASHFS_I(inode)->u.s1.fragment_offset;
 	}
 
-	for (i = start_index; i <= end_index && byte_offset < bytes;
-					i++, byte_offset += PAGE_CACHE_SIZE) {
+	for (i = start_index; i <= end_index && bytes > 0; i++,
+						bytes -= PAGE_CACHE_SIZE, data_ptr += PAGE_CACHE_SIZE) {
 		struct page *push_page;
-		int avail = min_t(unsigned int, bytes - byte_offset, PAGE_CACHE_SIZE);
+		int avail = sparse ? 0 : min_t(unsigned int, bytes, PAGE_CACHE_SIZE);
 
-		TRACE("bytes %d, i %d, byte_offset %d, available_bytes %d\n",
-					bytes, i, byte_offset, avail);
+		TRACE("bytes %d, i %d, available_bytes %d\n", bytes, i, avail);
 
 		push_page = (i == page->index) ? page :
 			grab_cache_page_nowait(page->mapping, i);
@@ -1753,7 +1759,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			goto skip_page;
 
  		pageaddr = kmap_atomic(push_page, KM_USER0);
-		memcpy(pageaddr, data_ptr + byte_offset, avail);
+		memcpy(pageaddr, data_ptr, avail);
 		memset(pageaddr + avail, 0, PAGE_CACHE_SIZE - avail);
 		kunmap_atomic(pageaddr, KM_USER0);
 		flush_dcache_page(push_page);
@@ -1765,8 +1771,9 @@ skip_page:
 	}
 
 	if (SQUASHFS_I(inode)->u.s1.fragment_start_block == SQUASHFS_INVALID_BLK
-					|| index < (i_size_read(inode) >> sblk->block_log)) {
-		mutex_unlock(&msblk->read_page_mutex);
+					|| index < file_end) {
+		if (!sparse)
+			mutex_unlock(&msblk->read_page_mutex);
 		kfree(block_list);
 	} else
 		release_cached_fragment(msblk, fragment);
@@ -2166,7 +2173,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.2-r2-CVS (2007/07/17) "
+	printk(KERN_INFO "squashfs: version 3.2-r2-CVS (2007/08/05) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
