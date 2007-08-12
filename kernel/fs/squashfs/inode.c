@@ -1674,7 +1674,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	struct inode *inode = page->mapping->host;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
-	unsigned char *block_list;
+	unsigned char *block_list = NULL;
 	long long block;
 	unsigned int bsize, i;
 	int bytes;
@@ -1693,10 +1693,8 @@ static int squashfs_readpage(struct file *file, struct page *page)
 					page->index, SQUASHFS_I(inode)->start_block);
 
 	if (page->index >= ((i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
-					PAGE_CACHE_SHIFT)) {
-		block_list = NULL;
+					PAGE_CACHE_SHIFT))
 		goto out;
-	}
 
 	if (SQUASHFS_I(inode)->u.s1.fragment_start_block == SQUASHFS_INVALID_BLK
 					|| index < file_end) {
@@ -1735,7 +1733,6 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			ERROR("Unable to read page, block %llx, size %x\n",
 					SQUASHFS_I(inode)->u.s1.fragment_start_block,
 					(int) SQUASHFS_I(inode)->u.s1.fragment_size);
-			block_list = NULL;
 			goto error_out;
 		}
 		bytes = i_size_read(inode) & (sblk->block_size - 1);
