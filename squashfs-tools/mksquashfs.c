@@ -1421,7 +1421,7 @@ unsigned short get_checksum_buffer(struct buffer_list *buffer_list, unsigned int
 
 		if(b->read_buffer)
 			chksum = get_checksum(b->read_buffer->data, b->read_buffer->size, chksum);
-		else
+		else if(b->size != 0)
 			chksum = get_checksum(read_from_disk(b->start, b->size), b->size, chksum);
 	}
 
@@ -1549,6 +1549,9 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 			char *buffer;
 			int block;
 
+			if(memcmp(*block_list, dupl->ptr->block_list, blocks) != 0)
+				continue;
+
 			if(checksum_flag == FALSE) {
 				checksum = get_checksum_buffer(buffer_list, blocks);
 				fragment_checksum = get_checksum_mem_buffer(file_buffer);
@@ -1569,8 +1572,10 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 
 				if(b->read_buffer)
 					buffer = b->read_buffer->data;
-				else
+				else if(b->size)
 					buffer = read_from_disk(b->start, b->size);
+				else
+					continue;
 
 				read_bytes(fd, dup_start, b->size, buffer2);
 				if(memcmp(buffer, buffer2, b->size) != 0)
@@ -2875,7 +2880,7 @@ skip_inode_hash_table:
 
 			
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2-CVS (2007/08/05)\n");\
+	printf("mksquashfs version 3.2-r2-CVS (2007/08/11)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
