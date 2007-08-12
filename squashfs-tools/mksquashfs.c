@@ -1549,7 +1549,7 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 			char *buffer;
 			int block;
 
-			if(memcmp(*block_list, dupl->ptr->block_list, blocks) != 0)
+			if(memcmp(*block_list, dupl_ptr->block_list, blocks) != 0)
 				continue;
 
 			if(checksum_flag == FALSE) {
@@ -2880,7 +2880,7 @@ skip_inode_hash_table:
 
 			
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2-CVS (2007/08/11)\n");\
+	printf("mksquashfs version 3.2-r2-CVS (2007/08/12)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -2919,7 +2919,9 @@ int main(int argc, char *argv[])
 	source_path = argv + 1;
 	source = i - 2;
 	for(; i < argc; i++) {
-		if(strcmp(argv[i], "-no-progress") == 0)
+		if(strcmp(argv[i], "-no-sparse") == 0)
+			sparse_files = FALSE;
+		else if(strcmp(argv[i], "-no-progress") == 0)
 			progress = FALSE;
 		else if(strcmp(argv[i], "-no-exports") == 0)
 			exportable = FALSE;
@@ -3082,6 +3084,7 @@ printOptions:
 			ERROR("-info\t\t\tprint files written to filesystem\n");
 			ERROR("-no-exports\t\tdon't make the filesystem exportable via NFS\n");
 			ERROR("-no-progress\t\tdon't display the progress bar\n");
+			ERROR("-no-sparse\t\tdon't detect sparse files\n");
 			ERROR("-b <block_size>\t\tset data block to <block_size>.  Default %d bytes\n", SQUASHFS_FILE_SIZE);
 			ERROR("-processors <number>\tUse <number> processors.  By default will use number of\n\t\t\tprocessors available\n");
 			ERROR("-read-queue <size>\tSet input queue to <size> Mbytes.  Default %d Mbytes\n", READER_BUFFER_DEFAULT);
@@ -3122,7 +3125,7 @@ printOptions:
 	reader_buffer_size = readb_mbytes << (20 - block_log);
 	writer_buffer_size = writeb_mbytes << (20 - block_log);
 
-	if(block_size <= 65536)
+	if(block_size <= 65536 && sparse_files == FALSE)
 		s_minor = 0;
 	else
 		s_minor = SQUASHFS_MINOR;
