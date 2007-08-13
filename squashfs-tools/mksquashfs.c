@@ -2028,9 +2028,9 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 
 		block_list[block] = read_buffer->c_byte;
 		if(read_buffer->c_byte) {
+			read_buffer->block = bytes;
 			bytes += read_buffer->size;
 			file_bytes += read_buffer->size;
-			read_buffer->block = bytes;
 			queue_put(to_writer, read_buffer);
 		} else
 			alloc_free(read_buffer);
