@@ -463,15 +463,55 @@ char *read_fragment_2(unsigned int fragment)
 }
 
 
-int write_file(char *pathname, unsigned int fragment, unsigned int frag_bytes,
+int lseek_broken = FALSE;
+char *zero_data;
+long long hole;
+
+int write_block(int file_fd, char *buffer, int size)
+{
+	off_t off = hole;
+
+	if(hole) {
+		if(lseek_broken == FALSE && lseek(file_fd, off, SEEK_CUR) == -1) {
+			/* failed to seek beyond end of file */
+			if((zero_data = malloc(block_size)) == NULL)
+				EXIT_UNSQUASH("write_block: failed to alloc zero data block\n");
+			memset(zero_data, 0, block_size);
+			lseek_broken = TRUE;
+		}
+		if(lseek_broken) {
+			int blocks = (hole + block_size -1) / block_size;
+			int avail_bytes, i;
+			for(i = 0; i < blocks; i++, hole -= avail_bytes) {
+				avail_bytes = hole > block_size ? block_size : hole;
+				if(write(file_fd, zero_data, avail_bytes) < avail_bytes)
+					goto failure;
+			}
+		}
+		hole = 0;
+	}
+
+	if(write(file_fd, buffer, size) < size)
+		goto failure;
+
+	return TRUE;
+
+failure:
+	return FALSE;
+}
+
+	
+int write_file(long long file_size, char *pathname, unsigned int fragment, unsigned int frag_bytes,
 unsigned int offset, unsigned int blocks, long long start, char *block_ptr,
 unsigned int mode)
 {
 	unsigned int file_fd, bytes, i;
 	unsigned int *block_list;
+	int file_end = file_size / block_size;
 
 	TRACE("write_file: regular file, blocks %d\n", blocks);
 
+	hole = 0;
 	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL) {
 		ERROR("write_file: unable to malloc block list\n");
 		return FALSE;
@@ -487,12 +527,16 @@ unsigned int mode)
 	}
 
 	for(i = 0; i < blocks; i++) {
+		if(block_list[i] == 0) { /* sparse file */
+			hole += i == file_end ? file_size & (block_size - 1) : block_size;
+			continue;
+		}
 		if((bytes = read_data_block(start, block_list[i], file_data)) == 0) {
 			ERROR("write_file: failed to read data block 0x%llx\n", start);
 			goto failure;
 		}
 
-		if(write(file_fd, file_data, bytes) < bytes) {
+		if(write_block(file_fd, file_data, bytes) == FALSE) {
 			ERROR("write_file: failed to write data block 0x%llx\n", start);
 			goto failure;
 		}
@@ -506,13 +550,23 @@ unsigned int mode)
 		if(fragment_data == NULL)
 			goto failure;
 
-		if(write(file_fd, fragment_data + offset, frag_bytes) < frag_bytes) {
+		if(write_block(file_fd, fragment_data + offset, frag_bytes) == FALSE) {
 			ERROR("write_file: failed to write fragment %d\n", fragment);
 			goto failure;
 		}
 	}
 
+	if(hole) {
+		/* corner case for hole extending to end of file */
+		hole --;
+		if(write_block(file_fd, "\0", 1) == FALSE) {
+			ERROR("write_file: failed to write sparse data block\n");
+			goto failure;
+		}
+	}
+
 	close(file_fd);
+	free(block_list);
 	return TRUE;
 
 failure:
@@ -583,7 +637,7 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset)
 
 			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", inode->file_size, blocks);
 
-			if(write_file(pathname, inode->fragment, frag_bytes,
+			if(write_file(inode->file_size, pathname, inode->fragment, frag_bytes,
 					offset, blocks, start, block_ptr +
 					sizeof(*inode), inode->mode)) {
 				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, force);
@@ -616,7 +670,7 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset)
 
 			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", inode->file_size, blocks);
 
-			if(write_file(pathname, inode->fragment, frag_bytes,
+			if(write_file(inode->file_size, pathname, inode->fragment, frag_bytes,
 					offset, blocks, start, block_ptr +
 					sizeof(*inode), inode->mode)) {
 				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, force);
@@ -774,7 +828,7 @@ int create_inode_2(char *pathname, unsigned int start_block, unsigned int offset
 
 			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", inode->file_size, blocks);
 
-			if(write_file(pathname, inode->fragment, frag_bytes,
+			if(write_file(inode->file_size, pathname, inode->fragment, frag_bytes,
 					offset, blocks, start, block_ptr +
 					sizeof(*inode), inode->mode)) {
 				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, force);
@@ -925,7 +979,7 @@ int create_inode_1(char *pathname, unsigned int start_block, unsigned int offset
 
 			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", inode->file_size, blocks);
 
-			if(write_file(pathname, 0, 0, 0, blocks, start,
+			if(write_file(inode->file_size, pathname, 0, 0, 0, blocks, start,
 					block_ptr + sizeof(*inode), inode->mode)) {
 				set_attributes(pathname, inode->mode, uid, inode->guid, inode->mtime, force);
 				file_count ++;
@@ -1625,7 +1679,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.4-CVS (2007/05/25)\n");\
+	printf("unsquashfs version 1.4-CVS (2007/08/16)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
