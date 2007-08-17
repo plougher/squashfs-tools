@@ -100,7 +100,7 @@ int swap, silent = TRUE;
 long long global_uid = -1, global_gid = -1;
 int exportable = TRUE;
 int progress = TRUE;
-int sparse_files = FALSE;
+int sparse_files = TRUE;
 
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
@@ -2880,7 +2880,7 @@ skip_inode_hash_table:
 
 			
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2-CVS (2007/08/12)\n");\
+	printf("mksquashfs version 3.2-r2-CVS (2007/08/16)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
