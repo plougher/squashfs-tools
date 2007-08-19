@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007
- * Phillip Lougher <phillip@lougher.org.uk>
+ * Phillip Lougher <phillip@lougher.demon.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -2881,7 +2881,7 @@ skip_inode_hash_table:
 			
 #define VERSION() \
 	printf("mksquashfs version 3.2-r2-CVS (2007/08/16)\n");\
-	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.org.uk>\n\n"); \
+	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
 	printf("as published by the Free Software Foundation; either version 2,\n");\

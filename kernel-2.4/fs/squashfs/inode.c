@@ -2,7 +2,7 @@
  * Squashfs - a compressed read only filesystem for Linux
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006
- * Phillip Lougher <phillip@lougher.org.uk>
+ * Phillip Lougher <phillip@lougher.demon.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -2025,5 +2025,5 @@ EXPORT_NO_SYMBOLS;
 module_init(init_squashfs_fs);
 module_exit(exit_squashfs_fs);
 MODULE_DESCRIPTION("squashfs 3.1, a compressed read-only filesystem");
-MODULE_AUTHOR("Phillip Lougher <phillip@lougher.org.uk>");
+MODULE_AUTHOR("Phillip Lougher <phillip@lougher.demon.co.uk>");
 MODULE_LICENSE("GPL");
