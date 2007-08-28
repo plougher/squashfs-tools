@@ -35,6 +35,8 @@
 #include <zlib.h>
 #include <sys/mman.h>
 #include <utime.h>
+#include <pwd.h>
+#include <grp.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -74,12 +76,20 @@ struct hash_table_entry {
 };
 
 typedef struct squashfs_operations {
-	struct dir	*(*squashfs_opendir)(unsigned int block_start, unsigned int offset);
-	char 		*(*read_fragment)(unsigned int fragment);
-	void		(*read_fragment_table)();
-	int		(*create_inode)(char *pathname, unsigned int start_block, unsigned int offset);
-	void		(*read_block_list)(unsigned int *block_list, unsigned char *block_ptr, int blocks);
+	struct dir *(*squashfs_opendir)(unsigned int block_start, unsigned int offset);
+	char *(*read_fragment)(unsigned int fragment);
+	void (*read_fragment_table)();
+	int (*create_inode)(char *pathname, unsigned int start_block, unsigned int offset);
+	void (*read_block_list)(unsigned int *block_list, unsigned char *block_ptr, int blocks);
+	void *(*read_header)(unsigned int start_block, unsigned int offset, int*data, int *type, int *mode, uid_t *uid, uid_t *gid);
 } squashfs_operations;
+
+struct test {
+	int mask;
+	int value;
+	int position;
+	char mode;
+};
 
 squashfs_super_block sBlk;
 squashfs_operations s_ops;
@@ -97,10 +107,91 @@ char *fragment_data;
 char *file_data;
 char *data;
 unsigned int block_size;
-int lsonly = FALSE, info = FALSE, force = FALSE;
+int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE;
 char **created_inode;
 int root_process;
 
+int lookup_type[] = {
+	0,
+	S_IFDIR,
+	S_IFREG,
+	S_IFLNK,
+	S_IFBLK,
+	S_IFCHR,
+	S_IFIFO,
+	S_IFSOCK,
+	S_IFDIR,
+	S_IFREG
+};
+
+struct test table[] = {
+	{ S_IFMT, S_IFSOCK, 0, 's' },
+	{ S_IFMT, S_IFLNK, 0, 'l' },
+	{ S_IFMT, S_IFBLK, 0, 'b' },
+	{ S_IFMT, S_IFDIR, 0, 'd' },
+	{ S_IFMT, S_IFCHR, 0, 'c' },
+	{ S_IFMT, S_IFIFO, 0, 'p' },
+	{ S_IRUSR, S_IRUSR, 1, 'r' },
+	{ S_IWUSR, S_IWUSR, 2, 'w' },
+	{ S_IRGRP, S_IRGRP, 4, 'r' },
+	{ S_IWGRP, S_IWGRP, 5, 'w' },
+	{ S_IROTH, S_IROTH, 7, 'r' },
+	{ S_IWOTH, S_IWOTH, 8, 'w' },
+	{ S_IXUSR | S_ISUID, S_IXUSR | S_ISUID, 3, 's' },
+	{ S_IXUSR | S_ISUID, S_ISUID, 3, 'S' },
+	{ S_IXUSR | S_ISUID, S_IXUSR, 3, 'x' },
+	{ S_IXGRP | S_ISGID, S_IXGRP | S_ISGID, 6, 's' },
+	{ S_IXGRP | S_ISGID, S_ISGID, 6, 'S' },
+	{ S_IXGRP | S_ISGID, S_IXGRP, 6, 'x' },
+	{ S_IXOTH | S_ISVTX, S_IXOTH | S_ISVTX, 9, 't' },
+	{ S_IXOTH | S_ISVTX, S_ISVTX, 9, 'T' },
+	{ S_IXOTH | S_ISVTX, S_IXOTH, 9, 'x' },
+	{ 0, 0, 0, 0} };
+
+
+char *modestr(char *str, int mode)
+{
+	int i;
+
+	strcpy(str, "----------");
+
+	for(i = 0; table[i].mask != 0; i++) {
+		if((mode & table[i].mask) == table[i].value)
+			str[table[i].position] = table[i].mode;
+	}
+
+	return str;
+}
+
+
+int print_filename(char *pathname, unsigned int start_block, unsigned int offset)
+{
+	char str[11], dummy[100], dummy2[100];
+	int data, mode, type;
+	uid_t uid, gid;
+	struct passwd *user;
+	struct group *group;
+
+	if(short_ls) {
+		printf("%s\n", pathname);
+		return 1;
+	}
+
+	if(s_ops.read_header(start_block, offset, &data, &type, &mode, &uid, &gid) == NULL) {
+		ERROR("failed to read header\n");
+		return 0;
+	}
+
+	user = getpwuid(uid);
+	group = getgrgid(gid);
+	printf("%s %s %s %s\n", modestr(str, mode), user == NULL ?
+		sprintf(dummy, "%d", uid), dummy : user->pw_name,
+		group == NULL ? sprintf(dummy2, "%d", gid), dummy2 :
+		group->gr_name, pathname);
+
+	return 1;
+}
+	
 #define CALCULATE_HASH(start)	(start & 0xffff)
 
 int add_entry(struct hash_table_entry *hash_table[], int start, int bytes)
@@ -574,7 +665,128 @@ failure:
 	free(block_list);
 	return FALSE;
 }
-		
+
+
+void *read_header(unsigned int start_block, unsigned int offset, int *data,
+	int *type, int *mode, uid_t *uid, uid_t *gid)
+{
+	static squashfs_inode_header header;
+	long long start = sBlk.inode_table_start + start_block;
+	int bytes = lookup_entry(inode_table_hash, start), file_fd;
+	char *block_ptr = inode_table + bytes + offset;
+
+	if(bytes == -1)
+		goto error;
+
+	if(swap) {
+		squashfs_base_inode_header sinode;
+		memcpy(&sinode, block_ptr, sizeof(header.base));
+		SQUASHFS_SWAP_BASE_INODE_HEADER(&header.base, &sinode, sizeof(squashfs_base_inode_header));
+	} else
+		memcpy(&header.base, block_ptr, sizeof(header.base));
+
+    *uid = (uid_t) uid_table[header.base.uid];
+    *gid = header.base.guid == SQUASHFS_GUIDS ? *uid : (uid_t) guid_table[header.base.guid];
+	*mode = lookup_type[header.base.inode_type] | header.base.mode;
+	*type = header.base.inode_type;
+
+	switch(header.base.inode_type) {
+		case SQUASHFS_DIR_TYPE: {
+			squashfs_dir_inode_header *inode = &header.dir;
+
+			if(swap) {
+				squashfs_dir_inode_header sinode;
+				memcpy(&sinode, block_ptr, sizeof(header.dir));
+				SQUASHFS_SWAP_DIR_INODE_HEADER(&header.dir, &sinode);
+			} else
+				memcpy(&header.dir, block_ptr, sizeof(header.dir));
+
+			*data = inode->file_size;
+		}
+		case SQUASHFS_LDIR_TYPE: {
+			squashfs_ldir_inode_header *inode = &header.ldir;
+
+			if(swap) {
+				squashfs_ldir_inode_header sinode;
+				memcpy(&sinode, block_ptr, sizeof(header.ldir));
+				SQUASHFS_SWAP_LDIR_INODE_HEADER(&header.ldir, &sinode);
+			} else
+				memcpy(&header.ldir, block_ptr, sizeof(header.ldir));
+
+			*data = inode->file_size;
+		}
+		case SQUASHFS_FILE_TYPE: {
+			squashfs_reg_inode_header *inode = &header.reg;
+
+			if(swap) {
+				squashfs_reg_inode_header sinode;
+				memcpy(&sinode, block_ptr, sizeof(sinode));
+				SQUASHFS_SWAP_REG_INODE_HEADER(inode, &sinode);
+			} else
+				memcpy(inode, block_ptr, sizeof(*inode));
+
+			*data = inode->file_size;
+			break;
+		}	
+		case SQUASHFS_LREG_TYPE: {
+			unsigned int frag_bytes;
+			unsigned int blocks;
+			unsigned int offset;
+			long long start;
+			squashfs_lreg_inode_header *inode = &header.lreg;
+
+			if(swap) {
+				squashfs_lreg_inode_header sinode;
+				memcpy(&sinode, block_ptr, sizeof(sinode));
+				SQUASHFS_SWAP_LREG_INODE_HEADER(inode, &sinode);
+			} else
+				memcpy(inode, block_ptr, sizeof(*inode));
+
+			*data = inode->file_size;
+			break;
+		}	
+		case SQUASHFS_SYMLINK_TYPE: {
+			squashfs_symlink_inode_header *inodep = &header.symlink;
+			char name[65536];
+
+			if(swap) {
+				squashfs_symlink_inode_header sinodep;
+				memcpy(&sinodep, block_ptr, sizeof(sinodep));
+				SQUASHFS_SWAP_SYMLINK_INODE_HEADER(inodep, &sinodep);
+			} else
+				memcpy(inodep, block_ptr, sizeof(*inodep));
+
+			*data = inodep->symlink_size;
+			break;
+		}
+ 		case SQUASHFS_BLKDEV_TYPE:
+	 	case SQUASHFS_CHRDEV_TYPE: {
+			squashfs_dev_inode_header *inodep = &header.dev;
+
+			if(swap) {
+				squashfs_dev_inode_header sinodep;
+				memcpy(&sinodep, block_ptr, sizeof(sinodep));
+				SQUASHFS_SWAP_DEV_INODE_HEADER(inodep, &sinodep);
+			} else
+				memcpy(inodep, block_ptr, sizeof(*inodep));
+
+			*data = inodep->rdev;
+			break;
+			}
+		case SQUASHFS_FIFO_TYPE:
+		case SQUASHFS_SOCKET_TYPE:
+			*data = 0;
+			break;
+		default:
+			ERROR("Unknown inode type %d in read_header!\n", header.base.inode_type);
+			return NULL;
+	}
+	return &header;
+
+error:
+	return NULL;
+}
+
 
 int create_inode(char *pathname, unsigned int start_block, unsigned int offset)
 {
@@ -780,6 +992,110 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset)
 }
 
 
+void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
+	int *type, int *mode, uid_t *uid, uid_t *gid)
+{
+	static squashfs_inode_header_2 header;
+	long long start = sBlk.inode_table_start + start_block;
+	int bytes = lookup_entry(inode_table_hash, start), file_fd;
+	char *block_ptr = inode_table + bytes + offset;
+
+	if(bytes == -1)
+		goto error;
+
+	if(swap) {
+		squashfs_base_inode_header_2 sinode;
+		memcpy(&sinode, block_ptr, sizeof(header.base));
+		SQUASHFS_SWAP_BASE_INODE_HEADER_2(&header.base, &sinode, sizeof(squashfs_base_inode_header_2));
+	} else
+		memcpy(&header.base, block_ptr, sizeof(header.base));
+
+    *uid = (uid_t) uid_table[header.base.uid];
+    *gid = header.base.guid == SQUASHFS_GUIDS ? *uid : (uid_t) guid_table[header.base.guid];
+	*mode = lookup_type[header.base.inode_type] | header.base.mode;
+	*type = header.base.inode_type;
+
+	switch(header.base.inode_type) {
+		case SQUASHFS_DIR_TYPE: {
+			squashfs_dir_inode_header_2 *inode = &header.dir;
+
+			if(swap) {
+				squashfs_dir_inode_header sinode;
+				memcpy(&sinode, block_ptr, sizeof(header.dir));
+				SQUASHFS_SWAP_DIR_INODE_HEADER_2(&header.dir, &sinode);
+			} else
+				memcpy(&header.dir, block_ptr, sizeof(header.dir));
+
+			*data = inode->file_size;
+		}
+		case SQUASHFS_LDIR_TYPE: {
+			squashfs_ldir_inode_header_2 *inode = &header.ldir;
+
+			if(swap) {
+				squashfs_ldir_inode_header sinode;
+				memcpy(&sinode, block_ptr, sizeof(header.ldir));
+				SQUASHFS_SWAP_LDIR_INODE_HEADER_2(&header.ldir, &sinode);
+			} else
+				memcpy(&header.ldir, block_ptr, sizeof(header.ldir));
+
+			*data = inode->file_size;
+		}
+		case SQUASHFS_FILE_TYPE: {
+			squashfs_reg_inode_header_2 *inode = &header.reg;
+
+			if(swap) {
+				squashfs_reg_inode_header_2 sinode;
+				memcpy(&sinode, block_ptr, sizeof(sinode));
+				SQUASHFS_SWAP_REG_INODE_HEADER_2(inode, &sinode);
+			} else
+				memcpy(inode, block_ptr, sizeof(*inode));
+
+			*data = inode->file_size;
+			break;
+		}	
+		case SQUASHFS_SYMLINK_TYPE: {
+			squashfs_symlink_inode_header_2 *inodep = &header.symlink;
+			char name[65536];
+
+			if(swap) {
+				squashfs_symlink_inode_header_2 sinodep;
+				memcpy(&sinodep, block_ptr, sizeof(sinodep));
+				SQUASHFS_SWAP_SYMLINK_INODE_HEADER_2(inodep, &sinodep);
+			} else
+				memcpy(inodep, block_ptr, sizeof(*inodep));
+
+			*data = inodep->symlink_size;
+			break;
+		}
+ 		case SQUASHFS_BLKDEV_TYPE:
+	 	case SQUASHFS_CHRDEV_TYPE: {
+			squashfs_dev_inode_header_2 *inodep = &header.dev;
+
+			if(swap) {
+				squashfs_dev_inode_header_2 sinodep;
+				memcpy(&sinodep, block_ptr, sizeof(sinodep));
+				SQUASHFS_SWAP_DEV_INODE_HEADER_2(inodep, &sinodep);
+			} else
+				memcpy(inodep, block_ptr, sizeof(*inodep));
+
+			*data = inodep->rdev;
+			break;
+			}
+		case SQUASHFS_FIFO_TYPE:
+		case SQUASHFS_SOCKET_TYPE:
+			*data = 0;
+			break;
+		default:
+			ERROR("Unknown inode type %d in read_inode_header_2!\n", header.base.inode_type);
+			return NULL;
+	}
+	return &header;
+
+error:
+	return NULL;
+}
+
+
 int create_inode_2(char *pathname, unsigned int start_block, unsigned int offset)
 {
 	long long start = sBlk.inode_table_start + start_block;
@@ -936,6 +1252,100 @@ int create_inode_2(char *pathname, unsigned int start_block, unsigned int offset
 }
 
 
+void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
+	int *type, int *mode, uid_t *uid, uid_t *gid)
+{
+	static squashfs_inode_header_1 header;
+	long long start = sBlk.inode_table_start + start_block;
+	int bytes = lookup_entry(inode_table_hash, start), file_fd;
+	char *block_ptr = inode_table + bytes + offset;
+
+	if(bytes == -1)
+		goto error;
+
+	if(swap) {
+		squashfs_base_inode_header_1 sinode;
+		memcpy(&sinode, block_ptr, sizeof(header.base));
+		SQUASHFS_SWAP_BASE_INODE_HEADER_1(&header.base, &sinode, sizeof(squashfs_base_inode_header_1));
+	} else
+		memcpy(&header.base, block_ptr, sizeof(header.base));
+
+    *uid = (uid_t) uid_table[(header.base.inode_type - 1) / SQUASHFS_TYPES * 16 + header.base.uid];
+    *gid = header.base.guid == SQUASHFS_GUIDS ? *uid : (uid_t) guid_table[header.base.guid];
+	if(header.base.inode_type == SQUASHFS_IPC_TYPE) {
+		squashfs_ipc_inode_header_1 *inodep = &header.ipc;
+
+		if(swap) {
+			squashfs_ipc_inode_header_1 sinodep;
+			memcpy(&sinodep, block_ptr, sizeof(sinodep));
+			SQUASHFS_SWAP_IPC_INODE_HEADER_1(inodep, &sinodep);
+		} else
+			memcpy(inodep, block_ptr, sizeof(*inodep));
+
+		if(inodep->type == SQUASHFS_SOCKET_TYPE) {
+		}
+	} else {
+		*mode = lookup_type[(header.base.inode_type - 1) % SQUASHFS_TYPES + 1] | header.base.mode;
+		*type = (header.base.inode_type - 1) % SQUASHFS_TYPES + 1;
+	}
+
+	switch(*type) {
+		case SQUASHFS_FILE_TYPE: {
+			squashfs_reg_inode_header_1 *inode = &header.reg;
+
+			if(swap) {
+				squashfs_reg_inode_header_1 sinode;
+				memcpy(&sinode, block_ptr, sizeof(sinode));
+				SQUASHFS_SWAP_REG_INODE_HEADER_1(inode, &sinode);
+			} else
+				memcpy(inode, block_ptr, sizeof(*inode));
+
+			*data = inode->file_size;
+		}	
+		case SQUASHFS_SYMLINK_TYPE: {
+			squashfs_symlink_inode_header_1 *inodep = &header.symlink;
+			char name[65536];
+
+			if(swap) {
+				squashfs_symlink_inode_header_1 sinodep;
+				memcpy(&sinodep, block_ptr, sizeof(sinodep));
+				SQUASHFS_SWAP_SYMLINK_INODE_HEADER_1(inodep, &sinodep);
+			} else
+				memcpy(inodep, block_ptr, sizeof(*inodep));
+
+			*data = inodep->symlink_size;
+			break;
+		}
+ 		case SQUASHFS_BLKDEV_TYPE:
+	 	case SQUASHFS_CHRDEV_TYPE: {
+			squashfs_dev_inode_header_1 *inodep = &header.dev;
+
+			if(swap) {
+				squashfs_dev_inode_header_1 sinodep;
+				memcpy(&sinodep, block_ptr, sizeof(sinodep));
+				SQUASHFS_SWAP_DEV_INODE_HEADER_1(inodep, &sinodep);
+			} else
+				memcpy(inodep, block_ptr, sizeof(*inodep));
+
+			*data = inodep->rdev;
+			break;
+			}
+		case SQUASHFS_FIFO_TYPE:
+		case SQUASHFS_SOCKET_TYPE: {
+			*data = 0;
+			break;
+			}
+		default:
+			ERROR("Unknown inode type %d in read_inode_header_1!\n", header.base.inode_type);
+			return NULL;
+	}
+	return &header;
+
+error:
+	return NULL;
+}
+
+
 int create_inode_1(char *pathname, unsigned int start_block, unsigned int offset)
 {
 	long long start = sBlk.inode_table_start + start_block;
@@ -952,9 +1362,9 @@ int create_inode_1(char *pathname, unsigned int start_block, unsigned int offset
 	block_ptr = inode_table + bytes + offset;
 
 	if(swap) {
-		squashfs_base_inode_header_2 sinode;
+		squashfs_base_inode_header_1 sinode;
 		memcpy(&sinode, block_ptr, sizeof(header.base));
-		SQUASHFS_SWAP_BASE_INODE_HEADER_2(&header.base, &sinode, sizeof(squashfs_base_inode_header_2));
+		SQUASHFS_SWAP_BASE_INODE_HEADER_1(&header.base, &sinode, sizeof(squashfs_base_inode_header_1));
 	} else
 		memcpy(&header.base, block_ptr, sizeof(header.base));
 
@@ -1555,7 +1965,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, c
 		strcat(strcat(strcpy(pathname, parent_name), "/"), name);
 
 		if(lsonly || info)
-			printf("%s\n", pathname);
+			print_filename(pathname, start_block, offset);
 
 		if(type == SQUASHFS_DIR_TYPE)
 			dir_scan(pathname, start_block, offset, target);
@@ -1651,6 +2061,7 @@ int read_super(char *source)
 			s_ops.read_fragment_table = read_fragment_table_1;
 			s_ops.create_inode = create_inode_1;
 			s_ops.read_block_list = read_block_list_1;
+			s_ops.read_header = read_header_1;
 		} else {
 			sBlk.fragment_table_start = sBlk.fragment_table_start_2;
 			s_ops.squashfs_opendir = squashfs_opendir_2;
@@ -1658,6 +2069,7 @@ int read_super(char *source)
 			s_ops.read_fragment_table = read_fragment_table_2;
 			s_ops.create_inode = create_inode_2;
 			s_ops.read_block_list = read_block_list;
+			s_ops.read_header = read_header_2;
 		}
 	} else if(sBlk.s_major == 3 && sBlk.s_minor <= 1) {
 		s_ops.squashfs_opendir = squashfs_opendir;
@@ -1665,6 +2077,7 @@ int read_super(char *source)
 		s_ops.read_fragment_table = read_fragment_table;
 		s_ops.create_inode = create_inode;
 		s_ops.read_block_list = read_block_list;
+		s_ops.read_header = read_header;
 	} else {
 		ERROR("Filesystem on %s is (%d:%d), ", source, sBlk.s_major, sBlk.s_minor);
 		ERROR("which is a later filesystem version than I support!\n");
@@ -1679,7 +2092,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.4-CVS (2007/08/16)\n");\
+	printf("unsquashfs version 1.4-CVS (2007/08/26)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
