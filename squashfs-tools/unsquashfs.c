@@ -184,7 +184,7 @@ int print_filename(char *pathname, unsigned int start_block, unsigned int offset
 
 	user = getpwuid(uid);
 	group = getgrgid(gid);
-	printf("%s %s %s %s\n", modestr(str, mode), user == NULL ?
+	printf("%s\t%s\t%s\t%s\n", modestr(str, mode), user == NULL ?
 		sprintf(dummy, "%d", uid), dummy : user->pw_name,
 		group == NULL ? sprintf(dummy2, "%d", gid), dummy2 :
 		group->gr_name, pathname);
@@ -2092,7 +2092,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.4-CVS (2007/08/26)\n");\
+	printf("unsquashfs version 1.4-CVS (2007/08/30)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -2129,7 +2129,13 @@ int main(int argc, char *argv[])
 			force = TRUE;
 		else if(strcmp(argv[i], "-stat") == 0 || strcmp(argv[i], "-s") == 0)
 			stat_sys = TRUE;
-		else
+		else if(strcmp(argv[i], "-lls") == 0 || strcmp(argv[i], "-ll") == 0) {
+			lsonly = TRUE;
+			short_ls = FALSE;
+		} else if(strcmp(argv[i], "linfo") == 0 || strcmp(argv[i], "li") == 0) {
+			info = TRUE;
+			short_ls = FALSE;
+		} else
 			goto options;
 	}
 
@@ -2139,7 +2145,9 @@ options:
 			ERROR("SYNTAX: %s [options] filesystem [directory or file to extract]\n", argv[0]);
 			ERROR("\t-v[ersion]\t\tprint version, licence and copyright information\n");
 			ERROR("\t-i[nfo]\t\t\tprint files as they are unsquashed\n");
-			ERROR("\t-l[s]\t\t\tlist filesystem only\n");
+			ERROR("\t-li[nfo]\t\tprint files as they are unsquashed with file\n\t\t\t\tattributes (like ls -l output)\n");
+			ERROR("\t-l[s]\t\t\tlist filesystem, but don't unsquash\n");
+			ERROR("\t-ll[s]\t\t\tlist filesystem with file attributes (like\n\t\t\t\tls -l output), but don't unsquash\n");
 			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, default \"squashfs-root\"\n");
 			ERROR("\t-f[orce]\t\tif file already exists then overwrite\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
