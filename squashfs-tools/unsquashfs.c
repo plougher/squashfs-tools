@@ -81,7 +81,7 @@ typedef struct squashfs_operations {
 	void (*read_fragment_table)();
 	int (*create_inode)(char *pathname, unsigned int start_block, unsigned int offset);
 	void (*read_block_list)(unsigned int *block_list, unsigned char *block_ptr, int blocks);
-	void *(*read_header)(unsigned int start_block, unsigned int offset, int*data, int *type, int *mode, uid_t *uid, uid_t *gid);
+	void *(*read_header)(unsigned int start_block, unsigned int offset, int *data, char *symlink, int *type, int *mode, uid_t *uid, uid_t *gid);
 } squashfs_operations;
 
 struct test {
@@ -164,10 +164,11 @@ char *modestr(char *str, int mode)
 }
 
 
+#define TOTALCHARS  25
 int print_filename(char *pathname, unsigned int start_block, unsigned int offset)
 {
-	char str[11], dummy[100], dummy2[100];
-	int data, mode, type;
+	char str[11], dummy[100], dummy2[100], *userstr, *groupstr, symlink[65536];
+	int data, mode, type, padchars;
 	uid_t uid, gid;
 	struct passwd *user;
 	struct group *group;
@@ -177,18 +178,48 @@ int print_filename(char *pathname, unsigned int start_block, unsigned int offset
 		return 1;
 	}
 
-	if(s_ops.read_header(start_block, offset, &data, &type, &mode, &uid, &gid) == NULL) {
+	if(s_ops.read_header(start_block, offset, &data, symlink, &type, &mode, &uid, &gid) == NULL) {
 		ERROR("failed to read header\n");
 		return 0;
 	}
 
-	user = getpwuid(uid);
-	group = getgrgid(gid);
-	printf("%s\t%s\t%s\t%s\n", modestr(str, mode), user == NULL ?
-		sprintf(dummy, "%d", uid), dummy : user->pw_name,
-		group == NULL ? sprintf(dummy2, "%d", gid), dummy2 :
-		group->gr_name, pathname);
+	if((user = getpwuid(uid)) == NULL) {
+		sprintf(dummy, "%d", uid);
+		userstr = dummy;
+	} else
+		userstr = user->pw_name;
+		 
+	if((group = getgrgid(gid)) == NULL) {
+		sprintf(dummy2, "%d", uid);
+		groupstr = dummy2;
+	} else
+		groupstr = group->gr_name;
 
+	printf("%s %s/%s ", modestr(str, mode), userstr, groupstr);
+
+	switch(mode & S_IFMT) {
+		case S_IFREG:
+		case S_IFDIR:
+		case S_IFSOCK:
+		case S_IFIFO:
+		case S_IFLNK:
+			padchars = TOTALCHARS - strlen(userstr) - strlen(groupstr);
+
+			printf("%*d ", padchars > 0 ? padchars : 0, data);
+			break;
+		case S_IFCHR:
+		case S_IFBLK:
+			padchars = TOTALCHARS - strlen(userstr) - strlen(groupstr) - 7; 
+
+			printf("%*s%3d,%3d ", padchars > 0 ? padchars : 0, " ", data >> 8, data & 0xff);
+			break;
+	}
+
+	printf("%s", pathname);
+	if((mode & S_IFMT) == S_IFLNK)
+		printf(" -> %s", symlink);
+	printf("\n");
+		
 	return 1;
 }
 	
@@ -668,7 +699,7 @@ failure:
 
 
 void *read_header(unsigned int start_block, unsigned int offset, int *data,
-	int *type, int *mode, uid_t *uid, uid_t *gid)
+	char *symlink, int *type, int *mode, uid_t *uid, uid_t *gid)
 {
 	static squashfs_inode_header header;
 	long long start = sBlk.inode_table_start + start_block;
@@ -702,6 +733,7 @@ void *read_header(unsigned int start_block, unsigned int offset, int *data,
 				memcpy(&header.dir, block_ptr, sizeof(header.dir));
 
 			*data = inode->file_size;
+			break;
 		}
 		case SQUASHFS_LDIR_TYPE: {
 			squashfs_ldir_inode_header *inode = &header.ldir;
@@ -714,6 +746,7 @@ void *read_header(unsigned int start_block, unsigned int offset, int *data,
 				memcpy(&header.ldir, block_ptr, sizeof(header.ldir));
 
 			*data = inode->file_size;
+			break;
 		}
 		case SQUASHFS_FILE_TYPE: {
 			squashfs_reg_inode_header *inode = &header.reg;
@@ -756,6 +789,8 @@ void *read_header(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
+			strncpy(symlink, block_ptr + sizeof(squashfs_symlink_inode_header), inodep->symlink_size);
+			symlink[inodep->symlink_size] = '\0';
 			*data = inodep->symlink_size;
 			break;
 		}
@@ -993,7 +1028,7 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset)
 
 
 void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
-	int *type, int *mode, uid_t *uid, uid_t *gid)
+	char *symlink, int *type, int *mode, uid_t *uid, uid_t *gid)
 {
 	static squashfs_inode_header_2 header;
 	long long start = sBlk.inode_table_start + start_block;
@@ -1027,6 +1062,7 @@ void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
 				memcpy(&header.dir, block_ptr, sizeof(header.dir));
 
 			*data = inode->file_size;
+			break;
 		}
 		case SQUASHFS_LDIR_TYPE: {
 			squashfs_ldir_inode_header_2 *inode = &header.ldir;
@@ -1039,6 +1075,7 @@ void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
 				memcpy(&header.ldir, block_ptr, sizeof(header.ldir));
 
 			*data = inode->file_size;
+			break;
 		}
 		case SQUASHFS_FILE_TYPE: {
 			squashfs_reg_inode_header_2 *inode = &header.reg;
@@ -1064,6 +1101,8 @@ void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
+			strncpy(symlink, block_ptr + sizeof(squashfs_symlink_inode_header_2), inodep->symlink_size);
+			symlink[inodep->symlink_size] = '\0';
 			*data = inodep->symlink_size;
 			break;
 		}
@@ -1253,7 +1292,7 @@ int create_inode_2(char *pathname, unsigned int start_block, unsigned int offset
 
 
 void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
-	int *type, int *mode, uid_t *uid, uid_t *gid)
+	char *symlink, int *type, int *mode, uid_t *uid, uid_t *gid)
 {
 	static squashfs_inode_header_1 header;
 	long long start = sBlk.inode_table_start + start_block;
@@ -1313,6 +1352,8 @@ void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
+			strncpy(symlink, block_ptr + sizeof(squashfs_symlink_inode_header_1), inodep->symlink_size);
+			symlink[inodep->symlink_size] = '\0';
 			*data = inodep->symlink_size;
 			break;
 		}
@@ -2132,7 +2173,7 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-lls") == 0 || strcmp(argv[i], "-ll") == 0) {
 			lsonly = TRUE;
 			short_ls = FALSE;
-		} else if(strcmp(argv[i], "linfo") == 0 || strcmp(argv[i], "li") == 0) {
+		} else if(strcmp(argv[i], "-linfo") == 0 || strcmp(argv[i], "-li") == 0) {
 			info = TRUE;
 			short_ls = FALSE;
 		} else
