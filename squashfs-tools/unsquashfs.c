@@ -1353,10 +1353,11 @@ void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
 				memcpy(&sinode, block_ptr, sizeof(header.dir));
 				SQUASHFS_SWAP_DIR_INODE_HEADER_1(inode, &sinode);
 			} else
-			memcpy(&header.dir, block_ptr, sizeof(inode));
+			memcpy(inode, block_ptr, sizeof(header.dir));
 
 			*data = inode->file_size;
 			*time = inode->mtime;
+			break;
 		}
 		case SQUASHFS_FILE_TYPE: {
 			squashfs_reg_inode_header_1 *inode = &header.reg;
@@ -1370,6 +1371,7 @@ void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
 
 			*data = inode->file_size;
 			*time = inode->mtime;
+			break;
 		}	
 		case SQUASHFS_SYMLINK_TYPE: {
 			squashfs_symlink_inode_header_1 *inodep = &header.symlink;
