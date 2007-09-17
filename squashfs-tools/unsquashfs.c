@@ -77,13 +77,30 @@ struct hash_table_entry {
 };
 
 typedef struct squashfs_operations {
-	struct dir *(*squashfs_opendir)(unsigned int block_start, unsigned int offset);
+	struct dir *(*squashfs_opendir)(char *pathname, unsigned int block_start, unsigned int offset);
 	char *(*read_fragment)(unsigned int fragment);
 	void (*read_fragment_table)();
-	int (*create_inode)(char *pathname, unsigned int start_block, unsigned int offset);
 	void (*read_block_list)(unsigned int *block_list, unsigned char *block_ptr, int blocks);
-	void *(*read_header)(unsigned int start_block, unsigned int offset, int *data, time_t *time, char *symlink, int *type, int *mode, uid_t *uid, uid_t *gid);
+	struct inode *(*read_inode)(unsigned int start_block, unsigned int offset);
 } squashfs_operations;
+
+struct inode {
+	int blocks;
+	char *block_ptr;
+	int data;
+	int fragment;
+	int frag_bytes;
+	gid_t gid;
+	int inode_number;
+	int mode;
+	int offset;
+	long long start;
+	char symlink[65536];
+	time_t time;
+	int type;
+	uid_t uid;
+};
+	
 
 struct test {
 	int mask;
@@ -166,41 +183,34 @@ char *modestr(char *str, int mode)
 
 
 #define TOTALCHARS  25
-int print_filename(char *pathname, unsigned int start_block, unsigned int offset)
+int print_filename(char *pathname, struct inode *inode)
 {
-	char str[11], dummy[100], dummy2[100], *userstr, *groupstr, symlink[65536];
-	int data, mode, type, padchars;
-	uid_t uid, gid;
+	char str[11], dummy[100], dummy2[100], *userstr, *groupstr;
+	int padchars;
 	struct passwd *user;
 	struct group *group;
 	struct tm *t;
-	time_t time;
 
 	if(short_ls) {
 		printf("%s\n", pathname);
 		return 1;
 	}
 
-	if(s_ops.read_header(start_block, offset, &data, &time, symlink, &type, &mode, &uid, &gid) == NULL) {
-		ERROR("failed to read header\n");
-		return 0;
-	}
-
-	if((user = getpwuid(uid)) == NULL) {
-		sprintf(dummy, "%d", uid);
+	if((user = getpwuid(inode->uid)) == NULL) {
+		sprintf(dummy, "%d", inode->uid);
 		userstr = dummy;
 	} else
 		userstr = user->pw_name;
 		 
-	if((group = getgrgid(gid)) == NULL) {
-		sprintf(dummy2, "%d", uid);
+	if((group = getgrgid(inode->gid)) == NULL) {
+		sprintf(dummy2, "%d", inode->gid);
 		groupstr = dummy2;
 	} else
 		groupstr = group->gr_name;
 
-	printf("%s %s/%s ", modestr(str, mode), userstr, groupstr);
+	printf("%s %s/%s ", modestr(str, inode->mode), userstr, groupstr);
 
-	switch(mode & S_IFMT) {
+	switch(inode->mode & S_IFMT) {
 		case S_IFREG:
 		case S_IFDIR:
 		case S_IFSOCK:
@@ -208,21 +218,21 @@ int print_filename(char *pathname, unsigned int start_block, unsigned int offset
 		case S_IFLNK:
 			padchars = TOTALCHARS - strlen(userstr) - strlen(groupstr);
 
-			printf("%*d ", padchars > 0 ? padchars : 0, data);
+			printf("%*d ", padchars > 0 ? padchars : 0, inode->data);
 			break;
 		case S_IFCHR:
 		case S_IFBLK:
 			padchars = TOTALCHARS - strlen(userstr) - strlen(groupstr) - 7; 
 
-			printf("%*s%3d,%3d ", padchars > 0 ? padchars : 0, " ", data >> 8, data & 0xff);
+			printf("%*s%3d,%3d ", padchars > 0 ? padchars : 0, " ", inode->data >> 8, inode->data & 0xff);
 			break;
 	}
 
-	t = localtime(&time);
+	t = localtime(&inode->time);
 
 	printf("%d-%02d-%02d %02d:%02d %s", t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, pathname);
-	if((mode & S_IFMT) == S_IFLNK)
-		printf(" -> %s", symlink);
+	if((inode->mode & S_IFMT) == S_IFLNK)
+		printf(" -> %s", inode->symlink);
 	printf("\n");
 		
 	return 1;
@@ -418,10 +428,9 @@ void uncompress_inode_table(long long start, long long end)
 }
 
 
-int set_attributes(char *pathname, unsigned int mode, unsigned int uid,
-unsigned int guid, unsigned int mtime, unsigned int set_mode)
+int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time, unsigned int set_mode)
 {
-	struct utimbuf times = { (time_t) mtime, (time_t) mtime };
+	struct utimbuf times = { time, time };
 
 	if(utime(pathname, &times) == -1) {
 		ERROR("set_attributes: failed to set time on %s, because %s\n", pathname, strerror(errno));
@@ -429,10 +438,7 @@ unsigned int guid, unsigned int mtime, unsigned int set_mode)
 	}
 
 	if(root_process) {
-		uid_t uid_value = (uid_t) uid_table[uid];
-		uid_t guid_value = guid == SQUASHFS_GUIDS ? uid_value : (uid_t) guid_table[guid];
-
-		if(chown(pathname, uid_value, guid_value) == -1) {
+		if(chown(pathname, uid, guid) == -1) {
 			ERROR("set_attributes: failed to change uid and gids on %s, because %s\n", pathname, strerror(errno));
 			return FALSE;
 		}
@@ -703,13 +709,13 @@ failure:
 }
 
 
-void *read_header(unsigned int start_block, unsigned int offset, int *data,
-	time_t *time, char *symlink, int *type, int *mode, uid_t *uid, uid_t *gid)
+static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header header;
 	long long start = sBlk.inode_table_start + start_block;
 	int bytes = lookup_entry(inode_table_hash, start), file_fd;
 	char *block_ptr = inode_table + bytes + offset;
+	static struct inode i;
 
 	if(bytes == -1)
 		goto error;
@@ -721,11 +727,12 @@ void *read_header(unsigned int start_block, unsigned int offset, int *data,
 	} else
 		memcpy(&header.base, block_ptr, sizeof(header.base));
 
-    *uid = (uid_t) uid_table[header.base.uid];
-    *gid = header.base.guid == SQUASHFS_GUIDS ? *uid : (uid_t) guid_table[header.base.guid];
-	*mode = lookup_type[header.base.inode_type] | header.base.mode;
-	*type = header.base.inode_type;
-	*time = header.base.mtime;
+	i.uid = (uid_t) uid_table[header.base.uid];
+	i.gid = header.base.guid == SQUASHFS_GUIDS ? i.uid : (uid_t) guid_table[header.base.guid];
+	i.mode = lookup_type[header.base.inode_type] | header.base.mode;
+	i.type = header.base.inode_type;
+	i.time = header.base.mtime;
+	i.inode_number = header.base.inode_number;
 
 	switch(header.base.inode_type) {
 		case SQUASHFS_DIR_TYPE: {
@@ -738,7 +745,9 @@ void *read_header(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(&header.dir, block_ptr, sizeof(header.dir));
 
-			*data = inode->file_size;
+			i.data = inode->file_size;
+			i.offset = inode->offset;
+			i.start = inode->start_block;
 			break;
 		}
 		case SQUASHFS_LDIR_TYPE: {
@@ -751,7 +760,9 @@ void *read_header(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(&header.ldir, block_ptr, sizeof(header.ldir));
 
-			*data = inode->file_size;
+			i.data = inode->file_size;
+			i.offset = inode->offset;
+			i.start = inode->start_block;
 			break;
 		}
 		case SQUASHFS_FILE_TYPE: {
@@ -764,14 +775,19 @@ void *read_header(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inode, block_ptr, sizeof(*inode));
 
-			*data = inode->file_size;
+			i.data = inode->file_size;
+			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ?
+				0 : inode->file_size % sBlk.block_size;
+			i.fragment = inode->fragment;
+			i.offset = inode->offset;
+			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
+				(inode->file_size + sBlk.block_size - 1) >>
+				sBlk.block_log : inode->file_size >> sBlk.block_log;
+			i.start = inode->start_block;
+			i.block_ptr = block_ptr + sizeof(*inode);
 			break;
 		}	
 		case SQUASHFS_LREG_TYPE: {
-			unsigned int frag_bytes;
-			unsigned int blocks;
-			unsigned int offset;
-			long long start;
 			squashfs_lreg_inode_header *inode = &header.lreg;
 
 			if(swap) {
@@ -781,12 +797,20 @@ void *read_header(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inode, block_ptr, sizeof(*inode));
 
-			*data = inode->file_size;
+			i.data = inode->file_size;
+			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ?
+				0 : inode->file_size % sBlk.block_size;
+			i.fragment = inode->fragment;
+			i.offset = inode->offset;
+			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
+				(inode->file_size + sBlk.block_size - 1) >>
+				sBlk.block_log : inode->file_size >> sBlk.block_log;
+			i.start = inode->start_block;
+			i.block_ptr = block_ptr + sizeof(*inode);
 			break;
 		}	
 		case SQUASHFS_SYMLINK_TYPE: {
 			squashfs_symlink_inode_header *inodep = &header.symlink;
-			char name[65536];
 
 			if(swap) {
 				squashfs_symlink_inode_header sinodep;
@@ -795,9 +819,9 @@ void *read_header(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
-			strncpy(symlink, block_ptr + sizeof(squashfs_symlink_inode_header), inodep->symlink_size);
-			symlink[inodep->symlink_size] = '\0';
-			*data = inodep->symlink_size;
+			strncpy(i.symlink, block_ptr + sizeof(squashfs_symlink_inode_header), inodep->symlink_size);
+			i.symlink[inodep->symlink_size] = '\0';
+			i.data = inodep->symlink_size;
 			break;
 		}
  		case SQUASHFS_BLKDEV_TYPE:
@@ -811,52 +835,34 @@ void *read_header(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
-			*data = inodep->rdev;
+			i.data = inodep->rdev;
 			break;
 			}
 		case SQUASHFS_FIFO_TYPE:
 		case SQUASHFS_SOCKET_TYPE:
-			*data = 0;
+			i.data = 0;
 			break;
 		default:
-			ERROR("Unknown inode type %d in read_header!\n", header.base.inode_type);
+			ERROR("Unknown inode type %d in read_inode!\n", header.base.inode_type);
 			return NULL;
 	}
-	return &header;
+	return &i;
 
 error:
 	return NULL;
 }
 
 
-int create_inode(char *pathname, unsigned int start_block, unsigned int offset)
+int create_inode(char *pathname, struct inode *i)
 {
-	long long start = sBlk.inode_table_start + start_block;
-	squashfs_inode_header header;
-	char *block_ptr;
-	int bytes = lookup_entry(inode_table_hash, start), file_fd;
+	TRACE("create_inode: pathname %s\n", pathname);
 
-	TRACE("create_inode: pathname %s, start 0x%llx, offset %d\n", pathname, start, offset);
-
-	if(bytes == -1) {
-		ERROR("create_inode: inode block 0x%llx out of range!\n", start);
-		return FALSE;
-	}
-	block_ptr = inode_table + bytes + offset;
-
-	if(swap) {
-		squashfs_base_inode_header sinode;
-		memcpy(&sinode, block_ptr, sizeof(header.base));
-		SQUASHFS_SWAP_BASE_INODE_HEADER(&header.base, &sinode, sizeof(squashfs_base_inode_header));
-	} else
-		memcpy(&header.base, block_ptr, sizeof(header.base));
-
-	if(created_inode[header.base.inode_number - 1]) {
+	if(created_inode[i->inode_number - 1]) {
 		TRACE("create_inode: hard link\n");
 		if(force)
 			unlink(pathname);
 
-		if(link(created_inode[header.base.inode_number - 1], pathname) == -1) {
+		if(link(created_inode[i->inode_number - 1], pathname) == -1) {
 			ERROR("create_inode: failed to create hardlink, because %s\n", strerror(errno));
 			return FALSE;
 		}
@@ -864,145 +870,58 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset)
 		return TRUE;
 	}
 
-	switch(header.base.inode_type) {
-		case SQUASHFS_FILE_TYPE: {
-			unsigned int frag_bytes;
-			unsigned int blocks;
-			unsigned int offset;
-			long long start;
-			squashfs_reg_inode_header *inode = &header.reg;
+	switch(i->type) {
+		case SQUASHFS_FILE_TYPE:
+		case SQUASHFS_LREG_TYPE:
+			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", i->data, i->blocks);
 
-			if(swap) {
-				squashfs_reg_inode_header sinode;
-				memcpy(&sinode, block_ptr, sizeof(sinode));
-				SQUASHFS_SWAP_REG_INODE_HEADER(inode, &sinode);
-			} else
-				memcpy(inode, block_ptr, sizeof(*inode));
-
-			frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				0 : inode->file_size % sBlk.block_size;
-			offset = inode->offset;
-			blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(inode->file_size + sBlk.block_size - 1) >>
-				sBlk.block_log : inode->file_size >>
-				sBlk.block_log;
-			start = inode->start_block;
-
-			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", inode->file_size, blocks);
-
-			if(write_file(inode->file_size, pathname, inode->fragment, frag_bytes,
-					offset, blocks, start, block_ptr +
-					sizeof(*inode), inode->mode)) {
-				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, force);
+			if(write_file(i->data, pathname, i->fragment, i->frag_bytes,
+					i->offset, i->blocks, i->start, i->block_ptr, i->mode)) {
+				set_attributes(pathname, i->mode, i->uid, i->gid, i->time, force);
 				file_count ++;
 			}
 			break;
-		}	
-		case SQUASHFS_LREG_TYPE: {
-			unsigned int frag_bytes;
-			unsigned int blocks;
-			unsigned int offset;
-			long long start;
-			squashfs_lreg_inode_header *inode = &header.lreg;
-
-			if(swap) {
-				squashfs_lreg_inode_header sinode;
-				memcpy(&sinode, block_ptr, sizeof(sinode));
-				SQUASHFS_SWAP_LREG_INODE_HEADER(inode, &sinode);
-			} else
-				memcpy(inode, block_ptr, sizeof(*inode));
-
-			frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				0 : inode->file_size % sBlk.block_size;
-			offset = inode->offset;
-			blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(inode->file_size + sBlk.block_size - 1) >>
-				sBlk.block_log : inode->file_size >>
-				sBlk.block_log;
-			start = inode->start_block;
-
-			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", inode->file_size, blocks);
-
-			if(write_file(inode->file_size, pathname, inode->fragment, frag_bytes,
-					offset, blocks, start, block_ptr +
-					sizeof(*inode), inode->mode)) {
-				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, force);
-				file_count ++;
-			}
-			break;
-		}	
-		case SQUASHFS_SYMLINK_TYPE: {
-			squashfs_symlink_inode_header *inodep = &header.symlink;
-			char name[65536];
-
-			if(swap) {
-				squashfs_symlink_inode_header sinodep;
-				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_SYMLINK_INODE_HEADER(inodep, &sinodep);
-			} else
-				memcpy(inodep, block_ptr, sizeof(*inodep));
-
-			TRACE("create_inode: symlink, symlink_size %d\n", inodep->symlink_size);
-
-			strncpy(name, block_ptr + sizeof(squashfs_symlink_inode_header), inodep->symlink_size);
-			name[inodep->symlink_size] = '\0';
+		case SQUASHFS_SYMLINK_TYPE:
+			TRACE("create_inode: symlink, symlink_size %d\n", i->data);
 
 			if(force)
 				unlink(pathname);
 
-			if(symlink(name, pathname) == -1) {
+			if(symlink(i->symlink, pathname) == -1) {
 				ERROR("create_inode: failed to create symlink %s, because %s\n", pathname,
 					strerror(errno));
 				break;
 			}
 
 			if(root_process) {
-				uid_t uid_value = (uid_t) uid_table[inodep->uid];
-				uid_t guid_value = inodep->guid ==
-					SQUASHFS_GUIDS ? uid_value : (uid_t)
-					guid_table[inodep->guid];
-
-				if(lchown(pathname, uid_value, guid_value) == -1)
+				if(lchown(pathname, i->uid, i->gid) == -1)
 					ERROR("create_inode: failed to change uid and gids on %s, because %s\n", pathname, strerror(errno));
 			}
 
 			sym_count ++;
 			break;
-		}
  		case SQUASHFS_BLKDEV_TYPE:
 	 	case SQUASHFS_CHRDEV_TYPE: {
-			squashfs_dev_inode_header *inodep = &header.dev;
-
-			if(swap) {
-				squashfs_dev_inode_header sinodep;
-				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_DEV_INODE_HEADER(inodep, &sinodep);
-			} else
-				memcpy(inodep, block_ptr, sizeof(*inodep));
-
-			TRACE("create_inode: dev, rdev 0x%x\n", inodep->rdev);
+			int chrdev = i->type == SQUASHFS_CHRDEV_TYPE;
+			TRACE("create_inode: dev, rdev 0x%x\n", i->data);
 
 			if(root_process) {
 				if(force)
 					unlink(pathname);
 
-				if(mknod(pathname, inodep->inode_type ==
-					SQUASHFS_CHRDEV_TYPE ?  S_IFCHR :
-					S_IFBLK, makedev((inodep->rdev >> 8)
-					& 0xff, inodep->rdev & 0xff)) == -1) {
+				if(mknod(pathname, chrdev ? S_IFCHR : S_IFBLK,
+					makedev((i->data >> 8) & 0xff, i->data & 0xff)) == -1) {
 					ERROR("create_inode: failed to create %s device %s, because %s\n",
-						inodep->inode_type == SQUASHFS_CHRDEV_TYPE ? "character" : "block",
-						pathname, strerror(errno));
+						chrdev ? "character" : "block", pathname, strerror(errno));
 					break;
 				}
-				set_attributes(pathname, inodep->mode, inodep->uid, inodep->guid, inodep->mtime, TRUE);
+				set_attributes(pathname, i->mode, i->uid, i->gid, i->time, TRUE);
 				dev_count ++;
 			} else
 				ERROR("create_inode: could not create %s device %s, because you're not superuser!\n",
-					inodep->inode_type == SQUASHFS_CHRDEV_TYPE ? "character" : "block",
-					pathname, strerror(errno));
+					chrdev ? "character" : "block", pathname, strerror(errno));
 			break;
-			}
+		}
 		case SQUASHFS_FIFO_TYPE:
 			TRACE("create_inode: fifo\n");
 
@@ -1014,8 +933,7 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset)
 					pathname, strerror(errno));
 				break;
 			}
-			set_attributes(pathname, header.base.mode, header.base.uid, header.base.guid,
-				header.base.mtime, TRUE);
+			set_attributes(pathname, i->mode, i->uid, i->gid, i->time, TRUE);
 			fifo_count ++;
 			break;
 		case SQUASHFS_SOCKET_TYPE:
@@ -1023,23 +941,24 @@ int create_inode(char *pathname, unsigned int start_block, unsigned int offset)
 			ERROR("create_inode: socket %s ignored\n", pathname);
 			break;
 		default:
-			ERROR("Unknown inode type %d in create_inode_table!\n", header.base.inode_type);
+			ERROR("Unknown inode type %d in create_inode_table!\n", i->type);
 			return FALSE;
 	}
 
-	created_inode[header.base.inode_number - 1] = strdup(pathname);
+	created_inode[i->inode_number - 1] = strdup(pathname);
 
 	return TRUE;
 }
 
 
-void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
-	time_t *time, char *symlink, int *type, int *mode, uid_t *uid, uid_t *gid)
+struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header_2 header;
 	long long start = sBlk.inode_table_start + start_block;
 	int bytes = lookup_entry(inode_table_hash, start), file_fd;
 	char *block_ptr = inode_table + bytes + offset;
+	static struct inode i;
+	static int inode_number = 1;
 
 	if(bytes == -1)
 		goto error;
@@ -1051,11 +970,12 @@ void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
 	} else
 		memcpy(&header.base, block_ptr, sizeof(header.base));
 
-    *uid = (uid_t) uid_table[header.base.uid];
-    *gid = header.base.guid == SQUASHFS_GUIDS ? *uid : (uid_t) guid_table[header.base.guid];
-	*mode = lookup_type[header.base.inode_type] | header.base.mode;
-	*type = header.base.inode_type;
-	*time = sBlk.mkfs_time;
+    i.uid = (uid_t) uid_table[header.base.uid];
+    i.gid = header.base.guid == SQUASHFS_GUIDS ? i.uid : (uid_t) guid_table[header.base.guid];
+	i.mode = lookup_type[header.base.inode_type] | header.base.mode;
+	i.type = header.base.inode_type;
+	i.time = sBlk.mkfs_time;
+	i.inode_number = inode_number++;
 
 	switch(header.base.inode_type) {
 		case SQUASHFS_DIR_TYPE: {
@@ -1068,8 +988,10 @@ void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(&header.dir, block_ptr, sizeof(header.dir));
 
-			*data = inode->file_size;
-			*time = inode->mtime;
+			i.data = inode->file_size;
+			i.offset = inode->offset;
+			i.start = inode->start_block;
+			i.time = inode->mtime;
 			break;
 		}
 		case SQUASHFS_LDIR_TYPE: {
@@ -1082,8 +1004,10 @@ void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(&header.ldir, block_ptr, sizeof(header.ldir));
 
-			*data = inode->file_size;
-			*time = inode->mtime;
+			i.data = inode->file_size;
+			i.offset = inode->offset;
+			i.start = inode->start_block;
+			i.time = inode->mtime;
 			break;
 		}
 		case SQUASHFS_FILE_TYPE: {
@@ -1096,13 +1020,21 @@ void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inode, block_ptr, sizeof(*inode));
 
-			*data = inode->file_size;
-			*time = inode->mtime;
+			i.data = inode->file_size;
+			i.time = inode->mtime;
+			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ?
+				0 : inode->file_size % sBlk.block_size;
+			i.fragment = inode->fragment;
+			i.offset = inode->offset;
+			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
+				(inode->file_size + sBlk.block_size - 1) >>
+				sBlk.block_log : inode->file_size >> sBlk.block_log;
+			i.start = inode->start_block;
+			i.block_ptr = block_ptr + sizeof(*inode);
 			break;
 		}	
 		case SQUASHFS_SYMLINK_TYPE: {
 			squashfs_symlink_inode_header_2 *inodep = &header.symlink;
-			char name[65536];
 
 			if(swap) {
 				squashfs_symlink_inode_header_2 sinodep;
@@ -1111,9 +1043,9 @@ void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
-			strncpy(symlink, block_ptr + sizeof(squashfs_symlink_inode_header_2), inodep->symlink_size);
-			symlink[inodep->symlink_size] = '\0';
-			*data = inodep->symlink_size;
+			strncpy(i.symlink, block_ptr + sizeof(squashfs_symlink_inode_header_2), inodep->symlink_size);
+			i.symlink[inodep->symlink_size] = '\0';
+			i.data = inodep->symlink_size;
 			break;
 		}
  		case SQUASHFS_BLKDEV_TYPE:
@@ -1127,187 +1059,32 @@ void *read_header_2(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
-			*data = inodep->rdev;
+			i.data = inodep->rdev;
 			break;
 			}
 		case SQUASHFS_FIFO_TYPE:
 		case SQUASHFS_SOCKET_TYPE:
-			*data = 0;
+			i.data = 0;
 			break;
 		default:
 			ERROR("Unknown inode type %d in read_inode_header_2!\n", header.base.inode_type);
 			return NULL;
 	}
-	return &header;
+	return &i;
 
 error:
 	return NULL;
 }
 
 
-int create_inode_2(char *pathname, unsigned int start_block, unsigned int offset)
-{
-	long long start = sBlk.inode_table_start + start_block;
-	squashfs_inode_header_2 header;
-	char *block_ptr;
-	int bytes = lookup_entry(inode_table_hash, start), file_fd;
-
-	TRACE("create_inode: pathname %s, start 0x%llx, offset %d\n", pathname, start, offset);
-
-	if(bytes == -1) {
-		ERROR("create_inode: inode block 0x%llx out of range!\n", start);
-		return FALSE;
-	}
-	block_ptr = inode_table + bytes + offset;
-
-	if(swap) {
-		squashfs_base_inode_header_2 sinode;
-		memcpy(&sinode, block_ptr, sizeof(header.base));
-		SQUASHFS_SWAP_BASE_INODE_HEADER_2(&header.base, &sinode, sizeof(squashfs_base_inode_header_2));
-	} else
-		memcpy(&header.base, block_ptr, sizeof(header.base));
-
-	switch(header.base.inode_type) {
-		case SQUASHFS_FILE_TYPE: {
-			unsigned int frag_bytes;
-			unsigned int blocks;
-			unsigned int offset;
-			long long start;
-			squashfs_reg_inode_header_2 *inode = &header.reg;
-
-			if(swap) {
-				squashfs_reg_inode_header_2 sinode;
-				memcpy(&sinode, block_ptr, sizeof(sinode));
-				SQUASHFS_SWAP_REG_INODE_HEADER_2(inode, &sinode);
-			} else
-				memcpy(inode, block_ptr, sizeof(*inode));
-
-			frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				0 : inode->file_size % sBlk.block_size;
-			offset = inode->offset;
-			blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(inode->file_size + sBlk.block_size - 1) >>
-				sBlk.block_log : inode->file_size >>
-				sBlk.block_log;
-			start = inode->start_block;
-
-			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", inode->file_size, blocks);
-
-			if(write_file(inode->file_size, pathname, inode->fragment, frag_bytes,
-					offset, blocks, start, block_ptr +
-					sizeof(*inode), inode->mode)) {
-				set_attributes(pathname, inode->mode, inode->uid, inode->guid, inode->mtime, force);
-				file_count ++;
-			}
-			break;
-		}	
-		case SQUASHFS_SYMLINK_TYPE: {
-			squashfs_symlink_inode_header_2 *inodep = &header.symlink;
-			char name[65536];
-
-			if(swap) {
-				squashfs_symlink_inode_header_2 sinodep;
-				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_SYMLINK_INODE_HEADER_2(inodep, &sinodep);
-			} else
-				memcpy(inodep, block_ptr, sizeof(*inodep));
-
-			TRACE("create_inode: symlink, symlink_size %d\n", inodep->symlink_size);
-
-			strncpy(name, block_ptr + sizeof(squashfs_symlink_inode_header_2), inodep->symlink_size);
-			name[inodep->symlink_size] = '\0';
-
-			if(force)
-				unlink(pathname);
-
-			if(symlink(name, pathname) == -1) {
-				ERROR("create_inode: failed to create symlink %s, because %s\n", pathname,
-					strerror(errno));
-				break;
-			}
-
-			if(root_process) {
-				uid_t uid_value = (uid_t) uid_table[inodep->uid];
-				uid_t guid_value = inodep->guid ==
-					SQUASHFS_GUIDS ? uid_value : (uid_t)
-					guid_table[inodep->guid];
-
-				if(lchown(pathname, uid_value, guid_value) == -1)
-					ERROR("create_inode: failed to change uid and gids on %s, because %s\n", pathname, strerror(errno));
-			}
-
-			sym_count ++;
-			break;
-		}
- 		case SQUASHFS_BLKDEV_TYPE:
-	 	case SQUASHFS_CHRDEV_TYPE: {
-			squashfs_dev_inode_header_2 *inodep = &header.dev;
-
-			if(swap) {
-				squashfs_dev_inode_header_2 sinodep;
-				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_DEV_INODE_HEADER_2(inodep, &sinodep);
-			} else
-				memcpy(inodep, block_ptr, sizeof(*inodep));
-
-			TRACE("create_inode: dev, rdev 0x%x\n", inodep->rdev);
-
-			if(root_process) {
-				if(force)
-					unlink(pathname);
-
-				if(mknod(pathname, inodep->inode_type ==
-					SQUASHFS_CHRDEV_TYPE ?  S_IFCHR :
-					S_IFBLK, makedev((inodep->rdev >> 8)
-					& 0xff, inodep->rdev & 0xff)) == -1) {
-					ERROR("create_inode: failed to create %s device %s, because %s\n",
-						inodep->inode_type == SQUASHFS_CHRDEV_TYPE ? "character" : "block",
-						pathname, strerror(errno));
-					break;
-				}
-				set_attributes(pathname, inodep->mode, inodep->uid, inodep->guid, sBlk.mkfs_time, TRUE);
-				dev_count ++;
-			} else
-				ERROR("create_inode: could not create %s device %s, because you're not superuser!\n",
-					inodep->inode_type == SQUASHFS_CHRDEV_TYPE ? "character" : "block",
-					pathname, strerror(errno));
-			break;
-			}
-		case SQUASHFS_FIFO_TYPE:
-			TRACE("create_inode: fifo\n");
-
-			if(force)
-				unlink(pathname);
-
-			if(mknod(pathname, S_IFIFO, 0) == -1) {
-				ERROR("create_inode: failed to create fifo %s, because %s\n",
-					pathname, strerror(errno));
-				break;
-			}
-			set_attributes(pathname, header.base.mode, header.base.uid, header.base.guid,
-				sBlk.mkfs_time, TRUE);
-			fifo_count ++;
-			break;
-		case SQUASHFS_SOCKET_TYPE:
-			TRACE("create_inode: socket\n");
-			ERROR("create_inode: socket %s ignored\n", pathname);
-			break;
-		default:
-			ERROR("Unknown inode type %d in create_inode_table!\n", header.base.inode_type);
-			return FALSE;
-	}
-
-	return TRUE;
-}
-
-
-void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
-	time_t *time, char *symlink, int *type, int *mode, uid_t *uid, uid_t *gid)
+struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header_1 header;
 	long long start = sBlk.inode_table_start + start_block;
 	int bytes = lookup_entry(inode_table_hash, start), file_fd;
 	char *block_ptr = inode_table + bytes + offset;
+	static struct inode i;
+	static int inode_number = 1;
 
 	if(bytes == -1)
 		goto error;
@@ -1319,7 +1096,7 @@ void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
 	} else
 		memcpy(&header.base, block_ptr, sizeof(header.base));
 
-    *uid = (uid_t) uid_table[(header.base.inode_type - 1) / SQUASHFS_TYPES * 16 + header.base.uid];
+    i.uid = (uid_t) uid_table[(header.base.inode_type - 1) / SQUASHFS_TYPES * 16 + header.base.uid];
 	if(header.base.inode_type == SQUASHFS_IPC_TYPE) {
 		squashfs_ipc_inode_header_1 *inodep = &header.ipc;
 
@@ -1331,23 +1108,25 @@ void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
 			memcpy(inodep, block_ptr, sizeof(*inodep));
 
 		if(inodep->type == SQUASHFS_SOCKET_TYPE) {
-			*mode = S_IFSOCK | header.base.mode;
-			*type = SQUASHFS_SOCKET_TYPE;
+			i.mode = S_IFSOCK | header.base.mode;
+			i.type = SQUASHFS_SOCKET_TYPE;
 		} else {
-			*mode = S_IFIFO | header.base.mode;
-			*type = SQUASHFS_FIFO_TYPE;
+			i.mode = S_IFIFO | header.base.mode;
+			i.type = SQUASHFS_FIFO_TYPE;
 		}
-		*uid = (uid_t) uid_table[inodep->offset * 16 + inodep->uid];
+		i.uid = (uid_t) uid_table[inodep->offset * 16 + inodep->uid];
 	} else {
-		*mode = lookup_type[(header.base.inode_type - 1) % SQUASHFS_TYPES + 1] | header.base.mode;
-		*type = (header.base.inode_type - 1) % SQUASHFS_TYPES + 1;
+		i.mode = lookup_type[(header.base.inode_type - 1) % SQUASHFS_TYPES + 1] | header.base.mode;
+		i.type = (header.base.inode_type - 1) % SQUASHFS_TYPES + 1;
 	}
-    *gid = header.base.guid == 15 ? *uid : (uid_t) guid_table[header.base.guid];
-	*time = sBlk.mkfs_time;
+    i.gid = header.base.guid == 15 ? i.uid : (uid_t) guid_table[header.base.guid];
+	i.time = sBlk.mkfs_time;
+	i.inode_number = inode_number ++;
 
-	switch(*type) {
+	switch(i.type) {
 		case SQUASHFS_DIR_TYPE: {
 			squashfs_dir_inode_header_1 *inode = &header.dir;
+
 			if(swap) {
 				squashfs_dir_inode_header_1 sinode;
 				memcpy(&sinode, block_ptr, sizeof(header.dir));
@@ -1355,8 +1134,9 @@ void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
 			} else
 			memcpy(inode, block_ptr, sizeof(header.dir));
 
-			*data = inode->file_size;
-			*time = inode->mtime;
+			i.data = inode->file_size;
+			i.start = inode->start_block;
+			i.time = inode->mtime;
 			break;
 		}
 		case SQUASHFS_FILE_TYPE: {
@@ -1369,13 +1149,19 @@ void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inode, block_ptr, sizeof(*inode));
 
-			*data = inode->file_size;
-			*time = inode->mtime;
+			i.data = inode->file_size;
+			i.time = inode->mtime;
+			i.blocks = (inode->file_size + sBlk.block_size - 1) >>
+				sBlk.block_log;
+			i.start = inode->start_block;
+			i.block_ptr = block_ptr + sizeof(*inode);
+			i.fragment = 0;
+			i.frag_bytes = 0;
+			i.offset = 0;
 			break;
 		}	
 		case SQUASHFS_SYMLINK_TYPE: {
 			squashfs_symlink_inode_header_1 *inodep = &header.symlink;
-			char name[65536];
 
 			if(swap) {
 				squashfs_symlink_inode_header_1 sinodep;
@@ -1384,9 +1170,9 @@ void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
-			strncpy(symlink, block_ptr + sizeof(squashfs_symlink_inode_header_1), inodep->symlink_size);
-			symlink[inodep->symlink_size] = '\0';
-			*data = inodep->symlink_size;
+			strncpy(i.symlink, block_ptr + sizeof(squashfs_symlink_inode_header_1), inodep->symlink_size);
+			i.symlink[inodep->symlink_size] = '\0';
+			i.data = inodep->symlink_size;
 			break;
 		}
  		case SQUASHFS_BLKDEV_TYPE:
@@ -1400,184 +1186,22 @@ void *read_header_1(unsigned int start_block, unsigned int offset, int *data,
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
-			*data = inodep->rdev;
+			i.data = inodep->rdev;
 			break;
 			}
 		case SQUASHFS_FIFO_TYPE:
 		case SQUASHFS_SOCKET_TYPE: {
-			*data = 0;
+			i.data = 0;
 			break;
 			}
 		default:
 			ERROR("Unknown inode type %d in read_inode_header_1!\n", header.base.inode_type);
 			return NULL;
 	}
-	return &header;
+	return &i;
 
 error:
 	return NULL;
-}
-
-
-int create_inode_1(char *pathname, unsigned int start_block, unsigned int offset)
-{
-	long long start = sBlk.inode_table_start + start_block;
-	squashfs_inode_header_1 header;
-	char *block_ptr, uid;
-	int bytes = lookup_entry(inode_table_hash, start), file_fd;
-
-	TRACE("create_inode: pathname %s, start 0x%llx, offset %d\n", pathname, start, offset);
-
-	if(bytes == -1) {
-		ERROR("create_inode: inode block 0x%llx out of range!\n", start);
-		return FALSE;
-	}
-	block_ptr = inode_table + bytes + offset;
-
-	if(swap) {
-		squashfs_base_inode_header_1 sinode;
-		memcpy(&sinode, block_ptr, sizeof(header.base));
-		SQUASHFS_SWAP_BASE_INODE_HEADER_1(&header.base, &sinode, sizeof(squashfs_base_inode_header_1));
-	} else
-		memcpy(&header.base, block_ptr, sizeof(header.base));
-
-	uid = (header.base.inode_type - 1) / SQUASHFS_TYPES * 16 + header.base.uid;
-
-	switch(header.base.inode_type == SQUASHFS_IPC_TYPE ? SQUASHFS_IPC_TYPE : (header.base.inode_type - 1) % SQUASHFS_TYPES + 1) {
-		case SQUASHFS_FILE_TYPE: {
-			unsigned int blocks;
-			long long start;
-			squashfs_reg_inode_header_1 *inode = &header.reg;
-
-			if(swap) {
-				squashfs_reg_inode_header_1 sinode;
-				memcpy(&sinode, block_ptr, sizeof(sinode));
-				SQUASHFS_SWAP_REG_INODE_HEADER_1(inode, &sinode);
-			} else
-				memcpy(inode, block_ptr, sizeof(*inode));
-
-			blocks = (inode->file_size + sBlk.block_size - 1) >>
-				sBlk.block_log;
-			start = inode->start_block;
-
-			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", inode->file_size, blocks);
-
-			if(write_file(inode->file_size, pathname, 0, 0, 0, blocks, start,
-					block_ptr + sizeof(*inode), inode->mode)) {
-				set_attributes(pathname, inode->mode, uid, inode->guid, inode->mtime, force);
-				file_count ++;
-			}
-			break;
-		}	
-		case SQUASHFS_SYMLINK_TYPE: {
-			squashfs_symlink_inode_header_1 *inodep = &header.symlink;
-			char name[65536];
-
-			if(swap) {
-				squashfs_symlink_inode_header_1 sinodep;
-				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_SYMLINK_INODE_HEADER_1(inodep, &sinodep);
-			} else
-				memcpy(inodep, block_ptr, sizeof(*inodep));
-
-			TRACE("create_inode: symlink, symlink_size %d\n", inodep->symlink_size);
-
-			strncpy(name, block_ptr + sizeof(squashfs_symlink_inode_header_1), inodep->symlink_size);
-			name[inodep->symlink_size] = '\0';
-
-			if(force)
-				unlink(pathname);
-
-			if(symlink(name, pathname) == -1) {
-				ERROR("create_inode: failed to create symlink %s, because %s\n", pathname,
-					strerror(errno));
-				break;
-			}
-
-			if(root_process) {
-				uid_t uid_value = (uid_t) uid_table[uid];
-				uid_t guid_value = inodep->guid ==
-					SQUASHFS_GUIDS ? uid_value : (uid_t)
-					guid_table[inodep->guid];
-
-				if(lchown(pathname, uid_value, guid_value) == -1)
-					ERROR("create_inode: failed to change uid and gids on %s, because %s\n", pathname, strerror(errno));
-			}
-
-			sym_count ++;
-			break;
-		}
- 		case SQUASHFS_BLKDEV_TYPE:
-	 	case SQUASHFS_CHRDEV_TYPE: {
-			squashfs_dev_inode_header_1 *inodep = &header.dev;
-
-			if(swap) {
-				squashfs_dev_inode_header_1 sinodep;
-				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_DEV_INODE_HEADER_1(inodep, &sinodep);
-			} else
-				memcpy(inodep, block_ptr, sizeof(*inodep));
-
-			TRACE("create_inode: dev, rdev 0x%x\n", inodep->rdev);
-
-			if(root_process) {
-				if(force)
-					unlink(pathname);
-
-				if(mknod(pathname, inodep->inode_type ==
-					SQUASHFS_CHRDEV_TYPE ?  S_IFCHR :
-					S_IFBLK, makedev((inodep->rdev >> 8)
-					& 0xff, inodep->rdev & 0xff)) == -1) {
-					ERROR("create_inode: failed to create %s device %s, because %s\n",
-						inodep->inode_type == SQUASHFS_CHRDEV_TYPE ? "character" : "block",
-						pathname, strerror(errno));
-					break;
-				}
-				set_attributes(pathname, inodep->mode, uid, inodep->guid, sBlk.mkfs_time, TRUE);
-				dev_count ++;
-			} else
-				ERROR("create_inode: could not create %s device %s, because you're not superuser!\n",
-					inodep->inode_type == SQUASHFS_CHRDEV_TYPE ? "character" : "block",
-					pathname, strerror(errno));
-			break;
-			}
-		case SQUASHFS_IPC_TYPE: {
-			squashfs_ipc_inode_header_1 *inodep = &header.ipc;
-
-			if(swap) {
-				squashfs_ipc_inode_header_1 sinodep;
-				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_IPC_INODE_HEADER_1(inodep, &sinodep);
-			} else
-				memcpy(inodep, block_ptr, sizeof(*inodep));
-
-			if(inodep->type == SQUASHFS_SOCKET_TYPE) {
-				TRACE("create_inode: socket\n");
-				ERROR("create_inode: socket %s ignored\n", pathname);
-				break;
-			}
-
-			TRACE("create_inode: fifo\n");
-
-			if(force)
-				unlink(pathname);
-
-			if(mknod(pathname, S_IFIFO, 0) == -1) {
-				ERROR("create_inode: failed to create fifo %s, because %s\n",
-					pathname, strerror(errno));
-				break;
-			}
-			set_attributes(pathname, header.base.mode, inodep->offset * 16 + inodep->uid, header.base.guid,
-				sBlk.mkfs_time, TRUE);
-			fifo_count ++;
-			break;
-			}
-		default:
-			ERROR("Unknown inode type %d in create_inode_table!\n", header.base.inode_type);
-			return FALSE;
-	}
-
-	return TRUE;
 }
 
 
@@ -1612,72 +1236,45 @@ struct dir {
 	int		dir_count;
 	int 		cur_entry;
 	unsigned int	mode;
-	unsigned int	uid;
-	unsigned int	guid;
+	uid_t		uid;
+	gid_t		guid;
 	unsigned int	mtime;
 	struct dir_ent	*dirs;
 };
 
 
-struct dir *squashfs_opendir(unsigned int block_start, unsigned int offset)
+struct dir *squashfs_opendir(char *pathname, unsigned int block_start, unsigned int offset)
 {
 	squashfs_dir_header dirh;
 	char buffer[sizeof(squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1];
 	squashfs_dir_entry *dire = (squashfs_dir_entry *) buffer;
-	long long start = sBlk.inode_table_start + block_start;
-	char *block_ptr;
-	int bytes = lookup_entry(inode_table_hash, start);
-	squashfs_inode_header header;
+	long long start;
+	int bytes;
+	struct inode *i;
 	int dir_count, size;
 	struct dir_ent *new_dir;
 	struct dir *dir;
 
 	TRACE("squashfs_opendir: inode start block %d, offset %d\n", block_start, offset);
 
-	if(bytes == -1) {
-		ERROR("squashfs_opendir: inode block %d not found!\n", block_start);
+	if((i = s_ops.read_inode(block_start, offset)) == NULL) {
+		ERROR("squashfs_opendir: failed to read directory inode %d\n", block_start);
 		return NULL;
 	}
-	block_ptr = inode_table + bytes + offset;
 
-	if(swap) {
-		squashfs_dir_inode_header sinode;
-		memcpy(&sinode, block_ptr, sizeof(header.dir));
-		SQUASHFS_SWAP_DIR_INODE_HEADER(&header.dir, &sinode);
-	} else
-		memcpy(&header.dir, block_ptr, sizeof(header.dir));
-
-	switch(header.dir.inode_type) {
-		case SQUASHFS_DIR_TYPE:
-			block_start = header.dir.start_block;
-			offset = header.dir.offset;
-			size = header.dir.file_size;
-			break;
-		case SQUASHFS_LDIR_TYPE:
-			if(swap) {
-				squashfs_ldir_inode_header sinode;
-				memcpy(&sinode, block_ptr, sizeof(header.ldir));
-				SQUASHFS_SWAP_LDIR_INODE_HEADER(&header.ldir, &sinode);
-			} else
-				memcpy(&header.ldir, block_ptr, sizeof(header.ldir));
-			block_start = header.ldir.start_block;
-			offset = header.ldir.offset;
-			size = header.ldir.file_size;
-			break;
-		default:
-			ERROR("squashfs_opendir: inode not a directory\n");
-			return NULL;
-	}
-
-	start = sBlk.directory_table_start + block_start;
+	start = sBlk.directory_table_start + i->start;
 	bytes = lookup_entry(directory_table_hash, start);
 
 	if(bytes == -1) {
 		ERROR("squashfs_opendir: directory block %d not found!\n", block_start);
 		return NULL;
 	}
-	bytes += offset;
-	size += bytes - 3;
+
+	if(lsonly || info)
+		print_filename(pathname, i);
+
+	bytes += i->offset;
+	size = i->data + bytes - 3;
 
 	if((dir = malloc(sizeof(struct dir))) == NULL) {
 		ERROR("squashfs_opendir: malloc failed!\n");
@@ -1686,10 +1283,10 @@ struct dir *squashfs_opendir(unsigned int block_start, unsigned int offset)
 
 	dir->dir_count = 0;
 	dir->cur_entry = 0;
-	dir->mode = header.dir.mode;
-	dir->uid = header.dir.uid;
-	dir->guid = header.dir.guid;
-	dir->mtime = header.dir.mtime;
+	dir->mode = i->mode;
+	dir->uid = i->uid;
+	dir->guid = i->gid;
+	dir->mtime = i->time;
 	dir->dirs = NULL;
 
 	while(bytes < size) {			
@@ -1738,65 +1335,38 @@ struct dir *squashfs_opendir(unsigned int block_start, unsigned int offset)
 }
 
 
-struct dir *squashfs_opendir_2(unsigned int block_start, unsigned int offset)
+struct dir *squashfs_opendir_2(char *pathname, unsigned int block_start, unsigned int offset)
 {
 	squashfs_dir_header_2 dirh;
 	char buffer[sizeof(squashfs_dir_entry_2) + SQUASHFS_NAME_LEN + 1];
 	squashfs_dir_entry_2 *dire = (squashfs_dir_entry_2 *) buffer;
-	long long start = sBlk.inode_table_start + block_start;
-	char *block_ptr;
-	int bytes = lookup_entry(inode_table_hash, start);
-	squashfs_inode_header_2 header;
+	long long start;
+	int bytes;
+	struct inode *i;
 	int dir_count, size;
 	struct dir_ent *new_dir;
 	struct dir *dir;
 
 	TRACE("squashfs_opendir: inode start block %d, offset %d\n", block_start, offset);
 
-	if(bytes == -1) {
-		ERROR("squashfs_opendir: inode block %d not found!\n", block_start);
+	if((i = s_ops.read_inode(block_start, offset)) == NULL) {
+		ERROR("squashfs_opendir: failed to read directory inode %d\n", block_start);
 		return NULL;
 	}
-	block_ptr = inode_table + bytes + offset;
 
-	if(swap) {
-		squashfs_dir_inode_header_2 sinode;
-		memcpy(&sinode, block_ptr, sizeof(header.dir));
-		SQUASHFS_SWAP_DIR_INODE_HEADER_2(&header.dir, &sinode);
-	} else
-		memcpy(&header.dir, block_ptr, sizeof(header.dir));
-
-	switch(header.dir.inode_type) {
-		case SQUASHFS_DIR_TYPE:
-			block_start = header.dir.start_block;
-			offset = header.dir.offset;
-			size = header.dir.file_size;
-			break;
-		case SQUASHFS_LDIR_TYPE:
-			if(swap) {
-				squashfs_ldir_inode_header_2 sinode;
-				memcpy(&sinode, block_ptr, sizeof(header.ldir));
-				SQUASHFS_SWAP_LDIR_INODE_HEADER_2(&header.ldir, &sinode);
-			} else
-				memcpy(&header.ldir, block_ptr, sizeof(header.ldir));
-			block_start = header.ldir.start_block;
-			offset = header.ldir.offset;
-			size = header.ldir.file_size;
-			break;
-		default:
-			ERROR("squashfs_opendir: inode not a directory\n");
-			return NULL;
-	}
-
-	start = sBlk.directory_table_start + block_start;
+	start = sBlk.directory_table_start + i->start;
 	bytes = lookup_entry(directory_table_hash, start);
 
 	if(bytes == -1) {
 		ERROR("squashfs_opendir: directory block %d not found!\n", block_start);
 		return NULL;
 	}
-	bytes += offset;
-	size += bytes;
+
+	if(lsonly || info)
+		print_filename(pathname, i);
+
+	bytes += i->offset;
+	size = i->data + bytes;
 
 	if((dir = malloc(sizeof(struct dir))) == NULL) {
 		ERROR("squashfs_opendir: malloc failed!\n");
@@ -1805,116 +1375,10 @@ struct dir *squashfs_opendir_2(unsigned int block_start, unsigned int offset)
 
 	dir->dir_count = 0;
 	dir->cur_entry = 0;
-	dir->mode = header.dir.mode;
-	dir->uid = header.dir.uid;
-	dir->guid = header.dir.guid;
-	dir->mtime = header.dir.mtime;
-	dir->dirs = NULL;
-
-	while(bytes < size) {			
-		if(swap) {
-			squashfs_dir_header_2 sdirh;
-			memcpy(&sdirh, directory_table + bytes, sizeof(sdirh));
-			SQUASHFS_SWAP_DIR_HEADER_2(&dirh, &sdirh);
-		} else
-			memcpy(&dirh, directory_table + bytes, sizeof(dirh));
-	
-		dir_count = dirh.count + 1;
-		TRACE("squashfs_opendir: Read directory header @ byte position %d, %d directory entries\n", bytes, dir_count);
-		bytes += sizeof(dirh);
-
-		while(dir_count--) {
-			if(swap) {
-				squashfs_dir_entry_2 sdire;
-				memcpy(&sdire, directory_table + bytes, sizeof(sdire));
-				SQUASHFS_SWAP_DIR_ENTRY_2(dire, &sdire);
-			} else
-				memcpy(dire, directory_table + bytes, sizeof(dire));
-			bytes += sizeof(*dire);
-
-			memcpy(dire->name, directory_table + bytes, dire->size + 1);
-			dire->name[dire->size + 1] = '\0';
-			TRACE("squashfs_opendir: directory entry %s, inode %d:%d, type %d\n", dire->name, dirh.start_block, dire->offset, dire->type);
-			if((dir->dir_count % DIR_ENT_SIZE) == 0) {
-				if((new_dir = realloc(dir->dirs, (dir->dir_count + DIR_ENT_SIZE) * sizeof(struct dir_ent))) == NULL) {
-					ERROR("squashfs_opendir: realloc failed!\n");
-					free(dir->dirs);
-					free(dir);
-					return NULL;
-				}
-				dir->dirs = new_dir;
-			}
-			strcpy(dir->dirs[dir->dir_count].name, dire->name);
-			dir->dirs[dir->dir_count].start_block = dirh.start_block;
-			dir->dirs[dir->dir_count].offset = dire->offset;
-			dir->dirs[dir->dir_count].type = dire->type;
-			dir->dir_count ++;
-			bytes += dire->size + 1;
-		}
-	}
-
-	return dir;
-}
-
-
-struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset)
-{
-	squashfs_dir_header_2 dirh;
-	char buffer[sizeof(squashfs_dir_entry_2) + SQUASHFS_NAME_LEN + 1];
-	squashfs_dir_entry_2 *dire = (squashfs_dir_entry_2 *) buffer;
-	long long start = sBlk.inode_table_start + block_start;
-	char *block_ptr;
-	int bytes = lookup_entry(inode_table_hash, start);
-	squashfs_inode_header_1 header;
-	int dir_count, size;
-	struct dir_ent *new_dir;
-	struct dir *dir;
-
-	TRACE("squashfs_opendir: inode start block 0x%x, offset %d\n", block_start, offset);
-
-	if(bytes == -1) {
-		ERROR("squashfs_opendir: inode block 0x%x not found!\n", block_start);
-		return NULL;
-	}
-	block_ptr = inode_table + bytes + offset;
-
-	if(swap) {
-		squashfs_dir_inode_header_1 sinode;
-		memcpy(&sinode, block_ptr, sizeof(header.dir));
-		SQUASHFS_SWAP_DIR_INODE_HEADER_1(&header.dir, &sinode);
-	} else
-		memcpy(&header.dir, block_ptr, sizeof(header.dir));
-
-	if(((header.dir.inode_type - 1) % SQUASHFS_TYPES + 1) != SQUASHFS_DIR_TYPE) {
-		ERROR("squashfs_opendir: inode not a directory\n");
-		return NULL;
-	}
-
-	block_start = header.dir.start_block;
-	offset = header.dir.offset;
-	size = header.dir.file_size;
-
-	start = sBlk.directory_table_start + block_start;
-	bytes = lookup_entry(directory_table_hash, start);
-
-	if(bytes == -1) {
-		ERROR("squashfs_opendir: directory block %d not found!\n", block_start);
-		return NULL;
-	}
-	bytes += offset;
-	size += bytes;
-
-	if((dir = malloc(sizeof(struct dir))) == NULL) {
-		ERROR("squashfs_opendir: malloc failed!\n");
-		return NULL;
-	}
-
-	dir->dir_count = 0;
-	dir->cur_entry = 0;
-	dir->mode = header.dir.mode;
-	dir->uid = header.dir.uid;
-	dir->guid = header.dir.guid;
-	dir->mtime = header.dir.mtime;
+	dir->mode = i->mode;
+	dir->uid = i->uid;
+	dir->guid = i->gid;
+	dir->mtime = i->time;
 	dir->dirs = NULL;
 
 	while(bytes < size) {			
@@ -2011,7 +1475,7 @@ int matches(char *targname, char *name)
 
 int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, char *target)
 {
-	struct dir *dir = s_ops.squashfs_opendir(start_block, offset);
+	struct dir *dir = s_ops.squashfs_opendir(parent_name, start_block, offset);
 	unsigned int type;
 	char *name, pathname[1024];
 	char targname[1024];
@@ -2029,22 +1493,29 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, c
 	}
 
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
-		TRACE("dir_scan: name %s, start_block %d, offset %d, type %d\n", name, start_block, offset, type);
+		struct inode *i;
 
+		TRACE("dir_scan: name %s, start_block %d, offset %d, type %d\n", name, start_block, offset, type);
 
 		if(!matches(targname, name))
 			continue;
 
 		strcat(strcat(strcpy(pathname, parent_name), "/"), name);
 
-		if(lsonly || info)
-			print_filename(pathname, start_block, offset);
-
 		if(type == SQUASHFS_DIR_TYPE)
 			dir_scan(pathname, start_block, offset, target);
-		else
+		else {
+			if((i = s_ops.read_inode(start_block, offset)) == NULL) {
+				ERROR("failed to read header\n");
+				continue;
+			}
+
+			if(lsonly || info)
+				print_filename(pathname, i);
+
 			if(!lsonly)
-				s_ops.create_inode(pathname, start_block, offset);
+				create_inode(pathname, i);
+		}
 	}
 
 	!lsonly && set_attributes(parent_name, dir->mode, dir->uid, dir->guid, dir->mtime, force);
@@ -2130,27 +1601,24 @@ int read_super(char *source)
 		if(sBlk.s_major == 1) {
 			sBlk.block_size = sBlk.block_size_1;
 			sBlk.fragment_table_start = sBlk.uid_start;
-			s_ops.squashfs_opendir = squashfs_opendir_1;
+			s_ops.squashfs_opendir = squashfs_opendir_2;
 			s_ops.read_fragment_table = read_fragment_table_1;
-			s_ops.create_inode = create_inode_1;
 			s_ops.read_block_list = read_block_list_1;
-			s_ops.read_header = read_header_1;
+			s_ops.read_inode = read_inode_1;
 		} else {
 			sBlk.fragment_table_start = sBlk.fragment_table_start_2;
 			s_ops.squashfs_opendir = squashfs_opendir_2;
 			s_ops.read_fragment = read_fragment_2;
 			s_ops.read_fragment_table = read_fragment_table_2;
-			s_ops.create_inode = create_inode_2;
 			s_ops.read_block_list = read_block_list;
-			s_ops.read_header = read_header_2;
+			s_ops.read_inode = read_inode_2;
 		}
 	} else if(sBlk.s_major == 3 && sBlk.s_minor <= 1) {
 		s_ops.squashfs_opendir = squashfs_opendir;
 		s_ops.read_fragment = read_fragment;
 		s_ops.read_fragment_table = read_fragment_table;
-		s_ops.create_inode = create_inode;
 		s_ops.read_block_list = read_block_list;
-		s_ops.read_header = read_header;
+		s_ops.read_inode = read_inode;
 	} else {
 		ERROR("Filesystem on %s is (%d:%d), ", source, sBlk.s_major, sBlk.s_minor);
 		ERROR("which is a later filesystem version than I support!\n");
@@ -2165,7 +1633,7 @@ failed_mount:
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.4-CVS (2007/09/02)\n");\
+	printf("unsquashfs version 1.4-CVS (2007/09/16)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
