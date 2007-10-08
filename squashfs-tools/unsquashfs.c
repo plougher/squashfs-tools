@@ -128,6 +128,7 @@ unsigned int block_size;
 int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE;
 char **created_inode;
 int root_process;
+struct pathname *paths = NULL;
 
 int lookup_type[] = {
 	0,
@@ -1464,23 +1465,114 @@ char *get_component(char *target, char *targname)
 }
 
 
-int matches(char *targname, char *name)
+struct path_entry {
+	char *name;
+	struct pathname *paths;
+};
+
+struct pathname {
+	int names;
+	struct path_entry *name;
+};
+
+
+struct pathname *add_path(struct pathname *paths, char *target)
 {
-	if(*targname == '\0' || strcmp(targname, name) == 0)
+	char targname[1024];
+	int i;
+
+	target = get_component(target, targname);
+
+	if(paths == NULL) {
+		if((paths = malloc(sizeof(struct pathname))) == NULL) {
+			ERROR("failed to allocate paths\n");
+			exit(1);
+		}
+		paths->names = 0;
+		paths->name = NULL;
+	}
+
+	for(i = 0; i < paths->names; i++)
+		if(strcmp(paths->name[i].name, targname) == 0)
+			break;
+
+	if(i < paths->names)
+			add_path(paths->name[i].paths, target);
+	else {
+		paths->names ++;
+		paths->name = realloc(paths->name, (i + 1) * sizeof(struct path_entry));
+		paths->name[i].name = strdup(targname);
+		if(targname[0] == '\0')
+			paths->name[i].paths = NULL;
+		else
+			paths->name[i].paths = add_path(NULL, target);
+	}
+
+	return paths;
+}
+	
+	
+void display_path(int depth, struct pathname *paths)
+{
+	int i, n;
+
+	if(paths == NULL)
+		return;
+
+	for(i = 0; i < paths->names; i++) {
+		for(n = 0; n < depth; n++)
+			printf("\t");
+		printf("%d: %s\n", depth, paths->name[i].name);
+		display_path(depth + 1, paths->name[i].paths);
+	}
+}
+
+
+void display_path2(struct pathname *paths, char *string)
+{
+	int i;
+	char path[1024];
+
+	if(paths == NULL)
+		return;
+
+	for(i = 0; i < paths->names; i++) {
+		if(paths->name[i].name[0] == '\0')
+			printf("%s\n", string);
+		else {
+			strcat(strcat(strcpy(path, string), "/"), paths->name[i].name);
+			display_path2(paths->name[i].paths, path);
+		}
+	}
+}
+
+
+int matches(struct pathname *paths, char *name, struct pathname **new)
+{
+	int i;
+		
+
+	if(paths == NULL) {
+		*new = NULL;
 		return TRUE;
+	}
+
+	for(i = 0; i < paths->names; i++)
+		if(paths->name[i].name[0] == '\0' || strcmp(paths->name[i].name, name) == 0) {
+			*new = paths->name[i].paths;
+			return TRUE;
+		}
 
 	return FALSE;
 }
 
 
-int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, char *target)
+int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, struct pathname *paths)
 {
 	struct dir *dir = s_ops.squashfs_opendir(parent_name, start_block, offset);
 	unsigned int type;
 	char *name, pathname[1024];
-	char targname[1024];
-
-	target = get_component(target, targname);
+	struct pathname *new;
 
 	if(dir == NULL) {
 		ERROR("dir_scan: Failed to read directory %s (%x:%x)\n", parent_name, start_block, offset);
@@ -1497,13 +1589,14 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, c
 
 		TRACE("dir_scan: name %s, start_block %d, offset %d, type %d\n", name, start_block, offset, type);
 
-		if(!matches(targname, name))
+
+		if(!matches(paths, name, &new))
 			continue;
 
 		strcat(strcat(strcpy(pathname, parent_name), "/"), name);
 
 		if(type == SQUASHFS_DIR_TYPE)
-			dir_scan(pathname, start_block, offset, target);
+			dir_scan(pathname, start_block, offset, new);
 		else {
 			if((i = s_ops.read_inode(start_block, offset)) == NULL) {
 				ERROR("failed to read header\n");
@@ -1632,8 +1725,25 @@ failed_mount:
 }
 
 
+void process_extract_files(char *filename)
+{
+	FILE *fd;
+	char name[16384];
+
+	if((fd = fopen(filename, "r")) == NULL) {
+		ERROR("Could not open %s, because %s\n", filename, strerror(errno));
+		exit(1);
+	}
+
+	while(fscanf(fd, "%16384[^\n]\n", name) != EOF)
+		paths = add_path(paths, name);
+
+	fclose(fd);
+}
+		
+
 #define VERSION() \
-	printf("unsquashfs version 1.4-CVS (2007/09/16)\n");\
+	printf("unsquashfs version 1.4-CVS (2007/10/05)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -1647,7 +1757,8 @@ int main(int argc, char *argv[])
 {
 	char *dest = "squashfs-root";
 	int i, stat_sys = FALSE, version = FALSE;
-	char *target = "";
+	char **target_name = NULL;
+	int n, targets = 0;
 
 	if(root_process = geteuid() == 0)
 		umask(0);
@@ -1663,8 +1774,10 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-ls") == 0 || strcmp(argv[i], "-l") == 0)
 			lsonly = TRUE;
 		else if(strcmp(argv[i], "-dest") == 0 || strcmp(argv[i], "-d") == 0) {
-			if(++i == argc)
-				goto options;
+			if(++i == argc) {
+				fprintf(stderr, "%s: -dest missing filename\n", argv[0]);
+				exit(1);
+			}
 			dest = argv[i];
 		} else if(strcmp(argv[i], "-force") == 0 || strcmp(argv[i], "-f") == 0)
 			force = TRUE;
@@ -1676,6 +1789,12 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-linfo") == 0 || strcmp(argv[i], "-li") == 0) {
 			info = TRUE;
 			short_ls = FALSE;
+		} else if(strcmp(argv[i], "-ef") == 0 || strcmp(argv[i], "-e") == 0) {
+			if(++i == argc) {
+				fprintf(stderr, "%s: -ef missing filename\n", argv[0]);
+				exit(1);
+			}
+			process_extract_files(argv[i]);
 		} else
 			goto options;
 	}
@@ -1683,7 +1802,7 @@ int main(int argc, char *argv[])
 	if(i == argc) {
 		if(!version) {
 options:
-			ERROR("SYNTAX: %s [options] filesystem [directory or file to extract]\n", argv[0]);
+			ERROR("SYNTAX: %s [options] filesystem [directories or files to extract]\n", argv[0]);
 			ERROR("\t-v[ersion]\t\tprint version, licence and copyright information\n");
 			ERROR("\t-i[nfo]\t\t\tprint files as they are unsquashed\n");
 			ERROR("\t-li[nfo]\t\tprint files as they are unsquashed with file\n\t\t\t\tattributes (like ls -l output)\n");
@@ -1692,12 +1811,13 @@ options:
 			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, default \"squashfs-root\"\n");
 			ERROR("\t-f[orce]\t\tif file already exists then overwrite\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
+			ERROR("\t-e[f] <extract file>\tlist of directories or files to extract.\n\t\t\t\tOne per line\n");
 		}
 		exit(1);
 	}
 
-	if((i + 1) < argc)
-		target = argv[i + 1];
+	for(n = i + 1; n < argc; n++)
+		paths = add_path(paths, argv[n]);
 
 	if((fd = open(argv[i], O_RDONLY)) == -1) {
 		ERROR("Could not open %s, because %s\n", argv[i], strerror(errno));
@@ -1736,7 +1856,7 @@ options:
 
 	uncompress_directory_table(sBlk.directory_table_start, sBlk.fragment_table_start);
 
-	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode), SQUASHFS_INODE_OFFSET(sBlk.root_inode), target);
+	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode), SQUASHFS_INODE_OFFSET(sBlk.root_inode), paths);
 
 	if(!lsonly) {
 		printf("\n");
