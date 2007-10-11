@@ -38,6 +38,8 @@
 #include <pwd.h>
 #include <grp.h>
 #include <time.h>
+#include <regex.h>
+#include <fnmatch.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -56,7 +58,7 @@
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)		do { \
-						printf("mksquashfs: "s, ## args); \
+						printf("unsquashfs: "s, ## args); \
 					} while(0)
 #else
 #define TRACE(s, args...)
@@ -68,6 +70,7 @@
 
 #define EXIT_UNSQUASH(s, args...)	do { \
 						fprintf(stderr, "FATAL ERROR aborting: "s, ## args); \
+						exit(1); \
 					} while(0)
 
 struct hash_table_entry {
@@ -125,7 +128,7 @@ char *fragment_data;
 char *file_data;
 char *data;
 unsigned int block_size;
-int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE;
+int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE, use_regex = FALSE;
 char **created_inode;
 int root_process;
 struct pathname *paths = NULL;
@@ -1467,6 +1470,7 @@ char *get_component(char *target, char *targname)
 
 struct path_entry {
 	char *name;
+	regex_t *preg;
 	struct pathname *paths;
 };
 
@@ -1476,18 +1480,17 @@ struct pathname {
 };
 
 
-struct pathname *add_path(struct pathname *paths, char *target)
+struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 {
 	char targname[1024];
-	int i;
+	int i, error;
 
 	target = get_component(target, targname);
 
 	if(paths == NULL) {
-		if((paths = malloc(sizeof(struct pathname))) == NULL) {
-			ERROR("failed to allocate paths\n");
-			exit(1);
-		}
+		if((paths = malloc(sizeof(struct pathname))) == NULL)
+			EXIT_UNSQUASH("failed to allocate paths\n");
+
 		paths->names = 0;
 		paths->name = NULL;
 	}
@@ -1497,15 +1500,26 @@ struct pathname *add_path(struct pathname *paths, char *target)
 			break;
 
 	if(i < paths->names)
-			add_path(paths->name[i].paths, target);
+			add_path(paths->name[i].paths, target, alltarget);
 	else {
 		paths->names ++;
 		paths->name = realloc(paths->name, (i + 1) * sizeof(struct path_entry));
 		paths->name[i].name = strdup(targname);
+		if(use_regex) {
+			paths->name[i].preg = malloc(sizeof(regex_t));
+			if(error = regcomp(paths->name[i].preg, targname, REG_EXTENDED|REG_NOSUB)) {
+				char str[1024];
+
+				regerror(error, paths->name[i].preg, str, 1024);
+				EXIT_UNSQUASH("invalid regex %s in export %s, because %s\n", targname, alltarget, str);
+			}
+		} else
+			paths->name[i].preg = NULL;
+			
 		if(targname[0] == '\0')
 			paths->name[i].paths = NULL;
 		else
-			paths->name[i].paths = add_path(NULL, target);
+			paths->name[i].paths = add_path(NULL, target, alltarget);
 	}
 
 	return paths;
@@ -1558,10 +1572,18 @@ int matches(struct pathname *paths, char *name, struct pathname **new)
 	}
 
 	for(i = 0; i < paths->names; i++)
-		if(paths->name[i].name[0] == '\0' || strcmp(paths->name[i].name, name) == 0) {
+		if(paths->name[i].name[0] == '\0') {
 			*new = paths->name[i].paths;
 			return TRUE;
-		}
+		} else if(use_regex) {
+			if(regexec(paths->name[i].preg, name, (size_t) 0, NULL, 0) == 0) {
+				*new = paths->name[i].paths;
+				return TRUE;
+			}
+		} else if(fnmatch(paths->name[i].name, name, FNM_PATHNAME|FNM_PERIOD) == 0) {
+				*new = paths->name[i].paths;
+				return TRUE;
+			}
 
 	return FALSE;
 }
@@ -1730,20 +1752,18 @@ void process_extract_files(char *filename)
 	FILE *fd;
 	char name[16384];
 
-	if((fd = fopen(filename, "r")) == NULL) {
-		ERROR("Could not open %s, because %s\n", filename, strerror(errno));
-		exit(1);
-	}
+	if((fd = fopen(filename, "r")) == NULL)
+		EXIT_UNSQUASH("Could not open %s, because %s\n", filename, strerror(errno));
 
 	while(fscanf(fd, "%16384[^\n]\n", name) != EOF)
-		paths = add_path(paths, name);
+		paths = add_path(paths, name, name);
 
 	fclose(fd);
 }
 		
 
 #define VERSION() \
-	printf("unsquashfs version 1.4-CVS (2007/10/05)\n");\
+	printf("unsquashfs version 1.4-CVS (2007/10/09)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -1795,7 +1815,9 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			process_extract_files(argv[i]);
-		} else
+		} else if(strcmp(argv[i], "-regex") == 0 || strcmp(argv[i], "-r") == 0)
+			use_regex = TRUE;
+		else
 			goto options;
 	}
 
@@ -1812,12 +1834,13 @@ options:
 			ERROR("\t-f[orce]\t\tif file already exists then overwrite\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
 			ERROR("\t-e[f] <extract file>\tlist of directories or files to extract.\n\t\t\t\tOne per line\n");
+			ERROR("\t-r[egex]\t\ttreat extract names as POSIX regular expressions\n\t\t\t\trather than use the default shell wildcard\n\t\t\t\texpansion (globbing)\n");
 		}
 		exit(1);
 	}
 
 	for(n = i + 1; n < argc; n++)
-		paths = add_path(paths, argv[n]);
+		paths = add_path(paths, argv[n], argv[n]);
 
 	if((fd = open(argv[i], O_RDONLY)) == -1) {
 		ERROR("Could not open %s, because %s\n", argv[i], strerror(errno));
