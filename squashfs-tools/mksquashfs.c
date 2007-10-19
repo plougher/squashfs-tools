@@ -3063,7 +3063,7 @@ no_exclude:
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2-CVS (2007/10/18)\n");\
+	printf("mksquashfs version 3.2-r2-CVS (2007/10/19)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3102,7 +3102,13 @@ int main(int argc, char *argv[])
 	source_path = argv + 1;
 	source = i - 2;
 	for(; i < argc; i++) {
-		if(strcmp(argv[i], "-no-sparse") == 0)
+		if(strcmp(argv[i], "-wildcards") == 0) {
+			old_exclude = FALSE;
+			use_regex = FALSE;
+		} else if(strcmp(argv[i], "-regex") == 0) {
+			old_exclude = FALSE;
+			use_regex = TRUE;
+		} else if(strcmp(argv[i], "-no-sparse") == 0)
 			sparse_files = FALSE;
 		else if(strcmp(argv[i], "-no-progress") == 0)
 			progress = FALSE;
@@ -3301,6 +3307,8 @@ printOptions:
 			ERROR("\t\t\tfile or dir with priority per line.  Priority -32768 to\n");
 			ERROR("\t\t\t32767, default priority 0\n");
 			ERROR("-ef <exclude_file>\tlist of exclude dirs/files.  One per line\n");
+			ERROR("-wildcards\t\tAllow extended shell wildcards (globbing) to be used in\n\t\t\texclude dirs/files\n");
+			ERROR("-regex\t\t\tAllow POSIX regular expressions to be used in exclude\n\t\t\tdirs/files\n");
 			exit(1);
 		}
 	}
@@ -3387,9 +3395,6 @@ printOptions:
 			else
 				paths = add_exclude(paths, argv[i++]);
 	}
-
-	display_path(0, paths);
-	display_path2(paths, "");
 
 	/* process the sort files - must be done afer the exclude files  */
 	for(i = source + 2; i < argc; i++)
