@@ -1480,6 +1480,24 @@ struct pathname {
 };
 
 
+void free_path(struct pathname *paths)
+{
+	int i;
+
+	for(i = 0; i < paths->names; i++) {
+		if(paths->name[i].paths)
+			free_path(paths->name[i].paths);
+		free(paths->name[i].name);
+		if(paths->name[i].preg) {
+			regfree(paths->name[i].preg);
+			free(paths->name[i].preg);
+		}
+	}
+
+	free(paths);
+}
+
+
 struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 {
 	char targname[1024];
@@ -1499,12 +1517,12 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		if(strcmp(paths->name[i].name, targname) == 0)
 			break;
 
-	if(i < paths->names)
-			add_path(paths->name[i].paths, target, alltarget);
-	else {
+	if(i == paths->names) {
+		/* allocate new name entry */
 		paths->names ++;
 		paths->name = realloc(paths->name, (i + 1) * sizeof(struct path_entry));
 		paths->name[i].name = strdup(targname);
+		paths->name[i].paths = NULL;
 		if(use_regex) {
 			paths->name[i].preg = malloc(sizeof(regex_t));
 			if(error = regcomp(paths->name[i].preg, targname, REG_EXTENDED|REG_NOSUB)) {
@@ -1515,17 +1533,34 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 			}
 		} else
 			paths->name[i].preg = NULL;
-			
-		if(targname[0] == '\0')
+
+		if(target[0] == '\0')
+			/* at leaf pathname component */
 			paths->name[i].paths = NULL;
 		else
+			/* recurse adding child components */
 			paths->name[i].paths = add_path(NULL, target, alltarget);
+	} else {
+		/* existing matching entry */
+		if(paths->name[i].paths == NULL) {
+			/* No sub-directory which means this is the leaf component of a
+		   	   pre-existing extract which subsumes the extract currently
+		   	   being added, in which case stop adding components */
+		} else if(target[0] == '\0') {
+			/* at leaf pathname component and child components exist from more
+		       specific extracts, delete as they're subsumed by this extract
+			*/
+			free_path(paths->name[i].paths);
+			paths->name[i].paths = NULL;
+		} else
+			/* recurse adding child components */
+			add_path(paths->name[i].paths, target, alltarget);
 	}
 
 	return paths;
 }
-	
-	
+
+
 void display_path(int depth, struct pathname *paths)
 {
 	int i, n;
@@ -1547,16 +1582,14 @@ void display_path2(struct pathname *paths, char *string)
 	int i;
 	char path[1024];
 
-	if(paths == NULL)
+	if(paths == NULL) {
+		printf("%s\n", string);
 		return;
+	}
 
 	for(i = 0; i < paths->names; i++) {
-		if(paths->name[i].name[0] == '\0')
-			printf("%s\n", string);
-		else {
-			strcat(strcat(strcpy(path, string), "/"), paths->name[i].name);
-			display_path2(paths->name[i].paths, path);
-		}
+		strcat(strcat(strcpy(path, string), "/"), paths->name[i].name);
+		display_path2(paths->name[i].paths, path);
 	}
 }
 
@@ -1572,15 +1605,12 @@ int matches(struct pathname *paths, char *name, struct pathname **new)
 	}
 
 	for(i = 0; i < paths->names; i++)
-		if(paths->name[i].name[0] == '\0') {
-			*new = paths->name[i].paths;
-			return TRUE;
-		} else if(use_regex) {
+		if(use_regex) {
 			if(regexec(paths->name[i].preg, name, (size_t) 0, NULL, 0) == 0) {
 				*new = paths->name[i].paths;
 				return TRUE;
 			}
-		} else if(fnmatch(paths->name[i].name, name, FNM_PATHNAME|FNM_PERIOD) == 0) {
+		} else if(fnmatch(paths->name[i].name, name, FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0) {
 				*new = paths->name[i].paths;
 				return TRUE;
 			}
@@ -1763,7 +1793,7 @@ void process_extract_files(char *filename)
 		
 
 #define VERSION() \
-	printf("unsquashfs version 1.4-CVS (2007/10/09)\n");\
+	printf("unsquashfs version 1.4-CVS (2007/10/19)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
