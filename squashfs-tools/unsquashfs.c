@@ -131,7 +131,6 @@ unsigned int block_size;
 int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE, use_regex = FALSE;
 char **created_inode;
 int root_process;
-struct pathname *paths = NULL;
 
 int lookup_type[] = {
 	0,
@@ -1479,6 +1478,11 @@ struct pathname {
 	struct path_entry *name;
 };
 
+struct pathnames {
+	int count;
+	struct pathname *path[0];
+};
+#define PATHS_ALLOC_SIZE 10
 
 void free_path(struct pathname *paths)
 {
@@ -1594,37 +1598,85 @@ void display_path2(struct pathname *paths, char *string)
 }
 
 
-int matches(struct pathname *paths, char *name, struct pathname **new)
+struct pathnames *init_subdir()
 {
-	int i;
-		
+	struct pathnames *new = malloc(sizeof(struct pathnames *));
+	new->count = 0;
+	return new;
+}
+
+
+struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
+{
+	if(paths->count % PATHS_ALLOC_SIZE == 0)
+		paths = realloc(paths, sizeof(struct pathnames *) + (paths->count + PATHS_ALLOC_SIZE) * sizeof(struct pathname *));
+
+	paths->path[paths->count++] = path;
+	return paths;
+}
+
+
+void free_subdir(struct pathnames *paths)
+{
+	free(paths);
+}
+
+
+int matches(struct pathnames *paths, char *name, struct pathnames **new)
+{
+	int i, n;
 
 	if(paths == NULL) {
 		*new = NULL;
 		return TRUE;
 	}
 
-	for(i = 0; i < paths->names; i++)
-		if(use_regex) {
-			if(regexec(paths->name[i].preg, name, (size_t) 0, NULL, 0) == 0) {
-				*new = paths->name[i].paths;
-				return TRUE;
-			}
-		} else if(fnmatch(paths->name[i].name, name, FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0) {
-				*new = paths->name[i].paths;
-				return TRUE;
-			}
+	*new = init_subdir();
 
-	return FALSE;
+	for(n = 0; n < paths->count; n++) {
+		struct pathname *path = paths->path[n];
+		for(i = 0; i < path->names; i++) {
+			int match = use_regex ?
+				regexec(path->name[i].preg, name, (size_t) 0, NULL, 0) == 0 :
+				fnmatch(path->name[i].name, name, FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
+			if(match && path->name[i].paths == NULL)
+				/* match on a leaf component, any subdirectories will
+				 * implicitly match, therefore return an empty new search set */
+				goto empty_set;
+
+			if(match)
+				/* match on a non-leaf component, add any subdirectories to
+				 * the new set of subdirectories to scan for this name */
+				*new = add_subdir(*new, path->name[i].paths);
+		}
+	}
+
+	if((*new)->count == 0) {
+		/* no matching names found, delete empty search set, and return
+        * FALSE */
+		free_subdir(*new);
+		*new = NULL;
+		return FALSE;
+	}
+
+	/* one or more matches with sub-directories found (no leaf matches),
+     * return new search set and return TRUE */
+	return TRUE;
+
+empty_set:
+   /* found matching leaf exclude, return empty search set and return TRUE */
+	free_subdir(*new);
+	*new = NULL;
+	return TRUE;
 }
 
 
-int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, struct pathname *paths)
+int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, struct pathnames *paths)
 {
 	struct dir *dir = s_ops.squashfs_opendir(parent_name, start_block, offset);
 	unsigned int type;
 	char *name, pathname[1024];
-	struct pathname *new;
+	struct pathnames *new;
 
 	if(dir == NULL) {
 		ERROR("dir_scan: Failed to read directory %s (%x:%x)\n", parent_name, start_block, offset);
@@ -1649,7 +1701,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, s
 
 		if(type == SQUASHFS_DIR_TYPE)
 			dir_scan(pathname, start_block, offset, new);
-		else {
+		else if(new == NULL) {
 			if((i = s_ops.read_inode(start_block, offset)) == NULL) {
 				ERROR("failed to read header\n");
 				continue;
@@ -1661,6 +1713,8 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, s
 			if(!lsonly)
 				create_inode(pathname, i);
 		}
+
+		free_subdir(new);
 	}
 
 	!lsonly && set_attributes(parent_name, dir->mode, dir->uid, dir->guid, dir->mtime, force);
@@ -1777,7 +1831,7 @@ failed_mount:
 }
 
 
-void process_extract_files(char *filename)
+struct pathname *process_extract_files(struct pathname *path, char *filename)
 {
 	FILE *fd;
 	char name[16384];
@@ -1786,9 +1840,10 @@ void process_extract_files(char *filename)
 		EXIT_UNSQUASH("Could not open %s, because %s\n", filename, strerror(errno));
 
 	while(fscanf(fd, "%16384[^\n]\n", name) != EOF)
-		paths = add_path(paths, name, name);
+		path = add_path(path, name, name);
 
 	fclose(fd);
+	return path;
 }
 		
 
@@ -1809,6 +1864,8 @@ int main(int argc, char *argv[])
 	int i, stat_sys = FALSE, version = FALSE;
 	char **target_name = NULL;
 	int n, targets = 0;
+	struct pathnames *paths = NULL;
+	struct pathname *path = NULL;
 
 	if(root_process = geteuid() == 0)
 		umask(0);
@@ -1844,7 +1901,7 @@ int main(int argc, char *argv[])
 				fprintf(stderr, "%s: -ef missing filename\n", argv[0]);
 				exit(1);
 			}
-			process_extract_files(argv[i]);
+			path = process_extract_files(path, argv[i]);
 		} else if(strcmp(argv[i], "-regex") == 0 || strcmp(argv[i], "-r") == 0)
 			use_regex = TRUE;
 		else
@@ -1870,7 +1927,7 @@ options:
 	}
 
 	for(n = i + 1; n < argc; n++)
-		paths = add_path(paths, argv[n], argv[n]);
+		path = add_path(path, argv[n], argv[n]);
 
 	if((fd = open(argv[i], O_RDONLY)) == -1) {
 		ERROR("Could not open %s, because %s\n", argv[i], strerror(errno));
@@ -1908,6 +1965,11 @@ options:
 	uncompress_inode_table(sBlk.inode_table_start, sBlk.directory_table_start);
 
 	uncompress_directory_table(sBlk.directory_table_start, sBlk.fragment_table_start);
+
+	if(path) {
+		paths = init_subdir();
+		paths = add_subdir(paths, path);
+	}
 
 	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode), SQUASHFS_INODE_OFFSET(sBlk.root_inode), paths);
 
