@@ -190,8 +190,15 @@ struct pathname {
 	struct path_entry *name;
 };
 
-struct pathname *paths = NULL;
-int excluded(struct pathname *paths, char *name, struct pathname **new);
+struct pathnames {
+	int count;
+	struct pathname *path[0];
+};
+#define PATHS_ALLOC_SIZE 10
+
+struct pathnames *paths = NULL;
+struct pathname *path = NULL;
+int excluded(struct pathnames *paths, char *name, struct pathnames **new);
 
 /* fragment block data structures */
 int fragments = 0;
@@ -343,7 +350,7 @@ extern long long read_filesystem(char *root_name, int fd, squashfs_super_block *
 extern int read_sort_file(char *filename, int source, char *source_path[]);
 extern void sort_files_and_write(struct dir_info *dir);
 struct file_info *duplicate(long long file_size, long long bytes, unsigned int **block_list, long long *start, struct fragment **fragment, struct file_buffer *file_buffer, struct buffer_list *buffer_list, int blocks, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag);
-struct dir_info *dir_scan1(char *, struct pathname *, int (_readdir)(char *, char *, struct dir_info *));
+struct dir_info *dir_scan1(char *, struct pathnames *, int (_readdir)(char *, char *, struct dir_info *));
 void dir_scan2(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes, unsigned int *block_list, long long start, struct fragment *fragment, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag);
 extern void generate_file_priorities(struct dir_info *dir, int priority, struct stat *buf);
@@ -2561,12 +2568,12 @@ void dir_scan(squashfs_inode *inode, char *pathname, int (_readdir)(char *, char
 }
 
 
-struct dir_info *dir_scan1(char *pathname, struct pathname *paths, int (_readdir)(char *, char *, struct dir_info *))
+struct dir_info *dir_scan1(char *pathname, struct pathnames *paths, int (_readdir)(char *, char *, struct dir_info *))
 {
 	struct dir_info *dir, *sub_dir;
 	struct stat buf;
 	char filename[8192], dir_name[8192];
-	struct pathname *new;
+	struct pathnames *new;
 
 	if((dir = scan1_opendir(pathname)) == NULL) {
 		ERROR("Could not open %s, skipping...\n", pathname);
@@ -3038,32 +3045,84 @@ void display_path2(struct pathname *paths, char *string)
 }
 
 
-int excluded(struct pathname *paths, char *name, struct pathname **new)
+
+struct pathnames *init_subdir()
 {
-	int i;
+	struct pathnames *new = malloc(sizeof(struct pathnames *));
+	new->count = 0;
+	return new;
+}
+
+
+struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
+{
+	if(paths->count % PATHS_ALLOC_SIZE == 0)
+		paths = realloc(paths, sizeof(struct pathnames *) + (paths->count + PATHS_ALLOC_SIZE) * sizeof(struct pathname *));
+
+	paths->path[paths->count++] = path;
+	return paths;
+}
+
+
+void free_subdir(struct pathnames *paths)
+{
+	free(paths);
+}
+
+
+int excluded(struct pathnames *paths, char *name, struct pathnames **new)
+{
+	int i, n, res;
 		
-	if(paths == NULL)
-		goto no_exclude;
+	if(paths == NULL) {
+		*new = NULL;
+		return FALSE;
+	}
 
-	for(i = 0; i < paths->names; i++)
-		if(use_regex) {
-			if(regexec(paths->name[i].preg, name, (size_t) 0, NULL, 0) == 0) {
-				*new = paths->name[i].paths;
-				return !*new;
-			}
-		} else if(fnmatch(paths->name[i].name, name, FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0) {
-				*new = paths->name[i].paths;
-				return !*new;
+
+	*new = init_subdir();
+
+	for(n = 0; n < paths->count; n++) {
+		struct pathname *path = paths->path[n];
+
+		for(i = 0; i < path->names; i++) {
+			int match = use_regex ?
+				regexec(path->name[i].preg, name, (size_t) 0, NULL, 0) == 0 :
+				fnmatch(path->name[i].name, name, FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
+
+			if(match && path->name[i].paths == NULL) {
+				/* match on a leaf component, any subdirectories in the
+				 * filesystem should be excluded */
+				res = TRUE;
+				goto empty_set;
 			}
 
-no_exclude:
-	*new = NULL;
+			if(match)
+				/* match on a non-leaf component, add any subdirectories to
+				 * the new set of subdirectories to scan for this name */
+				*new = add_subdir(*new, path->name[i].paths);
+		}
+	}
+
+	if((*new)->count == 0) {
+			/* no matching names found, return empty new search set */
+			res = FALSE;
+			goto empty_set;
+	}
+
+	/* one or more matches with sub-directories found (no leaf matches).
+	 * Return new set */
 	return FALSE;
+
+empty_set:
+	free_subdir(*new);
+	*new = NULL;
+	return res;
 }
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2-CVS (2007/10/19)\n");\
+	printf("mksquashfs version 3.2-r2-CVS (2007/10/21)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3377,7 +3436,7 @@ printOptions:
 					if(old_exclude)
 						old_add_exclude(filename);
 					else
-						paths = add_exclude(paths, filename);
+						path = add_exclude(path, filename);
 			fclose(fd);
 		} else if(strcmp(argv[i], "-e") == 0)
 			break;
@@ -3393,7 +3452,7 @@ printOptions:
 			if(old_exclude)
 				old_add_exclude(argv[i++]);
 			else
-				paths = add_exclude(paths, argv[i++]);
+				path = add_exclude(path, argv[i++]);
 	}
 
 	/* process the sort files - must be done afer the exclude files  */
@@ -3532,6 +3591,11 @@ printOptions:
 		} else
 			columns = winsize.ws_col;
 		signal(SIGWINCH, sigwinch_handler);
+	}
+
+	if(path) {
+		paths = init_subdir();
+		paths = add_subdir(paths, path);
 	}
 
 	if(delete && !keep_as_directory && source == 1 && S_ISDIR(source_buf.st_mode))
