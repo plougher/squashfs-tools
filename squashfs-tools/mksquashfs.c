@@ -198,6 +198,7 @@ struct pathnames {
 
 struct pathnames *paths = NULL;
 struct pathname *path = NULL;
+struct pathname *stickypath = NULL;
 int excluded(struct pathnames *paths, char *name, struct pathnames **new);
 
 /* fragment block data structures */
@@ -3006,9 +3007,15 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 }
 	
 	
-struct pathname *add_exclude(struct pathname *paths, char *target)
+void add_exclude(char *target)
 {
-	return add_path(paths, target, target);
+
+	if(target[0] == '/' || strncmp(target, "./", 2) == 0 || strncmp(target, "../", 3) == 0)
+		BAD_ERROR("/, ./ and ../ prefixed excludes not supported with -wildcards or -regex options\n");	
+	else if(strncmp(target, "... ", 4) == 0)
+		stickypath = add_path(stickypath, target + 4, target + 4);
+	else	
+		path = add_path(path, target, target);
 }
 
 
@@ -3043,7 +3050,6 @@ void display_path2(struct pathname *paths, char *string)
 		display_path2(paths->name[i].paths, path);
 	}
 }
-
 
 
 struct pathnames *init_subdir()
@@ -3081,6 +3087,7 @@ int excluded(struct pathnames *paths, char *name, struct pathnames **new)
 
 
 	*new = init_subdir();
+	*new = add_subdir(*new, stickypath);
 
 	for(n = 0; n < paths->count; n++) {
 		struct pathname *path = paths->path[n];
@@ -3122,7 +3129,7 @@ empty_set:
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2-CVS (2007/10/21)\n");\
+	printf("mksquashfs version 3.2-r2-CVS (2007/10/23)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3436,7 +3443,7 @@ printOptions:
 					if(old_exclude)
 						old_add_exclude(filename);
 					else
-						path = add_exclude(path, filename);
+						add_exclude(filename);
 			fclose(fd);
 		} else if(strcmp(argv[i], "-e") == 0)
 			break;
@@ -3452,7 +3459,7 @@ printOptions:
 			if(old_exclude)
 				old_add_exclude(argv[i++]);
 			else
-				path = add_exclude(path, argv[i++]);
+				add_exclude(argv[i++]);
 	}
 
 	/* process the sort files - must be done afer the exclude files  */
@@ -3593,9 +3600,12 @@ printOptions:
 		signal(SIGWINCH, sigwinch_handler);
 	}
 
-	if(path) {
+	if(path || stickypath) {
 		paths = init_subdir();
-		paths = add_subdir(paths, path);
+		if(path)
+			paths = add_subdir(paths, path);
+		if(stickypath)
+			paths = add_subdir(paths, stickypath);
 	}
 
 	if(delete && !keep_as_directory && source == 1 && S_ISDIR(source_buf.st_mode))
