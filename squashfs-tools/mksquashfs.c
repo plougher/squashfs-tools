@@ -3087,7 +3087,8 @@ int excluded(struct pathnames *paths, char *name, struct pathnames **new)
 
 
 	*new = init_subdir();
-	*new = add_subdir(*new, stickypath);
+	if(stickypath)
+		*new = add_subdir(*new, stickypath);
 
 	for(n = 0; n < paths->count; n++) {
 		struct pathname *path = paths->path[n];
