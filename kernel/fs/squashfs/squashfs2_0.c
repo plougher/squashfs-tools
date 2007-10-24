@@ -156,7 +156,7 @@ static int squashfs_read_inode_2(struct inode *i, squashfs_inode_t inode)
 	struct squashfs_base_inode_header_2 *inodeb = &id.base,
 					  *sinodeb = &sid.base;
 
-	TRACE("Entered squashfs_iget\n");
+	TRACE("Entered squashfs_read_inode_2\n");
 
 	if (msblk->swap) {
 		if (!squashfs_get_cached_block(s, (char *) sinodeb, block,
