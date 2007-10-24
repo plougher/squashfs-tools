@@ -453,6 +453,7 @@ out:
 	return 0;
 }
 
+
 static int get_fragment_location(struct super_block *s, unsigned int fragment,
 				long long *fragment_start_block,
 				unsigned int *fragment_size)
@@ -1139,7 +1140,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	char b[BDEVNAME_SIZE];
 	struct inode *root;
 
-	TRACE("Entered squashfs_read_superblock\n");
+	TRACE("Entered squashfs_fill_superblock\n");
 
 	s->s_fs_info = kzalloc(sizeof(struct squashfs_sb_info), GFP_KERNEL);
 	if (s->s_fs_info == NULL) {
@@ -1212,8 +1213,8 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 					? "un" : "");
 	TRACE("Data is %scompressed\n", SQUASHFS_UNCOMPRESSED_DATA(sblk->flags)
 					? "un" : "");
-	TRACE("Check data is %s present in the filesystem\n",
-					SQUASHFS_CHECK_DATA(sblk->flags) ?  "" : "not");
+	TRACE("Check data is %spresent in the filesystem\n",
+					SQUASHFS_CHECK_DATA(sblk->flags) ?  "" : "not ");
 	TRACE("Filesystem size %lld bytes\n", sblk->bytes_used);
 	TRACE("Block size %d\n", sblk->block_size);
 	TRACE("Number of inodes %d\n", sblk->inodes);
@@ -1317,7 +1318,7 @@ allocate_root:
 		goto failed_mount;
 	}
 
-	TRACE("Leaving squashfs_read_super\n");
+	TRACE("Leaving squashfs_fill_super\n");
 	return 0;
 
 failed_mount:
