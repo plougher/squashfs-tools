@@ -1276,7 +1276,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	if (sblk->s_major == 1 && squashfs_1_0_supported(msblk))
 		goto allocate_root;
 
-	msblk->fragment = kmalloc(sizeof(struct squashfs_fragment_cache) *
+	msblk->fragment = kzalloc(sizeof(struct squashfs_fragment_cache) *
 				SQUASHFS_CACHED_FRAGMENTS, GFP_KERNEL);
 	if (msblk->fragment == NULL) {
 		ERROR("Failed to allocate fragment block cache\n");
@@ -1284,9 +1284,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	for (i = 0; i < SQUASHFS_CACHED_FRAGMENTS; i++) {
-		msblk->fragment[i].locked = 0;
 		msblk->fragment[i].block = SQUASHFS_INVALID_BLK;
-		msblk->fragment[i].data = NULL;
 	}
 
 	msblk->next_fragment = 0;
