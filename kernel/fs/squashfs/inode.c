@@ -1168,6 +1168,9 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	init_waitqueue_head(&msblk->waitq);
 	init_waitqueue_head(&msblk->fragment_wait_queue);
 
+	/* sblk->bytes_used is checked in squashfs_read_data to ensure reads are not
+ 	 * beyond filesystem end.  As we're using squashfs_read_data to read sblk here,
+ 	 * first set sblk->bytes_used to a useful value */
 	sblk->bytes_used = sizeof(struct squashfs_super_block);
 	if (!squashfs_read_data(s, (char *) sblk, SQUASHFS_START,
 					sizeof(struct squashfs_super_block) |
@@ -1177,7 +1180,6 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	/* Check it is a SQUASHFS superblock */
-	msblk->swap = 0;
 	if ((s->s_magic = sblk->s_magic) != SQUASHFS_MAGIC) {
 		if (sblk->s_magic == SQUASHFS_MAGIC_SWAP) {
 			struct squashfs_super_block ssblk;
