@@ -1017,59 +1017,6 @@ static int read_fragment_index_table(struct super_block *s)
 }
 
 
-#if 0
-static int readahead_metadata(struct super_block *s)
-{
-	struct squashfs_sb_info *msblk = s->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
-	long long block = sblk->inode_table_start;
-	int i;
-
-	squashfs_cached_blks = 1000;
-
-	/* Init inode_table block pointer array */
-	msblk->block_cache = kmalloc(sizeof(struct squashfs_cache) *
-					squashfs_cached_blks, GFP_KERNEL);
-	if (msblk->block_cache == NULL) {
-		ERROR("Failed to allocate block cache\n");
-		goto failed2;
-	}
-
-	for (i = 0; i < squashfs_cached_blks; i++)
-		msblk->block_cache[i].block = SQUASHFS_INVALID_BLK;
-
-	msblk->next_cache = 0;
-	msblk->unused_cache_blks = squashfs_cached_blks;
-
-	for (i = 0; i < squashfs_cached_blks && block < sblk->fragment_table_start;
-																	 i++) {
-		msblk->block_cache[i].data = vmalloc(SQUASHFS_METADATA_SIZE);
-		if (msblk->block_cache[i].data == NULL) {
-			ERROR("Failed to allocate metadata block\n");
-			goto failed;
-		}
-
-		msblk->block_cache[i].block = block;
-
-		msblk->block_cache[i].length = squashfs_read_data(s, msblk->block_cache[i].data,
-			block, 0, &block, SQUASHFS_METADATA_SIZE);
-
-		if (msblk->block_cache[i].length == 0)
-			goto failed;
-
-		msblk->block_cache[i].next_index = block;
-	}
-
-	return 1;
-
-failed:
-	for(; i >= 0; i --)
-		vfree(msblk->block_cache[i].data);
-
-failed2:
-	return 0;
-}
-#endif
 static int readahead_metadata(struct super_block *s)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
