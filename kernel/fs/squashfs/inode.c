@@ -1185,7 +1185,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		goto failed_mount;
 
 	/* Allocate read_page block */
-	msblk->read_page = vmalloc(sblk->block_size, GFP_KERNEL);
+	msblk->read_page = vmalloc(sblk->block_size);
 	if (msblk->read_page == NULL) {
 		ERROR("Failed to allocate read_page block\n");
 		goto failed_mount;
