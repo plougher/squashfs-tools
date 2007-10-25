@@ -1185,7 +1185,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		goto failed_mount;
 
 	/* Allocate read_page block */
-	msblk->read_page = kmalloc(sblk->block_size, GFP_KERNEL);
+	msblk->read_page = vmalloc(sblk->block_size, GFP_KERNEL);
 	if (msblk->read_page == NULL) {
 		ERROR("Failed to allocate read_page block\n");
 		goto failed_mount;
@@ -1275,7 +1275,7 @@ failed_mount:
 	kfree(msblk->fragment_index);
 	kfree(msblk->fragment);
 	kfree(msblk->uid);
-	kfree(msblk->read_page);
+	vfree(msblk->read_page);
 	kfree(msblk->block_cache);
 	kfree(msblk->fragment_index_2);
 	vfree(msblk->stream.workspace);
@@ -2092,7 +2092,7 @@ static void squashfs_put_super(struct super_block *s)
 				vfree(sbi->fragment[i].data);
 		kfree(sbi->fragment);
 		kfree(sbi->block_cache);
-		kfree(sbi->read_page);
+		vfree(sbi->read_page);
 		kfree(sbi->uid);
 		kfree(sbi->fragment_index);
 		kfree(sbi->fragment_index_2);
