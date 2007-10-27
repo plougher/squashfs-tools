@@ -221,7 +221,7 @@ int print_filename(char *pathname, struct inode *inode)
 		case S_IFLNK:
 			padchars = TOTALCHARS - strlen(userstr) - strlen(groupstr);
 
-			printf("%*ld ", padchars > 0 ? padchars : 0, inode->data);
+			printf("%*lld ", padchars > 0 ? padchars : 0, inode->data);
 			break;
 		case S_IFCHR:
 		case S_IFBLK:
