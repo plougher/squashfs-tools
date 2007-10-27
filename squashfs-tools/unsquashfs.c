@@ -90,7 +90,7 @@ typedef struct squashfs_operations {
 struct inode {
 	int blocks;
 	char *block_ptr;
-	int data;
+	long long data;
 	int fragment;
 	int frag_bytes;
 	gid_t gid;
@@ -221,13 +221,13 @@ int print_filename(char *pathname, struct inode *inode)
 		case S_IFLNK:
 			padchars = TOTALCHARS - strlen(userstr) - strlen(groupstr);
 
-			printf("%*d ", padchars > 0 ? padchars : 0, inode->data);
+			printf("%*ld ", padchars > 0 ? padchars : 0, inode->data);
 			break;
 		case S_IFCHR:
 		case S_IFBLK:
 			padchars = TOTALCHARS - strlen(userstr) - strlen(groupstr) - 7; 
 
-			printf("%*s%3d,%3d ", padchars > 0 ? padchars : 0, " ", inode->data >> 8, inode->data & 0xff);
+			printf("%*s%3d,%3d ", padchars > 0 ? padchars : 0, " ", (int) inode->data >> 8, (int) inode->data & 0xff);
 			break;
 	}
 
