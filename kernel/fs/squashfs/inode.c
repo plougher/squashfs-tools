@@ -399,6 +399,7 @@ SQSH_EXTERN int squashfs_get_cached_block(struct super_block *s, void *buffer,
 				mutex_lock(&msblk->block_cache_mutex);
 				msblk->block_cache[i].block = SQUASHFS_INVALID_BLK;
 				msblk->unused_cache_blks ++;
+				smp_mb();
 				vfree(msblk->block_cache[i].data);
 				wake_up(&msblk->waitq);
 				mutex_unlock(&msblk->block_cache_mutex);
@@ -409,6 +410,7 @@ SQSH_EXTERN int squashfs_get_cached_block(struct super_block *s, void *buffer,
 			msblk->block_cache[i].block = block;
 			msblk->block_cache[i].next_index = next_index;
 			msblk->unused_cache_blks ++;
+			smp_mb();
 			wake_up(&msblk->waitq);
 			TRACE("Read cache block [%llx:%x]\n", block, offset);
 		}
@@ -472,7 +474,8 @@ static int get_fragment_location(struct super_block *s, unsigned int fragment,
 			goto out;
 		SQUASHFS_SWAP_FRAGMENT_ENTRY(&fragment_entry, &sfragment_entry);
 	} else
-		if (!squashfs_get_cached_block(s, &fragment_entry, start_block, offset,						 sizeof(fragment_entry), &start_block, &offset))
+		if (!squashfs_get_cached_block(s, &fragment_entry, start_block, offset,
+					 sizeof(fragment_entry), &start_block, &offset))
 			goto out;
 
 	*fragment_start_block = fragment_entry.start_block;
@@ -492,6 +495,7 @@ SQSH_EXTERN void release_cached_fragment(struct squashfs_sb_info *msblk,
 	fragment->locked --;
 	if (fragment->locked == 0) {
 		msblk->unused_frag_blks ++;
+		smp_mb();
 		wake_up(&msblk->fragment_wait_queue);
 	}
 	mutex_unlock(&msblk->fragment_mutex);
@@ -551,6 +555,7 @@ struct squashfs_fragment_cache *get_cached_fragment(struct super_block *s,
 				ERROR("Unable to read fragment cache block [%llx]\n", start_block);
 				msblk->fragment[i].locked = 0;
 				msblk->unused_frag_blks ++;
+				smp_mb();
 				wake_up(&msblk->fragment_wait_queue);
 				goto out;
 			}
