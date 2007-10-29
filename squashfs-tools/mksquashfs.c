@@ -3144,7 +3144,7 @@ void write_recovery_data(squashfs_super_block *sBlk)
 
 	if(recover == FALSE) {
 		printf("No recovery data option specified.\n");
-		printf("Skipping saving recovery file.\n");
+		printf("Skipping saving recovery file.\n\n");
 		return;
 	}
 
@@ -3233,7 +3233,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2-CVS (2007/10/28)\n");\
+	printf("mksquashfs version 3.3 (2007/10/29)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3589,6 +3589,7 @@ printOptions:
 	if(!delete) {
 	        if(read_super(fd, &sBlk, &orig_be, argv[source + 1]) == 0) {
 			ERROR("Failed to read existing filesystem - will not overwrite - ABORTING!\n");
+			ERROR("To force Mksquashfs to write to this block device or file use -noappend\n");
 			EXIT_MKSQUASHFS();
 		}
 
@@ -3626,6 +3627,7 @@ printOptions:
 				&total_bytes, &total_inode_bytes, &total_directory_bytes, &inode_dir_inode_number,
 				&inode_dir_parent_inode, add_old_root_entry, &fragment_table, &inode_lookup_table)) == 0) {
 			ERROR("Failed to read existing filesystem - will not overwrite - ABORTING!\n");
+			ERROR("To force Mksquashfs to write to this block device or file use -noappend\n");
 			EXIT_MKSQUASHFS();
 		}
 		if((fragments = sBlk.fragments))
