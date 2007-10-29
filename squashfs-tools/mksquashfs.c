@@ -214,7 +214,6 @@ struct fragment {
 squashfs_fragment_entry *fragment_table = NULL;
 int fragments_outstanding = 0;
 
-
 /* current inode number for directories and non directories */
 unsigned int dir_inode_no = 1;
 unsigned int inode_no = 0;
@@ -273,6 +272,10 @@ int sorted = 0;
 
 /* save destination file name for deleting on error */
 char *destination_file = NULL;
+
+/* recovery file for abnormal exit on appending */
+char recovery_file[1024] = "";
+int recover = TRUE;
 
 /* data allocator status struct.  Allocators are used to keep
   track of memory buffers passed between different threads */
@@ -3129,8 +3132,108 @@ empty_set:
 }
 
 
+#define RECOVER_ID "Squashfs recovery file v1.0\n"
+#define RECOVER_ID_SIZE 28
+
+void write_recovery_data(squashfs_super_block *sBlk)
+{
+	int recoverfd, bytes = sBlk->bytes_used - sBlk->inode_table_start;
+	pid_t pid = getpid();
+	char *metadata;
+	char header[] = RECOVER_ID;
+
+	if(recover == FALSE) {
+		printf("No recovery data option specified.\n");
+		printf("Skipping saving recovery file.\n");
+		return;
+	}
+
+	if((metadata = malloc(bytes)) == NULL)
+		BAD_ERROR("Failed to alloc metadata buffer in write_recovery_data\n");
+
+	read_bytes(fd, sBlk->inode_table_start, bytes, metadata);
+
+	sprintf(recovery_file, "squashfs_recovery_%s_%d", destination_file, pid);
+	if((recoverfd = open(recovery_file, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU)) == -1)
+		BAD_ERROR("Failed to create recovery file, because %s.  Aborting\n", strerror(errno));
+		
+	if(write(recoverfd, header, RECOVER_ID_SIZE) == -1)
+		BAD_ERROR("Failed to write recovery file, because %s\n", strerror(errno));
+
+	if(write(recoverfd, sBlk, sizeof(squashfs_super_block)) == -1)
+		BAD_ERROR("Failed to write recovery file, because %s\n", strerror(errno));
+
+	if(write(recoverfd, metadata, bytes) == -1)
+		BAD_ERROR("Failed to write recovery file, because %s\n", strerror(errno));
+
+	close(recoverfd);
+	free(metadata);
+	
+	printf("Recovery file \"%s\" written\n", recovery_file);
+	printf("If Mksquashfs aborts abnormally (i.e. power failure), run\n");
+	printf("mksquashfs dummy %s -recover %s\n", destination_file, recovery_file);
+	printf("to restore filesystem\n\n");
+}
+
+
+void read_recovery_data(char *recovery_file, char *destination_file)
+{
+	int fd, recoverfd, bytes;
+	squashfs_super_block orig_sBlk, sBlk;
+	char *metadata;
+	int readbytes;
+	struct stat buf;
+	char header[] = RECOVER_ID;
+	char header2[RECOVER_ID_SIZE];
+
+	if((recoverfd = open(recovery_file, O_RDONLY)) == -1)
+		BAD_ERROR("Failed to open recovery file because %s\n", strerror(errno));
+
+	if(stat(destination_file, &buf) == -1)
+		BAD_ERROR("Failed to stat destination file, because %s\n", strerror(errno));
+
+	if((fd = open(destination_file, O_RDWR)) == -1)
+		BAD_ERROR("Failed to open destination file because %s\n", strerror(errno));
+
+	if(read(recoverfd, header2, RECOVER_ID_SIZE) == -1)
+		BAD_ERROR("Failed to read recovery file, because %s\n", strerror(errno));
+	if(strncmp(header, header2, RECOVER_ID_SIZE) !=0 )
+		BAD_ERROR("Not a recovery file\n");
+
+	if(read(recoverfd, &sBlk, sizeof(squashfs_super_block)) == -1)
+		BAD_ERROR("Failed to read recovery file, because %s\n", strerror(errno));
+
+	read_bytes(fd, 0, sizeof(squashfs_super_block), (char *) &orig_sBlk);
+
+	if(memcmp(((char *) &sBlk) + 4, ((char *) &orig_sBlk) + 4, sizeof(squashfs_super_block) - 4) != 0)
+		BAD_ERROR("Recovery file and destination file do not seem to match\n");
+
+	bytes = sBlk.bytes_used - sBlk.inode_table_start;
+
+	if((metadata = malloc(bytes)) == NULL)
+		BAD_ERROR("Failed to alloc metadata buffer in read_recovery_data\n");
+
+	if((readbytes = read(recoverfd, metadata, bytes)) == -1)
+		BAD_ERROR("Failed to read recovery file, because %s\n", strerror(errno));
+
+	if(readbytes != bytes)
+		BAD_ERROR("Recovery file appears to be truncated\n");
+
+	write_bytes(fd, 0, sizeof(squashfs_super_block), (char *) &sBlk);
+
+	write_bytes(fd, sBlk.inode_table_start, bytes, metadata);
+
+	close(recoverfd);
+	close(fd);
+
+	printf("Successfully wrote recovery file \"%s\".  Exiting\n", recovery_file);
+	
+	exit(0);
+}
+
+
 #define VERSION() \
-	printf("mksquashfs version 3.2-r2-CVS (2007/10/23)\n");\
+	printf("mksquashfs version 3.2-r2-CVS (2007/10/28)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3169,7 +3272,15 @@ int main(int argc, char *argv[])
 	source_path = argv + 1;
 	source = i - 2;
 	for(; i < argc; i++) {
-		if(strcmp(argv[i], "-wildcards") == 0) {
+		if(strcmp(argv[i], "-recover") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -recover missing recovery file\n", argv[0]);
+				exit(1);
+			}
+			read_recovery_data(argv[i], argv[source + 1]);
+		} else if(strcmp(argv[i], "-no-recovery") == 0)
+			recover = FALSE;
+		else if(strcmp(argv[i], "-wildcards") == 0) {
 			old_exclude = FALSE;
 			use_regex = FALSE;
 		} else if(strcmp(argv[i], "-regex") == 0) {
@@ -3337,6 +3448,8 @@ printOptions:
 			ERROR("SYNTAX:%s source1 source2 ...  dest [options] [-e list of exclude\ndirs/files]\n", argv[0]);
 			ERROR("\nOptions are\n");
 			ERROR("-version\t\tprint version, licence and copyright message\n");
+			ERROR("-recover <name>\t\trecover filesystem data using recovery file <name>\n");
+			ERROR("-no-recovery\t\tdon't generate a recovery file\n");
 			ERROR("-info\t\t\tprint files written to filesystem\n");
 			ERROR("-no-exports\t\tdon't make the filesystem exportable via NFS\n");
 			ERROR("-no-progress\t\tdon't display the progress bar\n");
@@ -3548,6 +3661,7 @@ printOptions:
 		sfifo_count = fifo_count;
 		ssock_count = sock_count;
 		sdup_files = dup_files;
+		write_recovery_data(&sBlk);
 		restore = TRUE;
 		if(setjmp(env))
 			goto restore_filesystem;
@@ -3690,6 +3804,11 @@ restore_filesystem:
 		write_bytes(fd, bytes, 4096 - i, temp);
 	}
 
+	close(fd);
+
+	if(recovery_file[0] != '\0')
+		unlink(recovery_file);
+
 	total_bytes += total_inode_bytes + total_directory_bytes + uid_count
 		* sizeof(unsigned short) + guid_count * sizeof(unsigned short) +
 		sizeof(squashfs_super_block);
@@ -3736,6 +3855,6 @@ restore_filesystem:
 		struct group *group = getgrgid(guids[i]);
 		printf("\t%s (%d)\n", group == NULL ? "unknown" : group->gr_name, guids[i]);
 	}
-	close(fd);
+
 	return 0;
 }
