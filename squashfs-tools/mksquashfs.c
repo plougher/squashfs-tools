@@ -3153,7 +3153,7 @@ void write_recovery_data(squashfs_super_block *sBlk)
 
 	read_bytes(fd, sBlk->inode_table_start, bytes, metadata);
 
-	sprintf(recovery_file, "squashfs_recovery_%s_%d", destination_file, pid);
+	sprintf(recovery_file, "squashfs_recovery_%s_%d", getbase(destination_file), pid);
 	if((recoverfd = open(recovery_file, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU)) == -1)
 		BAD_ERROR("Failed to create recovery file, because %s.  Aborting\n", strerror(errno));
 		
@@ -3233,7 +3233,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3 (2007/10/29)\n");\
+	printf("mksquashfs version 3.3 (2007/10/31)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
