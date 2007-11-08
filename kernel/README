@@ -1,2 +1,3 @@
 These files should compile on linux 2.6.22.
-For earlier kernels please use the non CVS released versions!
+For earlier or later kernels (including linux 2.6.24) please use the non CVS
+released versions!
