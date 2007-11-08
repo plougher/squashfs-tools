@@ -1717,7 +1717,8 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, s
 		free_subdir(new);
 	}
 
-	!lsonly && set_attributes(parent_name, dir->mode, dir->uid, dir->guid, dir->mtime, force);
+	if(!lsonly)
+		set_attributes(parent_name, dir->mode, dir->uid, dir->guid, dir->mtime, force);
 
 	squashfs_closedir(dir);
 	dir_count ++;
