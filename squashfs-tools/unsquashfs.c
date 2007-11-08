@@ -1456,7 +1456,7 @@ void squashfs_closedir(struct dir *dir)
 char *get_component(char *target, char *targname)
 {
 	while(*target == '/')
-		*target ++;
+		target ++;
 
 	while(*target != '/' && *target!= '\0')
 		*targname ++ = *target ++;
