@@ -1,8 +1,6 @@
 CVS status:
 
-CVS reflects squashfs3.2-r2 plus
-	- Unsquashfs extended to read 1.0 filesystems
-	- Code updated to use wait_event()
+CVS reflects squashfs3.3
 
 kernel-2.4 code is still squashfs3.1-r2.  Support for 2.4 kernels was
 experimentally dropped in squashfs3.2.
