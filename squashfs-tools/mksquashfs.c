@@ -2920,7 +2920,7 @@ skip_inode_hash_table:
 char *get_component(char *target, char *targname)
 {
 	while(*target == '/')
-		*target ++;
+		target ++;
 
 	while(*target != '/' && *target!= '\0')
 		*targname ++ = *target ++;
