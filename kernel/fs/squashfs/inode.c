@@ -34,7 +34,7 @@
 
 #include "squashfs.h"
 
-int squashfs_cached_blks;
+static int squashfs_cached_blks;
 
 static void vfs_read_inode(struct inode *i);
 static struct dentry *squashfs_get_parent(struct dentry *child);
@@ -1358,7 +1358,7 @@ skip_read:
 }
 
 
-struct meta_index *locate_meta_index(struct inode *inode, int index, int offset)
+static struct meta_index *locate_meta_index(struct inode *inode, int index, int offset)
 {
 	struct meta_index *meta = NULL;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
@@ -1393,7 +1393,7 @@ not_allocated:
 }
 
 
-struct meta_index *empty_meta_index(struct inode *inode, int offset, int skip)
+static struct meta_index *empty_meta_index(struct inode *inode, int offset, int skip)
 {
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
 	struct meta_index *meta = NULL;
@@ -1447,7 +1447,7 @@ failed:
 }
 
 
-void release_meta_index(struct inode *inode, struct meta_index *meta)
+static void release_meta_index(struct inode *inode, struct meta_index *meta)
 {
 	meta->locked = 0;
 	smp_mb();
