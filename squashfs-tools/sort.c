@@ -74,7 +74,7 @@ struct sort_info *sort_info_list[65536];
 struct priority_entry *priority_list[65536];
 
 extern int silent;
-extern write_file(squashfs_inode *inode, struct dir_ent *dir_ent, int *c_size);
+extern void write_file(squashfs_inode *inode, struct dir_ent *dir_ent, int *c_size);
 
 
 int add_priority_list(struct dir_ent *dir, int priority)
