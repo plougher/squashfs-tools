@@ -1480,7 +1480,6 @@ char fragdata[SQUASHFS_FILE_MAX_SIZE];
 void add_file(long long start, long long file_size, long long file_bytes, unsigned int *block_listp, int blocks, unsigned int fragment, int offset, int bytes)
 {
 	struct fragment *frg;
-	char *datap;
 	unsigned int *block_list = block_listp;
 	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
 
@@ -1957,7 +1956,6 @@ void write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent, int *dupli
 
 void write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent, int size, int *duplicate_file, struct file_buffer *file_buffer, unsigned short checksum)
 {
-	int file;
 	struct file_info *dupl_ptr;
 	struct fragment *fragment;
 	unsigned int *block_listp = NULL;
@@ -2027,7 +2025,6 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 	unsigned int c_byte, frag_bytes;
 	long long bbytes, file_bytes, start;
 	struct fragment *fragment;
-	struct file_info *dupl_ptr;
 	int blocks = (read_size + block_size - 1) >> block_log;
 	unsigned int *block_list;
 	struct file_buffer *read_buffer;
@@ -2122,7 +2119,6 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 	int blocks = (read_size + block_size - 1) >> block_log;
 	unsigned int *block_list, *block_listp;
 	struct file_buffer *read_buffer;
-	struct file_data *file_data;
 	struct buffer_list *buffer_list;
 	int status;
 
@@ -2395,8 +2391,6 @@ void sort_directory(struct dir_info *dir)
 
 struct dir_info *scan1_opendir(char *pathname)
 {
-	DIR	*linuxdir;
-	struct dirent *d_name;
 	struct dir_info *dir;
 
 	if((dir = malloc(sizeof(struct dir_info))) == NULL)
