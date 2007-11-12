@@ -1341,7 +1341,7 @@ long long generic_write_table(int length, char *buffer, int uncompressed)
 {
 	int meta_blocks = (length + SQUASHFS_METADATA_SIZE - 1) / SQUASHFS_METADATA_SIZE;
 	long long list[meta_blocks], start_bytes;
-	int avail_bytes, compressed_size, i;
+	int compressed_size, i;
 	unsigned short c_byte;
 	char cbuffer[(SQUASHFS_METADATA_SIZE << 2) + 2];
 	
