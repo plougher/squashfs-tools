@@ -83,7 +83,7 @@ typedef struct squashfs_operations {
 	struct dir *(*squashfs_opendir)(char *pathname, unsigned int block_start, unsigned int offset);
 	char *(*read_fragment)(unsigned int fragment);
 	void (*read_fragment_table)();
-	void (*read_block_list)(unsigned int *block_list, unsigned char *block_ptr, int blocks);
+	void (*read_block_list)(unsigned int *block_list, char *block_ptr, int blocks);
 	struct inode *(*read_inode)(unsigned int start_block, unsigned int offset);
 } squashfs_operations;
 
@@ -323,8 +323,9 @@ int read_block(long long start, long long *next, char *block)
 		if(read_bytes(start + offset, c_byte, buffer) == FALSE)
 			goto failed;
 
-		if((res = uncompress((unsigned char *) block, &bytes,
-		(const unsigned char *) buffer, c_byte)) != Z_OK) {
+		res = uncompress((unsigned char *) block, &bytes, (const unsigned char *) buffer, c_byte);
+
+		if(res != Z_OK) {
 			if(res == Z_MEM_ERROR)
 				ERROR("zlib::uncompress failed, not enough memory\n");
 			else if(res == Z_BUF_ERROR)
@@ -362,8 +363,9 @@ int read_data_block(long long start, unsigned int size, char *block)
 		if(read_bytes(start, c_byte, data) == FALSE)
 			return 0;
 
-		if((res = uncompress((unsigned char *) block, &bytes,
-		(const unsigned char *) data, c_byte)) != Z_OK) {
+		res = uncompress((unsigned char *) block, &bytes, (const unsigned char *) data, c_byte);
+
+		if(res != Z_OK) {
 			if(res == Z_MEM_ERROR)
 				ERROR("zlib::uncompress failed, not enough memory\n");
 			else if(res == Z_BUF_ERROR)
@@ -383,7 +385,7 @@ int read_data_block(long long start, unsigned int size, char *block)
 }
 
 
-void read_block_list(unsigned int *block_list, unsigned char *block_ptr, int blocks)
+void read_block_list(unsigned int *block_list, char *block_ptr, int blocks)
 {
 	if(swap) {
 		unsigned int sblock_list[blocks];
@@ -394,7 +396,7 @@ void read_block_list(unsigned int *block_list, unsigned char *block_ptr, int blo
 }
 
 
-void read_block_list_1(unsigned int *block_list, unsigned char *block_ptr, int blocks)
+void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
 {
 	unsigned short block_size;
 	int i;
@@ -545,7 +547,7 @@ void read_fragment_table_2()
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fragment_table_index[i], NULL,
 		((char *) fragment_table_2) + (i * SQUASHFS_METADATA_SIZE));
-		TRACE("Read fragment table block %d, from 0x%llx, length %d\n", i, fragment_table_index[i], length);
+		TRACE("Read fragment table block %d, from 0x%x, length %d\n", i, fragment_table_index[i], length);
 	}
 
 	if(swap) {
@@ -638,7 +640,7 @@ failure:
 
 	
 int write_file(long long file_size, char *pathname, unsigned int fragment, unsigned int frag_bytes,
-unsigned int offset, unsigned int blocks, long long start, char *block_ptr,
+unsigned int offset, int blocks, long long start, char *block_ptr,
 unsigned int mode)
 {
 	unsigned int file_fd, bytes, i;
@@ -716,7 +718,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header header;
 	long long start = sBlk.inode_table_start + start_block;
-	int bytes = lookup_entry(inode_table_hash, start), file_fd;
+	int bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
 	static struct inode i;
 
@@ -885,7 +887,7 @@ int create_inode(char *pathname, struct inode *i)
 			}
 			break;
 		case SQUASHFS_SYMLINK_TYPE:
-			TRACE("create_inode: symlink, symlink_size %d\n", i->data);
+			TRACE("create_inode: symlink, symlink_size %lld\n", i->data);
 
 			if(force)
 				unlink(pathname);
@@ -906,7 +908,7 @@ int create_inode(char *pathname, struct inode *i)
  		case SQUASHFS_BLKDEV_TYPE:
 	 	case SQUASHFS_CHRDEV_TYPE: {
 			int chrdev = i->type == SQUASHFS_CHRDEV_TYPE;
-			TRACE("create_inode: dev, rdev 0x%x\n", i->data);
+			TRACE("create_inode: dev, rdev 0x%llx\n", i->data);
 
 			if(root_process) {
 				if(force)
@@ -922,7 +924,7 @@ int create_inode(char *pathname, struct inode *i)
 				dev_count ++;
 			} else
 				ERROR("create_inode: could not create %s device %s, because you're not superuser!\n",
-					chrdev ? "character" : "block", pathname, strerror(errno));
+					chrdev ? "character" : "block", pathname);
 			break;
 		}
 		case SQUASHFS_FIFO_TYPE:
@@ -958,7 +960,7 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header_2 header;
 	long long start = sBlk.inode_table_start + start_block;
-	int bytes = lookup_entry(inode_table_hash, start), file_fd;
+	int bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
 	static struct inode i;
 	static int inode_number = 1;
@@ -1084,7 +1086,7 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header_1 header;
 	long long start = sBlk.inode_table_start + start_block;
-	int bytes = lookup_entry(inode_table_hash, start), file_fd;
+	int bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
 	static struct inode i;
 	static int inode_number = 1;
@@ -1529,7 +1531,8 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		paths->name[i].paths = NULL;
 		if(use_regex) {
 			paths->name[i].preg = malloc(sizeof(regex_t));
-			if(error = regcomp(paths->name[i].preg, targname, REG_EXTENDED|REG_NOSUB)) {
+			error = regcomp(paths->name[i].preg, targname, REG_EXTENDED|REG_NOSUB);
+			if(error) {
 				char str[1024];
 
 				regerror(error, paths->name[i].preg, str, 1024);
@@ -1849,7 +1852,7 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 		
 
 #define VERSION() \
-	printf("unsquashfs version 1.5 (2007/10/31)\n");\
+	printf("unsquashfs version 1.5-CVS (2007/11/13)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -1863,12 +1866,12 @@ int main(int argc, char *argv[])
 {
 	char *dest = "squashfs-root";
 	int i, stat_sys = FALSE, version = FALSE;
-	char **target_name = NULL;
-	int n, targets = 0;
+	int n;
 	struct pathnames *paths = NULL;
 	struct pathname *path = NULL;
 
-	if(root_process = geteuid() == 0)
+	root_process = geteuid() == 0;
+	if(root_process)
 		umask(0);
 	
 	for(i = 1; i < argc; i++) {
