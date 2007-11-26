@@ -1578,7 +1578,7 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 			char *buffer;
 			int block;
 
-			if(memcmp(*block_list, dupl_ptr->block_list, blocks) != 0)
+			if(memcmp(*block_list, dupl_ptr->block_list, blocks * sizeof(unsigned int)) != 0)
 				continue;
 
 			if(checksum_flag == FALSE) {
@@ -2153,6 +2153,8 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 		}
 
 		block_list[block] = read_buffer->c_byte;
+		buffer_list[block].start = bytes;
+		buffer_list[block].size = read_buffer->size;
 
 		if(read_buffer->c_byte) {
 			read_buffer->block = bytes;
@@ -2167,8 +2169,6 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 			buffer_list[block].read_buffer = NULL;
 			alloc_free(read_buffer);
 		}
-		buffer_list[block].start = read_buffer->block;
-		buffer_list[block].size = read_buffer->size;
 		progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
 	}
 
@@ -2188,7 +2188,8 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 	if(dupl_ptr) {
 		*duplicate_file = FALSE;
 		for(block = thresh; block < blocks; block ++)
-			queue_put(to_writer, buffer_list[block].read_buffer);
+			if(buffer_list[block].read_buffer)
+				queue_put(to_writer, buffer_list[block].read_buffer);
 		fragment = get_and_fill_fragment(read_buffer);
 		dupl_ptr->fragment = fragment;
 	} else {
@@ -3229,7 +3230,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2007/11/13)\n");\
+	printf("mksquashfs version 3.3-CVS (2007/11/17)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
