@@ -3230,7 +3230,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2007/11/17)\n");\
+	printf("mksquashfs version 3.3-CVS (2007/11/29)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3499,7 +3499,7 @@ printOptions:
 		s_minor = SQUASHFS_MINOR;
 
         for(i = 0; i < source; i++)
-                if(stat(source_path[i], &source_buf) == -1) {
+                if(lstat(source_path[i], &source_buf) == -1) {
                         fprintf(stderr, "Cannot stat source directory \"%s\" because %s\n", source_path[i], strerror(errno));
                         EXIT_MKSQUASHFS();
                 }
