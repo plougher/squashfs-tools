@@ -2342,6 +2342,10 @@ struct inode_info *lookup_inode(struct stat *buf)
 	inode->read = FALSE;
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
+
+	if((buf->st_mode & S_IFMT) == S_IFREG)
+		estimated_uncompressed += (buf->st_size + block_size - 1) >> block_log;
+
 	if((buf->st_mode & S_IFMT) == S_IFDIR)
 		inode->inode_number = dir_inode_no ++;
 	else
@@ -2612,9 +2616,6 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths, int (_readdi
 			if(excluded(paths, dir_name, &new))
 				continue;
 		}
-
-		if((buf.st_mode & S_IFMT) == S_IFREG)
-			estimated_uncompressed += (buf.st_size + block_size - 1) >> block_log;
 
 		if((buf.st_mode & S_IFMT) == S_IFDIR) {
 			if((sub_dir = dir_scan1(filename, new, scan1_readdir)) == NULL)
@@ -3230,7 +3231,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2007/11/29)\n");\
+	printf("mksquashfs version 3.3-CVS (2007/12/04)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
