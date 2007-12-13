@@ -511,7 +511,8 @@ void restorefs()
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
 	for(i = 0; i < 2 + processors * 2; i++)
-		pthread_kill(thread[i], SIGUSR1);
+		if(thread[i])
+			pthread_kill(thread[i], SIGUSR1);
 	for(i = 0; i < 2 + processors * 2; i++)
 		waitforthread(i);
 	TRACE("All threads in signal handler\n");
@@ -1756,6 +1757,8 @@ void *reader(void *arg)
 			for(entry = priority_list[i]; entry; entry = entry->next)
 				reader_read_file(entry->dir);
 	}
+
+	thread[0] = 0;
 
 	pthread_exit(NULL);
 }
