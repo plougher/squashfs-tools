@@ -283,7 +283,7 @@ int read_bytes(long long byte, int bytes, char *buff)
 	TRACE("read_bytes: reading from position 0x%llx, bytes %d\n", byte, bytes);
 
 	if(lseek(fd, off, SEEK_SET) == -1) {
-		ERROR("Lseek failed because %s\b", strerror(errno));
+		ERROR("Lseek failed because %s\n", strerror(errno));
 		return FALSE;
 	}
 
