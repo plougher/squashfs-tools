@@ -1853,7 +1853,7 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 		
 
 #define VERSION() \
-	printf("unsquashfs version 1.5-CVS (2007/11/13)\n");\
+	printf("unsquashfs version 1.5-CVS (2007/01/02)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
