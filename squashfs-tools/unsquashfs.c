@@ -697,8 +697,15 @@ unsigned int mode)
 
 	if(hole) {
 		/* corner case for hole extending to end of file */
-		hole --;
-		if(write_block(file_fd, "\0", 1) == FALSE) {
+		if(lseek(file_fd, hole, SEEK_CUR) == -1) {
+			/* for broken lseeks which cannot seek beyond end of
+ 			 * file, write_block will do the right thing */
+			hole --;
+			if(write_block(file_fd, "\0", 1) == FALSE) {
+				ERROR("write_file: failed to write sparse data block\n");
+				goto failure;
+			}
+		} else if(ftruncate(file_fd, hole) == -1) {
 			ERROR("write_file: failed to write sparse data block\n");
 			goto failure;
 		}
@@ -1853,7 +1860,7 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 		
 
 #define VERSION() \
-	printf("unsquashfs version 1.5-CVS (2007/01/02)\n");\
+	printf("unsquashfs version 1.5-CVS (2007/01/03)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
