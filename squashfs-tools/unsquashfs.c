@@ -705,7 +705,7 @@ unsigned int mode)
 				ERROR("write_file: failed to write sparse data block\n");
 				goto failure;
 			}
-		} else if(ftruncate(file_fd, hole) == -1) {
+		} else if(ftruncate(file_fd, file_size) == -1) {
 			ERROR("write_file: failed to write sparse data block\n");
 			goto failure;
 		}
@@ -1860,7 +1860,7 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 		
 
 #define VERSION() \
-	printf("unsquashfs version 1.5-CVS (2007/01/03)\n");\
+	printf("unsquashfs version 1.5-CVS (2007/01/25)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
