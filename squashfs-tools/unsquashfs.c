@@ -1,7 +1,7 @@
 /*
  * Unsquash a squashfs filesystem.  This is a highly compressed read only filesystem.
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008
  *  Phillip Lougher <phillip@lougher.demon.co.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -41,6 +42,8 @@
 #include <time.h>
 #include <regex.h>
 #include <fnmatch.h>
+#include <signal.h>
+#include <pthread.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -50,12 +53,9 @@
 #include <endian.h>
 #endif
 
-#include <squashfs_fs.h>
+#include "squashfs_fs.h"
 #include "read_fs.h"
 #include "global.h"
-
-#include <stdlib.h>
-#include <time.h>
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)		do { \
@@ -74,6 +74,8 @@
 						exit(1); \
 					} while(0)
 
+#define CALCULATE_HASH(start)	(start & 0xffff)
+
 struct hash_table_entry {
 	int	start;
 	int	bytes;
@@ -82,7 +84,7 @@ struct hash_table_entry {
 
 typedef struct squashfs_operations {
 	struct dir *(*squashfs_opendir)(char *pathname, unsigned int block_start, unsigned int offset);
-	char *(*read_fragment)(unsigned int fragment);
+	void (*read_fragment)(unsigned int fragment, long long *start_block, int *size);
 	void (*read_fragment_table)();
 	void (*read_block_list)(unsigned int *block_list, char *block_ptr, int blocks);
 	struct inode *(*read_inode)(unsigned int start_block, unsigned int offset);
@@ -112,6 +114,60 @@ struct test {
 	int position;
 	char mode;
 };
+
+
+/* Cache status struct.  Caches are used to keep
+  track of memory buffers passed between different threads */
+struct cache {
+	int	max_buffers;
+	int	count;
+	int	buffer_size;
+	int	wait_free;
+	int	wait_pending;
+	pthread_mutex_t	mutex;
+	pthread_cond_t wait_for_free;
+	pthread_cond_t wait_for_pending;
+	struct cache_entry *free_list;
+	struct cache_entry *hash_table[65536];
+};
+
+/* struct describing a cache entry passed between threads */
+struct cache_entry {
+	struct cache *cache;
+	long long block;
+	int	size;
+	int	used;
+	int error;
+	int	pending;
+	struct cache_entry *hash_next;
+	struct cache_entry *hash_prev;
+	struct cache_entry *free_next;
+	struct cache_entry *free_prev;
+	char *data;
+};
+
+/* struct describing queues used to pass data between threads */
+struct queue {
+	int	size;
+	int	readp;
+	int	writep;
+	pthread_mutex_t	mutex;
+	pthread_cond_t empty;
+	pthread_cond_t full;
+	void **data;
+};
+
+struct cache *fragment_cache, *data_cache;
+struct queue *to_reader, *to_deflate, *to_writer, *from_writer;
+pthread_t *thread, *deflator_thread;
+pthread_mutex_t	fragment_mutex;
+
+/* user options that control parallelisation */
+int processors = -1;
+/* default size of fragment buffer in Mbytes */
+#define FRAGMENT_BUFFER_DEFAULT 256
+/* default size of data buffer in Mbytes */
+#define DATA_BUFFER_DEFAULT 256
 
 squashfs_super_block sBlk;
 squashfs_operations s_ops;
@@ -168,7 +224,280 @@ struct test table[] = {
 	{ S_IXOTH | S_ISVTX, S_IXOTH | S_ISVTX, 9, 't' },
 	{ S_IXOTH | S_ISVTX, S_ISVTX, 9, 'T' },
 	{ S_IXOTH | S_ISVTX, S_IXOTH, 9, 'x' },
-	{ 0, 0, 0, 0} };
+	{ 0, 0, 0, 0}
+};
+
+
+struct queue *queue_init(int size)
+{
+	struct queue *queue = malloc(sizeof(struct queue));
+
+	if(queue == NULL)
+		return NULL;
+
+	if((queue->data = malloc(sizeof(void *) * (size + 1))) == NULL) {
+		free(queue);
+		return NULL;
+	}
+
+	queue->size = size + 1;
+	queue->readp = queue->writep = 0;
+	pthread_mutex_init(&queue->mutex, NULL);
+	pthread_cond_init(&queue->empty, NULL);
+	pthread_cond_init(&queue->full, NULL);
+
+	return queue;
+}
+
+
+void queue_put(struct queue *queue, void *data)
+{
+	int nextp;
+
+	pthread_mutex_lock(&queue->mutex);
+
+	while((nextp = (queue->writep + 1) % queue->size) == queue->readp)
+		pthread_cond_wait(&queue->full, &queue->mutex);
+
+	queue->data[queue->writep] = data;
+	queue->writep = nextp;
+	pthread_cond_signal(&queue->empty);
+	pthread_mutex_unlock(&queue->mutex);
+}
+
+
+void *queue_get(struct queue *queue)
+{
+	void *data;
+	pthread_mutex_lock(&queue->mutex);
+
+	while(queue->readp == queue->writep)
+		pthread_cond_wait(&queue->empty, &queue->mutex);
+
+	data = queue->data[queue->readp];
+	queue->readp = (queue->readp + 1) % queue->size;
+	pthread_cond_signal(&queue->full);
+	pthread_mutex_unlock(&queue->mutex);
+
+	return data;
+}
+
+
+/* Called with the cache mutex held */
+void insert_hash_table(struct cache *cache, struct cache_entry *entry)
+{
+	int hash = CALCULATE_HASH(entry->block);
+
+	entry->hash_next = cache->hash_table[hash];
+	cache->hash_table[hash] = entry;
+	entry->hash_prev = NULL;
+	if(entry->hash_next)
+		entry->hash_next->hash_prev = entry;
+}
+
+
+/* Called with the cache mutex held */
+void remove_hash_table(struct cache *cache, struct cache_entry *entry)
+{
+	if(entry->hash_prev)
+		entry->hash_prev->hash_next = entry->hash_next;
+	else
+		cache->hash_table[CALCULATE_HASH(entry->block)] = entry->hash_next;
+	if(entry->hash_next)
+		entry->hash_next->hash_prev = entry->hash_prev;
+
+	entry->hash_prev = entry->hash_next = NULL;
+}
+
+
+/* Called with the cache mutex held */
+void insert_free_list(struct cache *cache, struct cache_entry *entry)
+{
+	if(cache->free_list) {
+		entry->free_next = cache->free_list;
+		entry->free_prev = cache->free_list->free_prev;
+		cache->free_list->free_prev->free_next = entry;
+		cache->free_list->free_prev = entry;
+	} else {
+		cache->free_list = entry;
+		entry->free_prev = entry->free_next = entry;
+	}
+}
+
+
+/* Called with the cache mutex held */
+void remove_free_list(struct cache *cache, struct cache_entry *entry)
+{
+	if(entry->free_prev == NULL && entry->free_next == NULL)
+		/* not in free list */
+		return;
+	else if(entry->free_prev == entry->free_next) {
+		/* only this entry in the free list */
+		cache->free_list = NULL;
+	} else {
+		/* more than one entry in the free list */
+		entry->free_next->free_prev = entry->free_prev;
+		entry->free_prev->free_next = entry->free_next;
+		if(cache->free_list == entry)
+			cache->free_list = entry->free_next;
+	}
+
+	entry->free_prev = entry->free_next = NULL;
+}
+
+
+struct cache *cache_init(int buffer_size, int max_buffers)
+{
+	struct cache *cache = malloc(sizeof(struct cache));
+
+	if(cache == NULL)
+		return NULL;
+
+	cache->max_buffers = max_buffers;
+	cache->buffer_size = buffer_size;
+	cache->count = 0;
+	cache->free_list = NULL;
+	memset(cache->hash_table, 0, sizeof(struct cache_entry *) * 65536);
+	cache->wait_free = FALSE;
+	cache->wait_pending = FALSE;
+	pthread_mutex_init(&cache->mutex, NULL);
+	pthread_cond_init(&cache->wait_for_free, NULL);
+	pthread_cond_init(&cache->wait_for_pending, NULL);
+
+	return cache;
+}
+
+
+struct cache_entry *cache_get(struct cache *cache, long long block, int size)
+{
+	/* Get a block out of the cache.  If the block isn't in the cache
+ 	 * it is added and queued to the reader() and deflate() threads for reading
+ 	 * off disk and decompression.  The cache grows until max_blocks is reached,
+ 	 * once this occurs existing discarded blocks on the free list are reused */
+	int hash = CALCULATE_HASH(block);
+	struct cache_entry *entry;
+
+	pthread_mutex_lock(&cache->mutex);
+
+	for(entry = cache->hash_table[hash]; entry; entry = entry->hash_next)
+		if(entry->block == block)
+			break;
+
+	if(entry) {
+		/* found the block in the cache, increment used count and
+ 		 * if necessary remove from free list so it won't disappear
+ 		 */
+		entry->used ++;
+		remove_free_list(cache, entry);
+		pthread_mutex_unlock(&cache->mutex);
+	} else {
+		/* not in the cache */
+		
+		/* first try to allocate new block */
+		if(cache->count < cache->max_buffers) {
+			entry = malloc(sizeof(struct cache_entry));
+			if(entry == NULL)
+				goto failed;
+			entry->data = malloc(cache->buffer_size);
+			if(entry->data == NULL) {
+				free(entry);
+				goto failed;
+			}
+			entry->cache = cache;
+			entry->free_prev = entry->free_next = NULL;
+			cache->count ++;
+		} else {
+			/* try to get from free list */
+			while(cache->free_list == NULL) {
+				cache->wait_free = TRUE;
+				pthread_cond_wait(&cache->wait_for_free, &cache->mutex);
+			}
+			entry = cache->free_list;
+			remove_free_list(cache, entry);
+			remove_hash_table(cache, entry);
+		}
+
+		/* initialise block and insert into the hash table */
+		entry->block = block;
+		entry->size = size;
+		entry->used = 1;
+		entry->error = FALSE;
+		entry->pending = TRUE;
+		insert_hash_table(cache, entry);
+
+		/* queue to read thread to read and ultimately (via the decompress
+ 		 * threads) decompress the buffer
+ 		 */
+		pthread_mutex_unlock(&cache->mutex);
+		queue_put(to_reader, entry);
+	}
+
+	return entry;
+
+failed:
+	pthread_mutex_unlock(&cache->mutex);
+	return NULL;
+}
+
+	
+void cache_block_ready(struct cache_entry *entry, int error)
+{
+	/* mark cache entry as being complete, reading and (if necessary)
+ 	 * decompression has taken place, and the buffer is valid for use.
+ 	 * If an error occurs reading or decompressing, the buffer also 
+ 	 * becomes ready but with an error... */
+	pthread_mutex_lock(&entry->cache->mutex);
+	entry->pending = FALSE;
+	entry->error = error;
+
+	/* if the wait_pending flag is set, one or more threads may be waiting on
+ 	 * this buffer */
+	if(entry->cache->wait_pending) {
+		entry->cache->wait_pending = FALSE;
+		pthread_cond_broadcast(&entry->cache->wait_for_pending);
+	}
+
+	pthread_mutex_unlock(&entry->cache->mutex);
+}
+
+
+void cache_block_wait(struct cache_entry *entry)
+{
+	/* wait for this cache entry to become ready, when reading and (if necessary)
+ 	 * decompression has taken place */
+	pthread_mutex_lock(&entry->cache->mutex);
+
+	while(entry->pending) {
+		entry->cache->wait_pending = TRUE;
+		pthread_cond_wait(&entry->cache->wait_for_pending, &entry->cache->mutex);
+	}
+
+	pthread_mutex_unlock(&entry->cache->mutex);
+}
+
+
+void cache_block_put(struct cache_entry *entry)
+{
+	/* finished with this cache entry, once the usage count reaches zero it
+ 	 * can be reused and is put onto the free list.  As it remains accessible
+ 	 * via the hash table it can be found getting a new lease of life before it
+ 	 * is reused. */
+	pthread_mutex_lock(&entry->cache->mutex);
+
+	entry->used --;
+	if(entry->used == 0) {
+		insert_free_list(entry->cache, entry);
+
+		/* if the wait_free flag is set, one or more threads may be waiting on
+ 	 	 * this buffer */
+		if(entry->cache->wait_free) {
+			entry->cache->wait_free = FALSE;
+			pthread_cond_broadcast(&entry->cache->wait_for_free);
+		}
+	}
+
+	pthread_mutex_unlock(&entry->cache->mutex);
+}
 
 
 char *modestr(char *str, int mode)
@@ -242,7 +571,6 @@ int print_filename(char *pathname, struct inode *inode)
 	return 1;
 }
 	
-#define CALCULATE_HASH(start)	(start & 0xffff)
 
 int add_entry(struct hash_table_entry *hash_table[], int start, int bytes)
 {
@@ -566,47 +894,30 @@ void read_fragment_table_1()
 }
 
 
-char *read_fragment(unsigned int fragment)
+void read_fragment(unsigned int fragment, long long *start_block, int *size)
 {
 	TRACE("read_fragment: reading fragment %d\n", fragment);
 
-	if(cached_frag == SQUASHFS_INVALID_FRAG || fragment != cached_frag) {
-		squashfs_fragment_entry *fragment_entry = &fragment_table[fragment];
-		if(read_data_block(fragment_entry->start_block, fragment_entry->size, fragment_data) == 0) {
-			ERROR("read_fragment: failed to read fragment %d\n", fragment);
-			cached_frag = SQUASHFS_INVALID_FRAG;
-			return NULL;
-		}
-		cached_frag = fragment;
-	}
-
-	return fragment_data;
+	squashfs_fragment_entry *fragment_entry = &fragment_table[fragment];
+	*start_block = fragment_entry->start_block;
+	*size = fragment_entry->size;
 }
 
 
-char *read_fragment_2(unsigned int fragment)
+void read_fragment_2(unsigned int fragment, long long *start_block, int *size)
 {
 	TRACE("read_fragment: reading fragment %d\n", fragment);
 
-	if(cached_frag == SQUASHFS_INVALID_FRAG || fragment != cached_frag) {
-		squashfs_fragment_entry_2 *fragment_entry = &fragment_table_2[fragment];
-		if(read_data_block(fragment_entry->start_block, fragment_entry->size, fragment_data) == 0) {
-			ERROR("read_fragment: failed to read fragment %d\n", fragment);
-			cached_frag = SQUASHFS_INVALID_FRAG;
-			return NULL;
-		}
-		cached_frag = fragment;
-	}
-
-	return fragment_data;
+	squashfs_fragment_entry_2 *fragment_entry = &fragment_table_2[fragment];
+	*start_block = fragment_entry->start_block;
+	*size = fragment_entry->size;
 }
 
 
 int lseek_broken = FALSE;
 char *zero_data;
-long long hole;
 
-int write_block(int file_fd, char *buffer, int size)
+int write_block(int file_fd, char *buffer, int size, int hole)
 {
 	off_t off = hole;
 
@@ -627,7 +938,6 @@ int write_block(int file_fd, char *buffer, int size)
 					goto failure;
 			}
 		}
-		hole = 0;
 	}
 
 	if(write(file_fd, buffer, size) < size)
@@ -639,86 +949,91 @@ failure:
 	return FALSE;
 }
 
-	
-int write_file(long long file_size, char *pathname, unsigned int fragment, unsigned int frag_bytes,
-unsigned int offset, int blocks, long long start, char *block_ptr,
-unsigned int mode)
+
+struct file_entry {
+	int offset;
+	int size;
+	struct cache_entry *buffer;
+};
+
+
+struct squashfs_file {
+	int fd;
+	int file_size;
+	int blocks;
+};
+
+
+int write_file(long long file_size, char *pathname, unsigned int fragment,
+unsigned int frag_bytes, unsigned int offset, int blocks, long long start,
+char *block_ptr, unsigned int mode)
 {
-	unsigned int file_fd, bytes, i;
+	unsigned int file_fd, i;
 	unsigned int *block_list;
 	int file_end = file_size / block_size;
+	struct squashfs_file *file;
 
 	TRACE("write_file: regular file, blocks %d\n", blocks);
-
-	hole = 0;
-	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL) {
-		ERROR("write_file: unable to malloc block list\n");
-		return FALSE;
-	}
-
-	s_ops.read_block_list(block_list, block_ptr, blocks);
 
 	if((file_fd = open(pathname, O_CREAT | O_WRONLY | (force ? O_TRUNC : 0), (mode_t) mode & 0777)) == -1) {
 		ERROR("write_file: failed to create file %s, because %s\n", pathname,
 			strerror(errno));
-		free(block_list);
 		return FALSE;
 	}
 
+	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL)
+		EXIT_UNSQUASH("write_file: unable to malloc block list\n");
+
+	s_ops.read_block_list(block_list, block_ptr, blocks);
+
+	if((file = malloc(sizeof(struct squashfs_file))) == NULL)
+		EXIT_UNSQUASH("write_file: unable to malloc file\n");
+
+	/* the writer thread is queued a squashfs_file structure describing the
+ 	 * file.  If the file has one or more blocks or a fragments they are queued
+ 	 * separately (references to blocks in the cache). */
+	file->fd = file_fd;
+	file->file_size = file_size;
+	file->blocks = blocks + (frag_bytes > 0);
+	queue_put(to_writer, file);
+
 	for(i = 0; i < blocks; i++) {
-		if(block_list[i] == 0) { /* sparse file */
-			hole += i == file_end ? file_size & (block_size - 1) : block_size;
-			continue;
-		}
-		if((bytes = read_data_block(start, block_list[i], file_data)) == 0) {
-			ERROR("write_file: failed to read data block 0x%llx\n", start);
-			goto failure;
-		}
+		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
+		struct file_entry *block = malloc(sizeof(struct file_entry *));
 
-		if(write_block(file_fd, file_data, bytes) == FALSE) {
-			ERROR("write_file: failed to write data block 0x%llx\n", start);
-			goto failure;
+		if(block == NULL)
+			EXIT_UNSQUASH("write_file: unable to malloc file\n");
+		block->offset = 0;
+		block->size = i == file_end ? file_size & (block_size - 1) : block_size;
+		if(block_list[i] == 0) /* sparse file */
+			block->buffer = NULL;
+		else {
+			block->buffer = cache_get(data_cache, start, block_list[i]);
+			if(block->buffer == NULL)
+				EXIT_UNSQUASH("write_file: cache_get failed\n");
+			start += c_byte;
 		}
-
-		start += SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
+		queue_put(to_writer, block);
 	}
 
-	if(frag_bytes != 0) {
-		char *fragment_data = s_ops.read_fragment(fragment);
+	if(frag_bytes) {
+		int size;
+		long long start;
+		struct file_entry *block = malloc(sizeof(struct file_entry *));
 
-		if(fragment_data == NULL)
-			goto failure;
-
-		if(write_block(file_fd, fragment_data + offset, frag_bytes) == FALSE) {
-			ERROR("write_file: failed to write fragment %d\n", fragment);
-			goto failure;
-		}
+		if(block == NULL)
+			EXIT_UNSQUASH("write_file: unable to malloc file\n");
+		s_ops.read_fragment(fragment, &start, &size);
+		block->buffer = cache_get(fragment_cache, start, size);
+		if(block->buffer == NULL)
+			EXIT_UNSQUASH("write_file: cache_get failed\n");
+		block->offset = offset;
+		block->size = frag_bytes;
+		queue_put(to_writer, block);
 	}
 
-	if(hole) {
-		/* corner case for hole extending to end of file */
-		if(lseek(file_fd, hole, SEEK_CUR) == -1) {
-			/* for broken lseeks which cannot seek beyond end of
- 			 * file, write_block will do the right thing */
-			hole --;
-			if(write_block(file_fd, "\0", 1) == FALSE) {
-				ERROR("write_file: failed to write sparse data block\n");
-				goto failure;
-			}
-		} else if(ftruncate(file_fd, file_size) == -1) {
-			ERROR("write_file: failed to write sparse data block\n");
-			goto failure;
-		}
-	}
-
-	close(file_fd);
 	free(block_list);
 	return TRUE;
-
-failure:
-	close(file_fd);
-	free(block_list);
-	return FALSE;
 }
 
 
@@ -890,7 +1205,7 @@ int create_inode(char *pathname, struct inode *i)
 
 			if(write_file(i->data, pathname, i->fragment, i->frag_bytes,
 					i->offset, i->blocks, i->start, i->block_ptr, i->mode)) {
-				set_attributes(pathname, i->mode, i->uid, i->gid, i->time, force);
+				//set_attributes(pathname, i->mode, i->uid, i->gid, i->time, force);
 				file_count ++;
 			}
 			break;
@@ -1859,8 +2174,186 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 }
 		
 
+/* reader thread.  This thread processes read requests queued by the
+ * cache_get() routine. */
+void *reader(void *arg)
+{
+	while(1) {
+		struct cache_entry *entry = queue_get(to_reader);
+		int res = read_bytes(entry->block,
+			SQUASHFS_COMPRESSED_SIZE_BLOCK(entry->size),
+			entry->data);
+
+		if(res && SQUASHFS_COMPRESSED_BLOCK(entry->size))
+			/* queue successfully read block to the deflate thread(s)
+ 			 * for further processing */
+			queue_put(to_deflate, entry);
+		else
+			/* block has either been successfully read and is uncompressed,
+ 			 * or an error has occurred, clear pending flag, set
+ 			 * error appropriately, and wake up any threads waiting on
+ 			 * this buffer */
+			cache_block_ready(entry, !res);
+	}
+}
+
+
+/* writer thread.  This processes file write requests queued by the
+ * write_file() routine. */
+void *writer(void *arg)
+{
+	int i;
+
+	while(1) {
+		struct squashfs_file *file = queue_get(to_writer);
+		int file_fd;
+		int hole = 0;
+
+		if(file == NULL) {
+			queue_put(from_writer, NULL);
+			continue;
+		}
+
+		TRACE("writer: regular file, blocks %d\n", file->blocks);
+
+		file_fd = file->fd;
+
+		for(i = 0; i < file->blocks; i++) {
+			struct file_entry *block = queue_get(to_writer);
+
+			if(block->buffer == 0) { /* sparse file */
+				hole += block->size;
+				free(block);
+				continue;
+			}
+
+			cache_block_wait(block->buffer);
+			if(write_block(file_fd, block->buffer->data + block->offset, block->size, hole) == FALSE) {
+				ERROR("writer: failed to write data block %d\n", i);
+				goto failure;
+			}
+			hole = 0;
+			cache_block_put(block->buffer);
+			free(block);
+		}
+
+		if(hole) {
+			/* corner case for hole extending to end of file */
+			if(lseek(file_fd, hole, SEEK_CUR) == -1) {
+				/* for broken lseeks which cannot seek beyond end of
+ 			 	* file, write_block will do the right thing */
+				hole --;
+				if(write_block(file_fd, "\0", 1, hole) == FALSE) {
+					ERROR("writer: failed to write sparse data block\n");
+					goto failure;
+				}
+			} else if(ftruncate(file_fd, file->file_size) == -1) {
+				ERROR("writer: failed to write sparse data block\n");
+				goto failure;
+			}
+		}
+
+failure:
+		close(file_fd);
+		free(file);
+	}
+}
+
+
+/* decompress thread.  This decompresses buffers queued by the read thread */
+void *deflator(void *arg)
+{
+	char tmp[block_size];
+
+	while(1) {
+		struct cache_entry *entry = queue_get(to_deflate);
+		int res;
+		unsigned long bytes = block_size;
+
+		res = uncompress((unsigned char *) tmp, &bytes, (const unsigned char *) entry->data, SQUASHFS_COMPRESSED_SIZE_BLOCK(entry->size));
+
+		if(res != Z_OK) {
+			if(res == Z_MEM_ERROR)
+				ERROR("zlib::uncompress failed, not enough memory\n");
+			else if(res == Z_BUF_ERROR)
+				ERROR("zlib::uncompress failed, not enough room in output buffer\n");
+			else
+				ERROR("zlib::uncompress failed, unknown error %d\n", res);
+		} else
+			memcpy(entry->data, tmp, bytes);
+
+		/* block has been either successfully decompressed, or an error
+ 		 * occurred, clear pending flag, set error appropriately and
+ 		 * wake up any threads waiting on this block */ 
+		cache_block_ready(entry, res != Z_OK);
+	}
+}
+
+
+void initialise_threads(int fragment_buffer_size, int data_buffer_size)
+{
+	int i;
+	sigset_t sigmask, old_mask;
+	int all_buffers_size = fragment_buffer_size + data_buffer_size;
+
+	sigemptyset(&sigmask);
+	sigaddset(&sigmask, SIGINT);
+	sigaddset(&sigmask, SIGQUIT);
+	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
+		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads\n");
+
+	//signal(SIGUSR1, sigusr1_handler);
+
+	if(processors == -1) {
+#ifndef linux
+		int mib[2];
+		size_t len = sizeof(processors);
+
+		mib[0] = CTL_HW;
+#ifdef HW_AVAILCPU
+		mib[1] = HW_AVAILCPU;
+#else
+		mib[1] = HW_NCPU;
+#endif
+
+		if(sysctl(mib, 2, &processors, &len, NULL, 0) == -1) {
+			ERROR("Failed to get number of available processors.  Defaulting to 1\n");
+			processors = 1;
+		}
+#else
+		processors = get_nprocs();
+#endif
+	}
+
+	if((thread = malloc((2 + processors) * sizeof(pthread_t))) == NULL)
+		EXIT_UNSQUASH("Out of memory allocating thread descriptors\n");
+	deflator_thread = &thread[2];
+
+	to_reader = queue_init(all_buffers_size);
+	to_deflate = queue_init(all_buffers_size);
+	/* XXX */ to_writer = queue_init(1000);
+	from_writer = queue_init(1);
+	fragment_cache = cache_init(block_size, fragment_buffer_size);
+	data_cache = cache_init(block_size, data_buffer_size);
+	pthread_create(&thread[0], NULL, reader, NULL);
+	pthread_create(&thread[1], NULL, writer, NULL);
+	pthread_mutex_init(&fragment_mutex, NULL);
+
+	for(i = 0; i < processors; i++) {
+		if(pthread_create(&deflator_thread[i], NULL, deflator, NULL) != 0 )
+			EXIT_UNSQUASH("Failed to create thread\n");
+	}
+
+	printf("Parallel unsquashfs: Using %d processor%s\n", processors,
+			processors == 1 ? "" : "s");
+
+	if(sigprocmask(SIG_SETMASK, &old_mask, NULL) == -1)
+		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads\n");
+}
+
+
 #define VERSION() \
-	printf("unsquashfs version 1.5-CVS (2007/01/25)\n");\
+	printf("unsquashfs version 1.5-CVS (2007/02/10)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -1877,6 +2370,7 @@ int main(int argc, char *argv[])
 	int n;
 	struct pathnames *paths = NULL;
 	struct pathname *path = NULL;
+	int fragment_buffer_size, data_buffer_size;
 
 	root_process = geteuid() == 0;
 	if(root_process)
@@ -1956,6 +2450,10 @@ options:
 
 	block_size = sBlk.block_size;
 
+	fragment_buffer_size = (FRAGMENT_BUFFER_DEFAULT << 20) / block_size;
+	data_buffer_size = (DATA_BUFFER_DEFAULT << 20) / block_size;
+	initialise_threads(fragment_buffer_size, data_buffer_size);
+
 	if((fragment_data = malloc(block_size)) == NULL)
 		EXIT_UNSQUASH("failed to allocate fragment_data\n");
 
@@ -1984,6 +2482,9 @@ options:
 	}
 
 	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode), SQUASHFS_INODE_OFFSET(sBlk.root_inode), paths);
+
+	queue_put(to_writer, NULL);
+	queue_get(from_writer);
 
 	if(!lsonly) {
 		printf("\n");
