@@ -2353,7 +2353,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.5-CVS (2007/02/10)\n");\
+	printf("unsquashfs version 1.6-CVS (2007/02/12)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
