@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008
- *  Phillip Lougher <phillip@lougher.demon.co.uk>
+ * Phillip Lougher <phillip@lougher.demon.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -959,32 +959,36 @@ struct file_entry {
 
 struct squashfs_file {
 	int fd;
-	int file_size;
 	int blocks;
+	long long file_size;
+	int mode;
+	uid_t uid;
+	gid_t gid;
+	time_t time;
+	char *pathname;
 };
 
 
-int write_file(long long file_size, char *pathname, unsigned int fragment,
-unsigned int frag_bytes, unsigned int offset, int blocks, long long start,
-char *block_ptr, unsigned int mode)
+int write_file(struct inode *inode, char *pathname)
 {
 	unsigned int file_fd, i;
 	unsigned int *block_list;
-	int file_end = file_size / block_size;
+	int file_end = inode->data / block_size;
+	long long start = inode->start;
 	struct squashfs_file *file;
 
-	TRACE("write_file: regular file, blocks %d\n", blocks);
+	TRACE("write_file: regular file, blocks %d\n", inode->blocks);
 
-	if((file_fd = open(pathname, O_CREAT | O_WRONLY | (force ? O_TRUNC : 0), (mode_t) mode & 0777)) == -1) {
+	if((file_fd = open(pathname, O_CREAT | O_WRONLY | (force ? O_TRUNC : 0), (mode_t) inode->mode & 0777)) == -1) {
 		ERROR("write_file: failed to create file %s, because %s\n", pathname,
 			strerror(errno));
 		return FALSE;
 	}
 
-	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL)
+	if((block_list = malloc(inode->blocks * sizeof(unsigned int))) == NULL)
 		EXIT_UNSQUASH("write_file: unable to malloc block list\n");
 
-	s_ops.read_block_list(block_list, block_ptr, blocks);
+	s_ops.read_block_list(block_list, inode->block_ptr, inode->blocks);
 
 	if((file = malloc(sizeof(struct squashfs_file))) == NULL)
 		EXIT_UNSQUASH("write_file: unable to malloc file\n");
@@ -993,18 +997,23 @@ char *block_ptr, unsigned int mode)
  	 * file.  If the file has one or more blocks or a fragments they are queued
  	 * separately (references to blocks in the cache). */
 	file->fd = file_fd;
-	file->file_size = file_size;
-	file->blocks = blocks + (frag_bytes > 0);
+	file->file_size = inode->data;
+	file->mode = inode->mode;
+	file->gid = inode->gid;
+	file->uid = inode->uid;
+	file->time = inode->time;
+	file->pathname = strdup(pathname);
+	file->blocks = inode->blocks + (inode->frag_bytes > 0);
 	queue_put(to_writer, file);
 
-	for(i = 0; i < blocks; i++) {
+	for(i = 0; i < inode->blocks; i++) {
 		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
 		struct file_entry *block = malloc(sizeof(struct file_entry *));
 
 		if(block == NULL)
 			EXIT_UNSQUASH("write_file: unable to malloc file\n");
 		block->offset = 0;
-		block->size = i == file_end ? file_size & (block_size - 1) : block_size;
+		block->size = i == file_end ? inode->data & (block_size - 1) : block_size;
 		if(block_list[i] == 0) /* sparse file */
 			block->buffer = NULL;
 		else {
@@ -1016,19 +1025,19 @@ char *block_ptr, unsigned int mode)
 		queue_put(to_writer, block);
 	}
 
-	if(frag_bytes) {
+	if(inode->frag_bytes) {
 		int size;
 		long long start;
 		struct file_entry *block = malloc(sizeof(struct file_entry *));
 
 		if(block == NULL)
 			EXIT_UNSQUASH("write_file: unable to malloc file\n");
-		s_ops.read_fragment(fragment, &start, &size);
+		s_ops.read_fragment(inode->fragment, &start, &size);
 		block->buffer = cache_get(fragment_cache, start, size);
 		if(block->buffer == NULL)
 			EXIT_UNSQUASH("write_file: cache_get failed\n");
-		block->offset = offset;
-		block->size = frag_bytes;
+		block->offset = inode->offset;
+		block->size = inode->frag_bytes;
 		queue_put(to_writer, block);
 	}
 
@@ -1203,11 +1212,8 @@ int create_inode(char *pathname, struct inode *i)
 		case SQUASHFS_LREG_TYPE:
 			TRACE("create_inode: regular file, file_size %lld, blocks %d\n", i->data, i->blocks);
 
-			if(write_file(i->data, pathname, i->fragment, i->frag_bytes,
-					i->offset, i->blocks, i->start, i->block_ptr, i->mode)) {
-				//set_attributes(pathname, i->mode, i->uid, i->gid, i->time, force);
+			if(write_file(i, pathname))
 				file_count ++;
-			}
 			break;
 		case SQUASHFS_SYMLINK_TYPE:
 			TRACE("create_inode: symlink, symlink_size %lld\n", i->data);
@@ -2255,6 +2261,8 @@ void *writer(void *arg)
 
 failure:
 		close(file_fd);
+		set_attributes(file->pathname, file->mode, file->uid, file->gid, file->time, force);
+		free(file->pathname);
 		free(file);
 	}
 }
@@ -2353,8 +2361,8 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.6-CVS (2007/02/12)\n");\
-	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
+	printf("unsquashfs version 1.6-CVS (2008/02/14)\n");\
+	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
 	printf("as published by the Free Software Foundation; either version 2,\n");\
