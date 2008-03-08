@@ -354,7 +354,7 @@ struct squashfs_dir_header {
 struct squashfs_fragment_entry {
 	long long		start_block;
 	unsigned int		size;
-	unsigned int		pending;
+	unsigned int		unused;
 } __attribute__ ((packed));
 
 extern int squashfs_uncompress_block(void *d, int dstlen, void *s, int srclen);
