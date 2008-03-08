@@ -90,7 +90,6 @@
 				} while(0)
 
 int delete = FALSE;
-long long total_compressed = 0, total_uncompressed = 0;
 int fd;
 int cur_uncompressed = 0, estimated_uncompressed = 0;
 int columns;
@@ -205,12 +204,16 @@ int excluded(struct pathnames *paths, char *name, struct pathnames **new);
 int fragments = 0;
 struct file_buffer *fragment_data = NULL;
 int fragment_size = 0;
+
 struct fragment {
 	unsigned int		index;
 	int			offset;
 	int			size;
 };
+
 #define FRAG_SIZE 32768
+#define FRAG_INDEX (1LL << 32)
+
 squashfs_fragment_entry *fragment_table = NULL;
 int fragments_outstanding = 0;
 
@@ -280,22 +283,21 @@ int recover = TRUE;
 /* struct describing a cache entry passed between threads */
 struct file_buffer {
 	struct cache *cache;
-	void			(*release)(int);
-	int			release_data;
-	long long		file_size;
+	int keep;
+	long long file_size;
 	long long index;
 	long long block;
 	int size;
 	int c_byte;
 	int used;
-	int			fragment;
+	int	fragment;
 	int error;
 	struct file_buffer *hash_next;
 	struct file_buffer *hash_prev;
 	struct file_buffer *free_next;
 	struct file_buffer *free_prev;
 	struct file_buffer *next;
-	char *data;
+	char data[0];
 };
 
 
@@ -332,8 +334,11 @@ int processors = -1;
 #define WRITER_BUFFER_DEFAULT 512
 /* default size of input buffer in Mbytes */
 #define READER_BUFFER_DEFAULT 64
+/* default size of fragment buffer in Mbytes */
+#define FRAGMENT_BUFFER_DEFAULT 64
 int writer_buffer_size;
 int reader_buffer_size;
+int fragment_buffer_size;
 
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int type);
 extern int read_super(int fd, squashfs_super_block *sBlk, int *be, char *source);
@@ -418,7 +423,6 @@ struct cache {
 	int	max_buffers;
 	int	count;
 	int	buffer_size;
-	int	wait_free;
 	pthread_mutex_t	mutex;
 	pthread_cond_t wait_for_free;
 	struct file_buffer *free_list;
@@ -448,7 +452,7 @@ void remove_hash_table(struct cache *cache, struct file_buffer *entry)
 	if(entry->hash_prev)
 		entry->hash_prev->hash_next = entry->hash_next;
 	else
-		cache->hash_table[CALCULATE_HASH(entry->block)] = entry->hash_next;
+		cache->hash_table[CALCULATE_HASH(entry->index)] = entry->hash_next;
 	if(entry->hash_next)
 		entry->hash_next->hash_prev = entry->hash_prev;
 
@@ -477,7 +481,7 @@ void remove_free_list(struct cache *cache, struct file_buffer *entry)
 	if(entry->free_prev == NULL && entry->free_next == NULL)
 		/* not in free list */
 		return;
-	else if(entry->free_prev == entry->free_next) {
+	else if(entry->free_prev == entry && entry->free_next == entry) {
 		/* only this entry in the free list */
 		cache->free_list = NULL;
 	} else {
@@ -504,7 +508,6 @@ struct cache *cache_init(int buffer_size, int max_buffers)
 	cache->count = 0;
 	cache->free_list = NULL;
 	memset(cache->hash_table, 0, sizeof(struct file_buffer *) * 65536);
-	cache->wait_free = FALSE;
 	pthread_mutex_init(&cache->mutex, NULL);
 	pthread_cond_init(&cache->wait_for_free, NULL);
 
@@ -539,43 +542,54 @@ struct file_buffer *cache_lookup(struct cache *cache, long long index)
 }
 
 
-struct file_buffer *cache_get(struct cache *cache, long long index)
+struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 {
 	/* Get a free block out of the cache indexed on index. */
 	struct file_buffer *entry;
 
 	pthread_mutex_lock(&cache->mutex);
 
-	/* first try to allocate new block */
-	if(cache->count < cache->max_buffers) {
-		entry = malloc(sizeof(struct file_buffer));
-		if(entry == NULL)
-			goto failed;
-		entry->data = malloc(cache->buffer_size);
-		if(entry->data == NULL) {
-			free(entry);
-			goto failed;
+	while(1) {
+		/* first try to get a block from the free list */
+#ifdef GET_FREELIST
+		if(cache->free_list) {
+			/* a block on the free_list is a "keep" block */
+			entry = cache->free_list;
+			remove_free_list(cache, entry);
+			remove_hash_table(cache, entry);
+			break;
+		} else
+#endif
+		if(cache->count < cache->max_buffers) {
+			/* next try to allocate new block */
+			entry = malloc(sizeof(struct file_buffer) + cache->buffer_size);
+			if(entry == NULL)
+				goto failed;
+			entry->cache = cache;
+			entry->free_prev = entry->free_next = NULL;
+			cache->count ++;
+			break;
+		} else
+#ifndef GET_FREELIST
+		if(cache->free_list) {
+			/* a block on the free_list is a "keep" block */
+			entry = cache->free_list;
+			remove_free_list(cache, entry);
+			remove_hash_table(cache, entry);
+			break;
 		}
-		entry->cache = cache;
-		entry->free_prev = entry->free_next = NULL;
-		cache->count ++;
-	} else {
-		/* try to get from free list */
-		while(cache->free_list == NULL) {
-			cache->wait_free = TRUE;
+#endif
+			/* wait for a block */
 			pthread_cond_wait(&cache->wait_for_free, &cache->mutex);
-		}
-		entry = cache->free_list;
-		remove_free_list(cache, entry);
-		remove_hash_table(cache, entry);
 	}
 
-	/* initialise block and insert into the hash table */
+	/* initialise block and if a keep block insert into the hash table */
 	entry->index = index;
 	entry->used = 1;
 	entry->error = FALSE;
-	entry->release = NULL;
-	insert_hash_table(cache, entry);
+	entry->keep = keep;
+	if(keep)
+		insert_hash_table(cache, entry);
 	pthread_mutex_unlock(&cache->mutex);
 
 	return entry;
@@ -585,47 +599,37 @@ failed:
 	return NULL;
 }
 
-	
-struct file_buffer *cache_get_2(struct cache *cache, void (*release)(int), int release_data, long long index)
-{
-	struct file_buffer *file_buffer = cache_get(cache, index);
-
-	if(file_buffer) {
-		file_buffer->release = release;
-		file_buffer->release_data = release_data;
-	}
-	return file_buffer;
-}
-
 
 void cache_block_put(struct file_buffer *entry)
 {
+	struct cache *cache;
+
 	/* finished with this cache entry, once the usage count reaches zero it
- 	 * can be reused and is put onto the free list.  As it remains accessible
- 	 * via the hash table it can be found getting a new lease of life before it
- 	 * is reused. */
+ 	 * can be reused and if a keep block put onto the free list.  As keep
+ 	 * blocks remain accessible via the hash table they can be found getting a
+ 	 * new lease of life before they are reused. */
 
 	if(entry == NULL)
 		return;
 
-	pthread_mutex_lock(&entry->cache->mutex);
+	cache = entry->cache;
 
-	if(entry->release)
-		entry->release(entry->release_data);
+	pthread_mutex_lock(&cache->mutex);
 
 	entry->used --;
 	if(entry->used == 0) {
-		insert_free_list(entry->cache, entry);
-
-		/* if the wait_free flag is set, one or more threads may be waiting on
- 	 	 * this buffer */
-		if(entry->cache->wait_free) {
-			entry->cache->wait_free = FALSE;
-			pthread_cond_broadcast(&entry->cache->wait_for_free);
+		if(entry->keep)
+			insert_free_list(cache, entry);
+		else {
+			free(entry);
+			cache->count --;
 		}
+
+		/* One or more threads may be waiting on this block */
+		pthread_cond_signal(&cache->wait_for_free);
 	}
 
-	pthread_mutex_unlock(&entry->cache->mutex);
+	pthread_mutex_unlock(&cache->mutex);
 }
 
 
@@ -1368,32 +1372,53 @@ failed:
 }
 
 
-char *get_fragment(char *buffer, struct fragment *fragment, int *cached_fragment)
+struct file_buffer *get_fragment(struct fragment *fragment)
 {
 	squashfs_fragment_entry *disk_fragment;
 	int size;
+	long long start_block;
+	struct file_buffer *buffer, *compressed_buffer;
 
-	if(fragment->index == *cached_fragment || fragment->index == SQUASHFS_INVALID_FRAG)
-		return buffer + fragment->offset;
+	if(fragment->index == SQUASHFS_INVALID_FRAG)
+		return NULL;
 
-	if(fragment_data && fragment->index == fragments)
-		return fragment_data->data + fragment->offset;
+	buffer = cache_lookup(fragment_buffer, fragment->index);
+	if(buffer) {
+		//printf("get_fragment, fragment->index %d, buffer->index %lld, fragments %d\n", fragment->index, buffer->index, fragments);
+		return buffer;
+	}
+
+	compressed_buffer = cache_lookup(writer_buffer, fragment->index + FRAG_INDEX);
+
+#if 0
+	if(compressed_buffer)
+		//printf("get_fragment, fragment->index %d, compressed_buffer->index %lld\n", fragment->index, compressed_buffer->index - FRAG_INDEX);
+	else
+		//printf("get_fragment, fragment->index %d, not in writer_buffer\n", fragment->index);
+#endif
+
+	buffer = cache_get(fragment_buffer, fragment->index, 1);
 
 	pthread_mutex_lock(&fragment_mutex);
-	while(fragment_table[fragment->index].pending)
-		pthread_cond_wait(&fragment_waiting, &fragment_mutex);
-	pthread_mutex_unlock(&fragment_mutex);
 	disk_fragment = &fragment_table[fragment->index];
 	size = SQUASHFS_COMPRESSED_SIZE_BLOCK(disk_fragment->size);
+	start_block = disk_fragment->start_block;
+	pthread_mutex_unlock(&fragment_mutex);
 
-	if(SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size)) {
+	if(SQUASHFS_COMPRESSED_BLOCK(size)) {
 		int res;
 		unsigned long bytes = block_size;
+		char *data;
 		char cbuffer[block_size];
 
-		read_bytes(fd, disk_fragment->start_block, size, cbuffer);
+		if(compressed_buffer)
+			data = compressed_buffer->data;
+		else {
+			data = cbuffer;
+			read_bytes(fd, start_block, size, data);
+		}
 
-		if((res = uncompress((unsigned char *) buffer, &bytes, (const unsigned char *) cbuffer, size)) != Z_OK) {
+		if((res = uncompress((unsigned char *) buffer->data, &bytes, (const unsigned char *) data, size)) != Z_OK) {
 			if(res == Z_MEM_ERROR)
 				BAD_ERROR("zlib::uncompress failed, not enough memory\n");
 			else if(res == Z_BUF_ERROR)
@@ -1401,19 +1426,34 @@ char *get_fragment(char *buffer, struct fragment *fragment, int *cached_fragment
 			else
 				BAD_ERROR("zlib::uncompress failed, unknown error %d\n", res);
 		}
-	} else
-		read_bytes(fd, disk_fragment->start_block, size, buffer);
+	} else if(compressed_buffer)
+		memcpy(buffer->data, compressed_buffer->data, size);
+	else
+		read_bytes(fd, start_block, size, buffer->data);
 
-	*cached_fragment = fragment->index;
-	return buffer + fragment->offset;
+	return buffer;
 }
 
-	
-void ensure_fragments_flushed()
+
+void lock_fragments()
 {
 	pthread_mutex_lock(&fragment_mutex);
-	while(fragments_outstanding)
-		pthread_cond_wait(&fragment_waiting, &fragment_mutex);
+	printf("lock_fragments: fragments_outstanding %d\n", fragments_outstanding);
+	fragments_locked = TRUE;
+	pthread_mutex_unlock(&fragment_mutex);
+}
+
+
+void unlock_fragments()
+{
+	pthread_mutex_lock(&fragment_mutex);
+	pthread_mutex_unlock(&fragment_mutex);
+}
+
+
+void add_pending_fragment(struct file_buffer *write_buffer, int compressed_size, int fragment)
+{
+	pthread_mutex_lock(&fragment_mutex);
 	pthread_mutex_unlock(&fragment_mutex);
 }
 
@@ -1432,20 +1472,11 @@ void write_fragment()
 	}
 	fragment_data->size = fragment_size;
 	fragment_data->block = fragments;
-	fragment_table[fragments].pending = TRUE;
+	fragment_table[fragments].unused = 0;
 	fragments_outstanding ++;
 	queue_put(to_frag, fragment_data);
 	fragments ++;
 	fragment_size = 0;
-	pthread_mutex_unlock(&fragment_mutex);
-}
-
-
-void frag_release(int block)
-{
-	pthread_mutex_lock(&fragment_mutex);
-	fragment_table[block].pending = FALSE;
-	pthread_cond_signal(&fragment_waiting);
 	pthread_mutex_unlock(&fragment_mutex);
 }
 
@@ -1466,7 +1497,7 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
 		BAD_ERROR("Out of memory in fragment block allocation!\n");
 
 	if(fragment_size == 0)
-		fragment_data = cache_get(fragment_buffer, fragments);
+		fragment_data = cache_get(fragment_buffer, fragments, 1);
 
 	ffrg->index = fragments;
 	ffrg->offset = fragment_size;
@@ -1615,8 +1646,6 @@ unsigned short get_checksum_mem_buffer(struct file_buffer *file_buffer)
 }
 
 
-int cached_frag = -1;
-char fragdata[SQUASHFS_FILE_MAX_SIZE];
 #define DUP_HASH(a) (a & 0xffff)
 void add_file(long long start, long long file_size, long long file_bytes, unsigned int *block_listp, int blocks, unsigned int fragment, int offset, int bytes)
 {
@@ -1649,8 +1678,6 @@ void add_file(long long start, long long file_size, long long file_bytes, unsign
 	add_non_dup(file_size, file_bytes, block_list, start, frg, 0, 0, FALSE);
 }
 
-char cached_fragment[SQUASHFS_FILE_MAX_SIZE];
-int cached_frag1 = -1;
 
 int pre_duplicate(long long file_size)
 {
@@ -1671,8 +1698,10 @@ int pre_duplicate_frag(long long file_size, unsigned short checksum)
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
 		if(dupl_ptr->file_size == file_size) {
 			if(dupl_ptr->checksum_flag == FALSE) {
+				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
 				dupl_ptr->checksum = get_checksum_disk(dupl_ptr->start, dupl_ptr->bytes);
-				dupl_ptr->fragment_checksum = get_checksum_mem(get_fragment(cached_fragment, dupl_ptr->fragment, &cached_frag1), file_size);
+				dupl_ptr->fragment_checksum = get_checksum_mem(frag_buffer->data + dupl_ptr->fragment->offset, file_size);
+				cache_block_put(frag_buffer);
 				dupl_ptr->checksum_flag = TRUE;
 			}
 			if(dupl_ptr->fragment_checksum == checksum)
@@ -1729,8 +1758,10 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 			}
 
 			if(dupl_ptr->checksum_flag == FALSE) {
+				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
 				dupl_ptr->checksum = get_checksum_disk(dupl_ptr->start, dupl_ptr->bytes);
-				dupl_ptr->fragment_checksum = get_checksum_mem(get_fragment(cached_fragment, dupl_ptr->fragment, &cached_frag1), frag_bytes);
+				dupl_ptr->fragment_checksum = get_checksum_mem(frag_buffer->data + dupl_ptr->fragment->offset, frag_bytes);
+				cache_block_put(frag_buffer);
 				dupl_ptr->checksum_flag = TRUE;
 			}
 
@@ -1753,16 +1784,18 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 				dup_start += b->size;
 			}
 			if(block == blocks) {
-				char *fragment_buffer1 = get_fragment(cached_fragment, dupl_ptr->fragment, &cached_frag1);
+				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
 
-				if(frag_bytes == 0 || memcmp(file_buffer->data, fragment_buffer1, frag_bytes) == 0) {
+				if(frag_bytes == 0 || memcmp(file_buffer->data, frag_buffer->data + dupl_ptr->fragment->offset, frag_bytes) == 0) {
 					TRACE("Found duplicate file, start 0x%llx, size %lld, checksum 0x%x, fragment %d, size %d, offset %d, checksum 0x%x\n", dupl_ptr->start,
 						dupl_ptr->bytes, dupl_ptr->checksum, dupl_ptr->fragment->index, frag_bytes, dupl_ptr->fragment->offset, fragment_checksum);
 					*block_list = dupl_ptr->block_list;
 					*start = dupl_ptr->start;
 					*fragment = dupl_ptr->fragment;
+					cache_block_put(frag_buffer);
 					return 0;
 				}
+				cache_block_put(frag_buffer);
 			}
 		}
 
@@ -1800,7 +1833,7 @@ again:
 
 		if(file_buffer)
 			queue_put(from_reader, file_buffer);
-		file_buffer = cache_get(reader_buffer, index ++);
+		file_buffer = cache_get(reader_buffer, index ++, 0);
 
 		byte = file_buffer->size = read(file, file_buffer->data, block_size);
 
@@ -1838,7 +1871,7 @@ again:
 	return;
 
 read_err:
-	file_buffer = cache_get(reader_buffer, index ++);
+	file_buffer = cache_get(reader_buffer, index ++, 0);
 read_err2:
 	file_buffer->error = TRUE;
 	queue_put(from_deflate, file_buffer);
@@ -1968,7 +2001,7 @@ void *deflator(void *arg)
 
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(from_reader);
-		struct file_buffer *write_buffer = cache_get(writer_buffer, file_buffer->index);
+		struct file_buffer *write_buffer = cache_get(writer_buffer, file_buffer->index, 1);
 
 		if(sparse_files && all_zero(file_buffer)) 
 			write_buffer->c_byte = 0;
@@ -1996,22 +2029,22 @@ void *frag_deflator(void *arg)
 	while(1) {
 		int c_byte, compressed_size;
 		struct file_buffer *file_buffer = queue_get(to_frag);
-		struct file_buffer *write_buffer = cache_get_2(writer_buffer, frag_release, file_buffer->block, 0 /* FIX ME */);
+		struct file_buffer *write_buffer = cache_get(writer_buffer, file_buffer->block + FRAG_INDEX, 1);
 
 		c_byte = mangle2(&stream, write_buffer->data, file_buffer->data, file_buffer->size, block_size, noF, 1);
 		compressed_size = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
-		pthread_mutex_lock(&fragment_mutex);
-		fragment_table[file_buffer->block].size = c_byte;
-		fragment_table[file_buffer->block].start_block = bytes;
 		write_buffer->size = compressed_size;
-		write_buffer->block = bytes;
-		queue_put(to_writer, write_buffer);
-		bytes += compressed_size;
-		total_uncompressed += file_buffer->size;
-		total_compressed += compressed_size;
-		TRACE("Writing fragment %lld, uncompressed size %d, compressed size %d\n", file_buffer->block, file_buffer->size, compressed_size);
-		fragments_outstanding --;
-		pthread_cond_signal(&fragment_waiting);
+		pthread_mutex_lock(&fragment_mutex);
+		if(fragments_locked == FALSE) {
+			fragment_table[file_buffer->block].size = c_byte;
+			fragment_table[file_buffer->block].start_block = bytes;
+			write_buffer->block = bytes;
+			queue_put(to_writer, write_buffer);
+			bytes += compressed_size;
+			TRACE("Writing fragment %lld, uncompressed size %d, compressed size %d\n", file_buffer->block, file_buffer->size, compressed_size);
+			fragments_outstanding --;
+		} else
+				add_pending_fragment(write_buffer, compressed_size, block);
 		pthread_mutex_unlock(&fragment_mutex);
 		cache_block_put(file_buffer);
 	}
@@ -2774,6 +2807,7 @@ error:
 	return dir;
 }
 
+
 void dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 {
 	int squashfs_type;
@@ -2997,10 +3031,10 @@ void initialise_threads()
 	to_writer = queue_init(writer_buffer_size);
 	from_writer = queue_init(1);
 	from_deflate = queue_init(reader_buffer_size);
-	to_frag = queue_init(processors * 2);
+	to_frag = queue_init(fragment_buffer_size);
 	reader_buffer = cache_init(block_size, reader_buffer_size);
 	writer_buffer = cache_init(block_size, writer_buffer_size);
-	fragment_buffer = cache_init(block_size, processors * 2);
+	fragment_buffer = cache_init(block_size, fragment_buffer_size);
 	pthread_create(&thread[0], NULL, reader, NULL);
 	pthread_create(&thread[1], NULL, writer, NULL);
 	pthread_mutex_init(&fragment_mutex, NULL);
@@ -3051,7 +3085,7 @@ skip_inode_hash_table:
 	return generic_write_table(lookup_bytes, (char *) inode_lookup_table, 0);
 }
 
-			
+
 char *get_component(char *target, char *targname)
 {
 	while(*target == '/')
@@ -3146,8 +3180,8 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 
 	return paths;
 }
-	
-	
+
+
 void add_exclude(char *target)
 {
 
@@ -3371,9 +3405,9 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2008/02/25)\n");\
+	printf("mksquashfs version 3.3-CVS (2008/03/06)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
-    	printf("This program is free software; you can redistribute it and/or\n");\
+	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
 	printf("as published by the Free Software Foundation; either version 2,\n");\
 	printf("or (at your option) any later version.\n\n");\
@@ -3390,7 +3424,7 @@ int main(int argc, char *argv[])
 	char *b, *root_name = NULL;
 	int be, nopad = FALSE, keep_as_directory = FALSE, orig_be;
 	squashfs_inode inode;
-	int readb_mbytes = READER_BUFFER_DEFAULT, writeb_mbytes = WRITER_BUFFER_DEFAULT;
+	int readb_mbytes = READER_BUFFER_DEFAULT, writeb_mbytes = WRITER_BUFFER_DEFAULT, fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
 	int s_minor;
 
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -3633,6 +3667,7 @@ printOptions:
 
 	reader_buffer_size = readb_mbytes << (20 - block_log);
 	writer_buffer_size = writeb_mbytes << (20 - block_log);
+	fragment_buffer_size = fragmentb_mbytes << (20 - block_log);
 
 	if(block_size <= 65536 && sparse_files == FALSE)
 		s_minor = 0;
