@@ -331,7 +331,7 @@ void remove_free_list(struct cache *cache, struct cache_entry *entry)
 	if(entry->free_prev == NULL && entry->free_next == NULL)
 		/* not in free list */
 		return;
-	else if(entry->free_prev == entry->free_next) {
+	else if(entry->free_prev == entry && entry->free_next == entry) {
 		/* only this entry in the free list */
 		cache->free_list = NULL;
 	} else {
@@ -2361,7 +2361,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.6-CVS (2008/02/14)\n");\
+	printf("unsquashfs version 1.6-CVS (2008/03/06)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
