@@ -1452,12 +1452,15 @@ struct frag_locked *frag_locked_list = NULL;
 INSERT_LIST(fragment, struct frag_locked)
 REMOVE_LIST(fragment, struct frag_locked)
 
-void lock_fragments()
+int lock_fragments()
 {
+	int count;
 	pthread_mutex_lock(&fragment_mutex);
 	//printf("lock_fragments: fragments_outstanding %d\n", fragments_outstanding);
 	fragments_locked = TRUE;
+	count = fragments_outstanding;
 	pthread_mutex_unlock(&fragment_mutex);
+	return count;
 }
 
 
@@ -2341,7 +2344,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 	unsigned int *block_list, *block_listp;
 	struct file_buffer *read_buffer;
 	struct buffer_list *buffer_list;
-	int status;
+	int status, num_locked_fragments;
 
 	if(!no_fragments && always_use_fragments) {
 		blocks = read_size >> block_log;
@@ -2356,11 +2359,11 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 	if((buffer_list = malloc(blocks * sizeof(struct buffer_list))) == NULL)
 		BAD_ERROR("Out of memory allocating file block list\n");
 
-	lock_fragments();
+	num_locked_fragments = lock_fragments();
 
 	file_bytes = 0;
 	start = bytes;
-	thresh = blocks > (writer_buffer_size - processors) ? blocks - (writer_buffer_size - processors): 0;
+	thresh = blocks > (writer_buffer_size - num_locked_fragments) ? blocks - (writer_buffer_size - num_locked_fragments): 0;
 	for(block = 0; block < blocks; block ++) {
 		if(reader_buffer) {
 			read_buffer = reader_buffer;
@@ -3453,7 +3456,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2008/03/10)\n");\
+	printf("mksquashfs version 3.3-CVS (2008/03/11)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
