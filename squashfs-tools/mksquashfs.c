@@ -287,6 +287,7 @@ struct file_buffer {
 	long long file_size;
 	long long index;
 	long long block;
+	long long sequence;
 	int size;
 	int c_byte;
 	int used;
@@ -587,12 +588,13 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 	}
 
 	/* initialise block and if a keep block insert into the hash table */
-	entry->index = index;
 	entry->used = 1;
 	entry->error = FALSE;
 	entry->keep = keep;
-	if(keep)
+	if(keep) {
+		entry->index = index;
 		insert_hash_table(cache, entry);
+	}
 	pthread_mutex_unlock(&cache->mutex);
 
 	return entry;
@@ -600,6 +602,20 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 failed:
 	pthread_mutex_unlock(&cache->mutex);
 	return NULL;
+}
+
+
+void cache_rehash(struct file_buffer *entry, long long index)
+{
+	struct cache *cache = entry->cache;
+
+	pthread_mutex_lock(&cache->mutex);
+	if(entry->keep)
+		remove_hash_table(cache, entry);
+	entry->keep = TRUE;
+	entry->index = index;
+	insert_hash_table(cache, entry);
+	pthread_mutex_unlock(&cache->mutex);
 }
 
 
@@ -1408,7 +1424,7 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 	start_block = disk_fragment->start_block;
 	pthread_mutex_unlock(&fragment_mutex);
 
-	if(SQUASHFS_COMPRESSED_BLOCK(size)) {
+	if(SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size)) {
 		int res;
 		unsigned long bytes = block_size;
 		char *data;
@@ -1792,7 +1808,6 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
 		if(file_size == dupl_ptr->file_size && bytes == dupl_ptr->bytes && frag_bytes == dupl_ptr->fragment->size) {
 			long long dup_start = dupl_ptr->start;
-			char *buffer;
 			int block;
 
 			if(memcmp(*block_list, dupl_ptr->block_list, blocks * sizeof(unsigned int)) != 0)
@@ -1817,6 +1832,9 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 
 			for(block = 0; block < blocks; block ++) {
 				struct buffer_list *b = &buffer_list[block];
+				struct file_buffer *write_buffer;
+				char *buffer, *data;
+				int res;
 
 				if(b->read_buffer)
 					buffer = b->read_buffer->data;
@@ -1825,8 +1843,17 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 				else
 					continue;
 
-				read_bytes(fd, dup_start, b->size, buffer2);
-				if(memcmp(buffer, buffer2, b->size) != 0)
+				write_buffer = cache_lookup(writer_buffer, dup_start);
+				if(write_buffer)
+					data = write_buffer->data;
+				else {
+					read_bytes(fd, dup_start, b->size, buffer2);
+					data = buffer2;
+				}
+				res = memcmp(buffer, data, b->size);
+				if(write_buffer)
+					cache_block_put(write_buffer);
+				if(res != 0)
 					break;
 				dup_start += b->size;
 			}
@@ -1880,7 +1907,8 @@ again:
 
 		if(file_buffer)
 			queue_put(from_reader, file_buffer);
-		file_buffer = cache_get(reader_buffer, index ++, 0);
+		file_buffer = cache_get(reader_buffer, 0, 0);
+		file_buffer->sequence = index ++;
 
 		byte = file_buffer->size = read(file, file_buffer->data, block_size);
 
@@ -1918,7 +1946,8 @@ again:
 	return;
 
 read_err:
-	file_buffer = cache_get(reader_buffer, index ++, 0);
+	file_buffer = cache_get(reader_buffer, 0, 0);
+	file_buffer->sequence = index ++;
 read_err2:
 	file_buffer->error = TRUE;
 	queue_put(from_deflate, file_buffer);
@@ -2048,12 +2077,13 @@ void *deflator(void *arg)
 
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(from_reader);
-		struct file_buffer *write_buffer = cache_get(writer_buffer, file_buffer->index, 1);
+		struct file_buffer *write_buffer = cache_get(writer_buffer, 0, 0);
 
 		if(sparse_files && all_zero(file_buffer)) 
 			write_buffer->c_byte = 0;
 		else
 			write_buffer->c_byte = mangle2(&stream, write_buffer->data, file_buffer->data, file_buffer->size, block_size, noD, 1);
+		write_buffer->sequence = file_buffer->sequence;
 		write_buffer->file_size = file_buffer->file_size;
 		write_buffer->block = file_buffer->block;
 		write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->c_byte);
@@ -2104,7 +2134,7 @@ struct file_buffer		*block_hash[HASH_ENTRIES];
 
 void push_buffer(struct file_buffer *file_buffer)
 {
-	int hash = BLOCK_HASH(file_buffer->index);
+	int hash = BLOCK_HASH(file_buffer->sequence);
 
 	file_buffer->next = block_hash[hash];
 	block_hash[hash] = file_buffer;
@@ -2113,12 +2143,12 @@ void push_buffer(struct file_buffer *file_buffer)
 
 struct file_buffer *get_file_buffer(struct queue *queue)
 {
-	static unsigned int index = 0;
-	int hash = BLOCK_HASH(index);
+	static unsigned int sequence = 0;
+	int hash = BLOCK_HASH(sequence);
 	struct file_buffer *file_buffer = block_hash[hash], *prev = NULL;
 
 	for(;file_buffer; prev = file_buffer, file_buffer = file_buffer->next)
-		if(file_buffer->index == index)
+		if(file_buffer->sequence == sequence)
 			break;
 
 	if(file_buffer) {
@@ -2129,13 +2159,13 @@ struct file_buffer *get_file_buffer(struct queue *queue)
 	} else {
 		while(1) {
 			file_buffer = queue_get(queue);
-			if(file_buffer->index == index)
+			if(file_buffer->sequence == sequence)
 				break;
 			push_buffer(file_buffer);
 		}
 	}
 
-	index ++;
+	sequence ++;
 
 	return file_buffer;
 }
@@ -2281,6 +2311,7 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 		if(read_buffer->c_byte) {
 			read_buffer->block = bytes;
 			bytes += read_buffer->size;
+			cache_rehash(read_buffer, read_buffer->block);
 			file_bytes += read_buffer->size;
 			queue_put(to_writer, read_buffer);
 		} else
@@ -2381,6 +2412,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 		if(read_buffer->c_byte) {
 			read_buffer->block = bytes;
 			bytes += read_buffer->size;
+			cache_rehash(read_buffer, read_buffer->block);
 			file_bytes += read_buffer->size;
 			if(block < thresh) {
 				buffer_list[block].read_buffer = NULL;
@@ -2400,10 +2432,6 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 			goto read_err;
 	} else
 		read_buffer = NULL;
-
-	queue_put(to_writer, NULL);
-	if(queue_get(from_writer) != 0)
-		EXIT_MKSQUASHFS();
 
 	dupl_ptr = duplicate(read_size, file_bytes, &block_listp, &start, &fragment, read_buffer, buffer_list, blocks, 0, 0, FALSE);
 
@@ -3456,7 +3484,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2008/03/11)\n");\
+	printf("mksquashfs version 3.3-CVS (2008/03/16)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
