@@ -1,7 +1,7 @@
 /*
  * Create a squashfs filesystem.  This is a highly compressed read only filesystem.
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008
  * Phillip Lougher <phillip@lougher.demon.co.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -544,7 +544,7 @@ struct file_buffer *cache_lookup(struct cache *cache, long long index)
 }
 
 
-//#define GET_FREELIST 1
+#define GET_FREELIST 1
 
 struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 {
@@ -3484,7 +3484,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2008/03/16)\n");\
+	printf("mksquashfs version 3.3-CVS (2008/04/05)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3568,6 +3568,15 @@ int main(int argc, char *argv[])
 			}
 			if(writeb_mbytes < 1) {
 				ERROR("%s: -write-queue should be 1 megabyte or larger\n", argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-fragment-queue") == 0) {
+			if((++i == argc) || (fragmentb_mbytes = strtol(argv[i], &b, 10), *b != '\0')) {
+				ERROR("%s: -fragment-queue missing or invalid queue size\n", argv[0]);
+				exit(1);
+			}
+			if(fragmentb_mbytes < 1) {
+				ERROR("%s: -fragment-queue should be 1 megabyte or larger\n", argv[0]);
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-b") == 0) {
@@ -3709,6 +3718,7 @@ printOptions:
 			ERROR("-processors <number>\tUse <number> processors.  By default will use number of\n\t\t\tprocessors available\n");
 			ERROR("-read-queue <size>\tSet input queue to <size> Mbytes.  Default %d Mbytes\n", READER_BUFFER_DEFAULT);
 			ERROR("-write-queue <size>\tSet output queue to <size> Mbytes.  Default %d Mbytes\n", WRITER_BUFFER_DEFAULT);
+			ERROR("-fragment-queue <size>\tSet fagment queue to <size> Mbytes.  Default %d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
 			ERROR("-noI\t\t\tdo not compress inode table\n");
 			ERROR("-noD\t\t\tdo not compress data blocks\n");
 			ERROR("-noF\t\t\tdo not compress fragment blocks\n");
