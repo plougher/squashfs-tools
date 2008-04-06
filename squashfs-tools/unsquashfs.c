@@ -2371,7 +2371,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.6-CVS (2008/04/05)\n");\
+	printf("unsquashfs version 1.6-CVS (2008/04/06)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -2389,6 +2389,7 @@ int main(int argc, char *argv[])
 	struct pathnames *paths = NULL;
 	struct pathname *path = NULL;
 	int fragment_buffer_size, data_buffer_size;
+	char *b;
 
 	root_process = geteuid() == 0;
 	if(root_process)
@@ -2410,6 +2411,15 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			dest = argv[i];
+		} else if(strcmp(argv[i], "-processors") == 0 || strcmp(argv[i], "-p") == 0) {
+			if((++i == argc) || (processors = strtol(argv[i], &b, 10), *b != '\0')) {
+				ERROR("%s: -processors missing or invalid processor number\n", argv[0]);
+				exit(1);
+			}
+			if(processors < 1) {
+				ERROR("%s: -processors should be 1 or larger\n", argv[0]);
+				exit(1);
+			}
 		} else if(strcmp(argv[i], "-force") == 0 || strcmp(argv[i], "-f") == 0)
 			force = TRUE;
 		else if(strcmp(argv[i], "-stat") == 0 || strcmp(argv[i], "-s") == 0)
@@ -2437,11 +2447,12 @@ int main(int argc, char *argv[])
 options:
 			ERROR("SYNTAX: %s [options] filesystem [directories or files to extract]\n", argv[0]);
 			ERROR("\t-v[ersion]\t\tprint version, licence and copyright information\n");
+			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, default \"squashfs-root\"\n");
+			ERROR("\t-p[rocessors] <number>\tuse <number> processors.  By default will use\n\t\t\t\tnumber of processors available\n");
 			ERROR("\t-i[nfo]\t\t\tprint files as they are unsquashed\n");
 			ERROR("\t-li[nfo]\t\tprint files as they are unsquashed with file\n\t\t\t\tattributes (like ls -l output)\n");
 			ERROR("\t-l[s]\t\t\tlist filesystem, but don't unsquash\n");
 			ERROR("\t-ll[s]\t\t\tlist filesystem with file attributes (like\n\t\t\t\tls -l output), but don't unsquash\n");
-			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, default \"squashfs-root\"\n");
 			ERROR("\t-f[orce]\t\tif file already exists then overwrite\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
 			ERROR("\t-e[f] <extract file>\tlist of directories or files to extract.\n\t\t\t\tOne per line\n");
