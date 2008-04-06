@@ -2214,6 +2214,7 @@ void *writer(void *arg)
 		struct squashfs_file *file = queue_get(to_writer);
 		int file_fd;
 		int hole = 0;
+		int failed = FALSE;
 
 		if(file == NULL) {
 			queue_put(from_writer, NULL);
@@ -2234,16 +2235,20 @@ void *writer(void *arg)
 			}
 
 			cache_block_wait(block->buffer);
-			if(write_block(file_fd, block->buffer->data + block->offset, block->size, hole) == FALSE) {
+
+			if(block->buffer->error)
+				failed = TRUE;
+
+			if(failed == FALSE && write_block(file_fd, block->buffer->data + block->offset, block->size, hole) == FALSE) {
 				ERROR("writer: failed to write data block %d\n", i);
-				goto failure;
+				failed = TRUE;
 			}
 			hole = 0;
 			cache_block_put(block->buffer);
 			free(block);
 		}
 
-		if(hole) {
+		if(hole && failed == FALSE) {
 			/* corner case for hole extending to end of file */
 			if(lseek(file_fd, hole, SEEK_CUR) == -1) {
 				/* for broken lseeks which cannot seek beyond end of
@@ -2251,19 +2256,24 @@ void *writer(void *arg)
 				hole --;
 				if(write_block(file_fd, "\0", 1, hole) == FALSE) {
 					ERROR("writer: failed to write sparse data block\n");
-					goto failure;
+					failed = TRUE;
 				}
 			} else if(ftruncate(file_fd, file->file_size) == -1) {
 				ERROR("writer: failed to write sparse data block\n");
-				goto failure;
+				failed = TRUE;
 			}
 		}
 
-failure:
 		close(file_fd);
-		set_attributes(file->pathname, file->mode, file->uid, file->gid, file->time, force);
+		if(failed == FALSE)
+			set_attributes(file->pathname, file->mode, file->uid, file->gid, file->time, force);
+		else {
+			ERROR("Failed to write %s, skipping\n", file->pathname);
+			unlink(file->pathname);
+		}
 		free(file->pathname);
 		free(file);
+
 	}
 }
 
@@ -2361,7 +2371,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.6-CVS (2008/03/06)\n");\
+	printf("unsquashfs version 1.6-CVS (2008/04/05)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
