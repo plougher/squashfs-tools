@@ -185,6 +185,7 @@ char *fragment_data;
 char *file_data;
 char *data;
 unsigned int block_size;
+unsigned int block_log;
 int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE, use_regex = FALSE;
 char **created_inode;
 int root_process;
@@ -2388,7 +2389,8 @@ int main(int argc, char *argv[])
 	int n;
 	struct pathnames *paths = NULL;
 	struct pathname *path = NULL;
-	int fragment_buffer_size, data_buffer_size;
+	int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
+	int data_buffer_size = DATA_BUFFER_DEFAULT;
 	char *b;
 
 	root_process = geteuid() == 0;
@@ -2418,6 +2420,24 @@ int main(int argc, char *argv[])
 			}
 			if(processors < 1) {
 				ERROR("%s: -processors should be 1 or larger\n", argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-data-queue") == 0 || strcmp(argv[i], "-da") == 0) {
+			if((++i == argc) || (data_buffer_size = strtol(argv[i], &b, 10), *b != '\0')) {
+				ERROR("%s: -data-queue missing or invalid queue size\n", argv[0]);
+				exit(1);
+			}
+			if(data_buffer_size < 1) {
+				ERROR("%s: -data-queue should be 1 Mbyte or larger\n", argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-frag-queue") == 0 || strcmp(argv[i], "-fr") == 0) {
+			if((++i == argc) || (fragment_buffer_size = strtol(argv[i], &b, 10), *b != '\0')) {
+				ERROR("%s: -frag-queue missing or invalid queue size\n", argv[0]);
+				exit(1);
+			}
+			if(fragment_buffer_size < 1) {
+				ERROR("%s: -frag-queue should be 1 Mbyte or larger\n", argv[0]);
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-force") == 0 || strcmp(argv[i], "-f") == 0)
@@ -2456,6 +2476,8 @@ options:
 			ERROR("\t-f[orce]\t\tif file already exists then overwrite\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
 			ERROR("\t-e[f] <extract file>\tlist of directories or files to extract.\n\t\t\t\tOne per line\n");
+			ERROR("\t-da[ta-queue] <size>\tSet data queue to <size> Mbytes.  Default %d\n\t\t\t\tMbytes\n", DATA_BUFFER_DEFAULT);
+			ERROR("\t-fr[ag-queue] <size>\tSet fagment queue to <size> Mbytes.  Default %d\n\t\t\t\tMbytes\n", FRAGMENT_BUFFER_DEFAULT);
 			ERROR("\t-r[egex]\t\ttreat extract names as POSIX regular expressions\n\t\t\t\trather than use the default shell wildcard\n\t\t\t\texpansion (globbing)\n");
 		}
 		exit(1);
@@ -2478,9 +2500,10 @@ options:
 	}
 
 	block_size = sBlk.block_size;
+	block_log = sBlk.block_log;
 
-	fragment_buffer_size = (FRAGMENT_BUFFER_DEFAULT << 20) / block_size;
-	data_buffer_size = (DATA_BUFFER_DEFAULT << 20) / block_size;
+	fragment_buffer_size <<= 20 - block_log;
+	data_buffer_size <<= 20 - block_log;
 	initialise_threads(fragment_buffer_size, data_buffer_size);
 
 	if((fragment_data = malloc(block_size)) == NULL)
