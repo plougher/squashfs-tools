@@ -44,6 +44,9 @@
 #include <fnmatch.h>
 #include <signal.h>
 #include <pthread.h>
+#include <math.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -82,14 +85,6 @@ struct hash_table_entry {
 	struct hash_table_entry *next;
 };
 
-typedef struct squashfs_operations {
-	struct dir *(*squashfs_opendir)(char *pathname, unsigned int block_start, unsigned int offset);
-	void (*read_fragment)(unsigned int fragment, long long *start_block, int *size);
-	void (*read_fragment_table)();
-	void (*read_block_list)(unsigned int *block_list, char *block_ptr, int blocks);
-	struct inode *(*read_inode)(unsigned int start_block, unsigned int offset);
-} squashfs_operations;
-
 struct inode {
 	int blocks;
 	char *block_ptr;
@@ -106,7 +101,14 @@ struct inode {
 	int type;
 	uid_t uid;
 };
-	
+
+typedef struct squashfs_operations {
+	struct dir *(*squashfs_opendir)(unsigned int block_start, unsigned int offset, struct inode **i);
+	void (*read_fragment)(unsigned int fragment, long long *start_block, int *size);
+	void (*read_fragment_table)();
+	void (*read_block_list)(unsigned int *block_list, char *block_ptr, int blocks);
+	struct inode *(*read_inode)(unsigned int start_block, unsigned int offset);
+} squashfs_operations;
 
 struct test {
 	int mask;
@@ -189,6 +191,13 @@ unsigned int block_log;
 int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE, use_regex = FALSE;
 char **created_inode;
 int root_process;
+int progress = TRUE;
+int columns;
+int rotate = 0;
+pthread_mutex_t	progress_mutex;
+pthread_cond_t progress_wait;
+unsigned int total_blocks = 0, total_files = 0, total_inodes = 0;
+unsigned int cur_blocks = 0;
 
 int lookup_type[] = {
 	0,
@@ -227,6 +236,20 @@ struct test table[] = {
 	{ S_IXOTH | S_ISVTX, S_IXOTH, 9, 'x' },
 	{ 0, 0, 0, 0}
 };
+
+void progress_bar(long long current, long long max, int columns);
+void update_progress_bar();
+
+void sigwinch_handler()
+{
+	struct winsize winsize;
+
+	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
+		printf("TIOCGWINSZ ioctl failed, defaulting to 80 columns\n");
+		columns = 80;
+	} else
+		columns = winsize.ws_col;
+}
 
 
 struct queue *queue_init(int size)
@@ -1578,26 +1601,25 @@ struct dir {
 };
 
 
-struct dir *squashfs_opendir(char *pathname, unsigned int block_start, unsigned int offset)
+struct dir *squashfs_opendir(unsigned int block_start, unsigned int offset, struct inode **i)
 {
 	squashfs_dir_header dirh;
 	char buffer[sizeof(squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1];
 	squashfs_dir_entry *dire = (squashfs_dir_entry *) buffer;
 	long long start;
 	int bytes;
-	struct inode *i;
 	int dir_count, size;
 	struct dir_ent *new_dir;
 	struct dir *dir;
 
 	TRACE("squashfs_opendir: inode start block %d, offset %d\n", block_start, offset);
 
-	if((i = s_ops.read_inode(block_start, offset)) == NULL) {
+	if((*i = s_ops.read_inode(block_start, offset)) == NULL) {
 		ERROR("squashfs_opendir: failed to read directory inode %d\n", block_start);
 		return NULL;
 	}
 
-	start = sBlk.directory_table_start + i->start;
+	start = sBlk.directory_table_start + (*i)->start;
 	bytes = lookup_entry(directory_table_hash, start);
 
 	if(bytes == -1) {
@@ -1605,11 +1627,8 @@ struct dir *squashfs_opendir(char *pathname, unsigned int block_start, unsigned 
 		return NULL;
 	}
 
-	if(lsonly || info)
-		print_filename(pathname, i);
-
-	bytes += i->offset;
-	size = i->data + bytes - 3;
+	bytes += (*i)->offset;
+	size = (*i)->data + bytes - 3;
 
 	if((dir = malloc(sizeof(struct dir))) == NULL) {
 		ERROR("squashfs_opendir: malloc failed!\n");
@@ -1618,10 +1637,10 @@ struct dir *squashfs_opendir(char *pathname, unsigned int block_start, unsigned 
 
 	dir->dir_count = 0;
 	dir->cur_entry = 0;
-	dir->mode = i->mode;
-	dir->uid = i->uid;
-	dir->guid = i->gid;
-	dir->mtime = i->time;
+	dir->mode = (*i)->mode;
+	dir->uid = (*i)->uid;
+	dir->guid = (*i)->gid;
+	dir->mtime = (*i)->time;
 	dir->dirs = NULL;
 
 	while(bytes < size) {			
@@ -1670,26 +1689,25 @@ struct dir *squashfs_opendir(char *pathname, unsigned int block_start, unsigned 
 }
 
 
-struct dir *squashfs_opendir_2(char *pathname, unsigned int block_start, unsigned int offset)
+struct dir *squashfs_opendir_2(unsigned int block_start, unsigned int offset, struct inode **i)
 {
 	squashfs_dir_header_2 dirh;
 	char buffer[sizeof(squashfs_dir_entry_2) + SQUASHFS_NAME_LEN + 1];
 	squashfs_dir_entry_2 *dire = (squashfs_dir_entry_2 *) buffer;
 	long long start;
 	int bytes;
-	struct inode *i;
 	int dir_count, size;
 	struct dir_ent *new_dir;
 	struct dir *dir;
 
 	TRACE("squashfs_opendir: inode start block %d, offset %d\n", block_start, offset);
 
-	if((i = s_ops.read_inode(block_start, offset)) == NULL) {
+	if(((*i) = s_ops.read_inode(block_start, offset)) == NULL) {
 		ERROR("squashfs_opendir: failed to read directory inode %d\n", block_start);
 		return NULL;
 	}
 
-	start = sBlk.directory_table_start + i->start;
+	start = sBlk.directory_table_start + (*i)->start;
 	bytes = lookup_entry(directory_table_hash, start);
 
 	if(bytes == -1) {
@@ -1697,11 +1715,8 @@ struct dir *squashfs_opendir_2(char *pathname, unsigned int block_start, unsigne
 		return NULL;
 	}
 
-	if(lsonly || info)
-		print_filename(pathname, i);
-
-	bytes += i->offset;
-	size = i->data + bytes;
+	bytes += (*i)->offset;
+	size = (*i)->data + bytes;
 
 	if((dir = malloc(sizeof(struct dir))) == NULL) {
 		ERROR("squashfs_opendir: malloc failed!\n");
@@ -1710,10 +1725,10 @@ struct dir *squashfs_opendir_2(char *pathname, unsigned int block_start, unsigne
 
 	dir->dir_count = 0;
 	dir->cur_entry = 0;
-	dir->mode = i->mode;
-	dir->uid = i->uid;
-	dir->guid = i->gid;
-	dir->mtime = i->time;
+	dir->mode = (*i)->mode;
+	dir->uid = (*i)->uid;
+	dir->guid = (*i)->gid;
+	dir->mtime = (*i)->time;
 	dir->dirs = NULL;
 
 	while(bytes < size) {			
@@ -2004,17 +2019,70 @@ empty_set:
 }
 
 
-int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, struct pathnames *paths)
+int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset, struct pathnames *paths)
 {
-	struct dir *dir = s_ops.squashfs_opendir(parent_name, start_block, offset);
 	unsigned int type;
 	char *name, pathname[1024];
 	struct pathnames *new;
+	struct inode *i;
+	struct dir *dir = s_ops.squashfs_opendir(start_block, offset, &i);
+
+	if(dir == NULL) {
+		ERROR("pre_scan: Failed to read directory %s (%x:%x)\n", parent_name, start_block, offset);
+		return FALSE;
+	}
+
+	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
+		struct inode *i;
+
+		TRACE("pre_scan: name %s, start_block %d, offset %d, type %d\n", name, start_block, offset, type);
+
+		if(!matches(paths, name, &new))
+			continue;
+
+		strcat(strcat(strcpy(pathname, parent_name), "/"), name);
+
+		if(type == SQUASHFS_DIR_TYPE)
+			pre_scan(parent_name, start_block, offset, new);
+		else if(new == NULL) {
+			if(type == SQUASHFS_FILE_TYPE || type == SQUASHFS_LREG_TYPE) {
+				if((i = s_ops.read_inode(start_block, offset)) == NULL) {
+					ERROR("failed to read header\n");
+					continue;
+				}
+				if(created_inode[i->inode_number - 1] == NULL) {
+					created_inode[i->inode_number - 1] = (char *) i;
+					total_blocks += (i->data + (block_size - 1)) >> block_log;
+				}
+				total_files ++;
+			}
+			total_inodes ++;
+		}
+
+		free_subdir(new);
+	}
+
+	squashfs_closedir(dir);
+
+	return TRUE;
+}
+
+
+int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, struct pathnames *paths)
+{
+	unsigned int type;
+	char *name, pathname[1024];
+	struct pathnames *new;
+	struct inode *i;
+	struct dir *dir = s_ops.squashfs_opendir(start_block, offset, &i);
 
 	if(dir == NULL) {
 		ERROR("dir_scan: Failed to read directory %s (%x:%x)\n", parent_name, start_block, offset);
 		return FALSE;
 	}
+
+	if(lsonly || info)
+		print_filename(parent_name, i);
 
 	if(!lsonly && mkdir(parent_name, (mode_t) dir->mode) == -1 && (!force || errno != EEXIST)) {
 		ERROR("dir_scan: failed to open directory %s, because %s\n", parent_name, strerror(errno));
@@ -2022,8 +2090,6 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, s
 	}
 
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
-		struct inode *i;
-
 		TRACE("dir_scan: name %s, start_block %d, offset %d, type %d\n", name, start_block, offset, type);
 
 
@@ -2043,8 +2109,10 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, s
 			if(lsonly || info)
 				print_filename(pathname, i);
 
-			if(!lsonly)
+			if(!lsonly) {
 				create_inode(pathname, i);
+				update_progress_bar();
+				}
 		}
 
 		free_subdir(new);
@@ -2226,7 +2294,7 @@ void *writer(void *arg)
 
 		file_fd = file->fd;
 
-		for(i = 0; i < file->blocks; i++) {
+		for(i = 0; i < file->blocks; i++, cur_blocks ++) {
 			struct file_entry *block = queue_get(to_writer);
 
 			if(block->buffer == 0) { /* sparse file */
@@ -2309,6 +2377,31 @@ void *deflator(void *arg)
 }
 
 
+void *progress_thread(void *arg)
+{
+	struct timeval timeval;
+	struct timespec timespec;
+
+	pthread_mutex_init(&progress_mutex, NULL);
+	pthread_cond_init(&progress_wait, NULL);
+
+	while(1) {
+		pthread_mutex_lock(&progress_mutex);
+		gettimeofday(&timeval, NULL);
+		timespec.tv_sec = timeval.tv_sec;
+		if(timeval.tv_usec + 250000 > 999999)
+			timespec.tv_sec++;
+		timespec.tv_nsec = ((timeval.tv_usec + 250000) % 1000000) * 1000;
+		if(pthread_cond_timedwait(&progress_wait, &progress_mutex, &timespec) == ETIMEDOUT)
+			rotate = (rotate + 1) % 4;
+		pthread_mutex_unlock(&progress_mutex);
+		progress_bar(sym_count + dev_count +
+			fifo_count + cur_blocks, total_inodes - total_files +
+			total_blocks, columns);
+	}
+}
+
+
 void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 {
 	int i;
@@ -2320,8 +2413,6 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	sigaddset(&sigmask, SIGQUIT);
 	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads\n");
-
-	//signal(SIGUSR1, sigusr1_handler);
 
 	if(processors == -1) {
 #ifndef linux
@@ -2344,18 +2435,19 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 #endif
 	}
 
-	if((thread = malloc((2 + processors) * sizeof(pthread_t))) == NULL)
+	if((thread = malloc((3 + processors) * sizeof(pthread_t))) == NULL)
 		EXIT_UNSQUASH("Out of memory allocating thread descriptors\n");
-	deflator_thread = &thread[2];
+	deflator_thread = &thread[3];
 
 	to_reader = queue_init(all_buffers_size);
 	to_deflate = queue_init(all_buffers_size);
-	/* XXX */ to_writer = queue_init(1000);
+	to_writer = queue_init(1000);
 	from_writer = queue_init(1);
 	fragment_cache = cache_init(block_size, fragment_buffer_size);
 	data_cache = cache_init(block_size, data_buffer_size);
 	pthread_create(&thread[0], NULL, reader, NULL);
 	pthread_create(&thread[1], NULL, writer, NULL);
+	pthread_create(&thread[2], NULL, progress_thread, NULL);
 	pthread_mutex_init(&fragment_mutex, NULL);
 
 	for(i = 0; i < processors; i++) {
@@ -2371,8 +2463,48 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 }
 
 
+void update_progress_bar()
+{
+	pthread_mutex_lock(&progress_mutex);
+	pthread_cond_signal(&progress_wait);
+	pthread_mutex_unlock(&progress_mutex);
+}
+
+
+void progress_bar(long long current, long long max, int columns)
+{
+	char rotate_list[] = { '|', '/', '-', '\\' };
+	int max_digits = ceil(log10(max));
+	int used = max_digits * 2 + 11;
+	int hashes = (current * (columns - used)) / max;
+	int spaces = columns - used - hashes;
+
+	if(current > max) {
+		printf("%lld %lld\n", current, max);
+		return;
+	}
+
+	if(!progress || columns - used < 0)
+		return;
+
+	printf("\r[");
+
+	while (hashes --)
+		putchar('=');
+
+	putchar(rotate_list[rotate]);
+
+	while(spaces --)
+		putchar(' ');
+
+	printf("] %*lld/%*lld", max_digits, current, max_digits, max);
+	printf(" %3lld%%", current * 100 / max);
+	fflush(stdout);
+}
+
+
 #define VERSION() \
-	printf("unsquashfs version 1.6-CVS (2008/04/06)\n");\
+	printf("unsquashfs version 1.6-CVS (2008/04/13)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -2392,6 +2524,7 @@ int main(int argc, char *argv[])
 	int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
 	int data_buffer_size = DATA_BUFFER_DEFAULT;
 	char *b;
+	struct winsize winsize;
 
 	root_process = geteuid() == 0;
 	if(root_process)
@@ -2513,7 +2646,7 @@ options:
 		EXIT_UNSQUASH("failed to allocate file_data");
 
 	if((data = malloc(block_size)) == NULL)
-		EXIT_UNSQUASH("failed to allocate datan\n");
+		EXIT_UNSQUASH("failed to allocate data\n");
 
 	if((created_inode = malloc(sBlk.inodes * sizeof(char *))) == NULL)
 		EXIT_UNSQUASH("failed to allocate created_inode\n");
@@ -2533,10 +2666,29 @@ options:
 		paths = add_subdir(paths, path);
 	}
 
+	if(progress) {
+		struct itimerval itimerval;
+
+		if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
+			printf("TIOCGWINZ ioctl failed, defaulting to 80 columns\n");
+			columns = 80;
+		} else
+			columns = winsize.ws_col;
+		signal(SIGWINCH, sigwinch_handler);
+	}
+
+	pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode), SQUASHFS_INODE_OFFSET(sBlk.root_inode), paths);
+
+	memset(created_inode, 0, sBlk.inodes * sizeof(char *));
+
+	printf("%d files (%d blocks) to write\n\n", total_inodes, total_inodes - total_files + total_blocks);
+
 	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode), SQUASHFS_INODE_OFFSET(sBlk.root_inode), paths);
 
 	queue_put(to_writer, NULL);
 	queue_get(from_writer);
+
+	update_progress_bar();
 
 	if(!lsonly) {
 		printf("\n");
@@ -2546,5 +2698,6 @@ options:
 		printf("created %d devices\n", dev_count);
 		printf("created %d fifos\n", fifo_count);
 	}
+
 	return 0;
 }
