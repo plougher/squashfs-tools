@@ -14,6 +14,6 @@ read_fs.o: read_fs.c squashfs_fs.h read_fs.h global.h
 sort.o: sort.c squashfs_fs.h global.h sort.h
 
 unsquashfs: unsquashfs.o
-	$(CC) unsquashfs.o -lz -lpthread -o $@
+	$(CC) unsquashfs.o -lz -lpthread -lm -o $@
 
 unsquashfs.o: unsquashfs.c squashfs_fs.h read_fs.h global.h
