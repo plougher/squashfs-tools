@@ -29,6 +29,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -328,6 +329,9 @@ pthread_t *thread, *deflator_thread, *frag_deflator_thread;
 pthread_mutex_t	fragment_mutex;
 pthread_cond_t fragment_waiting;
 pthread_mutex_t	pos_mutex;
+pthread_mutex_t progress_mutex;
+pthread_cond_t progress_wait;
+int rotate = 0;
 
 /* user options that control parallelisation */
 int processors = -1;
@@ -361,6 +365,7 @@ void dir_scan2(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes, unsigned int *block_list, long long start, struct fragment *fragment, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag);
 extern void generate_file_priorities(struct dir_info *dir, int priority, struct stat *buf);
 extern struct priority_entry *priority_list[65536];
+void progress_bar(long long current, long long max, int columns);
 
 
 struct queue *queue_init(int size)
@@ -655,6 +660,20 @@ void cache_block_put(struct file_buffer *entry)
 #define MKINODE(A)	((squashfs_inode)(((squashfs_inode) inode_bytes << 16) + (((char *)A) - data_cache)))
 
 
+inline void inc_progress_bar()
+{
+	cur_uncompressed ++;
+}
+
+
+inline void update_progress_bar()
+{
+	pthread_mutex_lock(&progress_mutex);
+	pthread_cond_signal(&progress_wait);
+	pthread_mutex_unlock(&progress_mutex);
+}
+
+
 inline void waitforthread(int i)
 {
 	TRACE("Waiting for thread %d\n", i);
@@ -672,10 +691,10 @@ void restorefs()
 
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
-	for(i = 0; i < 2 + processors * 2; i++)
+	for(i = 0; i < 3 + processors * 2; i++)
 		if(thread[i])
 			pthread_kill(thread[i], SIGUSR1);
-	for(i = 0; i < 2 + processors * 2; i++)
+	for(i = 0; i < 3 + processors * 2; i++)
 		waitforthread(i);
 	TRACE("All threads in signal handler\n");
 	bytes = sbytes;
@@ -752,6 +771,12 @@ void sigwinch_handler()
 		columns = 80;
 	} else
 		columns = winsize.ws_col;
+}
+
+
+void sigalrm_handler()
+{
+	rotate = (rotate + 1) % 4;
 }
 
 
@@ -2171,12 +2196,56 @@ struct file_buffer *get_file_buffer(struct queue *queue)
 }
 
 
+void *progress_thread(void *arg)
+{
+	struct timeval timeval;
+	struct timespec timespec;
+	struct itimerval itimerval;
+	struct winsize winsize;
+
+	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
+		printf("TIOCGWINZ ioctl failed, defaulting to 80 columns\n");
+		columns = 80;
+	} else
+		columns = winsize.ws_col;
+	signal(SIGWINCH, sigwinch_handler);
+	signal(SIGALRM, sigalrm_handler);
+
+	itimerval.it_value.tv_sec = 0;
+	itimerval.it_value.tv_usec = 250000;
+	itimerval.it_interval.tv_sec = 0;
+	itimerval.it_interval.tv_usec = 250000;
+	setitimer(ITIMER_REAL, &itimerval, NULL);
+
+	pthread_mutex_init(&progress_mutex, NULL);
+	pthread_cond_init(&progress_wait, NULL);
+
+	while(1) {
+		pthread_mutex_lock(&progress_mutex);
+		gettimeofday(&timeval, NULL);
+		timespec.tv_sec = timeval.tv_sec;
+		if(timeval.tv_usec + 250000 > 999999)
+			timespec.tv_sec++;
+		timespec.tv_nsec = ((timeval.tv_usec + 250000) % 1000000) * 1000;
+		pthread_cond_timedwait(&progress_wait, &progress_mutex, &timespec);
+		pthread_mutex_unlock(&progress_mutex);
+		progress_bar(cur_uncompressed, estimated_uncompressed, columns);
+	}
+}
+
+
 void progress_bar(long long current, long long max, int columns)
 {
+	char rotate_list[] = { '|', '/', '-', '\\' };
 	int max_digits = ceil(log10(max));
-	int used = max_digits * 2 + 10;
+	int used = max_digits * 2 + 11;
 	int hashes = (current * (columns - used)) / max;
 	int spaces = columns - used - hashes;
+
+	if(current > max) {
+		printf("%lld %lld\n", current, max);
+		return;
+	}
 
 	if(!progress || columns - used < 0)
 		return;
@@ -2185,6 +2254,8 @@ void progress_bar(long long current, long long max, int columns)
 
 	while (hashes --)
 		putchar('=');
+
+	putchar(rotate_list[rotate]);
 
 	while(spaces --)
 		putchar(' ');
@@ -2227,7 +2298,7 @@ void write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent, int siz
 	total_bytes += size;
 	file_count ++;
 
-	progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
+	inc_progress_bar();
 
 	if(dir_ent->inode->nlink == 1)
 		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL);
@@ -2260,7 +2331,7 @@ void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size, s
 
 	*duplicate_file = FALSE;
 
-	progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
+	inc_progress_bar();
 
 	if(dir_ent->inode->nlink == 1)
 		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL);
@@ -2316,14 +2387,14 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 			queue_put(to_writer, read_buffer);
 		} else
 			cache_block_put(read_buffer);
-		progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
+		inc_progress_bar();
 	}
 
 	if(frag_bytes != 0) {
 		read_buffer = get_file_buffer(from_deflate);
 		if(read_buffer->error)
 			goto read_err;
-		progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
+		inc_progress_bar();
 	} else
 		read_buffer = NULL;
 
@@ -2423,7 +2494,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 			buffer_list[block].read_buffer = NULL;
 			cache_block_put(read_buffer);
 		}
-		progress_bar(++cur_uncompressed, estimated_uncompressed, columns);
+		inc_progress_bar();
 	}
 
 	if(frag_bytes != 0) {
@@ -2984,6 +3055,7 @@ void dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 		}
 		
 		add_dir(*inode, inode_number, dir_name, squashfs_type, &dir);
+		update_progress_bar();
 	}
 
 	write_dir(inode, dir_info, &dir);
@@ -3100,9 +3172,9 @@ void initialise_threads()
 #endif
 	}
 
-	if((thread = malloc((2 + processors * 2) * sizeof(pthread_t))) == NULL)
+	if((thread = malloc((3 + processors * 2) * sizeof(pthread_t))) == NULL)
 		BAD_ERROR("Out of memory allocating thread descriptors\n");
-	deflator_thread = &thread[2];
+	deflator_thread = &thread[3];
 	frag_deflator_thread = &deflator_thread[processors];
 
 	to_reader = queue_init(1);
@@ -3116,6 +3188,7 @@ void initialise_threads()
 	fragment_buffer = cache_init(block_size, fragment_buffer_size);
 	pthread_create(&thread[0], NULL, reader, NULL);
 	pthread_create(&thread[1], NULL, writer, NULL);
+	pthread_create(&thread[2], NULL, progress_thread, NULL);
 	pthread_mutex_init(&fragment_mutex, NULL);
 	pthread_cond_init(&fragment_waiting, NULL);
 
@@ -3484,7 +3557,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2008/04/05)\n");\
+	printf("mksquashfs version 3.3-CVS (2008/04/20)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3496,7 +3569,6 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	printf("GNU General Public License for more details.\n");
 int main(int argc, char *argv[])
 {
-	struct winsize winsize;
 	struct stat buf, source_buf;
 	int i;
 	squashfs_super_block sBlk;
@@ -3971,15 +4043,6 @@ printOptions:
 #endif
 
 	block_offset = check_data ? 3 : 2;
-
-	if(progress) {
-		if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
-			printf("TIOCGWINZ ioctl failed, defaulting to 80 columns\n");
-			columns = 80;
-		} else
-			columns = winsize.ws_col;
-		signal(SIGWINCH, sigwinch_handler);
-	}
 
 	if(path || stickypath) {
 		paths = init_subdir();
