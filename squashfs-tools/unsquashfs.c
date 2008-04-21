@@ -252,6 +252,12 @@ void sigwinch_handler()
 }
 
 
+void sigalrm_handler()
+{
+	rotate = (rotate + 1) % 4;
+}
+
+
 struct queue *queue_init(int size)
 {
 	struct queue *queue = malloc(sizeof(struct queue));
@@ -2381,6 +2387,22 @@ void *progress_thread(void *arg)
 {
 	struct timeval timeval;
 	struct timespec timespec;
+	struct itimerval itimerval;
+	struct winsize winsize;
+
+	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
+		printf("TIOCGWINZ ioctl failed, defaulting to 80 columns\n");
+		columns = 80;
+	} else
+		columns = winsize.ws_col;
+	signal(SIGWINCH, sigwinch_handler);
+	signal(SIGALRM, sigalrm_handler);
+
+	itimerval.it_value.tv_sec = 0;
+	itimerval.it_value.tv_usec = 250000;
+	itimerval.it_interval.tv_sec = 0;
+	itimerval.it_interval.tv_usec = 250000;
+	setitimer(ITIMER_REAL, &itimerval, NULL);
 
 	pthread_mutex_init(&progress_mutex, NULL);
 	pthread_cond_init(&progress_wait, NULL);
@@ -2392,8 +2414,7 @@ void *progress_thread(void *arg)
 		if(timeval.tv_usec + 250000 > 999999)
 			timespec.tv_sec++;
 		timespec.tv_nsec = ((timeval.tv_usec + 250000) % 1000000) * 1000;
-		if(pthread_cond_timedwait(&progress_wait, &progress_mutex, &timespec) == ETIMEDOUT)
-			rotate = (rotate + 1) % 4;
+		pthread_cond_timedwait(&progress_wait, &progress_mutex, &timespec);
 		pthread_mutex_unlock(&progress_mutex);
 		progress_bar(sym_count + dev_count +
 			fifo_count + cur_blocks, total_inodes - total_files +
@@ -2504,7 +2525,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.6-CVS (2008/04/13)\n");\
+	printf("unsquashfs version 1.6-CVS (2008/04/20)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -2664,17 +2685,6 @@ options:
 	if(path) {
 		paths = init_subdir();
 		paths = add_subdir(paths, path);
-	}
-
-	if(progress) {
-		struct itimerval itimerval;
-
-		if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
-			printf("TIOCGWINZ ioctl failed, defaulting to 80 columns\n");
-			columns = 80;
-		} else
-			columns = winsize.ws_col;
-		signal(SIGWINCH, sigwinch_handler);
 	}
 
 	pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode), SQUASHFS_INODE_OFFSET(sBlk.root_inode), paths);
