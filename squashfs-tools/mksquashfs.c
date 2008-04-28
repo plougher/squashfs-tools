@@ -2136,8 +2136,8 @@ void *frag_deflator(void *arg)
 		c_byte = mangle2(&stream, write_buffer->data, file_buffer->data, file_buffer->size, block_size, noF, 1);
 		compressed_size = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
 		write_buffer->size = compressed_size;
+		pthread_mutex_lock(&fragment_mutex);
 		if(fragments_locked == FALSE) {
-			pthread_mutex_lock(&fragment_mutex);
 			fragment_table[file_buffer->block].size = c_byte;
 			fragment_table[file_buffer->block].start_block = bytes;
 			write_buffer->block = bytes;
@@ -2146,8 +2146,10 @@ void *frag_deflator(void *arg)
 			pthread_mutex_unlock(&fragment_mutex);
 			queue_put(to_writer, write_buffer);
 			TRACE("Writing fragment %lld, uncompressed size %d, compressed size %d\n", file_buffer->block, file_buffer->size, compressed_size);
-		} else
+		} else {
+				pthread_mutex_unlock(&fragment_mutex);
 				add_pending_fragment(write_buffer, c_byte, file_buffer->block);
+		}
 		cache_block_put(file_buffer);
 	}
 }
@@ -3557,7 +3559,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2008/04/20)\n");\
+	printf("mksquashfs version 3.3-CVS (2008/04/27)\n");\
 	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
