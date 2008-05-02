@@ -60,20 +60,32 @@
 #include "read_fs.h"
 #include "global.h"
 
+#define PRINTF(s, args...)		do { \
+						pthread_mutex_lock(&screen_mutex); \
+						printf(s, ## args); \
+						pthread_mutex_unlock(&screen_mutex);\
+					} while(0)
+
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)		do { \
+						pthread_mutex_lock(&screen_mutex); \
 						printf("unsquashfs: "s, ## args); \
+						pthread_mutex_unlock(&screen_mutex);\
 					} while(0)
 #else
 #define TRACE(s, args...)
 #endif
 
 #define ERROR(s, args...)		do { \
+						pthread_mutex_lock(&screen_mutex); \
 						fprintf(stderr, s, ## args); \
+						pthread_mutex_unlock(&screen_mutex);\
 					} while(0)
 
 #define EXIT_UNSQUASH(s, args...)	do { \
+						pthread_mutex_lock(&screen_mutex); \
 						fprintf(stderr, "FATAL ERROR aborting: "s, ## args); \
+						pthread_mutex_unlock(&screen_mutex);\
 						exit(1); \
 					} while(0)
 
@@ -191,11 +203,11 @@ unsigned int block_log;
 int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE, use_regex = FALSE;
 char **created_inode;
 int root_process;
-int progress = TRUE;
 int columns;
 int rotate = 0;
-pthread_mutex_t	progress_mutex;
+pthread_mutex_t	screen_mutex;
 pthread_cond_t progress_wait;
+int progress = TRUE, progress_enabled = FALSE;
 unsigned int total_blocks = 0, total_files = 0, total_inodes = 0;
 unsigned int cur_blocks = 0;
 
@@ -245,7 +257,7 @@ void sigwinch_handler()
 	struct winsize winsize;
 
 	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
-		printf("TIOCGWINSZ ioctl failed, defaulting to 80 columns\n");
+		ERROR("TIOCGWINSZ ioctl failed, defaulting to 80 columns\n");
 		columns = 80;
 	} else
 		columns = winsize.ws_col;
@@ -1919,39 +1931,6 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 }
 
 
-void display_path(int depth, struct pathname *paths)
-{
-	int i, n;
-
-	if(paths == NULL)
-		return;
-
-	for(i = 0; i < paths->names; i++) {
-		for(n = 0; n < depth; n++)
-			printf("\t");
-		printf("%d: %s\n", depth, paths->name[i].name);
-		display_path(depth + 1, paths->name[i].paths);
-	}
-}
-
-
-void display_path2(struct pathname *paths, char *string)
-{
-	int i;
-	char path[1024];
-
-	if(paths == NULL) {
-		printf("%s\n", string);
-		return;
-	}
-
-	for(i = 0; i < paths->names; i++) {
-		strcat(strcat(strcpy(path, string), "/"), paths->name[i].name);
-		display_path2(paths->name[i].paths, path);
-	}
-}
-
-
 struct pathnames *init_subdir()
 {
 	struct pathnames *new = malloc(sizeof(struct pathnames *));
@@ -2391,7 +2370,7 @@ void *progress_thread(void *arg)
 	struct winsize winsize;
 
 	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
-		printf("TIOCGWINZ ioctl failed, defaulting to 80 columns\n");
+		ERROR("TIOCGWINZ ioctl failed, defaulting to 80 columns\n");
 		columns = 80;
 	} else
 		columns = winsize.ws_col;
@@ -2404,21 +2383,20 @@ void *progress_thread(void *arg)
 	itimerval.it_interval.tv_usec = 250000;
 	setitimer(ITIMER_REAL, &itimerval, NULL);
 
-	pthread_mutex_init(&progress_mutex, NULL);
 	pthread_cond_init(&progress_wait, NULL);
 
+	pthread_mutex_lock(&screen_mutex);
 	while(1) {
-		pthread_mutex_lock(&progress_mutex);
 		gettimeofday(&timeval, NULL);
 		timespec.tv_sec = timeval.tv_sec;
 		if(timeval.tv_usec + 250000 > 999999)
 			timespec.tv_sec++;
 		timespec.tv_nsec = ((timeval.tv_usec + 250000) % 1000000) * 1000;
-		pthread_cond_timedwait(&progress_wait, &progress_mutex, &timespec);
-		pthread_mutex_unlock(&progress_mutex);
-		progress_bar(sym_count + dev_count +
-			fifo_count + cur_blocks, total_inodes - total_files +
-			total_blocks, columns);
+		pthread_cond_timedwait(&progress_wait, &screen_mutex, &timespec);
+		if(progress_enabled)
+			progress_bar(sym_count + dev_count +
+				fifo_count + cur_blocks, total_inodes - total_files +
+				total_blocks, columns);
 	}
 }
 
@@ -2484,11 +2462,27 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 }
 
 
+void enable_progress_bar()
+{
+	pthread_mutex_lock(&screen_mutex);
+	progress_enabled = TRUE;
+	pthread_mutex_unlock(&screen_mutex);
+}
+
+
+void disable_progress_bar()
+{
+	pthread_mutex_lock(&screen_mutex);
+	progress_enabled = FALSE;
+	pthread_mutex_unlock(&screen_mutex);
+}
+
+
 void update_progress_bar()
 {
-	pthread_mutex_lock(&progress_mutex);
+	pthread_mutex_lock(&screen_mutex);
 	pthread_cond_signal(&progress_wait);
-	pthread_mutex_unlock(&progress_mutex);
+	pthread_mutex_unlock(&screen_mutex);
 }
 
 
@@ -2525,7 +2519,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.6-CVS (2008/04/20)\n");\
+	printf("unsquashfs version 1.6-CVS (2008/05/01)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -2547,6 +2541,7 @@ int main(int argc, char *argv[])
 	char *b;
 	struct winsize winsize;
 
+	pthread_mutex_init(&screen_mutex, NULL);
 	root_process = geteuid() == 0;
 	if(root_process)
 		umask(0);
@@ -2693,12 +2688,19 @@ options:
 
 	printf("%d files (%d blocks) to write\n\n", total_inodes, total_inodes - total_files + total_blocks);
 
+	if(progress)
+		enable_progress_bar();
+
 	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode), SQUASHFS_INODE_OFFSET(sBlk.root_inode), paths);
 
 	queue_put(to_writer, NULL);
 	queue_get(from_writer);
 
-	update_progress_bar();
+	if(progress)
+		disable_progress_bar();
+
+	progress_bar(sym_count + dev_count + fifo_count + cur_blocks,
+			total_inodes - total_files + total_blocks, columns);
 
 	if(!lsonly) {
 		printf("\n");
