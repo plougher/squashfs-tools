@@ -60,15 +60,11 @@
 #include "read_fs.h"
 #include "global.h"
 
-#define PRINTF(s, args...)		do { \
-						pthread_mutex_lock(&screen_mutex); \
-						printf(s, ## args); \
-						pthread_mutex_unlock(&screen_mutex);\
-					} while(0)
-
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)		do { \
 						pthread_mutex_lock(&screen_mutex); \
+						if(progress_enabled) \
+							printf("\n"); \
 						printf("unsquashfs: "s, ## args); \
 						pthread_mutex_unlock(&screen_mutex);\
 					} while(0)
@@ -78,6 +74,8 @@
 
 #define ERROR(s, args...)		do { \
 						pthread_mutex_lock(&screen_mutex); \
+						if(progress_enabled) \
+							fprintf(stderr, "\n"); \
 						fprintf(stderr, s, ## args); \
 						pthread_mutex_unlock(&screen_mutex);\
 					} while(0)
@@ -2610,6 +2608,9 @@ int main(int argc, char *argv[])
 		else
 			goto options;
 	}
+
+	if(lsonly || info)
+		progress = FALSE;
 
 	if(i == argc) {
 		if(!version) {
