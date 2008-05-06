@@ -65,6 +65,9 @@
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)	do { \
+					pthread_mutex_lock(&progress_mutex); \
+					if(progress_enabled) \
+						printf("\n"); \
 					printf("mksquashfs: "s, ## args); \
 				} while(0)
 #else
@@ -76,7 +79,11 @@
 						printf("mksquashfs: "s, ## args);\
 				} while(0)
 #define ERROR(s, args...)	do {\
+					pthread_mutex_lock(&progress_mutex); \
+					if(progress_enabled) \
+						fprintf(stderr, "\n"); \
 					fprintf(stderr, s, ## args);\
+					pthread_mutex_unlock(&progress_mutex); \
 				} while(0)
 #define EXIT_MKSQUASHFS()	do {\
 					if(restore)\
@@ -86,7 +93,11 @@
 					exit(1);\
 				} while(0)
 #define BAD_ERROR(s, args...)	do {\
+					pthread_mutex_lock(&progress_mutex); \
+					if(progress_enabled) \
+						fprintf(stderr, "\n"); \
 					fprintf(stderr, "FATAL ERROR:" s, ##args);\
+					pthread_mutex_unlock(&progress_mutex); \
 					EXIT_MKSQUASHFS();\
 				} while(0)
 
@@ -102,6 +113,7 @@ int swap, silent = TRUE;
 long long global_uid = -1, global_gid = -1;
 int exportable = TRUE;
 int progress = TRUE;
+int progress_enabled = FALSE;
 int sparse_files = TRUE;
 int old_exclude = TRUE;
 int use_regex = FALSE;
@@ -325,7 +337,7 @@ struct buffer_list {
 
 struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
 struct queue *to_reader, *from_reader, *to_writer, *from_writer, *from_deflate, *to_frag;
-pthread_t *thread, *deflator_thread, *frag_deflator_thread;
+pthread_t *thread, *deflator_thread, *frag_deflator_thread, progress_thread;
 pthread_mutex_t	fragment_mutex;
 pthread_cond_t fragment_waiting;
 pthread_mutex_t	pos_mutex;
@@ -691,10 +703,10 @@ void restorefs()
 
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
-	for(i = 0; i < 3 + processors * 2; i++)
+	for(i = 0; i < 2 + processors * 2; i++)
 		if(thread[i])
 			pthread_kill(thread[i], SIGUSR1);
-	for(i = 0; i < 3 + processors * 2; i++)
+	for(i = 0; i < 2 + processors * 2; i++)
 		waitforthread(i);
 	TRACE("All threads in signal handler\n");
 	bytes = sbytes;
@@ -902,15 +914,11 @@ void read_bytes(int fd, long long byte, int bytes, char *buff)
 	off_t off = byte;
 
 	pthread_mutex_lock(&pos_mutex);
-	if(lseek(fd, off, SEEK_SET) == -1) {
-		perror("Lseek on destination failed");
-		EXIT_MKSQUASHFS();
-	}
+	if(lseek(fd, off, SEEK_SET) == -1)
+		BAD_ERROR("Lseek on destination failed because %s\n", strerror(errno));
 
-	if(read(fd, buff, bytes) == -1) {
-		perror("Read on destination failed");
-		EXIT_MKSQUASHFS();
-	}
+	if(read(fd, buff, bytes) == -1)
+		BAD_ERROR("Read on destination failed because %s\n", strerror(errno));
 	pthread_mutex_unlock(&pos_mutex);
 }
 
@@ -922,15 +930,11 @@ void write_bytes(int fd, long long byte, int bytes, char *buff)
 	if(interrupted < 2)
 		pthread_mutex_lock(&pos_mutex);
 
-	if(lseek(fd, off, SEEK_SET) == -1) {
-		perror("Lseek on destination failed");
-		EXIT_MKSQUASHFS();
-	}
+	if(lseek(fd, off, SEEK_SET) == -1)
+		BAD_ERROR("Lseek on destination failed because %s\n", strerror(errno));
 
-	if(write(fd, buff, bytes) == -1) {
-		perror("Write on destination failed");
-		EXIT_MKSQUASHFS();
-	}
+	if(write(fd, buff, bytes) == -1)
+		BAD_ERROR("Write on destination failed because %s\n", strerror(errno));
 	
 	if(interrupted < 2)
 		pthread_mutex_unlock(&pos_mutex);
@@ -2058,12 +2062,12 @@ void *writer(void *arg)
 		pthread_mutex_lock(&pos_mutex);
 
 		if(!write_error && lseek(fd, off, SEEK_SET) == -1) {
-			perror("Lseek on destination failed");
+			ERROR("Lseek on destination failed because %s\n", strerror(errno));
 			write_error = TRUE;
 		}
 
 		if(!write_error && write(fd, file_buffer->data, file_buffer->size) == -1) {
-			perror("Write on destination failed");
+			ERROR("Write on destination failed because %s\n", strerror(errno));
 			write_error = TRUE;
 		}
 		pthread_mutex_unlock(&pos_mutex);
@@ -2198,7 +2202,7 @@ struct file_buffer *get_file_buffer(struct queue *queue)
 }
 
 
-void *progress_thread(void *arg)
+void *progress_thrd(void *arg)
 {
 	struct timeval timeval;
 	struct timespec timespec;
@@ -2219,20 +2223,36 @@ void *progress_thread(void *arg)
 	itimerval.it_interval.tv_usec = 250000;
 	setitimer(ITIMER_REAL, &itimerval, NULL);
 
-	pthread_mutex_init(&progress_mutex, NULL);
 	pthread_cond_init(&progress_wait, NULL);
 
+	pthread_mutex_lock(&progress_mutex);
+
 	while(1) {
-		pthread_mutex_lock(&progress_mutex);
 		gettimeofday(&timeval, NULL);
 		timespec.tv_sec = timeval.tv_sec;
 		if(timeval.tv_usec + 250000 > 999999)
 			timespec.tv_sec++;
 		timespec.tv_nsec = ((timeval.tv_usec + 250000) % 1000000) * 1000;
 		pthread_cond_timedwait(&progress_wait, &progress_mutex, &timespec);
-		pthread_mutex_unlock(&progress_mutex);
-		progress_bar(cur_uncompressed, estimated_uncompressed, columns);
+		if(progress_enabled)
+			progress_bar(cur_uncompressed, estimated_uncompressed, columns);
 	}
+}
+
+
+void enable_progress_bar()
+{
+	pthread_mutex_lock(&progress_mutex);
+	progress_enabled = TRUE;
+	pthread_mutex_unlock(&progress_mutex);
+}
+
+
+void disable_progress_bar()
+{
+	pthread_mutex_lock(&progress_mutex);
+	progress_enabled = FALSE;
+	pthread_mutex_unlock(&progress_mutex);
 }
 
 
@@ -2873,9 +2893,7 @@ void dir_scan(squashfs_inode *inode, char *pathname, int (_readdir)(char *, char
 		buf.st_dev = 0;
 		buf.st_ino = 0;
 	} else if(lstat(pathname, &buf) == -1) {
-		char buffer[8192];
-		sprintf(buffer, "Cannot stat dir/file %s, ignoring", pathname);
-		perror(buffer);
+		ERROR("Cannot stat dir/file %s because %s, ignoring", pathname, strerror(errno));
 		return;
 	}
 
@@ -2895,6 +2913,8 @@ void dir_scan(squashfs_inode *inode, char *pathname, int (_readdir)(char *, char
 	queue_put(to_reader, dir_info);
 	if(sorted)
 		sort_files_and_write(dir_info);
+	if(progress)
+		enable_progress_bar();
 	dir_scan2(inode, dir_info);
 	dir_ent->inode->inode = *inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
@@ -3099,13 +3119,12 @@ int old_excluded(char *filename, struct stat *buf)
 int old_add_exclude(char *path)
 {
 	int i;
-	char buffer[4096], filename[4096];
+	char filename[4096];
 	struct stat buf;
 
 	if(path[0] == '/' || strncmp(path, "./", 2) == 0 || strncmp(path, "../", 3) == 0) {
 		if(lstat(path, &buf) == -1) {
-			sprintf(buffer, "Cannot stat exclude dir/file %s, ignoring", path);
-			perror(buffer);
+			ERROR("Cannot stat exclude dir/file %s because %s, ignoring", path, strerror(errno));
 			return TRUE;
 		}
 		ADD_ENTRY(buf);
@@ -3115,10 +3134,8 @@ int old_add_exclude(char *path)
 	for(i = 0; i < source; i++) {
 		strcat(strcat(strcpy(filename, source_path[i]), "/"), path);
 		if(lstat(filename, &buf) == -1) {
-			if(!(errno == ENOENT || errno == ENOTDIR)) {
-				sprintf(buffer, "Cannot stat exclude dir/file %s, ignoring", filename);
-				perror(buffer);
-			}
+			if(!(errno == ENOENT || errno == ENOTDIR))
+				ERROR("Cannot stat exclude dir/file %s because %s, ignoring", filename, strerror(errno));
 			continue;
 		}
 		ADD_ENTRY(buf);
@@ -3174,9 +3191,9 @@ void initialise_threads()
 #endif
 	}
 
-	if((thread = malloc((3 + processors * 2) * sizeof(pthread_t))) == NULL)
+	if((thread = malloc((2 + processors * 2) * sizeof(pthread_t))) == NULL)
 		BAD_ERROR("Out of memory allocating thread descriptors\n");
-	deflator_thread = &thread[3];
+	deflator_thread = &thread[2];
 	frag_deflator_thread = &deflator_thread[processors];
 
 	to_reader = queue_init(1);
@@ -3190,7 +3207,7 @@ void initialise_threads()
 	fragment_buffer = cache_init(block_size, fragment_buffer_size);
 	pthread_create(&thread[0], NULL, reader, NULL);
 	pthread_create(&thread[1], NULL, writer, NULL);
-	pthread_create(&thread[2], NULL, progress_thread, NULL);
+	pthread_create(&progress_thread, NULL, progress_thrd, NULL);
 	pthread_mutex_init(&fragment_mutex, NULL);
 	pthread_cond_init(&fragment_waiting, NULL);
 
@@ -3559,8 +3576,8 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2008/04/27)\n");\
-	printf("copyright (C) 2007 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
+	printf("mksquashfs version 3.3-CVS (2008/05/04)\n");\
+	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
 	printf("as published by the Free Software Foundation; either version 2,\n");\
@@ -3586,6 +3603,7 @@ int main(int argc, char *argv[])
 	be = FALSE;
 #endif
 
+	pthread_mutex_init(&progress_mutex, NULL);
 	block_log = slog(block_size);
 	if(argc > 1 && strcmp(argv[1], "-version") == 0) {
 		VERSION();
@@ -3750,9 +3768,10 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-check_data") == 0)
 			check_data = TRUE;
 
-		else if(strcmp(argv[i], "-info") == 0)
-			silent = 0;
-
+		else if(strcmp(argv[i], "-info") == 0) {
+			silent = FALSE;
+			progress = FALSE;
+		}
 		else if(strcmp(argv[i], "-be") == 0)
 			be = TRUE;
 
@@ -3837,11 +3856,11 @@ printOptions:
 	else
 		s_minor = SQUASHFS_MINOR;
 
-        for(i = 0; i < source; i++)
-                if(lstat(source_path[i], &source_buf) == -1) {
-                        fprintf(stderr, "Cannot stat source directory \"%s\" because %s\n", source_path[i], strerror(errno));
-                        EXIT_MKSQUASHFS();
-                }
+	for(i = 0; i < source; i++)
+		if(lstat(source_path[i], &source_buf) == -1) {
+			fprintf(stderr, "Cannot stat source directory \"%s\" because %s\n", source_path[i], strerror(errno));
+			EXIT_MKSQUASHFS();
+		}
 
 	destination_file = argv[source + 1];
 	if(stat(argv[source + 1], &buf) == -1) {
@@ -4071,6 +4090,7 @@ printOptions:
 	sBlk.mkfs_time = time(NULL);
 
 restore_filesystem:
+	disable_progress_bar();
 	write_fragment();
 	sBlk.fragments = fragments;
 	if(interrupted < 2) {
