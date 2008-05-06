@@ -2278,7 +2278,7 @@ void progress_bar(long long current, long long max, int columns)
 		return;
 	}
 
-	if(!progress || columns - used < 0)
+	if(columns - used < 0)
 		return;
 
 	printf("\r[");
@@ -3585,7 +3585,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2008/05/05)\n");\
+	printf("mksquashfs version 3.3-CVS (2008/05/06)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -4099,7 +4099,11 @@ printOptions:
 	sBlk.mkfs_time = time(NULL);
 
 restore_filesystem:
-	disable_progress_bar();
+	if(progress) {
+		disable_progress_bar();
+		progress_bar(cur_uncompressed, estimated_uncompressed, columns);
+	}
+
 	write_fragment();
 	sBlk.fragments = fragments;
 	if(interrupted < 2) {
