@@ -1689,15 +1689,24 @@ unsigned short get_checksum(char *buff, int bytes, unsigned short chksum)
 }
 
 
-unsigned short get_checksum_disk(long long start, long long l)
+unsigned short get_checksum_disk(long long start, long long l, unsigned int *blocks)
 {
 	unsigned short chksum = 0;
 	unsigned int bytes;
+	struct file_buffer *write_buffer;
+	int i;
 
-	while(l) {
-		bytes = l > SQUASHFS_FILE_MAX_SIZE ? SQUASHFS_FILE_MAX_SIZE : l;
+	for(i = 0; l; i++)  {
+		bytes = SQUASHFS_COMPRESSED_SIZE_BLOCK(blocks[i]);
+		if(bytes == 0) /* sparse block */
+			continue;
+		write_buffer = cache_lookup(writer_buffer, start);
+		if(write_buffer) {
+			chksum = get_checksum(write_buffer->data, bytes, chksum);
+			cache_block_put(write_buffer);
+		} else
+			chksum = get_checksum(read_from_disk(start, bytes), bytes, chksum);
 		l -= bytes;
-		chksum = get_checksum(read_from_disk(start, bytes), bytes, chksum);
 		start += bytes;
 	}
 
@@ -1791,7 +1800,7 @@ int pre_duplicate_frag(long long file_size, unsigned short checksum)
 		if(dupl_ptr->file_size == file_size) {
 			if(dupl_ptr->checksum_flag == FALSE) {
 				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
-				dupl_ptr->checksum = get_checksum_disk(dupl_ptr->start, dupl_ptr->bytes);
+				dupl_ptr->checksum = get_checksum_disk(dupl_ptr->start, dupl_ptr->bytes, dupl_ptr->block_list);
 				dupl_ptr->fragment_checksum = get_checksum_mem(frag_buffer->data + dupl_ptr->fragment->offset, file_size);
 				cache_block_put(frag_buffer);
 				dupl_ptr->checksum_flag = TRUE;
@@ -1850,7 +1859,7 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 
 			if(dupl_ptr->checksum_flag == FALSE) {
 				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
-				dupl_ptr->checksum = get_checksum_disk(dupl_ptr->start, dupl_ptr->bytes);
+				dupl_ptr->checksum = get_checksum_disk(dupl_ptr->start, dupl_ptr->bytes, dupl_ptr->block_list);
 				dupl_ptr->fragment_checksum = get_checksum_mem(frag_buffer->data + dupl_ptr->fragment->offset, frag_bytes);
 				cache_block_put(frag_buffer);
 				dupl_ptr->checksum_flag = TRUE;
@@ -3576,7 +3585,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2008/05/04)\n");\
+	printf("mksquashfs version 3.3-CVS (2008/05/05)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
