@@ -2497,7 +2497,7 @@ void progress_bar(long long current, long long max, int columns)
 		return;
 	}
 
-	if(!progress || columns - used < 0)
+	if(columns - used < 0)
 		return;
 
 	printf("\r[");
@@ -2517,7 +2517,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.6-CVS (2008/05/01)\n");\
+	printf("unsquashfs version 1.6-CVS (2008/05/06)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -2697,11 +2697,11 @@ options:
 	queue_put(to_writer, NULL);
 	queue_get(from_writer);
 
-	if(progress)
+	if(progress) {
 		disable_progress_bar();
-
-	progress_bar(sym_count + dev_count + fifo_count + cur_blocks,
+		progress_bar(sym_count + dev_count + fifo_count + cur_blocks,
 			total_inodes - total_files + total_blocks, columns);
+	}
 
 	if(!lsonly) {
 		printf("\n");
