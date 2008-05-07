@@ -2554,6 +2554,8 @@ int main(int argc, char *argv[])
 			info = TRUE;
 		else if(strcmp(argv[i], "-ls") == 0 || strcmp(argv[i], "-l") == 0)
 			lsonly = TRUE;
+		else if(strcmp(argv[i], "-no-progress") == 0 || strcmp(argv[i], "-n") == 0)
+			progress = FALSE;
 		else if(strcmp(argv[i], "-dest") == 0 || strcmp(argv[i], "-d") == 0) {
 			if(++i == argc) {
 				fprintf(stderr, "%s: -dest missing filename\n", argv[0]);
@@ -2618,6 +2620,7 @@ options:
 			ERROR("SYNTAX: %s [options] filesystem [directories or files to extract]\n", argv[0]);
 			ERROR("\t-v[ersion]\t\tprint version, licence and copyright information\n");
 			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, default \"squashfs-root\"\n");
+			ERROR("\t-n[o-progress]\t\tdon't display the progress bar\n");
 			ERROR("\t-p[rocessors] <number>\tuse <number> processors.  By default will use\n\t\t\t\tnumber of processors available\n");
 			ERROR("\t-i[nfo]\t\t\tprint files as they are unsquashed\n");
 			ERROR("\t-li[nfo]\t\tprint files as they are unsquashed with file\n\t\t\t\tattributes (like ls -l output)\n");
