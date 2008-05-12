@@ -1,7 +1,7 @@
 /*
  * Squashfs - a compressed read only filesystem for Linux
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008
  * Phillip Lougher <phillip@lougher.demon.co.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -543,27 +543,29 @@ struct squashfs_fragment_cache *get_cached_fragment(struct super_block *s,
 			}
 
 			msblk->unused_frag_blks --;
-			msblk->fragment[i].block = SQUASHFS_INVALID_BLK;
+			msblk->fragment[i].block = start_block;
 			msblk->fragment[i].locked = 1;
+			msblk->fragment[i].pending = 1;
+			msblk->fragment[i].error = 0;
 			mutex_unlock(&msblk->fragment_mutex);
 
 			msblk->fragment[i].length = squashfs_read_data(s,
 				msblk->fragment[i].data, start_block, length, NULL,
 				sblk->block_size);
 
+			mutex_lock(&msblk->fragment_mutex);
+
 			if (msblk->fragment[i].length == 0) {
 				ERROR("Unable to read fragment cache block [%llx]\n", start_block);
-				msblk->fragment[i].locked = 0;
-				msblk->unused_frag_blks ++;
-				smp_mb();
-				wake_up(&msblk->fragment_wait_queue);
-				goto out;
+				msblk->fragment[i].error = 1;
 			}
 
-			mutex_lock(&msblk->fragment_mutex);
-			msblk->fragment[i].block = start_block;
 			TRACE("New fragment %d, start block %lld, locked %d\n",
 				i, msblk->fragment[i].block, msblk->fragment[i].locked);
+		
+			msblk->fragment[i].pending = 0;
+			smp_mb();
+			wake_up_all(&msblk->fragment[i].wait_queue);
 			mutex_unlock(&msblk->fragment_mutex);
 			break;
 		}
@@ -571,7 +573,12 @@ struct squashfs_fragment_cache *get_cached_fragment(struct super_block *s,
 		if (msblk->fragment[i].locked == 0)
 			msblk->unused_frag_blks --;
 		msblk->fragment[i].locked++;
-		mutex_unlock(&msblk->fragment_mutex);
+
+		if (msblk->fragment[i].pending) {
+			mutex_unlock(&msblk->fragment_mutex);
+			wait_event(msblk->fragment[i].wait_queue, !msblk->fragment[i].pending);
+		} else
+			mutex_unlock(&msblk->fragment_mutex);
 		TRACE("Got fragment %d, start block %lld, locked %d\n", i,
 			msblk->fragment[i].block, msblk->fragment[i].locked);
 		break;
@@ -1240,6 +1247,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 
 	for (i = 0; i < SQUASHFS_CACHED_FRAGMENTS; i++) {
 		msblk->fragment[i].block = SQUASHFS_INVALID_BLK;
+		init_waitqueue_head(&msblk->fragment[i].wait_queue);
 	}
 
 	msblk->next_fragment = 0;
@@ -1682,10 +1690,12 @@ static int squashfs_readpage(struct file *file, struct page *page)
 					SQUASHFS_I(inode)-> u.s1.fragment_start_block,
 					SQUASHFS_I(inode)->u.s1.fragment_size);
 
-		if (fragment == NULL) {
+		if (fragment == NULL || fragment->error) {
 			ERROR("Unable to read page, block %llx, size %x\n",
 					SQUASHFS_I(inode)->u.s1.fragment_start_block,
 					(int) SQUASHFS_I(inode)->u.s1.fragment_size);
+			if (fragment)
+				release_cached_fragment(msblk, fragment);
 			goto error_out;
 		}
 		bytes = i_size_read(inode) & (sblk->block_size - 1);
@@ -2123,7 +2133,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.3 (2007/10/31) "
+	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/11) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
@@ -2186,6 +2196,6 @@ static void destroy_inodecache(void)
 
 module_init(init_squashfs_fs);
 module_exit(exit_squashfs_fs);
-MODULE_DESCRIPTION("squashfs 3.2-r2-CVS, a compressed read-only filesystem");
+MODULE_DESCRIPTION("squashfs 3.3-CVS, a compressed read-only filesystem");
 MODULE_AUTHOR("Phillip Lougher <phillip@lougher.demon.co.uk>");
 MODULE_LICENSE("GPL");
