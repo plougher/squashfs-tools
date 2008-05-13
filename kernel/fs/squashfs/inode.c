@@ -509,6 +509,7 @@ struct squashfs_fragment_cache *get_cached_fragment(struct super_block *s,
 	int i, n;
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
+	struct squashfs_fragment_cache *fragment;
 
 	while (1) {
 		mutex_lock(&msblk->fragment_mutex);
@@ -532,62 +533,64 @@ struct squashfs_fragment_cache *get_cached_fragment(struct super_block *s,
 
 			msblk->next_fragment = (msblk->next_fragment + 1) %
 				SQUASHFS_CACHED_FRAGMENTS;
-			
-			if (msblk->fragment[i].data == NULL) {
-				msblk->fragment[i].data = vmalloc(sblk->block_size);
-				if (msblk->fragment[i].data == NULL) {
+			fragment = &msblk->fragment[i];
+
+			if (fragment->data == NULL) {
+				fragment->data = vmalloc(sblk->block_size);
+				if (fragment->data == NULL) {
 					ERROR("Failed to allocate fragment cache block\n");
-					mutex_unlock(&msblk->fragment_mutex);
-					goto out;
+					fragment = NULL;
+					goto out_unlock;
 				}
 			}
 
 			msblk->unused_frag_blks --;
-			msblk->fragment[i].block = start_block;
-			msblk->fragment[i].locked = 1;
-			msblk->fragment[i].pending = 1;
-			msblk->fragment[i].error = 0;
+			fragment->block = start_block;
+			fragment->locked = 1;
+			fragment->pending = 1;
+			fragment->error = 0;
 			mutex_unlock(&msblk->fragment_mutex);
 
-			msblk->fragment[i].length = squashfs_read_data(s,
-				msblk->fragment[i].data, start_block, length, NULL,
-				sblk->block_size);
+			fragment->length = squashfs_read_data(s, fragment->data,
+				start_block, length, NULL, sblk->block_size);
 
 			mutex_lock(&msblk->fragment_mutex);
 
-			if (msblk->fragment[i].length == 0) {
+			if (fragment->length == 0) {
 				ERROR("Unable to read fragment cache block [%llx]\n", start_block);
-				msblk->fragment[i].error = 1;
+				fragment->error = 1;
 			}
 
 			TRACE("New fragment %d, start block %lld, locked %d\n",
-				i, msblk->fragment[i].block, msblk->fragment[i].locked);
+				i, fragment->block, fragment->locked);
 		
-			msblk->fragment[i].pending = 0;
+			fragment->pending = 0;
 			smp_mb();
-			wake_up_all(&msblk->fragment[i].wait_queue);
-			mutex_unlock(&msblk->fragment_mutex);
-			break;
+			wake_up_all(&fragment->wait_queue);
+			goto out_unlock;
 		}
 
-		if (msblk->fragment[i].locked == 0)
+		fragment = &msblk->fragment[i];
+		if (fragment->locked == 0)
 			msblk->unused_frag_blks --;
-		msblk->fragment[i].locked++;
+		fragment->locked++;
 
-		if (msblk->fragment[i].pending) {
+		if (fragment->pending) {
+			TRACE("Got pending fragment %d, start block %lld, locked %d\n", i,
+				fragment->block, fragment->locked);
 			mutex_unlock(&msblk->fragment_mutex);
-			wait_event(msblk->fragment[i].wait_queue, !msblk->fragment[i].pending);
-		} else
-			mutex_unlock(&msblk->fragment_mutex);
+			wait_event(fragment->wait_queue, !fragment->pending);
+			goto out;
+		}
 		TRACE("Got fragment %d, start block %lld, locked %d\n", i,
-			msblk->fragment[i].block, msblk->fragment[i].locked);
-		break;
+			fragment->block, fragment->locked);
+		goto out_unlock;
 	}
 
-	return &msblk->fragment[i];
-
+out_unlock:
+	mutex_unlock(&msblk->fragment_mutex);
 out:
-	return NULL;
+	return fragment;
 }
 
 
@@ -2133,7 +2136,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/11) "
+	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/12) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
