@@ -205,7 +205,7 @@ SQSH_EXTERN unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 
 		bh[0] = sb_getblk(s, cur_index);
 		if (bh[0] == NULL)
-			goto block_release;
+			goto read_failure;
 
 		for (b = 1; bytes < c_byte; b++) {
 			bh[b] = sb_getblk(s, ++cur_index);
@@ -229,8 +229,10 @@ SQSH_EXTERN unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		TRACE("Block @ 0x%llx, %scompressed size %d\n", index, compressed
 					? "" : "un", (unsigned int) c_byte);
 
-		if (c_byte > srclength || (index + c_byte) > sblk->bytes_used)
-			goto read_failure;
+		if (c_byte > srclength || (index + c_byte) > sblk->bytes_used) {
+			b = 1;
+			goto block_release;
+		}
 
 		for (b = 1; bytes < c_byte; b++) {
 			bh[b] = sb_getblk(s, ++cur_index);
