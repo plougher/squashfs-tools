@@ -193,7 +193,7 @@ SQSH_EXTERN unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		goto read_failure;
 
 	if (c_byte) {
-		bytes = msblk->devblksize - offset;
+		bytes = -offset;
 		compressed = SQUASHFS_COMPRESSED_BLOCK(c_byte);
 		c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
 
@@ -203,12 +203,8 @@ SQSH_EXTERN unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		if (c_byte > srclength || index < 0 || (index + c_byte) > sblk->bytes_used)
 			goto read_failure;
 
-		bh[0] = sb_getblk(s, cur_index);
-		if (bh[0] == NULL)
-			goto read_failure;
-
-		for (b = 1; bytes < c_byte; b++) {
-			bh[b] = sb_getblk(s, ++cur_index);
+		for (b = 0; bytes < (int) c_byte; b++, cur_index++) {
+			bh[b] = sb_getblk(s, cur_index);
 			if (bh[b] == NULL)
 				goto block_release;
 			bytes += msblk->devblksize;
@@ -221,6 +217,7 @@ SQSH_EXTERN unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		bh[0] = get_block_length(s, &cur_index, &offset, &c_byte);
 		if (bh[0] == NULL)
 			goto read_failure;
+		b = 1;
 
 		bytes = msblk->devblksize - offset;
 		compressed = SQUASHFS_COMPRESSED(c_byte);
@@ -229,12 +226,10 @@ SQSH_EXTERN unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		TRACE("Block @ 0x%llx, %scompressed size %d\n", index, compressed
 					? "" : "un", (unsigned int) c_byte);
 
-		if (c_byte > srclength || (index + c_byte) > sblk->bytes_used) {
-			b = 1;
+		if (c_byte > srclength || (index + c_byte) > sblk->bytes_used)
 			goto block_release;
-		}
 
-		for (b = 1; bytes < c_byte; b++) {
+		for (; bytes < c_byte; b++) {
 			bh[b] = sb_getblk(s, ++cur_index);
 			if (bh[b] == NULL)
 				goto block_release;
@@ -2138,7 +2133,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/12) "
+	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/21) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
