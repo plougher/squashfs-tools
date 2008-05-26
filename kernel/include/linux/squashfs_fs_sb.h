@@ -25,21 +25,27 @@
 
 #include <linux/squashfs_fs.h>
 
-struct squashfs_cache {
+struct squashfs_cache_entry {
 	long long	block;
 	int		length;
+	int		locked;
 	long long	next_index;
-	char		*data;
-};
-
-struct squashfs_fragment_cache {
-	long long	block;
-	int		length;
-	unsigned int	locked;
 	char		pending;
 	char		error;
 	wait_queue_head_t	wait_queue;
 	char		*data;
+};
+
+struct squashfs_cache {
+	char *name;
+	int entries;
+	int block_size;
+	int next_blk;
+	int unused_blks;
+	int use_vmalloc;
+	struct mutex mutex;
+	wait_queue_head_t wait_queue;
+	struct squashfs_cache_entry entry[0];
 };
 
 struct squashfs_sb_info {
@@ -48,9 +54,7 @@ struct squashfs_sb_info {
 	int			devblksize_log2;
 	int			swap;
 	struct squashfs_cache	*block_cache;
-	struct squashfs_fragment_cache	*fragment;
-	int			next_cache;
-	int			next_fragment;
+	struct squashfs_cache	*fragment_cache;
 	int			next_meta_index;
 	unsigned int		*uid;
 	unsigned int		*guid;
@@ -59,16 +63,10 @@ struct squashfs_sb_info {
 	char			*read_page;
 	struct mutex		read_data_mutex;
 	struct mutex		read_page_mutex;
-	struct mutex		block_cache_mutex;
-	struct mutex		fragment_mutex;
 	struct mutex		meta_index_mutex;
-	wait_queue_head_t	waitq;
-	wait_queue_head_t	fragment_wait_queue;
 	struct meta_index	*meta_index;
 	z_stream		stream;
 	long long		*inode_lookup_table;
-	int			unused_cache_blks;
-	int			unused_frag_blks;
 	int			(*read_inode)(struct inode *i,  squashfs_inode_t \
 				inode);
 	long long		(*read_blocklist)(struct inode *inode, int \
