@@ -55,8 +55,8 @@ extern int squashfs_get_cached_block(struct super_block *s, void *buffer,
 				int length, long long *next_block,
 				unsigned int *next_offset);
 extern void release_cached_fragment(struct squashfs_sb_info *msblk, struct
-					squashfs_fragment_cache *fragment);
-extern struct squashfs_fragment_cache *get_cached_fragment(struct super_block
+					squashfs_cache_entry *fragment);
+extern struct squashfs_cache_entry *get_cached_fragment(struct super_block
 					*s, long long start_block,
 					int length);
 extern struct inode *squashfs_iget(struct super_block *s, squashfs_inode_t inode, unsigned int inode_number);
