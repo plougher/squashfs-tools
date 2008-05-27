@@ -43,7 +43,7 @@ struct squashfs_cache {
 	int next_blk;
 	int unused_blks;
 	int use_vmalloc;
-	struct mutex mutex;
+	spinlock_t lock;
 	wait_queue_head_t wait_queue;
 	struct squashfs_cache_entry entry[0];
 };
