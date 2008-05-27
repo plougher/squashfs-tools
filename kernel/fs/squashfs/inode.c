@@ -2073,7 +2073,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "shit shit squashfs: version 3.3-CVS (2008/05/26) "
+	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/26) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
