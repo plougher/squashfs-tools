@@ -1718,7 +1718,7 @@ static int get_dir_index_using_offset(struct super_block *s,
 	TRACE("Entered get_dir_index_using_offset, i_count %d, f_pos %d\n",
 					i_count, (unsigned int) f_pos);
 
-	f_pos =- 3;
+	f_pos -= 3;
 	if (f_pos == 0)
 		goto finish;
 
@@ -2073,7 +2073,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/26) "
+	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/29) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
