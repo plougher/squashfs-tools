@@ -507,7 +507,7 @@ SQSH_EXTERN int squashfs_get_cached_block(struct super_block *s, void *buffer,
 		entry = squashfs_cache_get(s, msblk->block_cache, block, 0);
 		bytes = entry->length - offset;
 
-		if (bytes < 1) {
+		if (entry->error || bytes < 1) {
 			return_length = 0;
 			goto finish;
 		} else if (bytes >= length) {
@@ -1645,12 +1645,11 @@ static int squashfs_readpage(struct file *file, struct page *page)
 					SQUASHFS_I(inode)-> u.s1.fragment_start_block,
 					SQUASHFS_I(inode)->u.s1.fragment_size);
 
-		if (fragment == NULL || fragment->error) {
+		if (fragment->error) {
 			ERROR("Unable to read page, block %llx, size %x\n",
 					SQUASHFS_I(inode)->u.s1.fragment_start_block,
 					(int) SQUASHFS_I(inode)->u.s1.fragment_size);
-			if (fragment)
-				release_cached_fragment(msblk, fragment);
+			release_cached_fragment(msblk, fragment);
 			goto error_out;
 		}
 		bytes = i_size_read(inode) & (sblk->block_size - 1);
@@ -2079,7 +2078,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/30) "
+	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/31) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
