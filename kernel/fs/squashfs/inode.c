@@ -344,15 +344,18 @@ static struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 	int i, n;
 	struct squashfs_cache_entry *entry;
 
-	while (1) {
-		spin_lock(&cache->lock);
+	spin_lock(&cache->lock);
 
+	while (1) {
 		for (i = 0; i < cache->entries && cache->entry[i].block != block; i++);
 
 		if (i == cache->entries) {
 			if (cache->unused_blks == 0) {
+				cache->waiting ++;
 				spin_unlock(&cache->lock);
 				wait_event(cache->wait_queue, cache->unused_blks);
+				spin_lock(&cache->lock);
+				cache->waiting --;
 				continue;
 			}
 
@@ -370,6 +373,7 @@ static struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 			entry->block = block;
 			entry->locked = 1;
 			entry->pending = 1;
+			entry->waiting = 0;
 			entry->error = 0;
 			spin_unlock(&cache->lock);
 
@@ -384,7 +388,8 @@ static struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 			entry->pending = 0;
 			spin_unlock(&cache->lock);
 			smp_mb();
-			wake_up_all(&entry->wait_queue);
+			if (entry->waiting)
+				wake_up_all(&entry->wait_queue);
 			goto out;
 		}
 
@@ -394,6 +399,7 @@ static struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 		entry->locked++;
 
 		if (entry->pending) {
+			entry->waiting ++;
 			spin_unlock(&cache->lock);
 			wait_event(entry->wait_queue, !entry->pending);
 			goto out;
@@ -421,7 +427,8 @@ static void squashfs_cache_put(struct squashfs_cache *cache,
 		cache->unused_blks ++;
 		spin_unlock(&cache->lock);
 		smp_mb();
-		wake_up(&cache->wait_queue);
+		if (cache->waiting)
+			wake_up(&cache->wait_queue);
 	} else
 		spin_unlock(&cache->lock);
 }
@@ -463,6 +470,7 @@ static struct squashfs_cache *squashfs_cache_init(char *name, int entries,
 	cache->block_size = block_size;
 	cache->use_vmalloc = use_vmalloc;
 	cache->name = name;
+	cache->waiting = 0;
 	spin_lock_init(&cache->lock);
 	init_waitqueue_head(&cache->wait_queue);
 
@@ -2073,7 +2081,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/29) "
+	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/30) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
