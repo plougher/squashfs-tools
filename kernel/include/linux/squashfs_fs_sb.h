@@ -32,6 +32,7 @@ struct squashfs_cache_entry {
 	long long	next_index;
 	char		pending;
 	char		error;
+	int		waiting;
 	wait_queue_head_t	wait_queue;
 	char		*data;
 };
@@ -41,6 +42,7 @@ struct squashfs_cache {
 	int entries;
 	int block_size;
 	int next_blk;
+	int waiting;
 	int unused_blks;
 	int use_vmalloc;
 	spinlock_t lock;
