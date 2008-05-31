@@ -387,7 +387,6 @@ static struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 
 			entry->pending = 0;
 			spin_unlock(&cache->lock);
-			smp_mb();
 			if (entry->waiting)
 				wake_up_all(&entry->wait_queue);
 			goto out;
@@ -426,7 +425,6 @@ static void squashfs_cache_put(struct squashfs_cache *cache,
 	if (entry->locked == 0) {
 		cache->unused_blks ++;
 		spin_unlock(&cache->lock);
-		smp_mb();
 		if (cache->waiting)
 			wake_up(&cache->wait_queue);
 	} else
