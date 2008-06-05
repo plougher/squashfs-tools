@@ -1677,7 +1677,7 @@ struct dir *squashfs_opendir(unsigned int block_start, unsigned int offset, stru
 				memcpy(&sdire, directory_table + bytes, sizeof(sdire));
 				SQUASHFS_SWAP_DIR_ENTRY(dire, &sdire);
 			} else
-				memcpy(dire, directory_table + bytes, sizeof(dire));
+				memcpy(dire, directory_table + bytes, sizeof(*dire));
 			bytes += sizeof(*dire);
 
 			memcpy(dire->name, directory_table + bytes, dire->size + 1);
@@ -1765,7 +1765,7 @@ struct dir *squashfs_opendir_2(unsigned int block_start, unsigned int offset, st
 				memcpy(&sdire, directory_table + bytes, sizeof(sdire));
 				SQUASHFS_SWAP_DIR_ENTRY_2(dire, &sdire);
 			} else
-				memcpy(dire, directory_table + bytes, sizeof(dire));
+				memcpy(dire, directory_table + bytes, sizeof(*dire));
 			bytes += sizeof(*dire);
 
 			memcpy(dire->name, directory_table + bytes, dire->size + 1);
@@ -2517,7 +2517,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 1.6-CVS (2008/05/06)\n");\
+	printf("unsquashfs version 1.6-CVS (2008/06/04)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
