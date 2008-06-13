@@ -32,10 +32,14 @@
 #include <linux/vmalloc.h>
 #include <linux/spinlock.h>
 #include <linux/smp_lock.h>
+#include <linux/exportfs.h>
 
 #include "squashfs.h"
 
-static void vfs_read_inode(struct inode *i);
+static struct dentry *squashfs_fh_to_dentry(struct super_block *s,
+		struct fid *fid, int fh_len, int fh_type);
+static struct dentry *squashfs_fh_to_parent(struct super_block *s,
+		struct fid *fid, int fh_len, int fh_type);
 static struct dentry *squashfs_get_parent(struct dentry *child);
 static int squashfs_read_inode(struct inode *i, squashfs_inode_t inode);
 static int squashfs_statfs(struct dentry *, struct kstatfs *);
@@ -76,15 +80,9 @@ static struct super_operations squashfs_super_ops = {
 	.remount_fs = squashfs_remount
 };
 
-static struct super_operations squashfs_export_super_ops = {
-	.alloc_inode = squashfs_alloc_inode,
-	.destroy_inode = squashfs_destroy_inode,
-	.statfs = squashfs_statfs,
-	.put_super = squashfs_put_super,
-	.read_inode = vfs_read_inode
-};
-
 static struct export_operations squashfs_export_ops = {
+	.fh_to_dentry = squashfs_fh_to_dentry,
+	.fh_to_parent = squashfs_fh_to_parent,
 	.get_parent = squashfs_get_parent
 };
 
@@ -633,42 +631,72 @@ static squashfs_inode_t squashfs_inode_lookup(struct super_block *s, int ino)
 out:
 	return SQUASHFS_INVALID_BLK;
 }
-	
 
-static void vfs_read_inode(struct inode *i)
+
+
+static struct dentry *squashfs_export_iget(struct super_block *s,
+	unsigned int inode_number)
 {
-	struct squashfs_sb_info *msblk = i->i_sb->s_fs_info;
-	squashfs_inode_t inode = squashfs_inode_lookup(i->i_sb, i->i_ino);
+	squashfs_inode_t inode;
+	struct inode *i;
+	struct dentry *dentry;
 
-	TRACE("Entered vfs_read_inode\n");
+	TRACE("Entered squashfs_export_iget\n");
 
-	if(inode != SQUASHFS_INVALID_BLK)
-		(msblk->read_inode)(i, inode);
+	inode = squashfs_inode_lookup(s, inode_number);
+	if(inode == SQUASHFS_INVALID_BLK) {
+		dentry = ERR_PTR(-ENOENT);
+		goto failure;
+	}
+
+	i = squashfs_iget(s, inode, inode_number);
+	if(i == NULL) {
+		dentry = ERR_PTR(-EACCES);
+		goto failure;
+	}
+
+	dentry = d_alloc_anon(i);
+	if (dentry == NULL) {
+		iput(i);
+		dentry = ERR_PTR(-ENOMEM);
+	}
+
+failure:
+	return dentry;
+}
+
+
+static struct dentry *squashfs_fh_to_dentry(struct super_block *s,
+		struct fid *fid, int fh_len, int fh_type)
+{
+	if((fh_type != FILEID_INO32_GEN && fh_type != FILEID_INO32_GEN_PARENT) ||
+			fh_len < 2)
+		return NULL;
+
+	return squashfs_export_iget(s, fid->i32.ino);
+}
+
+
+static struct dentry *squashfs_fh_to_parent(struct super_block *s,
+		struct fid *fid, int fh_len, int fh_type)
+{
+	if(fh_type != FILEID_INO32_GEN_PARENT || fh_len < 4)
+		return NULL;
+
+	return squashfs_export_iget(s, fid->i32.parent_ino);
 }
 
 
 static struct dentry *squashfs_get_parent(struct dentry *child)
 {
 	struct inode *i = child->d_inode;
-	struct inode *parent = iget(i->i_sb, SQUASHFS_I(i)->u.s2.parent_inode);
-	struct dentry *rv;
 
 	TRACE("Entered squashfs_get_parent\n");
 
-	if(parent == NULL) {
-		rv = ERR_PTR(-EACCES);
-		goto out;
-	}
-
-	rv = d_alloc_anon(parent);
-	if(rv == NULL)
-		rv = ERR_PTR(-ENOMEM);
-
-out:
-	return rv;
+	return squashfs_export_iget(i->i_sb, SQUASHFS_I(i)->u.s2.parent_inode);
 }
 
-	
+
 SQSH_EXTERN struct inode *squashfs_iget(struct super_block *s,
 				squashfs_inode_t inode, unsigned int inode_number)
 {
@@ -1219,7 +1247,6 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	if (read_inode_lookup_table(s) == 0)
 		goto failed_mount;
 
-	s->s_op = &squashfs_export_super_ops;
 	s->s_export_op = &squashfs_export_ops;
 
 allocate_root:
@@ -2078,7 +2105,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/05/31) "
+	printk(KERN_INFO "squashfs: version 3.3-CVS (2008/06/12) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
@@ -2114,7 +2141,7 @@ static void squashfs_destroy_inode(struct inode *inode)
 }
 
 
-static void init_once(void * foo, struct kmem_cache * cachep, unsigned long flags)
+static void init_once(struct kmem_cache *cachep, void *foo)
 {
 	struct squashfs_inode_info *ei = foo;
 
@@ -2126,7 +2153,7 @@ static int __init init_inodecache(void)
 {
 	squashfs_inode_cachep = kmem_cache_create("squashfs_inode_cache",
 	    sizeof(struct squashfs_inode_info), 0,
-		SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT, init_once, NULL);
+		SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT, init_once);
 	if (squashfs_inode_cachep == NULL)
 		return -ENOMEM;
 	return 0;
