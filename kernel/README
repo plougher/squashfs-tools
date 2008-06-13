@@ -1,3 +1,7 @@
-These files should compile on linux 2.6.22.
-For earlier or later kernels (including linux 2.6.24) please use the non CVS
-released versions!
+Squashfs is now targetted at current mainline from git.kernel.org.
+These files should compile on current mainline and older kernel
+versions down to and including 2.6.25.
+
+For earlier kernel versions 2.6.22, 2.6.23 or 2.6.24 please apply the
+patches found in this directory.  For even earlier kernels please use the
+non CVS released versions!
