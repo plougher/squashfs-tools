@@ -355,7 +355,7 @@ failed:
 }
 
 
-int read_super(int fd, squashfs_super_block *sBlk, int *be, char *source)
+int read_super(int fd, squashfs_super_block *sBlk, char *source)
 {
 	read_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block), (char *) sBlk);
 
@@ -384,13 +384,7 @@ int read_super(int fd, squashfs_super_block *sBlk, int *be, char *source)
 		goto failed_mount;
 	}
 
-#if __BYTE_ORDER == __BIG_ENDIAN
-	*be = !swap;
-#else
-	*be = swap;
-#endif
-
-	printf("Found a valid %s%s SQUASHFS superblock on %s.\n", SQUASHFS_EXPORTABLE(sBlk->flags) ? "exportable " : "", *be ? "big endian" : "little endian", source);
+	printf("Found a valid %s SQUASHFS superblock on %s.\n", SQUASHFS_EXPORTABLE(sBlk->flags) ? "exportable " : "", source);
 	printf("\tInodes are %scompressed\n", SQUASHFS_UNCOMPRESSED_INODES(sBlk->flags) ? "un" : "");
 	printf("\tData is %scompressed\n", SQUASHFS_UNCOMPRESSED_DATA(sBlk->flags) ? "un" : "");
 	printf("\tFragments are %scompressed\n", SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk->flags) ? "un" : "");
