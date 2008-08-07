@@ -113,7 +113,7 @@ int columns;
 /* filesystem flags for building */
 int duplicate_checking = 1, noF = 0, no_fragments = 0, always_use_fragments = 0;
 int noI = 0, noD = 0;
-int swap, silent = TRUE;
+int swap = FALSE, silent = TRUE;
 long long global_uid = -1, global_gid = -1;
 int exportable = TRUE;
 int progress = TRUE;
@@ -368,7 +368,7 @@ int reader_buffer_size;
 int fragment_buffer_size;
 
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int type);
-extern int read_super(int fd, squashfs_super_block *sBlk, int *be, char *source);
+extern int read_super(int fd, squashfs_super_block *sBlk, char *source);
 extern long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk, char **cinode_table,
 		char **data_cache, char **cdirectory_table, char **directory_data_cache,
 		unsigned int *last_directory_block, unsigned int *inode_dir_offset, unsigned int *inode_dir_file_size,
@@ -3618,7 +3618,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.0-CVS (2008/08/03)\n");\
+	printf("mksquashfs version 4.0-CVS (2008/08/06)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3634,15 +3634,13 @@ int main(int argc, char *argv[])
 	int i;
 	squashfs_super_block sBlk;
 	char *b, *root_name = NULL;
-	int be, nopad = FALSE, keep_as_directory = FALSE, orig_be;
+	int nopad = FALSE, keep_as_directory = FALSE;
 	squashfs_inode inode;
 	int readb_mbytes = READER_BUFFER_DEFAULT, writeb_mbytes = WRITER_BUFFER_DEFAULT, fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
 	int s_minor;
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-	be = TRUE;
-#else
-	be = FALSE;
+	BAD_ERROR("Swapping is not supported!\n");
 #endif
 
 	pthread_mutex_init(&progress_mutex, NULL);
@@ -3811,11 +3809,6 @@ int main(int argc, char *argv[])
 			silent = FALSE;
 			progress = FALSE;
 		}
-		else if(strcmp(argv[i], "-be") == 0)
-			be = TRUE;
-
-		else if(strcmp(argv[i], "-le") == 0)
-			be = FALSE;
 
 		else if(strcmp(argv[i], "-e") == 0)
 			break;
@@ -3868,8 +3861,6 @@ printOptions:
 			ERROR("-all-root\t\tmake all files owned by root\n");
 			ERROR("-force-uid uid\t\tset all file uids to uid\n");
 			ERROR("-force-gid gid\t\tset all file gids to gid\n");
-			ERROR("-le\t\t\tcreate a little endian filesystem\n");
-			ERROR("-be\t\t\tcreate a big endian filesystem\n");
 			ERROR("-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
 			ERROR("-root-owned\t\talternative name for -all-root\n");
 			ERROR("-noInodeCompression\talternative name for -noI\n");
@@ -3980,13 +3971,12 @@ printOptions:
 			i++;
 
 	if(!delete) {
-	        if(read_super(fd, &sBlk, &orig_be, argv[source + 1]) == 0) {
+	        if(read_super(fd, &sBlk, argv[source + 1]) == 0) {
 			ERROR("Failed to read existing filesystem - will not overwrite - ABORTING!\n");
 			ERROR("To force Mksquashfs to write to this block device or file use -noappend\n");
 			EXIT_MKSQUASHFS();
 		}
 
-		be = orig_be;
 		block_log = slog(block_size = sBlk.block_size);
 		s_minor = sBlk.s_minor;
 		noI = SQUASHFS_UNCOMPRESSED_INODES(sBlk.flags);
@@ -4001,8 +3991,8 @@ printOptions:
 	initialise_threads();
 
 	if(delete) {
-		printf("Creating %s %d.%d filesystem on %s, block size %d.\n",
-				be ? "big endian" : "little endian", SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
+		printf("Creating little endian %d.%d filesystem on %s, block size %d.\n",
+				SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
 		bytes = sizeof(squashfs_super_block);
 	} else {
 		unsigned int last_directory_block, inode_dir_offset, inode_dir_file_size, root_inode_size,
@@ -4024,9 +4014,9 @@ printOptions:
 		if((fragments = sBlk.fragments))
 			fragment_table = (squashfs_fragment_entry *) realloc((char *) fragment_table, ((fragments + FRAG_SIZE - 1) & ~(FRAG_SIZE - 1)) * sizeof(squashfs_fragment_entry)); 
 
-		printf("Appending to existing %s %d.%d filesystem on %s, block size %d\n", be ? "big endian" :
-			"little endian", SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
-		printf("All -be, -le, -b, -noI, -noD, -noF, no-duplicates, no-fragments, -always-use-fragments and -exportable options ignored\n");
+		printf("Appending to existing little endian %d.%d filesystem on %s, block size %d\n", 
+			SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
+		printf("All -b, -noI, -noD, -noF, no-duplicates, no-fragments, -always-use-fragments and -exportable options ignored\n");
 		printf("\nIf appending is not wanted, please re-run with -noappend specified!\n\n");
 
 		compressed_data = (inode_dir_offset + inode_dir_file_size) & ~(SQUASHFS_METADATA_SIZE - 1);
@@ -4091,12 +4081,6 @@ printOptions:
 
 		inode_count = file_count + dir_count + sym_count + dev_count + fifo_count + sock_count;
 	}
-
-#if __BYTE_ORDER == __BIG_ENDIAN
-	swap = !be;
-#else
-	swap = be;
-#endif
 
 	if(path || stickypath) {
 		paths = init_subdir();
@@ -4182,8 +4166,8 @@ restore_filesystem:
 		* sizeof(unsigned short) + guid_count * sizeof(unsigned short) +
 		sizeof(squashfs_super_block);
 
-	printf("\n%s%s filesystem, data block size %d, %s data, %s metadata, %s fragments, duplicates are %sremoved\n",
-		exportable ? "Exportable " : "", be ?  "Big endian" : "Little endian", block_size,
+	printf("\n%sLittle endian filesystem, data block size %d, %s data, %s metadata, %s fragments, duplicates are %sremoved\n",
+		exportable ? "Exportable " : "", block_size,
 		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" : "compressed",
 		no_fragments ? "no" : noF ? "uncompressed" : "compressed", duplicate_checking ? "" : "not ");
 	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0, bytes / (1024.0 * 1024.0));
