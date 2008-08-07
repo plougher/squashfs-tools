@@ -66,7 +66,7 @@ typedef struct squashfs_fragment_entry_2 squashfs_fragment_entry_2;
 typedef union squashfs_inode_header_2 squashfs_inode_header_2;
 #endif
 
-typedef unsigned int squashfs_uid;
+typedef unsigned int squashfs_id;
 typedef long long squashfs_fragment_index;
 typedef squashfs_inode_t squashfs_inode;
 typedef squashfs_block_t squashfs_block;

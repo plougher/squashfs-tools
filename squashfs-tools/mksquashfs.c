@@ -58,7 +58,8 @@
 #include <sys/sysinfo.h>
 #endif
 
-#include <squashfs_fs.h>
+#include "squashfs_fs.h"
+#include "squashfs_swap.h"
 #include "mksquashfs.h"
 #include "global.h"
 #include "sort.h"
@@ -101,6 +102,9 @@
 					EXIT_MKSQUASHFS();\
 				} while(0)
 
+/* offset of data in compressed metadata blocks (allowing room for
+ * compressed size */
+#define BLOCK_OFFSET 2
 int delete = FALSE;
 int fd;
 int cur_uncompressed = 0, estimated_uncompressed = 0;
@@ -108,7 +112,7 @@ int columns;
 
 /* filesystem flags for building */
 int duplicate_checking = 1, noF = 0, no_fragments = 0, always_use_fragments = 0;
-int noI = 0, noD = 0, check_data = 0;
+int noI = 0, noD = 0;
 int swap, silent = TRUE;
 long long global_uid = -1, global_gid = -1;
 int exportable = TRUE;
@@ -120,9 +124,7 @@ int use_regex = FALSE;
 
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
-unsigned short uid_count = 0, guid_count = 0;
-squashfs_uid uids[SQUASHFS_UIDS], guids[SQUASHFS_GUIDS];
-int block_offset;
+unsigned int id_count = 0;
 int file_count = 0, sym_count = 0, dev_count = 0, dir_count = 0, fifo_count = 0, sock_count = 0;
 
 /* write position within data section */
@@ -272,7 +274,7 @@ char *sdata_cache, *sdirectory_data_cache;
 long long sbytes, stotal_bytes;
 
 unsigned int sinode_bytes, scache_bytes, sdirectory_bytes,
-	sdirectory_cache_bytes, suid_count, sguid_count,
+	sdirectory_cache_bytes,
 	stotal_inode_bytes, stotal_directory_bytes,
 	sinode_count = 0, sfile_count, ssym_count, sdev_count,
 	sdir_count, sfifo_count, ssock_count, sdup_files;
@@ -326,14 +328,22 @@ struct queue {
 	void			**data;
 };
 
-/* describes the list of blocks in a file which is a possible
-   duplicate.  For each block, it indicates whether the block is
-   in memory or on disk */
-struct buffer_list {
-	long long start;
-	int size;
-	struct file_buffer *read_buffer;
+
+/* in memory uid tables */
+#define ID_ENTRIES 256
+#define ID_HASH(id) (id & (ID_ENTRIES - 1))
+#define ISA_UID 1
+#define ISA_GID 2
+struct id {
+	unsigned int id;
+	int	index;
+	char	flags;
+	struct id *next;
 };
+struct id *id_hash_table[ID_ENTRIES];
+struct id *id_table[SQUASHFS_IDS], *sid_table[SQUASHFS_IDS];
+unsigned int uid_count = 0, guid_count = 0;
+unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 
 struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
 struct queue *to_reader, *from_reader, *to_writer, *from_writer, *from_deflate, *to_frag;
@@ -363,21 +373,21 @@ extern long long read_filesystem(char *root_name, int fd, squashfs_super_block *
 		char **data_cache, char **cdirectory_table, char **directory_data_cache,
 		unsigned int *last_directory_block, unsigned int *inode_dir_offset, unsigned int *inode_dir_file_size,
 		unsigned int *root_inode_size, unsigned int *inode_dir_start_block, int *file_count, int *sym_count,
-		int *dev_count, int *dir_count, int *fifo_count, int *sock_count, squashfs_uid *uids,
-		unsigned short *uid_count, squashfs_uid *guids, unsigned short *guid_count,
+		int *dev_count, int *dir_count, int *fifo_count, int *sock_count,
 		long long *uncompressed_file, unsigned int *uncompressed_inode, unsigned int *uncompressed_directory,
 		unsigned int *inode_dir_inode_number, unsigned int *inode_dir_parent_inode,
 		void (push_directory_entry)(char *, squashfs_inode, int, int),
 		squashfs_fragment_entry **fragment_table, squashfs_inode **inode_lookup_table);
 extern int read_sort_file(char *filename, int source, char *source_path[]);
 extern void sort_files_and_write(struct dir_info *dir);
-struct file_info *duplicate(long long file_size, long long bytes, unsigned int **block_list, long long *start, struct fragment **fragment, struct file_buffer *file_buffer, struct buffer_list *buffer_list, int blocks, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag);
+struct file_info *duplicate(long long file_size, long long bytes, unsigned int **block_list, long long *start, struct fragment **fragment, struct file_buffer *file_buffer, int blocks, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag);
 struct dir_info *dir_scan1(char *, struct pathnames *, int (_readdir)(char *, char *, struct dir_info *));
 void dir_scan2(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes, unsigned int *block_list, long long start, struct fragment *fragment, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag);
 extern void generate_file_priorities(struct dir_info *dir, int priority, struct stat *buf);
 extern struct priority_entry *priority_list[65536];
 void progress_bar(long long current, long long max, int columns);
+long long generic_write_table(int length, char *buffer, int uncompressed);
 
 
 struct queue *queue_init(int size)
@@ -714,8 +724,6 @@ void restorefs()
 	memcpy(directory_data_cache, sdirectory_data_cache, directory_cache_bytes = sdirectory_cache_bytes);
 	inode_bytes = sinode_bytes;
 	directory_bytes = sdirectory_bytes;
-	uid_count = suid_count;
-	guid_count = sguid_count;
 	total_bytes = stotal_bytes;
 	total_inode_bytes = stotal_inode_bytes;
 	total_directory_bytes = stotal_directory_bytes;
@@ -729,6 +737,7 @@ void restorefs()
 	dup_files = sdup_files;
 	fragments = sfragments;
 	fragment_size = 0;
+	id_count = sid_count;
 	longjmp(env, 1);
 }
 
@@ -875,17 +884,15 @@ squashfs_base_inode_header *get_inode(int req_size)
 			inode_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 
-		c_byte = mangle(inode_table + inode_bytes + block_offset, data_cache,
+		c_byte = mangle(inode_table + inode_bytes + BLOCK_OFFSET, data_cache,
 								SQUASHFS_METADATA_SIZE, SQUASHFS_METADATA_SIZE, noI, 0);
 		TRACE("Inode block @ 0x%x, size %d\n", inode_bytes, c_byte);
 		if(!swap)
 			memcpy(inode_table + inode_bytes, &c_byte, sizeof(unsigned short));
 		else
 			SQUASHFS_SWAP_SHORTS((&c_byte), (inode_table + inode_bytes), 1);
-		if(check_data)
-			*((unsigned char *)(inode_table + inode_bytes + block_offset - 1)) = SQUASHFS_MARKER_BYTE;
-		inode_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + block_offset;
-		total_inode_bytes += SQUASHFS_METADATA_SIZE + block_offset;
+		inode_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
+		total_inode_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
 		memcpy(data_cache, data_cache + SQUASHFS_METADATA_SIZE, cache_bytes - SQUASHFS_METADATA_SIZE);
 		cache_bytes -= SQUASHFS_METADATA_SIZE;
 	}
@@ -956,16 +963,14 @@ long long write_inodes()
 			inode_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 		avail_bytes = cache_bytes > SQUASHFS_METADATA_SIZE ? SQUASHFS_METADATA_SIZE : cache_bytes;
-		c_byte = mangle(inode_table + inode_bytes + block_offset, datap, avail_bytes, SQUASHFS_METADATA_SIZE, noI, 0);
+		c_byte = mangle(inode_table + inode_bytes + BLOCK_OFFSET, datap, avail_bytes, SQUASHFS_METADATA_SIZE, noI, 0);
 		TRACE("Inode block @ 0x%x, size %d\n", inode_bytes, c_byte);
 		if(!swap)
 			memcpy(inode_table + inode_bytes, &c_byte, sizeof(unsigned short));
 		else
 			SQUASHFS_SWAP_SHORTS((&c_byte), (inode_table + inode_bytes), 1); 
-		if(check_data)
-			*((unsigned char *)(inode_table + inode_bytes + block_offset - 1)) = SQUASHFS_MARKER_BYTE;
-		inode_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + block_offset;
-		total_inode_bytes += avail_bytes + block_offset;
+		inode_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
+		total_inode_bytes += avail_bytes + BLOCK_OFFSET;
 		datap += avail_bytes;
 		cache_bytes -= avail_bytes;
 	}
@@ -993,16 +998,14 @@ long long write_directories()
 			directory_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 		avail_bytes = directory_cache_bytes > SQUASHFS_METADATA_SIZE ? SQUASHFS_METADATA_SIZE : directory_cache_bytes;
-		c_byte = mangle(directory_table + directory_bytes + block_offset, directoryp, avail_bytes, SQUASHFS_METADATA_SIZE, noI, 0);
+		c_byte = mangle(directory_table + directory_bytes + BLOCK_OFFSET, directoryp, avail_bytes, SQUASHFS_METADATA_SIZE, noI, 0);
 		TRACE("Directory block @ 0x%x, size %d\n", directory_bytes, c_byte);
 		if(!swap)
 			memcpy(directory_table + directory_bytes, &c_byte, sizeof(unsigned short));
 		else
 			SQUASHFS_SWAP_SHORTS((&c_byte), (directory_table + directory_bytes), 1);
-		if(check_data)
-			*((unsigned char *)(directory_table + directory_bytes + block_offset - 1)) = SQUASHFS_MARKER_BYTE;
-		directory_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + block_offset;
-		total_directory_bytes += avail_bytes + block_offset;
+		directory_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
+		total_directory_bytes += avail_bytes + BLOCK_OFFSET;
 		directoryp += avail_bytes;
 		directory_cache_bytes -= avail_bytes;
 	}
@@ -1013,44 +1016,94 @@ long long write_directories()
 }
 
 
-unsigned int get_uid(squashfs_uid uid)
+long long write_id_table()
 {
+	unsigned int id_bytes = SQUASHFS_ID_BYTES(id_count);
+	char buffer[id_bytes];
+	unsigned int *p = (unsigned int *) buffer;
 	int i;
 
-	for(i = 0; (i < uid_count) && uids[i] != uid; i++);
-	if(i == uid_count) {
-		if(uid_count == SQUASHFS_UIDS) {
-			ERROR("Out of uids! - using uid 0 - probably not what's wanted!\n");
-			i = 0;
-		} else
-			uids[uid_count++] = uid;
+	TRACE("write_id_table: ids %d, id_bytes %d\n", id_count, id_bytes);
+	for(i = 0; i < id_count; i++, p++) {
+		TRACE("write_id_table: id index %d, id %d", i, id_table[i]->id);
+		if(!swap)
+			memcpy(p, &id_table[i]->id, sizeof(unsigned int));
+		else
+			SQUASHFS_SWAP_INTS((&id_table[i]->id), p, 1);
 	}
 
-	return i;
+	return generic_write_table(id_bytes, buffer, 1);
 }
 
 
-unsigned int get_guid(squashfs_uid uid, squashfs_uid guid)
+struct id *get_id(unsigned int id)
 {
-	int i;
+	int hash = ID_HASH(id);
+	struct id *entry = id_hash_table[hash];
 
-	if(uid == guid)
-		return SQUASHFS_GUIDS;
+	for(; entry; entry = entry->next)
+		if(entry->id == id)
+			break;
 
-	for(i = 0; (i < guid_count) && guids[i] != guid; i++);
-	if(i == guid_count) {
-		if(guid_count == SQUASHFS_GUIDS) {
-			ERROR("Out of gids! - using gid 0 - probably not what's wanted!\n");
-			return SQUASHFS_GUIDS;
-		} else
-			guids[guid_count++] = guid;
-	}
-
-	return i;
+	return entry;
 }
 
 
-int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long long byte_size, long long start_block, unsigned int offset, unsigned int *block_list, struct fragment *fragment, struct directory *dir_in)
+struct id *create_id(unsigned int id)
+{
+	int hash = ID_HASH(id);
+	struct id *entry = malloc(sizeof(struct id));
+	if(entry == NULL)
+		BAD_ERROR("Out of memory in create_id\n");
+	entry->id = id;
+	entry->index = id_count ++;
+	entry->flags = 0;
+	entry->next = id_hash_table[hash];
+	id_hash_table[hash] = entry;
+	id_table[entry->index] = entry;
+	return entry;
+}
+
+
+unsigned int get_uid(unsigned int uid)
+{
+	struct id *entry = get_id(uid);
+
+	if(entry == NULL) {
+		if(id_count == SQUASHFS_IDS)
+			BAD_ERROR("Out of uids!\n");
+		entry = create_id(uid);
+	}
+
+	if((entry->flags & ISA_UID) == 0) {
+		entry->flags |= ISA_UID;
+		uid_count ++;
+	}
+
+	return entry->index;
+}
+
+
+unsigned int get_guid(unsigned int guid)
+{
+	struct id *entry = get_id(guid);
+
+	if(entry == NULL) {
+		if(id_count == SQUASHFS_IDS)
+			BAD_ERROR("Out of gids!\n");
+		entry = create_id(guid);
+	}
+
+	if((entry->flags & ISA_GID) == 0) {
+		entry->flags |= ISA_GID;
+		guid_count ++;
+	}
+
+	return entry->index;
+}
+
+
+int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long long byte_size, long long start_block, unsigned int offset, unsigned int *block_list, struct fragment *fragment, struct directory *dir_in, unsigned int sparse)
 {
 	struct stat *buf = &dir_ent->inode->buf;
 	squashfs_inode_header inode_header;
@@ -1060,9 +1113,9 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 	int inode_number = (type == SQUASHFS_LDIR_TYPE || type == SQUASHFS_DIR_TYPE) ? dir_ent->inode->inode_number : dir_ent->inode->inode_number + dir_inode_no;
 
 	base->mode = SQUASHFS_MODE(buf->st_mode);
-	base->uid = get_uid((squashfs_uid) global_uid == -1 ? buf->st_uid : global_uid);
+	base->uid = get_uid((unsigned int) global_uid == -1 ? buf->st_uid : global_uid);
 	base->inode_type = type;
-	base->guid = get_guid((squashfs_uid) global_uid == -1 ? buf->st_uid : global_uid, (squashfs_uid) global_gid == -1 ? buf->st_gid : global_gid);
+	base->guid = get_guid((unsigned int) global_gid == -1 ? buf->st_gid : global_gid);
 	base->mtime = buf->st_mtime;
 	base->inode_number = inode_number;
 
@@ -1099,6 +1152,7 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 		reg->start_block = start_block;
 		reg->fragment = fragment->index;
 		reg->offset = fragment->offset;
+		reg->sparse = sparse;
 		if(!swap) {
 			memcpy(inodep, reg, sizeof(*reg));
 			memcpy(inodep->block_list, block_list, offset * sizeof(unsigned int));
@@ -1363,25 +1417,23 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info, struct director
 			directory_size += SQUASHFS_METADATA_SIZE << 1;
 		}
 
-		c_byte = mangle(directory_table + directory_bytes + block_offset, directory_data_cache,
+		c_byte = mangle(directory_table + directory_bytes + BLOCK_OFFSET, directory_data_cache,
 				SQUASHFS_METADATA_SIZE, SQUASHFS_METADATA_SIZE, noI, 0);
 		TRACE("Directory block @ 0x%x, size %d\n", directory_bytes, c_byte);
 		if(!swap)
 			memcpy(directory_table + directory_bytes, &c_byte, sizeof(unsigned short));
 		else
 			SQUASHFS_SWAP_SHORTS((&c_byte), (directory_table + directory_bytes), 1);
-		if(check_data)
-			*((unsigned char *)(directory_table + directory_bytes + block_offset - 1)) = SQUASHFS_MARKER_BYTE;
-		directory_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + block_offset;
-		total_directory_bytes += SQUASHFS_METADATA_SIZE + block_offset;
+		directory_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
+		total_directory_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
 		memcpy(directory_data_cache, directory_data_cache + SQUASHFS_METADATA_SIZE, directory_cache_bytes - SQUASHFS_METADATA_SIZE);
 		directory_cache_bytes -= SQUASHFS_METADATA_SIZE;
 	}
 
 	if(dir_info->dir_is_ldir)
-		create_inode(inode, dir_info->dir_ent, SQUASHFS_LDIR_TYPE, dir_size + 3, directory_block, directory_offset, NULL, NULL, dir);
+		create_inode(inode, dir_info->dir_ent, SQUASHFS_LDIR_TYPE, dir_size + 3, directory_block, directory_offset, NULL, NULL, dir, 0);
 	else
-		create_inode(inode, dir_info->dir_ent, SQUASHFS_DIR_TYPE, dir_size + 3, directory_block, directory_offset, NULL, NULL, NULL);
+		create_inode(inode, dir_info->dir_ent, SQUASHFS_DIR_TYPE, dir_size + 3, directory_block, directory_offset, NULL, NULL, NULL, 0);
 
 #ifdef SQUASHFS_TRACE
 	if(!swap) {
@@ -1431,19 +1483,10 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 		return NULL;
 
 	buffer = cache_lookup(fragment_buffer, fragment->index);
-	if(buffer) {
-		//printf("get_fragment, fragment->index %d, buffer->index %lld, fragments %d\n", fragment->index, buffer->index, fragments);
+	if(buffer)
 		return buffer;
-	}
 
 	compressed_buffer = cache_lookup(writer_buffer, fragment->index + FRAG_INDEX);
-
-#if 0
-	if(compressed_buffer)
-		//printf("get_fragment, fragment->index %d, compressed_buffer->index %lld\n", fragment->index, compressed_buffer->index - FRAG_INDEX);
-	else
-		//printf("get_fragment, fragment->index %d, not in writer_buffer\n", fragment->index);
-#endif
 
 	buffer = cache_get(fragment_buffer, fragment->index, 1);
 
@@ -1501,7 +1544,6 @@ int lock_fragments()
 {
 	int count;
 	pthread_mutex_lock(&fragment_mutex);
-	//printf("lock_fragments: fragments_outstanding %d\n", fragments_outstanding);
 	fragments_locked = TRUE;
 	count = fragments_outstanding;
 	pthread_mutex_unlock(&fragment_mutex);
@@ -1613,15 +1655,13 @@ long long generic_write_table(int length, char *buffer, int uncompressed)
 
 	for(i = 0; i < meta_blocks; i++) {
 		int avail_bytes = length > SQUASHFS_METADATA_SIZE ? SQUASHFS_METADATA_SIZE : length;
-		c_byte = mangle(cbuffer + block_offset, buffer + i * SQUASHFS_METADATA_SIZE , avail_bytes, SQUASHFS_METADATA_SIZE, uncompressed, 0);
+		c_byte = mangle(cbuffer + BLOCK_OFFSET, buffer + i * SQUASHFS_METADATA_SIZE , avail_bytes, SQUASHFS_METADATA_SIZE, uncompressed, 0);
 		if(!swap)
 			memcpy(cbuffer, &c_byte, sizeof(unsigned short));
 		else
 			SQUASHFS_SWAP_SHORTS((&c_byte), cbuffer, 1);
-		if(check_data)
-			*((unsigned char *)(cbuffer + block_offset - 1)) = SQUASHFS_MARKER_BYTE;
 		list[i] = bytes;
-		compressed_size = SQUASHFS_COMPRESSED_SIZE(c_byte) + block_offset;
+		compressed_size = SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
 		TRACE("block %d @ 0x%llx, compressed size %d\n", i, bytes, compressed_size);
 		write_bytes(fd, bytes, compressed_size, cbuffer);
 		bytes += compressed_size;
@@ -1673,6 +1713,14 @@ char *read_from_disk(long long start, unsigned int avail_bytes)
 }
 
 
+char read_from_file_buffer2[SQUASHFS_FILE_MAX_SIZE];
+char *read_from_disk2(long long start, unsigned int avail_bytes)
+{
+	read_bytes(fd, start, avail_bytes, read_from_file_buffer2);
+	return read_from_file_buffer2;
+}
+
+
 /*
  * Compute 16 bit BSD checksum over the data
  */
@@ -1708,24 +1756,6 @@ unsigned short get_checksum_disk(long long start, long long l, unsigned int *blo
 			chksum = get_checksum(read_from_disk(start, bytes), bytes, chksum);
 		l -= bytes;
 		start += bytes;
-	}
-
-	return chksum;
-}
-
-
-unsigned short get_checksum_buffer(struct buffer_list *buffer_list, unsigned int blocks)
-{
-	unsigned short chksum = 0;
-	int block;
-
-	for(block = 0; block < blocks; block ++) {
-		struct buffer_list *b = &buffer_list[block];
-
-		if(b->read_buffer)
-			chksum = get_checksum(b->read_buffer->data, b->read_buffer->size, chksum);
-		else if(b->size != 0)
-			chksum = get_checksum(read_from_disk(b->start, b->size), b->size, chksum);
 	}
 
 	return chksum;
@@ -1797,7 +1827,7 @@ int pre_duplicate_frag(long long file_size, unsigned short checksum)
 	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
 
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
-		if(dupl_ptr->file_size == file_size) {
+		if(file_size == dupl_ptr->file_size && file_size == dupl_ptr->fragment->size) {
 			if(dupl_ptr->checksum_flag == FALSE) {
 				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
 				dupl_ptr->checksum = get_checksum_disk(dupl_ptr->start, dupl_ptr->bytes, dupl_ptr->block_list);
@@ -1837,22 +1867,21 @@ struct file_info *add_non_dup(long long file_size, long long bytes, unsigned int
 }
 
 
-char buffer2[SQUASHFS_FILE_MAX_SIZE];
-struct file_info *duplicate(long long file_size, long long bytes, unsigned int **block_list, long long *start, struct fragment **fragment, struct file_buffer *file_buffer, struct buffer_list *buffer_list, int blocks, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag)
+struct file_info *duplicate(long long file_size, long long bytes, unsigned int **block_list, long long *start, struct fragment **fragment, struct file_buffer *file_buffer, int blocks, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag)
 {
 	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
 	int frag_bytes = file_buffer ? file_buffer->size : 0;
 
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
 		if(file_size == dupl_ptr->file_size && bytes == dupl_ptr->bytes && frag_bytes == dupl_ptr->fragment->size) {
-			long long dup_start = dupl_ptr->start;
+			long long target_start, dup_start = dupl_ptr->start;
 			int block;
 
 			if(memcmp(*block_list, dupl_ptr->block_list, blocks * sizeof(unsigned int)) != 0)
 				continue;
 
 			if(checksum_flag == FALSE) {
-				checksum = get_checksum_buffer(buffer_list, blocks);
+				checksum = get_checksum_disk(*start, bytes, *block_list);
 				fragment_checksum = get_checksum_mem_buffer(file_buffer);
 				checksum_flag = TRUE;
 			}
@@ -1868,32 +1897,35 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 			if(checksum != dupl_ptr->checksum || fragment_checksum != dupl_ptr->fragment_checksum)
 				continue;
 
+			target_start = *start;
 			for(block = 0; block < blocks; block ++) {
-				struct buffer_list *b = &buffer_list[block];
-				struct file_buffer *write_buffer;
-				char *buffer, *data;
+				int size = SQUASHFS_COMPRESSED_SIZE_BLOCK((*block_list)[block]);
+				struct file_buffer *target_buffer = NULL;
+				struct file_buffer *dup_buffer = NULL;
+				char *target_data, *dup_data;
 				int res;
 
-				if(b->read_buffer)
-					buffer = b->read_buffer->data;
-				else if(b->size)
-					buffer = read_from_disk(b->start, b->size);
-				else
+				if(size == 0)
 					continue;
+				target_buffer = cache_lookup(writer_buffer, target_start);
+				if(target_buffer)
+					target_data = target_buffer->data;
+				else
+					target_data = read_from_disk(target_start, size);
 
-				write_buffer = cache_lookup(writer_buffer, dup_start);
-				if(write_buffer)
-					data = write_buffer->data;
-				else {
-					read_bytes(fd, dup_start, b->size, buffer2);
-					data = buffer2;
-				}
-				res = memcmp(buffer, data, b->size);
-				if(write_buffer)
-					cache_block_put(write_buffer);
+				dup_buffer = cache_lookup(writer_buffer, dup_start);
+				if(dup_buffer)
+					dup_data = dup_buffer->data;
+				else
+					dup_data = read_from_disk2(dup_start, size);
+
+				res = memcmp(target_data, dup_data, size);
+				cache_block_put(target_buffer);
+				cache_block_put(dup_buffer);
 				if(res != 0)
 					break;
-				dup_start += b->size;
+				target_start += size;
+				dup_start += size;
 			}
 			if(block == blocks) {
 				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
@@ -1957,6 +1989,7 @@ again:
 
 		file_buffer->block = count;
 		file_buffer->error = FALSE;
+		file_buffer->fragment = (file_buffer->block == frag_block);
 
 		bytes += byte;
 		count ++;
@@ -1972,12 +2005,7 @@ again:
 			goto restat;
 	}
 
-	file_buffer->fragment = (file_buffer->block == frag_block);
-
-	if(file_buffer->fragment)
-		queue_put(from_deflate, file_buffer);
-	else
-		queue_put(from_reader, file_buffer);
+	queue_put(from_reader, file_buffer);
 
 	close(file);
 
@@ -2115,20 +2143,26 @@ void *deflator(void *arg)
 
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(from_reader);
-		struct file_buffer *write_buffer = cache_get(writer_buffer, 0, 0);
+		struct file_buffer *write_buffer;
 
-		if(sparse_files && all_zero(file_buffer)) 
-			write_buffer->c_byte = 0;
-		else
+		if(sparse_files && all_zero(file_buffer)) { 
+			file_buffer->c_byte = 0;
+			queue_put(from_deflate, file_buffer);
+		} else if(file_buffer->fragment) {
+			file_buffer->c_byte = file_buffer->size;
+			queue_put(from_deflate, file_buffer);
+		} else {
+			write_buffer = cache_get(writer_buffer, 0, 0);
 			write_buffer->c_byte = mangle2(&stream, write_buffer->data, file_buffer->data, file_buffer->size, block_size, noD, 1);
-		write_buffer->sequence = file_buffer->sequence;
-		write_buffer->file_size = file_buffer->file_size;
-		write_buffer->block = file_buffer->block;
-		write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->c_byte);
-		write_buffer->fragment = FALSE;
-		write_buffer->error = FALSE;
-		cache_block_put(file_buffer);
-		queue_put(from_deflate, write_buffer);
+			write_buffer->sequence = file_buffer->sequence;
+			write_buffer->file_size = file_buffer->file_size;
+			write_buffer->block = file_buffer->block;
+			write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->c_byte);
+			write_buffer->fragment = FALSE;
+			write_buffer->error = FALSE;
+			cache_block_put(file_buffer);
+			queue_put(from_deflate, write_buffer);
+		}
 	}
 }
 
@@ -2302,9 +2336,9 @@ void write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent, int *dupli
 	file_count ++;
 	*duplicate_file = FALSE;
 	if(dir_ent->inode->nlink == 1)
-		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, 0, 0, 0, NULL, &empty_fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, 0, 0, 0, NULL, &empty_fragment, NULL, 0);
 	else
-		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, 0, 0, 0, NULL, &empty_fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, 0, 0, 0, NULL, &empty_fragment, NULL, 0);
 }
 
 
@@ -2315,7 +2349,7 @@ void write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent, int siz
 	unsigned int *block_listp = NULL;
 	long long start = 0;
 
-	dupl_ptr = duplicate(size, 0, &block_listp, &start, &fragment, file_buffer, NULL, 0, 0, checksum, TRUE);
+	dupl_ptr = duplicate(size, 0, &block_listp, &start, &fragment, file_buffer, 0, 0, checksum, TRUE);
 
 	if(dupl_ptr) {
 		*duplicate_file = FALSE;
@@ -2332,9 +2366,9 @@ void write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent, int siz
 	inc_progress_bar();
 
 	if(dir_ent->inode->nlink == 1)
-		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL, 0);
 	else
-		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, size, 0, 0, NULL, fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, size, 0, 0, NULL, fragment, NULL, 0);
 }
 
 
@@ -2365,32 +2399,25 @@ void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size, s
 	inc_progress_bar();
 
 	if(dir_ent->inode->nlink == 1)
-		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, size, 0, 0, NULL, fragment, NULL, 0);
 	else
-		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, size, 0, 0, NULL, fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, size, 0, 0, NULL, fragment, NULL, 0);
 
 	return;
 }
 
 
-int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size, struct file_buffer *reader_buffer, int *duplicate_file)
+int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size, struct file_buffer *read_buffer, int *duplicate_file)
 {
-	int block;
-	unsigned int frag_bytes;
 	long long file_bytes, start;
 	struct fragment *fragment;
-	int blocks = (read_size + block_size - 1) >> block_log;
 	unsigned int *block_list;
-	struct file_buffer *read_buffer;
-	int status;
+	int block, status;
+	int blocks = (read_size + block_size - 1) >> block_log;
+	long long sparse = 0;
+	struct file_buffer *fragment_buffer = NULL;
 
 	*duplicate_file = FALSE;
-
-	if(!no_fragments && always_use_fragments) {
-		blocks = read_size >> block_log;
-		frag_bytes = read_size % block_size;
-	} else
-		frag_bytes = 0;
 
 	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL)
 		BAD_ERROR("Out of memory allocating block_list\n");
@@ -2399,49 +2426,54 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 
 	file_bytes = 0;
 	start = bytes;
-	for(block = 0; block < blocks; block ++) {
-		if(reader_buffer) {
-			read_buffer = reader_buffer;
-			reader_buffer = NULL;
+	for(block = 0; block < blocks;) {
+		if(read_buffer->fragment && read_buffer->c_byte) {
+			fragment_buffer = read_buffer;
+			blocks = read_size >> block_log;
 		} else {
+			block_list[block] = read_buffer->c_byte;
+			if(read_buffer->c_byte) {
+				read_buffer->block = bytes;
+				bytes += read_buffer->size;
+				cache_rehash(read_buffer, read_buffer->block);
+				file_bytes += read_buffer->size;
+				queue_put(to_writer, read_buffer);
+			} else {
+				sparse += read_buffer->size;
+				cache_block_put(read_buffer);
+			}
+		}
+		inc_progress_bar();
+
+		if(++block < blocks) {
 			read_buffer = get_file_buffer(from_deflate);
 			if(read_buffer->error)
 				goto read_err;
 		}
-
-		block_list[block] = read_buffer->c_byte;
-		if(read_buffer->c_byte) {
-			read_buffer->block = bytes;
-			bytes += read_buffer->size;
-			cache_rehash(read_buffer, read_buffer->block);
-			file_bytes += read_buffer->size;
-			queue_put(to_writer, read_buffer);
-		} else
-			cache_block_put(read_buffer);
-		inc_progress_bar();
 	}
 
-	if(frag_bytes != 0) {
-		read_buffer = get_file_buffer(from_deflate);
-		if(read_buffer->error)
-			goto read_err;
-		inc_progress_bar();
-	} else
-		read_buffer = NULL;
-
 	unlock_fragments();
-	fragment = get_and_fill_fragment(read_buffer);
-	cache_block_put(read_buffer);
+	fragment = get_and_fill_fragment(fragment_buffer);
+	cache_block_put(fragment_buffer);
 
 	if(duplicate_checking)
 		add_non_dup(read_size, file_bytes, block_list, start, fragment, 0, 0, FALSE);
 	file_count ++;
 	total_bytes += read_size;
 
-	if(dir_ent->inode->nlink == 1 && read_size < ((long long) (1<<30) - 1))
-		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_list, fragment, NULL);
+	/* sparse count is needed to ensure squashfs correctly reports a
+ 	 * a smaller block count on stat calls to sparse files.  This is
+ 	 * to ensure intelligent applications like cp correctly handle the
+ 	 * file as a sparse file.  If the file in the original filesystem isn't
+ 	 * stored as a sparse file then still store it sparsely in squashfs, but
+ 	 * report it as non-sparse on stat calls to preserve semantics */
+	if(sparse && (dir_ent->inode->buf.st_blocks << 9) >= read_size)
+		sparse = 0;
+
+	if(dir_ent->inode->nlink == 1 && read_size < (1LL << 32) && start < (1LL << 32) && sparse == 0)
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_list, fragment, NULL, 0);
 	else
-		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_list, fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_list, fragment, NULL, sparse);
 
 	if(duplicate_checking == FALSE)
 		free(block_list);
@@ -2451,13 +2483,12 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent, long long 
 read_err:
 	cur_uncompressed -= block;
 	status = read_buffer->error;
-	if(block) {
+	bytes = start;
+	if(!block_device) {
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
 			EXIT_MKSQUASHFS();
-		bytes = start;
-		if(!block_device)
-			ftruncate(fd, bytes);
+		ftruncate(fd, bytes);
 	}
 	unlock_fragments();
 	free(block_list);
@@ -2466,103 +2497,105 @@ read_err:
 }
 
 
-int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size, struct file_buffer *reader_buffer, int *duplicate_file)
+int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long long read_size, struct file_buffer *read_buffer, int *duplicate_file)
 {
 	int block, thresh;
-	unsigned int frag_bytes;
-	long long file_bytes, start;
+	long long file_bytes, dup_start, start;
 	struct fragment *fragment;
 	struct file_info *dupl_ptr;
 	int blocks = (read_size + block_size - 1) >> block_log;
 	unsigned int *block_list, *block_listp;
-	struct file_buffer *read_buffer;
-	struct buffer_list *buffer_list;
+	struct file_buffer **buffer_list;
 	int status, num_locked_fragments;
-
-	if(!no_fragments && always_use_fragments) {
-		blocks = read_size >> block_log;
-		frag_bytes = read_size % block_size;
-	} else
-		frag_bytes = 0;
+	long long sparse = 0;
+	struct file_buffer *fragment_buffer = NULL;
 
 	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL)
 		BAD_ERROR("Out of memory allocating block_list\n");
 	block_listp = block_list;
 
-	if((buffer_list = malloc(blocks * sizeof(struct buffer_list))) == NULL)
+	if((buffer_list = malloc(blocks * sizeof(struct file_buffer *))) == NULL)
 		BAD_ERROR("Out of memory allocating file block list\n");
 
 	num_locked_fragments = lock_fragments();
 
 	file_bytes = 0;
-	start = bytes;
+	start = dup_start = bytes;
 	thresh = blocks > (writer_buffer_size - num_locked_fragments) ? blocks - (writer_buffer_size - num_locked_fragments): 0;
-	for(block = 0; block < blocks; block ++) {
-		if(reader_buffer) {
-			read_buffer = reader_buffer;
-			reader_buffer = NULL;
-		 } else {
+
+	for(block = 0; block < blocks;) {
+		if(read_buffer->fragment && read_buffer->c_byte) {
+			fragment_buffer = read_buffer;
+			blocks = read_size >> block_log;
+		} else {
+			block_list[block] = read_buffer->c_byte;
+
+			if(read_buffer->c_byte) {
+				read_buffer->block = bytes;
+				bytes += read_buffer->size;
+				file_bytes += read_buffer->size;
+				cache_rehash(read_buffer, read_buffer->block);
+				if(block < thresh) {
+					buffer_list[block] = NULL;
+					queue_put(to_writer, read_buffer);
+				} else
+					buffer_list[block] = read_buffer;
+			} else {
+				buffer_list[block] = NULL;
+				sparse += read_buffer->size;
+				cache_block_put(read_buffer);
+			}
+		}
+		inc_progress_bar();
+
+		if(++block < blocks) {
 			read_buffer = get_file_buffer(from_deflate);
 			if(read_buffer->error)
 				goto read_err;
 		}
-
-		block_list[block] = read_buffer->c_byte;
-		buffer_list[block].start = bytes;
-		buffer_list[block].size = read_buffer->size;
-
-		if(read_buffer->c_byte) {
-			read_buffer->block = bytes;
-			bytes += read_buffer->size;
-			cache_rehash(read_buffer, read_buffer->block);
-			file_bytes += read_buffer->size;
-			if(block < thresh) {
-				buffer_list[block].read_buffer = NULL;
-				queue_put(to_writer, read_buffer);
-			} else
-				buffer_list[block].read_buffer = read_buffer;
-		} else {
-			buffer_list[block].read_buffer = NULL;
-			cache_block_put(read_buffer);
-		}
-		inc_progress_bar();
 	}
 
-	if(frag_bytes != 0) {
-		read_buffer = get_file_buffer(from_deflate);
-		if(read_buffer->error)
-			goto read_err;
-	} else
-		read_buffer = NULL;
-
-	dupl_ptr = duplicate(read_size, file_bytes, &block_listp, &start, &fragment, read_buffer, buffer_list, blocks, 0, 0, FALSE);
+	dupl_ptr = duplicate(read_size, file_bytes, &block_listp, &dup_start, &fragment, fragment_buffer, blocks, 0, 0, FALSE);
 
 	if(dupl_ptr) {
 		*duplicate_file = FALSE;
 		for(block = thresh; block < blocks; block ++)
-			if(buffer_list[block].read_buffer)
-				queue_put(to_writer, buffer_list[block].read_buffer);
-		fragment = get_and_fill_fragment(read_buffer);
+			if(buffer_list[block])
+				queue_put(to_writer, buffer_list[block]);
+		fragment = get_and_fill_fragment(fragment_buffer);
 		dupl_ptr->fragment = fragment;
 	} else {
 		*duplicate_file = TRUE;
 		for(block = thresh; block < blocks; block ++)
-			cache_block_put(buffer_list[block].read_buffer);
-		bytes = buffer_list[0].start;
-		if(thresh && !block_device)
+			cache_block_put(buffer_list[block]);
+		bytes = start;
+		if(thresh && !block_device) {
+			queue_put(to_writer, NULL);
+			if(queue_get(from_writer) != 0)
+				EXIT_MKSQUASHFS();
 			ftruncate(fd, bytes);
+		}
 	}
 
 	unlock_fragments();
-	cache_block_put(read_buffer);
+	cache_block_put(fragment_buffer);
 	free(buffer_list);
 	file_count ++;
 	total_bytes += read_size;
 
-	if(dir_ent->inode->nlink == 1 && read_size < ((long long) (1<<30) - 1))
-		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
+	/* sparse count is needed to ensure squashfs correctly reports a
+ 	 * a smaller block count on stat calls to sparse files.  This is
+ 	 * to ensure intelligent applications like cp correctly handle the
+ 	 * file as a sparse file.  If the file in the original filesystem isn't
+ 	 * stored as a sparse file then still store it sparsely in squashfs, but
+ 	 * report it as non-sparse on stat calls to preserve semantics */
+	if(sparse && (dir_ent->inode->buf.st_blocks << 9) >= read_size)
+		sparse = 0;
+
+	if(dir_ent->inode->nlink == 1 && read_size < (1LL << 32) && dup_start < (1LL << 32) && sparse == 0)
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size, dup_start, blocks, block_listp, fragment, NULL, 0);
 	else
-		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, start, blocks, block_listp, fragment, NULL);
+		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size, dup_start, blocks, block_listp, fragment, NULL, sparse);
 
 	if(*duplicate_file == TRUE)
 		free(block_list);
@@ -2572,17 +2605,16 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 read_err:
 	cur_uncompressed -= block;
 	status = read_buffer->error;
-	if(block && thresh) {
+	bytes = start;
+	if(thresh && !block_device) {
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
 			EXIT_MKSQUASHFS();
-		bytes = start;
-		if(!block_device)
-			ftruncate(fd, bytes);
+		ftruncate(fd, bytes);
 	}
 	unlock_fragments();
 	for(blocks = thresh; blocks < block; blocks ++)
-		cache_block_put(buffer_list[blocks].read_buffer);
+		cache_block_put(buffer_list[blocks]);
 	free(buffer_list);
 	free(block_list);
 	cache_block_put(read_buffer);
@@ -2598,6 +2630,7 @@ void write_file(squashfs_inode *inode, struct dir_ent *dir_ent, int *duplicate_f
 
 again:
 	read_buffer = get_file_buffer(from_deflate);
+
 	status = read_buffer->error;
 	if(status) {
 		cache_block_put(read_buffer);
@@ -2609,7 +2642,7 @@ again:
 	if(read_size == 0) {
 		write_file_empty(inode, dir_ent, duplicate_file);
 		cache_block_put(read_buffer);
-	} else if(!no_fragments && (read_size < block_size))
+	} else if(read_buffer->fragment && read_buffer->c_byte)
 		write_file_frag(inode, dir_ent, read_size, read_buffer, duplicate_file);
 	else if(pre_duplicate(read_size))
 		status = write_file_blocks_dup(inode, dir_ent, read_size, read_buffer, duplicate_file);
@@ -3021,35 +3054,35 @@ void dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 
 				case S_IFLNK:
 					squashfs_type = SQUASHFS_SYMLINK_TYPE;
-					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
+					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL, 0);
 					INFO("symbolic link %s inode 0x%llx\n", dir_name, *inode);
 					sym_count ++;
 					break;
 
 				case S_IFCHR:
 					squashfs_type = SQUASHFS_CHRDEV_TYPE;
-					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
+					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL, 0);
 					INFO("character device %s inode 0x%llx\n", dir_name, *inode);
 					dev_count ++;
 					break;
 
 				case S_IFBLK:
 					squashfs_type = SQUASHFS_BLKDEV_TYPE;
-					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
+					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL, 0);
 					INFO("block device %s inode 0x%llx\n", dir_name, *inode);
 					dev_count ++;
 					break;
 
 				case S_IFIFO:
 					squashfs_type = SQUASHFS_FIFO_TYPE;
-					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
+					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL, 0);
 					INFO("fifo %s inode 0x%llx\n", dir_name, *inode);
 					fifo_count ++;
 					break;
 
 				case S_IFSOCK:
 					squashfs_type = SQUASHFS_SOCKET_TYPE;
-					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL);
+					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL, 0);
 					INFO("unix domain socket %s inode 0x%llx\n", dir_name, *inode);
 					sock_count ++;
 					break;
@@ -3585,7 +3618,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 3.3-CVS (2008/05/06)\n");\
+	printf("mksquashfs version 4.0-CVS (2008/08/03)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3774,9 +3807,6 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;
 
-		else if(strcmp(argv[i], "-check_data") == 0)
-			check_data = TRUE;
-
 		else if(strcmp(argv[i], "-info") == 0) {
 			silent = FALSE;
 			progress = FALSE;
@@ -3841,7 +3871,6 @@ printOptions:
 			ERROR("-le\t\t\tcreate a little endian filesystem\n");
 			ERROR("-be\t\t\tcreate a big endian filesystem\n");
 			ERROR("-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
-			ERROR("-check_data\t\tadd checkdata for greater filesystem checks\n");
 			ERROR("-root-owned\t\talternative name for -all-root\n");
 			ERROR("-noInodeCompression\talternative name for -noI\n");
 			ERROR("-noDataCompression\talternative name for -noD\n");
@@ -3963,7 +3992,6 @@ printOptions:
 		noI = SQUASHFS_UNCOMPRESSED_INODES(sBlk.flags);
 		noD = SQUASHFS_UNCOMPRESSED_DATA(sBlk.flags);
 		noF = SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.flags);
-		check_data = SQUASHFS_CHECK_DATA(sBlk.flags);
 		no_fragments = SQUASHFS_NO_FRAGMENTS(sBlk.flags);
 		always_use_fragments = SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags);
 		duplicate_checking = SQUASHFS_DUPLICATES(sBlk.flags);
@@ -3987,7 +4015,6 @@ printOptions:
 				&directory_table, &directory_data_cache, &last_directory_block, &inode_dir_offset,
 				&inode_dir_file_size, &root_inode_size, &inode_dir_start_block,
 				&file_count, &sym_count, &dev_count, &dir_count, &fifo_count, &sock_count,
-				(squashfs_uid *) uids, &uid_count, (squashfs_uid *) guids, &guid_count,
 				&total_bytes, &total_inode_bytes, &total_directory_bytes, &inode_dir_inode_number,
 				&inode_dir_parent_inode, add_old_root_entry, &fragment_table, &inode_lookup_table)) == 0) {
 			ERROR("Failed to read existing filesystem - will not overwrite - ABORTING!\n");
@@ -3999,7 +4026,7 @@ printOptions:
 
 		printf("Appending to existing %s %d.%d filesystem on %s, block size %d\n", be ? "big endian" :
 			"little endian", SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
-		printf("All -be, -le, -b, -noI, -noD, -noF, -check_data, no-duplicates, no-fragments, -always-use-fragments and -exportable options ignored\n");
+		printf("All -be, -le, -b, -noI, -noD, -noF, no-duplicates, no-fragments, -always-use-fragments and -exportable options ignored\n");
 		printf("\nIf appending is not wanted, please re-run with -noappend specified!\n\n");
 
 		compressed_data = (inode_dir_offset + inode_dir_file_size) & ~(SQUASHFS_METADATA_SIZE - 1);
@@ -4017,8 +4044,6 @@ printOptions:
 		memcpy(sdirectory_data_cache, directory_data_cache + compressed_data, sdirectory_cache_bytes);
 		sinode_bytes = root_inode_start;
 		sdirectory_bytes = last_directory_block;
-		suid_count = uid_count;
-		sguid_count = guid_count;
 		stotal_bytes = total_bytes;
 		stotal_inode_bytes = total_inode_bytes;
 		stotal_directory_bytes = total_directory_bytes + compressed_data;
@@ -4029,6 +4054,7 @@ printOptions:
 		sfifo_count = fifo_count;
 		ssock_count = sock_count;
 		sdup_files = dup_files;
+		sid_count = id_count;
 		write_recovery_data(&sBlk);
 		restore = TRUE;
 		if(setjmp(env))
@@ -4072,8 +4098,6 @@ printOptions:
 	swap = be;
 #endif
 
-	block_offset = check_data ? 3 : 2;
-
 	if(path || stickypath) {
 		paths = init_subdir();
 		if(path)
@@ -4095,7 +4119,7 @@ printOptions:
 	sBlk.s_minor = s_minor;
 	sBlk.block_size = block_size;
 	sBlk.block_log = block_log;
-	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, check_data, noF, no_fragments, always_use_fragments, duplicate_checking, exportable);
+	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, no_fragments, always_use_fragments, duplicate_checking, exportable);
 	sBlk.mkfs_time = time(NULL);
 
 restore_filesystem:
@@ -4130,35 +4154,8 @@ restore_filesystem:
 	if(exportable)
 		TRACE("sBlk->lookup_table_start 0x%llx\n", sBlk.lookup_table_start);
 
-	sBlk.no_uids = uid_count;
-	if(sBlk.no_uids) {
-		if(!swap)
-			write_bytes(fd, bytes, uid_count * sizeof(squashfs_uid), (char *) uids);
-		else {
-			squashfs_uid uids_copy[uid_count];
-
-			SQUASHFS_SWAP_DATA(uids, uids_copy, uid_count, sizeof(squashfs_uid) * 8);
-			write_bytes(fd, bytes, uid_count * sizeof(squashfs_uid), (char *) uids_copy);
-		}
-		sBlk.uid_start = bytes;
-		bytes += uid_count * sizeof(squashfs_uid);
-	} else
-		sBlk.uid_start = 0;
-
-	sBlk.no_guids = guid_count;
-	if(sBlk.no_guids) {
-		if(!swap)
-			write_bytes(fd, bytes, guid_count * sizeof(squashfs_uid), (char *) guids);
-		else {
-			squashfs_uid guids_copy[guid_count];
-
-			SQUASHFS_SWAP_DATA(guids, guids_copy, guid_count, sizeof(squashfs_uid) * 8);
-			write_bytes(fd, bytes, guid_count * sizeof(squashfs_uid), (char *) guids_copy);
-		}
-		sBlk.guid_start = bytes;
-		bytes += guid_count * sizeof(squashfs_uid);
-	} else
-		sBlk.guid_start = 0;
+	sBlk.no_ids = id_count;
+	sBlk.id_table_start = write_id_table();
 
 	sBlk.bytes_used = bytes;
 
@@ -4167,7 +4164,7 @@ restore_filesystem:
 	else {
 		squashfs_super_block sBlk_copy;
 
-		SQUASHFS_SWAP_SUPER_BLOCK((&sBlk), &sBlk_copy); 
+		//SQUASHFS_SWAP_SUPER_BLOCK((&sBlk), &sBlk_copy); 
 		write_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block), (char *) &sBlk_copy);
 	}
 
@@ -4213,19 +4210,23 @@ restore_filesystem:
 	printf("Number of fifo nodes %d\n", fifo_count);
 	printf("Number of socket nodes %d\n", sock_count);
 	printf("Number of directories %d\n", dir_count);
+	printf("Number of ids (unique uids + gids) %d\n", id_count);
 	printf("Number of uids %d\n", uid_count);
 
-	for(i = 0; i < uid_count; i++) {
-		int uid = uids[i];
-		struct passwd *user = getpwuid(uid);
-		printf("\t%s (%d)\n", user == NULL ? "unknown" : user->pw_name, uids[i]);
+	for(i = 0; i < id_count; i++) {
+		if(id_table[i]->flags & ISA_UID) {
+			struct passwd *user = getpwuid(id_table[i]->id);
+			printf("\t%s (%d)\n", user == NULL ? "unknown" : user->pw_name, id_table[i]->id);
+		}
 	}
 
 	printf("Number of gids %d\n", guid_count);
 
-	for(i = 0; i < guid_count; i++) {
-		struct group *group = getgrgid(guids[i]);
-		printf("\t%s (%d)\n", group == NULL ? "unknown" : group->gr_name, guids[i]);
+	for(i = 0; i < id_count; i++) {
+		if(id_table[i]->flags & ISA_GID) {
+			struct group *group = getgrgid(id_table[i]->id);
+			printf("\t%s (%d)\n", group == NULL ? "unknown" : group->gr_name, id_table[i]->id);
+		}
 	}
 
 	return 0;
