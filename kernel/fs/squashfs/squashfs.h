@@ -46,50 +46,47 @@ static inline struct squashfs_inode_info *SQUASHFS_I(struct inode *inode)
 }
 
 /* block.c */
-extern unsigned int squashfs_read_data(struct super_block *s, char *buffer,
-				long long index, unsigned int length,
-				long long *next_index, int srclength);
-extern int squashfs_get_cached_block(struct super_block *s, void *buffer,
-				long long block, unsigned int offset,
-				int length, long long *next_block,
-				unsigned int *next_offset);
+extern unsigned int squashfs_read_data(struct super_block *, char *,
+				long long, unsigned int, long long *, int);
+extern int squashfs_get_cached_block(struct super_block *, void *,
+				long long, unsigned int, int, long long *, unsigned int *);
 
 /* cache.c */
-extern struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
-	struct squashfs_cache *cache, long long block, int length);
-extern void squashfs_cache_put(struct squashfs_cache *cache,
-				struct squashfs_cache_entry *entry);
-extern void squashfs_cache_delete(struct squashfs_cache *cache);
-extern struct squashfs_cache *squashfs_cache_init(char *name, int entries,
-	int block_size, int use_vmalloc);
+extern struct squashfs_cache_entry *squashfs_cache_get(struct super_block *,
+	struct squashfs_cache *, long long, int);
+extern void squashfs_cache_put(struct squashfs_cache *,
+				struct squashfs_cache_entry *);
+extern void squashfs_cache_delete(struct squashfs_cache *);
+extern struct squashfs_cache *squashfs_cache_init(char *, int, int, int);
 
 /* export.c */
-extern int read_inode_lookup_table(struct super_block *s);
+extern int read_inode_lookup_table(struct super_block *);
 
 /* file.c */
-extern long long read_blocklist(struct inode *inode, int index,
-				int readahead_blks, char *block_list,
-				unsigned short **block_p, unsigned int *bsize);
+extern long long read_blocklist(struct inode *, int, int, char *,
+				unsigned short **, unsigned int *);
 
 /* fragment.c */
-extern int get_fragment_location(struct super_block *s, unsigned int fragment,
-				long long *fragment_start_block,
-				unsigned int *fragment_size);
-extern void release_cached_fragment(struct squashfs_sb_info *msblk,
-				struct squashfs_cache_entry *fragment);
-extern struct squashfs_cache_entry *get_cached_fragment(struct super_block *s,
-				long long start_block, int length);
-extern int read_fragment_index_table(struct super_block *s);
+extern int get_fragment_location(struct super_block *, unsigned int,
+				long long *, unsigned int *);
+extern void release_cached_fragment(struct squashfs_sb_info *,
+				struct squashfs_cache_entry *);
+extern struct squashfs_cache_entry *get_cached_fragment(struct super_block *,
+				long long, int);
+extern int read_fragment_index_table(struct super_block *);
 
 /* id.c */
-extern int get_id(struct super_block *s, unsigned int index, unsigned int *id);
-extern int read_id_index_table(struct super_block *s);
+extern int get_id(struct super_block *, unsigned int, unsigned int *);
+extern int read_id_index_table(struct super_block *);
 
 /* inode.c */
-extern struct inode *squashfs_iget(struct super_block *s,
-				squashfs_inode_t inode, unsigned int inode_number);
-extern int squashfs_read_inode(struct inode *i, squashfs_inode_t inode);
+extern struct inode *squashfs_iget(struct super_block *, squashfs_inode_t,
+			unsigned int);
+extern int squashfs_read_inode(struct inode *, squashfs_inode_t);
 
+/*
+ * Inodes and files operations
+ */
 
 /* dir.c */
 extern const struct file_operations squashfs_dir_ops;
