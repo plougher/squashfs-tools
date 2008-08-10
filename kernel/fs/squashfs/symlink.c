@@ -21,28 +21,24 @@
  * symlink.c
  */
 
-#include <linux/squashfs_fs.h>
-#include <linux/module.h>
-#include <linux/zlib.h>
 #include <linux/fs.h>
+#include <linux/vfs.h>
+#include <linux/zlib.h>
+#include <linux/buffer_head.h>
+#include <linux/squashfs_fs.h>
 #include <linux/squashfs_fs_sb.h>
 #include <linux/squashfs_fs_i.h>
-#include <linux/buffer_head.h>
-#include <linux/vfs.h>
-#include <linux/vmalloc.h>
-#include <linux/spinlock.h>
-#include <linux/smp_lock.h>
-#include <linux/exportfs.h>
 
 #include "squashfs.h"
 
 static int squashfs_symlink_readpage(struct file *file, struct page *page)
 {
 	struct inode *inode = page->mapping->host;
-	int index = page->index << PAGE_CACHE_SHIFT, length, bytes, avail_bytes;
+	int index = page->index << PAGE_CACHE_SHIFT;
 	long long block = SQUASHFS_I(inode)->start_block;
 	int offset = SQUASHFS_I(inode)->offset;
 	void *pageaddr = kmap(page);
+	int length, bytes, avail_bytes;
 
 	TRACE("Entered squashfs_symlink_readpage, page index %ld, start block "
 				"%llx, offset %x\n", page->index,
@@ -53,7 +49,8 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 		bytes = squashfs_get_cached_block(inode->i_sb, NULL, block,
 				offset, PAGE_CACHE_SIZE, &block, &offset);
 		if (bytes == 0) {
-			ERROR("Unable to read symbolic link [%llx:%x]\n", block, offset);
+			ERROR("Unable to read symbolic link [%llx:%x]\n",
+				block, offset);
 			goto skip_read;
 		}
 	}
@@ -67,9 +64,10 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 	avail_bytes = min_t(int, i_size_read(inode) - length, PAGE_CACHE_SIZE);
 
 	bytes = squashfs_get_cached_block(inode->i_sb, pageaddr, block, offset,
-		avail_bytes, &block, &offset);
+				avail_bytes, &block, &offset);
 	if (bytes == 0)
-		ERROR("Unable to read symbolic link [%llx:%x]\n", block, offset);
+		ERROR("Unable to read symbolic link [%llx:%x]\n", block,
+				offset);
 
 skip_read:
 	memset(pageaddr + bytes, 0, PAGE_CACHE_SIZE - bytes);
