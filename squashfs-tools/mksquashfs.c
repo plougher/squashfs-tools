@@ -269,12 +269,12 @@ int interrupted = 0;
 
 /* restore orignal filesystem state if appending to existing filesystem is cancelled */
 jmp_buf env;
-char *sdata_cache, *sdirectory_data_cache;
+char *sdata_cache, *sdirectory_data_cache, *sdirectory_compressed;
 
 long long sbytes, stotal_bytes;
 
 unsigned int sinode_bytes, scache_bytes, sdirectory_bytes,
-	sdirectory_cache_bytes,
+	sdirectory_cache_bytes, sdirectory_compressed_bytes,
 	stotal_inode_bytes, stotal_directory_bytes,
 	sinode_count = 0, sfile_count, ssym_count, sdev_count,
 	sdir_count, sfifo_count, ssock_count, sdup_files;
@@ -724,6 +724,8 @@ void restorefs()
 	memcpy(directory_data_cache, sdirectory_data_cache, directory_cache_bytes = sdirectory_cache_bytes);
 	inode_bytes = sinode_bytes;
 	directory_bytes = sdirectory_bytes;
+ 	memcpy(directory_table + directory_bytes, sdirectory_compressed, sdirectory_compressed_bytes);
+ 	directory_bytes += sdirectory_compressed_bytes;
 	total_bytes = stotal_bytes;
 	total_inode_bytes = stotal_inode_bytes;
 	total_directory_bytes = stotal_directory_bytes;
@@ -3618,7 +3620,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.0-CVS (2008/08/06)\n");\
+	printf("mksquashfs version 4.0-CVS (2008/08/14)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -4033,7 +4035,6 @@ printOptions:
 		memcpy(sdata_cache, data_cache, scache_bytes);
 		memcpy(sdirectory_data_cache, directory_data_cache + compressed_data, sdirectory_cache_bytes);
 		sinode_bytes = root_inode_start;
-		sdirectory_bytes = last_directory_block;
 		stotal_bytes = total_bytes;
 		stotal_inode_bytes = total_inode_bytes;
 		stotal_directory_bytes = total_directory_bytes + compressed_data;
@@ -4062,6 +4063,8 @@ printOptions:
 		cache_size = root_inode_offset + root_inode_size;
 		directory_cache_size = inode_dir_offset + inode_dir_file_size;
 		if(root_name) {
+			sdirectory_bytes = last_directory_block;
+			sdirectory_compressed_bytes = 0;
 			root_inode_number = inode_dir_parent_inode;
 			dir_inode_no = sBlk.inodes + 2;
 			directory_bytes = last_directory_block;
@@ -4072,6 +4075,10 @@ printOptions:
 			total_directory_bytes += compressed_data;
 			dir_count ++;
 		} else {
+			sdirectory_compressed_bytes = last_directory_block - inode_dir_start_block;
+			sdirectory_compressed = malloc(sdirectory_compressed_bytes);
+			memcpy(sdirectory_compressed, directory_table + inode_dir_start_block, sdirectory_compressed_bytes); 
+			sdirectory_bytes = inode_dir_start_block;
 			root_inode_number = inode_dir_inode_number;
 			dir_inode_no = sBlk.inodes + 1;
 			directory_bytes = inode_dir_start_block;
