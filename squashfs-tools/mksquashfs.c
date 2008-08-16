@@ -66,7 +66,6 @@
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)	do { \
-					pthread_mutex_lock(&progress_mutex); \
 					if(progress_enabled) \
 						printf("\n"); \
 					printf("mksquashfs: "s, ## args); \
@@ -3971,6 +3970,10 @@ printOptions:
 			break;
 		else if(strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "-root-becomes") == 0 || strcmp(argv[i], "-ef") == 0)
 			i++;
+
+#ifdef SQUASHFS_TRACE
+	progress = FALSE;
+#endif
 
 	if(!delete) {
 	        if(read_super(fd, &sBlk, argv[source + 1]) == 0) {
