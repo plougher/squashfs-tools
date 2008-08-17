@@ -2278,7 +2278,7 @@ void *progress_thrd(void *arg)
 			timespec.tv_sec++;
 		timespec.tv_nsec = ((timeval.tv_usec + 250000) % 1000000) * 1000;
 		pthread_cond_timedwait(&progress_wait, &progress_mutex, &timespec);
-		if(progress_enabled)
+		if(progress_enabled && estimated_uncompressed)
 			progress_bar(cur_uncompressed, estimated_uncompressed, columns);
 	}
 }
@@ -4112,7 +4112,7 @@ printOptions:
 	sBlk.mkfs_time = time(NULL);
 
 restore_filesystem:
-	if(progress) {
+	if(progress && estimated_uncompressed) {
 		disable_progress_bar();
 		progress_bar(cur_uncompressed, estimated_uncompressed, columns);
 	}
