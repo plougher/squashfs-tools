@@ -2303,7 +2303,7 @@ void disable_progress_bar()
 void progress_bar(long long current, long long max, int columns)
 {
 	char rotate_list[] = { '|', '/', '-', '\\' };
-	int max_digits = ceil(log10(max));
+	int max_digits = floor(log10(max)) + 1;
 	int used = max_digits * 2 + 11;
 	int hashes = (current * (columns - used)) / max;
 	int spaces = columns - used - hashes;
