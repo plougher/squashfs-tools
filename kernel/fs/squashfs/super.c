@@ -294,7 +294,7 @@ static int squashfs_get_sb(struct file_system_type *fs_type, int flags,
 static struct kmem_cache * squashfs_inode_cachep;
 
 
-static void init_once(struct kmem_cache *cachep, void *foo)
+static void init_once(void *foo)
 {
 	struct squashfs_inode_info *ei = foo;
 
