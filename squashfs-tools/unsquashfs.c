@@ -2690,7 +2690,7 @@ options:
 
 	memset(created_inode, 0, sBlk.inodes * sizeof(char *));
 
-	printf("%d files (%d blocks) to write\n\n", total_inodes, total_inodes - total_files + total_blocks);
+	printf("%d inodes (%d blocks) to write\n\n", total_inodes, total_inodes - total_files + total_blocks);
 
 	if(progress)
 		enable_progress_bar();
