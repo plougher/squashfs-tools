@@ -68,30 +68,14 @@ static struct dentry *squashfs_export_iget(struct super_block *s,
 	unsigned int inode_number)
 {
 	squashfs_inode_t inode;
-	struct inode *i;
-	struct dentry *dentry;
+	struct dentry *dentry = ERR_PTR(-ENOENT);
 
 	TRACE("Entered squashfs_export_iget\n");
 
 	inode = squashfs_inode_lookup(s, inode_number);
-	if(inode == SQUASHFS_INVALID_BLK) {
-		dentry = ERR_PTR(-ENOENT);
-		goto failure;
-	}
+	if(inode != SQUASHFS_INVALID_BLK)
+		dentry = d_obtain_alias(squashfs_iget(s, inode, inode_number));
 
-	i = squashfs_iget(s, inode, inode_number);
-	if(i == NULL) {
-		dentry = ERR_PTR(-EACCES);
-		goto failure;
-	}
-
-	dentry = d_alloc_anon(i);
-	if (dentry == NULL) {
-		iput(i);
-		dentry = ERR_PTR(-ENOMEM);
-	}
-
-failure:
 	return dentry;
 }
 
