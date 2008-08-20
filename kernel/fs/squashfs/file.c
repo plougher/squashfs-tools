@@ -24,8 +24,10 @@
 
 #include <linux/fs.h>
 #include <linux/vfs.h>
-#include <linux/types.h>
+#include <linux/slab.h>
+#include <linux/string.h>
 #include <linux/pagemap.h>
+#include <linux/mutex.h>
 #include <linux/zlib.h>
 #include <linux/squashfs_fs.h>
 #include <linux/squashfs_fs_sb.h>
