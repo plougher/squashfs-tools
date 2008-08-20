@@ -21,20 +21,18 @@
  * cache.c
  */
 
-#include <linux/squashfs_fs.h>
-#include <linux/module.h>
-#include <linux/zlib.h>
 #include <linux/fs.h>
-#include <linux/squashfs_fs_sb.h>
-#include <linux/squashfs_fs_i.h>
-#include <linux/buffer_head.h>
 #include <linux/vfs.h>
+#include <linux/zlib.h>
 #include <linux/vmalloc.h>
 #include <linux/spinlock.h>
 #include <linux/smp_lock.h>
-#include <linux/exportfs.h>
+#include <linux/squashfs_fs.h>
+#include <linux/squashfs_fs_sb.h>
+#include <linux/squashfs_fs_i.h>
 
 #include "squashfs.h"
+
 struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 	struct squashfs_cache *cache, long long block, int length)
 {
