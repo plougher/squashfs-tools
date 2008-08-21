@@ -21,18 +21,15 @@
  * namei.c
  */
 
-#include <linux/squashfs_fs.h>
-#include <linux/module.h>
-#include <linux/zlib.h>
 #include <linux/fs.h>
+#include <linux/vfs.h>
+#include <linux/slab.h>
+#include <linux/string.h>
+#include <linux/dcache.h>
+#include <linux/zlib.h>
+#include <linux/squashfs_fs.h>
 #include <linux/squashfs_fs_sb.h>
 #include <linux/squashfs_fs_i.h>
-#include <linux/buffer_head.h>
-#include <linux/vfs.h>
-#include <linux/vmalloc.h>
-#include <linux/spinlock.h>
-#include <linux/smp_lock.h>
-#include <linux/exportfs.h>
 
 #include "squashfs.h"
 
