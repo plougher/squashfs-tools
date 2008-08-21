@@ -23,8 +23,11 @@
 
 #include <linux/fs.h>
 #include <linux/vfs.h>
+#include <linux/kernel.h>
+#include <linux/slab.h>
+#include <linux/string.h>
+#include <linux/pagemap.h>
 #include <linux/zlib.h>
-#include <linux/buffer_head.h>
 #include <linux/squashfs_fs.h>
 #include <linux/squashfs_fs_sb.h>
 #include <linux/squashfs_fs_i.h>
