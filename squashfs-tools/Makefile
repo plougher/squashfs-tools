@@ -1,3 +1,5 @@
+INSTALL_DIR = /usr/local/bin
+
 INCLUDEDIR = .
 
 CFLAGS := -I$(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE -O2
@@ -17,3 +19,10 @@ unsquashfs: unsquashfs.o
 	$(CC) unsquashfs.o -lz -lpthread -lm -o $@
 
 unsquashfs.o: unsquashfs.c squashfs_fs.h read_fs.h global.h
+
+clean:
+	-rm -f *.o mksquashfs unsquashfs
+
+install: mksquashfs
+	mkdir -p $(INSTALL_DIR)
+	cp mksquashfs $(INSTALL_DIR)
