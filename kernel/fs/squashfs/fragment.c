@@ -33,26 +33,24 @@
 #include "squashfs.h"
 
 int get_fragment_location(struct super_block *s, unsigned int fragment,
-				long long *fragment_start_block,
-				unsigned int *fragment_size)
+				long long *fragment_start_block)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	long long start_block =
 		le64_to_cpu(msblk->fragment_index[SQUASHFS_FRAGMENT_INDEX(fragment)]);
 	int offset = SQUASHFS_FRAGMENT_INDEX_OFFSET(fragment);
 	struct squashfs_fragment_entry fragment_entry;
+	int size = 0;
 
 	if (!squashfs_get_cached_block(s, &fragment_entry, start_block, offset,
 				 sizeof(fragment_entry), &start_block, &offset))
 		goto out;
 
 	*fragment_start_block = le64_to_cpu(fragment_entry.start_block);
-	*fragment_size = le32_to_cpu(fragment_entry.size);
-
-	return 1;
+	size = le32_to_cpu(fragment_entry.size);
 
 out:
-	return 0;
+	return size;
 }
 
 
