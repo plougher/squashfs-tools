@@ -68,7 +68,7 @@ extern long long read_blocklist(struct inode *, int, int, char *,
 
 /* fragment.c */
 extern int get_fragment_location(struct super_block *, unsigned int,
-				long long *, unsigned int *);
+				long long *);
 extern void release_cached_fragment(struct squashfs_sb_info *,
 				struct squashfs_cache_entry *);
 extern struct squashfs_cache_entry *get_cached_fragment(struct super_block *,
