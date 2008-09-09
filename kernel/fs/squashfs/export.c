@@ -35,29 +35,19 @@
 static squashfs_inode_t squashfs_inode_lookup(struct super_block *s, int ino)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	long long start = msblk->inode_lookup_table[SQUASHFS_LOOKUP_BLOCK(ino - 1)];
+	long long start =
+		le64_to_cpu(msblk->inode_lookup_table[SQUASHFS_LOOKUP_BLOCK(ino - 1)]);
 	int offset = SQUASHFS_LOOKUP_BLOCK_OFFSET(ino - 1);
-	squashfs_inode_t inode;
+	__le64 inode;
 
 	TRACE("Entered squashfs_inode_lookup, inode_number = %d\n", ino);
 
-	if (msblk->swap) {
-		squashfs_inode_t sinode;
-
-		if (!squashfs_get_cached_block(s, &sinode, start, offset,
-					sizeof(sinode), &start, &offset))
-			goto out;
-		SQUASHFS_SWAP_INODE_T((&inode), &sinode);
-	} else if (!squashfs_get_cached_block(s, &inode, start, offset,
+	if (!squashfs_get_cached_block(s, &inode, start, offset,
 					sizeof(inode), &start, &offset))
-			goto out;
+		return SQUASHFS_INVALID_BLK;
 
-	TRACE("squashfs_inode_lookup, inode = 0x%llx\n", inode);
-
-	return inode;
-
-out:
-	return SQUASHFS_INVALID_BLK;
+	TRACE("squashfs_inode_lookup, inode = 0x%llx\n", le32_to_cpu(inode));
+	return le32_to_cpu(inode);
 }
 
 
@@ -128,17 +118,6 @@ int read_inode_lookup_table(struct super_block *s)
 			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
 		ERROR("unable to read inode lookup table\n");
 		return 0;
-	}
-
-	if (msblk->swap) {
-		int i;
-		long long block;
-
-		for (i = 0; i < SQUASHFS_LOOKUP_BLOCKS(sblk->inodes); i++) {
-			SQUASHFS_SWAP_LOOKUP_BLOCKS((&block),
-						&msblk->inode_lookup_table[i], 1);
-			msblk->inode_lookup_table[i] = block;
-		}
 	}
 
 	return 1;
