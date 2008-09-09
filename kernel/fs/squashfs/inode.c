@@ -113,12 +113,15 @@ int squashfs_read_inode(struct inode *i, squashfs_inode_t inode)
 						sizeof(*inodep), &next_block, &next_offset))
 					goto failed_read;
 
-			frag_blk = SQUASHFS_INVALID_BLK;
-
-			if (inodep->fragment != SQUASHFS_INVALID_FRAG)
-					if(!get_fragment_location(s, inodep->fragment, &frag_blk,
-												&frag_size))
+			if (inodep->fragment != SQUASHFS_INVALID_FRAG) {
+					frag_size = get_fragment_location(s, inodep->fragment,
+								&frag_blk);
+					if (frag_size == 0)	
 						goto failed_read;
+			} else {
+				frag_blk = SQUASHFS_INVALID_BLK;
+				frag_size = 0;
+			}
 				
 			i->i_nlink = 1;
 			i->i_size = inodep->file_size;
@@ -156,12 +159,15 @@ int squashfs_read_inode(struct inode *i, squashfs_inode_t inode)
 						sizeof(*inodep), &next_block, &next_offset))
 					goto failed_read;
 
-			frag_blk = SQUASHFS_INVALID_BLK;
-
-			if (inodep->fragment != SQUASHFS_INVALID_FRAG)
-				if (!get_fragment_location(s, inodep->fragment, &frag_blk,
-												 &frag_size))
+			if (inodep->fragment != SQUASHFS_INVALID_FRAG) {
+				frag_size = get_fragment_location(s, inodep->fragment,
+						&frag_blk);
+				if (frag_size == 0)
 					goto failed_read;
+			} else {
+				frag_blk = SQUASHFS_INVALID_BLK;
+				frag_size = 0;
+			}
 				
 			i->i_nlink = inodep->nlink;
 			i->i_size = inodep->file_size;
