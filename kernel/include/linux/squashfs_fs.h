@@ -262,9 +262,9 @@ struct squashfs_super_block {
 };
 
 struct squashfs_dir_index {
-	unsigned int		index;
-	unsigned int		start_block;
-	unsigned int		size;
+	__le32			index;
+	__le32			start_block;
+	__le32			size;
 	unsigned char		name[0];
 };
 
@@ -351,17 +351,17 @@ union squashfs_inode_header {
 };
 	
 struct squashfs_dir_entry {
-	unsigned short		offset;
-	short			inode_number;
-	unsigned short		type;
-	unsigned short		size;
+	__le16			offset;
+	__le16			inode_number;
+	__le16			type;
+	__le16			size;
 	char			name[0];
 };
 
 struct squashfs_dir_header {
-	unsigned int		count;
-	unsigned int		start_block;
-	unsigned int		inode_number;
+	__le32			count;
+	__le32			start_block;
+	__le32			inode_number;
 };
 
 struct squashfs_fragment_entry {
