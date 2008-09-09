@@ -43,34 +43,31 @@ static int get_dir_index_using_offset(struct super_block *s,
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
-	int i, length = 0;
-	struct squashfs_dir_index index;
+	int i, index, length = 0;
+	struct squashfs_dir_index dir_index;
 
-	TRACE("Entered get_dir_index_using_offset, i_count %d, f_pos %d\n",
-					i_count, (unsigned int) f_pos);
+	TRACE("Entered get_dir_index_using_offset, i_count %d, f_pos %lld\n",
+					i_count, f_pos);
 
 	f_pos -= 3;
 	if (f_pos == 0)
 		goto finish;
 
 	for (i = 0; i < i_count; i++) {
-		if (msblk->swap) {
-			struct squashfs_dir_index sindex;
-			squashfs_get_cached_block(s, &sindex, index_start, index_offset,
-					sizeof(sindex), &index_start, &index_offset);
-			SQUASHFS_SWAP_DIR_INDEX(&index, &sindex);
-		} else
-			squashfs_get_cached_block(s, &index, index_start, index_offset,
-					sizeof(index), &index_start, &index_offset);
+			squashfs_get_cached_block(s, &dir_index, index_start, index_offset,
+					sizeof(dir_index), &index_start, &index_offset);
 
-		if (index.index > f_pos)
+		index = le32_to_cpu(dir_index.index);
+		if (index > f_pos)
 			break;
 
 		squashfs_get_cached_block(s, NULL, index_start, index_offset,
-					index.size + 1, &index_start, &index_offset);
+					le32_to_cpu(dir_index.size) + 1, &index_start,
+					&index_offset);
 
-		length = index.index;
-		*next_block = index.start_block + sblk->directory_table_start;
+		length = index;
+		*next_block = le32_to_cpu(dir_index.start_block) +
+				sblk->directory_table_start;
 	}
 
 	*next_offset = (length + *next_offset) % SQUASHFS_METADATA_SIZE;
@@ -86,15 +83,16 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	struct squashfs_sb_info *msblk = i->i_sb->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
 	long long next_block = SQUASHFS_I(i)->start_block +
-		sblk->directory_table_start;
-	int next_offset = SQUASHFS_I(i)->offset, length = 0, dir_count;
+				sblk->directory_table_start;
+	int next_offset = SQUASHFS_I(i)->offset, length = 0, dir_count, size, type;
+	unsigned int inode_number;
 	struct squashfs_dir_header dirh;
 	struct squashfs_dir_entry *dire;
 
 	TRACE("Entered squashfs_readdir [%llx:%x]\n", next_block, next_offset);
 
-	dire = kmalloc(sizeof(struct squashfs_dir_entry) +
-		SQUASHFS_NAME_LEN + 1, GFP_KERNEL);
+	dire = kmalloc(sizeof(struct squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1,
+			GFP_KERNEL);
 	if (dire == NULL) {
 		ERROR("Failed to allocate squashfs_dir_entry\n");
 		goto finish;
@@ -113,9 +111,9 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 			size = 2;
 			i_ino = SQUASHFS_I(i)->u.s2.parent_inode;
 		}
-		TRACE("Calling filldir(%x, %s, %d, %d, %d, %d)\n",
-				(unsigned int) dirent, name, size, (int)
-				file->f_pos, i_ino, squashfs_filetype_table[1]);
+		TRACE("Calling filldir(%p, %s, %d, %lld, %d, %d)\n",
+				dirent, name, size, file->f_pos, i_ino,
+				squashfs_filetype_table[1]);
 
 		if (filldir(dirent, name, size, file->f_pos, i_ino,
 				squashfs_filetype_table[1]) < 0) {
@@ -132,61 +130,41 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 
 	while (length < i_size_read(i)) {
 		/* read directory header */
-		if (msblk->swap) {
-			struct squashfs_dir_header sdirh;
-			
-			if (!squashfs_get_cached_block(i->i_sb, &sdirh, next_block,
-					 next_offset, sizeof(sdirh), &next_block, &next_offset))
-				goto failed_read;
+		if (!squashfs_get_cached_block(i->i_sb, &dirh, next_block,
+				next_offset, sizeof(dirh), &next_block, &next_offset))
+			goto failed_read;
 
-			length += sizeof(sdirh);
-			SQUASHFS_SWAP_DIR_HEADER(&dirh, &sdirh);
-		} else {
-			if (!squashfs_get_cached_block(i->i_sb, &dirh, next_block,
-					next_offset, sizeof(dirh), &next_block, &next_offset))
-				goto failed_read;
+		length += sizeof(dirh);
 
-			length += sizeof(dirh);
-		}
-
-		dir_count = dirh.count + 1;
+		dir_count = le32_to_cpu(dirh.count) + 1;
 		while (dir_count--) {
-			if (msblk->swap) {
-				struct squashfs_dir_entry sdire;
-				if (!squashfs_get_cached_block(i->i_sb, &sdire, next_block,
-						next_offset, sizeof(sdire), &next_block, &next_offset))
-					goto failed_read;
-				
-				length += sizeof(sdire);
-				SQUASHFS_SWAP_DIR_ENTRY(dire, &sdire);
-			} else {
-				if (!squashfs_get_cached_block(i->i_sb, dire, next_block,
-						next_offset, sizeof(*dire), &next_block, &next_offset))
-					goto failed_read;
+			if (!squashfs_get_cached_block(i->i_sb, dire, next_block,
+					next_offset, sizeof(*dire), &next_block, &next_offset))
+				goto failed_read;
 
-				length += sizeof(*dire);
-			}
+			size = le16_to_cpu(dire->size) + 1;
 
 			if (!squashfs_get_cached_block(i->i_sb, dire->name, next_block,
-						next_offset, dire->size + 1, &next_block, &next_offset))
+						next_offset, size, &next_block, &next_offset))
 				goto failed_read;
 
-			length += dire->size + 1;
+			length += sizeof(*dire) + size;
 
 			if (file->f_pos >= length)
 				continue;
 
-			dire->name[dire->size + 1] = '\0';
+			dire->name[size] = '\0';
+			inode_number = le32_to_cpu(dirh.inode_number) +
+					((short) le16_to_cpu(dire->inode_number));
+			type = le16_to_cpu(dire->type);
 
-			TRACE("Calling filldir(%x, %s, %d, %d, %x:%x, %d, %d)\n",
-					(unsigned int) dirent, dire->name, dire->size + 1,
-					(int) file->f_pos, dirh.start_block, dire->offset,
-					dirh.inode_number + dire->inode_number,
-					squashfs_filetype_table[dire->type]);
+			TRACE("Calling filldir(%p, %s, %d, %lld, %x:%x, %d, %d)\n",
+					dirent, dire->name, size, file->f_pos,
+					le32_to_cpu(dirh.start_block), le16_to_cpu(dire->offset),
+					inode_number, squashfs_filetype_table[type]);
 
-			if (filldir(dirent, dire->name, dire->size + 1, file->f_pos,
-					dirh.inode_number + dire->inode_number,
-					squashfs_filetype_table[dire->type]) < 0) {
+			if (filldir(dirent, dire->name, size, file->f_pos, inode_number,
+					squashfs_filetype_table[type]) < 0) {
 				TRACE("Filldir returned less than 0\n");
 				goto finish;
 			}
