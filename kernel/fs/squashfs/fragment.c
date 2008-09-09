@@ -38,24 +38,16 @@ int get_fragment_location(struct super_block *s, unsigned int fragment,
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	long long start_block =
-		msblk->fragment_index[SQUASHFS_FRAGMENT_INDEX(fragment)];
+		le64_to_cpu(msblk->fragment_index[SQUASHFS_FRAGMENT_INDEX(fragment)]);
 	int offset = SQUASHFS_FRAGMENT_INDEX_OFFSET(fragment);
 	struct squashfs_fragment_entry fragment_entry;
 
-	if (msblk->swap) {
-		struct squashfs_fragment_entry sfragment_entry;
+	if (!squashfs_get_cached_block(s, &fragment_entry, start_block, offset,
+				 sizeof(fragment_entry), &start_block, &offset))
+		goto out;
 
-		if (!squashfs_get_cached_block(s, &sfragment_entry, start_block, offset,
-					 sizeof(sfragment_entry), &start_block, &offset))
-			goto out;
-		SQUASHFS_SWAP_FRAGMENT_ENTRY(&fragment_entry, &sfragment_entry);
-	} else
-		if (!squashfs_get_cached_block(s, &fragment_entry, start_block, offset,
-					 sizeof(fragment_entry), &start_block, &offset))
-			goto out;
-
-	*fragment_start_block = fragment_entry.start_block;
-	*fragment_size = fragment_entry.size;
+	*fragment_start_block = le64_to_cpu(fragment_entry.start_block);
+	*fragment_size = le32_to_cpu(fragment_entry.size);
 
 	return 1;
 
@@ -101,17 +93,6 @@ int read_fragment_index_table(struct super_block *s)
 			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
 		ERROR("unable to read fragment index table\n");
 		return 0;
-	}
-
-	if (msblk->swap) {
-		int i;
-		long long fragment;
-
-		for (i = 0; i < SQUASHFS_FRAGMENT_INDEXES(sblk->fragments); i++) {
-			SQUASHFS_SWAP_FRAGMENT_INDEXES((&fragment),
-						&msblk->fragment_index[i], 1);
-			msblk->fragment_index[i] = fragment;
-		}
 	}
 
 	return 1;
