@@ -365,8 +365,8 @@ struct squashfs_dir_header {
 };
 
 struct squashfs_fragment_entry {
-	long long		start_block;
-	unsigned int		size;
+	__le32			start_block;
+	__le32			size;
 	unsigned int		unused;
 };
 
