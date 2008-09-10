@@ -34,25 +34,17 @@
 int get_id(struct super_block *s, unsigned int index, unsigned int *id)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	long long start_block = msblk->id_table[SQUASHFS_ID_BLOCK(index)];
+	long long start_block =
+			le64_to_cpu(msblk->id_table[SQUASHFS_ID_BLOCK(index)]);
 	int offset = SQUASHFS_ID_BLOCK_OFFSET(index);
+	__le32 disk_id;
 
-	if (msblk->swap) {
-		unsigned int sid;
+	if (!squashfs_get_cached_block(s, &disk_id, start_block, offset,
+				 sizeof(__le32), &start_block, &offset))
+		return 0;
 
-		if (!squashfs_get_cached_block(s, &sid, start_block, offset,
-					 sizeof(unsigned int), &start_block, &offset))
-			goto out;
-		SQUASHFS_SWAP_INTS((&sid), id, 1);
-	} else
-		if (!squashfs_get_cached_block(s, id, start_block, offset,
-					 sizeof(unsigned int), &start_block, &offset))
-			goto out;
-
+	*id = le32_to_cpu(disk_id);
 	return 1;
-
-out:
-	return 0;
 }
 
 
@@ -76,16 +68,6 @@ int read_id_index_table(struct super_block *s)
 			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
 		ERROR("unable to read id index table\n");
 		return 0;
-	}
-
-	if (msblk->swap) {
-		int i;
-		long long block;
-
-		for (i = 0; i < SQUASHFS_ID_BLOCKS(sblk->no_ids); i++) {
-			SQUASHFS_SWAP_ID_BLOCKS((&block), &msblk->id_table[i], 1);
-			msblk->id_table[i] = block;
-		}
 	}
 
 	return 1;
