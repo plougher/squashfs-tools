@@ -71,7 +71,7 @@ struct squashfs_sb_info {
 	int			(*read_inode)(struct inode *i,  squashfs_inode_t \
 				inode);
 	long long		(*read_blocklist)(struct inode *inode, int \
-				index, int readahead_blks, char *block_list, \
+				index, int readahead_blks, void *block_list, \
 				unsigned short **block_p, unsigned int *bsize);
 	int			(*read_fragment_index_table)(struct super_block *s);
 };
