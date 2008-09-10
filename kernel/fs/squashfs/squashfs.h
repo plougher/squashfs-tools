@@ -63,7 +63,7 @@ extern struct squashfs_cache *squashfs_cache_init(char *, int, int, int);
 extern int read_inode_lookup_table(struct super_block *);
 
 /* file.c */
-extern long long read_blocklist(struct inode *, int, int, char *,
+extern long long read_blocklist(struct inode *, int, int, void *,
 				unsigned short **, unsigned int *);
 
 /* fragment.c */
