@@ -132,11 +132,11 @@ static void release_meta_index(struct inode *inode, struct meta_index *meta)
 }
 
 
-static int read_block_index(struct super_block *s, int blocks, char *block_list,
+static int read_block_index(struct super_block *s, int blocks, void *block_list,
 				long long *start_block, int *offset)
 {
-	unsigned int *block_listp;
-	int block = 0;
+	__le32 *blist = block_list;
+	int i, block = 0;
 	
 	if (!squashfs_get_cached_block(s, block_list, *start_block,
 			*offset, blocks << 2, start_block, offset)) {
@@ -144,9 +144,8 @@ static int read_block_index(struct super_block *s, int blocks, char *block_list,
 		goto failure;
 	}
 
-	for (block_listp = (unsigned int *) block_list; blocks;
-				block_listp++, blocks --)
-		block += SQUASHFS_COMPRESSED_SIZE_BLOCK(le32_to_cpu(*block_listp));
+	for (i = 0; i < blocks; i++)
+		block += SQUASHFS_COMPRESSED_SIZE_BLOCK(le32_to_cpu(blist[i]));
 
 	return block;
 
@@ -165,7 +164,7 @@ static inline int calculate_skip(int blocks) {
 
 static int get_meta_index(struct inode *inode, int index,
 		long long *index_block, int *index_offset,
-		long long *data_block, char *block_list)
+		long long *data_block, void *block_list)
 {
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
@@ -249,12 +248,13 @@ failed:
 
 
 long long read_blocklist(struct inode *inode, int index,
-				int readahead_blks, char *block_list,
+				int readahead_blks, void *block_list,
 				unsigned short **block_p, unsigned int *bsize)
 {
 	long long block_ptr;
 	int offset;
 	long long block;
+	__le32 *blist = block_list;
 	int res = get_meta_index(inode, index, &block_ptr, &offset, &block,
 		block_list);
 
@@ -278,7 +278,7 @@ long long read_blocklist(struct inode *inode, int index,
 
 	if (read_block_index(inode->i_sb, 1, block_list, &block_ptr, &offset) == -1)
 		goto failure;
-	*bsize = le32_to_cpu(*((unsigned int *) block_list));
+	*bsize = le32_to_cpu(blist[0]);
 
 	return block;
 
@@ -292,7 +292,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	struct inode *inode = page->mapping->host;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
 	struct squashfs_super_block *sblk = &msblk->sblk;
-	unsigned char *block_list = NULL;
+	void *block_list = NULL;
 	long long block;
 	unsigned int bsize, i;
 	int bytes;
