@@ -135,31 +135,18 @@ static void release_meta_index(struct inode *inode, struct meta_index *meta)
 static int read_block_index(struct super_block *s, int blocks, char *block_list,
 				long long *start_block, int *offset)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
 	unsigned int *block_listp;
 	int block = 0;
 	
-	if (msblk->swap) {
-		char sblock_list[blocks << 2];
-
-		if (!squashfs_get_cached_block(s, sblock_list, *start_block,
-				*offset, blocks << 2, start_block, offset)) {
-			ERROR("Fail reading block list [%llx:%x]\n", *start_block, *offset);
-			goto failure;
-		}
-		SQUASHFS_SWAP_INTS(((unsigned int *)block_list),
-				((unsigned int *)sblock_list), blocks);
-	} else {
-		if (!squashfs_get_cached_block(s, block_list, *start_block,
-				*offset, blocks << 2, start_block, offset)) {
-			ERROR("Fail reading block list [%llx:%x]\n", *start_block, *offset);
-			goto failure;
-		}
+	if (!squashfs_get_cached_block(s, block_list, *start_block,
+			*offset, blocks << 2, start_block, offset)) {
+		ERROR("Fail reading block list [%llx:%x]\n", *start_block, *offset);
+		goto failure;
 	}
 
 	for (block_listp = (unsigned int *) block_list; blocks;
 				block_listp++, blocks --)
-		block += SQUASHFS_COMPRESSED_SIZE_BLOCK(*block_listp);
+		block += SQUASHFS_COMPRESSED_SIZE_BLOCK(le32_to_cpu(*block_listp));
 
 	return block;
 
@@ -291,7 +278,7 @@ long long read_blocklist(struct inode *inode, int index,
 
 	if (read_block_index(inode->i_sb, 1, block_list, &block_ptr, &offset) == -1)
 		goto failure;
-	*bsize = *((unsigned int *) block_list);
+	*bsize = le32_to_cpu(*((unsigned int *) block_list));
 
 	return block;
 
