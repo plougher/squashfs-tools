@@ -36,9 +36,9 @@ int get_fragment_location(struct super_block *s, unsigned int fragment,
 				long long *fragment_start_block)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	long long start_block =
-		le64_to_cpu(msblk->fragment_index[SQUASHFS_FRAGMENT_INDEX(fragment)]);
+	int block = SQUASHFS_FRAGMENT_INDEX(fragment);
 	int offset = SQUASHFS_FRAGMENT_INDEX_OFFSET(fragment);
+	long long start_block = le64_to_cpu(msblk->fragment_index[block]);
 	struct squashfs_fragment_entry fragment_entry;
 	int size = 0;
 
@@ -66,7 +66,8 @@ struct squashfs_cache_entry *get_cached_fragment(struct super_block *s,
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 
-	return squashfs_cache_get(s, msblk->fragment_cache, start_block, length);
+	return squashfs_cache_get(s, msblk->fragment_cache, start_block,
+		length);
 }
 
 
@@ -82,8 +83,9 @@ __le64 *read_fragment_index_table(struct super_block *s,
 		ERROR("Failed to allocate fragment index table\n");
 		return NULL;
 	}
-   
-	if (!squashfs_read_data(s, (char *) fragment_index, fragment_table_start,
+
+	if (!squashfs_read_data(s, (char *) fragment_index,
+			fragment_table_start,
 			length | SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
 		ERROR("unable to read fragment index table\n");
 		kfree(fragment_index);

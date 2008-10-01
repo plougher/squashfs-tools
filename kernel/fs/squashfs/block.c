@@ -41,7 +41,8 @@ static struct buffer_head *get_block_length(struct super_block *s,
 	unsigned short temp;
 	struct buffer_head *bh;
 
-	if (!(bh = sb_bread(s, *cur_index)))
+	bh = sb_bread(s, *cur_index);
+	if (bh == NULL)
 		goto out;
 
 	if (msblk->devblksize - *offset == 1) {
@@ -52,14 +53,15 @@ static struct buffer_head *get_block_length(struct super_block *s,
 			((unsigned char *) &temp)[0] = *((unsigned char *)
 				(bh->b_data + *offset));
 		brelse(bh);
-		if (!(bh = sb_bread(s, ++(*cur_index))))
+		bh = sb_bread(s, ++(*cur_index));
+		if (bh == NULL)
 			goto out;
 		if (msblk->swap)
 			((unsigned char *) &temp)[0] = *((unsigned char *)
-				bh->b_data); 
+				bh->b_data);
 		else
 			((unsigned char *) &temp)[1] = *((unsigned char *)
-				bh->b_data); 
+				bh->b_data);
 		*c_byte = temp;
 		*offset = 1;
 	} else {
@@ -67,12 +69,12 @@ static struct buffer_head *get_block_length(struct super_block *s,
 			((unsigned char *) &temp)[1] = *((unsigned char *)
 				(bh->b_data + *offset));
 			((unsigned char *) &temp)[0] = *((unsigned char *)
-				(bh->b_data + *offset + 1)); 
+				(bh->b_data + *offset + 1));
 		} else {
 			((unsigned char *) &temp)[0] = *((unsigned char *)
 				(bh->b_data + *offset));
 			((unsigned char *) &temp)[1] = *((unsigned char *)
-				(bh->b_data + *offset + 1)); 
+				(bh->b_data + *offset + 1));
 		}
 		*c_byte = temp;
 		*offset += 2;
@@ -93,12 +95,12 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 	struct buffer_head **bh;
 	unsigned int offset = index & ((1 << msblk->devblksize_log2) - 1);
 	unsigned int cur_index = index >> msblk->devblksize_log2;
-	int bytes, avail_bytes, b = 0, k = 0;
+	int bytes, avail, b = 0, k = 0;
 	unsigned int compressed;
 	unsigned int c_byte = length;
 
 	bh = kmalloc(((msblk->block_size >> msblk->devblksize_log2) + 1) *
-								sizeof(struct buffer_head *), GFP_KERNEL);
+				sizeof(struct buffer_head *), GFP_KERNEL);
 	if (bh == NULL)
 		goto read_failure;
 
@@ -107,10 +109,12 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		compressed = SQUASHFS_COMPRESSED_BLOCK(c_byte);
 		c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
 
-		TRACE("Block @ 0x%llx, %scompressed size %d, src size %d\n", index,
-					compressed ? "" : "un", (unsigned int) c_byte, srclength);
+		TRACE("Block @ 0x%llx, %scompressed size %d, src size %d\n",
+			index, compressed ? "" : "un", (unsigned int) c_byte,
+			srclength);
 
-		if (c_byte > srclength || index < 0 || (index + c_byte) > msblk->bytes_used)
+		if (c_byte > srclength || index < 0 ||
+				(index + c_byte) > msblk->bytes_used)
 			goto read_failure;
 
 		for (b = 0; bytes < (int) c_byte; b++, cur_index++) {
@@ -133,8 +137,8 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		compressed = SQUASHFS_COMPRESSED(c_byte);
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
 
-		TRACE("Block @ 0x%llx, %scompressed size %d\n", index, compressed
-					? "" : "un", (unsigned int) c_byte);
+		TRACE("Block @ 0x%llx, %scompressed size %d\n", index,
+				compressed ? "" : "un", (unsigned int) c_byte);
 
 		if (c_byte > srclength || (index + c_byte) > msblk->bytes_used)
 			goto block_release;
@@ -152,8 +156,8 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		int zlib_err = 0;
 
 		/*
-	 	* uncompress block
-	 	*/
+		 * uncompress block
+		 */
 
 		mutex_lock(&msblk->read_data_mutex);
 
@@ -161,24 +165,26 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		msblk->stream.avail_out = srclength;
 
 		for (bytes = 0; k < b; k++) {
-			avail_bytes = min(c_byte - bytes, msblk->devblksize - offset);
+			avail = min(c_byte - bytes, msblk->devblksize - offset);
 
 			wait_on_buffer(bh[k]);
 			if (!buffer_uptodate(bh[k]))
 				goto release_mutex;
 
 			msblk->stream.next_in = bh[k]->b_data + offset;
-			msblk->stream.avail_in = avail_bytes;
+			msblk->stream.avail_in = avail;
 
 			if (k == 0) {
 				zlib_err = zlib_inflateInit(&msblk->stream);
 				if (zlib_err != Z_OK) {
-					ERROR("zlib_inflateInit returned unexpected result 0x%x,"
-						" srclength %d\n", zlib_err, srclength);
+					ERROR("zlib_inflateInit returned"
+						" unexpected result 0x%x,"
+						" srclength %d\n", zlib_err,
+						srclength);
 					goto release_mutex;
 				}
 
-				if (avail_bytes == 0) {
+				if (avail == 0) {
 					offset = 0;
 					brelse(bh[k]);
 					continue;
@@ -187,13 +193,15 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 
 			zlib_err = zlib_inflate(&msblk->stream, Z_NO_FLUSH);
 			if (zlib_err != Z_OK && zlib_err != Z_STREAM_END) {
-				ERROR("zlib_inflate returned unexpected result 0x%x,"
-					" srclength %d, avail_in %d, avail_out %d\n", zlib_err,
-					srclength, msblk->stream.avail_in, msblk->stream.avail_out);
+				ERROR("zlib_inflate returned unexpected result"
+					" 0x%x, srclength %d, avail_in %d,"
+					" avail_out %d\n", zlib_err, srclength,
+					msblk->stream.avail_in,
+					msblk->stream.avail_out);
 				goto release_mutex;
 			}
 
-			bytes += avail_bytes;
+			bytes += avail;
 			offset = 0;
 			brelse(bh[k]);
 		}
@@ -212,17 +220,17 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 	} else {
 		int i;
 
-		for(i = 0; i < b; i++) {
+		for (i = 0; i < b; i++) {
 			wait_on_buffer(bh[i]);
 			if (!buffer_uptodate(bh[i]))
 				goto block_release;
 		}
 
 		for (bytes = 0; k < b; k++) {
-			avail_bytes = min(c_byte - bytes, msblk->devblksize - offset);
+			avail = min(c_byte - bytes, msblk->devblksize - offset);
 
-			memcpy(buffer + bytes, bh[k]->b_data + offset, avail_bytes);
-			bytes += avail_bytes;
+			memcpy(buffer + bytes, bh[k]->b_data + offset, avail);
+			bytes += avail;
 			offset = 0;
 			brelse(bh[k]);
 		}

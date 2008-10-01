@@ -43,7 +43,7 @@ struct squashfs_cache {
 	int block_size;
 	int next_blk;
 	int waiting;
-	int unused_blks;
+	int unused;
 	int use_vmalloc;
 	spinlock_t lock;
 	wait_queue_head_t wait_queue;
@@ -51,7 +51,6 @@ struct squashfs_cache {
 };
 
 struct squashfs_sb_info {
-	//struct squashfs_super_block	sblk;
 	int			devblksize;
 	int			devblksize_log2;
 	int			swap;

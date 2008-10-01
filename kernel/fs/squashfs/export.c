@@ -35,9 +35,9 @@
 static squashfs_inode_t squashfs_inode_lookup(struct super_block *s, int ino)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	long long start =
-		le64_to_cpu(msblk->inode_lookup_table[SQUASHFS_LOOKUP_BLOCK(ino - 1)]);
+	int blk = SQUASHFS_LOOKUP_BLOCK(ino - 1);
 	int offset = SQUASHFS_LOOKUP_BLOCK_OFFSET(ino - 1);
+	long long start = le64_to_cpu(msblk->inode_lookup_table[blk]);
 	__le64 inode;
 
 	TRACE("Entered squashfs_inode_lookup, inode_number = %d\n", ino);
@@ -60,7 +60,7 @@ static struct dentry *squashfs_export_iget(struct super_block *s,
 	TRACE("Entered squashfs_export_iget\n");
 
 	inode = squashfs_inode_lookup(s, inode_number);
-	if(inode != SQUASHFS_INVALID_BLK)
+	if (inode != SQUASHFS_INVALID_BLK)
 		dentry = d_obtain_alias(squashfs_iget(s, inode, inode_number));
 
 	return dentry;
@@ -70,8 +70,8 @@ static struct dentry *squashfs_export_iget(struct super_block *s,
 static struct dentry *squashfs_fh_to_dentry(struct super_block *s,
 		struct fid *fid, int fh_len, int fh_type)
 {
-	if((fh_type != FILEID_INO32_GEN && fh_type != FILEID_INO32_GEN_PARENT) ||
-			fh_len < 2)
+	if ((fh_type != FILEID_INO32_GEN && fh_type != FILEID_INO32_GEN_PARENT)
+			|| fh_len < 2)
 		return NULL;
 
 	return squashfs_export_iget(s, fid->i32.ino);
@@ -81,7 +81,7 @@ static struct dentry *squashfs_fh_to_dentry(struct super_block *s,
 static struct dentry *squashfs_fh_to_parent(struct super_block *s,
 		struct fid *fid, int fh_len, int fh_type)
 {
-	if(fh_type != FILEID_INO32_GEN_PARENT || fh_len < 4)
+	if (fh_type != FILEID_INO32_GEN_PARENT || fh_len < 4)
 		return NULL;
 
 	return squashfs_export_iget(s, fid->i32.parent_ino);
@@ -112,8 +112,9 @@ __le64 *read_inode_lookup_table(struct super_block *s,
 		ERROR("Failed to allocate inode lookup table\n");
 		return NULL;
 	}
-   
-	if (!squashfs_read_data(s, (char *) inode_lookup_table, lookup_table_start,
+ 
+	if (!squashfs_read_data(s, (char *) inode_lookup_table,
+			lookup_table_start,
 			length | SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
 		ERROR("unable to read inode lookup table\n");
 		kfree(inode_lookup_table);

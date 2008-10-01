@@ -44,15 +44,17 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 	spin_lock(&cache->lock);
 
 	while (1) {
-		for (i = 0; i < cache->entries && cache->entry[i].block != block; i++);
+		for (i = 0; i < cache->entries; i++)
+			if (cache->entry[i].block == block)
+				break;
 
 		if (i == cache->entries) {
-			if (cache->unused_blks == 0) {
-				cache->waiting ++;
+			if (cache->unused == 0) {
+				cache->waiting++;
 				spin_unlock(&cache->lock);
-				wait_event(cache->wait_queue, cache->unused_blks);
+				wait_event(cache->wait_queue, cache->unused);
 				spin_lock(&cache->lock);
-				cache->waiting --;
+				cache->waiting--;
 				continue;
 			}
 
@@ -66,7 +68,7 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 			cache->next_blk = (i + 1) % cache->entries;
 			entry = &cache->entry[i];
 
-			cache->unused_blks --;
+			cache->unused--;
 			entry->block = block;
 			entry->locked = 1;
 			entry->pending = 1;
@@ -75,7 +77,8 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 			spin_unlock(&cache->lock);
 
 			entry->length = squashfs_read_data(s, entry->data,
-				block, length, &entry->next_index, cache->block_size);
+				block, length, &entry->next_index,
+				cache->block_size);
 
 			spin_lock(&cache->lock);
 
@@ -84,6 +87,7 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 
 			entry->pending = 0;
 			spin_unlock(&cache->lock);
+
 			if (entry->waiting)
 				wake_up_all(&entry->wait_queue);
 			goto out;
@@ -91,11 +95,11 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 
 		entry = &cache->entry[i];
 		if (entry->locked == 0)
-			cache->unused_blks --;
+			cache->unused--;
 		entry->locked++;
 
 		if (entry->pending) {
-			entry->waiting ++;
+			entry->waiting++;
 			spin_unlock(&cache->lock);
 			wait_event(entry->wait_queue, !entry->pending);
 			goto out;
@@ -109,7 +113,8 @@ out:
 	TRACE("Got %s %d, start block %lld, locked %d, error %d\n", cache->name,
 		i, entry->block, entry->locked, entry->error);
 	if (entry->error)
-		ERROR("Unable to read %s cache entry [%llx]\n", cache->name, block);
+		ERROR("Unable to read %s cache entry [%llx]\n", cache->name,
+							block);
 	return entry;
 }
 
@@ -118,9 +123,9 @@ void squashfs_cache_put(struct squashfs_cache *cache,
 				struct squashfs_cache_entry *entry)
 {
 	spin_lock(&cache->lock);
-	entry->locked --;
+	entry->locked--;
 	if (entry->locked == 0) {
-		cache->unused_blks ++;
+		cache->unused++;
 		spin_unlock(&cache->lock);
 		if (cache->waiting)
 			wake_up(&cache->wait_queue);
@@ -153,14 +158,16 @@ struct squashfs_cache *squashfs_cache_init(char *name, int entries,
 {
 	int i;
 	struct squashfs_cache *cache = kzalloc(sizeof(struct squashfs_cache) +
-			entries * sizeof(struct squashfs_cache_entry), GFP_KERNEL);
+			entries * sizeof(struct squashfs_cache_entry),
+			GFP_KERNEL);
+
 	if (cache == NULL) {
 		ERROR("Failed to allocate %s cache\n", name);
 		goto failed;
 	}
 
 	cache->next_blk = 0;
-	cache->unused_blks = entries;
+	cache->unused = entries;
 	cache->entries = entries;
 	cache->block_size = block_size;
 	cache->use_vmalloc = use_vmalloc;

@@ -33,10 +33,11 @@
 
 #define ERROR(s, args...)	printk(KERN_ERR "SQUASHFS error: "s, ## args)
 
-#define SERROR(s, args...)	do { \
-				if (!silent) \
+#define SERROR(s, args...)	\
+		do { \
+			if (!silent) \
 				printk(KERN_ERR "SQUASHFS error: "s, ## args);\
-				} while(0)
+		} while (0)
 
 #define WARNING(s, args...)	printk(KERN_WARNING "SQUASHFS: "s, ## args)
 
@@ -49,7 +50,8 @@ static inline struct squashfs_inode_info *SQUASHFS_I(struct inode *inode)
 extern unsigned int squashfs_read_data(struct super_block *, char *,
 				long long, unsigned int, long long *, int);
 extern int squashfs_get_cached_block(struct super_block *, void *,
-				long long, unsigned int, int, long long *, unsigned int *);
+				long long, unsigned int, int, long long *,
+				unsigned int *);
 
 /* cache.c */
 extern struct squashfs_cache_entry *squashfs_cache_get(struct super_block *,

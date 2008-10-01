@@ -62,7 +62,7 @@ __le64 *read_id_index_table(struct super_block *s, long long id_table_start,
 		ERROR("Failed to allocate id index table\n");
 		return NULL;
 	}
-   
+
 	if (!squashfs_read_data(s, (char *) id_table, id_table_start, length |
 			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
 		ERROR("unable to read id index table\n");

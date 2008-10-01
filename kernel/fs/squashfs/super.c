@@ -39,7 +39,8 @@
 static struct file_system_type squashfs_fs_type;
 static struct super_operations squashfs_super_ops;
 
-static int supported_squashfs_filesystem(struct squashfs_sb_info *msblk, short major, short minor, int silent)
+static int supported_squashfs_filesystem(struct squashfs_sb_info *msblk,
+					short major, short minor, int silent)
 {
 	msblk->read_inode = squashfs_read_inode;
 	msblk->read_blocklist = read_blocklist;
@@ -49,17 +50,19 @@ static int supported_squashfs_filesystem(struct squashfs_sb_info *msblk, short m
 		if (!squashfs_1_0_supported(msblk)) {
 			SERROR("Major/Minor mismatch, Squashfs 1.0 filesystems "
 				"are unsupported\n");
-			SERROR("Please recompile with Squashfs 1.0 support enabled\n");
+			SERROR("Please recompile with Squashfs 1.0 support "
+				"enabled\n");
 			return 0;
 		}
 	} else if (major == 2) {
 		if (!squashfs_2_0_supported(msblk)) {
 			SERROR("Major/Minor mismatch, Squashfs 2.0 filesystems "
 				"are unsupported\n");
-			SERROR("Please recompile with Squashfs 2.0 support enabled\n");
+			SERROR("Please recompile with Squashfs 2.0 support "
+				"enabled\n");
 			return 0;
 		}
-	} else if(major != SQUASHFS_MAJOR || minor > SQUASHFS_MINOR) {
+	} else if (major != SQUASHFS_MAJOR || minor > SQUASHFS_MINOR) {
 		SERROR("Major/Minor mismatch, trying to mount newer %d.%d "
 				"filesystem\n", major, minor);
 		SERROR("Please update your kernel\n");
@@ -96,7 +99,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		ERROR("Failed to allocate zlib workspace\n");
 		goto failure;
 	}
-	
+
 	sblk = kzalloc(sizeof(struct squashfs_super_block), GFP_KERNEL);
 	if (sblk == NULL) {
 		ERROR("Failed to allocate squashfs_super_block\n");
@@ -109,10 +112,11 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	mutex_init(&msblk->read_data_mutex);
 	mutex_init(&msblk->read_page_mutex);
 	mutex_init(&msblk->meta_index_mutex);
-	
-	/* msblk->bytes_used is checked in squashfs_read_data to ensure reads are not
- 	 * beyond filesystem end.  As we're using squashfs_read_data to read sblk here,
- 	 * first set sblk->bytes_used to a useful value */
+
+	/* msblk->bytes_used is checked in squashfs_read_data to ensure reads
+	 * are not beyond filesystem end.  As we're using squashfs_read_data to
+	 * read sblk here, first set sblk->bytes_used to a useful value
+	 */
 	msblk->bytes_used = sizeof(struct squashfs_super_block);
 	if (!squashfs_read_data(s, (char *) sblk, SQUASHFS_START,
 					sizeof(struct squashfs_super_block) |
@@ -131,13 +135,15 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	/* Check the MAJOR & MINOR versions */
-	if(!supported_squashfs_filesystem(msblk, le16_to_cpu(sblk->s_major), le16_to_cpu(sblk->s_minor), silent))
+	if (!supported_squashfs_filesystem(msblk, le16_to_cpu(sblk->s_major),
+			le16_to_cpu(sblk->s_minor), silent))
 		goto failed_mount;
 
 	/* Check the filesystem does not extend beyond the end of the
 	   block device */
 	msblk->bytes_used = le64_to_cpu(sblk->bytes_used);
-	if(msblk->bytes_used < 0 || msblk->bytes_used > i_size_read(s->s_bdev->bd_inode))
+	if (msblk->bytes_used < 0 || msblk->bytes_used >
+			i_size_read(s->s_bdev->bd_inode))
 		goto failed_mount;
 
 	/* Check block size for sanity */
@@ -161,27 +167,30 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 
 	TRACE("Found valid superblock on %s\n", bdevname(s->s_bdev, b));
 	TRACE("Inodes are %scompressed\n", SQUASHFS_UNCOMPRESSED_INODES(flags)
-					? "un" : "");
+				? "un" : "");
 	TRACE("Data is %scompressed\n", SQUASHFS_UNCOMPRESSED_DATA(flags)
-					? "un" : "");
+				? "un" : "");
 	TRACE("Check data is %spresent in the filesystem\n",
-					SQUASHFS_CHECK_DATA(flags) ?  "" : "not ");
+				SQUASHFS_CHECK_DATA(flags) ?  "" : "not ");
 	TRACE("Filesystem size %lld bytes\n", msblk->bytes_used);
 	TRACE("Block size %d\n", msblk->block_size);
 	TRACE("Number of inodes %d\n", inodes);
 	TRACE("Number of fragments %d\n", le32_to_cpu(sblk->fragments));
 	TRACE("Number of ids %d\n", le16_to_cpu(sblk->no_ids));
 	TRACE("sblk->inode_table_start %llx\n", msblk->inode_table_start);
-	TRACE("sblk->directory_table_start %llx\n", msblk->directory_table_start);
+	TRACE("sblk->directory_table_start %llx\n",
+				msblk->directory_table_start);
 	if (sblk->s_major > 1)
-		TRACE("sblk->fragment_table_start %llx\n", le32_to_cpu(sblk->fragment_table_start));
+		TRACE("sblk->fragment_table_start %llx\n",
+				le32_to_cpu(sblk->fragment_table_start));
 	TRACE("sblk->id_table_start %llx\n", le64_to_cpu(sblk->id_table_start));
 
 	s->s_maxbytes = MAX_LFS_FILESIZE;
 	s->s_flags |= MS_RDONLY;
 	s->s_op = &squashfs_super_ops;
 
-	msblk->block_cache = squashfs_cache_init("metadata", SQUASHFS_CACHED_BLKS,
+	msblk->block_cache = squashfs_cache_init("metadata",
+				SQUASHFS_CACHED_BLKS,
 		SQUASHFS_METADATA_SIZE, 0);
 	if (msblk->block_cache == NULL)
 		goto failed_mount;
@@ -194,8 +203,8 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	/* Allocate and read id index table */
-	msblk->id_table = read_id_index_table(s, le64_to_cpu(sblk->id_table_start),
-						le16_to_cpu(sblk->no_ids));
+	msblk->id_table = read_id_index_table(s,
+		le64_to_cpu(sblk->id_table_start), le16_to_cpu(sblk->no_ids));
 	if (msblk->id_table == NULL)
 		goto failed_mount;
 
@@ -224,7 +233,7 @@ allocate_lookup_table:
 
 	/* Allocate and read inode lookup table */
 	msblk->inode_lookup_table = read_inode_lookup_table(s,
-			lookup_table_start, msblk->inodes); 
+		lookup_table_start, msblk->inodes);
 	if (msblk->inode_lookup_table == NULL)
 		goto failed_mount;
 
@@ -313,14 +322,15 @@ static void squashfs_put_super(struct super_block *s)
 
 
 static int squashfs_get_sb(struct file_system_type *fs_type, int flags,
-				const char *dev_name, void *data, struct vfsmount *mnt)
+				const char *dev_name, void *data,
+				struct vfsmount *mnt)
 {
 	return get_sb_bdev(fs_type, flags, dev_name, data, squashfs_fill_super,
 				mnt);
 }
 
 
-static struct kmem_cache * squashfs_inode_cachep;
+static struct kmem_cache *squashfs_inode_cachep;
 
 
 static void init_once(void *foo)
@@ -354,7 +364,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 4.0-CVS (2008/09/24) "
+	printk(KERN_INFO "squashfs: version 4.0-CVS (2008/09/30) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
