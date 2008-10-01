@@ -240,25 +240,25 @@ typedef long long		squashfs_inode_t;
 #define COMPRESSION_ZLIB 1
 
 struct squashfs_super_block {
-	unsigned int		s_magic;
-	unsigned int		inodes;
-	unsigned int		mkfs_time /* time of filesystem creation */;
-	unsigned int		block_size;
-	unsigned int		fragments;
-	unsigned short		compression;
-	unsigned short		block_log;
-	unsigned short		flags;
-	unsigned short		no_ids;
-	unsigned short		s_major;
-	unsigned short		s_minor;
-	squashfs_inode_t	root_inode;
-	long long		bytes_used;
-	long long		id_table_start;
-	long long		xattr_table_start;
-	long long		inode_table_start;
-	long long		directory_table_start;
-	long long		fragment_table_start;
-	long long		lookup_table_start;
+	__le32			s_magic;
+	__le32			inodes;
+	__le32			mkfs_time /* time of filesystem creation */;
+	__le32			block_size;
+	__le32			fragments;
+	__le16			compression;
+	__le16			block_log;
+	__le16			flags;
+	__le16			no_ids;
+	__le16			s_major;
+	__le16			s_minor;
+	__le64			root_inode;
+	__le64			bytes_used;
+	__le64			id_table_start;
+	__le64			xattr_table_start;
+	__le64			inode_table_start;
+	__le64			directory_table_start;
+	__le64			fragment_table_start;
+	__le64			lookup_table_start;
 };
 
 struct squashfs_dir_index {
