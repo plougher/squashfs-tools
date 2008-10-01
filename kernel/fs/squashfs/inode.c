@@ -73,8 +73,7 @@ int squashfs_read_inode(struct inode *i, squashfs_inode_t inode)
 {
 	struct super_block *s = i->i_sb;
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
-	long long block = SQUASHFS_INODE_BLK(inode) + sblk->inode_table_start;
+	long long block = SQUASHFS_INODE_BLK(inode) + msblk->inode_table_start;
 	unsigned int offset = SQUASHFS_INODE_OFFSET(inode);
 	long long next_block;
 	unsigned int next_offset;
