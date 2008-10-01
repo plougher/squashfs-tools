@@ -51,7 +51,7 @@ struct squashfs_cache {
 };
 
 struct squashfs_sb_info {
-	struct squashfs_super_block	sblk;
+	//struct squashfs_super_block	sblk;
 	int			devblksize;
 	int			devblksize_log2;
 	int			swap;
@@ -68,6 +68,12 @@ struct squashfs_sb_info {
 	struct meta_index	*meta_index;
 	z_stream		stream;
 	__le64			*inode_lookup_table;
+	long long		inode_table_start;
+	long long		directory_table_start;
+	unsigned int		block_size;
+	unsigned short		block_log;
+	long long		bytes_used;
+	unsigned int		inodes;
 	int			(*read_inode)(struct inode *i,  squashfs_inode_t \
 				inode);
 	long long		(*read_blocklist)(struct inode *inode, int \
