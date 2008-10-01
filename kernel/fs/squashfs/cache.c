@@ -106,8 +106,8 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 	}
 
 out:
-	TRACE("Got %s %d, start block %lld, locked %d, error %d\n", i,
-		cache->name, entry->block, entry->locked, entry->error);
+	TRACE("Got %s %d, start block %lld, locked %d, error %d\n", cache->name,
+		i, entry->block, entry->locked, entry->error);
 	if (entry->error)
 		ERROR("Unable to read %s cache entry [%llx]\n", cache->name, block);
 	return entry;
