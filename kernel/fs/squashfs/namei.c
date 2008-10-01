@@ -39,7 +39,6 @@ static int get_dir_index_using_name(struct super_block *s,
 				const char *name, int len)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
 	int i, size, length = 0;
 	struct squashfs_dir_index *index;
 	char *str;
@@ -73,7 +72,7 @@ static int get_dir_index_using_name(struct super_block *s,
 
 		length = le32_to_cpu(index->index);
 		*next_block = le32_to_cpu(index->start_block) +
-				sblk->directory_table_start;
+				msblk->directory_table_start;
 	}
 
 	*next_offset = (length + *next_offset) % SQUASHFS_METADATA_SIZE;
@@ -91,9 +90,8 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 	int len = dentry->d_name.len;
 	struct inode *inode = NULL;
 	struct squashfs_sb_info *msblk = i->i_sb->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
 	long long next_block = SQUASHFS_I(i)->start_block +
-				sblk->directory_table_start;
+				msblk->directory_table_start;
 	int next_offset = SQUASHFS_I(i)->offset, length = 0, dir_count, size;
 	struct squashfs_dir_header dirh;
 	struct squashfs_dir_entry *dire;
