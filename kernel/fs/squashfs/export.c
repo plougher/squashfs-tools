@@ -98,29 +98,29 @@ static struct dentry *squashfs_get_parent(struct dentry *child)
 }
 
 
-int read_inode_lookup_table(struct super_block *s)
+__le64 *read_inode_lookup_table(struct super_block *s,
+		long long lookup_table_start, unsigned int inodes)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
-	unsigned int length = SQUASHFS_LOOKUP_BLOCK_BYTES(sblk->inodes);
+	unsigned int length = SQUASHFS_LOOKUP_BLOCK_BYTES(inodes);
+	__le64 *inode_lookup_table;
 
 	TRACE("In read_inode_lookup_table, length %d\n", length);
 
 	/* Allocate inode lookup table */
-	msblk->inode_lookup_table = kmalloc(length, GFP_KERNEL);
-	if (msblk->inode_lookup_table == NULL) {
+	inode_lookup_table = kmalloc(length, GFP_KERNEL);
+	if (inode_lookup_table == NULL) {
 		ERROR("Failed to allocate inode lookup table\n");
-		return 0;
+		return NULL;
 	}
    
-	if (!squashfs_read_data(s, (char *) msblk->inode_lookup_table,
-			sblk->lookup_table_start, length |
-			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
+	if (!squashfs_read_data(s, (char *) inode_lookup_table, lookup_table_start,
+			length | SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
 		ERROR("unable to read inode lookup table\n");
-		return 0;
+		kfree(inode_lookup_table);
+		return NULL;
 	}
 
-	return 1;
+	return inode_lookup_table;
 }
 
 
