@@ -167,8 +167,7 @@ static int get_meta_index(struct inode *inode, int index,
 		long long *data_block, void *block_list)
 {
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
-	int skip = calculate_skip(i_size_read(inode) >> sblk->block_log);
+	int skip = calculate_skip(i_size_read(inode) >> msblk->block_log);
 	int offset = 0;
 	struct meta_index *meta;
 	struct meta_entry *meta_entry;
@@ -194,7 +193,7 @@ static int get_meta_index(struct inode *inode, int index,
 				meta->offset + meta->entries - 1;
 			/* XXX */
 			meta_entry = &meta->meta_entry[offset - meta->offset];
-			cur_index_block = meta_entry->index_block + sblk->inode_table_start;
+			cur_index_block = meta_entry->index_block + msblk->inode_table_start;
 			cur_offset = meta_entry->offset;
 			cur_data_block = meta_entry->data_block;
 			TRACE("get_meta_index: offset %d, meta->offset %d, "
@@ -221,7 +220,7 @@ static int get_meta_index(struct inode *inode, int index,
 			}
 
 			meta_entry = &meta->meta_entry[i - meta->offset];
-			meta_entry->index_block = cur_index_block - sblk->inode_table_start;
+			meta_entry->index_block = cur_index_block - msblk->inode_table_start;
 			meta_entry->offset = cur_offset;
 			meta_entry->data_block = cur_data_block;
 			meta->entries ++;
@@ -291,20 +290,19 @@ static int squashfs_readpage(struct file *file, struct page *page)
 {
 	struct inode *inode = page->mapping->host;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
 	void *block_list = NULL;
 	long long block;
 	unsigned int bsize, i;
 	int bytes;
-	int index = page->index >> (sblk->block_log - PAGE_CACHE_SHIFT);
+	int index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
  	void *pageaddr;
 	struct squashfs_cache_entry *fragment = NULL;
 	char *data_ptr = msblk->read_page;
 	
-	int mask = (1 << (sblk->block_log - PAGE_CACHE_SHIFT)) - 1;
+	int mask = (1 << (msblk->block_log - PAGE_CACHE_SHIFT)) - 1;
 	int start_index = page->index & ~mask;
 	int end_index = start_index | mask;
-	int file_end = i_size_read(inode) >> sblk->block_log;
+	int file_end = i_size_read(inode) >> msblk->block_log;
 	int sparse = 0;
 
 	TRACE("Entered squashfs_readpage, page index %lx, start block %llx\n",
@@ -328,13 +326,13 @@ static int squashfs_readpage(struct file *file, struct page *page)
 
 		if (bsize == 0) { /* hole */
 			bytes = index == file_end ?
-				(i_size_read(inode) & (sblk->block_size - 1)) : sblk->block_size;
+				(i_size_read(inode) & (msblk->block_size - 1)) : msblk->block_size;
 			sparse = 1;
 		} else {
 			mutex_lock(&msblk->read_page_mutex);
 		
 			bytes = squashfs_read_data(inode->i_sb, msblk->read_page, block,
-				bsize, NULL, sblk->block_size);
+				bsize, NULL, msblk->block_size);
 
 			if (bytes == 0) {
 				ERROR("Unable to read page, block %llx, size %x\n", block, bsize);
@@ -354,7 +352,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			release_cached_fragment(msblk, fragment);
 			goto error_out;
 		}
-		bytes = i_size_read(inode) & (sblk->block_size - 1);
+		bytes = i_size_read(inode) & (msblk->block_size - 1);
 		data_ptr = fragment->data + SQUASHFS_I(inode)->u.s1.fragment_offset;
 	}
 
