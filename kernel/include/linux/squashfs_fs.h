@@ -269,12 +269,12 @@ struct squashfs_dir_index {
 };
 
 #define SQUASHFS_BASE_INODE_HEADER		\
-	unsigned short		inode_type;	\
-	unsigned short		mode;	\
-	unsigned short		uid;		\
-	unsigned short		guid;		\
-	unsigned int		mtime;		\
-	unsigned int 		inode_number;
+	__le16			inode_type;	\
+	__le16			mode;	\
+	__le16			uid;		\
+	__le16			guid;		\
+	__le32			mtime;		\
+	__le32	 		inode_number;
 
 struct squashfs_base_inode_header {
 	SQUASHFS_BASE_INODE_HEADER;
@@ -282,60 +282,60 @@ struct squashfs_base_inode_header {
 
 struct squashfs_ipc_inode_header {
 	SQUASHFS_BASE_INODE_HEADER;
-	unsigned int		nlink;
+	__le32			nlink;
 };
 
 struct squashfs_dev_inode_header {
 	SQUASHFS_BASE_INODE_HEADER;
-	unsigned int		nlink;
-	unsigned int		rdev;
+	__le32			nlink;
+	__le32			rdev;
 };
 	
 struct squashfs_symlink_inode_header {
 	SQUASHFS_BASE_INODE_HEADER;
-	unsigned int		nlink;
-	unsigned int		symlink_size;
+	__le32			nlink;
+	__le32			symlink_size;
 	char			symlink[0];
 };
 
 struct squashfs_reg_inode_header {
 	SQUASHFS_BASE_INODE_HEADER;
-	unsigned int		start_block;
-	unsigned int		fragment;
-	unsigned int		offset;
-	unsigned int		file_size;
-	unsigned short		block_list[0];
+	__le32			start_block;
+	__le32			fragment;
+	__le32			offset;
+	__le32			file_size;
+	__le16			block_list[0];
 };
 
 struct squashfs_lreg_inode_header {
 	SQUASHFS_BASE_INODE_HEADER;
-	squashfs_block_t	start_block;
-	long long		file_size;
-	long long		sparse;
-	unsigned int		nlink;
-	unsigned int		fragment;
-	unsigned int		offset;
-	unsigned int		xattr;
-	unsigned short		block_list[0];
+	__le64			start_block;
+	__le64			file_size;
+	__le64			sparse;
+	__le32			nlink;
+	__le32			fragment;
+	__le32			offset;
+	__le32			xattr;
+	__le16			block_list[0];
 };
 
 struct squashfs_dir_inode_header {
 	SQUASHFS_BASE_INODE_HEADER;
-	unsigned int		start_block;
-	unsigned int		nlink;
-	unsigned short		file_size;
-	unsigned short		offset;
-	unsigned int		parent_inode;
+	__le32			start_block;
+	__le32			nlink;
+	__le16			file_size;
+	__le16			offset;
+	__le32			parent_inode;
 };
 
 struct squashfs_ldir_inode_header {
 	SQUASHFS_BASE_INODE_HEADER;
-	unsigned int		nlink;
-	unsigned int		file_size;
-	unsigned int		start_block;
-	unsigned int		parent_inode;
-	unsigned short		i_count;
-	unsigned short		offset;
+	__le32			nlink;
+	__le32			file_size;
+	__le32			start_block;
+	__le32			parent_inode;
+	__le16			i_count;
+	__le16			offset;
 	struct squashfs_dir_index	index[0];
 };
 
