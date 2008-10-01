@@ -143,13 +143,12 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 			if (len == size && !strncmp(name, dire->name, len)) {
 				unsigned int start_block = le32_to_cpu(dirh.start_block);
 				unsigned int offset = le32_to_cpu(dire->offset);
-				unsigned int inode_number = le32_to_cpu(dire->inode_number) +
-							((short) le16_to_cpu(dire->inode_number));
+				unsigned int inode_number = le32_to_cpu(dirh.inode_number) +
+					((short) le16_to_cpu(dire->inode_number));
 				squashfs_inode_t ino = SQUASHFS_MKINODE(start_block, offset);
 
 				TRACE("calling squashfs_iget for directory entry %s, inode"
-					"  %x:%x, %d\n", name, start_block, offset, inode_number);
-
+					"  %x:%x, %d\n", name, start_block, offset, inode_number); 
 				inode = squashfs_iget(i->i_sb, ino, inode_number);
 
 				goto exit_lookup;
