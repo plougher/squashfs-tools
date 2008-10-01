@@ -42,7 +42,6 @@ static int get_dir_index_using_offset(struct super_block *s,
 				long long f_pos)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
 	int i, index, length = 0;
 	struct squashfs_dir_index dir_index;
 
@@ -67,7 +66,7 @@ static int get_dir_index_using_offset(struct super_block *s,
 
 		length = index;
 		*next_block = le32_to_cpu(dir_index.start_block) +
-				sblk->directory_table_start;
+				msblk->directory_table_start;
 	}
 
 	*next_offset = (length + *next_offset) % SQUASHFS_METADATA_SIZE;
@@ -81,9 +80,8 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 {
 	struct inode *i = file->f_dentry->d_inode;
 	struct squashfs_sb_info *msblk = i->i_sb->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
 	long long next_block = SQUASHFS_I(i)->start_block +
-				sblk->directory_table_start;
+				msblk->directory_table_start;
 	int next_offset = SQUASHFS_I(i)->offset, length = 0, dir_count, size, type;
 	unsigned int inode_number;
 	struct squashfs_dir_header dirh;
