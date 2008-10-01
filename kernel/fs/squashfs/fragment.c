@@ -70,28 +70,25 @@ struct squashfs_cache_entry *get_cached_fragment(struct super_block *s,
 }
 
 
-int read_fragment_index_table(struct super_block *s)
+__le64 *read_fragment_index_table(struct super_block *s,
+	long long fragment_table_start, unsigned int fragments)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
-	unsigned int length = SQUASHFS_FRAGMENT_INDEX_BYTES(sblk->fragments);
-
-	if(length == 0)
-		return 1;
+	unsigned int length = SQUASHFS_FRAGMENT_INDEX_BYTES(fragments);
+	__le64 *fragment_index;
 
 	/* Allocate fragment index table */
-	msblk->fragment_index = kmalloc(length, GFP_KERNEL);
-	if (msblk->fragment_index == NULL) {
+	fragment_index = kmalloc(length, GFP_KERNEL);
+	if (fragment_index == NULL) {
 		ERROR("Failed to allocate fragment index table\n");
-		return 0;
+		return NULL;
 	}
    
-	if (!squashfs_read_data(s, (char *) msblk->fragment_index,
-			sblk->fragment_table_start, length |
-			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
+	if (!squashfs_read_data(s, (char *) fragment_index, fragment_table_start,
+			length | SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
 		ERROR("unable to read fragment index table\n");
-		return 0;
+		kfree(fragment_index);
+		return NULL;
 	}
 
-	return 1;
+	return fragment_index;
 }
