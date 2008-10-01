@@ -78,22 +78,6 @@ static struct buffer_head *get_block_length(struct super_block *s,
 		*offset += 2;
 	}
 
-	if (SQUASHFS_CHECK_DATA(msblk->sblk.flags)) {
-		if (*offset == msblk->devblksize) {
-			brelse(bh);
-			if (!(bh = sb_bread(s, ++(*cur_index))))
-				goto out;
-			*offset = 0;
-		}
-		if (*((unsigned char *) (bh->b_data + *offset)) !=
-						SQUASHFS_MARKER_BYTE) {
-			ERROR("Metadata block marker corrupt @ %x\n",
-						*cur_index);
-			brelse(bh);
-			goto out;
-		}
-		(*offset)++;
-	}
 	return bh;
 
 out:
@@ -106,7 +90,6 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 			long long *next_index, int srclength)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
 	struct buffer_head **bh;
 	unsigned int offset = index & ((1 << msblk->devblksize_log2) - 1);
 	unsigned int cur_index = index >> msblk->devblksize_log2;
@@ -114,7 +97,7 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 	unsigned int compressed;
 	unsigned int c_byte = length;
 
-	bh = kmalloc(((sblk->block_size >> msblk->devblksize_log2) + 1) *
+	bh = kmalloc(((msblk->block_size >> msblk->devblksize_log2) + 1) *
 								sizeof(struct buffer_head *), GFP_KERNEL);
 	if (bh == NULL)
 		goto read_failure;
@@ -127,7 +110,7 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		TRACE("Block @ 0x%llx, %scompressed size %d, src size %d\n", index,
 					compressed ? "" : "un", (unsigned int) c_byte, srclength);
 
-		if (c_byte > srclength || index < 0 || (index + c_byte) > sblk->bytes_used)
+		if (c_byte > srclength || index < 0 || (index + c_byte) > msblk->bytes_used)
 			goto read_failure;
 
 		for (b = 0; bytes < (int) c_byte; b++, cur_index++) {
@@ -138,7 +121,7 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		}
 		ll_rw_block(READ, b, bh);
 	} else {
-		if (index < 0 || (index + 2) > sblk->bytes_used)
+		if (index < 0 || (index + 2) > msblk->bytes_used)
 			goto read_failure;
 
 		bh[0] = get_block_length(s, &cur_index, &offset, &c_byte);
@@ -153,7 +136,7 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 		TRACE("Block @ 0x%llx, %scompressed size %d\n", index, compressed
 					? "" : "un", (unsigned int) c_byte);
 
-		if (c_byte > srclength || (index + c_byte) > sblk->bytes_used)
+		if (c_byte > srclength || (index + c_byte) > msblk->bytes_used)
 			goto block_release;
 
 		for (; bytes < c_byte; b++) {
@@ -246,8 +229,7 @@ unsigned int squashfs_read_data(struct super_block *s, char *buffer,
 	}
 
 	if (next_index)
-		*next_index = index + c_byte + (length ? 0 :
-				(SQUASHFS_CHECK_DATA(msblk->sblk.flags) ? 3 : 2));
+		*next_index = index + c_byte + (length ? 0 : 2);
 
 	kfree(bh);
 	return bytes;
