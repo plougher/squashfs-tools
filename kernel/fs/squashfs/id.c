@@ -48,27 +48,27 @@ int get_id(struct super_block *s, unsigned int index, unsigned int *id)
 }
 
 
-int read_id_index_table(struct super_block *s)
+__le64 *read_id_index_table(struct super_block *s, long long id_table_start,
+	unsigned short no_ids)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
-	struct squashfs_super_block *sblk = &msblk->sblk;
-	unsigned int length = SQUASHFS_ID_BLOCK_BYTES(sblk->no_ids);
+	unsigned int length = SQUASHFS_ID_BLOCK_BYTES(no_ids);
+	__le64 *id_table;
 
 	TRACE("In read_id_index_table, length %d\n", length);
 
 	/* Allocate id index table */
-	msblk->id_table = kmalloc(length, GFP_KERNEL);
-	if (msblk->id_table == NULL) {
+	id_table = kmalloc(length, GFP_KERNEL);
+	if (id_table == NULL) {
 		ERROR("Failed to allocate id index table\n");
-		return 0;
+		return NULL;
 	}
    
-	if (!squashfs_read_data(s, (char *) msblk->id_table,
-			sblk->id_table_start, length |
+	if (!squashfs_read_data(s, (char *) id_table, id_table_start, length |
 			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
 		ERROR("unable to read id index table\n");
-		return 0;
+		kfree(id_table);
+		return NULL;
 	}
 
-	return 1;
+	return id_table;
 }
