@@ -181,11 +181,16 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	/* Allocate and read id index table */
-	if (read_id_index_table(s) == 0)
+	msblk->id_table = read_id_index_table(s, le64_to_cpu(sblk->id_table_start),
+						le16_to_cpu(sblk->no_ids));
+	if (msblk->id_table == NULL)
 		goto failed_mount;
 
 	if (sblk->s_major == 1 && squashfs_1_0_supported(msblk))
 		goto allocate_root;
+
+	if (le32_to_cpu(sblk->fragments) == 0)
+		goto allocate_lookup_table;
 
 	msblk->fragment_cache = squashfs_cache_init("fragment",
 		SQUASHFS_CACHED_FRAGMENTS, sblk->block_size, 1);
@@ -193,14 +198,19 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		goto failed_mount;
 
 	/* Allocate and read fragment index table */
-	if (msblk->read_fragment_index_table(s) == 0)
+	msblk->fragment_index = msblk->read_fragment_index_table(s,
+		le64_to_cpu(sblk->fragment_table_start), le32_to_cpu(sblk->fragments));
+	if (msblk->fragment_index == NULL)
 		goto failed_mount;
 
-	if(sblk->s_major < 3 || sblk->lookup_table_start == SQUASHFS_INVALID_BLK)
+allocate_lookup_table:
+	if (sblk->lookup_table_start == SQUASHFS_INVALID_BLK)
 		goto allocate_root;
 
 	/* Allocate and read inode lookup table */
-	if (read_inode_lookup_table(s) == 0)
+	msblk->inode_lookup_table = read_inode_lookup_table(s,
+			le64_to_cpu(sblk->lookup_table_start), le32_to_cpu(sblk->inodes)); 
+	if (msblk->inode_lookup_table == NULL)
 		goto failed_mount;
 
 	s->s_export_op = &squashfs_export_ops;
@@ -325,7 +335,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 4.0-CVS (2008/09/08) "
+	printk(KERN_INFO "squashfs: version 4.0-CVS (2008/09/22) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);
