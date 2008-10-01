@@ -60,7 +60,8 @@ extern void squashfs_cache_delete(struct squashfs_cache *);
 extern struct squashfs_cache *squashfs_cache_init(char *, int, int, int);
 
 /* export.c */
-extern int read_inode_lookup_table(struct super_block *);
+extern __le64 *read_inode_lookup_table(struct super_block *, long long,
+			unsigned int);
 
 /* file.c */
 extern long long read_blocklist(struct inode *, int, int, void *,
@@ -73,11 +74,13 @@ extern void release_cached_fragment(struct squashfs_sb_info *,
 				struct squashfs_cache_entry *);
 extern struct squashfs_cache_entry *get_cached_fragment(struct super_block *,
 				long long, int);
-extern int read_fragment_index_table(struct super_block *);
+extern __le64 *read_fragment_index_table(struct super_block *, long long,
+				unsigned int);
 
 /* id.c */
 extern int get_id(struct super_block *, unsigned int, unsigned int *);
-extern int read_id_index_table(struct super_block *);
+extern __le64 *read_id_index_table(struct super_block *, long long,
+			unsigned short);
 
 /* inode.c */
 extern struct inode *squashfs_iget(struct super_block *, squashfs_inode_t,
