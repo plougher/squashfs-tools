@@ -189,10 +189,10 @@ int squashfs_read_inode(struct inode *i, squashfs_inode_t inode)
 			SQUASHFS_I(i)->u.s2.directory_index_count = 0;
 			SQUASHFS_I(i)->u.s2.parent_inode = le32_to_cpu(inodep->parent_inode);
 
-			TRACE("Directory inode %x:%x, start_block %x, offset "
+			TRACE("Directory inode %x:%x, start_block %llx, offset "
 					"%x\n", SQUASHFS_INODE_BLK(inode),
 					offset, SQUASHFS_I(i)->start_block,
-					inodep->offset);
+					le16_to_cpu(inodep->offset));
 			break;
 		}
 		case SQUASHFS_LDIR_TYPE: {
@@ -214,9 +214,9 @@ int squashfs_read_inode(struct inode *i, squashfs_inode_t inode)
 			SQUASHFS_I(i)->u.s2.directory_index_count = le16_to_cpu(inodep->i_count);
 			SQUASHFS_I(i)->u.s2.parent_inode = le32_to_cpu(inodep->parent_inode);
 
-			TRACE("Long directory inode %x:%x, start_block %x, offset %x\n",
+			TRACE("Long directory inode %x:%x, start_block %llx, offset %x\n",
 					SQUASHFS_INODE_BLK(inode), offset,
-					SQUASHFS_I(i)->start_block, inodep->offset);
+					SQUASHFS_I(i)->start_block, le16_to_cpu(inodep->offset));
 			break;
 		}
 		case SQUASHFS_SYMLINK_TYPE: {
