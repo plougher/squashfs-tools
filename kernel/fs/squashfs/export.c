@@ -46,8 +46,8 @@ static squashfs_inode_t squashfs_inode_lookup(struct super_block *s, int ino)
 					sizeof(inode), &start, &offset))
 		return SQUASHFS_INVALID_BLK;
 
-	TRACE("squashfs_inode_lookup, inode = 0x%llx\n", le32_to_cpu(inode));
-	return le32_to_cpu(inode);
+	TRACE("squashfs_inode_lookup, inode = 0x%llx\n", le64_to_cpu(inode));
+	return le64_to_cpu(inode);
 }
 
 
