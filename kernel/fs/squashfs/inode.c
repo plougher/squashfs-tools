@@ -161,7 +161,7 @@ int squashfs_read_inode(struct inode *i, squashfs_inode_t inode)
 		i->i_blocks = ((i->i_size - le64_to_cpu(inodep->sparse) - 1)
 				>> 9) + 1;
 
-		SQUASHFS_I(i)->u.s1.fragment__block = frag_blk;
+		SQUASHFS_I(i)->u.s1.fragment_block = frag_blk;
 		SQUASHFS_I(i)->u.s1.fragment_size = frag_size;
 		SQUASHFS_I(i)->u.s1.fragment_offset = frag_offset;
 		SQUASHFS_I(i)->start_block = le64_to_cpu(inodep->start_block);
