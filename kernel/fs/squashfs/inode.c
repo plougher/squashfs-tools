@@ -185,7 +185,7 @@ int squashfs_read_inode(struct inode *i, squashfs_inode_t inode)
 		i->i_mode |= S_IFDIR;
 		SQUASHFS_I(i)->start_block = le32_to_cpu(inodep->start_block);
 		SQUASHFS_I(i)->offset = le16_to_cpu(inodep->offset);
-		SQUASHFS_I(i)->u.s2.directory_index_count = 0;
+		SQUASHFS_I(i)->u.s2.dir_index_count = 0;
 		SQUASHFS_I(i)->u.s2.parent_inode = le32_to_cpu(inodep->parent_inode);
 
 		TRACE("Directory inode %x:%x, start_block %llx, offset %x\n",
@@ -208,9 +208,9 @@ int squashfs_read_inode(struct inode *i, squashfs_inode_t inode)
 		i->i_mode |= S_IFDIR;
 		SQUASHFS_I(i)->start_block = le32_to_cpu(inodep->start_block);
 		SQUASHFS_I(i)->offset = le16_to_cpu(inodep->offset);
-		SQUASHFS_I(i)->u.s2.directory_index_start = next_block;
-		SQUASHFS_I(i)->u.s2.directory_index_offset = next_offset;
-		SQUASHFS_I(i)->u.s2.directory_index_count = le16_to_cpu(inodep->i_count);
+		SQUASHFS_I(i)->u.s2.dir_index_start = next_block;
+		SQUASHFS_I(i)->u.s2.dir_index_offset = next_offset;
+		SQUASHFS_I(i)->u.s2.dir_index_count = le16_to_cpu(inodep->i_count);
 		SQUASHFS_I(i)->u.s2.parent_inode = le32_to_cpu(inodep->parent_inode);
 
 		TRACE("Long directory inode %x:%x, start_block %llx, offset "
