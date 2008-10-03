@@ -28,15 +28,15 @@ struct squashfs_inode_info {
 	unsigned int	offset;
 	union {
 		struct {
-			long long	fragment_start_block;
+			long long	fragment_block;
 			unsigned int	fragment_size;
 			unsigned int	fragment_offset;
 			long long	block_list_start;
 		} s1;
 		struct {
-			long long	directory_index_start;
-			unsigned int	directory_index_offset;
-			unsigned int	directory_index_count;
+			long long	dir_index_start;
+			unsigned int	dir_index_offset;
+			unsigned int	dir_index_count;
 			unsigned int	parent_inode;
 		} s2;
 	} u;
