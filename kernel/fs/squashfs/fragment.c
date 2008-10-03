@@ -33,7 +33,7 @@
 #include "squashfs.h"
 
 int get_fragment_location(struct super_block *s, unsigned int fragment,
-				long long *fragment_start_block)
+				long long *fragment__block)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	int block = SQUASHFS_FRAGMENT_INDEX(fragment);
@@ -46,7 +46,7 @@ int get_fragment_location(struct super_block *s, unsigned int fragment,
 				 sizeof(fragment_entry), &start_block, &offset))
 		goto out;
 
-	*fragment_start_block = le64_to_cpu(fragment_entry.start_block);
+	*fragment__block = le64_to_cpu(fragment_entry.start_block);
 	size = le32_to_cpu(fragment_entry.size);
 
 out:
