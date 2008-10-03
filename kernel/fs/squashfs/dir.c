@@ -125,9 +125,9 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	}
 
 	length = get_dir_index_using_offset(i->i_sb, &next_block, &next_offset,
-				SQUASHFS_I(i)->u.s2.directory_index_start,
-				SQUASHFS_I(i)->u.s2.directory_index_offset,
-				SQUASHFS_I(i)->u.s2.directory_index_count,
+				SQUASHFS_I(i)->u.s2.dir_index_start,
+				SQUASHFS_I(i)->u.s2.dir_index_offset,
+				SQUASHFS_I(i)->u.s2.dir_index_count,
 				file->f_pos);
 
 	while (length < i_size_read(i)) {
