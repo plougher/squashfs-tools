@@ -323,7 +323,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 					PAGE_CACHE_SHIFT))
 		goto out;
 
-	if (SQUASHFS_I(inode)->u.s1.fragment_start_block == SQUASHFS_INVALID_BLK
+	if (SQUASHFS_I(inode)->u.s1.fragment_block == SQUASHFS_INVALID_BLK
 					|| index < file_end) {
 		block_list = kmalloc(SIZE, GFP_KERNEL);
 		if (block_list == NULL) {
@@ -357,12 +357,12 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		}
 	} else {
 		fragment = get_cached_fragment(inode->i_sb,
-				SQUASHFS_I(inode)->u.s1.fragment_start_block,
+				SQUASHFS_I(inode)->u.s1.fragment_block,
 				SQUASHFS_I(inode)->u.s1.fragment_size);
 
 		if (fragment->error) {
 			ERROR("Unable to read page, block %llx, size %x\n",
-				SQUASHFS_I(inode)->u.s1.fragment_start_block,
+				SQUASHFS_I(inode)->u.s1.fragment_block,
 				(int) SQUASHFS_I(inode)->u.s1.fragment_size);
 			release_cached_fragment(msblk, fragment);
 			goto error_out;
@@ -401,7 +401,7 @@ skip_page:
 			page_cache_release(push_page);
 	}
 
-	if (SQUASHFS_I(inode)->u.s1.fragment_start_block == SQUASHFS_INVALID_BLK
+	if (SQUASHFS_I(inode)->u.s1.fragment_block == SQUASHFS_INVALID_BLK
 					|| index < file_end) {
 		if (!sparse)
 			mutex_unlock(&msblk->read_page_mutex);
