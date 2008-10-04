@@ -200,8 +200,8 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		goto failed_mount;
 
 	/* Allocate and read fragment index table */
-	msblk->fragment_index = msblk->read_fragment_index_table(s,
-		le64_to_cpu(sblk->fragment_table_start), fragments);
+	read_fragment_index_table(s, le64_to_cpu(sblk->fragment_table_start),
+		fragments);
 	if (msblk->fragment_index == NULL)
 		goto failed_mount;
 
@@ -220,7 +220,7 @@ allocate_lookup_table:
 
 allocate_root:
 	root = new_inode(s);
-	if ((msblk->read_inode)(root, root_inode) == 0)
+	squashfs_read_inode(root, root_inode) == 0)
 		goto failed_mount;
 	insert_inode_hash(root);
 
