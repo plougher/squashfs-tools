@@ -21,10 +21,6 @@
  * squashfs.h
  */
 
-#ifdef CONFIG_SQUASHFS_1_0_COMPATIBILITY
-#undef CONFIG_SQUASHFS_1_0_COMPATIBILITY
-#endif
-
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)	printk(KERN_NOTICE "SQUASHFS: "s, ## args)
 #else
@@ -107,21 +103,3 @@ extern const struct inode_operations squashfs_dir_inode_ops;
 
 /* symlink.c */
 extern const struct address_space_operations squashfs_symlink_aops;
-
-#ifdef CONFIG_SQUASHFS_1_0_COMPATIBILITY
-extern int squashfs_1_0_supported(struct squashfs_sb_info *msblk);
-#else
-static inline int squashfs_1_0_supported(struct squashfs_sb_info *msblk)
-{
-	return 0;
-}
-#endif
-
-#ifdef CONFIG_SQUASHFS_2_0_COMPATIBILITY
-extern int squashfs_2_0_supported(struct squashfs_sb_info *msblk);
-#else
-static inline int squashfs_2_0_supported(struct squashfs_sb_info *msblk)
-{
-	return 0;
-}
-#endif
