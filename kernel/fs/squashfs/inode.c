@@ -56,13 +56,12 @@ struct inode *squashfs_iget(struct super_block *s,
 				squashfs_inode_t inode,
 				unsigned int inode_number)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
 	struct inode *i = iget_locked(s, inode_number);
 
 	TRACE("Entered squashfs_iget\n");
 
 	if (i && (i->i_state & I_NEW)) {
-		(msblk->read_inode)(i, inode);
+		squashfs_read_inode(i, inode);
 		unlock_new_inode(i);
 	}
 

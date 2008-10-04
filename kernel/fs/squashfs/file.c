@@ -331,8 +331,8 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			goto error_out;
 		}
 
-		block = (msblk->read_blocklist)(inode, index, 1, block_list,
-			NULL, &bsize);
+		block = read_blocklist(inode, index, 1, block_list, NULL,
+			&bsize);
 		if (block == 0)
 			goto error_out;
 
