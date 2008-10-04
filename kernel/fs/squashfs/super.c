@@ -220,7 +220,7 @@ allocate_lookup_table:
 
 allocate_root:
 	root = new_inode(s);
-	squashfs_read_inode(root, root_inode) == 0)
+	if (squashfs_read_inode(root, root_inode) == 0)
 		goto failed_mount;
 	insert_inode_hash(root);
 
