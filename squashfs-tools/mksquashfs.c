@@ -1221,11 +1221,21 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 	}
 	else if(type == SQUASHFS_CHRDEV_TYPE || type == SQUASHFS_BLKDEV_TYPE) {
 		squashfs_dev_inode_header *dev = &inode_header.dev;
+		unsigned int major = major(buf->st_rdev);
+		unsigned int minor = minor(buf->st_rdev);
 
+		if(major > 0xfff) {
+			ERROR("Major %d out of range in device node %s, truncating to %d\n", major, filename, major & 0xfff);
+			major &= 0xfff;
+		}
+		if(minor > 0xfffff) {
+			ERROR("Minor %d out of range in device node %s, truncating to %d\n", minor, filename, minor & 0xfffff);
+			minor &= 0xfffff;
+		}
 		inode = get_inode(sizeof(*dev));
 		dev->nlink = nlink;
-		dev->rdev = (unsigned short) ((major(buf->st_rdev) << 8) |
-			(minor(buf->st_rdev) & 0xff));
+		dev->rdev = (major << 8) | (minor & 0xff) |
+				((minor & ~0xff) << 12);
 		if(!swap)
 			memcpy(inode, dev, sizeof(*dev));
 		else
@@ -3619,7 +3629,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.0-CVS (2008/08/20)\n");\
+	printf("mksquashfs version 4.0-CVS (2008/10/04)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\

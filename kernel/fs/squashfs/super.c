@@ -364,7 +364,7 @@ static int __init init_squashfs_fs(void)
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 4.0-CVS (2008/09/30) "
+	printk(KERN_INFO "squashfs: version 4.0-CVS (2008/10/04) "
 		"Phillip Lougher\n");
 
 	err = register_filesystem(&squashfs_fs_type);

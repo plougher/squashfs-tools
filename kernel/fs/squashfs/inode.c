@@ -259,7 +259,7 @@ int squashfs_read_inode(struct inode *i, squashfs_inode_t inode)
 		i->i_mode |= (type == SQUASHFS_CHRDEV_TYPE) ? S_IFCHR : S_IFBLK;
 		rdev = le32_to_cpu(inodep->rdev);
 		init_special_inode(i, le16_to_cpu(i->i_mode),
-					old_decode_dev(rdev));
+					new_decode_dev(rdev));
 
 		TRACE("Device inode %x:%x, rdev %x\n",
 				SQUASHFS_INODE_BLK(inode), offset, rdev);
