@@ -39,30 +39,13 @@
 static struct file_system_type squashfs_fs_type;
 static struct super_operations squashfs_super_ops;
 
-static int supported_squashfs_filesystem(struct squashfs_sb_info *msblk,
-					short major, short minor, int silent)
+static int supported_squashfs_filesystem(short major, short minor, int silent)
 {
-	msblk->read_inode = squashfs_read_inode;
-	msblk->read_blocklist = read_blocklist;
-	msblk->read_fragment_index_table = read_fragment_index_table;
-
-	if (major == 1) {
-		if (!squashfs_1_0_supported(msblk)) {
-			SERROR("Major/Minor mismatch, Squashfs 1.0 filesystems "
-				"are unsupported\n");
-			SERROR("Please recompile with Squashfs 1.0 support "
-				"enabled\n");
-			return 0;
-		}
-	} else if (major == 2) {
-		if (!squashfs_2_0_supported(msblk)) {
-			SERROR("Major/Minor mismatch, Squashfs 2.0 filesystems "
-				"are unsupported\n");
-			SERROR("Please recompile with Squashfs 2.0 support "
-				"enabled\n");
-			return 0;
-		}
-	} else if (major != SQUASHFS_MAJOR || minor > SQUASHFS_MINOR) {
+	if (major < SQUASHFS_MAJOR) {
+		SERROR("Major/Minor mismatch, older Squashfs %d.%d filesystems "
+				"are unsupported\n", major, minor);
+		return 0;
+	} else if (major > SQUASHFS_MAJOR || minor > SQUASHFS_MINOR) {
 		SERROR("Major/Minor mismatch, trying to mount newer %d.%d "
 				"filesystem\n", major, minor);
 		SERROR("Please update your kernel\n");
@@ -135,7 +118,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	/* Check the MAJOR & MINOR versions */
-	if (!supported_squashfs_filesystem(msblk, le16_to_cpu(sblk->s_major),
+	if (!supported_squashfs_filesystem(le16_to_cpu(sblk->s_major),
 			le16_to_cpu(sblk->s_minor), silent))
 		goto failed_mount;
 
@@ -180,8 +163,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	TRACE("sblk->inode_table_start %llx\n", msblk->inode_table_start);
 	TRACE("sblk->directory_table_start %llx\n",
 				msblk->directory_table_start);
-	if (sblk->s_major > 1)
-		TRACE("sblk->fragment_table_start %llx\n",
+	TRACE("sblk->fragment_table_start %llx\n",
 				le32_to_cpu(sblk->fragment_table_start));
 	TRACE("sblk->id_table_start %llx\n", le64_to_cpu(sblk->id_table_start));
 
@@ -207,9 +189,6 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		le64_to_cpu(sblk->id_table_start), le16_to_cpu(sblk->no_ids));
 	if (msblk->id_table == NULL)
 		goto failed_mount;
-
-	if (sblk->s_major == 1 && squashfs_1_0_supported(msblk))
-		goto allocate_root;
 
 	fragments = le32_to_cpu(sblk->fragments);
 	if (fragments == 0)
@@ -263,7 +242,6 @@ failed_mount:
 	kfree(msblk->id_table);
 	vfree(msblk->read_page);
 	squashfs_cache_delete(msblk->block_cache);
-	kfree(msblk->fragment_index_2);
 	kfree(sblk);
 	vfree(msblk->stream.workspace);
 	kfree(s->s_fs_info);
@@ -312,7 +290,6 @@ static void squashfs_put_super(struct super_block *s)
 		vfree(sbi->read_page);
 		kfree(sbi->id_table);
 		kfree(sbi->fragment_index);
-		kfree(sbi->fragment_index_2);
 		kfree(sbi->meta_index);
 		vfree(sbi->stream.workspace);
 		kfree(s->s_fs_info);
