@@ -73,11 +73,5 @@ struct squashfs_sb_info {
 	unsigned short		block_log;
 	long long		bytes_used;
 	unsigned int		inodes;
-	int			(*read_inode)(struct inode *i,  squashfs_inode_t \
-				inode);
-	long long		(*read_blocklist)(struct inode *inode, int \
-				index, int readahead_blks, void *block_list, \
-				unsigned short **block_p, unsigned int *bsize);
-	__le64			*(*read_fragment_index_table)(struct super_block *s, long long, unsigned int);
 };
 #endif
