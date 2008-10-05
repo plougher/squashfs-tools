@@ -193,10 +193,8 @@ static int get_meta_index(struct inode *inode, int index,
 		} else {
 			if (meta->entries == 0)
 				goto failed;
-			/* XXX */
 			offset = index < meta->offset + meta->entries ? index :
 				meta->offset + meta->entries - 1;
-			/* XXX */
 			meta_entry = &meta->meta_entry[offset - meta->offset];
 			cur_index_block = meta_entry->index_block +
 				msblk->inode_table_start;
@@ -255,9 +253,8 @@ failed:
 }
 
 
-long long read_blocklist(struct inode *inode, int index,
-				int readahead_blks, void *block_list,
-				unsigned short **block_p, unsigned int *bsize)
+long long read_blocklist(struct inode *inode, int index, void *block_list,
+				unsigned int *bsize)
 {
 	long long block_ptr;
 	int offset;
@@ -331,8 +328,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			goto error_out;
 		}
 
-		block = read_blocklist(inode, index, 1, block_list, NULL,
-			&bsize);
+		block = read_blocklist(inode, index, block_list, &bsize);
 		if (block == 0)
 			goto error_out;
 

@@ -62,8 +62,7 @@ extern __le64 *read_inode_lookup_table(struct super_block *, long long,
 			unsigned int);
 
 /* file.c */
-extern long long read_blocklist(struct inode *, int, int, void *,
-				unsigned short **, unsigned int *);
+extern long long read_blocklist(struct inode *, int, void *, unsigned int *);
 
 /* fragment.c */
 extern int get_fragment_location(struct super_block *, unsigned int,
