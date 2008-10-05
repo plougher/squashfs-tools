@@ -96,9 +96,11 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	mutex_init(&msblk->read_page_mutex);
 	mutex_init(&msblk->meta_index_mutex);
 
-	/* msblk->bytes_used is checked in squashfs_read_data to ensure reads
-	 * are not beyond filesystem end.  As we're using squashfs_read_data to
-	 * read sblk here, first set sblk->bytes_used to a useful value
+	/*
+	 * msblk->bytes_used is checked in squashfs_read_data to ensure reads
+	 * are not beyond filesystem end.  But as we're using squashfs_read_data
+	 * here to read the superblock (including the value of
+	 * bytes_used) we need to set it to an initial sensible dummy value
 	 */
 	msblk->bytes_used = sizeof(struct squashfs_super_block);
 	if (!squashfs_read_data(s, (char *) sblk, SQUASHFS_START,
@@ -172,8 +174,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	s->s_op = &squashfs_super_ops;
 
 	msblk->block_cache = squashfs_cache_init("metadata",
-				SQUASHFS_CACHED_BLKS,
-		SQUASHFS_METADATA_SIZE, 0);
+			SQUASHFS_CACHED_BLKS, SQUASHFS_METADATA_SIZE, 0);
 	if (msblk->block_cache == NULL)
 		goto failed_mount;
 
@@ -200,8 +201,8 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		goto failed_mount;
 
 	/* Allocate and read fragment index table */
-	read_fragment_index_table(s, le64_to_cpu(sblk->fragment_table_start),
-		fragments);
+	msblk->fragment_index = read_fragment_index_table(s,
+		le64_to_cpu(sblk->fragment_table_start), fragments);
 	if (msblk->fragment_index == NULL)
 		goto failed_mount;
 
@@ -236,21 +237,22 @@ allocate_root:
 	return 0;
 
 failed_mount:
+	squashfs_cache_delete(msblk->block_cache);
+	squashfs_cache_delete(msblk->fragment_cache);
 	kfree(msblk->inode_lookup_table);
 	kfree(msblk->fragment_index);
-	squashfs_cache_delete(msblk->fragment_cache);
 	kfree(msblk->id_table);
 	vfree(msblk->read_page);
-	squashfs_cache_delete(msblk->block_cache);
-	kfree(sblk);
 	vfree(msblk->stream.workspace);
 	kfree(s->s_fs_info);
 	s->s_fs_info = NULL;
+	kfree(sblk);
 	return -EINVAL;
 
 failure:
 	vfree(msblk->stream.workspace);
 	kfree(s->s_fs_info);
+	s->s_fs_info = NULL;
 failure2:
 	return -ENOMEM;
 }
@@ -321,11 +323,10 @@ static void init_once(void *foo)
 static int __init init_inodecache(void)
 {
 	squashfs_inode_cachep = kmem_cache_create("squashfs_inode_cache",
-	    sizeof(struct squashfs_inode_info), 0,
+	 	sizeof(struct squashfs_inode_info), 0,
 		SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT, init_once);
-	if (squashfs_inode_cachep == NULL)
-		return -ENOMEM;
-	return 0;
+
+	return squashfs_inode_cachep ? 0 : -ENOMEM;
 }
 
 
@@ -338,15 +339,18 @@ static void destroy_inodecache(void)
 static int __init init_squashfs_fs(void)
 {
 	int err = init_inodecache();
+
 	if (err)
 		goto out;
 
-	printk(KERN_INFO "squashfs: version 4.0-CVS (2008/10/04) "
-		"Phillip Lougher\n");
-
 	err = register_filesystem(&squashfs_fs_type);
-	if (err)
+	if (err) {
 		destroy_inodecache();
+		goto out;
+	}
+
+	printk(KERN_INFO "squashfs: version 4.0-CVS (2008/10/05) "
+		"Phillip Lougher\n");
 
 out:
 	return err;
@@ -362,8 +366,9 @@ static void __exit exit_squashfs_fs(void)
 
 static struct inode *squashfs_alloc_inode(struct super_block *sb)
 {
-	struct squashfs_inode_info *ei;
-	ei = kmem_cache_alloc(squashfs_inode_cachep, GFP_KERNEL);
+	struct squashfs_inode_info *ei =
+		kmem_cache_alloc(squashfs_inode_cachep, GFP_KERNEL);
+
 	return ei ? &ei->vfs_inode : NULL;
 }
 
