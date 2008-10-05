@@ -23,7 +23,7 @@
  * squashfs_fs.h
  */
 
-#define SQUASHFS_CACHED_FRAGMENTS	CONFIG_SQUASHFS_FRAGMENT_CACHE_SIZE	
+#define SQUASHFS_CACHED_FRAGMENTS	CONFIG_SQUASHFS_FRAGMENT_CACHE_SIZE
 #define SQUASHFS_MAJOR			4
 #define SQUASHFS_MINOR			0
 #define SQUASHFS_MAGIC			0x73717368
@@ -124,7 +124,7 @@
 #define SQUASHFS_INODE_OFFSET(A)	((unsigned int) ((A) & 0xffff))
 
 #define SQUASHFS_MKINODE(A, B)		\
-				((squashfs_inode_t)(((squashfs_inode_t) (A)\
+				((long long)(((long long) (A)\
 				<< 16) + (B)))
 
 /* Compute 32 bit VFS inode number from squashfs inode number */
@@ -152,7 +152,7 @@
 						sizeof(long long))
 
 /* inode lookup table defines */
-#define SQUASHFS_LOOKUP_BYTES(A)	((A) * sizeof(squashfs_inode_t))
+#define SQUASHFS_LOOKUP_BYTES(A)	((A) * sizeof(long long))
 
 #define SQUASHFS_LOOKUP_BLOCK(A)		(SQUASHFS_LOOKUP_BYTES(A) / \
 						SQUASHFS_METADATA_SIZE)
@@ -220,10 +220,6 @@ struct meta_index {
 /*
  * definitions for structures on disk
  */
-
-typedef long long		squashfs_block_t;
-typedef long long		squashfs_inode_t;
-
 #define COMPRESSION_ZLIB 1
 
 struct squashfs_super_block {
@@ -277,7 +273,7 @@ struct squashfs_dev_inode_header {
 	__le32			nlink;
 	__le32			rdev;
 };
-	
+
 struct squashfs_symlink_inode_header {
 	SQUASHFS_BASE_INODE_HEADER;
 	__le32			nlink;
@@ -336,7 +332,7 @@ union squashfs_inode_header {
 	struct squashfs_ldir_inode_header	ldir;
 	struct squashfs_ipc_inode_header	ipc;
 };
-	
+
 struct squashfs_dir_entry {
 	__le16			offset;
 	__le16			inode_number;
