@@ -23,12 +23,6 @@
  * squashfs_fs.h
  */
 
-#if 0
-#ifndef CONFIG_SQUASHFS_2_0_COMPATIBILITY
-#define CONFIG_SQUASHFS_2_0_COMPATIBILITY
-#endif
-#endif
-
 #define SQUASHFS_CACHED_FRAGMENTS	CONFIG_SQUASHFS_FRAGMENT_CACHE_SIZE	
 #define SQUASHFS_MAJOR			4
 #define SQUASHFS_MINOR			0
@@ -52,15 +46,14 @@
 /* Max length of filename (not 255) */
 #define SQUASHFS_NAME_LEN		256
 
-#define SQUASHFS_INVALID		((long long) 0xffffffffffff)
-#define SQUASHFS_INVALID_FRAG		((unsigned int) 0xffffffff)
-#define SQUASHFS_INVALID_BLK		((long long) -1)
-#define SQUASHFS_USED_BLK		((long long) -2)
+#define SQUASHFS_INVALID		(0xffffffffffffLL)
+#define SQUASHFS_INVALID_FRAG		(0xffffffffU)
+#define SQUASHFS_INVALID_BLK		(-1LL)
+#define SQUASHFS_USED_BLK		(-2LL)
 
 /* Filesystem flags */
 #define SQUASHFS_NOI			0
 #define SQUASHFS_NOD			1
-#define SQUASHFS_CHECK			2
 #define SQUASHFS_NOF			3
 #define SQUASHFS_NO_FRAG		4
 #define SQUASHFS_ALWAYS_FRAG		5
@@ -90,11 +83,8 @@
 #define SQUASHFS_EXPORTABLE(flags)		SQUASHFS_BIT(flags, \
 						SQUASHFS_EXPORT)
 
-#define SQUASHFS_CHECK_DATA(flags)		SQUASHFS_BIT(flags, \
-						SQUASHFS_CHECK)
-
-#define SQUASHFS_MKFLAGS(noi, nod, check_data, nof, no_frag, always_frag, \
-		duplicate_checking, exportable)	(noi | (nod << 1) | (check_data << 2) \
+#define SQUASHFS_MKFLAGS(noi, nod, nof, no_frag, always_frag, \
+		duplicate_checking, exportable)	(noi | (nod << 1) \
 		| (nof << 3) | (no_frag << 4) | (always_frag << 5) | \
 		(duplicate_checking << 6) | (exportable << 7))
 
@@ -108,10 +98,6 @@
 #define SQUASHFS_SOCKET_TYPE		7
 #define SQUASHFS_LDIR_TYPE		8
 #define SQUASHFS_LREG_TYPE		9
-
-/* 1.0 filesystem type definitions */
-#define SQUASHFS_TYPES			5
-#define SQUASHFS_IPC_TYPE		0
 
 /* Flag whether block is compressed or uncompressed, bit is set if block is
  * uncompressed */
@@ -131,25 +117,26 @@
 
 /*
  * Inode number ops.  Inodes consist of a compressed block number, and an
- * uncompressed  offset within that block
+ * uncompressed offset within that block
  */
-#define SQUASHFS_INODE_BLK(a)		((unsigned int) ((a) >> 16))
+#define SQUASHFS_INODE_BLK(A)		((unsigned int) ((A) >> 16))
 
-#define SQUASHFS_INODE_OFFSET(a)	((unsigned int) ((a) & 0xffff))
+#define SQUASHFS_INODE_OFFSET(A)	((unsigned int) ((A) & 0xffff))
 
-#define SQUASHFS_MKINODE(A, B)		((squashfs_inode_t)(((squashfs_inode_t) (A)\
-					<< 16) + (B)))
+#define SQUASHFS_MKINODE(A, B)		\
+				((squashfs_inode_t)(((squashfs_inode_t) (A)\
+				<< 16) + (B)))
 
 /* Compute 32 bit VFS inode number from squashfs inode number */
-#define SQUASHFS_MK_VFS_INODE(a, b)	((unsigned int) (((a) << 8) + \
-					((b) >> 2) + 1))
-/* XXX */
+#define SQUASHFS_MK_VFS_INODE(A, B)	((unsigned int) (((A) << 8) + \
+					((B) >> 2) + 1))
 
 /* Translate between VFS mode and squashfs mode */
-#define SQUASHFS_MODE(a)		((a) & 0xfff)
+#define SQUASHFS_MODE(A)		((A) & 0xfff)
 
 /* fragment and fragment table defines */
-#define SQUASHFS_FRAGMENT_BYTES(A)	((A) * sizeof(struct squashfs_fragment_entry))
+#define SQUASHFS_FRAGMENT_BYTES(A)	\
+				((A) * sizeof(struct squashfs_fragment_entry))
 
 #define SQUASHFS_FRAGMENT_INDEX(A)	(SQUASHFS_FRAGMENT_BYTES(A) / \
 					SQUASHFS_METADATA_SIZE)
@@ -180,7 +167,7 @@
 #define SQUASHFS_LOOKUP_BLOCK_BYTES(A)	(SQUASHFS_LOOKUP_BLOCKS(A) *\
 					sizeof(long long))
 
-/* uid lookup table defines */
+/* uid/gid lookup table defines */
 #define SQUASHFS_ID_BYTES(A)	((A) * sizeof(unsigned int))
 
 #define SQUASHFS_ID_BLOCK(A)		(SQUASHFS_ID_BYTES(A) / \
@@ -201,7 +188,7 @@
 
 #define SQUASHFS_MAX_FILE_SIZE_LOG	64
 
-#define SQUASHFS_MAX_FILE_SIZE		((long long) 1 << \
+#define SQUASHFS_MAX_FILE_SIZE		(1LL << \
 					(SQUASHFS_MAX_FILE_SIZE_LOG - 2))
 
 #define SQUASHFS_MARKER_BYTE		0xff
@@ -242,7 +229,7 @@ typedef long long		squashfs_inode_t;
 struct squashfs_super_block {
 	__le32			s_magic;
 	__le32			inodes;
-	__le32			mkfs_time /* time of filesystem creation */;
+	__le32			mkfs_time;
 	__le32			block_size;
 	__le32			fragments;
 	__le16			compression;
@@ -270,7 +257,7 @@ struct squashfs_dir_index {
 
 #define SQUASHFS_BASE_INODE_HEADER		\
 	__le16			inode_type;	\
-	__le16			mode;	\
+	__le16			mode;		\
 	__le16			uid;		\
 	__le16			guid;		\
 	__le32			mtime;		\
@@ -369,344 +356,5 @@ struct squashfs_fragment_entry {
 	__le32			size;
 	unsigned int		unused;
 };
-
-extern int squashfs_uncompress_block(void *d, int dstlen, void *s, int srclen);
-extern int squashfs_uncompress_init(void);
-extern int squashfs_uncompress_exit(void);
-
-#ifdef CONFIG_SQUASHFS_1_0_COMPATIBILITY
-
-struct squashfs_base_inode_header_1 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:4; /* index into uid table */
-	unsigned int		guid:4; /* index into guid table */
-} __attribute__ ((packed));
-
-struct squashfs_ipc_inode_header_1 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:4; /* index into uid table */
-	unsigned int		guid:4; /* index into guid table */
-	unsigned int		type:4;
-	unsigned int		offset:4;
-} __attribute__ ((packed));
-
-struct squashfs_dev_inode_header_1 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:4; /* index into uid table */
-	unsigned int		guid:4; /* index into guid table */
-	unsigned short		rdev;
-} __attribute__ ((packed));
-	
-struct squashfs_symlink_inode_header_1 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:4; /* index into uid table */
-	unsigned int		guid:4; /* index into guid table */
-	unsigned short		symlink_size;
-	char			symlink[0];
-} __attribute__ ((packed));
-
-struct squashfs_reg_inode_header_1 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:4; /* index into uid table */
-	unsigned int		guid:4; /* index into guid table */
-	unsigned int		mtime;
-	unsigned int		start_block;
-	unsigned int		file_size:32;
-	unsigned short		block_list[0];
-} __attribute__ ((packed));
-
-struct squashfs_dir_inode_header_1 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:4; /* index into uid table */
-	unsigned int		guid:4; /* index into guid table */
-	unsigned int		file_size:19;
-	unsigned int		offset:13;
-	unsigned int		mtime;
-	unsigned int		start_block:24;
-} __attribute__  ((packed));
-
-union squashfs_inode_header_1 {
-	struct squashfs_base_inode_header_1	base;
-	struct squashfs_dev_inode_header_1	dev;
-	struct squashfs_symlink_inode_header_1	symlink;
-	struct squashfs_reg_inode_header_1	reg;
-	struct squashfs_dir_inode_header_1	dir;
-	struct squashfs_ipc_inode_header_1	ipc;
-};
-
-#define SQUASHFS_SWAP_BASE_INODE_CORE_1(s, d, n) \
-	SQUASHFS_MEMSET(s, d, n);\
-	SQUASHFS_SWAP((s)->inode_type, d, 0, 4);\
-	SQUASHFS_SWAP((s)->mode, d, 4, 12);\
-	SQUASHFS_SWAP((s)->uid, d, 16, 4);\
-	SQUASHFS_SWAP((s)->guid, d, 20, 4);
-
-#define SQUASHFS_SWAP_BASE_INODE_HEADER_1(s, d, n) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_1(s, d, n)\
-}
-
-#define SQUASHFS_SWAP_IPC_INODE_HEADER_1(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_1(s, d, \
-			sizeof(struct squashfs_ipc_inode_header_1));\
-	SQUASHFS_SWAP((s)->type, d, 24, 4);\
-	SQUASHFS_SWAP((s)->offset, d, 28, 4);\
-}
-
-#define SQUASHFS_SWAP_DEV_INODE_HEADER_1(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_1(s, d, \
-			sizeof(struct squashfs_dev_inode_header_1));\
-	SQUASHFS_SWAP((s)->rdev, d, 24, 16);\
-}
-
-#define SQUASHFS_SWAP_SYMLINK_INODE_HEADER_1(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_1(s, d, \
-			sizeof(struct squashfs_symlink_inode_header_1));\
-	SQUASHFS_SWAP((s)->symlink_size, d, 24, 16);\
-}
-
-#define SQUASHFS_SWAP_REG_INODE_HEADER_1(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_1(s, d, \
-			sizeof(struct squashfs_reg_inode_header_1));\
-	SQUASHFS_SWAP((s)->mtime, d, 24, 32);\
-	SQUASHFS_SWAP((s)->start_block, d, 56, 32);\
-	SQUASHFS_SWAP((s)->file_size, d, 88, 32);\
-}
-
-#define SQUASHFS_SWAP_DIR_INODE_HEADER_1(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_1(s, d, \
-			sizeof(struct squashfs_dir_inode_header_1));\
-	SQUASHFS_SWAP((s)->file_size, d, 24, 19);\
-	SQUASHFS_SWAP((s)->offset, d, 43, 13);\
-	SQUASHFS_SWAP((s)->mtime, d, 56, 32);\
-	SQUASHFS_SWAP((s)->start_block, d, 88, 24);\
-}
-
-#endif
-
-#ifdef CONFIG_SQUASHFS_2_0_COMPATIBILITY
-
-struct squashfs_dir_index_2 {
-	unsigned int		index:27;
-	unsigned int		start_block:29;
-	unsigned char		size;
-	unsigned char		name[0];
-} __attribute__ ((packed));
-
-struct squashfs_base_inode_header_2 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:8; /* index into uid table */
-	unsigned int		guid:8; /* index into guid table */
-} __attribute__ ((packed));
-
-struct squashfs_ipc_inode_header_2 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:8; /* index into uid table */
-	unsigned int		guid:8; /* index into guid table */
-} __attribute__ ((packed));
-
-struct squashfs_dev_inode_header_2 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:8; /* index into uid table */
-	unsigned int		guid:8; /* index into guid table */
-	unsigned short		rdev;
-} __attribute__ ((packed));
-	
-struct squashfs_symlink_inode_header_2 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:8; /* index into uid table */
-	unsigned int		guid:8; /* index into guid table */
-	unsigned short		symlink_size;
-	char			symlink[0];
-} __attribute__ ((packed));
-
-struct squashfs_reg_inode_header_2 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:8; /* index into uid table */
-	unsigned int		guid:8; /* index into guid table */
-	unsigned int		mtime;
-	unsigned int		start_block;
-	unsigned int		fragment;
-	unsigned int		offset;
-	unsigned int		file_size:32;
-	unsigned short		block_list[0];
-} __attribute__ ((packed));
-
-struct squashfs_dir_inode_header_2 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:8; /* index into uid table */
-	unsigned int		guid:8; /* index into guid table */
-	unsigned int		file_size:19;
-	unsigned int		offset:13;
-	unsigned int		mtime;
-	unsigned int		start_block:24;
-} __attribute__  ((packed));
-
-struct squashfs_ldir_inode_header_2 {
-	unsigned int		inode_type:4;
-	unsigned int		mode:12; /* protection */
-	unsigned int		uid:8; /* index into uid table */
-	unsigned int		guid:8; /* index into guid table */
-	unsigned int		file_size:27;
-	unsigned int		offset:13;
-	unsigned int		mtime;
-	unsigned int		start_block:24;
-	unsigned int		i_count:16;
-	struct squashfs_dir_index_2	index[0];
-} __attribute__  ((packed));
-
-union squashfs_inode_header_2 {
-	struct squashfs_base_inode_header_2	base;
-	struct squashfs_dev_inode_header_2	dev;
-	struct squashfs_symlink_inode_header_2	symlink;
-	struct squashfs_reg_inode_header_2	reg;
-	struct squashfs_dir_inode_header_2	dir;
-	struct squashfs_ldir_inode_header_2	ldir;
-	struct squashfs_ipc_inode_header_2	ipc;
-};
-	
-struct squashfs_dir_header_2 {
-	unsigned int		count:8;
-	unsigned int		start_block:24;
-} __attribute__ ((packed));
-
-struct squashfs_dir_entry_2 {
-	unsigned int		offset:13;
-	unsigned int		type:3;
-	unsigned int		size:8;
-	char			name[0];
-} __attribute__ ((packed));
-
-struct squashfs_fragment_entry_2 {
-	unsigned int		start_block;
-	unsigned int		size;
-} __attribute__ ((packed));
-
-#define SQUASHFS_SWAP_BASE_INODE_CORE_2(s, d, n)\
-	SQUASHFS_MEMSET(s, d, n);\
-	SQUASHFS_SWAP((s)->inode_type, d, 0, 4);\
-	SQUASHFS_SWAP((s)->mode, d, 4, 12);\
-	SQUASHFS_SWAP((s)->uid, d, 16, 8);\
-	SQUASHFS_SWAP((s)->guid, d, 24, 8);\
-
-#define SQUASHFS_SWAP_BASE_INODE_HEADER_2(s, d, n) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_2(s, d, n)\
-}
-
-#define SQUASHFS_SWAP_IPC_INODE_HEADER_2(s, d) \
-	SQUASHFS_SWAP_BASE_INODE_HEADER_2(s, d, sizeof(struct squashfs_ipc_inode_header_2))
-
-#define SQUASHFS_SWAP_DEV_INODE_HEADER_2(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_2(s, d, \
-			sizeof(struct squashfs_dev_inode_header_2)); \
-	SQUASHFS_SWAP((s)->rdev, d, 32, 16);\
-}
-
-#define SQUASHFS_SWAP_SYMLINK_INODE_HEADER_2(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_2(s, d, \
-			sizeof(struct squashfs_symlink_inode_header_2));\
-	SQUASHFS_SWAP((s)->symlink_size, d, 32, 16);\
-}
-
-#define SQUASHFS_SWAP_REG_INODE_HEADER_2(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_2(s, d, \
-			sizeof(struct squashfs_reg_inode_header_2));\
-	SQUASHFS_SWAP((s)->mtime, d, 32, 32);\
-	SQUASHFS_SWAP((s)->start_block, d, 64, 32);\
-	SQUASHFS_SWAP((s)->fragment, d, 96, 32);\
-	SQUASHFS_SWAP((s)->offset, d, 128, 32);\
-	SQUASHFS_SWAP((s)->file_size, d, 160, 32);\
-}
-
-#define SQUASHFS_SWAP_DIR_INODE_HEADER_2(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_2(s, d, \
-			sizeof(struct squashfs_dir_inode_header_2));\
-	SQUASHFS_SWAP((s)->file_size, d, 32, 19);\
-	SQUASHFS_SWAP((s)->offset, d, 51, 13);\
-	SQUASHFS_SWAP((s)->mtime, d, 64, 32);\
-	SQUASHFS_SWAP((s)->start_block, d, 96, 24);\
-}
-
-#define SQUASHFS_SWAP_LDIR_INODE_HEADER_2(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_SWAP_BASE_INODE_CORE_2(s, d, \
-			sizeof(struct squashfs_ldir_inode_header_2));\
-	SQUASHFS_SWAP((s)->file_size, d, 32, 27);\
-	SQUASHFS_SWAP((s)->offset, d, 59, 13);\
-	SQUASHFS_SWAP((s)->mtime, d, 72, 32);\
-	SQUASHFS_SWAP((s)->start_block, d, 104, 24);\
-	SQUASHFS_SWAP((s)->i_count, d, 128, 16);\
-}
-
-#define SQUASHFS_SWAP_DIR_INDEX_2(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_MEMSET(s, d, sizeof(struct squashfs_dir_index_2));\
-	SQUASHFS_SWAP((s)->index, d, 0, 27);\
-	SQUASHFS_SWAP((s)->start_block, d, 27, 29);\
-	SQUASHFS_SWAP((s)->size, d, 56, 8);\
-}
-#define SQUASHFS_SWAP_DIR_HEADER_2(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_MEMSET(s, d, sizeof(struct squashfs_dir_header_2));\
-	SQUASHFS_SWAP((s)->count, d, 0, 8);\
-	SQUASHFS_SWAP((s)->start_block, d, 8, 24);\
-}
-
-#define SQUASHFS_SWAP_DIR_ENTRY_2(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_MEMSET(s, d, sizeof(struct squashfs_dir_entry_2));\
-	SQUASHFS_SWAP((s)->offset, d, 0, 13);\
-	SQUASHFS_SWAP((s)->type, d, 13, 3);\
-	SQUASHFS_SWAP((s)->size, d, 16, 8);\
-}
-
-#define SQUASHFS_SWAP_FRAGMENT_ENTRY_2(s, d) {\
-	SQUASHFS_SWAP_START\
-	SQUASHFS_MEMSET(s, d, sizeof(struct squashfs_fragment_entry_2));\
-	SQUASHFS_SWAP((s)->start_block, d, 0, 32);\
-	SQUASHFS_SWAP((s)->size, d, 32, 32);\
-}
-
-#define SQUASHFS_SWAP_FRAGMENT_INDEXES_2(s, d, n) SQUASHFS_SWAP_INTS(s, d, n)
-
-/* fragment and fragment table defines */
-#define SQUASHFS_FRAGMENT_BYTES_2(A)	(A * sizeof(struct squashfs_fragment_entry_2))
-
-#define SQUASHFS_FRAGMENT_INDEX_2(A)	(SQUASHFS_FRAGMENT_BYTES_2(A) / \
-					SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_FRAGMENT_INDEX_OFFSET_2(A)	(SQUASHFS_FRAGMENT_BYTES_2(A) % \
-						SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_FRAGMENT_INDEXES_2(A)	((SQUASHFS_FRAGMENT_BYTES_2(A) + \
-					SQUASHFS_METADATA_SIZE - 1) / \
-					SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_FRAGMENT_INDEX_BYTES_2(A)	(SQUASHFS_FRAGMENT_INDEXES_2(A) *\
-						sizeof(int))
-
-#endif
 
 #endif
