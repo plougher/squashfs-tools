@@ -84,8 +84,7 @@ __le64 *read_fragment_index_table(struct super_block *s,
 		return NULL;
 	}
 
-	if (!squashfs_read_data(s, (char *) fragment_index,
-			fragment_table_start,
+	if (!squashfs_read_data(s, fragment_index, fragment_table_start,
 			length | SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
 		ERROR("unable to read fragment index table\n");
 		kfree(fragment_index);

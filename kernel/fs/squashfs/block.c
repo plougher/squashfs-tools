@@ -87,7 +87,7 @@ out:
 }
 
 
-unsigned int squashfs_read_data(struct super_block *s, char *buffer,
+unsigned int squashfs_read_data(struct super_block *s, void *buffer,
 			long long index, unsigned int length,
 			long long *next_index, int srclength)
 {

@@ -103,7 +103,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	 * bytes_used) we need to set it to an initial sensible dummy value
 	 */
 	msblk->bytes_used = sizeof(struct squashfs_super_block);
-	if (!squashfs_read_data(s, (char *) sblk, SQUASHFS_START,
+	if (!squashfs_read_data(s, sblk, SQUASHFS_START,
 					sizeof(struct squashfs_super_block) |
 					SQUASHFS_COMPRESSED_BIT_BLOCK, NULL,
 					sizeof(struct squashfs_super_block))) {
