@@ -32,7 +32,7 @@
 
 #include "squashfs.h"
 
-static squashfs_inode_t squashfs_inode_lookup(struct super_block *s, int ino)
+static long long squashfs_inode_lookup(struct super_block *s, int ino)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	int blk = SQUASHFS_LOOKUP_BLOCK(ino - 1);
@@ -54,7 +54,7 @@ static squashfs_inode_t squashfs_inode_lookup(struct super_block *s, int ino)
 static struct dentry *squashfs_export_iget(struct super_block *s,
 	unsigned int inode_number)
 {
-	squashfs_inode_t inode;
+	long long inode;
 	struct dentry *dentry = ERR_PTR(-ENOENT);
 
 	TRACE("Entered squashfs_export_iget\n");

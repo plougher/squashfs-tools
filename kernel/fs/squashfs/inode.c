@@ -52,8 +52,7 @@ out:
 }
 
 
-struct inode *squashfs_iget(struct super_block *s,
-				squashfs_inode_t inode,
+struct inode *squashfs_iget(struct super_block *s, long long inode,
 				unsigned int inode_number)
 {
 	struct inode *i = iget_locked(s, inode_number);
@@ -69,7 +68,7 @@ struct inode *squashfs_iget(struct super_block *s,
 }
 
 
-int squashfs_read_inode(struct inode *i, squashfs_inode_t inode)
+int squashfs_read_inode(struct inode *i, long long inode)
 {
 	struct super_block *s = i->i_sb;
 	struct squashfs_sb_info *msblk = s->s_fs_info;

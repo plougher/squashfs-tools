@@ -81,9 +81,9 @@ extern __le64 *read_id_index_table(struct super_block *, long long,
 			unsigned short);
 
 /* inode.c */
-extern struct inode *squashfs_iget(struct super_block *, squashfs_inode_t,
+extern struct inode *squashfs_iget(struct super_block *, long long,
 			unsigned int);
-extern int squashfs_read_inode(struct inode *, squashfs_inode_t);
+extern int squashfs_read_inode(struct inode *, long long);
 
 /*
  * Inodes and files operations
