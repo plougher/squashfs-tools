@@ -35,6 +35,14 @@
 
 #include "squashfs.h"
 
+/*
+ * Metadata and fragments in Squashfs are compressed.  To avoid repeatedly
+ * decompressing recently accessed data Squashfs uses two small metadata
+ * and fragment caches.
+ *
+ * This file implements a generic cache implementation used for both caches.
+ */
+
 struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 	struct squashfs_cache *cache, long long block, int length)
 {
@@ -49,6 +57,8 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 				break;
 
 		if (i == cache->entries) {
+			/* Block not in cache, if all cache entries are locked
+ 			 * go to sleep waiting for one to become available */
 			if (cache->unused == 0) {
 				cache->waiting++;
 				spin_unlock(&cache->lock);
@@ -58,6 +68,9 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 				continue;
 			}
 
+			/* At least one unlocked cache entry.  A simple
+ 			 * round-robin strategy is used to choose the entry to
+ 			 * be evicted from the cache */
 			i = cache->next_blk;
 			for (n = 0; n < cache->entries; n++) {
 				if (cache->entry[i].locked == 0)
@@ -68,6 +81,8 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 			cache->next_blk = (i + 1) % cache->entries;
 			entry = &cache->entry[i];
 
+			/* Initialise choosen cache entry, and fill it in from
+ 			 * disk. */
 			cache->unused--;
 			entry->block = block;
 			entry->locked = 1;
@@ -88,16 +103,25 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 			entry->pending = 0;
 			spin_unlock(&cache->lock);
 
+			/* While filling this entry one or more other processes
+ 			 * have looked it up in the cache, and have slept
+ 			 * waiting for it to become available */
 			if (entry->waiting)
 				wake_up_all(&entry->wait_queue);
 			goto out;
 		}
 
+		/* Block already in cache.  Increment lock so it doesn't
+ 		 * get reused until we're finished with it, if it was
+ 		 * previously unlocked there's one less cache entry available
+ 		 * for reuse */
 		entry = &cache->entry[i];
 		if (entry->locked == 0)
 			cache->unused--;
 		entry->locked++;
 
+		/* If the entry is currently being filled in by another process
+ 		 * go to sleep waiting for it to become available */
 		if (entry->pending) {
 			entry->waiting++;
 			spin_unlock(&cache->lock);
@@ -112,6 +136,7 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 out:
 	TRACE("Got %s %d, start block %lld, locked %d, error %d\n", cache->name,
 		i, entry->block, entry->locked, entry->error);
+
 	if (entry->error)
 		ERROR("Unable to read %s cache entry [%llx]\n", cache->name,
 							block);
