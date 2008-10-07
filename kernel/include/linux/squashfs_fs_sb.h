@@ -53,7 +53,6 @@ struct squashfs_cache {
 struct squashfs_sb_info {
 	int			devblksize;
 	int			devblksize_log2;
-	int			swap;
 	struct squashfs_cache	*block_cache;
 	struct squashfs_cache	*fragment_cache;
 	int			next_meta_index;
