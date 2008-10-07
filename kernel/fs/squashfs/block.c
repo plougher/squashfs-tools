@@ -35,10 +35,9 @@
 #include "squashfs.h"
 
 static struct buffer_head *get_block_length(struct super_block *s,
-				int *cur_index, int *offset, int *c_byte)
+			int *cur_index, int *offset, unsigned int *length)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	unsigned short temp;
 	struct buffer_head *bh;
 
 	bh = sb_bread(s, *cur_index);
@@ -46,45 +45,23 @@ static struct buffer_head *get_block_length(struct super_block *s,
 		goto out;
 
 	if (msblk->devblksize - *offset == 1) {
-		if (msblk->swap)
-			((unsigned char *) &temp)[1] = *((unsigned char *)
-				(bh->b_data + *offset));
-		else
-			((unsigned char *) &temp)[0] = *((unsigned char *)
-				(bh->b_data + *offset));
+		*length = (unsigned char) bh->b_data[*offset];
 		brelse(bh);
 		bh = sb_bread(s, ++(*cur_index));
 		if (bh == NULL)
 			goto out;
-		if (msblk->swap)
-			((unsigned char *) &temp)[0] = *((unsigned char *)
-				bh->b_data);
-		else
-			((unsigned char *) &temp)[1] = *((unsigned char *)
-				bh->b_data);
-		*c_byte = temp;
+		*length |= (unsigned char) bh->b_data[0] << 8;
 		*offset = 1;
 	} else {
-		if (msblk->swap) {
-			((unsigned char *) &temp)[1] = *((unsigned char *)
-				(bh->b_data + *offset));
-			((unsigned char *) &temp)[0] = *((unsigned char *)
-				(bh->b_data + *offset + 1));
-		} else {
-			((unsigned char *) &temp)[0] = *((unsigned char *)
-				(bh->b_data + *offset));
-			((unsigned char *) &temp)[1] = *((unsigned char *)
-				(bh->b_data + *offset + 1));
-		}
-		*c_byte = temp;
+		*length = (unsigned char) bh->b_data[*offset] |
+			(unsigned char) bh->b_data[*offset + 1] << 8;
 		*offset += 2;
 	}
 
-	return bh;
-
 out:
-	return NULL;
+	return bh;
 }
+
 
 
 unsigned int squashfs_read_data(struct super_block *s, void *buffer,
@@ -110,8 +87,7 @@ unsigned int squashfs_read_data(struct super_block *s, void *buffer,
 		c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
 
 		TRACE("Block @ 0x%llx, %scompressed size %d, src size %d\n",
-			index, compressed ? "" : "un", (unsigned int) c_byte,
-			srclength);
+			index, compressed ? "" : "un", c_byte, srclength);
 
 		if (c_byte > srclength || index < 0 ||
 				(index + c_byte) > msblk->bytes_used)
@@ -138,7 +114,7 @@ unsigned int squashfs_read_data(struct super_block *s, void *buffer,
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
 
 		TRACE("Block @ 0x%llx, %scompressed size %d\n", index,
-				compressed ? "" : "un", (unsigned int) c_byte);
+				compressed ? "" : "un", c_byte);
 
 		if (c_byte > srclength || (index + c_byte) > msblk->bytes_used)
 			goto block_release;
@@ -288,7 +264,7 @@ int squashfs_get_cached_block(struct super_block *s, void *buffer,
 		} else {
 			if (buffer) {
 				memcpy(buffer, entry->data + offset, bytes);
-				buffer = (char *) buffer + bytes;
+				buffer += bytes;
 			}
 			block = entry->next_index;
 			squashfs_cache_put(msblk->block_cache, entry);
