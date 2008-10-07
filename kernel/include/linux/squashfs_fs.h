@@ -251,38 +251,55 @@ struct squashfs_dir_index {
 	unsigned char		name[0];
 };
 
-#define SQUASHFS_BASE_INODE_HEADER		\
-	__le16			inode_type;	\
-	__le16			mode;		\
-	__le16			uid;		\
-	__le16			guid;		\
-	__le32			mtime;		\
+struct squashfs_base_inode {
+	__le16			inode_type;
+	__le16			mode;
+	__le16			uid;
+	__le16			guid;
+	__le32			mtime;
 	__le32	 		inode_number;
-
-struct squashfs_base_inode_header {
-	SQUASHFS_BASE_INODE_HEADER;
 };
 
-struct squashfs_ipc_inode_header {
-	SQUASHFS_BASE_INODE_HEADER;
+struct squashfs_ipc_inode {
+	__le16			inode_type;
+	__le16			mode;
+	__le16			uid;
+	__le16			guid;
+	__le32			mtime;
+	__le32	 		inode_number;
 	__le32			nlink;
 };
 
-struct squashfs_dev_inode_header {
-	SQUASHFS_BASE_INODE_HEADER;
+struct squashfs_dev_inode {
+	__le16			inode_type;
+	__le16			mode;
+	__le16			uid;
+	__le16			guid;
+	__le32			mtime;
+	__le32	 		inode_number;
 	__le32			nlink;
 	__le32			rdev;
 };
 
-struct squashfs_symlink_inode_header {
-	SQUASHFS_BASE_INODE_HEADER;
+struct squashfs_symlink_inode {
+	__le16			inode_type;
+	__le16			mode;
+	__le16			uid;
+	__le16			guid;
+	__le32			mtime;
+	__le32	 		inode_number;
 	__le32			nlink;
 	__le32			symlink_size;
 	char			symlink[0];
 };
 
-struct squashfs_reg_inode_header {
-	SQUASHFS_BASE_INODE_HEADER;
+struct squashfs_reg_inode {
+	__le16			inode_type;
+	__le16			mode;
+	__le16			uid;
+	__le16			guid;
+	__le32			mtime;
+	__le32	 		inode_number;
 	__le32			start_block;
 	__le32			fragment;
 	__le32			offset;
@@ -290,8 +307,13 @@ struct squashfs_reg_inode_header {
 	__le16			block_list[0];
 };
 
-struct squashfs_lreg_inode_header {
-	SQUASHFS_BASE_INODE_HEADER;
+struct squashfs_lreg_inode {
+	__le16			inode_type;
+	__le16			mode;
+	__le16			uid;
+	__le16			guid;
+	__le32			mtime;
+	__le32	 		inode_number;
 	__le64			start_block;
 	__le64			file_size;
 	__le64			sparse;
@@ -302,8 +324,13 @@ struct squashfs_lreg_inode_header {
 	__le16			block_list[0];
 };
 
-struct squashfs_dir_inode_header {
-	SQUASHFS_BASE_INODE_HEADER;
+struct squashfs_dir_inode {
+	__le16			inode_type;
+	__le16			mode;
+	__le16			uid;
+	__le16			guid;
+	__le32			mtime;
+	__le32	 		inode_number;
 	__le32			start_block;
 	__le32			nlink;
 	__le16			file_size;
@@ -311,8 +338,13 @@ struct squashfs_dir_inode_header {
 	__le32			parent_inode;
 };
 
-struct squashfs_ldir_inode_header {
-	SQUASHFS_BASE_INODE_HEADER;
+struct squashfs_ldir_inode {
+	__le16			inode_type;
+	__le16			mode;
+	__le16			uid;
+	__le16			guid;
+	__le32			mtime;
+	__le32	 		inode_number;
 	__le32			nlink;
 	__le32			file_size;
 	__le32			start_block;
@@ -322,15 +354,15 @@ struct squashfs_ldir_inode_header {
 	struct squashfs_dir_index	index[0];
 };
 
-union squashfs_inode_header {
-	struct squashfs_base_inode_header	base;
-	struct squashfs_dev_inode_header	dev;
-	struct squashfs_symlink_inode_header	symlink;
-	struct squashfs_reg_inode_header	reg;
-	struct squashfs_lreg_inode_header	lreg;
-	struct squashfs_dir_inode_header	dir;
-	struct squashfs_ldir_inode_header	ldir;
-	struct squashfs_ipc_inode_header	ipc;
+union squashfs_inode {
+	struct squashfs_base_inode		base;
+	struct squashfs_dev_inode		dev;
+	struct squashfs_symlink_inode		symlink;
+	struct squashfs_reg_inode		reg;
+	struct squashfs_lreg_inode		lreg;
+	struct squashfs_dir_inode		dir;
+	struct squashfs_ldir_inode		ldir;
+	struct squashfs_ipc_inode		ipc;
 };
 
 struct squashfs_dir_entry {
