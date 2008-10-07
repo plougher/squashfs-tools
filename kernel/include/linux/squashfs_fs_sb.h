@@ -26,27 +26,27 @@
 #include <linux/squashfs_fs.h>
 
 struct squashfs_cache_entry {
-	long long	block;
-	int		length;
-	int		locked;
-	long long	next_index;
-	char		pending;
-	char		error;
-	int		waiting;
+	long long		block;
+	int			length;
+	int			locked;
+	long long		next_index;
+	char			pending;
+	char			error;
+	int			waiting;
 	wait_queue_head_t	wait_queue;
-	char		*data;
+	char			*data;
 };
 
 struct squashfs_cache {
-	char *name;
-	int entries;
-	int block_size;
-	int next_blk;
-	int waiting;
-	int unused;
-	int use_vmalloc;
-	spinlock_t lock;
-	wait_queue_head_t wait_queue;
+	char			*name;
+	int			entries;
+	int			block_size;
+	int			next_blk;
+	int			waiting;
+	int			unused;
+	int			use_vmalloc;
+	spinlock_t		lock;
+	wait_queue_head_t	wait_queue;
 	struct squashfs_cache_entry entry[0];
 };
 
