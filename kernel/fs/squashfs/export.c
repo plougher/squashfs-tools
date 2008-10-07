@@ -94,7 +94,7 @@ static struct dentry *squashfs_get_parent(struct dentry *child)
 
 	TRACE("Entered squashfs_get_parent\n");
 
-	return squashfs_export_iget(i->i_sb, SQUASHFS_I(i)->u.s2.parent_inode);
+	return squashfs_export_iget(i->i_sb, SQUASHFS_I(i)->parent_inode);
 }
 
 

@@ -117,11 +117,11 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		i->i_fop = &generic_ro_fops;
 		i->i_mode |= S_IFREG;
 		i->i_blocks = ((i->i_size - 1) >> 9) + 1;
-		SQUASHFS_I(i)->u.s1.fragment_block = frag_blk;
-		SQUASHFS_I(i)->u.s1.fragment_size = frag_size;
-		SQUASHFS_I(i)->u.s1.fragment_offset = frag_offset;
+		SQUASHFS_I(i)->fragment_block = frag_blk;
+		SQUASHFS_I(i)->fragment_size = frag_size;
+		SQUASHFS_I(i)->fragment_offset = frag_offset;
 		SQUASHFS_I(i)->start_block = le32_to_cpu(inodep->start_block);
-		SQUASHFS_I(i)->u.s1.block_list_start = next_block;
+		SQUASHFS_I(i)->block_list_start = next_block;
 		SQUASHFS_I(i)->offset = next_offset;
 		i->i_data.a_ops = &squashfs_aops;
 
@@ -159,11 +159,11 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		i->i_blocks = ((i->i_size - le64_to_cpu(inodep->sparse) - 1)
 				>> 9) + 1;
 
-		SQUASHFS_I(i)->u.s1.fragment_block = frag_blk;
-		SQUASHFS_I(i)->u.s1.fragment_size = frag_size;
-		SQUASHFS_I(i)->u.s1.fragment_offset = frag_offset;
+		SQUASHFS_I(i)->fragment_block = frag_blk;
+		SQUASHFS_I(i)->fragment_size = frag_size;
+		SQUASHFS_I(i)->fragment_offset = frag_offset;
 		SQUASHFS_I(i)->start_block = le64_to_cpu(inodep->start_block);
-		SQUASHFS_I(i)->u.s1.block_list_start = next_block;
+		SQUASHFS_I(i)->block_list_start = next_block;
 		SQUASHFS_I(i)->offset = next_offset;
 		i->i_data.a_ops = &squashfs_aops;
 
@@ -187,9 +187,8 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		i->i_mode |= S_IFDIR;
 		SQUASHFS_I(i)->start_block = le32_to_cpu(inodep->start_block);
 		SQUASHFS_I(i)->offset = le16_to_cpu(inodep->offset);
-		SQUASHFS_I(i)->u.s2.dir_index_count = 0;
-		SQUASHFS_I(i)->u.s2.parent_inode =
-				le32_to_cpu(inodep->parent_inode);
+		SQUASHFS_I(i)->dir_index_count = 0;
+		SQUASHFS_I(i)->parent_inode = le32_to_cpu(inodep->parent_inode);
 
 		TRACE("Directory inode %x:%x, start_block %llx, offset %x\n",
 				SQUASHFS_INODE_BLK(inode), offset,
@@ -211,12 +210,10 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		i->i_mode |= S_IFDIR;
 		SQUASHFS_I(i)->start_block = le32_to_cpu(inodep->start_block);
 		SQUASHFS_I(i)->offset = le16_to_cpu(inodep->offset);
-		SQUASHFS_I(i)->u.s2.dir_index_start = next_block;
-		SQUASHFS_I(i)->u.s2.dir_index_offset = next_offset;
-		SQUASHFS_I(i)->u.s2.dir_index_count =
-					le16_to_cpu(inodep->i_count);
-		SQUASHFS_I(i)->u.s2.parent_inode =
-					le32_to_cpu(inodep->parent_inode);
+		SQUASHFS_I(i)->dir_index_start = next_block;
+		SQUASHFS_I(i)->dir_index_offset = next_offset;
+		SQUASHFS_I(i)->dir_index_count = le16_to_cpu(inodep->i_count);
+		SQUASHFS_I(i)->parent_inode = le32_to_cpu(inodep->parent_inode);
 
 		TRACE("Long directory inode %x:%x, start_block %llx, offset "
 				"%x\n", SQUASHFS_INODE_BLK(inode), offset,

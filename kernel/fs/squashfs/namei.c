@@ -113,9 +113,9 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 		goto exit_lookup;
 
 	length = get_dir_index_using_name(i->i_sb, &next_block, &next_offset,
-				SQUASHFS_I(i)->u.s2.dir_index_start,
-				SQUASHFS_I(i)->u.s2.dir_index_offset,
-				SQUASHFS_I(i)->u.s2.dir_index_count, name, len);
+				SQUASHFS_I(i)->dir_index_start,
+				SQUASHFS_I(i)->dir_index_offset,
+				SQUASHFS_I(i)->dir_index_count, name, len);
 
 	while (length < i_size_read(i)) {
 		/* read directory header */

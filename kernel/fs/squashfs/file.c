@@ -176,7 +176,7 @@ static int get_meta_index(struct inode *inode, int index,
 	int offset = 0;
 	struct meta_index *meta;
 	struct meta_entry *meta_entry;
-	long long cur_index_block = SQUASHFS_I(inode)->u.s1.block_list_start;
+	long long cur_index_block = SQUASHFS_I(inode)->block_list_start;
 	int cur_offset = SQUASHFS_I(inode)->offset;
 	long long cur_data_block = SQUASHFS_I(inode)->start_block;
 	int i;
@@ -320,7 +320,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 					PAGE_CACHE_SHIFT))
 		goto out;
 
-	if (SQUASHFS_I(inode)->u.s1.fragment_block == SQUASHFS_INVALID_BLK
+	if (SQUASHFS_I(inode)->fragment_block == SQUASHFS_INVALID_BLK
 					|| index < file_end) {
 		block_list = kmalloc(SIZE, GFP_KERNEL);
 		if (block_list == NULL) {
@@ -353,19 +353,18 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		}
 	} else {
 		fragment = get_cached_fragment(inode->i_sb,
-				SQUASHFS_I(inode)->u.s1.fragment_block,
-				SQUASHFS_I(inode)->u.s1.fragment_size);
+				SQUASHFS_I(inode)->fragment_block,
+				SQUASHFS_I(inode)->fragment_size);
 
 		if (fragment->error) {
 			ERROR("Unable to read page, block %llx, size %x\n",
-				SQUASHFS_I(inode)->u.s1.fragment_block,
-				(int) SQUASHFS_I(inode)->u.s1.fragment_size);
+				SQUASHFS_I(inode)->fragment_block,
+				SQUASHFS_I(inode)->fragment_size);
 			release_cached_fragment(msblk, fragment);
 			goto error_out;
 		}
 		bytes = i_size_read(inode) & (msblk->block_size - 1);
-		data_ptr = fragment->data +
-			SQUASHFS_I(inode)->u.s1.fragment_offset;
+		data_ptr = fragment->data + SQUASHFS_I(inode)->fragment_offset;
 	}
 
 	for (i = start_index; i <= end_index && bytes > 0; i++,
@@ -397,7 +396,7 @@ skip_page:
 			page_cache_release(push_page);
 	}
 
-	if (SQUASHFS_I(inode)->u.s1.fragment_block == SQUASHFS_INVALID_BLK
+	if (SQUASHFS_I(inode)->fragment_block == SQUASHFS_INVALID_BLK
 					|| index < file_end) {
 		if (!sparse)
 			mutex_unlock(&msblk->read_page_mutex);

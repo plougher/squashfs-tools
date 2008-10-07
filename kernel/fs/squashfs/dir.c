@@ -108,7 +108,7 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		} else {
 			name = "..";
 			size = 2;
-			i_ino = SQUASHFS_I(i)->u.s2.parent_inode;
+			i_ino = SQUASHFS_I(i)->parent_inode;
 		}
 
 		TRACE("Calling filldir(%p, %s, %d, %lld, %d, %d)\n",
@@ -125,9 +125,9 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	}
 
 	length = get_dir_index_using_offset(i->i_sb, &next_block, &next_offset,
-				SQUASHFS_I(i)->u.s2.dir_index_start,
-				SQUASHFS_I(i)->u.s2.dir_index_offset,
-				SQUASHFS_I(i)->u.s2.dir_index_count,
+				SQUASHFS_I(i)->dir_index_start,
+				SQUASHFS_I(i)->dir_index_offset,
+				SQUASHFS_I(i)->dir_index_count,
 				file->f_pos);
 
 	while (length < i_size_read(i)) {
