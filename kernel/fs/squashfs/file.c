@@ -157,8 +157,6 @@ failure:
 }
 
 
-#define SIZE 256
-
 static inline int calculate_skip(int blocks)
 {
 	int skip = (blocks - 1) / ((SQUASHFS_SLOTS * SQUASHFS_META_ENTRIES + 1)
@@ -213,7 +211,7 @@ static int get_meta_index(struct inode *inode, int index,
 			int blocks = skip * SQUASHFS_META_INDEXES;
 
 			while (blocks) {
-				int block = min(SIZE >> 2, blocks);
+				int block = min(PAGE_CACHE_SIZE >> 2, blocks);
 				int res = read_block_index(inode->i_sb, block,
 					block_list, &cur_index_block,
 					&cur_offset);
@@ -273,7 +271,7 @@ long long read_blocklist(struct inode *inode, int index, void *block_list,
 	index -= res;
 
 	while (index) {
-		int blocks = index > (SIZE >> 2) ? (SIZE >> 2) : index;
+		int blocks = min(index, PAGE_CACHE_SIZE >> 2);
 		int res = read_block_index(inode->i_sb, blocks, block_list,
 			&block_ptr, &offset);
 		if (res == -1)
@@ -322,7 +320,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 
 	if (SQUASHFS_I(inode)->fragment_block == SQUASHFS_INVALID_BLK
 					|| index < file_end) {
-		block_list = kmalloc(SIZE, GFP_KERNEL);
+		block_list = kmalloc(PAGE_CACHE_SIZE, GFP_KERNEL);
 		if (block_list == NULL) {
 			ERROR("Failed to allocate block_list\n");
 			goto error_out;
