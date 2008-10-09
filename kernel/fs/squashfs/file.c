@@ -21,6 +21,17 @@
  * file.c
  */
 
+/*
+ * This file contains code for handling regular files.  A regular file
+ * consists of a sequence of contiguous compressed blocks, and/or a
+ * compressed fragment block (tail-end packed block).   The compressed size
+ * of each datablock is stored in a blocklist contained within the 
+ * file inode (itself stored in one or more compressed metadata blocks).
+ *
+ * To speed up access to datablocks when reading 'large' files (256 Mbytes or
+ * larger), the code implements an index cache that caches the mapping from
+ * block index to datablock location on disk.
+ */
 
 #include <linux/fs.h>
 #include <linux/vfs.h>
