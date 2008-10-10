@@ -195,9 +195,8 @@
 
 /* meta index cache */
 #define SQUASHFS_META_INDEXES	(SQUASHFS_METADATA_SIZE / sizeof(unsigned int))
-#define SQUASHFS_META_ENTRIES	31
-#define SQUASHFS_META_NUMBER	8
-#define SQUASHFS_SLOTS		4
+#define SQUASHFS_META_ENTRIES	127
+#define SQUASHFS_META_SLOTS	8
 
 struct meta_entry {
 	long long		data_block;
