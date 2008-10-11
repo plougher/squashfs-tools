@@ -339,14 +339,11 @@ static int squashfs_readpage(struct file *file, struct page *page)
 {
 	struct inode *inode = page->mapping->host;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
-	void *block_list = NULL;
 	long long block;
 	unsigned int bsize, i;
-	int bytes;
-	int index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
-	void *pageaddr;
+	int bytes, index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
 	struct squashfs_cache_entry *fragment = NULL;
-	char *data_ptr = msblk->read_page;
+	void *pageaddr, *block_list = NULL, *data_ptr = msblk->read_page;
 
 	int mask = (1 << (msblk->block_log - PAGE_CACHE_SHIFT)) - 1;
 	int start_index = page->index & ~mask;
@@ -437,13 +434,13 @@ skip_page:
 			page_cache_release(push_page);
 	}
 
-	if (SQUASHFS_I(inode)->fragment_block == SQUASHFS_INVALID_BLK
-					|| index < file_end) {
+	if (block_list) {
 		if (!sparse)
 			mutex_unlock(&msblk->read_page_mutex);
 		kfree(block_list);
-	} else
+	} else {
 		release_cached_fragment(msblk, fragment);
+	}
 
 	return 0;
 
