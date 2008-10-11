@@ -155,8 +155,9 @@ static void squashfs_cache_put(struct squashfs_cache *cache,
 		spin_unlock(&cache->lock);
 		if (cache->waiting)
 			wake_up(&cache->wait_queue);
-	} else
+	} else {
 		spin_unlock(&cache->lock);
+	}
 }
 
 
