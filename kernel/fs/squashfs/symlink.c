@@ -49,7 +49,7 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 				SQUASHFS_I(inode)->offset);
 
 	for (length = 0; length < index; length += bytes) {
-		bytes = squashfs_get_cached_block(inode->i_sb, NULL, block,
+		bytes = squashfs_read_metadata(inode->i_sb, NULL, block,
 				offset, PAGE_CACHE_SIZE, &block, &offset);
 		if (bytes == 0) {
 			ERROR("Unable to read symbolic link [%llx:%x]\n",
@@ -66,7 +66,7 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 
 	avail_bytes = min_t(int, i_size_read(inode) - length, PAGE_CACHE_SIZE);
 
-	bytes = squashfs_get_cached_block(inode->i_sb, pageaddr, block, offset,
+	bytes = squashfs_read_metadata(inode->i_sb, pageaddr, block, offset,
 				avail_bytes, &block, &offset);
 	if (bytes == 0)
 		ERROR("Unable to read symbolic link [%llx:%x]\n", block,

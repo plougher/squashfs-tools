@@ -42,7 +42,7 @@ int get_fragment_location(struct super_block *s, unsigned int fragment,
 	struct squashfs_fragment_entry fragment_entry;
 	int size = 0;
 
-	if (!squashfs_get_cached_block(s, &fragment_entry, start_block, offset,
+	if (!squashfs_read_metadata(s, &fragment_entry, start_block, offset,
 				 sizeof(fragment_entry), &start_block, &offset))
 		goto out;
 

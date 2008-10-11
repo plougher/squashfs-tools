@@ -57,13 +57,13 @@ static int get_dir_index_using_name(struct super_block *s,
 	str[len] = '\0';
 
 	for (i = 0; i < i_count; i++) {
-		squashfs_get_cached_block(s, index, index_start, index_offset,
+		squashfs_read_metadata(s, index, index_start, index_offset,
 					sizeof(struct squashfs_dir_index),
 					&index_start, &index_offset);
 
 		size = le32_to_cpu(index->size) + 1;
 
-		squashfs_get_cached_block(s, index->name, index_start,
+		squashfs_read_metadata(s, index->name, index_start,
 					index_offset, size, &index_start,
 					&index_offset);
 
@@ -119,7 +119,7 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 
 	while (length < i_size_read(i)) {
 		/* read directory header */
-		if (!squashfs_get_cached_block(i->i_sb, &dirh, next_block,
+		if (!squashfs_read_metadata(i->i_sb, &dirh, next_block,
 				next_offset, sizeof(dirh), &next_block,
 				&next_offset))
 			goto failed_read;
@@ -128,14 +128,14 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 
 		dir_count = le32_to_cpu(dirh.count) + 1;
 		while (dir_count--) {
-			if (!squashfs_get_cached_block(i->i_sb, dire,
+			if (!squashfs_read_metadata(i->i_sb, dire,
 					next_block, next_offset, sizeof(*dire),
 					&next_block, &next_offset))
 				goto failed_read;
 
 			size = le16_to_cpu(dire->size) + 1;
 
-			if (!squashfs_get_cached_block(i->i_sb, dire->name,
+			if (!squashfs_read_metadata(i->i_sb, dire->name,
 					next_block, next_offset, size,
 					&next_block, &next_offset))
 				goto failed_read;

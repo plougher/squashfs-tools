@@ -162,7 +162,7 @@ static int read_block_index(struct super_block *s, int blocks, void *block_list,
 	__le32 *blist = block_list;
 	int i, block = 0;
 
-	if (!squashfs_get_cached_block(s, block_list, *start_block,
+	if (!squashfs_read_metadata(s, block_list, *start_block,
 			*offset, blocks << 2, start_block, offset)) {
 		ERROR("Fail reading block list [%llx:%x]\n", *start_block,
 			*offset);

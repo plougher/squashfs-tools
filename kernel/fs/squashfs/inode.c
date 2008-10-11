@@ -82,8 +82,8 @@ int squashfs_read_inode(struct inode *i, long long inode)
 
 	TRACE("Entered squashfs_read_inode\n");
 
-	if (!squashfs_get_cached_block(s, inodeb, block, offset,
-				sizeof(*inodeb), &next_block, &next_offset))
+	if (!squashfs_read_metadata(s, inodeb, block, offset, sizeof(*inodeb),
+			&next_block, &next_offset))
 		goto failed_read;
 
 	if (squashfs_new_inode(s, i, inodeb) == 0)
@@ -96,7 +96,7 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		long long frag_blk;
 		struct squashfs_reg_inode *inodep = &id.reg;
 
-		if (!squashfs_get_cached_block(s, inodep, block, offset,
+		if (!squashfs_read_metadata(s, inodep, block, offset,
 				sizeof(*inodep), &next_block, &next_offset))
 			goto failed_read;
 
@@ -136,7 +136,7 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		long long frag_blk;
 		struct squashfs_lreg_inode *inodep = &id.lreg;
 
-		if (!squashfs_get_cached_block(s, inodep, block, offset,
+		if (!squashfs_read_metadata(s, inodep, block, offset,
 				sizeof(*inodep), &next_block, &next_offset))
 			goto failed_read;
 
@@ -176,7 +176,7 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	case SQUASHFS_DIR_TYPE: {
 		struct squashfs_dir_inode *inodep = &id.dir;
 
-		if (!squashfs_get_cached_block(s, inodep, block, offset,
+		if (!squashfs_read_metadata(s, inodep, block, offset,
 				sizeof(*inodep), &next_block, &next_offset))
 			goto failed_read;
 
@@ -199,7 +199,7 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	case SQUASHFS_LDIR_TYPE: {
 		struct squashfs_ldir_inode *inodep = &id.ldir;
 
-		if (!squashfs_get_cached_block(s, inodep, block, offset,
+		if (!squashfs_read_metadata(s, inodep, block, offset,
 				sizeof(*inodep), &next_block, &next_offset))
 			goto failed_read;
 
@@ -224,7 +224,7 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	case SQUASHFS_SYMLINK_TYPE: {
 		struct squashfs_symlink_inode *inodep = &id.symlink;
 
-		if (!squashfs_get_cached_block(s, inodep, block, offset,
+		if (!squashfs_read_metadata(s, inodep, block, offset,
 				sizeof(*inodep), &next_block, &next_offset))
 			goto failed_read;
 
@@ -246,7 +246,7 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		struct squashfs_dev_inode *inodep = &id.dev;
 		unsigned int rdev;
 
-		if (!squashfs_get_cached_block(s, inodep, block, offset,
+		if (!squashfs_read_metadata(s, inodep, block, offset,
 				sizeof(*inodep), &next_block, &next_offset))
 			goto failed_read;
 
@@ -264,7 +264,7 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	case SQUASHFS_SOCKET_TYPE: {
 		struct squashfs_ipc_inode *inodep = &id.ipc;
 
-		if (!squashfs_get_cached_block(s, inodep, block, offset,
+		if (!squashfs_read_metadata(s, inodep, block, offset,
 				sizeof(*inodep), &next_block, &next_offset))
 			goto failed_read;
 

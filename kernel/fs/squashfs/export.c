@@ -42,7 +42,7 @@ static long long squashfs_inode_lookup(struct super_block *s, int ino)
 
 	TRACE("Entered squashfs_inode_lookup, inode_number = %d\n", ino);
 
-	if (!squashfs_get_cached_block(s, &inode, start, offset,
+	if (!squashfs_read_metadata(s, &inode, start, offset,
 					sizeof(inode), &start, &offset))
 		return SQUASHFS_INVALID_BLK;
 
