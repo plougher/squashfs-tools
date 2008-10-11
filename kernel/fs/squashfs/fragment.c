@@ -54,23 +54,6 @@ out:
 }
 
 
-void release_cached_fragment(struct squashfs_sb_info *msblk,
-				struct squashfs_cache_entry *fragment)
-{
-	squashfs_cache_put(msblk->fragment_cache, fragment);
-}
-
-
-struct squashfs_cache_entry *get_cached_fragment(struct super_block *s,
-				long long start_block, int length)
-{
-	struct squashfs_sb_info *msblk = s->s_fs_info;
-
-	return squashfs_cache_get(s, msblk->fragment_cache, start_block,
-		length);
-}
-
-
 __le64 *read_fragment_index_table(struct super_block *s,
 	long long fragment_table_start, unsigned int fragments)
 {

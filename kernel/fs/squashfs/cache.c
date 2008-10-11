@@ -44,7 +44,7 @@
 
 #include "squashfs.h"
 
-struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
+static struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 	struct squashfs_cache *cache, long long block, int length)
 {
 	int i, n;
@@ -145,7 +145,7 @@ out:
 }
 
 
-void squashfs_cache_put(struct squashfs_cache *cache,
+static void squashfs_cache_put(struct squashfs_cache *cache,
 				struct squashfs_cache_entry *entry)
 {
 	spin_lock(&cache->lock);
@@ -267,3 +267,21 @@ finish:
 	squashfs_cache_put(msblk->block_cache, entry);
 	return return_length;
 }
+
+
+struct squashfs_cache_entry *get_cached_fragment(struct super_block *s,
+				long long start_block, int length)
+{
+	struct squashfs_sb_info *msblk = s->s_fs_info;
+
+	return squashfs_cache_get(s, msblk->fragment_cache, start_block,
+		length);
+}
+
+
+void release_cached_fragment(struct squashfs_sb_info *msblk,
+				struct squashfs_cache_entry *fragment)
+{
+	squashfs_cache_put(msblk->fragment_cache, fragment);
+}
+

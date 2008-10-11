@@ -47,15 +47,15 @@ extern unsigned int squashfs_read_data(struct super_block *, void *,
 				long long, unsigned int, long long *, int);
 
 /* cache.c */
-extern struct squashfs_cache_entry *squashfs_cache_get(struct super_block *,
-				struct squashfs_cache *, long long, int);
-extern void squashfs_cache_put(struct squashfs_cache *,
-				struct squashfs_cache_entry *);
-extern void squashfs_cache_delete(struct squashfs_cache *);
 extern struct squashfs_cache *squashfs_cache_init(char *, int, int, int);
+extern void squashfs_cache_delete(struct squashfs_cache *);
 extern int squashfs_read_metadata(struct super_block *, void *,
 				long long, unsigned int, int, long long *,
 				unsigned int *);
+extern struct squashfs_cache_entry *get_cached_fragment(struct super_block *,
+				long long, int);
+extern void release_cached_fragment(struct squashfs_sb_info *,
+				struct squashfs_cache_entry *);
 
 /* export.c */
 extern __le64 *read_inode_lookup_table(struct super_block *, long long,
