@@ -64,10 +64,6 @@ extern __le64 *read_inode_lookup_table(struct super_block *, long long,
 /* fragment.c */
 extern int get_fragment_location(struct super_block *, unsigned int,
 				long long *);
-extern void release_cached_fragment(struct squashfs_sb_info *,
-				struct squashfs_cache_entry *);
-extern struct squashfs_cache_entry *get_cached_fragment(struct super_block *,
-				long long, int);
 extern __le64 *read_fragment_index_table(struct super_block *, long long,
 				unsigned int);
 
