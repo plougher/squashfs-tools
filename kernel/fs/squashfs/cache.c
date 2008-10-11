@@ -22,11 +22,12 @@
  */
 
 /*
- * Metadata and fragments in Squashfs are compressed.  To avoid repeatedly
- * decompressing recently accessed data Squashfs uses two small metadata
- * and fragment caches.
+ * Blocks in Squashfs are compressed.  To avoid repeatedly decompressing
+ * recently accessed data Squashfs uses two small metadata and fragment caches.
  *
- * This file implements a generic cache implementation used for both caches.
+ * This file implements a generic cache implementation used for both caches,
+ * plus functions layered ontop of the generic cache implementation to
+ * access the metadata and fragment caches.
  */
 
 #include <linux/fs.h>
@@ -218,4 +219,51 @@ cleanup:
 	squashfs_cache_delete(cache);
 failed:
 	return NULL;
+}
+
+
+int squashfs_read_metadata(struct super_block *s, void *buffer,
+				long long block, unsigned int offset,
+				int length, long long *next_block,
+				unsigned int *next_offset)
+{
+	struct squashfs_sb_info *msblk = s->s_fs_info;
+	int bytes, return_length = length;
+	struct squashfs_cache_entry *entry;
+
+	TRACE("Entered squashfs_read_metadata [%llx:%x]\n", block, offset);
+
+	while (1) {
+		entry = squashfs_cache_get(s, msblk->block_cache, block, 0);
+		bytes = entry->length - offset;
+
+		if (entry->error || bytes < 1) {
+			return_length = 0;
+			goto finish;
+		} else if (bytes >= length) {
+			if (buffer)
+				memcpy(buffer, entry->data + offset, length);
+			if (entry->length - offset == length) {
+				*next_block = entry->next_index;
+				*next_offset = 0;
+			} else {
+				*next_block = block;
+				*next_offset = offset + length;
+			}
+			goto finish;
+		} else {
+			if (buffer) {
+				memcpy(buffer, entry->data + offset, bytes);
+				buffer += bytes;
+			}
+			block = entry->next_index;
+			squashfs_cache_put(msblk->block_cache, entry);
+			length -= bytes;
+			offset = 0;
+		}
+	}
+
+finish:
+	squashfs_cache_put(msblk->block_cache, entry);
+	return return_length;
 }
