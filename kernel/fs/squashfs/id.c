@@ -44,9 +44,9 @@
 int get_id(struct super_block *s, unsigned int index, unsigned int *id)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	long long start_block =
-			le64_to_cpu(msblk->id_table[SQUASHFS_ID_BLOCK(index)]);
+	int block = SQUASHFS_ID_BLOCK(index);
 	int offset = SQUASHFS_ID_BLOCK_OFFSET(index);
+	long long start_block = le64_to_cpu(msblk->id_table[block]);
 	__le32 disk_id;
 
 	if (!squashfs_read_metadata(s, &disk_id, start_block, offset,
