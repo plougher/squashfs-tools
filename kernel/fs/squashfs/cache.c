@@ -21,6 +21,14 @@
  * cache.c
  */
 
+/*
+ * Metadata and fragments in Squashfs are compressed.  To avoid repeatedly
+ * decompressing recently accessed data Squashfs uses two small metadata
+ * and fragment caches.
+ *
+ * This file implements a generic cache implementation used for both caches.
+ */
+
 #include <linux/fs.h>
 #include <linux/vfs.h>
 #include <linux/slab.h>
@@ -34,14 +42,6 @@
 #include <linux/squashfs_fs_i.h>
 
 #include "squashfs.h"
-
-/*
- * Metadata and fragments in Squashfs are compressed.  To avoid repeatedly
- * decompressing recently accessed data Squashfs uses two small metadata
- * and fragment caches.
- *
- * This file implements a generic cache implementation used for both caches.
- */
 
 struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 	struct squashfs_cache *cache, long long block, int length)
