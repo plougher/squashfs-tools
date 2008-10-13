@@ -147,7 +147,7 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 
 			if (len == size && !strncmp(name, dire->name, len)) {
 				start_block = le32_to_cpu(dirh.start_block);
-				offset = le32_to_cpu(dire->offset);
+				offset = le16_to_cpu(dire->offset);
 				ino_number = le32_to_cpu(dirh.inode_number) +
 					(short) le16_to_cpu(dire->inode_number);
 				ino = SQUASHFS_MKINODE(start_block, offset);
