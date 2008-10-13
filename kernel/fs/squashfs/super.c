@@ -155,18 +155,16 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 				? "un" : "");
 	TRACE("Data is %scompressed\n", SQUASHFS_UNCOMPRESSED_DATA(flags)
 				? "un" : "");
-	TRACE("Check data is %spresent in the filesystem\n",
-				SQUASHFS_CHECK_DATA(flags) ?  "" : "not ");
 	TRACE("Filesystem size %lld bytes\n", msblk->bytes_used);
 	TRACE("Block size %d\n", msblk->block_size);
-	TRACE("Number of inodes %d\n", inodes);
+	TRACE("Number of inodes %d\n", msblk->inodes);
 	TRACE("Number of fragments %d\n", le32_to_cpu(sblk->fragments));
 	TRACE("Number of ids %d\n", le16_to_cpu(sblk->no_ids));
 	TRACE("sblk->inode_table_start %llx\n", msblk->inode_table_start);
 	TRACE("sblk->directory_table_start %llx\n",
 				msblk->directory_table_start);
 	TRACE("sblk->fragment_table_start %llx\n",
-				le32_to_cpu(sblk->fragment_table_start));
+				le64_to_cpu(sblk->fragment_table_start));
 	TRACE("sblk->id_table_start %llx\n", le64_to_cpu(sblk->id_table_start));
 
 	s->s_maxbytes = MAX_LFS_FILESIZE;
