@@ -25,7 +25,7 @@
  * This file contains code for handling regular files.  A regular file
  * consists of a sequence of contiguous compressed blocks, and/or a
  * compressed fragment block (tail-end packed block).   The compressed size
- * of each datablock is stored in a blocklist contained within the 
+ * of each datablock is stored in a block list contained within the 
  * file inode (itself stored in one or more compressed metadata blocks).
  *
  * To speed up access to datablocks when reading 'large' files (256 Mbytes or
@@ -33,7 +33,7 @@
  * block index to datablock location on disk.
  *
  * The index cache allows Squashfs to handle large files (up to 1.75 TiB) while
- * retaining a simple and space-efficient blocklist on disk.  The cache
+ * retaining a simple and space-efficient block list on disk.  The cache
  * is split into slots, caching up to eight 224 GiB files (128 KiB blocks).
  * Larger files use multiple slots, with 1.75 TiB files using all 8 slots.
  * The index cache is designed to be memory efficient, and by default uses
@@ -58,8 +58,8 @@
  * Locate cache slot in range [offset, index] for specified inode.  If
  * there's more than one return the slot closest to index.
  */
-static struct meta_index *locate_meta_index(struct inode *inode, int index,
-				int offset)
+static struct meta_index *locate_meta_index(struct inode *inode, int offset,
+				int index)
 {
 	struct meta_index *meta = NULL;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
@@ -94,6 +94,9 @@ not_allocated:
 }
 
 
+/*
+ * Find and initialise an empty cache slot for index offset.
+ */
 static struct meta_index *empty_meta_index(struct inode *inode, int offset,
 				int skip)
 {
@@ -106,6 +109,12 @@ static struct meta_index *empty_meta_index(struct inode *inode, int offset,
 	TRACE("empty_meta_index: offset %d, skip %d\n", offset, skip);
 
 	if (msblk->meta_index == NULL) {
+		/*
+ 		 * First time cache index has been used, allocate and
+ 		 * initialise.  The cache index could be allocated at
+ 		 * mount time but doing it here means it is allocated only
+ 		 * if a 'large' file is read.
+ 		 */
 		msblk->meta_index = kmalloc(sizeof(struct meta_index) *
 					SQUASHFS_META_SLOTS, GFP_KERNEL);
 		if (msblk->meta_index == NULL) {
@@ -156,20 +165,24 @@ static void release_meta_index(struct inode *inode, struct meta_index *meta)
 }
 
 
-static int read_block_index(struct super_block *s, int blocks, void *block_list,
+/*
+ * Read the next n blocks from the block list, starting from
+ * metadata block <start_block, offset>.
+ */
+static int read_block_indexes(struct super_block *s, int n, void *block_list,
 				long long *start_block, int *offset)
 {
 	__le32 *blist = block_list;
 	int i, block = 0;
 
 	if (!squashfs_read_metadata(s, block_list, *start_block,
-			*offset, blocks << 2, start_block, offset)) {
+			*offset, n << 2, start_block, offset)) {
 		ERROR("Fail reading block list [%llx:%x]\n", *start_block,
 			*offset);
 		goto failure;
 	}
 
-	for (i = 0; i < blocks; i++)
+	for (i = 0; i < n; i++)
 		block += SQUASHFS_COMPRESSED_SIZE_BLOCK(le32_to_cpu(blist[i]));
 
 	return block;
@@ -200,8 +213,8 @@ static inline int calculate_skip(int blocks)
 
 /*
  * Search and grow the index cache for the specified inode, returning the
- * on-disk locations of the datablock and blocklist metadata block for
- * index (scaled to nearest cache index) .
+ * on-disk locations of the datablock and block list metadata block
+ * <index_block, index_offset> for index (scaled to nearest cache index).
  */
 static int fill_meta_index(struct inode *inode, int index,
 		long long *index_block, int *index_offset,
@@ -217,10 +230,13 @@ static int fill_meta_index(struct inode *inode, int index,
 	long long cur_data_block = SQUASHFS_I(inode)->start_block;
 	int i;
 
+	/*
+	 * Scale index to cache index (cache slot entry)
+	 */
 	index /= SQUASHFS_META_INDEXES * skip;
 
 	while (offset < index) {
-		meta = locate_meta_index(inode, index, offset + 1);
+		meta = locate_meta_index(inode, offset + 1, index);
 
 		if (meta == NULL) {
 			meta = empty_meta_index(inode, offset + 1, skip);
@@ -244,6 +260,11 @@ static int fill_meta_index(struct inode *inode, int index,
 				cur_offset, cur_data_block);
 		}
 
+		/*
+ 		 * If necessary grow cache slot by reading block list.  Cache
+ 		 * slot is extended up to index or to the end of the slot, in
+ 		 * which case further slots will be used.
+ 		 */
 		for (i = meta->offset + meta->entries; i <= index &&
 				i < meta->offset + SQUASHFS_META_ENTRIES; i++) {
 			int blocks = skip * SQUASHFS_META_INDEXES;
@@ -251,7 +272,7 @@ static int fill_meta_index(struct inode *inode, int index,
 			while (blocks) {
 				int block = min_t(int, PAGE_CACHE_SIZE >> 2,
 					blocks);
-				int res = read_block_index(inode->i_sb, block,
+				int res = read_block_indexes(inode->i_sb, block,
 					block_list, &cur_index_block,
 					&cur_offset);
 
@@ -282,6 +303,9 @@ all_done:
 	*index_offset = cur_offset;
 	*data_block = cur_data_block;
 
+	/*
+	 * Scale cache index (cache slot entry) to index
+	 */
 	return offset * SQUASHFS_META_INDEXES * skip;
 
 failed:
@@ -297,34 +321,39 @@ failed:
 static long long read_blocklist(struct inode *inode, int index,
 				void *block_list, unsigned int *bsize)
 {
-	long long block_ptr;
+	long long start;
 	int offset;
 	long long block;
 	__le32 *blist = block_list;
-	int res = fill_meta_index(inode, index, &block_ptr, &offset, &block,
+	int res = fill_meta_index(inode, index, &start, &offset, &block,
 		block_list);
 
-	TRACE("read_blocklist: res %d, index %d, block_ptr 0x%llx, offset"
-		       " 0x%x, block 0x%llx\n", res, index, block_ptr, offset,
+	TRACE("read_blocklist: res %d, index %d, start 0x%llx, offset"
+		       " 0x%x, block 0x%llx\n", res, index, start, offset,
 			block);
 
 	if (res == -1)
 		goto failure;
 
+	/*
+ 	 * res contains the index of the mapping returned by fill_meta_index(),
+ 	 * this will likely be less than the desired index (because the
+ 	 * meta_index cache works at a higher granularity).  Work out how
+ 	 * many more block list indexes need to be read.
+ 	 */
 	index -= res;
 
 	while (index) {
 		int blocks = min_t(int, index, PAGE_CACHE_SIZE >> 2);
-		int res = read_block_index(inode->i_sb, blocks, block_list,
-			&block_ptr, &offset);
+		int res = read_block_indexes(inode->i_sb, blocks, block_list,
+			&start, &offset);
 		if (res == -1)
 			goto failure;
 		block += res;
 		index -= blocks;
 	}
 
-	if (read_block_index(inode->i_sb, 1, block_list, &block_ptr, &offset)
-			== -1)
+	if (read_block_indexes(inode->i_sb, 1, blist, &start, &offset) == -1)
 		goto failure;
 	*bsize = le32_to_cpu(blist[0]);
 
@@ -358,8 +387,12 @@ static int squashfs_readpage(struct file *file, struct page *page)
 					PAGE_CACHE_SHIFT))
 		goto out;
 
-	if (SQUASHFS_I(inode)->fragment_block == SQUASHFS_INVALID_BLK
-					|| index < file_end) {
+	if (index < file_end || SQUASHFS_I(inode)->fragment_block ==
+					SQUASHFS_INVALID_BLK) {
+		/*
+ 		 * Reading a datablock from disk.  Need to read block list
+ 		 * to get location and block size.
+ 		 */
 		block_list = kmalloc(PAGE_CACHE_SIZE, GFP_KERNEL);
 		if (block_list == NULL) {
 			ERROR("Failed to allocate block_list\n");
@@ -390,6 +423,10 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			}
 		}
 	} else {
+		/*
+ 		 * Datablock is stored inside a fragment (tail-end packed
+ 		 * block).
+ 		 */
 		fragment = get_cached_fragment(inode->i_sb,
 				SQUASHFS_I(inode)->fragment_block,
 				SQUASHFS_I(inode)->fragment_size);
