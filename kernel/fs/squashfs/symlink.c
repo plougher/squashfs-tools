@@ -21,6 +21,15 @@
  * symlink.c
  */
 
+/*
+ * This file implements code to handle symbolic links.
+ *
+ * The data contents of symbolic links are stored inside the symbolic
+ * link inode within the inode table.  This allows the normally small symbolic
+ * link to be compressed as part of the inode table, achieving much greater
+ * compression than if the symbolic link was compressed individually.
+ */
+
 #include <linux/fs.h>
 #include <linux/vfs.h>
 #include <linux/kernel.h>
