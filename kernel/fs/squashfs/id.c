@@ -41,7 +41,7 @@
 
 #include "squashfs.h"
 
-int get_id(struct super_block *s, unsigned int index, unsigned int *id)
+int squashfs_get_id(struct super_block *s, unsigned int index, unsigned int *id)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	int block = SQUASHFS_ID_BLOCK(index);

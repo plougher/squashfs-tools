@@ -68,7 +68,7 @@ extern __le64 *read_fragment_index_table(struct super_block *, long long,
 				unsigned int);
 
 /* id.c */
-extern int get_id(struct super_block *, unsigned int, unsigned int *);
+extern int squashfs_get_id(struct super_block *, unsigned int, unsigned int *);
 extern __le64 *read_id_index_table(struct super_block *, long long,
 			unsigned short);
 
