@@ -58,8 +58,10 @@ static struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 				break;
 
 		if (i == cache->entries) {
-			/* Block not in cache, if all cache entries are locked
- 			 * go to sleep waiting for one to become available */
+			/*
+ 			 * Block not in cache, if all cache entries are locked
+ 			 * go to sleep waiting for one to become available.
+ 			 */
 			if (cache->unused == 0) {
 				cache->waiting++;
 				spin_unlock(&cache->lock);
@@ -69,9 +71,11 @@ static struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 				continue;
 			}
 
-			/* At least one unlocked cache entry.  A simple
+			/*
+			 * At least one unlocked cache entry.  A simple
  			 * round-robin strategy is used to choose the entry to
- 			 * be evicted from the cache */
+ 			 * be evicted from the cache.
+ 			 */
 			i = cache->next_blk;
 			for (n = 0; n < cache->entries; n++) {
 				if (cache->entry[i].locked == 0)
@@ -82,8 +86,10 @@ static struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 			cache->next_blk = (i + 1) % cache->entries;
 			entry = &cache->entry[i];
 
-			/* Initialise choosen cache entry, and fill it in from
- 			 * disk. */
+			/*
+			 * Initialise choosen cache entry, and fill it in from
+ 			 * disk.
+ 			 */
 			cache->unused--;
 			entry->block = block;
 			entry->locked = 1;
@@ -104,25 +110,31 @@ static struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 			entry->pending = 0;
 			spin_unlock(&cache->lock);
 
-			/* While filling this entry one or more other processes
+			/*
+ 			 * While filling this entry one or more other processes
  			 * have looked it up in the cache, and have slept
- 			 * waiting for it to become available */
+ 			 * waiting for it to become available.
+ 			 */
 			if (entry->waiting)
 				wake_up_all(&entry->wait_queue);
 			goto out;
 		}
 
-		/* Block already in cache.  Increment lock so it doesn't
+		/*
+		 * Block already in cache.  Increment lock so it doesn't
  		 * get reused until we're finished with it, if it was
  		 * previously unlocked there's one less cache entry available
- 		 * for reuse */
+ 		 * for reuse.
+ 		 */
 		entry = &cache->entry[i];
 		if (entry->locked == 0)
 			cache->unused--;
 		entry->locked++;
 
-		/* If the entry is currently being filled in by another process
- 		 * go to sleep waiting for it to become available */
+		/*
+		 * If the entry is currently being filled in by another process
+ 		 * go to sleep waiting for it to become available.
+ 		 */
 		if (entry->pending) {
 			entry->waiting++;
 			spin_unlock(&cache->lock);
@@ -223,6 +235,12 @@ failed:
 }
 
 
+/*
+ * Read length bytes from metadata position <block, offset> (block is the
+ * start of the compressed block on disk, and offset is the offset into
+ * the block once decompressed).  Data is packed into consecutive blocks,
+ * and length bytes may require reading more than one block.
+ */
 int squashfs_read_metadata(struct super_block *s, void *buffer,
 				long long block, unsigned int offset,
 				int length, long long *next_block,
