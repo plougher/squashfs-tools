@@ -21,6 +21,23 @@
  * inode.c
  */
 
+/*
+ * This file implements code to create and read inodes from disk.
+ *
+ * Inodes in Squashfs are identified by a 48-bit inode which encodes the
+ * location of the compressed metadata block containing the inode, and the byte
+ * offset into that block where the inode is placed (<block, offset>).  
+ *
+ * To maximise compression there are different inodes for each file type
+ * (regular file, directory, device, etc.), the inode contents and length
+ * varying with the type.
+ *
+ * To further maximise compression, two types of regular file inode and
+ * directory inode are defined: inodes optimised for frequently occurring
+ * regular files and directories, and extended types where extra
+ * information has to be stored.
+ */
+
 #include <linux/fs.h>
 #include <linux/vfs.h>
 #include <linux/zlib.h>
@@ -33,9 +50,9 @@
 static int squashfs_new_inode(struct super_block *s, struct inode *i,
 				struct squashfs_base_inode *inodeb)
 {
-	if (get_id(s, le16_to_cpu(inodeb->uid), &i->i_uid) == 0)
+	if (squashfs_get_id(s, le16_to_cpu(inodeb->uid), &i->i_uid) == 0)
 		goto out;
-	if (get_id(s, le16_to_cpu(inodeb->guid), &i->i_gid) == 0)
+	if (squashfs_get_id(s, le16_to_cpu(inodeb->guid), &i->i_gid) == 0)
 		goto out;
 
 	i->i_ino = le32_to_cpu(inodeb->inode_number);
