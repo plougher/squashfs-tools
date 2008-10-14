@@ -26,11 +26,11 @@
  * datablocks).
  *
  * Regular files contain a fragment index which is mapped to a fragment
- * location on disk and compressed size using a fragment lookup table. 
+ * location on disk and compressed size using a fragment lookup table.
  * Like everything in Squashfs this fragment lookup table is itself stored
  * compressed into metadata blocks.  A second index table is used to locate
- * these compressed metadata blocks.  This index table for speed of access
- * (and because it is small) is read at mount time and cached in memory.
+ * these.  This second index table for speed of access (and because it
+ * is small) is read at mount time and cached in memory.
  */
 
 #include <linux/fs.h>

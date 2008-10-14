@@ -27,8 +27,8 @@
  * For space efficiency regular files store uid and gid indexes, which are
  * converted to 32-bit uids/gids using an id look up table.  This table is
  * stored compressed into metadata blocks.  A second index table is used to
- * locate these.  This index table for speed of access (and because it is
- * small) is read at mount time and cached in memory.
+ * locate these.  This second index table for speed of access (and because it
+ * is small) is read at mount time and cached in memory.
  */
 
 #include <linux/fs.h>

@@ -21,6 +21,20 @@
  * export.c
  */
 
+/*
+ * This file implements code to make Squashfs filesystems exportable (NFS etc.)
+ *
+ * The export code uses an inode lookup table to map inode numbers passed in
+ * filehandles to an inode location on disk.  This table is stored compressed
+ * into metadata blocks.  A second index table is used to locate these.  This
+ * second index table for speed of access (and because it is small) is read at
+ * mount time and cached in memory.
+ *
+ * The inode lookup table is used only by the export code, inode disk
+ * locations are directly encoded in directories, enabling direct access
+ * without an intermediate lookup for all operations except the export ops.
+ */
+
 #include <linux/fs.h>
 #include <linux/vfs.h>
 #include <linux/dcache.h>
@@ -91,8 +105,6 @@ static struct dentry *squashfs_fh_to_parent(struct super_block *s,
 static struct dentry *squashfs_get_parent(struct dentry *child)
 {
 	struct inode *i = child->d_inode;
-
-	TRACE("Entered squashfs_get_parent\n");
 
 	return squashfs_export_iget(i->i_sb, SQUASHFS_I(i)->parent_inode);
 }
