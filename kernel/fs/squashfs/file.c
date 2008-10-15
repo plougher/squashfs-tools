@@ -160,8 +160,10 @@ failed:
 
 static void release_meta_index(struct inode *inode, struct meta_index *meta)
 {
+	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	mutex_lock(&msblk->meta_index_mutex);
 	meta->locked = 0;
-	smp_mb();
+	mutex_unlock(&msblk->meta_index_mutex);
 }
 
 
@@ -169,25 +171,41 @@ static void release_meta_index(struct inode *inode, struct meta_index *meta)
  * Read the next n blocks from the block list, starting from
  * metadata block <start_block, offset>.
  */
-static int read_block_indexes(struct super_block *s, int n, void *block_list,
+static long long read_indexes(struct super_block *s, int n,
 				long long *start_block, int *offset)
 {
-	__le32 *blist = block_list;
-	int i, block = 0;
+	int i;
+	long long block = 0;
+	__le32 *blist = kmalloc(PAGE_CACHE_SIZE, GFP_KERNEL);
 
-	if (!squashfs_read_metadata(s, block_list, *start_block,
-			*offset, n << 2, start_block, offset)) {
-		ERROR("Fail reading block list [%llx:%x]\n", *start_block,
-			*offset);
+	if (blist == NULL) {
+		ERROR("read_indexes: Failed to allocate block_list\n");
 		goto failure;
 	}
 
-	for (i = 0; i < n; i++)
-		block += SQUASHFS_COMPRESSED_SIZE_BLOCK(le32_to_cpu(blist[i]));
+	while (n) {
+		int blocks = min_t(int, n, PAGE_CACHE_SIZE >> 2);
+		int res = squashfs_read_metadata(s, blist, *start_block,
+				*offset, blocks << 2, start_block, offset);
 
+		if (res == 0) {
+			ERROR("read_indexes: reading block [%llx:%x]\n",
+				*start_block, *offset);
+			goto failure;
+		}
+
+		for (i = 0; i < blocks; i++) {
+			int size = le32_to_cpu(blist[i]);
+			block += SQUASHFS_COMPRESSED_SIZE_BLOCK(size);
+		}
+		n -= blocks;
+	}
+
+	kfree(blist);
 	return block;
 
 failure:
+	kfree(blist);
 	return -1;
 }
 
@@ -218,7 +236,7 @@ static inline int calculate_skip(int blocks)
  */
 static int fill_meta_index(struct inode *inode, int index,
 		long long *index_block, int *index_offset,
-		long long *data_block, void *block_list)
+		long long *data_block)
 {
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
 	int skip = calculate_skip(i_size_read(inode) >> msblk->block_log);
@@ -268,21 +286,13 @@ static int fill_meta_index(struct inode *inode, int index,
 		for (i = meta->offset + meta->entries; i <= index &&
 				i < meta->offset + SQUASHFS_META_ENTRIES; i++) {
 			int blocks = skip * SQUASHFS_META_INDEXES;
+			long long res = read_indexes(inode->i_sb, blocks,
+					&cur_index_block, &cur_offset);
 
-			while (blocks) {
-				int block = min_t(int, PAGE_CACHE_SIZE >> 2,
-					blocks);
-				int res = read_block_indexes(inode->i_sb, block,
-					block_list, &cur_index_block,
-					&cur_offset);
+			if (res == -1)
+				goto failed;
 
-				if (res == -1)
-					goto failed;
-
-				cur_data_block += res;
-				blocks -= block;
-			}
-
+			cur_data_block += res;
 			meta_entry = &meta->meta_entry[i - meta->offset];
 			meta_entry->index_block = cur_index_block -
 				msblk->inode_table_start;
@@ -319,14 +329,12 @@ failed:
  * specified by index.  Fill_meta_index() does most of the work.
  */
 static long long read_blocklist(struct inode *inode, int index,
-				void *block_list, unsigned int *bsize)
+				unsigned int *bsize)
 {
-	long long start;
+	long long start, block, blks;
 	int offset;
-	long long block;
-	__le32 *blist = block_list;
-	int res = fill_meta_index(inode, index, &start, &offset, &block,
-		block_list);
+	__le32 size;
+	int res = fill_meta_index(inode, index, &start, &offset, &block);
 
 	TRACE("read_blocklist: res %d, index %d, start 0x%llx, offset"
 		       " 0x%x, block 0x%llx\n", res, index, start, offset,
@@ -338,29 +346,29 @@ static long long read_blocklist(struct inode *inode, int index,
 	/*
  	 * res contains the index of the mapping returned by fill_meta_index(),
  	 * this will likely be less than the desired index (because the
- 	 * meta_index cache works at a higher granularity).  Work out how
- 	 * many more block list indexes need to be read.
+ 	 * meta_index cache works at a higher granularity).  Read any
+ 	 * extra block indexes needed.
  	 */
-	index -= res;
-
-	while (index) {
-		int blocks = min_t(int, index, PAGE_CACHE_SIZE >> 2);
-		int res = read_block_indexes(inode->i_sb, blocks, block_list,
-			&start, &offset);
-		if (res == -1)
+	if (res < index) {
+		blks = read_indexes(inode->i_sb, index - res, &start, &offset);
+		if (blks == -1)
 			goto failure;
-		block += res;
-		index -= blocks;
+		block += blks;
 	}
 
-	if (read_block_indexes(inode->i_sb, 1, blist, &start, &offset) == -1)
+	/*
+ 	 * Read length of block specified by index.
+ 	 */ 
+	res = squashfs_read_metadata(inode->i_sb, &size, start, offset,
+			sizeof(size), &start, &offset);
+	if (res == 0)
 		goto failure;
-	*bsize = le32_to_cpu(blist[0]);
+	*bsize = le32_to_cpu(size);
 
 	return block;
 
 failure:
-	return 0;
+	return -1;
 }
 
 
@@ -372,7 +380,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	unsigned int bsize, i;
 	int bytes, index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
 	struct squashfs_cache_entry *fragment = NULL;
-	void *pageaddr, *block_list = NULL, *data_ptr = msblk->read_page;
+	void *pageaddr, *data_ptr = msblk->read_page;
 
 	int mask = (1 << (msblk->block_log - PAGE_CACHE_SHIFT)) - 1;
 	int start_index = page->index & ~mask;
@@ -393,14 +401,8 @@ static int squashfs_readpage(struct file *file, struct page *page)
  		 * Reading a datablock from disk.  Need to read block list
  		 * to get location and block size.
  		 */
-		block_list = kmalloc(PAGE_CACHE_SIZE, GFP_KERNEL);
-		if (block_list == NULL) {
-			ERROR("Failed to allocate block_list\n");
-			goto error_out;
-		}
-
-		block = read_blocklist(inode, index, block_list, &bsize);
-		if (block == 0)
+		block = read_blocklist(inode, index, &bsize);
+		if (block == -1)
 			goto error_out;
 
 		if (bsize == 0) { /* hole */
@@ -471,13 +473,10 @@ skip_page:
 			page_cache_release(push_page);
 	}
 
-	if (block_list) {
-		if (!sparse)
-			mutex_unlock(&msblk->read_page_mutex);
-		kfree(block_list);
-	} else {
+	if (fragment)
 		release_cached_fragment(msblk, fragment);
-	}
+	else if (!sparse)
+		mutex_unlock(&msblk->read_page_mutex);
 
 	return 0;
 
@@ -492,7 +491,6 @@ out:
 		SetPageUptodate(page);
 	unlock_page(page);
 
-	kfree(block_list);
 	return 0;
 }
 
