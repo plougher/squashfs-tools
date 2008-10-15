@@ -96,6 +96,8 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 		memcpy(pageaddr + bytes, entry->data + offset, avail);
 		if (avail == length - bytes)
 			memset(pageaddr + length, 0, PAGE_CACHE_SIZE - length);
+		else
+			block = entry->next_index;
 		kunmap_atomic(pageaddr, KM_USER0);
 		squashfs_cache_put(msblk->block_cache, entry);
 	}
