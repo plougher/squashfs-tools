@@ -90,8 +90,7 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 
 	TRACE("Entered squashfs_readdir [%llx:%x]\n", next_block, next_offset);
 
-	dire = kmalloc(sizeof(struct squashfs_dir_entry) + SQUASHFS_NAME_LEN +
-			1, GFP_KERNEL);
+	dire = kmalloc(sizeof(*dire) + SQUASHFS_NAME_LEN + 1, GFP_KERNEL);
 	if (dire == NULL) {
 		ERROR("Failed to allocate squashfs_dir_entry\n");
 		goto finish;

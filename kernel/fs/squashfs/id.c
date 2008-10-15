@@ -50,7 +50,7 @@ int squashfs_get_id(struct super_block *s, unsigned int index, unsigned int *id)
 	__le32 disk_id;
 
 	if (!squashfs_read_metadata(s, &disk_id, start_block, offset,
-				 sizeof(__le32), &start_block, &offset))
+				 sizeof(disk_id), &start_block, &offset))
 		return 0;
 
 	*id = le32_to_cpu(disk_id);

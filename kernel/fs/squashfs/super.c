@@ -66,11 +66,11 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	unsigned short flags;
 	unsigned int fragments;
 	long long lookup_table_start;
-
+	int res;
 
 	TRACE("Entered squashfs_fill_superblock\n");
 
-	s->s_fs_info = kzalloc(sizeof(struct squashfs_sb_info), GFP_KERNEL);
+	s->s_fs_info = kzalloc(sizeof(*msblk), GFP_KERNEL);
 	if (s->s_fs_info == NULL) {
 		ERROR("Failed to allocate squashfs_sb_info\n");
 		goto failure2;
@@ -83,7 +83,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		goto failure;
 	}
 
-	sblk = kzalloc(sizeof(struct squashfs_super_block), GFP_KERNEL);
+	sblk = kzalloc(sizeof(*sblk), GFP_KERNEL);
 	if (sblk == NULL) {
 		ERROR("Failed to allocate squashfs_super_block\n");
 		goto failure;
@@ -102,11 +102,11 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	 * here to read the superblock (including the value of
 	 * bytes_used) we need to set it to an initial sensible dummy value
 	 */
-	msblk->bytes_used = sizeof(struct squashfs_super_block);
-	if (!squashfs_read_data(s, sblk, SQUASHFS_START,
-					sizeof(struct squashfs_super_block) |
-					SQUASHFS_COMPRESSED_BIT_BLOCK, NULL,
-					sizeof(struct squashfs_super_block))) {
+	msblk->bytes_used = sizeof(*sblk);
+	res = squashfs_read_data(s, sblk, SQUASHFS_START, sizeof(*sblk) |
+			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, sizeof(*sblk));
+
+	if (res == 0) {
 		SERROR("unable to read squashfs_super_block\n");
 		goto failed_mount;
 	}

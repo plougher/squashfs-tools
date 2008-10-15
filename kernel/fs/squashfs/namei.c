@@ -45,8 +45,7 @@ static int get_dir_index_using_name(struct super_block *s,
 
 	TRACE("Entered get_dir_index_using_name, i_count %d\n", i_count);
 
-	str = kmalloc(sizeof(struct squashfs_dir_index) +
-		(SQUASHFS_NAME_LEN + 1) * 2, GFP_KERNEL);
+	str = kmalloc(sizeof(*index) + (SQUASHFS_NAME_LEN + 1) * 2, GFP_KERNEL);
 	if (str == NULL) {
 		ERROR("Failed to allocate squashfs_dir_index\n");
 		goto failure;
@@ -58,8 +57,8 @@ static int get_dir_index_using_name(struct super_block *s,
 
 	for (i = 0; i < i_count; i++) {
 		squashfs_read_metadata(s, index, index_start, index_offset,
-					sizeof(struct squashfs_dir_index),
-					&index_start, &index_offset);
+					sizeof(*index), &index_start,
+					&index_offset);
 
 		size = le32_to_cpu(index->size) + 1;
 
@@ -102,8 +101,7 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 
 	TRACE("Entered squashfs_lookup [%llx:%x]\n", next_block, next_offset);
 
-	dire = kmalloc(sizeof(struct squashfs_dir_entry) +
-		SQUASHFS_NAME_LEN + 1, GFP_KERNEL);
+	dire = kmalloc(sizeof(*dire) + SQUASHFS_NAME_LEN + 1, GFP_KERNEL);
 	if (dire == NULL) {
 		ERROR("Failed to allocate squashfs_dir_entry\n");
 		goto exit_lookup;

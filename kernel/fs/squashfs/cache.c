@@ -196,9 +196,8 @@ struct squashfs_cache *squashfs_cache_init(char *name, int entries,
 	int block_size, int use_vmalloc)
 {
 	int i;
-	struct squashfs_cache *cache = kzalloc(sizeof(struct squashfs_cache) +
-			entries * sizeof(struct squashfs_cache_entry),
-			GFP_KERNEL);
+	struct squashfs_cache *cache = kzalloc(sizeof(*cache) + entries *
+			sizeof(*(cache->entry)), GFP_KERNEL);
 
 	if (cache == NULL) {
 		ERROR("Failed to allocate %s cache\n", name);

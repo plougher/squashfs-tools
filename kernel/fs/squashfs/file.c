@@ -115,8 +115,8 @@ static struct meta_index *empty_meta_index(struct inode *inode, int offset,
  		 * mount time but doing it here means it is allocated only
  		 * if a 'large' file is read.
  		 */
-		msblk->meta_index = kmalloc(sizeof(struct meta_index) *
-					SQUASHFS_META_SLOTS, GFP_KERNEL);
+		msblk->meta_index = kcalloc(SQUASHFS_META_SLOTS,
+			sizeof(*(msblk->meta_index)), GFP_KERNEL);
 		if (msblk->meta_index == NULL) {
 			ERROR("Failed to allocate meta_index\n");
 			goto failed;

@@ -92,8 +92,8 @@ unsigned int squashfs_read_data(struct super_block *s, void *buffer,
 	unsigned int compressed;
 	unsigned int c_byte = length;
 
-	bh = kmalloc(((msblk->block_size >> msblk->devblksize_log2) + 1) *
-				sizeof(struct buffer_head *), GFP_KERNEL);
+	bh = kcalloc((msblk->block_size >> msblk->devblksize_log2) + 1,
+				sizeof(*bh), GFP_KERNEL);
 	if (bh == NULL)
 		goto read_failure;
 
