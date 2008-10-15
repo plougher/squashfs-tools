@@ -44,7 +44,7 @@
 
 #include "squashfs.h"
 
-static struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
+struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 	struct squashfs_cache *cache, long long block, int length)
 {
 	int i, n;
@@ -157,7 +157,7 @@ out:
 }
 
 
-static void squashfs_cache_put(struct squashfs_cache *cache,
+void squashfs_cache_put(struct squashfs_cache *cache,
 				struct squashfs_cache_entry *entry)
 {
 	spin_lock(&cache->lock);

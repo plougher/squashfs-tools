@@ -49,6 +49,9 @@ extern unsigned int squashfs_read_data(struct super_block *, void *,
 /* cache.c */
 extern struct squashfs_cache *squashfs_cache_init(char *, int, int, int);
 extern void squashfs_cache_delete(struct squashfs_cache *);
+struct squashfs_cache_entry *squashfs_cache_get(struct super_block *,
+				struct squashfs_cache *, long long, int);
+void squashfs_cache_put(struct squashfs_cache *, struct squashfs_cache_entry *);
 extern int squashfs_read_metadata(struct super_block *, void *,
 				long long, unsigned int, int, long long *,
 				unsigned int *);
