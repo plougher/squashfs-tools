@@ -46,48 +46,68 @@
 static int squashfs_symlink_readpage(struct file *file, struct page *page)
 {
 	struct inode *inode = page->mapping->host;
+	struct super_block *s = inode->i_sb;
+	struct squashfs_sb_info *msblk = s->s_fs_info;
 	int index = page->index << PAGE_CACHE_SHIFT;
 	long long block = SQUASHFS_I(inode)->start_block;
 	int offset = SQUASHFS_I(inode)->offset;
-	void *pageaddr = kmap(page);
-	int length, bytes, avail_bytes;
+	int length = min_t(int, i_size_read(inode) - index, PAGE_CACHE_SIZE);
+	int avail, bytes;
+	void *pageaddr;
+	struct squashfs_cache_entry *entry;
 
 	TRACE("Entered squashfs_symlink_readpage, page index %ld, start block "
-				"%llx, offset %x\n", page->index,
+			"%llx, offset %x\n", page->index, block, offset);
+
+	/*
+ 	 * Skip index bytes into symlink metadata.
+ 	 */
+	if (index) {
+		bytes = squashfs_read_metadata(s, NULL, block, offset, index,
+			&block, &offset);
+		if (bytes == 0) {
+			ERROR("Unable to read symlink [%llx:%x]\n", 
 				SQUASHFS_I(inode)->start_block,
 				SQUASHFS_I(inode)->offset);
+			goto error_out;
+		}	
+	}
 
-	for (length = 0; length < index; length += bytes) {
-		bytes = squashfs_read_metadata(inode->i_sb, NULL, block,
-				offset, PAGE_CACHE_SIZE, &block, &offset);
-		if (bytes == 0) {
-			ERROR("Unable to read symbolic link [%llx:%x]\n",
-				block, offset);
-			goto skip_read;
+	/*
+	 * Read length bytes from symlink metadata.  Squashfs_read_metadata
+	 * is not used here because it can sleep and we want to use
+	 * kmap_atomic to map the page.  Instead call the underlying
+	 * squashfs_cache_get routine.  As length bytes may overlap metadata
+	 * blocks, we may need to call squashfs_cache_get multiple times.
+	 */
+	for (bytes = 0; bytes < length; offset = 0, bytes += avail) {
+		entry = squashfs_cache_get(s, msblk->block_cache, block, 0);
+		avail = min(entry->length - offset, length - bytes);
+
+		if (entry->error) {
+			ERROR("Unable to read symlink [%llx:%x]\n", 
+				SQUASHFS_I(inode)->start_block,
+				SQUASHFS_I(inode)->offset);
+			squashfs_cache_put(msblk->block_cache, entry);
+			goto error_out;
 		}
+
+		pageaddr = kmap_atomic(page, KM_USER0);
+		memcpy(pageaddr + bytes, entry->data + offset, avail);
+		if (avail == length - bytes)
+			memset(pageaddr + length, 0, PAGE_CACHE_SIZE - length);
+		kunmap_atomic(pageaddr, KM_USER0);
+		squashfs_cache_put(msblk->block_cache, entry);
 	}
 
-	if (length != index) {
-		ERROR("(squashfs_symlink_readpage) length != index\n");
-		bytes = 0;
-		goto skip_read;
-	}
-
-	avail_bytes = min_t(int, i_size_read(inode) - length, PAGE_CACHE_SIZE);
-
-	bytes = squashfs_read_metadata(inode->i_sb, pageaddr, block, offset,
-				avail_bytes, &block, &offset);
-	if (bytes == 0)
-		ERROR("Unable to read symbolic link [%llx:%x]\n", block,
-				offset);
-
-skip_read:
-	memset(pageaddr + bytes, 0, PAGE_CACHE_SIZE - bytes);
-	kunmap(page);
 	flush_dcache_page(page);
 	SetPageUptodate(page);
 	unlock_page(page);
+	return 0;
 
+error_out:
+	SetPageError(page);
+	unlock_page(page);
 	return 0;
 }
 
