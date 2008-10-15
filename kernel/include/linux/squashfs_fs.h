@@ -127,10 +127,6 @@
 				((long long)(((long long) (A)\
 				<< 16) + (B)))
 
-/* Compute 32 bit VFS inode number from squashfs inode number */
-#define SQUASHFS_MK_VFS_INODE(A, B)	((unsigned int) (((A) << 8) + \
-					((B) >> 2) + 1))
-
 /* Translate between VFS mode and squashfs mode */
 #define SQUASHFS_MODE(A)		((A) & 0xfff)
 
