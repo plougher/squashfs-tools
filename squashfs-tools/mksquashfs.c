@@ -4157,6 +4157,7 @@ restore_filesystem:
 	sBlk.id_table_start = write_id_table();
 
 	sBlk.bytes_used = bytes;
+	sBlk.compression = COMPRESSION_ZLIB;
 
 	if(!swap)
 		write_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block), (char *) &sBlk);
