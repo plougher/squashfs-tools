@@ -46,6 +46,9 @@
 
 #include "squashfs.h"
 
+/*
+ * Look-up inode number (ino) in table, returning the inode location.
+ */
 static long long squashfs_inode_lookup(struct super_block *s, int ino)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;

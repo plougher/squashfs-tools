@@ -413,6 +413,9 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		} else {
 			mutex_lock(&msblk->read_page_mutex);
 
+			/*
+ 			 * Read and decompress datablock.
+ 			 */
 			bytes = squashfs_read_data(inode->i_sb,
 				msblk->read_page, block, bsize, NULL,
 				msblk->block_size);
@@ -444,6 +447,12 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		data_ptr = fragment->data + SQUASHFS_I(inode)->fragment_offset;
 	}
 
+	/*
+	 * Loop copying datablock into pages.  As the datablock likely covers
+	 * many PAGE_CACHE_SIZE pages (default block size is 128 KiB) explicitly
+	 * grab the pages from the page cache, except for the page that we've
+	 * been called to fill.
+	 */
 	for (i = start_index; i <= end_index && bytes > 0; i++,
 			bytes -= PAGE_CACHE_SIZE, data_ptr += PAGE_CACHE_SIZE) {
 		struct page *push_page;

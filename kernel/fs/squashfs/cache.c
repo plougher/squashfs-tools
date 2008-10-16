@@ -44,6 +44,10 @@
 
 #include "squashfs.h"
 
+/*
+ * Look-up block in cache, and increment usage count.  If not in cache, read
+ * and decompress it from disk.
+ */
 struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 	struct squashfs_cache *cache, long long block, int length)
 {
@@ -157,6 +161,9 @@ out:
 }
 
 
+/*
+ * Release block, once usage count is zero it can be reused.
+ */
 void squashfs_cache_put(struct squashfs_cache *cache,
 				struct squashfs_cache_entry *entry)
 {
@@ -165,6 +172,10 @@ void squashfs_cache_put(struct squashfs_cache *cache,
 	if (entry->locked == 0) {
 		cache->unused++;
 		spin_unlock(&cache->lock);
+		/*
+ 		 * If there's any processes waiting for a block to become
+ 		 * available, wake one up.
+ 		 */
 		if (cache->waiting)
 			wake_up(&cache->wait_queue);
 	} else {

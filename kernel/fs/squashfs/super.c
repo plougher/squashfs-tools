@@ -21,6 +21,12 @@
  * super.c
  */
 
+/*
+ * This file implements code to read the superblock, read and initialise
+ * in-memory structures at mount time, and all the VFS glue code to register
+ * the filesystem.
+ */
+
 #include <linux/fs.h>
 #include <linux/vfs.h>
 #include <linux/slab.h>

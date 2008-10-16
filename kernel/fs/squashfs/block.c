@@ -98,6 +98,9 @@ unsigned int squashfs_read_data(struct super_block *s, void *buffer,
 		goto read_failure;
 
 	if (c_byte) {
+		/*
+ 		 * Datablock.
+ 		 */
 		bytes = -offset;
 		compressed = SQUASHFS_COMPRESSED_BLOCK(c_byte);
 		c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
@@ -117,6 +120,9 @@ unsigned int squashfs_read_data(struct super_block *s, void *buffer,
 		}
 		ll_rw_block(READ, b, bh);
 	} else {
+		/*
+		 * Metadata block.
+		 */
 		if (index < 0 || (index + 2) > msblk->bytes_used)
 			goto read_failure;
 
@@ -148,7 +154,7 @@ unsigned int squashfs_read_data(struct super_block *s, void *buffer,
 		int zlib_err = 0;
 
 		/*
-		 * uncompress block
+		 * Uncompress block.
 		 */
 
 		mutex_lock(&msblk->read_data_mutex);
@@ -210,6 +216,9 @@ unsigned int squashfs_read_data(struct super_block *s, void *buffer,
 		bytes = msblk->stream.total_out;
 		mutex_unlock(&msblk->read_data_mutex);
 	} else {
+		/*
+		 * Block is uncompressed.
+		 */
 		int i;
 
 		for (i = 0; i < b; i++) {

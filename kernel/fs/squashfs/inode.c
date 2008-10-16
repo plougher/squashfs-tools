@@ -47,6 +47,11 @@
 
 #include "squashfs.h"
 
+/*
+ * Initialise VFS inode with the base inode information common to all
+ * Squashfs inode types.  Inodeb contains the unswapped base inode
+ * off disk.
+ */
 static int squashfs_new_inode(struct super_block *s, struct inode *i,
 				struct squashfs_base_inode *inodeb)
 {
@@ -85,6 +90,10 @@ struct inode *squashfs_iget(struct super_block *s, long long inode,
 }
 
 
+/*
+ * Initialise VFS inode by reading inode from inode table (compressed
+ * metadata).  The format and amount of data read depends on type.
+ */
 int squashfs_read_inode(struct inode *i, long long inode)
 {
 	struct super_block *s = i->i_sb;
@@ -99,6 +108,9 @@ int squashfs_read_inode(struct inode *i, long long inode)
 
 	TRACE("Entered squashfs_read_inode\n");
 
+	/*
+	 * Read inode base common to all inode types.
+	 */
 	if (!squashfs_read_metadata(s, inodeb, block, offset, sizeof(*inodeb),
 			&next_block, &next_offset))
 		goto failed_read;
