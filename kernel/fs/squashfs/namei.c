@@ -21,6 +21,37 @@
  * namei.c
  */
 
+/*
+ * This file implements code to do filename lookup in directories.
+ *
+ * Like inodes, directories are packed into compressed metadata blocks, stored
+ * in a directory table.  Directories are accessed using the start address of
+ * the metablock containing the directory and the offset into the 
+ * decompressed block (<block, offset>).
+ *
+ * Directories are organised in a slightly complex way, and are not simply
+ * a list of file names.  The organisation takes advantage of the
+ * fact that (in most cases) the inodes of the files will be in the same
+ * compressed metadata block, and therefore, can share the start block.
+ * Directories are therefore organised in a two level list, a directory
+ * header containing the shared start block value, and a sequence of directory
+ * entries, each of which share the shared start block.  A new directory header
+ * is written once/if the inode start block changes.  The directory
+ * header/directory entry list is repeated as many times as necessary.
+ *
+ * Directories are sorted, and can contain a directory index to speed up
+ * file lookup.  Directory indexes store one entry per metablock, each entry
+ * storing the index/filename mapping to the first directory header
+ * in each metadata block.  Directories are sorted in alphabetical order,
+ * and at lookup the index is scanned linearly looking for the first filename
+ * alphabetically larger than the filename being looked up.  At this point the
+ * location of the metadata block the filename is in has been found.
+ * The general idea of the index is ensure only one metadata block needs to be
+ * decompressed to do a lookup irrespective of the length of the directory.
+ * This scheme has the advantage that it doesn't require extra memory overhead
+ * and doesn't require much extra storage on disk.
+ */
+
 #include <linux/fs.h>
 #include <linux/vfs.h>
 #include <linux/slab.h>
@@ -33,6 +64,10 @@
 
 #include "squashfs.h"
 
+/*
+ * Lookup name in the directory index, returning the location of the metadata
+ * block containing the filename, and the directory index this represents.
+ */
 static int get_dir_index_using_name(struct super_block *s,
 			long long *next_block, unsigned int *next_offset,
 			long long index_start, unsigned int index_offset,
@@ -48,7 +83,7 @@ static int get_dir_index_using_name(struct super_block *s,
 	str = kmalloc(sizeof(*index) + (SQUASHFS_NAME_LEN + 1) * 2, GFP_KERNEL);
 	if (str == NULL) {
 		ERROR("Failed to allocate squashfs_dir_index\n");
-		goto failure;
+		goto out;
 	}
 
 	index = (struct squashfs_dir_index *) (str + SQUASHFS_NAME_LEN + 1);
@@ -79,7 +114,13 @@ static int get_dir_index_using_name(struct super_block *s,
 	*next_offset = (length + *next_offset) % SQUASHFS_METADATA_SIZE;
 	kfree(str);
 
-failure:
+out:
+	/*
+	 * Return index (f_pos) of the looked up metadata block.  Translate
+	 * from internal f_pos to external f_pos which is offset by 3 because
+	 * we invent "." and ".." entries which are not actually stored in the
+	 * directory on disk.
+	 */
 	return length + 3;
 }
 
@@ -116,7 +157,9 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 				SQUASHFS_I(i)->dir_index_count, name, len);
 
 	while (length < i_size_read(i)) {
-		/* read directory header */
+		/*
+ 		 * Read directory header.
+ 		 */
 		if (!squashfs_read_metadata(i->i_sb, &dirh, next_block,
 				next_offset, sizeof(dirh), &next_block,
 				&next_offset))
@@ -126,6 +169,9 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 
 		dir_count = le32_to_cpu(dirh.count) + 1;
 		while (dir_count--) {
+			/*
+ 			 * Read directory entry.
+ 			 */
 			if (!squashfs_read_metadata(i->i_sb, dire,
 					next_block, next_offset, sizeof(*dire),
 					&next_block, &next_offset))
