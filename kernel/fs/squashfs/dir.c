@@ -21,6 +21,12 @@
  * dir.c
  */
 
+/*
+ * This file implements code to read directories from disk.
+ *
+ * See namei.c for a description of directory organisation on disk.
+ */
+
 #include <linux/fs.h>
 #include <linux/vfs.h>
 #include <linux/slab.h>
@@ -35,6 +41,10 @@ static const unsigned char squashfs_filetype_table[] = {
 	DT_UNKNOWN, DT_DIR, DT_REG, DT_LNK, DT_BLK, DT_CHR, DT_FIFO, DT_SOCK
 };
 
+/*
+ * Lookup offset (f_pos) in the directory index, returning the
+ * metadata block containing it.
+ */ 
 static int get_dir_index_using_offset(struct super_block *s,
 	long long *next_block, unsigned int *next_offset,
 	long long index_start, unsigned int index_offset, int i_count,
@@ -47,12 +57,17 @@ static int get_dir_index_using_offset(struct super_block *s,
 	TRACE("Entered get_dir_index_using_offset, i_count %d, f_pos %lld\n",
 					i_count, f_pos);
 
+	/*
+	 * Translate from external f_pos to the internal f_pos.  This
+	 * is offset by 3 because we invent "." and ".." entries which are
+	 * not actually stored in the directory.
+	 */
 	f_pos -= 3;
 	if (f_pos == 0)
 		goto finish;
 
 	for (i = 0; i < i_count; i++) {
-			squashfs_read_metadata(s, &dir_index, index_start,
+		squashfs_read_metadata(s, &dir_index, index_start,
 					index_offset, sizeof(dir_index),
 					&index_start, &index_offset);
 
@@ -66,12 +81,15 @@ static int get_dir_index_using_offset(struct super_block *s,
 
 		length = index;
 		*next_block = le32_to_cpu(dir_index.start_block) +
-				msblk->directory_table_start;
+					msblk->directory_table_start;
 	}
 
 	*next_offset = (length + *next_offset) % SQUASHFS_METADATA_SIZE;
 
 finish:
+	/*
+ 	 * Translate back from internal f_pos to external f_pos.
+ 	 */
 	return length + 3;
 }
 
@@ -96,6 +114,14 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		goto finish;
 	}
 
+	/*
+ 	 * Return "." and  ".." entries as the first two filenames in the
+ 	 * directory.  To maximise compression these two entries are not
+ 	 * stored in the directory, and so we invent them here.
+ 	 *
+ 	 * It also means that the external f_pos is offset by 3 from the
+ 	 * on-disk directory f_pos.
+ 	 */
 	while (file->f_pos < 3) {
 		char *name;
 		int size, i_ino;
@@ -130,7 +156,9 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 				file->f_pos);
 
 	while (length < i_size_read(i)) {
-		/* read directory header */
+		/*
+ 		 * Read directory header
+ 		 */
 		if (!squashfs_read_metadata(i->i_sb, &dirh, next_block,
 				next_offset, sizeof(dirh), &next_block,
 				&next_offset))
@@ -140,6 +168,9 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 
 		dir_count = le32_to_cpu(dirh.count) + 1;
 		while (dir_count--) {
+			/*
+ 			 * Read directory entry.
+ 			 */
 			if (!squashfs_read_metadata(i->i_sb, dire, next_block,
 					next_offset, sizeof(*dire),
 					&next_block, &next_offset))
