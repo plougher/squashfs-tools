@@ -3629,7 +3629,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.0-CVS (2008/10/04)\n");\
+	printf("mksquashfs version 4.0-CVS (2008/10/15)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -4157,7 +4157,7 @@ restore_filesystem:
 	sBlk.id_table_start = write_id_table();
 
 	sBlk.bytes_used = bytes;
-	sBlk.compression = COMPRESSION_ZLIB;
+	sBlk.compression = ZLIB_COMPRESSION;
 
 	if(!swap)
 		write_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block), (char *) &sBlk);

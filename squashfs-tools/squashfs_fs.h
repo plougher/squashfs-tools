@@ -223,7 +223,7 @@ struct meta_index {
 typedef long long		squashfs_block_t;
 typedef long long		squashfs_inode_t;
 
-#define COMPRESSION_ZLIB 1
+#define ZLIB_COMPRESSION	1
 
 struct squashfs_super_block {
 	unsigned int		s_magic;
