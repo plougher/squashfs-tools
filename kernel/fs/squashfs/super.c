@@ -45,7 +45,8 @@
 static struct file_system_type squashfs_fs_type;
 static struct super_operations squashfs_super_ops;
 
-static int supported_squashfs_filesystem(short major, short minor, int silent)
+static int supported_squashfs_filesystem(short major, short minor,
+						short compression, int silent)
 {
 	if (major < SQUASHFS_MAJOR) {
 		SERROR("Major/Minor mismatch, older Squashfs %d.%d filesystems "
@@ -57,6 +58,9 @@ static int supported_squashfs_filesystem(short major, short minor, int silent)
 		SERROR("Please update your kernel\n");
 		return 0;
 	}
+
+	if (compression != ZLIB_COMPRESSION)
+		return 0;
 
 	return 1;
 }
@@ -125,9 +129,10 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		goto failed_mount;
 	}
 
-	/* Check the MAJOR & MINOR versions */
+	/* Check the MAJOR & MINOR versions and compression type */
 	if (!supported_squashfs_filesystem(le16_to_cpu(sblk->s_major),
-			le16_to_cpu(sblk->s_minor), silent))
+			le16_to_cpu(sblk->s_minor),
+			le16_to_cpu(sblk->compression), silent))
 		goto failed_mount;
 
 	/* Check the filesystem does not extend beyond the end of the
