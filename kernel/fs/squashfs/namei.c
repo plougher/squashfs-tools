@@ -66,7 +66,7 @@
 
 /*
  * Lookup name in the directory index, returning the location of the metadata
- * block containing the filename, and the directory index this represents.
+ * block containing it, and the directory index this represents.
  */
 static int get_dir_index_using_name(struct super_block *s,
 			long long *next_block, unsigned int *next_offset,
@@ -119,7 +119,7 @@ out:
 	 * Return index (f_pos) of the looked up metadata block.  Translate
 	 * from internal f_pos to external f_pos which is offset by 3 because
 	 * we invent "." and ".." entries which are not actually stored in the
-	 * directory on disk.
+	 * directory.
 	 */
 	return length + 3;
 }
