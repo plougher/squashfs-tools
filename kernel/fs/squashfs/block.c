@@ -99,8 +99,8 @@ unsigned int squashfs_read_data(struct super_block *s, void *buffer,
 
 	if (c_byte) {
 		/*
- 		 * Datablock.
- 		 */
+		 * Datablock.
+		 */
 		bytes = -offset;
 		compressed = SQUASHFS_COMPRESSED_BLOCK(c_byte);
 		c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);

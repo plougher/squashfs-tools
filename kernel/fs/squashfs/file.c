@@ -25,7 +25,7 @@
  * This file contains code for handling regular files.  A regular file
  * consists of a sequence of contiguous compressed blocks, and/or a
  * compressed fragment block (tail-end packed block).   The compressed size
- * of each datablock is stored in a block list contained within the 
+ * of each datablock is stored in a block list contained within the
  * file inode (itself stored in one or more compressed metadata blocks).
  *
  * To speed up access to datablocks when reading 'large' files (256 Mbytes or
@@ -110,11 +110,11 @@ static struct meta_index *empty_meta_index(struct inode *inode, int offset,
 
 	if (msblk->meta_index == NULL) {
 		/*
- 		 * First time cache index has been used, allocate and
- 		 * initialise.  The cache index could be allocated at
- 		 * mount time but doing it here means it is allocated only
- 		 * if a 'large' file is read.
- 		 */
+		 * First time cache index has been used, allocate and
+		 * initialise.  The cache index could be allocated at
+		 * mount time but doing it here means it is allocated only
+		 * if a 'large' file is read.
+		 */
 		msblk->meta_index = kcalloc(SQUASHFS_META_SLOTS,
 			sizeof(*(msblk->meta_index)), GFP_KERNEL);
 		if (msblk->meta_index == NULL) {
@@ -279,10 +279,10 @@ static int fill_meta_index(struct inode *inode, int index,
 		}
 
 		/*
- 		 * If necessary grow cache slot by reading block list.  Cache
- 		 * slot is extended up to index or to the end of the slot, in
- 		 * which case further slots will be used.
- 		 */
+		 * If necessary grow cache slot by reading block list.  Cache
+		 * slot is extended up to index or to the end of the slot, in
+		 * which case further slots will be used.
+		 */
 		for (i = meta->offset + meta->entries; i <= index &&
 				i < meta->offset + SQUASHFS_META_ENTRIES; i++) {
 			int blocks = skip * SQUASHFS_META_INDEXES;
@@ -324,7 +324,7 @@ failed:
 }
 
 
-/* 
+/*
  * Get the on-disk location and compressed size of the datablock
  * specified by index.  Fill_meta_index() does most of the work.
  */
@@ -344,11 +344,11 @@ static long long read_blocklist(struct inode *inode, int index,
 		goto failure;
 
 	/*
- 	 * res contains the index of the mapping returned by fill_meta_index(),
- 	 * this will likely be less than the desired index (because the
- 	 * meta_index cache works at a higher granularity).  Read any
- 	 * extra block indexes needed.
- 	 */
+	 * res contains the index of the mapping returned by fill_meta_index(),
+	 * this will likely be less than the desired index (because the
+	 * meta_index cache works at a higher granularity).  Read any
+	 * extra block indexes needed.
+	 */
 	if (res < index) {
 		blks = read_indexes(inode->i_sb, index - res, &start, &offset);
 		if (blks == -1)
@@ -357,8 +357,8 @@ static long long read_blocklist(struct inode *inode, int index,
 	}
 
 	/*
- 	 * Read length of block specified by index.
- 	 */ 
+	 * Read length of block specified by index.
+	 */
 	res = squashfs_read_metadata(inode->i_sb, &size, start, offset,
 			sizeof(size), &start, &offset);
 	if (res == 0)
@@ -398,9 +398,9 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	if (index < file_end || SQUASHFS_I(inode)->fragment_block ==
 					SQUASHFS_INVALID_BLK) {
 		/*
- 		 * Reading a datablock from disk.  Need to read block list
- 		 * to get location and block size.
- 		 */
+		 * Reading a datablock from disk.  Need to read block list
+		 * to get location and block size.
+		 */
 		block = read_blocklist(inode, index, &bsize);
 		if (block == -1)
 			goto error_out;
@@ -414,8 +414,8 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			mutex_lock(&msblk->read_page_mutex);
 
 			/*
- 			 * Read and decompress datablock.
- 			 */
+			 * Read and decompress datablock.
+			 */
 			bytes = squashfs_read_data(inode->i_sb,
 				msblk->read_page, block, bsize, NULL,
 				msblk->block_size);
@@ -429,9 +429,9 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		}
 	} else {
 		/*
- 		 * Datablock is stored inside a fragment (tail-end packed
- 		 * block).
- 		 */
+		 * Datablock is stored inside a fragment (tail-end packed
+		 * block).
+		 */
 		fragment = get_cached_fragment(inode->i_sb,
 				SQUASHFS_I(inode)->fragment_block,
 				SQUASHFS_I(inode)->fragment_size);

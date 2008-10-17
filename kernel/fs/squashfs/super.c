@@ -332,7 +332,7 @@ static void init_once(void *foo)
 static int __init init_inodecache(void)
 {
 	squashfs_inode_cachep = kmem_cache_create("squashfs_inode_cache",
-	 	sizeof(struct squashfs_inode_info), 0,
+		sizeof(struct squashfs_inode_info), 0,
 		SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT, init_once);
 
 	return squashfs_inode_cachep ? 0 : -ENOMEM;

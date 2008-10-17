@@ -60,17 +60,17 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 			"%llx, offset %x\n", page->index, block, offset);
 
 	/*
- 	 * Skip index bytes into symlink metadata.
- 	 */
+	 * Skip index bytes into symlink metadata.
+	 */
 	if (index) {
 		bytes = squashfs_read_metadata(s, NULL, block, offset, index,
 			&block, &offset);
 		if (bytes == 0) {
-			ERROR("Unable to read symlink [%llx:%x]\n", 
+			ERROR("Unable to read symlink [%llx:%x]\n",
 				SQUASHFS_I(inode)->start_block,
 				SQUASHFS_I(inode)->offset);
 			goto error_out;
-		}	
+		}
 	}
 
 	/*
@@ -85,7 +85,7 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 		avail = min(entry->length - offset, length - bytes);
 
 		if (entry->error) {
-			ERROR("Unable to read symlink [%llx:%x]\n", 
+			ERROR("Unable to read symlink [%llx:%x]\n",
 				SQUASHFS_I(inode)->start_block,
 				SQUASHFS_I(inode)->offset);
 			squashfs_cache_put(msblk->block_cache, entry);

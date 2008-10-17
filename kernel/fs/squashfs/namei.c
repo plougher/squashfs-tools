@@ -26,7 +26,7 @@
  *
  * Like inodes, directories are packed into compressed metadata blocks, stored
  * in a directory table.  Directories are accessed using the start address of
- * the metablock containing the directory and the offset into the 
+ * the metablock containing the directory and the offset into the
  * decompressed block (<block, offset>).
  *
  * Directories are organised in a slightly complex way, and are not simply
@@ -158,8 +158,8 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 
 	while (length < i_size_read(i)) {
 		/*
- 		 * Read directory header.
- 		 */
+		 * Read directory header.
+		 */
 		if (!squashfs_read_metadata(i->i_sb, &dirh, next_block,
 				next_offset, sizeof(dirh), &next_block,
 				&next_offset))
@@ -170,8 +170,8 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 		dir_count = le32_to_cpu(dirh.count) + 1;
 		while (dir_count--) {
 			/*
- 			 * Read directory entry.
- 			 */
+			 * Read directory entry.
+			 */
 			if (!squashfs_read_metadata(i->i_sb, dire,
 					next_block, next_offset, sizeof(*dire),
 					&next_block, &next_offset))

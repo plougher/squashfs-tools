@@ -63,9 +63,9 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 
 		if (i == cache->entries) {
 			/*
- 			 * Block not in cache, if all cache entries are locked
- 			 * go to sleep waiting for one to become available.
- 			 */
+			 * Block not in cache, if all cache entries are locked
+			 * go to sleep waiting for one to become available.
+			 */
 			if (cache->unused == 0) {
 				cache->waiting++;
 				spin_unlock(&cache->lock);
@@ -77,9 +77,9 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 
 			/*
 			 * At least one unlocked cache entry.  A simple
- 			 * round-robin strategy is used to choose the entry to
- 			 * be evicted from the cache.
- 			 */
+			 * round-robin strategy is used to choose the entry to
+			 * be evicted from the cache.
+			 */
 			i = cache->next_blk;
 			for (n = 0; n < cache->entries; n++) {
 				if (cache->entry[i].locked == 0)
@@ -92,8 +92,8 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 
 			/*
 			 * Initialise choosen cache entry, and fill it in from
- 			 * disk.
- 			 */
+			 * disk.
+			 */
 			cache->unused--;
 			entry->block = block;
 			entry->locked = 1;
@@ -115,10 +115,10 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 			spin_unlock(&cache->lock);
 
 			/*
- 			 * While filling this entry one or more other processes
- 			 * have looked it up in the cache, and have slept
- 			 * waiting for it to become available.
- 			 */
+			 * While filling this entry one or more other processes
+			 * have looked it up in the cache, and have slept
+			 * waiting for it to become available.
+			 */
 			if (entry->waiting)
 				wake_up_all(&entry->wait_queue);
 			goto out;
@@ -126,10 +126,10 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 
 		/*
 		 * Block already in cache.  Increment lock so it doesn't
- 		 * get reused until we're finished with it, if it was
- 		 * previously unlocked there's one less cache entry available
- 		 * for reuse.
- 		 */
+		 * get reused until we're finished with it, if it was
+		 * previously unlocked there's one less cache entry available
+		 * for reuse.
+		 */
 		entry = &cache->entry[i];
 		if (entry->locked == 0)
 			cache->unused--;
@@ -137,8 +137,8 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 
 		/*
 		 * If the entry is currently being filled in by another process
- 		 * go to sleep waiting for it to become available.
- 		 */
+		 * go to sleep waiting for it to become available.
+		 */
 		if (entry->pending) {
 			entry->waiting++;
 			spin_unlock(&cache->lock);
@@ -173,9 +173,9 @@ void squashfs_cache_put(struct squashfs_cache *cache,
 		cache->unused++;
 		spin_unlock(&cache->lock);
 		/*
- 		 * If there's any processes waiting for a block to become
- 		 * available, wake one up.
- 		 */
+		 * If there's any processes waiting for a block to become
+		 * available, wake one up.
+		 */
 		if (cache->waiting)
 			wake_up(&cache->wait_queue);
 	} else {

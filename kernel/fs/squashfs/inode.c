@@ -26,7 +26,7 @@
  *
  * Inodes in Squashfs are identified by a 48-bit inode which encodes the
  * location of the compressed metadata block containing the inode, and the byte
- * offset into that block where the inode is placed (<block, offset>).  
+ * offset into that block where the inode is placed (<block, offset>).
  *
  * To maximise compression there are different inodes for each file type
  * (regular file, directory, device, etc.), the inode contents and length
