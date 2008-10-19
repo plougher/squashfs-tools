@@ -55,9 +55,14 @@
 static int squashfs_new_inode(struct super_block *s, struct inode *i,
 				struct squashfs_base_inode *inodeb)
 {
-	if (squashfs_get_id(s, le16_to_cpu(inodeb->uid), &i->i_uid) == 0)
+	int err;
+
+	err = squashfs_get_id(s, le16_to_cpu(inodeb->uid), &i->i_uid);
+	if (err)
 		goto out;
-	if (squashfs_get_id(s, le16_to_cpu(inodeb->guid), &i->i_gid) == 0)
+
+	err = squashfs_get_id(s, le16_to_cpu(inodeb->guid), &i->i_gid);
+	if (err < 0)
 		goto out;
 
 	i->i_ino = le32_to_cpu(inodeb->inode_number);
@@ -67,10 +72,8 @@ static int squashfs_new_inode(struct super_block *s, struct inode *i,
 	i->i_mode = le16_to_cpu(inodeb->mode);
 	i->i_size = 0;
 
-	return 1;
-
 out:
-	return 0;
+	return err;
 }
 
 
@@ -100,7 +103,7 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	long long block = SQUASHFS_INODE_BLK(inode) + msblk->inode_table_start;
 	unsigned int offset = SQUASHFS_INODE_OFFSET(inode);
-	int type;
+	int err, type;
 	union squashfs_inode id;
 	struct squashfs_base_inode *inodeb = &id.base;
 
@@ -112,8 +115,9 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	if (!squashfs_read_metadata(s, inodeb, &block, &offset, sizeof(*inodeb)))
 		goto failed_read;
 
-	if (squashfs_new_inode(s, i, inodeb) == 0)
-			goto failed_read;
+	err = squashfs_new_inode(s, i, inodeb);
+	if (err)
+		goto failed_read;
 
 	block = SQUASHFS_INODE_BLK(inode) + msblk->inode_table_start;
 	offset = SQUASHFS_INODE_OFFSET(inode);

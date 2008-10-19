@@ -51,10 +51,10 @@ int squashfs_get_id(struct super_block *s, unsigned int index, unsigned int *id)
 
 	if (!squashfs_read_metadata(s, &disk_id, &start_block, &offset,
 				 			sizeof(disk_id)))
-		return 0;
+		return -EIO;
 
 	*id = le32_to_cpu(disk_id);
-	return 1;
+	return 0;
 }
 
 
