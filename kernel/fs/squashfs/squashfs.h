@@ -29,12 +29,6 @@
 
 #define ERROR(s, args...)	printk(KERN_ERR "SQUASHFS error: "s, ## args)
 
-#define SERROR(s, args...)	\
-		do { \
-			if (!silent) \
-				printk(KERN_ERR "SQUASHFS error: "s, ## args);\
-		} while (0)
-
 #define WARNING(s, args...)	printk(KERN_WARNING "SQUASHFS: "s, ## args)
 
 static inline struct squashfs_inode_info *SQUASHFS_I(struct inode *inode)

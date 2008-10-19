@@ -49,13 +49,16 @@ static int supported_squashfs_filesystem(short major, short minor,
 						short compression, int silent)
 {
 	if (major < SQUASHFS_MAJOR) {
-		SERROR("Major/Minor mismatch, older Squashfs %d.%d filesystems "
-				"are unsupported\n", major, minor);
+		if (!silent)
+			ERROR("Major/Minor mismatch, older Squashfs %d.%d "
+				filesystems are unsupported\n", major, minor);
 		return 0;
 	} else if (major > SQUASHFS_MAJOR || minor > SQUASHFS_MINOR) {
-		SERROR("Major/Minor mismatch, trying to mount newer %d.%d "
-				"filesystem\n", major, minor);
-		SERROR("Please update your kernel\n");
+		if (!silent) {
+			ERROR("Major/Minor mismatch, trying to mount newer "
+				"%d.%d filesystem\n", major, minor);
+			ERROR("Please update your kernel\n");
+		}
 		return 0;
 	}
 
