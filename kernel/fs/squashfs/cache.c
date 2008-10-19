@@ -252,43 +252,40 @@ failed:
  * and length bytes may require reading more than one block.
  */
 int squashfs_read_metadata(struct super_block *s, void *buffer,
-				long long block, unsigned int offset,
-				int length, long long *next_block,
-				unsigned int *next_offset)
+		long long *block, unsigned int *offset, int length)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
 	int bytes, return_length = length;
 	struct squashfs_cache_entry *entry;
 
-	TRACE("Entered squashfs_read_metadata [%llx:%x]\n", block, offset);
+	TRACE("Entered squashfs_read_metadata [%llx:%x]\n", *block, *offset);
 
 	while (1) {
-		entry = squashfs_cache_get(s, msblk->block_cache, block, 0);
-		bytes = entry->length - offset;
+		entry = squashfs_cache_get(s, msblk->block_cache, *block, 0);
+		bytes = entry->length - *offset;
 
 		if (entry->error || bytes < 1) {
 			return_length = 0;
 			goto finish;
 		} else if (bytes >= length) {
 			if (buffer)
-				memcpy(buffer, entry->data + offset, length);
-			if (entry->length - offset == length) {
-				*next_block = entry->next_index;
-				*next_offset = 0;
+				memcpy(buffer, entry->data + *offset, length);
+			if (entry->length - *offset == length) {
+				*block = entry->next_index;
+				*offset = 0;
 			} else {
-				*next_block = block;
-				*next_offset = offset + length;
+				*offset += length;
 			}
 			goto finish;
 		} else {
 			if (buffer) {
-				memcpy(buffer, entry->data + offset, bytes);
+				memcpy(buffer, entry->data + *offset, bytes);
 				buffer += bytes;
 			}
-			block = entry->next_index;
+			*block = entry->next_index;
 			squashfs_cache_put(msblk->block_cache, entry);
 			length -= bytes;
-			offset = 0;
+			*offset = 0;
 		}
 	}
 

@@ -185,8 +185,8 @@ static long long read_indexes(struct super_block *s, int n,
 
 	while (n) {
 		int blocks = min_t(int, n, PAGE_CACHE_SIZE >> 2);
-		int res = squashfs_read_metadata(s, blist, *start_block,
-				*offset, blocks << 2, start_block, offset);
+		int res = squashfs_read_metadata(s, blist, start_block,
+				offset, blocks << 2);
 
 		if (res == 0) {
 			ERROR("read_indexes: reading block [%llx:%x]\n",
@@ -359,8 +359,8 @@ static long long read_blocklist(struct inode *inode, int index,
 	/*
 	 * Read length of block specified by index.
 	 */
-	res = squashfs_read_metadata(inode->i_sb, &size, start, offset,
-			sizeof(size), &start, &offset);
+	res = squashfs_read_metadata(inode->i_sb, &size, &start, &offset,
+			sizeof(size));
 	if (res == 0)
 		goto failure;
 	*bsize = le32_to_cpu(size);

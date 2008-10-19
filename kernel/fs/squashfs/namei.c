@@ -91,15 +91,13 @@ static int get_dir_index_using_name(struct super_block *s,
 	str[len] = '\0';
 
 	for (i = 0; i < i_count; i++) {
-		squashfs_read_metadata(s, index, index_start, index_offset,
-					sizeof(*index), &index_start,
-					&index_offset);
+		squashfs_read_metadata(s, index, &index_start, &index_offset,
+					sizeof(*index));
 
 		size = le32_to_cpu(index->size) + 1;
 
-		squashfs_read_metadata(s, index->name, index_start,
-					index_offset, size, &index_start,
-					&index_offset);
+		squashfs_read_metadata(s, index->name, &index_start,
+					&index_offset, size);
 
 		index->name[size] = '\0';
 
@@ -160,9 +158,8 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 		/*
 		 * Read directory header.
 		 */
-		if (!squashfs_read_metadata(i->i_sb, &dirh, next_block,
-				next_offset, sizeof(dirh), &next_block,
-				&next_offset))
+		if (!squashfs_read_metadata(i->i_sb, &dirh, &next_block,
+				&next_offset, sizeof(dirh)))
 			goto failed_read;
 
 		length += sizeof(dirh);
@@ -172,16 +169,14 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 			/*
 			 * Read directory entry.
 			 */
-			if (!squashfs_read_metadata(i->i_sb, dire,
-					next_block, next_offset, sizeof(*dire),
-					&next_block, &next_offset))
+			if (!squashfs_read_metadata(i->i_sb, dire, &next_block,
+					&next_offset, sizeof(*dire)))
 				goto failed_read;
 
 			size = le16_to_cpu(dire->size) + 1;
 
 			if (!squashfs_read_metadata(i->i_sb, dire->name,
-					next_block, next_offset, size,
-					&next_block, &next_offset))
+					&next_block, &next_offset, size))
 				goto failed_read;
 
 			length += sizeof(*dire) + size;

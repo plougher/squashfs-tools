@@ -67,17 +67,15 @@ static int get_dir_index_using_offset(struct super_block *s,
 		goto finish;
 
 	for (i = 0; i < i_count; i++) {
-		squashfs_read_metadata(s, &dir_index, index_start,
-					index_offset, sizeof(dir_index),
-					&index_start, &index_offset);
+		squashfs_read_metadata(s, &dir_index, &index_start,
+					&index_offset, sizeof(dir_index));
 
 		index = le32_to_cpu(dir_index.index);
 		if (index > f_pos)
 			break;
 
-		squashfs_read_metadata(s, NULL, index_start, index_offset,
-					le32_to_cpu(dir_index.size) + 1,
-					&index_start, &index_offset);
+		squashfs_read_metadata(s, NULL, &index_start, &index_offset,
+					le32_to_cpu(dir_index.size) + 1);
 
 		length = index;
 		*next_block = le32_to_cpu(dir_index.start_block) +
@@ -159,9 +157,8 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		/*
 		 * Read directory header
 		 */
-		if (!squashfs_read_metadata(i->i_sb, &dirh, next_block,
-				next_offset, sizeof(dirh), &next_block,
-				&next_offset))
+		if (!squashfs_read_metadata(i->i_sb, &dirh, &next_block,
+					&next_offset, sizeof(dirh)))
 			goto failed_read;
 
 		length += sizeof(dirh);
@@ -171,16 +168,14 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 			/*
 			 * Read directory entry.
 			 */
-			if (!squashfs_read_metadata(i->i_sb, dire, next_block,
-					next_offset, sizeof(*dire),
-					&next_block, &next_offset))
+			if (!squashfs_read_metadata(i->i_sb, dire, &next_block,
+					&next_offset, sizeof(*dire)))
 				goto failed_read;
 
 			size = le16_to_cpu(dire->size) + 1;
 
 			if (!squashfs_read_metadata(i->i_sb, dire->name,
-					next_block, next_offset, size,
-					&next_block, &next_offset))
+					&next_block, &next_offset, size))
 				goto failed_read;
 
 			length += sizeof(*dire) + size;

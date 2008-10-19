@@ -59,8 +59,7 @@ static long long squashfs_inode_lookup(struct super_block *s, int ino)
 
 	TRACE("Entered squashfs_inode_lookup, inode_number = %d\n", ino);
 
-	if (!squashfs_read_metadata(s, &inode, start, offset,
-					sizeof(inode), &start, &offset))
+	if (!squashfs_read_metadata(s, &inode, &start, &offset, sizeof(inode)))
 		return SQUASHFS_INVALID_BLK;
 
 	TRACE("squashfs_inode_lookup, inode = 0x%llx\n", le64_to_cpu(inode));
