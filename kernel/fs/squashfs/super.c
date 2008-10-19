@@ -45,24 +45,20 @@
 static struct file_system_type squashfs_fs_type;
 static struct super_operations squashfs_super_ops;
 
-static int supported_squashfs_filesystem(short major, short minor,
-						short compression, int silent)
+static int supported_squashfs_filesystem(short major, short minor, short comp)
 {
 	if (major < SQUASHFS_MAJOR) {
-		if (!silent)
-			ERROR("Major/Minor mismatch, older Squashfs %d.%d "
-				filesystems are unsupported\n", major, minor);
+		ERROR("Major/Minor mismatch, older Squashfs %d.%d "
+			"filesystems are unsupported\n", major, minor);
 		return 0;
 	} else if (major > SQUASHFS_MAJOR || minor > SQUASHFS_MINOR) {
-		if (!silent) {
-			ERROR("Major/Minor mismatch, trying to mount newer "
-				"%d.%d filesystem\n", major, minor);
-			ERROR("Please update your kernel\n");
-		}
+		ERROR("Major/Minor mismatch, trying to mount newer "
+			"%d.%d filesystem\n", major, minor);
+		ERROR("Please update your kernel\n");
 		return 0;
 	}
 
-	if (compression != ZLIB_COMPRESSION)
+	if (comp != ZLIB_COMPRESSION)
 		return 0;
 
 	return 1;
@@ -120,14 +116,15 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, sizeof(*sblk));
 
 	if (res == 0) {
-		SERROR("unable to read squashfs_super_block\n");
+		ERROR("unable to read squashfs_super_block\n");
 		goto failed_mount;
 	}
 
 	/* Check it is a SQUASHFS superblock */
 	s->s_magic = le32_to_cpu(sblk->s_magic);
 	if (s->s_magic != SQUASHFS_MAGIC) {
-		SERROR("Can't find a SQUASHFS superblock on %s\n",
+		if (!silent)
+			ERROR("Can't find a SQUASHFS superblock on %s\n",
 						bdevname(s->s_bdev, b));
 		goto failed_mount;
 	}
@@ -135,7 +132,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	/* Check the MAJOR & MINOR versions and compression type */
 	if (!supported_squashfs_filesystem(le16_to_cpu(sblk->s_major),
 			le16_to_cpu(sblk->s_minor),
-			le16_to_cpu(sblk->compression), silent))
+			le16_to_cpu(sblk->compression)))
 		goto failed_mount;
 
 	/* Check the filesystem does not extend beyond the end of the
@@ -361,7 +358,7 @@ static int __init init_squashfs_fs(void)
 		goto out;
 	}
 
-	printk(KERN_INFO "squashfs: version 4.0 (2008/10/16) "
+	printk(KERN_INFO "squashfs: version 4.0 (2008/10/19) "
 		"Phillip Lougher\n");
 
 out:
