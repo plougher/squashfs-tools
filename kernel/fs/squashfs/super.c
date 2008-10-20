@@ -77,7 +77,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	unsigned short flags;
 	unsigned int fragments;
 	long long lookup_table_start;
-	int res;
+	int err;
 
 	TRACE("Entered squashfs_fill_superblock\n");
 
@@ -114,10 +114,10 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	 * bytes_used) we need to set it to an initial sensible dummy value
 	 */
 	msblk->bytes_used = sizeof(*sblk);
-	res = squashfs_read_data(s, sblk, SQUASHFS_START, sizeof(*sblk) |
+	err = squashfs_read_data(s, sblk, SQUASHFS_START, sizeof(*sblk) |
 			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, sizeof(*sblk));
 
-	if (res == 0) {
+	if (err < 0) {
 		ERROR("unable to read squashfs_super_block\n");
 		goto failed_mount;
 	}
@@ -128,14 +128,18 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		if (!silent)
 			ERROR("Can't find a SQUASHFS superblock on %s\n",
 						bdevname(s->s_bdev, b));
+		err = -EINVAL;
 		goto failed_mount;
 	}
 
 	/* Check the MAJOR & MINOR versions and compression type */
-	if (supported_squashfs_filesystem(le16_to_cpu(sblk->s_major),
+	err = supported_squashfs_filesystem(le16_to_cpu(sblk->s_major),
 			le16_to_cpu(sblk->s_minor),
-			le16_to_cpu(sblk->compression)) < 0)
+			le16_to_cpu(sblk->compression));
+	if (err < 0)
 		goto failed_mount;
+
+	err = -EINVAL;
 
 	/* Check the filesystem does not extend beyond the end of the
 	   block device */
@@ -184,6 +188,8 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	s->s_flags |= MS_RDONLY;
 	s->s_op = &squashfs_super_ops;
 
+	err = -ENOMEM;
+
 	msblk->block_cache = squashfs_cache_init("metadata",
 			SQUASHFS_CACHED_BLKS, SQUASHFS_METADATA_SIZE, 0);
 	if (msblk->block_cache == NULL)
@@ -199,8 +205,11 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	/* Allocate and read id index table */
 	msblk->id_table = read_id_index_table(s,
 		le64_to_cpu(sblk->id_table_start), le16_to_cpu(sblk->no_ids));
-	if (msblk->id_table == NULL)
+	if (IS_ERR(msblk->id_table)) {
+		err = PTR_ERR(msblk->id_table);
+		msblk->id_table = NULL;
 		goto failed_mount;
+	}
 
 	fragments = le32_to_cpu(sblk->fragments);
 	if (fragments == 0)
@@ -208,14 +217,19 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 
 	msblk->fragment_cache = squashfs_cache_init("fragment",
 		SQUASHFS_CACHED_FRAGMENTS, msblk->block_size, 1);
-	if (msblk->fragment_cache == NULL)
+	if (msblk->fragment_cache == NULL) {
+		err = -ENOMEM;
 		goto failed_mount;
+	}
 
 	/* Allocate and read fragment index table */
 	msblk->fragment_index = read_fragment_index_table(s,
 		le64_to_cpu(sblk->fragment_table_start), fragments);
-	if (msblk->fragment_index == NULL)
+	if (IS_ERR(msblk->fragment_index)) {
+		err = PTR_ERR(msblk->fragment_index);
+		msblk->fragment_index = NULL;
 		goto failed_mount;
+	}
 
 allocate_lookup_table:
 	lookup_table_start = le64_to_cpu(sblk->lookup_table_start);
@@ -225,18 +239,23 @@ allocate_lookup_table:
 	/* Allocate and read inode lookup table */
 	msblk->inode_lookup_table = read_inode_lookup_table(s,
 		lookup_table_start, msblk->inodes);
-	if (msblk->inode_lookup_table == NULL)
+	if (IS_ERR(msblk->inode_lookup_table)) {
+		err = PTR_ERR(msblk->inode_lookup_table);
+		msblk->inode_lookup_table = NULL;
 		goto failed_mount;
+	}
 
 	s->s_export_op = &squashfs_export_ops;
 
 allocate_root:
 	root = new_inode(s);
-	if (!root)
+	if (!root) {
+		err = -ENOMEM;
 		goto failed_mount;
+	}
 	
-	res = squashfs_read_inode(root, root_inode);
-	if (res) {
+	err = squashfs_read_inode(root, root_inode);
+	if (err) {
 		iget_failed(root);
 		goto failed_mount;
 	}
@@ -245,6 +264,7 @@ allocate_root:
 	s->s_root = d_alloc_root(root);
 	if (s->s_root == NULL) {
 		ERROR("Root inode create failed\n");
+		err = -ENOMEM;
 		iput(root);
 		goto failed_mount;
 	}
@@ -264,7 +284,7 @@ failed_mount:
 	kfree(s->s_fs_info);
 	s->s_fs_info = NULL;
 	kfree(sblk);
-	return -EINVAL;
+	return err;
 
 failure:
 	vfree(msblk->stream.workspace);
@@ -366,7 +386,7 @@ static int __init init_squashfs_fs(void)
 		goto out;
 	}
 
-	printk(KERN_INFO "squashfs: version 4.0 (2008/10/19) "
+	printk(KERN_INFO "squashfs: version 4.0 (2008/10/20) "
 		"Phillip Lougher\n");
 
 out:
@@ -414,6 +434,6 @@ static struct super_operations squashfs_super_ops = {
 
 module_init(init_squashfs_fs);
 module_exit(exit_squashfs_fs);
-MODULE_DESCRIPTION("squashfs 4.0-CVS, a compressed read-only filesystem");
+MODULE_DESCRIPTION("squashfs 4.0, a compressed read-only filesystem");
 MODULE_AUTHOR("Phillip Lougher <phillip@lougher.demon.co.uk>");
 MODULE_LICENSE("GPL");

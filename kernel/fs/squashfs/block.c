@@ -80,7 +80,7 @@ out:
  * is stored uncompressed in the filesystem (usually because compression
  * generated a larger block - this does occasionally happen with zlib).
  */
-unsigned int squashfs_read_data(struct super_block *s, void *buffer,
+int squashfs_read_data(struct super_block *s, void *buffer,
 			long long index, unsigned int length,
 			long long *next_index, int srclength)
 {
@@ -88,14 +88,16 @@ unsigned int squashfs_read_data(struct super_block *s, void *buffer,
 	struct buffer_head **bh;
 	unsigned int offset = index & ((1 << msblk->devblksize_log2) - 1);
 	unsigned int cur_index = index >> msblk->devblksize_log2;
-	int bytes, avail, b = 0, k = 0;
+	int bytes, avail, b = 0, k = 0, err;
 	unsigned int compressed;
 	unsigned int c_byte = length;
 
 	bh = kcalloc((msblk->block_size >> msblk->devblksize_log2) + 1,
 				sizeof(*bh), GFP_KERNEL);
-	if (bh == NULL)
-		goto read_failure;
+	if (bh == NULL) {
+		err = -ENOMEM;
+		goto failure;
+	}
 
 	if (c_byte) {
 		/*
@@ -252,6 +254,8 @@ block_release:
 
 read_failure:
 	ERROR("sb_bread failed reading block 0x%x\n", cur_index);
+	err = -EIO;
+failure:
 	kfree(bh);
-	return 0;
+	return err;
 }

@@ -108,8 +108,8 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 
 			spin_lock(&cache->lock);
 
-			if (entry->length == 0)
-				entry->error = 1;
+			if (entry->length < 0)
+				entry->error = entry->length;
 
 			entry->pending = 0;
 			spin_unlock(&cache->lock);

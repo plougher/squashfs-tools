@@ -63,6 +63,7 @@ __le64 *read_id_index_table(struct super_block *s, long long id_table_start,
 {
 	unsigned int length = SQUASHFS_ID_BLOCK_BYTES(no_ids);
 	__le64 *id_table;
+	int err;
 
 	TRACE("In read_id_index_table, length %d\n", length);
 
@@ -70,14 +71,15 @@ __le64 *read_id_index_table(struct super_block *s, long long id_table_start,
 	id_table = kmalloc(length, GFP_KERNEL);
 	if (id_table == NULL) {
 		ERROR("Failed to allocate id index table\n");
-		return NULL;
+		return ERR_PTR(-ENOMEM);
 	}
 
-	if (!squashfs_read_data(s, id_table, id_table_start, length |
-			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length)) {
+	err = squashfs_read_data(s, id_table, id_table_start, length |
+			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length);
+	if (err < 0) {
 		ERROR("unable to read id index table\n");
 		kfree(id_table);
-		return NULL;
+		return ERR_PTR(err);
 	}
 
 	return id_table;

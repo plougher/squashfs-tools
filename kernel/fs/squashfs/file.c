@@ -420,7 +420,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 				msblk->read_page, block, bsize, NULL,
 				msblk->block_size);
 
-			if (bytes == 0) {
+			if (bytes < 0) {
 				ERROR("Unable to read page, block %llx, size %x"
 					"\n", block, bsize);
 				mutex_unlock(&msblk->read_page_mutex);
