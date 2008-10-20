@@ -130,12 +130,13 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 	int len = dentry->d_name.len;
 	struct inode *inode = NULL;
 	struct squashfs_sb_info *msblk = i->i_sb->s_fs_info;
-	long long next_block = SQUASHFS_I(i)->start_block +
-				msblk->directory_table_start;
-	int next_offset = SQUASHFS_I(i)->offset, length = 0, dir_count, size;
 	struct squashfs_dir_header dirh;
 	struct squashfs_dir_entry *dire;
+	long long next_block = SQUASHFS_I(i)->start_block +
+				msblk->directory_table_start;
+	int next_offset = SQUASHFS_I(i)->offset;
 	unsigned int start_block, offset, ino_number;
+	int err, length = 0, dir_count, size;
 	long long ino;
 
 	TRACE("Entered squashfs_lookup [%llx:%x]\n", next_block, next_offset);
@@ -143,11 +144,14 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 	dire = kmalloc(sizeof(*dire) + SQUASHFS_NAME_LEN + 1, GFP_KERNEL);
 	if (dire == NULL) {
 		ERROR("Failed to allocate squashfs_dir_entry\n");
-		goto exit_lookup;
+		err = -ENOMEM;
+		goto failure;
 	}
 
-	if (len > SQUASHFS_NAME_LEN)
-		goto exit_lookup;
+	if (len > SQUASHFS_NAME_LEN) {
+		err = -ENAMETOOLONG;
+		goto failure;
+	}
 
 	length = get_dir_index_using_name(i->i_sb, &next_block, &next_offset,
 				SQUASHFS_I(i)->dir_index_start,
@@ -160,7 +164,7 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 		 */
 		if (!squashfs_read_metadata(i->i_sb, &dirh, &next_block,
 				&next_offset, sizeof(dirh)))
-			goto failed_read;
+			goto read_failure;
 
 		length += sizeof(dirh);
 
@@ -171,13 +175,13 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 			 */
 			if (!squashfs_read_metadata(i->i_sb, dire, &next_block,
 					&next_offset, sizeof(*dire)))
-				goto failed_read;
+				goto read_failure;
 
 			size = le16_to_cpu(dire->size) + 1;
 
 			if (!squashfs_read_metadata(i->i_sb, dire->name,
 					&next_block, &next_offset, size))
-				goto failed_read;
+				goto read_failure;
 
 			length += sizeof(*dire) + size;
 
@@ -197,6 +201,10 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 
 				inode = squashfs_iget(i->i_sb, ino, ino_number);
 
+				if (IS_ERR(inode)) {
+					err = PTR_ERR(inode);
+					goto failure;
+				}
 				goto exit_lookup;
 			}
 		}
@@ -209,10 +217,12 @@ exit_lookup:
 	d_add(dentry, inode);
 	return ERR_PTR(0);
 
-failed_read:
-	ERROR("Unable to read directory block [%llx:%x]\n", next_block,
-		next_offset);
-	goto exit_lookup;
+read_failure:
+	ERROR("Unable to read directory block [%llx:%x]\n", 
+		SQUASHFS_I(i)->start_block + msblk->directory_table_start,
+		SQUASHFS_I(i)->offset);
+failure:
+	return ERR_PTR(err);
 }
 
 

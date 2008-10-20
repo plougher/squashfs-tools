@@ -47,21 +47,23 @@ static struct super_operations squashfs_super_ops;
 
 static int supported_squashfs_filesystem(short major, short minor, short comp)
 {
+	int err = 0;
+
 	if (major < SQUASHFS_MAJOR) {
 		ERROR("Major/Minor mismatch, older Squashfs %d.%d "
 			"filesystems are unsupported\n", major, minor);
-		return 0;
+		err = -EINVAL;
 	} else if (major > SQUASHFS_MAJOR || minor > SQUASHFS_MINOR) {
 		ERROR("Major/Minor mismatch, trying to mount newer "
 			"%d.%d filesystem\n", major, minor);
 		ERROR("Please update your kernel\n");
-		return 0;
+		err = -EINVAL;
 	}
 
 	if (comp != ZLIB_COMPRESSION)
-		return 0;
+		err = -EINVAL;
 
-	return 1;
+	return err;
 }
 
 
@@ -130,9 +132,9 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	/* Check the MAJOR & MINOR versions and compression type */
-	if (!supported_squashfs_filesystem(le16_to_cpu(sblk->s_major),
+	if (supported_squashfs_filesystem(le16_to_cpu(sblk->s_major),
 			le16_to_cpu(sblk->s_minor),
-			le16_to_cpu(sblk->compression)))
+			le16_to_cpu(sblk->compression)) < 0)
 		goto failed_mount;
 
 	/* Check the filesystem does not extend beyond the end of the
@@ -230,8 +232,14 @@ allocate_lookup_table:
 
 allocate_root:
 	root = new_inode(s);
-	if (squashfs_read_inode(root, root_inode) == 0)
+	if (!root)
 		goto failed_mount;
+	
+	res = squashfs_read_inode(root, root_inode);
+	if (res) {
+		iget_failed(root);
+		goto failed_mount;
+	}
 	insert_inode_hash(root);
 
 	s->s_root = d_alloc_root(root);

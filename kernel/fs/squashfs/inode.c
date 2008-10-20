@@ -62,7 +62,7 @@ static int squashfs_new_inode(struct super_block *s, struct inode *i,
 		goto out;
 
 	err = squashfs_get_id(s, le16_to_cpu(inodeb->guid), &i->i_gid);
-	if (err < 0)
+	if (err)
 		goto out;
 
 	i->i_ino = le32_to_cpu(inodeb->inode_number);
@@ -81,14 +81,22 @@ struct inode *squashfs_iget(struct super_block *s, long long inode,
 				unsigned int inode_number)
 {
 	struct inode *i = iget_locked(s, inode_number);
+	int err;
 
 	TRACE("Entered squashfs_iget\n");
 
-	if (i && (i->i_state & I_NEW)) {
-		squashfs_read_inode(i, inode);
-		unlock_new_inode(i);
+	if (!i)
+		return ERR_PTR(-ENOMEM);
+	if (!(i->i_state & I_NEW))
+		return i;
+
+	err = squashfs_read_inode(i, inode);
+	if (err) {
+		iget_failed(i);
+		return ERR_PTR(err);
 	}
 
+	unlock_new_inode(i);
 	return i;
 }
 
@@ -136,8 +144,10 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		if (frag != SQUASHFS_INVALID_FRAG) {
 			frag_offset = le32_to_cpu(inodep->offset);
 			frag_size = get_fragment_location(s, frag, &frag_blk);
-			if (frag_size == 0)
+			if (frag_size < 0) {
+				err = frag_size;
 				goto failed_read;
+			}
 		} else {
 			frag_blk = SQUASHFS_INVALID_BLK;
 			frag_size = 0;
@@ -175,8 +185,10 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		if (frag != SQUASHFS_INVALID_FRAG) {
 			frag_offset = le32_to_cpu(inodep->offset);
 			frag_size = get_fragment_location(s, frag, &frag_blk);
-			if (frag_size == 0)
+			if (frag_size < 0) {
+				err = frag_size;
 				goto failed_read;
+			}
 		} else {
 			frag_blk = SQUASHFS_INVALID_BLK;
 			frag_size = 0;
@@ -305,15 +317,15 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	}
 	default:
 		ERROR("Unknown inode type %d in squashfs_iget!\n", type);
+		err = -EINVAL;
 		goto failed_read1;
 	}
 
-	return 1;
+	return 0;
 
 failed_read:
-	ERROR("Unable to read inode [%llx:%x]\n", block, offset);
+	ERROR("Unable to read inode 0x%llx\n", inode);
 
 failed_read1:
-	make_bad_inode(i);
-	return 0;
+	return err;
 }
