@@ -67,7 +67,7 @@ static int supported_squashfs_filesystem(short major, short minor, short comp)
 }
 
 
-static int squashfs_fill_super(struct super_block *s, void *data, int silent)
+static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 {
 	struct squashfs_sb_info *msblk;
 	struct squashfs_super_block *sblk = NULL;
@@ -81,12 +81,12 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 
 	TRACE("Entered squashfs_fill_superblock\n");
 
-	s->s_fs_info = kzalloc(sizeof(*msblk), GFP_KERNEL);
-	if (s->s_fs_info == NULL) {
+	sb->s_fs_info = kzalloc(sizeof(*msblk), GFP_KERNEL);
+	if (sb->s_fs_info == NULL) {
 		ERROR("Failed to allocate squashfs_sb_info\n");
 		goto failure2;
 	}
-	msblk = s->s_fs_info;
+	msblk = sb->s_fs_info;
 
 	msblk->stream.workspace = vmalloc(zlib_inflate_workspacesize());
 	if (msblk->stream.workspace == NULL) {
@@ -100,7 +100,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 		goto failure;
 	}
 
-	msblk->devblksize = sb_min_blocksize(s, BLOCK_SIZE);
+	msblk->devblksize = sb_min_blocksize(sb, BLOCK_SIZE);
 	msblk->devblksize_log2 = ffz(~msblk->devblksize);
 
 	mutex_init(&msblk->read_data_mutex);
@@ -114,7 +114,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	 * bytes_used) we need to set it to an initial sensible dummy value
 	 */
 	msblk->bytes_used = sizeof(*sblk);
-	err = squashfs_read_data(s, sblk, SQUASHFS_START, sizeof(*sblk) |
+	err = squashfs_read_data(sb, sblk, SQUASHFS_START, sizeof(*sblk) |
 			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, sizeof(*sblk));
 
 	if (err < 0) {
@@ -123,11 +123,11 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	/* Check it is a SQUASHFS superblock */
-	s->s_magic = le32_to_cpu(sblk->s_magic);
-	if (s->s_magic != SQUASHFS_MAGIC) {
+	sb->s_magic = le32_to_cpu(sblk->s_magic);
+	if (sb->s_magic != SQUASHFS_MAGIC) {
 		if (!silent)
 			ERROR("Can't find a SQUASHFS superblock on %s\n",
-						bdevname(s->s_bdev, b));
+						bdevname(sb->s_bdev, b));
 		err = -EINVAL;
 		goto failed_mount;
 	}
@@ -145,7 +145,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	   block device */
 	msblk->bytes_used = le64_to_cpu(sblk->bytes_used);
 	if (msblk->bytes_used < 0 || msblk->bytes_used >
-			i_size_read(s->s_bdev->bd_inode))
+			i_size_read(sb->s_bdev->bd_inode))
 		goto failed_mount;
 
 	/* Check block size for sanity */
@@ -167,7 +167,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	msblk->inodes = le32_to_cpu(sblk->inodes);
 	flags = le16_to_cpu(sblk->flags);
 
-	TRACE("Found valid superblock on %s\n", bdevname(s->s_bdev, b));
+	TRACE("Found valid superblock on %s\n", bdevname(sb->s_bdev, b));
 	TRACE("Inodes are %scompressed\n", SQUASHFS_UNCOMPRESSED_INODES(flags)
 				? "un" : "");
 	TRACE("Data is %scompressed\n", SQUASHFS_UNCOMPRESSED_DATA(flags)
@@ -184,9 +184,9 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 				le64_to_cpu(sblk->fragment_table_start));
 	TRACE("sblk->id_table_start %llx\n", le64_to_cpu(sblk->id_table_start));
 
-	s->s_maxbytes = MAX_LFS_FILESIZE;
-	s->s_flags |= MS_RDONLY;
-	s->s_op = &squashfs_super_ops;
+	sb->s_maxbytes = MAX_LFS_FILESIZE;
+	sb->s_flags |= MS_RDONLY;
+	sb->s_op = &squashfs_super_ops;
 
 	err = -ENOMEM;
 
@@ -203,7 +203,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	/* Allocate and read id index table */
-	msblk->id_table = read_id_index_table(s,
+	msblk->id_table = read_id_index_table(sb,
 		le64_to_cpu(sblk->id_table_start), le16_to_cpu(sblk->no_ids));
 	if (IS_ERR(msblk->id_table)) {
 		err = PTR_ERR(msblk->id_table);
@@ -223,7 +223,7 @@ static int squashfs_fill_super(struct super_block *s, void *data, int silent)
 	}
 
 	/* Allocate and read fragment index table */
-	msblk->fragment_index = read_fragment_index_table(s,
+	msblk->fragment_index = read_fragment_index_table(sb,
 		le64_to_cpu(sblk->fragment_table_start), fragments);
 	if (IS_ERR(msblk->fragment_index)) {
 		err = PTR_ERR(msblk->fragment_index);
@@ -237,7 +237,7 @@ allocate_lookup_table:
 		goto allocate_root;
 
 	/* Allocate and read inode lookup table */
-	msblk->inode_lookup_table = read_inode_lookup_table(s,
+	msblk->inode_lookup_table = read_inode_lookup_table(sb,
 		lookup_table_start, msblk->inodes);
 	if (IS_ERR(msblk->inode_lookup_table)) {
 		err = PTR_ERR(msblk->inode_lookup_table);
@@ -245,10 +245,10 @@ allocate_lookup_table:
 		goto failed_mount;
 	}
 
-	s->s_export_op = &squashfs_export_ops;
+	sb->s_export_op = &squashfs_export_ops;
 
 allocate_root:
-	root = new_inode(s);
+	root = new_inode(sb);
 	if (!root) {
 		err = -ENOMEM;
 		goto failed_mount;
@@ -261,8 +261,8 @@ allocate_root:
 	}
 	insert_inode_hash(root);
 
-	s->s_root = d_alloc_root(root);
-	if (s->s_root == NULL) {
+	sb->s_root = d_alloc_root(root);
+	if (sb->s_root == NULL) {
 		ERROR("Root inode create failed\n");
 		err = -ENOMEM;
 		iput(root);
@@ -281,15 +281,15 @@ failed_mount:
 	kfree(msblk->id_table);
 	vfree(msblk->read_page);
 	vfree(msblk->stream.workspace);
-	kfree(s->s_fs_info);
-	s->s_fs_info = NULL;
+	kfree(sb->s_fs_info);
+	sb->s_fs_info = NULL;
 	kfree(sblk);
 	return err;
 
 failure:
 	vfree(msblk->stream.workspace);
-	kfree(s->s_fs_info);
-	s->s_fs_info = NULL;
+	kfree(sb->s_fs_info);
+	sb->s_fs_info = NULL;
 failure2:
 	return -ENOMEM;
 }
@@ -313,17 +313,17 @@ static int squashfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 }
 
 
-static int squashfs_remount(struct super_block *s, int *flags, char *data)
+static int squashfs_remount(struct super_block *sb, int *flags, char *data)
 {
 	*flags |= MS_RDONLY;
 	return 0;
 }
 
 
-static void squashfs_put_super(struct super_block *s)
+static void squashfs_put_super(struct super_block *sb)
 {
-	if (s->s_fs_info) {
-		struct squashfs_sb_info *sbi = s->s_fs_info;
+	if (sb->s_fs_info) {
+		struct squashfs_sb_info *sbi = sb->s_fs_info;
 		squashfs_cache_delete(sbi->block_cache);
 		squashfs_cache_delete(sbi->fragment_cache);
 		vfree(sbi->read_page);
@@ -331,8 +331,8 @@ static void squashfs_put_super(struct super_block *s)
 		kfree(sbi->fragment_index);
 		kfree(sbi->meta_index);
 		vfree(sbi->stream.workspace);
-		kfree(s->s_fs_info);
-		s->s_fs_info = NULL;
+		kfree(sb->s_fs_info);
+		sb->s_fs_info = NULL;
 	}
 }
 
