@@ -48,7 +48,7 @@
  * Look-up block in cache, and increment usage count.  If not in cache, read
  * and decompress it from disk.
  */
-struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
+struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 	struct squashfs_cache *cache, long long block, int length)
 {
 	int i, n;
@@ -102,7 +102,7 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *s,
 			entry->error = 0;
 			spin_unlock(&cache->lock);
 
-			entry->length = squashfs_read_data(s, entry->data,
+			entry->length = squashfs_read_data(sb, entry->data,
 				block, length, &entry->next_index,
 				cache->block_size);
 
@@ -251,17 +251,17 @@ failed:
  * the block once decompressed).  Data is packed into consecutive blocks,
  * and length bytes may require reading more than one block.
  */
-int squashfs_read_metadata(struct super_block *s, void *buffer,
+int squashfs_read_metadata(struct super_block *sb, void *buffer,
 		long long *block, unsigned int *offset, int length)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
+	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int bytes, return_length = length;
 	struct squashfs_cache_entry *entry;
 
 	TRACE("Entered squashfs_read_metadata [%llx:%x]\n", *block, *offset);
 
 	while (1) {
-		entry = squashfs_cache_get(s, msblk->block_cache, *block, 0);
+		entry = squashfs_cache_get(sb, msblk->block_cache, *block, 0);
 		bytes = entry->length - *offset;
 
 		if (entry->error) {
@@ -298,12 +298,12 @@ finish:
 }
 
 
-struct squashfs_cache_entry *get_cached_fragment(struct super_block *s,
+struct squashfs_cache_entry *get_cached_fragment(struct super_block *sb,
 				long long start_block, int length)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
+	struct squashfs_sb_info *msblk = sb->s_fs_info;
 
-	return squashfs_cache_get(s, msblk->fragment_cache, start_block,
+	return squashfs_cache_get(sb, msblk->fragment_cache, start_block,
 		length);
 }
 
