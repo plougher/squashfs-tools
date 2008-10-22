@@ -43,18 +43,18 @@
 
 #include "squashfs.h"
 
-int get_fragment_location(struct super_block *s, unsigned int fragment,
+int get_fragment_location(struct super_block *sb, unsigned int fragment,
 				long long *fragment_block)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
+	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int block = SQUASHFS_FRAGMENT_INDEX(fragment);
 	int offset = SQUASHFS_FRAGMENT_INDEX_OFFSET(fragment);
 	long long start_block = le64_to_cpu(msblk->fragment_index[block]);
 	struct squashfs_fragment_entry fragment_entry;
 	int size;
 
-	size = squashfs_read_metadata(s, &fragment_entry, &start_block, &offset,
-				 		sizeof(fragment_entry));
+	size = squashfs_read_metadata(sb, &fragment_entry, &start_block,
+					&offset, sizeof(fragment_entry));
 	if (size < 0)
 		goto out;
 
@@ -66,7 +66,7 @@ out:
 }
 
 
-__le64 *read_fragment_index_table(struct super_block *s,
+__le64 *read_fragment_index_table(struct super_block *sb,
 	long long fragment_table_start, unsigned int fragments)
 {
 	unsigned int length = SQUASHFS_FRAGMENT_INDEX_BYTES(fragments);
@@ -80,7 +80,7 @@ __le64 *read_fragment_index_table(struct super_block *s,
 		return ERR_PTR(-ENOMEM);
 	}
 
-	err = squashfs_read_data(s, fragment_index, fragment_table_start,
+	err = squashfs_read_data(sb, fragment_index, fragment_table_start,
 			length | SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length);
 	if (err < 0) {
 		ERROR("unable to read fragment index table\n");
