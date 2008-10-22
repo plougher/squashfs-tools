@@ -72,12 +72,12 @@
  * (if any) we have managed to read - the index isn't essential, just
  * quicker.
  */
-static int get_dir_index_using_name(struct super_block *s,
+static int get_dir_index_using_name(struct super_block *sb,
 			long long *next_block, unsigned int *next_offset,
 			long long index_start, unsigned int index_offset,
 			int i_count, const char *name, int len)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
+	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int i, size, length = 0, err;
 	struct squashfs_dir_index *index;
 	char *str;
@@ -95,7 +95,7 @@ static int get_dir_index_using_name(struct super_block *s,
 	str[len] = '\0';
 
 	for (i = 0; i < i_count; i++) {
-		err = squashfs_read_metadata(s, index, &index_start,
+		err = squashfs_read_metadata(sb, index, &index_start,
 					&index_offset, sizeof(*index));
 		if (err < 0)
 			break;
@@ -103,7 +103,7 @@ static int get_dir_index_using_name(struct super_block *s,
 
 		size = le32_to_cpu(index->size) + 1;
 
-		err = squashfs_read_metadata(s, index->name, &index_start,
+		err = squashfs_read_metadata(sb, index->name, &index_start,
 					&index_offset, size);
 		if (err < 0)
 			break;
