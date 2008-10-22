@@ -46,8 +46,8 @@
 static int squashfs_symlink_readpage(struct file *file, struct page *page)
 {
 	struct inode *inode = page->mapping->host;
-	struct super_block *s = inode->i_sb;
-	struct squashfs_sb_info *msblk = s->s_fs_info;
+	struct super_block *sb = inode->i_sb;
+	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int index = page->index << PAGE_CACHE_SHIFT;
 	long long block = SQUASHFS_I(inode)->start_block;
 	int offset = SQUASHFS_I(inode)->offset;
@@ -63,7 +63,8 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 	 * Skip index bytes into symlink metadata.
 	 */
 	if (index) {
-		bytes = squashfs_read_metadata(s, NULL, &block, &offset, index);
+		bytes = squashfs_read_metadata(sb, NULL, &block, &offset,
+								index);
 		if (bytes < 0) {
 			ERROR("Unable to read symlink [%llx:%x]\n",
 				SQUASHFS_I(inode)->start_block,
@@ -80,7 +81,7 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 	 * blocks, we may need to call squashfs_cache_get multiple times.
 	 */
 	for (bytes = 0; bytes < length; offset = 0, bytes += avail) {
-		entry = squashfs_cache_get(s, msblk->block_cache, block, 0);
+		entry = squashfs_cache_get(sb, msblk->block_cache, block, 0);
 		avail = min(entry->length - offset, length - bytes);
 
 		if (entry->error) {
