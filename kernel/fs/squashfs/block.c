@@ -43,20 +43,20 @@
  * Read the metadata block length, this is stored in the first two
  * bytes of the metadata block.
  */
-static struct buffer_head *get_block_length(struct super_block *s,
+static struct buffer_head *get_block_length(struct super_block *sb,
 			int *cur_index, int *offset, unsigned int *length)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
+	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	struct buffer_head *bh;
 
-	bh = sb_bread(s, *cur_index);
+	bh = sb_bread(sb, *cur_index);
 	if (bh == NULL)
 		goto out;
 
 	if (msblk->devblksize - *offset == 1) {
 		*length = (unsigned char) bh->b_data[*offset];
 		brelse(bh);
-		bh = sb_bread(s, ++(*cur_index));
+		bh = sb_bread(sb, ++(*cur_index));
 		if (bh == NULL)
 			goto out;
 		*length |= (unsigned char) bh->b_data[0] << 8;
@@ -80,11 +80,11 @@ out:
  * is stored uncompressed in the filesystem (usually because compression
  * generated a larger block - this does occasionally happen with zlib).
  */
-int squashfs_read_data(struct super_block *s, void *buffer,
+int squashfs_read_data(struct super_block *sb, void *buffer,
 			long long index, unsigned int length,
 			long long *next_index, int srclength)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
+	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	struct buffer_head **bh;
 	unsigned int offset = index & ((1 << msblk->devblksize_log2) - 1);
 	unsigned int cur_index = index >> msblk->devblksize_log2;
@@ -115,7 +115,7 @@ int squashfs_read_data(struct super_block *s, void *buffer,
 			goto read_failure;
 
 		for (b = 0; bytes < (int) c_byte; b++, cur_index++) {
-			bh[b] = sb_getblk(s, cur_index);
+			bh[b] = sb_getblk(sb, cur_index);
 			if (bh[b] == NULL)
 				goto block_release;
 			bytes += msblk->devblksize;
@@ -128,7 +128,7 @@ int squashfs_read_data(struct super_block *s, void *buffer,
 		if (index < 0 || (index + 2) > msblk->bytes_used)
 			goto read_failure;
 
-		bh[0] = get_block_length(s, &cur_index, &offset, &c_byte);
+		bh[0] = get_block_length(sb, &cur_index, &offset, &c_byte);
 		if (bh[0] == NULL)
 			goto read_failure;
 		b = 1;
@@ -144,7 +144,7 @@ int squashfs_read_data(struct super_block *s, void *buffer,
 			goto block_release;
 
 		for (; bytes < c_byte; b++) {
-			bh[b] = sb_getblk(s, ++cur_index);
+			bh[b] = sb_getblk(sb, ++cur_index);
 			if (bh[b] == NULL)
 				goto block_release;
 			bytes += msblk->devblksize;
