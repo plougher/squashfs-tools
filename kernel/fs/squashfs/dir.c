@@ -105,11 +105,11 @@ finish:
 
 static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 {
-	struct inode *i = file->f_dentry->d_inode;
-	struct squashfs_sb_info *msblk = i->i_sb->s_fs_info;
-	long long next_block = SQUASHFS_I(i)->start_block +
+	struct inode *inode = file->f_dentry->d_inode;
+	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
+	long long block = SQUASHFS_I(inode)->start_block +
 				msblk->directory_table_start;
-	int next_offset = SQUASHFS_I(i)->offset, length = 0, dir_count, size,
+	int offset = SQUASHFS_I(inode)->offset, length = 0, dir_count, size,
 				type, err;
 	unsigned int inode_number;
 	struct squashfs_dir_header dirh;
@@ -138,11 +138,11 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		if (file->f_pos == 0) {
 			name = ".";
 			size = 1;
-			i_ino = i->i_ino;
+			i_ino = inode->i_ino;
 		} else {
 			name = "..";
 			size = 2;
-			i_ino = SQUASHFS_I(i)->parent_inode;
+			i_ino = SQUASHFS_I(inode)->parent_inode;
 		}
 
 		TRACE("Calling filldir(%p, %s, %d, %lld, %d, %d)\n",
@@ -158,18 +158,18 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		file->f_pos += size;
 	}
 
-	length = get_dir_index_using_offset(i->i_sb, &next_block, &next_offset,
-				SQUASHFS_I(i)->dir_index_start,
-				SQUASHFS_I(i)->dir_index_offset,
-				SQUASHFS_I(i)->dir_index_count,
+	length = get_dir_index_using_offset(inode->i_sb, &block, &offset,
+				SQUASHFS_I(inode)->dir_index_start,
+				SQUASHFS_I(inode)->dir_index_offset,
+				SQUASHFS_I(inode)->dir_index_count,
 				file->f_pos);
 
-	while (length < i_size_read(i)) {
+	while (length < i_size_read(inode)) {
 		/*
 		 * Read directory header
 		 */
-		err = squashfs_read_metadata(i->i_sb, &dirh, &next_block,
-					&next_offset, sizeof(dirh));
+		err = squashfs_read_metadata(inode->i_sb, &dirh, &block,
+					&offset, sizeof(dirh));
 		if (err < 0)
 			goto failed_read;
 
@@ -180,15 +180,15 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 			/*
 			 * Read directory entry.
 			 */
-			err = squashfs_read_metadata(i->i_sb, dire, &next_block,
-					&next_offset, sizeof(*dire));
+			err = squashfs_read_metadata(inode->i_sb, dire, &block,
+					&offset, sizeof(*dire));
 			if (err < 0)
 				goto failed_read;
 
 			size = le16_to_cpu(dire->size) + 1;
 
-			err = squashfs_read_metadata(i->i_sb, dire->name,
-					&next_block, &next_offset, size);
+			err = squashfs_read_metadata(inode->i_sb, dire->name,
+					&block, &offset, size);
 			if (err < 0)
 				goto failed_read;
 
@@ -226,8 +226,7 @@ finish:
 	return 0;
 
 failed_read:
-	ERROR("Unable to read directory block [%llx:%x]\n", next_block,
-		next_offset);
+	ERROR("Unable to read directory block [%llx:%x]\n", block, offset);
 	kfree(dire);
 	return 0;
 }
