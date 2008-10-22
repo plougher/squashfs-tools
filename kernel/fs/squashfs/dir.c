@@ -49,12 +49,12 @@ static const unsigned char squashfs_filetype_table[] = {
  * (if any) we have managed to read - the index isn't essential, just
  * quicker.
  */
-static int get_dir_index_using_offset(struct super_block *s,
+static int get_dir_index_using_offset(struct super_block *sb,
 	long long *next_block, unsigned int *next_offset,
 	long long index_start, unsigned int index_offset, int i_count,
 	long long f_pos)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
+	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int err, i, index, length = 0;
 	struct squashfs_dir_index dir_index;
 
@@ -71,7 +71,7 @@ static int get_dir_index_using_offset(struct super_block *s,
 		goto finish;
 
 	for (i = 0; i < i_count; i++) {
-		err = squashfs_read_metadata(s, &dir_index, &index_start,
+		err = squashfs_read_metadata(sb, &dir_index, &index_start,
 				&index_offset, sizeof(dir_index));
 		if (err < 0)
 			break;
@@ -83,7 +83,7 @@ static int get_dir_index_using_offset(struct super_block *s,
 			 */
 			break;
 
-		err = squashfs_read_metadata(s, NULL, &index_start,
+		err = squashfs_read_metadata(sb, NULL, &index_start,
 				&index_offset, le32_to_cpu(dir_index.size) + 1);
 		if (err < 0)
 			break;
