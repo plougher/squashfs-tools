@@ -171,7 +171,7 @@ static void release_meta_index(struct inode *inode, struct meta_index *meta)
  * Read the next n blocks from the block list, starting from
  * metadata block <start_block, offset>.
  */
-static long long read_indexes(struct super_block *s, int n,
+static long long read_indexes(struct super_block *sb, int n,
 				long long *start_block, int *offset)
 {
 	int err, i;
@@ -187,7 +187,7 @@ static long long read_indexes(struct super_block *s, int n,
 	while (n) {
 		int blocks = min_t(int, n, PAGE_CACHE_SIZE >> 2);
 
-		err = squashfs_read_metadata(s, blist, start_block,
+		err = squashfs_read_metadata(sb, blist, start_block,
 				offset, blocks << 2);
 		if (err < 0) {
 			ERROR("read_indexes: reading block [%llx:%x]\n",
