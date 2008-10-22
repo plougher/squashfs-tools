@@ -67,6 +67,10 @@
 /*
  * Lookup name in the directory index, returning the location of the metadata
  * block containing it, and the directory index this represents.
+ *
+ * If we get an error reading the index then return the part of the index
+ * (if any) we have managed to read - the index isn't essential, just
+ * quicker.
  */
 static int get_dir_index_using_name(struct super_block *s,
 			long long *next_block, unsigned int *next_offset,
@@ -74,7 +78,7 @@ static int get_dir_index_using_name(struct super_block *s,
 			int i_count, const char *name, int len)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	int i, size, length = 0;
+	int i, size, length = 0, err;
 	struct squashfs_dir_index *index;
 	char *str;
 
@@ -91,13 +95,18 @@ static int get_dir_index_using_name(struct super_block *s,
 	str[len] = '\0';
 
 	for (i = 0; i < i_count; i++) {
-		squashfs_read_metadata(s, index, &index_start, &index_offset,
-					sizeof(*index));
+		err = squashfs_read_metadata(s, index, &index_start,
+					&index_offset, sizeof(*index));
+		if (err < 0)
+			break;
+
 
 		size = le32_to_cpu(index->size) + 1;
 
-		squashfs_read_metadata(s, index->name, &index_start,
+		err = squashfs_read_metadata(s, index->name, &index_start,
 					&index_offset, size);
+		if (err < 0)
+			break;
 
 		index->name[size] = '\0';
 
@@ -162,8 +171,9 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 		/*
 		 * Read directory header.
 		 */
-		if (!squashfs_read_metadata(i->i_sb, &dirh, &next_block,
-				&next_offset, sizeof(dirh)))
+		err = squashfs_read_metadata(i->i_sb, &dirh, &next_block,
+				&next_offset, sizeof(dirh));
+		if (err < 0)
 			goto read_failure;
 
 		length += sizeof(dirh);
@@ -173,14 +183,16 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 			/*
 			 * Read directory entry.
 			 */
-			if (!squashfs_read_metadata(i->i_sb, dire, &next_block,
-					&next_offset, sizeof(*dire)))
+			err = squashfs_read_metadata(i->i_sb, dire, &next_block,
+					&next_offset, sizeof(*dire));
+			if (err < 0)
 				goto read_failure;
 
 			size = le16_to_cpu(dire->size) + 1;
 
-			if (!squashfs_read_metadata(i->i_sb, dire->name,
-					&next_block, &next_offset, size))
+			err = squashfs_read_metadata(i->i_sb, dire->name,
+					&next_block, &next_offset, size);
+			if (err < 0)
 				goto read_failure;
 
 			length += sizeof(*dire) + size;

@@ -174,21 +174,22 @@ static void release_meta_index(struct inode *inode, struct meta_index *meta)
 static long long read_indexes(struct super_block *s, int n,
 				long long *start_block, int *offset)
 {
-	int i;
+	int err, i;
 	long long block = 0;
 	__le32 *blist = kmalloc(PAGE_CACHE_SIZE, GFP_KERNEL);
 
 	if (blist == NULL) {
 		ERROR("read_indexes: Failed to allocate block_list\n");
+		err = -ENOMEM;
 		goto failure;
 	}
 
 	while (n) {
 		int blocks = min_t(int, n, PAGE_CACHE_SIZE >> 2);
-		int res = squashfs_read_metadata(s, blist, start_block,
-				offset, blocks << 2);
 
-		if (res == 0) {
+		err = squashfs_read_metadata(s, blist, start_block,
+				offset, blocks << 2);
+		if (err < 0) {
 			ERROR("read_indexes: reading block [%llx:%x]\n",
 				*start_block, *offset);
 			goto failure;
@@ -206,7 +207,7 @@ static long long read_indexes(struct super_block *s, int n,
 
 failure:
 	kfree(blist);
-	return -1;
+	return err;
 }
 
 
@@ -246,7 +247,7 @@ static int fill_meta_index(struct inode *inode, int index,
 	long long cur_index_block = SQUASHFS_I(inode)->block_list_start;
 	int cur_offset = SQUASHFS_I(inode)->offset;
 	long long cur_data_block = SQUASHFS_I(inode)->start_block;
-	int i;
+	int err, i;
 
 	/*
 	 * Scale index to cache index (cache slot entry)
@@ -261,8 +262,6 @@ static int fill_meta_index(struct inode *inode, int index,
 			if (meta == NULL)
 				goto all_done;
 		} else {
-			if (meta->entries == 0)
-				goto failed;
 			offset = index < meta->offset + meta->entries ? index :
 				meta->offset + meta->entries - 1;
 			meta_entry = &meta->meta_entry[offset - meta->offset];
@@ -289,8 +288,16 @@ static int fill_meta_index(struct inode *inode, int index,
 			long long res = read_indexes(inode->i_sb, blocks,
 					&cur_index_block, &cur_offset);
 
-			if (res == -1)
+			if (res < 0) {
+				if (meta->entries == 0)
+					/*
+ 					 * Don't leave an empty slot on read
+ 					 * error allocated to this inode...
+ 					 */
+					meta->inode_number = 0;
+					err = res;
 				goto failed;
+			}
 
 			cur_data_block += res;
 			meta_entry = &meta->meta_entry[i - meta->offset];
@@ -320,7 +327,7 @@ all_done:
 
 failed:
 	release_meta_index(inode, meta);
-	return -1;
+	return err;
 }
 
 
@@ -331,7 +338,7 @@ failed:
 static long long read_blocklist(struct inode *inode, int index,
 				unsigned int *bsize)
 {
-	long long start, block, blks;
+	long long start, block = 0, blks;
 	int offset;
 	__le32 size;
 	int res = fill_meta_index(inode, index, &start, &offset, &block);
@@ -340,7 +347,7 @@ static long long read_blocklist(struct inode *inode, int index,
 		       " 0x%x, block 0x%llx\n", res, index, start, offset,
 			block);
 
-	if (res == -1)
+	if (res < 0)
 		goto failure;
 
 	/*
@@ -351,8 +358,10 @@ static long long read_blocklist(struct inode *inode, int index,
 	 */
 	if (res < index) {
 		blks = read_indexes(inode->i_sb, index - res, &start, &offset);
-		if (blks == -1)
+		if (blks < 0) {
+			res = blks;
 			goto failure;
+		}
 		block += blks;
 	}
 
@@ -361,14 +370,14 @@ static long long read_blocklist(struct inode *inode, int index,
 	 */
 	res = squashfs_read_metadata(inode->i_sb, &size, &start, &offset,
 			sizeof(size));
-	if (res == 0)
+	if (res < 0)
 		goto failure;
 	*bsize = le32_to_cpu(size);
 
 	return block;
 
 failure:
-	return -1;
+	return res;
 }
 
 
@@ -377,7 +386,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	struct inode *inode = page->mapping->host;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
 	long long block;
-	unsigned int bsize, i;
+	unsigned int bsize = 0, i;
 	int bytes, index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
 	struct squashfs_cache_entry *fragment = NULL;
 	void *pageaddr, *data_ptr = msblk->read_page;
@@ -402,7 +411,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		 * to get location and block size.
 		 */
 		block = read_blocklist(inode, index, &bsize);
-		if (block == -1)
+		if (block < 0)
 			goto error_out;
 
 		if (bsize == 0) { /* hole */

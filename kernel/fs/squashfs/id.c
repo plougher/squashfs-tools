@@ -48,10 +48,12 @@ int squashfs_get_id(struct super_block *s, unsigned int index, unsigned int *id)
 	int offset = SQUASHFS_ID_BLOCK_OFFSET(index);
 	long long start_block = le64_to_cpu(msblk->id_table[block]);
 	__le32 disk_id;
+	int err;
 
-	if (!squashfs_read_metadata(s, &disk_id, &start_block, &offset,
-				 			sizeof(disk_id)))
-		return -EIO;
+	err = squashfs_read_metadata(s, &disk_id, &start_block, &offset,
+				 			sizeof(disk_id));
+	if (err < 0)
+		return err;
 
 	*id = le32_to_cpu(disk_id);
 	return 0;

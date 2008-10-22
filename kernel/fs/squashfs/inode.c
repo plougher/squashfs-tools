@@ -120,7 +120,8 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	/*
 	 * Read inode base common to all inode types.
 	 */
-	if (!squashfs_read_metadata(s, inodeb, &block, &offset, sizeof(*inodeb)))
+	err = squashfs_read_metadata(s, inodeb, &block, &offset, sizeof(*inodeb));
+	if (err < 0)
 		goto failed_read;
 
 	err = squashfs_new_inode(s, i, inodeb);
@@ -137,7 +138,9 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		long long frag_blk;
 		struct squashfs_reg_inode *inodep = &id.reg;
 
-		if (!squashfs_read_metadata(s, inodep, &block, &offset,									sizeof(*inodep)))
+		err = squashfs_read_metadata(s, inodep, &block, &offset,
+							sizeof(*inodep));
+		if (err < 0)
 			goto failed_read;
 
 		frag = le32_to_cpu(inodep->fragment);
@@ -177,8 +180,9 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		long long frag_blk;
 		struct squashfs_lreg_inode *inodep = &id.lreg;
 
-		if (!squashfs_read_metadata(s, inodep, &block, &offset,
-							sizeof(*inodep)))
+		err = squashfs_read_metadata(s, inodep, &block, &offset,
+							sizeof(*inodep));
+		if (err < 0)
 			goto failed_read;
 
 		frag = le32_to_cpu(inodep->fragment);
@@ -218,8 +222,9 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	case SQUASHFS_DIR_TYPE: {
 		struct squashfs_dir_inode *inodep = &id.dir;
 
-		if (!squashfs_read_metadata(s, inodep, &block, &offset,
-				sizeof(*inodep)))
+		err = squashfs_read_metadata(s, inodep, &block, &offset,
+				sizeof(*inodep));
+		if (err < 0)
 			goto failed_read;
 
 		i->i_nlink = le32_to_cpu(inodep->nlink);
@@ -241,8 +246,9 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	case SQUASHFS_LDIR_TYPE: {
 		struct squashfs_ldir_inode *inodep = &id.ldir;
 
-		if (!squashfs_read_metadata(s, inodep, &block, &offset,
-				sizeof(*inodep)))
+		err = squashfs_read_metadata(s, inodep, &block, &offset,
+				sizeof(*inodep));
+		if (err < 0)
 			goto failed_read;
 
 		i->i_nlink = le32_to_cpu(inodep->nlink);
@@ -266,8 +272,9 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	case SQUASHFS_SYMLINK_TYPE: {
 		struct squashfs_symlink_inode *inodep = &id.symlink;
 
-		if (!squashfs_read_metadata(s, inodep, &block, &offset,
-				sizeof(*inodep)))
+		err = squashfs_read_metadata(s, inodep, &block, &offset,
+				sizeof(*inodep));
+		if (err < 0)
 			goto failed_read;
 
 		i->i_nlink = le32_to_cpu(inodep->nlink);
@@ -288,8 +295,9 @@ int squashfs_read_inode(struct inode *i, long long inode)
 		struct squashfs_dev_inode *inodep = &id.dev;
 		unsigned int rdev;
 
-		if (!squashfs_read_metadata(s, inodep, &block, &offset,
-				sizeof(*inodep)))
+		err = squashfs_read_metadata(s, inodep, &block, &offset,
+				sizeof(*inodep));
+		if (err < 0)
 			goto failed_read;
 
 		i->i_nlink = le32_to_cpu(inodep->nlink);
@@ -306,8 +314,9 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	case SQUASHFS_SOCKET_TYPE: {
 		struct squashfs_ipc_inode *inodep = &id.ipc;
 
-		if (!squashfs_read_metadata(s, inodep, &block, &offset,
-				sizeof(*inodep)))
+		err = squashfs_read_metadata(s, inodep, &block, &offset,
+				sizeof(*inodep));
+		if (err < 0)
 			goto failed_read;
 
 		i->i_nlink = le32_to_cpu(inodep->nlink);

@@ -56,11 +56,13 @@ static long long squashfs_inode_lookup(struct super_block *s, int ino)
 	int offset = SQUASHFS_LOOKUP_BLOCK_OFFSET(ino - 1);
 	long long start = le64_to_cpu(msblk->inode_lookup_table[blk]);
 	__le64 inode;
+	int err;
 
 	TRACE("Entered squashfs_inode_lookup, inode_number = %d\n", ino);
 
-	if (!squashfs_read_metadata(s, &inode, &start, &offset, sizeof(inode)))
-		return SQUASHFS_INVALID_BLK;
+	err = squashfs_read_metadata(s, &inode, &start, &offset, sizeof(inode));
+	if (err < 0)
+		return err;
 
 	TRACE("squashfs_inode_lookup, inode = 0x%llx\n", le64_to_cpu(inode));
 	return le64_to_cpu(inode);
@@ -76,7 +78,7 @@ static struct dentry *squashfs_export_iget(struct super_block *s,
 	TRACE("Entered squashfs_export_iget\n");
 
 	inode = squashfs_inode_lookup(s, inode_number);
-	if (inode != SQUASHFS_INVALID_BLK)
+	if (inode >= 0)
 		dentry = d_obtain_alias(squashfs_iget(s, inode, inode_number));
 
 	return dentry;

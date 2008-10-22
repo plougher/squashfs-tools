@@ -264,8 +264,11 @@ int squashfs_read_metadata(struct super_block *s, void *buffer,
 		entry = squashfs_cache_get(s, msblk->block_cache, *block, 0);
 		bytes = entry->length - *offset;
 
-		if (entry->error || bytes < 1) {
-			return_length = 0;
+		if (entry->error) {
+			return_length = entry->error;
+			goto finish;
+		} else if (bytes < 1) {
+			return_length = -EIO;
 			goto finish;
 		} else if (bytes >= length) {
 			if (buffer)

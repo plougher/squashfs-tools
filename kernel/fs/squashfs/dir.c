@@ -44,6 +44,10 @@ static const unsigned char squashfs_filetype_table[] = {
 /*
  * Lookup offset (f_pos) in the directory index, returning the
  * metadata block containing it.
+ *
+ * If we get an error reading the index then return the part of the index
+ * (if any) we have managed to read - the index isn't essential, just
+ * quicker.
  */
 static int get_dir_index_using_offset(struct super_block *s,
 	long long *next_block, unsigned int *next_offset,
@@ -51,7 +55,7 @@ static int get_dir_index_using_offset(struct super_block *s,
 	long long f_pos)
 {
 	struct squashfs_sb_info *msblk = s->s_fs_info;
-	int i, index, length = 0;
+	int err, i, index, length = 0;
 	struct squashfs_dir_index dir_index;
 
 	TRACE("Entered get_dir_index_using_offset, i_count %d, f_pos %lld\n",
@@ -67,15 +71,22 @@ static int get_dir_index_using_offset(struct super_block *s,
 		goto finish;
 
 	for (i = 0; i < i_count; i++) {
-		squashfs_read_metadata(s, &dir_index, &index_start,
-					&index_offset, sizeof(dir_index));
+		err = squashfs_read_metadata(s, &dir_index, &index_start,
+				&index_offset, sizeof(dir_index));
+		if (err < 0)
+			break;
 
 		index = le32_to_cpu(dir_index.index);
 		if (index > f_pos)
+			/*
+			 * Found the index we're looking for.
+			 */
 			break;
 
-		squashfs_read_metadata(s, NULL, &index_start, &index_offset,
-					le32_to_cpu(dir_index.size) + 1);
+		err = squashfs_read_metadata(s, NULL, &index_start,
+				&index_offset, le32_to_cpu(dir_index.size) + 1);
+		if (err < 0)
+			break;
 
 		length = index;
 		*next_block = le32_to_cpu(dir_index.start_block) +
@@ -99,7 +110,7 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	long long next_block = SQUASHFS_I(i)->start_block +
 				msblk->directory_table_start;
 	int next_offset = SQUASHFS_I(i)->offset, length = 0, dir_count, size,
-				type;
+				type, err;
 	unsigned int inode_number;
 	struct squashfs_dir_header dirh;
 	struct squashfs_dir_entry *dire;
@@ -157,8 +168,9 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		/*
 		 * Read directory header
 		 */
-		if (!squashfs_read_metadata(i->i_sb, &dirh, &next_block,
-					&next_offset, sizeof(dirh)))
+		err = squashfs_read_metadata(i->i_sb, &dirh, &next_block,
+					&next_offset, sizeof(dirh));
+		if (err < 0)
 			goto failed_read;
 
 		length += sizeof(dirh);
@@ -168,14 +180,16 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 			/*
 			 * Read directory entry.
 			 */
-			if (!squashfs_read_metadata(i->i_sb, dire, &next_block,
-					&next_offset, sizeof(*dire)))
+			err = squashfs_read_metadata(i->i_sb, dire, &next_block,
+					&next_offset, sizeof(*dire));
+			if (err < 0)
 				goto failed_read;
 
 			size = le16_to_cpu(dire->size) + 1;
 
-			if (!squashfs_read_metadata(i->i_sb, dire->name,
-					&next_block, &next_offset, size))
+			err = squashfs_read_metadata(i->i_sb, dire->name,
+					&next_block, &next_offset, size);
+			if (err < 0)
 				goto failed_read;
 
 			length += sizeof(*dire) + size;

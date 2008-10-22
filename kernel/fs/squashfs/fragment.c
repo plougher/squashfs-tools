@@ -51,10 +51,11 @@ int get_fragment_location(struct super_block *s, unsigned int fragment,
 	int offset = SQUASHFS_FRAGMENT_INDEX_OFFSET(fragment);
 	long long start_block = le64_to_cpu(msblk->fragment_index[block]);
 	struct squashfs_fragment_entry fragment_entry;
-	int size = -EIO;
+	int size;
 
-	if (!squashfs_read_metadata(s, &fragment_entry, &start_block, &offset,
-				 		sizeof(fragment_entry)))
+	size = squashfs_read_metadata(s, &fragment_entry, &start_block, &offset,
+				 		sizeof(fragment_entry));
+	if (size < 0)
 		goto out;
 
 	*fragment_block = le64_to_cpu(fragment_entry.start_block);

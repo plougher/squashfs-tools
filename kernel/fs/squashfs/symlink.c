@@ -64,7 +64,7 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 	 */
 	if (index) {
 		bytes = squashfs_read_metadata(s, NULL, &block, &offset, index);
-		if (bytes == 0) {
+		if (bytes < 0) {
 			ERROR("Unable to read symlink [%llx:%x]\n",
 				SQUASHFS_I(inode)->start_block,
 				SQUASHFS_I(inode)->offset);
