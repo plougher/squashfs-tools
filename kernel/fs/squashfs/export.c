@@ -49,60 +49,60 @@
 /*
  * Look-up inode number (ino) in table, returning the inode location.
  */
-static long long squashfs_inode_lookup(struct super_block *s, int ino)
+static long long squashfs_inode_lookup(struct super_block *sb, int ino_num)
 {
-	struct squashfs_sb_info *msblk = s->s_fs_info;
-	int blk = SQUASHFS_LOOKUP_BLOCK(ino - 1);
-	int offset = SQUASHFS_LOOKUP_BLOCK_OFFSET(ino - 1);
+	struct squashfs_sb_info *msblk = sb->s_fs_info;
+	int blk = SQUASHFS_LOOKUP_BLOCK(ino_num - 1);
+	int offset = SQUASHFS_LOOKUP_BLOCK_OFFSET(ino_num - 1);
 	long long start = le64_to_cpu(msblk->inode_lookup_table[blk]);
-	__le64 inode;
+	__le64 ino;
 	int err;
 
-	TRACE("Entered squashfs_inode_lookup, inode_number = %d\n", ino);
+	TRACE("Entered squashfs_inode_lookup, inode_number = %d\n", ino_num);
 
-	err = squashfs_read_metadata(s, &inode, &start, &offset, sizeof(inode));
+	err = squashfs_read_metadata(sb, &ino, &start, &offset, sizeof(ino));
 	if (err < 0)
 		return err;
 
-	TRACE("squashfs_inode_lookup, inode = 0x%llx\n", le64_to_cpu(inode));
-	return le64_to_cpu(inode);
+	TRACE("squashfs_inode_lookup, inode = 0x%llx\n", le64_to_cpu(ino));
+	return le64_to_cpu(ino);
 }
 
 
-static struct dentry *squashfs_export_iget(struct super_block *s,
-	unsigned int inode_number)
+static struct dentry *squashfs_export_iget(struct super_block *sb,
+	unsigned int ino_num)
 {
-	long long inode;
+	long long ino;
 	struct dentry *dentry = ERR_PTR(-ENOENT);
 
 	TRACE("Entered squashfs_export_iget\n");
 
-	inode = squashfs_inode_lookup(s, inode_number);
-	if (inode >= 0)
-		dentry = d_obtain_alias(squashfs_iget(s, inode, inode_number));
+	ino = squashfs_inode_lookup(sb, ino_num);
+	if (ino >= 0)
+		dentry = d_obtain_alias(squashfs_iget(sb, ino, ino_num));
 
 	return dentry;
 }
 
 
-static struct dentry *squashfs_fh_to_dentry(struct super_block *s,
+static struct dentry *squashfs_fh_to_dentry(struct super_block *sb,
 		struct fid *fid, int fh_len, int fh_type)
 {
 	if ((fh_type != FILEID_INO32_GEN && fh_type != FILEID_INO32_GEN_PARENT)
 			|| fh_len < 2)
 		return NULL;
 
-	return squashfs_export_iget(s, fid->i32.ino);
+	return squashfs_export_iget(sb, fid->i32.ino);
 }
 
 
-static struct dentry *squashfs_fh_to_parent(struct super_block *s,
+static struct dentry *squashfs_fh_to_parent(struct super_block *sb,
 		struct fid *fid, int fh_len, int fh_type)
 {
 	if (fh_type != FILEID_INO32_GEN_PARENT || fh_len < 4)
 		return NULL;
 
-	return squashfs_export_iget(s, fid->i32.parent_ino);
+	return squashfs_export_iget(sb, fid->i32.parent_ino);
 }
 
 
@@ -114,7 +114,7 @@ static struct dentry *squashfs_get_parent(struct dentry *child)
 }
 
 
-__le64 *read_inode_lookup_table(struct super_block *s,
+__le64 *read_inode_lookup_table(struct super_block *sb,
 		long long lookup_table_start, unsigned int inodes)
 {
 	unsigned int length = SQUASHFS_LOOKUP_BLOCK_BYTES(inodes);
@@ -130,7 +130,7 @@ __le64 *read_inode_lookup_table(struct super_block *s,
 		return ERR_PTR(-ENOMEM);
 	}
 
-	err = squashfs_read_data(s, inode_lookup_table, lookup_table_start,
+	err = squashfs_read_data(sb, inode_lookup_table, lookup_table_start,
 			length | SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length);
 	if (err < 0) {
 		ERROR("unable to read inode lookup table\n");
