@@ -132,23 +132,21 @@ out:
 }
 
 
-static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
-				struct nameidata *nd)
+static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
+				 struct nameidata *nd)
 {
 	const unsigned char *name = dentry->d_name.name;
 	int len = dentry->d_name.len;
 	struct inode *inode = NULL;
-	struct squashfs_sb_info *msblk = i->i_sb->s_fs_info;
+	struct squashfs_sb_info *msblk = dir->i_sb->s_fs_info;
 	struct squashfs_dir_header dirh;
 	struct squashfs_dir_entry *dire;
-	long long next_block = SQUASHFS_I(i)->start_block +
+	long long block = SQUASHFS_I(dir)->start_block +
 				msblk->directory_table_start;
-	int next_offset = SQUASHFS_I(i)->offset;
-	unsigned int start_block, offset, ino_number;
+	int offset = SQUASHFS_I(dir)->offset;
 	int err, length = 0, dir_count, size;
-	long long ino;
 
-	TRACE("Entered squashfs_lookup [%llx:%x]\n", next_block, next_offset);
+	TRACE("Entered squashfs_lookup [%llx:%x]\n", block, offset);
 
 	dire = kmalloc(sizeof(*dire) + SQUASHFS_NAME_LEN + 1, GFP_KERNEL);
 	if (dire == NULL) {
@@ -162,17 +160,17 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 		goto failure;
 	}
 
-	length = get_dir_index_using_name(i->i_sb, &next_block, &next_offset,
-				SQUASHFS_I(i)->dir_index_start,
-				SQUASHFS_I(i)->dir_index_offset,
-				SQUASHFS_I(i)->dir_index_count, name, len);
+	length = get_dir_index_using_name(dir->i_sb, &block, &offset,
+				SQUASHFS_I(dir)->dir_index_start,
+				SQUASHFS_I(dir)->dir_index_offset,
+				SQUASHFS_I(dir)->dir_index_count, name, len);
 
-	while (length < i_size_read(i)) {
+	while (length < i_size_read(dir)) {
 		/*
 		 * Read directory header.
 		 */
-		err = squashfs_read_metadata(i->i_sb, &dirh, &next_block,
-				&next_offset, sizeof(dirh));
+		err = squashfs_read_metadata(dir->i_sb, &dirh, &block,
+				&offset, sizeof(dirh));
 		if (err < 0)
 			goto read_failure;
 
@@ -183,15 +181,15 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 			/*
 			 * Read directory entry.
 			 */
-			err = squashfs_read_metadata(i->i_sb, dire, &next_block,
-					&next_offset, sizeof(*dire));
+			err = squashfs_read_metadata(dir->i_sb, dire, &block,
+					&offset, sizeof(*dire));
 			if (err < 0)
 				goto read_failure;
 
 			size = le16_to_cpu(dire->size) + 1;
 
-			err = squashfs_read_metadata(i->i_sb, dire->name,
-					&next_block, &next_offset, size);
+			err = squashfs_read_metadata(dir->i_sb, dire->name,
+					&block, &offset, size);
 			if (err < 0)
 				goto read_failure;
 
@@ -201,17 +199,19 @@ static struct dentry *squashfs_lookup(struct inode *i, struct dentry *dentry,
 				goto exit_lookup;
 
 			if (len == size && !strncmp(name, dire->name, len)) {
-				start_block = le32_to_cpu(dirh.start_block);
-				offset = le16_to_cpu(dire->offset);
-				ino_number = le32_to_cpu(dirh.inode_number) +
+				unsigned int blk, off, ino_num;
+				long long ino;
+				blk = le32_to_cpu(dirh.start_block);
+				off = le16_to_cpu(dire->offset);
+				ino_num = le32_to_cpu(dirh.inode_number) +
 					(short) le16_to_cpu(dire->inode_number);
-				ino = SQUASHFS_MKINODE(start_block, offset);
+				ino = SQUASHFS_MKINODE(blk, off);
 
 				TRACE("calling squashfs_iget for directory "
 					"entry %s, inode  %x:%x, %d\n", name,
-					start_block, offset, ino_number);
+					blk, off, ino_num);
 
-				inode = squashfs_iget(i->i_sb, ino, ino_number);
+				inode = squashfs_iget(dir->i_sb, ino, ino_num);
 
 				if (IS_ERR(inode)) {
 					err = PTR_ERR(inode);
@@ -231,8 +231,8 @@ exit_lookup:
 
 read_failure:
 	ERROR("Unable to read directory block [%llx:%x]\n", 
-		SQUASHFS_I(i)->start_block + msblk->directory_table_start,
-		SQUASHFS_I(i)->offset);
+		SQUASHFS_I(dir)->start_block + msblk->directory_table_start,
+		SQUASHFS_I(dir)->offset);
 failure:
 	return ERR_PTR(err);
 }
