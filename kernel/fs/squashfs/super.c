@@ -162,8 +162,8 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	if (SQUASHFS_INODE_OFFSET(root_inode) > SQUASHFS_METADATA_SIZE)
 		goto failed_mount;
 
-	msblk->inode_table_start = le64_to_cpu(sblk->inode_table_start);
-	msblk->directory_table_start = le64_to_cpu(sblk->directory_table_start);
+	msblk->inode_table = le64_to_cpu(sblk->inode_table_start);
+	msblk->directory_table = le64_to_cpu(sblk->directory_table_start);
 	msblk->inodes = le32_to_cpu(sblk->inodes);
 	flags = le16_to_cpu(sblk->flags);
 
@@ -177,7 +177,7 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	TRACE("Number of inodes %d\n", msblk->inodes);
 	TRACE("Number of fragments %d\n", le32_to_cpu(sblk->fragments));
 	TRACE("Number of ids %d\n", le16_to_cpu(sblk->no_ids));
-	TRACE("sblk->inode_table_start %llx\n", msblk->inode_table_start);
+	TRACE("sblk->inode_table_start %llx\n", msblk->inode_table);
 	TRACE("sblk->directory_table_start %llx\n",
 				msblk->directory_table_start);
 	TRACE("sblk->fragment_table_start %llx\n",

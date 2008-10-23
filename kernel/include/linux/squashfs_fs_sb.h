@@ -66,8 +66,8 @@ struct squashfs_sb_info {
 	struct meta_index	*meta_index;
 	z_stream		stream;
 	__le64			*inode_lookup_table;
-	long long		inode_table_start;
-	long long		directory_table_start;
+	long long		inode_table;
+	long long		directory_table;
 	unsigned int		block_size;
 	unsigned short		block_log;
 	long long		bytes_used;

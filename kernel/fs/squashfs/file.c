@@ -266,7 +266,7 @@ static int fill_meta_index(struct inode *inode, int index,
 				meta->offset + meta->entries - 1;
 			meta_entry = &meta->meta_entry[offset - meta->offset];
 			cur_index_block = meta_entry->index_block +
-				msblk->inode_table_start;
+				msblk->inode_table;
 			cur_offset = meta_entry->offset;
 			cur_data_block = meta_entry->data_block;
 			TRACE("get_meta_index: offset %d, meta->offset %d, "
@@ -302,7 +302,7 @@ static int fill_meta_index(struct inode *inode, int index,
 			cur_data_block += res;
 			meta_entry = &meta->meta_entry[i - meta->offset];
 			meta_entry->index_block = cur_index_block -
-				msblk->inode_table_start;
+				msblk->inode_table;
 			meta_entry->offset = cur_offset;
 			meta_entry->data_block = cur_data_block;
 			meta->entries++;

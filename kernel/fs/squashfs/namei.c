@@ -115,7 +115,7 @@ static int get_dir_index_using_name(struct super_block *sb,
 
 		length = le32_to_cpu(index->index);
 		*next_block = le32_to_cpu(index->start_block) +
-					msblk->directory_table_start;
+					msblk->directory_table;
 	}
 
 	*next_offset = (length + *next_offset) % SQUASHFS_METADATA_SIZE;
@@ -141,7 +141,7 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
 	struct squashfs_sb_info *msblk = dir->i_sb->s_fs_info;
 	struct squashfs_dir_header dirh;
 	struct squashfs_dir_entry *dire;
-	long long block = SQUASHFS_I(dir)->start + msblk->directory_table_start;
+	long long block = SQUASHFS_I(dir)->start + msblk->directory_table;
 	int offset = SQUASHFS_I(dir)->offset;
 	int err, length = 0, dir_count, size;
 
@@ -230,7 +230,7 @@ exit_lookup:
 
 read_failure:
 	ERROR("Unable to read directory block [%llx:%x]\n", 
-		SQUASHFS_I(dir)->start + msblk->directory_table_start,
+		SQUASHFS_I(dir)->start + msblk->directory_table,
 		SQUASHFS_I(dir)->offset);
 failure:
 	return ERR_PTR(err);

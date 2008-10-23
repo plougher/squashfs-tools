@@ -109,7 +109,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 {
 	struct super_block *sb = inode->i_sb;
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
-	long long block = SQUASHFS_INODE_BLK(ino) + msblk->inode_table_start;
+	long long block = SQUASHFS_INODE_BLK(ino) + msblk->inode_table;
 	unsigned int offset = SQUASHFS_INODE_OFFSET(ino);
 	int err, type;
 	union squashfs_inode squashfs_ino;
@@ -129,7 +129,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 	if (err)
 		goto failed_read;
 
-	block = SQUASHFS_INODE_BLK(ino) + msblk->inode_table_start;
+	block = SQUASHFS_INODE_BLK(ino) + msblk->inode_table;
 	offset = SQUASHFS_INODE_OFFSET(ino);
 
 	type = le16_to_cpu(sqsh_ino->inode_type);
