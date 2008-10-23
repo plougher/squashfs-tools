@@ -114,7 +114,7 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	struct squashfs_dir_header dirh;
 	struct squashfs_dir_entry *dire;
 
-	TRACE("Entered squashfs_readdir [%llx:%x]\n", next_block, next_offset);
+	TRACE("Entered squashfs_readdir [%llx:%x]\n", block, offset);
 
 	dire = kmalloc(sizeof(*dire) + SQUASHFS_NAME_LEN + 1, GFP_KERNEL);
 	if (dire == NULL) {

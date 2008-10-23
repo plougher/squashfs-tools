@@ -21,15 +21,11 @@
  * squashfs.h
  */
 
-#ifdef SQUASHFS_TRACE
-#define TRACE(s, args...)	printk(KERN_NOTICE "SQUASHFS: "s, ## args)
-#else
-#define TRACE(s, args...)	{}
-#endif
+#define TRACE(s, args...)	pr_debug("SQUASHFS: "s, ## args)
 
-#define ERROR(s, args...)	printk(KERN_ERR "SQUASHFS error: "s, ## args)
+#define ERROR(s, args...)	pr_err("SQUASHFS error: "s, ## args)
 
-#define WARNING(s, args...)	printk(KERN_WARNING "SQUASHFS: "s, ## args)
+#define WARNING(s, args...)	pr_warning("SQUASHFS: "s, ## args)
 
 static inline struct squashfs_inode_info *SQUASHFS_I(struct inode *inode)
 {

@@ -239,8 +239,8 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 		SQUASHFS_I(inode)->parent = le32_to_cpu(sqsh_ino->parent_inode);
 
 		TRACE("Directory inode %x:%x, start_block %llx, offset %x\n",
-				SQUASHFS_INODE_BLK(inode), offset,
-				SQUASHFS_I(i)->start,
+				SQUASHFS_INODE_BLK(ino), offset,
+				SQUASHFS_I(inode)->start,
 				le16_to_cpu(sqsh_ino->offset));
 		break;
 	}
@@ -322,10 +322,10 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 		if (err < 0)
 			goto failed_read;
 
-		if (type == SQUASHFS_CHRDEV_TYPE)
-			inode->i_mode = S_IFCHR;
+		if (type == SQUASHFS_FIFO_TYPE)
+			inode->i_mode = S_IFIFO;
 		else
-			inode->i_mode = S_IFBLK;
+			inode->i_mode = S_IFSOCK;
 		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
 		init_special_inode(inode, inode->i_mode, 0);
 		break;

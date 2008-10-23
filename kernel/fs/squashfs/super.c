@@ -178,8 +178,7 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	TRACE("Number of fragments %d\n", le32_to_cpu(sblk->fragments));
 	TRACE("Number of ids %d\n", le16_to_cpu(sblk->no_ids));
 	TRACE("sblk->inode_table_start %llx\n", msblk->inode_table);
-	TRACE("sblk->directory_table_start %llx\n",
-				msblk->directory_table_start);
+	TRACE("sblk->directory_table_start %llx\n", msblk->directory_table);
 	TRACE("sblk->fragment_table_start %llx\n",
 				le64_to_cpu(sblk->fragment_table_start));
 	TRACE("sblk->id_table_start %llx\n", le64_to_cpu(sblk->id_table_start));
