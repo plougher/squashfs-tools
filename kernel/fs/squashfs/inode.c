@@ -307,8 +307,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 			inode->i_mode = S_IFBLK;
 		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
 		rdev = le32_to_cpu(sqsh_ino->rdev);
-		init_special_inode(inode, le16_to_cpu(inode->i_mode),
-					new_decode_dev(rdev));
+		init_special_inode(inode, inode->i_mode, new_decode_dev(rdev));
 
 		TRACE("Device inode %x:%x, rdev %x\n",
 				SQUASHFS_INODE_BLK(ino), offset, rdev);
@@ -328,7 +327,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 		else
 			inode->i_mode = S_IFBLK;
 		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
-		init_special_inode(inode, le16_to_cpu(inode->i_mode), 0);
+		init_special_inode(inode, inode->i_mode, 0);
 		break;
 	}
 	default:
