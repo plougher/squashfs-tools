@@ -52,52 +52,52 @@
  * Squashfs inode types.  Inodeb contains the unswapped base inode
  * off disk.
  */
-static int squashfs_new_inode(struct super_block *sb, struct inode *i,
-				struct squashfs_base_inode *inodeb)
+static int squashfs_new_inode(struct super_block *sb, struct inode *inode,
+				struct squashfs_base_inode *sino)
 {
 	int err;
 
-	err = squashfs_get_id(sb, le16_to_cpu(inodeb->uid), &i->i_uid);
+	err = squashfs_get_id(sb, le16_to_cpu(sino->uid), &inode->i_uid);
 	if (err)
 		goto out;
 
-	err = squashfs_get_id(sb, le16_to_cpu(inodeb->guid), &i->i_gid);
+	err = squashfs_get_id(sb, le16_to_cpu(sino->guid), &inode->i_gid);
 	if (err)
 		goto out;
 
-	i->i_ino = le32_to_cpu(inodeb->inode_number);
-	i->i_mtime.tv_sec = le32_to_cpu(inodeb->mtime);
-	i->i_atime.tv_sec = i->i_mtime.tv_sec;
-	i->i_ctime.tv_sec = i->i_mtime.tv_sec;
-	i->i_mode = le16_to_cpu(inodeb->mode);
-	i->i_size = 0;
+	inode->i_ino = le32_to_cpu(sino->inode_number);
+	inode->i_mtime.tv_sec = le32_to_cpu(sino->mtime);
+	inode->i_atime.tv_sec = inode->i_mtime.tv_sec;
+	inode->i_ctime.tv_sec = inode->i_mtime.tv_sec;
+	inode->i_mode = le16_to_cpu(sino->mode);
+	inode->i_size = 0;
 
 out:
 	return err;
 }
 
 
-struct inode *squashfs_iget(struct super_block *sb, long long inode,
-				unsigned int inode_number)
+struct inode *squashfs_iget(struct super_block *sb, long long ino,
+				unsigned int ino_number)
 {
-	struct inode *i = iget_locked(sb, inode_number);
+	struct inode *inode = iget_locked(sb, ino_number);
 	int err;
 
 	TRACE("Entered squashfs_iget\n");
 
-	if (!i)
+	if (!inode)
 		return ERR_PTR(-ENOMEM);
-	if (!(i->i_state & I_NEW))
-		return i;
+	if (!(inode->i_state & I_NEW))
+		return inode;
 
-	err = squashfs_read_inode(i, inode);
+	err = squashfs_read_inode(inode, ino);
 	if (err) {
-		iget_failed(i);
+		iget_failed(inode);
 		return ERR_PTR(err);
 	}
 
-	unlock_new_inode(i);
-	return i;
+	unlock_new_inode(inode);
+	return inode;
 }
 
 
@@ -105,47 +105,48 @@ struct inode *squashfs_iget(struct super_block *sb, long long inode,
  * Initialise VFS inode by reading inode from inode table (compressed
  * metadata).  The format and amount of data read depends on type.
  */
-int squashfs_read_inode(struct inode *i, long long inode)
+int squashfs_read_inode(struct inode *inode, long long ino)
 {
-	struct super_block *sb = i->i_sb;
+	struct super_block *sb = inode->i_sb;
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
-	long long block = SQUASHFS_INODE_BLK(inode) + msblk->inode_table_start;
-	unsigned int offset = SQUASHFS_INODE_OFFSET(inode);
+	long long block = SQUASHFS_INODE_BLK(ino) + msblk->inode_table_start;
+	unsigned int offset = SQUASHFS_INODE_OFFSET(ino);
 	int err, type;
-	union squashfs_inode id;
-	struct squashfs_base_inode *inodeb = &id.base;
+	union squashfs_inode squashfs_ino;
+	struct squashfs_base_inode *sqsh_ino = &squashfs_ino.base;
 
 	TRACE("Entered squashfs_read_inode\n");
 
 	/*
 	 * Read inode base common to all inode types.
 	 */
-	err = squashfs_read_metadata(sb, inodeb, &block, &offset, sizeof(*inodeb));
+	err = squashfs_read_metadata(sb, sqsh_ino, &block,
+						&offset, sizeof(*sqsh_ino));
 	if (err < 0)
 		goto failed_read;
 
-	err = squashfs_new_inode(sb, i, inodeb);
+	err = squashfs_new_inode(sb, inode, sqsh_ino);
 	if (err)
 		goto failed_read;
 
-	block = SQUASHFS_INODE_BLK(inode) + msblk->inode_table_start;
-	offset = SQUASHFS_INODE_OFFSET(inode);
+	block = SQUASHFS_INODE_BLK(ino) + msblk->inode_table_start;
+	offset = SQUASHFS_INODE_OFFSET(ino);
 
-	type = le16_to_cpu(inodeb->inode_type);
+	type = le16_to_cpu(sqsh_ino->inode_type);
 	switch (type) {
 	case SQUASHFS_FILE_TYPE: {
 		unsigned int frag_offset, frag_size, frag;
 		long long frag_blk;
-		struct squashfs_reg_inode *inodep = &id.reg;
+		struct squashfs_reg_inode *sqsh_ino = &squashfs_ino.reg;
 
-		err = squashfs_read_metadata(sb, inodep, &block, &offset,
-							sizeof(*inodep));
+		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
+							sizeof(*sqsh_ino));
 		if (err < 0)
 			goto failed_read;
 
-		frag = le32_to_cpu(inodep->fragment);
+		frag = le32_to_cpu(sqsh_ino->fragment);
 		if (frag != SQUASHFS_INVALID_FRAG) {
-			frag_offset = le32_to_cpu(inodep->offset);
+			frag_offset = le32_to_cpu(sqsh_ino->offset);
 			frag_size = get_fragment_location(sb, frag, &frag_blk);
 			if (frag_size < 0) {
 				err = frag_size;
@@ -157,37 +158,38 @@ int squashfs_read_inode(struct inode *i, long long inode)
 			frag_offset = 0;
 		}
 
-		i->i_nlink = 1;
-		i->i_size = le32_to_cpu(inodep->file_size);
-		i->i_fop = &generic_ro_fops;
-		i->i_mode |= S_IFREG;
-		i->i_blocks = ((i->i_size - 1) >> 9) + 1;
-		SQUASHFS_I(i)->fragment_block = frag_blk;
-		SQUASHFS_I(i)->fragment_size = frag_size;
-		SQUASHFS_I(i)->fragment_offset = frag_offset;
-		SQUASHFS_I(i)->start_block = le32_to_cpu(inodep->start_block);
-		SQUASHFS_I(i)->block_list_start = block;
-		SQUASHFS_I(i)->offset = offset;
-		i->i_data.a_ops = &squashfs_aops;
+		inode->i_nlink = 1;
+		inode->i_size = le32_to_cpu(sqsh_ino->file_size);
+		inode->i_fop = &generic_ro_fops;
+		inode->i_mode |= S_IFREG;
+		inode->i_blocks = ((inode->i_size - 1) >> 9) + 1;
+		SQUASHFS_I(inode)->fragment_block = frag_blk;
+		SQUASHFS_I(inode)->fragment_size = frag_size;
+		SQUASHFS_I(inode)->fragment_offset = frag_offset;
+		SQUASHFS_I(inode)->start_block =
+					le32_to_cpu(sqsh_ino->start_block);
+		SQUASHFS_I(inode)->block_list_start = block;
+		SQUASHFS_I(inode)->offset = offset;
+		inode->i_data.a_ops = &squashfs_aops;
 
 		TRACE("File inode %x:%x, start_block %llx, block_list_start "
-			"%llx, offset %x\n", SQUASHFS_INODE_BLK(inode),
-			offset, SQUASHFS_I(i)->start_block, block, offset);
+			"%llx, offset %x\n", SQUASHFS_INODE_BLK(ino),
+			offset, SQUASHFS_I(inode)->start_block, block, offset);
 		break;
 	}
 	case SQUASHFS_LREG_TYPE: {
 		unsigned int frag_offset, frag_size, frag;
 		long long frag_blk;
-		struct squashfs_lreg_inode *inodep = &id.lreg;
+		struct squashfs_lreg_inode *sqsh_ino = &squashfs_ino.lreg;
 
-		err = squashfs_read_metadata(sb, inodep, &block, &offset,
-							sizeof(*inodep));
+		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
+							sizeof(*sqsh_ino));
 		if (err < 0)
 			goto failed_read;
 
-		frag = le32_to_cpu(inodep->fragment);
+		frag = le32_to_cpu(sqsh_ino->fragment);
 		if (frag != SQUASHFS_INVALID_FRAG) {
-			frag_offset = le32_to_cpu(inodep->offset);
+			frag_offset = le32_to_cpu(sqsh_ino->offset);
 			frag_size = get_fragment_location(sb, frag, &frag_blk);
 			if (frag_size < 0) {
 				err = frag_size;
@@ -199,129 +201,130 @@ int squashfs_read_inode(struct inode *i, long long inode)
 			frag_offset = 0;
 		}
 
-		i->i_nlink = le32_to_cpu(inodep->nlink);
-		i->i_size = le64_to_cpu(inodep->file_size);
-		i->i_fop = &generic_ro_fops;
-		i->i_mode |= S_IFREG;
-		i->i_blocks = ((i->i_size - le64_to_cpu(inodep->sparse) - 1)
-				>> 9) + 1;
+		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
+		inode->i_size = le64_to_cpu(sqsh_ino->file_size);
+		inode->i_fop = &generic_ro_fops;
+		inode->i_mode |= S_IFREG;
+		inode->i_blocks = ((inode->i_size -
+				le64_to_cpu(sqsh_ino->sparse) - 1) >> 9) + 1;
 
-		SQUASHFS_I(i)->fragment_block = frag_blk;
-		SQUASHFS_I(i)->fragment_size = frag_size;
-		SQUASHFS_I(i)->fragment_offset = frag_offset;
-		SQUASHFS_I(i)->start_block = le64_to_cpu(inodep->start_block);
-		SQUASHFS_I(i)->block_list_start = block;
-		SQUASHFS_I(i)->offset = offset;
-		i->i_data.a_ops = &squashfs_aops;
+		SQUASHFS_I(inode)->fragment_block = frag_blk;
+		SQUASHFS_I(inode)->fragment_size = frag_size;
+		SQUASHFS_I(inode)->fragment_offset = frag_offset;
+		SQUASHFS_I(inode)->start_block =
+				le64_to_cpu(sqsh_ino->start_block);
+		SQUASHFS_I(inode)->block_list_start = block;
+		SQUASHFS_I(inode)->offset = offset;
+		inode->i_data.a_ops = &squashfs_aops;
 
 		TRACE("File inode %x:%x, start_block %llx, block_list_start "
-			"%llx, offset %x\n", SQUASHFS_INODE_BLK(inode),
-			offset, SQUASHFS_I(i)->start_block, block, offset);
+			"%llx, offset %x\n", SQUASHFS_INODE_BLK(ino),
+			offset, SQUASHFS_I(inode)->start_block, block, offset);
 		break;
 	}
 	case SQUASHFS_DIR_TYPE: {
-		struct squashfs_dir_inode *inodep = &id.dir;
+		struct squashfs_dir_inode *sqsh_ino = &squashfs_ino.dir;
 
-		err = squashfs_read_metadata(sb, inodep, &block, &offset,
-				sizeof(*inodep));
+		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
+				sizeof(*sqsh_ino));
 		if (err < 0)
 			goto failed_read;
 
-		i->i_nlink = le32_to_cpu(inodep->nlink);
-		i->i_size = le16_to_cpu(inodep->file_size);
-		i->i_op = &squashfs_dir_inode_ops;
-		i->i_fop = &squashfs_dir_ops;
-		i->i_mode |= S_IFDIR;
-		SQUASHFS_I(i)->start_block = le32_to_cpu(inodep->start_block);
-		SQUASHFS_I(i)->offset = le16_to_cpu(inodep->offset);
-		SQUASHFS_I(i)->dir_index_count = 0;
-		SQUASHFS_I(i)->parent_inode = le32_to_cpu(inodep->parent_inode);
+		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
+		inode->i_size = le16_to_cpu(sqsh_ino->file_size);
+		inode->i_op = &squashfs_dir_inode_ops;
+		inode->i_fop = &squashfs_dir_ops;
+		inode->i_mode |= S_IFDIR;
+		SQUASHFS_I(inode)->start_block = le32_to_cpu(sqsh_ino->start_block);
+		SQUASHFS_I(inode)->offset = le16_to_cpu(sqsh_ino->offset);
+		SQUASHFS_I(inode)->dir_index_count = 0;
+		SQUASHFS_I(inode)->parent_inode = le32_to_cpu(sqsh_ino->parent_inode);
 
 		TRACE("Directory inode %x:%x, start_block %llx, offset %x\n",
 				SQUASHFS_INODE_BLK(inode), offset,
 				SQUASHFS_I(i)->start_block,
-				le16_to_cpu(inodep->offset));
+				le16_to_cpu(sqsh_ino->offset));
 		break;
 	}
 	case SQUASHFS_LDIR_TYPE: {
-		struct squashfs_ldir_inode *inodep = &id.ldir;
+		struct squashfs_ldir_inode *sqsh_ino = &squashfs_ino.ldir;
 
-		err = squashfs_read_metadata(sb, inodep, &block, &offset,
-				sizeof(*inodep));
+		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
+				sizeof(*sqsh_ino));
 		if (err < 0)
 			goto failed_read;
 
-		i->i_nlink = le32_to_cpu(inodep->nlink);
-		i->i_size = le32_to_cpu(inodep->file_size);
-		i->i_op = &squashfs_dir_inode_ops;
-		i->i_fop = &squashfs_dir_ops;
-		i->i_mode |= S_IFDIR;
-		SQUASHFS_I(i)->start_block = le32_to_cpu(inodep->start_block);
-		SQUASHFS_I(i)->offset = le16_to_cpu(inodep->offset);
-		SQUASHFS_I(i)->dir_index_start = block;
-		SQUASHFS_I(i)->dir_index_offset = offset;
-		SQUASHFS_I(i)->dir_index_count = le16_to_cpu(inodep->i_count);
-		SQUASHFS_I(i)->parent_inode = le32_to_cpu(inodep->parent_inode);
+		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
+		inode->i_size = le32_to_cpu(sqsh_ino->file_size);
+		inode->i_op = &squashfs_dir_inode_ops;
+		inode->i_fop = &squashfs_dir_ops;
+		inode->i_mode |= S_IFDIR;
+		SQUASHFS_I(inode)->start_block = le32_to_cpu(sqsh_ino->start_block);
+		SQUASHFS_I(inode)->offset = le16_to_cpu(sqsh_ino->offset);
+		SQUASHFS_I(inode)->dir_index_start = block;
+		SQUASHFS_I(inode)->dir_index_offset = offset;
+		SQUASHFS_I(inode)->dir_index_count = le16_to_cpu(sqsh_ino->i_count);
+		SQUASHFS_I(inode)->parent_inode = le32_to_cpu(sqsh_ino->parent_inode);
 
 		TRACE("Long directory inode %x:%x, start_block %llx, offset "
-				"%x\n", SQUASHFS_INODE_BLK(inode), offset,
-				SQUASHFS_I(i)->start_block,
-				le16_to_cpu(inodep->offset));
+				"%x\n", SQUASHFS_INODE_BLK(ino), offset,
+				SQUASHFS_I(inode)->start_block,
+				le16_to_cpu(sqsh_ino->offset));
 		break;
 	}
 	case SQUASHFS_SYMLINK_TYPE: {
-		struct squashfs_symlink_inode *inodep = &id.symlink;
+		struct squashfs_symlink_inode *sqsh_ino = &squashfs_ino.symlink;
 
-		err = squashfs_read_metadata(sb, inodep, &block, &offset,
-				sizeof(*inodep));
+		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
+				sizeof(*sqsh_ino));
 		if (err < 0)
 			goto failed_read;
 
-		i->i_nlink = le32_to_cpu(inodep->nlink);
-		i->i_size = le32_to_cpu(inodep->symlink_size);
-		i->i_op = &page_symlink_inode_operations;
-		i->i_data.a_ops = &squashfs_symlink_aops;
-		i->i_mode |= S_IFLNK;
-		SQUASHFS_I(i)->start_block = block;
-		SQUASHFS_I(i)->offset = offset;
+		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
+		inode->i_size = le32_to_cpu(sqsh_ino->symlink_size);
+		inode->i_op = &page_symlink_inode_operations;
+		inode->i_data.a_ops = &squashfs_symlink_aops;
+		inode->i_mode |= S_IFLNK;
+		SQUASHFS_I(inode)->start_block = block;
+		SQUASHFS_I(inode)->offset = offset;
 
 		TRACE("Symbolic link inode %x:%x, start_block %llx, offset "
-				"%x\n", SQUASHFS_INODE_BLK(inode), offset,
+				"%x\n", SQUASHFS_INODE_BLK(ino), offset,
 				block, offset);
 		break;
 	}
 	case SQUASHFS_BLKDEV_TYPE:
 	case SQUASHFS_CHRDEV_TYPE: {
-		struct squashfs_dev_inode *inodep = &id.dev;
+		struct squashfs_dev_inode *sqsh_ino = &squashfs_ino.dev;
 		unsigned int rdev;
 
-		err = squashfs_read_metadata(sb, inodep, &block, &offset,
-				sizeof(*inodep));
+		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
+				sizeof(*sqsh_ino));
 		if (err < 0)
 			goto failed_read;
 
-		i->i_nlink = le32_to_cpu(inodep->nlink);
-		i->i_mode |= (type == SQUASHFS_CHRDEV_TYPE) ? S_IFCHR : S_IFBLK;
-		rdev = le32_to_cpu(inodep->rdev);
-		init_special_inode(i, le16_to_cpu(i->i_mode),
+		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
+		inode->i_mode |= (type == SQUASHFS_CHRDEV_TYPE) ? S_IFCHR : S_IFBLK;
+		rdev = le32_to_cpu(sqsh_ino->rdev);
+		init_special_inode(inode, le16_to_cpu(inode->i_mode),
 					new_decode_dev(rdev));
 
 		TRACE("Device inode %x:%x, rdev %x\n",
-				SQUASHFS_INODE_BLK(inode), offset, rdev);
+				SQUASHFS_INODE_BLK(ino), offset, rdev);
 		break;
 	}
 	case SQUASHFS_FIFO_TYPE:
 	case SQUASHFS_SOCKET_TYPE: {
-		struct squashfs_ipc_inode *inodep = &id.ipc;
+		struct squashfs_ipc_inode *sqsh_ino = &squashfs_ino.ipc;
 
-		err = squashfs_read_metadata(sb, inodep, &block, &offset,
-				sizeof(*inodep));
+		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
+				sizeof(*sqsh_ino));
 		if (err < 0)
 			goto failed_read;
 
-		i->i_nlink = le32_to_cpu(inodep->nlink);
-		i->i_mode |= (type == SQUASHFS_FIFO_TYPE) ? S_IFIFO : S_IFSOCK;
-		init_special_inode(i, le16_to_cpu(i->i_mode), 0);
+		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
+		inode->i_mode |= (type == SQUASHFS_FIFO_TYPE) ? S_IFIFO : S_IFSOCK;
+		init_special_inode(inode, le16_to_cpu(inode->i_mode), 0);
 		break;
 	}
 	default:
@@ -333,7 +336,7 @@ int squashfs_read_inode(struct inode *i, long long inode)
 	return 0;
 
 failed_read:
-	ERROR("Unable to read inode 0x%llx\n", inode);
+	ERROR("Unable to read inode 0x%llx\n", ino);
 
 failed_read1:
 	return err;
