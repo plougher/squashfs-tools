@@ -51,14 +51,14 @@ static struct buffer_head *get_block_length(struct super_block *sb,
 
 	bh = sb_bread(sb, *cur_index);
 	if (bh == NULL)
-		goto out;
+		return NULL;
 
 	if (msblk->devblksize - *offset == 1) {
 		*length = (unsigned char) bh->b_data[*offset];
 		brelse(bh);
 		bh = sb_bread(sb, ++(*cur_index));
 		if (bh == NULL)
-			goto out;
+			return NULL;
 		*length |= (unsigned char) bh->b_data[0] << 8;
 		*offset = 1;
 	} else {
@@ -67,7 +67,6 @@ static struct buffer_head *get_block_length(struct super_block *sb,
 		*offset += 2;
 	}
 
-out:
 	return bh;
 }
 
@@ -88,16 +87,14 @@ int squashfs_read_data(struct super_block *sb, void *buffer,
 	struct buffer_head **bh;
 	unsigned int offset = index & ((1 << msblk->devblksize_log2) - 1);
 	unsigned int cur_index = index >> msblk->devblksize_log2;
-	int bytes, avail, b = 0, k = 0, err;
+	int bytes, avail, b = 0, k = 0;
 	unsigned int compressed;
 	unsigned int c_byte = length;
 
 	bh = kcalloc((msblk->block_size >> msblk->devblksize_log2) + 1,
 				sizeof(*bh), GFP_KERNEL);
-	if (bh == NULL) {
-		err = -ENOMEM;
-		goto failure;
-	}
+	if (bh == NULL)
+		return -ENOMEM;
 
 	if (c_byte) {
 		/*
@@ -254,8 +251,6 @@ block_release:
 
 read_failure:
 	ERROR("sb_bread failed reading block 0x%x\n", cur_index);
-	err = -EIO;
-failure:
 	kfree(bh);
-	return err;
+	return -EIO;
 }

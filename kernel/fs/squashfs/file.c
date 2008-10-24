@@ -180,8 +180,7 @@ static long long read_indexes(struct super_block *sb, int n,
 
 	if (blist == NULL) {
 		ERROR("read_indexes: Failed to allocate block_list\n");
-		err = -ENOMEM;
-		goto failure;
+		return -ENOMEM;
 	}
 
 	while (n) {
@@ -348,7 +347,7 @@ static long long read_blocklist(struct inode *inode, int index,
 			block);
 
 	if (res < 0)
-		goto failure;
+		return res;
 
 	/*
 	 * res contains the index of the mapping returned by fill_meta_index(),
@@ -358,10 +357,8 @@ static long long read_blocklist(struct inode *inode, int index,
 	 */
 	if (res < index) {
 		blks = read_indexes(inode->i_sb, index - res, &start, &offset);
-		if (blks < 0) {
-			res = blks;
-			goto failure;
-		}
+		if (blks < 0)
+			return blks;
 		block += blks;
 	}
 
@@ -371,13 +368,10 @@ static long long read_blocklist(struct inode *inode, int index,
 	res = squashfs_read_metadata(inode->i_sb, &size, &start, &offset,
 			sizeof(size));
 	if (res < 0)
-		goto failure;
+		return res;
 	*bsize = le32_to_cpu(size);
 
 	return block;
-
-failure:
-	return res;
 }
 
 

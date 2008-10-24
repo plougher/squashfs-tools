@@ -66,9 +66,9 @@ static int get_dir_index_using_offset(struct super_block *sb,
 	 * is offset by 3 because we invent "." and ".." entries which are
 	 * not actually stored in the directory.
 	 */
+	if (f_pos < 3)
+		return f_pos;
 	f_pos -= 3;
-	if (f_pos == 0)
-		goto finish;
 
 	for (i = 0; i < i_count; i++) {
 		err = squashfs_read_metadata(sb, &dir_index, &index_start,
@@ -95,7 +95,6 @@ static int get_dir_index_using_offset(struct super_block *sb,
 
 	*next_offset = (length + *next_offset) % SQUASHFS_METADATA_SIZE;
 
-finish:
 	/*
 	 * Translate back from internal f_pos to external f_pos.
 	 */

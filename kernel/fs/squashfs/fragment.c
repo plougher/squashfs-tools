@@ -56,12 +56,11 @@ int get_fragment_location(struct super_block *sb, unsigned int fragment,
 	size = squashfs_read_metadata(sb, &fragment_entry, &start_block,
 					&offset, sizeof(fragment_entry));
 	if (size < 0)
-		goto out;
+		return size;
 
 	*fragment_block = le64_to_cpu(fragment_entry.start_block);
 	size = le32_to_cpu(fragment_entry.size);
 
-out:
 	return size;
 }
 

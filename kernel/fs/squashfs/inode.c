@@ -59,11 +59,11 @@ static int squashfs_new_inode(struct super_block *sb, struct inode *inode,
 
 	err = squashfs_get_id(sb, le16_to_cpu(sqsh_ino->uid), &inode->i_uid);
 	if (err)
-		goto out;
+		return err;
 
 	err = squashfs_get_id(sb, le16_to_cpu(sqsh_ino->guid), &inode->i_gid);
 	if (err)
-		goto out;
+		return err;
 
 	inode->i_ino = le32_to_cpu(sqsh_ino->inode_number);
 	inode->i_mtime.tv_sec = le32_to_cpu(sqsh_ino->mtime);
@@ -72,7 +72,6 @@ static int squashfs_new_inode(struct super_block *sb, struct inode *inode,
 	inode->i_mode = le16_to_cpu(sqsh_ino->mode);
 	inode->i_size = 0;
 
-out:
 	return err;
 }
 
@@ -332,15 +331,12 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 	}
 	default:
 		ERROR("Unknown inode type %d in squashfs_iget!\n", type);
-		err = -EINVAL;
-		goto failed_read1;
+		return -EINVAL;
 	}
 
 	return 0;
 
 failed_read:
 	ERROR("Unable to read inode 0x%llx\n", ino);
-
-failed_read1:
 	return err;
 }

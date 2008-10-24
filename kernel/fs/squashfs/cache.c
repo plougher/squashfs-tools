@@ -212,7 +212,7 @@ struct squashfs_cache *squashfs_cache_init(char *name, int entries,
 
 	if (cache == NULL) {
 		ERROR("Failed to allocate %s cache\n", name);
-		goto failed;
+		return NULL;
 	}
 
 	cache->next_blk = 0;
@@ -240,7 +240,6 @@ struct squashfs_cache *squashfs_cache_init(char *name, int entries,
 
 cleanup:
 	squashfs_cache_delete(cache);
-failed:
 	return NULL;
 }
 

@@ -47,23 +47,21 @@ static struct super_operations squashfs_super_ops;
 
 static int supported_squashfs_filesystem(short major, short minor, short comp)
 {
-	int err = 0;
-
 	if (major < SQUASHFS_MAJOR) {
 		ERROR("Major/Minor mismatch, older Squashfs %d.%d "
 			"filesystems are unsupported\n", major, minor);
-		err = -EINVAL;
+		return -EINVAL;
 	} else if (major > SQUASHFS_MAJOR || minor > SQUASHFS_MINOR) {
 		ERROR("Major/Minor mismatch, trying to mount newer "
 			"%d.%d filesystem\n", major, minor);
 		ERROR("Please update your kernel\n");
-		err = -EINVAL;
+		return -EINVAL;
 	}
 
 	if (comp != ZLIB_COMPRESSION)
-		err = -EINVAL;
+		return -EINVAL;
 
-	return err;
+	return 0;
 }
 
 
@@ -84,7 +82,7 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_fs_info = kzalloc(sizeof(*msblk), GFP_KERNEL);
 	if (sb->s_fs_info == NULL) {
 		ERROR("Failed to allocate squashfs_sb_info\n");
-		goto failure2;
+		return -ENOMEM;
 	}
 	msblk = sb->s_fs_info;
 
@@ -289,7 +287,6 @@ failure:
 	vfree(msblk->stream.workspace);
 	kfree(sb->s_fs_info);
 	sb->s_fs_info = NULL;
-failure2:
 	return -ENOMEM;
 }
 
@@ -377,19 +374,18 @@ static int __init init_squashfs_fs(void)
 	int err = init_inodecache();
 
 	if (err)
-		goto out;
+		return err;
 
 	err = register_filesystem(&squashfs_fs_type);
 	if (err) {
 		destroy_inodecache();
-		goto out;
+		return err;
 	}
 
 	printk(KERN_INFO "squashfs: version 4.0 (2008/10/20) "
 		"Phillip Lougher\n");
 
-out:
-	return err;
+	return 0;
 }
 
 
