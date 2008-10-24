@@ -27,7 +27,6 @@
 #define SQUASHFS_MAJOR			4
 #define SQUASHFS_MINOR			0
 #define SQUASHFS_MAGIC			0x73717368
-#define SQUASHFS_MAGIC_SWAP		0x68737173
 #define SQUASHFS_START			0
 
 /* size of metadata (inode and directory) blocks */
@@ -46,10 +45,8 @@
 /* Max length of filename (not 255) */
 #define SQUASHFS_NAME_LEN		256
 
-#define SQUASHFS_INVALID		(0xffffffffffffLL)
 #define SQUASHFS_INVALID_FRAG		(0xffffffffU)
 #define SQUASHFS_INVALID_BLK		(-1LL)
-#define SQUASHFS_USED_BLK		(-2LL)
 
 /* Filesystem flags */
 #define SQUASHFS_NOI			0
@@ -83,11 +80,6 @@
 #define SQUASHFS_EXPORTABLE(flags)		SQUASHFS_BIT(flags, \
 						SQUASHFS_EXPORT)
 
-#define SQUASHFS_MKFLAGS(noi, nod, nof, no_frag, always_frag, \
-		duplicate_checking, exportable)	(noi | (nod << 1) \
-		| (nof << 3) | (no_frag << 4) | (always_frag << 5) | \
-		(duplicate_checking << 6) | (exportable << 7))
-
 /* Max number of types and file types */
 #define SQUASHFS_DIR_TYPE		1
 #define SQUASHFS_FILE_TYPE		2
@@ -108,10 +100,10 @@
 
 #define SQUASHFS_COMPRESSED(B)		(!((B) & SQUASHFS_COMPRESSED_BIT))
 
-#define SQUASHFS_COMPRESSED_BIT_BLOCK		(1 << 24)
+#define SQUASHFS_COMPRESSED_BIT_BLOCK	(1 << 24)
 
 #define SQUASHFS_COMPRESSED_SIZE_BLOCK(B)	((B) & \
-	~SQUASHFS_COMPRESSED_BIT_BLOCK)
+						~SQUASHFS_COMPRESSED_BIT_BLOCK)
 
 #define SQUASHFS_COMPRESSED_BLOCK(B)	(!((B) & SQUASHFS_COMPRESSED_BIT_BLOCK))
 
@@ -123,9 +115,8 @@
 
 #define SQUASHFS_INODE_OFFSET(A)	((unsigned int) ((A) & 0xffff))
 
-#define SQUASHFS_MKINODE(A, B)		\
-				((long long)(((long long) (A)\
-				<< 16) + (B)))
+#define SQUASHFS_MKINODE(A, B)		((long long)(((long long) (A)\
+					<< 16) + (B)))
 
 /* Translate between VFS mode and squashfs mode */
 #define SQUASHFS_MODE(A)		((A) & 0xfff)
@@ -150,11 +141,11 @@
 /* inode lookup table defines */
 #define SQUASHFS_LOOKUP_BYTES(A)	((A) * sizeof(long long))
 
-#define SQUASHFS_LOOKUP_BLOCK(A)		(SQUASHFS_LOOKUP_BYTES(A) / \
-						SQUASHFS_METADATA_SIZE)
+#define SQUASHFS_LOOKUP_BLOCK(A)	(SQUASHFS_LOOKUP_BYTES(A) / \
+					SQUASHFS_METADATA_SIZE)
 
-#define SQUASHFS_LOOKUP_BLOCK_OFFSET(A)		(SQUASHFS_LOOKUP_BYTES(A) % \
-						SQUASHFS_METADATA_SIZE)
+#define SQUASHFS_LOOKUP_BLOCK_OFFSET(A)	(SQUASHFS_LOOKUP_BYTES(A) % \
+					SQUASHFS_METADATA_SIZE)
 
 #define SQUASHFS_LOOKUP_BLOCKS(A)	((SQUASHFS_LOOKUP_BYTES(A) + \
 					SQUASHFS_METADATA_SIZE - 1) / \
@@ -164,15 +155,15 @@
 					sizeof(long long))
 
 /* uid/gid lookup table defines */
-#define SQUASHFS_ID_BYTES(A)	((A) * sizeof(unsigned int))
+#define SQUASHFS_ID_BYTES(A)		((A) * sizeof(unsigned int))
 
 #define SQUASHFS_ID_BLOCK(A)		(SQUASHFS_ID_BYTES(A) / \
-						SQUASHFS_METADATA_SIZE)
+					SQUASHFS_METADATA_SIZE)
 
-#define SQUASHFS_ID_BLOCK_OFFSET(A)		(SQUASHFS_ID_BYTES(A) % \
-						SQUASHFS_METADATA_SIZE)
+#define SQUASHFS_ID_BLOCK_OFFSET(A)	(SQUASHFS_ID_BYTES(A) % \
+					SQUASHFS_METADATA_SIZE)
 
-#define SQUASHFS_ID_BLOCKS(A)	((SQUASHFS_ID_BYTES(A) + \
+#define SQUASHFS_ID_BLOCKS(A)		((SQUASHFS_ID_BYTES(A) + \
 					SQUASHFS_METADATA_SIZE - 1) / \
 					SQUASHFS_METADATA_SIZE)
 
