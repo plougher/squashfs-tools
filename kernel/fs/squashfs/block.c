@@ -44,7 +44,7 @@
  * bytes of the metadata block.
  */
 static struct buffer_head *get_block_length(struct super_block *sb,
-			int *cur_index, int *offset, unsigned int *length)
+			long long *cur_index, int *offset, int *length)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	struct buffer_head *bh;
@@ -80,16 +80,15 @@ static struct buffer_head *get_block_length(struct super_block *sb,
  * generated a larger block - this does occasionally happen with zlib).
  */
 int squashfs_read_data(struct super_block *sb, void *buffer,
-			long long index, unsigned int length,
-			long long *next_index, int srclength)
+			long long index, int length, long long *next_index,
+			int srclength)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	struct buffer_head **bh;
-	unsigned int offset = index & ((1 << msblk->devblksize_log2) - 1);
-	unsigned int cur_index = index >> msblk->devblksize_log2;
-	int bytes, avail, b = 0, k = 0;
-	unsigned int compressed;
-	unsigned int c_byte = length;
+	int offset = index & ((1 << msblk->devblksize_log2) - 1);
+	long long cur_index = index >> msblk->devblksize_log2;
+	int avail, bytes, compressed, b = 0, k = 0;
+	int c_byte = length;
 
 	bh = kcalloc((msblk->block_size >> msblk->devblksize_log2) + 1,
 				sizeof(*bh), GFP_KERNEL);
@@ -107,11 +106,11 @@ int squashfs_read_data(struct super_block *sb, void *buffer,
 		TRACE("Block @ 0x%llx, %scompressed size %d, src size %d\n",
 			index, compressed ? "" : "un", c_byte, srclength);
 
-		if (c_byte > srclength || index < 0 ||
+		if (c_byte < 0 || c_byte > srclength || index < 0 ||
 				(index + c_byte) > msblk->bytes_used)
 			goto read_failure;
 
-		for (b = 0; bytes < (int) c_byte; b++, cur_index++) {
+		for (b = 0; bytes < c_byte; b++, cur_index++) {
 			bh[b] = sb_getblk(sb, cur_index);
 			if (bh[b] == NULL)
 				goto block_release;
@@ -137,7 +136,8 @@ int squashfs_read_data(struct super_block *sb, void *buffer,
 		TRACE("Block @ 0x%llx, %scompressed size %d\n", index,
 				compressed ? "" : "un", c_byte);
 
-		if (c_byte > srclength || (index + c_byte) > msblk->bytes_used)
+		if (c_byte < 0 || c_byte > srclength ||
+					(index + c_byte) > msblk->bytes_used)
 			goto block_release;
 
 		for (; bytes < c_byte; b++) {
@@ -250,7 +250,7 @@ block_release:
 		brelse(bh[k]);
 
 read_failure:
-	ERROR("sb_bread failed reading block 0x%x\n", cur_index);
+	ERROR("sb_bread failed reading block 0x%llx\n", cur_index);
 	kfree(bh);
 	return -EIO;
 }

@@ -73,8 +73,8 @@
  * quicker.
  */
 static int get_dir_index_using_name(struct super_block *sb,
-			long long *next_block, unsigned int *next_offset,
-			long long index_start, unsigned int index_offset,
+			long long *next_block, int *next_offset,
+			long long index_start, int index_offset,
 			int i_count, const char *name, int len)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;

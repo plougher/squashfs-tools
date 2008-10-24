@@ -109,29 +109,28 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 	struct super_block *sb = inode->i_sb;
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	long long block = SQUASHFS_INODE_BLK(ino) + msblk->inode_table;
-	unsigned int offset = SQUASHFS_INODE_OFFSET(ino);
-	int err, type;
+	int err, type, offset = SQUASHFS_INODE_OFFSET(ino);
 	union squashfs_inode squashfs_ino;
-	struct squashfs_base_inode *sqsh_ino = &squashfs_ino.base;
+	struct squashfs_base_inode *sqshb_ino = &squashfs_ino.base;
 
 	TRACE("Entered squashfs_read_inode\n");
 
 	/*
 	 * Read inode base common to all inode types.
 	 */
-	err = squashfs_read_metadata(sb, sqsh_ino, &block,
-						&offset, sizeof(*sqsh_ino));
+	err = squashfs_read_metadata(sb, sqshb_ino, &block,
+				&offset, sizeof(*sqshb_ino));
 	if (err < 0)
 		goto failed_read;
 
-	err = squashfs_new_inode(sb, inode, sqsh_ino);
+	err = squashfs_new_inode(sb, inode, sqshb_ino);
 	if (err)
 		goto failed_read;
 
 	block = SQUASHFS_INODE_BLK(ino) + msblk->inode_table;
 	offset = SQUASHFS_INODE_OFFSET(ino);
 
-	type = le16_to_cpu(sqsh_ino->inode_type);
+	type = le16_to_cpu(sqshb_ino->inode_type);
 	switch (type) {
 	case SQUASHFS_FILE_TYPE: {
 		unsigned int frag_offset, frag_size, frag;

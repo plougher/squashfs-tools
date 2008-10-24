@@ -251,7 +251,7 @@ cleanup:
  * and length bytes may require reading more than one block.
  */
 int squashfs_read_metadata(struct super_block *sb, void *buffer,
-		long long *block, unsigned int *offset, int length)
+		long long *block, int *offset, int length)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int bytes, return_length = length;

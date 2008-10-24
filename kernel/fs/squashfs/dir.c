@@ -50,8 +50,8 @@ static const unsigned char squashfs_filetype_table[] = {
  * quicker.
  */
 static int get_dir_index_using_offset(struct super_block *sb,
-	long long *next_block, unsigned int *next_offset,
-	long long index_start, unsigned int index_offset, int i_count,
+	long long *next_block, int *next_offset,
+	long long index_start, int index_offset, int i_count,
 	long long f_pos)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
@@ -131,7 +131,7 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	 */
 	while (file->f_pos < 3) {
 		char *name;
-		int size, i_ino;
+		int i_ino;
 
 		if (file->f_pos == 0) {
 			name = ".";

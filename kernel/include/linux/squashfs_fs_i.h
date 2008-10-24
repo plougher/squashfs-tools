@@ -25,19 +25,19 @@
 
 struct squashfs_inode_info {
 	long long	start;
-	unsigned int	offset;
+	int		offset;
 	union {
 		struct {
 			long long	fragment_block;
-			unsigned int	fragment_size;
-			unsigned int	fragment_offset;
+			int		fragment_size;
+			int		fragment_offset;
 			long long	block_list_start;
 		};
 		struct {
 			long long	dir_idx_start;
-			unsigned int	dir_idx_offset;
-			unsigned int	dir_idx_cnt;
-			unsigned int	parent;
+			int		dir_idx_offset;
+			int		dir_idx_cnt;
+			int		parent;
 		};
 	};
 	struct inode	vfs_inode;
