@@ -268,7 +268,8 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 				le16_to_cpu(sqsh_ino->offset));
 		break;
 	}
-	case SQUASHFS_SYMLINK_TYPE: {
+	case SQUASHFS_SYMLINK_TYPE:
+	case SQUASHFS_LSYMLINK_TYPE: {
 		struct squashfs_symlink_inode *sqsh_ino = &squashfs_ino.symlink;
 
 		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
@@ -290,7 +291,9 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 		break;
 	}
 	case SQUASHFS_BLKDEV_TYPE:
-	case SQUASHFS_CHRDEV_TYPE: {
+	case SQUASHFS_CHRDEV_TYPE:
+	case SQUASHFS_LBLKDEV_TYPE:
+	case SQUASHFS_LCHRDEV_TYPE: {
 		struct squashfs_dev_inode *sqsh_ino = &squashfs_ino.dev;
 		unsigned int rdev;
 
@@ -312,7 +315,9 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 		break;
 	}
 	case SQUASHFS_FIFO_TYPE:
-	case SQUASHFS_SOCKET_TYPE: {
+	case SQUASHFS_SOCKET_TYPE:
+	case SQUASHFS_LFIFO_TYPE:
+	case SQUASHFS_LSOCKET_TYPE: {
 		struct squashfs_ipc_inode *sqsh_ino = &squashfs_ino.ipc;
 
 		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,

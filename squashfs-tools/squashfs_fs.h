@@ -322,6 +322,7 @@ struct squashfs_ldir_inode_header {
 	unsigned int		parent_inode;
 	unsigned short		i_count;
 	unsigned short		offset;
+	unsigned int		xattr;
 	struct squashfs_dir_index	index[0];
 };
 
