@@ -303,9 +303,9 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 			goto failed_read;
 
 		if (type == SQUASHFS_CHRDEV_TYPE)
-			inode->i_mode = S_IFCHR;
+			inode->i_mode |= S_IFCHR;
 		else
-			inode->i_mode = S_IFBLK;
+			inode->i_mode |= S_IFBLK;
 		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
 		rdev = le32_to_cpu(sqsh_ino->rdev);
 		init_special_inode(inode, inode->i_mode, new_decode_dev(rdev));
@@ -326,9 +326,9 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 			goto failed_read;
 
 		if (type == SQUASHFS_FIFO_TYPE)
-			inode->i_mode = S_IFIFO;
+			inode->i_mode |= S_IFIFO;
 		else
-			inode->i_mode = S_IFSOCK;
+			inode->i_mode |= S_IFSOCK;
 		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
 		init_special_inode(inode, inode->i_mode, 0);
 		break;
