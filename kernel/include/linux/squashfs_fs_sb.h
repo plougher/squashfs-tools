@@ -23,7 +23,7 @@
  * squashfs_fs_sb.h
  */
 
-#include <linux/squashfs_fs.h>
+#include "squashfs_fs.h"
 
 struct squashfs_cache_entry {
 	long long		block;

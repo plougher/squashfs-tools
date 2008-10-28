@@ -38,10 +38,10 @@
 #include <linux/spinlock.h>
 #include <linux/wait.h>
 #include <linux/zlib.h>
-#include <linux/squashfs_fs.h>
-#include <linux/squashfs_fs_sb.h>
-#include <linux/squashfs_fs_i.h>
 
+#include "squashfs_fs.h"
+#include "squashfs_fs_sb.h"
+#include "squashfs_fs_i.h"
 #include "squashfs.h"
 
 /*

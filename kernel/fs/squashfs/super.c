@@ -36,10 +36,10 @@
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/zlib.h>
-#include <linux/squashfs_fs.h>
-#include <linux/squashfs_fs_sb.h>
-#include <linux/squashfs_fs_i.h>
 
+#include "squashfs_fs.h"
+#include "squashfs_fs_sb.h"
+#include "squashfs_fs_i.h"
 #include "squashfs.h"
 
 static struct file_system_type squashfs_fs_type;

@@ -37,10 +37,10 @@
 #include <linux/string.h>
 #include <linux/pagemap.h>
 #include <linux/zlib.h>
-#include <linux/squashfs_fs.h>
-#include <linux/squashfs_fs_sb.h>
-#include <linux/squashfs_fs_i.h>
 
+#include "squashfs_fs.h"
+#include "squashfs_fs_sb.h"
+#include "squashfs_fs_i.h"
 #include "squashfs.h"
 
 static int squashfs_symlink_readpage(struct file *file, struct page *page)
