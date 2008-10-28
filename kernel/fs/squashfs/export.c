@@ -64,7 +64,9 @@ static long long squashfs_inode_lookup(struct super_block *sb, int ino_num)
 	if (err < 0)
 		return err;
 
-	TRACE("squashfs_inode_lookup, inode = 0x%llx\n", le64_to_cpu(ino));
+	TRACE("squashfs_inode_lookup, inode = 0x%llx\n",
+		(unsigned long long) le64_to_cpu(ino));
+
 	return le64_to_cpu(ino);
 }
 

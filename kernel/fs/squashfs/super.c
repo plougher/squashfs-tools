@@ -185,8 +185,9 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	TRACE("sblk->inode_table_start %llx\n", msblk->inode_table);
 	TRACE("sblk->directory_table_start %llx\n", msblk->directory_table);
 	TRACE("sblk->fragment_table_start %llx\n",
-				le64_to_cpu(sblk->fragment_table_start));
-	TRACE("sblk->id_table_start %llx\n", le64_to_cpu(sblk->id_table_start));
+		(unsigned long long) le64_to_cpu(sblk->fragment_table_start));
+	TRACE("sblk->id_table_start %llx\n",
+		(unsigned long long) le64_to_cpu(sblk->id_table_start));
 
 	sb->s_maxbytes = MAX_LFS_FILESIZE;
 	sb->s_flags |= MS_RDONLY;
