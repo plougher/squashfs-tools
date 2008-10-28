@@ -82,7 +82,7 @@
 
 /* Max number of types and file types */
 #define SQUASHFS_DIR_TYPE		1
-#define SQUASHFS_FILE_TYPE		2
+#define SQUASHFS_REG_TYPE		2
 #define SQUASHFS_SYMLINK_TYPE		3
 #define SQUASHFS_BLKDEV_TYPE		4
 #define SQUASHFS_CHRDEV_TYPE		5

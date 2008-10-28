@@ -132,7 +132,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 
 	type = le16_to_cpu(sqshb_ino->inode_type);
 	switch (type) {
-	case SQUASHFS_FILE_TYPE: {
+	case SQUASHFS_REG_TYPE: {
 		unsigned int frag_offset, frag_size, frag;
 		long long frag_blk;
 		struct squashfs_reg_inode *sqsh_ino = &squashfs_ino.reg;
