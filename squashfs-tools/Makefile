@@ -6,14 +6,16 @@ CFLAGS := -I$(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOUR
 
 all: mksquashfs
 
-mksquashfs: mksquashfs.o read_fs.o sort.o
-	$(CC) mksquashfs.o read_fs.o sort.o -lz -lpthread -lm -o $@
+mksquashfs: mksquashfs.o read_fs.o sort.o swap.o
+	$(CC) mksquashfs.o read_fs.o sort.o swap.o -lz -lpthread -lm -o $@
 
 mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h
 
 read_fs.o: read_fs.c squashfs_fs.h read_fs.h global.h
 
 sort.o: sort.c squashfs_fs.h global.h sort.h
+
+swap.o: swap.c
 
 unsquashfs: unsquashfs.o
 	$(CC) unsquashfs.o -lz -lpthread -lm -o $@
