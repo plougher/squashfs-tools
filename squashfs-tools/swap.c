@@ -23,8 +23,8 @@ void swap_le16(unsigned short *src, unsigned short *dest)
 	unsigned char *s = (unsigned char *) src;
 	unsigned char *d = (unsigned char *) dest;
 
-	s[0] = d[1];
-	s[1] = d[0];
+	d[0] = s[1];
+	d[1] = s[0];
 }
 
 
@@ -33,10 +33,10 @@ void swap_le32(unsigned int *src, unsigned int *dest)
 	unsigned char *s = (unsigned char *) src;
 	unsigned char *d = (unsigned char *) dest;
 
-	s[0] = d[3];
-	s[1] = d[2];
-	s[2] = d[1];
-	s[3] = d[0];
+	d[0] = s[3];
+	d[1] = s[2];
+	d[2] = s[1];
+	d[3] = s[0];
 }
 
 
@@ -45,14 +45,14 @@ void swap_le64(long long *src, long long *dest)
 	unsigned char *s = (unsigned char *) src;
 	unsigned char *d = (unsigned char *) dest;
 
-	s[0] = d[7];
-	s[1] = d[6];
-	s[2] = d[5];
-	s[3] = d[4];
-	s[4] = d[3];
-	s[5] = d[2];
-	s[6] = d[1];
-	s[7] = d[0];
+	d[0] = s[7];
+	d[1] = s[6];
+	d[2] = s[5];
+	d[3] = s[4];
+	d[4] = s[3];
+	d[5] = s[2];
+	d[6] = s[1];
+	d[7] = s[0];
 }
 
 
