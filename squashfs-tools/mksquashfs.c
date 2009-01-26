@@ -891,7 +891,7 @@ squashfs_base_inode_header *get_inode(int req_size)
 		if(!swap)
 			memcpy(inode_table + inode_bytes, &c_byte, sizeof(unsigned short));
 		else
-			SQUASHFS_SWAP_SHORTS((&c_byte), (inode_table + inode_bytes), 1);
+			SQUASHFS_SWAP_SHORTS((&c_byte), (unsigned short *) (inode_table + inode_bytes), 1);
 		inode_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
 		total_inode_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
 		memcpy(data_cache, data_cache + SQUASHFS_METADATA_SIZE, cache_bytes - SQUASHFS_METADATA_SIZE);
@@ -969,7 +969,7 @@ long long write_inodes()
 		if(!swap)
 			memcpy(inode_table + inode_bytes, &c_byte, sizeof(unsigned short));
 		else
-			SQUASHFS_SWAP_SHORTS((&c_byte), (inode_table + inode_bytes), 1); 
+			SQUASHFS_SWAP_SHORTS((&c_byte), (unsigned short *) (inode_table + inode_bytes), 1); 
 		inode_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
 		total_inode_bytes += avail_bytes + BLOCK_OFFSET;
 		datap += avail_bytes;
@@ -1004,7 +1004,7 @@ long long write_directories()
 		if(!swap)
 			memcpy(directory_table + directory_bytes, &c_byte, sizeof(unsigned short));
 		else
-			SQUASHFS_SWAP_SHORTS((&c_byte), (directory_table + directory_bytes), 1);
+			SQUASHFS_SWAP_SHORTS((&c_byte), (unsigned short *) (directory_table + directory_bytes), 1);
 		directory_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
 		total_directory_bytes += avail_bytes + BLOCK_OFFSET;
 		directoryp += avail_bytes;
@@ -1190,13 +1190,13 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 		if(!swap)
 			memcpy(inode, dir, sizeof(*dir));
 		else
-			SQUASHFS_SWAP_LDIR_INODE_HEADER(dir, inode);
+			SQUASHFS_SWAP_LDIR_INODE_HEADER(dir, inodep);
 		p = (unsigned char *) inodep->index;
 		for(i = 0; i < i_count; i++) {
 			if(!swap)
 				memcpy(p, &index[i].index, sizeof(squashfs_dir_index));
 			else
-				SQUASHFS_SWAP_DIR_INDEX(&index[i].index, p);
+				SQUASHFS_SWAP_DIR_INDEX(&index[i].index, (squashfs_dir_index *) p);
 			memcpy(((squashfs_dir_index *)p)->name, index[i].name, index[i].index.size + 1);
 			p += sizeof(squashfs_dir_index) + index[i].index.size + 1;
 		}
@@ -1215,7 +1215,7 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 		if(!swap)
 			memcpy(inode, dir, sizeof(*dir));
 		else
-			SQUASHFS_SWAP_DIR_INODE_HEADER(dir, inode);
+			SQUASHFS_SWAP_DIR_INODE_HEADER(dir, (squashfs_dir_inode_header *) inode);
 		TRACE("Directory inode, file_size %lld, start_block 0x%llx, offset 0x%x, nlink %d\n", byte_size,
 			start_block, offset, dir_ent->dir->directory_count + 2);
 	}
@@ -1239,7 +1239,7 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 		if(!swap)
 			memcpy(inode, dev, sizeof(*dev));
 		else
-			SQUASHFS_SWAP_DEV_INODE_HEADER(dev, inode);
+			SQUASHFS_SWAP_DEV_INODE_HEADER(dev, (squashfs_dev_inode_header *) inode);
 		TRACE("Device inode, rdev 0x%x, nlink %d\n", dev->rdev, nlink);
 	}
 	else if(type == SQUASHFS_SYMLINK_TYPE) {
@@ -1264,7 +1264,7 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 		if(!swap)
 			memcpy(inode, symlink, sizeof(*symlink));
 		else
-			SQUASHFS_SWAP_SYMLINK_INODE_HEADER(symlink, inode);
+			SQUASHFS_SWAP_SYMLINK_INODE_HEADER(symlink, inodep);
 		strncpy(inodep->symlink, buff, byte);
 		TRACE("Symbolic link inode, symlink_size %d, nlink %d\n", byte, nlink);
 	}
@@ -1276,7 +1276,7 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 		if(!swap)
 			memcpy(inode, ipc, sizeof(*ipc));
 		else
-			SQUASHFS_SWAP_IPC_INODE_HEADER(ipc, inode);
+			SQUASHFS_SWAP_IPC_INODE_HEADER(ipc, (squashfs_ipc_inode_header *) inode);
 		TRACE("ipc inode, type %s, nlink %d\n", type == SQUASHFS_FIFO_TYPE ? "fifo" : "socket", nlink);
 	} else
 		BAD_ERROR("Unrecognised inode %d in create_inode\n", type);
@@ -1434,7 +1434,7 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info, struct director
 		if(!swap)
 			memcpy(directory_table + directory_bytes, &c_byte, sizeof(unsigned short));
 		else
-			SQUASHFS_SWAP_SHORTS((&c_byte), (directory_table + directory_bytes), 1);
+			SQUASHFS_SWAP_SHORTS((&c_byte), (unsigned short *) (directory_table + directory_bytes), 1);
 		directory_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
 		total_directory_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
 		memcpy(directory_data_cache, directory_data_cache + SQUASHFS_METADATA_SIZE, directory_cache_bytes - SQUASHFS_METADATA_SIZE);
@@ -1670,7 +1670,7 @@ long long generic_write_table(int length, char *buffer, int uncompressed)
 		if(!swap)
 			memcpy(cbuffer, &c_byte, sizeof(unsigned short));
 		else
-			SQUASHFS_SWAP_SHORTS((&c_byte), cbuffer, 1);
+			SQUASHFS_SWAP_SHORTS((&c_byte), (unsigned short *) cbuffer, 1);
 		list[i] = bytes;
 		compressed_size = SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
 		TRACE("block %d @ 0x%llx, compressed size %d\n", i, bytes, compressed_size);
@@ -4169,7 +4169,7 @@ restore_filesystem:
 	else {
 		squashfs_super_block sBlk_copy;
 
-		//SQUASHFS_SWAP_SUPER_BLOCK((&sBlk), &sBlk_copy); 
+		SQUASHFS_SWAP_SUPER_BLOCK((&sBlk), &sBlk_copy); 
 		write_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block), (char *) &sBlk_copy);
 	}
 
