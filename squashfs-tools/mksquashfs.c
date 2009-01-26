@@ -3629,8 +3629,8 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.0-CVS (2008/10/26)\n");\
-	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
+	printf("mksquashfs version 4.0-CVS (2009/01/25)\n");\
+	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
 	printf("as published by the Free Software Foundation; either version 2,\n");\
@@ -3651,7 +3651,7 @@ int main(int argc, char *argv[])
 	int s_minor;
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-	BAD_ERROR("Swapping is not supported!\n");
+	swap = TRUE;
 #endif
 
 	pthread_mutex_init(&progress_mutex, NULL);
