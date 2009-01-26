@@ -290,7 +290,7 @@ struct squashfs_reg_inode_header {
 	unsigned int		fragment;
 	unsigned int		offset;
 	unsigned int		file_size;
-	unsigned short		block_list[0];
+	unsigned int		block_list[0];
 };
 
 struct squashfs_lreg_inode_header {
@@ -302,7 +302,7 @@ struct squashfs_lreg_inode_header {
 	unsigned int		fragment;
 	unsigned int		offset;
 	unsigned int		xattr;
-	unsigned short		block_list[0];
+	unsigned int		block_list[0];
 };
 
 struct squashfs_dir_inode_header {
