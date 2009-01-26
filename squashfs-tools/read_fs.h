@@ -31,4 +31,6 @@
 #define SWAP_LE16(d, s, field)	swap_le16(&((s)->field), &((d)->field))
 #define SWAP_LE32(d, s, field)	swap_le32(&((s)->field), &((d)->field))
 #define SWAP_LE64(d, s, field)	swap_le64(&((s)->field), &((d)->field))
+#define SWAP_ULE16(d, s, field)	swap_le16((unsigned short *) &((s)->field), \
+				(unsigned short *) &((d)->field))
 #endif
