@@ -502,9 +502,9 @@ unsigned int *read_id_table(int fd, squashfs_super_block *sBlk)
 	for(i = 0; i < indexes; i++) {
 		int length;
 		if(swap)
-			length = read_block(fd, index[i], NULL, ((char *) sid_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
+			length = read_block(fd, index[i], NULL, ((unsigned char *) sid_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
 		else
-			length = read_block(fd, index[i], NULL, ((char *) id_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
+			length = read_block(fd, index[i], NULL, ((unsigned char *) id_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
 		TRACE("Read id table block %d, from 0x%llx, length %d\n", i, index[i], length);
 	}
 
