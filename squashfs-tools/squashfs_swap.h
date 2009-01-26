@@ -165,7 +165,7 @@ extern void swap_le64_num(long long *, long long *, int);
 
 #define SQUASHFS_SWAP_DIR_ENTRY(s, d) {\
 	SWAP_LE16(s, d, offset);\
-	SWAP_LE16(s, d, inode_number);\
+	SWAP_ULE16(s, d, inode_number);\
 	SWAP_LE16(s, d, type);\
 	SWAP_LE16(s, d, size);\
 }
