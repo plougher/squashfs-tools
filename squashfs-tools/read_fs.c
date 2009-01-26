@@ -153,7 +153,7 @@ int scan_inode_table(int fd, long long start, long long end,
 	if(swap) {
 		squashfs_base_inode_header sinode;
 		memcpy(&sinode, *inode_table + bytes, sizeof(dir_inode->base));
-		SQUASHFS_SWAP_BASE_INODE_HEADER(&dir_inode->base, &sinode, sizeof(squashfs_base_inode_header));
+		SQUASHFS_SWAP_BASE_INODE_HEADER(&dir_inode->base, &sinode);
 	} else
 		memcpy(&dir_inode->base, *inode_table + bytes, sizeof(dir_inode->base));
 	if(dir_inode->base.inode_type == SQUASHFS_DIR_TYPE) {
