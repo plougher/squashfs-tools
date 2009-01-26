@@ -1,7 +1,7 @@
+#ifndef READ_FS_H
+#define READ_FS_H
 /*
- * macros to convert each packed bitfield structure from little endian to big
- * endian and vice versa.  These are needed when creating a filesystem on a
- * machine with different byte ordering to the target architecture.
+ * Squashfs
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007
  * Phillip Lougher <phillip@lougher.demon.co.uk>
@@ -20,30 +20,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- * mksquashfs.h
+ * read_fs.h
  *
  */
 
-/*
- * macros used to swap each structure entry, taking into account
- * bitfields and different bitfield placing conventions on differing architectures
- */
-#if __BYTE_ORDER == __BIG_ENDIAN
-	/* convert from big endian to little endian */
-#define SQUASHFS_SWAP(value, p, pos, tbits) _SQUASHFS_SWAP(value, p, pos, tbits, b_pos)
-#else
-	/* convert from little endian to big endian */ 
-#define SQUASHFS_SWAP(value, p, pos, tbits) _SQUASHFS_SWAP(value, p, pos, tbits, 64 - tbits - b_pos)
-#endif
+#define SQUASHFS_SWAP_SHORTS(d, s, n) swap_le16_num(s, d, n)
+#define SQUASHFS_SWAP_INTS(d, s, n) swap_le32_num(s, d, n)
+#define SQUASHFS_SWAP_LONG_LONGS(d, s, n) swap_le64_num(s, d, n)
 
-#define _SQUASHFS_SWAP(value, p, pos, tbits, SHIFT) {\
-	int bits;\
-	int b_pos = pos % 8;\
-	unsigned long long val = 0;\
-	unsigned char *s = (unsigned char *)p + (pos / 8);\
-	unsigned char *d = ((unsigned char *) &val) + 7;\
-	for(bits = 0; bits < (tbits + b_pos); bits += 8) \
-		*d-- = *s++;\
-	value = (val >> (SHIFT))/* & ((1 << tbits) - 1)*/;\
-}
-#define SQUASHFS_MEMSET(s, d, n)	memset(s, 0, n);
+#define SWAP_LE16(d, s, field)	swap_le16(&((s)->field), &((d)->field))
+#define SWAP_LE32(d, s, field)	swap_le32(&((s)->field), &((d)->field))
+#define SWAP_LE64(d, s, field)	swap_le64(&((s)->field), &((d)->field))
+#endif
