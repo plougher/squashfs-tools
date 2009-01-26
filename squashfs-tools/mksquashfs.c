@@ -3648,7 +3648,7 @@ int main(int argc, char *argv[])
 	int nopad = FALSE, keep_as_directory = FALSE;
 	squashfs_inode inode;
 	int readb_mbytes = READER_BUFFER_DEFAULT, writeb_mbytes = WRITER_BUFFER_DEFAULT, fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
-	int s_minor;
+	int s_minor = SQUASHFS_MINOR;
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 	swap = TRUE;
