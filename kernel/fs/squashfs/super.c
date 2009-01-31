@@ -153,11 +153,11 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 
 	/* Check block size for sanity */
 	msblk->block_size = le32_to_cpu(sblk->block_size);
-	if (msblk->block_size > SQUASHFS_FILE_SIZE)
+	if (msblk->block_size > SQUASHFS_FILE_MAX_SIZE)
 		goto failed_mount;
 
 	msblk->block_log = le16_to_cpu(sblk->block_log);
-	if (msblk->block_log > SQUASHFS_FILE_LOG)
+	if (msblk->block_log > SQUASHFS_FILE_MAX_LOG)
 		goto failed_mount;
 
 	/* Check the root inode for sanity */
@@ -194,12 +194,12 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	err = -ENOMEM;
 
 	msblk->block_cache = squashfs_cache_init("metadata",
-			SQUASHFS_CACHED_BLKS, SQUASHFS_METADATA_SIZE, 0);
+			SQUASHFS_CACHED_BLKS, SQUASHFS_METADATA_SIZE);
 	if (msblk->block_cache == NULL)
 		goto failed_mount;
 
 	/* Allocate read_page block */
-	msblk->read_page = squashfs_cache_init("datablock", 1, msblk->block_size, 1);
+	msblk->read_page = squashfs_cache_init("data", 1, msblk->block_size);
 	if (msblk->read_page == NULL) {
 		ERROR("Failed to allocate read_page block\n");
 		goto failed_mount;
@@ -219,7 +219,7 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 		goto allocate_lookup_table;
 
 	msblk->fragment_cache = squashfs_cache_init("fragment",
-		SQUASHFS_CACHED_FRAGMENTS, msblk->block_size, 1);
+		SQUASHFS_CACHED_FRAGMENTS, msblk->block_size);
 	if (msblk->fragment_cache == NULL) {
 		err = -ENOMEM;
 		goto failed_mount;
@@ -388,7 +388,7 @@ static int __init init_squashfs_fs(void)
 		return err;
 	}
 
-	printk(KERN_INFO "squashfs: version 4.0 (2008/11/23) "
+	printk(KERN_INFO "squashfs: version 4.0 (2008/12/27) "
 		"Phillip Lougher\n");
 
 	return 0;

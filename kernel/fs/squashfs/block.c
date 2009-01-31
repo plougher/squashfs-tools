@@ -79,38 +79,39 @@ static struct buffer_head *get_block_length(struct super_block *sb,
  * is stored uncompressed in the filesystem (usually because compression
  * generated a larger block - this does occasionally happen with zlib).
  */
-int squashfs_read_data(struct super_block *sb, void *buffer,
-			long long index, int length, long long *next_index,
-			int srclength)
+int squashfs_read_data(struct super_block *sb, void **buffer, long long index,
+			int length, long long *next_index, int srclength)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	struct buffer_head **bh;
 	int offset = index & ((1 << msblk->devblksize_log2) - 1);
 	long long cur_index = index >> msblk->devblksize_log2;
-	int avail, bytes, compressed, b = 0, k = 0;
-	int c_byte = length;
+	int bytes, compressed, b = 0, k = 0, page = 0, avail;
+	
 
 	bh = kcalloc((msblk->block_size >> msblk->devblksize_log2) + 1,
 				sizeof(*bh), GFP_KERNEL);
 	if (bh == NULL)
 		return -ENOMEM;
 
-	if (c_byte) {
+	if (length) {
 		/*
 		 * Datablock.
 		 */
 		bytes = -offset;
-		compressed = SQUASHFS_COMPRESSED_BLOCK(c_byte);
-		c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
+		compressed = SQUASHFS_COMPRESSED_BLOCK(length);
+		length = SQUASHFS_COMPRESSED_SIZE_BLOCK(length);
+		if (next_index)
+			*next_index = index + length;
 
 		TRACE("Block @ 0x%llx, %scompressed size %d, src size %d\n",
-			index, compressed ? "" : "un", c_byte, srclength);
+			index, compressed ? "" : "un", length, srclength);
 
-		if (c_byte < 0 || c_byte > srclength || index < 0 ||
-				(index + c_byte) > msblk->bytes_used)
+		if (length < 0 || length > srclength || index < 0 ||
+				(index + length) > msblk->bytes_used)
 			goto read_failure;
 
-		for (b = 0; bytes < c_byte; b++, cur_index++) {
+		for (b = 0; bytes < length; b++, cur_index++) {
 			bh[b] = sb_getblk(sb, cur_index);
 			if (bh[b] == NULL)
 				goto block_release;
@@ -124,23 +125,25 @@ int squashfs_read_data(struct super_block *sb, void *buffer,
 		if (index < 0 || (index + 2) > msblk->bytes_used)
 			goto read_failure;
 
-		bh[0] = get_block_length(sb, &cur_index, &offset, &c_byte);
+		bh[0] = get_block_length(sb, &cur_index, &offset, &length);
 		if (bh[0] == NULL)
 			goto read_failure;
 		b = 1;
 
 		bytes = msblk->devblksize - offset;
-		compressed = SQUASHFS_COMPRESSED(c_byte);
-		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
+		compressed = SQUASHFS_COMPRESSED(length);
+		length = SQUASHFS_COMPRESSED_SIZE(length);
+		if (next_index)
+			*next_index = index + length + 2;
 
 		TRACE("Block @ 0x%llx, %scompressed size %d\n", index,
-				compressed ? "" : "un", c_byte);
+				compressed ? "" : "un", length);
 
-		if (c_byte < 0 || c_byte > srclength ||
-					(index + c_byte) > msblk->bytes_used)
+		if (length < 0 || length > srclength ||
+					(index + length) > msblk->bytes_used)
 			goto block_release;
 
-		for (; bytes < c_byte; b++) {
+		for (; bytes < length; b++) {
 			bh[b] = sb_getblk(sb, ++cur_index);
 			if (bh[b] == NULL)
 				goto block_release;
@@ -150,7 +153,7 @@ int squashfs_read_data(struct super_block *sb, void *buffer,
 	}
 
 	if (compressed) {
-		int zlib_err = 0;
+		int zlib_err = 0, zlib_init = 0;
 
 		/*
 		 * Uncompress block.
@@ -158,20 +161,35 @@ int squashfs_read_data(struct super_block *sb, void *buffer,
 
 		mutex_lock(&msblk->read_data_mutex);
 
-		msblk->stream.next_out = buffer;
-		msblk->stream.avail_out = srclength;
+		msblk->stream.avail_out = 0;
+		msblk->stream.avail_in = 0;
 
-		for (bytes = 0; k < b; k++) {
-			avail = min(c_byte - bytes, msblk->devblksize - offset);
+		bytes = length;
+		do {
+			if (msblk->stream.avail_in == 0 && k < b) {
+				avail = min(bytes, msblk->devblksize - offset);
+				bytes -= avail;
+				wait_on_buffer(bh[k]);
+				if (!buffer_uptodate(bh[k]))
+					goto release_mutex;
 
-			wait_on_buffer(bh[k]);
-			if (!buffer_uptodate(bh[k]))
-				goto release_mutex;
+				if (avail == 0) {
+					offset = 0;
+					brelse(bh[k++]);
+					continue;
+				}
 
-			msblk->stream.next_in = bh[k]->b_data + offset;
-			msblk->stream.avail_in = avail;
+				msblk->stream.next_in = bh[k]->b_data + offset;
+				msblk->stream.avail_in = avail;
+				offset = 0;
+			}
 
-			if (k == 0) {
+			if (msblk->stream.avail_out == 0) {
+				msblk->stream.next_out = buffer[page ++];
+				msblk->stream.avail_out = PAGE_CACHE_SIZE;
+			}
+
+			if (!zlib_init) {
 				zlib_err = zlib_inflateInit(&msblk->stream);
 				if (zlib_err != Z_OK) {
 					ERROR("zlib_inflateInit returned"
@@ -179,32 +197,24 @@ int squashfs_read_data(struct super_block *sb, void *buffer,
 						" srclength %d\n", zlib_err,
 						srclength);
 					goto release_mutex;
-				}
-
-				if (avail == 0) {
-					offset = 0;
-					brelse(bh[k]);
-					continue;
-				}
+				}		
+				zlib_init = 1;
 			}
 
 			zlib_err = zlib_inflate(&msblk->stream, Z_NO_FLUSH);
-			if (zlib_err != Z_OK && zlib_err != Z_STREAM_END) {
-				ERROR("zlib_inflate returned unexpected result"
-					" 0x%x, srclength %d, avail_in %d,"
-					" avail_out %d\n", zlib_err, srclength,
-					msblk->stream.avail_in,
-					msblk->stream.avail_out);
-				goto release_mutex;
-			}
 
-			bytes += avail;
-			offset = 0;
-			brelse(bh[k]);
-		}
+			if (msblk->stream.avail_in == 0 && k < b)
+				brelse(bh[k++]);
+		} while (zlib_err == Z_OK);
 
-		if (zlib_err != Z_STREAM_END)
+		if (zlib_err != Z_STREAM_END) {
+			ERROR("zlib_inflate returned unexpected result"
+				" 0x%x, srclength %d, avail_in %d,"
+				" avail_out %d\n", zlib_err, srclength,
+				msblk->stream.avail_in,
+				msblk->stream.avail_out);
 			goto release_mutex;
+		}
 
 		zlib_err = zlib_inflateEnd(&msblk->stream);
 		if (zlib_err != Z_OK) {
@@ -212,13 +222,13 @@ int squashfs_read_data(struct super_block *sb, void *buffer,
 				" srclength %d\n", zlib_err, srclength);
 			goto release_mutex;
 		}
-		bytes = msblk->stream.total_out;
+		length = msblk->stream.total_out;
 		mutex_unlock(&msblk->read_data_mutex);
 	} else {
 		/*
 		 * Block is uncompressed.
 		 */
-		int i;
+		int i, in, pg_offset = 0;
 
 		for (i = 0; i < b; i++) {
 			wait_on_buffer(bh[i]);
@@ -226,21 +236,27 @@ int squashfs_read_data(struct super_block *sb, void *buffer,
 				goto block_release;
 		}
 
-		for (bytes = 0; k < b; k++) {
-			avail = min(c_byte - bytes, msblk->devblksize - offset);
-
-			memcpy(buffer + bytes, bh[k]->b_data + offset, avail);
-			bytes += avail;
+		for (bytes = length; k < b; k++) {
+			in = min(bytes, msblk->devblksize - offset);
+			bytes -= in;
+			while (in) {
+				if (pg_offset == PAGE_CACHE_SIZE) {
+					page ++;
+					pg_offset = 0;
+				}
+				avail = min_t(int, in, PAGE_CACHE_SIZE - pg_offset);
+				memcpy(buffer[page] + pg_offset, bh[k]->b_data + offset, avail);
+				in -= avail;
+				pg_offset += avail;
+				offset += avail;
+			}
 			offset = 0;
 			brelse(bh[k]);
 		}
 	}
 
-	if (next_index)
-		*next_index = index + c_byte + (length ? 0 : 2);
-
 	kfree(bh);
-	return bytes;
+	return length;
 
 release_mutex:
 	mutex_unlock(&msblk->read_data_mutex);

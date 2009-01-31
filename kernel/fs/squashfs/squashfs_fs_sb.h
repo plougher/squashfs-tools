@@ -25,6 +25,19 @@
 
 #include "squashfs_fs.h"
 
+struct squashfs_cache {
+	char			*name;
+	int			entries;
+	int			next_blk;
+	int			waiting;
+	int			unused;
+	int			block_size;
+	int			pages;
+	spinlock_t		lock;
+	wait_queue_head_t	wait_queue;
+	struct squashfs_cache_entry *entry;
+};
+
 struct squashfs_cache_entry {
 	long long		block;
 	int			length;
@@ -34,20 +47,8 @@ struct squashfs_cache_entry {
 	char			error;
 	int			waiting;
 	wait_queue_head_t	wait_queue;
-	char			*data;
-};
-
-struct squashfs_cache {
-	char			*name;
-	int			entries;
-	int			block_size;
-	int			next_blk;
-	int			waiting;
-	int			unused;
-	int			use_vmalloc;
-	spinlock_t		lock;
-	wait_queue_head_t	wait_queue;
-	struct squashfs_cache_entry entry[0];
+	struct squashfs_cache	*cache;
+	void			**data;
 };
 
 struct squashfs_sb_info {

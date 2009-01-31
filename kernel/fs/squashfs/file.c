@@ -382,14 +382,14 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	long long block;
 	unsigned int bsize = 0, i;
 	int bytes, index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
-	struct squashfs_cache_entry *fragment = NULL, *datablock = NULL;
-	void *pageaddr, *data_ptr = NULL;
+	struct squashfs_cache_entry *buffer = NULL;
+	void *pageaddr;
 
 	int mask = (1 << (msblk->block_log - PAGE_CACHE_SHIFT)) - 1;
 	int start_index = page->index & ~mask;
 	int end_index = start_index | mask;
 	int file_end = i_size_read(inode) >> msblk->block_log;
-	int sparse = 0;
+	int offset = 0, sparse = 0;
 
 	TRACE("Entered squashfs_readpage, page index %lx, start block %llx\n",
 				page->index, SQUASHFS_I(inode)->start);
@@ -417,34 +417,33 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			/*
 			 * Read and decompress datablock.
 			 */
-			datablock = get_datablock(inode->i_sb, block, bsize);
-			if (datablock->error) {
+			buffer = get_datablock(inode->i_sb, block, bsize);
+			if (buffer->error) {
 				ERROR("Unable to read page, block %llx, size %x"
 					"\n", block, bsize);
-				release_datablock(msblk, datablock);
+				squashfs_cache_put(buffer);
 				goto error_out;
 			}
-			bytes = datablock->length;
-			data_ptr = datablock->data;
+			bytes = buffer->length;
 		}
 	} else {
 		/*
 		 * Datablock is stored inside a fragment (tail-end packed
 		 * block).
 		 */
-		fragment = get_cached_fragment(inode->i_sb,
+		buffer = get_cached_fragment(inode->i_sb,
 				SQUASHFS_I(inode)->fragment_block,
 				SQUASHFS_I(inode)->fragment_size);
 
-		if (fragment->error) {
+		if (buffer->error) {
 			ERROR("Unable to read page, block %llx, size %x\n",
 				SQUASHFS_I(inode)->fragment_block,
 				SQUASHFS_I(inode)->fragment_size);
-			release_cached_fragment(msblk, fragment);
+			squashfs_cache_put(buffer);
 			goto error_out;
 		}
 		bytes = i_size_read(inode) & (msblk->block_size - 1);
-		data_ptr = fragment->data + SQUASHFS_I(inode)->fragment_offset;
+	        offset = SQUASHFS_I(inode)->fragment_offset;
 	}
 
 	/*
@@ -454,7 +453,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	 * been called to fill.
 	 */
 	for (i = start_index; i <= end_index && bytes > 0; i++,
-			bytes -= PAGE_CACHE_SIZE, data_ptr += PAGE_CACHE_SIZE) {
+			bytes -= PAGE_CACHE_SIZE, offset += PAGE_CACHE_SIZE) {
 		struct page *push_page;
 		int avail = sparse ? 0 : min_t(unsigned int, bytes,
 			PAGE_CACHE_SIZE);
@@ -471,7 +470,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			goto skip_page;
 
 		pageaddr = kmap_atomic(push_page, KM_USER0);
-		memcpy(pageaddr, data_ptr, avail);
+		squashfs_copy_data(pageaddr, buffer, offset, avail);
 		memset(pageaddr + avail, 0, PAGE_CACHE_SIZE - avail);
 		kunmap_atomic(pageaddr, KM_USER0);
 		flush_dcache_page(push_page);
@@ -482,10 +481,8 @@ skip_page:
 			page_cache_release(push_page);
 	}
 
-	if (fragment)
-		release_cached_fragment(msblk, fragment);
-	else if (!sparse)
-		release_datablock(msblk, datablock);
+	if (!sparse)
+		squashfs_cache_put(buffer);
 
 	return 0;
 

@@ -52,7 +52,7 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 	long long block = SQUASHFS_I(inode)->start;
 	int offset = SQUASHFS_I(inode)->offset;
 	int length = min_t(int, i_size_read(inode) - index, PAGE_CACHE_SIZE);
-	int avail, bytes;
+	int bytes, copied;
 	void *pageaddr;
 	struct squashfs_cache_entry *entry;
 
@@ -80,26 +80,25 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 	 * squashfs_cache_get routine.  As length bytes may overlap metadata
 	 * blocks, we may need to call squashfs_cache_get multiple times.
 	 */
-	for (bytes = 0; bytes < length; offset = 0, bytes += avail) {
+	for (bytes = 0; bytes < length; offset = 0, bytes += copied) {
 		entry = squashfs_cache_get(sb, msblk->block_cache, block, 0);
-		avail = min(entry->length - offset, length - bytes);
-
 		if (entry->error) {
 			ERROR("Unable to read symlink [%llx:%x]\n",
 				SQUASHFS_I(inode)->start,
 				SQUASHFS_I(inode)->offset);
-			squashfs_cache_put(msblk->block_cache, entry);
+			squashfs_cache_put(entry);
 			goto error_out;
 		}
 
 		pageaddr = kmap_atomic(page, KM_USER0);
-		memcpy(pageaddr + bytes, entry->data + offset, avail);
-		if (avail == length - bytes)
+		copied = squashfs_copy_data(pageaddr + bytes, entry, offset,
+								length - bytes);
+		if (copied == length - bytes)
 			memset(pageaddr + length, 0, PAGE_CACHE_SIZE - length);
 		else
 			block = entry->next_index;
 		kunmap_atomic(pageaddr, KM_USER0);
-		squashfs_cache_put(msblk->block_cache, entry);
+		squashfs_cache_put(entry);
 	}
 
 	flush_dcache_page(page);
