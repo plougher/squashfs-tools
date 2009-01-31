@@ -1,6 +1,11 @@
-Squashfs is now targetted at linux-next from git.kernel.org.  These files will
-not compile on anything older.
+Squashfs is now in mainline at www.kernel.org.
+These files are a CVS sync of my git development tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/pkl/squashfs-linus.git.  I still
+intend to keep these files in sync because they contain the development
+history prior to mainlining.
 
-For earlier kernel versions please check if there's any patches in this
-directory.  If a patch exists it will patch the squashfs code to work on that
-kernel.
+Squashfs is targetted at mainline.  These files, however, should
+compile on 2.6.28, but not on anything older.
+
+The patch files in this directory are completely out of date, and won't work
+anymore.
