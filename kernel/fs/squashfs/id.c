@@ -41,6 +41,9 @@
 #include "squashfs_fs_i.h"
 #include "squashfs.h"
 
+/*
+ * Map uid/gid index into real 32-bit uid/gid using the id look up table
+ */
 int squashfs_get_id(struct super_block *sb, unsigned int index,
 					unsigned int *id)
 {
@@ -61,6 +64,9 @@ int squashfs_get_id(struct super_block *sb, unsigned int index,
 }
 
 
+/*
+ * Read uncompressed id lookup table indexes from disk into memory
+ */
 __le64 *squashfs_read_id_index_table(struct super_block *sb,
 			long long id_table_start, unsigned short no_ids)
 {
@@ -70,7 +76,7 @@ __le64 *squashfs_read_id_index_table(struct super_block *sb,
 
 	TRACE("In read_id_index_table, length %d\n", length);
 
-	/* Allocate id index table */
+	/* Allocate id lookup table indexes */
 	id_table = kmalloc(length, GFP_KERNEL);
 	if (id_table == NULL) {
 		ERROR("Failed to allocate id index table\n");

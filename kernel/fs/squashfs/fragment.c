@@ -43,6 +43,10 @@
 #include "squashfs_fs_i.h"
 #include "squashfs.h"
 
+/*
+ * Look-up fragment using the fragment index table.  Return the on disk
+ * location of the fragment and its compressed size
+ */
 int squashfs_frag_location(struct super_block *sb, unsigned int fragment,
 				long long *fragment_block)
 {
@@ -65,6 +69,9 @@ int squashfs_frag_location(struct super_block *sb, unsigned int fragment,
 }
 
 
+/*
+ * Read the uncompressed fragment lookup table indexes off disk into memory
+ */
 __le64 *squashfs_read_fragment_index_table(struct super_block *sb,
 	long long fragment_table_start, unsigned int fragments)
 {
@@ -72,7 +79,7 @@ __le64 *squashfs_read_fragment_index_table(struct super_block *sb,
 	__le64 *fragment_index;
 	int err;
 
-	/* Allocate fragment index table */
+	/* Allocate fragment lookup table indexes */
 	fragment_index = kmalloc(length, GFP_KERNEL);
 	if (fragment_index == NULL) {
 		ERROR("Failed to allocate fragment index table\n");

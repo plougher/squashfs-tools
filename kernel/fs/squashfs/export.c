@@ -117,6 +117,9 @@ static struct dentry *squashfs_get_parent(struct dentry *child)
 }
 
 
+/*
+ * Read uncompressed inode lookup table indexes off disk into memory
+ */
 __le64 *squashfs_read_inode_lookup_table(struct super_block *sb,
 		long long lookup_table_start, unsigned int inodes)
 {
@@ -126,7 +129,7 @@ __le64 *squashfs_read_inode_lookup_table(struct super_block *sb,
 
 	TRACE("In read_inode_lookup_table, length %d\n", length);
 
-	/* Allocate inode lookup table */
+	/* Allocate inode lookup table indexes */
 	inode_lookup_table = kmalloc(length, GFP_KERNEL);
 	if (inode_lookup_table == NULL) {
 		ERROR("Failed to allocate inode lookup table\n");
