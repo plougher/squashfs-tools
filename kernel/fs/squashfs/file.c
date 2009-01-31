@@ -376,17 +376,15 @@ static int squashfs_readpage(struct file *file, struct page *page)
 {
 	struct inode *inode = page->mapping->host;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
-	u64 block = 0;
-	unsigned int i;
-	int bytes, index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
+	int bytes, i, offset = 0, sparse = 0;
 	struct squashfs_cache_entry *buffer = NULL;
 	void *pageaddr;
 
 	int mask = (1 << (msblk->block_log - PAGE_CACHE_SHIFT)) - 1;
+	int index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
 	int start_index = page->index & ~mask;
 	int end_index = start_index | mask;
 	int file_end = i_size_read(inode) >> msblk->block_log;
-	int offset = 0, sparse = 0;
 
 	TRACE("Entered squashfs_readpage, page index %lx, start block %llx\n",
 				page->index, squashfs_i(inode)->start);
@@ -401,6 +399,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		 * Reading a datablock from disk.  Need to read block list
 		 * to get location and block size.
 		 */
+		u64 block = 0;
 		int bsize = read_blocklist(inode, index, &block);
 		if (bsize < 0)
 			goto error_out;
