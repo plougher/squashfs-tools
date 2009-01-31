@@ -290,9 +290,9 @@ static int fill_meta_index(struct inode *inode, int index,
 			if (res < 0) {
 				if (meta->entries == 0)
 					/*
- 					 * Don't leave an empty slot on read
- 					 * error allocated to this inode...
- 					 */
+					 * Don't leave an empty slot on read
+					 * error allocated to this inode...
+					 */
 					meta->inode_number = 0;
 					err = res;
 				goto failed;

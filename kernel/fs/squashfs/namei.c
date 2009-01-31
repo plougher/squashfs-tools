@@ -224,7 +224,7 @@ exit_lookup:
 	return ERR_PTR(0);
 
 read_failure:
-	ERROR("Unable to read directory block [%llx:%x]\n", 
+	ERROR("Unable to read directory block [%llx:%x]\n",
 		SQUASHFS_I(dir)->start + msblk->directory_table,
 		SQUASHFS_I(dir)->offset);
 	return ERR_PTR(err);

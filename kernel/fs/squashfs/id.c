@@ -52,7 +52,7 @@ int squashfs_get_id(struct super_block *sb, unsigned int index,
 	int err;
 
 	err = squashfs_read_metadata(sb, &disk_id, &start_block, &offset,
-				 			sizeof(disk_id));
+							sizeof(disk_id));
 	if (err < 0)
 		return err;
 

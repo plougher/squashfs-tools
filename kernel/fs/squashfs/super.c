@@ -258,7 +258,7 @@ allocate_root:
 		err = -ENOMEM;
 		goto failed_mount;
 	}
-	
+
 	err = squashfs_read_inode(root, root_inode);
 	if (err) {
 		iget_failed(root);
