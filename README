@@ -1,4 +1,14 @@
 CVS status:
 
-New 4.0 disk layout.  Mksquashfs should generate correct filesystems, and the
-kernel code can mount them.  Swapping and Unsquashfs still broken.
+New 4.0 disk layout.
+
+Squashfs-tools: mksquashfs generates 4.0 layout.  Unsquashfs building
+disabled because it is currently broken due to code changes elsewhere.
+
+kernel: this directory now tracks the git tree at kernel.org, following
+mainlining of Squashfs.  Please read the README in kernel/ for further
+information.
+
+kernel-2.4: prehistoric.  Not updated since the 3.1 release.  If you still need
+Squashfs support in the 2.4 kernel then use the squashfs 3.1 release.  This
+is the last release that supported 2.4 kernels.
