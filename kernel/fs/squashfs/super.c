@@ -30,7 +30,6 @@
 #include <linux/fs.h>
 #include <linux/vfs.h>
 #include <linux/slab.h>
-#include <linux/vmalloc.h>
 #include <linux/mutex.h>
 #include <linux/pagemap.h>
 #include <linux/init.h>
@@ -86,7 +85,8 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	}
 	msblk = sb->s_fs_info;
 
-	msblk->stream.workspace = vmalloc(zlib_inflate_workspacesize());
+	msblk->stream.workspace = kmalloc(zlib_inflate_workspacesize(),
+		GFP_KERNEL);
 	if (msblk->stream.workspace == NULL) {
 		ERROR("Failed to allocate zlib workspace\n");
 		goto failure;
@@ -105,14 +105,13 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	mutex_init(&msblk->meta_index_mutex);
 
 	/*
-	 * msblk->bytes_used is checked in squashfs_read_data to ensure reads
-	 * are not beyond filesystem end.  But as we're using squashfs_read_data
-	 * here to read the superblock (including the value of
-	 * bytes_used) we need to set it to an initial sensible dummy value
+	 * msblk->bytes_used is checked in squashfs_read_table to ensure reads
+	 * are not beyond filesystem end.  But as we're using
+	 * squashfs_read_table here to read the superblock (including the value
+	 * of bytes_used) we need to set it to an initial sensible dummy value
 	 */
 	msblk->bytes_used = sizeof(*sblk);
-	err = squashfs_read_data(sb, sblk, SQUASHFS_START, sizeof(*sblk) |
-			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, sizeof(*sblk));
+	err = squashfs_read_table(sb, sblk, SQUASHFS_START, sizeof(*sblk));
 
 	if (err < 0) {
 		ERROR("unable to read squashfs_super_block\n");
@@ -284,14 +283,14 @@ failed_mount:
 	kfree(msblk->inode_lookup_table);
 	kfree(msblk->fragment_index);
 	kfree(msblk->id_table);
-	vfree(msblk->stream.workspace);
+	kfree(msblk->stream.workspace);
 	kfree(sb->s_fs_info);
 	sb->s_fs_info = NULL;
 	kfree(sblk);
 	return err;
 
 failure:
-	vfree(msblk->stream.workspace);
+	kfree(msblk->stream.workspace);
 	kfree(sb->s_fs_info);
 	sb->s_fs_info = NULL;
 	return -ENOMEM;
@@ -333,7 +332,7 @@ static void squashfs_put_super(struct super_block *sb)
 		kfree(sbi->id_table);
 		kfree(sbi->fragment_index);
 		kfree(sbi->meta_index);
-		vfree(sbi->stream.workspace);
+		kfree(sbi->stream.workspace);
 		kfree(sb->s_fs_info);
 		sb->s_fs_info = NULL;
 	}
@@ -389,7 +388,7 @@ static int __init init_squashfs_fs(void)
 		return err;
 	}
 
-	printk(KERN_INFO "squashfs: version 4.0 (2008/11/14) "
+	printk(KERN_INFO "squashfs: version 4.0 (2008/11/23) "
 		"Phillip Lougher\n");
 
 	return 0;

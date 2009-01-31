@@ -79,8 +79,8 @@ __le64 *read_fragment_index_table(struct super_block *sb,
 		return ERR_PTR(-ENOMEM);
 	}
 
-	err = squashfs_read_data(sb, fragment_index, fragment_table_start,
-			length | SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length);
+	err = squashfs_read_table(sb, fragment_index, fragment_table_start,
+			length);
 	if (err < 0) {
 		ERROR("unable to read fragment index table\n");
 		kfree(fragment_index);

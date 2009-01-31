@@ -77,8 +77,7 @@ __le64 *read_id_index_table(struct super_block *sb, long long id_table_start,
 		return ERR_PTR(-ENOMEM);
 	}
 
-	err = squashfs_read_data(sb, id_table, id_table_start, length |
-			SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length);
+	err = squashfs_read_table(sb, id_table, id_table_start, length);
 	if (err < 0) {
 		ERROR("unable to read id index table\n");
 		kfree(id_table);

@@ -133,8 +133,8 @@ __le64 *read_inode_lookup_table(struct super_block *sb,
 		return ERR_PTR(-ENOMEM);
 	}
 
-	err = squashfs_read_data(sb, inode_lookup_table, lookup_table_start,
-			length | SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length);
+	err = squashfs_read_table(sb, inode_lookup_table, lookup_table_start,
+			length);
 	if (err < 0) {
 		ERROR("unable to read inode lookup table\n");
 		kfree(inode_lookup_table);

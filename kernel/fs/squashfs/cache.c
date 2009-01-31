@@ -329,3 +329,10 @@ void release_datablock(struct squashfs_sb_info *msblk,
 	squashfs_cache_put(msblk->read_page, datablock);
 }
 
+
+int squashfs_read_table(struct super_block *sb, void *buffer, long long block,
+	int length)
+{
+	return squashfs_read_data(sb, buffer, block, length |
+		SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length);
+}

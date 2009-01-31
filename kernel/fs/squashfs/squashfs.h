@@ -52,6 +52,7 @@ extern struct squashfs_cache_entry *get_datablock(struct super_block *,
 				long long, int);
 extern void release_datablock(struct squashfs_sb_info *,
 				struct squashfs_cache_entry *);
+extern int squashfs_read_table(struct super_block *, void *, long long, int);
 
 /* export.c */
 extern __le64 *read_inode_lookup_table(struct super_block *, long long,
