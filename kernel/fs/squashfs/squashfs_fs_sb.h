@@ -43,8 +43,8 @@ struct squashfs_cache_entry {
 	int			length;
 	int			refcount;
 	long long		next_index;
-	char			pending;
-	char			error;
+	int			pending;
+	int			error;
 	int			num_waiters;
 	wait_queue_head_t	wait_queue;
 	struct squashfs_cache	*cache;
