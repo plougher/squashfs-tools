@@ -44,7 +44,7 @@
  * bytes of the metadata block.
  */
 static struct buffer_head *get_block_length(struct super_block *sb,
-			long long *cur_index, int *offset, int *length)
+			u64 *cur_index, int *offset, int *length)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	struct buffer_head *bh;
@@ -79,13 +79,13 @@ static struct buffer_head *get_block_length(struct super_block *sb,
  * is stored uncompressed in the filesystem (usually because compression
  * generated a larger block - this does occasionally happen with zlib).
  */
-int squashfs_read_data(struct super_block *sb, void **buffer, long long index,
-			int length, long long *next_index, int srclength)
+int squashfs_read_data(struct super_block *sb, void **buffer, u64 index,
+			int length, u64 *next_index, int srclength)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	struct buffer_head **bh;
 	int offset = index & ((1 << msblk->devblksize_log2) - 1);
-	long long cur_index = index >> msblk->devblksize_log2;
+	u64 cur_index = index >> msblk->devblksize_log2;
 	int bytes, compressed, b = 0, k = 0, page = 0, avail;
 	
 
@@ -107,7 +107,7 @@ int squashfs_read_data(struct super_block *sb, void **buffer, long long index,
 		TRACE("Block @ 0x%llx, %scompressed size %d, src size %d\n",
 			index, compressed ? "" : "un", length, srclength);
 
-		if (length < 0 || length > srclength || index < 0 ||
+		if (length < 0 || length > srclength ||
 				(index + length) > msblk->bytes_used)
 			goto read_failure;
 
@@ -122,7 +122,7 @@ int squashfs_read_data(struct super_block *sb, void **buffer, long long index,
 		/*
 		 * Metadata block.
 		 */
-		if (index < 0 || (index + 2) > msblk->bytes_used)
+		if ((index + 2) > msblk->bytes_used)
 			goto read_failure;
 
 		bh[0] = get_block_length(sb, &cur_index, &offset, &length);

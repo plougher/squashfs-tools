@@ -172,7 +172,7 @@ static void release_meta_index(struct inode *inode, struct meta_index *meta)
  * metadata block <start_block, offset>.
  */
 static long long read_indexes(struct super_block *sb, int n,
-				long long *start_block, int *offset)
+				u64 *start_block, int *offset)
 {
 	int err, i;
 	long long block = 0;
@@ -235,17 +235,16 @@ static inline int calculate_skip(int blocks)
  * <index_block, index_offset> for index (scaled to nearest cache index).
  */
 static int fill_meta_index(struct inode *inode, int index,
-		long long *index_block, int *index_offset,
-		long long *data_block)
+		u64 *index_block, int *index_offset, u64 *data_block)
 {
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
 	int skip = calculate_skip(i_size_read(inode) >> msblk->block_log);
 	int offset = 0;
 	struct meta_index *meta;
 	struct meta_entry *meta_entry;
-	long long cur_index_block = squashfs_i(inode)->block_list_start;
+	u64 cur_index_block = squashfs_i(inode)->block_list_start;
 	int cur_offset = squashfs_i(inode)->offset;
-	long long cur_data_block = squashfs_i(inode)->start;
+	u64 cur_data_block = squashfs_i(inode)->start;
 	int err, i;
 
 	/*
@@ -334,17 +333,17 @@ failed:
  * Get the on-disk location and compressed size of the datablock
  * specified by index.  Fill_meta_index() does most of the work.
  */
-static long long read_blocklist(struct inode *inode, int index,
-				unsigned int *bsize)
+static int read_blocklist(struct inode *inode, int index, u64 *block)
 {
-	long long start, block = 0, blks;
+	u64 start;
+	long long blks;
 	int offset;
 	__le32 size;
-	int res = fill_meta_index(inode, index, &start, &offset, &block);
+	int res = fill_meta_index(inode, index, &start, &offset, block);
 
 	TRACE("read_blocklist: res %d, index %d, start 0x%llx, offset"
 		       " 0x%x, block 0x%llx\n", res, index, start, offset,
-			block);
+			*block);
 
 	if (res < 0)
 		return res;
@@ -358,8 +357,8 @@ static long long read_blocklist(struct inode *inode, int index,
 	if (res < index) {
 		blks = read_indexes(inode->i_sb, index - res, &start, &offset);
 		if (blks < 0)
-			return blks;
-		block += blks;
+			return (int) blks;
+		*block += blks;
 	}
 
 	/*
@@ -369,9 +368,7 @@ static long long read_blocklist(struct inode *inode, int index,
 			sizeof(size));
 	if (res < 0)
 		return res;
-	*bsize = le32_to_cpu(size);
-
-	return block;
+	return le32_to_cpu(size);
 }
 
 
@@ -379,8 +376,8 @@ static int squashfs_readpage(struct file *file, struct page *page)
 {
 	struct inode *inode = page->mapping->host;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
-	long long block;
-	unsigned int bsize = 0, i;
+	u64 block = 0;
+	unsigned int i;
 	int bytes, index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
 	struct squashfs_cache_entry *buffer = NULL;
 	void *pageaddr;
@@ -404,8 +401,8 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		 * Reading a datablock from disk.  Need to read block list
 		 * to get location and block size.
 		 */
-		block = read_blocklist(inode, index, &bsize);
-		if (block < 0)
+		int bsize = read_blocklist(inode, index, &block);
+		if (bsize < 0)
 			goto error_out;
 
 		if (bsize == 0) { /* hole */

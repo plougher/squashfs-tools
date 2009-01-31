@@ -54,7 +54,7 @@ static long long squashfs_inode_lookup(struct super_block *sb, int ino_num)
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int blk = SQUASHFS_LOOKUP_BLOCK(ino_num - 1);
 	int offset = SQUASHFS_LOOKUP_BLOCK_OFFSET(ino_num - 1);
-	long long start = le64_to_cpu(msblk->inode_lookup_table[blk]);
+	u64 start = le64_to_cpu(msblk->inode_lookup_table[blk]);
 	__le64 ino;
 	int err;
 
@@ -65,7 +65,7 @@ static long long squashfs_inode_lookup(struct super_block *sb, int ino_num)
 		return err;
 
 	TRACE("squashfs_inode_lookup, inode = 0x%llx\n",
-		(unsigned long long) le64_to_cpu(ino));
+		(u64) le64_to_cpu(ino));
 
 	return le64_to_cpu(ino);
 }
@@ -121,7 +121,7 @@ static struct dentry *squashfs_get_parent(struct dentry *child)
  * Read uncompressed inode lookup table indexes off disk into memory
  */
 __le64 *squashfs_read_inode_lookup_table(struct super_block *sb,
-		long long lookup_table_start, unsigned int inodes)
+		u64 lookup_table_start, unsigned int inodes)
 {
 	unsigned int length = SQUASHFS_LOOKUP_BLOCK_BYTES(inodes);
 	__le64 *inode_lookup_table;

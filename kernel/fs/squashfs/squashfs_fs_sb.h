@@ -39,10 +39,10 @@ struct squashfs_cache {
 };
 
 struct squashfs_cache_entry {
-	long long		block;
+	u64			block;
 	int			length;
 	int			refcount;
-	long long		next_index;
+	u64			next_index;
 	int			pending;
 	int			error;
 	int			num_waiters;
@@ -66,8 +66,8 @@ struct squashfs_sb_info {
 	struct meta_index	*meta_index;
 	z_stream		stream;
 	__le64			*inode_lookup_table;
-	long long		inode_table;
-	long long		directory_table;
+	u64			inode_table;
+	u64			directory_table;
 	unsigned int		block_size;
 	unsigned short		block_log;
 	long long		bytes_used;

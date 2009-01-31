@@ -33,37 +33,36 @@ static inline struct squashfs_inode_info *squashfs_i(struct inode *inode)
 }
 
 /* block.c */
-extern int squashfs_read_data(struct super_block *, void **,
-				long long, int, long long *, int);
+extern int squashfs_read_data(struct super_block *, void **, u64, int, u64 *,
+				int);
 
 /* cache.c */
 extern struct squashfs_cache *squashfs_cache_init(char *, int, int);
 extern void squashfs_cache_delete(struct squashfs_cache *);
 extern struct squashfs_cache_entry *squashfs_cache_get(struct super_block *,
-				struct squashfs_cache *, long long, int);
+				struct squashfs_cache *, u64, int);
 extern void squashfs_cache_put( struct squashfs_cache_entry *);
 extern int squashfs_copy_data(void *, struct squashfs_cache_entry *, int, int);
-extern int squashfs_read_metadata(struct super_block *, void *, long long *,
+extern int squashfs_read_metadata(struct super_block *, void *, u64 *,
 				int *, int);
 extern struct squashfs_cache_entry *squashfs_get_fragment(struct super_block *,
-				long long, int);
+				u64, int);
 extern struct squashfs_cache_entry *squashfs_get_datablock(struct super_block *,
-				long long, int);
-extern int squashfs_read_table(struct super_block *, void *, long long, int);
+				u64, int);
+extern int squashfs_read_table(struct super_block *, void *, u64, int);
 
 /* export.c */
-extern __le64 *squashfs_read_inode_lookup_table(struct super_block *, long long,
+extern __le64 *squashfs_read_inode_lookup_table(struct super_block *, u64,
 				unsigned int);
 
 /* fragment.c */
-extern int squashfs_frag_location(struct super_block *, unsigned int,
-				long long *);
+extern int squashfs_frag_location(struct super_block *, unsigned int, u64 *);
 extern __le64 *squashfs_read_fragment_index_table(struct super_block *,
-				long long, unsigned int);
+				u64, unsigned int);
 
 /* id.c */
 extern int squashfs_get_id(struct super_block *, unsigned int, unsigned int *);
-extern __le64 *squashfs_read_id_index_table(struct super_block *, long long,
+extern __le64 *squashfs_read_id_index_table(struct super_block *, u64,
 				unsigned short);
 
 /* inode.c */

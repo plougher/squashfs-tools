@@ -50,7 +50,7 @@ int squashfs_get_id(struct super_block *sb, unsigned int index,
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int block = SQUASHFS_ID_BLOCK(index);
 	int offset = SQUASHFS_ID_BLOCK_OFFSET(index);
-	long long start_block = le64_to_cpu(msblk->id_table[block]);
+	u64 start_block = le64_to_cpu(msblk->id_table[block]);
 	__le32 disk_id;
 	int err;
 
@@ -68,7 +68,7 @@ int squashfs_get_id(struct super_block *sb, unsigned int index,
  * Read uncompressed id lookup table indexes from disk into memory
  */
 __le64 *squashfs_read_id_index_table(struct super_block *sb,
-			long long id_table_start, unsigned short no_ids)
+			u64 id_table_start, unsigned short no_ids)
 {
 	unsigned int length = SQUASHFS_ID_BLOCK_BYTES(no_ids);
 	__le64 *id_table;

@@ -48,12 +48,12 @@
  * location of the fragment and its compressed size
  */
 int squashfs_frag_location(struct super_block *sb, unsigned int fragment,
-				long long *fragment_block)
+				u64 *fragment_block)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int block = SQUASHFS_FRAGMENT_INDEX(fragment);
 	int offset = SQUASHFS_FRAGMENT_INDEX_OFFSET(fragment);
-	long long start_block = le64_to_cpu(msblk->fragment_index[block]);
+	u64 start_block = le64_to_cpu(msblk->fragment_index[block]);
 	struct squashfs_fragment_entry fragment_entry;
 	int size;
 
@@ -73,7 +73,7 @@ int squashfs_frag_location(struct super_block *sb, unsigned int fragment,
  * Read the uncompressed fragment lookup table indexes off disk into memory
  */
 __le64 *squashfs_read_fragment_index_table(struct super_block *sb,
-	long long fragment_table_start, unsigned int fragments)
+	u64 fragment_table_start, unsigned int fragments)
 {
 	unsigned int length = SQUASHFS_FRAGMENT_INDEX_BYTES(fragments);
 	__le64 *fragment_index;

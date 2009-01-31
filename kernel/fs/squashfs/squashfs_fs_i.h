@@ -24,17 +24,17 @@
  */
 
 struct squashfs_inode_info {
-	long long	start;
+	u64		start;
 	int		offset;
 	union {
 		struct {
-			long long	fragment_block;
+			u64		fragment_block;
 			int		fragment_size;
 			int		fragment_offset;
-			long long	block_list_start;
+			u64		block_list_start;
 		};
 		struct {
-			long long	dir_idx_start;
+			u64		dir_idx_start;
 			int		dir_idx_offset;
 			int		dir_idx_cnt;
 			int		parent;

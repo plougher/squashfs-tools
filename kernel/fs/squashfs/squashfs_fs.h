@@ -142,10 +142,10 @@
 					SQUASHFS_METADATA_SIZE)
 
 #define SQUASHFS_FRAGMENT_INDEX_BYTES(A)	(SQUASHFS_FRAGMENT_INDEXES(A) *\
-						sizeof(long long))
+						sizeof(u64))
 
 /* inode lookup table defines */
-#define SQUASHFS_LOOKUP_BYTES(A)	((A) * sizeof(long long))
+#define SQUASHFS_LOOKUP_BYTES(A)	((A) * sizeof(u64))
 
 #define SQUASHFS_LOOKUP_BLOCK(A)	(SQUASHFS_LOOKUP_BYTES(A) / \
 					SQUASHFS_METADATA_SIZE)
@@ -158,7 +158,7 @@
 					SQUASHFS_METADATA_SIZE)
 
 #define SQUASHFS_LOOKUP_BLOCK_BYTES(A)	(SQUASHFS_LOOKUP_BLOCKS(A) *\
-					sizeof(long long))
+					sizeof(u64))
 
 /* uid/gid lookup table defines */
 #define SQUASHFS_ID_BYTES(A)		((A) * sizeof(unsigned int))
@@ -174,7 +174,7 @@
 					SQUASHFS_METADATA_SIZE)
 
 #define SQUASHFS_ID_BLOCK_BYTES(A)	(SQUASHFS_ID_BLOCKS(A) *\
-					sizeof(long long))
+					sizeof(u64))
 
 /* cached data constants for filesystem */
 #define SQUASHFS_CACHED_BLKS		8
@@ -192,7 +192,7 @@
 #define SQUASHFS_META_SLOTS	8
 
 struct meta_entry {
-	long long		data_block;
+	u64			data_block;
 	unsigned int		index_block;
 	unsigned short		offset;
 	unsigned short		pad;

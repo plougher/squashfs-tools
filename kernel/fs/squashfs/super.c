@@ -73,7 +73,7 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	long long root_inode;
 	unsigned short flags;
 	unsigned int fragments;
-	long long lookup_table_start;
+	u64 lookup_table_start;
 	int err;
 
 	TRACE("Entered squashfs_fill_superblock\n");
@@ -183,9 +183,9 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	TRACE("sblk->inode_table_start %llx\n", msblk->inode_table);
 	TRACE("sblk->directory_table_start %llx\n", msblk->directory_table);
 	TRACE("sblk->fragment_table_start %llx\n",
-		(unsigned long long) le64_to_cpu(sblk->fragment_table_start));
+		(u64) le64_to_cpu(sblk->fragment_table_start));
 	TRACE("sblk->id_table_start %llx\n",
-		(unsigned long long) le64_to_cpu(sblk->id_table_start));
+		(u64) le64_to_cpu(sblk->id_table_start));
 
 	sb->s_maxbytes = MAX_LFS_FILESIZE;
 	sb->s_flags |= MS_RDONLY;
@@ -388,7 +388,7 @@ static int __init init_squashfs_fs(void)
 		return err;
 	}
 
-	printk(KERN_INFO "squashfs: version 4.0 (2008/12/29) "
+	printk(KERN_INFO "squashfs: version 4.0 (2008/12/30) "
 		"Phillip Lougher\n");
 
 	return 0;

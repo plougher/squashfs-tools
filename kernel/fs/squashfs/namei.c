@@ -73,9 +73,9 @@
  * quicker.
  */
 static int get_dir_index_using_name(struct super_block *sb,
-			long long *next_block, int *next_offset,
-			long long index_start, int index_offset,
-			int i_count, const char *name, int len)
+			u64 *next_block, int *next_offset, u64 index_start,
+			int index_offset, int i_count, const char *name,
+			int len)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int i, size, length = 0, err;
@@ -141,7 +141,7 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
 	struct squashfs_sb_info *msblk = dir->i_sb->s_fs_info;
 	struct squashfs_dir_header dirh;
 	struct squashfs_dir_entry *dire;
-	long long block = squashfs_i(dir)->start + msblk->directory_table;
+	u64 block = squashfs_i(dir)->start + msblk->directory_table;
 	int offset = squashfs_i(dir)->offset;
 	int err, length = 0, dir_count, size;
 

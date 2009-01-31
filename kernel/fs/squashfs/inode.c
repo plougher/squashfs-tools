@@ -108,7 +108,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 {
 	struct super_block *sb = inode->i_sb;
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
-	long long block = SQUASHFS_INODE_BLK(ino) + msblk->inode_table;
+	u64 block = SQUASHFS_INODE_BLK(ino) + msblk->inode_table;
 	int err, type, offset = SQUASHFS_INODE_OFFSET(ino);
 	union squashfs_inode squashfs_ino;
 	struct squashfs_base_inode *sqshb_ino = &squashfs_ino.base;
@@ -134,7 +134,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 	switch (type) {
 	case SQUASHFS_REG_TYPE: {
 		unsigned int frag_offset, frag_size, frag;
-		long long frag_blk;
+		u64 frag_blk;
 		struct squashfs_reg_inode *sqsh_ino = &squashfs_ino.reg;
 
 		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
@@ -176,7 +176,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 	}
 	case SQUASHFS_LREG_TYPE: {
 		unsigned int frag_offset, frag_size, frag;
-		long long frag_blk;
+		u64 frag_blk;
 		struct squashfs_lreg_inode *sqsh_ino = &squashfs_ino.lreg;
 
 		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,

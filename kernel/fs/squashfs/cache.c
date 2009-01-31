@@ -50,7 +50,7 @@
  * and decompress it from disk.
  */
 struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
-	struct squashfs_cache *cache, long long block, int length)
+	struct squashfs_cache *cache, u64 block, int length)
 {
 	int i, n;
 	struct squashfs_cache_entry *entry;
@@ -305,7 +305,7 @@ int squashfs_copy_data(void *buffer, struct squashfs_cache_entry *entry,
  * and length bytes may require reading more than one block.
  */
 int squashfs_read_metadata(struct super_block *sb, void *buffer,
-		long long *block, int *offset, int length)
+		u64 *block, int *offset, int length)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int bytes, copied = length;
@@ -339,7 +339,7 @@ int squashfs_read_metadata(struct super_block *sb, void *buffer,
 
 
 struct squashfs_cache_entry *squashfs_get_fragment(struct super_block *sb,
-				long long start_block, int length)
+				u64 start_block, int length)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 
@@ -349,7 +349,7 @@ struct squashfs_cache_entry *squashfs_get_fragment(struct super_block *sb,
 
 
 struct squashfs_cache_entry *squashfs_get_datablock(struct super_block *sb,
-				long long start_block, int length)
+				u64 start_block, int length)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 
@@ -360,7 +360,7 @@ struct squashfs_cache_entry *squashfs_get_datablock(struct super_block *sb,
 /*
  * Read a filesystem table (uncompressed sequence of bytes) from disk
  */
-int squashfs_read_table(struct super_block *sb, void *buffer, long long block,
+int squashfs_read_table(struct super_block *sb, void *buffer, u64 block,
 	int length)
 {
 	int pages = (length + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
