@@ -102,7 +102,6 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	msblk->devblksize_log2 = ffz(~msblk->devblksize);
 
 	mutex_init(&msblk->read_data_mutex);
-	mutex_init(&msblk->read_page_mutex);
 	mutex_init(&msblk->meta_index_mutex);
 
 	/*
@@ -201,7 +200,7 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 		goto failed_mount;
 
 	/* Allocate read_page block */
-	msblk->read_page = vmalloc(msblk->block_size);
+	msblk->read_page = squashfs_cache_init("datablock", 1, msblk->block_size, 1);
 	if (msblk->read_page == NULL) {
 		ERROR("Failed to allocate read_page block\n");
 		goto failed_mount;
@@ -281,10 +280,10 @@ allocate_root:
 failed_mount:
 	squashfs_cache_delete(msblk->block_cache);
 	squashfs_cache_delete(msblk->fragment_cache);
+	squashfs_cache_delete(msblk->read_page);
 	kfree(msblk->inode_lookup_table);
 	kfree(msblk->fragment_index);
 	kfree(msblk->id_table);
-	vfree(msblk->read_page);
 	vfree(msblk->stream.workspace);
 	kfree(sb->s_fs_info);
 	sb->s_fs_info = NULL;
@@ -330,7 +329,7 @@ static void squashfs_put_super(struct super_block *sb)
 		struct squashfs_sb_info *sbi = sb->s_fs_info;
 		squashfs_cache_delete(sbi->block_cache);
 		squashfs_cache_delete(sbi->fragment_cache);
-		vfree(sbi->read_page);
+		squashfs_cache_delete(sbi->read_page);
 		kfree(sbi->id_table);
 		kfree(sbi->fragment_index);
 		kfree(sbi->meta_index);
@@ -390,7 +389,7 @@ static int __init init_squashfs_fs(void)
 		return err;
 	}
 
-	printk(KERN_INFO "squashfs: version 4.0 (2008/10/28) "
+	printk(KERN_INFO "squashfs: version 4.0 (2008/11/14) "
 		"Phillip Lougher\n");
 
 	return 0;

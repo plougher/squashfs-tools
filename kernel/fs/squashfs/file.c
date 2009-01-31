@@ -382,8 +382,8 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	long long block;
 	unsigned int bsize = 0, i;
 	int bytes, index = page->index >> (msblk->block_log - PAGE_CACHE_SHIFT);
-	struct squashfs_cache_entry *fragment = NULL;
-	void *pageaddr, *data_ptr = msblk->read_page;
+	struct squashfs_cache_entry *fragment = NULL, *datablock = NULL;
+	void *pageaddr, *data_ptr = NULL;
 
 	int mask = (1 << (msblk->block_log - PAGE_CACHE_SHIFT)) - 1;
 	int start_index = page->index & ~mask;
@@ -414,21 +414,18 @@ static int squashfs_readpage(struct file *file, struct page *page)
 				 msblk->block_size;
 			sparse = 1;
 		} else {
-			mutex_lock(&msblk->read_page_mutex);
-
 			/*
 			 * Read and decompress datablock.
 			 */
-			bytes = squashfs_read_data(inode->i_sb,
-				msblk->read_page, block, bsize, NULL,
-				msblk->block_size);
-
-			if (bytes < 0) {
+			datablock = get_datablock(inode->i_sb, block, bsize);
+			if (datablock->error) {
 				ERROR("Unable to read page, block %llx, size %x"
 					"\n", block, bsize);
-				mutex_unlock(&msblk->read_page_mutex);
+				release_datablock(msblk, datablock);
 				goto error_out;
 			}
+			bytes = datablock->length;
+			data_ptr = datablock->data;
 		}
 	} else {
 		/*
@@ -488,7 +485,7 @@ skip_page:
 	if (fragment)
 		release_cached_fragment(msblk, fragment);
 	else if (!sparse)
-		mutex_unlock(&msblk->read_page_mutex);
+		release_datablock(msblk, datablock);
 
 	return 0;
 

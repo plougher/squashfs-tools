@@ -313,3 +313,19 @@ void release_cached_fragment(struct squashfs_sb_info *msblk,
 	squashfs_cache_put(msblk->fragment_cache, fragment);
 }
 
+
+struct squashfs_cache_entry *get_datablock(struct super_block *sb,
+				long long start_block, int length)
+{
+	struct squashfs_sb_info *msblk = sb->s_fs_info;
+
+	return squashfs_cache_get(sb, msblk->read_page, start_block, length);
+}
+
+
+void release_datablock(struct squashfs_sb_info *msblk,
+				struct squashfs_cache_entry *datablock)
+{
+	squashfs_cache_put(msblk->read_page, datablock);
+}
+
