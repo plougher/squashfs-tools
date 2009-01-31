@@ -173,16 +173,17 @@ void squashfs_cache_put(struct squashfs_cache_entry *entry)
 	entry->refcount--;
 	if (entry->refcount == 0) {
 		cache->unused++;
-		spin_unlock(&cache->lock);
 		/*
 		 * If there's any processes waiting for a block to become
 		 * available, wake one up.
 		 */
-		if (cache->num_waiters)
+		if (cache->num_waiters) {
+			spin_unlock(&cache->lock);
 			wake_up(&cache->wait_queue);
-	} else {
-		spin_unlock(&cache->lock);
+			return;
+		}
 	}
+	spin_unlock(&cache->lock);
 }
 
 
