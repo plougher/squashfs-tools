@@ -49,7 +49,7 @@
 
 /*
  * Initialise VFS inode with the base inode information common to all
- * Squashfs inode types.  Inodeb contains the unswapped base inode
+ * Squashfs inode types.  Sqsh_ino contains the unswapped base inode
  * off disk.
  */
 static int squashfs_new_inode(struct super_block *sb, struct inode *inode,
