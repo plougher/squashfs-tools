@@ -417,7 +417,8 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			/*
 			 * Read and decompress datablock.
 			 */
-			buffer = get_datablock(inode->i_sb, block, bsize);
+			buffer = squashfs_get_datablock(inode->i_sb,
+								block, bsize);
 			if (buffer->error) {
 				ERROR("Unable to read page, block %llx, size %x"
 					"\n", block, bsize);
@@ -431,7 +432,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		 * Datablock is stored inside a fragment (tail-end packed
 		 * block).
 		 */
-		buffer = get_cached_fragment(inode->i_sb,
+		buffer = squashfs_get_fragment(inode->i_sb,
 				SQUASHFS_I(inode)->fragment_block,
 				SQUASHFS_I(inode)->fragment_size);
 

@@ -206,7 +206,7 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	}
 
 	/* Allocate and read id index table */
-	msblk->id_table = read_id_index_table(sb,
+	msblk->id_table = squashfs_read_id_index_table(sb,
 		le64_to_cpu(sblk->id_table_start), le16_to_cpu(sblk->no_ids));
 	if (IS_ERR(msblk->id_table)) {
 		err = PTR_ERR(msblk->id_table);
@@ -226,7 +226,7 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	}
 
 	/* Allocate and read fragment index table */
-	msblk->fragment_index = read_fragment_index_table(sb,
+	msblk->fragment_index = squashfs_read_fragment_index_table(sb,
 		le64_to_cpu(sblk->fragment_table_start), fragments);
 	if (IS_ERR(msblk->fragment_index)) {
 		err = PTR_ERR(msblk->fragment_index);
@@ -240,7 +240,7 @@ allocate_lookup_table:
 		goto allocate_root;
 
 	/* Allocate and read inode lookup table */
-	msblk->inode_lookup_table = read_inode_lookup_table(sb,
+	msblk->inode_lookup_table = squashfs_read_inode_lookup_table(sb,
 		lookup_table_start, msblk->inodes);
 	if (IS_ERR(msblk->inode_lookup_table)) {
 		err = PTR_ERR(msblk->inode_lookup_table);

@@ -61,8 +61,8 @@ int squashfs_get_id(struct super_block *sb, unsigned int index,
 }
 
 
-__le64 *read_id_index_table(struct super_block *sb, long long id_table_start,
-						unsigned short no_ids)
+__le64 *squashfs_read_id_index_table(struct super_block *sb,
+			long long id_table_start, unsigned short no_ids)
 {
 	unsigned int length = SQUASHFS_ID_BLOCK_BYTES(no_ids);
 	__le64 *id_table;

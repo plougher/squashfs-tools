@@ -333,7 +333,7 @@ int squashfs_read_metadata(struct super_block *sb, void *buffer,
 }
 
 
-struct squashfs_cache_entry *get_cached_fragment(struct super_block *sb,
+struct squashfs_cache_entry *squashfs_get_fragment(struct super_block *sb,
 				long long start_block, int length)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
@@ -343,7 +343,7 @@ struct squashfs_cache_entry *get_cached_fragment(struct super_block *sb,
 }
 
 
-struct squashfs_cache_entry *get_datablock(struct super_block *sb,
+struct squashfs_cache_entry *squashfs_get_datablock(struct super_block *sb,
 				long long start_block, int length)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;

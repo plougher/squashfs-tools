@@ -117,7 +117,7 @@ static struct dentry *squashfs_get_parent(struct dentry *child)
 }
 
 
-__le64 *read_inode_lookup_table(struct super_block *sb,
+__le64 *squashfs_read_inode_lookup_table(struct super_block *sb,
 		long long lookup_table_start, unsigned int inodes)
 {
 	unsigned int length = SQUASHFS_LOOKUP_BLOCK_BYTES(inodes);

@@ -45,25 +45,25 @@ extern void squashfs_cache_put( struct squashfs_cache_entry *);
 extern int squashfs_copy_data(void *, struct squashfs_cache_entry *, int, int);
 extern int squashfs_read_metadata(struct super_block *, void *, long long *,
 				int *, int);
-extern struct squashfs_cache_entry *get_cached_fragment(struct super_block *,
+extern struct squashfs_cache_entry *squashfs_get_fragment(struct super_block *,
 				long long, int);
-extern struct squashfs_cache_entry *get_datablock(struct super_block *,
+extern struct squashfs_cache_entry *squashfs_get_datablock(struct super_block *,
 				long long, int);
 extern int squashfs_read_table(struct super_block *, void *, long long, int);
 
 /* export.c */
-extern __le64 *read_inode_lookup_table(struct super_block *, long long,
+extern __le64 *squashfs_read_inode_lookup_table(struct super_block *, long long,
 				unsigned int);
 
 /* fragment.c */
-extern int get_fragment_location(struct super_block *, unsigned int,
+extern int squashfs_frag_location(struct super_block *, unsigned int,
 				long long *);
-extern __le64 *read_fragment_index_table(struct super_block *, long long,
-				unsigned int);
+extern __le64 *squashfs_read_fragment_index_table(struct super_block *,
+				long long, unsigned int);
 
 /* id.c */
 extern int squashfs_get_id(struct super_block *, unsigned int, unsigned int *);
-extern __le64 *read_id_index_table(struct super_block *, long long,
+extern __le64 *squashfs_read_id_index_table(struct super_block *, long long,
 				unsigned short);
 
 /* inode.c */
