@@ -55,7 +55,7 @@ static struct buffer_head *get_block_length(struct super_block *sb,
 
 	if (msblk->devblksize - *offset == 1) {
 		*length = (unsigned char) bh->b_data[*offset];
-		brelse(bh);
+		put_bh(bh);
 		bh = sb_bread(sb, ++(*cur_index));
 		if (bh == NULL)
 			return NULL;
@@ -175,7 +175,7 @@ int squashfs_read_data(struct super_block *sb, void **buffer, long long index,
 
 				if (avail == 0) {
 					offset = 0;
-					brelse(bh[k++]);
+					put_bh(bh[k++]);
 					continue;
 				}
 
@@ -204,7 +204,7 @@ int squashfs_read_data(struct super_block *sb, void **buffer, long long index,
 			zlib_err = zlib_inflate(&msblk->stream, Z_NO_FLUSH);
 
 			if (msblk->stream.avail_in == 0 && k < b)
-				brelse(bh[k++]);
+				put_bh(bh[k++]);
 		} while (zlib_err == Z_OK);
 
 		if (zlib_err != Z_STREAM_END) {
@@ -251,7 +251,7 @@ int squashfs_read_data(struct super_block *sb, void **buffer, long long index,
 				offset += avail;
 			}
 			offset = 0;
-			brelse(bh[k]);
+			put_bh(bh[k]);
 		}
 	}
 
@@ -263,7 +263,7 @@ release_mutex:
 
 block_release:
 	for (; k < b; k++)
-		brelse(bh[k]);
+		put_bh(bh[k]);
 
 read_failure:
 	ERROR("sb_bread failed reading block 0x%llx\n", cur_index);
