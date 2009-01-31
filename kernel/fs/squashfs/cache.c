@@ -68,11 +68,11 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 			 * go to sleep waiting for one to become available.
 			 */
 			if (cache->unused == 0) {
-				cache->waiting++;
+				cache->num_waiters++;
 				spin_unlock(&cache->lock);
 				wait_event(cache->wait_queue, cache->unused);
 				spin_lock(&cache->lock);
-				cache->waiting--;
+				cache->num_waiters--;
 				continue;
 			}
 
@@ -99,7 +99,7 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 			entry->block = block;
 			entry->refcount = 1;
 			entry->pending = 1;
-			entry->waiting = 0;
+			entry->num_waiters = 0;
 			entry->error = 0;
 			spin_unlock(&cache->lock);
 
@@ -120,7 +120,7 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 			 * have looked it up in the cache, and have slept
 			 * waiting for it to become available.
 			 */
-			if (entry->waiting)
+			if (entry->num_waiters)
 				wake_up_all(&entry->wait_queue);
 			goto out;
 		}
@@ -141,7 +141,7 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 		 * go to sleep waiting for it to become available.
 		 */
 		if (entry->pending) {
-			entry->waiting++;
+			entry->num_waiters++;
 			spin_unlock(&cache->lock);
 			wait_event(entry->wait_queue, !entry->pending);
 			goto out;
@@ -178,7 +178,7 @@ void squashfs_cache_put(struct squashfs_cache_entry *entry)
 		 * If there's any processes waiting for a block to become
 		 * available, wake one up.
 		 */
-		if (cache->waiting)
+		if (cache->num_waiters)
 			wake_up(&cache->wait_queue);
 	} else {
 		spin_unlock(&cache->lock);
@@ -229,7 +229,7 @@ struct squashfs_cache *squashfs_cache_init(char *name, int entries,
 	cache->block_size = block_size;
 	cache->pages = block_size >> PAGE_CACHE_SHIFT;
 	cache->name = name;
-	cache->waiting = 0;
+	cache->num_waiters = 0;
 	spin_lock_init(&cache->lock);
 	init_waitqueue_head(&cache->wait_queue);
 

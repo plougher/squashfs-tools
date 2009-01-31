@@ -29,7 +29,7 @@ struct squashfs_cache {
 	char			*name;
 	int			entries;
 	int			next_blk;
-	int			waiting;
+	int			num_waiters;
 	int			unused;
 	int			block_size;
 	int			pages;
@@ -45,7 +45,7 @@ struct squashfs_cache_entry {
 	long long		next_index;
 	char			pending;
 	char			error;
-	int			waiting;
+	int			num_waiters;
 	wait_queue_head_t	wait_queue;
 	struct squashfs_cache	*cache;
 	void			**data;
