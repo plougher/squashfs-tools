@@ -113,15 +113,18 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 				entry->error = entry->length;
 
 			entry->pending = 0;
-			spin_unlock(&cache->lock);
 
 			/*
 			 * While filling this entry one or more other processes
 			 * have looked it up in the cache, and have slept
 			 * waiting for it to become available.
 			 */
-			if (entry->num_waiters)
+			if (entry->num_waiters) {
+				spin_unlock(&cache->lock);
 				wake_up_all(&entry->wait_queue);
+			} else
+				spin_unlock(&cache->lock);
+
 			goto out;
 		}
 
@@ -144,10 +147,9 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 			entry->num_waiters++;
 			spin_unlock(&cache->lock);
 			wait_event(entry->wait_queue, !entry->pending);
-			goto out;
-		}
+		} else
+			spin_unlock(&cache->lock);
 
-		spin_unlock(&cache->lock);
 		goto out;
 	}
 
