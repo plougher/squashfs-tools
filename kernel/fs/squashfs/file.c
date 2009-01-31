@@ -293,7 +293,7 @@ static int fill_meta_index(struct inode *inode, int index,
 					 * error allocated to this inode...
 					 */
 					meta->inode_number = 0;
-					err = res;
+				err = res;
 				goto failed;
 			}
 
