@@ -41,7 +41,7 @@ struct squashfs_cache {
 struct squashfs_cache_entry {
 	long long		block;
 	int			length;
-	int			locked;
+	int			refcount;
 	long long		next_index;
 	char			pending;
 	char			error;

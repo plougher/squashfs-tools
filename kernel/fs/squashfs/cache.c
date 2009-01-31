@@ -64,7 +64,7 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 
 		if (i == cache->entries) {
 			/*
-			 * Block not in cache, if all cache entries are locked
+			 * Block not in cache, if all cache entries are used
 			 * go to sleep waiting for one to become available.
 			 */
 			if (cache->unused == 0) {
@@ -77,13 +77,13 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 			}
 
 			/*
-			 * At least one unlocked cache entry.  A simple
+			 * At least one unused cache entry.  A simple
 			 * round-robin strategy is used to choose the entry to
 			 * be evicted from the cache.
 			 */
 			i = cache->next_blk;
 			for (n = 0; n < cache->entries; n++) {
-				if (cache->entry[i].locked == 0)
+				if (cache->entry[i].refcount == 0)
 					break;
 				i = (i + 1) % cache->entries;
 			}
@@ -97,7 +97,7 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 			 */
 			cache->unused--;
 			entry->block = block;
-			entry->locked = 1;
+			entry->refcount = 1;
 			entry->pending = 1;
 			entry->waiting = 0;
 			entry->error = 0;
@@ -126,15 +126,15 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 		}
 
 		/*
-		 * Block already in cache.  Increment lock so it doesn't
+		 * Block already in cache.  Increment refcount so it doesn't
 		 * get reused until we're finished with it, if it was
-		 * previously unlocked there's one less cache entry available
+		 * previously unused there's one less cache entry available
 		 * for reuse.
 		 */
 		entry = &cache->entry[i];
-		if (entry->locked == 0)
+		if (entry->refcount == 0)
 			cache->unused--;
-		entry->locked++;
+		entry->refcount++;
 
 		/*
 		 * If the entry is currently being filled in by another process
@@ -152,8 +152,8 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 	}
 
 out:
-	TRACE("Got %s %d, start block %lld, locked %d, error %d\n", cache->name,
-		i, entry->block, entry->locked, entry->error);
+	TRACE("Got %s %d, start block %lld, refcount %d, error %d\n",
+		cache->name, i, entry->block, entry->refcount, entry->error);
 
 	if (entry->error)
 		ERROR("Unable to read %s cache entry [%llx]\n", cache->name,
@@ -170,8 +170,8 @@ void squashfs_cache_put(struct squashfs_cache_entry *entry)
 	struct squashfs_cache *cache = entry->cache;
 
 	spin_lock(&cache->lock);
-	entry->locked--;
-	if (entry->locked == 0) {
+	entry->refcount--;
+	if (entry->refcount == 0) {
 		cache->unused++;
 		spin_unlock(&cache->lock);
 		/*
