@@ -141,8 +141,8 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
 	struct squashfs_sb_info *msblk = dir->i_sb->s_fs_info;
 	struct squashfs_dir_header dirh;
 	struct squashfs_dir_entry *dire;
-	long long block = SQUASHFS_I(dir)->start + msblk->directory_table;
-	int offset = SQUASHFS_I(dir)->offset;
+	long long block = squashfs_i(dir)->start + msblk->directory_table;
+	int offset = squashfs_i(dir)->offset;
 	int err, length = 0, dir_count, size;
 
 	TRACE("Entered squashfs_lookup [%llx:%x]\n", block, offset);
@@ -159,9 +159,9 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
 	}
 
 	length = get_dir_index_using_name(dir->i_sb, &block, &offset,
-				SQUASHFS_I(dir)->dir_idx_start,
-				SQUASHFS_I(dir)->dir_idx_offset,
-				SQUASHFS_I(dir)->dir_idx_cnt, name, len);
+				squashfs_i(dir)->dir_idx_start,
+				squashfs_i(dir)->dir_idx_offset,
+				squashfs_i(dir)->dir_idx_cnt, name, len);
 
 	while (length < i_size_read(dir)) {
 		/*
@@ -229,8 +229,8 @@ exit_lookup:
 
 read_failure:
 	ERROR("Unable to read directory block [%llx:%x]\n",
-		SQUASHFS_I(dir)->start + msblk->directory_table,
-		SQUASHFS_I(dir)->offset);
+		squashfs_i(dir)->start + msblk->directory_table,
+		squashfs_i(dir)->offset);
 failed:
 	kfree(dire);
 	return ERR_PTR(err);

@@ -388,7 +388,7 @@ static int __init init_squashfs_fs(void)
 		return err;
 	}
 
-	printk(KERN_INFO "squashfs: version 4.0 (2008/12/27) "
+	printk(KERN_INFO "squashfs: version 4.0 (2008/12/29) "
 		"Phillip Lougher\n");
 
 	return 0;
@@ -413,7 +413,7 @@ static struct inode *squashfs_alloc_inode(struct super_block *sb)
 
 static void squashfs_destroy_inode(struct inode *inode)
 {
-	kmem_cache_free(squashfs_inode_cachep, SQUASHFS_I(inode));
+	kmem_cache_free(squashfs_inode_cachep, squashfs_i(inode));
 }
 
 

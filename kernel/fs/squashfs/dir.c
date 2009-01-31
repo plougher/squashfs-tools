@@ -106,8 +106,8 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 {
 	struct inode *inode = file->f_dentry->d_inode;
 	struct squashfs_sb_info *msblk = inode->i_sb->s_fs_info;
-	long long block = SQUASHFS_I(inode)->start + msblk->directory_table;
-	int offset = SQUASHFS_I(inode)->offset, length = 0, dir_count, size,
+	long long block = squashfs_i(inode)->start + msblk->directory_table;
+	int offset = squashfs_i(inode)->offset, length = 0, dir_count, size,
 				type, err;
 	unsigned int inode_number;
 	struct squashfs_dir_header dirh;
@@ -140,7 +140,7 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		} else {
 			name = "..";
 			size = 2;
-			i_ino = SQUASHFS_I(inode)->parent;
+			i_ino = squashfs_i(inode)->parent;
 		}
 
 		TRACE("Calling filldir(%p, %s, %d, %lld, %d, %d)\n",
@@ -157,9 +157,9 @@ static int squashfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	}
 
 	length = get_dir_index_using_offset(inode->i_sb, &block, &offset,
-				SQUASHFS_I(inode)->dir_idx_start,
-				SQUASHFS_I(inode)->dir_idx_offset,
-				SQUASHFS_I(inode)->dir_idx_cnt,
+				squashfs_i(inode)->dir_idx_start,
+				squashfs_i(inode)->dir_idx_offset,
+				squashfs_i(inode)->dir_idx_cnt,
 				file->f_pos);
 
 	while (length < i_size_read(inode)) {

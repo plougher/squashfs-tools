@@ -49,8 +49,8 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 	struct super_block *sb = inode->i_sb;
 	struct squashfs_sb_info *msblk = sb->s_fs_info;
 	int index = page->index << PAGE_CACHE_SHIFT;
-	long long block = SQUASHFS_I(inode)->start;
-	int offset = SQUASHFS_I(inode)->offset;
+	long long block = squashfs_i(inode)->start;
+	int offset = squashfs_i(inode)->offset;
 	int length = min_t(int, i_size_read(inode) - index, PAGE_CACHE_SIZE);
 	int bytes, copied;
 	void *pageaddr;
@@ -67,8 +67,8 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 								index);
 		if (bytes < 0) {
 			ERROR("Unable to read symlink [%llx:%x]\n",
-				SQUASHFS_I(inode)->start,
-				SQUASHFS_I(inode)->offset);
+				squashfs_i(inode)->start,
+				squashfs_i(inode)->offset);
 			goto error_out;
 		}
 	}
@@ -84,8 +84,8 @@ static int squashfs_symlink_readpage(struct file *file, struct page *page)
 		entry = squashfs_cache_get(sb, msblk->block_cache, block, 0);
 		if (entry->error) {
 			ERROR("Unable to read symlink [%llx:%x]\n",
-				SQUASHFS_I(inode)->start,
-				SQUASHFS_I(inode)->offset);
+				squashfs_i(inode)->start,
+				squashfs_i(inode)->offset);
 			squashfs_cache_put(entry);
 			goto error_out;
 		}

@@ -243,9 +243,9 @@ static int fill_meta_index(struct inode *inode, int index,
 	int offset = 0;
 	struct meta_index *meta;
 	struct meta_entry *meta_entry;
-	long long cur_index_block = SQUASHFS_I(inode)->block_list_start;
-	int cur_offset = SQUASHFS_I(inode)->offset;
-	long long cur_data_block = SQUASHFS_I(inode)->start;
+	long long cur_index_block = squashfs_i(inode)->block_list_start;
+	int cur_offset = squashfs_i(inode)->offset;
+	long long cur_data_block = squashfs_i(inode)->start;
 	int err, i;
 
 	/*
@@ -392,13 +392,13 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	int offset = 0, sparse = 0;
 
 	TRACE("Entered squashfs_readpage, page index %lx, start block %llx\n",
-				page->index, SQUASHFS_I(inode)->start);
+				page->index, squashfs_i(inode)->start);
 
 	if (page->index >= ((i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
 					PAGE_CACHE_SHIFT))
 		goto out;
 
-	if (index < file_end || SQUASHFS_I(inode)->fragment_block ==
+	if (index < file_end || squashfs_i(inode)->fragment_block ==
 					SQUASHFS_INVALID_BLK) {
 		/*
 		 * Reading a datablock from disk.  Need to read block list
@@ -433,18 +433,18 @@ static int squashfs_readpage(struct file *file, struct page *page)
 		 * block).
 		 */
 		buffer = squashfs_get_fragment(inode->i_sb,
-				SQUASHFS_I(inode)->fragment_block,
-				SQUASHFS_I(inode)->fragment_size);
+				squashfs_i(inode)->fragment_block,
+				squashfs_i(inode)->fragment_size);
 
 		if (buffer->error) {
 			ERROR("Unable to read page, block %llx, size %x\n",
-				SQUASHFS_I(inode)->fragment_block,
-				SQUASHFS_I(inode)->fragment_size);
+				squashfs_i(inode)->fragment_block,
+				squashfs_i(inode)->fragment_size);
 			squashfs_cache_put(buffer);
 			goto error_out;
 		}
 		bytes = i_size_read(inode) & (msblk->block_size - 1);
-	        offset = SQUASHFS_I(inode)->fragment_offset;
+	        offset = squashfs_i(inode)->fragment_offset;
 	}
 
 	/*
