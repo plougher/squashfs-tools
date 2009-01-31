@@ -84,13 +84,13 @@ static int get_dir_index_using_name(struct super_block *sb,
 
 	TRACE("Entered get_dir_index_using_name, i_count %d\n", i_count);
 
-	str = kmalloc(sizeof(*index) + (SQUASHFS_NAME_LEN + 1) * 2, GFP_KERNEL);
-	if (str == NULL) {
+	index = kmalloc(sizeof(*index) + SQUASHFS_NAME_LEN * 2 + 2, GFP_KERNEL);
+	if (index == NULL) {
 		ERROR("Failed to allocate squashfs_dir_index\n");
 		goto out;
 	}
 
-	index = (struct squashfs_dir_index *) (str + SQUASHFS_NAME_LEN + 1);
+	str = &index->name[SQUASHFS_NAME_LEN + 1];
 	strncpy(str, name, len);
 	str[len] = '\0';
 
@@ -119,7 +119,7 @@ static int get_dir_index_using_name(struct super_block *sb,
 	}
 
 	*next_offset = (length + *next_offset) % SQUASHFS_METADATA_SIZE;
-	kfree(str);
+	kfree(index);
 
 out:
 	/*
