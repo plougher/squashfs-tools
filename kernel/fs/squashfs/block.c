@@ -87,7 +87,7 @@ int squashfs_read_data(struct super_block *sb, void **buffer, u64 index,
 	int offset = index & ((1 << msblk->devblksize_log2) - 1);
 	u64 cur_index = index >> msblk->devblksize_log2;
 	int bytes, compressed, b = 0, k = 0, page = 0, avail;
-	
+
 
 	bh = kcalloc((msblk->block_size >> msblk->devblksize_log2) + 1,
 				sizeof(*bh), GFP_KERNEL);
@@ -185,7 +185,7 @@ int squashfs_read_data(struct super_block *sb, void **buffer, u64 index,
 			}
 
 			if (msblk->stream.avail_out == 0) {
-				msblk->stream.next_out = buffer[page ++];
+				msblk->stream.next_out = buffer[page++];
 				msblk->stream.avail_out = PAGE_CACHE_SIZE;
 			}
 
@@ -197,7 +197,7 @@ int squashfs_read_data(struct super_block *sb, void **buffer, u64 index,
 						" srclength %d\n", zlib_err,
 						srclength);
 					goto release_mutex;
-				}		
+				}
 				zlib_init = 1;
 			}
 
@@ -241,11 +241,13 @@ int squashfs_read_data(struct super_block *sb, void **buffer, u64 index,
 			bytes -= in;
 			while (in) {
 				if (pg_offset == PAGE_CACHE_SIZE) {
-					page ++;
+					page++;
 					pg_offset = 0;
 				}
-				avail = min_t(int, in, PAGE_CACHE_SIZE - pg_offset);
-				memcpy(buffer[page] + pg_offset, bh[k]->b_data + offset, avail);
+				avail = min_t(int, in, PAGE_CACHE_SIZE -
+						pg_offset);
+				memcpy(buffer[page] + pg_offset,
+						bh[k]->b_data + offset, avail);
 				in -= avail;
 				pg_offset += avail;
 				offset += avail;

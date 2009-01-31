@@ -300,7 +300,7 @@ int squashfs_copy_data(void *buffer, struct squashfs_cache_entry *entry,
 		return 0;
 	else if (buffer == NULL)
 		return min(length, entry->length - offset);
- 
+
 	while (offset < entry->length) {
 		void *buff = entry->data[offset / PAGE_CACHE_SIZE]
 				+ (offset % PAGE_CACHE_SIZE);
@@ -403,7 +403,7 @@ int squashfs_read_table(struct super_block *sb, void *buffer, u64 block,
 	if (data == NULL)
 		return -ENOMEM;
 
-	for(i = 0; i < pages; i++, buffer += PAGE_CACHE_SIZE)
+	for (i = 0; i < pages; i++, buffer += PAGE_CACHE_SIZE)
 		data[i] = buffer;
 	res = squashfs_read_data(sb, data, block, length |
 		SQUASHFS_COMPRESSED_BIT_BLOCK, NULL, length);

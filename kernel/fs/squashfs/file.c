@@ -440,7 +440,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 			goto error_out;
 		}
 		bytes = i_size_read(inode) & (msblk->block_size - 1);
-	        offset = squashfs_i(inode)->fragment_offset;
+		offset = squashfs_i(inode)->fragment_offset;
 	}
 
 	/*
