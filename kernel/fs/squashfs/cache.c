@@ -262,6 +262,11 @@ cleanup:
 }
 
 
+/*
+ * Copy upto length bytes from cache entry to buffer starting at offset bytes
+ * into the cache entry.  If there's not length bytes then copy the number of
+ * bytes available.  In all cases return the number of bytes copied.
+ */
 int squashfs_copy_data(void *buffer, struct squashfs_cache_entry *entry,
 		int offset, int length)
 {
@@ -352,6 +357,9 @@ struct squashfs_cache_entry *squashfs_get_datablock(struct super_block *sb,
 }
 
 
+/*
+ * Read a filesystem table (uncompressed sequence of bytes) from disk
+ */
 int squashfs_read_table(struct super_block *sb, void *buffer, long long block,
 	int length)
 {
