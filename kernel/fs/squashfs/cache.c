@@ -273,6 +273,11 @@ int squashfs_copy_data(void *buffer, struct squashfs_cache_entry *entry,
 {
 	int remaining = length;
 
+	if (length == 0)
+		return 0;
+	else if (buffer == NULL)
+		return min(length, entry->length - offset);
+ 
 	while (offset < entry->length) {
 		void *buff = entry->data[offset / PAGE_CACHE_SIZE]
 				+ (offset % PAGE_CACHE_SIZE);
@@ -280,17 +285,13 @@ int squashfs_copy_data(void *buffer, struct squashfs_cache_entry *entry,
 				PAGE_CACHE_SIZE - (offset % PAGE_CACHE_SIZE));
 
 		if (bytes >= remaining) {
-			if (buffer)
-				memcpy(buffer, buff, remaining);
+			memcpy(buffer, buff, remaining);
 			remaining = 0;
 			break;
 		}
 
-		if (buffer) {
-			memcpy(buffer, buff, bytes);
-			buffer += bytes;
-		}
-
+		memcpy(buffer, buff, bytes);
+		buffer += bytes;
 		remaining -= bytes;
 		offset += bytes;
 	}
