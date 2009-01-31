@@ -28,6 +28,20 @@
  * This file implements a generic cache implementation used for both caches,
  * plus functions layered ontop of the generic cache implementation to
  * access the metadata and fragment caches.
+ *
+ * To avoid out of memory and fragmentation isssues with vmalloc the cache
+ * uses sequences of kmalloced PAGE_CACHE_SIZE buffers.
+ *
+ * It should be noted that the cache is not used for file datablocks, these
+ * are decompressed and cached in the page-cache in the normal way.  The
+ * cache is only used to temporarily cache fragment and metadata blocks
+ * which have been read as as a result of a metadata (i.e. inode or
+ * directory) or fragment access.  Because metadata and fragments are packed
+ * together into blocks (to gain greater compression) the read of a particular
+ * piece of metadata or fragment will retrieve other metadata/fragments which
+ * have been packed with it, these because of locality-of-reference may be read
+ * in the near future. Temporarily caching them ensures they are available for
+ * near future access without requiring an additional read and decompress.
  */
 
 #include <linux/fs.h>
@@ -165,7 +179,7 @@ out:
 
 
 /*
- * Release block, once usage count is zero it can be reused.
+ * Release cache entry, once usage count is zero it can be reused.
  */
 void squashfs_cache_put(struct squashfs_cache_entry *entry)
 {
@@ -188,7 +202,9 @@ void squashfs_cache_put(struct squashfs_cache_entry *entry)
 	spin_unlock(&cache->lock);
 }
 
-
+/*
+ * Delete cache reclaiming all kmalloced buffers.
+ */
 void squashfs_cache_delete(struct squashfs_cache *cache)
 {
 	int i, j;
@@ -209,6 +225,11 @@ void squashfs_cache_delete(struct squashfs_cache *cache)
 }
 
 
+/*
+ * Initialise cache allocating the specified number of entries, each of
+ * size block_size.  To avoid vmalloc fragmentation issues each entry
+ * is allocated as a sequence of kmalloced PAGE_CACHE_SIZE buffers.
+ */
 struct squashfs_cache *squashfs_cache_init(char *name, int entries,
 	int block_size)
 {
@@ -342,6 +363,10 @@ int squashfs_read_metadata(struct super_block *sb, void *buffer,
 }
 
 
+/*
+ * Look-up in the fragmment cache the fragment located at <start_block> in the
+ * filesystem.  If necessary read and decompress it from disk.
+ */
 struct squashfs_cache_entry *squashfs_get_fragment(struct super_block *sb,
 				u64 start_block, int length)
 {
@@ -352,6 +377,11 @@ struct squashfs_cache_entry *squashfs_get_fragment(struct super_block *sb,
 }
 
 
+/*
+ * Read and decompress the datablock located at <start_block> in the
+ * filesystem.  The cache is used here to avoid duplicating locking and
+ * read/decompress code.
+ */
 struct squashfs_cache_entry *squashfs_get_datablock(struct super_block *sb,
 				u64 start_block, int length)
 {
