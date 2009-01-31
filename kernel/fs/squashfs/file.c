@@ -223,7 +223,7 @@ failure:
  */
 static inline int calculate_skip(int blocks)
 {
-	int skip = (blocks - 1) / ((SQUASHFS_META_ENTRIES + 1)
+	int skip = blocks / ((SQUASHFS_META_ENTRIES + 1)
 		 * SQUASHFS_META_INDEXES);
 	return min(SQUASHFS_CACHED_BLKS - 1, skip + 1);
 }
@@ -452,8 +452,7 @@ static int squashfs_readpage(struct file *file, struct page *page)
 	for (i = start_index; i <= end_index && bytes > 0; i++,
 			bytes -= PAGE_CACHE_SIZE, offset += PAGE_CACHE_SIZE) {
 		struct page *push_page;
-		int avail = sparse ? 0 : min_t(unsigned int, bytes,
-			PAGE_CACHE_SIZE);
+		int avail = sparse ? 0 : min_t(int, bytes, PAGE_CACHE_SIZE);
 
 		TRACE("bytes %d, i %d, available_bytes %d\n", bytes, i, avail);
 
