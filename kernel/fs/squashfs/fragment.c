@@ -47,7 +47,7 @@
  * Look-up fragment using the fragment index table.  Return the on disk
  * location of the fragment and its compressed size
  */
-int squashfs_frag_location(struct super_block *sb, unsigned int fragment,
+int squashfs_frag_lookup(struct super_block *sb, unsigned int fragment,
 				u64 *fragment_block)
 {
 	struct squashfs_sb_info *msblk = sb->s_fs_info;

@@ -145,7 +145,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 		frag = le32_to_cpu(sqsh_ino->fragment);
 		if (frag != SQUASHFS_INVALID_FRAG) {
 			frag_offset = le32_to_cpu(sqsh_ino->offset);
-			frag_size = squashfs_frag_location(sb, frag, &frag_blk);
+			frag_size = squashfs_frag_lookup(sb, frag, &frag_blk);
 			if (frag_size < 0) {
 				err = frag_size;
 				goto failed_read;
@@ -187,7 +187,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
 		frag = le32_to_cpu(sqsh_ino->fragment);
 		if (frag != SQUASHFS_INVALID_FRAG) {
 			frag_offset = le32_to_cpu(sqsh_ino->offset);
-			frag_size = squashfs_frag_location(sb, frag, &frag_blk);
+			frag_size = squashfs_frag_lookup(sb, frag, &frag_blk);
 			if (frag_size < 0) {
 				err = frag_size;
 				goto failed_read;
