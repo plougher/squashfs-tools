@@ -34,152 +34,179 @@ extern void swap_le16_num(unsigned short *, unsigned short *, int);
 extern void swap_le32_num(unsigned int *, unsigned int *, int);
 extern void swap_le64_num(long long *, long long *, int);
 
-#define SQUASHFS_SWAP_SUPER_BLOCK(s, d) {\
-	SWAP_LE32(s, d, s_magic);\
-	SWAP_LE32(s, d, inodes);\
-	SWAP_LE32(s, d, mkfs_time);\
-	SWAP_LE32(s, d, block_size);\
-	SWAP_LE32(s, d, fragments);\
-	SWAP_LE16(s, d, compression);\
-	SWAP_LE16(s, d, block_log);\
-	SWAP_LE16(s, d, flags);\
-	SWAP_LE16(s, d, no_ids);\
-	SWAP_LE16(s, d, s_major);\
-	SWAP_LE16(s, d, s_minor);\
-	SWAP_LE64(s, d, root_inode);\
-	SWAP_LE64(s, d, bytes_used);\
-	SWAP_LE64(s, d, id_table_start);\
-	SWAP_LE64(s, d, xattr_table_start);\
-	SWAP_LE64(s, d, inode_table_start);\
-	SWAP_LE64(s, d, directory_table_start);\
-	SWAP_LE64(s, d, fragment_table_start);\
-	SWAP_LE64(s, d, lookup_table_start);\
+#define _SQUASHFS_SWAP_SUPER_BLOCK(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##32(s, d, s_magic);\
+	SWAP_FUNC##32(s, d, inodes);\
+	SWAP_FUNC##32(s, d, mkfs_time);\
+	SWAP_FUNC##32(s, d, block_size);\
+	SWAP_FUNC##32(s, d, fragments);\
+	SWAP_FUNC##16(s, d, compression);\
+	SWAP_FUNC##16(s, d, block_log);\
+	SWAP_FUNC##16(s, d, flags);\
+	SWAP_FUNC##16(s, d, no_ids);\
+	SWAP_FUNC##16(s, d, s_major);\
+	SWAP_FUNC##16(s, d, s_minor);\
+	SWAP_FUNC##64(s, d, root_inode);\
+	SWAP_FUNC##64(s, d, bytes_used);\
+	SWAP_FUNC##64(s, d, id_table_start);\
+	SWAP_FUNC##64(s, d, xattr_table_start);\
+	SWAP_FUNC##64(s, d, inode_table_start);\
+	SWAP_FUNC##64(s, d, directory_table_start);\
+	SWAP_FUNC##64(s, d, fragment_table_start);\
+	SWAP_FUNC##64(s, d, lookup_table_start);\
 }
 
-#define SQUASHFS_SWAP_DIR_INDEX(s, d) {\
-	SWAP_LE32(s, d, index);\
-	SWAP_LE32(s, d, start_block);\
-	SWAP_LE32(s, d, size);\
+#define _SQUASHFS_SWAP_DIR_INDEX(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##32(s, d, index);\
+	SWAP_FUNC##32(s, d, start_block);\
+	SWAP_FUNC##32(s, d, size);\
 }
 
-#define SQUASHFS_SWAP_BASE_INODE_HEADER(s, d) {\
-	SWAP_LE16(s, d, inode_type);\
-	SWAP_LE16(s, d, mode);\
-	SWAP_LE16(s, d, uid);\
-	SWAP_LE16(s, d, guid);\
-	SWAP_LE32(s, d, mtime);\
-	SWAP_LE32(s, d, inode_number);\
+#define _SQUASHFS_SWAP_BASE_INODE_HEADER(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##16(s, d, inode_type);\
+	SWAP_FUNC##16(s, d, mode);\
+	SWAP_FUNC##16(s, d, uid);\
+	SWAP_FUNC##16(s, d, guid);\
+	SWAP_FUNC##32(s, d, mtime);\
+	SWAP_FUNC##32(s, d, inode_number);\
 }
 
-#define SQUASHFS_SWAP_IPC_INODE_HEADER(s, d) {\
-	SWAP_LE16(s, d, inode_type);\
-	SWAP_LE16(s, d, mode);\
-	SWAP_LE16(s, d, uid);\
-	SWAP_LE16(s, d, guid);\
-	SWAP_LE32(s, d, mtime);\
-	SWAP_LE32(s, d, inode_number);\
-	SWAP_LE32(s, d, nlink);\
+#define _SQUASHFS_SWAP_IPC_INODE_HEADER(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##16(s, d, inode_type);\
+	SWAP_FUNC##16(s, d, mode);\
+	SWAP_FUNC##16(s, d, uid);\
+	SWAP_FUNC##16(s, d, guid);\
+	SWAP_FUNC##32(s, d, mtime);\
+	SWAP_FUNC##32(s, d, inode_number);\
+	SWAP_FUNC##32(s, d, nlink);\
 }
 
-#define SQUASHFS_SWAP_DEV_INODE_HEADER(s, d) {\
-	SWAP_LE16(s, d, inode_type);\
-	SWAP_LE16(s, d, mode);\
-	SWAP_LE16(s, d, uid);\
-	SWAP_LE16(s, d, guid);\
-	SWAP_LE32(s, d, mtime);\
-	SWAP_LE32(s, d, inode_number);\
-	SWAP_LE32(s, d, nlink);\
-	SWAP_LE32(s, d, rdev);\
+#define _SQUASHFS_SWAP_DEV_INODE_HEADER(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##16(s, d, inode_type);\
+	SWAP_FUNC##16(s, d, mode);\
+	SWAP_FUNC##16(s, d, uid);\
+	SWAP_FUNC##16(s, d, guid);\
+	SWAP_FUNC##32(s, d, mtime);\
+	SWAP_FUNC##32(s, d, inode_number);\
+	SWAP_FUNC##32(s, d, nlink);\
+	SWAP_FUNC##32(s, d, rdev);\
 }
 
-#define SQUASHFS_SWAP_SYMLINK_INODE_HEADER(s, d) {\
-	SWAP_LE16(s, d, inode_type);\
-	SWAP_LE16(s, d, mode);\
-	SWAP_LE16(s, d, uid);\
-	SWAP_LE16(s, d, guid);\
-	SWAP_LE32(s, d, mtime);\
-	SWAP_LE32(s, d, inode_number);\
-	SWAP_LE32(s, d, nlink);\
-	SWAP_LE32(s, d, symlink_size);\
+#define _SQUASHFS_SWAP_SYMLINK_INODE_HEADER(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##16(s, d, inode_type);\
+	SWAP_FUNC##16(s, d, mode);\
+	SWAP_FUNC##16(s, d, uid);\
+	SWAP_FUNC##16(s, d, guid);\
+	SWAP_FUNC##32(s, d, mtime);\
+	SWAP_FUNC##32(s, d, inode_number);\
+	SWAP_FUNC##32(s, d, nlink);\
+	SWAP_FUNC##32(s, d, symlink_size);\
 }
 
-#define SQUASHFS_SWAP_REG_INODE_HEADER(s, d) {\
-	SWAP_LE16(s, d, inode_type);\
-	SWAP_LE16(s, d, mode);\
-	SWAP_LE16(s, d, uid);\
-	SWAP_LE16(s, d, guid);\
-	SWAP_LE32(s, d, mtime);\
-	SWAP_LE32(s, d, inode_number);\
-	SWAP_LE32(s, d, start_block);\
-	SWAP_LE32(s, d, fragment);\
-	SWAP_LE32(s, d, offset);\
-	SWAP_LE32(s, d, file_size);\
+#define _SQUASHFS_SWAP_REG_INODE_HEADER(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##16(s, d, inode_type);\
+	SWAP_FUNC##16(s, d, mode);\
+	SWAP_FUNC##16(s, d, uid);\
+	SWAP_FUNC##16(s, d, guid);\
+	SWAP_FUNC##32(s, d, mtime);\
+	SWAP_FUNC##32(s, d, inode_number);\
+	SWAP_FUNC##32(s, d, start_block);\
+	SWAP_FUNC##32(s, d, fragment);\
+	SWAP_FUNC##32(s, d, offset);\
+	SWAP_FUNC##32(s, d, file_size);\
 }
 
-#define SQUASHFS_SWAP_LREG_INODE_HEADER(s, d) {\
-	SWAP_LE16(s, d, inode_type);\
-	SWAP_LE16(s, d, mode);\
-	SWAP_LE16(s, d, uid);\
-	SWAP_LE16(s, d, guid);\
-	SWAP_LE32(s, d, mtime);\
-	SWAP_LE32(s, d, inode_number);\
-	SWAP_LE64(s, d, start_block);\
-	SWAP_LE64(s, d, file_size);\
-	SWAP_LE64(s, d, sparse);\
-	SWAP_LE32(s, d, nlink);\
-	SWAP_LE32(s, d, fragment);\
-	SWAP_LE32(s, d, offset);\
-	SWAP_LE32(s, d, xattr);\
+#define _SQUASHFS_SWAP_LREG_INODE_HEADER(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##16(s, d, inode_type);\
+	SWAP_FUNC##16(s, d, mode);\
+	SWAP_FUNC##16(s, d, uid);\
+	SWAP_FUNC##16(s, d, guid);\
+	SWAP_FUNC##32(s, d, mtime);\
+	SWAP_FUNC##32(s, d, inode_number);\
+	SWAP_FUNC##64(s, d, start_block);\
+	SWAP_FUNC##64(s, d, file_size);\
+	SWAP_FUNC##64(s, d, sparse);\
+	SWAP_FUNC##32(s, d, nlink);\
+	SWAP_FUNC##32(s, d, fragment);\
+	SWAP_FUNC##32(s, d, offset);\
+	SWAP_FUNC##32(s, d, xattr);\
 }
 
-#define SQUASHFS_SWAP_DIR_INODE_HEADER(s, d) {\
-	SWAP_LE16(s, d, inode_type);\
-	SWAP_LE16(s, d, mode);\
-	SWAP_LE16(s, d, uid);\
-	SWAP_LE16(s, d, guid);\
-	SWAP_LE32(s, d, mtime);\
-	SWAP_LE32(s, d, inode_number);\
-	SWAP_LE32(s, d, start_block);\
-	SWAP_LE32(s, d, nlink);\
-	SWAP_LE16(s, d, file_size);\
-	SWAP_LE16(s, d, offset);\
-	SWAP_LE32(s, d, parent_inode);\
+#define _SQUASHFS_SWAP_DIR_INODE_HEADER(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##16(s, d, inode_type);\
+	SWAP_FUNC##16(s, d, mode);\
+	SWAP_FUNC##16(s, d, uid);\
+	SWAP_FUNC##16(s, d, guid);\
+	SWAP_FUNC##32(s, d, mtime);\
+	SWAP_FUNC##32(s, d, inode_number);\
+	SWAP_FUNC##32(s, d, start_block);\
+	SWAP_FUNC##32(s, d, nlink);\
+	SWAP_FUNC##16(s, d, file_size);\
+	SWAP_FUNC##16(s, d, offset);\
+	SWAP_FUNC##32(s, d, parent_inode);\
 }
 
-#define SQUASHFS_SWAP_LDIR_INODE_HEADER(s, d) {\
-	SWAP_LE16(s, d, inode_type);\
-	SWAP_LE16(s, d, mode);\
-	SWAP_LE16(s, d, uid);\
-	SWAP_LE16(s, d, guid);\
-	SWAP_LE32(s, d, mtime);\
-	SWAP_LE32(s, d, inode_number);\
-	SWAP_LE32(s, d, nlink);\
-	SWAP_LE32(s, d, file_size);\
-	SWAP_LE32(s, d, start_block);\
-	SWAP_LE32(s, d, parent_inode);\
-	SWAP_LE16(s, d, i_count);\
-	SWAP_LE16(s, d, offset);\
-	SWAP_LE32(s, d, xattr);\
+#define _SQUASHFS_SWAP_LDIR_INODE_HEADER(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##16(s, d, inode_type);\
+	SWAP_FUNC##16(s, d, mode);\
+	SWAP_FUNC##16(s, d, uid);\
+	SWAP_FUNC##16(s, d, guid);\
+	SWAP_FUNC##32(s, d, mtime);\
+	SWAP_FUNC##32(s, d, inode_number);\
+	SWAP_FUNC##32(s, d, nlink);\
+	SWAP_FUNC##32(s, d, file_size);\
+	SWAP_FUNC##32(s, d, start_block);\
+	SWAP_FUNC##32(s, d, parent_inode);\
+	SWAP_FUNC##16(s, d, i_count);\
+	SWAP_FUNC##16(s, d, offset);\
+	SWAP_FUNC##32(s, d, xattr);\
 }
 
-
-#define SQUASHFS_SWAP_DIR_ENTRY(s, d) {\
-	SWAP_LE16(s, d, offset);\
+#define _SQUASHFS_SWAP_DIR_ENTRY(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##16(s, d, offset);\
 	SWAP_ULE16(s, d, inode_number);\
-	SWAP_LE16(s, d, type);\
-	SWAP_LE16(s, d, size);\
+	SWAP_FUNC##16(s, d, type);\
+	SWAP_FUNC##16(s, d, size);\
 }
 
-#define SQUASHFS_SWAP_DIR_HEADER(s, d) {\
-	SWAP_LE32(s, d, count);\
-	SWAP_LE32(s, d, start_block);\
-	SWAP_LE32(s, d, inode_number);\
+#define _SQUASHFS_SWAP_DIR_HEADER(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##32(s, d, count);\
+	SWAP_FUNC##32(s, d, start_block);\
+	SWAP_FUNC##32(s, d, inode_number);\
 }
 
-#define SQUASHFS_SWAP_FRAGMENT_ENTRY(s, d) {\
-	SWAP_LE64(s, d, start_block);\
-	SWAP_LE32(s, d, size);\
+#define _SQUASHFS_SWAP_FRAGMENT_ENTRY(s, d, SWAP_FUNC) {\
+	SWAP_FUNC##64(s, d, start_block);\
+	SWAP_FUNC##32(s, d, size);\
 }
+
+#define SQUASHFS_SWAP_SUPER_BLOCK(s, d)			_SQUASHFS_SWAP_SUPER_BLOCK(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_DIR_INDEX(s, d)			_SQUASHFS_SWAP_DIR_INDEX(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_BASE_INODE_HEADER(s, d)		_SQUASHFS_SWAP_BASE_INODE_HEADER(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_IPC_INODE_HEADER(s, d)		_SQUASHFS_SWAP_IPC_INODE_HEADER(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_DEV_INODE_HEADER(s, d)		_SQUASHFS_SWAP_DEV_INODE_HEADER(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_SYMLINK_INODE_HEADER(s, d)	_SQUASHFS_SWAP_SYMLINK_INODE_HEADER(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_REG_INODE_HEADER(s, d)		_SQUASHFS_SWAP_REG_INODE_HEADER(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_LREG_INODE_HEADER(s, d)		_SQUASHFS_SWAP_LREG_INODE_HEADER(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_DIR_INODE_HEADER(s, d)		_SQUASHFS_SWAP_DIR_INODE_HEADER(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_LDIR_INODE_HEADER(s, d)		_SQUASHFS_SWAP_LDIR_INODE_HEADER(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_DIR_ENTRY(s, d)			_SQUASHFS_SWAP_DIR_ENTRY(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_DIR_HEADER(s, d)			_SQUASHFS_SWAP_DIR_HEADER(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_FRAGMENT_ENTRY(s, d)		_SQUASHFS_SWAP_FRAGMENT_ENTRY(s, d, SWAP_LE)
+
+#define SQUASHFS_INSWAP_SUPER_BLOCK(s, d)		_SQUASHFS_INSWAP_SUPER_BLOCK(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_DIR_INDEX(s, d)			_SQUASHFS_INSWAP_DIR_INDEX(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_BASE_INODE_HEADER(s, d)		_SQUASHFS_INSWAP_BASE_INODE_HEADER(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_IPC_INODE_HEADER(s, d)		_SQUASHFS_INSWAP_IPC_INODE_HEADER(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_DEV_INODE_HEADER(s, d)		_SQUASHFS_INSWAP_DEV_INODE_HEADER(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_SYMLINK_INODE_HEADER(s, d)	_SQUASHFS_INSWAP_SYMLINK_INODE_HEADER(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_REG_INODE_HEADER(s, d)		_SQUASHFS_INSWAP_REG_INODE_HEADER(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_LREG_INODE_HEADER(s, d)		_SQUASHFS_INSWAP_LREG_INODE_HEADER(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_DIR_INODE_HEADER(s, d)		_SQUASHFS_INSWAP_DIR_INODE_HEADER(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_LDIR_INODE_HEADER(s, d)		_SQUASHFS_INSWAP_LDIR_INODE_HEADER(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_DIR_ENTRY(s, d)			_SQUASHFS_INSWAP_DIR_ENTRY(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_DIR_HEADER(s, d)		_SQUASHFS_INSWAP_DIR_HEADER(s, d, INSWAP_LE)
+#define SQUASHFS_INSWAP_FRAGMENT_ENTRY(s, d)		_SQUASHFS_INSWAP_FRAGMENT_ENTRY(s, d, INSWAP_LE)
 
 #define SQUASHFS_SWAP_INODE_T(s, d) SQUASHFS_SWAP_LONG_LONGS(s, d, 1)
 #define SQUASHFS_SWAP_FRAGMENT_INDEXES(s, d, n) SQUASHFS_SWAP_LONG_LONGS(s, d, n)
