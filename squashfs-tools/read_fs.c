@@ -65,19 +65,18 @@ extern unsigned int get_guid(unsigned int);
 						fprintf(stderr, s, ## args); \
 					} while(0)
 
-int swap;
-
 int read_block(int fd, long long start, long long *next, unsigned char *block, squashfs_super_block *sBlk)
 {
 	unsigned short c_byte;
 	int offset = 2;
 	
-	if(swap) {
+#if __BYTE_ORDER == __BIG_ENDIAN
 		read_bytes(fd, start, 2, (char *) block);
 		((unsigned char *) &c_byte)[1] = block[0];
 		((unsigned char *) &c_byte)[0] = block[1]; 
-	} else 
+#else
 		read_bytes(fd, start, 2, (char *)&c_byte);
+#endif
 
 	if(SQUASHFS_COMPRESSED(c_byte)) {
 		char buffer[SQUASHFS_METADATA_SIZE];
@@ -150,39 +149,43 @@ int scan_inode_table(int fd, long long start, long long end,
 	 */
 	*root_inode_size = bytes - (*root_inode_block + root_inode_offset);
 	bytes = *root_inode_block + root_inode_offset;
-	if(swap) {
-		squashfs_base_inode_header sinode;
-		memcpy(&sinode, *inode_table + bytes, sizeof(dir_inode->base));
-		SQUASHFS_SWAP_BASE_INODE_HEADER(&dir_inode->base, &sinode);
-	} else
-		memcpy(&dir_inode->base, *inode_table + bytes, sizeof(dir_inode->base));
+#if __BYTE_ORDER == __BIG_ENDIAN
+	squashfs_base_inode_header sinode;
+	memcpy(&sinode, *inode_table + bytes, sizeof(dir_inode->base));
+	SQUASHFS_SWAP_BASE_INODE_HEADER(&dir_inode->base, &sinode);
+#else
+	memcpy(&dir_inode->base, *inode_table + bytes, sizeof(dir_inode->base));
+#endif
 	if(dir_inode->base.inode_type == SQUASHFS_DIR_TYPE) {
-		if(swap) {
-			squashfs_dir_inode_header sinode;
-			memcpy(&sinode, *inode_table + bytes, sizeof(dir_inode->dir));
-			SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode->dir, &sinode);
-		} else
-			memcpy(&dir_inode->dir, *inode_table + bytes, sizeof(dir_inode->dir));
+#if __BYTE_ORDER == __BIG_ENDIAN
+		squashfs_dir_inode_header sinode;
+		memcpy(&sinode, *inode_table + bytes, sizeof(dir_inode->dir));
+		SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode->dir, &sinode);
+#else
+		memcpy(&dir_inode->dir, *inode_table + bytes, sizeof(dir_inode->dir));
+#endif
 		directory_start_block = dir_inode->dir.start_block;
 	} else {
-		if(swap) {
-			squashfs_ldir_inode_header sinode;
-			memcpy(&sinode, *inode_table + bytes, sizeof(dir_inode->ldir));
-			SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode->ldir, &sinode);
-		} else
-			memcpy(&dir_inode->ldir, *inode_table + bytes, sizeof(dir_inode->ldir));
+#if __BYTE_ORDER == __BIG_ENDIAN
+		squashfs_ldir_inode_header sinode;
+		memcpy(&sinode, *inode_table + bytes, sizeof(dir_inode->ldir));
+		SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode->ldir, &sinode);
+#else
+		memcpy(&dir_inode->ldir, *inode_table + bytes, sizeof(dir_inode->ldir));
+#endif
 		directory_start_block = dir_inode->ldir.start_block;
 	}
 	get_uid(id_table[dir_inode->base.uid]);
 	get_guid(id_table[dir_inode->base.guid]);
 
 	for(cur_ptr = *inode_table; cur_ptr < *inode_table + bytes; files ++) {
-		if(swap) {
-			squashfs_reg_inode_header sinode;
-			memcpy(&sinode, cur_ptr, sizeof(inode));
-			SQUASHFS_SWAP_REG_INODE_HEADER(&inode, &sinode);
-		} else
-			memcpy(&inode, cur_ptr, sizeof(inode));
+#if __BYTE_ORDER == __BIG_ENDIAN
+		squashfs_reg_inode_header sinode;
+		memcpy(&sinode, cur_ptr, sizeof(inode));
+		SQUASHFS_SWAP_REG_INODE_HEADER(&inode, &sinode);
+#else
+		memcpy(&inode, cur_ptr, sizeof(inode));
+#endif
 
 		TRACE("scan_inode_table: processing inode @ byte position 0x%x, type 0x%x\n", cur_ptr - *inode_table, inode.inode_type);
 
@@ -208,12 +211,13 @@ int scan_inode_table(int fd, long long start, long long end,
 				}
 
 				cur_ptr += sizeof(inode);
-				if(swap) {
-					unsigned int sblock_list[blocks];
-					memcpy(sblock_list, cur_ptr, blocks * sizeof(unsigned int));
-					SQUASHFS_SWAP_INTS(block_list, sblock_list, blocks);
-				} else
-					memcpy(block_list, cur_ptr, blocks * sizeof(unsigned int));
+#if __BYTE_ORDER == __BIG_ENDIAN
+				unsigned int sblock_list[blocks];
+				memcpy(sblock_list, cur_ptr, blocks * sizeof(unsigned int));
+				SQUASHFS_SWAP_INTS(block_list, sblock_list, blocks);
+#else
+				memcpy(block_list, cur_ptr, blocks * sizeof(unsigned int));
+#endif
 
 				*uncompressed_file += inode.file_size;
 				(*file_count) ++;
@@ -234,12 +238,13 @@ int scan_inode_table(int fd, long long start, long long end,
 				long long start;
 				unsigned int *block_list;
 
-				if(swap) {
-					squashfs_lreg_inode_header sinodep;
-					memcpy(&sinodep, cur_ptr, sizeof(sinodep));
-					SQUASHFS_SWAP_LREG_INODE_HEADER(&inode, &sinodep);
-				} else
-					memcpy(&inode, cur_ptr, sizeof(inode));
+#if __BYTE_ORDER == __BIG_ENDIAN
+				squashfs_lreg_inode_header sinodep;
+				memcpy(&sinodep, cur_ptr, sizeof(sinodep));
+				SQUASHFS_SWAP_LREG_INODE_HEADER(&inode, &sinodep);
+#else
+				memcpy(&inode, cur_ptr, sizeof(inode));
+#endif
 
 				frag_bytes = inode.fragment == SQUASHFS_INVALID_FRAG ? 0 : inode.file_size % sBlk->block_size;
 				blocks = inode.fragment == SQUASHFS_INVALID_FRAG ? (inode.file_size
@@ -255,12 +260,13 @@ int scan_inode_table(int fd, long long start, long long end,
 				}
 
 				cur_ptr += sizeof(inode);
-				if(swap) {
-					unsigned int sblock_list[blocks];
-					memcpy(sblock_list, cur_ptr, blocks * sizeof(unsigned int));
-					SQUASHFS_SWAP_INTS(block_list, sblock_list, blocks);
-				} else
-					memcpy(block_list, cur_ptr, blocks * sizeof(unsigned int));
+#if __BYTE_ORDER == __BIG_ENDIAN
+				unsigned int sblock_list[blocks];
+				memcpy(sblock_list, cur_ptr, blocks * sizeof(unsigned int));
+				SQUASHFS_SWAP_INTS(block_list, sblock_list, blocks);
+#else
+				memcpy(block_list, cur_ptr, blocks * sizeof(unsigned int));
+#endif
 
 				*uncompressed_file += inode.file_size;
 				(*file_count) ++;
@@ -275,12 +281,13 @@ int scan_inode_table(int fd, long long start, long long end,
 			case SQUASHFS_SYMLINK_TYPE: {
 				squashfs_symlink_inode_header inodep;
 	
-				if(swap) {
-					squashfs_symlink_inode_header sinodep;
-					memcpy(&sinodep, cur_ptr, sizeof(sinodep));
-					SQUASHFS_SWAP_SYMLINK_INODE_HEADER(&inodep, &sinodep);
-				} else
-					memcpy(&inodep, cur_ptr, sizeof(inodep));
+#if __BYTE_ORDER == __BIG_ENDIAN
+				squashfs_symlink_inode_header sinodep;
+				memcpy(&sinodep, cur_ptr, sizeof(sinodep));
+				SQUASHFS_SWAP_SYMLINK_INODE_HEADER(&inodep, &sinodep);
+#else
+				memcpy(&inodep, cur_ptr, sizeof(inodep));
+#endif
 				(*sym_count) ++;
 				cur_ptr += sizeof(inodep) + inodep.symlink_size;
 				break;
@@ -288,12 +295,13 @@ int scan_inode_table(int fd, long long start, long long end,
 			case SQUASHFS_DIR_TYPE: {
 				squashfs_dir_inode_header dir_inode;
 
-				if(swap) {
-					squashfs_dir_inode_header sinode;
-					memcpy(&sinode, cur_ptr, sizeof(dir_inode));
-					SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode, &sinode);
-				} else
-					memcpy(&dir_inode, cur_ptr, sizeof(dir_inode));
+#if __BYTE_ORDER == __BIG_ENDIAN
+				squashfs_dir_inode_header sinode;
+				memcpy(&sinode, cur_ptr, sizeof(dir_inode));
+				SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode, &sinode);
+#else
+				memcpy(&dir_inode, cur_ptr, sizeof(dir_inode));
+#endif
 				if(dir_inode.start_block < directory_start_block)
 					*uncompressed_directory += dir_inode.file_size;
 				(*dir_count) ++;
@@ -304,24 +312,26 @@ int scan_inode_table(int fd, long long start, long long end,
 				squashfs_ldir_inode_header dir_inode;
 				int i;
 
-				if(swap) {
-					squashfs_ldir_inode_header sinode;
-					memcpy(&sinode, cur_ptr, sizeof(dir_inode));
-					SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode, &sinode);
-				} else
-					memcpy(&dir_inode, cur_ptr, sizeof(dir_inode));
+#if __BYTE_ORDER == __BIG_ENDIAN
+				squashfs_ldir_inode_header sinode;
+				memcpy(&sinode, cur_ptr, sizeof(dir_inode));
+				SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode, &sinode);
+#else
+				memcpy(&dir_inode, cur_ptr, sizeof(dir_inode));
+#endif
 				if(dir_inode.start_block < directory_start_block)
 					*uncompressed_directory += dir_inode.file_size;
 				(*dir_count) ++;
 				cur_ptr += sizeof(squashfs_ldir_inode_header);
 				for(i = 0; i < dir_inode.i_count; i++) {
 					squashfs_dir_index index;
-					if(swap) {
-						squashfs_dir_index sindex;
-						memcpy(&sindex, cur_ptr, sizeof(squashfs_dir_index));
-						SQUASHFS_SWAP_DIR_INDEX(&index, &sindex);
-					} else
-						memcpy(&index, cur_ptr, sizeof(squashfs_dir_index));
+#if __BYTE_ORDER == __BIG_ENDIAN
+					squashfs_dir_index sindex;
+					memcpy(&sindex, cur_ptr, sizeof(squashfs_dir_index));
+					SQUASHFS_SWAP_DIR_INDEX(&index, &sindex);
+#else
+					memcpy(&index, cur_ptr, sizeof(squashfs_dir_index));
+#endif
 					cur_ptr += sizeof(squashfs_dir_index) + index.size + 1;
 				}
 				break;
@@ -357,20 +367,21 @@ failed:
 
 int read_super(int fd, squashfs_super_block *sBlk, char *source)
 {
+#if __BYTE_ORDER == __BIG_ENDIAN
+	squashfs_super_block sblk;
+	read_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block), (char *) &sblk);
+	SQUASHFS_SWAP_SUPER_BLOCK(sBlk, &sblk);
+#else
 	read_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block), (char *) sBlk);
+#endif
 
-	/* Check it is a SQUASHFS superblock */
-	swap = 0;
 	if(sBlk->s_magic != SQUASHFS_MAGIC) {
-		if(sBlk->s_magic == SQUASHFS_MAGIC_SWAP) {
-			squashfs_super_block sblk;
-			SQUASHFS_SWAP_SUPER_BLOCK(&sblk, sBlk);
-			memcpy(sBlk, &sblk, sizeof(squashfs_super_block));
-			swap = 1;
-		} else  {
+		if(sBlk->s_magic == SQUASHFS_MAGIC_SWAP)
+			ERROR("Pre 4.0 big-endian filesystem on %s, appending"
+				" to this is unsupported\n", source);
+		else
 			ERROR("Can't find a SQUASHFS superblock on %s\n", source);
-			goto failed_mount;
-		}
+		goto failed_mount;
 	}
 
 	/* Check the MAJOR & MINOR versions */
@@ -437,24 +448,26 @@ unsigned char *squashfs_readdir(int fd, int root_entries, unsigned int directory
 
 	bytes = offset;
  	while(bytes < size) {			
-		if(swap) {
-			squashfs_dir_header sdirh;
-			memcpy(&sdirh, directory_table + bytes, sizeof(sdirh));
-			SQUASHFS_SWAP_DIR_HEADER(&dirh, &sdirh);
-		} else
-			memcpy(&dirh, directory_table + bytes, sizeof(dirh));
+#if __BYTE_ORDER == __BIG_ENDIAN
+		squashfs_dir_header sdirh;
+		memcpy(&sdirh, directory_table + bytes, sizeof(sdirh));
+		SQUASHFS_SWAP_DIR_HEADER(&dirh, &sdirh);
+#else
+		memcpy(&dirh, directory_table + bytes, sizeof(dirh));
+#endif
 
 		dir_count = dirh.count + 1;
 		TRACE("squashfs_readdir: Read directory header @ byte position 0x%x, 0x%x directory entries\n", bytes, dir_count);
 		bytes += sizeof(dirh);
 
 		while(dir_count--) {
-			if(swap) {
-				squashfs_dir_entry sdire;
-				memcpy(&sdire, directory_table + bytes, sizeof(sdire));
-				SQUASHFS_SWAP_DIR_ENTRY(dire, &sdire);
-			} else
-				memcpy(dire, directory_table + bytes, sizeof(*dire));
+#if __BYTE_ORDER == __BIG_ENDIAN
+			squashfs_dir_entry sdire;
+			memcpy(&sdire, directory_table + bytes, sizeof(sdire));
+			SQUASHFS_SWAP_DIR_ENTRY(dire, &sdire);
+#else
+			memcpy(dire, directory_table + bytes, sizeof(*dire));
+#endif
 			bytes += sizeof(*dire);
 
 			memcpy(dire->name, directory_table + bytes, dire->size + 1);
@@ -484,33 +497,35 @@ unsigned int *read_id_table(int fd, squashfs_super_block *sBlk)
 		ERROR("Failed to allocate id table\n");
 		return NULL;
 	}
-	if(swap) {
-		long long sindex[indexes];
-		sid_table = malloc(bytes);
-		if(sid_table == NULL) {
-			ERROR("Failed to allocate id table\n");
-			free(id_table);
-			return NULL;
-		}
+#if __BYTE_ORDER == __BIG_ENDIAN
+	long long sindex[indexes];
+	sid_table = malloc(bytes);
+	if(sid_table == NULL) {
+		ERROR("Failed to allocate id table\n");
+		free(id_table);
+		return NULL;
+	}
 
-		read_bytes(fd, sBlk->id_table_start, SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), (char *) sindex);
-		SQUASHFS_SWAP_ID_BLOCKS(index, sindex, indexes);
-	} else
+	read_bytes(fd, sBlk->id_table_start, SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), (char *) sindex);
+	SQUASHFS_SWAP_ID_BLOCKS(index, sindex, indexes);
+#else
 		read_bytes(fd, sBlk->id_table_start, SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), (char *) index);
+#endif
 
 	for(i = 0; i < indexes; i++) {
 		int length;
-		if(swap)
-			length = read_block(fd, index[i], NULL, ((unsigned char *) sid_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
-		else
-			length = read_block(fd, index[i], NULL, ((unsigned char *) id_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
+#if __BYTE_ORDER == __BIG_ENDIAN
+		length = read_block(fd, index[i], NULL, ((unsigned char *) sid_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
+#else
+		length = read_block(fd, index[i], NULL, ((unsigned char *) id_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
+#endif
 		TRACE("Read id table block %d, from 0x%llx, length %d\n", i, index[i], length);
 	}
 
-	if(swap) {
-		SQUASHFS_SWAP_INTS(id_table, sid_table, sBlk->no_ids);
-		free(sid_table);
-	}
+#if __BYTE_ORDER == __BIG_ENDIAN
+	SQUASHFS_SWAP_INTS(id_table, sid_table, sBlk->no_ids);
+	free(sid_table);
+#endif
 
 	for(i = 0; i < sBlk->no_ids; i++) {
 		TRACE("Adding id %d to id tables\n", id_table[i]);
@@ -535,26 +550,27 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk, squashfs_fragment_en
 		return 0;
 	}
 
-	if(swap) {
-		squashfs_fragment_index sfragment_table_index[indexes];
+#if __BYTE_ORDER == __BIG_ENDIAN
+	squashfs_fragment_index sfragment_table_index[indexes];
 
-		read_bytes(fd, sBlk->fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments), (char *) sfragment_table_index);
-		SQUASHFS_SWAP_FRAGMENT_INDEXES(fragment_table_index, sfragment_table_index, indexes);
-	} else
-		read_bytes(fd, sBlk->fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments), (char *) fragment_table_index);
+	read_bytes(fd, sBlk->fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments), (char *) sfragment_table_index);
+	SQUASHFS_SWAP_FRAGMENT_INDEXES(fragment_table_index, sfragment_table_index, indexes);
+#else
+	read_bytes(fd, sBlk->fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments), (char *) fragment_table_index);
+#endif
 
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fd, fragment_table_index[i], NULL, ((unsigned char *) *fragment_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
 		TRACE("Read fragment table block %d, from 0x%llx, length %d\n", i, fragment_table_index[i], length);
 	}
 
-	if(swap) {
-		squashfs_fragment_entry sfragment;
-		for(i = 0; i < sBlk->fragments; i++) {
-			SQUASHFS_SWAP_FRAGMENT_ENTRY((&sfragment), (&(*fragment_table)[i]));
-			memcpy((char *) &(*fragment_table)[i], (char *) &sfragment, sizeof(squashfs_fragment_entry));
-		}
+#if __BYTE_ORDER == __BIG_ENDIAN
+	squashfs_fragment_entry sfragment;
+	for(i = 0; i < sBlk->fragments; i++) {
+		SQUASHFS_SWAP_FRAGMENT_ENTRY((&sfragment), (&(*fragment_table)[i]));
+		memcpy((char *) &(*fragment_table)[i], (char *) &sfragment, sizeof(squashfs_fragment_entry));
 	}
+#endif
 
 	return 1;
 }
@@ -575,26 +591,27 @@ int read_inode_lookup_table(int fd, squashfs_super_block *sBlk, squashfs_inode *
 		return 0;
 	}
 
-	if(swap) {
-		long long sindex[indexes];
+#if __BYTE_ORDER == __BIG_ENDIAN
+	long long sindex[indexes];
 
-		read_bytes(fd, sBlk->lookup_table_start, SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), (char *) sindex);
-		SQUASHFS_SWAP_FRAGMENT_INDEXES(index, sindex, indexes);
-	} else
-		read_bytes(fd, sBlk->lookup_table_start, SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), (char *) index);
+	read_bytes(fd, sBlk->lookup_table_start, SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), (char *) sindex);
+	SQUASHFS_SWAP_FRAGMENT_INDEXES(index, sindex, indexes);
+#else
+	read_bytes(fd, sBlk->lookup_table_start, SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), (char *) index);
+#endif
 
 	for(i = 0; i <  indexes; i++) {
 		int length = read_block(fd, index[i], NULL, ((unsigned char *) *inode_lookup_table) + (i * SQUASHFS_METADATA_SIZE), sBlk);
 		TRACE("Read inode lookup table block %d, from 0x%llx, length %d\n", i, index[i], length);
 	}
 
-	if(swap) {
-		squashfs_inode_t sinode;
-		for(i = 0; i < sBlk->inodes; i++) {
-			SQUASHFS_SWAP_INODE_T((&sinode), (&(*inode_lookup_table)[i]));
-			memcpy((char *) &(*inode_lookup_table)[i], (char *) &sinode, sizeof(squashfs_inode_t));
-		}
+#if __BYTE_ORDER == __BIG_ENDIAN
+	squashfs_inode_t sinode;
+	for(i = 0; i < sBlk->inodes; i++) {
+		SQUASHFS_SWAP_INODE_T((&sinode), (&(*inode_lookup_table)[i]));
+		memcpy((char *) &(*inode_lookup_table)[i], (char *) &sinode, sizeof(squashfs_inode_t));
 	}
+#endif
 
 	return 1;
 }
