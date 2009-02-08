@@ -1,7 +1,7 @@
 /*
  * Read a squashfs filesystem.  This is a highly compressed read only filesystem.
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
  * Phillip Lougher <phillip@lougher.demon.co.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -77,6 +77,7 @@ int read_block(int fd, long long start, long long *next, unsigned char *block, s
 #else
 		read_bytes(fd, start, 2, (char *)&c_byte);
 #endif
+	c_byte = block[0] & (block[1] << 8);
 
 	if(SQUASHFS_COMPRESSED(c_byte)) {
 		char buffer[SQUASHFS_METADATA_SIZE];
