@@ -9,9 +9,9 @@ all: mksquashfs
 mksquashfs: mksquashfs.o read_fs.o sort.o swap.o
 	$(CC) mksquashfs.o read_fs.o sort.o swap.o -lz -lpthread -lm -o $@
 
-mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h
+mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h squashfs_swap.h
 
-read_fs.o: read_fs.c squashfs_fs.h read_fs.h global.h
+read_fs.o: read_fs.c squashfs_fs.h read_fs.h global.h squashfs_swap.h
 
 sort.o: sort.c squashfs_fs.h global.h sort.h
 
