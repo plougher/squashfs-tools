@@ -324,7 +324,7 @@ int read_super(int fd, squashfs_super_block *sBlk, char *source)
 	/* Check the MAJOR & MINOR versions */
 	if(sBlk->s_major != SQUASHFS_MAJOR || sBlk->s_minor > SQUASHFS_MINOR) {
 		if(sBlk->s_major < 4)
-			ERROR("Filesystem on %s is a SQUASHFS %d.%d filesystem.  Appending\nto SQUASHFS %d.%d filesystems is not supported.  Please convert it to a SQUASHFS 3 filesystem\n", source, sBlk->s_major, sBlk->s_minor, sBlk->s_major, sBlk->s_minor);
+			ERROR("Filesystem on %s is a SQUASHFS %d.%d filesystem.  Appending\nto SQUASHFS %d.%d filesystems is not supported.  Please convert it to a SQUASHFS 4 filesystem\n", source, sBlk->s_major, sBlk->s_minor, sBlk->s_major, sBlk->s_minor);
 		else
 			ERROR("Filesystem on %s is %d.%d, which is a later filesystem version than I support\n",
 				source, sBlk->s_major, sBlk->s_minor);
