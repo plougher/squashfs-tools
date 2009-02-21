@@ -18,6 +18,16 @@
  *
  * swap.c
  */
+
+#ifndef linux
+#define __BYTE_ORDER BYTE_ORDER
+#define __BIG_ENDIAN BIG_ENDIAN
+#define __LITTLE_ENDIAN LITTLE_ENDIAN
+#else
+#include <endian.h>
+#endif
+
+#if __BYTE_ORDER == __BIG_ENDIAN
 void swap_le16(unsigned short *src, unsigned short *dest)
 {
 	unsigned char *s = (unsigned char *) src;
@@ -56,6 +66,35 @@ void swap_le64(long long *src, long long *dest)
 }
 
 
+unsigned short inswap_le16(unsigned short num)
+{
+	return (num >> 8) |
+		((num & 0xff) << 8);
+}
+
+
+unsigned int inswap_le32(unsigned int num)
+{
+	return ((num & 0xff000000) >> 24) |
+		((num & 0xff0000) >> 8) |
+		((num & 0xff00) << 8) |
+		((num & 0xff) << 24);
+}
+
+
+long long inswap_le64(long long num)
+{
+	return ((num & 0xff00000000000000) >> 56) |
+		((num & 0xff000000000000) >> 40) |
+		((num & 0xff0000000000) >> 24) |
+		((num & 0xff00000000) >> 8) |
+		((num & 0xff000000) << 8) |
+		((num & 0xff0000) << 24) |
+		((num & 0xff00) << 40) |
+		((num & 0xff) << 56);
+}
+
+
 #define SWAP_LE_NUM(BITS, TYPE) \
 void swap_le##BITS##_num(TYPE *s, TYPE *d, int n) \
 {\
@@ -67,3 +106,16 @@ void swap_le##BITS##_num(TYPE *s, TYPE *d, int n) \
 SWAP_LE_NUM(16, unsigned short)
 SWAP_LE_NUM(32, unsigned int)
 SWAP_LE_NUM(64, long long)
+
+#define INSWAP_LE_NUM(BITS, TYPE) \
+void inswap_le##BITS##_num(TYPE *s, int n) \
+{\
+	int i;\
+	for(i = 0; i < n; i++)\
+		s[i] = inswap_le##BITS(s[i]);\
+}
+
+INSWAP_LE_NUM(16, unsigned short)
+INSWAP_LE_NUM(32, unsigned int)
+INSWAP_LE_NUM(64, long long)
+#endif
