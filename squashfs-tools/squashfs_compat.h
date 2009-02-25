@@ -179,6 +179,13 @@ struct squashfs_fragment_entry_3 {
  *
  */
 
+#define SQUASHFS_SWAP_START \
+	int bits;\
+	int b_pos;\
+	unsigned long long val;\
+	unsigned char *s;\
+	unsigned char *d;
+
 #define SQUASHFS_SWAP_SUPER_BLOCK_3(s, d) {\
 	SQUASHFS_SWAP_START\
 	SQUASHFS_MEMSET(s, d, sizeof(struct squashfs_super_block_3));\
@@ -316,13 +323,57 @@ struct squashfs_fragment_entry_3 {
 	SQUASHFS_SWAP((s)->inode_number, d, 24, 16);\
 }
 
+#define SQUASHFS_SWAP_INODE_T_3(s, d) SQUASHFS_SWAP_LONG_LONGS_3(s, d, 1)
+
+#define SQUASHFS_SWAP_SHORTS_3(s, d, n) {\
+	int entry;\
+	int bit_position;\
+	SQUASHFS_SWAP_START\
+	SQUASHFS_MEMSET(s, d, n * 2);\
+	for(entry = 0, bit_position = 0; entry < n; entry++, bit_position += \
+			16)\
+		SQUASHFS_SWAP(s[entry], d, bit_position, 16);\
+}
+
+#define SQUASHFS_SWAP_INTS_3(s, d, n) {\
+	int entry;\
+	int bit_position;\
+	SQUASHFS_SWAP_START\
+	SQUASHFS_MEMSET(s, d, n * 4);\
+	for(entry = 0, bit_position = 0; entry < n; entry++, bit_position += \
+			32)\
+		SQUASHFS_SWAP(s[entry], d, bit_position, 32);\
+}
+
+#define SQUASHFS_SWAP_LONG_LONGS_3(s, d, n) {\
+	int entry;\
+	int bit_position;\
+	SQUASHFS_SWAP_START\
+	SQUASHFS_MEMSET(s, d, n * 8);\
+	for(entry = 0, bit_position = 0; entry < n; entry++, bit_position += \
+			64)\
+		SQUASHFS_SWAP(s[entry], d, bit_position, 64);\
+}
+
+#define SQUASHFS_SWAP_DATA(s, d, n, bits) {\
+	int entry;\
+	int bit_position;\
+	SQUASHFS_SWAP_START\
+	SQUASHFS_MEMSET(s, d, n * bits / 8);\
+	for(entry = 0, bit_position = 0; entry < n; entry++, bit_position += \
+			bits)\
+		SQUASHFS_SWAP(s[entry], d, bit_position, bits);\
+}
+
+#define SQUASHFS_SWAP_FRAGMENT_INDEXES_3(s, d, n) SQUASHFS_SWAP_LONG_LONGS_3(s, d, n)
+#define SQUASHFS_SWAP_LOOKUP_BLOCKS_3(s, d, n) SQUASHFS_SWAP_LONG_LONGS_3(s, d, n)
+
 #define SQUASHFS_SWAP_FRAGMENT_ENTRY_3(s, d) {\
 	SQUASHFS_SWAP_START\
 	SQUASHFS_MEMSET(s, d, sizeof(struct squashfs_fragment_entry_3));\
 	SQUASHFS_SWAP((s)->start_block, d, 0, 64);\
 	SQUASHFS_SWAP((s)->size, d, 64, 32);\
 }
-
 
 /*
  * definitions for structures on disk - layout 1.x
@@ -642,7 +693,7 @@ struct squashfs_fragment_entry_2 {
 	SQUASHFS_SWAP((s)->size, d, 32, 32);\
 }
 
-#define SQUASHFS_SWAP_FRAGMENT_INDEXES_2(s, d, n) SQUASHFS_SWAP_INTS(s, d, n)
+#define SQUASHFS_SWAP_FRAGMENT_INDEXES_2(s, d, n) SQUASHFS_SWAP_INTS_3(s, d, n)
 
 /* fragment and fragment table defines */
 #define SQUASHFS_FRAGMENT_BYTES_2(A)	(A * sizeof(struct squashfs_fragment_entry_2))
@@ -659,5 +710,27 @@ struct squashfs_fragment_entry_2 {
 
 #define SQUASHFS_FRAGMENT_INDEX_BYTES_2(A)	(SQUASHFS_FRAGMENT_INDEXES_2(A) *\
 						sizeof(int))
+/*
+ * macros used to swap each structure entry, taking into account
+ * bitfields and different bitfield placing conventions on differing architectures
+ */
+#if __BYTE_ORDER == __BIG_ENDIAN
+	/* convert from big endian to little endian */
+#define SQUASHFS_SWAP(value, p, pos, tbits) _SQUASHFS_SWAP(value, p, pos, tbits, b_pos)
+#else
+	/* convert from little endian to big endian */ 
+#define SQUASHFS_SWAP(value, p, pos, tbits) _SQUASHFS_SWAP(value, p, pos, tbits, 64 - tbits - b_pos)
+#endif
 
+#define _SQUASHFS_SWAP(value, p, pos, tbits, SHIFT) {\
+	int bits;\
+	int b_pos = pos % 8;\
+	unsigned long long val = 0;\
+	unsigned char *s = (unsigned char *)p + (pos / 8);\
+	unsigned char *d = ((unsigned char *) &val) + 7;\
+	for(bits = 0; bits < (tbits + b_pos); bits += 8) \
+		*d-- = *s++;\
+	value = (val >> (SHIFT))/* & ((1 << tbits) - 1)*/;\
+}
+#define SQUASHFS_MEMSET(s, d, n)	memset(s, 0, n);
 #endif
