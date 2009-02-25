@@ -57,7 +57,7 @@
 #endif
 
 #include "squashfs_fs.h"
-#include "read_fs.h"
+#include "squashfs_compat.h"
 #include "global.h"
 
 #ifdef SQUASHFS_TRACE
@@ -181,7 +181,7 @@ int processors = -1;
 /* default size of data buffer in Mbytes */
 #define DATA_BUFFER_DEFAULT 256
 
-squashfs_super_block sBlk;
+squashfs_super_block_3 sBlk;
 squashfs_operations s_ops;
 
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
@@ -189,7 +189,7 @@ int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
 char *inode_table = NULL, *directory_table = NULL;
 struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
 int fd;
-squashfs_fragment_entry *fragment_table;
+squashfs_fragment_entry_3 *fragment_table;
 squashfs_fragment_entry_2 *fragment_table_2;
 unsigned int *uid_table, *guid_table;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
@@ -638,6 +638,7 @@ int lookup_entry(struct hash_table_entry *hash_table[], int start)
 
 	for(hash_table_entry = hash_table[hash]; hash_table_entry;
 				hash_table_entry = hash_table_entry->next)
+
 		if(hash_table_entry->start == start)
 			return hash_table_entry->bytes;
 
@@ -759,7 +760,7 @@ void read_block_list(unsigned int *block_list, char *block_ptr, int blocks)
 	if(swap) {
 		unsigned int sblock_list[blocks];
 		memcpy(sblock_list, block_ptr, blocks * sizeof(unsigned int));
-		SQUASHFS_SWAP_INTS(block_list, sblock_list, blocks);
+		SQUASHFS_SWAP_INTS_3(block_list, sblock_list, blocks);
 	} else
 		memcpy(block_list, block_ptr, blocks * sizeof(unsigned int));
 }
@@ -774,7 +775,7 @@ void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
 		if(swap) {
 			unsigned short sblock_size;
 			memcpy(&sblock_size, block_ptr, sizeof(unsigned short));
-			SQUASHFS_SWAP_SHORTS((&block_size), &sblock_size, 1);
+			SQUASHFS_SWAP_SHORTS_3((&block_size), &sblock_size, 1);
 		} else
 			memcpy(&block_size, block_ptr, sizeof(unsigned short));
 		block_list[i] = SQUASHFS_COMPRESSED_SIZE(block_size) | (SQUASHFS_COMPRESSED(block_size) ? 0 : SQUASHFS_COMPRESSED_BIT_BLOCK);
@@ -842,7 +843,7 @@ void read_uids_guids()
 				* sizeof(unsigned int), (char *) suid_table) ==
 				FALSE)
 			EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
-		SQUASHFS_SWAP_INTS(uid_table, suid_table, sBlk.no_uids + sBlk.no_guids);
+		SQUASHFS_SWAP_INTS_3(uid_table, suid_table, sBlk.no_uids + sBlk.no_guids);
 	} else
 		if(read_bytes(sBlk.uid_start, (sBlk.no_uids + sBlk.no_guids)
 				* sizeof(unsigned int), (char *) uid_table) ==
@@ -861,16 +862,16 @@ void read_fragment_table()
 	if(sBlk.fragments == 0)
 		return;
 
-	if((fragment_table = (squashfs_fragment_entry *)
+	if((fragment_table = (squashfs_fragment_entry_3 *)
 			malloc(sBlk.fragments *
-			sizeof(squashfs_fragment_entry))) == NULL)
+			sizeof(squashfs_fragment_entry_3))) == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate fragment table\n");
 
 	if(swap) {
 		squashfs_fragment_index sfragment_table_index[indexes];
 
 		read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk.fragments), (char *) sfragment_table_index);
-		SQUASHFS_SWAP_FRAGMENT_INDEXES(fragment_table_index, sfragment_table_index, indexes);
+		SQUASHFS_SWAP_FRAGMENT_INDEXES_3(fragment_table_index, sfragment_table_index, indexes);
 	} else
 		read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk.fragments), (char *) fragment_table_index);
 
@@ -881,10 +882,10 @@ void read_fragment_table()
 	}
 
 	if(swap) {
-		squashfs_fragment_entry sfragment;
+		squashfs_fragment_entry_3 sfragment;
 		for(i = 0; i < sBlk.fragments; i++) {
-			SQUASHFS_SWAP_FRAGMENT_ENTRY((&sfragment), (&fragment_table[i]));
-			memcpy((char *) &fragment_table[i], (char *) &sfragment, sizeof(squashfs_fragment_entry));
+			SQUASHFS_SWAP_FRAGMENT_ENTRY_3((&sfragment), (&fragment_table[i]));
+			memcpy((char *) &fragment_table[i], (char *) &sfragment, sizeof(squashfs_fragment_entry_3));
 		}
 	}
 }
@@ -902,7 +903,7 @@ void read_fragment_table_2()
 
 	if((fragment_table_2 = (squashfs_fragment_entry_2 *)
 			malloc(sBlk.fragments *
-			sizeof(squashfs_fragment_entry))) == NULL)
+			sizeof(squashfs_fragment_entry_2))) == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate fragment table\n");
 
 	if(swap) {
@@ -938,7 +939,7 @@ void read_fragment(unsigned int fragment, long long *start_block, int *size)
 {
 	TRACE("read_fragment: reading fragment %d\n", fragment);
 
-	squashfs_fragment_entry *fragment_entry = &fragment_table[fragment];
+	squashfs_fragment_entry_3 *fragment_entry = &fragment_table[fragment];
 	*start_block = fragment_entry->start_block;
 	*size = fragment_entry->size;
 }
@@ -1088,7 +1089,7 @@ int write_file(struct inode *inode, char *pathname)
 
 static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 {
-	static squashfs_inode_header header;
+	static squashfs_inode_header_3 header;
 	long long start = sBlk.inode_table_start + start_block;
 	int bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
@@ -1098,9 +1099,9 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		goto error;
 
 	if(swap) {
-		squashfs_base_inode_header sinode;
+		squashfs_base_inode_header_3 sinode;
 		memcpy(&sinode, block_ptr, sizeof(header.base));
-		SQUASHFS_SWAP_BASE_INODE_HEADER(&header.base, &sinode, sizeof(squashfs_base_inode_header));
+		SQUASHFS_SWAP_BASE_INODE_HEADER_3(&header.base, &sinode, sizeof(squashfs_base_inode_header_3));
 	} else
 		memcpy(&header.base, block_ptr, sizeof(header.base));
 
@@ -1113,12 +1114,12 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 	switch(header.base.inode_type) {
 		case SQUASHFS_DIR_TYPE: {
-			squashfs_dir_inode_header *inode = &header.dir;
+			squashfs_dir_inode_header_3 *inode = &header.dir;
 
 			if(swap) {
-				squashfs_dir_inode_header sinode;
+				squashfs_dir_inode_header_3 sinode;
 				memcpy(&sinode, block_ptr, sizeof(header.dir));
-				SQUASHFS_SWAP_DIR_INODE_HEADER(&header.dir, &sinode);
+				SQUASHFS_SWAP_DIR_INODE_HEADER_3(&header.dir, &sinode);
 			} else
 				memcpy(&header.dir, block_ptr, sizeof(header.dir));
 
@@ -1128,12 +1129,12 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			break;
 		}
 		case SQUASHFS_LDIR_TYPE: {
-			squashfs_ldir_inode_header *inode = &header.ldir;
+			squashfs_ldir_inode_header_3 *inode = &header.ldir;
 
 			if(swap) {
-				squashfs_ldir_inode_header sinode;
+				squashfs_ldir_inode_header_3 sinode;
 				memcpy(&sinode, block_ptr, sizeof(header.ldir));
-				SQUASHFS_SWAP_LDIR_INODE_HEADER(&header.ldir, &sinode);
+				SQUASHFS_SWAP_LDIR_INODE_HEADER_3(&header.ldir, &sinode);
 			} else
 				memcpy(&header.ldir, block_ptr, sizeof(header.ldir));
 
@@ -1143,12 +1144,12 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			break;
 		}
 		case SQUASHFS_FILE_TYPE: {
-			squashfs_reg_inode_header *inode = &header.reg;
+			squashfs_reg_inode_header_3 *inode = &header.reg;
 
 			if(swap) {
-				squashfs_reg_inode_header sinode;
+				squashfs_reg_inode_header_3 sinode;
 				memcpy(&sinode, block_ptr, sizeof(sinode));
-				SQUASHFS_SWAP_REG_INODE_HEADER(inode, &sinode);
+				SQUASHFS_SWAP_REG_INODE_HEADER_3(inode, &sinode);
 			} else
 				memcpy(inode, block_ptr, sizeof(*inode));
 
@@ -1165,12 +1166,12 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			break;
 		}	
 		case SQUASHFS_LREG_TYPE: {
-			squashfs_lreg_inode_header *inode = &header.lreg;
+			squashfs_lreg_inode_header_3 *inode = &header.lreg;
 
 			if(swap) {
-				squashfs_lreg_inode_header sinode;
+				squashfs_lreg_inode_header_3 sinode;
 				memcpy(&sinode, block_ptr, sizeof(sinode));
-				SQUASHFS_SWAP_LREG_INODE_HEADER(inode, &sinode);
+				SQUASHFS_SWAP_LREG_INODE_HEADER_3(inode, &sinode);
 			} else
 				memcpy(inode, block_ptr, sizeof(*inode));
 
@@ -1187,28 +1188,28 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			break;
 		}	
 		case SQUASHFS_SYMLINK_TYPE: {
-			squashfs_symlink_inode_header *inodep = &header.symlink;
+			squashfs_symlink_inode_header_3 *inodep = &header.symlink;
 
 			if(swap) {
-				squashfs_symlink_inode_header sinodep;
+				squashfs_symlink_inode_header_3 sinodep;
 				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_SYMLINK_INODE_HEADER(inodep, &sinodep);
+				SQUASHFS_SWAP_SYMLINK_INODE_HEADER_3(inodep, &sinodep);
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
-			strncpy(i.symlink, block_ptr + sizeof(squashfs_symlink_inode_header), inodep->symlink_size);
+			strncpy(i.symlink, block_ptr + sizeof(squashfs_symlink_inode_header_3), inodep->symlink_size);
 			i.symlink[inodep->symlink_size] = '\0';
 			i.data = inodep->symlink_size;
 			break;
 		}
  		case SQUASHFS_BLKDEV_TYPE:
 	 	case SQUASHFS_CHRDEV_TYPE: {
-			squashfs_dev_inode_header *inodep = &header.dev;
+			squashfs_dev_inode_header_3 *inodep = &header.dev;
 
 			if(swap) {
-				squashfs_dev_inode_header sinodep;
+				squashfs_dev_inode_header_3 sinodep;
 				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_DEV_INODE_HEADER(inodep, &sinodep);
+				SQUASHFS_SWAP_DEV_INODE_HEADER_3(inodep, &sinodep);
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
@@ -1356,7 +1357,7 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 			squashfs_dir_inode_header_2 *inode = &header.dir;
 
 			if(swap) {
-				squashfs_dir_inode_header sinode;
+				squashfs_dir_inode_header_2 sinode;
 				memcpy(&sinode, block_ptr, sizeof(header.dir));
 				SQUASHFS_SWAP_DIR_INODE_HEADER_2(&header.dir, &sinode);
 			} else
@@ -1372,7 +1373,7 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 			squashfs_ldir_inode_header_2 *inode = &header.ldir;
 
 			if(swap) {
-				squashfs_ldir_inode_header sinode;
+				squashfs_ldir_inode_header_2 sinode;
 				memcpy(&sinode, block_ptr, sizeof(header.ldir));
 				SQUASHFS_SWAP_LDIR_INODE_HEADER_2(&header.ldir, &sinode);
 			} else
@@ -1619,9 +1620,9 @@ struct dir {
 
 struct dir *squashfs_opendir(unsigned int block_start, unsigned int offset, struct inode **i)
 {
-	squashfs_dir_header dirh;
-	char buffer[sizeof(squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1];
-	squashfs_dir_entry *dire = (squashfs_dir_entry *) buffer;
+	squashfs_dir_header_3 dirh;
+	char buffer[sizeof(squashfs_dir_entry_3) + SQUASHFS_NAME_LEN + 1];
+	squashfs_dir_entry_3 *dire = (squashfs_dir_entry_3 *) buffer;
 	long long start;
 	int bytes;
 	int dir_count, size;
@@ -1661,9 +1662,9 @@ struct dir *squashfs_opendir(unsigned int block_start, unsigned int offset, stru
 
 	while(bytes < size) {			
 		if(swap) {
-			squashfs_dir_header sdirh;
+			squashfs_dir_header_3 sdirh;
 			memcpy(&sdirh, directory_table + bytes, sizeof(sdirh));
-			SQUASHFS_SWAP_DIR_HEADER(&dirh, &sdirh);
+			SQUASHFS_SWAP_DIR_HEADER_3(&dirh, &sdirh);
 		} else
 			memcpy(&dirh, directory_table + bytes, sizeof(dirh));
 	
@@ -1673,9 +1674,9 @@ struct dir *squashfs_opendir(unsigned int block_start, unsigned int offset, stru
 
 		while(dir_count--) {
 			if(swap) {
-				squashfs_dir_entry sdire;
+				squashfs_dir_entry_3 sdire;
 				memcpy(&sdire, directory_table + bytes, sizeof(sdire));
-				SQUASHFS_SWAP_DIR_ENTRY(dire, &sdire);
+				SQUASHFS_SWAP_DIR_ENTRY_3(dire, &sdire);
 			} else
 				memcpy(dire, directory_table + bytes, sizeof(*dire));
 			bytes += sizeof(*dire);
@@ -2157,16 +2158,16 @@ void squashfs_stat(char *source)
 
 int read_super(char *source)
 {
-	read_bytes(SQUASHFS_START, sizeof(squashfs_super_block), (char *) &sBlk);
+	read_bytes(SQUASHFS_START, sizeof(squashfs_super_block_3), (char *) &sBlk);
 
 	/* Check it is a SQUASHFS superblock */
 	swap = 0;
 	if(sBlk.s_magic != SQUASHFS_MAGIC) {
 		if(sBlk.s_magic == SQUASHFS_MAGIC_SWAP) {
-			squashfs_super_block sblk;
+			squashfs_super_block_3 sblk;
 			ERROR("Reading a different endian SQUASHFS filesystem on %s\n", source);
-			SQUASHFS_SWAP_SUPER_BLOCK(&sblk, &sBlk);
-			memcpy(&sBlk, &sblk, sizeof(squashfs_super_block));
+			SQUASHFS_SWAP_SUPER_BLOCK_3(&sblk, &sBlk);
+			memcpy(&sBlk, &sblk, sizeof(squashfs_super_block_3));
 			swap = 1;
 		} else  {
 			ERROR("Can't find a SQUASHFS superblock on %s\n", source);
@@ -2517,7 +2518,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.0-CVS (2008/08/20)\n");\
+	printf("unsquashfs version 4.0-CVS (2009/02/25)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
