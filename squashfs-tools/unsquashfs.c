@@ -1510,6 +1510,7 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 			memcpy(inode, block_ptr, sizeof(header.dir));
 
 			i.data = inode->file_size;
+			i.offset = inode->offset;
 			i.start = inode->start_block;
 			i.time = inode->mtime;
 			break;
