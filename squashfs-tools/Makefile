@@ -20,7 +20,7 @@ swap.o: swap.c Makefile
 unsquashfs: unsquashfs.o
 	$(CC) unsquashfs.o -lz -lpthread -lm -o $@
 
-unsquashfs.o: unsquashfs.c squashfs_fs.h read_fs.h global.h Makefile
+unsquashfs.o: unsquashfs.c squashfs_fs.h squashfs_compat.h global.h Makefile
 
 clean:
 	-rm -f *.o mksquashfs unsquashfs
