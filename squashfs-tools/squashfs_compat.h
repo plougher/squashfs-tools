@@ -137,7 +137,7 @@ struct squashfs_ldir_inode_header_3 {
 	unsigned int		start_block;
 	unsigned int		i_count:16;
 	unsigned int		parent_inode;
-	struct squashfs_dir_index	index[0];
+	struct squashfs_dir_index_3	index[0];
 } __attribute__  ((packed));
 
 union squashfs_inode_header_3 {
@@ -374,6 +374,22 @@ struct squashfs_fragment_entry_3 {
 	SQUASHFS_SWAP((s)->start_block, d, 0, 64);\
 	SQUASHFS_SWAP((s)->size, d, 64, 32);\
 }
+
+/* fragment and fragment table defines */
+#define SQUASHFS_FRAGMENT_BYTES_3(A)	((A) * sizeof(struct squashfs_fragment_entry_3))
+
+#define SQUASHFS_FRAGMENT_INDEX_3(A)	(SQUASHFS_FRAGMENT_BYTES_3(A) / \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_FRAGMENT_INDEX_OFFSET_3(A)	(SQUASHFS_FRAGMENT_BYTES_3(A) % \
+						SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_FRAGMENT_INDEXES_3(A)	((SQUASHFS_FRAGMENT_BYTES_3(A) + \
+					SQUASHFS_METADATA_SIZE - 1) / \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_FRAGMENT_INDEX_BYTES_3(A)	(SQUASHFS_FRAGMENT_INDEXES_3(A) *\
+						sizeof(long long))
 
 /*
  * definitions for structures on disk - layout 1.x
@@ -696,7 +712,7 @@ struct squashfs_fragment_entry_2 {
 #define SQUASHFS_SWAP_FRAGMENT_INDEXES_2(s, d, n) SQUASHFS_SWAP_INTS_3(s, d, n)
 
 /* fragment and fragment table defines */
-#define SQUASHFS_FRAGMENT_BYTES_2(A)	(A * sizeof(struct squashfs_fragment_entry_2))
+#define SQUASHFS_FRAGMENT_BYTES_2(A)	((A) * sizeof(struct squashfs_fragment_entry_2))
 
 #define SQUASHFS_FRAGMENT_INDEX_2(A)	(SQUASHFS_FRAGMENT_BYTES_2(A) / \
 					SQUASHFS_METADATA_SIZE)
