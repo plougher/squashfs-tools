@@ -1326,6 +1326,7 @@ int create_inode(char *pathname, struct inode *i)
 }
 
 
+int inode_number = 1;
 struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header_2 header;
@@ -1333,7 +1334,6 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 	int bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
 	static struct inode i;
-	static int inode_number = 1;
 
 	if(bytes == -1)
 		goto error;
@@ -1459,7 +1459,6 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 	int bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
 	static struct inode i;
-	static int inode_number = 1;
 
 	if(bytes == -1)
 		goto error;
@@ -2691,6 +2690,7 @@ options:
 	pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode), SQUASHFS_INODE_OFFSET(sBlk.root_inode), paths);
 
 	memset(created_inode, 0, sBlk.inodes * sizeof(char *));
+	inode_number = 1;
 
 	printf("%d inodes (%d blocks) to write\n\n", total_inodes, total_inodes - total_files + total_blocks);
 
