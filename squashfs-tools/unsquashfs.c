@@ -854,7 +854,7 @@ void read_uids_guids()
 
 void read_fragment_table()
 {
-	int i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.fragments);
+	int i, indexes = SQUASHFS_FRAGMENT_INDEXES_3(sBlk.fragments);
 	squashfs_fragment_index fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes from 0x%llx\n", sBlk.fragments, indexes, sBlk.fragment_table_start);
@@ -870,10 +870,10 @@ void read_fragment_table()
 	if(swap) {
 		squashfs_fragment_index sfragment_table_index[indexes];
 
-		read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk.fragments), (char *) sfragment_table_index);
+		read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.fragments), (char *) sfragment_table_index);
 		SQUASHFS_SWAP_FRAGMENT_INDEXES_3(fragment_table_index, sfragment_table_index, indexes);
 	} else
-		read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk.fragments), (char *) fragment_table_index);
+		read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.fragments), (char *) fragment_table_index);
 
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fragment_table_index[i], NULL,
