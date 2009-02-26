@@ -95,14 +95,14 @@ struct squashfs_dev_inode_header_3 {
 } __attribute__ ((packed));
 	
 struct squashfs_symlink_inode_header_3 {
-	SQUASHFS_BASE_INODE_HEADER;
+	SQUASHFS_BASE_INODE_HEADER_3;
 	unsigned int		nlink;
 	unsigned short		symlink_size;
 	char			symlink[0];
 } __attribute__ ((packed));
 
 struct squashfs_reg_inode_header_3 {
-	SQUASHFS_BASE_INODE_HEADER;
+	SQUASHFS_BASE_INODE_HEADER_3;
 	squashfs_block_t	start_block;
 	unsigned int		fragment;
 	unsigned int		offset;
