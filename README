@@ -2,8 +2,9 @@ CVS status:
 
 New 4.0 disk layout.
 
-Squashfs-tools: mksquashfs generates 4.0 layout.  Unsquashfs building
-disabled because it is currently broken due to code changes elsewhere.
+Squashfs-tools: mksquashfs generates 4.0 layout.  Unsquashfs fixed
+to unsquashfs 1.x, 2.x and 3.x filesystems.  Code to unsquashfs 4.0
+filesystems is currently being added!
 
 kernel: this directory now tracks the git tree at kernel.org, following
 mainlining of Squashfs.  Please read the README in kernel/ for further
