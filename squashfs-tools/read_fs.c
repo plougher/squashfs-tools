@@ -455,7 +455,7 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk, squashfs_fragment_en
 	if(sBlk->fragments == 0)
 		return 1;
 
-	if((*fragment_table = (squashfs_fragment_entry *) malloc(sBlk->fragments * sizeof(squashfs_fragment_entry))) == NULL) {
+	if((*fragment_table = malloc(sBlk->fragments * sizeof(squashfs_fragment_entry))) == NULL) {
 		ERROR("Failed to allocate fragment table\n");
 		return 0;
 	}
@@ -569,25 +569,25 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk, c
 		}
 
 		root_inode_start -= start;
-		if((*cinode_table = (char *) malloc(root_inode_start)) == NULL) {
+		if((*cinode_table = malloc(root_inode_start)) == NULL) {
 			ERROR("read_filesystem: failed to alloc space for existing filesystem inode table\n");
 			goto error;
 		}
 	       	read_bytes(fd, start, root_inode_start, *cinode_table);
 
-		if((*cdirectory_table = (char *) malloc(*last_directory_block)) == NULL) {
+		if((*cdirectory_table = malloc(*last_directory_block)) == NULL) {
 			ERROR("read_filesystem: failed to alloc space for existing filesystem directory table\n");
 			goto error;
 		}
 		read_bytes(fd, sBlk->directory_table_start, *last_directory_block, *cdirectory_table);
 
-		if((*data_cache = (char *) malloc(root_inode_offset + *root_inode_size)) == NULL) {
+		if((*data_cache = malloc(root_inode_offset + *root_inode_size)) == NULL) {
 			ERROR("read_filesystem: failed to alloc inode cache\n");
 			goto error;
 		}
 		memcpy(*data_cache, inode_table + root_inode_block, root_inode_offset + *root_inode_size);
 
-		if((*directory_data_cache = (char *) malloc(*inode_dir_offset + *inode_dir_file_size)) == NULL) {
+		if((*directory_data_cache = malloc(*inode_dir_offset + *inode_dir_file_size)) == NULL) {
 			ERROR("read_filesystem: failed to alloc directory cache\n");
 			goto error;
 		}
