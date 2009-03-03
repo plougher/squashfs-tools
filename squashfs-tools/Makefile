@@ -25,6 +25,7 @@ unsquashfs.o: unsquashfs.c squashfs_fs.h squashfs_compat.h global.h Makefile
 clean:
 	-rm -f *.o mksquashfs unsquashfs
 
-install: mksquashfs
+install: mksquashfs unsquashfs
 	mkdir -p $(INSTALL_DIR)
 	cp mksquashfs $(INSTALL_DIR)
+	cp unsquashfs $(INSTALL_DIR)
