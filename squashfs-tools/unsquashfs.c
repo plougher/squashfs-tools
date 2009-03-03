@@ -862,8 +862,7 @@ void read_fragment_table()
 	if(sBlk.fragments == 0)
 		return;
 
-	if((fragment_table = (squashfs_fragment_entry_3 *)
-			malloc(sBlk.fragments *
+	if((fragment_table = malloc(sBlk.fragments *
 			sizeof(squashfs_fragment_entry_3))) == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate fragment table\n");
 
@@ -901,8 +900,7 @@ void read_fragment_table_2()
 	if(sBlk.fragments == 0)
 		return;
 
-	if((fragment_table_2 = (squashfs_fragment_entry_2 *)
-			malloc(sBlk.fragments *
+	if((fragment_table_2 = malloc(sBlk.fragments *
 			sizeof(squashfs_fragment_entry_2))) == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate fragment table\n");
 
@@ -1049,7 +1047,7 @@ int write_file(struct inode *inode, char *pathname)
 
 	for(i = 0; i < inode->blocks; i++) {
 		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
-		struct file_entry *block = malloc(sizeof(struct file_entry *));
+		struct file_entry *block = malloc(sizeof(struct file_entry));
 
 		if(block == NULL)
 			EXIT_UNSQUASH("write_file: unable to malloc file\n");
@@ -1069,7 +1067,7 @@ int write_file(struct inode *inode, char *pathname)
 	if(inode->frag_bytes) {
 		int size;
 		long long start;
-		struct file_entry *block = malloc(sizeof(struct file_entry *));
+		struct file_entry *block = malloc(sizeof(struct file_entry));
 
 		if(block == NULL)
 			EXIT_UNSQUASH("write_file: unable to malloc file\n");
@@ -1932,7 +1930,7 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 
 struct pathnames *init_subdir()
 {
-	struct pathnames *new = malloc(sizeof(struct pathnames *));
+	struct pathnames *new = malloc(sizeof(struct pathnames));
 	new->count = 0;
 	return new;
 }
@@ -2523,7 +2521,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.0-CVS (2009/02/28)\n");\
+	printf("unsquashfs version 4.0-CVS (2009/03/03)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
