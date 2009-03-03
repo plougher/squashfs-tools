@@ -2434,10 +2434,15 @@ read_err:
 	status = read_buffer->error;
 	bytes = start;
 	if(!block_device) {
+		int res;
+
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
 			EXIT_MKSQUASHFS();
-		ftruncate(fd, bytes);
+		res = ftruncate(fd, bytes);
+		if(res != 0)
+			BAD_ERROR("Failed to truncate dest file because %s\n",
+				strerror(errno));
 	}
 	unlock_fragments();
 	free(block_list);
@@ -2519,10 +2524,15 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent, long l
 			cache_block_put(buffer_list[block]);
 		bytes = start;
 		if(thresh && !block_device) {
+			int res;
+
 			queue_put(to_writer, NULL);
 			if(queue_get(from_writer) != 0)
 				EXIT_MKSQUASHFS();
-			ftruncate(fd, bytes);
+			res = ftruncate(fd, bytes);
+			if(res != 0)
+				BAD_ERROR("Failed to truncate dest file because"
+					"  %s\n", strerror(errno));
 		}
 	}
 
@@ -2556,10 +2566,15 @@ read_err:
 	status = read_buffer->error;
 	bytes = start;
 	if(thresh && !block_device) {
+		int res;
+
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
 			EXIT_MKSQUASHFS();
-		ftruncate(fd, bytes);
+		res = ftruncate(fd, bytes);
+		if(res != 0)
+			BAD_ERROR("Failed to truncate dest file because %s\n",
+				strerror(errno));
 	}
 	unlock_fragments();
 	for(blocks = thresh; blocks < block; blocks ++)
