@@ -1587,7 +1587,7 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
 	if(fragment_size + file_buffer->size > block_size)
 		write_fragment();
 
-	if((ffrg = (struct fragment *) malloc(sizeof(struct fragment))) == NULL)
+	if((ffrg = malloc(sizeof(struct fragment))) == NULL)
 		BAD_ERROR("Out of memory in fragment block allocation!\n");
 
 	if(fragment_size == 0)
@@ -1748,7 +1748,7 @@ void add_file(long long start, long long file_size, long long file_bytes, unsign
 		return;
 	}
 
-	if((frg = (struct fragment *) malloc(sizeof(struct fragment))) == NULL)
+	if((frg = malloc(sizeof(struct fragment))) == NULL)
 		BAD_ERROR("Out of memory in fragment block allocation!\n");
 
 	frg->index = fragment;
@@ -1796,7 +1796,7 @@ struct file_info *add_non_dup(long long file_size, long long bytes, unsigned int
 {
 	struct file_info *dupl_ptr;
 
-	if((dupl_ptr = (struct file_info *) malloc(sizeof(struct file_info))) == NULL) {
+	if((dupl_ptr = malloc(sizeof(struct file_info))) == NULL) {
 		BAD_ERROR("Out of memory in dup_files allocation!\n");
 	}
 
@@ -3388,7 +3388,7 @@ void display_path2(struct pathname *paths, char *string)
 
 struct pathnames *init_subdir()
 {
-	struct pathnames *new = malloc(sizeof(struct pathnames *));
+	struct pathnames *new = malloc(sizeof(struct pathnames));
 	new->count = 0;
 	return new;
 }
@@ -3564,7 +3564,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.0-CVS (2009/02/20)\n");\
+	printf("mksquashfs version 4.0-CVS (2009/03/03)\n");\
 	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3969,8 +3969,8 @@ printOptions:
 		sinode_count = sBlk.inodes;
 		scache_bytes = root_inode_offset + root_inode_size;
 		sdirectory_cache_bytes = uncompressed_data;
-		sdata_cache = (char *)malloc(scache_bytes);
-		sdirectory_data_cache = (char *)malloc(sdirectory_cache_bytes);
+		sdata_cache = malloc(scache_bytes);
+		sdirectory_data_cache = malloc(sdirectory_cache_bytes);
 		memcpy(sdata_cache, data_cache, scache_bytes);
 		memcpy(sdirectory_data_cache, directory_data_cache + compressed_data, sdirectory_cache_bytes);
 		sinode_bytes = root_inode_start;
