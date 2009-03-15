@@ -20,13 +20,13 @@ swap.o: swap.c Makefile
 unsquashfs: unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o
 	$(CC) unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o -lz -lpthread -lm -o $@
 
-unsquashfs.o: unsquashfs.c squashfs_fs.h squashfs_compat.h global.h Makefile
+unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_compat.h global.h Makefile
 
-unsquash-1.o: unsquash-1.c squashfs_fs.h squashfs_compat.h global.h Makefile
+unsquash-1.o: unsquashfs.h unsquash-1.c squashfs_fs.h squashfs_compat.h global.h Makefile
 
-unsquash-2.o: unsquash-2.c squashfs_fs.h squashfs_compat.h global.h Makefile
+unsquash-2.o: unsquashfs.h unsquash-2.c unsquashfs.h squashfs_fs.h squashfs_compat.h global.h Makefile
 
-unsquash-3.o: unsquash-3.c squashfs_fs.h squashfs_compat.h global.h Makefile
+unsquash-3.o: unsquashfs.h unsquash-3.c squashfs_fs.h squashfs_compat.h global.h Makefile
 
 clean:
 	-rm -f *.o mksquashfs unsquashfs
