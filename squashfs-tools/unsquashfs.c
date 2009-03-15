@@ -652,29 +652,6 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 }
 
 
-void read_uids_guids()
-{
-	if((uid_table = malloc((sBlk.no_uids + sBlk.no_guids) * sizeof(unsigned int))) == NULL)
-		EXIT_UNSQUASH("read_uids_guids: failed to allocate uid/gid table\n");
-
-	guid_table = uid_table + sBlk.no_uids;
-
-	if(swap) {
-		unsigned int suid_table[sBlk.no_uids + sBlk.no_guids];
-
-		if(read_bytes(sBlk.uid_start, (sBlk.no_uids + sBlk.no_guids)
-				* sizeof(unsigned int), (char *) suid_table) ==
-				FALSE)
-			EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
-		SQUASHFS_SWAP_INTS_3(uid_table, suid_table, sBlk.no_uids + sBlk.no_guids);
-	} else
-		if(read_bytes(sBlk.uid_start, (sBlk.no_uids + sBlk.no_guids)
-				* sizeof(unsigned int), (char *) uid_table) ==
-				FALSE)
-			EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
-}
-
-
 int lseek_broken = FALSE;
 char *zero_data;
 
@@ -1316,6 +1293,7 @@ int read_super(char *source)
 			s_ops.read_fragment_table = read_fragment_table_1;
 			s_ops.read_block_list = read_block_list_1;
 			s_ops.read_inode = read_inode_1;
+			s_ops.read_uids_guids = read_uids_guids_1;
 		} else {
 			sBlk.fragment_table_start = sBlk.fragment_table_start_2;
 			s_ops.squashfs_opendir = squashfs_opendir_1;
@@ -1323,6 +1301,7 @@ int read_super(char *source)
 			s_ops.read_fragment_table = read_fragment_table_2;
 			s_ops.read_block_list = read_block_list_2;
 			s_ops.read_inode = read_inode_2;
+			s_ops.read_uids_guids = read_uids_guids_1;
 		}
 	} else if(sBlk.s_major == 3 && sBlk.s_minor <= 1) {
 		s_ops.squashfs_opendir = squashfs_opendir_3;
@@ -1330,6 +1309,7 @@ int read_super(char *source)
 		s_ops.read_fragment_table = read_fragment_table_3;
 		s_ops.read_block_list = read_block_list_2;
 		s_ops.read_inode = read_inode_3;
+		s_ops.read_uids_guids = read_uids_guids_1;
 	} else if (sBlk.s_major == 4) {
 		ERROR("Filesystem on %s is a 4.0 filesystem.  These are"
 			" currently NOT supported!\n", source);
@@ -1649,7 +1629,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.0-CVS (2009/03/13)\n");\
+	printf("unsquashfs version 4.0-CVS (2009/03/14)\n");\
 	printf("copyright (C) 2008 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -1805,7 +1785,7 @@ options:
 
 	memset(created_inode, 0, sBlk.inodes * sizeof(char *));
 
-	read_uids_guids();
+	s_ops.read_uids_guids();
 
 	s_ops.read_fragment_table();
 
