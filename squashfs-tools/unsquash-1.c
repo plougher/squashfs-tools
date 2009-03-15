@@ -259,3 +259,26 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset, st
 
 	return dir;
 }
+
+
+void read_uids_guids_1()
+{
+	if((uid_table = malloc((sBlk.no_uids + sBlk.no_guids) * sizeof(unsigned int))) == NULL)
+		EXIT_UNSQUASH("read_uids_guids: failed to allocate uid/gid table\n");
+
+	guid_table = uid_table + sBlk.no_uids;
+
+	if(swap) {
+		unsigned int suid_table[sBlk.no_uids + sBlk.no_guids];
+
+		if(read_bytes(sBlk.uid_start, (sBlk.no_uids + sBlk.no_guids)
+				* sizeof(unsigned int), (char *) suid_table) ==
+				FALSE)
+			EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
+		SQUASHFS_SWAP_INTS_3(uid_table, suid_table, sBlk.no_uids + sBlk.no_guids);
+	} else
+		if(read_bytes(sBlk.uid_start, (sBlk.no_uids + sBlk.no_guids)
+				* sizeof(unsigned int), (char *) uid_table) ==
+				FALSE)
+			EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
+}
