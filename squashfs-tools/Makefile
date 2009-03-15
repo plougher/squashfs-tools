@@ -9,7 +9,7 @@ all: mksquashfs unsquashfs
 mksquashfs: mksquashfs.o read_fs.o sort.o swap.o
 	$(CC) mksquashfs.o read_fs.o sort.o swap.o -lz -lpthread -lm -o $@
 
-mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h squashfs_swap.h
+mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h squashfs_swap.h Makefile
 
 read_fs.o: read_fs.c squashfs_fs.h read_fs.h global.h squashfs_swap.h Makefile
 
