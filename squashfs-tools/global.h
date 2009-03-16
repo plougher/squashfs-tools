@@ -54,7 +54,6 @@ typedef struct squashfs_dir_header_3 squashfs_dir_header_3;
 typedef struct squashfs_fragment_entry_3 squashfs_fragment_entry_3;
 typedef union squashfs_inode_header_3 squashfs_inode_header_3;
 
-#ifdef CONFIG_SQUASHFS_1_0_COMPATIBILITY
 typedef struct squashfs_dir_index_1 squashfs_dir_index_1;
 typedef struct squashfs_base_inode_header_1 squashfs_base_inode_header_1;
 typedef struct squashfs_ipc_inode_header_1 squashfs_ipc_inode_header_1;
@@ -63,9 +62,7 @@ typedef struct squashfs_symlink_inode_header_1 squashfs_symlink_inode_header_1;
 typedef struct squashfs_reg_inode_header_1 squashfs_reg_inode_header_1;
 typedef struct squashfs_dir_inode_header_1 squashfs_dir_inode_header_1;
 typedef union squashfs_inode_header_1 squashfs_inode_header_1;
-#endif
 
-#ifdef CONFIG_SQUASHFS_2_0_COMPATIBILITY
 typedef struct squashfs_dir_index_2 squashfs_dir_index_2;
 typedef struct squashfs_base_inode_header_2 squashfs_base_inode_header_2;
 typedef struct squashfs_ipc_inode_header_2 squashfs_ipc_inode_header_2;
@@ -79,7 +76,6 @@ typedef struct squashfs_dir_entry_2 squashfs_dir_entry_2;
 typedef struct squashfs_dir_header_2 squashfs_dir_header_2;
 typedef struct squashfs_fragment_entry_2 squashfs_fragment_entry_2;
 typedef union squashfs_inode_header_2 squashfs_inode_header_2;
-#endif
 
 typedef unsigned int squashfs_id;
 typedef long long squashfs_fragment_index;

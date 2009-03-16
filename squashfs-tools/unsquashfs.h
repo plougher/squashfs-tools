@@ -20,8 +20,6 @@
  *
  * unsquashfs.h
  */
-#define CONFIG_SQUASHFS_1_0_COMPATIBILITY
-#define CONFIG_SQUASHFS_2_0_COMPATIBILITY
 
 #define TRUE 1
 #define FALSE 0
