@@ -23,6 +23,8 @@
 
 #include "unsquashfs.h"
 
+static squashfs_fragment_entry_3 *fragment_table;
+
 void read_fragment_table_3()
 {
 	int i, indexes = SQUASHFS_FRAGMENT_INDEXES_3(sBlk.fragments);
@@ -33,7 +35,7 @@ void read_fragment_table_3()
 	if(sBlk.fragments == 0)
 		return;
 
-	if((fragment_table_3 = malloc(sBlk.fragments *
+	if((fragment_table = malloc(sBlk.fragments *
 			sizeof(squashfs_fragment_entry_3))) == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate fragment table\n");
 
@@ -47,15 +49,15 @@ void read_fragment_table_3()
 
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fragment_table_index[i], NULL,
-		((char *) fragment_table_3) + (i * SQUASHFS_METADATA_SIZE));
+		((char *) fragment_table) + (i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read fragment table block %d, from 0x%llx, length %d\n", i, fragment_table_index[i], length);
 	}
 
 	if(swap) {
 		squashfs_fragment_entry_3 sfragment;
 		for(i = 0; i < sBlk.fragments; i++) {
-			SQUASHFS_SWAP_FRAGMENT_ENTRY_3((&sfragment), (&fragment_table_3[i]));
-			memcpy((char *) &fragment_table_3[i], (char *) &sfragment, sizeof(squashfs_fragment_entry_3));
+			SQUASHFS_SWAP_FRAGMENT_ENTRY_3((&sfragment), (&fragment_table[i]));
+			memcpy((char *) &fragment_table[i], (char *) &sfragment, sizeof(squashfs_fragment_entry_3));
 		}
 	}
 }
@@ -65,7 +67,7 @@ void read_fragment_3(unsigned int fragment, long long *start_block, int *size)
 {
 	TRACE("read_fragment: reading fragment %d\n", fragment);
 
-	squashfs_fragment_entry_3 *fragment_entry = &fragment_table_3[fragment];
+	squashfs_fragment_entry_3 *fragment_entry = &fragment_table[fragment];
 	*start_block = fragment_entry->start_block;
 	*size = fragment_entry->size;
 }
