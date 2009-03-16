@@ -197,8 +197,6 @@ extern squashfs_operations s_ops;
 extern int swap;
 extern char *inode_table, *directory_table;
 extern struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
-extern squashfs_fragment_entry_2 *fragment_table_2;
-extern squashfs_fragment_entry_3 *fragment_table_3;
 extern unsigned int *uid_table, *guid_table;
 extern pthread_mutex_t screen_mutex;
 extern int progress_enabled;
