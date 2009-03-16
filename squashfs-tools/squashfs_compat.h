@@ -172,6 +172,21 @@ struct squashfs_fragment_entry_3 {
 } __attribute__ ((packed));
 
 
+typedef struct squashfs_super_block_3 squashfs_super_block_3;
+typedef struct squashfs_dir_index_3 squashfs_dir_index_3;
+typedef struct squashfs_base_inode_header_3 squashfs_base_inode_header_3;
+typedef struct squashfs_ipc_inode_header_3 squashfs_ipc_inode_header_3;
+typedef struct squashfs_dev_inode_header_3 squashfs_dev_inode_header_3;
+typedef struct squashfs_symlink_inode_header_3 squashfs_symlink_inode_header_3;
+typedef struct squashfs_reg_inode_header_3 squashfs_reg_inode_header_3;
+typedef struct squashfs_lreg_inode_header_3 squashfs_lreg_inode_header_3;
+typedef struct squashfs_dir_inode_header_3 squashfs_dir_inode_header_3;
+typedef struct squashfs_ldir_inode_header_3 squashfs_ldir_inode_header_3;
+typedef struct squashfs_dir_entry_3 squashfs_dir_entry_3;
+typedef struct squashfs_dir_header_3 squashfs_dir_header_3;
+typedef struct squashfs_fragment_entry_3 squashfs_fragment_entry_3;
+typedef union squashfs_inode_header_3 squashfs_inode_header_3;
+
 /*
  * macros to convert each packed bitfield structure from little endian to big
  * endian and vice versa.  These are needed when creating or using a filesystem
@@ -461,6 +476,15 @@ union squashfs_inode_header_1 {
 	struct squashfs_ipc_inode_header_1	ipc;
 };
 
+typedef struct squashfs_dir_index_1 squashfs_dir_index_1;
+typedef struct squashfs_base_inode_header_1 squashfs_base_inode_header_1;
+typedef struct squashfs_ipc_inode_header_1 squashfs_ipc_inode_header_1;
+typedef struct squashfs_dev_inode_header_1 squashfs_dev_inode_header_1;
+typedef struct squashfs_symlink_inode_header_1 squashfs_symlink_inode_header_1;
+typedef struct squashfs_reg_inode_header_1 squashfs_reg_inode_header_1;
+typedef struct squashfs_dir_inode_header_1 squashfs_dir_inode_header_1;
+typedef union squashfs_inode_header_1 squashfs_inode_header_1;
+
 #define SQUASHFS_SWAP_BASE_INODE_CORE_1(s, d, n) \
 	SQUASHFS_MEMSET(s, d, n);\
 	SQUASHFS_SWAP((s)->inode_type, d, 0, 4);\
@@ -618,6 +642,20 @@ struct squashfs_fragment_entry_2 {
 	unsigned int		start_block;
 	unsigned int		size;
 } __attribute__ ((packed));
+
+typedef struct squashfs_dir_index_2 squashfs_dir_index_2;
+typedef struct squashfs_base_inode_header_2 squashfs_base_inode_header_2;
+typedef struct squashfs_ipc_inode_header_2 squashfs_ipc_inode_header_2;
+typedef struct squashfs_dev_inode_header_2 squashfs_dev_inode_header_2;
+typedef struct squashfs_symlink_inode_header_2 squashfs_symlink_inode_header_2;
+typedef struct squashfs_reg_inode_header_2 squashfs_reg_inode_header_2;
+typedef struct squashfs_lreg_inode_header_2 squashfs_lreg_inode_header_2;
+typedef struct squashfs_dir_inode_header_2 squashfs_dir_inode_header_2;
+typedef struct squashfs_ldir_inode_header_2 squashfs_ldir_inode_header_2;
+typedef struct squashfs_dir_entry_2 squashfs_dir_entry_2;
+typedef struct squashfs_dir_header_2 squashfs_dir_header_2;
+typedef struct squashfs_fragment_entry_2 squashfs_fragment_entry_2;
+typedef union squashfs_inode_header_2 squashfs_inode_header_2;
 
 #define SQUASHFS_SWAP_BASE_INODE_CORE_2(s, d, n)\
 	SQUASHFS_MEMSET(s, d, n);\
