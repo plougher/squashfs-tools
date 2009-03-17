@@ -24,7 +24,7 @@
 #include "unsquashfs.h"
 #include "squashfs_swap.h"
 
-void read_fragment_table_3()
+void read_fragment_table_4()
 {
 	int i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.fragments);
 	squashfs_fragment_index fragment_table_index[indexes];
@@ -62,7 +62,7 @@ void read_fragment_table_3()
 }
 
 
-void read_fragment_3(unsigned int fragment, long long *start_block, int *size)
+void read_fragment_4(unsigned int fragment, long long *start_block, int *size)
 {
 	TRACE("read_fragment: reading fragment %d\n", fragment);
 
@@ -72,7 +72,7 @@ void read_fragment_3(unsigned int fragment, long long *start_block, int *size)
 }
 
 
-struct inode *read_inode_3(unsigned int start_block, unsigned int offset)
+struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header header;
 	long long start = sBlk.inode_table_start + start_block;
@@ -216,7 +216,7 @@ error:
 }
 
 
-struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset, struct inode **i)
+struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset, struct inode **i)
 {
 	squashfs_dir_header dirh;
 	char buffer[sizeof(squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1];
