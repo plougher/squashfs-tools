@@ -75,12 +75,8 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 	if(bytes == -1)
 		goto error;
 
-	if(swap) {
-		squashfs_base_inode_header sinode;
-		memcpy(&sinode, block_ptr, sizeof(header.base));
-		SQUASHFS_SWAP_BASE_INODE_HEADER(&header.base, &sinode, sizeof(squashfs_base_inode_header));
-	} else
-		memcpy(&header.base, block_ptr, sizeof(header.base));
+	SQUASHFS_SWAP_BASE_INODE_HEADER(&header.base,
+		(squashfs_base_inode_header *) block_ptr);
 
 	i.uid = (uid_t) uid_table[header.base.uid];
 	i.gid = header.base.guid == SQUASHFS_GUIDS ? i.uid : (uid_t) guid_table[header.base.guid];
@@ -93,12 +89,8 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 		case SQUASHFS_DIR_TYPE: {
 			squashfs_dir_inode_header *inode = &header.dir;
 
-			if(swap) {
-				squashfs_dir_inode_header sinode;
-				memcpy(&sinode, block_ptr, sizeof(header.dir));
-				SQUASHFS_SWAP_DIR_INODE_HEADER(&header.dir, &sinode);
-			} else
-				memcpy(&header.dir, block_ptr, sizeof(header.dir));
+			SQUASHFS_SWAP_DIR_INODE_HEADER(inode,
+				(squashfs_dir_inode_header *) block_ptr);
 
 			i.data = inode->file_size;
 			i.offset = inode->offset;
@@ -108,12 +100,8 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 		case SQUASHFS_LDIR_TYPE: {
 			squashfs_ldir_inode_header *inode = &header.ldir;
 
-			if(swap) {
-				squashfs_ldir_inode_header sinode;
-				memcpy(&sinode, block_ptr, sizeof(header.ldir));
-				SQUASHFS_SWAP_LDIR_INODE_HEADER(&header.ldir, &sinode);
-			} else
-				memcpy(&header.ldir, block_ptr, sizeof(header.ldir));
+			SQUASHFS_SWAP_LDIR_INODE_HEADER(inode,
+				(squashfs_ldir_inode_header *) block_ptr);
 
 			i.data = inode->file_size;
 			i.offset = inode->offset;
@@ -123,12 +111,8 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 		case SQUASHFS_FILE_TYPE: {
 			squashfs_reg_inode_header *inode = &header.reg;
 
-			if(swap) {
-				squashfs_reg_inode_header sinode;
-				memcpy(&sinode, block_ptr, sizeof(sinode));
-				SQUASHFS_SWAP_REG_INODE_HEADER(inode, &sinode);
-			} else
-				memcpy(inode, block_ptr, sizeof(*inode));
+			SQUASHFS_SWAP_REG_INODE_HEADER(inode,
+				(squashfs_reg_inode_header *) block_ptr);
 
 			i.data = inode->file_size;
 			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ?
@@ -145,12 +129,8 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 		case SQUASHFS_LREG_TYPE: {
 			squashfs_lreg_inode_header *inode = &header.lreg;
 
-			if(swap) {
-				squashfs_lreg_inode_header sinode;
-				memcpy(&sinode, block_ptr, sizeof(sinode));
-				SQUASHFS_SWAP_LREG_INODE_HEADER(inode, &sinode);
-			} else
-				memcpy(inode, block_ptr, sizeof(*inode));
+			SQUASHFS_SWAP_LREG_INODE_HEADER(inode,
+				(squashfs_lreg_inode_header *) block_ptr);
 
 			i.data = inode->file_size;
 			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG ?
@@ -164,37 +144,34 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 			i.block_ptr = block_ptr + sizeof(*inode);
 			break;
 		}	
-		case SQUASHFS_SYMLINK_TYPE: {
-			squashfs_symlink_inode_header *inodep = &header.symlink;
+		case SQUASHFS_SYMLINK_TYPE:
+		case SQUASHFS_LSYMLINK_TYPE: {
+			squashfs_symlink_inode_header *inode = &header.symlink;
 
-			if(swap) {
-				squashfs_symlink_inode_header sinodep;
-				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_SYMLINK_INODE_HEADER(inodep, &sinodep);
-			} else
-				memcpy(inodep, block_ptr, sizeof(*inodep));
+			SQUASHFS_SWAP_SYMLINK_INODE_HEADER(inode,
+				(squashfs_symlink_inode_header *) block_ptr);
 
 			strncpy(i.symlink, block_ptr + sizeof(squashfs_symlink_inode_header), inodep->symlink_size);
-			i.symlink[inodep->symlink_size] = '\0';
-			i.data = inodep->symlink_size;
+			i.symlink[inode->symlink_size] = '\0';
+			i.data = inode->symlink_size;
 			break;
 		}
  		case SQUASHFS_BLKDEV_TYPE:
-	 	case SQUASHFS_CHRDEV_TYPE: {
-			squashfs_dev_inode_header *inodep = &header.dev;
+	 	case SQUASHFS_CHRDEV_TYPE:
+ 		case SQUASHFS_LBLKDEV_TYPE:
+	 	case SQUASHFS_LCHRDEV_TYPE: {
+			squashfs_dev_inode_header *inode = &header.dev;
 
-			if(swap) {
-				squashfs_dev_inode_header sinodep;
-				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_DEV_INODE_HEADER(inodep, &sinodep);
-			} else
-				memcpy(inodep, block_ptr, sizeof(*inodep));
+			SQUASHFS_SWAP_DEV_INODE_HEADER(inode,
+				(squashfs_dev_inode_header *) block_ptr);
 
-			i.data = inodep->rdev;
+			i.data = inode->rdev;
 			break;
-			}
+		}
 		case SQUASHFS_FIFO_TYPE:
 		case SQUASHFS_SOCKET_TYPE:
+		case SQUASHFS_LFIFO_TYPE:
+		case SQUASHFS_LSOCKET_TYPE:
 			i.data = 0;
 			break;
 		default:
