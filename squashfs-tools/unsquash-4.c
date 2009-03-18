@@ -264,3 +264,8 @@ struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset, st
 
 	return dir;
 }
+
+
+void read_uids_guids()
+{
+}
