@@ -228,24 +228,17 @@ struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset, st
 	dir->dirs = NULL;
 
 	while(bytes < size) {			
-		if(swap) {
-			squashfs_dir_header sdirh;
-			memcpy(&sdirh, directory_table + bytes, sizeof(sdirh));
-			SQUASHFS_SWAP_DIR_HEADER(&dirh, &sdirh);
-		} else
-			memcpy(&dirh, directory_table + bytes, sizeof(dirh));
+		SQUASHFS_SWAP_DIR_HEADER(&dirh, (squashfs_dir_header *)
+			(directory_table + bytes));
 	
 		dir_count = dirh.count + 1;
 		TRACE("squashfs_opendir: Read directory header @ byte position %d, %d directory entries\n", bytes, dir_count);
 		bytes += sizeof(dirh);
 
 		while(dir_count--) {
-			if(swap) {
-				squashfs_dir_entry sdire;
-				memcpy(&sdire, directory_table + bytes, sizeof(sdire));
-				SQUASHFS_SWAP_DIR_ENTRY(dire, &sdire);
-			} else
-				memcpy(dire, directory_table + bytes, sizeof(*dire));
+			SQUASHFS_SWAP_DIR_ENTRY(dire, (squashfs_dir_entry *)
+				(directory_table + bytes));
+
 			bytes += sizeof(*dire);
 
 			memcpy(dire->name, directory_table + bytes, dire->size + 1);
