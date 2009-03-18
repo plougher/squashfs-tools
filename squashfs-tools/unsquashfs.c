@@ -39,8 +39,6 @@ int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
 char *inode_table = NULL, *directory_table = NULL;
 struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
 int fd;
-squashfs_fragment_entry_2 *fragment_table_2;
-squashfs_fragment_entry_3 *fragment_table_3;
 unsigned int *uid_table, *guid_table;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
 char *fragment_data;
@@ -70,7 +68,12 @@ int lookup_type[] = {
 	S_IFIFO,
 	S_IFSOCK,
 	S_IFDIR,
-	S_IFREG
+	S_IFREG,
+	S_IFLNK,
+	S_IFBLK,
+	S_IFCHR,
+	S_IFIFO,
+	S_IFSOCK
 };
 
 struct test table[] = {
