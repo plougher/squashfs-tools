@@ -23,6 +23,7 @@
 
 #include "unsquashfs.h"
 #include "squashfs_swap.h"
+#include "read_fs.h"
 
 static struct squashfs_fragment_entry *fragment_table;
 
