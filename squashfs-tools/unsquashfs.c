@@ -1295,8 +1295,8 @@ int read_super(char *source)
 
 	/* Check it is a SQUASHFS superblock */
 	swap = 0;
-	if(sBlk.s_magic != SQUASHFS_MAGIC) {
-		if(sBlk.s_magic == SQUASHFS_MAGIC_SWAP) {
+	if(sBlk_3.s_magic != SQUASHFS_MAGIC) {
+		if(sBlk_3.s_magic == SQUASHFS_MAGIC_SWAP) {
 			squashfs_super_block_3 sblk;
 			ERROR("Reading a different endian SQUASHFS filesystem on %s\n", source);
 			SQUASHFS_SWAP_SUPER_BLOCK_3(&sblk, &sBlk_3);
