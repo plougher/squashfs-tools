@@ -78,8 +78,11 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 	SQUASHFS_SWAP_BASE_INODE_HEADER(&header.base,
 		(squashfs_base_inode_header *) block_ptr);
 
-	i.uid = (uid_t) uid_table[header.base.uid];
-	i.gid = header.base.guid == SQUASHFS_GUIDS ? i.uid : (uid_t) guid_table[header.base.guid];
+	//i.uid = (uid_t) uid_table[header.base.uid];
+	//i.gid = header.base.guid == SQUASHFS_GUIDS ? i.uid : (uid_t) guid_table[header.base.guid];
+	/* XXX */
+	i.uid = 0;
+	i.gid = 0;
 	i.mode = lookup_type[header.base.inode_type] | header.base.mode;
 	i.type = header.base.inode_type;
 	i.time = header.base.mtime;
