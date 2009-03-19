@@ -1353,7 +1353,7 @@ int read_super(char *source)
 			s_ops.read_inode = read_inode_2;
 			s_ops.read_uids_guids = read_uids_guids_1;
 		}
-	} else if(sBlk.s_major == 3 && sBlk.s_minor <= 1) {
+	} else if(sBlk.s_major == 3) {
 		s_ops.squashfs_opendir = squashfs_opendir_3;
 		s_ops.read_fragment = read_fragment_3;
 		s_ops.read_fragment_table = read_fragment_table_3;
