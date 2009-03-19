@@ -99,6 +99,11 @@
 #define SQUASHFS_SOCKET_TYPE		7
 #define SQUASHFS_LDIR_TYPE		8
 #define SQUASHFS_LREG_TYPE		9
+#define SQUASHFS_LSYMLINK_TYPE		10
+#define SQUASHFS_LBLKDEV_TYPE		11
+#define SQUASHFS_LCHRDEV_TYPE		12
+#define SQUASHFS_LFIFO_TYPE		13
+#define SQUASHFS_LSOCKET_TYPE		14
 
 /* Flag whether block is compressed or uncompressed, bit is set if block is
  * uncompressed */
