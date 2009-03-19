@@ -22,6 +22,7 @@
  */
 
 #include "unsquashfs.h"
+#include "squashfs_compat.h"
 
 static squashfs_fragment_entry_2 *fragment_table;
 

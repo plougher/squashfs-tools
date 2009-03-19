@@ -22,6 +22,7 @@
  */
 
 #include "unsquashfs.h"
+#include "squashfs_compat.h"
 
 void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
 {
