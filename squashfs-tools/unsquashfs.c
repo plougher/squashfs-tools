@@ -1338,7 +1338,7 @@ int read_super(char *source)
 		
 		if(sBlk.s_major == 1) {
 			sBlk.block_size = sBlk_3.block_size_1;
-			sBlk.fragment_table_start = sBlk_3.uid_start;
+			sBlk.fragment_table_start = sBlk.uid_start;
 			s_ops.squashfs_opendir = squashfs_opendir_1;
 			s_ops.read_fragment_table = read_fragment_table_1;
 			s_ops.read_block_list = read_block_list_1;
