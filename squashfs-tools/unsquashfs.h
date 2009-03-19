@@ -222,7 +222,7 @@ struct dir {
 };
 
 /* globals */
-extern squashfs_super_block_3 sBlk;
+extern struct super_block sBlk;
 extern squashfs_operations s_ops;
 extern int swap;
 extern char *inode_table, *directory_table;
