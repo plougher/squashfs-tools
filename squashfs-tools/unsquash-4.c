@@ -26,6 +26,7 @@
 #include "read_fs.h"
 
 static struct squashfs_fragment_entry *fragment_table;
+static unsigned int *id_table;
 
 void read_fragment_table_4()
 {
@@ -79,11 +80,8 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 	SQUASHFS_SWAP_BASE_INODE_HEADER(&header.base,
 		(squashfs_base_inode_header *) block_ptr);
 
-	//i.uid = (uid_t) uid_table[header.base.uid];
-	//i.gid = header.base.guid == SQUASHFS_GUIDS ? i.uid : (uid_t) guid_table[header.base.guid];
-	/* XXX */
-	i.uid = 0;
-	i.gid = 0;
+	i.uid = (uid_t) id_table[header.base.uid];
+	i.gid = (uid_t) id_table[header.base.guid];
 	i.mode = lookup_type[header.base.inode_type] | header.base.mode;
 	i.type = header.base.inode_type;
 	i.time = header.base.mtime;
@@ -272,4 +270,21 @@ struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset, st
 
 void read_uids_guids_4()
 {
+	int i, indexes = SQUASHFS_ID_BLOCKS(sBlk.no_ids);
+	long long id_index_table[indexes];
+
+	id_table = malloc(SQUASHFS_ID_BYTES(sBlk.no_ids));
+	if(id_table == NULL)
+		EXIT_UNSQUASH("read_uids_guids: failed to allocate id table\n");
+
+	read_bytes(sBlk.id_table_start, SQUASHFS_ID_BLOCK_BYTES(sBlk.no_ids),
+		(char *) id_index_table);
+	SQUASHFS_INSWAP_ID_BLOCKS(id_index_table, indexes);
+
+	for(i = 0; i < indexes; i++) {
+		read_block(id_index_table[i], NULL, ((char *) id_table) + i *
+			SQUASHFS_METADATA_SIZE);
+	}
+
+	SQUASHFS_INSWAP_INTS(id_table, sBlk.no_ids);
 }
