@@ -1276,7 +1276,7 @@ int read_super(char *source)
 	read_bytes(SQUASHFS_START, sizeof(squashfs_super_block), (char *) &sBlk_4);
 	SQUASHFS_INSWAP_SUPER_BLOCK(&sBlk_4);
 
-	if(sBlk_4.s_magic == SQUASHFS_MAGIC && sBlk_4.s_major == 4) {
+	if(sBlk_4.s_magic == SQUASHFS_MAGIC && sBlk_4.s_major == 4 && sBlk_4.s_minor == 0) {
 		s_ops.squashfs_opendir = squashfs_opendir_4;
 		s_ops.read_fragment = read_fragment_4;
 		s_ops.read_fragment_table = read_fragment_table_4;
