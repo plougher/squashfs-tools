@@ -86,6 +86,36 @@
 
 #define CALCULATE_HASH(start)	(start & 0xffff)
 
+/*
+ * Unified superblock containing fields for all superblocks
+ */
+struct super_block {
+	unsigned int		s_magic;
+	unsigned int		inodes;
+	unsigned int		mkfs_time;
+	unsigned int		block_size;
+	unsigned int		fragments;
+	unsigned short		compression;
+	unsigned short		block_log;
+	unsigned short		flags;
+	unsigned short		no_ids;
+	unsigned short		s_major;
+	unsigned short		s_minor;
+	squashfs_inode_t	root_inode;
+	long long		bytes_used;
+	long long		id_table_start;
+	long long		xattr_table_start;
+	long long		inode_table_start;
+	long long		directory_table_start;
+	long long		fragment_table_start;
+	long long		lookup_table_start;
+	/* fields only used by squashfs 3 and earlier layouts */
+	unsigned int		no_uids;
+	unsigned int		no_guids;
+	long long		uid_start;
+	long long		guid_start;
+};
+
 struct hash_table_entry {
 	int	start;
 	int	bytes;
