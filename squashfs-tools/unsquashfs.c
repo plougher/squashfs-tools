@@ -1227,9 +1227,9 @@ void squashfs_stat(char *source)
 	char *mkfs_str = ctime(&mkfs_time);
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-	printf("Found a valid %s endian SQUASHFS %d:%d superblock on %s.\n", swap ? "little" : "big", sBlk.s_major, sBlk.s_minor, source);
+	printf("Found a valid %sSQUASHFS %d:%d superblock on %s.\n", sBlk.s_major == 4 ? "" : swap ? "little endian " : "big endian ", sBlk.s_major, sBlk.s_minor, source);
 #else
-	printf("Found a valid %s endian SQUASHFS %d:%d superblock on %s.\n", swap ? "big" : "little", sBlk.s_major, sBlk.s_minor, source);
+	printf("Found a valid %sSQUASHFS %d:%d superblock on %s.\n", sBlk.s_major == 4 ? "" : swap ? "big endian " : "little endian ", sBlk.s_major, sBlk.s_minor, source);
 #endif
 	printf("Creation or last append time %s", mkfs_str ? mkfs_str : "failed to get time\n");
 	printf("Filesystem is %sexportable via NFS\n", SQUASHFS_EXPORTABLE(sBlk.flags) ? "" : "not ");
@@ -1254,12 +1254,21 @@ void squashfs_stat(char *source)
 	if(sBlk.s_major > 1)
 		printf("Number of fragments %d\n", sBlk.fragments);
 	printf("Number of inodes %d\n", sBlk.inodes);
-	printf("Number of uids %d\n", sBlk.no_uids);
-	printf("Number of gids %d\n", sBlk.no_guids);
+	if(sBlk.s_major == 4)
+		printf("Number of ids %d\n", sBlk.no_ids);
+	else {
+		printf("Number of uids %d\n", sBlk.no_uids);
+		printf("Number of gids %d\n", sBlk.no_guids);
+	}
 
 	TRACE("sBlk.inode_table_start 0x%llx\n", sBlk.inode_table_start);
 	TRACE("sBlk.directory_table_start 0x%llx\n", sBlk.directory_table_start);
-	TRACE("sBlk.uid_start 0x%llx\n", sBlk.uid_start);
+	if(sBlk.s_major == 4)
+		TRACE("sBlk.id_table_start 0x%llx\n", sBlk.id_table_start);
+	else {
+		TRACE("sBlk.uid_start 0x%llx\n", sBlk.uid_start);
+		TRACE("sBlk.guid_start 0x%llx\n", sBlk.guid_start);
+	}
 	if(sBlk.s_major > 1)
 		TRACE("sBlk.fragment_table_start 0x%llx\n\n", sBlk.fragment_table_start);
 }
