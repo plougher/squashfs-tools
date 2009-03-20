@@ -3579,7 +3579,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.0-CVS (2009/03/03)\n");\
+	printf("mksquashfs version 4.0-CVS (2009/03/19)\n");\
 	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -3947,7 +3947,7 @@ printOptions:
 	initialise_threads();
 
 	if(delete) {
-		printf("Creating little endian %d.%d filesystem on %s, block size %d.\n",
+		printf("Creating %d.%d filesystem on %s, block size %d.\n",
 				SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
 		bytes = sizeof(squashfs_super_block);
 	} else {
@@ -3970,7 +3970,7 @@ printOptions:
 		if((fragments = sBlk.fragments))
 			fragment_table = (squashfs_fragment_entry *) realloc((char *) fragment_table, ((fragments + FRAG_SIZE - 1) & ~(FRAG_SIZE - 1)) * sizeof(squashfs_fragment_entry)); 
 
-		printf("Appending to existing little endian %d.%d filesystem on %s, block size %d\n", 
+		printf("Appending to existing %d.%d filesystem on %s, block size %d\n", 
 			SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
 		printf("All -b, -noI, -noD, -noF, no-duplicates, no-fragments, -always-use-fragments and -exportable options ignored\n");
 		printf("\nIf appending is not wanted, please re-run with -noappend specified!\n\n");
@@ -4127,10 +4127,14 @@ restore_filesystem:
 		* sizeof(unsigned short) + guid_count * sizeof(unsigned short) +
 		sizeof(squashfs_super_block);
 
-	printf("\n%sLittle endian filesystem, data block size %d, %s data, %s metadata, %s fragments, duplicates are %sremoved\n",
-		exportable ? "Exportable " : "", block_size,
-		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" : "compressed",
-		no_fragments ? "no" : noF ? "uncompressed" : "compressed", duplicate_checking ? "" : "not ");
+	printf("\n%sSquashfs %d.%d filesystem, data block size %d\n",
+		exportable ? "Exportable " : "", SQUASHFS_MAJOR, SQUASHFS_MINOR,
+		block_size);
+	printf("\t%s data, %s metadata, %s fragments\n",
+		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" :
+		"compressed", no_fragments ? "no" : noF ? "uncompressed" :
+		"compressed");
+	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" : "not ");
 	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0, bytes / (1024.0 * 1024.0));
 	printf("\t%.2f%% of uncompressed filesystem size (%.2f Kbytes)\n",
 		((float) bytes / total_bytes) * 100.0, total_bytes / 1024.0);
