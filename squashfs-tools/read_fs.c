@@ -331,7 +331,7 @@ int read_super(int fd, squashfs_super_block *sBlk, char *source)
 		goto failed_mount;
 	}
 
-	printf("Found a valid %s SQUASHFS superblock on %s.\n", SQUASHFS_EXPORTABLE(sBlk->flags) ? "exportable " : "", source);
+	printf("Found a valid %sSQUASHFS superblock on %s.\n", SQUASHFS_EXPORTABLE(sBlk->flags) ? "exportable " : "", source);
 	printf("\tInodes are %scompressed\n", SQUASHFS_UNCOMPRESSED_INODES(sBlk->flags) ? "un" : "");
 	printf("\tData is %scompressed\n", SQUASHFS_UNCOMPRESSED_DATA(sBlk->flags) ? "un" : "");
 	printf("\tFragments are %scompressed\n", SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk->flags) ? "un" : "");
