@@ -136,6 +136,7 @@ struct inode {
 	time_t time;
 	int type;
 	uid_t uid;
+	char sparse;
 };
 
 typedef struct squashfs_operations {
