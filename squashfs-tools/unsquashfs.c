@@ -1206,6 +1206,9 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset, s
 				create_inode(pathname, i);
 				update_progress_bar();
 				}
+
+			if(i->type == SQUASHFS_SYMLINK_TYPE || i->type == SQUASHFS_LSYMLINK_TYPE)
+				free(i->symlink);
 		}
 
 		free_subdir(new);
