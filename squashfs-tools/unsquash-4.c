@@ -153,6 +153,9 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 			SQUASHFS_SWAP_SYMLINK_INODE_HEADER(inode,
 				(squashfs_symlink_inode_header *) block_ptr);
 
+			i.symlink = malloc(inode->symlink_size + 1);
+			if(i.symlink == NULL)
+				EXIT_UNSQUASH("read_inode: failed to malloc symlink data\n");
 			strncpy(i.symlink, block_ptr + sizeof(squashfs_symlink_inode_header), inode->symlink_size);
 			i.symlink[inode->symlink_size] = '\0';
 			i.data = inode->symlink_size;
