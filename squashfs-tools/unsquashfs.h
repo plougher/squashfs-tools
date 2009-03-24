@@ -132,7 +132,7 @@ struct inode {
 	int mode;
 	int offset;
 	long long start;
-	char symlink[65536];
+	char *symlink;
 	time_t time;
 	int type;
 	uid_t uid;
