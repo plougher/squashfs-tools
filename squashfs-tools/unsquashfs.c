@@ -694,25 +694,6 @@ failure:
 }
 
 
-struct file_entry {
-	int offset;
-	int size;
-	struct cache_entry *buffer;
-};
-
-
-struct squashfs_file {
-	int fd;
-	int blocks;
-	long long file_size;
-	int mode;
-	uid_t uid;
-	gid_t gid;
-	time_t time;
-	char *pathname;
-};
-
-
 int write_file(struct inode *inode, char *pathname)
 {
 	unsigned int file_fd, i;
@@ -1686,7 +1667,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.0-CVS (2009/03/19)\n");\
+	printf("unsquashfs version 4.0-CVS (2009/03/23)\n");\
 	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\

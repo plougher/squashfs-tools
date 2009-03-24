@@ -221,6 +221,24 @@ struct dir {
 	struct dir_ent	*dirs;
 };
 
+struct file_entry {
+	int offset;
+	int size;
+	struct cache_entry *buffer;
+};
+
+
+struct squashfs_file {
+	int fd;
+	int blocks;
+	long long file_size;
+	int mode;
+	uid_t uid;
+	gid_t gid;
+	time_t time;
+	char *pathname;
+};
+
 /* globals */
 extern struct super_block sBlk;
 extern squashfs_operations s_ops;
