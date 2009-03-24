@@ -239,6 +239,23 @@ struct squashfs_file {
 	char *pathname;
 };
 
+struct path_entry {
+	char *name;
+	regex_t *preg;
+	struct pathname *paths;
+};
+
+struct pathname {
+	int names;
+	struct path_entry *name;
+};
+
+struct pathnames {
+	int count;
+	struct pathname *path[0];
+};
+#define PATHS_ALLOC_SIZE 10
+
 /* globals */
 extern struct super_block sBlk;
 extern squashfs_operations s_ops;

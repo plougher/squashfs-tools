@@ -921,23 +921,6 @@ char *get_component(char *target, char *targname)
 }
 
 
-struct path_entry {
-	char *name;
-	regex_t *preg;
-	struct pathname *paths;
-};
-
-struct pathname {
-	int names;
-	struct path_entry *name;
-};
-
-struct pathnames {
-	int count;
-	struct pathname *path[0];
-};
-#define PATHS_ALLOC_SIZE 10
-
 void free_path(struct pathname *paths)
 {
 	int i;
