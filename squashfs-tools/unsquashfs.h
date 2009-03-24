@@ -237,6 +237,7 @@ struct squashfs_file {
 	gid_t gid;
 	time_t time;
 	char *pathname;
+	char sparse;
 };
 
 struct path_entry {

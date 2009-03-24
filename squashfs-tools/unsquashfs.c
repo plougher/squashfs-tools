@@ -729,6 +729,7 @@ int write_file(struct inode *inode, char *pathname)
 	file->time = inode->time;
 	file->pathname = strdup(pathname);
 	file->blocks = inode->blocks + (inode->frag_bytes > 0);
+	file->sparse = inode->sparse;
 	queue_put(to_writer, file);
 
 	for(i = 0; i < inode->blocks; i++) {
