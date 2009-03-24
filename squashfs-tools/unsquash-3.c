@@ -149,6 +149,7 @@ struct inode *read_inode_3(unsigned int start_block, unsigned int offset)
 				(inode->file_size + sBlk.block_size - 1) >>
 				sBlk.block_log : inode->file_size >> sBlk.block_log;
 			i.start = inode->start_block;
+			i.sparse = 1;
 			i.block_ptr = block_ptr + sizeof(*inode);
 			break;
 		}	
@@ -171,6 +172,7 @@ struct inode *read_inode_3(unsigned int start_block, unsigned int offset)
 				(inode->file_size + sBlk.block_size - 1) >>
 				sBlk.block_log : inode->file_size >> sBlk.block_log;
 			i.start = inode->start_block;
+			i.sparse = 1;
 			i.block_ptr = block_ptr + sizeof(*inode);
 			break;
 		}	

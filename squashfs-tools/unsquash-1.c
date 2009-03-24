@@ -127,6 +127,7 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 			i.fragment = 0;
 			i.frag_bytes = 0;
 			i.offset = 0;
+			i.sparse = 0;
 			break;
 		}	
 		case SQUASHFS_SYMLINK_TYPE: {
