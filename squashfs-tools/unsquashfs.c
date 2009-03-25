@@ -659,21 +659,27 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 
 
 int lseek_broken = FALSE;
-char *zero_data;
+char *zero_data = NULL;
 
-int write_block(int file_fd, char *buffer, int size, int hole)
+int write_block(int file_fd, char *buffer, int size, int hole, int sparse)
 {
 	off_t off = hole;
 
 	if(hole) {
-		if(lseek_broken == FALSE && lseek(file_fd, off, SEEK_CUR) == -1) {
-			/* failed to seek beyond end of file */
+		if(sparse && lseek_broken == FALSE) {
+			 int error = lseek(file_fd, off, SEEK_CUR);
+			 if(error == -1)
+				/* failed to seek beyond end of file */
+				lseek_broken = TRUE;
+		}
+
+		if((sparse == FALSE || lseek_broken) && zero_data == NULL) {
 			if((zero_data = malloc(block_size)) == NULL)
 				EXIT_UNSQUASH("write_block: failed to alloc zero data block\n");
 			memset(zero_data, 0, block_size);
-			lseek_broken = TRUE;
 		}
-		if(lseek_broken) {
+
+		if(sparse == FALSE || lseek_broken) {
 			int blocks = (hole + block_size -1) / block_size;
 			int avail_bytes, i;
 			for(i = 0; i < blocks; i++, hole -= avail_bytes) {
@@ -1401,6 +1407,7 @@ void *writer(void *arg)
 		int file_fd;
 		int hole = 0;
 		int failed = FALSE;
+		int error;
 
 		if(file == NULL) {
 			queue_put(from_writer, NULL);
@@ -1425,10 +1432,17 @@ void *writer(void *arg)
 			if(block->buffer->error)
 				failed = TRUE;
 
-			if(failed == FALSE && write_block(file_fd, block->buffer->data + block->offset, block->size, hole) == FALSE) {
+			if(failed)
+				continue;
+
+			error = write_block(file_fd, block->buffer->data +
+				block->offset, block->size, hole, file->sparse);
+
+			if(error == FALSE) {
 				ERROR("writer: failed to write data block %d\n", i);
 				failed = TRUE;
 			}
+
 			hole = 0;
 			cache_block_put(block->buffer);
 			free(block);
@@ -1436,11 +1450,14 @@ void *writer(void *arg)
 
 		if(hole && failed == FALSE) {
 			/* corner case for hole extending to end of file */
-			if(lseek(file_fd, hole, SEEK_CUR) == -1) {
-				/* for broken lseeks which cannot seek beyond end of
- 			 	* file, write_block will do the right thing */
+			if(file->sparse == FALSE || lseek(file_fd, hole, SEEK_CUR) == -1) {
+				/* for files which we don't want to write
+				 * sparsely, or for broken lseeks which cannot
+				 * seek beyond end of file, write_block will do
+				 * the right thing
+				 */
 				hole --;
-				if(write_block(file_fd, "\0", 1, hole) == FALSE) {
+				if(write_block(file_fd, "\0", 1, hole, file->sparse) == FALSE) {
 					ERROR("writer: failed to write sparse data block\n");
 					failed = TRUE;
 				}
@@ -1651,7 +1668,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.0-CVS (2009/03/23)\n");\
+	printf("unsquashfs version 4.0-CVS (2009/03/24)\n");\
 	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
