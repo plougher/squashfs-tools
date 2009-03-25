@@ -1136,6 +1136,8 @@ int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type, long l
 		reg->start_block = start_block;
 		reg->fragment = fragment->index;
 		reg->offset = fragment->offset;
+		if(sparse && sparse >= byte_size)
+			sparse = byte_size - 1;
 		reg->sparse = sparse;
 		SQUASHFS_SWAP_LREG_INODE_HEADER(reg, inodep);
 		SQUASHFS_SWAP_INTS(block_list, inodep->block_list, offset);
@@ -3579,7 +3581,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.0-CVS (2009/03/19)\n");\
+	printf("mksquashfs version 4.0-CVS (2009/03/24)\n");\
 	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
