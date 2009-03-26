@@ -1,4 +1,4 @@
-/*
+, size/*
  * Unsquash a squashfs filesystem.  This is a highly compressed read only filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009
@@ -574,6 +574,7 @@ int read_block(long long start, long long *next, char *block)
 	}
 
 failed:
+	ERROR("read_block: failed to read block @0x%llx\n", start);
 	return FALSE;
 }
 
@@ -588,7 +589,7 @@ int read_data_block(long long start, unsigned int size, char *block)
 
 	if(SQUASHFS_COMPRESSED_BLOCK(size)) {
 		if(read_bytes(start, c_byte, data) == FALSE)
-			return 0;
+			goto failed;
 
 		res = uncompress((unsigned char *) block, &bytes, (const unsigned char *) data, c_byte);
 
@@ -599,16 +600,20 @@ int read_data_block(long long start, unsigned int size, char *block)
 				ERROR("zlib::uncompress failed, not enough room in output buffer\n");
 			else
 				ERROR("zlib::uncompress failed, unknown error %d\n", res);
-			return 0;
+			goto failed;
 		}
 
 		return bytes;
 	} else {
 		if(read_bytes(start, c_byte, block) == FALSE)
-			return 0;
+			goto failed;
 
 		return c_byte;
 	}
+
+failed:
+	ERROR("read_data_block: failed to read block @0x%llx, size %d\n", start, size);
+	return FALSE;
 }
 
 
