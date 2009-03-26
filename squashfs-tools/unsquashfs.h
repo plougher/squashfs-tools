@@ -270,7 +270,7 @@ extern int inode_number;
 extern int lookup_type[];
 
 /* unsquashfs.c */
-extern int lookup_entry(struct hash_table_entry *, long long);
+extern int lookup_entry(struct hash_table_entry **, long long);
 
 /* unsquash-1.c */
 extern void read_block_list_1(unsigned int *, char *, int);
