@@ -279,6 +279,8 @@ void read_uids_guids_4()
 	int i, indexes = SQUASHFS_ID_BLOCKS(sBlk.no_ids);
 	long long id_index_table[indexes];
 
+	TRACE("read_uids_guids: no_ids %d\n", sBlk.no_ids);
+
 	id_table = malloc(SQUASHFS_ID_BYTES(sBlk.no_ids));
 	if(id_table == NULL)
 		EXIT_UNSQUASH("read_uids_guids: failed to allocate id table\n");
