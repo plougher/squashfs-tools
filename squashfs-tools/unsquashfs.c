@@ -621,6 +621,7 @@ void uncompress_inode_table(long long start, long long end)
 {
 	int size = 0, bytes = 0, res;
 
+	TRACE("uncompress_inode_table: start %lld, end %lld\n", start, end);
 	while(start < end) {
 		if((size - bytes < SQUASHFS_METADATA_SIZE) &&
 				((inode_table = realloc(inode_table, size +=
@@ -881,6 +882,8 @@ int create_inode(char *pathname, struct inode *i)
 void uncompress_directory_table(long long start, long long end)
 {
 	int bytes = 0, size = 0, res;
+
+	TRACE("uncompress_directory_table: start %lld, end %lld\n", start, end);
 
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE && (directory_table =
