@@ -469,7 +469,7 @@ int print_filename(char *pathname, struct inode *inode)
 }
 	
 
-int add_entry(struct hash_table_entry *hash_table[], int start, int bytes)
+int add_entry(struct hash_table_entry *hash_table[], long long start, int bytes)
 {
 	int hash = CALCULATE_HASH(start);
 	struct hash_table_entry *hash_table_entry;
@@ -488,7 +488,7 @@ int add_entry(struct hash_table_entry *hash_table[], int start, int bytes)
 }
 
 
-int lookup_entry(struct hash_table_entry *hash_table[], int start)
+int lookup_entry(struct hash_table_entry *hash_table[], long long start)
 {
 	int hash = CALCULATE_HASH(start);
 	struct hash_table_entry *hash_table_entry;

@@ -116,8 +116,8 @@ struct super_block {
 };
 
 struct hash_table_entry {
-	int	start;
-	int	bytes;
+	long long	start;
+	int		bytes;
 	struct hash_table_entry *next;
 };
 
