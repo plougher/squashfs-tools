@@ -75,19 +75,21 @@ unsigned short inswap_le16(unsigned short num)
 
 unsigned int inswap_le32(unsigned int num)
 {
-	return ((num & 0xff000000) >> 24) |
+	return (num >> 24) |
 		((num & 0xff0000) >> 8) |
 		((num & 0xff00) << 8) |
 		((num & 0xff) << 24);
 }
 
 
-long long inswap_le64(long long num)
+long long inswap_le64(long long n)
 {
-	return ((num & 0xff00000000000000) >> 56) |
-		((num & 0xff000000000000) >> 40) |
-		((num & 0xff0000000000) >> 24) |
-		((num & 0xff00000000) >> 8) |
+	unsigned long long num = n;
+
+	return (num >> 56) |
+		((num & 0xff000000000000LL) >> 40) |
+		((num & 0xff0000000000LL) >> 24) |
+		((num & 0xff00000000LL) >> 8) |
 		((num & 0xff000000) << 8) |
 		((num & 0xff0000) << 24) |
 		((num & 0xff00) << 40) |
