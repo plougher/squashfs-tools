@@ -1257,6 +1257,7 @@ int read_super(char *source)
 	 * Try to read a Squashfs 4 superblock
 	 */
 	read_bytes(SQUASHFS_START, sizeof(squashfs_super_block), (char *) &sBlk_4);
+	swap = sBlk_4.s_magic != SQUASHFS_MAGIC;
 	SQUASHFS_INSWAP_SUPER_BLOCK(&sBlk_4);
 
 	if(sBlk_4.s_magic == SQUASHFS_MAGIC && sBlk_4.s_major == 4 && sBlk_4.s_minor == 0) {
