@@ -54,8 +54,12 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 	char *block_ptr = inode_table + bytes + offset;
 	static struct inode i;
 
-	if(bytes == -1)
-		goto error;
+	TRACE("read_inode: reading inode [%d:%d]\n", start_block,  offset);
+
+	if(bytes == -1) {
+		ERROR("read_inode: inode table block %lld not found\n", start); 
+		return NULL;
+	}
 
 	if(swap) {
 		squashfs_base_inode_header_1 sinode;
@@ -172,9 +176,6 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 			return NULL;
 	}
 	return &i;
-
-error:
-	return NULL;
 }
 
 
