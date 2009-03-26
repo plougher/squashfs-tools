@@ -29,6 +29,8 @@ void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
 	unsigned short block_size;
 	int i;
 
+	TRACE("read_block_list: blocks %d\n", blocks);
+
 	for(i = 0; i < blocks; i++, block_ptr += 2) {
 		if(swap) {
 			unsigned short sblock_size;
@@ -43,6 +45,7 @@ void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
 
 void read_fragment_table_1()
 {
+	TRACE("read_fragment_table\n");
 }
 
 
@@ -269,6 +272,8 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset, st
 
 void read_uids_guids_1()
 {
+	TRACE("read_uids_guids: no_uids %d, no_guids %d\n", sBlk.no_uids, sBlk.no_guids);
+
 	if((uid_table = malloc((sBlk.no_uids + sBlk.no_guids) * sizeof(unsigned int))) == NULL)
 		EXIT_UNSQUASH("read_uids_guids: failed to allocate uid/gid table\n");
 
