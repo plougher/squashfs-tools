@@ -28,9 +28,9 @@
 static struct squashfs_fragment_entry *fragment_table;
 static unsigned int *id_table;
 
-void read_fragment_table_4()
+int read_fragment_table_4()
 {
-	int i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.fragments);
+	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.fragments);
 	squashfs_fragment_index fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes from 0x%llx\n", sBlk.fragments, indexes, sBlk.fragment_table_start);
@@ -42,17 +42,27 @@ void read_fragment_table_4()
 			sizeof(squashfs_fragment_entry))) == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate fragment table\n");
 
-	read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk.fragments), (char *) fragment_table_index);
+	res = read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk.fragments), (char *) fragment_table_index);
+	if(res == FALSE) {
+		ERROR("read_fragment_table: failed to read fragment table index\n");
+		return FALSE;
+	}
 	SQUASHFS_INSWAP_FRAGMENT_INDEXES(fragment_table_index, indexes);
 
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fragment_table_index[i], NULL,
 		((char *) fragment_table) + (i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read fragment table block %d, from 0x%llx, length %d\n", i, fragment_table_index[i], length);
+		if(length == FALSE) {
+			ERROR("read_fragment_table: failed to read fragment table index\n");
+			return FALSE;
+		}
 	}
 
 	for(i = 0; i < sBlk.fragments; i++) 
 		SQUASHFS_INSWAP_FRAGMENT_ENTRY(&fragment_table[i]);
+
+	return TRUE;
 }
 
 
