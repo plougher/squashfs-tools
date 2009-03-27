@@ -145,7 +145,7 @@ typedef struct squashfs_operations {
 	int (*read_fragment_table)();
 	void (*read_block_list)(unsigned int *block_list, char *block_ptr, int blocks);
 	struct inode *(*read_inode)(unsigned int start_block, unsigned int offset);
-	void (*read_uids_guids)();
+	int (*read_uids_guids)();
 } squashfs_operations;
 
 struct test {
@@ -277,7 +277,7 @@ extern void read_block_list_1(unsigned int *, char *, int);
 extern int read_fragment_table_1();
 extern struct inode *read_inode_1(unsigned int, unsigned int);
 extern struct dir *squashfs_opendir_1(unsigned int, unsigned int, struct inode **);
-extern void read_uids_guids_1();
+extern int read_uids_guids_1();
 
 /* unsquash-2.c */
 extern void read_block_list_2(unsigned int *, char *, int);
@@ -296,4 +296,4 @@ extern int read_fragment_table_4();
 extern void read_fragment_4(unsigned int, long long *, int *);
 extern struct inode *read_inode_4(unsigned int, unsigned int);
 extern struct dir *squashfs_opendir_4(unsigned int, unsigned int, struct inode **);
-extern void read_uids_guids_4();
+extern int read_uids_guids_4();
