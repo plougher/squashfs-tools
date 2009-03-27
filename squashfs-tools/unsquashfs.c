@@ -675,6 +675,26 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 }
 
 
+int write_bytes(int fd, char *buff, int bytes)
+{
+	int res, count;
+
+	for(count = 0; count < bytes; count += res) {
+		res = write(fd, buff + count, bytes - count);
+		if(res == -1) {
+			if(errno != EINTR) {
+				ERROR("Write on output file failed because %s\n",
+						strerror(errno));
+				return -1;
+			}
+			res = 0;
+		}
+	}
+
+	return 0;
+}
+
+
 int lseek_broken = FALSE;
 char *zero_data = NULL;
 
@@ -701,13 +721,13 @@ int write_block(int file_fd, char *buffer, int size, int hole, int sparse)
 			int avail_bytes, i;
 			for(i = 0; i < blocks; i++, hole -= avail_bytes) {
 				avail_bytes = hole > block_size ? block_size : hole;
-				if(write(file_fd, zero_data, avail_bytes) < avail_bytes)
+				if(write_bytes(file_fd, zero_data, avail_bytes) == -1)
 					goto failure;
 			}
 		}
 	}
 
-	if(write(file_fd, buffer, size) < size)
+	if(write_bytes(file_fd, buffer, size) == -1)
 		goto failure;
 
 	return TRUE;
