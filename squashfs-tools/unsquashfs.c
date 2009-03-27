@@ -506,6 +506,7 @@ int lookup_entry(struct hash_table_entry *hash_table[], long long start)
 int read_bytes(long long byte, int bytes, char *buff)
 {
 	off_t off = byte;
+	int res, count;
 
 	TRACE("read_bytes: reading from position 0x%llx, bytes %d\n", byte, bytes);
 
@@ -514,9 +515,19 @@ int read_bytes(long long byte, int bytes, char *buff)
 		return FALSE;
 	}
 
-	if(read(fd, buff, bytes) == -1) {
-		ERROR("Read on destination failed because %s\n", strerror(errno));
-		return FALSE;
+	for(count = 0; count < bytes; count += res) {
+		res = read(fd, buff + count, bytes - count);
+		if(res < 1) {
+			if(res == 0) {
+				ERROR("Read on filesystem failed because EOF\n");
+				return FALSE;
+			} else if(errno != EINTR) {
+				ERROR("Read on filesystem failed because %s\n",
+						strerror(errno));
+				return FALSE;
+			} else
+				res = 0;
+		}
 	}
 
 	return TRUE;
