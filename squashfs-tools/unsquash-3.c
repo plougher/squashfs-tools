@@ -26,9 +26,9 @@
 
 static squashfs_fragment_entry_3 *fragment_table;
 
-void read_fragment_table_3()
+int read_fragment_table_3()
 {
-	int i, indexes = SQUASHFS_FRAGMENT_INDEXES_3(sBlk.fragments);
+	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES_3(sBlk.fragments);
 	squashfs_fragment_index fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes from 0x%llx\n", sBlk.fragments, indexes, sBlk.fragment_table_start);
@@ -43,15 +43,28 @@ void read_fragment_table_3()
 	if(swap) {
 		squashfs_fragment_index sfragment_table_index[indexes];
 
-		read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.fragments), (char *) sfragment_table_index);
+		res = read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.fragments), (char *) sfragment_table_index);
+		if(res == FALSE) {
+			ERROR("read_fragment_table: failed to read fragment table index\n");       
+			return FALSE;
+		}
 		SQUASHFS_SWAP_FRAGMENT_INDEXES_3(fragment_table_index, sfragment_table_index, indexes);
-	} else
-		read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.fragments), (char *) fragment_table_index);
+	} else {
+		res = read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.fragments), (char *) fragment_table_index);
+		if(res == FALSE) {
+			ERROR("read_fragment_table: failed to read fragment table index\n");       
+			return FALSE;
+		}
+	}
 
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fragment_table_index[i], NULL,
 		((char *) fragment_table) + (i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read fragment table block %d, from 0x%llx, length %d\n", i, fragment_table_index[i], length);
+		if(length == FALSE) {
+			ERROR("read_fragment_table: failed to read fragment table block\n");       
+			return FALSE;
+		}
 	}
 
 	if(swap) {
@@ -61,6 +74,8 @@ void read_fragment_table_3()
 			memcpy((char *) &fragment_table[i], (char *) &sfragment, sizeof(squashfs_fragment_entry_3));
 		}
 	}
+
+	return TRUE;
 }
 
 
