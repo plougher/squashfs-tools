@@ -1835,7 +1835,8 @@ options:
 
 	s_ops.read_uids_guids();
 
-	s_ops.read_fragment_table();
+	if(s_ops.read_fragment_table() == FALSE)
+		EXIT_UNSQUASH("failed to read fragment table\n");
 
 	uncompress_inode_table(sBlk.inode_table_start, sBlk.directory_table_start);
 
