@@ -1833,7 +1833,8 @@ options:
 
 	memset(created_inode, 0, sBlk.inodes * sizeof(char *));
 
-	s_ops.read_uids_guids();
+	if(s_ops.read_uids_guids() == FALSE)
+		EXIT_UNSQUASH("failed to uid/gid table\n");
 
 	if(s_ops.read_fragment_table() == FALSE)
 		EXIT_UNSQUASH("failed to read fragment table\n");
