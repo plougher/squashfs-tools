@@ -39,15 +39,15 @@ void read_block_list_2(unsigned int *block_list, char *block_ptr, int blocks)
 }
 
 
-void read_fragment_table_2()
+int read_fragment_table_2()
 {
-	int i, indexes = SQUASHFS_FRAGMENT_INDEXES_2(sBlk.fragments);
+	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES_2(sBlk.fragments);
 	unsigned int fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes from 0x%llx\n", sBlk.fragments, indexes, sBlk.fragment_table_start);
 
 	if(sBlk.fragments == 0)
-		return;
+		return TRUE;
 
 	if((fragment_table = malloc(sBlk.fragments *
 			sizeof(squashfs_fragment_entry_2))) == NULL)
@@ -56,15 +56,28 @@ void read_fragment_table_2()
 	if(swap) {
 		 unsigned int sfragment_table_index[indexes];
 
-		read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments), (char *) sfragment_table_index);
+		 res = read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments), (char *) sfragment_table_index);
+		if(res == FALSE) {
+			ERROR("read_fragment_table: failed to read fragment table index\n");
+			return FALSE;
+		}
 		SQUASHFS_SWAP_FRAGMENT_INDEXES_2(fragment_table_index, sfragment_table_index, indexes);
-	} else
-		read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments), (char *) fragment_table_index);
+	} else {
+		res = read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments), (char *) fragment_table_index);
+		if(res == FALSE) {
+			ERROR("read_fragment_table: failed to read fragment table index\n");
+			return FALSE;
+		}
+	}
 
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fragment_table_index[i], NULL,
 		((char *) fragment_table) + (i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read fragment table block %d, from 0x%x, length %d\n", i, fragment_table_index[i], length);
+		if(length == FALSE) {
+			ERROR("read_fragment_table: failed to read fragment table block\n");
+			return FALSE;
+		}
 	}
 
 	if(swap) {
@@ -74,6 +87,8 @@ void read_fragment_table_2()
 			memcpy((char *) &fragment_table[i], (char *) &sfragment, sizeof(squashfs_fragment_entry_2));
 		}
 	}
+
+	return TRUE;
 }
 
 
