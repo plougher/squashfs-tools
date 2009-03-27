@@ -43,9 +43,10 @@ void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
 }
 
 
-void read_fragment_table_1()
+int read_fragment_table_1()
 {
 	TRACE("read_fragment_table\n");
+	return TRUE;
 }
 
 
