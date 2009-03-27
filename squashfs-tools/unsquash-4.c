@@ -284,25 +284,37 @@ struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset, st
 }
 
 
-void read_uids_guids_4()
+int read_uids_guids_4()
 {
-	int i, indexes = SQUASHFS_ID_BLOCKS(sBlk.no_ids);
+	int res, i, indexes = SQUASHFS_ID_BLOCKS(sBlk.no_ids);
 	long long id_index_table[indexes];
 
 	TRACE("read_uids_guids: no_ids %d\n", sBlk.no_ids);
 
 	id_table = malloc(SQUASHFS_ID_BYTES(sBlk.no_ids));
-	if(id_table == NULL)
-		EXIT_UNSQUASH("read_uids_guids: failed to allocate id table\n");
+	if(id_table == NULL) {
+		ERROR("read_uids_guids: failed to allocate id table\n");
+		return FALSE;
+	}
 
-	read_bytes(sBlk.id_table_start, SQUASHFS_ID_BLOCK_BYTES(sBlk.no_ids),
+	res = read_bytes(sBlk.id_table_start, SQUASHFS_ID_BLOCK_BYTES(sBlk.no_ids),
 		(char *) id_index_table);
+	if(res == FALSE) {
+		ERROR("read_uids_guids: failed to read id index table\n");
+		return FALSE;
+	}
 	SQUASHFS_INSWAP_ID_BLOCKS(id_index_table, indexes);
 
 	for(i = 0; i < indexes; i++) {
-		read_block(id_index_table[i], NULL, ((char *) id_table) + i *
+		res = read_block(id_index_table[i], NULL, ((char *) id_table) + i *
 			SQUASHFS_METADATA_SIZE);
+		if(res == FALSE) {
+			ERROR("read_uids_guids: failed to read id table block\n");
+			return FALSE;
+		}
 	}
 
 	SQUASHFS_INSWAP_INTS(id_table, sBlk.no_ids);
+
+	return TRUE;
 }
