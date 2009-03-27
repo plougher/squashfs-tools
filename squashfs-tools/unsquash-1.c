@@ -271,26 +271,38 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset, st
 }
 
 
-void read_uids_guids_1()
+int read_uids_guids_1()
 {
+	int res;
+
 	TRACE("read_uids_guids: no_uids %d, no_guids %d\n", sBlk.no_uids, sBlk.no_guids);
 
-	if((uid_table = malloc((sBlk.no_uids + sBlk.no_guids) * sizeof(unsigned int))) == NULL)
-		EXIT_UNSQUASH("read_uids_guids: failed to allocate uid/gid table\n");
+	uid_table = malloc((sBlk.no_uids + sBlk.no_guids) * sizeof(unsigned int));
+	if(uid_table == NULL) {
+		ERROR("read_uids_guids: failed to allocate uid/gid table\n");
+		return FALSE;
+	}
 
 	guid_table = uid_table + sBlk.no_uids;
 
 	if(swap) {
 		unsigned int suid_table[sBlk.no_uids + sBlk.no_guids];
 
-		if(read_bytes(sBlk.uid_start, (sBlk.no_uids + sBlk.no_guids)
-				* sizeof(unsigned int), (char *) suid_table) ==
-				FALSE)
-			EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
+		res = read_bytes(sBlk.uid_start, (sBlk.no_uids + sBlk.no_guids)
+			* sizeof(unsigned int), (char *) suid_table);
+		if(res == FALSE) {
+			ERROR("read_uids_guids: failed to read uid/gid table\n");
+			return FALSE;
+		}
 		SQUASHFS_SWAP_INTS_3(uid_table, suid_table, sBlk.no_uids + sBlk.no_guids);
-	} else
-		if(read_bytes(sBlk.uid_start, (sBlk.no_uids + sBlk.no_guids)
-				* sizeof(unsigned int), (char *) uid_table) ==
-				FALSE)
-			EXIT_UNSQUASH("read_uids_guids: failed to read uid/gid table\n");
+	} else {
+		res = read_bytes(sBlk.uid_start, (sBlk.no_uids + sBlk.no_guids)
+			* sizeof(unsigned int), (char *) uid_table);
+		if(res == FALSE) {
+			ERROR("read_uids_guids: failed to read uid/gid table\n");
+			return FALSE;
+		}
+	}
+
+	return TRUE;
 }
