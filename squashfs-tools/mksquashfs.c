@@ -921,14 +921,9 @@ int read_bytes(int fd, void *buff, int bytes)
 	for(count = 0; count < bytes; count += res) {
 		res = read(fd, buff + count, bytes - count);
 		if(res < 1) {
-			if(res == 0) {
-				if(count)
-					goto bytes_read;
-				else {
-					ERROR("Read failed because EOF\n");
-					return -1;
-				}
-			} else if(errno != EINTR) {
+			if(res == 0)
+				goto bytes_read;
+			else if(errno != EINTR) {
 				ERROR("Read failed because %s\n",
 						strerror(errno));
 				return -1;
