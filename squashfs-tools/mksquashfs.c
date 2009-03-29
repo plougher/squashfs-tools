@@ -914,16 +914,46 @@ failed:
 }
 
 
-void read_bytes(int fd, long long byte, int bytes, char *buff)
+int read_bytes(int fd, char *buff, int bytes)
+{
+	int res, count;
+
+	for(count = 0; count < bytes; count += res) {
+		res = read(fd, buff + count, bytes - count);
+		if(res < 1) {
+			if(res == 0) {
+				if(count)
+					goto bytes_read;
+				else {
+					ERROR("Read failed because EOF\n");
+					return -1;
+				}
+			} else if(errno != EINTR) {
+				ERROR("Read failed because %s\n",
+						strerror(errno));
+				return -1;
+			} else
+				res = 0;
+		}
+	}
+
+bytes_read:
+	return count;
+}
+
+
+void read_destination(int fd, long long byte, int bytes, char *buff)
 {
 	off_t off = byte;
+
+	TRACE("read_destination: reading from position 0x%llx, bytes %d\n", byte, bytes);
 
 	pthread_mutex_lock(&pos_mutex);
 	if(lseek(fd, off, SEEK_SET) == -1)
 		BAD_ERROR("Lseek on destination failed because %s\n", strerror(errno));
 
-	if(read(fd, buff, bytes) == -1)
-		BAD_ERROR("Read on destination failed because %s\n", strerror(errno));
+	if(read_bytes(fd, buff, bytes) < bytes)
+		BAD_ERROR("Read on destination failed\n");
 	pthread_mutex_unlock(&pos_mutex);
 }
 
@@ -1488,7 +1518,7 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 			data = compressed_buffer->data;
 		else {
 			data = cbuffer;
-			read_bytes(fd, start_block, size, data);
+			read_destination(fd, start_block, size, data);
 		}
 
 		if((res = uncompress((unsigned char *) buffer->data, &bytes, (const unsigned char *) data, size)) != Z_OK) {
@@ -1502,7 +1532,7 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 	} else if(compressed_buffer)
 		memcpy(buffer->data, compressed_buffer->data, size);
 	else
-		read_bytes(fd, start_block, size, buffer->data);
+		read_destination(fd, start_block, size, buffer->data);
 
 	return buffer;
 }
@@ -1679,7 +1709,7 @@ long long write_fragment_table()
 char read_from_file_buffer[SQUASHFS_FILE_MAX_SIZE];
 char *read_from_disk(long long start, unsigned int avail_bytes)
 {
-	read_bytes(fd, start, avail_bytes, read_from_file_buffer);
+	read_destination(fd, start, avail_bytes, read_from_file_buffer);
 	return read_from_file_buffer;
 }
 
@@ -1687,7 +1717,7 @@ char *read_from_disk(long long start, unsigned int avail_bytes)
 char read_from_file_buffer2[SQUASHFS_FILE_MAX_SIZE];
 char *read_from_disk2(long long start, unsigned int avail_bytes)
 {
-	read_bytes(fd, start, avail_bytes, read_from_file_buffer2);
+	read_destination(fd, start, avail_bytes, read_from_file_buffer2);
 	return read_from_file_buffer2;
 }
 
@@ -3519,7 +3549,7 @@ void write_recovery_data(squashfs_super_block *sBlk)
 	if((metadata = malloc(bytes)) == NULL)
 		BAD_ERROR("Failed to alloc metadata buffer in write_recovery_data\n");
 
-	read_bytes(fd, sBlk->inode_table_start, bytes, metadata);
+	read_destination(fd, sBlk->inode_table_start, bytes, metadata);
 
 	sprintf(recovery_file, "squashfs_recovery_%s_%d", getbase(destination_file), pid);
 	if((recoverfd = open(recovery_file, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU)) == -1)
@@ -3571,7 +3601,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	if(read(recoverfd, &sBlk, sizeof(squashfs_super_block)) == -1)
 		BAD_ERROR("Failed to read recovery file, because %s\n", strerror(errno));
 
-	read_bytes(fd, 0, sizeof(squashfs_super_block), (char *) &orig_sBlk);
+	read_destination(fd, 0, sizeof(squashfs_super_block), (char *) &orig_sBlk);
 
 	if(memcmp(((char *) &sBlk) + 4, ((char *) &orig_sBlk) + 4, sizeof(squashfs_super_block) - 4) != 0)
 		BAD_ERROR("Recovery file and destination file do not seem to match\n");

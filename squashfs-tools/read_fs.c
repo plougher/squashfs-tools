@@ -21,7 +21,7 @@
  * read_fs.c
  */
 
-extern void read_bytes(int, long long, int, char *);
+extern void read_destination(int, long long, int, char *);
 extern int add_file(long long, long long, long long, unsigned int *, int, unsigned int, int, int);
 extern void *create_id(unsigned int);
 extern unsigned int get_uid(unsigned int);
@@ -70,7 +70,7 @@ int read_block(int fd, long long start, long long *next, unsigned char *block, s
 	unsigned short c_byte;
 	int offset = 2;
 	
-	read_bytes(fd, start, 2, (char *)&c_byte);
+	read_destination(fd, start, 2, (char *)&c_byte);
 	SQUASHFS_INSWAP_SHORTS(&c_byte, 1);
 
 	if(SQUASHFS_COMPRESSED(c_byte)) {
@@ -79,7 +79,7 @@ int read_block(int fd, long long start, long long *next, unsigned char *block, s
 		unsigned long bytes = SQUASHFS_METADATA_SIZE;
 
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
-		read_bytes(fd, start + offset, c_byte, buffer);
+		read_destination(fd, start + offset, c_byte, buffer);
 
 		if((res = uncompress(block, &bytes, (const unsigned char *) buffer, c_byte)) != Z_OK) {
 			if(res == Z_MEM_ERROR)
@@ -95,7 +95,7 @@ int read_block(int fd, long long start, long long *next, unsigned char *block, s
 		return bytes;
 	} else {
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
-		read_bytes(fd, start + offset, c_byte, (char *) block);
+		read_destination(fd, start + offset, c_byte, (char *) block);
 		if(next)
 			*next = start + offset + c_byte;
 		return c_byte;
@@ -309,7 +309,7 @@ failed:
 
 int read_super(int fd, squashfs_super_block *sBlk, char *source)
 {
-	read_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block), (char *) sBlk);
+	read_destination(fd, SQUASHFS_START, sizeof(squashfs_super_block), (char *) sBlk);
 	SQUASHFS_INSWAP_SUPER_BLOCK(sBlk);
 
 	if(sBlk->s_magic != SQUASHFS_MAGIC) {
@@ -426,7 +426,7 @@ unsigned int *read_id_table(int fd, squashfs_super_block *sBlk)
 		return NULL;
 	}
 
-	read_bytes(fd, sBlk->id_table_start, SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), (char *) index);
+	read_destination(fd, sBlk->id_table_start, SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), (char *) index);
 	SQUASHFS_INSWAP_ID_BLOCKS(index, indexes);
 
 	for(i = 0; i < indexes; i++) {
@@ -460,7 +460,7 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk, squashfs_fragment_en
 		return 0;
 	}
 
-	read_bytes(fd, sBlk->fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments), (char *) fragment_table_index);
+	read_destination(fd, sBlk->fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments), (char *) fragment_table_index);
 	SQUASHFS_INSWAP_FRAGMENT_INDEXES(fragment_table_index, indexes);
 
 	for(i = 0; i < indexes; i++) {
@@ -490,7 +490,7 @@ int read_inode_lookup_table(int fd, squashfs_super_block *sBlk, squashfs_inode *
 		return 0;
 	}
 
-	read_bytes(fd, sBlk->lookup_table_start, SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), (char *) index);
+	read_destination(fd, sBlk->lookup_table_start, SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), (char *) index);
 	SQUASHFS_INSWAP_LONG_LONGS(index, indexes);
 
 	for(i = 0; i <  indexes; i++) {
@@ -573,13 +573,13 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk, c
 			ERROR("read_filesystem: failed to alloc space for existing filesystem inode table\n");
 			goto error;
 		}
-	       	read_bytes(fd, start, root_inode_start, *cinode_table);
+	       	read_destination(fd, start, root_inode_start, *cinode_table);
 
 		if((*cdirectory_table = malloc(*last_directory_block)) == NULL) {
 			ERROR("read_filesystem: failed to alloc space for existing filesystem directory table\n");
 			goto error;
 		}
-		read_bytes(fd, sBlk->directory_table_start, *last_directory_block, *cdirectory_table);
+		read_destination(fd, sBlk->directory_table_start, *last_directory_block, *cdirectory_table);
 
 		if((*data_cache = malloc(root_inode_offset + *root_inode_size)) == NULL) {
 			ERROR("read_filesystem: failed to alloc inode cache\n");
