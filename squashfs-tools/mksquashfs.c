@@ -2302,9 +2302,25 @@ void progress_bar(long long current, long long max, int columns)
 	int used = max_digits * 2 + 11;
 	int hashes = (current * (columns - used)) / max;
 	int spaces = columns - used - hashes;
+	static int tty = -1;
 
 	if((current > max) || (columns - used < 0))
 		return;
+
+	if(tty == -1)
+		tty = isatty(STDOUT_FILENO);
+	if(!tty) {
+		static long long previous = -1;
+
+		/* Updating much more frequently than this results in huge
+		 * log files. */
+		if((current % 100) != 0 && current != max)
+			return;
+		/* Don't update just to rotate the spinner. */
+		if(current == previous)
+			return;
+		previous = current;
+	}
 
 	printf("\r[");
 
