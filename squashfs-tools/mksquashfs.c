@@ -2303,12 +2303,7 @@ void progress_bar(long long current, long long max, int columns)
 	int hashes = (current * (columns - used)) / max;
 	int spaces = columns - used - hashes;
 
-	if(current > max) {
-		printf("%lld %lld\n", current, max);
-		return;
-	}
-
-	if(columns - used < 0)
+	if((current > max) || (columns - used < 0))
 		return;
 
 	printf("\r[");
