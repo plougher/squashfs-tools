@@ -928,7 +928,27 @@ void read_bytes(int fd, long long byte, int bytes, char *buff)
 }
 
 
-void write_bytes(int fd, long long byte, int bytes, char *buff)
+int write_bytes(int fd, char *buff, int bytes)
+{
+	int res, count;
+
+	for(count = 0; count < bytes; count += res) {
+		res = write(fd, buff + count, bytes - count);
+		if(res == -1) {
+			if(errno != EINTR) {
+				ERROR("Write failed because %s\n",
+						strerror(errno));
+				return -1;
+			}
+			res = 0;
+		}
+	}
+
+	return 0;
+}
+
+
+void write_destination(int fd, long long byte, int bytes, char *buff)
 {
 	off_t off = byte;
 
@@ -938,8 +958,8 @@ void write_bytes(int fd, long long byte, int bytes, char *buff)
 	if(lseek(fd, off, SEEK_SET) == -1)
 		BAD_ERROR("Lseek on destination failed because %s\n", strerror(errno));
 
-	if(write(fd, buff, bytes) == -1)
-		BAD_ERROR("Write on destination failed because %s\n", strerror(errno));
+	if(write_bytes(fd, buff, bytes) == -1)
+		BAD_ERROR("Write on destination failed\n");
 	
 	if(interrupted < 2)
 		pthread_mutex_unlock(&pos_mutex);
@@ -970,7 +990,7 @@ long long write_inodes()
 		cache_bytes -= avail_bytes;
 	}
 
-	write_bytes(fd, bytes, inode_bytes, (char *) inode_table);
+	write_destination(fd, bytes, inode_bytes, (char *) inode_table);
 	bytes += inode_bytes;
 
 	return start_bytes;
@@ -1001,7 +1021,7 @@ long long write_directories()
 		directoryp += avail_bytes;
 		directory_cache_bytes -= avail_bytes;
 	}
-	write_bytes(fd, bytes, directory_bytes, (char *) directory_table);
+	write_destination(fd, bytes, directory_bytes, (char *) directory_table);
 	bytes += directory_bytes;
 
 	return start_bytes;
@@ -1622,13 +1642,13 @@ long long generic_write_table(int length, char *buffer, int uncompressed)
 		list[i] = bytes;
 		compressed_size = SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
 		TRACE("block %d @ 0x%llx, compressed size %d\n", i, bytes, compressed_size);
-		write_bytes(fd, bytes, compressed_size, cbuffer);
+		write_destination(fd, bytes, compressed_size, cbuffer);
 		bytes += compressed_size;
 		length -= avail_bytes;
 	}
 
 	SQUASHFS_INSWAP_LONG_LONGS(list, meta_blocks);
-	write_bytes(fd, bytes, sizeof(list), (char *) list);
+	write_destination(fd, bytes, sizeof(list), (char *) list);
 
 	start_bytes = bytes;
 	bytes += sizeof(list);
@@ -3567,9 +3587,9 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	if(readbytes != bytes)
 		BAD_ERROR("Recovery file appears to be truncated\n");
 
-	write_bytes(fd, 0, sizeof(squashfs_super_block), (char *) &sBlk);
+	write_destination(fd, 0, sizeof(squashfs_super_block), (char *) &sBlk);
 
-	write_bytes(fd, sBlk.inode_table_start, bytes, metadata);
+	write_destination(fd, sBlk.inode_table_start, bytes, metadata);
 
 	close(recoverfd);
 	close(fd);
@@ -3581,7 +3601,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.0-CVS (2009/03/24)\n");\
+	printf("mksquashfs version 4.0-CVS (2009/03/29)\n");\
 	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -4008,7 +4028,7 @@ printOptions:
 			goto restore_filesystem;
 		signal(SIGTERM, sighandler);
 		signal(SIGINT, sighandler);
-		write_bytes(fd, SQUASHFS_START, 4, "\0\0\0\0");
+		write_destination(fd, SQUASHFS_START, 4, "\0\0\0\0");
 
 		/* set the filesystem state up to be able to append to the original filesystem.  The filesystem state
 		 * differs depending on whether we're appending to the original root directory, or if the original
@@ -4113,11 +4133,11 @@ restore_filesystem:
 	sBlk.xattr_table_start = SQUASHFS_INVALID_BLK;
 
 	SQUASHFS_INSWAP_SUPER_BLOCK(&sBlk); 
-	write_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block), (char *) &sBlk);
+	write_destination(fd, SQUASHFS_START, sizeof(squashfs_super_block), (char *) &sBlk);
 
 	if(!nopad && (i = bytes & (4096 - 1))) {
 		char temp[4096] = {0};
-		write_bytes(fd, bytes, 4096 - i, temp);
+		write_destination(fd, bytes, 4096 - i, temp);
 	}
 
 	close(fd);
