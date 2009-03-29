@@ -789,7 +789,8 @@ void sigwinch_handler()
 	struct winsize winsize;
 
 	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
-		printf("TIOCGWINSZ ioctl failed, defaulting to 80 columns\n");
+		if(isatty(STDOUT_FILENO))
+			printf("TIOCGWINSZ ioctl failed, defaulting to 80 columns\n");
 		columns = 80;
 	} else
 		columns = winsize.ws_col;
