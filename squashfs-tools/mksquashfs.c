@@ -914,7 +914,7 @@ failed:
 }
 
 
-int read_bytes(int fd, char *buff, int bytes)
+int read_bytes(int fd, void *buff, int bytes)
 {
 	int res, count;
 
@@ -3579,7 +3579,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	int fd, recoverfd, bytes;
 	squashfs_super_block orig_sBlk, sBlk;
 	char *metadata;
-	int readbytes;
+	int res;
 	struct stat buf;
 	char header[] = RECOVER_ID;
 	char header2[RECOVER_ID_SIZE];
@@ -3593,13 +3593,19 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	if((fd = open(destination_file, O_RDWR)) == -1)
 		BAD_ERROR("Failed to open destination file because %s\n", strerror(errno));
 
-	if(read(recoverfd, header2, RECOVER_ID_SIZE) == -1)
+	res = read_bytes(recoverfd, header2, RECOVER_ID_SIZE);
+	if(res == -1)
 		BAD_ERROR("Failed to read recovery file, because %s\n", strerror(errno));
+	if(res < RECOVER_ID_SIZE)
+		BAD_ERROR("Recovery file appears to be truncated\n");
 	if(strncmp(header, header2, RECOVER_ID_SIZE) !=0 )
 		BAD_ERROR("Not a recovery file\n");
 
-	if(read(recoverfd, &sBlk, sizeof(squashfs_super_block)) == -1)
+	res = read_bytes(recoverfd, &sBlk, sizeof(squashfs_super_block));
+	if(res == -1)
 		BAD_ERROR("Failed to read recovery file, because %s\n", strerror(errno));
+	if(res < sizeof(squashfs_super_block))
+		BAD_ERROR("Recovery file appears to be truncated\n");
 
 	read_destination(fd, 0, sizeof(squashfs_super_block), (char *) &orig_sBlk);
 
@@ -3611,10 +3617,10 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	if((metadata = malloc(bytes)) == NULL)
 		BAD_ERROR("Failed to alloc metadata buffer in read_recovery_data\n");
 
-	if((readbytes = read(recoverfd, metadata, bytes)) == -1)
+	res = read_bytes(recoverfd, metadata, bytes);
+	if(res == -1)
 		BAD_ERROR("Failed to read recovery file, because %s\n", strerror(errno));
-
-	if(readbytes != bytes)
+	if(res < bytes)
 		BAD_ERROR("Recovery file appears to be truncated\n");
 
 	write_destination(fd, 0, sizeof(squashfs_super_block), (char *) &sBlk);
