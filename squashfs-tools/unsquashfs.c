@@ -1817,6 +1817,10 @@ int main(int argc, char *argv[])
 	if(lsonly || info)
 		progress = FALSE;
 
+#ifdef SQUASHFS_TRACE
+	progress = FALSE;
+#endif
+
 	if(i == argc) {
 		if(!version) {
 options:
