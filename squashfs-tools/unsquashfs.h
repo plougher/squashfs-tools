@@ -271,6 +271,8 @@ extern int lookup_type[];
 
 /* unsquashfs.c */
 extern int lookup_entry(struct hash_table_entry **, long long);
+extern int read_bytes(long long, int, char *);
+extern int read_block(long long, long long *, char *);
 
 /* unsquash-1.c */
 extern void read_block_list_1(unsigned int *, char *, int);
