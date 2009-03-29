@@ -2104,7 +2104,7 @@ void *writer(void *arg)
 			write_error = TRUE;
 		}
 
-		if(!write_error && write(fd, file_buffer->data, file_buffer->size) == -1) {
+		if(!write_error && write_bytes(fd, file_buffer->data, file_buffer->size) == -1) {
 			ERROR("Write on destination failed because %s\n", strerror(errno));
 			write_error = TRUE;
 		}
