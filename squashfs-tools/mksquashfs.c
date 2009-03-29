@@ -958,7 +958,7 @@ void read_destination(int fd, long long byte, int bytes, char *buff)
 }
 
 
-int write_bytes(int fd, char *buff, int bytes)
+int write_bytes(int fd, void *buff, int bytes)
 {
 	int res, count;
 
@@ -3555,13 +3555,13 @@ void write_recovery_data(squashfs_super_block *sBlk)
 	if((recoverfd = open(recovery_file, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU)) == -1)
 		BAD_ERROR("Failed to create recovery file, because %s.  Aborting\n", strerror(errno));
 		
-	if(write(recoverfd, header, RECOVER_ID_SIZE) == -1)
+	if(write_bytes(recoverfd, header, RECOVER_ID_SIZE) == -1)
 		BAD_ERROR("Failed to write recovery file, because %s\n", strerror(errno));
 
-	if(write(recoverfd, sBlk, sizeof(squashfs_super_block)) == -1)
+	if(write_bytes(recoverfd, sBlk, sizeof(squashfs_super_block)) == -1)
 		BAD_ERROR("Failed to write recovery file, because %s\n", strerror(errno));
 
-	if(write(recoverfd, metadata, bytes) == -1)
+	if(write_bytes(recoverfd, metadata, bytes) == -1)
 		BAD_ERROR("Failed to write recovery file, because %s\n", strerror(errno));
 
 	close(recoverfd);
