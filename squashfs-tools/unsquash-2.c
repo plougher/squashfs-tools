@@ -44,38 +44,51 @@ int read_fragment_table_2()
 	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES_2(sBlk.fragments);
 	unsigned int fragment_table_index[indexes];
 
-	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes from 0x%llx\n", sBlk.fragments, indexes, sBlk.fragment_table_start);
+	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
+		"from 0x%llx\n", sBlk.fragments, indexes,
+		sBlk.fragment_table_start);
 
 	if(sBlk.fragments == 0)
 		return TRUE;
 
-	if((fragment_table = malloc(sBlk.fragments *
-			sizeof(squashfs_fragment_entry_2))) == NULL)
-		EXIT_UNSQUASH("read_fragment_table: failed to allocate fragment table\n");
+	fragment_table = malloc(sBlk.fragments *
+		sizeof(squashfs_fragment_entry_2));
+	if(fragment_table == NULL)
+		EXIT_UNSQUASH("read_fragment_table: failed to allocate fragment "
+			"table\n");
 
 	if(swap) {
 		 unsigned int sfragment_table_index[indexes];
 
-		 res = read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments), (char *) sfragment_table_index);
+		 res = read_bytes(sBlk.fragment_table_start,
+			SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments),
+			(char *) sfragment_table_index);
 		if(res == FALSE) {
-			ERROR("read_fragment_table: failed to read fragment table index\n");
+			ERROR("read_fragment_table: failed to read fragment table "
+				"index\n");
 			return FALSE;
 		}
-		SQUASHFS_SWAP_FRAGMENT_INDEXES_2(fragment_table_index, sfragment_table_index, indexes);
+		SQUASHFS_SWAP_FRAGMENT_INDEXES_2(fragment_table_index,
+			sfragment_table_index, indexes);
 	} else {
-		res = read_bytes(sBlk.fragment_table_start, SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments), (char *) fragment_table_index);
+		res = read_bytes(sBlk.fragment_table_start,
+			SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments),
+			(char *) fragment_table_index);
 		if(res == FALSE) {
-			ERROR("read_fragment_table: failed to read fragment table index\n");
+			ERROR("read_fragment_table: failed to read fragment table "
+				"index\n");
 			return FALSE;
 		}
 	}
 
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fragment_table_index[i], NULL,
-		((char *) fragment_table) + (i * SQUASHFS_METADATA_SIZE));
-		TRACE("Read fragment table block %d, from 0x%x, length %d\n", i, fragment_table_index[i], length);
+			((char *) fragment_table) + (i * SQUASHFS_METADATA_SIZE));
+		TRACE("Read fragment table block %d, from 0x%x, length %d\n", i,
+			fragment_table_index[i], length);
 		if(length == FALSE) {
-			ERROR("read_fragment_table: failed to read fragment table block\n");
+			ERROR("read_fragment_table: failed to read fragment table "
+				"block\n");
 			return FALSE;
 		}
 	}
@@ -83,8 +96,10 @@ int read_fragment_table_2()
 	if(swap) {
 		squashfs_fragment_entry_2 sfragment;
 		for(i = 0; i < sBlk.fragments; i++) {
-			SQUASHFS_SWAP_FRAGMENT_ENTRY_2((&sfragment), (&fragment_table[i]));
-			memcpy((char *) &fragment_table[i], (char *) &sfragment, sizeof(squashfs_fragment_entry_2));
+			SQUASHFS_SWAP_FRAGMENT_ENTRY_2((&sfragment),
+				(&fragment_table[i]));
+			memcpy((char *) &fragment_table[i], (char *) &sfragment,
+				sizeof(squashfs_fragment_entry_2));
 		}
 	}
 
@@ -120,12 +135,14 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 	if(swap) {
 		squashfs_base_inode_header_2 sinode;
 		memcpy(&sinode, block_ptr, sizeof(header.base));
-		SQUASHFS_SWAP_BASE_INODE_HEADER_2(&header.base, &sinode, sizeof(squashfs_base_inode_header_2));
+		SQUASHFS_SWAP_BASE_INODE_HEADER_2(&header.base, &sinode,
+			sizeof(squashfs_base_inode_header_2));
 	} else
 		memcpy(&header.base, block_ptr, sizeof(header.base));
 
-    i.uid = (uid_t) uid_table[header.base.uid];
-    i.gid = header.base.guid == SQUASHFS_GUIDS ? i.uid : (uid_t) guid_table[header.base.guid];
+	i.uid = (uid_t) uid_table[header.base.uid];
+	i.gid = header.base.guid == SQUASHFS_GUIDS ? i.uid :
+		(uid_t) guid_table[header.base.guid];
 	i.mode = lookup_type[header.base.inode_type] | header.base.mode;
 	i.type = header.base.inode_type;
 	i.time = sBlk.mkfs_time;
@@ -138,7 +155,8 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 			if(swap) {
 				squashfs_dir_inode_header_2 sinode;
 				memcpy(&sinode, block_ptr, sizeof(header.dir));
-				SQUASHFS_SWAP_DIR_INODE_HEADER_2(&header.dir, &sinode);
+				SQUASHFS_SWAP_DIR_INODE_HEADER_2(&header.dir,
+					&sinode);
 			} else
 				memcpy(&header.dir, block_ptr, sizeof(header.dir));
 
@@ -154,9 +172,11 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 			if(swap) {
 				squashfs_ldir_inode_header_2 sinode;
 				memcpy(&sinode, block_ptr, sizeof(header.ldir));
-				SQUASHFS_SWAP_LDIR_INODE_HEADER_2(&header.ldir, &sinode);
+				SQUASHFS_SWAP_LDIR_INODE_HEADER_2(&header.ldir,
+					&sinode);
 			} else
-				memcpy(&header.ldir, block_ptr, sizeof(header.ldir));
+				memcpy(&header.ldir, block_ptr,
+					sizeof(header.ldir));
 
 			i.data = inode->file_size;
 			i.offset = inode->offset;
@@ -194,14 +214,18 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 			if(swap) {
 				squashfs_symlink_inode_header_2 sinodep;
 				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_SYMLINK_INODE_HEADER_2(inodep, &sinodep);
+				SQUASHFS_SWAP_SYMLINK_INODE_HEADER_2(inodep,
+					&sinodep);
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
 			i.symlink = malloc(inodep->symlink_size + 1);
 			if(i.symlink == NULL)
-				EXIT_UNSQUASH("read_inode: failed to malloc symlink data\n");
-			strncpy(i.symlink, block_ptr + sizeof(squashfs_symlink_inode_header_2), inodep->symlink_size);
+				EXIT_UNSQUASH("read_inode: failed to malloc "
+					"symlink data\n");
+			strncpy(i.symlink, block_ptr +
+				sizeof(squashfs_symlink_inode_header_2),
+				inodep->symlink_size);
 			i.symlink[inodep->symlink_size] = '\0';
 			i.data = inodep->symlink_size;
 			break;
@@ -225,7 +249,8 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 			i.data = 0;
 			break;
 		default:
-			ERROR("Unknown inode type %d in read_inode_header_2!\n", header.base.inode_type);
+			ERROR("Unknown inode type %d in read_inode_header_2!\n",
+				header.base.inode_type);
 			return NULL;
 	}
 	return &i;
