@@ -670,7 +670,7 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk,
 		}
 
 		root_inode_start -= start;
-		cinode_table = malloc(root_inode_start);
+		*cinode_table = malloc(root_inode_start);
 		if(*cinode_table == NULL) {
 			ERROR("read_filesystem: failed to alloc space for "
 				"existing filesystem inode table\n");
