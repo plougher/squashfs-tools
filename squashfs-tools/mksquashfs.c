@@ -1655,11 +1655,14 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 			(const unsigned char *) data, size);
 		if(res != Z_OK) {
 			if(res == Z_MEM_ERROR)
-				BAD_ERROR("zlib::uncompress failed, not enough memory\n");
+				BAD_ERROR("zlib::uncompress failed, not enough "
+					"memory\n");
 			else if(res == Z_BUF_ERROR)
-				BAD_ERROR("zlib::uncompress failed, not enough room in output buffer\n");
+				BAD_ERROR("zlib::uncompress failed, not enough "
+					"room in output buffer\n");
 			else
-				BAD_ERROR("zlib::uncompress failed, unknown error %d\n", res);
+				BAD_ERROR("zlib::uncompress failed,"
+					"  unknown error %d\n", res);
 		}
 	} else if(compressed_buffer)
 		memcpy(buffer->data, compressed_buffer->data, size);
@@ -1713,7 +1716,8 @@ void unlock_fragments()
 		pthread_mutex_unlock(&fragment_mutex);
 		queue_put(to_writer, entry->buffer);
 		pthread_mutex_lock(&fragment_mutex);
-		TRACE("fragment_locked writing fragment %d, compressed size %d\n", entry->fragment, compressed_size);
+		TRACE("fragment_locked writing fragment %d, compressed size %d\n",
+			entry->fragment, compressed_size);
 		free(entry);
 	}
 	fragments_locked = FALSE;
@@ -1721,7 +1725,8 @@ void unlock_fragments()
 }
 
 
-int add_pending_fragment(struct file_buffer *write_buffer, int c_byte, int fragment)
+int add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
+	int fragment)
 {
 	struct frag_locked *entry = malloc(sizeof(struct frag_locked));
 	if(entry == NULL)
@@ -1743,7 +1748,9 @@ void write_fragment()
 
 	pthread_mutex_lock(&fragment_mutex);
 	if(fragments % FRAG_SIZE == 0) {
-		if((fragment_table = (squashfs_fragment_entry *) realloc(fragment_table, (fragments + FRAG_SIZE) * sizeof(squashfs_fragment_entry))) == NULL) {
+		fragment_table = realloc(fragment_table, (fragments + FRAG_SIZE) *
+			sizeof(squashfs_fragment_entry));
+		if(fragment_table == NULL) {
 			pthread_mutex_unlock(&fragment_mutex);
 			BAD_ERROR("Out of memory in fragment table\n");
 		}
@@ -1780,7 +1787,8 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
 	ffrg->index = fragments;
 	ffrg->offset = fragment_size;
 	ffrg->size = file_buffer->size;
-	memcpy(fragment_data->data + fragment_size, file_buffer->data, file_buffer->size);
+	memcpy(fragment_data->data + fragment_size, file_buffer->data,
+		file_buffer->size);
 	fragment_size += file_buffer->size;
 
 	return ffrg;
@@ -1789,7 +1797,8 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
 
 long long generic_write_table(int length, char *buffer, int uncompressed)
 {
-	int meta_blocks = (length + SQUASHFS_METADATA_SIZE - 1) / SQUASHFS_METADATA_SIZE;
+	int meta_blocks = (length + SQUASHFS_METADATA_SIZE - 1) /
+		SQUASHFS_METADATA_SIZE;
 	long long list[meta_blocks], start_bytes;
 	int compressed_size, i;
 	unsigned short c_byte;
@@ -1798,12 +1807,16 @@ long long generic_write_table(int length, char *buffer, int uncompressed)
 	long long obytes = bytes;
 
 	for(i = 0; i < meta_blocks; i++) {
-		int avail_bytes = length > SQUASHFS_METADATA_SIZE ? SQUASHFS_METADATA_SIZE : length;
-		c_byte = mangle(cbuffer + BLOCK_OFFSET, buffer + i * SQUASHFS_METADATA_SIZE , avail_bytes, SQUASHFS_METADATA_SIZE, uncompressed, 0);
+		int avail_bytes = length > SQUASHFS_METADATA_SIZE ?
+			SQUASHFS_METADATA_SIZE : length;
+		c_byte = mangle(cbuffer + BLOCK_OFFSET, buffer + i *
+			SQUASHFS_METADATA_SIZE , avail_bytes,
+			SQUASHFS_METADATA_SIZE, uncompressed, 0);
 		SQUASHFS_SWAP_SHORTS(&c_byte, (unsigned short *) cbuffer, 1);
 		list[i] = bytes;
 		compressed_size = SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
-		TRACE("block %d @ 0x%llx, compressed size %d\n", i, bytes, compressed_size);
+		TRACE("block %d @ 0x%llx, compressed size %d\n", i, bytes,
+			compressed_size);
 		write_destination(fd, bytes, compressed_size, cbuffer);
 		bytes += compressed_size;
 		length -= avail_bytes;
@@ -1815,7 +1828,8 @@ long long generic_write_table(int length, char *buffer, int uncompressed)
 	start_bytes = bytes;
 	bytes += sizeof(list);
 
-	TRACE("total uncompressed %d compressed %lld\n", inode_count * sizeof(squashfs_inode), bytes - obytes);
+	TRACE("total uncompressed %d compressed %lld\n", inode_count *
+		sizeof(squashfs_inode), bytes - obytes);
 
 	return start_bytes;
 }
@@ -1828,9 +1842,12 @@ long long write_fragment_table()
 	squashfs_fragment_entry *p = (squashfs_fragment_entry *) buffer;
 	int i;
 
-	TRACE("write_fragment_table: fragments %d, frag_bytes %d\n", fragments, frag_bytes);
+	TRACE("write_fragment_table: fragments %d, frag_bytes %d\n", fragments,
+		frag_bytes);
 	for(i = 0; i < fragments; i++, p++) {
-		TRACE("write_fragment_table: fragment %d, start_block 0x%llx, size %d\n", i, fragment_table[i].start_block, fragment_table[i].size);
+		TRACE("write_fragment_table: fragment %d, start_block 0x%llx, size"
+			" %d\n", i, fragment_table[i].start_block,
+			fragment_table[i].size);
 		SQUASHFS_SWAP_FRAGMENT_ENTRY(&fragment_table[i], p);
 	}
 
@@ -1870,7 +1887,8 @@ unsigned short get_checksum(char *buff, int bytes, unsigned short chksum)
 }
 
 
-unsigned short get_checksum_disk(long long start, long long l, unsigned int *blocks)
+unsigned short get_checksum_disk(long long start, long long l,
+	unsigned int *blocks)
 {
 	unsigned short chksum = 0;
 	unsigned int bytes;
@@ -1886,7 +1904,8 @@ unsigned short get_checksum_disk(long long start, long long l, unsigned int *blo
 			chksum = get_checksum(write_buffer->data, bytes, chksum);
 			cache_block_put(write_buffer);
 		} else
-			chksum = get_checksum(read_from_disk(start, bytes), bytes, chksum);
+			chksum = get_checksum(read_from_disk(start, bytes), bytes,
+				chksum);
 		l -= bytes;
 		start += bytes;
 	}
@@ -1911,7 +1930,9 @@ unsigned short get_checksum_mem_buffer(struct file_buffer *file_buffer)
 
 
 #define DUP_HASH(a) (a & 0xffff)
-void add_file(long long start, long long file_size, long long file_bytes, unsigned int *block_listp, int blocks, unsigned int fragment, int offset, int bytes)
+void add_file(long long start, long long file_size, long long file_bytes,
+	unsigned int *block_listp, int blocks, unsigned int fragment, int offset,
+	int bytes)
 {
 	struct fragment *frg;
 	unsigned int *block_list = block_listp;
@@ -1927,7 +1948,9 @@ void add_file(long long start, long long file_size, long long file_bytes, unsign
 			continue;
 		if(fragment != dupl_ptr->fragment->index)
 			continue;
-		if(fragment != SQUASHFS_INVALID_FRAG && (offset != dupl_ptr->fragment->offset || bytes != dupl_ptr->fragment->size))
+		if(fragment != SQUASHFS_INVALID_FRAG && (offset !=
+				dupl_ptr->fragment->offset || bytes !=
+				dupl_ptr->fragment->size))
 			continue;
 		return;
 	}
@@ -1960,11 +1983,17 @@ int pre_duplicate_frag(long long file_size, unsigned short checksum)
 	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
 
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
-		if(file_size == dupl_ptr->file_size && file_size == dupl_ptr->fragment->size) {
+		if(file_size == dupl_ptr->file_size && file_size ==
+				dupl_ptr->fragment->size) {
 			if(dupl_ptr->checksum_flag == FALSE) {
-				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
-				dupl_ptr->checksum = get_checksum_disk(dupl_ptr->start, dupl_ptr->bytes, dupl_ptr->block_list);
-				dupl_ptr->fragment_checksum = get_checksum_mem(frag_buffer->data + dupl_ptr->fragment->offset, file_size);
+				struct file_buffer *frag_buffer =
+					get_fragment(dupl_ptr->fragment);
+				dupl_ptr->checksum =
+					get_checksum_disk(dupl_ptr->start,
+					dupl_ptr->bytes, dupl_ptr->block_list);
+				dupl_ptr->fragment_checksum =
+					get_checksum_mem(frag_buffer->data +
+					dupl_ptr->fragment->offset, file_size);
 				cache_block_put(frag_buffer);
 				dupl_ptr->checksum_flag = TRUE;
 			}
@@ -1976,7 +2005,10 @@ int pre_duplicate_frag(long long file_size, unsigned short checksum)
 }
 
 
-struct file_info *add_non_dup(long long file_size, long long bytes, unsigned int *block_list, long long start, struct fragment *fragment, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag)
+struct file_info *add_non_dup(long long file_size, long long bytes,
+	unsigned int *block_list, long long start, struct fragment *fragment,
+	unsigned short checksum, unsigned short fragment_checksum,
+	int checksum_flag)
 {
 	struct file_info *dupl_ptr;
 
@@ -2000,39 +2032,54 @@ struct file_info *add_non_dup(long long file_size, long long bytes, unsigned int
 }
 
 
-struct file_info *duplicate(long long file_size, long long bytes, unsigned int **block_list, long long *start, struct fragment **fragment, struct file_buffer *file_buffer, int blocks, unsigned short checksum, unsigned short fragment_checksum, int checksum_flag)
+struct file_info *duplicate(long long file_size, long long bytes,
+	unsigned int **block_list, long long *start, struct fragment **fragment,
+	struct file_buffer *file_buffer, int blocks, unsigned short checksum,
+	unsigned short fragment_checksum, int checksum_flag)
 {
 	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
 	int frag_bytes = file_buffer ? file_buffer->size : 0;
 
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
-		if(file_size == dupl_ptr->file_size && bytes == dupl_ptr->bytes && frag_bytes == dupl_ptr->fragment->size) {
+		if(file_size == dupl_ptr->file_size && bytes == dupl_ptr->bytes &&
+				 frag_bytes == dupl_ptr->fragment->size) {
 			long long target_start, dup_start = dupl_ptr->start;
 			int block;
 
-			if(memcmp(*block_list, dupl_ptr->block_list, blocks * sizeof(unsigned int)) != 0)
+			if(memcmp(*block_list, dupl_ptr->block_list, blocks *
+					sizeof(unsigned int)) != 0)
 				continue;
 
 			if(checksum_flag == FALSE) {
-				checksum = get_checksum_disk(*start, bytes, *block_list);
-				fragment_checksum = get_checksum_mem_buffer(file_buffer);
+				checksum = get_checksum_disk(*start, bytes,
+					*block_list);
+				fragment_checksum =
+					get_checksum_mem_buffer(file_buffer);
 				checksum_flag = TRUE;
 			}
 
 			if(dupl_ptr->checksum_flag == FALSE) {
-				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
-				dupl_ptr->checksum = get_checksum_disk(dupl_ptr->start, dupl_ptr->bytes, dupl_ptr->block_list);
-				dupl_ptr->fragment_checksum = get_checksum_mem(frag_buffer->data + dupl_ptr->fragment->offset, frag_bytes);
+				struct file_buffer *frag_buffer =
+					get_fragment(dupl_ptr->fragment);
+				dupl_ptr->checksum =
+					get_checksum_disk(dupl_ptr->start,
+					dupl_ptr->bytes, dupl_ptr->block_list);
+				dupl_ptr->fragment_checksum =
+					get_checksum_mem(frag_buffer->data +
+					dupl_ptr->fragment->offset, frag_bytes);
 				cache_block_put(frag_buffer);
 				dupl_ptr->checksum_flag = TRUE;
 			}
 
-			if(checksum != dupl_ptr->checksum || fragment_checksum != dupl_ptr->fragment_checksum)
+			if(checksum != dupl_ptr->checksum ||
+					fragment_checksum !=
+					dupl_ptr->fragment_checksum)
 				continue;
 
 			target_start = *start;
 			for(block = 0; block < blocks; block ++) {
-				int size = SQUASHFS_COMPRESSED_SIZE_BLOCK((*block_list)[block]);
+				int size = SQUASHFS_COMPRESSED_SIZE_BLOCK
+					((*block_list)[block]);
 				struct file_buffer *target_buffer = NULL;
 				struct file_buffer *dup_buffer = NULL;
 				char *target_data, *dup_data;
@@ -2040,11 +2087,13 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 
 				if(size == 0)
 					continue;
-				target_buffer = cache_lookup(writer_buffer, target_start);
+				target_buffer = cache_lookup(writer_buffer,
+					target_start);
 				if(target_buffer)
 					target_data = target_buffer->data;
 				else
-					target_data = read_from_disk(target_start, size);
+					target_data = read_from_disk(target_start,
+						size);
 
 				dup_buffer = cache_lookup(writer_buffer, dup_start);
 				if(dup_buffer)
@@ -2061,11 +2110,24 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 				dup_start += size;
 			}
 			if(block == blocks) {
-				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
+				struct file_buffer *frag_buffer =
+					get_fragment(dupl_ptr->fragment);
 
-				if(frag_bytes == 0 || memcmp(file_buffer->data, frag_buffer->data + dupl_ptr->fragment->offset, frag_bytes) == 0) {
-					TRACE("Found duplicate file, start 0x%llx, size %lld, checksum 0x%x, fragment %d, size %d, offset %d, checksum 0x%x\n", dupl_ptr->start,
-						dupl_ptr->bytes, dupl_ptr->checksum, dupl_ptr->fragment->index, frag_bytes, dupl_ptr->fragment->offset, fragment_checksum);
+				if(frag_bytes == 0 ||
+						memcmp(file_buffer->data,
+						frag_buffer->data +
+						dupl_ptr->fragment->offset,
+						frag_bytes) == 0) {
+					TRACE("Found duplicate file, start 0x%llx,"
+						" size %lld, checksum 0x%x, "
+						"fragment %d, size %d, offset %d, "
+						"checksum 0x%x\n", dupl_ptr->start,
+						dupl_ptr->bytes,
+						dupl_ptr->checksum,
+						dupl_ptr->fragment->index,
+						frag_bytes,
+						dupl_ptr->fragment->offset,
+						fragment_checksum);
 					*block_list = dupl_ptr->block_list;
 					*start = dupl_ptr->start;
 					*fragment = dupl_ptr->fragment;
@@ -2077,7 +2139,8 @@ struct file_info *duplicate(long long file_size, long long bytes, unsigned int *
 		}
 
 
-	return add_non_dup(file_size, bytes, *block_list, *start, *fragment, checksum, fragment_checksum, checksum_flag);
+	return add_non_dup(file_size, bytes, *block_list, *start, *fragment,
+		checksum, fragment_checksum, checksum_flag);
 }
 
 
