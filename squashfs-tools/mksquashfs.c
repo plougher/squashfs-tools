@@ -3355,41 +3355,53 @@ void dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 
 				case S_IFLNK:
 					squashfs_type = SQUASHFS_SYMLINK_TYPE;
-					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL, 0);
-					INFO("symbolic link %s inode 0x%llx\n", dir_name, *inode);
+					create_inode(inode, dir_ent, squashfs_type,
+						 0, 0, 0, NULL, NULL, NULL, 0);
+					INFO("symbolic link %s inode 0x%llx\n",
+						dir_name, *inode);
 					sym_count ++;
 					break;
 
 				case S_IFCHR:
 					squashfs_type = SQUASHFS_CHRDEV_TYPE;
-					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL, 0);
-					INFO("character device %s inode 0x%llx\n", dir_name, *inode);
+					create_inode(inode, dir_ent, squashfs_type,
+						 0, 0, 0, NULL, NULL, NULL, 0);
+					INFO("character device %s inode 0x%llx\n",
+						dir_name, *inode);
 					dev_count ++;
 					break;
 
 				case S_IFBLK:
 					squashfs_type = SQUASHFS_BLKDEV_TYPE;
-					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL, 0);
-					INFO("block device %s inode 0x%llx\n", dir_name, *inode);
+					create_inode(inode, dir_ent, squashfs_type,
+						 0, 0, 0, NULL, NULL, NULL, 0);
+					INFO("block device %s inode 0x%llx\n",
+						dir_name, *inode);
 					dev_count ++;
 					break;
 
 				case S_IFIFO:
 					squashfs_type = SQUASHFS_FIFO_TYPE;
-					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL, 0);
-					INFO("fifo %s inode 0x%llx\n", dir_name, *inode);
+					create_inode(inode, dir_ent, squashfs_type,
+						 0, 0, 0, NULL, NULL, NULL, 0);
+					INFO("fifo %s inode 0x%llx\n",dir_name,
+						*inode);
 					fifo_count ++;
 					break;
 
 				case S_IFSOCK:
 					squashfs_type = SQUASHFS_SOCKET_TYPE;
-					create_inode(inode, dir_ent, squashfs_type, 0, 0, 0, NULL, NULL, NULL, 0);
-					INFO("unix domain socket %s inode 0x%llx\n", dir_name, *inode);
+					create_inode(inode, dir_ent, squashfs_type,
+						 0, 0, 0, NULL, NULL, NULL, 0);
+					INFO("unix domain socket %s inode "
+						"0x%llx\n", dir_name, *inode);
 					sock_count ++;
 					break;
 
 				default:
-					BAD_ERROR("%s unrecognised file type, mode is %x\n", filename, buf->st_mode);
+					BAD_ERROR("%s unrecognised file type, "
+						"mode is %x\n", filename,
+						buf->st_mode);
 			}
 			dir_ent->inode->inode = *inode;
 			dir_ent->inode->type = squashfs_type;
@@ -3399,22 +3411,29 @@ void dir_scan2(squashfs_inode *inode, struct dir_info *dir_info)
 			switch(squashfs_type) {
 				case SQUASHFS_FILE_TYPE:
 					if(!sorted)
-						INFO("file %s, uncompressed size %lld bytes LINK\n", filename, buf->st_size);
+						INFO("file %s, uncompressed size "
+							"%lld bytes LINK\n",
+							filename, buf->st_size);
 					break;
 				case SQUASHFS_SYMLINK_TYPE:
-					INFO("symbolic link %s inode 0x%llx LINK\n", dir_name, *inode);
+					INFO("symbolic link %s inode 0x%llx "
+						"LINK\n", dir_name, *inode);
 					break;
 				case SQUASHFS_CHRDEV_TYPE:
-					INFO("character device %s inode 0x%llx LINK\n", dir_name, *inode);
+					INFO("character device %s inode 0x%llx "
+						"LINK\n", dir_name, *inode);
 					break;
 				case SQUASHFS_BLKDEV_TYPE:
-					INFO("block device %s inode 0x%llx LINK\n", dir_name, *inode);
+					INFO("block device %s inode 0x%llx "
+						"LINK\n", dir_name, *inode);
 					break;
 				case SQUASHFS_FIFO_TYPE:
-					INFO("fifo %s inode 0x%llx LINK\n", dir_name, *inode);
+					INFO("fifo %s inode 0x%llx LINK\n",
+						dir_name, *inode);
 					break;
 				case SQUASHFS_SOCKET_TYPE:
-					INFO("unix domain socket %s inode 0x%llx LINK\n", dir_name, *inode);
+					INFO("unix domain socket %s inode 0x%llx "
+						"LINK\n", dir_name, *inode);
 					break;
 			}
 		}
@@ -3446,7 +3465,8 @@ int old_excluded(char *filename, struct stat *buf)
 	int i;
 
 	for(i = 0; i < exclude; i++)
-		if((exclude_paths[i].st_dev == buf->st_dev) && (exclude_paths[i].st_ino == buf->st_ino))
+		if((exclude_paths[i].st_dev == buf->st_dev) &&
+				(exclude_paths[i].st_ino == buf->st_ino))
 			return TRUE;
 	return FALSE;
 }
@@ -3454,7 +3474,9 @@ int old_excluded(char *filename, struct stat *buf)
 
 #define ADD_ENTRY(buf) \
 	if(exclude % EXCLUDE_SIZE == 0) {\
-		if((exclude_paths = (struct exclude_info *) realloc(exclude_paths, (exclude + EXCLUDE_SIZE) * sizeof(struct exclude_info))) == NULL)\
+		if((exclude_paths = (struct exclude_info *) \
+				realloc(exclude_paths, (exclude + EXCLUDE_SIZE) \
+				 * sizeof(struct exclude_info))) == NULL)\
 			BAD_ERROR("Out of memory in exclude dir/file table\n");\
 	}\
 	exclude_paths[exclude].st_dev = buf.st_dev;\
@@ -3465,9 +3487,11 @@ int old_add_exclude(char *path)
 	char filename[4096];
 	struct stat buf;
 
-	if(path[0] == '/' || strncmp(path, "./", 2) == 0 || strncmp(path, "../", 3) == 0) {
+	if(path[0] == '/' || strncmp(path, "./", 2) == 0 ||
+			strncmp(path, "../", 3) == 0) {
 		if(lstat(path, &buf) == -1) {
-			ERROR("Cannot stat exclude dir/file %s because %s, ignoring", path, strerror(errno));
+			ERROR("Cannot stat exclude dir/file %s because %s, "
+				"ignoring", path, strerror(errno));
 			return TRUE;
 		}
 		ADD_ENTRY(buf);
@@ -3478,7 +3502,8 @@ int old_add_exclude(char *path)
 		strcat(strcat(strcpy(filename, source_path[i]), "/"), path);
 		if(lstat(filename, &buf) == -1) {
 			if(!(errno == ENOENT || errno == ENOTDIR))
-				ERROR("Cannot stat exclude dir/file %s because %s, ignoring", filename, strerror(errno));
+				ERROR("Cannot stat exclude dir/file %s because "
+					"%s, ignoring", filename, strerror(errno));
 			continue;
 		}
 		ADD_ENTRY(buf);
@@ -3487,10 +3512,12 @@ int old_add_exclude(char *path)
 }
 
 
-void add_old_root_entry(char *name, squashfs_inode inode, int inode_number, int type)
+void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
+	int type)
 {
-	if((old_root_entry = (struct old_root_entry_info *) realloc(old_root_entry, sizeof(struct old_root_entry_info)
-				* (old_root_entries + 1))) == NULL)
+	old_root_entry = realloc(old_root_entry,
+		sizeof(struct old_root_entry_info) * (old_root_entries + 1));
+	if(old_root_entry == NULL)
 		BAD_ERROR("Out of memory in old root directory entries reallocation\n");
 
 	strcpy(old_root_entry[old_root_entries].name, name);
@@ -3651,17 +3678,20 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 	if(i == paths->names) {
 		/* allocate new name entry */
 		paths->names ++;
-		paths->name = realloc(paths->name, (i + 1) * sizeof(struct path_entry));
+		paths->name = realloc(paths->name, (i + 1) *
+			sizeof(struct path_entry));
 		paths->name[i].name = strdup(targname);
 		paths->name[i].paths = NULL;
 		if(use_regex) {
 			paths->name[i].preg = malloc(sizeof(regex_t));
-			error = regcomp(paths->name[i].preg, targname, REG_EXTENDED|REG_NOSUB);
+			error = regcomp(paths->name[i].preg, targname,
+				REG_EXTENDED|REG_NOSUB);
 			if(error) {
 				char str[1024];
 
 				regerror(error, paths->name[i].preg, str, 1024);
-				BAD_ERROR("invalid regex %s in export %s, because %s\n", targname, alltarget, str);
+				BAD_ERROR("invalid regex %s in export %s, "
+					"because %s\n", targname, alltarget, str);
 			}
 		} else
 			paths->name[i].preg = NULL;
@@ -3675,13 +3705,14 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 	} else {
 		/* existing matching entry */
 		if(paths->name[i].paths == NULL) {
-			/* No sub-directory which means this is the leaf component of a
-		   	   pre-existing exclude which subsumes the exclude currently
-		   	   being added, in which case stop adding components */
+			/* No sub-directory which means this is the leaf component
+ 			 * of a pre-existing exclude which subsumes the exclude
+ 			 * currently being added, in which case stop adding
+ 			 * components */
 		} else if(target[0] == '\0') {
-			/* at leaf pathname component and child components exist from more
-		       specific excludes, delete as they're subsumed by this exclude
-			*/
+			/* at leaf pathname component and child components exist
+			 *from more specific excludes, delete as they're subsumed
+			 * by this exclude */
 			free_path(paths->name[i].paths);
 			paths->name[i].paths = NULL;
 		} else
@@ -3696,8 +3727,10 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 void add_exclude(char *target)
 {
 
-	if(target[0] == '/' || strncmp(target, "./", 2) == 0 || strncmp(target, "../", 3) == 0)
-		BAD_ERROR("/, ./ and ../ prefixed excludes not supported with -wildcards or -regex options\n");	
+	if(target[0] == '/' || strncmp(target, "./", 2) == 0 ||
+			strncmp(target, "../", 3) == 0)
+		BAD_ERROR("/, ./ and ../ prefixed excludes not supported with "
+			"-wildcards or -regex options\n");	
 	else if(strncmp(target, "... ", 4) == 0)
 		stickypath = add_path(stickypath, target + 4, target + 4);
 	else	
@@ -3749,7 +3782,9 @@ struct pathnames *init_subdir()
 struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 {
 	if(paths->count % PATHS_ALLOC_SIZE == 0)
-		paths = realloc(paths, sizeof(struct pathnames *) + (paths->count + PATHS_ALLOC_SIZE) * sizeof(struct pathname *));
+		paths = realloc(paths, sizeof(struct pathnames *) +
+			(paths->count + PATHS_ALLOC_SIZE) *
+			sizeof(struct pathname *));
 
 	paths->path[paths->count++] = path;
 	return paths;
@@ -3781,19 +3816,22 @@ int excluded(struct pathnames *paths, char *name, struct pathnames **new)
 
 		for(i = 0; i < path->names; i++) {
 			int match = use_regex ?
-				regexec(path->name[i].preg, name, (size_t) 0, NULL, 0) == 0 :
-				fnmatch(path->name[i].name, name, FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
+				regexec(path->name[i].preg, name, (size_t) 0, NULL,
+					 0) == 0 :
+				fnmatch(path->name[i].name, name,
+					FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
 
 			if(match && path->name[i].paths == NULL) {
-				/* match on a leaf component, any subdirectories in the
-				 * filesystem should be excluded */
+				/* match on a leaf component, any subdirectories
+				 * in the filesystem should be excluded */
 				res = TRUE;
 				goto empty_set;
 			}
 
 			if(match)
-				/* match on a non-leaf component, add any subdirectories to
-				 * the new set of subdirectories to scan for this name */
+				/* match on a non-leaf component, add any
+				 * subdirectories to the new set of subdirectories
+				 * to scan for this name */
 				*new = add_subdir(*new, path->name[i].paths);
 		}
 	}
@@ -3836,25 +3874,32 @@ void write_recovery_data(squashfs_super_block *sBlk)
 
 	read_destination(fd, sBlk->inode_table_start, bytes, metadata);
 
-	sprintf(recovery_file, "squashfs_recovery_%s_%d", getbase(destination_file), pid);
-	if((recoverfd = open(recovery_file, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU)) == -1)
-		BAD_ERROR("Failed to create recovery file, because %s.  Aborting\n", strerror(errno));
+	sprintf(recovery_file, "squashfs_recovery_%s_%d",
+		getbase(destination_file), pid);
+	recoverfd = open(recovery_file, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
+	if(recoverfd == -1)
+		BAD_ERROR("Failed to create recovery file, because %s.  "
+			"Aborting\n", strerror(errno));
 		
 	if(write_bytes(recoverfd, header, RECOVER_ID_SIZE) == -1)
-		BAD_ERROR("Failed to write recovery file, because %s\n", strerror(errno));
+		BAD_ERROR("Failed to write recovery file, because %s\n",
+			strerror(errno));
 
 	if(write_bytes(recoverfd, sBlk, sizeof(squashfs_super_block)) == -1)
-		BAD_ERROR("Failed to write recovery file, because %s\n", strerror(errno));
+		BAD_ERROR("Failed to write recovery file, because %s\n",
+			strerror(errno));
 
 	if(write_bytes(recoverfd, metadata, bytes) == -1)
-		BAD_ERROR("Failed to write recovery file, because %s\n", strerror(errno));
+		BAD_ERROR("Failed to write recovery file, because %s\n",
+			strerror(errno));
 
 	close(recoverfd);
 	free(metadata);
 	
 	printf("Recovery file \"%s\" written\n", recovery_file);
 	printf("If Mksquashfs aborts abnormally (i.e. power failure), run\n");
-	printf("mksquashfs dummy %s -recover %s\n", destination_file, recovery_file);
+	printf("mksquashfs dummy %s -recover %s\n", destination_file,
+		recovery_file);
 	printf("to restore filesystem\n\n");
 }
 
@@ -3870,17 +3915,21 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	char header2[RECOVER_ID_SIZE];
 
 	if((recoverfd = open(recovery_file, O_RDONLY)) == -1)
-		BAD_ERROR("Failed to open recovery file because %s\n", strerror(errno));
+		BAD_ERROR("Failed to open recovery file because %s\n",
+			strerror(errno));
 
 	if(stat(destination_file, &buf) == -1)
-		BAD_ERROR("Failed to stat destination file, because %s\n", strerror(errno));
+		BAD_ERROR("Failed to stat destination file, because %s\n",
+			strerror(errno));
 
 	if((fd = open(destination_file, O_RDWR)) == -1)
-		BAD_ERROR("Failed to open destination file because %s\n", strerror(errno));
+		BAD_ERROR("Failed to open destination file because %s\n",
+			strerror(errno));
 
 	res = read_bytes(recoverfd, header2, RECOVER_ID_SIZE);
 	if(res == -1)
-		BAD_ERROR("Failed to read recovery file, because %s\n", strerror(errno));
+		BAD_ERROR("Failed to read recovery file, because %s\n",
+			strerror(errno));
 	if(res < RECOVER_ID_SIZE)
 		BAD_ERROR("Recovery file appears to be truncated\n");
 	if(strncmp(header, header2, RECOVER_ID_SIZE) !=0 )
@@ -3888,23 +3937,28 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 	res = read_bytes(recoverfd, &sBlk, sizeof(squashfs_super_block));
 	if(res == -1)
-		BAD_ERROR("Failed to read recovery file, because %s\n", strerror(errno));
+		BAD_ERROR("Failed to read recovery file, because %s\n",
+			strerror(errno));
 	if(res < sizeof(squashfs_super_block))
 		BAD_ERROR("Recovery file appears to be truncated\n");
 
 	read_destination(fd, 0, sizeof(squashfs_super_block), (char *) &orig_sBlk);
 
-	if(memcmp(((char *) &sBlk) + 4, ((char *) &orig_sBlk) + 4, sizeof(squashfs_super_block) - 4) != 0)
-		BAD_ERROR("Recovery file and destination file do not seem to match\n");
+	if(memcmp(((char *) &sBlk) + 4, ((char *) &orig_sBlk) + 4,
+			sizeof(squashfs_super_block) - 4) != 0)
+		BAD_ERROR("Recovery file and destination file do not seem to "
+			"match\n");
 
 	bytes = sBlk.bytes_used - sBlk.inode_table_start;
 
 	if((metadata = malloc(bytes)) == NULL)
-		BAD_ERROR("Failed to alloc metadata buffer in read_recovery_data\n");
+		BAD_ERROR("Failed to alloc metadata buffer in "
+			"read_recovery_data\n");
 
 	res = read_bytes(recoverfd, metadata, bytes);
 	if(res == -1)
-		BAD_ERROR("Failed to read recovery file, because %s\n", strerror(errno));
+		BAD_ERROR("Failed to read recovery file, because %s\n",
+			strerror(errno));
 	if(res < bytes)
 		BAD_ERROR("Recovery file appears to be truncated\n");
 
@@ -3915,7 +3969,8 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	close(recoverfd);
 	close(fd);
 
-	printf("Successfully wrote recovery file \"%s\".  Exiting\n", recovery_file);
+	printf("Successfully wrote recovery file \"%s\".  Exiting\n",
+		recovery_file);
 	
 	exit(0);
 }
@@ -3940,7 +3995,9 @@ int main(int argc, char *argv[])
 	char *b, *root_name = NULL;
 	int nopad = FALSE, keep_as_directory = FALSE;
 	squashfs_inode inode;
-	int readb_mbytes = READER_BUFFER_DEFAULT, writeb_mbytes = WRITER_BUFFER_DEFAULT, fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
+	int readb_mbytes = READER_BUFFER_DEFAULT,
+		writeb_mbytes = WRITER_BUFFER_DEFAULT,
+		fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
 	int s_minor = SQUASHFS_MINOR;
 
 	pthread_mutex_init(&progress_mutex, NULL);
@@ -3957,7 +4014,8 @@ int main(int argc, char *argv[])
 	for(; i < argc; i++) {
 		if(strcmp(argv[i], "-recover") == 0) {
 			if(++i == argc) {
-				ERROR("%s: -recover missing recovery file\n", argv[0]);
+				ERROR("%s: -recover missing recovery file\n",
+					argv[0]);
 				exit(1);
 			}
 			read_recovery_data(argv[i], argv[source + 1]);
