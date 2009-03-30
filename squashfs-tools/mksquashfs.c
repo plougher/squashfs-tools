@@ -1977,7 +1977,7 @@ again:
 		file_buffer = cache_get(reader_buffer, 0, 0);
 		file_buffer->sequence = index ++;
 
-		byte = file_buffer->size = read(file, file_buffer->data, block_size);
+		byte = file_buffer->size = read_bytes(file, file_buffer->data, block_size);
 
 		file_buffer->file_size = read_size;
 
@@ -1998,7 +1998,7 @@ again:
 	if(expected == block_size) {
 		char buffer;
 
-		if(read(file, &buffer, 1) == 1)
+		if(read_bytes(file, &buffer, 1) == 1)
 			goto restat;
 	}
 
