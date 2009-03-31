@@ -369,6 +369,7 @@ int writer_buffer_size;
 int reader_buffer_size;
 int fragment_buffer_size;
 
+char *read_from_disk(long long start, unsigned int avail_bytes);
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type);
 extern int read_super(int fd, squashfs_super_block *sBlk, char *source);
@@ -1644,14 +1645,11 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 		int res;
 		unsigned long bytes = block_size;
 		char *data;
-		char cbuffer[block_size];
 
 		if(compressed_buffer)
 			data = compressed_buffer->data;
-		else {
-			data = cbuffer;
-			read_destination(fd, start_block, size, data);
-		}
+		else
+			data = read_from_disk(start_block, size);
 
 		res = uncompress((unsigned char *) buffer->data, &bytes,
 			(const unsigned char *) data, size);
