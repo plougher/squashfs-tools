@@ -75,8 +75,8 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 	} else
 		memcpy(&header.base, block_ptr, sizeof(header.base));
 
-	i.uid = (uid_t) uid_table[(header.base.inode_type - 1) / SQUASHFS_TYPES *
-		16 + header.base.uid];
+	i.uid = (uid_t) uid_table[(header.base.inode_type - 1) /
+		SQUASHFS_TYPES * 16 + header.base.uid];
 	if(header.base.inode_type == SQUASHFS_IPC_TYPE) {
 		squashfs_ipc_inode_header_1 *inodep = &header.ipc;
 
@@ -113,7 +113,8 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 			if(swap) {
 				squashfs_dir_inode_header_1 sinode;
 				memcpy(&sinode, block_ptr, sizeof(header.dir));
-				SQUASHFS_SWAP_DIR_INODE_HEADER_1(inode, &sinode);
+				SQUASHFS_SWAP_DIR_INODE_HEADER_1(inode,
+					&sinode);
 			} else
 			memcpy(inode, block_ptr, sizeof(header.dir));
 
@@ -129,7 +130,8 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 			if(swap) {
 				squashfs_reg_inode_header_1 sinode;
 				memcpy(&sinode, block_ptr, sizeof(sinode));
-				SQUASHFS_SWAP_REG_INODE_HEADER_1(inode, &sinode);
+				SQUASHFS_SWAP_REG_INODE_HEADER_1(inode,
+					&sinode);
 			} else
 				memcpy(inode, block_ptr, sizeof(*inode));
 
@@ -146,7 +148,8 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 			break;
 		}	
 		case SQUASHFS_SYMLINK_TYPE: {
-			squashfs_symlink_inode_header_1 *inodep = &header.symlink;
+			squashfs_symlink_inode_header_1 *inodep =
+				&header.symlink;
 
 			if(swap) {
 				squashfs_symlink_inode_header_1 sinodep;
@@ -174,7 +177,8 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 			if(swap) {
 				squashfs_dev_inode_header_1 sinodep;
 				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_DEV_INODE_HEADER_1(inodep, &sinodep);
+				SQUASHFS_SWAP_DEV_INODE_HEADER_1(inodep,
+					&sinodep);
 			} else
 				memcpy(inodep, block_ptr, sizeof(*inodep));
 
@@ -207,8 +211,8 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 	struct dir_ent *new_dir;
 	struct dir *dir;
 
-	TRACE("squashfs_opendir: inode start block %d, offset %d\n", block_start,
-		offset);
+	TRACE("squashfs_opendir: inode start block %d, offset %d\n",
+		block_start, offset);
 
 	if(((*i) = s_ops.read_inode(block_start, offset)) == NULL) {
 		ERROR("squashfs_opendir: failed to read directory inode %d\n",
@@ -267,15 +271,15 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 			memcpy(dire->name, directory_table + bytes,
 				dire->size + 1);
 			dire->name[dire->size + 1] = '\0';
-			TRACE("squashfs_opendir: directory entry %s, inode %d:%d, "
-				"type %d\n", dire->name, dirh.start_block,
-				dire->offset, dire->type);
+			TRACE("squashfs_opendir: directory entry %s, inode "
+				"%d:%d, type %d\n", dire->name,
+				dirh.start_block, dire->offset, dire->type);
 			if((dir->dir_count % DIR_ENT_SIZE) == 0) {
 				new_dir = realloc(dir->dirs, (dir->dir_count +
 					DIR_ENT_SIZE) * sizeof(struct dir_ent));
 				if(new_dir == NULL) {
-					ERROR("squashfs_opendir: realloc failed!"
-						"\n");
+					ERROR("squashfs_opendir: realloc "
+						"failed!\n");
 					free(dir->dirs);
 					free(dir);
 					return NULL;
@@ -283,7 +287,8 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 				dir->dirs = new_dir;
 			}
 			strcpy(dir->dirs[dir->dir_count].name, dire->name);
-			dir->dirs[dir->dir_count].start_block = dirh.start_block;
+			dir->dirs[dir->dir_count].start_block =
+				dirh.start_block;
 			dir->dirs[dir->dir_count].offset = dire->offset;
 			dir->dirs[dir->dir_count].type = dire->type;
 			dir->dir_count ++;
@@ -302,7 +307,8 @@ int read_uids_guids_1()
 	TRACE("read_uids_guids: no_uids %d, no_guids %d\n", sBlk.no_uids,
 		sBlk.no_guids);
 
-	uid_table = malloc((sBlk.no_uids + sBlk.no_guids) * sizeof(unsigned int));
+	uid_table = malloc((sBlk.no_uids + sBlk.no_guids) *
+		sizeof(unsigned int));
 	if(uid_table == NULL) {
 		ERROR("read_uids_guids: failed to allocate uid/gid table\n");
 		return FALSE;
@@ -316,7 +322,8 @@ int read_uids_guids_1()
 		res = read_bytes(sBlk.uid_start, (sBlk.no_uids + sBlk.no_guids)
 			* sizeof(unsigned int), (char *) suid_table);
 		if(res == FALSE) {
-			ERROR("read_uids_guids: failed to read uid/gid table\n");
+			ERROR("read_uids_guids: failed to read uid/gid table"
+				"\n");
 			return FALSE;
 		}
 		SQUASHFS_SWAP_INTS_3(uid_table, suid_table,
@@ -325,7 +332,8 @@ int read_uids_guids_1()
 		res = read_bytes(sBlk.uid_start, (sBlk.no_uids + sBlk.no_guids)
 			* sizeof(unsigned int), (char *) uid_table);
 		if(res == FALSE) {
-			ERROR("read_uids_guids: failed to read uid/gid table\n");
+			ERROR("read_uids_guids: failed to read uid/gid table"
+				"\n");
 			return FALSE;
 		}
 	}
