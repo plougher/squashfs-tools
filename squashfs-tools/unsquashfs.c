@@ -202,7 +202,8 @@ void remove_hash_table(struct cache *cache, struct cache_entry *entry)
 	if(entry->hash_prev)
 		entry->hash_prev->hash_next = entry->hash_next;
 	else
-		cache->hash_table[CALCULATE_HASH(entry->block)] = entry->hash_next;
+		cache->hash_table[CALCULATE_HASH(entry->block)] =
+			entry->hash_next;
 	if(entry->hash_next)
 		entry->hash_next->hash_prev = entry->hash_prev;
 
@@ -273,9 +274,9 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 	/*
 	 * Get a block out of the cache.  If the block isn't in the cache
  	 * it is added and queued to the reader() and deflate() threads for
- 	 * reading * off disk and decompression.  The cache grows until max_blocks
- 	 * is reached, once this occurs existing discarded blocks on the free list
- 	 * are reused
+ 	 * reading off disk and decompression.  The cache grows until max_blocks
+ 	 * is reached, once this occurs existing discarded blocks on the free
+ 	 * list are reused
  	 */
 	int hash = CALCULATE_HASH(block);
 	struct cache_entry *entry;
@@ -337,8 +338,8 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 		insert_hash_table(cache, entry);
 
 		/*
-		 * queue to read thread to read and ultimately (via the decompress
- 		 * threads) decompress the buffer
+		 * queue to read thread to read and ultimately (via the
+		 * decompress threads) decompress the buffer
  		 */
 		pthread_mutex_unlock(&cache->mutex);
 		queue_put(to_reader, entry);
@@ -365,8 +366,8 @@ void cache_block_ready(struct cache_entry *entry, int error)
 	entry->error = error;
 
 	/*
-	 * if the wait_pending flag is set, one or more threads may be waiting on
- 	 * this buffer
+	 * if the wait_pending flag is set, one or more threads may be waiting
+	 * on this buffer
 	 */
 	if(entry->cache->wait_pending) {
 		entry->cache->wait_pending = FALSE;
@@ -399,9 +400,9 @@ void cache_block_put(struct cache_entry *entry)
 {
 	/*
 	 * finished with this cache entry, once the usage count reaches zero it
- 	 * can be reused and is put onto the free list.  As it remains accessible
- 	 * via the hash table it can be found getting a new lease of life before it
- 	 * is reused.
+ 	 * can be reused and is put onto the free list.  As it remains
+ 	 * accessible via the hash table it can be found getting a new lease of
+ 	 * life before it is reused.
  	 */
 	pthread_mutex_lock(&entry->cache->mutex);
 
@@ -410,8 +411,8 @@ void cache_block_put(struct cache_entry *entry)
 		insert_free_list(entry->cache, entry);
 
 		/*
-		 * if the wait_free flag is set, one or more threads may be waiting
-		 * on this buffer
+		 * if the wait_free flag is set, one or more threads may be
+		 * waiting on this buffer
 		 */
 		if(entry->cache->wait_free) {
 			entry->cache->wait_free = FALSE;
@@ -472,16 +473,20 @@ int print_filename(char *pathname, struct inode *inode)
 		case S_IFSOCK:
 		case S_IFIFO:
 		case S_IFLNK:
-			padchars = TOTALCHARS - strlen(userstr) - strlen(groupstr);
+			padchars = TOTALCHARS - strlen(userstr) -
+				strlen(groupstr);
 
-			printf("%*lld ", padchars > 0 ? padchars : 0, inode->data);
+			printf("%*lld ", padchars > 0 ? padchars : 0,
+				inode->data);
 			break;
 		case S_IFCHR:
 		case S_IFBLK:
-			padchars = TOTALCHARS - strlen(userstr) - strlen(groupstr) - 7; 
+			padchars = TOTALCHARS - strlen(userstr) -
+				strlen(groupstr) - 7; 
 
 			printf("%*s%3d,%3d ", padchars > 0 ? padchars : 0, " ",
-				(int) inode->data >> 8, (int) inode->data & 0xff);
+				(int) inode->data >> 8, (int) inode->data &
+				0xff);
 			break;
 	}
 
@@ -536,7 +541,8 @@ int read_bytes(long long byte, int bytes, char *buff)
 	off_t off = byte;
 	int res, count;
 
-	TRACE("read_bytes: reading from position 0x%llx, bytes %d\n", byte, bytes);
+	TRACE("read_bytes: reading from position 0x%llx, bytes %d\n", byte,
+		bytes);
 
 	if(lseek(fd, off, SEEK_SET) == -1) {
 		ERROR("Lseek failed because %s\n", strerror(errno));
@@ -596,11 +602,11 @@ int read_block(long long start, long long *next, char *block)
 
 		if(res != Z_OK) {
 			if(res == Z_MEM_ERROR)
-				ERROR("zlib::uncompress failed, not enough memory"
-					"\n");
+				ERROR("zlib::uncompress failed, not enough "
+					"memory\n");
 			else if(res == Z_BUF_ERROR)
-				ERROR("zlib::uncompress failed, not enough room "
-					"in output buffer\n");
+				ERROR("zlib::uncompress failed, not enough "
+					"room in output buffer\n");
 			else
 				ERROR("zlib::uncompress failed, unknown error "
 					"%d\n", res);
@@ -632,7 +638,8 @@ int read_data_block(long long start, unsigned int size, char *block)
 
 	TRACE("read_data_block: block @0x%llx, %d %s bytes\n", start,
 		SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte),
-		SQUASHFS_COMPRESSED_BLOCK(c_byte) ? "compressed" : "uncompressed");
+		SQUASHFS_COMPRESSED_BLOCK(c_byte) ? "compressed" :
+		"uncompressed");
 
 	if(SQUASHFS_COMPRESSED_BLOCK(size)) {
 		if(read_bytes(start, c_byte, data) == FALSE)
@@ -643,11 +650,11 @@ int read_data_block(long long start, unsigned int size, char *block)
 
 		if(res != Z_OK) {
 			if(res == Z_MEM_ERROR)
-				ERROR("zlib::uncompress failed, not enough memory"
-					"\n");
+				ERROR("zlib::uncompress failed, not enough "
+					"memory\n");
 			else if(res == Z_BUF_ERROR)
-				ERROR("zlib::uncompress failed, not enough room "
-					"in output buffer\n");
+				ERROR("zlib::uncompress failed, not enough "
+					"room in output buffer\n");
 			else
 				ERROR("zlib::uncompress failed, unknown error "
 					"%d\n", res);
@@ -678,11 +685,12 @@ void uncompress_inode_table(long long start, long long end)
 		if((size - bytes < SQUASHFS_METADATA_SIZE) &&
 				((inode_table = realloc(inode_table, size +=
 				SQUASHFS_METADATA_SIZE)) == NULL))
-			EXIT_UNSQUASH("uncompress_inode_table: out of memory in "
-				"realloc\n");
+			EXIT_UNSQUASH("uncompress_inode_table: out of memory "
+				"in realloc\n");
 		TRACE("uncompress_inode_table: reading block 0x%llx\n", start);
 		add_entry(inode_table_hash, start, bytes);
-		if((res = read_block(start, &start, inode_table + bytes)) == 0) {
+		res = read_block(start, &start, inode_table + bytes);
+		if(res == 0) {
 			free(inode_table);
 			EXIT_UNSQUASH("uncompress_inode_table: failed to read "
 				"block \n");
@@ -705,8 +713,9 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 
 	if(root_process) {
 		if(chown(pathname, uid, guid) == -1) {
-			ERROR("set_attributes: failed to change uid and gids on "
-				"%s, because %s\n", pathname, strerror(errno));
+			ERROR("set_attributes: failed to change uid and gids "
+				"on %s, because %s\n", pathname,
+				strerror(errno));
 			return FALSE;
 		}
 	} else
@@ -730,8 +739,8 @@ int write_bytes(int fd, char *buff, int bytes)
 		res = write(fd, buff + count, bytes - count);
 		if(res == -1) {
 			if(errno != EINTR) {
-				ERROR("Write on output file failed because %s\n",
-						strerror(errno));
+				ERROR("Write on output file failed because "
+					"%s\n", strerror(errno));
 				return -1;
 			}
 			res = 0;
@@ -759,8 +768,8 @@ int write_block(int file_fd, char *buffer, int size, int hole, int sparse)
 
 		if((sparse == FALSE || lseek_broken) && zero_data == NULL) {
 			if((zero_data = malloc(block_size)) == NULL)
-				EXIT_UNSQUASH("write_block: failed to alloc zero "
-					"data block\n");
+				EXIT_UNSQUASH("write_block: failed to alloc "
+					"zero data block\n");
 			memset(zero_data, 0, block_size);
 		}
 
@@ -815,8 +824,8 @@ int write_file(struct inode *inode, char *pathname)
 
 	/*
 	 * the writer thread is queued a squashfs_file structure describing the
- 	 * file.  If the file has one or more blocks or a fragments they are queued
- 	 * separately (references to blocks in the cache).
+ 	 * file.  If the file has one or more blocks or a fragments they are
+ 	 * queued separately (references to blocks in the cache).
  	 */
 	file->fd = file_fd;
 	file->file_size = inode->data;
@@ -881,8 +890,8 @@ int create_inode(char *pathname, struct inode *i)
 			unlink(pathname);
 
 		if(link(created_inode[i->inode_number - 1], pathname) == -1) {
-			ERROR("create_inode: failed to create hardlink, because "
-				"%s\n", strerror(errno));
+			ERROR("create_inode: failed to create hardlink, "
+				"because %s\n", strerror(errno));
 			return FALSE;
 		}
 
@@ -892,8 +901,8 @@ int create_inode(char *pathname, struct inode *i)
 	switch(i->type) {
 		case SQUASHFS_FILE_TYPE:
 		case SQUASHFS_LREG_TYPE:
-			TRACE("create_inode: regular file, file_size %lld, blocks "
-				"%d\n", i->data, i->blocks);
+			TRACE("create_inode: regular file, file_size %lld, "
+				"blocks %d\n", i->data, i->blocks);
 
 			if(write_file(i, pathname))
 				file_count ++;
@@ -906,16 +915,18 @@ int create_inode(char *pathname, struct inode *i)
 				unlink(pathname);
 
 			if(symlink(i->symlink, pathname) == -1) {
-				ERROR("create_inode: failed to create symlink %s, "
-					"because %s\n", pathname, strerror(errno));
+				ERROR("create_inode: failed to create symlink "
+					"%s, because %s\n", pathname,
+					strerror(errno));
 				break;
 			}
 
 			if(root_process) {
 				if(lchown(pathname, i->uid, i->gid) == -1)
-					ERROR("create_inode: failed to change uid "
-						"and gids on %s, because %s\n",
-						pathname, strerror(errno));
+					ERROR("create_inode: failed to change "
+						"uid and gids on %s, because "
+						"%s\n", pathname,
+						strerror(errno));
 			}
 
 			sym_count ++;
@@ -932,19 +943,20 @@ int create_inode(char *pathname, struct inode *i)
 				if(mknod(pathname, chrdev ? S_IFCHR : S_IFBLK,
 						makedev((i->data >> 8) & 0xff,
 						i->data & 0xff)) == -1) {
-					ERROR("create_inode: failed to create %s "
-						"device %s, because %s\n",
+					ERROR("create_inode: failed to create "
+						"%s device %s, because %s\n",
 						chrdev ? "character" : "block",
 						pathname, strerror(errno));
 					break;
 				}
-				set_attributes(pathname, i->mode, i->uid, i->gid,
-					i->time, TRUE);
+				set_attributes(pathname, i->mode, i->uid,
+					i->gid, i->time, TRUE);
 				dev_count ++;
 			} else
-				ERROR("create_inode: could not create %s device "
-					"%s, because you're not superuser!\n",
-					chrdev ? "character" : "block", pathname);
+				ERROR("create_inode: could not create %s "
+					"device %s, because you're not "
+					"superuser!\n", chrdev ? "character" :
+					"block", pathname);
 			break;
 		}
 		case SQUASHFS_FIFO_TYPE:
@@ -959,7 +971,8 @@ int create_inode(char *pathname, struct inode *i)
 					strerror(errno));
 				break;
 			}
-			set_attributes(pathname, i->mode, i->uid, i->gid, i->time, TRUE);
+			set_attributes(pathname, i->mode, i->uid, i->gid,
+				i->time, TRUE);
 			fifo_count ++;
 			break;
 		case SQUASHFS_SOCKET_TYPE:
@@ -988,13 +1001,15 @@ void uncompress_directory_table(long long start, long long end)
 		if(size - bytes < SQUASHFS_METADATA_SIZE && (directory_table =
 				realloc(directory_table, size +=
 				SQUASHFS_METADATA_SIZE)) == NULL)
-			EXIT_UNSQUASH("uncompress_directory_table: out of memory "
-				"in realloc\n");
-		TRACE("uncompress_directory_table: reading block 0x%llx\n", start);
+			EXIT_UNSQUASH("uncompress_directory_table: out of "
+				"memory in realloc\n");
+		TRACE("uncompress_directory_table: reading block 0x%llx\n",
+				start);
 		add_entry(directory_table_hash, start, bytes);
-		if((res = read_block(start, &start, directory_table + bytes)) == 0)
-			EXIT_UNSQUASH("uncompress_directory_table: failed to read "
-				"block\n");
+		res = read_block(start, &start, directory_table + bytes);
+		if(res == 0)
+			EXIT_UNSQUASH("uncompress_directory_table: failed to "
+				"read block\n");
 		bytes += res;
 	}
 }
@@ -1092,7 +1107,8 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 
 				regerror(error, paths->name[i].preg, str, 1024);
 				EXIT_UNSQUASH("invalid regex %s in export %s, "
-					"because %s\n", targname, alltarget, str);
+					"because %s\n", targname, alltarget,
+					str);
 			}
 		} else
 			paths->name[i].preg = NULL;
@@ -1113,16 +1129,16 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		 */
 		if(paths->name[i].paths == NULL) {
 			/*
-			 * No sub-directory which means this is the leaf component
-			 * of a pre-existing extract which subsumes the extract
-			 * currently being added, in which case stop adding
-			 * components
+			 * No sub-directory which means this is the leaf
+			 * component of a pre-existing extract which subsumes
+			 * the extract currently being added, in which case stop
+			 * adding components
 			 */
 		} else if(target[0] == '\0') {
 			/*
 			 * at leaf pathname component and child components exist
-			 * from more specific extracts, delete as they're subsumed
-			 * by this extract
+			 * from more specific extracts, delete as they're
+			 * subsumed by this extract
 			 */
 			free_path(paths->name[i].paths);
 			paths->name[i].paths = NULL;
@@ -1177,22 +1193,23 @@ int matches(struct pathnames *paths, char *name, struct pathnames **new)
 		struct pathname *path = paths->path[n];
 		for(i = 0; i < path->names; i++) {
 			int match = use_regex ?
-				regexec(path->name[i].preg, name, (size_t) 0, NULL,
-				0) == 0 : fnmatch(path->name[i].name, name,
-				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
+				regexec(path->name[i].preg, name, (size_t) 0,
+				NULL, 0) == 0 : fnmatch(path->name[i].name,
+				name, FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) ==
+				0;
 			if(match && path->name[i].paths == NULL)
 				/*
 				 * match on a leaf component, any subdirectories
-				 * will implicitly match, therefore return an empty
-				 * new search set
+				 * will implicitly match, therefore return an
+				 * empty new search set
 				 */
 				goto empty_set;
 
 			if(match)
 				/*
 				 * match on a non-leaf component, add any
-				 * subdirectories to the new set of subdirectories
-				 * to scan for this name
+				 * subdirectories to the new set of
+				 * subdirectories to scan for this name
 				 */
 				*new = add_subdir(*new, path->name[i].paths);
 		}
@@ -1255,8 +1272,8 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		else if(new == NULL) {
 			if(type == SQUASHFS_FILE_TYPE ||
 					type == SQUASHFS_LREG_TYPE) {
-				if((i = s_ops.read_inode(start_block, offset)) ==
-						NULL) {
+				if((i = s_ops.read_inode(start_block, offset))
+						== NULL) {
 					ERROR("failed to read header\n");
 					continue;
 				}
@@ -1357,12 +1374,12 @@ void squashfs_stat(char *source)
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 	printf("Found a valid %sSQUASHFS %d:%d superblock on %s.\n",
-		sBlk.s_major == 4 ? "" : swap ? "little endian " : "big endian ",
-		sBlk.s_major, sBlk.s_minor, source);
+		sBlk.s_major == 4 ? "" : swap ? "little endian " :
+		"big endian ", sBlk.s_major, sBlk.s_minor, source);
 #else
 	printf("Found a valid %sSQUASHFS %d:%d superblock on %s.\n",
-		sBlk.s_major == 4 ? "" : swap ? "big endian " : "little endian ",
-		sBlk.s_major, sBlk.s_minor, source);
+		sBlk.s_major == 4 ? "" : swap ? "big endian " :
+		"little endian ", sBlk.s_major, sBlk.s_minor, source);
 #endif
 	printf("Creation or last append time %s", mkfs_str ? mkfs_str :
 		"failed to get time\n");
@@ -1375,7 +1392,8 @@ void squashfs_stat(char *source)
 		SQUASHFS_UNCOMPRESSED_DATA(sBlk.flags) ? "un" : "");
 	if(sBlk.s_major > 1 && !SQUASHFS_NO_FRAGMENTS(sBlk.flags))
 		printf("Fragments are %scompressed\n",
-			SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.flags) ? "un" : "");
+			SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.flags) ? "un" :
+			"");
 	printf("Check data is %spresent in the filesystem\n",
 		SQUASHFS_CHECK_DATA(sBlk.flags) ? "" : "not ");
 	if(sBlk.s_major > 1) {
@@ -1405,7 +1423,8 @@ void squashfs_stat(char *source)
 	}
 
 	TRACE("sBlk.inode_table_start 0x%llx\n", sBlk.inode_table_start);
-	TRACE("sBlk.directory_table_start 0x%llx\n", sBlk.directory_table_start);
+	TRACE("sBlk.directory_table_start 0x%llx\n",
+		sBlk.directory_table_start);
 	if(sBlk.s_major == 4)
 		TRACE("sBlk.id_table_start 0x%llx\n", sBlk.id_table_start);
 	else {
@@ -1457,13 +1476,14 @@ int read_super(char *source)
 	if(sBlk_3.s_magic != SQUASHFS_MAGIC) {
 		if(sBlk_3.s_magic == SQUASHFS_MAGIC_SWAP) {
 			squashfs_super_block_3 sblk;
-			ERROR("Reading a different endian SQUASHFS filesystem on "
-				"%s\n", source);
+			ERROR("Reading a different endian SQUASHFS filesystem "
+				"on %s\n", source);
 			SQUASHFS_SWAP_SUPER_BLOCK_3(&sblk, &sBlk_3);
 			memcpy(&sBlk_3, &sblk, sizeof(squashfs_super_block_3));
 			swap = 1;
 		} else  {
-			ERROR("Can't find a SQUASHFS superblock on %s\n", source);
+			ERROR("Can't find a SQUASHFS superblock on %s\n",
+				source);
 			goto failed_mount;
 		}
 	}
@@ -1505,7 +1525,8 @@ int read_super(char *source)
 			s_ops.read_inode = read_inode_1;
 			s_ops.read_uids_guids = read_uids_guids_1;
 		} else {
-			sBlk.fragment_table_start = sBlk_3.fragment_table_start_2;
+			sBlk.fragment_table_start =
+				sBlk_3.fragment_table_start_2;
 			s_ops.squashfs_opendir = squashfs_opendir_1;
 			s_ops.read_fragment = read_fragment_2;
 			s_ops.read_fragment_table = read_fragment_table_2;
@@ -1565,16 +1586,16 @@ void *reader(void *arg)
 
 		if(res && SQUASHFS_COMPRESSED_BLOCK(entry->size))
 			/*
-			 * queue successfully read block to the deflate thread(s)
- 			 * for further processing
+			 * queue successfully read block to the deflate
+			 * thread(s) for further processing
  			 */
 			queue_put(to_deflate, entry);
 		else
 			/*
 			 * block has either been successfully read and is
 			 * uncompressed, or an error has occurred, clear pending
-			 * flag, set error appropriately, and wake up any threads
-			 * waiting on this buffer
+			 * flag, set error appropriately, and wake up any
+			 * threads waiting on this buffer
 			 */
 			cache_block_ready(entry, !res);
 	}
@@ -1695,11 +1716,11 @@ void *deflator(void *arg)
 
 		if(res != Z_OK) {
 			if(res == Z_MEM_ERROR)
-				ERROR("zlib::uncompress failed, not enough memory"
-					"\n");
+				ERROR("zlib::uncompress failed, not enough"
+					"memory\n");
 			else if(res == Z_BUF_ERROR)
-				ERROR("zlib::uncompress failed, not enough room "
-					"in output buffer\n");
+				ERROR("zlib::uncompress failed, not enough "
+					"room in output buffer\n");
 			else
 				ERROR("zlib::uncompress failed, unknown error "
 					"%d\n", res);
@@ -1747,8 +1768,10 @@ void *progress_thread(void *arg)
 		timespec.tv_sec = timeval.tv_sec;
 		if(timeval.tv_usec + 250000 > 999999)
 			timespec.tv_sec++;
-		timespec.tv_nsec = ((timeval.tv_usec + 250000) % 1000000) * 1000;
-		pthread_cond_timedwait(&progress_wait, &screen_mutex, &timespec);
+		timespec.tv_nsec = ((timeval.tv_usec + 250000) % 1000000) *
+			1000;
+		pthread_cond_timedwait(&progress_wait, &screen_mutex,
+			&timespec);
 		if(progress_enabled)
 			progress_bar(sym_count + dev_count +
 				fifo_count + cur_blocks, total_inodes -
@@ -1767,7 +1790,8 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	sigaddset(&sigmask, SIGINT);
 	sigaddset(&sigmask, SIGQUIT);
 	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
-		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads\n");
+		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads"
+			"\n");
 
 	if(processors == -1) {
 #ifndef linux
@@ -1807,7 +1831,8 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	pthread_mutex_init(&fragment_mutex, NULL);
 
 	for(i = 0; i < processors; i++) {
-		if(pthread_create(&deflator_thread[i], NULL, deflator, NULL) != 0)
+		if(pthread_create(&deflator_thread[i], NULL, deflator, NULL) !=
+				 0)
 			EXIT_UNSQUASH("Failed to create thread\n");
 	}
 
@@ -1815,7 +1840,8 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 			processors == 1 ? "" : "s");
 
 	if(sigprocmask(SIG_SETMASK, &old_mask, NULL) == -1)
-		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads\n");
+		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads"
+			"\n");
 }
 
 
@@ -1929,7 +1955,8 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-info") == 0 ||
 				strcmp(argv[i], "-i") == 0)
 			info = TRUE;
-		else if(strcmp(argv[i], "-ls") == 0 || strcmp(argv[i], "-l") == 0)
+		else if(strcmp(argv[i], "-ls") == 0 ||
+				strcmp(argv[i], "-l") == 0)
 			lsonly = TRUE;
 		else if(strcmp(argv[i], "-no-progress") == 0 ||
 				strcmp(argv[i], "-n") == 0)
@@ -1944,7 +1971,8 @@ int main(int argc, char *argv[])
 			dest = argv[i];
 		} else if(strcmp(argv[i], "-processors") == 0 ||
 				strcmp(argv[i], "-p") == 0) {
-			if((++i == argc) || (processors = strtol(argv[i], &b, 10),
+			if((++i == argc) || 
+					(processors = strtol(argv[i], &b, 10),
 					*b != '\0')) {
 				ERROR("%s: -processors missing or invalid "
 					"processor number\n", argv[0]);
@@ -1957,10 +1985,11 @@ int main(int argc, char *argv[])
 			}
 		} else if(strcmp(argv[i], "-data-queue") == 0 ||
 					 strcmp(argv[i], "-da") == 0) {
-			if((++i == argc) || (data_buffer_size = strtol(argv[i], &b,
+			if((++i == argc) ||
+					(data_buffer_size = strtol(argv[i], &b,
 					 10), *b != '\0')) {
-				ERROR("%s: -data-queue missing or invalid queue "
-					"size\n", argv[0]);
+				ERROR("%s: -data-queue missing or invalid "
+					"queue size\n", argv[0]);
 				exit(1);
 			}
 			if(data_buffer_size < 1) {
@@ -1970,10 +1999,11 @@ int main(int argc, char *argv[])
 			}
 		} else if(strcmp(argv[i], "-frag-queue") == 0 ||
 					strcmp(argv[i], "-fr") == 0) {
-			if((++i == argc) || (fragment_buffer_size = strtol(argv[i],
+			if((++i == argc) ||
+					(fragment_buffer_size = strtol(argv[i],
 					 &b, 10), *b != '\0')) {
-				ERROR("%s: -frag-queue missing or invalid queue "
-					"size\n", argv[0]);
+				ERROR("%s: -frag-queue missing or invalid "
+					"queue size\n", argv[0]);
 				exit(1);
 			}
 			if(fragment_buffer_size < 1) {
@@ -2026,36 +2056,37 @@ options:
 				"copyright information\n");
 			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, "
 				"default \"squashfs-root\"\n");
-			ERROR("\t-n[o-progress]\t\tdon't display the progress bar"
-				"\n");
-			ERROR("\t-p[rocessors] <number>\tuse <number> processors."
-				"  By default will use\n\t\t\t\tnumber of "
-				"processors available\n");
-			ERROR("\t-i[nfo]\t\t\tprint files as they are unsquashed"
-				"\n");
-			ERROR("\t-li[nfo]\t\tprint files as they are unsquashed "
-				"with file\n\t\t\t\tattributes (like ls -l "
-				"output)\n");
+			ERROR("\t-n[o-progress]\t\tdon't display the progress "
+				"bar\n");
+			ERROR("\t-p[rocessors] <number>\tuse <number> "
+				"processors.  By default will use\n");
+			ERROR("\t\t\t\tnumber of processors available\n");
+			ERROR("\t-i[nfo]\t\t\tprint files as they are "
+				"unsquashed\n");
+			ERROR("\t-li[nfo]\t\tprint files as they are "
+				"unsquashed with file\n");
+			ERROR("\t\t\t\tattributes (like ls -l output)\n");
 			ERROR("\t-l[s]\t\t\tlist filesystem, but don't unsquash"
 				"\n");
-			ERROR("\t-ll[s]\t\t\tlist filesystem with file attributes "
-				"(like\n\t\t\t\tls -l output), but don't unsquash"
-				"\n");
-			ERROR("\t-f[orce]\t\tif file already exists then overwrite"
-				"\n");
+			ERROR("\t-ll[s]\t\t\tlist filesystem with file "
+				"attributes (like\n");
+			ERROR("\t\t\t\tls -l output), but don't unsquash\n");
+			ERROR("\t-f[orce]\t\tif file already exists then "
+				"overwrite\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
 				"information\n");
 			ERROR("\t-e[f] <extract file>\tlist of directories or "
 				"files to extract.\n\t\t\t\tOne per line\n");
-			ERROR("\t-da[ta-queue] <size>\tSet data queue to <size> "
-				"Mbytes.  Default %d\n\t\t\t\tMbytes\n",
+			ERROR("\t-da[ta-queue] <size>\tSet data queue to "
+				"<size> Mbytes.  Default %d\n\t\t\t\tMbytes\n",
 				DATA_BUFFER_DEFAULT);
 			ERROR("\t-fr[ag-queue] <size>\tSet fagment queue to "
 				"<size> Mbytes.  Default %d\n\t\t\t\t Mbytes\n",
 				FRAGMENT_BUFFER_DEFAULT);
-			ERROR("\t-r[egex]\t\ttreat extract names as POSIX regular "
-				"expressions\n\t\t\t\trather than use the default "
-				"shell wildcard\n\t\t\t\texpansion (globbing)\n");
+			ERROR("\t-r[egex]\t\ttreat extract names as POSIX "
+				"regular expressions\n");
+			ERROR("\t\t\t\trather than use the default shell "
+				"wildcard\n\t\t\t\texpansion (globbing)\n");
 		}
 		exit(1);
 	}
@@ -2121,8 +2152,8 @@ options:
 	memset(created_inode, 0, sBlk.inodes * sizeof(char *));
 	inode_number = 1;
 
-	printf("%d inodes (%d blocks) to write\n\n", total_inodes, total_inodes -
-		total_files + total_blocks);
+	printf("%d inodes (%d blocks) to write\n\n", total_inodes,
+		total_inodes - total_files + total_blocks);
 
 	if(progress)
 		enable_progress_bar();
