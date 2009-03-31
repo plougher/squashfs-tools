@@ -1671,6 +1671,8 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 	else
 		read_destination(fd, start_block, size, buffer->data);
 
+	cache_block_put(compressed_buffer);
+
 	return buffer;
 }
 
