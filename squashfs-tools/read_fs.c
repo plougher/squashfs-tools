@@ -90,8 +90,8 @@ int read_block(int fd, long long start, long long *next, unsigned char *block,
 				ERROR("zlib::uncompress failed, not enough "
 					"memory\n");
 			else if(res == Z_BUF_ERROR)
-				ERROR("zlib::uncompress failed, not enough room "
-					"in output buffer\n");
+				ERROR("zlib::uncompress failed, not enough "
+					"room in output buffer\n");
 			else
 				ERROR("zlib::uncompress failed, unknown error "
 					"%d\n", res);
@@ -140,7 +140,8 @@ int scan_inode_table(int fd, long long start, long long end,
 				return FALSE;
 		}
 		TRACE("scan_inode_table: reading block 0x%llx\n", start);
-		byte = read_block(fd, start, &start, *inode_table + bytes, sBlk);
+		byte = read_block(fd, start, &start, *inode_table + bytes,
+			sBlk);
 		if(byte == 0) {
 			free(*inode_table);
 			return FALSE;
@@ -149,10 +150,10 @@ int scan_inode_table(int fd, long long start, long long end,
 	}
 
 	/*
-	 * Read last inode entry which is the root directory inode, and obtain the
-	 * last directory start block index.  This is used when calculating the
-	 * total uncompressed directory size.  The directory bytes in the last
-	 * block will be counted as normal.
+	 * Read last inode entry which is the root directory inode, and obtain
+	 * the last directory start block index.  This is used when calculating
+	 * the total uncompressed directory size.  The directory bytes in the
+	 * last * block will be counted as normal.
 	 *
 	 * The root inode is ignored in the inode scan.  This ensures there is
 	 * always enough bytes left to read a regular file inode entry
@@ -191,18 +192,20 @@ int scan_inode_table(int fd, long long start, long long end,
 					inode.file_size % sBlk->block_size;
 				int blocks = inode.fragment ==
 					SQUASHFS_INVALID_FRAG ? (inode.file_size
-					+ sBlk->block_size - 1) >> sBlk->block_log
-					 : inode.file_size >> sBlk->block_log;
+					+ sBlk->block_size - 1) >>
+					sBlk->block_log : inode.file_size >>
+					sBlk->block_log;
 				long long file_bytes = 0;
 				int i;
 				long long start = inode.start_block;
 				unsigned int *block_list;
 
-				TRACE("scan_inode_table: regular file, file_size "
-					"%d, blocks %d\n", inode.file_size,
-					blocks);
+				TRACE("scan_inode_table: regular file, "
+					"file_size %d, blocks %d\n",
+					inode.file_size, blocks);
 
-				block_list = malloc(blocks * sizeof(unsigned int));
+				block_list = malloc(blocks *
+					sizeof(unsigned int));
 				if(block_list == NULL) {
 					ERROR("Out of memory in block list "
 						"malloc\n");
@@ -242,17 +245,19 @@ int scan_inode_table(int fd, long long start, long long end,
 				frag_bytes = inode.fragment ==
 					SQUASHFS_INVALID_FRAG ? 0 :
 					inode.file_size % sBlk->block_size;
-				blocks = inode.fragment == SQUASHFS_INVALID_FRAG ?
-					(inode.file_size + sBlk->block_size - 1)
-					>> sBlk->block_log : inode.file_size >>
+				blocks = inode.fragment == SQUASHFS_INVALID_FRAG
+					?  (inode.file_size +
+					sBlk->block_size - 1) >>
+					sBlk->block_log : inode.file_size >>
 					sBlk->block_log;
 				start = inode.start_block;
 
-				TRACE("scan_inode_table: extended regular file, "
-					"file_size %lld, blocks %d\n",
+				TRACE("scan_inode_table: extended regular "
+					"file, file_size %lld, blocks %d\n",
 					inode.file_size, blocks);
 
-				block_list = malloc(blocks * sizeof(unsigned int));
+				block_list = malloc(blocks *
+					sizeof(unsigned int));
 				if(block_list == NULL) {
 					ERROR("Out of memory in block list "
 						"malloc\n");
@@ -335,8 +340,9 @@ int scan_inode_table(int fd, long long start, long long end,
 				cur_ptr += sizeof(squashfs_ipc_inode_header);
 				break;
 		 	default:
-				ERROR("Unknown inode type %d in scan_inode_table!"
-					"\n", inode.inode_type);
+				ERROR("Unknown inode type %d in "
+					"scan_inode_table!\n",
+					inode.inode_type);
 				goto failed;
 		}
 	}
@@ -361,17 +367,19 @@ int read_super(int fd, squashfs_super_block *sBlk, char *source)
 			ERROR("Pre 4.0 big-endian filesystem on %s, appending"
 				" to this is unsupported\n", source);
 		else
-			ERROR("Can't find a SQUASHFS superblock on %s\n", source);
+			ERROR("Can't find a SQUASHFS superblock on %s\n",
+				source);
 		goto failed_mount;
 	}
 
 	/* Check the MAJOR & MINOR versions */
 	if(sBlk->s_major != SQUASHFS_MAJOR || sBlk->s_minor > SQUASHFS_MINOR) {
 		if(sBlk->s_major < 4)
-			ERROR("Filesystem on %s is a SQUASHFS %d.%d filesystem.  "
-				"Appending\nto SQUASHFS %d.%d filesystems is not "
-				"supported.  Please convert it to a SQUASHFS 4 "
-				"filesystem\n", source, sBlk->s_major,
+			ERROR("Filesystem on %s is a SQUASHFS %d.%d filesystem."
+				"  Appending\nto SQUASHFS %d.%d filesystems is "
+				"not supported.  Please convert it to a "
+				"SQUASHFS 4 filesystem\n", source,
+				sBlk->s_major,
 				sBlk->s_minor, sBlk->s_major, sBlk->s_minor);
 		else
 			ERROR("Filesystem on %s is %d.%d, which is a later "
@@ -395,13 +403,15 @@ int read_super(int fd, squashfs_super_block *sBlk, char *source)
 	printf("\tDuplicates are %sremoved\n",
 		SQUASHFS_DUPLICATES(sBlk->flags) ? "" : "not ");
 	printf("\tFilesystem size %.2f Kbytes (%.2f Mbytes)\n",
-		sBlk->bytes_used / 1024.0, sBlk->bytes_used / (1024.0 * 1024.0));
+		sBlk->bytes_used / 1024.0, sBlk->bytes_used
+		/ (1024.0 * 1024.0));
 	printf("\tBlock size %d\n", sBlk->block_size);
 	printf("\tNumber of fragments %d\n", sBlk->fragments);
 	printf("\tNumber of inodes %d\n", sBlk->inodes);
 	printf("\tNumber of ids %d\n", sBlk->no_ids);
 	TRACE("sBlk->inode_table_start %llx\n", sBlk->inode_table_start);
-	TRACE("sBlk->directory_table_start %llx\n", sBlk->directory_table_start);
+	TRACE("sBlk->directory_table_start %llx\n",
+		sBlk->directory_table_start);
 	TRACE("sBlk->id_table_start %llx\n", sBlk->id_table_start);
 	TRACE("sBlk->fragment_table_start %llx\n", sBlk->fragment_table_start);
 	TRACE("sBlk->lookup_table_start %llx\n", sBlk->lookup_table_start);
@@ -433,8 +443,8 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 	if(directory_table == NULL)
 		return NULL;
 	while(bytes < size) {
-		TRACE("squashfs_readdir: reading block 0x%llx, bytes read so far "
-			"%d\n", start, bytes);
+		TRACE("squashfs_readdir: reading block 0x%llx, bytes read so "
+			"far %d\n", start, bytes);
 		last_start_block = start;
 		byte = read_block(fd, start, &start, directory_table + bytes,
 			sBlk);
@@ -464,15 +474,16 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 				(directory_table + bytes));
 			bytes += sizeof(*dire);
 
-			memcpy(dire->name, directory_table + bytes, dire->size + 1);
+			memcpy(dire->name, directory_table + bytes,
+				dire->size + 1);
 			dire->name[dire->size + 1] = '\0';
 			TRACE("squashfs_readdir: pushing directory entry %s, "
 				"inode %x:%x, type 0x%x\n", dire->name,
 				dirh.start_block, dire->offset, dire->type);
 			push_directory_entry(dire->name,
-				SQUASHFS_MKINODE(dirh.start_block, dire->offset),
-				dirh.inode_number + dire->inode_number,
-				dire->type);
+				SQUASHFS_MKINODE(dirh.start_block,
+				dire->offset), dirh.inode_number +
+				dire->inode_number, dire->type);
 			bytes += dire->size + 1;
 		}
 	}
@@ -550,8 +561,8 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk,
 		int length = read_block(fd, fragment_table_index[i], NULL,
 			((unsigned char *) *fragment_table) +
 			(i * SQUASHFS_METADATA_SIZE), sBlk);
-		TRACE("Read fragment table block %d, from 0x%llx, length %d\n", i,
-			 fragment_table_index[i], length);
+		TRACE("Read fragment table block %d, from 0x%llx, length %d\n",
+			i, fragment_table_index[i], length);
 	}
 
 	for(i = 0; i < sBlk->fragments; i++)
@@ -586,8 +597,8 @@ int read_inode_lookup_table(int fd, squashfs_super_block *sBlk,
 		int length = read_block(fd, index[i], NULL,
 			((unsigned char *) *inode_lookup_table) +
 			(i * SQUASHFS_METADATA_SIZE), sBlk);
-		TRACE("Read inode lookup table block %d, from 0x%llx, length %d\n",
-			 i, index[i], length);
+		TRACE("Read inode lookup table block %d, from 0x%llx, length "
+			"%d\n", i, index[i], length);
 	}
 
 	SQUASHFS_INSWAP_LONG_LONGS(*inode_lookup_table, sBlk->inodes);
@@ -604,16 +615,19 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk,
 	int *file_count, int *sym_count, int *dev_count, int *dir_count,
 	int *fifo_count, int *sock_count, long long *uncompressed_file,
 	unsigned int *uncompressed_inode, unsigned int *uncompressed_directory,
-	unsigned int *inode_dir_inode_number, unsigned int *inode_dir_parent_inode,
+	unsigned int *inode_dir_inode_number,
+	unsigned int *inode_dir_parent_inode,
 	void (push_directory_entry)(char *, squashfs_inode, int, int),
 	squashfs_fragment_entry **fragment_table,
 	squashfs_inode **inode_lookup_table)
 {
 	unsigned char *inode_table = NULL, *directory_table;
 	long long start = sBlk->inode_table_start;
-	long long  end = sBlk->directory_table_start, root_inode_start = start +
+	long long end = sBlk->directory_table_start;
+	long long root_inode_start = start +
 		SQUASHFS_INODE_BLK(sBlk->root_inode);
-	unsigned int root_inode_offset = SQUASHFS_INODE_OFFSET(sBlk->root_inode);
+	unsigned int root_inode_offset =
+		SQUASHFS_INODE_OFFSET(sBlk->root_inode);
 	unsigned int root_inode_block, files;
 	squashfs_inode_header inode;
 	unsigned int *id_table;
@@ -665,7 +679,8 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk,
 			*inode_dir_file_size, last_directory_block, sBlk,
 			push_directory_entry);
 		if(directory_table == NULL) {
-			ERROR("read_filesystem: Could not read root directory\n");
+			ERROR("read_filesystem: Could not read root directory"
+				"\n");
 			goto error;
 		}
 
