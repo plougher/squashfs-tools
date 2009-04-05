@@ -3441,6 +3441,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		buf.st_gid = pseudo_ent->dev->gid;
 		buf.st_rdev = makedev(pseudo_ent->dev->major,
 			pseudo_ent->dev->minor);
+		buf.st_mtime = time(NULL);
 		buf.st_ino = pseudo_ino ++;
 
 		add_dir_entry(pseudo_ent->name, pseudo_ent->pathname, sub_dir,
