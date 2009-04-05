@@ -6,8 +6,8 @@ CFLAGS := -I$(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOUR
 
 all: mksquashfs unsquashfs
 
-mksquashfs: mksquashfs.o read_fs.o sort.o swap.o
-	$(CC) mksquashfs.o read_fs.o sort.o swap.o -lz -lpthread -lm -o $@
+mksquashfs: mksquashfs.o read_fs.o sort.o swap.o pseudo.o
+	$(CC) mksquashfs.o read_fs.o sort.o swap.o pseudo.o -lz -lpthread -lm -o $@
 
 mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h squashfs_swap.h Makefile
 
@@ -16,6 +16,8 @@ read_fs.o: read_fs.c squashfs_fs.h read_fs.h global.h squashfs_swap.h Makefile
 sort.o: sort.c squashfs_fs.h global.h sort.h Makefile
 
 swap.o: swap.c Makefile
+
+pseudo.o: pseudo.c pseudo.h Makefile
 
 unsquashfs: unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o unsquash-4.o swap.o
 	$(CC) unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o unsquash-4.o swap.o -lz -lpthread -lm -o $@
