@@ -4469,6 +4469,8 @@ printOptions:
 				"dirs/files\n");
 			ERROR("-regex\t\t\tAllow POSIX regular expressions to "
 				"be used in exclude\n\t\t\tdirs/files\n");
+			ERROR("-p <pseudo-definition>\tAdd pseudo file definition\n");
+			ERROR("-pf <pseudo-file>\tAdd list of pseudo file definitions\n");
 			exit(1);
 		}
 	}
