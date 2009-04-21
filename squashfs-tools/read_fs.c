@@ -514,12 +514,17 @@ unsigned int *read_id_table(int fd, squashfs_super_block *sBlk)
 	SQUASHFS_INSWAP_ID_BLOCKS(index, indexes);
 
 	for(i = 0; i < indexes; i++) {
-		int length;
-		length = read_block(fd, index[i], NULL,
+		int length = read_block(fd, index[i], NULL,
 			((unsigned char *) id_table) +
 			(i * SQUASHFS_METADATA_SIZE), sBlk);
 		TRACE("Read id table block %d, from 0x%llx, length %d\n", i,
 			index[i], length);
+		if(length == 0) {
+			ERROR("Failed to read id table block %d, from 0x%llx, "
+				"length %d\n", i, index[i], length);
+			free(id_table);
+			return NULL;
+		}
 	}
 
 	SQUASHFS_INSWAP_INTS(id_table, sBlk->no_ids);
@@ -563,6 +568,13 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk,
 			(i * SQUASHFS_METADATA_SIZE), sBlk);
 		TRACE("Read fragment table block %d, from 0x%llx, length %d\n",
 			i, fragment_table_index[i], length);
+		if(length == 0) {
+			ERROR("Failed to read fragment table block %d, from "
+				"0x%llx, length %d\n", i,
+				fragment_table_index[i], length);
+			free(*fragment_table);
+			return 0;
+		}
 	}
 
 	for(i = 0; i < sBlk->fragments; i++)
@@ -599,6 +611,13 @@ int read_inode_lookup_table(int fd, squashfs_super_block *sBlk,
 			(i * SQUASHFS_METADATA_SIZE), sBlk);
 		TRACE("Read inode lookup table block %d, from 0x%llx, length "
 			"%d\n", i, index[i], length);
+		if(length == 0) {
+			ERROR("Failed to read inode lookup table block %d, "
+				"from 0x%llx, length %d\n", i, index[i],
+				length);
+			free(*inode_lookup_table);
+			return 0;
+		}
 	}
 
 	SQUASHFS_INSWAP_LONG_LONGS(*inode_lookup_table, sBlk->inodes);
