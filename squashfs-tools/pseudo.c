@@ -99,7 +99,7 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 	char *target, char *alltarget)
 {
 	char targname[1024];
-	int i, error;
+	int i;
 
 	target = get_component(target, targname);
 
