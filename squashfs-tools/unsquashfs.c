@@ -26,6 +26,8 @@
 #include "squashfs_compat.h"
 #include "read_fs.h"
 
+#include <sys/sysinfo.h>
+
 struct cache *fragment_cache, *data_cache;
 struct queue *to_reader, *to_deflate, *to_writer, *from_writer;
 pthread_t *thread, *deflator_thread;
@@ -1938,7 +1940,6 @@ int main(int argc, char *argv[])
 	int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
 	int data_buffer_size = DATA_BUFFER_DEFAULT;
 	char *b;
-	struct winsize winsize;
 
 	pthread_mutex_init(&screen_mutex, NULL);
 	root_process = geteuid() == 0;
