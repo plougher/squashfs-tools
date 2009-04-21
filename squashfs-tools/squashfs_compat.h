@@ -777,11 +777,10 @@ typedef union squashfs_inode_header_2 squashfs_inode_header_2;
 #endif
 
 #define _SQUASHFS_SWAP(value, p, pos, tbits, SHIFT) {\
-	int bits;\
-	int b_pos = pos % 8;\
-	unsigned long long val = 0;\
-	unsigned char *s = (unsigned char *)p + (pos / 8);\
-	unsigned char *d = ((unsigned char *) &val) + 7;\
+	b_pos = pos % 8;\
+	val = 0;\
+	s = (unsigned char *)p + (pos / 8);\
+	d = ((unsigned char *) &val) + 7;\
 	for(bits = 0; bits < (tbits + b_pos); bits += 8) \
 		*d-- = *s++;\
 	value = (val >> (SHIFT))/* & ((1 << tbits) - 1)*/;\
