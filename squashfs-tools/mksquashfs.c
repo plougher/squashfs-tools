@@ -1758,6 +1758,8 @@ int add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 	pthread_mutex_lock(&fragment_mutex);
 	insert_fragment_list(&frag_locked_list, entry);
 	pthread_mutex_unlock(&fragment_mutex);
+
+	return TRUE;
 }
 
 
