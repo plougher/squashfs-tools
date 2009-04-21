@@ -1826,7 +1826,9 @@ long long generic_write_table(int length, char *buffer, int uncompressed)
 	unsigned short c_byte;
 	char cbuffer[(SQUASHFS_METADATA_SIZE << 2) + 2];
 	
+#ifdef SQUASHFS_TRACE
 	long long obytes = bytes;
+#endif
 
 	for(i = 0; i < meta_blocks; i++) {
 		int avail_bytes = length > SQUASHFS_METADATA_SIZE ?
@@ -3401,7 +3403,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 	struct dir_ent *dir_ent;
 	struct pseudo_entry *pseudo_ent;
 	struct stat buf;
-	static pseudo_ino = 1;
+	static int pseudo_ino = 1;
 	
 	if(dir == NULL && (dir = scan1_opendir("")) == NULL)
 		return NULL;
@@ -3484,8 +3486,9 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 						&duplicate_file);
 					INFO("file %s, uncompressed size %lld "
 						"bytes %s\n", filename,
-						buf->st_size, duplicate_file ?
-						"DUPLICATE" : "");
+						(long long) buf->st_size,
+						duplicate_file ?  "DUPLICATE" :
+						 "");
 					break;
 
 				case S_IFDIR:
@@ -3559,6 +3562,7 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 						INFO("file %s, uncompressed "
 							"size %lld bytes LINK"
 							"\n", filename,
+							(long long)
 							buf->st_size);
 					break;
 				case SQUASHFS_SYMLINK_TYPE:

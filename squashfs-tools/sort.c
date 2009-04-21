@@ -254,6 +254,7 @@ void sort_files_and_write(struct dir_info *dir)
 				write_file(&inode, entry->dir, &duplicate_file);
 				INFO("file %s, uncompressed size %lld bytes %s"
 					"\n", entry->dir->pathname,
+					(long long)
 					entry->dir->inode->buf.st_size,
 					duplicate_file ? "DUPLICATE" : "");
 				entry->dir->inode->inode = inode;
@@ -261,6 +262,7 @@ void sort_files_and_write(struct dir_info *dir)
 			} else
 				INFO("file %s, uncompressed size %lld bytes "
 					"LINK\n", entry->dir->pathname,
+					(long long)
 					entry->dir->inode->buf.st_size);
 		}
 }
