@@ -267,6 +267,7 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 
 		/* fall through */
 	case 'd':
+	case 's':
 		if(mode > 0777) {
 			ERROR("Mode %o out of range\n", mode);
 			goto error;

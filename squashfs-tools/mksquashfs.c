@@ -3419,6 +3419,29 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
 		dir_ent = scan2_lookup(dir, pseudo_ent->name);
+		if(pseudo_ent->dev->type == 's') {
+			struct stat *buf;
+			if(dir_ent == NULL) {
+				ERROR("Pseudo set file \"%s\" does not exist "
+					"in source filesystem.  Ignoring\n",
+					pseudo_ent->pathname);
+				continue;
+			}
+			if(dir_ent->data) {
+				ERROR("Pseudo set file \"%s\" is a pre-existing"
+					" file in the filesystem being appended"
+					"  to.  It cannot be modified. "
+					"Ignoring!\n", pseudo_ent->pathname);
+				continue;
+			}
+			buf = &dir_ent->inode->buf;
+			buf->st_mode = (buf->st_mode & S_IFMT) |
+				pseudo_ent->dev->mode;
+			buf->st_uid = pseudo_ent->dev->uid;
+			buf->st_gid = pseudo_ent->dev->gid;
+			continue;
+		}
+
 		if(dir_ent) {
 			ERROR("Pseudo file \"%s\" exists in source filesystem "
 				"\"%s\"\n", pseudo_ent->pathname,
@@ -4143,7 +4166,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.0 (2009/04/05)\n");\
+	printf("mksquashfs version 4.0 (2009/04/25)\n");\
 	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
