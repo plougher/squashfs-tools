@@ -30,6 +30,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 #include "pseudo.h"
 
@@ -54,6 +55,8 @@
 
 #define TRUE 1
 #define FALSE 0
+
+struct pseudo_file *pseudo_file = NULL;
 
 static void dump_pseudo(struct pseudo *pseudo, char *string)
 {
@@ -229,16 +232,77 @@ struct pseudo_entry *pseudo_readdir(struct pseudo *pseudo)
 }
 
 
+int exec_file(char *command, char *filename)
+{
+	int fd, child, res, status;
+	static int number = 0;
+	static pid_t pid = -1;
+
+	if(pid == -1)
+		pid = getpid();
+
+	sprintf(filename, "/tmp/squashfs_pseudo_%d_%d", pid, number ++);
+	fd = open(filename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
+	if(fd == -1) {
+		printf("open failed\n");
+		return -1;
+	}
+
+	child = fork();
+	if(child == -1) {
+		printf("fork failed\n");
+		return -1;
+	}
+
+	if(child == 0) {
+		close(STDOUT_FILENO);
+		res = dup(fd);
+		if(res == -1) {
+			printf("dup failed\n");
+			exit(EXIT_FAILURE);
+		}
+		execl("/bin/sh", "sh", "-c", command, (char *) NULL);
+		printf("execl failed\n");
+		exit(EXIT_FAILURE);
+	}
+
+	res = waitpid(child, &status, 0);
+	close(fd);
+	return res == -1 ? -1 : status;
+}
+
+
+void add_pseudo_file(char *filename)
+{
+	struct pseudo_file *entry = malloc(sizeof(struct pseudo_file));
+	if(entry == NULL)
+		return;
+
+	entry->filename = filename;
+	entry->next = pseudo_file;
+	pseudo_file = entry;
+}
+
+
+void delete_pseudo_files()
+{
+	struct pseudo_file *entry;
+
+	for(entry = pseudo_file; entry; entry = entry->next)
+		unlink(entry->filename);
+}
+
+
 int read_pseudo_def(struct pseudo **pseudo, char *def)
 {
-	int n;
+	int n, bytes;
 	unsigned int major = 0, minor = 0, mode;
 	char filename[2048], type, suid[100], sgid[100], *ptr;
 	long long uid, gid;
 	struct pseudo_dev dev;
 
-	n = sscanf(def, "%s %c %o %s %s %u %u", filename, &type, &mode, suid, sgid,
-			&major, &minor);
+	n = sscanf(def, "%s %c %o %s %s %n", filename, &type, &mode, suid,
+			sgid, &bytes);
 
 	if(n < 5) {
 		ERROR("Not enough or invalid arguments in pseudo file "
@@ -249,7 +313,9 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 	switch(type) {
 	case 'b':
 	case 'c':
-		if(n < 7) {
+		n = sscanf(def + bytes,  "%u %u", &major, &minor);
+
+		if(n < 2) {
 			ERROR("Not enough or invalid arguments in pseudo file "
 				"definition\n");
 			goto error;
@@ -265,54 +331,58 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 			goto error;
 		}
 
-		/* fall through */
-	case 'd':
-	case 's':
-		if(mode > 0777) {
-			ERROR("Mode %o out of range\n", mode);
+	case 'f':
+		if(def[bytes] == '\0') {
+			ERROR("Not enough arguments in pseudo file "
+				"definition\n");
 			goto error;
-		}
-
-		uid = strtoll(suid, &ptr, 10);
-		if(*ptr == '\0') {
-			if(uid < 0 || uid > ((1LL << 32) - 1)) {
-				ERROR("Uid %s out of range\n", suid);
-				goto error;
-			}
-		} else {
-			struct passwd *pwuid = getpwnam(suid);
-			if(pwuid)
-				uid = pwuid->pw_uid;
-			else {
-				ERROR("Uid %s invalid uid or unknown user\n",
-					suid);
-				goto error;
-			}
-		}
-		
-		gid = strtoll(sgid, &ptr, 10);
-		if(*ptr == '\0') {
-			if(gid < 0 || gid > ((1LL << 32) - 1)) {
-				ERROR("Gid %s out of range\n", sgid);
-				goto error;
-			}
-		} else {
-			struct group *grgid = getgrnam(sgid);
-			if(grgid)
-				gid = grgid->gr_gid;
-			else {
-				ERROR("Gid %s invalid uid or unknown user\n",
-					sgid);
-				goto error;
-			}
-		}
-
+		}	
+		break;
+	case 'd':
+	case 'm':
 		break;
 	default:
 		ERROR("Unsupported type %c\n", type);
 		goto error;
 	}
 
+
+	if(mode > 0777) {
+		ERROR("Mode %o out of range\n", mode);
+		goto error;
+	}
+
+	uid = strtoll(suid, &ptr, 10);
+	if(*ptr == '\0') {
+		if(uid < 0 || uid > ((1LL << 32) - 1)) {
+			ERROR("Uid %s out of range\n", suid);
+			goto error;
+		}
+	} else {
+		struct passwd *pwuid = getpwnam(suid);
+		if(pwuid)
+			uid = pwuid->pw_uid;
+		else {
+			ERROR("Uid %s invalid uid or unknown user\n", suid);
+			goto error;
+		}
+	}
+		
+	gid = strtoll(sgid, &ptr, 10);
+	if(*ptr == '\0') {
+		if(gid < 0 || gid > ((1LL << 32) - 1)) {
+			ERROR("Gid %s out of range\n", sgid);
+			goto error;
+		}
+	} else {
+		struct group *grgid = getgrnam(sgid);
+		if(grgid)
+			gid = grgid->gr_gid;
+		else {
+			ERROR("Gid %s invalid uid or unknown user\n", sgid);
+			goto error;
+		}
+	}
 
 	switch(type) {
 	case 'b':
@@ -324,6 +394,9 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 	case 'd':
 		mode |= S_IFDIR;
 		break;
+	case 'f':
+		mode |= S_IFREG;
+		break;
 	}
 
 	dev.type = type;
@@ -333,6 +406,19 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 	dev.major = major;
 	dev.minor = minor;
 
+	if(type == 'f') {
+		char filename[1024];
+		int res = exec_file(def + bytes, filename);
+		dev.filename = strdup(filename);
+		add_pseudo_file(dev.filename);
+		if(res < 0) {
+			ERROR("Failed to execute dynamic pseudo file definition"
+				" \"%s\"", def);
+			return FALSE;
+		}
+	} else
+		dev.filename = NULL;
+	
 	*pseudo = add_pseudo(*pseudo, &dev, filename, filename);
 
 	return TRUE;
