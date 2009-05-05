@@ -27,6 +27,7 @@ struct pseudo_dev {
 	unsigned int	gid;
 	unsigned int	major;
 	unsigned int	minor;
+	char		*filename;
 };
 
 struct pseudo_entry {
@@ -40,6 +41,11 @@ struct pseudo {
 	int			names;
 	int			count;
 	struct pseudo_entry	*name;
+};
+
+struct pseudo_file {
+	char			*filename;
+	struct pseudo_file	*next;
 };
 
 extern int read_pseudo_def(struct pseudo **, char *);
