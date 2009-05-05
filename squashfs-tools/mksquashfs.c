@@ -3471,8 +3471,21 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		buf.st_mtime = time(NULL);
 		buf.st_ino = pseudo_ino ++;
 
-		add_dir_entry(pseudo_ent->name, pseudo_ent->pathname, sub_dir,
-			lookup_inode(&buf), NULL, dir);
+		if(pseudo_ent->dev->type == 'f') {
+			struct stat buf2;
+			int res = stat(pseudo_ent->dev->filename, &buf2);
+			if(res == -1) {
+				ERROR("Stat on pseudo file \"%s\" failed, "
+					"skipping...", pseudo_ent->pathname);
+				continue;
+			}
+			buf.st_size = buf2.st_size;
+			add_dir_entry(pseudo_ent->name,
+				pseudo_ent->dev->filename, sub_dir,
+				lookup_inode(&buf), NULL, dir);
+		} else
+			add_dir_entry(pseudo_ent->name, pseudo_ent->pathname,
+				sub_dir, lookup_inode(&buf), NULL, dir);
 	}
 
 	scan2_freedir(dir);
@@ -4166,7 +4179,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.0 (2009/04/25)\n");\
+	printf("mksquashfs version 4.0 (2009/05/04)\n");\
 	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
