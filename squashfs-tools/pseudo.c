@@ -408,7 +408,11 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 
 	if(type == 'f') {
 		char filename[1024];
-		int res = exec_file(def + bytes, filename);
+		int res;
+		printf("Running dynamic pseudo file (this may take "
+			"some time):\n");
+		printf("\t\"%s\"\n", def);
+		res = exec_file(def + bytes, filename);
 		dev.filename = strdup(filename);
 		add_pseudo_file(dev.filename);
 		if(res < 0) {
