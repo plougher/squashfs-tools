@@ -64,6 +64,7 @@
 #include "global.h"
 #include "sort.h"
 #include "pseudo.h"
+#include "compressor.h"
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)	do { \
@@ -370,6 +371,10 @@ int processors = -1;
 int writer_buffer_size;
 int reader_buffer_size;
 int fragment_buffer_size;
+
+/* compression operations structure */
+struct compressor *comp;
+char *comp_name = "gzip";
 
 char *read_from_disk(long long start, unsigned int avail_bytes);
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
@@ -831,83 +836,32 @@ void sigalrm_handler()
 }
 
 
-unsigned int mangle2(z_stream **strm, char *d, char *s, int size,
+int mangle2(void **strm, char *d, char *s, int size,
 	int block_size, int uncompressed, int data_block)
 {
-	unsigned long c_byte;
-	unsigned int res;
-	z_stream *stream = *strm;
+	int error, c_byte = 0;
 
-	if(uncompressed)
-		goto notcompressed;
-
-	if(stream == NULL) {
-		if((stream = *strm = malloc(sizeof(z_stream))) == NULL)
-			BAD_ERROR("mangle::compress failed, not enough "
-				"memory\n");
-
-		stream->zalloc = Z_NULL;
-		stream->zfree = Z_NULL;
-		stream->opaque = 0;
-
-		if((res = deflateInit(stream, 9)) != Z_OK) {
-			if(res == Z_MEM_ERROR)
-				BAD_ERROR("zlib::compress failed, not enough "
-					"memory\n");
-			else if(res == Z_STREAM_ERROR)
-				BAD_ERROR("zlib::compress failed, not a valid "
-					"compression level\n");
-			else if(res == Z_VERSION_ERROR)
-				BAD_ERROR("zlib::compress failed, incorrect "
-					"zlib version\n");
-			else
-				BAD_ERROR("zlib::compress failed, unknown "
-					"error %d\n", res);
-		}
-	} else if((res = deflateReset(stream)) != Z_OK) {
-		if(res == Z_STREAM_ERROR)
-			BAD_ERROR("zlib::compress failed, stream state "
-				"inconsistent\n");
-		else
-			BAD_ERROR("zlib::compress failed, unknown error %d\n",
-				res);
+	if(!uncompressed) {
+		c_byte = comp->compress(strm, d, s, size, block_size, &error);
+		if(c_byte == -1)
+			BAD_ERROR("mangle2:: %s compress failed with error "
+				"code %d\n", comp->name, error);
 	}
 
-	stream->next_in = (unsigned char *) s;
-	stream->avail_in = size;
-	stream->next_out = (unsigned char *) d;
-	stream->avail_out = block_size;
-
-	res = deflate(stream, Z_FINISH);
-	if(res != Z_STREAM_END && res != Z_OK) {
-		if(res == Z_STREAM_ERROR)
-			BAD_ERROR("zlib::compress failed, stream state "
-				"inconsistent\n");
-		else if(res == Z_BUF_ERROR)
-			BAD_ERROR("zlib::compress failed, no progress possible"
-				"\n");
-		else
-			BAD_ERROR("zlib::compress failed, unknown error %d\n",
-				res);
-	}
-
-	c_byte = stream->total_out;
-
-	if(res != Z_STREAM_END || c_byte >= size) {
-notcompressed:
+	if(c_byte == 0 || c_byte >= size) {
 		memcpy(d, s, size);
 		return size | (data_block ? SQUASHFS_COMPRESSED_BIT_BLOCK :
 			SQUASHFS_COMPRESSED_BIT);
 	}
 
-	return (unsigned int) c_byte;
+	return c_byte;
 }
 
 
-unsigned int mangle(char *d, char *s, int size, int block_size,
+int mangle(char *d, char *s, int size, int block_size,
 	int uncompressed, int data_block)
 {
-	static z_stream *stream = NULL;
+	static void *stream = NULL;
 
 	return mangle2(&stream, d, s, size, block_size, uncompressed,
 		data_block);
@@ -2369,7 +2323,7 @@ int all_zero(struct file_buffer *file_buffer)
 
 void *deflator(void *arg)
 {
-	z_stream *stream = NULL;
+	void *stream = NULL;
 	int oldstate;
 
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
@@ -2406,7 +2360,7 @@ void *deflator(void *arg)
 
 void *frag_deflator(void *arg)
 {
-	z_stream *stream = NULL;
+	void *stream = NULL;
 	int oldstate;
 
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
@@ -4646,6 +4600,11 @@ printOptions:
 		duplicate_checking = SQUASHFS_DUPLICATES(sBlk.flags);
 		exportable = SQUASHFS_EXPORTABLE(sBlk.flags);
 	}
+
+	comp = lookup_compressor(comp_name);
+	if(comp == NULL)
+		BAD_ERROR("Compressor \"%s\" is not supported!\n",
+			comp_name);
 
 	initialise_threads();
 
