@@ -373,13 +373,14 @@ int reader_buffer_size;
 int fragment_buffer_size;
 
 /* compression operations structure */
-struct compressor *comp;
+static struct compressor *comp;
 char *comp_name = "gzip";
 
 char *read_from_disk(long long start, unsigned int avail_bytes);
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type);
-extern int read_super(int fd, squashfs_super_block *sBlk, char *source);
+extern struct compressor  *read_super(int fd, squashfs_super_block *sBlk,
+	char *source);
 extern long long read_filesystem(char *root_name, int fd,
 	squashfs_super_block *sBlk, char **cinode_table, char **data_cache,
 	char **cdirectory_table, char **directory_data_cache,
@@ -1614,8 +1615,7 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 	pthread_mutex_unlock(&fragment_mutex);
 
 	if(SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size)) {
-		int res;
-		unsigned long bytes = block_size;
+		int error, res;
 		char *data;
 
 		if(compressed_buffer)
@@ -1623,19 +1623,11 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 		else
 			data = read_from_disk(start_block, size);
 
-		res = uncompress((unsigned char *) buffer->data, &bytes,
-			(const unsigned char *) data, size);
-		if(res != Z_OK) {
-			if(res == Z_MEM_ERROR)
-				BAD_ERROR("zlib::uncompress failed, not enough "
-					"memory\n");
-			else if(res == Z_BUF_ERROR)
-				BAD_ERROR("zlib::uncompress failed, not enough "
-					"room in output buffer\n");
-			else
-				BAD_ERROR("zlib::uncompress failed,"
-					"  unknown error %d\n", res);
-		}
+		res = comp->uncompress(buffer->data, data, size, block_size,
+			&error);
+		if(res == -1)
+			BAD_ERROR("%s uncompress failed with error code %d\n",
+				comp->name, error);
 	} else if(compressed_buffer)
 		memcpy(buffer->data, compressed_buffer->data, size);
 	else
@@ -4582,7 +4574,8 @@ printOptions:
 #endif
 
 	if(!delete) {
-	        if(read_super(fd, &sBlk, argv[source + 1]) == 0) {
+	        comp = read_super(fd, &sBlk, argv[source + 1]);
+	        if(comp == NULL) {
 			ERROR("Failed to read existing filesystem - will not "
 				"overwrite - ABORTING!\n");
 			ERROR("To force Mksquashfs to write to this block "
@@ -4599,12 +4592,12 @@ printOptions:
 		always_use_fragments = SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags);
 		duplicate_checking = SQUASHFS_DUPLICATES(sBlk.flags);
 		exportable = SQUASHFS_EXPORTABLE(sBlk.flags);
+	} else {
+		comp = lookup_compressor(comp_name);
+		if(!comp->supported)
+			BAD_ERROR("Compressor \"%s\" is not supported!\n",
+				comp_name);
 	}
-
-	comp = lookup_compressor(comp_name);
-	if(comp == NULL)
-		BAD_ERROR("Compressor \"%s\" is not supported!\n",
-			comp_name);
 
 	initialise_threads();
 
