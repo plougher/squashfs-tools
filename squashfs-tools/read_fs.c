@@ -51,6 +51,7 @@ extern unsigned int get_guid(unsigned int);
 #include "squashfs_swap.h"
 #include "read_fs.h"
 #include "global.h"
+#include "compressor.h"
 
 #include <stdlib.h>
 
@@ -65,6 +66,8 @@ extern unsigned int get_guid(unsigned int);
 #define ERROR(s, args...)		do { \
 						fprintf(stderr, s, ## args); \
 					} while(0)
+
+static struct compressor *comp;
 
 int read_block(int fd, long long start, long long *next, unsigned char *block,
 	squashfs_super_block *sBlk)
@@ -356,7 +359,7 @@ failed:
 }
 
 
-int read_super(int fd, squashfs_super_block *sBlk, char *source)
+struct compressor *read_super(int fd, squashfs_super_block *sBlk, char *source)
 {
 	read_destination(fd, SQUASHFS_START, sizeof(squashfs_super_block),
 		(char *) sBlk);
@@ -385,6 +388,14 @@ int read_super(int fd, squashfs_super_block *sBlk, char *source)
 			ERROR("Filesystem on %s is %d.%d, which is a later "
 				"filesystem version than I support\n",
 				source, sBlk->s_major, sBlk->s_minor);
+		goto failed_mount;
+	}
+
+	/* Check the compression type */
+	comp = lookup_compressor_id(sBlk->compression);
+	if(!comp->supported) {
+		ERROR("Filesystem on %s uses %s compression, this is"
+			"unsupported by this version\n", source, comp->name);
 		goto failed_mount;
 	}
 
@@ -417,10 +428,10 @@ int read_super(int fd, squashfs_super_block *sBlk, char *source)
 	TRACE("sBlk->lookup_table_start %llx\n", sBlk->lookup_table_start);
 	printf("\n");
 
-	return TRUE;
+	return comp;
 
 failed_mount:
-	return FALSE;
+	return NULL;
 }
 
 
