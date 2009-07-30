@@ -23,12 +23,14 @@
 #include <stdio.h>
 #include <string.h>
 #include "compressor.h"
+#include "squashfs_fs.h"
 
 extern int gzip_compress(void **, char *, char *, int, int, int *);
+extern int gzip_uncompress(char *, char *, int, int, int *);
 
 struct compressor compressor[] = {
-	{ gzip_compress, "gzip" },
-	{ NULL, NULL }
+	{ gzip_compress, gzip_uncompress, ZLIB_COMPRESSION, "gzip", 1 },
+	{ NULL, NULL , 0, "unknown", 0}
 };
 
 
@@ -36,11 +38,23 @@ struct compressor *lookup_compressor(char *name)
 {
 	int i;
 
-	for(i = 0; compressor[i].name; i++)
+	for(i = 0; compressor[i].id; i++)
 		if(strcmp(compressor[i].name, name) == 0)
-			return &compressor[i];
+			break;
 
-	return NULL;
+	return &compressor[i];
+}
+
+
+struct compressor *lookup_compressor_id(int id)
+{
+	int i;
+
+	for(i = 0; compressor[i].id; i++)
+		if(id == compressor[i].id)
+			break;
+
+	return &compressor[i];
 }
 
 
@@ -48,5 +62,5 @@ struct compressor *enumerate_compressor(struct compressor *comp)
 {
 	if(comp == NULL)
 		return &compressor[0];
-	return (comp + 1)->name ? comp + 1 : NULL;
+	return (comp + 1)->id ? comp + 1 : NULL;
 }

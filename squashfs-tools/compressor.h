@@ -22,8 +22,12 @@
 
 struct compressor {
 	int (*compress)(void **, char *, char *, int, int, int *);
+	int (*uncompress)(char *, char *, int, int, int *);
+	int id;
 	char *name;
+	int supported;
 };
 
 extern struct compressor *lookup_compressor(char *);
+extern struct compressor *lookup_compressor_id(int);
 extern struct compressor *enumerate_compressor(struct compressor *);
