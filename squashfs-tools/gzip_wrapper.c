@@ -55,3 +55,16 @@ failed:
 	*error = res;
 	return -1;
 }
+
+
+int gzip_uncompress(char *d, char *s, int size, int block_size, int *error)
+{
+	int res;
+	unsigned long bytes = block_size;
+
+	res = uncompress((unsigned char *) d, &bytes,
+		(const unsigned char *) s, size);
+
+	*error = res;
+	return res == Z_OK ? (int) bytes : -1;
+}
