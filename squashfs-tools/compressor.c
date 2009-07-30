@@ -30,6 +30,7 @@ extern int gzip_uncompress(char *, char *, int, int, int *);
 
 struct compressor compressor[] = {
 	{ gzip_compress, gzip_uncompress, ZLIB_COMPRESSION, "gzip", 1 },
+	{ NULL, NULL, LZMA_COMPRESSION, "lzma", 0 },
 	{ NULL, NULL , 0, "unknown", 0}
 };
 

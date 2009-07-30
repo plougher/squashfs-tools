@@ -229,6 +229,7 @@ typedef long long		squashfs_block_t;
 typedef long long		squashfs_inode_t;
 
 #define ZLIB_COMPRESSION	1
+#define LZMA_COMPRESSION	2
 
 struct squashfs_super_block {
 	unsigned int		s_magic;
