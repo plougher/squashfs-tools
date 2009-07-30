@@ -4797,8 +4797,7 @@ restore_filesystem:
 
 	sBlk.bytes_used = bytes;
 
-	/* Only compression supported */
-	sBlk.compression = ZLIB_COMPRESSION;
+	sBlk.compression = comp->id;
 
 	/* Xattrs are not currently supported */
 	sBlk.xattr_table_start = SQUASHFS_INVALID_BLK;
