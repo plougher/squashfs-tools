@@ -25,6 +25,7 @@
 #include "squashfs_swap.h"
 #include "squashfs_compat.h"
 #include "read_fs.h"
+#include "compressor.h"
 
 #include <sys/sysinfo.h>
 
@@ -38,6 +39,7 @@ int processors = -1;
 
 struct super_block sBlk;
 squashfs_operations s_ops;
+struct compressor *comp;
 
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
 	dev_count = 0, fifo_count = 0;
@@ -592,31 +594,23 @@ int read_block(long long start, long long *next, char *block)
 		offset = 3;
 	if(SQUASHFS_COMPRESSED(c_byte)) {
 		char buffer[SQUASHFS_METADATA_SIZE];
-		int res;
-		unsigned long bytes = SQUASHFS_METADATA_SIZE;
+		int error, res;
 
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
 		if(read_bytes(start + offset, c_byte, buffer) == FALSE)
 			goto failed;
 
-		res = uncompress((unsigned char *) block, &bytes,
-			(const unsigned char *) buffer, c_byte);
+		res = comp->uncompress(block, buffer, c_byte,
+			SQUASHFS_METADATA_SIZE, &error);
 
-		if(res != Z_OK) {
-			if(res == Z_MEM_ERROR)
-				ERROR("zlib::uncompress failed, not enough "
-					"memory\n");
-			else if(res == Z_BUF_ERROR)
-				ERROR("zlib::uncompress failed, not enough "
-					"room in output buffer\n");
-			else
-				ERROR("zlib::uncompress failed, unknown error "
-					"%d\n", res);
+		if(res == -1) {
+			ERROR("%s uncompress failed with error code %d\n",
+				comp->name, error);
 			goto failed;
 		}
 		if(next)
 			*next = start + offset + c_byte;
-		return bytes;
+		return res;
 	} else {
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
 		if(read_bytes(start + offset, c_byte, block) == FALSE)
@@ -634,8 +628,7 @@ failed:
 
 int read_data_block(long long start, unsigned int size, char *block)
 {
-	int res;
-	unsigned long bytes = block_size;
+	int error, res;
 	int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(size);
 
 	TRACE("read_data_block: block @0x%llx, %d %s bytes\n", start,
@@ -647,23 +640,15 @@ int read_data_block(long long start, unsigned int size, char *block)
 		if(read_bytes(start, c_byte, data) == FALSE)
 			goto failed;
 
-		res = uncompress((unsigned char *) block, &bytes,
-			(const unsigned char *) data, c_byte);
+		res = comp->uncompress(block, data, c_byte, block_size, &error);
 
-		if(res != Z_OK) {
-			if(res == Z_MEM_ERROR)
-				ERROR("zlib::uncompress failed, not enough "
-					"memory\n");
-			else if(res == Z_BUF_ERROR)
-				ERROR("zlib::uncompress failed, not enough "
-					"room in output buffer\n");
-			else
-				ERROR("zlib::uncompress failed, unknown error "
-					"%d\n", res);
+		if(res == -1) {
+			ERROR("%s uncompress failed with error code %d\n",
+				comp->name, error);
 			goto failed;
 		}
 
-		return bytes;
+		return res;
 	} else {
 		if(read_bytes(start, c_byte, block) == FALSE)
 			goto failed;
@@ -1461,6 +1446,16 @@ int read_super(char *source)
 		s_ops.read_inode = read_inode_4;
 		s_ops.read_uids_guids = read_uids_guids_4;
 		memcpy(&sBlk, &sBlk_4, sizeof(sBlk_4));
+
+		/*
+		 * Check the compression type
+		 */
+		comp = lookup_compressor_id(sBlk.compression);
+		if(!comp->supported) {
+			ERROR("Filesystem uses %s compression, this is"
+				"unsupported by this version", comp->name);
+			goto failed_mount;
+		}
 		return TRUE;
 	}
 
@@ -1550,6 +1545,11 @@ int read_super(char *source)
 		goto failed_mount;
 	}
 
+	/*
+	 * 1.x, 2.x and 3.x filesystems use gzip compression.  Gzip is always
+	 * suppported.
+	 */
+	comp = lookup_compressor("gzip");
 	return TRUE;
 
 failed_mount:
@@ -1709,32 +1709,24 @@ void *deflator(void *arg)
 
 	while(1) {
 		struct cache_entry *entry = queue_get(to_deflate);
-		int res;
-		unsigned long bytes = block_size;
+		int error, res;
 
-		res = uncompress((unsigned char *) tmp, &bytes,
-			(const unsigned char *) entry->data,
-			SQUASHFS_COMPRESSED_SIZE_BLOCK(entry->size));
+		res = comp->uncompress(tmp, entry->data,
+			SQUASHFS_COMPRESSED_SIZE_BLOCK(entry->size), block_size,
+			&error);
 
-		if(res != Z_OK) {
-			if(res == Z_MEM_ERROR)
-				ERROR("zlib::uncompress failed, not enough"
-					"memory\n");
-			else if(res == Z_BUF_ERROR)
-				ERROR("zlib::uncompress failed, not enough "
-					"room in output buffer\n");
-			else
-				ERROR("zlib::uncompress failed, unknown error "
-					"%d\n", res);
-		} else
-			memcpy(entry->data, tmp, bytes);
+		if(res == -1)
+			ERROR("%s uncompress failed with error code %d\n",
+				comp->name, error);
+		else
+			memcpy(entry->data, tmp, res);
 
 		/*
 		 * block has been either successfully decompressed, or an error
  		 * occurred, clear pending flag, set error appropriately and
  		 * wake up any threads waiting on this block
  		 */ 
-		cache_block_ready(entry, res != Z_OK);
+		cache_block_ready(entry, res == -1);
 	}
 }
 
