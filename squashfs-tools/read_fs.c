@@ -69,7 +69,7 @@ extern unsigned int get_guid(unsigned int);
 
 static struct compressor *comp;
 
-int read_block(int fd, long long start, long long *next, unsigned char *block,
+int read_block(int fd, long long start, long long *next, void *block,
 	squashfs_super_block *sBlk)
 {
 	unsigned short c_byte;
@@ -80,32 +80,24 @@ int read_block(int fd, long long start, long long *next, unsigned char *block,
 
 	if(SQUASHFS_COMPRESSED(c_byte)) {
 		char buffer[SQUASHFS_METADATA_SIZE];
-		int res;
-		unsigned long bytes = SQUASHFS_METADATA_SIZE;
+		int error, res;
 
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
 		read_destination(fd, start + offset, c_byte, buffer);
 
-		res = uncompress(block, &bytes, (const unsigned char *) buffer,
-			c_byte);
-		if(res != Z_OK) {
-			if(res == Z_MEM_ERROR)
-				ERROR("zlib::uncompress failed, not enough "
-					"memory\n");
-			else if(res == Z_BUF_ERROR)
-				ERROR("zlib::uncompress failed, not enough "
-					"room in output buffer\n");
-			else
-				ERROR("zlib::uncompress failed, unknown error "
-					"%d\n", res);
+		res = comp->uncompress(block, buffer, c_byte,
+			SQUASHFS_METADATA_SIZE, &error);
+		if(res == -1) {
+			ERROR("%s uncompress failed with error code %d\n",
+				comp->name, error);
 			return 0;
 		}
 		if(next)
 			*next = start + offset + c_byte;
-		return bytes;
+		return res;
 	} else {
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
-		read_destination(fd, start + offset, c_byte, (char *) block);
+		read_destination(fd, start + offset, c_byte, block);
 		if(next)
 			*next = start + offset + c_byte;
 		return c_byte;
