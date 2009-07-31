@@ -36,7 +36,6 @@
 #include <errno.h>
 #include <dirent.h>
 #include <string.h>
-#include <zlib.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <setjmp.h>

@@ -36,7 +36,6 @@ extern unsigned int get_guid(unsigned int);
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
-#include <zlib.h>
 #include <sys/mman.h>
 
 #ifndef linux
