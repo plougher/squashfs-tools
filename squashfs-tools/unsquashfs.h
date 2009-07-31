@@ -31,7 +31,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
-#include <zlib.h>
 #include <sys/mman.h>
 #include <utime.h>
 #include <pwd.h>
