@@ -4542,11 +4542,10 @@ printOptions:
 			fclose(fd);
 		} else if(strcmp(argv[i], "-e") == 0)
 			break;
-		else if(strcmp(argv[i], "-b") == 0 ||
-				strcmp(argv[i], "-root-becomes") == 0 ||
+		else if(strcmp(argv[i], "-root-becomes") == 0 ||
 				strcmp(argv[i], "-sort") == 0 ||
 				strcmp(argv[i], "-pf") == 0 ||
-				strcmp(argv[i], "-p") == 0)
+				strcmp(argv[i], "-comp") == 0)
 			i++;
 
 	if(i != argc) {
@@ -4568,11 +4567,10 @@ printOptions:
 			sorted ++;
 		} else if(strcmp(argv[i], "-e") == 0)
 			break;
-		else if(strcmp(argv[i], "-b") == 0 ||
-				strcmp(argv[i], "-root-becomes") == 0 ||
+		else if(strcmp(argv[i], "-root-becomes") == 0 ||
 				strcmp(argv[i], "-ef") == 0 ||
 				strcmp(argv[i], "-pf") == 0 ||
-				strcmp(argv[i], "-p") == 0)
+				strcmp(argv[i], "-comp") == 0)
 			i++;
 
 #ifdef SQUASHFS_TRACE
