@@ -632,8 +632,7 @@ int read_data_block(long long start, unsigned int size, char *block)
 	int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(size);
 
 	TRACE("read_data_block: block @0x%llx, %d %s bytes\n", start,
-		SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte),
-		SQUASHFS_COMPRESSED_BLOCK(c_byte) ? "compressed" :
+		c_byte, SQUASHFS_COMPRESSED_BLOCK(size) ? "compressed" :
 		"uncompressed");
 
 	if(SQUASHFS_COMPRESSED_BLOCK(size)) {
@@ -658,7 +657,7 @@ int read_data_block(long long start, unsigned int size, char *block)
 
 failed:
 	ERROR("read_data_block: failed to read block @0x%llx, size %d\n", start,
-		size);
+		c_byte);
 	return FALSE;
 }
 
