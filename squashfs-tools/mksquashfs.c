@@ -4159,7 +4159,14 @@ int main(int argc, char *argv[])
 	source_path = argv + 1;
 	source = i - 2;
 	for(; i < argc; i++) {
-		if(strcmp(argv[i], "-pf") == 0) {
+		if(strcmp(argv[i], "-comp") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -comp missing compression type\n",
+					argv[0]);
+				exit(1);
+			}
+			comp_name = argv[i];
+		} else if(strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -pf missing filename\n", argv[0]);
 				exit(1);
