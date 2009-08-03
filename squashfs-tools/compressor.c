@@ -59,9 +59,12 @@ struct compressor *lookup_compressor_id(int id)
 }
 
 
-struct compressor *enumerate_compressor(struct compressor *comp)
+void display_compressors()
 {
-	if(comp == NULL)
-		return &compressor[0];
-	return (comp + 1)->id ? comp + 1 : NULL;
+	int i;
+
+	printf("Compressors available:\n");
+	for(i = 0; compressor[i].id; i++)
+		if(compressor[i].supported)
+			printf("\t%s\n", compressor[i].name);
 }
