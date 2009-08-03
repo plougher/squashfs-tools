@@ -1453,6 +1453,7 @@ int read_super(char *source)
 		if(!comp->supported) {
 			ERROR("Filesystem uses %s compression, this is"
 				"unsupported by this version", comp->name);
+			display_compressors();
 			goto failed_mount;
 		}
 		return TRUE;
