@@ -4599,8 +4599,10 @@ printOptions:
 	} else {
 		comp = lookup_compressor(comp_name);
 		if(!comp->supported)
-			BAD_ERROR("Compressor \"%s\" is not supported!\n",
-				comp_name);
+			ERROR("FATAL_ERROR: Compressor \"%s\" is not "
+				"supported!\n", comp_name);
+			display_compressors();
+			EXIT_MKSQUASHFS();
 	}
 
 	initialise_threads();
