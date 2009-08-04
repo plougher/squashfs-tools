@@ -4598,11 +4598,12 @@ printOptions:
 		exportable = SQUASHFS_EXPORTABLE(sBlk.flags);
 	} else {
 		comp = lookup_compressor(comp_name);
-		if(!comp->supported)
+		if(!comp->supported) {
 			ERROR("FATAL_ERROR: Compressor \"%s\" is not "
 				"supported!\n", comp_name);
 			display_compressors();
 			EXIT_MKSQUASHFS();
+		}
 	}
 
 	initialise_threads();
