@@ -1,13 +1,24 @@
+#LZMA_SUPPORT = yes
+INCLUDEDIR = -I.
 INSTALL_DIR = /usr/local/bin
 
-INCLUDEDIR = .
+MKSQUASHFS_OBJS = mksquashfs.o read_fs.o sort.o swap.o pseudo.o compressor.o gzip_wrapper.o
+UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o unsquash-4.o swap.o compressor.o gzip_wrapper.o
+CFLAGS = $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE -O2 -Wall
 
-CFLAGS := -I$(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE -O2 -Wall
+ifdef LZMA_SUPPORT
+LZMA_DIR = /home/phillip/LZMA/lzma465
+LZMA_OBJS = $(LZMA_DIR)/C/Alloc.o $(LZMA_DIR)/C/LzFind.o $(LZMA_DIR)/C/LzmaDec.o $(LZMA_DIR)/C/LzmaEnc.o $(LZMA_DIR)/C/LzmaLib.o
+INCLUDEDIR += -I$(LZMA_DIR)/C
+CFLAGS += -DLZMA_SUPPORT
+MKSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
+UNSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
+endif
 
 all: mksquashfs unsquashfs
 
-mksquashfs: mksquashfs.o read_fs.o sort.o swap.o pseudo.o compressor.o gzip_wrapper.o
-	$(CC) mksquashfs.o read_fs.o sort.o swap.o pseudo.o compressor.o gzip_wrapper.o -lz -lpthread -lm -o $@
+mksquashfs: $(MKSQUASHFS_OBJS)
+	$(CC) $(MKSQUASHFS_OBJS) -lz -lpthread -lm -o $@
 
 mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h squashfs_swap.h Makefile
 
@@ -21,10 +32,8 @@ pseudo.o: pseudo.c pseudo.h Makefile
 
 compressor.o: compressor.c compressor.h Makefile
 
-gzip_wrapper.o: gzip_wrapper.c Makefile
-
-unsquashfs: unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o unsquash-4.o swap.o compressor.o gzip_wrapper.o
-	$(CC) unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o unsquash-4.o swap.o compressor.o gzip_wrapper.o -lz -lpthread -lm -o $@
+unsquashfs: $(UNSQUASHFS_OBJS)
+	$(CC) $(UNSQUASHFS_OBJS) -lz -lpthread -lm -o $@
 
 unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h squashfs_compat.h global.h Makefile
 
