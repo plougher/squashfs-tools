@@ -4649,8 +4649,8 @@ printOptions:
 			"size %d\n", SQUASHFS_MAJOR, s_minor, argv[source + 1],
 			block_size);
 		printf("All -b, -noI, -noD, -noF, no-duplicates, no-fragments, "
-			"-always-use-fragments and -exportable options ignored"
-			"\n");
+			"-always-use-fragments,\n-exportable and -comp options "
+			"ignored\n");
 		printf("\nIf appending is not wanted, please re-run with "
 			"-noappend specified!\n\n");
 

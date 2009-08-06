@@ -393,6 +393,7 @@ struct compressor *read_super(int fd, squashfs_super_block *sBlk, char *source)
 
 	printf("Found a valid %sSQUASHFS superblock on %s.\n",
 		SQUASHFS_EXPORTABLE(sBlk->flags) ? "exportable " : "", source);
+	printf("\tCompression used %s\n", comp->name);
 	printf("\tInodes are %scompressed\n",
 		SQUASHFS_UNCOMPRESSED_INODES(sBlk->flags) ? "un" : "");
 	printf("\tData is %scompressed\n",
