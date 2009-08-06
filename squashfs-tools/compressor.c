@@ -27,10 +27,16 @@
 
 extern int gzip_compress(void **, char *, char *, int, int, int *);
 extern int gzip_uncompress(char *, char *, int, int, int *);
+extern int lzma_compress(void **, char *, char *, int, int, int *);
+extern int lzma_uncompress(char *, char *, int, int, int *);
 
 struct compressor compressor[] = {
 	{ gzip_compress, gzip_uncompress, ZLIB_COMPRESSION, "gzip", 1 },
+#ifdef LZMA_SUPPORT
+	{ lzma_compress, lzma_uncompress, LZMA_COMPRESSION, "lzma", 1 },
+#else
 	{ NULL, NULL, LZMA_COMPRESSION, "lzma", 0 },
+#endif
 	{ NULL, NULL , 0, "unknown", 0}
 };
 
