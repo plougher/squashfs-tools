@@ -4827,9 +4827,9 @@ restore_filesystem:
 		* sizeof(unsigned short) + guid_count * sizeof(unsigned short) +
 		sizeof(squashfs_super_block);
 
-	printf("\n%sSquashfs %d.%d filesystem, data block size %d\n",
-		exportable ? "Exportable " : "", SQUASHFS_MAJOR, SQUASHFS_MINOR,
-		block_size);
+	printf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
+		" %d\n", exportable ? "Exportable " : "", SQUASHFS_MAJOR,
+		SQUASHFS_MINOR, comp->name, block_size);
 	printf("\t%s data, %s metadata, %s fragments\n",
 		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" :
 		"compressed", no_fragments ? "no" : noF ? "uncompressed" :
