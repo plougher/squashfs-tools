@@ -48,10 +48,20 @@ int gzip_compress(void **strm, char *d, char *s, int size, int block_size,
 
 	res = deflate(stream, Z_FINISH);
 	if(res == Z_STREAM_END)
+		/*
+		 * Success, return the compressed size.
+		 */
 		return (int) stream->total_out;
 	if(res == Z_OK)
+		/*
+		 * Output buffer overflow.  Return out of buffer space
+		 */
 		return 0;
 failed:
+	/*
+	 * All other errors return failure, with the compressor
+	 * specific error code in *error
+	 */
 	*error = res;
 	return -1;
 }
