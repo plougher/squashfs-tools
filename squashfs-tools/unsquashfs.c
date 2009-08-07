@@ -1369,6 +1369,11 @@ void squashfs_stat(char *source)
 #endif
 	printf("Creation or last append time %s", mkfs_str ? mkfs_str :
 		"failed to get time\n");
+	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n",
+		sBlk.bytes_used / 1024.0, sBlk.bytes_used / (1024.0 * 1024.0));
+	if(sBlk.s_major == 4)
+		printf("Compression %s\n", comp->name);
+	printf("Block size %d\n", sBlk.block_size);
 	printf("Filesystem is %sexportable via NFS\n",
 		SQUASHFS_EXPORTABLE(sBlk.flags) ? "" : "not ");
 
@@ -1395,9 +1400,6 @@ void squashfs_stat(char *source)
 			SQUASHFS_DUPLICATES(sBlk.flags) ? "" : "not ");
 	else
 		printf("Duplicates are removed\n");
-	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n",
-		sBlk.bytes_used / 1024.0, sBlk.bytes_used / (1024.0 * 1024.0));
-	printf("Block size %d\n", sBlk.block_size);
 	if(sBlk.s_major > 1)
 		printf("Number of fragments %d\n", sBlk.fragments);
 	printf("Number of inodes %d\n", sBlk.inodes);
