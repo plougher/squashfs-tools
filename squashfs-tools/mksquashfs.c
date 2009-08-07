@@ -4388,34 +4388,13 @@ int main(int argc, char *argv[])
 printOptions:
 			ERROR("SYNTAX:%s source1 source2 ...  dest [options] "
 				"[-e list of exclude\ndirs/files]\n", argv[0]);
-			ERROR("\nOptions are\n");
-			ERROR("-version\t\tprint version, licence and "
-				"copyright message\n");
-			ERROR("-recover <name>\t\trecover filesystem data "
-				"using recovery file <name>\n");
-			ERROR("-no-recovery\t\tdon't generate a recovery "
-				"file\n");
-			ERROR("-info\t\t\tprint files written to filesystem\n");
-			ERROR("-no-exports\t\tdon't make the filesystem "
-				"exportable via NFS\n");
-			ERROR("-no-progress\t\tdon't display the progress "
-				"bar\n");
-			ERROR("-no-sparse\t\tdon't detect sparse files\n");
+			ERROR("\nFilesystem build options:\n");
 			ERROR("-b <block_size>\t\tset data block to "
 				"<block_size>.  Default %d bytes\n",
 				SQUASHFS_FILE_SIZE);
-			ERROR("-processors <number>\tUse <number> processors."
-				"  By default will use number of\n");
-			ERROR("\t\t\tprocessors available\n");
-			ERROR("-read-queue <size>\tSet input queue to <size> "
-				"Mbytes.  Default %d Mbytes\n",
-				READER_BUFFER_DEFAULT);
-			ERROR("-write-queue <size>\tSet output queue to <size> "
-				"Mbytes.  Default %d Mbytes\n",
-				WRITER_BUFFER_DEFAULT);
-			ERROR("-fragment-queue <size>\tSet fagment queue to "
-				"<size> Mbytes.  Default %d Mbytes\n",
-				FRAGMENT_BUFFER_DEFAULT);
+			ERROR("-no-exports\t\tdon't make the filesystem "
+				"exportable via NFS\n");
+			ERROR("-no-sparse\t\tdon't detect sparse files\n");
 			ERROR("-noI\t\t\tdo not compress inode table\n");
 			ERROR("-noD\t\t\tdo not compress data blocks\n");
 			ERROR("-noF\t\t\tdo not compress fragment blocks\n");
@@ -4424,33 +4403,19 @@ printOptions:
 				"files larger than block size\n");
 			ERROR("-no-duplicates\t\tdo not perform duplicate "
 				"checking\n");
-			ERROR("-noappend\t\tdo not append to existing "
-				"filesystem\n");
-			ERROR("-keep-as-directory\tif one source directory is "
-				"specified, create a root\n");
-			ERROR("\t\t\tdirectory containing that directory, "
-				"rather than the\n");
-			ERROR("\t\t\tcontents of the directory\n");
-			ERROR("-root-becomes <name>\twhen appending source "
-				"files/directories, make the\n");
-			ERROR("\t\t\toriginal root become a subdirectory in "
-				"the new root\n");
-			ERROR("\t\t\tcalled <name>, rather than adding the new "
-				"source items\n");
-			ERROR("\t\t\tto the original root\n");
 			ERROR("-all-root\t\tmake all files owned by root\n");
 			ERROR("-force-uid uid\t\tset all file uids to uid\n");
 			ERROR("-force-gid gid\t\tset all file gids to gid\n");
 			ERROR("-nopad\t\t\tdo not pad filesystem to a multiple "
 				"of 4K\n");
-			ERROR("-root-owned\t\talternative name for -all-root"
-				"\n");
-			ERROR("-noInodeCompression\talternative name for -noI"
-				"\n");
-			ERROR("-noDataCompression\talternative name for -noD"
-				"\n");
-			ERROR("-noFragmentCompression\talternative name for "
-				"-noF\n");
+			ERROR("-keep-as-directory\tif one source directory is "
+				"specified, create a root\n");
+			ERROR("\t\t\tdirectory containing that directory, "
+				"rather than the\n");
+			ERROR("\t\t\tcontents of the directory\n");
+			ERROR("\nFilesystem filter options:\n");
+			ERROR("-p <pseudo-definition>\tAdd pseudo file definition\n");
+			ERROR("-pf <pseudo-file>\tAdd list of pseudo file definitions\n");
 			ERROR("-sort <sort_file>\tsort files according to "
 				"priorities in <sort_file>.  One\n");
 			ERROR("\t\t\tfile or dir with priority per line.  "
@@ -4463,8 +4428,47 @@ printOptions:
 				"dirs/files\n");
 			ERROR("-regex\t\t\tAllow POSIX regular expressions to "
 				"be used in exclude\n\t\t\tdirs/files\n");
-			ERROR("-p <pseudo-definition>\tAdd pseudo file definition\n");
-			ERROR("-pf <pseudo-file>\tAdd list of pseudo file definitions\n");
+			ERROR("\nFilesystem append options:\n");
+			ERROR("-noappend\t\tdo not append to existing "
+				"filesystem\n");
+			ERROR("-root-becomes <name>\twhen appending source "
+				"files/directories, make the\n");
+			ERROR("\t\t\toriginal root become a subdirectory in "
+				"the new root\n");
+			ERROR("\t\t\tcalled <name>, rather than adding the new "
+				"source items\n");
+			ERROR("\t\t\tto the original root\n");
+			ERROR("\nMksquashfs runtime options:\n");
+			ERROR("-version\t\tprint version, licence and "
+				"copyright message\n");
+			ERROR("-recover <name>\t\trecover filesystem data "
+				"using recovery file <name>\n");
+			ERROR("-no-recovery\t\tdon't generate a recovery "
+				"file\n");
+			ERROR("-info\t\t\tprint files written to filesystem\n");
+			ERROR("-no-progress\t\tdon't display the progress "
+				"bar\n");
+			ERROR("-processors <number>\tUse <number> processors."
+				"  By default will use number of\n");
+			ERROR("\t\t\tprocessors available\n");
+			ERROR("-read-queue <size>\tSet input queue to <size> "
+				"Mbytes.  Default %d Mbytes\n",
+				READER_BUFFER_DEFAULT);
+			ERROR("-write-queue <size>\tSet output queue to <size> "
+				"Mbytes.  Default %d Mbytes\n",
+				WRITER_BUFFER_DEFAULT);
+			ERROR("-fragment-queue <size>\tSet fagment queue to "
+				"<size> Mbytes.  Default %d Mbytes\n",
+				FRAGMENT_BUFFER_DEFAULT);
+			ERROR("\nMiscellaneous options:\n");
+			ERROR("-root-owned\t\talternative name for -all-root"
+				"\n");
+			ERROR("-noInodeCompression\talternative name for -noI"
+				"\n");
+			ERROR("-noDataCompression\talternative name for -noD"
+				"\n");
+			ERROR("-noFragmentCompression\talternative name for "
+				"-noF\n");
 			exit(1);
 		}
 	}
