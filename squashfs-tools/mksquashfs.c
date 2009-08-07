@@ -4605,7 +4605,7 @@ printOptions:
 		if(!comp->supported) {
 			ERROR("FATAL_ERROR: Compressor \"%s\" is not "
 				"supported!\n", comp_name);
-			display_compressors();
+			display_compressors("");
 			EXIT_MKSQUASHFS();
 		}
 	}

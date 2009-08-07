@@ -30,4 +30,4 @@ struct compressor {
 
 extern struct compressor *lookup_compressor(char *);
 extern struct compressor *lookup_compressor_id(int);
-extern void display_compressors(void);
+extern void display_compressors(char *);
