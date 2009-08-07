@@ -4389,6 +4389,8 @@ printOptions:
 			ERROR("SYNTAX:%s source1 source2 ...  dest [options] "
 				"[-e list of exclude\ndirs/files]\n", argv[0]);
 			ERROR("\nFilesystem build options:\n");
+			ERROR("-comp <comp>\t\tselect <comp> compression\n");
+			display_compressors("\t\t\t");
 			ERROR("-b <block_size>\t\tset data block to "
 				"<block_size>.  Default %d bytes\n",
 				SQUASHFS_FILE_SIZE);
