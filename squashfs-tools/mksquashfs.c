@@ -373,7 +373,7 @@ int fragment_buffer_size;
 
 /* compression operations structure */
 static struct compressor *comp;
-char *comp_name = "gzip";
+char *comp_name = COMP_DEFAULT;
 
 char *read_from_disk(long long start, unsigned int avail_bytes);
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
@@ -4390,7 +4390,7 @@ printOptions:
 				"[-e list of exclude\ndirs/files]\n", argv[0]);
 			ERROR("\nFilesystem build options:\n");
 			ERROR("-comp <comp>\t\tselect <comp> compression\n");
-			display_compressors("\t\t\t");
+			display_compressors("\t\t\t", COMP_DEFAULT);
 			ERROR("-b <block_size>\t\tset data block to "
 				"<block_size>.  Default %d bytes\n",
 				SQUASHFS_FILE_SIZE);
@@ -4607,7 +4607,7 @@ printOptions:
 		if(!comp->supported) {
 			ERROR("FATAL_ERROR: Compressor \"%s\" is not "
 				"supported!\n", comp_name);
-			display_compressors("");
+			display_compressors("", COMP_DEFAULT);
 			EXIT_MKSQUASHFS();
 		}
 	}

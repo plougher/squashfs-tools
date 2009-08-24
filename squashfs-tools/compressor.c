@@ -65,12 +65,14 @@ struct compressor *lookup_compressor_id(int id)
 }
 
 
-void display_compressors(char *indent)
+void display_compressors(char *indent, char *def_comp)
 {
 	int i;
 
 	printf("%sCompressors available:\n", indent);
 	for(i = 0; compressor[i].id; i++)
 		if(compressor[i].supported)
-			printf("%s\t%s\n", indent, compressor[i].name);
+			printf("%s\t%s%s\n", indent, compressor[i].name,
+				strcmp(compressor[i].name, def_comp) == 0 ?
+				" (default)" : "");
 }

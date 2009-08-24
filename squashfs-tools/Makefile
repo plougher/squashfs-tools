@@ -2,8 +2,11 @@
 # Building LZMA support
 # Download LZMA sdk (4.65 used in development, other versions may work),
 # set LZMA_DIR to unpacked source, and uncomment next line
-#LZMA_SUPPORT = yes
+#LZMA_SUPPORT = 1
 LZMA_DIR = ../../../LZMA/lzma465
+
+#Compression default.
+COMP_DEFAULT = gzip
 
 INCLUDEDIR = -I.
 INSTALL_DIR = /usr/local/bin
@@ -15,7 +18,7 @@ UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o swap.o compressor.o gzip_wrapper.o
 
 CFLAGS = $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
-	-D_GNU_SOURCE -O2 -Wall
+	-D_GNU_SOURCE -DCOMP_DEFAULT=\"$(COMP_DEFAULT)\" -O2 -Wall
 
 ifdef LZMA_SUPPORT
 LZMA_OBJS = $(LZMA_DIR)/C/Alloc.o $(LZMA_DIR)/C/LzFind.o \
