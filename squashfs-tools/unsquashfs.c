@@ -1453,8 +1453,9 @@ int read_super(char *source)
 		 */
 		comp = lookup_compressor_id(sBlk.compression);
 		if(!comp->supported) {
-			ERROR("Filesystem uses %s compression, this is"
-				"unsupported by this version", comp->name);
+			ERROR("Filesystem uses %s compression, this is "
+				"unsupported by this version\n", comp->name);
+			ERROR("Decompressors available:\n");
 			display_compressors("", "");
 			goto failed_mount;
 		}
@@ -2082,6 +2083,7 @@ options:
 				"regular expressions\n");
 			ERROR("\t\t\t\trather than use the default shell "
 				"wildcard\n\t\t\t\texpansion (globbing)\n");
+			
 		}
 		exit(1);
 	}

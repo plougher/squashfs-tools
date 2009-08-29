@@ -4390,6 +4390,7 @@ printOptions:
 				"[-e list of exclude\ndirs/files]\n", argv[0]);
 			ERROR("\nFilesystem build options:\n");
 			ERROR("-comp <comp>\t\tselect <comp> compression\n");
+			ERROR("\t\t\tCompressors available:\n");
 			display_compressors("\t\t\t", COMP_DEFAULT);
 			ERROR("-b <block_size>\t\tset data block to "
 				"<block_size>.  Default %d bytes\n",
@@ -4607,6 +4608,7 @@ printOptions:
 		if(!comp->supported) {
 			ERROR("FATAL_ERROR: Compressor \"%s\" is not "
 				"supported!\n", comp_name);
+			ERROR("Compressors available:\n");
 			display_compressors("", COMP_DEFAULT);
 			EXIT_MKSQUASHFS();
 		}

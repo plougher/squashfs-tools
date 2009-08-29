@@ -69,10 +69,10 @@ void display_compressors(char *indent, char *def_comp)
 {
 	int i;
 
-	printf("%sCompressors available:\n", indent);
 	for(i = 0; compressor[i].id; i++)
 		if(compressor[i].supported)
-			printf("%s\t%s%s\n", indent, compressor[i].name,
+			fprintf(stderr, "%s\t%s%s\n", indent,
+				compressor[i].name,
 				strcmp(compressor[i].name, def_comp) == 0 ?
 				" (default)" : "");
 }
