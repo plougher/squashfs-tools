@@ -42,7 +42,6 @@ struct dir_ent {
 	struct inode_info	*inode;
 	struct dir_info		*dir;
 	struct dir_info		*our_dir;
-	struct old_root_entry_info *data;
 };
 
 struct inode_info {
@@ -52,6 +51,7 @@ struct inode_info {
 	unsigned int		type;
 	unsigned int		inode_number;
 	char			read;
+	char			root_entry;
 	struct inode_info	*next;
 };
 

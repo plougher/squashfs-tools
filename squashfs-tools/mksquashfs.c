@@ -245,10 +245,8 @@ char **source_path;
 /* list of root directory entries read from original filesystem */
 int old_root_entries = 0;
 struct old_root_entry_info {
-	char			name[SQUASHFS_NAME_LEN + 1];
-	squashfs_inode		inode;
-	int			type;
-	int			inode_number;
+	char			*name;
+	struct inode_info	inode;
 };
 struct old_root_entry_info *old_root_entry;
 
@@ -2211,7 +2209,7 @@ void reader_scan(struct dir_info *dir) {
 	for(i = 0; i < dir->count; i++) {
 		struct dir_ent *dir_ent = dir->list[i];
 		struct stat *buf = &dir_ent->inode->buf;
-		if(dir_ent->data)
+		if(dir_ent->inode->root_entry)
 			continue;
 
 		switch(buf->st_mode & S_IFMT) {
@@ -2985,6 +2983,7 @@ struct inode_info *lookup_inode(struct stat *buf)
 
 	memcpy(&inode->buf, buf, sizeof(struct stat));
 	inode->read = FALSE;
+	inode->root_entry = FALSE;
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
 
@@ -3005,7 +3004,7 @@ struct inode_info *lookup_inode(struct stat *buf)
 
 
 inline void add_dir_entry(char *name, char *pathname, struct dir_info *sub_dir,
-	struct inode_info *inode_info, void *data, struct dir_info *dir)
+	struct inode_info *inode_info, struct dir_info *dir)
 {
 	if((dir->count % DIR_ENTRIES) == 0) {
 		dir->list = realloc(dir->list, (dir->count + DIR_ENTRIES) *
@@ -3024,8 +3023,7 @@ inline void add_dir_entry(char *name, char *pathname, struct dir_info *sub_dir,
 		NULL;
 	dir->list[dir->count]->inode = inode_info;
 	dir->list[dir->count]->dir = sub_dir;
-	dir->list[dir->count]->our_dir = dir;
-	dir->list[dir->count++]->data = data;
+	dir->list[dir->count++]->our_dir = dir;
 	dir->byte_count += strlen(name) + sizeof(squashfs_dir_entry);
 }
 
@@ -3077,10 +3075,10 @@ int scan1_encomp_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 
 	if(dir->count < old_root_entries)
 		for(i = 0; i < old_root_entries; i++) {
-			if(old_root_entry[i].type == SQUASHFS_DIR_TYPE)
+			if(old_root_entry[i].inode.type == SQUASHFS_DIR_TYPE)
 				dir->directory_count ++;
-			add_dir_entry(old_root_entry[i].name, "", NULL, NULL,
-				&old_root_entry[i], dir);
+			add_dir_entry(old_root_entry[i].name, "", NULL,
+				&old_root_entry[i].inode, dir);
 		}
 
 	while(index < source) {
@@ -3116,10 +3114,10 @@ int scan1_single_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 
 	if(dir->count < old_root_entries)
 		for(i = 0; i < old_root_entries; i++) {
-			if(old_root_entry[i].type == SQUASHFS_DIR_TYPE)
+			if(old_root_entry[i].inode.type == SQUASHFS_DIR_TYPE)
 				dir->directory_count ++;
-			add_dir_entry(old_root_entry[i].name, "", NULL, NULL,
-				&old_root_entry[i], dir);
+			add_dir_entry(old_root_entry[i].name, "", NULL,
+				&old_root_entry[i].inode, dir);
 		}
 
 	if((d_name = readdir(dir->linuxdir)) != NULL) {
@@ -3164,7 +3162,7 @@ struct dir_ent *scan2_readdir(struct dir_info *dir_info)
 	int current_count;
 
 	while((current_count = dir_info->current_count++) < dir_info->count)
-		if(dir_info->list[current_count]->data)
+		if(dir_info->list[current_count]->inode->root_entry)
 			continue;
 		else 
 			return dir_info->list[current_count];
@@ -3189,11 +3187,11 @@ struct dir_ent *scan3_readdir(struct directory *dir, struct dir_info *dir_info)
 	int current_count;
 
 	while((current_count = dir_info->current_count++) < dir_info->count)
-		if(dir_info->list[current_count]->data)
-			add_dir(dir_info->list[current_count]->data->inode,
-				dir_info->list[current_count]->data->inode_number,
+		if(dir_info->list[current_count]->inode->root_entry)
+			add_dir(dir_info->list[current_count]->inode->inode,
+				dir_info->list[current_count]->inode->inode_number,
 				dir_info->list[current_count]->name,
-				dir_info->list[current_count]->data->type, dir);
+				dir_info->list[current_count]->inode->type, dir);
 		else 
 			return dir_info->list[current_count];
 	return NULL;	
@@ -3262,7 +3260,6 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	dir_ent->name = dir_ent->pathname = strdup(pathname);
 	dir_ent->dir = dir_info;
 	dir_ent->our_dir = NULL;
-	dir_ent->data = NULL;
 	dir_info->dir_ent = dir_ent;
 
 	if(sorted)
@@ -3332,7 +3329,7 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 			sub_dir = NULL;
 
 		add_dir_entry(dir_name, filename, sub_dir, lookup_inode(&buf),
-			NULL, dir);
+			dir);
 	}
 
 	scan1_freedir(dir);
@@ -3372,7 +3369,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 					pseudo_ent->pathname);
 				continue;
 			}
-			if(dir_ent->data) {
+			if(dir_ent->inode->root_entry) {
 				ERROR("Pseudo set file \"%s\" is a pre-existing"
 					" file in the filesystem being appended"
 					"  to.  It cannot be modified. "
@@ -3427,10 +3424,10 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			buf.st_size = buf2.st_size;
 			add_dir_entry(pseudo_ent->name,
 				pseudo_ent->dev->filename, sub_dir,
-				lookup_inode(&buf), NULL, dir);
+				lookup_inode(&buf), dir);
 		} else
 			add_dir_entry(pseudo_ent->name, pseudo_ent->pathname,
-				sub_dir, lookup_inode(&buf), NULL, dir);
+				sub_dir, lookup_inode(&buf), dir);
 	}
 
 	scan2_freedir(dir);
@@ -3654,10 +3651,11 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 		BAD_ERROR("Out of memory in old root directory entries "
 			"reallocation\n");
 
-	strcpy(old_root_entry[old_root_entries].name, name);
-	old_root_entry[old_root_entries].inode = inode;
-	old_root_entry[old_root_entries].inode_number = inode_number;
-	old_root_entry[old_root_entries++].type = type;
+	old_root_entry[old_root_entries].name = strdup(name);
+	old_root_entry[old_root_entries].inode.inode = inode;
+	old_root_entry[old_root_entries].inode.inode_number = inode_number;
+	old_root_entry[old_root_entries].inode.type = type;
+	old_root_entry[old_root_entries++].inode.root_entry = TRUE;
 }
 
 

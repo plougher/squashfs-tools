@@ -198,7 +198,7 @@ void generate_file_priorities(struct dir_info *dir, int priority,
 	while(dir->current_count < dir->count) {
 		struct dir_ent *dir_ent = dir->list[dir->current_count++];
 		struct stat *buf = &dir_ent->inode->buf;
-		if(dir_ent->data)
+		if(dir_ent->inode->root_entry)
 			continue;
 
 		switch(buf->st_mode & S_IFMT) {
