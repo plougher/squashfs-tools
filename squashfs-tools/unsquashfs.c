@@ -2083,7 +2083,8 @@ options:
 				"regular expressions\n");
 			ERROR("\t\t\t\trather than use the default shell "
 				"wildcard\n\t\t\t\texpansion (globbing)\n");
-			
+			ERROR("\nDecompressors available:\n");
+			display_compressors("", "");
 		}
 		exit(1);
 	}
