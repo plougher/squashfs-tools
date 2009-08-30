@@ -45,14 +45,14 @@ struct dir_ent {
 };
 
 struct inode_info {
-	unsigned int		nlink;
 	struct stat		buf;
+	struct inode_info	*next;
 	squashfs_inode		inode;
-	unsigned int		type;
 	unsigned int		inode_number;
+	unsigned int		nlink;
+	char			type;
 	char			read;
 	char			root_entry;
-	struct inode_info	*next;
 };
 
 struct priority_entry {
