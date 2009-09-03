@@ -234,19 +234,31 @@ struct pseudo_entry *pseudo_readdir(struct pseudo *pseudo)
 
 int exec_file(char *command, char *filename)
 {
-	int fd, child, res, status;
-	static int number = 0;
+	int child, res;
 	static pid_t pid = -1;
+	int pipefd[2];
+#ifdef USE_TMP_FILE
+	int status;
+	static int number = 0;
+#endif
 
 	if(pid == -1)
 		pid = getpid();
 
+#ifdef USE_TMP_FILE
 	sprintf(filename, "/tmp/squashfs_pseudo_%d_%d", pid, number ++);
-	fd = open(filename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
-	if(fd == -1) {
+	pipefd[1] = open(filename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
+	if(pipefd[1] == -1) {
 		printf("open failed\n");
 		return -1;
 	}
+#else
+	res = pipe(pipefd);
+	if(res == -1) {
+		printf("pipe failed\n");
+		return -1;
+	}
+#endif
 
 	child = fork();
 	if(child == -1) {
@@ -256,7 +268,7 @@ int exec_file(char *command, char *filename)
 
 	if(child == 0) {
 		close(STDOUT_FILENO);
-		res = dup(fd);
+		res = dup(pipefd[1]);
 		if(res == -1) {
 			printf("dup failed\n");
 			exit(EXIT_FAILURE);
@@ -266,9 +278,14 @@ int exec_file(char *command, char *filename)
 		exit(EXIT_FAILURE);
 	}
 
+#ifdef USE_TMP_FILE
 	res = waitpid(child, &status, 0);
-	close(fd);
+	close(pipefd[1]);
 	return res == -1 ? -1 : status;
+#else
+	close(pipefd[1]);
+	return pipefd[0];
+#endif
 }
 
 
@@ -406,6 +423,7 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 	dev.major = major;
 	dev.minor = minor;
 
+#ifdef USE_TMP_FILE
 	if(type == 'f') {
 		char filename[1024];
 		int res;
@@ -422,6 +440,18 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 		}
 	} else
 		dev.filename = NULL;
+#else
+	if(type == 'f') {
+		printf("Executing dynamic pseudo file\n");
+		printf("\t\"%s\"\n", def);
+		dev.fd = exec_file(def + bytes, NULL);
+		if(dev.fd < 0) {
+			ERROR("Failed to execute dynamic pseudo file definition"
+				" \"%s\"", def);
+			return FALSE;
+		}
+	}
+#endif
 	
 	*pseudo = add_pseudo(*pseudo, &dev, filename, filename);
 

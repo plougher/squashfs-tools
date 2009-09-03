@@ -2117,11 +2117,65 @@ struct file_info *duplicate(long long file_size, long long bytes,
 }
 
 
+static int seq = 0;
+void reader_read_process(struct dir_ent *dir_ent)
+{
+	struct file_buffer *prev_buffer = NULL, *file_buffer;
+	int byte, count = 0;
+	int file = dir_ent->inode->fd;
+	long long bytes = 0;
+
+	while(1) {
+		file_buffer = cache_get(reader_buffer, 0, 0);
+		file_buffer->sequence = seq ++;
+
+		byte = read_bytes(file, file_buffer->data, block_size);
+		if(byte == -1)
+			goto read_err;
+
+		file_buffer->size = byte;
+		file_buffer->file_size = -1;
+		file_buffer->block = count ++;
+		file_buffer->error = FALSE;
+		file_buffer->fragment = FALSE;
+		bytes += byte;
+
+		if(byte == 0)
+			break;
+
+		if(prev_buffer)
+			queue_put(from_reader, prev_buffer);
+		prev_buffer = file_buffer;
+	}
+
+	if(prev_buffer == NULL)
+		prev_buffer = file_buffer;
+	else {
+		cache_block_put(file_buffer);
+		seq --;
+	}
+	prev_buffer->file_size = bytes;
+	prev_buffer->fragment = !no_fragments &&
+		(count == 2 || always_use_fragments) && (byte < block_size);
+	queue_put(from_reader, prev_buffer);
+
+	return;
+
+read_err:
+	if(prev_buffer) {
+		cache_block_put(file_buffer);
+		seq --;
+		file_buffer = prev_buffer;
+	}
+	file_buffer->error = TRUE;
+	queue_put(from_deflate, file_buffer);
+}
+
+
 void reader_read_file(struct dir_ent *dir_ent)
 {
 	struct stat *buf = &dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
-	static int index = 0;
 	int blocks, byte, count, expected, file, frag_block;
 	long long bytes, read_size;
 
@@ -2149,7 +2203,7 @@ again:
 		if(file_buffer)
 			queue_put(from_reader, file_buffer);
 		file_buffer = cache_get(reader_buffer, 0, 0);
-		file_buffer->sequence = index ++;
+		file_buffer->sequence = seq ++;
 
 		byte = file_buffer->size = read_bytes(file, file_buffer->data,
 			block_size);
@@ -2185,7 +2239,7 @@ again:
 
 read_err:
 	file_buffer = cache_get(reader_buffer, 0, 0);
-	file_buffer->sequence = index ++;
+	file_buffer->sequence = seq ++;
 read_err2:
 	file_buffer->error = TRUE;
 	queue_put(from_deflate, file_buffer);
@@ -2211,6 +2265,11 @@ void reader_scan(struct dir_info *dir) {
 		struct stat *buf = &dir_ent->inode->buf;
 		if(dir_ent->inode->root_entry)
 			continue;
+
+		if(dir_ent->inode->pseudo_file) {
+			reader_read_process(dir_ent);
+			continue;
+		}
 
 		switch(buf->st_mode & S_IFMT) {
 			case S_IFREG:
@@ -2621,6 +2680,98 @@ void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size,
 }
 
 
+int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
+	struct file_buffer *read_buffer, int *duplicate_file)
+{
+	long long read_size, file_bytes, start;
+	struct fragment *fragment;
+	unsigned int *block_list = NULL;
+	int block = 0, status;
+	long long sparse = 0;
+	struct file_buffer *fragment_buffer = NULL;
+
+	*duplicate_file = FALSE;
+
+	lock_fragments();
+
+	file_bytes = 0;
+	start = bytes;
+	while (1) {
+		read_size = read_buffer->file_size;
+		if(read_buffer->fragment && read_buffer->c_byte)
+			fragment_buffer = read_buffer;
+		else {
+			block_list = realloc(block_list, (block + 1) *
+				sizeof(unsigned int));
+			if(block_list == NULL)
+				BAD_ERROR("Out of memory allocating block_list"
+					"\n");
+			block_list[block ++] = read_buffer->c_byte;
+			if(read_buffer->c_byte) {
+				read_buffer->block = bytes;
+				bytes += read_buffer->size;
+				cache_rehash(read_buffer, read_buffer->block);
+				file_bytes += read_buffer->size;
+				queue_put(to_writer, read_buffer);
+			} else {
+				sparse += read_buffer->size;
+				cache_block_put(read_buffer);
+			}
+		}
+		//inc_progress_bar();
+
+		if(read_size != -1)
+			break;
+
+		read_buffer = get_file_buffer(from_deflate);
+		if(read_buffer->error)
+			goto read_err;
+	}
+
+	unlock_fragments();
+	fragment = get_and_fill_fragment(fragment_buffer);
+	cache_block_put(fragment_buffer);
+
+	if(duplicate_checking)
+		add_non_dup(read_size, file_bytes, block_list, start, fragment,
+			0, 0, FALSE);
+	file_count ++;
+	total_bytes += read_size;
+
+	if(read_size < (1LL << 32) && start < (1LL << 32) && sparse == 0)
+		create_inode(inode, dir_ent, SQUASHFS_FILE_TYPE, read_size,
+			start, block, block_list, fragment, NULL, 0);
+	else
+		create_inode(inode, dir_ent, SQUASHFS_LREG_TYPE, read_size,
+			start, block, block_list, fragment, NULL, sparse);
+
+	if(duplicate_checking == FALSE)
+		free(block_list);
+
+	return 0;
+
+read_err:
+	//cur_uncompressed -= block;
+	status = read_buffer->error;
+	bytes = start;
+	if(!block_device) {
+		int res;
+
+		queue_put(to_writer, NULL);
+		if(queue_get(from_writer) != 0)
+			EXIT_MKSQUASHFS();
+		res = ftruncate(fd, bytes);
+		if(res != 0)
+			BAD_ERROR("Failed to truncate dest file because %s\n",
+				strerror(errno));
+	}
+	unlock_fragments();
+	free(block_list);
+	cache_block_put(read_buffer);
+	return status;
+}
+
+
 int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 	long long read_size, struct file_buffer *read_buffer,
 	int *duplicate_file)
@@ -2888,7 +3039,10 @@ again:
 	
 	read_size = read_buffer->file_size;
 
-	if(read_size == 0) {
+	if(read_size == -1)
+		status = write_file_process(inode, dir_ent, read_buffer,
+			duplicate_file);
+	else if(read_size == 0) {
 		write_file_empty(inode, dir_ent, duplicate_file);
 		cache_block_put(read_buffer);
 	} else if(read_buffer->fragment && read_buffer->c_byte)
@@ -2984,6 +3138,7 @@ struct inode_info *lookup_inode(struct stat *buf)
 	memcpy(&inode->buf, buf, sizeof(struct stat));
 	inode->read = FALSE;
 	inode->root_entry = FALSE;
+	inode->pseudo_file = FALSE;
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
 
@@ -3414,6 +3569,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		buf.st_ino = pseudo_ino ++;
 
 		if(pseudo_ent->dev->type == 'f') {
+#ifdef USE_TMP_FILE
 			struct stat buf2;
 			int res = stat(pseudo_ent->dev->filename, &buf2);
 			if(res == -1) {
@@ -3425,6 +3581,13 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			add_dir_entry(pseudo_ent->name,
 				pseudo_ent->dev->filename, sub_dir,
 				lookup_inode(&buf), dir);
+#else
+			struct inode_info *inode = lookup_inode(&buf);
+			inode->fd = pseudo_ent->dev->fd;
+			inode->pseudo_file = TRUE;		
+			add_dir_entry(pseudo_ent->name, pseudo_ent->pathname,
+				sub_dir, inode, dir);
+#endif
 		} else
 			add_dir_entry(pseudo_ent->name, pseudo_ent->pathname,
 				sub_dir, lookup_inode(&buf), dir);

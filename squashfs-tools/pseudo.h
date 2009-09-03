@@ -27,7 +27,11 @@ struct pseudo_dev {
 	unsigned int	gid;
 	unsigned int	major;
 	unsigned int	minor;
+#ifdef USE_TMP_FILE
 	char		*filename;
+#else
+	int		fd;
+#endif
 };
 
 struct pseudo_entry {
