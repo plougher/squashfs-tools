@@ -48,7 +48,7 @@ struct pseudo {
 };
 
 struct pseudo_file {
-	char			*filename;
+	struct pseudo_dev	*dev;	
 	struct pseudo_file	*next;
 };
 

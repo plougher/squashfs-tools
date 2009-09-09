@@ -232,12 +232,13 @@ struct pseudo_entry *pseudo_readdir(struct pseudo *pseudo)
 }
 
 
-int exec_file(char *command, char *filename)
+int exec_file(char *command, struct pseudo_dev *dev)
 {
 	int child, res;
 	static pid_t pid = -1;
 	int pipefd[2];
 #ifdef USE_TMP_FILE
+	char filename[1024];
 	int status;
 	static int number = 0;
 #endif
@@ -263,7 +264,7 @@ int exec_file(char *command, char *filename)
 	child = fork();
 	if(child == -1) {
 		printf("fork failed\n");
-		return -1;
+		goto failed;
 	}
 
 	if(child == 0) {
@@ -281,21 +282,31 @@ int exec_file(char *command, char *filename)
 #ifdef USE_TMP_FILE
 	res = waitpid(child, &status, 0);
 	close(pipefd[1]);
-	return res == -1 ? -1 : status;
+	if(res != -1 && status >= 0) {
+		dev->filename = strdup(filename);
+		return 0;
+	}
+failed:
+	unlink(filename);
+	return -1;
 #else
 	close(pipefd[1]);
-	return pipefd[0];
+	dev->fd = pipefd[0];
+	//dev->child = child;
+	return 0;
+failed:
+	return -1;
 #endif
 }
 
 
-void add_pseudo_file(char *filename)
+void add_pseudo_file(struct pseudo_dev *dev)
 {
 	struct pseudo_file *entry = malloc(sizeof(struct pseudo_file));
 	if(entry == NULL)
 		return;
 
-	entry->filename = filename;
+	entry->dev = dev;
 	entry->next = pseudo_file;
 	pseudo_file = entry;
 }
@@ -306,7 +317,11 @@ void delete_pseudo_files()
 	struct pseudo_file *entry;
 
 	for(entry = pseudo_file; entry; entry = entry->next)
-		unlink(entry->filename);
+#ifdef USE_TMP_FILE
+		unlink(entry->dev->filename);
+#else
+	;
+#endif
 }
 
 
@@ -423,36 +438,20 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 	dev.major = major;
 	dev.minor = minor;
 
-#ifdef USE_TMP_FILE
 	if(type == 'f') {
-		char filename[1024];
 		int res;
-		printf("Running dynamic pseudo file (this may take "
-			"some time):\n");
-		printf("\t\"%s\"\n", def);
-		res = exec_file(def + bytes, filename);
-		dev.filename = strdup(filename);
-		add_pseudo_file(dev.filename);
-		if(res < 0) {
-			ERROR("Failed to execute dynamic pseudo file definition"
-				" \"%s\"", def);
-			return FALSE;
-		}
-	} else
-		dev.filename = NULL;
-#else
-	if(type == 'f') {
+
 		printf("Executing dynamic pseudo file\n");
 		printf("\t\"%s\"\n", def);
-		dev.fd = exec_file(def + bytes, NULL);
-		if(dev.fd < 0) {
+		res = exec_file(def + bytes, &dev);
+		if(res == -1) {
 			ERROR("Failed to execute dynamic pseudo file definition"
 				" \"%s\"", def);
 			return FALSE;
 		}
+		add_pseudo_file(&dev);
 	}
-#endif
-	
+
 	*pseudo = add_pseudo(*pseudo, &dev, filename, filename);
 
 	return TRUE;
