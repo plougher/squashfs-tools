@@ -4338,21 +4338,16 @@ int main(int argc, char *argv[])
 				ERROR("%s: -pf missing filename\n", argv[0]);
 				exit(1);
 			}
-			if(read_pseudo_file(&pseudo, argv[i]) == FALSE) {
-				ERROR("Failed to parse pseudo file \"%s\"\n",
-					argv[i]);
+			if(read_pseudo_file(&pseudo, argv[i]) == FALSE)
 				exit(1);
-			}
 		} else if(strcmp(argv[i], "-p") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -p missing pseudo file definition\n",
 					argv[0]);
 				exit(1);
 			}
-			if(read_pseudo_def(&pseudo, argv[i]) == FALSE) {
-				ERROR("Failed to parse pseudo definition\n");
+			if(read_pseudo_def(&pseudo, argv[i]) == FALSE)
 				exit(1);
-			}
 		} else if(strcmp(argv[i], "-recover") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -recover missing recovery file\n",

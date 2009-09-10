@@ -445,7 +445,7 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 		res = exec_file(def + bytes, dev);
 		if(res == -1) {
 			ERROR("Failed to execute dynamic pseudo file definition"
-				" \"%s\"", def);
+				" \"%s\"\n", def);
 			return FALSE;
 		}
 		add_pseudo_file(dev);
