@@ -56,7 +56,8 @@
 #define TRUE 1
 #define FALSE 0
 
-struct pseudo_file *pseudo_file = NULL;
+struct pseudo_dev **pseudo_file = NULL;
+int pseudo_count = 0;
 
 static void dump_pseudo(struct pseudo *pseudo, char *string)
 {
@@ -131,12 +132,8 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 		if(target[0] == '\0') {
 			/* at leaf pathname component */
 			pseudo->name[i].pseudo = NULL;
-			pseudo->name[i].dev = malloc(sizeof(struct pseudo_dev));
-			if(pseudo->name[i].dev == NULL)
-				BAD_ERROR("failed to allocate pseudo file\n");
 			pseudo->name[i].pathname = strdup(alltarget);
-			memcpy(pseudo->name[i].dev, pseudo_dev,
-				sizeof(struct pseudo_dev));
+			pseudo->name[i].dev = pseudo_dev;
 		} else {
 			/* recurse adding child components */
 			pseudo->name[i].dev = NULL;
@@ -172,15 +169,9 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 			if(target[0] == '\0') {
 				if(pseudo->name[i].dev == NULL &&
 						pseudo_dev->type == 'd') {
-					pseudo->name[i].dev =
-						malloc(sizeof(struct pseudo_dev));
-					if(pseudo->name[i].dev == NULL)
-						BAD_ERROR("failed to allocate "
-							"pseudo file\n");
 					pseudo->name[i].pathname =
 						strdup(alltarget);
-					memcpy(pseudo->name[i].dev, pseudo_dev,
-						sizeof(struct pseudo_dev));
+					pseudo->name[i].dev = pseudo_dev;
 				} else
 					ERROR("%s already exists as a "
 						"directory.  Ignoring %s!\n",
@@ -292,7 +283,7 @@ failed:
 #else
 	close(pipefd[1]);
 	dev->fd = pipefd[0];
-	//dev->child = child;
+	dev->child = child;
 	return 0;
 failed:
 	return -1;
@@ -302,26 +293,30 @@ failed:
 
 void add_pseudo_file(struct pseudo_dev *dev)
 {
-	struct pseudo_file *entry = malloc(sizeof(struct pseudo_file));
-	if(entry == NULL)
-		return;
+	pseudo_file = realloc(pseudo_file, (pseudo_count + 1) *
+		sizeof(struct pseudo_dev *));
+	if(pseudo_file == NULL)
+		BAD_ERROR("Failed to realloc pseudo_file\n");
 
-	entry->dev = dev;
-	entry->next = pseudo_file;
-	pseudo_file = entry;
+	dev->pseudo_id = pseudo_count;
+	pseudo_file[pseudo_count ++] = dev;
 }
 
 
 void delete_pseudo_files()
 {
-	struct pseudo_file *entry;
-
-	for(entry = pseudo_file; entry; entry = entry->next)
 #ifdef USE_TMP_FILE
-		unlink(entry->dev->filename);
-#else
-	;
+	int i;
+
+	for(i = 0; i < pseudo_count; i++)
+		unlink(pseudo_file[i]->filename);
 #endif
+}
+
+
+struct pseudo_dev *get_pseudo_file(int pseudo_id)
+{
+	return pseudo_file[pseudo_id];
 }
 
 
@@ -331,7 +326,7 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 	unsigned int major = 0, minor = 0, mode;
 	char filename[2048], type, suid[100], sgid[100], *ptr;
 	long long uid, gid;
-	struct pseudo_dev dev;
+	struct pseudo_dev *dev;
 
 	n = sscanf(def, "%s %c %o %s %s %n", filename, &type, &mode, suid,
 			sgid, &bytes);
@@ -431,28 +426,32 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 		break;
 	}
 
-	dev.type = type;
-	dev.mode = mode;
-	dev.uid = uid;
-	dev.gid = gid;
-	dev.major = major;
-	dev.minor = minor;
+	dev = malloc(sizeof(struct pseudo_dev));
+	if(dev == NULL)
+		BAD_ERROR("Failed to create pseudo_dev\n");
+
+	dev->type = type;
+	dev->mode = mode;
+	dev->uid = uid;
+	dev->gid = gid;
+	dev->major = major;
+	dev->minor = minor;
 
 	if(type == 'f') {
 		int res;
 
 		printf("Executing dynamic pseudo file\n");
 		printf("\t\"%s\"\n", def);
-		res = exec_file(def + bytes, &dev);
+		res = exec_file(def + bytes, dev);
 		if(res == -1) {
 			ERROR("Failed to execute dynamic pseudo file definition"
 				" \"%s\"", def);
 			return FALSE;
 		}
-		add_pseudo_file(&dev);
+		add_pseudo_file(dev);
 	}
 
-	*pseudo = add_pseudo(*pseudo, &dev, filename, filename);
+	*pseudo = add_pseudo(*pseudo, dev, filename, filename);
 
 	return TRUE;
 

@@ -27,10 +27,11 @@ struct pseudo_dev {
 	unsigned int	gid;
 	unsigned int	major;
 	unsigned int	minor;
+	int		pseudo_id;
+	int		fd;
+	int		child;
 #ifdef USE_TMP_FILE
 	char		*filename;
-#else
-	int		fd;
 #endif
 };
 
@@ -47,12 +48,8 @@ struct pseudo {
 	struct pseudo_entry	*name;
 };
 
-struct pseudo_file {
-	struct pseudo_dev	*dev;	
-	struct pseudo_file	*next;
-};
-
 extern int read_pseudo_def(struct pseudo **, char *);
 extern int read_pseudo_file(struct pseudo **, char *);
 extern struct pseudo *pseudo_subdir(char *, struct pseudo *);
 extern struct pseudo_entry *pseudo_readdir(struct pseudo *);
+extern struct pseudo_dev *get_pseudo_file(int);

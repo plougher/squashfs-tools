@@ -46,6 +46,7 @@
 #include <math.h>
 #include <regex.h>
 #include <fnmatch.h>
+#include <sys/wait.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -2121,8 +2122,9 @@ static int seq = 0;
 void reader_read_process(struct dir_ent *dir_ent)
 {
 	struct file_buffer *prev_buffer = NULL, *file_buffer;
-	int byte, count = 0;
-	int file = dir_ent->inode->fd;
+	int status, res, byte, count = 0;
+	int file = get_pseudo_file(dir_ent->inode->pseudo_id)->fd;
+	int child = get_pseudo_file(dir_ent->inode->pseudo_id)->child;
 	long long bytes = 0;
 
 	while(1) {
@@ -2147,6 +2149,10 @@ void reader_read_process(struct dir_ent *dir_ent)
 			queue_put(from_reader, prev_buffer);
 		prev_buffer = file_buffer;
 	}
+
+	res = waitpid(child, &status, 0);
+	if(res == -1 || status < 0)
+		goto read_err;
 
 	if(prev_buffer == NULL)
 		prev_buffer = file_buffer;
@@ -3583,7 +3589,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				lookup_inode(&buf), dir);
 #else
 			struct inode_info *inode = lookup_inode(&buf);
-			inode->fd = pseudo_ent->dev->fd;
+			inode->pseudo_id = pseudo_ent->dev->pseudo_id;
 			inode->pseudo_file = TRUE;		
 			add_dir_entry(pseudo_ent->name, pseudo_ent->pathname,
 				sub_dir, inode, dir);

@@ -50,7 +50,7 @@ struct inode_info {
 	squashfs_inode		inode;
 	unsigned int		inode_number;
 	unsigned int		nlink;
-	int			fd;
+	int			pseudo_id;
 	char			type;
 	char			read;
 	char			root_entry;
