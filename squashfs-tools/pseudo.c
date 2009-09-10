@@ -273,7 +273,7 @@ int exec_file(char *command, struct pseudo_dev *dev)
 #ifdef USE_TMP_FILE
 	res = waitpid(child, &status, 0);
 	close(pipefd[1]);
-	if(res != -1 && status >= 0) {
+	if(res != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0) {
 		dev->filename = strdup(filename);
 		return 0;
 	}

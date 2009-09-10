@@ -2151,7 +2151,7 @@ void reader_read_process(struct dir_ent *dir_ent)
 	}
 
 	res = waitpid(child, &status, 0);
-	if(res == -1 || status < 0)
+	if(res == -1 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		goto read_err;
 
 	if(prev_buffer == NULL)
