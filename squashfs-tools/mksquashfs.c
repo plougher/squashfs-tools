@@ -4990,6 +4990,8 @@ restore_filesystem:
 
 	close(fd);
 
+	delete_pseudo_files();
+
 	if(recovery_file[0] != '\0')
 		unlink(recovery_file);
 
