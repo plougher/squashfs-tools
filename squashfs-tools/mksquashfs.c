@@ -2150,6 +2150,12 @@ void reader_read_process(struct dir_ent *dir_ent)
 		prev_buffer = file_buffer;
 	}
 
+	/*
+ 	 * Update inode file size now that the size of the dynamic pseudo file
+	 * is known.  This is needed for the -info option.
+	 */
+	dir_ent->inode->buf.st_size = bytes;
+
 	res = waitpid(child, &status, 0);
 	if(res == -1 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		goto read_err;
