@@ -2145,6 +2145,15 @@ void reader_read_process(struct dir_ent *dir_ent)
 		if(byte == 0)
 			break;
 
+		/*
+		 * Update estimated_uncompressed block count.  This is done
+		 * on every block rather than waiting for all blocks to be
+		 * read incase write_file_process() is running in parallel
+		 * with this.  Otherwise cur uncompressed block count may
+		 * get ahead of the total uncompressed block count.
+		 */ 
+		estimated_uncompressed ++;
+
 		if(prev_buffer)
 			queue_put(from_reader, prev_buffer);
 		prev_buffer = file_buffer;
@@ -2730,7 +2739,7 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 				cache_block_put(read_buffer);
 			}
 		}
-		//inc_progress_bar();
+		inc_progress_bar();
 
 		if(read_size != -1)
 			break;
@@ -2763,7 +2772,7 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 	return 0;
 
 read_err:
-	//cur_uncompressed -= block;
+	cur_uncompressed -= block;
 	status = read_buffer->error;
 	bytes = start;
 	if(!block_device) {
