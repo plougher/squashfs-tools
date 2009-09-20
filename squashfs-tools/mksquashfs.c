@@ -1677,9 +1677,7 @@ void unlock_fragments()
 		entry->buffer->block = bytes;
 		bytes += compressed_size;
 		fragments_outstanding --;
-		pthread_mutex_unlock(&fragment_mutex);
 		queue_put(to_writer, entry->buffer);
-		pthread_mutex_lock(&fragment_mutex);
 		TRACE("fragment_locked writing fragment %d, compressed size %d"
 			"\n", entry->fragment, compressed_size);
 		free(entry);
@@ -2453,8 +2451,8 @@ void *frag_deflator(void *arg)
 			write_buffer->block = bytes;
 			bytes += compressed_size;
 			fragments_outstanding --;
-			pthread_mutex_unlock(&fragment_mutex);
 			queue_put(to_writer, write_buffer);
+			pthread_mutex_unlock(&fragment_mutex);
 			TRACE("Writing fragment %lld, uncompressed size %d, "
 				"compressed size %d\n", file_buffer->block,
 				file_buffer->size, compressed_size);
