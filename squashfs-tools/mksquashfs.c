@@ -4304,7 +4304,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.1-CVS (2009/09/20)\n");\
+	printf("mksquashfs version 4.1-CVS (2009/12/08)\n");\
 	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -4647,6 +4647,8 @@ printOptions:
 				"\n");
 			ERROR("-noFragmentCompression\talternative name for "
 				"-noF\n");
+			ERROR("\nCompressors available:\n");
+			display_compressors("", COMP_DEFAULT);
 			exit(1);
 		}
 	}
