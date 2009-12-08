@@ -2,7 +2,7 @@
 # Building LZMA support
 # Download LZMA sdk (4.65 used in development, other versions may work),
 # set LZMA_DIR to unpacked source, and uncomment next line
-LZMA_SUPPORT = 1
+#LZMA_SUPPORT = 1
 LZMA_DIR = ../../../LZMA/lzma465
 
 #Compression default.
