@@ -122,6 +122,7 @@ int progress_enabled = FALSE;
 int sparse_files = TRUE;
 int old_exclude = TRUE;
 int use_regex = FALSE;
+int first_freelist = TRUE;
 
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
@@ -596,8 +597,6 @@ struct file_buffer *cache_lookup(struct cache *cache, long long index)
 }
 
 
-#define GET_FREELIST 1
-
 struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 {
 	/* Get a free block out of the cache indexed on index. */
@@ -607,16 +606,13 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 
 	while(1) {
 		/* first try to get a block from the free list */
-#ifdef GET_FREELIST
-		if(cache->free_list) {
+		if(first_freelist && cache->free_list) {
 			/* a block on the free_list is a "keep" block */
 			entry = cache->free_list;
 			remove_free_list(&cache->free_list, entry);
 			remove_hash_table(cache, entry);
 			break;
-		} else
-#endif
-		if(cache->count < cache->max_buffers) {
+		} else if(cache->count < cache->max_buffers) {
 			/* next try to allocate new block */
 			entry = malloc(sizeof(struct file_buffer) +
 				cache->buffer_size);
@@ -626,16 +622,13 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 			entry->free_prev = entry->free_next = NULL;
 			cache->count ++;
 			break;
-		} else
-#ifndef GET_FREELIST
-		if(cache->free_list) {
+		} else if(!first_freelist && cache->free_list) {
 			/* a block on the free_list is a "keep" block */
 			entry = cache->free_list;
 			remove_free_list(&cache->free_list, entry);
 			remove_hash_table(cache, entry);
 			break;
-		}
-#endif
+		} else
 			/* wait for a block */
 			pthread_cond_wait(&cache->wait_for_free, &cache->mutex);
 	}
@@ -4304,7 +4297,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.1-CVS (2009/12/08)\n");\
+	printf("mksquashfs version 4.1-CVS (2010/01/31)\n");\
 	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -4920,6 +4913,18 @@ printOptions:
 
 		inode_count = file_count + dir_count + sym_count + dev_count +
 			fifo_count + sock_count;
+
+		/*
+		 * The default use freelist before growing cache policy behaves
+		 * poorly with appending - with many deplicates the caches
+		 * do not grow due to the fact that large queues of outstanding
+		 * fragments/writer blocks do not occur, leading to small caches
+		 * and un-uncessary performance loss to frequent cache
+		 * replacement in the small caches.  Therefore with appending
+		 * change the policy to grow the caches before reusing blocks
+		 * from the freelist
+		 */
+		first_freelist = FALSE;
 	}
 
 	if(path || stickypath) {
