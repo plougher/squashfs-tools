@@ -941,22 +941,17 @@ void read_destination(int fd, long long byte, int bytes, char *buff)
 {
 	off_t off = byte;
 
-	printf("Here\n");
 	TRACE("read_destination: reading from position 0x%llx, bytes %d\n",
 		byte, bytes);
 
 	pthread_mutex_lock(&pos_mutex);
-	printf("Here 2\n");
 	if(lseek(fd, off, SEEK_SET) == -1)
 		BAD_ERROR("Lseek on destination failed because %s\n",
 			strerror(errno));
 
-	printf("Here 3\n");
 	if(read_bytes(fd, buff, bytes) < bytes)
 		BAD_ERROR("Read on destination failed\n");
-	printf("Here 4\n");
 	pthread_mutex_unlock(&pos_mutex);
-	printf("Here 5\n");
 }
 
 
@@ -3085,7 +3080,8 @@ file_err:
 }
 
 
-char b_buffer[8192];
+#define BUFF_SIZE 8192
+char b_buffer[BUFF_SIZE];
 char *name;
 char *basename_r();
 
@@ -3094,12 +3090,10 @@ char *getbase(char *pathname)
 	char *result;
 
 	if(*pathname != '/') {
-		result = getenv("PWD");
-		if(result == NULL) {
-			printf("getenv returned NULL!\n");
-			exit(0);
-		}
-		strcat(strcat(strcpy(b_buffer, result), "/"), pathname);
+		result = getcwd(b_buffer, BUFF_SIZE);
+		if(result == NULL)
+			return NULL;
+		strcat(strcat(b_buffer, "/"), pathname);
 	} else
 		strcpy(b_buffer, pathname);
 	name = b_buffer;
@@ -4187,10 +4181,8 @@ void write_recovery_data(squashfs_super_block *sBlk)
 {
 	int recoverfd, bytes = sBlk->bytes_used - sBlk->inode_table_start;
 	pid_t pid = getpid();
-//	char *metadata;
-	char metadata[128*1024];
+	char *metadata;
 	char header[] = RECOVER_ID;
-	char *b;
 
 	if(recover == FALSE) {
 		printf("No recovery data option specified.\n");
@@ -4198,48 +4190,34 @@ void write_recovery_data(squashfs_super_block *sBlk)
 		return;
 	}
 
-#if 0
 	if((metadata = malloc(bytes)) == NULL)
 		BAD_ERROR("Failed to alloc metadata buffer in "
 			"write_recovery_data\n");
-#endif
-	printf("here\n");
-	printf("%s\n", destination_file);
-	printf("shit\n");
-	b  = getbase(destination_file);
+
 	read_destination(fd, sBlk->inode_table_start, bytes, metadata);
 
-	printf("here 1\n");
 	sprintf(recovery_file, "squashfs_recovery_%s_%d",
-		b, pid);
-	printf("here 2\n");
+		getbase(destination_file), pid);
 	recoverfd = open(recovery_file, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
-	printf("here 3\n");
 	if(recoverfd == -1)
 		BAD_ERROR("Failed to create recovery file, because %s.  "
 			"Aborting\n", strerror(errno));
 		
-	printf("here 4\n");
 	if(write_bytes(recoverfd, header, RECOVER_ID_SIZE) == -1)
 		BAD_ERROR("Failed to write recovery file, because %s\n",
 			strerror(errno));
 
-	printf("here 5\n");
 	if(write_bytes(recoverfd, sBlk, sizeof(squashfs_super_block)) == -1)
 		BAD_ERROR("Failed to write recovery file, because %s\n",
 			strerror(errno));
 
-	printf("here 6\n");
 	if(write_bytes(recoverfd, metadata, bytes) == -1)
 		BAD_ERROR("Failed to write recovery file, because %s\n",
 			strerror(errno));
 
-	printf("here 7\n");
 	close(recoverfd);
-	printf("here 8\n");
-//	free(metadata);
+	free(metadata);
 	
-	printf("here 9\n");
 	printf("Recovery file \"%s\" written\n", recovery_file);
 	printf("If Mksquashfs aborts abnormally (i.e. power failure), run\n");
 	printf("mksquashfs dummy %s -recover %s\n", destination_file,
@@ -4715,7 +4693,7 @@ printOptions:
 					"writing as destination");
 				exit(1);
 			}
-		}	
+		}
 		else {
 			ERROR("Destination not block device or regular file\n");
 			exit(1);
