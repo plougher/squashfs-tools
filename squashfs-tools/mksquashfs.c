@@ -1763,6 +1763,7 @@ long long generic_write_table(int length, char *buffer, int uncompressed)
 	
 #ifdef SQUASHFS_TRACE
 	long long obytes = bytes;
+	int olength = length;
 #endif
 
 	for(i = 0; i < meta_blocks; i++) {
@@ -1788,8 +1789,8 @@ long long generic_write_table(int length, char *buffer, int uncompressed)
 	start_bytes = bytes;
 	bytes += sizeof(list);
 
-	TRACE("total uncompressed %d compressed %lld\n", inode_count *
-		sizeof(squashfs_inode), bytes - obytes);
+	TRACE("generic_write_table: total uncompressed %d compressed %lld\n",
+		olength, bytes - obytes);
 
 	return start_bytes;
 }
