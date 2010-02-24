@@ -140,8 +140,9 @@ re_read:
 			strncmp(path, "../", 3) == 0 || mkisofs_style == 1) {
 		if(lstat(path, &buf) == -1)
 			goto error;
-		TRACE("adding filename %s, priority %d, st_dev %llx, st_ino "
-			"%llx\n", path, priority, buf.st_dev, buf.st_ino);
+		TRACE("adding filename %s, priority %d, st_dev %d, st_ino "
+			"%lld\n", path, priority, (int) buf.st_dev,
+			(long long) buf.st_ino);
 		ADD_ENTRY(buf, priority);
 		return TRUE;
 	}
