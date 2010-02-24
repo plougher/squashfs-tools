@@ -171,7 +171,8 @@ int scan_inode_table(int fd, long long start, long long end,
 		SQUASHFS_SWAP_REG_INODE_HEADER(&inode, cur_ptr);
 
 		TRACE("scan_inode_table: processing inode @ byte position "
-			"0x%x, type 0x%x\n", cur_ptr - *inode_table,
+			"0x%x, type 0x%x\n",
+			(unsigned int) (cur_ptr - *inode_table),
 			inode.inode_type);
 
 		get_uid(id_table[inode.uid]);
