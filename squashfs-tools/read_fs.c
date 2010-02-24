@@ -154,23 +154,21 @@ int scan_inode_table(int fd, long long start, long long end,
 	 */
 	*root_inode_size = bytes - (*root_inode_block + root_inode_offset);
 	bytes = *root_inode_block + root_inode_offset;
-	SQUASHFS_SWAP_BASE_INODE_HEADER(&dir_inode->base,
-			(squashfs_base_inode_header *) (*inode_table + bytes));
+	SQUASHFS_SWAP_BASE_INODE_HEADER(&dir_inode->base, *inode_table + bytes);
 	if(dir_inode->base.inode_type == SQUASHFS_DIR_TYPE) {
 		SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode->dir,
-			(squashfs_dir_inode_header *) (*inode_table + bytes));
+			*inode_table + bytes);
 		directory_start_block = dir_inode->dir.start_block;
 	} else {
 		SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode->ldir,
-			(squashfs_ldir_inode_header *) (*inode_table + bytes));
+			*inode_table + bytes);
 		directory_start_block = dir_inode->ldir.start_block;
 	}
 	get_uid(id_table[dir_inode->base.uid]);
 	get_guid(id_table[dir_inode->base.guid]);
 
 	for(cur_ptr = *inode_table; cur_ptr < *inode_table + bytes; files ++) {
-		SQUASHFS_SWAP_REG_INODE_HEADER(&inode,
-			(squashfs_reg_inode_header *) cur_ptr);
+		SQUASHFS_SWAP_REG_INODE_HEADER(&inode, cur_ptr);
 
 		TRACE("scan_inode_table: processing inode @ byte position "
 			"0x%x, type 0x%x\n", cur_ptr - *inode_table,
@@ -207,8 +205,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				}
 
 				cur_ptr += sizeof(inode);
-				SQUASHFS_SWAP_INTS(block_list,
-					(unsigned int *) cur_ptr, blocks);
+				SQUASHFS_SWAP_INTS(block_list, cur_ptr, blocks);
 
 				*uncompressed_file += inode.file_size;
 				(*file_count) ++;
@@ -233,8 +230,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				long long start;
 				unsigned int *block_list;
 
-				SQUASHFS_SWAP_LREG_INODE_HEADER(&inode,
-					(squashfs_lreg_inode_header *) cur_ptr);
+				SQUASHFS_SWAP_LREG_INODE_HEADER(&inode, cur_ptr);
 
 				frag_bytes = inode.fragment ==
 					SQUASHFS_INVALID_FRAG ? 0 :
@@ -259,8 +255,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				}
 
 				cur_ptr += sizeof(inode);
-				SQUASHFS_SWAP_INTS(block_list,
-					(unsigned int *) cur_ptr, blocks);
+				SQUASHFS_SWAP_INTS(block_list, cur_ptr, blocks);
 
 				*uncompressed_file += inode.file_size;
 				(*file_count) ++;
@@ -279,9 +274,7 @@ int scan_inode_table(int fd, long long start, long long end,
 			case SQUASHFS_SYMLINK_TYPE: {
 				squashfs_symlink_inode_header inodep;
 	
-				SQUASHFS_SWAP_SYMLINK_INODE_HEADER(&inodep,
-					(squashfs_symlink_inode_header *)
-					cur_ptr);
+				SQUASHFS_SWAP_SYMLINK_INODE_HEADER(&inodep, cur_ptr);
 				(*sym_count) ++;
 				cur_ptr += sizeof(inodep) + inodep.symlink_size;
 				break;
@@ -289,8 +282,7 @@ int scan_inode_table(int fd, long long start, long long end,
 			case SQUASHFS_DIR_TYPE: {
 				squashfs_dir_inode_header dir_inode;
 
-				SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode,
-					(squashfs_dir_inode_header *) cur_ptr);
+				SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode, cur_ptr);
 				if(dir_inode.start_block < directory_start_block)
 					*uncompressed_directory +=
 					dir_inode.file_size;
@@ -302,8 +294,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				squashfs_ldir_inode_header dir_inode;
 				int i;
 
-				SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode,
-					(squashfs_ldir_inode_header *) cur_ptr);
+				SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode, cur_ptr);
 				if(dir_inode.start_block < directory_start_block)
 					*uncompressed_directory +=
 					dir_inode.file_size;
@@ -312,8 +303,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				for(i = 0; i < dir_inode.i_count; i++) {
 					squashfs_dir_index index;
 
-					SQUASHFS_SWAP_DIR_INDEX(&index,
-						(squashfs_dir_index *) cur_ptr);
+					SQUASHFS_SWAP_DIR_INDEX(&index, cur_ptr);
 					cur_ptr += sizeof(squashfs_dir_index) +
 						index.size + 1;
 				}
@@ -434,7 +424,8 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 	void (push_directory_entry)(char *, squashfs_inode, int, int))
 {
 	squashfs_dir_header dirh;
-	char buffer[sizeof(squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1];
+	char buffer[sizeof(squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1]
+		__attribute__ ((aligned));
 	squashfs_dir_entry *dire = (squashfs_dir_entry *) buffer;
 	unsigned char *directory_table = NULL;
 	int byte, bytes = 0, dir_count;
@@ -464,8 +455,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 
 	bytes = offset;
  	while(bytes < size) {			
-		SQUASHFS_SWAP_DIR_HEADER(&dirh,
-			(squashfs_dir_header *) (directory_table + bytes));
+		SQUASHFS_SWAP_DIR_HEADER(&dirh, directory_table + bytes);
 
 		dir_count = dirh.count + 1;
 		TRACE("squashfs_readdir: Read directory header @ byte position "
@@ -473,9 +463,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 		bytes += sizeof(dirh);
 
 		while(dir_count--) {
-			SQUASHFS_SWAP_DIR_ENTRY(dire,
-				(squashfs_dir_entry *)
-				(directory_table + bytes));
+			SQUASHFS_SWAP_DIR_ENTRY(dire, directory_table + bytes);
 			bytes += sizeof(*dire);
 
 			memcpy(dire->name, directory_table + bytes,
