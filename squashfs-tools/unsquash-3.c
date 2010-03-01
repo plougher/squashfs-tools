@@ -274,7 +274,8 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 	struct inode **i)
 {
 	squashfs_dir_header_3 dirh;
-	char buffer[sizeof(squashfs_dir_entry_3) + SQUASHFS_NAME_LEN + 1];
+	char buffer[sizeof(squashfs_dir_entry_3) + SQUASHFS_NAME_LEN + 1]
+		__attribute__((aligned));
 	squashfs_dir_entry_3 *dire = (squashfs_dir_entry_3 *) buffer;
 	long long start;
 	int bytes;
