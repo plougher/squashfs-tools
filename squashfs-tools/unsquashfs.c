@@ -293,7 +293,7 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 
 	if(entry) {
 		/*
- 		 *found the block in the cache, increment used count and
+ 		 * found the block in the cache, increment used count and
  		 * if necessary remove from free list so it won't disappear
  		 */
 		entry->used ++;
@@ -1214,9 +1214,9 @@ int matches(struct pathnames *paths, char *name, struct pathnames **new)
 	}
 
 	/*
-	* one or more matches with sub-directories found (no leaf matches),
-	* return new search set and return TRUE
-	*/
+	 * one or more matches with sub-directories found (no leaf matches),
+	 * return new search set and return TRUE
+	 */
 	return TRUE;
 
 empty_set:
@@ -1885,8 +1885,10 @@ void progress_bar(long long current, long long max, int columns)
 	if(!tty) {
 		static long long previous = -1;
 
-		/* Updating much more frequently than this results in huge
-		 * log files. */
+		/*
+		 * Updating much more frequently than this results in huge
+		 * log files.
+		 */
 		if((current % 100) != 0 && current != max)
 			return;
 		/* Don't update just to rotate the spinner. */
