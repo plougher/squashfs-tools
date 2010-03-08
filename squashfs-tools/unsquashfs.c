@@ -1871,11 +1871,16 @@ void update_progress_bar()
 void progress_bar(long long current, long long max, int columns)
 {
 	char rotate_list[] = { '|', '/', '-', '\\' };
-	int max_digits = floor(log10(max)) + 1;
-	int used = max_digits * 2 + 11;
-	int hashes = (current * (columns - used)) / max;
-	int spaces = columns - used - hashes;
+	int max_digits, used, hashes, spaces;
 	static int tty = -1;
+
+	if(max == 0)
+		return;
+
+	max_digits = floor(log10(max)) + 1;
+	used = max_digits * 2 + 11;
+	hashes = (current * (columns - used)) / max;
+	spaces = columns - used - hashes;
 
 	if((current > max) || (columns - used < 0))
 		return;
@@ -1914,7 +1919,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.1-CVS (2010/03/06)\n");\
+	printf("unsquashfs version 4.1-CVS (2010/03/07)\n");\
 	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>"\
 		"\n\n");\
     	printf("This program is free software; you can redistribute it and/or\n");\
