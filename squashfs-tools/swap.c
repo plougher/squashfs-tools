@@ -28,20 +28,20 @@
 #endif
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-void swap_le16(unsigned short *src, unsigned short *dest)
+void swap_le16(void *src, void *dest)
 {
-	unsigned char *s = (unsigned char *) src;
-	unsigned char *d = (unsigned char *) dest;
+	unsigned char *s = src;
+	unsigned char *d = dest;
 
 	d[0] = s[1];
 	d[1] = s[0];
 }
 
 
-void swap_le32(unsigned int *src, unsigned int *dest)
+void swap_le32(void *src, void *dest)
 {
-	unsigned char *s = (unsigned char *) src;
-	unsigned char *d = (unsigned char *) dest;
+	unsigned char *s = src;
+	unsigned char *d = dest;
 
 	d[0] = s[3];
 	d[1] = s[2];
@@ -50,10 +50,10 @@ void swap_le32(unsigned int *src, unsigned int *dest)
 }
 
 
-void swap_le64(long long *src, long long *dest)
+void swap_le64(void *src, void *dest)
 {
-	unsigned char *s = (unsigned char *) src;
-	unsigned char *d = (unsigned char *) dest;
+	unsigned char *s = src;
+	unsigned char *d = dest;
 
 	d[0] = s[7];
 	d[1] = s[6];
@@ -97,17 +97,17 @@ long long inswap_le64(long long n)
 }
 
 
-#define SWAP_LE_NUM(BITS, TYPE) \
-void swap_le##BITS##_num(TYPE *s, TYPE *d, int n) \
+#define SWAP_LE_NUM(BITS) \
+void swap_le##BITS##_num(void *s, void *d, int n) \
 {\
 	int i;\
-	for(i = 0; i < n; i++, s++, d++)\
+	for(i = 0; i < n; i++, s += BITS / 8, d += BITS / 8)\
 		swap_le##BITS(s, d);\
 }
 
-SWAP_LE_NUM(16, unsigned short)
-SWAP_LE_NUM(32, unsigned int)
-SWAP_LE_NUM(64, long long)
+SWAP_LE_NUM(16)
+SWAP_LE_NUM(32)
+SWAP_LE_NUM(64)
 
 #define INSWAP_LE_NUM(BITS, TYPE) \
 void inswap_le##BITS##_num(TYPE *s, int n) \
