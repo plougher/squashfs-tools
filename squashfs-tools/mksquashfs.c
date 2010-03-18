@@ -1157,7 +1157,7 @@ unsigned int get_guid(unsigned int guid)
 int create_inode(squashfs_inode *i_no, struct dir_ent *dir_ent, int type,
 	long long byte_size, long long start_block, unsigned int offset,
 	unsigned int *block_list, struct fragment *fragment,
-	struct directory *dir_in, unsigned int sparse)
+	struct directory *dir_in, long long sparse)
 {
 	struct stat *buf = &dir_ent->inode->buf;
 	squashfs_inode_header inode_header;
