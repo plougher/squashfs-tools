@@ -1172,6 +1172,13 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	if(type == SQUASHFS_DIR_TYPE && dir_info->dir_is_ldir)
 		type = SQUASHFS_LDIR_TYPE;
 
+	if(type == SQUASHFS_FILE_TYPE &&
+			(dir_ent->inode->nlink > 1 ||
+			byte_size >= (1LL << 32) ||
+			start_block >= (1LL << 32) ||
+			sparse))
+		type = SQUASHFS_LREG_TYPE;
+
 	base->mode = SQUASHFS_MODE(buf->st_mode);
 	base->uid = get_uid((unsigned int) global_uid == -1 ?
 		buf->st_uid : global_uid);
@@ -2602,12 +2609,8 @@ void write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent,
 {
 	file_count ++;
 	*duplicate_file = FALSE;
-	if(dir_ent->inode->nlink == 1)
-		create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, 0, 0, 0,
-			 NULL, &empty_fragment, NULL, 0);
-	else
-		create_inode(inode, NULL,dir_ent, SQUASHFS_LREG_TYPE, 0, 0, 0,
-			NULL, &empty_fragment, NULL, 0);
+	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, 0, 0, 0,
+		 NULL, &empty_fragment, NULL, 0);
 }
 
 
@@ -2637,11 +2640,7 @@ void write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	inc_progress_bar();
 
-	if(dir_ent->inode->nlink == 1)
-		create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, size, 0,
-			0, NULL, fragment, NULL, 0);
-	else
-		create_inode(inode, NULL, dir_ent, SQUASHFS_LREG_TYPE, size, 0,
+	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, size, 0,
 			0, NULL, fragment, NULL, 0);
 }
 
@@ -2674,11 +2673,7 @@ void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size,
 
 	inc_progress_bar();
 
-	if(dir_ent->inode->nlink == 1)
-		create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, size, 0,
-			0, NULL, fragment, NULL, 0);
-	else
-		create_inode(inode, NULL, dir_ent, SQUASHFS_LREG_TYPE, size, 0,
+	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, size, 0,
 			0, NULL, fragment, NULL, 0);
 
 	return;
@@ -2743,13 +2738,8 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 	file_count ++;
 	total_bytes += read_size;
 
-	if(read_size < (1LL << 32) && start < (1LL << 32) && sparse == 0)
-		create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE,
-			read_size, start, block, block_list, fragment, NULL, 0);
-	else
-		create_inode(inode, NULL, dir_ent, SQUASHFS_LREG_TYPE,
-			read_size, start, block, block_list, fragment, NULL,
-			sparse);
+	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size, start,
+		 block, block_list, fragment, NULL, sparse);
 
 	if(duplicate_checking == FALSE)
 		free(block_list);
@@ -2846,15 +2836,8 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 	if(sparse && (dir_ent->inode->buf.st_blocks << 9) >= read_size)
 		sparse = 0;
 
-	if(dir_ent->inode->nlink == 1 && read_size < (1LL << 32) && start <
-			(1LL << 32) && sparse == 0)
-		create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE,
-			read_size, start, blocks, block_list, fragment, NULL,
-			0);
-	else
-		create_inode(inode, NULL, dir_ent, SQUASHFS_LREG_TYPE,
-			read_size, start, blocks, block_list, fragment, NULL,
-			sparse);
+	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size, start,
+		 blocks, block_list, fragment, NULL, sparse);
 
 	if(duplicate_checking == FALSE)
 		free(block_list);
@@ -2991,15 +2974,8 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 	if(sparse && (dir_ent->inode->buf.st_blocks << 9) >= read_size)
 		sparse = 0;
 
-	if(dir_ent->inode->nlink == 1 && read_size < (1LL << 32) && dup_start <
-			(1LL << 32) && sparse == 0)
-		create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE,
-			read_size, dup_start, blocks, block_listp, fragment,
-			NULL, 0);
-	else
-		create_inode(inode, NULL, dir_ent, SQUASHFS_LREG_TYPE,
-			read_size, dup_start, blocks, block_listp, fragment,
-			NULL, sparse);
+	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size,
+		dup_start, blocks, block_listp, fragment, NULL, sparse);
 
 	if(*duplicate_file == TRUE)
 		free(block_list);
