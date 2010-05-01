@@ -61,8 +61,8 @@
 
 #include "squashfs_fs.h"
 #include "squashfs_swap.h"
-#include "mksquashfs.h"
 #include "global.h"
+#include "mksquashfs.h"
 #include "sort.h"
 #include "pseudo.h"
 #include "compressor.h"

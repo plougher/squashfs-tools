@@ -39,4 +39,37 @@
 #define SQUASHFS_SWAP_LONG_LONGS(s, d, n) \
 					memcpy(d, s, n * sizeof(long long))
 #endif
+
+struct dir_info {
+	char			*pathname;
+	unsigned int		count;
+	unsigned int		directory_count;
+	unsigned int		current_count;
+	unsigned int		byte_count;
+	char			dir_is_ldir;
+	struct dir_ent		*dir_ent;
+	struct dir_ent		**list;
+	DIR			*linuxdir;
+};
+
+struct dir_ent {
+	char			*name;
+	char			*pathname;
+	struct inode_info	*inode;
+	struct dir_info		*dir;
+	struct dir_info		*our_dir;
+};
+
+struct inode_info {
+	struct stat		buf;
+	struct inode_info	*next;
+	squashfs_inode		inode;
+	unsigned int		inode_number;
+	unsigned int		nlink;
+	int			pseudo_id;
+	char			type;
+	char			read;
+	char			root_entry;
+	char			pseudo_file;
+};
 #endif

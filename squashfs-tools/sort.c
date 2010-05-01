@@ -34,8 +34,9 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <squashfs_fs.h>
+#include "squashfs_fs.h"
 #include "global.h"
+#include "mksquashfs.h"
 #include "sort.h"
 
 #ifdef SQUASHFS_TRACE
