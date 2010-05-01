@@ -3346,12 +3346,18 @@ void scan1_freedir(struct dir_info *dir)
 {
 	if(dir->pathname[0] != '\0')
 		closedir(dir->linuxdir);
+	free(dir->pathname);
+	dir->pathname = NULL;
 }
 
 
 void scan2_freedir(struct dir_info *dir)
 {
 	dir->current_count = 0;
+	if(dir->pathname) {
+		free(dir->pathname);
+		dir->pathname = NULL;
+	}
 }
 
 
