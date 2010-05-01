@@ -3515,7 +3515,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			struct stat *buf;
 			if(dir_ent == NULL) {
 				ERROR("Pseudo set file \"%s\" does not exist "
-					"in source filesystem.  Ignoring\n",
+					"in source filesystem.  Ignoring.\n",
 					pseudo_ent->pathname);
 				continue;
 			}
@@ -3523,7 +3523,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				ERROR("Pseudo set file \"%s\" is a pre-existing"
 					" file in the filesystem being appended"
 					"  to.  It cannot be modified. "
-					"Ignoring!\n", pseudo_ent->pathname);
+					"Ignoring.\n", pseudo_ent->pathname);
 				continue;
 			}
 			buf = &dir_ent->inode->buf;
@@ -3535,10 +3535,17 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		}
 
 		if(dir_ent) {
-			ERROR("Pseudo file \"%s\" exists in source filesystem "
-				"\"%s\"\n", pseudo_ent->pathname,
-				dir_ent->pathname);
-			ERROR("Ignoring, exclude it (-e/-ef) to override\n");
+			if(dir_ent->inode->root_entry)
+				ERROR("Pseudo file \"%s\" is a pre-existing"
+					" file in the filesystem being appended"
+					"  to.  Ignoring.\n",
+					pseudo_ent->pathname);
+			else
+				ERROR("Pseudo file \"%s\" exists in source "
+					"filesystem \"%s\"\n.  Ignoring, "
+					"exclude it (-e/-ef) to override.\n",
+					pseudo_ent->pathname,
+					dir_ent->pathname);
 			continue;
 		}
 
