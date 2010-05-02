@@ -2273,7 +2273,7 @@ void reader_scan(struct dir_info *dir) {
 		if(dir_ent->inode->root_entry)
 			continue;
 
-		if(IS_PSEUDO_PROCESS(dir_ent->inode->pseudo_file)) {
+		if(IS_PSEUDO_PROCESS(dir_ent->inode)) {
 			reader_read_process(dir_ent);
 			continue;
 		}

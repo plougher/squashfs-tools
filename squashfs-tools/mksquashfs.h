@@ -77,6 +77,6 @@ struct inode_info {
 #define PSEUDO_FILE_OTHER	1
 #define PSEUDO_FILE_PROCESS	2
 
-#define IS_PSEUDO(a)		(a)
-#define IS_PSEUDO_PROCESS(a)	(a & PSEUDO_FILE_PROCESS)
-#define IS_PSEUDO_OTHER(a)	(a & PSEUDO_FILE_OTHER)
+#define IS_PSEUDO(a)		((a)->pseudo_file)
+#define IS_PSEUDO_PROCESS(a)	((a)->pseudo_file & PSEUDO_FILE_PROCESS)
+#define IS_PSEUDO_OTHER(a)	((a)->pseudo_file & PSEUDO_FILE_OTHER)
