@@ -2273,7 +2273,7 @@ void reader_scan(struct dir_info *dir) {
 		if(dir_ent->inode->root_entry)
 			continue;
 
-		if(dir_ent->inode->pseudo_file) {
+		if(IS_PSEUDO_PROCESS(dir_ent->inode->pseudo_file)) {
 			reader_read_process(dir_ent);
 			continue;
 		}
@@ -3574,25 +3574,31 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 #ifdef USE_TMP_FILE
 			struct stat buf2;
 			int res = stat(pseudo_ent->dev->filename, &buf2);
+			struct inode_info *inode;
 			if(res == -1) {
 				ERROR("Stat on pseudo file \"%s\" failed, "
 					"skipping...", pseudo_ent->pathname);
 				continue;
 			}
 			buf.st_size = buf2.st_size;
+			inode = lookup_inode(&buf);
+			inode->pseudo_file = PSEUDO_FILE_OTHER;		
 			add_dir_entry(pseudo_ent->name,
-				pseudo_ent->dev->filename, sub_dir,
-				lookup_inode(&buf), dir);
+				pseudo_ent->dev->filename, sub_dir, inode,
+				dir);
 #else
 			struct inode_info *inode = lookup_inode(&buf);
 			inode->pseudo_id = pseudo_ent->dev->pseudo_id;
-			inode->pseudo_file = TRUE;		
+			inode->pseudo_file = PSEUDO_FILE_PROCESS;		
 			add_dir_entry(pseudo_ent->name, pseudo_ent->pathname,
 				sub_dir, inode, dir);
 #endif
-		} else
+		} else {
+			struct inode_info *inode = lookup_inode(&buf);
+			inode->pseudo_file = PSEUDO_FILE_OTHER;		
 			add_dir_entry(pseudo_ent->name, pseudo_ent->pathname,
-				sub_dir, lookup_inode(&buf), dir);
+				sub_dir, inode, dir);
+		}
 	}
 
 	scan2_freedir(dir);

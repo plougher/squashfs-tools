@@ -73,3 +73,10 @@ struct inode_info {
 	char			pseudo_file;
 };
 #endif
+
+#define PSEUDO_FILE_OTHER	1
+#define PSEUDO_FILE_PROCESS	2
+
+#define IS_PSEUDO(a)		(a)
+#define IS_PSEUDO_PROCESS(a)	(a & PSEUDO_FILE_PROCESS)
+#define IS_PSEUDO_OTHER(a)	(a & PSEUDO_FILE_OTHER)
