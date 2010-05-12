@@ -429,7 +429,8 @@ long long write_xattrs()
 
 		avail_bytes = cache_bytes > SQUASHFS_METADATA_SIZE ?
 			SQUASHFS_METADATA_SIZE : cache_bytes;
-		c_byte = mangle(xattr_table + xattr_bytes + BLOCK_OFFSET, datap,			avail_bytes, SQUASHFS_METADATA_SIZE, noI, 0);
+		c_byte = mangle(xattr_table + xattr_bytes + BLOCK_OFFSET, datap,
+			avail_bytes, SQUASHFS_METADATA_SIZE, noI, 0);
 		TRACE("Xattr block @ 0x%x, size %d\n", xattr_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, xattr_table + xattr_bytes, 1);
 		xattr_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
