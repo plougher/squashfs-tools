@@ -1198,6 +1198,14 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		if(IS_XATTR(xattr))
 			type = SQUASHFS_LCHRDEV_TYPE;
 		break;
+	case SQUASHFS_FIFO_TYPE:
+		if(IS_XATTR(xattr))
+			type = SQUASHFS_LFIFO_TYPE;
+		break;
+	case SQUASHFS_SOCKET_TYPE:
+		if(IS_XATTR(xattr))
+			type = SQUASHFS_LSOCKET_TYPE;
+		break;
 	}
 			
 	base->mode = SQUASHFS_MODE(buf->st_mode);
@@ -1412,6 +1420,16 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		inode = get_inode(sizeof(*ipc));
 		ipc->nlink = nlink;
 		SQUASHFS_SWAP_IPC_INODE_HEADER(ipc, inode);
+		TRACE("ipc inode, type %s, nlink %d\n", type ==
+			SQUASHFS_FIFO_TYPE ? "fifo" : "socket", nlink);
+	}
+	else if(type == SQUASHFS_LFIFO_TYPE || type == SQUASHFS_LSOCKET_TYPE) {
+		squashfs_lipc_inode_header *ipc = &inode_header.lipc;
+
+		inode = get_inode(sizeof(*ipc));
+		ipc->nlink = nlink;
+		ipc->xattr = xattr;
+		SQUASHFS_SWAP_LIPC_INODE_HEADER(ipc, inode);
 		TRACE("ipc inode, type %s, nlink %d\n", type ==
 			SQUASHFS_FIFO_TYPE ? "fifo" : "socket", nlink);
 	} else

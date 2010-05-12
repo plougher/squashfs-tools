@@ -89,6 +89,17 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(32, s, d, nlink, squashfs_ipc_inode_header);\
 }
 
+#define _SQUASHFS_SWAP_LIPC_INODE_HEADER(s, d, SWAP_FUNC) {\
+	SWAP_FUNC(16, s, d, inode_type, squashfs_lipc_inode_header);\
+	SWAP_FUNC(16, s, d, mode, squashfs_lipc_inode_header);\
+	SWAP_FUNC(16, s, d, uid, squashfs_lipc_inode_header);\
+	SWAP_FUNC(16, s, d, guid, squashfs_lipc_inode_header);\
+	SWAP_FUNC(32, s, d, mtime, squashfs_lipc_inode_header);\
+	SWAP_FUNC(32, s, d, inode_number, squashfs_lipc_inode_header);\
+	SWAP_FUNC(32, s, d, nlink, squashfs_lipc_inode_header);\
+	SWAP_FUNC(32, s, d, xattr, squashfs_lipc_inode_header);\
+}
+
 #define _SQUASHFS_SWAP_DEV_INODE_HEADER(s, d, SWAP_FUNC) {\
 	SWAP_FUNC(16, s, d, inode_type, squashfs_dev_inode_header);\
 	SWAP_FUNC(16, s, d, mode, squashfs_dev_inode_header);\
@@ -228,6 +239,8 @@ extern void inswap_le64_num(long long *, int);
 			_SQUASHFS_SWAP_BASE_INODE_HEADER(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_IPC_INODE_HEADER(s, d) \
 			_SQUASHFS_SWAP_IPC_INODE_HEADER(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_LIPC_INODE_HEADER(s, d) \
+			_SQUASHFS_SWAP_LIPC_INODE_HEADER(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_DEV_INODE_HEADER(s, d) \
 			_SQUASHFS_SWAP_DEV_INODE_HEADER(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_LDEV_INODE_HEADER(s, d) \
@@ -274,6 +287,8 @@ extern void inswap_le64_num(long long *, int);
 			_SQUASHFS_SWAP_BASE_INODE_HEADER(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_IPC_INODE_HEADER(s) \
 			_SQUASHFS_SWAP_IPC_INODE_HEADER(s, s, INSWAP_LE)
+#define SQUASHFS_INSWAP_LIPC_INODE_HEADER(s) \
+			_SQUASHFS_SWAP_LIPC_INODE_HEADER(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_DEV_INODE_HEADER(s) \
 			_SQUASHFS_SWAP_DEV_INODE_HEADER(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_LDEV_INODE_HEADER(s) \
@@ -321,6 +336,8 @@ extern void inswap_le64_num(long long *, int);
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_IPC_INODE_HEADER(s, d) \
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
+#define SQUASHFS_SWAP_LIPC_INODE_HEADER(s, d) \
+		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_DEV_INODE_HEADER(s, d) \
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_LDEV_INODE_HEADER(s, d) \
@@ -358,6 +375,7 @@ extern void inswap_le64_num(long long *, int);
 #define SQUASHFS_INSWAP_DIR_INDEX(s)
 #define SQUASHFS_INSWAP_BASE_INODE_HEADER(s)
 #define SQUASHFS_INSWAP_IPC_INODE_HEADER(s)
+#define SQUASHFS_INSWAP_LIPC_INODE_HEADER(s)
 #define SQUASHFS_INSWAP_DEV_INODE_HEADER(s)
 #define SQUASHFS_INSWAP_LDEV_INODE_HEADER(s)
 #define SQUASHFS_INSWAP_SYMLINK_INODE_HEADER(s)

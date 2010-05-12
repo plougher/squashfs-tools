@@ -285,6 +285,12 @@ struct squashfs_ipc_inode_header {
 	unsigned int		nlink;
 };
 
+struct squashfs_lipc_inode_header {
+	SQUASHFS_BASE_INODE_HEADER;
+	unsigned int		nlink;
+	unsigned int		xattr;
+};
+
 struct squashfs_dev_inode_header {
 	SQUASHFS_BASE_INODE_HEADER;
 	unsigned int		nlink;
@@ -357,6 +363,7 @@ union squashfs_inode_header {
 	struct squashfs_dir_inode_header	dir;
 	struct squashfs_ldir_inode_header	ldir;
 	struct squashfs_ipc_inode_header	ipc;
+	struct squashfs_lipc_inode_header	lipc;
 };
 	
 struct squashfs_dir_entry {
