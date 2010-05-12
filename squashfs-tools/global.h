@@ -29,6 +29,7 @@ typedef struct squashfs_dir_index squashfs_dir_index;
 typedef struct squashfs_base_inode_header squashfs_base_inode_header;
 typedef struct squashfs_ipc_inode_header squashfs_ipc_inode_header;
 typedef struct squashfs_dev_inode_header squashfs_dev_inode_header;
+typedef struct squashfs_ldev_inode_header squashfs_ldev_inode_header;
 typedef struct squashfs_symlink_inode_header squashfs_symlink_inode_header;
 typedef struct squashfs_reg_inode_header squashfs_reg_inode_header;
 typedef struct squashfs_lreg_inode_header squashfs_lreg_inode_header;

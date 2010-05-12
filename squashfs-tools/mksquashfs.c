@@ -66,6 +66,7 @@
 #include "sort.h"
 #include "pseudo.h"
 #include "compressor.h"
+#include "xattr.h"
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)	do { \
@@ -413,7 +414,10 @@ extern void generate_file_priorities(struct dir_info *dir, int priority,
 	struct stat *buf);
 extern struct priority_entry *priority_list[65536];
 void progress_bar(long long current, long long max, int columns);
-long long generic_write_table(int length, char *buffer, int uncompressed);
+long long generic_write_table(int, char *, int, char *, int);
+extern long long write_xattrs();
+extern unsigned int xattr_bytes, total_xattr_bytes;
+
 
 
 struct queue *queue_init(int size)
@@ -1083,7 +1087,7 @@ long long write_id_table()
 		SQUASHFS_SWAP_INTS(&id_table[i]->id, p + i, 1);
 	}
 
-	return generic_write_table(id_bytes, (char *) p, 1);
+	return generic_write_table(id_bytes, (char *) p, 0, NULL, 1);
 }
 
 
@@ -1168,17 +1172,34 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	int inode_number = type == SQUASHFS_DIR_TYPE ?
 		dir_ent->inode->inode_number :
 		dir_ent->inode->inode_number + dir_inode_no;
+	int xattr = read_xattrs(dir_ent);
 
-	if(type == SQUASHFS_DIR_TYPE && dir_info->dir_is_ldir)
-		type = SQUASHFS_LDIR_TYPE;
-
-	if(type == SQUASHFS_FILE_TYPE &&
-			(dir_ent->inode->nlink > 1 ||
-			byte_size >= (1LL << 32) ||
-			start_block >= (1LL << 32) ||
-			sparse))
-		type = SQUASHFS_LREG_TYPE;
-
+	switch(type) {
+	case SQUASHFS_FILE_TYPE:
+		if(dir_ent->inode->nlink > 1 ||
+				byte_size >= (1LL << 32) ||
+				start_block >= (1LL << 32) ||
+				sparse || IS_XATTR(xattr))
+			type = SQUASHFS_LREG_TYPE;
+		break;
+	case SQUASHFS_DIR_TYPE:
+		if(dir_info->dir_is_ldir || IS_XATTR(xattr))
+			type = SQUASHFS_LDIR_TYPE;
+		break;
+	case SQUASHFS_SYMLINK_TYPE:
+		if(IS_XATTR(xattr))
+			type = SQUASHFS_LSYMLINK_TYPE;
+		break;
+	case SQUASHFS_BLKDEV_TYPE:
+		if(IS_XATTR(xattr))
+			type = SQUASHFS_LBLKDEV_TYPE;
+		break;
+	case SQUASHFS_CHRDEV_TYPE:
+		if(IS_XATTR(xattr))
+			type = SQUASHFS_LCHRDEV_TYPE;
+		break;
+	}
+			
 	base->mode = SQUASHFS_MODE(buf->st_mode);
 	base->uid = get_uid((unsigned int) global_uid == -1 ?
 		buf->st_uid : global_uid);
@@ -1221,6 +1242,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		if(sparse && sparse >= byte_size)
 			sparse = byte_size - 1;
 		reg->sparse = sparse;
+		reg->xattr = xattr;
 		SQUASHFS_SWAP_LREG_INODE_HEADER(reg, inode);
 		SQUASHFS_SWAP_INTS(block_list, inode + off, offset);
 		TRACE("Long file inode, file_size %lld, start_block 0x%llx, "
@@ -1251,6 +1273,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		dir->parent_inode = dir_ent->our_dir ?
 			dir_ent->our_dir->dir_ent->inode->inode_number :
 			dir_inode_no + inode_no;
+		dir->xattr = xattr;
 
 		SQUASHFS_SWAP_LDIR_INODE_HEADER(dir, inode);
 		p = inode + offsetof(squashfs_ldir_inode_header, index);
@@ -1304,6 +1327,31 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		SQUASHFS_SWAP_DEV_INODE_HEADER(dev, inode);
 		TRACE("Device inode, rdev 0x%x, nlink %d\n", dev->rdev, nlink);
 	}
+	else if(type == SQUASHFS_LCHRDEV_TYPE || type == SQUASHFS_LBLKDEV_TYPE) {
+		squashfs_ldev_inode_header *dev = &inode_header.ldev;
+		unsigned int major = major(buf->st_rdev);
+		unsigned int minor = minor(buf->st_rdev);
+
+		if(major > 0xfff) {
+			ERROR("Major %d out of range in device node %s, "
+				"truncating to %d\n", major, filename,
+				major & 0xfff);
+			major &= 0xfff;
+		}
+		if(minor > 0xfffff) {
+			ERROR("Minor %d out of range in device node %s, "
+				"truncating to %d\n", minor, filename,
+				minor & 0xfffff);
+			minor &= 0xfffff;
+		}
+		inode = get_inode(sizeof(*dev));
+		dev->nlink = nlink;
+		dev->rdev = (major << 8) | (minor & 0xff) |
+				((minor & ~0xff) << 12);
+		dev->xattr = xattr;
+		SQUASHFS_SWAP_LDEV_INODE_HEADER(dev, inode);
+		TRACE("Device inode, rdev 0x%x, nlink %d\n", dev->rdev, nlink);
+	}
 	else if(type == SQUASHFS_SYMLINK_TYPE) {
 		squashfs_symlink_inode_header *symlink = &inode_header.symlink;
 		int byte;
@@ -1327,6 +1375,34 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		symlink->symlink_size = byte;
 		SQUASHFS_SWAP_SYMLINK_INODE_HEADER(symlink, inode);
 		strncpy(inode + off, buff, byte);
+		TRACE("Symbolic link inode, symlink_size %d, nlink %d\n", byte,
+			nlink);
+	}
+	else if(type == SQUASHFS_LSYMLINK_TYPE) {
+		squashfs_symlink_inode_header *symlink = &inode_header.symlink;
+		int byte;
+		char buff[65536];
+		size_t off = offsetof(squashfs_symlink_inode_header, symlink);
+
+		if((byte = readlink(filename, buff, 65536)) == -1) {
+			ERROR("Failed to read symlink %s, creating empty "
+				"symlink\n", filename);
+			byte = 0;
+		}
+
+		if(byte == 65536) {
+			ERROR("Symlink %s is greater than 65536 bytes! "
+				"Creating empty symlink\n", filename);
+			byte = 0;
+		}
+
+		inode = get_inode(sizeof(*symlink) + byte +
+						sizeof(unsigned int));
+		symlink->nlink = nlink;
+		symlink->symlink_size = byte;
+		SQUASHFS_SWAP_SYMLINK_INODE_HEADER(symlink, inode);
+		strncpy(inode + off, buff, byte);
+		SQUASHFS_SWAP_INTS(&xattr, inode + off + byte, 1);
 		TRACE("Symbolic link inode, symlink_size %d, nlink %d\n", byte,
 			nlink);
 	}
@@ -1747,7 +1823,8 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
 }
 
 
-long long generic_write_table(int length, char *buffer, int uncompressed)
+long long generic_write_table(int length, char *buffer, int length2,
+	char *buffer2, int uncompressed)
 {
 	int meta_blocks = (length + SQUASHFS_METADATA_SIZE - 1) /
 		SQUASHFS_METADATA_SIZE;
@@ -1778,10 +1855,14 @@ long long generic_write_table(int length, char *buffer, int uncompressed)
 		length -= avail_bytes;
 	}
 
+	start_bytes = bytes;
+	if(length2) {
+		write_destination(fd, bytes, length2, (char *) buffer2);
+		bytes += length2;
+	}
+		
 	SQUASHFS_INSWAP_LONG_LONGS(list, meta_blocks);
 	write_destination(fd, bytes, sizeof(list), (char *) list);
-
-	start_bytes = bytes;
 	bytes += sizeof(list);
 
 	TRACE("generic_write_table: total uncompressed %d compressed %lld\n",
@@ -1806,7 +1887,7 @@ long long write_fragment_table()
 		SQUASHFS_SWAP_FRAGMENT_ENTRY(&fragment_table[i], p + i);
 	}
 
-	return generic_write_table(frag_bytes, (char *) p, noF);
+	return generic_write_table(frag_bytes, (char *) p, 0, NULL, noF);
 }
 
 
@@ -3930,7 +4011,7 @@ long long write_inode_lookup_table()
 
 skip_inode_hash_table:
 	return generic_write_table(lookup_bytes, (char *) inode_lookup_table,
-		0);
+		0, NULL, 0);
 }
 
 
@@ -4293,8 +4374,8 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.1-CVS (2010/03/18)\n");\
-	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
+	printf("mksquashfs version 4.1-CVS (2010/05/12)\n");\
+	printf("copyright (C) 2010 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
 	printf("as published by the Free Software Foundation; either version 2,\n");\
@@ -4971,11 +5052,14 @@ restore_filesystem:
 			EXIT_MKSQUASHFS();
 	}
 
+	sBlk.no_ids = id_count;
 	sBlk.inode_table_start = write_inodes();
 	sBlk.directory_table_start = write_directories();
 	sBlk.fragment_table_start = write_fragment_table();
 	sBlk.lookup_table_start = exportable ? write_inode_lookup_table() :
 		SQUASHFS_INVALID_BLK;
+	sBlk.id_table_start = write_id_table();
+	sBlk.xattr_id_table_start = write_xattrs();
 
 	TRACE("sBlk->inode_table_start 0x%llx\n", sBlk.inode_table_start);
 	TRACE("sBlk->directory_table_start 0x%llx\n",
@@ -4985,15 +5069,9 @@ restore_filesystem:
 		TRACE("sBlk->lookup_table_start 0x%llx\n",
 			sBlk.lookup_table_start);
 
-	sBlk.no_ids = id_count;
-	sBlk.id_table_start = write_id_table();
-
 	sBlk.bytes_used = bytes;
 
 	sBlk.compression = comp->id;
-
-	/* Xattrs are not currently supported */
-	sBlk.xattr_table_start = SQUASHFS_INVALID_BLK;
 
 	SQUASHFS_INSWAP_SUPER_BLOCK(&sBlk); 
 	write_destination(fd, SQUASHFS_START, sizeof(squashfs_super_block),
@@ -5038,6 +5116,13 @@ restore_filesystem:
 	printf("\t%.2f%% of uncompressed directory table size (%d bytes)\n",
 		((float) directory_bytes / total_directory_bytes) * 100.0,
 		total_directory_bytes);
+	if(total_xattr_bytes) {
+		printf("Xattr table size %d bytes (%.2f Kbytes)\n",
+			xattr_bytes, xattr_bytes / 1024.0);
+		printf("\t%.2f%% of uncompressed xattr table size (%d bytes)\n",
+			((float) xattr_bytes / total_xattr_bytes) * 100.0,
+			total_xattr_bytes);
+	}
 	if(duplicate_checking)
 		printf("Number of duplicate files found %d\n", file_count -
 			dup_files);

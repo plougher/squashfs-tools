@@ -57,7 +57,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(64, s, d, root_inode, squashfs_super_block);\
 	SWAP_FUNC(64, s, d, bytes_used, squashfs_super_block);\
 	SWAP_FUNC(64, s, d, id_table_start, squashfs_super_block);\
-	SWAP_FUNC(64, s, d, xattr_table_start, squashfs_super_block);\
+	SWAP_FUNC(64, s, d, xattr_id_table_start, squashfs_super_block);\
 	SWAP_FUNC(64, s, d, inode_table_start, squashfs_super_block);\
 	SWAP_FUNC(64, s, d, directory_table_start, squashfs_super_block);\
 	SWAP_FUNC(64, s, d, fragment_table_start, squashfs_super_block);\
@@ -98,6 +98,18 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(32, s, d, inode_number, squashfs_dev_inode_header);\
 	SWAP_FUNC(32, s, d, nlink, squashfs_dev_inode_header);\
 	SWAP_FUNC(32, s, d, rdev, squashfs_dev_inode_header);\
+}
+
+#define _SQUASHFS_SWAP_LDEV_INODE_HEADER(s, d, SWAP_FUNC) {\
+	SWAP_FUNC(16, s, d, inode_type, squashfs_ldev_inode_header);\
+	SWAP_FUNC(16, s, d, mode, squashfs_ldev_inode_header);\
+	SWAP_FUNC(16, s, d, uid, squashfs_ldev_inode_header);\
+	SWAP_FUNC(16, s, d, guid, squashfs_ldev_inode_header);\
+	SWAP_FUNC(32, s, d, mtime, squashfs_ldev_inode_header);\
+	SWAP_FUNC(32, s, d, inode_number, squashfs_ldev_inode_header);\
+	SWAP_FUNC(32, s, d, nlink, squashfs_ldev_inode_header);\
+	SWAP_FUNC(32, s, d, rdev, squashfs_ldev_inode_header);\
+	SWAP_FUNC(32, s, d, xattr, squashfs_ldev_inode_header);\
 }
 
 #define _SQUASHFS_SWAP_SYMLINK_INODE_HEADER(s, d, SWAP_FUNC) {\
@@ -188,6 +200,26 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(32, s, d, size, squashfs_fragment_entry);\
 }
 
+#define _SQUASHFS_SWAP_XATTR_ENTRY(s, d, SWAP_FUNC) {\
+	SWAP_FUNC(16, s, d, type, squashfs_xattr_entry);\
+	SWAP_FUNC(16, s, d, size, squashfs_xattr_entry);\
+}
+
+#define _SQUASHFS_SWAP_XATTR_VAL(s, d, SWAP_FUNC) {\
+	SWAP_FUNC(32, vsize, squashfs_xattr_val);\
+}
+
+#define _SQUASHFS_SWAP_XATTR_ID(s, d, SWAP_FUNC) {\
+	_SWAP_FUNC(64, xattr, squashfs_xattr_id);\
+	_SWAP_FUNC(32, count, squashfs_xattr_id);\
+	_SWAP_FUNC(32, size, squashfs_xattr_id);\
+}
+
+#define _SQUASHFS_SWAP_XATTR_TABLE(s, d, SWAP_FUNC) {\
+	_SWAP_FUNC(64, xattr_table_start, squashfs_xattr_table);\
+	_SWAP_FUNC(32, xattr_ids, squashfs_xattr_table);\
+}
+
 #define SQUASHFS_SWAP_SUPER_BLOCK(s, d)	\
 			_SQUASHFS_SWAP_SUPER_BLOCK(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_DIR_INDEX(s, d) \
@@ -198,6 +230,8 @@ extern void inswap_le64_num(long long *, int);
 			_SQUASHFS_SWAP_IPC_INODE_HEADER(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_DEV_INODE_HEADER(s, d) \
 			_SQUASHFS_SWAP_DEV_INODE_HEADER(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_LDEV_INODE_HEADER(s, d) \
+			_SQUASHFS_SWAP_LDEV_INODE_HEADER(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_SYMLINK_INODE_HEADER(s, d) \
 			_SQUASHFS_SWAP_SYMLINK_INODE_HEADER(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_REG_INODE_HEADER(s, d) \
@@ -214,6 +248,14 @@ extern void inswap_le64_num(long long *, int);
 			_SQUASHFS_SWAP_DIR_HEADER(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_FRAGMENT_ENTRY(s, d) \
 			_SQUASHFS_SWAP_FRAGMENT_ENTRY(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_XATTR_ENTRY(s, d) \
+			 _SQUASHFS_SWAP_XATTR_ENTRY(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_XATTR_VAL(s, d) \
+			_SQUASHFS_SWAP_XATTR_VAL(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_XATTR_ID(s, d) \
+			 _SQUASHFS_SWAP_XATTR_ID(s, d, SWAP_LE)
+#define SQUASHFS_SWAP_XATTR_TABLE(s, d) \
+			_SQUASHFS_SWAP_XATTR_TABLE(s, d, SWAP_LE)
 #define SWAP_LE(bits, s, d, field, type) \
 			SWAP_LE##bits(((void *)(s)) + offsetof(type, field), \
 				((void *)(d)) + offsetof(type, field))
@@ -234,6 +276,8 @@ extern void inswap_le64_num(long long *, int);
 			_SQUASHFS_SWAP_IPC_INODE_HEADER(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_DEV_INODE_HEADER(s) \
 			_SQUASHFS_SWAP_DEV_INODE_HEADER(s, s, INSWAP_LE)
+#define SQUASHFS_INSWAP_LDEV_INODE_HEADER(s) \
+			_SQUASHFS_SWAP_LDEV_INODE_HEADER(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_SYMLINK_INODE_HEADER(s) \
 			_SQUASHFS_SWAP_SYMLINK_INODE_HEADER(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_REG_INODE_HEADER(s) \
@@ -250,6 +294,14 @@ extern void inswap_le64_num(long long *, int);
 			_SQUASHFS_SWAP_DIR_HEADER(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_FRAGMENT_ENTRY(s) \
 			_SQUASHFS_SWAP_FRAGMENT_ENTRY(s, s, INSWAP_LE)
+#define SQUASHFS_INSWAP_XATTR_ENTRY(s) \
+			 _SQUASHFS_SWAP_XATTR_ENTRY(s, s, INSWAP_LE)
+#define SQUASHFS_INSWAP_XATTR_VAL(s) \
+			_SQUASHFS_SWAP_XATTR_VAL(s, s, INSWAP_LE)
+#define SQUASHFS_INSWAP_XATTR_ID(s) \
+			 _SQUASHFS_SWAP_XATTR_ID(s, s, INSWAP_LE)
+#define SQUASHFS_INSWAP_XATTR_TABLE(s) \
+			_SQUASHFS_SWAP_XATTR_TABLE(s, s, INSWAP_LE)
 #define INSWAP_LE(bits, s, d, field, type)	(s)->field = inswap_le##bits((s)->field)
 #define INSWAP_LES(bits, s, d, field, type) \
 		(s)->field = (short) inswap_le##bits((unsigned short) (s)->field)
@@ -271,6 +323,8 @@ extern void inswap_le64_num(long long *, int);
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_DEV_INODE_HEADER(s, d) \
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
+#define SQUASHFS_SWAP_LDEV_INODE_HEADER(s, d) \
+		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_SYMLINK_INODE_HEADER(s, d) \
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_REG_INODE_HEADER(s, d) \
@@ -287,6 +341,14 @@ extern void inswap_le64_num(long long *, int);
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_FRAGMENT_ENTRY(s, d) \
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
+#define SQUASHFS_SWAP_XATTR_ENTRY(s, d) \
+		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
+#define SQUASHFS_SWAP_XATTR_VAL(s, d) \
+		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
+#define SQUASHFS_SWAP_XATTR_ID(s, d) \
+		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
+#define SQUASHFS_SWAP_XATTR_TABLE(s, d) \
+		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_INODE_T(s, d) SQUASHFS_SWAP_LONG_LONGS(s, d, 1)
 #define SQUASHFS_SWAP_FRAGMENT_INDEXES(s, d, n) SQUASHFS_SWAP_LONG_LONGS(s, d, n)
 #define SQUASHFS_SWAP_LOOKUP_BLOCKS(s, d, n) SQUASHFS_SWAP_LONG_LONGS(s, d, n)
@@ -297,6 +359,7 @@ extern void inswap_le64_num(long long *, int);
 #define SQUASHFS_INSWAP_BASE_INODE_HEADER(s)
 #define SQUASHFS_INSWAP_IPC_INODE_HEADER(s)
 #define SQUASHFS_INSWAP_DEV_INODE_HEADER(s)
+#define SQUASHFS_INSWAP_LDEV_INODE_HEADER(s)
 #define SQUASHFS_INSWAP_SYMLINK_INODE_HEADER(s)
 #define SQUASHFS_INSWAP_REG_INODE_HEADER(s)
 #define SQUASHFS_INSWAP_LREG_INODE_HEADER(s)
@@ -305,6 +368,10 @@ extern void inswap_le64_num(long long *, int);
 #define SQUASHFS_INSWAP_DIR_ENTRY(s)
 #define SQUASHFS_INSWAP_DIR_HEADER(s)
 #define SQUASHFS_INSWAP_FRAGMENT_ENTRY(s)
+#define SQUASHFS_INSWAP_XATTR_ENTRY(s)
+#define SQUASHFS_INSWAP_XATTR_VAL(s)
+#define SQUASHFS_INSWAP_XATTR_ID(s)
+#define SQUASHFS_INSWAP_XATTR_TABLE(s)
 #define SQUASHFS_INSWAP_INODE_T(s)
 #define SQUASHFS_INSWAP_FRAGMENT_INDEXES(s, n)
 #define SQUASHFS_INSWAP_LOOKUP_BLOCKS(s, n)
