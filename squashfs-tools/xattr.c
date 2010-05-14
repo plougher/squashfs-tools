@@ -275,7 +275,7 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 	}
 
 	if(disk)
-		*disk = (xattr_bytes << 16) | cache_bytes;
+		*disk = ((long long) xattr_bytes << 16) | cache_bytes;
 	cache_bytes += req_size;
 	return data_cache + cache_bytes - req_size;
 
