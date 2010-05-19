@@ -4769,7 +4769,7 @@ printOptions:
 	if(stat(argv[source + 1], &buf) == -1) {
 		if(errno == ENOENT) { /* Does not exist */
 			fd = open(argv[source + 1], O_CREAT | O_TRUNC | O_RDWR,
-				S_IRWXU);
+				S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 			if(fd == -1) {
 				perror("Could not create destination file");
 				exit(1);
