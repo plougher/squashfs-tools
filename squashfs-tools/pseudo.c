@@ -474,6 +474,8 @@ int read_pseudo_file(struct pseudo **pseudo, char *filename)
 		return FALSE;
 	}
 	while(fscanf(fd, "%2047[^\n]\n", line) > 0) {
+		if (line[0] == '#')
+			continue;
 		res = read_pseudo_def(pseudo, line);
 		if(res == FALSE)
 			break;
