@@ -114,7 +114,7 @@ int cur_uncompressed = 0, estimated_uncompressed = 0;
 int columns;
 
 /* filesystem flags for building */
-int no_attrs = 0, noX = 0;
+int no_xattrs = 0, noX = 0;
 int duplicate_checking = 1, noF = 0, no_fragments = 0, always_use_fragments = 0;
 int noI = 0, noD = 0;
 int silent = TRUE;
@@ -4625,8 +4625,8 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-noXattrCompression") == 0)
 			noX = TRUE;
 
-		else if(strcmp(argv[i], "-no-attrs") == 0)
-			no_attrs = TRUE;
+		else if(strcmp(argv[i], "-no-xattrs") == 0)
+			no_xattrs = TRUE;
 
 		else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;
@@ -5129,7 +5129,7 @@ restore_filesystem:
 	printf("\t%s data, %s metadata, %s fragments, %s xattrs\n",
 		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" :
 		"compressed", no_fragments ? "no" : noF ? "uncompressed" :
-		"compressed", no_attrs ? "no" : noX ? "uncompressed" : "compressed");
+		"compressed", no_xattrs ? "no" : noX ? "uncompressed" : "compressed");
 	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
 		"not ");
 	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0,

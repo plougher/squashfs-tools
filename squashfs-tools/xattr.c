@@ -72,7 +72,7 @@ static struct xattr_list *dupl[65536];
 static struct dupl_id *dupl_id[65536];
 
 /* file system globals from mksquashfs.c */
-extern int no_attrs, noX;
+extern int no_xattrs, noX;
 extern long long bytes;
 extern int fd;
 
@@ -477,7 +477,7 @@ int read_xattrs(struct dir_ent *dir_ent)
 	long long xattr_disk;
 	struct dupl_id *xattr_dupl;
 
-	if(no_attrs || IS_PSEUDO(inode) || inode->root_entry)
+	if(no_xattrs || IS_PSEUDO(inode) || inode->root_entry)
 		return SQUASHFS_INVALID_XATTR;
 
 	xattrs = read_xattrs_from_system(filename, &xattr_list);
