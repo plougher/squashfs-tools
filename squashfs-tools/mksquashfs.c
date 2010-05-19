@@ -114,8 +114,9 @@ int cur_uncompressed = 0, estimated_uncompressed = 0;
 int columns;
 
 /* filesystem flags for building */
+int no_attrs = 0, noX = 0;
 int duplicate_checking = 1, noF = 0, no_fragments = 0, always_use_fragments = 0;
-int noI = 0, noD = 0, noX = 0;
+int noI = 0, noD = 0;
 int silent = TRUE;
 long long global_uid = -1, global_gid = -1;
 int exportable = TRUE;
@@ -4624,6 +4625,9 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-noXattrCompression") == 0)
 			noX = TRUE;
 
+		else if(strcmp(argv[i], "-no-attrs") == 0)
+			no_attrs = TRUE;
+
 		else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;
 
@@ -4665,6 +4669,7 @@ printOptions:
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
 			ERROR("-no-sparse\t\tdon't detect sparse files\n");
+			ERROR("-no-xattrs\t\tdon't detect extended attributes\n");
 			ERROR("-noI\t\t\tdo not compress inode table\n");
 			ERROR("-noD\t\t\tdo not compress data blocks\n");
 			ERROR("-noF\t\t\tdo not compress fragment blocks\n");
@@ -5124,7 +5129,7 @@ restore_filesystem:
 	printf("\t%s data, %s metadata, %s fragments, %s xattrs\n",
 		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" :
 		"compressed", no_fragments ? "no" : noF ? "uncompressed" :
-		"compressed", noX ? "uncompressed" : "compressed");
+		"compressed", no_attrs ? "no" : noX ? "uncompressed" : "compressed");
 	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
 		"not ");
 	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0,
