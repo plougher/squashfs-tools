@@ -82,13 +82,6 @@ extern void write_destination(int, long long, int, char *);
 extern long long generic_write_table(int, char *, int, char *, int);
 extern int mangle(char *, char *, int, int, int, int);
 
-struct prefix prefix_table[] = {
-	{ "user.", SQUASHFS_XATTR_USER },
-	{ "trusted.", SQUASHFS_XATTR_TRUSTED },
-	{ "security.", SQUASHFS_XATTR_SECURITY },
-	{ "", -1 }
-};
-
 static int get_prefix(struct xattr_list *xattr, char *name)
 {
 	int i;
@@ -370,8 +363,12 @@ static void check_value_dupl(struct xattr_list *xattr)
 		 */
 		xattr->type |= XATTR_VALUE_OOL;
 		xattr->ool_value = entry->ool_value;
-		free(xattr->value);
-		xattr->value = entry->value;
+		/* on appending don't free duplicate values because the
+		 * duplicate value already points to the non-duplicate value */
+		if(xattr->value != entry->value) {
+			free(xattr->value);
+			xattr->value = entry->value;
+		}
 	}
 }
 
@@ -466,23 +463,13 @@ failed:
 }
 
 
-int read_xattrs(struct dir_ent *dir_ent)
+int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 {
-	struct inode_info *inode = dir_ent->inode;
-	char *filename = dir_ent->pathname;
-	struct xattr_list *xattr_list;
-	int total_size, i, xattrs;
+	int total_size, i;
 	int xattr_value_max;
 	void *xp;
 	long long xattr_disk;
 	struct dupl_id *xattr_dupl;
-
-	if(no_xattrs || IS_PSEUDO(inode) || inode->root_entry)
-		return SQUASHFS_INVALID_XATTR;
-
-	xattrs = read_xattrs_from_system(filename, &xattr_list);
-	if(xattrs == 0)
-		return SQUASHFS_INVALID_XATTR;
 
 	/*
 	 * check if the file xattrs are a complete duplicate of a pre-existing
@@ -609,5 +596,23 @@ int read_xattrs(struct dir_ent *dir_ent)
 	 * Add to xattr id lookup table
 	 */
 	return get_xattr_id(xattrs, xattr_list, xattr_disk, xattr_dupl);
+}
+
+
+int read_xattrs(struct dir_ent *dir_ent)
+{
+	struct inode_info *inode = dir_ent->inode;
+	char *filename = dir_ent->pathname;
+	struct xattr_list *xattr_list;
+	int xattrs;
+
+	if(no_xattrs || IS_PSEUDO(inode) || inode->root_entry)
+		return SQUASHFS_INVALID_XATTR;
+
+	xattrs = read_xattrs_from_system(filename, &xattr_list);
+	if(xattrs == 0)
+		return SQUASHFS_INVALID_XATTR;
+
+	return generate_xattrs(xattrs, xattr_list);
 }
 

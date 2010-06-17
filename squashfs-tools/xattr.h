@@ -58,4 +58,11 @@ struct prefix {
 	int			type;
 };
 
-extern int read_xattrs(struct dir_ent *);
+extern int generate_xattrs(int, struct xattr_list *);
+
+static struct prefix prefix_table[] = {
+	{ "user.", SQUASHFS_XATTR_USER },
+	{ "trusted.", SQUASHFS_XATTR_TRUSTED },
+	{ "security.", SQUASHFS_XATTR_SECURITY },
+	{ "", -1 }
+};

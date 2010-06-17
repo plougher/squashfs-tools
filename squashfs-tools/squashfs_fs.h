@@ -195,6 +195,26 @@
 #define SQUASHFS_ID_BLOCK_BYTES(A)	(SQUASHFS_ID_BLOCKS(A) *\
 					sizeof(long long))
 
+/* xattr id lookup table defines */
+#define SQUASHFS_XATTR_BYTES(A)		((A) * sizeof(struct squashfs_xattr_id))
+
+#define SQUASHFS_XATTR_BLOCK(A)		(SQUASHFS_XATTR_BYTES(A) / \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_XATTR_BLOCK_OFFSET(A)	(SQUASHFS_XATTR_BYTES(A) % \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_XATTR_BLOCKS(A)	((SQUASHFS_XATTR_BYTES(A) + \
+					SQUASHFS_METADATA_SIZE - 1) / \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_XATTR_BLOCK_BYTES(A)	(SQUASHFS_XATTR_BLOCKS(A) *\
+					sizeof(long long))
+
+#define SQUASHFS_XATTR_BLK(A)		((unsigned int) ((A) >> 16))
+
+#define SQUASHFS_XATTR_OFFSET(A)	((unsigned int) ((A) & 0xffff))
+
 /* cached data constants for filesystem */
 #define SQUASHFS_CACHED_BLKS		8
 
@@ -395,6 +415,11 @@ struct squashfs_xattr_entry {
 struct squashfs_xattr_val {
 	unsigned int		vsize;
 	char			value[0];
+};
+
+struct squashfs_xattr_val_ool {
+	unsigned int		vsize;
+	long long		xattr;
 };
 
 struct squashfs_xattr_id {

@@ -84,3 +84,5 @@ struct inode_info {
 /* offset of data in compressed metadata blocks (allowing room for
  * compressed size */
 #define BLOCK_OFFSET 2
+
+extern int read_xattrs(struct dir_ent *);
