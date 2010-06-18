@@ -24,12 +24,7 @@
 #define TRUE 1
 #define FALSE 0
 #include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
 #include <string.h>
-#include <sys/mman.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -43,7 +38,6 @@
 #include "squashfs_swap.h"
 #include "read_fs.h"
 #include "global.h"
-#include "compressor.h"
 #include "xattr.h"
 
 #include <stdlib.h>
@@ -63,11 +57,16 @@
 extern int read_fs_bytes(int, long long, int, void *);
 extern int read_block(int, long long, long long *, void *);
 
-struct hash_entry {
+static struct hash_entry {
 	long long		start;
 	unsigned int		offset;
 	struct hash_entry	*next;
 } *hash_table[65536];
+
+static struct squashfs_xattr_id *xattr_ids;
+static void *xattrs = NULL;
+static int ids;
+static long long xattr_table_start;
 
 
 static int save_xattr_block(long long start, int offset)
@@ -132,18 +131,16 @@ static int read_xattr_entry(struct xattr_list *xattr,
 }
 
 
-int get_xattrs(int fd, squashfs_super_block *sBlk)
+int read_xattrs_from_disk(int fd, squashfs_super_block *sBlk)
 {
-	int res, bytes, i, id, ids, indexes, index_bytes;
+	int res, bytes, i, indexes, index_bytes;
 	long long *index, start, end;
 	struct squashfs_xattr_table id_table;
-	struct squashfs_xattr_id *xattr_ids;
-	void *xattrs = NULL;
 
-	TRACE("get_xattrs\n");
+	TRACE("read_xattrs_from_disk\n");
 
 	if(sBlk->xattr_id_table_start == SQUASHFS_INVALID_BLK)
-		return 1;
+		return SQUASHFS_INVALID_BLK;
 
 	/*
 	 * Read xattr id table, containing start of xattr metadata and the
@@ -161,6 +158,7 @@ int get_xattrs(int fd, squashfs_super_block *sBlk)
 	 * blocks
 	 */
 	ids = id_table.xattr_ids;
+	xattr_table_start = id_table.xattr_table_start;
 	index_bytes = SQUASHFS_XATTR_BLOCK_BYTES(ids);
 	indexes = SQUASHFS_XATTR_BLOCKS(ids);
 	index = malloc(index_bytes);
@@ -208,7 +206,7 @@ int get_xattrs(int fd, squashfs_super_block *sBlk)
 	 * the last xattr metadata block, so we can use index[0] to work out
 	 * the end of the xattr metadata
 	 */
-	start = id_table.xattr_table_start;
+	start = xattr_table_start;
 	end = index[0];
 	for(i = 0; start < end; i++) {
 		int length;
@@ -233,88 +231,11 @@ int get_xattrs(int fd, squashfs_super_block *sBlk)
 		}
 	}
 
-	/*
-	 * for each xattr id read and construct its list of xattr
-	 * name:value pairs, and add them to the *current* file system
-	 * being built
-	 */
-	for(i = 0; i < ids; i++) {
-	        struct xattr_list *xattr_list = NULL;
-		unsigned int count, offset;
-		void *xptr;
-		int j;
-
-		/* swap if necessary the xattr id entry */
+	/* swap if necessary the xattr id entries */
+	for(i = 0; i < ids; i++)
 		SQUASHFS_INSWAP_XATTR_ID(&xattr_ids[i]);
 
-		count = xattr_ids[i].count;
-		start = SQUASHFS_XATTR_BLK(xattr_ids[i].xattr) +
-			id_table.xattr_table_start;
-		offset = SQUASHFS_XATTR_OFFSET(xattr_ids[i].xattr);
-		xptr = xattrs + get_xattr_block(start) + offset;
-
-		TRACE("get_xattrs: xattr_id %d, count %d, start %lld, offset "
-			"%d\n", i, count, start, offset);
-
-		for(j = 0; j < count; j++) {
-			struct squashfs_xattr_entry entry;
-			struct squashfs_xattr_val val;
-
-			xattr_list = realloc(xattr_list, (j + 1) *
-						sizeof(struct xattr_list));
-			if(xattr_list == NULL) {
-				ERROR("Out of memory in get_xattrs\n");
-				goto failed3;
-			}
-			
-			SQUASHFS_SWAP_XATTR_ENTRY(&entry, xptr);
-			xptr += sizeof(entry);
-			read_xattr_entry(&xattr_list[j], &entry, xptr);
-			xptr += entry.size;
-			
-			TRACE("get_xattrs: xattr %d, type %d, size %d, name "
-				"%s\n", j, entry.type, entry.size,
-				xattr_list[j].full_name); 
-
-			if(entry.type & SQUASHFS_XATTR_VALUE_OOL) {
-				long long xattr;
-				void *ool_xptr;
-
-				xptr += sizeof(val);
-				SQUASHFS_SWAP_LONG_LONGS(&xattr, xptr, 1);
-				xptr += sizeof(xattr);	
-				start = SQUASHFS_XATTR_BLK(xattr) +
-					id_table.xattr_table_start;
-				offset = SQUASHFS_XATTR_OFFSET(xattr);
-				ool_xptr = xattrs + get_xattr_block(start) +
-					offset;
-				SQUASHFS_SWAP_XATTR_VAL(&val, ool_xptr);
-				xattr_list[j].value = ool_xptr + sizeof(val);
-			} else {
-				SQUASHFS_SWAP_XATTR_VAL(&val, xptr);
-				xattr_list[j].value = xptr + sizeof(val);
-				xptr += sizeof(val) + val.vsize;
-			}
-
-			TRACE("get_xattrs: xattr %d, vsize %d\n", j, val.vsize);
-
-			xattr_list[j].vsize = val.vsize;
-		}
-
-		id = generate_xattrs(count, xattr_list);
-
-		/*
-		 * Sanity check, the new xattr id should be the same as the
-		 * xattr id in the original file system
-		 */
-		if(id != i) {
-			ERROR("BUG, different xattr_id in get_xattrs\n");
-			goto failed3;
-		}
-	}
-
 	free(index);
-	free(xattr_ids);
 
 	return 1;
 
@@ -324,5 +245,112 @@ failed2:
 	free(xattr_ids);
 failed1:
 	free(index);
+
 	return 0;
+}
+
+
+struct xattr_list *get_xattr(int i, unsigned int *count)
+{
+	long long start;
+	struct xattr_list *xattr_list = NULL;
+	unsigned int offset;
+	void *xptr;
+	int j;
+
+	TRACE("get_xattr\n");
+
+	*count = xattr_ids[i].count;
+	start = SQUASHFS_XATTR_BLK(xattr_ids[i].xattr) + xattr_table_start;
+	offset = SQUASHFS_XATTR_OFFSET(xattr_ids[i].xattr);
+	xptr = xattrs + get_xattr_block(start) + offset;
+
+	TRACE("get_xattr: xattr_id %d, count %d, start %lld, offset %d\n", i,
+			*count, start, offset);
+
+	for(j = 0; j < *count; j++) {
+		struct squashfs_xattr_entry entry;
+		struct squashfs_xattr_val val;
+
+		xattr_list = realloc(xattr_list, (j + 1) *
+						sizeof(struct xattr_list));
+		if(xattr_list == NULL) {
+			ERROR("Out of memory in get_xattrs\n");
+			goto failed;
+		}
+			
+		SQUASHFS_SWAP_XATTR_ENTRY(&entry, xptr);
+		xptr += sizeof(entry);
+		read_xattr_entry(&xattr_list[j], &entry, xptr);
+		xptr += entry.size;
+			
+		TRACE("get_xattr: xattr %d, type %d, size %d, name %s\n", j,
+			entry.type, entry.size, xattr_list[j].full_name); 
+
+		if(entry.type & SQUASHFS_XATTR_VALUE_OOL) {
+			long long xattr;
+			void *ool_xptr;
+
+			xptr += sizeof(val);
+			SQUASHFS_SWAP_LONG_LONGS(&xattr, xptr, 1);
+			xptr += sizeof(xattr);	
+			start = SQUASHFS_XATTR_BLK(xattr) + xattr_table_start;
+			offset = SQUASHFS_XATTR_OFFSET(xattr);
+			ool_xptr = xattrs + get_xattr_block(start) + offset;
+			SQUASHFS_SWAP_XATTR_VAL(&val, ool_xptr);
+			xattr_list[j].value = ool_xptr + sizeof(val);
+		} else {
+			SQUASHFS_SWAP_XATTR_VAL(&val, xptr);
+			xattr_list[j].value = xptr + sizeof(val);
+			xptr += sizeof(val) + val.vsize;
+		}
+
+		TRACE("get_xattr: xattr %d, vsize %d\n", j, val.vsize);
+
+		xattr_list[j].vsize = val.vsize;
+	}
+
+	return xattr_list;
+
+failed:
+	free(xattr_list);
+
+	return NULL;
+}
+
+
+int get_xattrs(int fd, squashfs_super_block *sBlk)
+{
+	int res, i, id;
+	unsigned int count;
+
+	TRACE("get_xattrs\n");
+
+	res = read_xattrs_from_disk(fd, sBlk);
+	if(res == SQUASHFS_INVALID_BLK || res == 0)
+		goto done;
+
+	for(i = 0; i < ids; i++) {
+		struct xattr_list *xattr_list = get_xattr(i, &count);
+		if(xattr_list == NULL) {
+			res = 0;
+			goto done;
+		}
+		id = generate_xattrs(count, xattr_list);
+
+		/*
+		 * Sanity check, the new xattr id should be the same as the
+		 * xattr id in the original file system
+		 */
+		if(id != i) {
+			ERROR("BUG, different xattr_id in get_xattrs\n");
+			res = 0;
+			goto done;
+		}
+	}
+
+done:
+	free(xattr_ids);
+
+	return res;
 }
