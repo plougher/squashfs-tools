@@ -21,13 +21,6 @@
  * read_fs.c
  */
 
-extern int read_fs_bytes(int, long long, int, void *);
-extern int add_file(long long, long long, long long, unsigned int *, int,
-	unsigned int, int, int);
-extern void *create_id(unsigned int);
-extern unsigned int get_uid(unsigned int);
-extern unsigned int get_guid(unsigned int);
-
 #define TRUE 1
 #define FALSE 0
 #include <stdio.h>
@@ -65,6 +58,14 @@ extern unsigned int get_guid(unsigned int);
 #define ERROR(s, args...)		do { \
 						fprintf(stderr, s, ## args); \
 					} while(0)
+
+extern int read_fs_bytes(int, long long, int, void *);
+extern int add_file(long long, long long, long long, unsigned int *, int,
+	unsigned int, int, int);
+extern void *create_id(unsigned int);
+extern unsigned int get_uid(unsigned int);
+extern unsigned int get_guid(unsigned int);
+extern int get_xattrs(int, squashfs_super_block *);
 
 static struct compressor *comp;
 
