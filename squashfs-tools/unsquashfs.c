@@ -572,16 +572,15 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 }
 
 
-int read_block(int fd, long long start, long long *next, char *block)
+int read_block(int fd, long long start, long long *next, void *block)
 {
 	unsigned short c_byte;
 	int offset = 2;
 	
 	if(swap) {
-		if(read_fs_bytes(fd, start, 2, block) == FALSE)
+		if(read_fs_bytes(fd, start, 2, &c_byte) == FALSE)
 			goto failed;
-		((unsigned char *) &c_byte)[1] = block[0];
-		((unsigned char *) &c_byte)[0] = block[1]; 
+		c_byte = (c_byte >> 8) | ((c_byte & 0xff) << 8);
 	} else 
 		if(read_fs_bytes(fd, start, 2, &c_byte) == FALSE)
 			goto failed;

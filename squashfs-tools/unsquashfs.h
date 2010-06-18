@@ -272,7 +272,7 @@ extern int fd;
 /* unsquashfs.c */
 extern int lookup_entry(struct hash_table_entry **, long long);
 extern int read_fs_bytes(int fd, long long, int, void *);
-extern int read_block(int, long long, long long *, char *);
+extern int read_block(int, long long, long long *, void *);
 
 /* unsquash-1.c */
 extern void read_block_list_1(unsigned int *, char *, int);

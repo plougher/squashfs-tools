@@ -69,8 +69,7 @@ extern int get_xattrs(int, squashfs_super_block *);
 
 static struct compressor *comp;
 
-int read_block(int fd, long long start, long long *next, void *block,
-	squashfs_super_block *sBlk)
+int read_block(int fd, long long start, long long *next, void *block)
 {
 	unsigned short c_byte;
 	int res, offset = 2;
@@ -143,8 +142,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				return FALSE;
 		}
 		TRACE("scan_inode_table: reading block 0x%llx\n", start);
-		byte = read_block(fd, start, &start, *inode_table + bytes,
-			sBlk);
+		byte = read_block(fd, start, &start, *inode_table + bytes);
 		if(byte == 0) {
 			free(*inode_table);
 			return FALSE;
@@ -481,8 +479,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 		TRACE("squashfs_readdir: reading block 0x%llx, bytes read so "
 			"far %d\n", start, bytes);
 		last_start_block = start;
-		byte = read_block(fd, start, &start, directory_table + bytes,
-			sBlk);
+		byte = read_block(fd, start, &start, directory_table + bytes);
 		if(byte == 0) {
 			free(directory_table);
 			return NULL;
@@ -553,7 +550,7 @@ unsigned int *read_id_table(int fd, squashfs_super_block *sBlk)
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fd, index[i], NULL,
 			((unsigned char *) id_table) +
-			(i * SQUASHFS_METADATA_SIZE), sBlk);
+			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read id table block %d, from 0x%llx, length %d\n", i,
 			index[i], length);
 		if(length == 0) {
@@ -607,7 +604,7 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk,
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fd, fragment_table_index[i], NULL,
 			((unsigned char *) *fragment_table) +
-			(i * SQUASHFS_METADATA_SIZE), sBlk);
+			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read fragment table block %d, from 0x%llx, length %d\n",
 			i, fragment_table_index[i], length);
 		if(length == 0) {
@@ -655,7 +652,7 @@ int read_inode_lookup_table(int fd, squashfs_super_block *sBlk,
 	for(i = 0; i <  indexes; i++) {
 		int length = read_block(fd, index[i], NULL,
 			((unsigned char *) *inode_lookup_table) +
-			(i * SQUASHFS_METADATA_SIZE), sBlk);
+			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read inode lookup table block %d, from 0x%llx, length "
 			"%d\n", i, index[i], length);
 		if(length == 0) {

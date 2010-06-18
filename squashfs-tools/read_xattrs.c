@@ -61,8 +61,7 @@
 					} while(0)
 
 extern int read_fs_bytes(int, long long, int, void *);
-extern int read_block(int, long long, long long *, void *,
-        squashfs_super_block *);
+extern int read_block(int, long long, long long *, void *);
 
 struct hash_entry {
 	long long		start;
@@ -191,7 +190,7 @@ int get_xattrs(int fd, squashfs_super_block *sBlk)
 	for(i = 0; i < indexes; i++) {
 		int length = read_block(fd, index[i], NULL,
 			((unsigned char *) xattr_ids) +
-			(i * SQUASHFS_METADATA_SIZE), sBlk);
+			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read xattr id table block %d, from 0x%llx, length "
 			"%d\n", i, index[i], length);
 		if(length == 0) {
@@ -226,7 +225,7 @@ int get_xattrs(int fd, squashfs_super_block *sBlk)
 
 		length = read_block(fd, start, &start,
 			((unsigned char *) xattrs) +
-			(i * SQUASHFS_METADATA_SIZE), sBlk);
+			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read xattr block %d, length %d\n", i, length);
 		if(length == 0) {
 			ERROR("Failed to read xattr block %d\n", i);
