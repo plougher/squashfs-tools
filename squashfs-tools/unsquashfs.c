@@ -572,7 +572,7 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 }
 
 
-int read_block(long long start, long long *next, char *block)
+int read_block(int fd, long long start, long long *next, char *block)
 {
 	unsigned short c_byte;
 	int offset = 2;
@@ -675,7 +675,7 @@ void uncompress_inode_table(long long start, long long end)
 				"in realloc\n");
 		TRACE("uncompress_inode_table: reading block 0x%llx\n", start);
 		add_entry(inode_table_hash, start, bytes);
-		res = read_block(start, &start, inode_table + bytes);
+		res = read_block(fd, start, &start, inode_table + bytes);
 		if(res == 0) {
 			free(inode_table);
 			EXIT_UNSQUASH("uncompress_inode_table: failed to read "
@@ -992,7 +992,7 @@ void uncompress_directory_table(long long start, long long end)
 		TRACE("uncompress_directory_table: reading block 0x%llx\n",
 				start);
 		add_entry(directory_table_hash, start, bytes);
-		res = read_block(start, &start, directory_table + bytes);
+		res = read_block(fd, start, &start, directory_table + bytes);
 		if(res == 0)
 			EXIT_UNSQUASH("uncompress_directory_table: failed to "
 				"read block\n");
