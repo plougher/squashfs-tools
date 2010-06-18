@@ -60,7 +60,7 @@
 						fprintf(stderr, s, ## args); \
 					} while(0)
 
-extern void read_destination(int, long long, int, char *);
+extern int read_fs_bytes(int, long long, int, char *);
 extern int read_block(int, long long, long long *, void *,
         squashfs_super_block *);
 
@@ -135,7 +135,7 @@ static int read_xattr_entry(struct xattr_list *xattr,
 
 int get_xattrs(int fd, squashfs_super_block *sBlk)
 {
-	int bytes, i, id, ids, indexes, index_bytes;
+	int res, bytes, i, id, ids, indexes, index_bytes;
 	long long *index, start, end;
 	struct squashfs_xattr_table id_table;
 	struct squashfs_xattr_id *xattr_ids;
@@ -150,8 +150,11 @@ int get_xattrs(int fd, squashfs_super_block *sBlk)
 	 * Read xattr id table, containing start of xattr metadata and the
 	 * number of xattrs in the file system
 	 */
-	read_destination(fd, sBlk->xattr_id_table_start, sizeof(id_table),
+	res = read_fs_bytes(fd, sBlk->xattr_id_table_start, sizeof(id_table),
 		(char *) &id_table);
+	if(res == 0)
+		return 0;
+
 	SQUASHFS_INSWAP_XATTR_TABLE(&id_table);
 
 	/*
@@ -167,8 +170,11 @@ int get_xattrs(int fd, squashfs_super_block *sBlk)
 		return 0;
 	}
 
-	read_destination(fd, sBlk->xattr_id_table_start + sizeof(id_table),
+	res = read_fs_bytes(fd, sBlk->xattr_id_table_start + sizeof(id_table),
 		index_bytes, (char *) index);
+	if(res ==0)
+		goto failed1;
+
 	SQUASHFS_INSWAP_LONG_LONGS(index, indexes);
 
 	/*

@@ -941,21 +941,31 @@ bytes_read:
 }
 
 
-void read_destination(int fd, long long byte, int bytes, char *buff)
+int read_fs_bytes(int fd, long long byte, int bytes, char *buff)
 {
 	off_t off = byte;
 
-	TRACE("read_destination: reading from position 0x%llx, bytes %d\n",
+	TRACE("read_fs_bytes: reading from position 0x%llx, bytes %d\n",
 		byte, bytes);
 
 	pthread_mutex_lock(&pos_mutex);
-	if(lseek(fd, off, SEEK_SET) == -1)
-		BAD_ERROR("Lseek on destination failed because %s\n",
+	if(lseek(fd, off, SEEK_SET) == -1) {
+		ERROR("Lseek on destination failed because %s\n",
 			strerror(errno));
+		goto failed;
+	}
 
-	if(read_bytes(fd, buff, bytes) < bytes)
-		BAD_ERROR("Read on destination failed\n");
+	if(read_bytes(fd, buff, bytes) < bytes) {
+		ERROR("Read on destination failed\n");
+		goto failed;
+	}
+
 	pthread_mutex_unlock(&pos_mutex);
+	return 1;
+
+failed:
+	pthread_mutex_unlock(&pos_mutex);
+	return 0;
 }
 
 
@@ -1673,7 +1683,7 @@ failed:
 struct file_buffer *get_fragment(struct fragment *fragment)
 {
 	squashfs_fragment_entry *disk_fragment;
-	int size;
+	int res, size;
 	long long start_block;
 	struct file_buffer *buffer, *compressed_buffer;
 
@@ -1696,7 +1706,7 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 	pthread_mutex_unlock(&fragment_mutex);
 
 	if(SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size)) {
-		int error, res;
+		int error;
 		char *data;
 
 		if(compressed_buffer)
@@ -1711,8 +1721,11 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 				comp->name, error);
 	} else if(compressed_buffer)
 		memcpy(buffer->data, compressed_buffer->data, size);
-	else
-		read_destination(fd, start_block, size, buffer->data);
+	else {
+		res = read_fs_bytes(fd, start_block, size, buffer->data);
+		if(res == 0)
+			EXIT_MKSQUASHFS();
+	}
 
 	cache_block_put(compressed_buffer);
 
@@ -1913,7 +1926,12 @@ long long write_fragment_table()
 char read_from_file_buffer[SQUASHFS_FILE_MAX_SIZE];
 char *read_from_disk(long long start, unsigned int avail_bytes)
 {
-	read_destination(fd, start, avail_bytes, read_from_file_buffer);
+	int res;
+
+	res = read_fs_bytes(fd, start, avail_bytes, read_from_file_buffer);
+	if(res == 0)
+		EXIT_MKSQUASHFS();
+
 	return read_from_file_buffer;
 }
 
@@ -1921,7 +1939,12 @@ char *read_from_disk(long long start, unsigned int avail_bytes)
 char read_from_file_buffer2[SQUASHFS_FILE_MAX_SIZE];
 char *read_from_disk2(long long start, unsigned int avail_bytes)
 {
-	read_destination(fd, start, avail_bytes, read_from_file_buffer2);
+	int res;
+
+	res = read_fs_bytes(fd, start, avail_bytes, read_from_file_buffer2);
+	if(res == 0)
+		EXIT_MKSQUASHFS();
+
 	return read_from_file_buffer2;
 }
 
@@ -4272,7 +4295,7 @@ empty_set:
 
 void write_recovery_data(squashfs_super_block *sBlk)
 {
-	int recoverfd, bytes = sBlk->bytes_used - sBlk->inode_table_start;
+	int res, recoverfd, bytes = sBlk->bytes_used - sBlk->inode_table_start;
 	pid_t pid = getpid();
 	char *metadata;
 	char header[] = RECOVER_ID;
@@ -4287,7 +4310,9 @@ void write_recovery_data(squashfs_super_block *sBlk)
 		BAD_ERROR("Failed to alloc metadata buffer in "
 			"write_recovery_data\n");
 
-	read_destination(fd, sBlk->inode_table_start, bytes, metadata);
+	res = read_fs_bytes(fd, sBlk->inode_table_start, bytes, metadata);
+	if(res == 0)
+		EXIT_MKSQUASHFS();
 
 	sprintf(recovery_file, "squashfs_recovery_%s_%d",
 		getbase(destination_file), pid);
@@ -4357,8 +4382,10 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	if(res < sizeof(squashfs_super_block))
 		BAD_ERROR("Recovery file appears to be truncated\n");
 
-	read_destination(fd, 0, sizeof(squashfs_super_block), (char *)
+	res = read_fs_bytes(fd, 0, sizeof(squashfs_super_block), (char *)
 		&orig_sBlk);
+	if(res == 0)
+		EXIT_MKSQUASHFS();
 
 	if(memcmp(((char *) &sBlk) + 4, ((char *) &orig_sBlk) + 4,
 			sizeof(squashfs_super_block) - 4) != 0)
