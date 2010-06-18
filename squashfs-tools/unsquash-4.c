@@ -45,7 +45,7 @@ int read_fragment_table_4()
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
 			"fragment table\n");
 
-	res = read_bytes(sBlk.fragment_table_start,
+	res = read_fs_bytes(fd, sBlk.fragment_table_start,
 		SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk.fragments),
 		(char *) fragment_table_index);
 	if(res == FALSE) {
@@ -316,7 +316,7 @@ int read_uids_guids_4()
 		return FALSE;
 	}
 
-	res = read_bytes(sBlk.id_table_start,
+	res = read_fs_bytes(fd, sBlk.id_table_start,
 		SQUASHFS_ID_BLOCK_BYTES(sBlk.no_ids), (char *) id_index_table);
 	if(res == FALSE) {
 		ERROR("read_uids_guids: failed to read id index table\n");

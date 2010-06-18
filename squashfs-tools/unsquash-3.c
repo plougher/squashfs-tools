@@ -46,7 +46,7 @@ int read_fragment_table_3()
 	if(swap) {
 		squashfs_fragment_index sfragment_table_index[indexes];
 
-		res = read_bytes(sBlk.fragment_table_start,
+		res = read_fs_bytes(fd, sBlk.fragment_table_start,
 			SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.fragments),
 			(char *) sfragment_table_index);
 		if(res == FALSE) {
@@ -57,7 +57,7 @@ int read_fragment_table_3()
 		SQUASHFS_SWAP_FRAGMENT_INDEXES_3(fragment_table_index,
 			sfragment_table_index, indexes);
 	} else {
-		res = read_bytes(sBlk.fragment_table_start,
+		res = read_fs_bytes(fd, sBlk.fragment_table_start,
 			SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.fragments),
 			(char *) fragment_table_index);
 		if(res == FALSE) {
