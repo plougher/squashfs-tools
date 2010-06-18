@@ -21,7 +21,7 @@
  * read_fs.c
  */
 
-extern int read_fs_bytes(int, long long, int, char *);
+extern int read_fs_bytes(int, long long, int, void *);
 extern int add_file(long long, long long, long long, unsigned int *, int,
 	unsigned int, int, int);
 extern void *create_id(unsigned int);
@@ -74,7 +74,7 @@ int read_block(int fd, long long start, long long *next, void *block,
 	unsigned short c_byte;
 	int res, offset = 2;
 	
-	res = read_fs_bytes(fd, start, 2, (char *)&c_byte);
+	res = read_fs_bytes(fd, start, 2, &c_byte);
 	if(res == 0)
 		return 0;
 
@@ -371,7 +371,7 @@ struct compressor *read_super(int fd, squashfs_super_block *sBlk, char *source)
 	int res;
 
 	res = read_fs_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block),
-		(char *) sBlk);
+		sBlk);
 	if(res == 0)
 		goto failed_mount;
 
@@ -541,7 +541,7 @@ unsigned int *read_id_table(int fd, squashfs_super_block *sBlk)
 	}
 
 	res = read_fs_bytes(fd, sBlk->id_table_start,
-		SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), (char *) index);
+		SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), index);
 	if(res == 0) {
 		free(id_table);
 		return NULL;
@@ -595,7 +595,7 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk,
 
 	res = read_fs_bytes(fd, sBlk->fragment_table_start,
 		SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments),
-		(char *) fragment_table_index);
+		fragment_table_index);
 	if(res == 0) {
 		free(*fragment_table);
 		return 0;
@@ -643,7 +643,7 @@ int read_inode_lookup_table(int fd, squashfs_super_block *sBlk,
 	}
 
 	res = read_fs_bytes(fd, sBlk->lookup_table_start,
-		SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), (char *) index);
+		SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), index);
 	if(res == 0) {
 		free(*inode_lookup_table);
 		return 0;

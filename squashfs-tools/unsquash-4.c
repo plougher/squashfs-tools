@@ -47,7 +47,7 @@ int read_fragment_table_4()
 
 	res = read_fs_bytes(fd, sBlk.fragment_table_start,
 		SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk.fragments),
-		(char *) fragment_table_index);
+		fragment_table_index);
 	if(res == FALSE) {
 		ERROR("read_fragment_table: failed to read fragment table "
 			"index\n");
@@ -317,7 +317,7 @@ int read_uids_guids_4()
 	}
 
 	res = read_fs_bytes(fd, sBlk.id_table_start,
-		SQUASHFS_ID_BLOCK_BYTES(sBlk.no_ids), (char *) id_index_table);
+		SQUASHFS_ID_BLOCK_BYTES(sBlk.no_ids), id_index_table);
 	if(res == FALSE) {
 		ERROR("read_uids_guids: failed to read id index table\n");
 		return FALSE;

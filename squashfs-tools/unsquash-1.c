@@ -321,8 +321,7 @@ int read_uids_guids_1()
 		unsigned int suid_table[sBlk.no_uids + sBlk.no_guids];
 
 		res = read_fs_bytes(fd, sBlk.uid_start, (sBlk.no_uids +
-			sBlk.no_guids) * sizeof(unsigned int),
-			(char *) suid_table);
+			sBlk.no_guids) * sizeof(unsigned int), suid_table);
 		if(res == FALSE) {
 			ERROR("read_uids_guids: failed to read uid/gid table"
 				"\n");
@@ -332,8 +331,7 @@ int read_uids_guids_1()
 			sBlk.no_uids + sBlk.no_guids);
 	} else {
 		res = read_fs_bytes(fd, sBlk.uid_start, (sBlk.no_uids +
-			sBlk.no_guids) * sizeof(unsigned int),
-			(char *) uid_table);
+			sBlk.no_guids) * sizeof(unsigned int), uid_table);
 		if(res == FALSE) {
 			ERROR("read_uids_guids: failed to read uid/gid table"
 				"\n");

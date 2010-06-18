@@ -941,7 +941,7 @@ bytes_read:
 }
 
 
-int read_fs_bytes(int fd, long long byte, int bytes, char *buff)
+int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 {
 	off_t off = byte;
 
@@ -4382,8 +4382,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	if(res < sizeof(squashfs_super_block))
 		BAD_ERROR("Recovery file appears to be truncated\n");
 
-	res = read_fs_bytes(fd, 0, sizeof(squashfs_super_block), (char *)
-		&orig_sBlk);
+	res = read_fs_bytes(fd, 0, sizeof(squashfs_super_block), &orig_sBlk);
 	if(res == 0)
 		EXIT_MKSQUASHFS();
 

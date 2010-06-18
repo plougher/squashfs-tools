@@ -62,7 +62,7 @@ int read_fragment_table_2()
 
 		 res = read_fs_bytes(fd, sBlk.fragment_table_start,
 			SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments),
-			(char *) sfragment_table_index);
+			sfragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
 				"table index\n");
@@ -73,7 +73,7 @@ int read_fragment_table_2()
 	} else {
 		res = read_fs_bytes(fd, sBlk.fragment_table_start,
 			SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments),
-			(char *) fragment_table_index);
+			fragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
 				"table index\n");

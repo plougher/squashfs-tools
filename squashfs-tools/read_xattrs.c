@@ -60,7 +60,7 @@
 						fprintf(stderr, s, ## args); \
 					} while(0)
 
-extern int read_fs_bytes(int, long long, int, char *);
+extern int read_fs_bytes(int, long long, int, void *);
 extern int read_block(int, long long, long long *, void *,
         squashfs_super_block *);
 
@@ -151,7 +151,7 @@ int get_xattrs(int fd, squashfs_super_block *sBlk)
 	 * number of xattrs in the file system
 	 */
 	res = read_fs_bytes(fd, sBlk->xattr_id_table_start, sizeof(id_table),
-		(char *) &id_table);
+		&id_table);
 	if(res == 0)
 		return 0;
 
@@ -171,7 +171,7 @@ int get_xattrs(int fd, squashfs_super_block *sBlk)
 	}
 
 	res = read_fs_bytes(fd, sBlk->xattr_id_table_start + sizeof(id_table),
-		index_bytes, (char *) index);
+		index_bytes, index);
 	if(res ==0)
 		goto failed1;
 

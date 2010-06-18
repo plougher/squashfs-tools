@@ -540,7 +540,7 @@ int lookup_entry(struct hash_table_entry *hash_table[], long long start)
 }
 
 
-int read_fs_bytes(int fd, long long byte, int bytes, char *buff)
+int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 {
 	off_t off = byte;
 	int res, count;
@@ -583,7 +583,7 @@ int read_block(long long start, long long *next, char *block)
 		((unsigned char *) &c_byte)[1] = block[0];
 		((unsigned char *) &c_byte)[0] = block[1]; 
 	} else 
-		if(read_fs_bytes(fd, start, 2, (char *)&c_byte) == FALSE)
+		if(read_fs_bytes(fd, start, 2, &c_byte) == FALSE)
 			goto failed;
 
 	TRACE("read_block: block @0x%llx, %d %s bytes\n", start,
@@ -1436,7 +1436,7 @@ int read_super(char *source)
 	 * Try to read a Squashfs 4 superblock
 	 */
 	read_fs_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block),
-		(char *) &sBlk_4);
+		&sBlk_4);
 	swap = sBlk_4.s_magic != SQUASHFS_MAGIC;
 	SQUASHFS_INSWAP_SUPER_BLOCK(&sBlk_4);
 
@@ -1469,7 +1469,7 @@ int read_super(char *source)
  	 * (compatible with 1 and 2 filesystems)
  	 */
 	read_fs_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block_3),
-		(char *) &sBlk_3);
+		&sBlk_3);
 
 	/*
 	 * Check it is a SQUASHFS superblock
