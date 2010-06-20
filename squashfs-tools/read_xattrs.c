@@ -68,7 +68,10 @@ static void *xattrs = NULL;
 static int ids;
 static long long xattr_table_start;
 
-
+/*
+ * store mapping from location of compressed block in fs ->
+ * location of uncompressed block in memory
+ */
 static int save_xattr_block(long long start, int offset)
 {
 	struct hash_entry *hash_entry = malloc(sizeof(*hash_entry));
@@ -90,6 +93,10 @@ static int save_xattr_block(long long start, int offset)
 }
 
 
+/*
+ * map from location of compressed block in fs ->
+ * location of uncompressed block in memory
+ */
 static int get_xattr_block(long long start)
 {
 	int hash = start & 0xffff;
@@ -106,6 +113,10 @@ static int get_xattr_block(long long start)
 }
 
 
+/*
+ * construct the xattr_list entry from the fs xattr, including
+ * mapping name and prefix into a full name
+ */
 static int read_xattr_entry(struct xattr_list *xattr,
 	struct squashfs_xattr_entry *entry, void *name)
 {
@@ -131,6 +142,10 @@ static int read_xattr_entry(struct xattr_list *xattr,
 }
 
 
+/*
+ * Read and decompress the xattr id table and the xattr metadata.
+ * This is cached in memory for later use by get_xattr()
+ */
 int read_xattrs_from_disk(int fd, squashfs_super_block *sBlk)
 {
 	int res, bytes, i, indexes, index_bytes;
@@ -250,6 +265,10 @@ failed1:
 }
 
 
+/*
+ * Construct and return the list of xattr name:value pairs for the passed xattr
+ * id
+ */
 struct xattr_list *get_xattr(int i, unsigned int *count)
 {
 	long long start;
@@ -319,6 +338,12 @@ failed:
 }
 
 
+/*
+ * Add the existing xattr ids and xattr metadata in the file system being
+ * appended to, to the in-memory xattr cache.  This allows duplicate checking to
+ * take place against the xattrs already in the file system being appended to,
+ * and ensures the pre-existing xattrs are written out along with any new xattrs
+ */
 int get_xattrs(int fd, squashfs_super_block *sBlk)
 {
 	int res, i, id;
@@ -330,6 +355,10 @@ int get_xattrs(int fd, squashfs_super_block *sBlk)
 	if(res == SQUASHFS_INVALID_BLK || res == 0)
 		goto done;
 
+	/*
+	 * for each xattr id read and construct its list of xattr
+	 * name:value pairs, and add them to the in-memory xattr cache
+	 */
 	for(i = 0; i < ids; i++) {
 		struct xattr_list *xattr_list = get_xattr(i, &count);
 		if(xattr_list == NULL) {
