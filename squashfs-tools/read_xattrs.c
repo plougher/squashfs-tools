@@ -21,6 +21,10 @@
  * read_xattrs.c
  */
 
+/*
+ * Common xattr read code shared between mksquashfs and unsquashfs
+ */
+
 #define TRUE 1
 #define FALSE 0
 #include <stdio.h>
@@ -44,7 +48,7 @@
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...)		do { \
-						printf("mksquashfs: "s, ## args); \
+						printf("read_xattrs: "s, ## args); \
 					} while(0)
 #else
 #define TRACE(s, args...)
@@ -65,7 +69,6 @@ static struct hash_entry {
 
 static struct squashfs_xattr_id *xattr_ids;
 static void *xattrs = NULL;
-static int ids;
 static long long xattr_table_start;
 
 /*
@@ -148,7 +151,7 @@ static int read_xattr_entry(struct xattr_list *xattr,
  */
 int read_xattrs_from_disk(int fd, squashfs_super_block *sBlk)
 {
-	int res, bytes, i, indexes, index_bytes;
+	int res, bytes, i, indexes, index_bytes, ids;
 	long long *index, start, end;
 	struct squashfs_xattr_table id_table;
 
@@ -252,7 +255,7 @@ int read_xattrs_from_disk(int fd, squashfs_super_block *sBlk)
 
 	free(index);
 
-	return 1;
+	return ids;
 
 failed3:
 	free(xattrs);
@@ -335,51 +338,4 @@ failed:
 	free(xattr_list);
 
 	return NULL;
-}
-
-
-/*
- * Add the existing xattr ids and xattr metadata in the file system being
- * appended to, to the in-memory xattr cache.  This allows duplicate checking to
- * take place against the xattrs already in the file system being appended to,
- * and ensures the pre-existing xattrs are written out along with any new xattrs
- */
-int get_xattrs(int fd, squashfs_super_block *sBlk)
-{
-	int res, i, id;
-	unsigned int count;
-
-	TRACE("get_xattrs\n");
-
-	res = read_xattrs_from_disk(fd, sBlk);
-	if(res == SQUASHFS_INVALID_BLK || res == 0)
-		goto done;
-
-	/*
-	 * for each xattr id read and construct its list of xattr
-	 * name:value pairs, and add them to the in-memory xattr cache
-	 */
-	for(i = 0; i < ids; i++) {
-		struct xattr_list *xattr_list = get_xattr(i, &count);
-		if(xattr_list == NULL) {
-			res = 0;
-			goto done;
-		}
-		id = generate_xattrs(count, xattr_list);
-
-		/*
-		 * Sanity check, the new xattr id should be the same as the
-		 * xattr id in the original file system
-		 */
-		if(id != i) {
-			ERROR("BUG, different xattr_id in get_xattrs\n");
-			res = 0;
-			goto done;
-		}
-	}
-
-done:
-	free(xattr_ids);
-
-	return res;
 }

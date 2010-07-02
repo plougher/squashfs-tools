@@ -2148,6 +2148,9 @@ options:
 	uncompress_directory_table(sBlk.s.directory_table_start,
 		sBlk.s.fragment_table_start);
 
+	if(read_xattrs_from_disk(fd, &sBlk.s) == 0)
+		EXIT_UNSQUASH("failed to read the xattr table\n");
+
 	if(path) {
 		paths = init_subdir();
 		paths = add_subdir(paths, path);
