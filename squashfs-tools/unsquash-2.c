@@ -41,17 +41,17 @@ void read_block_list_2(unsigned int *block_list, char *block_ptr, int blocks)
 
 int read_fragment_table_2()
 {
-	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES_2(sBlk.fragments);
+	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES_2(sBlk.s.fragments);
 	unsigned int fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
-		"from 0x%llx\n", sBlk.fragments, indexes,
-		sBlk.fragment_table_start);
+		"from 0x%llx\n", sBlk.s.fragments, indexes,
+		sBlk.s.fragment_table_start);
 
-	if(sBlk.fragments == 0)
+	if(sBlk.s.fragments == 0)
 		return TRUE;
 
-	fragment_table = malloc(sBlk.fragments *
+	fragment_table = malloc(sBlk.s.fragments *
 		sizeof(squashfs_fragment_entry_2));
 	if(fragment_table == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
@@ -60,8 +60,8 @@ int read_fragment_table_2()
 	if(swap) {
 		 unsigned int sfragment_table_index[indexes];
 
-		 res = read_fs_bytes(fd, sBlk.fragment_table_start,
-			SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments),
+		 res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
+			SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.s.fragments),
 			sfragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
@@ -71,8 +71,8 @@ int read_fragment_table_2()
 		SQUASHFS_SWAP_FRAGMENT_INDEXES_2(fragment_table_index,
 			sfragment_table_index, indexes);
 	} else {
-		res = read_fs_bytes(fd, sBlk.fragment_table_start,
-			SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.fragments),
+		res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
+			SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.s.fragments),
 			fragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
@@ -96,7 +96,7 @@ int read_fragment_table_2()
 
 	if(swap) {
 		squashfs_fragment_entry_2 sfragment;
-		for(i = 0; i < sBlk.fragments; i++) {
+		for(i = 0; i < sBlk.s.fragments; i++) {
 			SQUASHFS_SWAP_FRAGMENT_ENTRY_2((&sfragment),
 				(&fragment_table[i]));
 			memcpy((char *) &fragment_table[i], (char *) &sfragment,
@@ -121,7 +121,7 @@ void read_fragment_2(unsigned int fragment, long long *start_block, int *size)
 struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header_2 header;
-	long long start = sBlk.inode_table_start + start_block;
+	long long start = sBlk.s.inode_table_start + start_block;
 	int bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
 	static struct inode i;
@@ -146,7 +146,7 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 		(uid_t) guid_table[header.base.guid];
 	i.mode = lookup_type[header.base.inode_type] | header.base.mode;
 	i.type = header.base.inode_type;
-	i.time = sBlk.mkfs_time;
+	i.time = sBlk.s.mkfs_time;
 	i.inode_number = inode_number++;
 
 	switch(header.base.inode_type) {
@@ -200,13 +200,13 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 			i.data = inode->file_size;
 			i.time = inode->mtime;
 			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG
-				?  0 : inode->file_size % sBlk.block_size;
+				?  0 : inode->file_size % sBlk.s.block_size;
 			i.fragment = inode->fragment;
 			i.offset = inode->offset;
 			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(inode->file_size + sBlk.block_size - 1) >>
-				sBlk.block_log : inode->file_size >>
-				sBlk.block_log;
+				(inode->file_size + sBlk.s.block_size - 1) >>
+				sBlk.s.block_log : inode->file_size >>
+				sBlk.s.block_log;
 			i.start = inode->start_block;
 			i.sparse = 0;
 			i.block_ptr = block_ptr + sizeof(*inode);

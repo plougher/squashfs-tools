@@ -28,17 +28,17 @@ static squashfs_fragment_entry_3 *fragment_table;
 
 int read_fragment_table_3()
 {
-	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES_3(sBlk.fragments);
+	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES_3(sBlk.s.fragments);
 	squashfs_fragment_index fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
-		"from 0x%llx\n", sBlk.fragments, indexes,
-		sBlk.fragment_table_start);
+		"from 0x%llx\n", sBlk.s.fragments, indexes,
+		sBlk.s.fragment_table_start);
 
-	if(sBlk.fragments == 0)
+	if(sBlk.s.fragments == 0)
 		return TRUE;
 
-	if((fragment_table = malloc(sBlk.fragments *
+	if((fragment_table = malloc(sBlk.s.fragments *
 			sizeof(squashfs_fragment_entry_3))) == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
 			"fragment table\n");
@@ -46,8 +46,8 @@ int read_fragment_table_3()
 	if(swap) {
 		squashfs_fragment_index sfragment_table_index[indexes];
 
-		res = read_fs_bytes(fd, sBlk.fragment_table_start,
-			SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.fragments),
+		res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
+			SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.s.fragments),
 			sfragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
@@ -57,8 +57,8 @@ int read_fragment_table_3()
 		SQUASHFS_SWAP_FRAGMENT_INDEXES_3(fragment_table_index,
 			sfragment_table_index, indexes);
 	} else {
-		res = read_fs_bytes(fd, sBlk.fragment_table_start,
-			SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.fragments),
+		res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
+			SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.s.fragments),
 			fragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
@@ -82,7 +82,7 @@ int read_fragment_table_3()
 
 	if(swap) {
 		squashfs_fragment_entry_3 sfragment;
-		for(i = 0; i < sBlk.fragments; i++) {
+		for(i = 0; i < sBlk.s.fragments; i++) {
 			SQUASHFS_SWAP_FRAGMENT_ENTRY_3((&sfragment),
 				(&fragment_table[i]));
 			memcpy((char *) &fragment_table[i], (char *) &sfragment,
@@ -107,7 +107,7 @@ void read_fragment_3(unsigned int fragment, long long *start_block, int *size)
 struct inode *read_inode_3(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header_3 header;
-	long long start = sBlk.inode_table_start + start_block;
+	long long start = sBlk.s.inode_table_start + start_block;
 	int bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
 	static struct inode i;
@@ -182,13 +182,13 @@ struct inode *read_inode_3(unsigned int start_block, unsigned int offset)
 
 			i.data = inode->file_size;
 			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG
-				?  0 : inode->file_size % sBlk.block_size;
+				?  0 : inode->file_size % sBlk.s.block_size;
 			i.fragment = inode->fragment;
 			i.offset = inode->offset;
 			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(inode->file_size + sBlk.block_size - 1) >>
-				sBlk.block_log :
-				inode->file_size >> sBlk.block_log;
+				(inode->file_size + sBlk.s.block_size - 1) >>
+				sBlk.s.block_log :
+				inode->file_size >> sBlk.s.block_log;
 			i.start = inode->start_block;
 			i.sparse = 1;
 			i.block_ptr = block_ptr + sizeof(*inode);
@@ -207,13 +207,13 @@ struct inode *read_inode_3(unsigned int start_block, unsigned int offset)
 
 			i.data = inode->file_size;
 			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG
-				?  0 : inode->file_size % sBlk.block_size;
+				?  0 : inode->file_size % sBlk.s.block_size;
 			i.fragment = inode->fragment;
 			i.offset = inode->offset;
 			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(inode->file_size + sBlk.block_size - 1) >>
-				sBlk.block_log :
-				inode->file_size >> sBlk.block_log;
+				(inode->file_size + sBlk.s.block_size - 1) >>
+				sBlk.s.block_log :
+				inode->file_size >> sBlk.s.block_log;
 			i.start = inode->start_block;
 			i.sparse = 1;
 			i.block_ptr = block_ptr + sizeof(*inode);
@@ -292,7 +292,7 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 		return NULL;
 	}
 
-	start = sBlk.directory_table_start + (*i)->start;
+	start = sBlk.s.directory_table_start + (*i)->start;
 	bytes = lookup_entry(directory_table_hash, start);
 
 	if(bytes == -1) {

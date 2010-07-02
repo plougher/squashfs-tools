@@ -589,7 +589,7 @@ int read_block(int fd, long long start, long long *next, void *block)
 		SQUASHFS_COMPRESSED_SIZE(c_byte), SQUASHFS_COMPRESSED(c_byte) ?
 		"compressed" : "uncompressed");
 
-	if(SQUASHFS_CHECK_DATA(sBlk.flags))
+	if(SQUASHFS_CHECK_DATA(sBlk.s.flags))
 		offset = 3;
 	if(SQUASHFS_COMPRESSED(c_byte)) {
 		char buffer[SQUASHFS_METADATA_SIZE];
@@ -1356,73 +1356,73 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 
 void squashfs_stat(char *source)
 {
-	time_t mkfs_time = (time_t) sBlk.mkfs_time;
+	time_t mkfs_time = (time_t) sBlk.s.mkfs_time;
 	char *mkfs_str = ctime(&mkfs_time);
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 	printf("Found a valid %sSQUASHFS %d:%d superblock on %s.\n",
-		sBlk.s_major == 4 ? "" : swap ? "little endian " :
-		"big endian ", sBlk.s_major, sBlk.s_minor, source);
+		sBlk.s.s_major == 4 ? "" : swap ? "little endian " :
+		"big endian ", sBlk.s.s_major, sBlk.s.s_minor, source);
 #else
 	printf("Found a valid %sSQUASHFS %d:%d superblock on %s.\n",
-		sBlk.s_major == 4 ? "" : swap ? "big endian " :
-		"little endian ", sBlk.s_major, sBlk.s_minor, source);
+		sBlk.s.s_major == 4 ? "" : swap ? "big endian " :
+		"little endian ", sBlk.s.s_major, sBlk.s.s_minor, source);
 #endif
 	printf("Creation or last append time %s", mkfs_str ? mkfs_str :
 		"failed to get time\n");
 	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n",
-		sBlk.bytes_used / 1024.0, sBlk.bytes_used / (1024.0 * 1024.0));
-	if(sBlk.s_major == 4)
+		sBlk.s.bytes_used / 1024.0, sBlk.s.bytes_used / (1024.0 * 1024.0));
+	if(sBlk.s.s_major == 4)
 		printf("Compression %s\n", comp->name);
-	printf("Block size %d\n", sBlk.block_size);
+	printf("Block size %d\n", sBlk.s.block_size);
 	printf("Filesystem is %sexportable via NFS\n",
-		SQUASHFS_EXPORTABLE(sBlk.flags) ? "" : "not ");
+		SQUASHFS_EXPORTABLE(sBlk.s.flags) ? "" : "not ");
 
 	printf("Inodes are %scompressed\n",
-		SQUASHFS_UNCOMPRESSED_INODES(sBlk.flags) ? "un" : "");
+		SQUASHFS_UNCOMPRESSED_INODES(sBlk.s.flags) ? "un" : "");
 	printf("Data is %scompressed\n",
-		SQUASHFS_UNCOMPRESSED_DATA(sBlk.flags) ? "un" : "");
-	if(sBlk.s_major > 1 && !SQUASHFS_NO_FRAGMENTS(sBlk.flags))
+		SQUASHFS_UNCOMPRESSED_DATA(sBlk.s.flags) ? "un" : "");
+	if(sBlk.s.s_major > 1 && !SQUASHFS_NO_FRAGMENTS(sBlk.s.flags))
 		printf("Fragments are %scompressed\n",
-			SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.flags) ? "un" :
+			SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.s.flags) ? "un" :
 			"");
 	printf("Check data is %spresent in the filesystem\n",
-		SQUASHFS_CHECK_DATA(sBlk.flags) ? "" : "not ");
-	if(sBlk.s_major > 1) {
+		SQUASHFS_CHECK_DATA(sBlk.s.flags) ? "" : "not ");
+	if(sBlk.s.s_major > 1) {
 		printf("Fragments are %spresent in the filesystem\n",
-			SQUASHFS_NO_FRAGMENTS(sBlk.flags) ? "not " : "");
+			SQUASHFS_NO_FRAGMENTS(sBlk.s.flags) ? "not " : "");
 		printf("Always_use_fragments option is %sspecified\n",
-			SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags) ? "" : "not ");
+			SQUASHFS_ALWAYS_FRAGMENTS(sBlk.s.flags) ? "" : "not ");
 	} else
 		printf("Fragments are not supported by the filesystem\n");
 
-	if(sBlk.s_major > 1)
+	if(sBlk.s.s_major > 1)
 		printf("Duplicates are %sremoved\n",
-			SQUASHFS_DUPLICATES(sBlk.flags) ? "" : "not ");
+			SQUASHFS_DUPLICATES(sBlk.s.flags) ? "" : "not ");
 	else
 		printf("Duplicates are removed\n");
-	if(sBlk.s_major > 1)
-		printf("Number of fragments %d\n", sBlk.fragments);
-	printf("Number of inodes %d\n", sBlk.inodes);
-	if(sBlk.s_major == 4)
-		printf("Number of ids %d\n", sBlk.no_ids);
+	if(sBlk.s.s_major > 1)
+		printf("Number of fragments %d\n", sBlk.s.fragments);
+	printf("Number of inodes %d\n", sBlk.s.inodes);
+	if(sBlk.s.s_major == 4)
+		printf("Number of ids %d\n", sBlk.s.no_ids);
 	else {
 		printf("Number of uids %d\n", sBlk.no_uids);
 		printf("Number of gids %d\n", sBlk.no_guids);
 	}
 
-	TRACE("sBlk.inode_table_start 0x%llx\n", sBlk.inode_table_start);
-	TRACE("sBlk.directory_table_start 0x%llx\n",
-		sBlk.directory_table_start);
-	if(sBlk.s_major == 4)
-		TRACE("sBlk.id_table_start 0x%llx\n", sBlk.id_table_start);
+	TRACE("sBlk.s.inode_table_start 0x%llx\n", sBlk.s.inode_table_start);
+	TRACE("sBlk.s.directory_table_start 0x%llx\n",
+		sBlk.s.directory_table_start);
+	if(sBlk.s.s_major == 4)
+		TRACE("sBlk.s.id_table_start 0x%llx\n", sBlk.s.id_table_start);
 	else {
 		TRACE("sBlk.uid_start 0x%llx\n", sBlk.uid_start);
 		TRACE("sBlk.guid_start 0x%llx\n", sBlk.guid_start);
 	}
-	if(sBlk.s_major > 1)
-		TRACE("sBlk.fragment_table_start 0x%llx\n\n",
-			sBlk.fragment_table_start);
+	if(sBlk.s.s_major > 1)
+		TRACE("sBlk.s.fragment_table_start 0x%llx\n\n",
+			sBlk.s.fragment_table_start);
 }
 
 
@@ -1452,7 +1452,7 @@ int read_super(char *source)
 		/*
 		 * Check the compression type
 		 */
-		comp = lookup_compressor_id(sBlk.compression);
+		comp = lookup_compressor_id(sBlk.s.compression);
 		if(!comp->supported) {
 			ERROR("Filesystem uses %s compression, this is "
 				"unsupported by this version\n", comp->name);
@@ -1489,44 +1489,45 @@ int read_super(char *source)
 		}
 	}
 
-	sBlk.s_magic = sBlk_3.s_magic;
-	sBlk.inodes = sBlk_3.inodes;
-	sBlk.mkfs_time = sBlk_3.mkfs_time;
-	sBlk.block_size = sBlk_3.block_size;
-	sBlk.fragments = sBlk_3.fragments;
-	sBlk.block_log = sBlk_3.block_log;
-	sBlk.flags = sBlk_3.flags;
-	sBlk.s_major = sBlk_3.s_major;
-	sBlk.s_minor = sBlk_3.s_minor;
-	sBlk.root_inode = sBlk_3.root_inode;
-	sBlk.bytes_used = sBlk_3.bytes_used;
-	sBlk.inode_table_start = sBlk_3.inode_table_start;
-	sBlk.directory_table_start = sBlk_3.directory_table_start;
-	sBlk.fragment_table_start = sBlk_3.fragment_table_start;
-	sBlk.lookup_table_start = sBlk_3.lookup_table_start;
+	sBlk.s.s_magic = sBlk_3.s_magic;
+	sBlk.s.inodes = sBlk_3.inodes;
+	sBlk.s.mkfs_time = sBlk_3.mkfs_time;
+	sBlk.s.block_size = sBlk_3.block_size;
+	sBlk.s.fragments = sBlk_3.fragments;
+	sBlk.s.block_log = sBlk_3.block_log;
+	sBlk.s.flags = sBlk_3.flags;
+	sBlk.s.s_major = sBlk_3.s_major;
+	sBlk.s.s_minor = sBlk_3.s_minor;
+	sBlk.s.root_inode = sBlk_3.root_inode;
+	sBlk.s.bytes_used = sBlk_3.bytes_used;
+	sBlk.s.inode_table_start = sBlk_3.inode_table_start;
+	sBlk.s.directory_table_start = sBlk_3.directory_table_start;
+	sBlk.s.fragment_table_start = sBlk_3.fragment_table_start;
+	sBlk.s.lookup_table_start = sBlk_3.lookup_table_start;
 	sBlk.no_uids = sBlk_3.no_uids;
 	sBlk.no_guids = sBlk_3.no_guids;
 	sBlk.uid_start = sBlk_3.uid_start;
 	sBlk.guid_start = sBlk_3.guid_start;
+	sBlk.s.xattr_id_table_start = SQUASHFS_INVALID_BLK;
 
 	/* Check the MAJOR & MINOR versions */
-	if(sBlk.s_major == 1 || sBlk.s_major == 2) {
-		sBlk.bytes_used = sBlk_3.bytes_used_2;
+	if(sBlk.s.s_major == 1 || sBlk.s.s_major == 2) {
+		sBlk.s.bytes_used = sBlk_3.bytes_used_2;
 		sBlk.uid_start = sBlk_3.uid_start_2;
 		sBlk.guid_start = sBlk_3.guid_start_2;
-		sBlk.inode_table_start = sBlk_3.inode_table_start_2;
-		sBlk.directory_table_start = sBlk_3.directory_table_start_2;
+		sBlk.s.inode_table_start = sBlk_3.inode_table_start_2;
+		sBlk.s.directory_table_start = sBlk_3.directory_table_start_2;
 		
-		if(sBlk.s_major == 1) {
-			sBlk.block_size = sBlk_3.block_size_1;
-			sBlk.fragment_table_start = sBlk.uid_start;
+		if(sBlk.s.s_major == 1) {
+			sBlk.s.block_size = sBlk_3.block_size_1;
+			sBlk.s.fragment_table_start = sBlk.uid_start;
 			s_ops.squashfs_opendir = squashfs_opendir_1;
 			s_ops.read_fragment_table = read_fragment_table_1;
 			s_ops.read_block_list = read_block_list_1;
 			s_ops.read_inode = read_inode_1;
 			s_ops.read_uids_guids = read_uids_guids_1;
 		} else {
-			sBlk.fragment_table_start =
+			sBlk.s.fragment_table_start =
 				sBlk_3.fragment_table_start_2;
 			s_ops.squashfs_opendir = squashfs_opendir_1;
 			s_ops.read_fragment = read_fragment_2;
@@ -1535,7 +1536,7 @@ int read_super(char *source)
 			s_ops.read_inode = read_inode_2;
 			s_ops.read_uids_guids = read_uids_guids_1;
 		}
-	} else if(sBlk.s_major == 3) {
+	} else if(sBlk.s.s_major == 3) {
 		s_ops.squashfs_opendir = squashfs_opendir_3;
 		s_ops.read_fragment = read_fragment_3;
 		s_ops.read_fragment_table = read_fragment_table_3;
@@ -1543,8 +1544,8 @@ int read_super(char *source)
 		s_ops.read_inode = read_inode_3;
 		s_ops.read_uids_guids = read_uids_guids_1;
 	} else {
-		ERROR("Filesystem on %s is (%d:%d), ", source, sBlk.s_major,
-			sBlk.s_minor);
+		ERROR("Filesystem on %s is (%d:%d), ", source, sBlk.s.s_major,
+			sBlk.s.s_minor);
 		ERROR("which is a later filesystem version than I support!\n");
 		goto failed_mount;
 	}
@@ -1918,8 +1919,8 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.1-CVS (2010/06/17)\n");\
-	printf("copyright (C) 2009 Phillip Lougher <phillip@lougher.demon.co.uk>"\
+	printf("unsquashfs version 4.1-CVS (2010/07/01)\n");\
+	printf("copyright (C) 2010 Phillip Lougher <phillip@lougher.demon.co.uk>"\
 		"\n\n");\
     	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -2114,8 +2115,8 @@ options:
 		exit(0);
 	}
 
-	block_size = sBlk.block_size;
-	block_log = sBlk.block_log;
+	block_size = sBlk.s.block_size;
+	block_log = sBlk.s.block_log;
 
 	fragment_buffer_size <<= 20 - block_log;
 	data_buffer_size <<= 20 - block_log;
@@ -2130,10 +2131,10 @@ options:
 	if((data = malloc(block_size)) == NULL)
 		EXIT_UNSQUASH("failed to allocate data\n");
 
-	if((created_inode = malloc(sBlk.inodes * sizeof(char *))) == NULL)
+	if((created_inode = malloc(sBlk.s.inodes * sizeof(char *))) == NULL)
 		EXIT_UNSQUASH("failed to allocate created_inode\n");
 
-	memset(created_inode, 0, sBlk.inodes * sizeof(char *));
+	memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
 
 	if(s_ops.read_uids_guids() == FALSE)
 		EXIT_UNSQUASH("failed to uid/gid table\n");
@@ -2141,21 +2142,21 @@ options:
 	if(s_ops.read_fragment_table() == FALSE)
 		EXIT_UNSQUASH("failed to read fragment table\n");
 
-	uncompress_inode_table(sBlk.inode_table_start,
-		sBlk.directory_table_start);
+	uncompress_inode_table(sBlk.s.inode_table_start,
+		sBlk.s.directory_table_start);
 
-	uncompress_directory_table(sBlk.directory_table_start,
-		sBlk.fragment_table_start);
+	uncompress_directory_table(sBlk.s.directory_table_start,
+		sBlk.s.fragment_table_start);
 
 	if(path) {
 		paths = init_subdir();
 		paths = add_subdir(paths, path);
 	}
 
-	pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.root_inode), paths);
+	pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths);
 
-	memset(created_inode, 0, sBlk.inodes * sizeof(char *));
+	memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
 	inode_number = 1;
 
 	printf("%d inodes (%d blocks) to write\n\n", total_inodes,
@@ -2164,8 +2165,8 @@ options:
 	if(progress)
 		enable_progress_bar();
 
-	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.root_inode), paths);
+	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths);
 
 	queue_put(to_writer, NULL);
 	queue_get(from_writer);

@@ -30,23 +30,23 @@ static unsigned int *id_table;
 
 int read_fragment_table_4()
 {
-	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.fragments);
+	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.s.fragments);
 	squashfs_fragment_index fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
-		"from 0x%llx\n", sBlk.fragments, indexes,
-		sBlk.fragment_table_start);
+		"from 0x%llx\n", sBlk.s.fragments, indexes,
+		sBlk.s.fragment_table_start);
 
-	if(sBlk.fragments == 0)
+	if(sBlk.s.fragments == 0)
 		return TRUE;
 
-	if((fragment_table = malloc(sBlk.fragments *
+	if((fragment_table = malloc(sBlk.s.fragments *
 			sizeof(squashfs_fragment_entry))) == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
 			"fragment table\n");
 
-	res = read_fs_bytes(fd, sBlk.fragment_table_start,
-		SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk.fragments),
+	res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
+		SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk.s.fragments),
 		fragment_table_index);
 	if(res == FALSE) {
 		ERROR("read_fragment_table: failed to read fragment table "
@@ -68,7 +68,7 @@ int read_fragment_table_4()
 		}
 	}
 
-	for(i = 0; i < sBlk.fragments; i++) 
+	for(i = 0; i < sBlk.s.fragments; i++) 
 		SQUASHFS_INSWAP_FRAGMENT_ENTRY(&fragment_table[i]);
 
 	return TRUE;
@@ -88,7 +88,7 @@ void read_fragment_4(unsigned int fragment, long long *start_block, int *size)
 struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header header;
-	long long start = sBlk.inode_table_start + start_block;
+	long long start = sBlk.s.inode_table_start + start_block;
 	int bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
 	static struct inode i;
@@ -137,13 +137,13 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 
 			i.data = inode->file_size;
 			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG
-				?  0 : inode->file_size % sBlk.block_size;
+				?  0 : inode->file_size % sBlk.s.block_size;
 			i.fragment = inode->fragment;
 			i.offset = inode->offset;
 			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(inode->file_size + sBlk.block_size - 1) >>
-				sBlk.block_log :
-				inode->file_size >> sBlk.block_log;
+				(inode->file_size + sBlk.s.block_size - 1) >>
+				sBlk.s.block_log :
+				inode->file_size >> sBlk.s.block_log;
 			i.start = inode->start_block;
 			i.sparse = 0;
 			i.block_ptr = block_ptr + sizeof(*inode);
@@ -156,13 +156,13 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 
 			i.data = inode->file_size;
 			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG
-				?  0 : inode->file_size % sBlk.block_size;
+				?  0 : inode->file_size % sBlk.s.block_size;
 			i.fragment = inode->fragment;
 			i.offset = inode->offset;
 			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(inode->file_size + sBlk.block_size - 1) >>
-				sBlk.block_log :
-				inode->file_size >> sBlk.block_log;
+				(inode->file_size + sBlk.s.block_size - 1) >>
+				sBlk.s.block_log :
+				inode->file_size >> sBlk.s.block_log;
 			i.start = inode->start_block;
 			i.sparse = inode->sparse != 0;
 			i.block_ptr = block_ptr + sizeof(*inode);
@@ -233,7 +233,7 @@ struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset,
 		return NULL;
 	}
 
-	start = sBlk.directory_table_start + (*i)->start;
+	start = sBlk.s.directory_table_start + (*i)->start;
 	bytes = lookup_entry(directory_table_hash, start);
 
 	if(bytes == -1) {
@@ -305,19 +305,19 @@ struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset,
 
 int read_uids_guids_4()
 {
-	int res, i, indexes = SQUASHFS_ID_BLOCKS(sBlk.no_ids);
+	int res, i, indexes = SQUASHFS_ID_BLOCKS(sBlk.s.no_ids);
 	long long id_index_table[indexes];
 
-	TRACE("read_uids_guids: no_ids %d\n", sBlk.no_ids);
+	TRACE("read_uids_guids: no_ids %d\n", sBlk.s.no_ids);
 
-	id_table = malloc(SQUASHFS_ID_BYTES(sBlk.no_ids));
+	id_table = malloc(SQUASHFS_ID_BYTES(sBlk.s.no_ids));
 	if(id_table == NULL) {
 		ERROR("read_uids_guids: failed to allocate id table\n");
 		return FALSE;
 	}
 
-	res = read_fs_bytes(fd, sBlk.id_table_start,
-		SQUASHFS_ID_BLOCK_BYTES(sBlk.no_ids), id_index_table);
+	res = read_fs_bytes(fd, sBlk.s.id_table_start,
+		SQUASHFS_ID_BLOCK_BYTES(sBlk.s.no_ids), id_index_table);
 	if(res == FALSE) {
 		ERROR("read_uids_guids: failed to read id index table\n");
 		return FALSE;
@@ -334,7 +334,7 @@ int read_uids_guids_4()
 		}
 	}
 
-	SQUASHFS_INSWAP_INTS(id_table, sBlk.no_ids);
+	SQUASHFS_INSWAP_INTS(id_table, sBlk.s.no_ids);
 
 	return TRUE;
 }

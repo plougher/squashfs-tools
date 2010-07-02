@@ -55,7 +55,7 @@ int read_fragment_table_1()
 struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 {
 	static squashfs_inode_header_1 header;
-	long long start = sBlk.inode_table_start + start_block;
+	long long start = sBlk.s.inode_table_start + start_block;
 	int bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
 	static struct inode i;
@@ -103,7 +103,7 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 
 	i.gid = header.base.guid == 15 ? i.uid :
 		(uid_t) guid_table[header.base.guid];
-	i.time = sBlk.mkfs_time;
+	i.time = sBlk.s.mkfs_time;
 	i.inode_number = inode_number ++;
 
 	switch(i.type) {
@@ -137,8 +137,8 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 
 			i.data = inode->file_size;
 			i.time = inode->mtime;
-			i.blocks = (inode->file_size + sBlk.block_size - 1) >>
-				sBlk.block_log;
+			i.blocks = (inode->file_size + sBlk.s.block_size - 1) >>
+				sBlk.s.block_log;
 			i.start = inode->start_block;
 			i.block_ptr = block_ptr + sizeof(*inode);
 			i.fragment = 0;
@@ -221,7 +221,7 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 		return NULL;
 	}
 
-	start = sBlk.directory_table_start + (*i)->start;
+	start = sBlk.s.directory_table_start + (*i)->start;
 	bytes = lookup_entry(directory_table_hash, start);
 	if(bytes == -1) {
 		ERROR("squashfs_opendir: directory block %d not found!\n",
