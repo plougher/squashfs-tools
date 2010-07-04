@@ -316,6 +316,7 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 	dir->uid = (*i)->uid;
 	dir->guid = (*i)->gid;
 	dir->mtime = (*i)->time;
+	dir->xattr = (*i)->xattr;
 	dir->dirs = NULL;
 
 	while(bytes < size) {			

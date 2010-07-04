@@ -686,7 +686,7 @@ void uncompress_inode_table(long long start, long long end)
 
 
 int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
-	unsigned int set_mode)
+	unsigned int xattr, unsigned int set_mode)
 {
 	struct utimbuf times = { time, time };
 
@@ -821,6 +821,7 @@ int write_file(struct inode *inode, char *pathname)
 	file->pathname = strdup(pathname);
 	file->blocks = inode->blocks + (inode->frag_bytes > 0);
 	file->sparse = inode->sparse;
+	file->xattr = inode->xattr;
 	queue_put(to_writer, file);
 
 	for(i = 0; i < inode->blocks; i++) {
@@ -938,7 +939,7 @@ int create_inode(char *pathname, struct inode *i)
 					break;
 				}
 				set_attributes(pathname, i->mode, i->uid,
-					i->gid, i->time, TRUE);
+					i->gid, i->time, i->xattr, TRUE);
 				dev_count ++;
 			} else
 				ERROR("create_inode: could not create %s "
@@ -961,7 +962,7 @@ int create_inode(char *pathname, struct inode *i)
 				break;
 			}
 			set_attributes(pathname, i->mode, i->uid, i->gid,
-				i->time, TRUE);
+				i->time, i->xattr, TRUE);
 			fifo_count ++;
 			break;
 		case SQUASHFS_SOCKET_TYPE:
@@ -1350,7 +1351,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 
 	if(!lsonly)
 		set_attributes(parent_name, dir->mode, dir->uid, dir->guid,
-			dir->mtime, force);
+			dir->mtime, dir->xattr, force);
 
 	squashfs_closedir(dir);
 	dir_count ++;
@@ -1698,7 +1699,7 @@ void *writer(void *arg)
 		close(file_fd);
 		if(failed == FALSE)
 			set_attributes(file->pathname, file->mode, file->uid,
-				file->gid, file->time, force);
+				file->gid, file->time, file->xattr, force);
 		else {
 			ERROR("Failed to write %s, skipping\n", file->pathname);
 			unlink(file->pathname);

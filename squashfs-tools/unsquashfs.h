@@ -200,6 +200,7 @@ struct dir {
 	uid_t		uid;
 	gid_t		guid;
 	unsigned int	mtime;
+	unsigned int xattr;
 	struct dir_ent	*dirs;
 };
 
@@ -220,6 +221,7 @@ struct squashfs_file {
 	time_t time;
 	char *pathname;
 	char sparse;
+	unsigned int xattr;
 };
 
 struct path_entry {
