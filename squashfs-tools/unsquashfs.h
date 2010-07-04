@@ -118,6 +118,7 @@ struct inode {
 	int type;
 	uid_t uid;
 	char sparse;
+	unsigned int xattr;
 };
 
 typedef struct squashfs_operations {

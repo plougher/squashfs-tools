@@ -101,6 +101,7 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 		i.type = (header.base.inode_type - 1) % SQUASHFS_TYPES + 1;
 	}
 
+	i.xattr = SQUASHFS_INVALID_XATTR;
 	i.gid = header.base.guid == 15 ? i.uid :
 		(uid_t) guid_table[header.base.guid];
 	i.time = sBlk.s.mkfs_time;

@@ -127,6 +127,7 @@ struct inode *read_inode_3(unsigned int start_block, unsigned int offset)
 	} else
 		memcpy(&header.base, block_ptr, sizeof(header.base));
 
+	i.xattr = SQUASHFS_INVALID_XATTR;
 	i.uid = (uid_t) uid_table[header.base.uid];
 	i.gid = header.base.guid == SQUASHFS_GUIDS ? i.uid :
 		(uid_t) guid_table[header.base.guid];

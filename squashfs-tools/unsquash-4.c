@@ -118,6 +118,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 			i.data = inode->file_size;
 			i.offset = inode->offset;
 			i.start = inode->start_block;
+			i.xattr = SQUASHFS_INVALID_XATTR;
 			break;
 		}
 		case SQUASHFS_LDIR_TYPE: {
@@ -128,6 +129,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 			i.data = inode->file_size;
 			i.offset = inode->offset;
 			i.start = inode->start_block;
+			i.xattr = inode->xattr;
 			break;
 		}
 		case SQUASHFS_FILE_TYPE: {
@@ -147,6 +149,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 			i.start = inode->start_block;
 			i.sparse = 0;
 			i.block_ptr = block_ptr + sizeof(*inode);
+			i.xattr = SQUASHFS_INVALID_XATTR;
 			break;
 		}	
 		case SQUASHFS_LREG_TYPE: {
@@ -166,6 +169,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 			i.start = inode->start_block;
 			i.sparse = inode->sparse != 0;
 			i.block_ptr = block_ptr + sizeof(*inode);
+			i.xattr = inode->xattr;
 			break;
 		}	
 		case SQUASHFS_SYMLINK_TYPE:
@@ -183,25 +187,50 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 				inode->symlink_size);
 			i.symlink[inode->symlink_size] = '\0';
 			i.data = inode->symlink_size;
+
+			if(header.base.inode_type == SQUASHFS_LSYMLINK_TYPE)
+				SQUASHFS_SWAP_INTS(&i.xattr, block_ptr +
+					sizeof(squashfs_symlink_inode_header) +
+					inode->symlink_size, 1);
+			else
+				i.xattr = SQUASHFS_INVALID_XATTR;
 			break;
 		}
  		case SQUASHFS_BLKDEV_TYPE:
-	 	case SQUASHFS_CHRDEV_TYPE:
- 		case SQUASHFS_LBLKDEV_TYPE:
-	 	case SQUASHFS_LCHRDEV_TYPE: {
+	 	case SQUASHFS_CHRDEV_TYPE: {
 			squashfs_dev_inode_header *inode = &header.dev;
 
 			SQUASHFS_SWAP_DEV_INODE_HEADER(inode, block_ptr);
 
 			i.data = inode->rdev;
+			i.xattr = SQUASHFS_INVALID_XATTR;
+			break;
+		}
+ 		case SQUASHFS_LBLKDEV_TYPE:
+	 	case SQUASHFS_LCHRDEV_TYPE: {
+			squashfs_ldev_inode_header *inode = &header.ldev;
+
+			SQUASHFS_SWAP_LDEV_INODE_HEADER(inode, block_ptr);
+
+			i.data = inode->rdev;
+			i.xattr = inode->xattr;
 			break;
 		}
 		case SQUASHFS_FIFO_TYPE:
 		case SQUASHFS_SOCKET_TYPE:
-		case SQUASHFS_LFIFO_TYPE:
-		case SQUASHFS_LSOCKET_TYPE:
 			i.data = 0;
+			i.xattr = SQUASHFS_INVALID_XATTR;
 			break;
+		case SQUASHFS_LFIFO_TYPE:
+		case SQUASHFS_LSOCKET_TYPE: {
+			squashfs_lipc_inode_header *inode = &header.lipc;
+
+			SQUASHFS_SWAP_LIPC_INODE_HEADER(inode, block_ptr);
+
+			i.data = 0;
+			i.xattr = inode->xattr;
+			break;
+		}
 		default:
 			ERROR("Unknown inode type %d in read_inode!\n",
 				header.base.inode_type);
