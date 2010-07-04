@@ -893,6 +893,7 @@ int create_inode(char *pathname, struct inode *i)
 				file_count ++;
 			break;
 		case SQUASHFS_SYMLINK_TYPE:
+		case SQUASHFS_LSYMLINK_TYPE:
 			TRACE("create_inode: symlink, symlink_size %lld\n",
 				i->data);
 
@@ -917,7 +918,9 @@ int create_inode(char *pathname, struct inode *i)
 			sym_count ++;
 			break;
  		case SQUASHFS_BLKDEV_TYPE:
-	 	case SQUASHFS_CHRDEV_TYPE: {
+	 	case SQUASHFS_CHRDEV_TYPE:
+ 		case SQUASHFS_LBLKDEV_TYPE:
+	 	case SQUASHFS_LCHRDEV_TYPE: {
 			int chrdev = i->type == SQUASHFS_CHRDEV_TYPE;
 			TRACE("create_inode: dev, rdev 0x%llx\n", i->data);
 
@@ -945,6 +948,7 @@ int create_inode(char *pathname, struct inode *i)
 			break;
 		}
 		case SQUASHFS_FIFO_TYPE:
+		case SQUASHFS_LFIFO_TYPE:
 			TRACE("create_inode: fifo\n");
 
 			if(force)
@@ -961,6 +965,7 @@ int create_inode(char *pathname, struct inode *i)
 			fifo_count ++;
 			break;
 		case SQUASHFS_SOCKET_TYPE:
+		case SQUASHFS_LSOCKET_TYPE:
 			TRACE("create_inode: socket\n");
 			ERROR("create_inode: socket %s ignored\n", pathname);
 			break;
