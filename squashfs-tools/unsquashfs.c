@@ -26,8 +26,11 @@
 #include "squashfs_compat.h"
 #include "read_fs.h"
 #include "compressor.h"
+#include "xattr.h"
 
 #include <sys/sysinfo.h>
+#include <sys/types.h>
+#include <attr/xattr.h>
 
 struct cache *fragment_cache, *data_cache;
 struct queue *to_reader, *to_deflate, *to_writer, *from_writer;
@@ -685,10 +688,39 @@ void uncompress_inode_table(long long start, long long end)
 }
 
 
+void write_xattr(char *pathname, unsigned int xattr)
+{
+	unsigned int count;
+	struct xattr_list *xattr_list;
+	int i;
+
+	if(xattr == SQUASHFS_INVALID_XATTR)
+		return;
+
+	xattr_list = get_xattr(xattr, &count);
+	if(xattr_list == NULL)
+		return;
+
+	for(i = 0; i < count; i++) {
+		int res = lsetxattr(pathname, xattr_list[i].full_name,
+			xattr_list[i].value, xattr_list[i].vsize, 0);
+
+		if(res == -1) {
+			ERROR("lsetxattr failed in write_xattr\n");
+			ERROR("failed to set xattr name %s\n",
+						xattr_list[i].full_name);
+			return;
+		}
+	}
+}
+
+
 int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 	unsigned int xattr, unsigned int set_mode)
 {
 	struct utimbuf times = { time, time };
+
+	write_xattr(pathname, xattr);
 
 	if(utime(pathname, &times) == -1) {
 		ERROR("set_attributes: failed to set time on %s, because %s\n",
@@ -908,6 +940,8 @@ int create_inode(char *pathname, struct inode *i)
 				break;
 			}
 
+			write_xattr(pathname, i->xattr);
+	
 			if(root_process) {
 				if(lchown(pathname, i->uid, i->gid) == -1)
 					ERROR("create_inode: failed to change "
