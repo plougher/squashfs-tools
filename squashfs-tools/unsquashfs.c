@@ -702,15 +702,27 @@ void write_xattr(char *pathname, unsigned int xattr)
 		return;
 
 	for(i = 0; i < count; i++) {
-		int res = lsetxattr(pathname, xattr_list[i].full_name,
-			xattr_list[i].value, xattr_list[i].vsize, 0);
+		int prefix = xattr_list[i].type & SQUASHFS_XATTR_PREFIX_MASK;
 
-		if(res == -1) {
-			ERROR("lsetxattr failed in write_xattr\n");
-			ERROR("failed to set xattr name %s\n",
-						xattr_list[i].full_name);
-			return;
-		}
+		if(root_process || prefix == SQUASHFS_XATTR_USER) {
+			int res = lsetxattr(pathname, xattr_list[i].full_name,
+				xattr_list[i].value, xattr_list[i].vsize, 0);
+
+			if(res == -1)
+				ERROR("write_xattr: failed to write xattr %s"
+					" because %s\n",
+					xattr_list[i].full_name,
+					errno == ENOSPC || errno == EDQUOT ?
+					"no extended attribute space remaining "
+					"on destination filesystem" :
+					errno == ENOTSUP ?
+					"extended attributes are not supported "
+					"by the destination filesystem" :
+					"weird eror occurred");
+		} else
+			ERROR("write_xattr: could not write xattr %s "
+					"because you're not superuser!\n",
+					xattr_list[i].full_name);
 	}
 }
 
