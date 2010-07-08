@@ -694,7 +694,8 @@ void write_xattr(char *pathname, unsigned int xattr)
 	struct xattr_list *xattr_list;
 	int i;
 
-	if(xattr == SQUASHFS_INVALID_XATTR)
+	if(xattr == SQUASHFS_INVALID_XATTR ||
+			sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
 		return;
 
 	xattr_list = get_xattr(xattr, &count);
