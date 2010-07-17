@@ -83,6 +83,11 @@ extern void write_destination(int, long long, int, char *);
 extern long long generic_write_table(int, char *, int, char *, int);
 extern int mangle(char *, char *, int, int, int, int);
 
+/* helper functions from read_xattrs.c */
+extern int read_xattrs_from_disk(int, squashfs_super_block *);
+extern struct xattr_list *get_xattr(int, unsigned int *);
+
+
 static int get_prefix(struct xattr_list *xattr, char *name)
 {
 	int i;
@@ -617,3 +622,50 @@ int read_xattrs(struct dir_ent *dir_ent)
 	return generate_xattrs(xattrs, xattr_list);
 }
 
+
+/*
+ * Add the existing xattr ids and xattr metadata in the file system being
+ * appended to, to the in-memory xattr cache.  This allows duplicate checking to
+ * take place against the xattrs already in the file system being appended to,
+ * and ensures the pre-existing xattrs are written out along with any new xattrs
+ */
+int get_xattrs(int fd, squashfs_super_block *sBlk)
+{
+	int ids, res, i, id;
+	unsigned int count;
+
+	TRACE("get_xattrs\n");
+
+	res = read_xattrs_from_disk(fd, sBlk);
+	if(res == SQUASHFS_INVALID_BLK || res == 0)
+		goto done;
+	ids = res;
+
+	/*
+	 * for each xattr id read and construct its list of xattr
+	 * name:value pairs, and add them to the in-memory xattr cache
+	 */
+	for(i = 0; i < ids; i++) {
+		struct xattr_list *xattr_list = get_xattr(i, &count);
+		if(xattr_list == NULL) {
+			res = 0;
+			goto done;
+		}
+		id = generate_xattrs(count, xattr_list);
+
+		/*
+		 * Sanity check, the new xattr id should be the same as the
+		 * xattr id in the original file system
+		 */
+		if(id != i) {
+			ERROR("BUG, different xattr_id in get_xattrs\n");
+			res = 0;
+			goto done;
+		}
+	}
+
+done:
+	//free(xattr_ids);
+
+	return res;
+}

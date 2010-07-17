@@ -67,8 +67,6 @@ extern void *create_id(unsigned int);
 extern unsigned int get_uid(unsigned int);
 extern unsigned int get_guid(unsigned int);
 extern int get_xattrs(int, squashfs_super_block *);
-extern int read_xattrs_from_disk(int, squashfs_super_block *);
-extern struct xattr_list *get_xattr(int, unsigned int *);
 
 static struct compressor *comp;
 
@@ -670,54 +668,6 @@ int read_inode_lookup_table(int fd, squashfs_super_block *sBlk,
 	SQUASHFS_INSWAP_LONG_LONGS(*inode_lookup_table, sBlk->inodes);
 
 	return 1;
-}
-
-
-/*
- * Add the existing xattr ids and xattr metadata in the file system being
- * appended to, to the in-memory xattr cache.  This allows duplicate checking to
- * take place against the xattrs already in the file system being appended to,
- * and ensures the pre-existing xattrs are written out along with any new xattrs
- */
-int get_xattrs(int fd, squashfs_super_block *sBlk)
-{
-	int ids, res, i, id;
-	unsigned int count;
-
-	TRACE("get_xattrs\n");
-
-	res = read_xattrs_from_disk(fd, sBlk);
-	if(res == SQUASHFS_INVALID_BLK || res == 0)
-		goto done;
-	ids = res;
-
-	/*
-	 * for each xattr id read and construct its list of xattr
-	 * name:value pairs, and add them to the in-memory xattr cache
-	 */
-	for(i = 0; i < ids; i++) {
-		struct xattr_list *xattr_list = get_xattr(i, &count);
-		if(xattr_list == NULL) {
-			res = 0;
-			goto done;
-		}
-		id = generate_xattrs(count, xattr_list);
-
-		/*
-		 * Sanity check, the new xattr id should be the same as the
-		 * xattr id in the original file system
-		 */
-		if(id != i) {
-			ERROR("BUG, different xattr_id in get_xattrs\n");
-			res = 0;
-			goto done;
-		}
-	}
-
-done:
-	//free(xattr_ids);
-
-	return res;
 }
 
 
