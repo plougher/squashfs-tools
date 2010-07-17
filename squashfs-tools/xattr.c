@@ -68,6 +68,7 @@ static int xattr_ids = 0;
 
 /* xattr hash table for value duplicate detection */
 static struct xattr_list *dupl[65536];
+
 /* xattr hash table for id duplicate detection */
 static struct dupl_id *dupl_id[65536];
 
