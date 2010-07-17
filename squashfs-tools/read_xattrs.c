@@ -72,6 +72,16 @@ static void *xattrs = NULL;
 static long long xattr_table_start;
 
 /*
+ * Prefix lookup table, storing mapping to/from prefix string and prefix id
+ */
+struct prefix prefix_table[] = {
+	{ "user.", SQUASHFS_XATTR_USER },
+	{ "trusted.", SQUASHFS_XATTR_TRUSTED },
+	{ "security.", SQUASHFS_XATTR_SECURITY },
+	{ "", -1 }
+};
+
+/*
  * store mapping from location of compressed block in fs ->
  * location of uncompressed block in memory
  */

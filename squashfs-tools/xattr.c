@@ -83,9 +83,10 @@ extern void write_destination(int, long long, int, char *);
 extern long long generic_write_table(int, char *, int, char *, int);
 extern int mangle(char *, char *, int, int, int, int);
 
-/* helper functions from read_xattrs.c */
+/* helper functions and definitions from read_xattrs.c */
 extern int read_xattrs_from_disk(int, squashfs_super_block *);
 extern struct xattr_list *get_xattr(int, unsigned int *);
+extern struct prefix prefix_table[];
 
 
 static int get_prefix(struct xattr_list *xattr, char *name)
