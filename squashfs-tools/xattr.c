@@ -66,6 +66,16 @@ static int cache_bytes = 0, cache_size = 0;
 static struct squashfs_xattr_id *xattr_id_table = NULL;
 static int xattr_ids = 0;
 
+/* saved compressed xattr table */
+unsigned int sxattr_bytes = 0, stotal_xattr_bytes = 0;
+
+/* saved cached uncompressed xattr data */
+static char *sdata_cache = NULL;
+static int scache_bytes = 0;
+
+/* saved cached uncompressed xattr id table */
+static int sxattr_ids = 0;
+
 /* xattr hash table for value duplicate detection */
 static struct xattr_list *dupl[65536];
 
@@ -669,4 +679,55 @@ done:
 	//free(xattr_ids);
 
 	return res;
+}
+
+
+/*
+ * Save current state of xattrs, needed for restoring state in the event of an
+ * abort in appending
+ */
+int save_xattrs()
+{
+	/* save the current state of the compressed xattr data */
+	sxattr_bytes = xattr_bytes;
+	stotal_xattr_bytes = total_xattr_bytes;
+
+	/*
+	 * save the current state of the cached uncompressed xattr data.
+	 * Note we have to save the contents of the data cache because future
+	 * operations will delete the current contents
+	 */
+	sdata_cache = malloc(cache_bytes);
+	if(sdata_cache == NULL)
+		goto failed;
+
+	memcpy(sdata_cache, data_cache, cache_bytes);
+	scache_bytes = cache_bytes;
+
+	/* save the current state of the xattr id table */
+	sxattr_ids = xattr_ids;
+
+	return TRUE;
+
+failed:
+	ERROR("Out of memory in save_xattrs\n");
+	return FALSE;
+}
+
+
+/*
+ * Restore xattrs in the event of an abort in appending
+ */
+void restore_xattrs()
+{
+	/* restore the state of the compressed xattr data */
+	xattr_bytes = sxattr_bytes;
+	total_xattr_bytes = stotal_xattr_bytes;
+
+	/* restore the state of the uncomoressed xattr data */
+	memcpy(data_cache, sdata_cache, scache_bytes);
+	cache_bytes = scache_bytes;
+
+	/* restore the state of the xattr id table */
+	xattr_ids = sxattr_ids;
 }

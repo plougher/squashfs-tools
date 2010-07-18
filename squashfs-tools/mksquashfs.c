@@ -418,7 +418,8 @@ void progress_bar(long long current, long long max, int columns);
 long long generic_write_table(int, char *, int, char *, int);
 extern long long write_xattrs();
 extern unsigned int xattr_bytes, total_xattr_bytes;
-
+extern int save_xattrs();
+extern void restore_xattrs();
 
 
 struct queue *queue_init(int size)
@@ -769,6 +770,7 @@ void restorefs()
 	fragments = sfragments;
 	fragment_size = 0;
 	id_count = sid_count;
+	restore_xattrs();
 	longjmp(env, 1);
 }
 
@@ -4419,7 +4421,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.1-CVS (2010/06/17)\n");\
+	printf("mksquashfs version 4.1-CVS (2010/07/17)\n");\
 	printf("copyright (C) 2010 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or\n");\
 	printf("modify it under the terms of the GNU General Public License\n");\
@@ -4995,6 +4997,8 @@ printOptions:
 		sdup_files = dup_files;
 		sid_count = id_count;
 		write_recovery_data(&sBlk);
+		if(save_xattrs() == FALSE)
+			BAD_ERROR("Failed to save xattrs from existing filesystem\n");
 		restore = TRUE;
 		if(setjmp(env))
 			goto restore_filesystem;
