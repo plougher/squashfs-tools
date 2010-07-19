@@ -5151,7 +5151,7 @@ restore_filesystem:
 
 	total_bytes += total_inode_bytes + total_directory_bytes + uid_count
 		* sizeof(unsigned short) + guid_count * sizeof(unsigned short) +
-		sizeof(squashfs_super_block);
+		sizeof(squashfs_super_block) + total_xattr_bytes;
 
 	printf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
 		" %d\n", exportable ? "Exportable " : "", SQUASHFS_MAJOR,
