@@ -264,7 +264,6 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 		TRACE("Xattr block @ 0x%x, size %d\n", xattr_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, xattr_table + xattr_bytes, 1);
 		xattr_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
-		total_xattr_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
 		memcpy(data_cache, data_cache + SQUASHFS_METADATA_SIZE,
 			cache_bytes - SQUASHFS_METADATA_SIZE);
 		cache_bytes -= SQUASHFS_METADATA_SIZE;
@@ -413,6 +412,12 @@ static int get_xattr_id(int xattrs, struct xattr_list *xattr_list,
 	xattr_id->count = xattrs;
 	xattr_id->size = size;
 
+	/*
+	 * keep track of total uncompressed xattr data, needed for mksquashfs
+	 * file system summary
+	 */
+	total_xattr_bytes += size;
+
 	xattr_dupl->xattr_id = xattr_ids ++;
 	return xattr_dupl->xattr_id;
 }
@@ -450,7 +455,6 @@ long long write_xattrs()
 		TRACE("Xattr block @ 0x%x, size %d\n", xattr_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, xattr_table + xattr_bytes, 1);
 		xattr_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
-		total_xattr_bytes += avail_bytes + BLOCK_OFFSET;
 		datap += avail_bytes;
 		cache_bytes -= avail_bytes;
 	}
