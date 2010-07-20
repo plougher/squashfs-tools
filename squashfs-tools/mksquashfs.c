@@ -1100,7 +1100,7 @@ long long write_id_table()
 		SQUASHFS_SWAP_INTS(&id_table[i]->id, p + i, 1);
 	}
 
-	return generic_write_table(id_bytes, (char *) p, 0, NULL, 1);
+	return generic_write_table(id_bytes, (char *) p, 0, NULL, noI);
 }
 
 
