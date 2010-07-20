@@ -420,6 +420,7 @@ extern long long write_xattrs();
 extern unsigned int xattr_bytes, total_xattr_bytes;
 extern int save_xattrs();
 extern void restore_xattrs();
+void restorefs();
 
 
 struct queue *queue_init(int size)
@@ -427,11 +428,11 @@ struct queue *queue_init(int size)
 	struct queue *queue = malloc(sizeof(struct queue));
 
 	if(queue == NULL)
-		return NULL;
+		goto failed;
 
 	if((queue->data = malloc(sizeof(void *) * (size + 1))) == NULL) {
 		free(queue);
-		return NULL;
+		goto failed;
 	}
 
 	queue->size = size + 1;
@@ -441,6 +442,9 @@ struct queue *queue_init(int size)
 	pthread_cond_init(&queue->full, NULL);
 
 	return queue;
+
+failed:
+	BAD_ERROR("Out of memory in queue_init\n");
 }
 
 
