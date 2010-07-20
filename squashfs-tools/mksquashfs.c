@@ -1886,6 +1886,7 @@ long long generic_write_table(int length, char *buffer, int length2,
 			compressed_size);
 		write_destination(fd, bytes, compressed_size, cbuffer);
 		bytes += compressed_size;
+		total_bytes += avail_bytes;
 		length -= avail_bytes;
 	}
 
@@ -1893,11 +1894,13 @@ long long generic_write_table(int length, char *buffer, int length2,
 	if(length2) {
 		write_destination(fd, bytes, length2, (char *) buffer2);
 		bytes += length2;
+		total_bytes += length2;
 	}
 		
 	SQUASHFS_INSWAP_LONG_LONGS(list, meta_blocks);
 	write_destination(fd, bytes, sizeof(list), (char *) list);
 	bytes += sizeof(list);
+	total_bytes += sizeof(list);
 
 	TRACE("generic_write_table: total uncompressed %d compressed %lld\n",
 		olength, bytes - obytes);
@@ -5149,8 +5152,7 @@ restore_filesystem:
 	if(recovery_file[0] != '\0')
 		unlink(recovery_file);
 
-	total_bytes += total_inode_bytes + total_directory_bytes + uid_count
-		* sizeof(unsigned short) + guid_count * sizeof(unsigned short) +
+	total_bytes += total_inode_bytes + total_directory_bytes +
 		sizeof(squashfs_super_block) + total_xattr_bytes;
 
 	printf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
