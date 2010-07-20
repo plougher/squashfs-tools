@@ -476,7 +476,7 @@ long long write_xattrs()
 	SQUASHFS_INSWAP_XATTR_TABLE(&header);
 
 	return generic_write_table(xattr_ids * sizeof(struct squashfs_xattr_id),
-		(char *) xattr_id_table, sizeof(header), (char *) &header, 0);
+		(char *) xattr_id_table, sizeof(header), (char *) &header, noX);
 
 failed:
 	ERROR("Out of memory in xattr_table reallocation!\n");
