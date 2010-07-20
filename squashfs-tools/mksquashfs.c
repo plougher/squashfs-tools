@@ -4055,7 +4055,7 @@ long long write_inode_lookup_table()
 
 skip_inode_hash_table:
 	return generic_write_table(lookup_bytes, (char *) inode_lookup_table,
-		0, NULL, 0);
+		0, NULL, noI);
 }
 
 
