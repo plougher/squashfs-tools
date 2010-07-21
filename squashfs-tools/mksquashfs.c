@@ -3325,7 +3325,7 @@ struct dir_info *scan1_opendir(char *pathname)
 	struct dir_info *dir;
 
 	if((dir = malloc(sizeof(struct dir_info))) == NULL)
-		return NULL;
+		BAD_ERROR("Out of memory in scan1_opendir\n");
 
 	if(pathname[0] != '\0' && (dir->linuxdir = opendir(pathname)) == NULL) {
 		free(dir);
