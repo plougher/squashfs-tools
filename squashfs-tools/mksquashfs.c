@@ -4988,7 +4988,11 @@ printOptions:
 		scache_bytes = root_inode_offset + root_inode_size;
 		sdirectory_cache_bytes = uncompressed_data;
 		sdata_cache = malloc(scache_bytes);
+		if(sdata_cache == NULL)
+			BAD_ERROR("Out of memory in save filesystem state\n");
 		sdirectory_data_cache = malloc(sdirectory_cache_bytes);
+		if(sdirectory_data_cache == NULL)
+			BAD_ERROR("Out of memory in save filesystem state\n");
 		memcpy(sdata_cache, data_cache, scache_bytes);
 		memcpy(sdirectory_data_cache, directory_data_cache +
 			compressed_data, sdirectory_cache_bytes);
@@ -5046,6 +5050,8 @@ printOptions:
 				inode_dir_start_block;
 			sdirectory_compressed =
 				malloc(sdirectory_compressed_bytes);
+			if(sdirectory_compressed == NULL)
+				BAD_ERROR("Out of memory in save filesystem state\n");
 			memcpy(sdirectory_compressed, directory_table +
 				inode_dir_start_block,
 				sdirectory_compressed_bytes); 
