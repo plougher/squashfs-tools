@@ -1185,6 +1185,8 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 struct pathnames *init_subdir()
 {
 	struct pathnames *new = malloc(sizeof(struct pathnames));
+	if(new == NULL)
+		EXIT_UNSQUASH("Out of memory in init_subdir\n");
 	new->count = 0;
 	return new;
 }
