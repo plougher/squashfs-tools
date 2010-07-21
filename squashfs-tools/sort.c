@@ -53,9 +53,6 @@
 #define ERROR(s, args...)		do { \
 						fprintf(stderr, s, ## args); \
 					} while(0)
-#define EXIT_MKSQUASHFS()		do { \
-						exit(1); \
-					} while(0)
 
 int mkisofs_style = -1;
 
