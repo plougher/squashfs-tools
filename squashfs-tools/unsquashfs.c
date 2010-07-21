@@ -699,8 +699,10 @@ void write_xattr(char *pathname, unsigned int xattr)
 		return;
 
 	xattr_list = get_xattr(xattr, &count);
-	if(xattr_list == NULL)
+	if(xattr_list == NULL) {
+		ERROR("Failed to read xattrs for file %s\n", pathname);
 		return;
+	}
 
 	for(i = 0; i < count; i++) {
 		int prefix = xattr_list[i].type & SQUASHFS_XATTR_PREFIX_MASK;
@@ -711,19 +713,20 @@ void write_xattr(char *pathname, unsigned int xattr)
 
 			if(res == -1)
 				ERROR("write_xattr: failed to write xattr %s"
-					" because %s\n",
-					xattr_list[i].full_name,
+					" for file %s because %s\n",
+					xattr_list[i].full_name, pathname,
 					errno == ENOSPC || errno == EDQUOT ?
 					"no extended attribute space remaining "
 					"on destination filesystem" :
 					errno == ENOTSUP ?
 					"extended attributes are not supported "
 					"by the destination filesystem" :
-					"weird eror occurred");
+					"a weird eror occurred");
 		} else
 			ERROR("write_xattr: could not write xattr %s "
-					"because you're not superuser!\n",
-					xattr_list[i].full_name);
+					"for file %s because you're not "
+					"superuser!\n",
+					xattr_list[i].full_name, pathname);
 	}
 }
 
