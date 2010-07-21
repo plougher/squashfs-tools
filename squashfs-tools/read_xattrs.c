@@ -139,11 +139,17 @@ static int read_xattr_entry(struct xattr_list *xattr,
 		if(prefix_table[i].type == type)
 			break;
 
-	if(prefix_table[i].type == -1)
+	if(prefix_table[i].type == -1) {
+		ERROR("Unrecognised type in read_xattr_entry\n");
 		return 0;
+	}
 
 	len = strlen(prefix_table[i].prefix);
 	xattr->full_name = malloc(len + entry->size + 1);
+	if(xattr->full_name == NULL) {
+		ERROR("Out of memory in read_xattr_entry\n");
+		return -1;
+	}
 	memcpy(xattr->full_name, prefix_table[i].prefix, len);
 	memcpy(xattr->full_name + len, name, entry->size);
 	xattr->full_name[len + entry->size] = '\0';
@@ -305,6 +311,7 @@ struct xattr_list *get_xattr(int i, unsigned int *count)
 	for(j = 0; j < *count; j++) {
 		struct squashfs_xattr_entry entry;
 		struct squashfs_xattr_val val;
+		int res;
 
 		xattr_list = realloc(xattr_list, (j + 1) *
 						sizeof(struct xattr_list));
@@ -315,7 +322,9 @@ struct xattr_list *get_xattr(int i, unsigned int *count)
 			
 		SQUASHFS_SWAP_XATTR_ENTRY(&entry, xptr);
 		xptr += sizeof(entry);
-		read_xattr_entry(&xattr_list[j], &entry, xptr);
+		res = read_xattr_entry(&xattr_list[j], &entry, xptr);
+		if(res != 1)
+			goto failed;
 		xptr += entry.size;
 			
 		TRACE("get_xattr: xattr %d, type %d, size %d, name %s\n", j,
