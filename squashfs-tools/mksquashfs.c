@@ -4124,6 +4124,8 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		paths->name[i].paths = NULL;
 		if(use_regex) {
 			paths->name[i].preg = malloc(sizeof(regex_t));
+			if(paths->name[i].preg == NULL)
+				BAD_ERROR("Out of memory in add_path\n");
 			error = regcomp(paths->name[i].preg, targname,
 				REG_EXTENDED|REG_NOSUB);
 			if(error) {
