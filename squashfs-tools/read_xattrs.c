@@ -247,7 +247,9 @@ int read_xattrs_from_disk(int fd, squashfs_super_block *sBlk)
 
 		/* store mapping from location of compressed block in fs ->
 		 * location of uncompressed block in memory */
-		save_xattr_block(start, i * SQUASHFS_METADATA_SIZE);
+		res = save_xattr_block(start, i * SQUASHFS_METADATA_SIZE);
+		if(res == -1)
+			goto failed3;
 
 		length = read_block(fd, start, &start,
 			((unsigned char *) xattrs) +
