@@ -1025,11 +1025,13 @@ void uncompress_directory_table(long long start, long long end)
 	TRACE("uncompress_directory_table: start %lld, end %lld\n", start, end);
 
 	while(start < end) {
-		if(size - bytes < SQUASHFS_METADATA_SIZE && (directory_table =
-				realloc(directory_table, size +=
-				SQUASHFS_METADATA_SIZE)) == NULL)
-			EXIT_UNSQUASH("uncompress_directory_table: out of "
-				"memory in realloc\n");
+		if(size - bytes < SQUASHFS_METADATA_SIZE) {
+			directory_table = realloc(directory_table, size +=
+				SQUASHFS_METADATA_SIZE);
+			if(directory_table == NULL)
+				EXIT_UNSQUASH("Out of memory in "
+					"uncompress_directory_table\n");
+		}
 		TRACE("uncompress_directory_table: reading block 0x%llx\n",
 				start);
 		add_entry(directory_table_hash, start, bytes);
