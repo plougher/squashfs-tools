@@ -4888,7 +4888,10 @@ printOptions:
 	/* process the sort files - must be done afer the exclude files  */
 	for(i = source + 2; i < argc; i++)
 		if(strcmp(argv[i], "-sort") == 0) {
-			read_sort_file(argv[++i], source, source_path);
+			int res = read_sort_file(argv[++i], source,
+								source_path);
+			if(res == FALSE)
+				BAD_ERROR("Failed to read sort file\n");
 			sorted ++;
 		} else if(strcmp(argv[i], "-e") == 0)
 			break;

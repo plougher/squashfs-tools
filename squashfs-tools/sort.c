@@ -56,10 +56,6 @@
 #define EXIT_MKSQUASHFS()		do { \
 						exit(1); \
 					} while(0)
-#define BAD_ERROR(s, args...)		do {\
-						fprintf(stderr, "FATAL ERROR:" s, ##args);\
-						EXIT_MKSQUASHFS();\
-					} while(0);
 
 int mkisofs_style = -1;
 
@@ -179,16 +175,26 @@ re_read:
 
 	if(n == 1)
 		return TRUE;
-	if(n > 1)
-		BAD_ERROR(" Ambiguous sortlist entry \"%s\"\n\nIt maps to more "
+	if(n > 1) {
+		ERROR(" Ambiguous sortlist entry \"%s\"\n\nIt maps to more "
 			"than one source entry!  Please use an absolute path."
 			"\n", path);
+		return FALSE;
+	}
 
 error:
-        fprintf(stderr, "Cannot stat sortlist entry \"%s\"\n", path);
-        fprintf(stderr, "This is probably because you're using the wrong file\n");
-        fprintf(stderr, "path relative to the source directories\n");
-        return FALSE;
+        ERROR("Cannot stat sortlist entry \"%s\"\n", path);
+        ERROR("This is probably because you're using the wrong file\n");
+        ERROR("path relative to the source directories\n");
+	/*
+	 * Historical note
+	 * Failure to stat a sortlist entry is deliberately ignored, even
+	 * though it is an error.  Squashfs release 2.2 changed the behaviour
+	 * to treat it as a fatal error, but it was changed back to
+	 * the original behaviour to ignore it in release 2.2-r2 following
+	 * feedback from users at the time.
+	 */
+        return TRUE;
 }
 
 
@@ -231,17 +237,19 @@ int read_sort_file(char *filename, int source, char *source_path[])
 {
 	FILE *fd;
 	char sort_filename[16385];
-	int priority;
+	int res, priority;
 
 	if((fd = fopen(filename, "r")) == NULL) {
 		perror("Could not open sort_list file...");
 		return FALSE;
 	}
 	while(fscanf(fd, "%s %d", sort_filename, &priority) != EOF)
-		if(priority >= -32768 && priority <= 32767)
-			add_sort_list(sort_filename, priority, source,
+		if(priority >= -32768 && priority <= 32767) {
+			res = add_sort_list(sort_filename, priority, source,
 				source_path);
-		else
+			if(res == FALSE)
+				return FALSE;
+		} else
 			ERROR("Sort file %s, priority %d outside range of "
 				"-32767:32768 - skipping...\n", sort_filename,
 				priority);
