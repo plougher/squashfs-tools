@@ -1789,12 +1789,12 @@ void unlock_fragments()
 }
 
 
-int add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
+void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 	int fragment)
 {
 	struct frag_locked *entry = malloc(sizeof(struct frag_locked));
 	if(entry == NULL)
-		return FALSE;
+		BAD_ERROR("Out of memory in add_pending fragment\n");
 	entry->buffer = write_buffer;
 	entry->c_byte = c_byte;
 	entry->fragment = fragment;
@@ -1802,8 +1802,6 @@ int add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 	pthread_mutex_lock(&fragment_mutex);
 	insert_fragment_list(&frag_locked_list, entry);
 	pthread_mutex_unlock(&fragment_mutex);
-
-	return TRUE;
 }
 
 
