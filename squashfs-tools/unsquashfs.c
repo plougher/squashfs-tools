@@ -1123,6 +1123,8 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		paths->names ++;
 		paths->name = realloc(paths->name, (i + 1) *
 			sizeof(struct path_entry));
+		if(paths->name == NULL)
+			EXIT_UNSQUASH("Out of memory in add_path\n");	
 		paths->name[i].name = strdup(targname);
 		paths->name[i].paths = NULL;
 		if(use_regex) {
