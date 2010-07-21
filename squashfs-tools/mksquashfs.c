@@ -567,7 +567,7 @@ struct cache *cache_init(int buffer_size, int max_buffers)
 	struct cache *cache = malloc(sizeof(struct cache));
 
 	if(cache == NULL)
-		return NULL;
+		BAD_ERROR("Out of memory in cache_init\n");
 
 	cache->max_buffers = max_buffers;
 	cache->buffer_size = buffer_size;
