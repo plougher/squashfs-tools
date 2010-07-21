@@ -309,12 +309,10 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 		if(cache->count < cache->max_buffers) {
 			entry = malloc(sizeof(struct cache_entry));
 			if(entry == NULL)
-				goto failed;
+				EXIT_UNSQUASH("Out of memory in cache_get\n");
 			entry->data = malloc(cache->buffer_size);
-			if(entry->data == NULL) {
-				free(entry);
-				goto failed;
-			}
+			if(entry->data == NULL)
+				EXIT_UNSQUASH("Out of memory in cache_get\n");
 			entry->cache = cache;
 			entry->free_prev = entry->free_next = NULL;
 			cache->count ++;
@@ -351,10 +349,6 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 	}
 
 	return entry;
-
-failed:
-	pthread_mutex_unlock(&cache->mutex);
-	return NULL;
 }
 
 	
@@ -884,8 +878,6 @@ int write_file(struct inode *inode, char *pathname)
 		else {
 			block->buffer = cache_get(data_cache, start,
 				block_list[i]);
-			if(block->buffer == NULL)
-				EXIT_UNSQUASH("write_file: cache_get failed\n");
 			start += c_byte;
 		}
 		queue_put(to_writer, block);
@@ -900,8 +892,6 @@ int write_file(struct inode *inode, char *pathname)
 			EXIT_UNSQUASH("write_file: unable to malloc file\n");
 		s_ops.read_fragment(inode->fragment, &start, &size);
 		block->buffer = cache_get(fragment_cache, start, size);
-		if(block->buffer == NULL)
-			EXIT_UNSQUASH("write_file: cache_get failed\n");
 		block->offset = inode->offset;
 		block->size = inode->frag_bytes;
 		queue_put(to_writer, block);
