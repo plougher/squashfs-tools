@@ -658,11 +658,13 @@ void uncompress_inode_table(long long start, long long end)
 
 	TRACE("uncompress_inode_table: start %lld, end %lld\n", start, end);
 	while(start < end) {
-		if((size - bytes < SQUASHFS_METADATA_SIZE) &&
-				((inode_table = realloc(inode_table, size +=
-				SQUASHFS_METADATA_SIZE)) == NULL))
-			EXIT_UNSQUASH("uncompress_inode_table: out of memory "
-				"in realloc\n");
+		if(size - bytes < SQUASHFS_METADATA_SIZE) {
+			inode_table = realloc(inode_table, size +=
+				SQUASHFS_METADATA_SIZE);
+			if(inode_table == NULL)
+				EXIT_UNSQUASH("Out of memory in "
+					"uncompress_inode_table");
+		}
 		TRACE("uncompress_inode_table: reading block 0x%llx\n", start);
 		add_entry(inode_table_hash, start, bytes);
 		res = read_block(fd, start, &start, inode_table + bytes);
