@@ -658,7 +658,7 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 
 failed:
 	pthread_mutex_unlock(&cache->mutex);
-	return NULL;
+	BAD_ERROR("Out of memory in cache_get\n");
 }
 
 
