@@ -680,8 +680,6 @@ int get_xattrs(int fd, squashfs_super_block *sBlk)
 	}
 
 done:
-	//free(xattr_ids);
-
 	return res;
 }
 
