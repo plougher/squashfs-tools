@@ -4218,6 +4218,8 @@ void display_path2(struct pathname *paths, char *string)
 struct pathnames *init_subdir()
 {
 	struct pathnames *new = malloc(sizeof(struct pathnames));
+	if(new == NULL)
+		BAD_ERROR("Out of memory in init_subdir\n");
 	new->count = 0;
 	return new;
 }
