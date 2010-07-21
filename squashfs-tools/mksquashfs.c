@@ -411,7 +411,7 @@ struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct fragment *fragment,
 	unsigned short checksum, unsigned short fragment_checksum,
 	int checksum_flag);
-extern void generate_file_priorities(struct dir_info *dir, int priority,
+extern int generate_file_priorities(struct dir_info *dir, int priority,
 	struct stat *buf);
 extern struct priority_entry *priority_list[65536];
 void progress_bar(long long current, long long max, int columns);
@@ -3542,9 +3542,13 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	dir_ent->our_dir = NULL;
 	dir_info->dir_ent = dir_ent;
 
-	if(sorted)
-		generate_file_priorities(dir_info, 0,
+	if(sorted) {
+		int res = generate_file_priorities(dir_info, 0,
 			&dir_info->dir_ent->inode->buf);
+
+		if(res == FALSE)
+			BAD_ERROR("generate_file_priorities failed\n");
+	}
 	queue_put(to_reader, dir_info);
 	if(sorted)
 		sort_files_and_write(dir_info);
