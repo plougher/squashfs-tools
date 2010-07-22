@@ -1,5 +1,6 @@
 /*
- * Create a squashfs filesystem.  This is a highly compressed read only filesystem.
+ * Create a squashfs filesystem.  This is a highly compressed read only
+ * filesystem.
  *
  * Copyright (c) 2008, 2009, 2010
  * Phillip Lougher <phillip@lougher.demon.co.uk>
@@ -42,16 +43,18 @@
 #include "xattr.h"
 
 #ifdef SQUASHFS_TRACE
-#define TRACE(s, args...)		do { \
-						printf("mksquashfs: "s, ## args); \
-					} while(0)
+#define TRACE(s, args...) \
+		do { \
+			printf("mksquashfs: "s, ## args); \
+		} while(0)
 #else
 #define TRACE(s, args...)
 #endif
 
-#define ERROR(s, args...)		do { \
-						fprintf(stderr, s, ## args); \
-					} while(0)
+#define ERROR(s, args...) \
+		do { \
+			fprintf(stderr, s, ## args); \
+		} while(0)
 
 /* compressed xattr table */
 static char *xattr_table = NULL;

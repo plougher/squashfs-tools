@@ -1,5 +1,6 @@
 /*
- * Create a squashfs filesystem.  This is a highly compressed read only filesystem.
+ * Create a squashfs filesystem.  This is a highly compressed read only
+ * filesystem.
  *
  * Copyright (c) 2010
  * Phillip Lougher <phillip@lougher.demon.co.uk>

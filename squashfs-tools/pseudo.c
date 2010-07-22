@@ -1,5 +1,6 @@
 /*
- * Create a squashfs filesystem.  This is a highly compressed read only filesystem.
+ * Create a squashfs filesystem.  This is a highly compressed read only
+ * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
  * Phillip Lougher <phillip@lougher.demon.co.uk>
@@ -35,23 +36,29 @@
 #include "pseudo.h"
 
 #ifdef SQUASHFS_TRACE
-#define TRACE(s, args...)		do { \
-						printf("mksquashfs: "s, ## args); \
-					} while(0)
+#define TRACE(s, args...) \
+		do { \
+			printf("mksquashfs: "s, ## args); \
+		} while(0)
 #else
 #define TRACE(s, args...)
 #endif
 
-#define ERROR(s, args...)		do { \
-						fprintf(stderr, s, ## args); \
-					} while(0)
-#define EXIT_MKSQUASHFS()		do { \
-						exit(1); \
-					} while(0)
-#define BAD_ERROR(s, args...)		do {\
-						fprintf(stderr, "FATAL ERROR:" s, ##args);\
-						EXIT_MKSQUASHFS();\
-					} while(0);
+#define ERROR(s, args...) \
+		do { \
+			fprintf(stderr, s, ## args); \
+		} while(0)
+
+#define EXIT_MKSQUASHFS() \
+		do { \
+			exit(1); \
+		} while(0)
+
+#define BAD_ERROR(s, args...) \
+		do {\
+			fprintf(stderr, "FATAL ERROR:" s, ##args);\
+			EXIT_MKSQUASHFS();\
+		} while(0);
 
 #define TRUE 1
 #define FALSE 0

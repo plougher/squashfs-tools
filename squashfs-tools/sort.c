@@ -1,5 +1,6 @@
 /*
- * Create a squashfs filesystem.  This is a highly compressed read only filesystem.
+ * Create a squashfs filesystem.  This is a highly compressed read only
+ * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
  * Phillip Lougher <phillip@lougher.demon.co.uk>
@@ -40,19 +41,23 @@
 #include "sort.h"
 
 #ifdef SQUASHFS_TRACE
-#define TRACE(s, args...)		do { \
-						printf("mksquashfs: "s, ## args); \
-					} while(0)
+#define TRACE(s, args...) \
+		do { \
+			printf("mksquashfs: "s, ## args); \
+		} while(0)
 #else
 #define TRACE(s, args...)
 #endif
 
-#define INFO(s, args...)		do { \
-						if(!silent) printf("mksquashfs: "s, ## args); \
-					} while(0)
-#define ERROR(s, args...)		do { \
-						fprintf(stderr, s, ## args); \
-					} while(0)
+#define INFO(s, args...) \
+		do { \
+			if(!silent) printf("mksquashfs: "s, ## args); \
+		} while(0)
+
+#define ERROR(s, args...) \
+		do { \
+			fprintf(stderr, s, ## args); \
+		} while(0)
 
 int mkisofs_style = -1;
 

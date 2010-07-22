@@ -1,5 +1,6 @@
 /*
- * Read a squashfs filesystem.  This is a highly compressed read only filesystem.
+ * Read a squashfs filesystem.  This is a highly compressed read only
+ * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
  * Phillip Lougher <phillip@lougher.demon.co.uk>
@@ -49,16 +50,18 @@
 #include <stdlib.h>
 
 #ifdef SQUASHFS_TRACE
-#define TRACE(s, args...)		do { \
-						printf("mksquashfs: "s, ## args); \
-					} while(0)
+#define TRACE(s, args...) \
+		do { \
+			printf("mksquashfs: "s, ## args); \
+		} while(0)
 #else
 #define TRACE(s, args...)
 #endif
 
-#define ERROR(s, args...)		do { \
-						fprintf(stderr, s, ## args); \
-					} while(0)
+#define ERROR(s, args...) \
+		do { \
+			fprintf(stderr, s, ## args); \
+		} while(0)
 
 extern int read_fs_bytes(int, long long, int, void *);
 extern int add_file(long long, long long, long long, unsigned int *, int,
@@ -284,7 +287,8 @@ int scan_inode_table(int fd, long long start, long long end,
 			case SQUASHFS_LSYMLINK_TYPE: {
 				squashfs_symlink_inode_header inodep;
 	
-				SQUASHFS_SWAP_SYMLINK_INODE_HEADER(&inodep, cur_ptr);
+				SQUASHFS_SWAP_SYMLINK_INODE_HEADER(&inodep,
+					cur_ptr);
 				(*sym_count) ++;
 				cur_ptr += sizeof(inodep) + inodep.symlink_size;
 
@@ -296,7 +300,8 @@ int scan_inode_table(int fd, long long start, long long end,
 			case SQUASHFS_DIR_TYPE: {
 				squashfs_dir_inode_header dir_inode;
 
-				SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode, cur_ptr);
+				SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode,
+					cur_ptr);
 				if(dir_inode.start_block < directory_start_block)
 					*uncompressed_directory +=
 					dir_inode.file_size;
@@ -308,7 +313,8 @@ int scan_inode_table(int fd, long long start, long long end,
 				squashfs_ldir_inode_header dir_inode;
 				int i;
 
-				SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode, cur_ptr);
+				SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode,
+					cur_ptr);
 				if(dir_inode.start_block < directory_start_block)
 					*uncompressed_directory +=
 					dir_inode.file_size;
@@ -317,7 +323,8 @@ int scan_inode_table(int fd, long long start, long long end,
 				for(i = 0; i < dir_inode.i_count; i++) {
 					squashfs_dir_index index;
 
-					SQUASHFS_SWAP_DIR_INDEX(&index, cur_ptr);
+					SQUASHFS_SWAP_DIR_INDEX(&index,
+						cur_ptr);
 					cur_ptr += sizeof(squashfs_dir_index) +
 						index.size + 1;
 				}

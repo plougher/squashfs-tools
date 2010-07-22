@@ -1,5 +1,6 @@
 /*
- * Read a squashfs filesystem.  This is a highly compressed read only filesystem.
+ * Read a squashfs filesystem.  This is a highly compressed read only
+ * filesystem.
  *
  * Copyright (c) 2010
  * Phillip Lougher <phillip@lougher.demon.co.uk>
@@ -47,16 +48,18 @@
 #include <stdlib.h>
 
 #ifdef SQUASHFS_TRACE
-#define TRACE(s, args...)		do { \
-						printf("read_xattrs: "s, ## args); \
-					} while(0)
+#define TRACE(s, args...) \
+		do { \
+			printf("read_xattrs: "s, ## args); \
+		} while(0)
 #else
 #define TRACE(s, args...)
 #endif
 
-#define ERROR(s, args...)		do { \
-						fprintf(stderr, s, ## args); \
-					} while(0)
+#define ERROR(s, args...) \
+		do { \
+			fprintf(stderr, s, ## args); \
+		} while(0)
 
 extern int read_fs_bytes(int, long long, int, void *);
 extern int read_block(int, long long, long long *, void *);
