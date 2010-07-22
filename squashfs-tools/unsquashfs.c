@@ -1,5 +1,6 @@
 /*
- * Unsquash a squashfs filesystem.  This is a highly compressed read only filesystem.
+ * Unsquash a squashfs filesystem.  This is a highly compressed read only
+ * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
  * Phillip Lougher <phillip@lougher.demon.co.uk>
@@ -501,7 +502,8 @@ int print_filename(char *pathname, struct inode *inode)
 }
 	
 
-void add_entry(struct hash_table_entry *hash_table[], long long start, int bytes)
+void add_entry(struct hash_table_entry *hash_table[], long long start,
+	int bytes)
 {
 	int hash = CALCULATE_HASH(start);
 	struct hash_table_entry *hash_table_entry;
@@ -548,7 +550,8 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 		res = read(fd, buff + count, bytes - count);
 		if(res < 1) {
 			if(res == 0) {
-				ERROR("Read on filesystem failed because EOF\n");
+				ERROR("Read on filesystem failed because "
+					"EOF\n");
 				return FALSE;
 			} else if(errno != EINTR) {
 				ERROR("Read on filesystem failed because %s\n",
@@ -1400,7 +1403,8 @@ void squashfs_stat(char *source)
 	printf("Creation or last append time %s", mkfs_str ? mkfs_str :
 		"failed to get time\n");
 	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n",
-		sBlk.s.bytes_used / 1024.0, sBlk.s.bytes_used / (1024.0 * 1024.0));
+		sBlk.s.bytes_used / 1024.0, sBlk.s.bytes_used /
+		(1024.0 * 1024.0));
 	if(sBlk.s.s_major == 4)
 		printf("Compression %s\n", comp->name);
 	printf("Block size %d\n", sBlk.s.block_size);
@@ -1949,15 +1953,17 @@ void progress_bar(long long current, long long max, int columns)
 
 #define VERSION() \
 	printf("unsquashfs version 4.1-CVS (2010/07/03)\n");\
-	printf("copyright (C) 2010 Phillip Lougher <phillip@lougher.demon.co.uk>"\
-		"\n\n");\
-    	printf("This program is free software; you can redistribute it and/or\n");\
-	printf("modify it under the terms of the GNU General Public License\n");\
-	printf("as published by the Free Software Foundation; either version 2,"\
+	printf("copyright (C) 2010 Phillip Lougher "\
+		"<phillip@lougher.demon.co.uk>\n\n");\
+    	printf("This program is free software; you can redistribute it and/or"\
 		"\n");\
+	printf("modify it under the terms of the GNU General Public License"\
+		"\n");\
+	printf("as published by the Free Software Foundation; either version "\
+		"2,\n");\
 	printf("or (at your option) any later version.\n\n");\
-	printf("This program is distributed in the hope that it will be useful,"\
-		"\n");\
+	printf("This program is distributed in the hope that it will be "\
+		"useful,\n");\
 	printf("but WITHOUT ANY WARRANTY; without even the implied warranty of"\
 		"\n");\
 	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"\
