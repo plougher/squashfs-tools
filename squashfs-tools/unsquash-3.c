@@ -284,12 +284,7 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 	TRACE("squashfs_opendir: inode start block %d, offset %d\n",
 		block_start, offset);
 
-	if((*i = s_ops.read_inode(block_start, offset)) == NULL) {
-		ERROR("squashfs_opendir: failed to read directory inode %d\n",
-			block_start);
-		return NULL;
-	}
-
+	*i = s_ops.read_inode(block_start, offset);
 	start = sBlk.s.directory_table_start + (*i)->start;
 	bytes = lookup_entry(directory_table_hash, start);
 
