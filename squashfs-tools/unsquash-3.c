@@ -288,11 +288,9 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 	start = sBlk.s.directory_table_start + (*i)->start;
 	bytes = lookup_entry(directory_table_hash, start);
 
-	if(bytes == -1) {
-		ERROR("squashfs_opendir: directory block %d not found!\n",
+	if(bytes == -1)
+		EXIT_UNSQUASH("squashfs_opendir: directory block %d not found!\n",
 			block_start);
-		return NULL;
-	}
 
 	bytes += (*i)->offset;
 	size = (*i)->data + bytes - 3;
