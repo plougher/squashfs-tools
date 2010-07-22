@@ -1313,11 +1313,7 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		else if(new == NULL) {
 			if(type == SQUASHFS_FILE_TYPE ||
 					type == SQUASHFS_LREG_TYPE) {
-				if((i = s_ops.read_inode(start_block, offset))
-						== NULL) {
-					ERROR("failed to read header\n");
-					continue;
-				}
+				i = s_ops.read_inode(start_block, offset);
 				if(created_inode[i->inode_number - 1] == NULL) {
 					created_inode[i->inode_number - 1] =
 						(char *) i;
@@ -1376,10 +1372,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		if(type == SQUASHFS_DIR_TYPE)
 			dir_scan(pathname, start_block, offset, new);
 		else if(new == NULL) {
-			if((i = s_ops.read_inode(start_block, offset)) == NULL) {
-				ERROR("failed to read header\n");
-				continue;
-			}
+			i = s_ops.read_inode(start_block, offset);
 
 			if(lsonly || info)
 				print_filename(pathname, i);
