@@ -114,10 +114,8 @@ struct inode *read_inode_3(unsigned int start_block, unsigned int offset)
 
 	TRACE("read_inode: reading inode [%d:%d]\n", start_block,  offset);
 
-	if(bytes == -1) {
-		ERROR("read_inode: inode table block %lld not found\n", start); 
-		return NULL;
-	}
+	if(bytes == -1)
+		EXIT_UNSQUASH("read_inode: inode table block %lld not found\n", start); 
 
 	if(swap) {
 		squashfs_base_inode_header_3 sinode;
