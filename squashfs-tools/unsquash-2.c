@@ -256,9 +256,8 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 			i.data = 0;
 			break;
 		default:
-			ERROR("Unknown inode type %d in read_inode_header_2!\n",
+			EXIT_UNSQUASH("Unknown inode type %d in read_inode_header_2!\n",
 				header.base.inode_type);
-			return NULL;
 	}
 	return &i;
 }
