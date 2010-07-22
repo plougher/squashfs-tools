@@ -1291,12 +1291,6 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct inode *i;
 	struct dir *dir = s_ops.squashfs_opendir(start_block, offset, &i);
 
-	if(dir == NULL) {
-		ERROR("pre_scan: Failed to read directory %s (%x:%x)\n",
-			parent_name, start_block, offset);
-		return FALSE;
-	}
-
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
 		struct inode *i;
 
@@ -1342,12 +1336,6 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *new;
 	struct inode *i;
 	struct dir *dir = s_ops.squashfs_opendir(start_block, offset, &i);
-
-	if(dir == NULL) {
-		ERROR("dir_scan: Failed to read directory %s (%x:%x)\n",
-			parent_name, start_block, offset);
-		return FALSE;
-	}
 
 	if(lsonly || info)
 		print_filename(parent_name, i);
