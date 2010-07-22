@@ -1,5 +1,6 @@
 /*
- * Create a squashfs filesystem.  This is a highly compressed read only filesystem.
+ * Create a squashfs filesystem.  This is a highly compressed read only
+ * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
  * Phillip Lougher <phillip@lougher.demon.co.uk>
@@ -69,41 +70,49 @@
 #include "xattr.h"
 
 #ifdef SQUASHFS_TRACE
-#define TRACE(s, args...)	do { \
-					if(progress_enabled) \
-						printf("\n"); \
-					printf("mksquashfs: "s, ## args); \
-				} while(0)
+#define TRACE(s, args...) \
+		do { \
+			if(progress_enabled) \
+				printf("\n"); \
+			printf("mksquashfs: "s, ## args); \
+		} while(0)
 #else
 #define TRACE(s, args...)
 #endif
 
-#define INFO(s, args...)	do {\
-					 if(!silent)\
-						printf("mksquashfs: "s, ## args);\
-				} while(0)
-#define ERROR(s, args...)	do {\
-					pthread_mutex_lock(&progress_mutex); \
-					if(progress_enabled) \
-						fprintf(stderr, "\n"); \
-					fprintf(stderr, s, ## args);\
-					pthread_mutex_unlock(&progress_mutex); \
-				} while(0)
-#define EXIT_MKSQUASHFS()	do {\
-					if(restore)\
-						restorefs();\
-					if(delete && destination_file && !block_device)\
-						unlink(destination_file);\
-					exit(1);\
-				} while(0)
-#define BAD_ERROR(s, args...)	do {\
-					pthread_mutex_lock(&progress_mutex); \
-					if(progress_enabled) \
-						fprintf(stderr, "\n"); \
-					fprintf(stderr, "FATAL ERROR:" s, ##args);\
-					pthread_mutex_unlock(&progress_mutex); \
-					EXIT_MKSQUASHFS();\
-				} while(0)
+#define INFO(s, args...) \
+		do {\
+			 if(!silent)\
+				printf("mksquashfs: "s, ## args);\
+		} while(0)
+
+#define ERROR(s, args...) \
+		do {\
+			pthread_mutex_lock(&progress_mutex); \
+			if(progress_enabled) \
+				fprintf(stderr, "\n"); \
+			fprintf(stderr, s, ## args);\
+			pthread_mutex_unlock(&progress_mutex); \
+		} while(0)
+
+#define EXIT_MKSQUASHFS() \
+		do {\
+			if(restore)\
+				restorefs();\
+			if(delete && destination_file && !block_device)\
+				unlink(destination_file);\
+			exit(1);\
+		} while(0)
+
+#define BAD_ERROR(s, args...) \
+		do {\
+			pthread_mutex_lock(&progress_mutex); \
+			if(progress_enabled) \
+				fprintf(stderr, "\n"); \
+			fprintf(stderr, "FATAL ERROR:" s, ##args);\
+			pthread_mutex_unlock(&progress_mutex); \
+			EXIT_MKSQUASHFS();\
+		} while(0)
 
 /* offset of data in compressed metadata blocks (allowing room for
  * compressed size */
@@ -2127,8 +2136,8 @@ struct file_info *duplicate(long long file_size, long long bytes,
 	int frag_bytes = file_buffer ? file_buffer->size : 0;
 
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
-		if(file_size == dupl_ptr->file_size && bytes == dupl_ptr->bytes &&
-				 frag_bytes == dupl_ptr->fragment->size) {
+		if(file_size == dupl_ptr->file_size && bytes == dupl_ptr->bytes
+				 && frag_bytes == dupl_ptr->fragment->size) {
 			long long target_start, dup_start = dupl_ptr->start;
 			int block;
 
@@ -2435,7 +2444,8 @@ void *reader(void *arg)
 
 		queue_get(to_reader);
 		for(i = 65535; i >= 0; i--)
-			for(entry = priority_list[i]; entry; entry = entry->next)
+			for(entry = priority_list[i]; entry;
+							entry = entry->next)
 				reader_read_file(entry->dir);
 	}
 
@@ -4435,14 +4445,21 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 #define VERSION() \
 	printf("mksquashfs version 4.1-CVS (2010/07/19)\n");\
-	printf("copyright (C) 2010 Phillip Lougher <phillip@lougher.demon.co.uk>\n\n"); \
-	printf("This program is free software; you can redistribute it and/or\n");\
-	printf("modify it under the terms of the GNU General Public License\n");\
-	printf("as published by the Free Software Foundation; either version 2,\n");\
+	printf("copyright (C) 2010 Phillip Lougher "\
+		"<phillip@lougher.demon.co.uk>\n\n"); \
+	printf("This program is free software; you can redistribute it and/or"\
+		"\n");\
+	printf("modify it under the terms of the GNU General Public License"\
+		"\n");\
+	printf("as published by the Free Software Foundation; either version "\
+		"2,\n");\
 	printf("or (at your option) any later version.\n\n");\
-	printf("This program is distributed in the hope that it will be useful,\n");\
-	printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");\
-	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");\
+	printf("This program is distributed in the hope that it will be "\
+		"useful,\n");\
+	printf("but WITHOUT ANY WARRANTY; without even the implied warranty "\
+		"of\n");\
+	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"\
+		"\n");\
 	printf("GNU General Public License for more details.\n");
 int main(int argc, char *argv[])
 {
@@ -4710,11 +4727,13 @@ printOptions:
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
 			ERROR("-no-sparse\t\tdon't detect sparse files\n");
-			ERROR("-no-xattrs\t\tdon't detect extended attributes\n");
+			ERROR("-no-xattrs\t\tdon't detect extended "
+				"attributes\n");
 			ERROR("-noI\t\t\tdo not compress inode table\n");
 			ERROR("-noD\t\t\tdo not compress data blocks\n");
 			ERROR("-noF\t\t\tdo not compress fragment blocks\n");
-			ERROR("-noX\t\t\tdo not compress extended attributes\n");
+			ERROR("-noX\t\t\tdo not compress extended "
+				"attributes\n");
 			ERROR("-no-fragments\t\tdo not use fragments\n");
 			ERROR("-always-use-fragments\tuse fragment blocks for "
 				"files larger than block size\n");
@@ -4731,8 +4750,10 @@ printOptions:
 				"rather than the\n");
 			ERROR("\t\t\tcontents of the directory\n");
 			ERROR("\nFilesystem filter options:\n");
-			ERROR("-p <pseudo-definition>\tAdd pseudo file definition\n");
-			ERROR("-pf <pseudo-file>\tAdd list of pseudo file definitions\n");
+			ERROR("-p <pseudo-definition>\tAdd pseudo file "
+				"definition\n");
+			ERROR("-pf <pseudo-file>\tAdd list of pseudo file "
+				"definitions\n");
 			ERROR("-sort <sort_file>\tsort files according to "
 				"priorities in <sort_file>.  One\n");
 			ERROR("\t\t\tfile or dir with priority per line.  "
@@ -4849,8 +4870,10 @@ printOptions:
 	signal(SIGTERM, sighandler2);
 	signal(SIGINT, sighandler2);
 
-	/* process the exclude files - must be done afer destination file has
-	 * been possibly created */
+	/*
+	 * process the exclude files - must be done afer destination file has
+	 * been possibly created
+	 */
 	for(i = source + 2; i < argc; i++)
 		if(strcmp(argv[i], "-ef") == 0) {
 			FILE *fd;
@@ -5018,7 +5041,8 @@ printOptions:
 		sid_count = id_count;
 		write_recovery_data(&sBlk);
 		if(save_xattrs() == FALSE)
-			BAD_ERROR("Failed to save xattrs from existing filesystem\n");
+			BAD_ERROR("Failed to save xattrs from existing "
+				"filesystem\n");
 		restore = TRUE;
 		if(setjmp(env))
 			goto restore_filesystem;
@@ -5058,7 +5082,8 @@ printOptions:
 			sdirectory_compressed =
 				malloc(sdirectory_compressed_bytes);
 			if(sdirectory_compressed == NULL)
-				BAD_ERROR("Out of memory in save filesystem state\n");
+				BAD_ERROR("Out of memory in save filesystem "
+					"state\n");
 			memcpy(sdirectory_compressed, directory_table +
 				inode_dir_start_block,
 				sdirectory_compressed_bytes); 
@@ -5180,7 +5205,8 @@ restore_filesystem:
 	printf("\t%s data, %s metadata, %s fragments, %s xattrs\n",
 		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" :
 		"compressed", no_fragments ? "no" : noF ? "uncompressed" :
-		"compressed", no_xattrs ? "no" : noX ? "uncompressed" : "compressed");
+		"compressed", no_xattrs ? "no" : noX ? "uncompressed" :
+		"compressed");
 	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
 		"not ");
 	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0,
