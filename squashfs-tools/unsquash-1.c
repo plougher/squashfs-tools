@@ -1,5 +1,6 @@
 /*
- * Unsquash a squashfs filesystem.  This is a highly compressed read only filesystem.
+ * Unsquash a squashfs filesystem.  This is a highly compressed read only
+ * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
  * Phillip Lougher <phillip@lougher.demon.co.uk>
@@ -63,7 +64,8 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 	TRACE("read_inode: reading inode [%d:%d]\n", start_block,  offset);
 
 	if(bytes == -1)
-		EXIT_UNSQUASH("read_inode: inode table block %lld not found\n", start); 
+		EXIT_UNSQUASH("read_inode: inode table block %lld not found\n",
+			 start); 
 
 	if(swap) {
 		squashfs_base_inode_header_1 sinode;
@@ -190,7 +192,8 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 			break;
 			}
 		default:
-			EXIT_UNSQUASH("Unknown inode type %d in read_inode_header_1!\n",
+			EXIT_UNSQUASH("Unknown inode type %d in "
+				" read_inode_header_1!\n",
 				header.base.inode_type);
 	}
 	return &i;
@@ -217,8 +220,8 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 	start = sBlk.s.directory_table_start + (*i)->start;
 	bytes = lookup_entry(directory_table_hash, start);
 	if(bytes == -1)
-		EXIT_UNSQUASH("squashfs_opendir: directory block %d not found!\n",
-			block_start);
+		EXIT_UNSQUASH("squashfs_opendir: directory block %d not "
+			"found!\n", block_start);
 
 	bytes += (*i)->offset;
 	size = (*i)->data + bytes;
@@ -269,8 +272,8 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 				new_dir = realloc(dir->dirs, (dir->dir_count +
 					DIR_ENT_SIZE) * sizeof(struct dir_ent));
 				if(new_dir == NULL)
-					EXIT_UNSQUASH("squashfs_opendir: realloc "
-						"failed!\n");
+					EXIT_UNSQUASH("squashfs_opendir: "
+						"realloc failed!\n");
 				dir->dirs = new_dir;
 			}
 			strcpy(dir->dirs[dir->dir_count].name, dire->name);
