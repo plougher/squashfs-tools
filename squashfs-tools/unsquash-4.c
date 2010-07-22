@@ -264,10 +264,8 @@ struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset,
 	bytes += (*i)->offset;
 	size = (*i)->data + bytes - 3;
 
-	if((dir = malloc(sizeof(struct dir))) == NULL) {
-		ERROR("squashfs_opendir: malloc failed!\n");
-		return NULL;
-	}
+	if((dir = malloc(sizeof(struct dir))) == NULL)
+		EXIT_UNSQUASH("squashfs_opendir: malloc failed!\n");
 
 	dir->dir_count = 0;
 	dir->cur_entry = 0;
@@ -300,13 +298,9 @@ struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset,
 			if((dir->dir_count % DIR_ENT_SIZE) == 0) {
 				new_dir = realloc(dir->dirs, (dir->dir_count +
 					DIR_ENT_SIZE) * sizeof(struct dir_ent));
-				if(new_dir == NULL) {
-					ERROR("squashfs_opendir: realloc "
+				if(new_dir == NULL)
+					EXIT_UNSQUASH("squashfs_opendir: realloc "
 						"failed!\n");
-					free(dir->dirs);
-					free(dir);
-					return NULL;
-				}
 				dir->dirs = new_dir;
 			}
 			strcpy(dir->dirs[dir->dir_count].name, dire->name);
