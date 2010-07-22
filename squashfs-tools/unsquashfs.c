@@ -1282,7 +1282,7 @@ empty_set:
 }
 
 
-int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
+void pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *paths)
 {
 	unsigned int type;
@@ -1323,8 +1323,6 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	}
 
 	squashfs_closedir(dir);
-
-	return TRUE;
 }
 
 
