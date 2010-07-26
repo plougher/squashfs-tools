@@ -889,11 +889,12 @@ void *get_inode(int req_size)
 	while(cache_bytes >= SQUASHFS_METADATA_SIZE) {
 		if((inode_size - inode_bytes) <
 				((SQUASHFS_METADATA_SIZE << 1)) + 2) {
-			inode_table = realloc(inode_table, inode_size +
+			void *it = realloc(inode_table, inode_size +
 				(SQUASHFS_METADATA_SIZE << 1) + 2);
-			if(inode_table == NULL) {
+			if(it == NULL) {
 				goto failed;
 			}
+			inode_table = it;
 			inode_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 
@@ -1033,13 +1034,14 @@ long long write_inodes()
 	while(cache_bytes) {
 		if(inode_size - inode_bytes <
 				((SQUASHFS_METADATA_SIZE << 1) + 2)) {
-			inode_table = realloc(inode_table, inode_size +
+			void *it = realloc(inode_table, inode_size +
 				((SQUASHFS_METADATA_SIZE << 1) + 2));
-			if(inode_table == NULL) {
+			if(it == NULL) {
 				BAD_ERROR("Out of memory in inode table "
 					"reallocation!\n");
 			}
 			inode_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
+			inode_table = it;
 		}
 		avail_bytes = cache_bytes > SQUASHFS_METADATA_SIZE ?
 			SQUASHFS_METADATA_SIZE : cache_bytes;
