@@ -4143,6 +4143,8 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		paths->names ++;
 		paths->name = realloc(paths->name, (i + 1) *
 			sizeof(struct path_entry));
+		if(paths->name == NULL)
+			BAD_ERROR("Out of memory in add path\n");
 		paths->name[i].name = strdup(targname);
 		paths->name[i].paths = NULL;
 		if(use_regex) {
@@ -4250,10 +4252,13 @@ struct pathnames *init_subdir()
 
 struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 {
-	if(paths->count % PATHS_ALLOC_SIZE == 0)
+	if(paths->count % PATHS_ALLOC_SIZE == 0) {
 		paths = realloc(paths, sizeof(struct pathnames *) +
 			(paths->count + PATHS_ALLOC_SIZE) *
 			sizeof(struct pathname *));
+		if(paths == NULL)
+			BAD_ERROR("Out of memory in add_subdir\n");
+	}
 
 	paths->path[paths->count++] = path;
 	return paths;
@@ -5001,10 +5006,13 @@ printOptions:
 				"device or file use -noappend\n");
 			EXIT_MKSQUASHFS();
 		}
-		if((fragments = sBlk.fragments))
+		if((fragments = sBlk.fragments)) {
 			fragment_table = realloc((char *) fragment_table,
 				((fragments + FRAG_SIZE - 1) & ~(FRAG_SIZE - 1))
 				 * sizeof(squashfs_fragment_entry)); 
+			if(fragment_table == NULL)
+				BAD_ERROR("Out of memory in save filesystem state\n");
+		}
 
 		printf("Appending to existing %d.%d filesystem on %s, block "
 			"size %d\n", SQUASHFS_MAJOR, s_minor, argv[source + 1],
