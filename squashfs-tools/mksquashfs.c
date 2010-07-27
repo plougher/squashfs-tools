@@ -917,12 +917,13 @@ void *get_inode(int req_size)
 				~(SQUASHFS_METADATA_SIZE - 1)) : req_size -
 				data_space;
 
-			data_cache = realloc(data_cache, cache_size +
+			void *dc = realloc(data_cache, cache_size +
 				realloc_size);
-			if(data_cache == NULL) {
+			if(dc == NULL) {
 				goto failed;
 			}
 			cache_size += realloc_size;
+			data_cache = dc;
 	}
 
 	cache_bytes += req_size;
@@ -1592,12 +1593,13 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 			((dir_size + SQUASHFS_METADATA_SIZE) &
 			~(SQUASHFS_METADATA_SIZE - 1)) : dir_size - data_space;
 
-		directory_data_cache = realloc(directory_data_cache,
+		void *dc = realloc(directory_data_cache,
 			directory_cache_size + realloc_size);
-		if(directory_data_cache == NULL) {
+		if(dc == NULL) {
 			goto failed;
 		}
 		directory_cache_size += realloc_size;
+		directory_data_cache = dc;
 	}
 
 	if(dir_size) {
