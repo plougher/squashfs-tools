@@ -1827,12 +1827,13 @@ void write_fragment()
 
 	pthread_mutex_lock(&fragment_mutex);
 	if(fragments % FRAG_SIZE == 0) {
-		fragment_table = realloc(fragment_table, (fragments +
+		void *ft = realloc(fragment_table, (fragments +
 			FRAG_SIZE) * sizeof(squashfs_fragment_entry));
-		if(fragment_table == NULL) {
+		if(ft == NULL) {
 			pthread_mutex_unlock(&fragment_mutex);
 			BAD_ERROR("Out of memory in fragment table\n");
 		}
+		fragment_table = ft;
 	}
 	fragment_data->size = fragment_size;
 	fragment_data->block = fragments;
