@@ -4056,13 +4056,15 @@ void initialise_threads()
 long long write_inode_lookup_table()
 {
 	int i, inode_number, lookup_bytes = SQUASHFS_LOOKUP_BYTES(inode_count);
+	void *it;
 
 	if(inode_count == sinode_count)
 		goto skip_inode_hash_table;
 
-	inode_lookup_table = realloc(inode_lookup_table, lookup_bytes);
-	if(inode_lookup_table == NULL)
+	it = realloc(inode_lookup_table, lookup_bytes);
+	if(it == NULL)
 		BAD_ERROR("Out of memory in write_inode_table\n");
+	inode_lookup_table = it;
 
 	for(i = 0; i < INODE_HASH_SIZE; i ++) {
 		struct inode_info *inode = inode_info[i];
