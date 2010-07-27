@@ -1072,14 +1072,15 @@ long long write_directories()
 	while(directory_cache_bytes) {
 		if(directory_size - directory_bytes <
 				((SQUASHFS_METADATA_SIZE << 1) + 2)) {
-			directory_table = realloc(directory_table,
+			void *dt = realloc(directory_table,
 				directory_size + ((SQUASHFS_METADATA_SIZE << 1)
 				+ 2));
-			if(directory_table == NULL) {
+			if(dt == NULL) {
 				BAD_ERROR("Out of memory in directory table "
 					"reallocation!\n");
 			}
 			directory_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
+			directory_table = dt;
 		}
 		avail_bytes = directory_cache_bytes > SQUASHFS_METADATA_SIZE ?
 			SQUASHFS_METADATA_SIZE : directory_cache_bytes;
@@ -1627,13 +1628,14 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 
 		if((directory_size - directory_bytes) <
 					((SQUASHFS_METADATA_SIZE << 1) + 2)) {
-			directory_table = realloc(directory_table,
+			void *dt = realloc(directory_table,
 				directory_size + (SQUASHFS_METADATA_SIZE << 1)
 				+ 2);
-			if(directory_table == NULL) {
+			if(dt == NULL) {
 				goto failed;
 			}
 			directory_size += SQUASHFS_METADATA_SIZE << 1;
+			directory_table = dt;
 		}
 
 		c_byte = mangle(directory_table + directory_bytes +
