@@ -186,7 +186,9 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 			vsize = lgetxattr(filename, xattr_list[i].full_name,
 								NULL, 0);
 			if(vsize < 0) {
-				ERROR("lgetxattr failed in read_attrs\n");
+				ERROR("lgetxattr failed for %s in read_attrs,"
+					" because %s\n", filename,
+					strerror(errno));
 				free(xattr_list[i].full_name);
 				goto failed;
 			}
@@ -206,8 +208,9 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 					/* xattr grew?  Try again */
 					continue;
 				else {
-					ERROR("lgetxattr failed in read_attrs"
-									"\n");
+					ERROR("lgetxattr failed for %s in "
+						"read_attrs, because %s\n",
+						filename, strerror(errno));
 					free(xattr_list[i].full_name);
 					goto failed;
 				}
