@@ -134,8 +134,9 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 		size = llistxattr(filename, NULL, 0);
 		if(size <= 0) {
 			if(size < 0 && errno != ENOTSUP)
-				ERROR("llistxattr for %s failed in read_attrs, because %s\n",
-					filename, strerror(errno));
+				ERROR("llistxattr for %s failed in read_attrs,"
+					" because %s\n", filename,
+					strerror(errno));
 			return 0;
 		}
 
@@ -152,8 +153,9 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 				/* xattr list grew?  Try again */
 				continue;
 			else {
-				ERROR("llistxattr for %s failed in read_attrs, because %s\n",
-					filename, strerror(errno));
+				ERROR("llistxattr for %s failed in read_attrs,"
+					" because %s\n", filename,
+					strerror(errno));
 				return 0;
 			}
 		}
