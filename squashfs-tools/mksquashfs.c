@@ -3533,7 +3533,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 
 	if(pathname[0] == '\0') {
 		/*
- 		 *dummy top level directory, if multiple sources specified on
+ 		 * dummy top level directory, if multiple sources specified on
 		 * command line
 		 */
 		memset(&buf, 0, sizeof(buf));
@@ -3543,13 +3543,17 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		buf.st_mtime = time(NULL);
 		buf.st_dev = 0;
 		buf.st_ino = 0;
-	} else if(lstat(pathname, &buf) == -1) {
-		ERROR("Cannot stat dir/file %s because %s, ignoring", pathname,
-			strerror(errno));
-		return;
+		dir_ent->inode = lookup_inode(&buf);
+		dir_ent->inode->pseudo_file = PSEUDO_FILE_OTHER;
+	} else {
+		if(lstat(pathname, &buf) == -1) {
+			ERROR("Cannot stat dir/file %s because %s, ignoring",
+				pathname, strerror(errno));
+			return;
+		}
+		dir_ent->inode = lookup_inode(&buf);
 	}
 
-	dir_ent->inode = lookup_inode(&buf);
 	if(root_inode_number) {
 		dir_ent->inode->inode_number = root_inode_number;
 		dir_inode_no --;
