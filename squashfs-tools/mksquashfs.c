@@ -905,7 +905,7 @@ void *get_inode(int req_size)
 		SQUASHFS_SWAP_SHORTS(&c_byte, inode_table + inode_bytes, 1);
 		inode_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
 		total_inode_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
-		memcpy(data_cache, data_cache + SQUASHFS_METADATA_SIZE,
+		memmove(data_cache, data_cache + SQUASHFS_METADATA_SIZE,
 			cache_bytes - SQUASHFS_METADATA_SIZE);
 		cache_bytes -= SQUASHFS_METADATA_SIZE;
 	}
@@ -1651,7 +1651,7 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 		directory_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) +
 			BLOCK_OFFSET;
 		total_directory_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
-		memcpy(directory_data_cache, directory_data_cache +
+		memmove(directory_data_cache, directory_data_cache +
 			SQUASHFS_METADATA_SIZE, directory_cache_bytes -
 			SQUASHFS_METADATA_SIZE);
 		directory_cache_bytes -= SQUASHFS_METADATA_SIZE;
