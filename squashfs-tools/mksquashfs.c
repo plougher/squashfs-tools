@@ -2344,8 +2344,11 @@ again:
 	frag_block = !no_fragments && (always_use_fragments ||
 		(read_size < block_size)) ? read_size >> block_log : -1;
 
-	if((file = open(dir_ent->pathname, O_RDONLY)) == -1)
+	if((file = open(dir_ent->pathname, O_RDONLY)) == -1) {
+		file_buffer = cache_get(reader_buffer, 0, 0);
+		file_buffer->sequence = seq ++;
 		goto read_err;
+	}
 
 	do {
 		expected = read_size - ((long long) count * block_size) >
@@ -2389,13 +2392,6 @@ again:
 
 	return;
 
-read_err:
-	file_buffer = cache_get(reader_buffer, 0, 0);
-	file_buffer->sequence = seq ++;
-read_err2:
-	file_buffer->error = TRUE;
-	queue_put(from_deflate, file_buffer);
-	return;
 restat:
 	fstat(file, &buf2);
 	close(file);
@@ -2405,7 +2401,9 @@ restat:
 		queue_put(from_deflate, file_buffer);
 		goto again;
 	}
-	goto read_err2;
+read_err:
+	file_buffer->error = TRUE;
+	queue_put(from_deflate, file_buffer);
 }
 
 
