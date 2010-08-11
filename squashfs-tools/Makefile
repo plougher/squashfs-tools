@@ -15,6 +15,8 @@
 #LZMA_SUPPORT = 1
 #LZMA_DIR = ../../../LZMA/lzma465
 
+XATTR_SUPPORT = 1
+
 #Compression default.
 COMP_DEFAULT = gzip
 
@@ -22,13 +24,13 @@ INCLUDEDIR = -I.
 INSTALL_DIR = /usr/local/bin
 
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o sort.o swap.o pseudo.o compressor.o \
-	gzip_wrapper.o xattr.o read_xattrs.o
+	gzip_wrapper.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
-	unsquash-4.o swap.o compressor.o gzip_wrapper.o read_xattrs.o
+	unsquash-4.o swap.o compressor.o gzip_wrapper.o
 
 CFLAGS = $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
-	-D_GNU_SOURCE -DCOMP_DEFAULT=\"$(COMP_DEFAULT)\" -O2 -Wall
+	-D_GNU_SOURCE -DCOMP_DEFAULT=\"$(COMP_DEFAULT)\"  -O2 -Wall
 
 LIBS =
 ifdef LZMA_SUPPORT
@@ -45,6 +47,12 @@ CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += xz_wrapper.o
 UNSQUASHFS_OBJS += xz_wrapper.o
 LIBS += -llzma
+endif
+
+ifdef XATTR_SUPPORT
+CFLAGS += -DXATTR_SUPPORT
+MKSQUASHFS_OBJS += xattr.o read_xattrs.o
+UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
 endif
 
 .PHONY: all
@@ -87,6 +95,8 @@ unsquash-3.o: unsquashfs.h unsquash-3.c squashfs_fs.h squashfs_compat.h \
 
 unsquash-4.o: unsquashfs.h unsquash-4.c squashfs_fs.h squashfs_swap.h \
 	global.h
+
+unsquashfs_xattr.o: xattr.h
 
 .PHONY: clean
 clean:

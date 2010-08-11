@@ -58,7 +58,6 @@
 
 /* compressed xattr table */
 static char *xattr_table = NULL;
-unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
 static unsigned int xattr_size = 0;
 
 /* cached uncompressed xattr data */
@@ -89,6 +88,7 @@ static struct dupl_id *dupl_id[65536];
 extern int no_xattrs, noX;
 extern long long bytes;
 extern int fd;
+extern unsigned int xattr_bytes, total_xattr_bytes;
 
 /* helper functions from mksquashfs.c */
 extern unsigned short get_checksum(char *, int, unsigned short);
@@ -630,8 +630,9 @@ int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 }
 
 
-int read_xattrs(struct dir_ent *dir_ent)
+int read_xattrs(void *d)
 {
+	struct dir_ent *dir_ent = d;
 	struct inode_info *inode = dir_ent->inode;
 	char *filename = dir_ent->pathname;
 	struct xattr_list *xattr_list;

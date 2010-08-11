@@ -263,10 +263,6 @@ extern int inode_number;
 extern int lookup_type[];
 extern int fd;
 
-/* read-xattrs.c */
-extern int read_xattrs_from_disk(int, squashfs_super_block *);
-extern struct xattr_list *get_xattr(int, unsigned int *);
-
 /* unsquashfs.c */
 extern int lookup_entry(struct hash_table_entry **, long long);
 extern int read_fs_bytes(int fd, long long, int, void *);

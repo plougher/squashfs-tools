@@ -40,13 +40,6 @@
 #include <endian.h>
 #endif
 
-#include "squashfs_fs.h"
-#include "squashfs_swap.h"
-#include "read_fs.h"
-#include "global.h"
-#include "compressor.h"
-#include "xattr.h"
-
 #include <stdlib.h>
 
 #ifdef SQUASHFS_TRACE
@@ -63,13 +56,19 @@
 			fprintf(stderr, s, ## args); \
 		} while(0)
 
+#include "squashfs_fs.h"
+#include "squashfs_swap.h"
+#include "read_fs.h"
+#include "global.h"
+#include "compressor.h"
+#include "xattr.h"
+
 extern int read_fs_bytes(int, long long, int, void *);
 extern int add_file(long long, long long, long long, unsigned int *, int,
 	unsigned int, int, int);
 extern void *create_id(unsigned int);
 extern unsigned int get_uid(unsigned int);
 extern unsigned int get_guid(unsigned int);
-extern int get_xattrs(int, squashfs_super_block *);
 
 static struct compressor *comp;
 

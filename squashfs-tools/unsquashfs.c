@@ -31,7 +31,6 @@
 
 #include <sys/sysinfo.h>
 #include <sys/types.h>
-#include <attr/xattr.h>
 
 struct cache *fragment_cache, *data_cache;
 struct queue *to_reader, *to_deflate, *to_writer, *from_writer;
@@ -677,49 +676,6 @@ void uncompress_inode_table(long long start, long long end)
 				"block \n");
 		}
 		bytes += res;
-	}
-}
-
-
-void write_xattr(char *pathname, unsigned int xattr)
-{
-	unsigned int count;
-	struct xattr_list *xattr_list;
-	int i;
-
-	if(xattr == SQUASHFS_INVALID_XATTR ||
-			sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
-		return;
-
-	xattr_list = get_xattr(xattr, &count);
-	if(xattr_list == NULL) {
-		ERROR("Failed to read xattrs for file %s\n", pathname);
-		return;
-	}
-
-	for(i = 0; i < count; i++) {
-		int prefix = xattr_list[i].type & SQUASHFS_XATTR_PREFIX_MASK;
-
-		if(root_process || prefix == SQUASHFS_XATTR_USER) {
-			int res = lsetxattr(pathname, xattr_list[i].full_name,
-				xattr_list[i].value, xattr_list[i].vsize, 0);
-
-			if(res == -1)
-				ERROR("write_xattr: failed to write xattr %s"
-					" for file %s because %s\n",
-					xattr_list[i].full_name, pathname,
-					errno == ENOSPC || errno == EDQUOT ?
-					"no extended attribute space remaining "
-					"on destination filesystem" :
-					errno == ENOTSUP ?
-					"extended attributes are not supported "
-					"by the destination filesystem" :
-					"a weird eror occurred");
-		} else
-			ERROR("write_xattr: could not write xattr %s "
-					"for file %s because you're not "
-					"superuser!\n",
-					xattr_list[i].full_name, pathname);
 	}
 }
 
@@ -1952,7 +1908,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.1-CVS (2010/07/03)\n");\
+	printf("unsquashfs version 4.1-CVS (2010/07/08)\n");\
 	printf("copyright (C) 2010 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\

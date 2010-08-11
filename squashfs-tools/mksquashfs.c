@@ -60,15 +60,6 @@
 #include <sys/sysinfo.h>
 #endif
 
-#include "squashfs_fs.h"
-#include "global.h"
-#include "squashfs_swap.h"
-#include "mksquashfs.h"
-#include "sort.h"
-#include "pseudo.h"
-#include "compressor.h"
-#include "xattr.h"
-
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...) \
 		do { \
@@ -113,6 +104,15 @@
 			pthread_mutex_unlock(&progress_mutex); \
 			EXIT_MKSQUASHFS();\
 		} while(0)
+
+#include "squashfs_fs.h"
+#include "global.h"
+#include "squashfs_swap.h"
+#include "mksquashfs.h"
+#include "sort.h"
+#include "pseudo.h"
+#include "compressor.h"
+#include "xattr.h"
 
 /* offset of data in compressed metadata blocks (allowing room for
  * compressed size */
@@ -387,6 +387,9 @@ int fragment_buffer_size;
 static struct compressor *comp;
 char *comp_name = COMP_DEFAULT;
 
+/* xattr stats */
+unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
+
 char *read_from_disk(long long start, unsigned int avail_bytes);
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type);
@@ -425,10 +428,6 @@ extern int generate_file_priorities(struct dir_info *dir, int priority,
 extern struct priority_entry *priority_list[65536];
 void progress_bar(long long current, long long max, int columns);
 long long generic_write_table(int, char *, int, char *, int);
-extern long long write_xattrs();
-extern unsigned int xattr_bytes, total_xattr_bytes;
-extern int save_xattrs();
-extern void restore_xattrs();
 void restorefs();
 
 
@@ -4462,7 +4461,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.1-CVS (2010/08/02)\n");\
+	printf("mksquashfs version 4.1-CVS (2010/08/07)\n");\
 	printf("copyright (C) 2010 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
