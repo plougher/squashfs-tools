@@ -427,7 +427,7 @@ extern int generate_file_priorities(struct dir_info *dir, int priority,
 	struct stat *buf);
 extern struct priority_entry *priority_list[65536];
 void progress_bar(long long current, long long max, int columns);
-long long generic_write_table(int, char *, int, char *, int);
+long long generic_write_table(int, void *, int, void *, int);
 void restorefs();
 
 
@@ -1116,7 +1116,7 @@ long long write_id_table()
 		SQUASHFS_SWAP_INTS(&id_table[i]->id, p + i, 1);
 	}
 
-	return generic_write_table(id_bytes, (char *) p, 0, NULL, noI);
+	return generic_write_table(id_bytes, p, 0, NULL, noI);
 }
 
 
@@ -1874,8 +1874,8 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
 }
 
 
-long long generic_write_table(int length, char *buffer, int length2,
-	char *buffer2, int uncompressed)
+long long generic_write_table(int length, void *buffer, int length2,
+	void *buffer2, int uncompressed)
 {
 	int meta_blocks = (length + SQUASHFS_METADATA_SIZE - 1) /
 		SQUASHFS_METADATA_SIZE;
@@ -1909,7 +1909,7 @@ long long generic_write_table(int length, char *buffer, int length2,
 
 	start_bytes = bytes;
 	if(length2) {
-		write_destination(fd, bytes, length2, (char *) buffer2);
+		write_destination(fd, bytes, length2, buffer2);
 		bytes += length2;
 		total_bytes += length2;
 	}
@@ -1941,7 +1941,7 @@ long long write_fragment_table()
 		SQUASHFS_SWAP_FRAGMENT_ENTRY(&fragment_table[i], p + i);
 	}
 
-	return generic_write_table(frag_bytes, (char *) p, 0, NULL, noF);
+	return generic_write_table(frag_bytes, p, 0, NULL, noF);
 }
 
 
@@ -4085,8 +4085,8 @@ long long write_inode_lookup_table()
 	}
 
 skip_inode_hash_table:
-	return generic_write_table(lookup_bytes, (char *) inode_lookup_table,
-		0, NULL, noI);
+	return generic_write_table(lookup_bytes, inode_lookup_table, 0, NULL,
+		noI);
 }
 
 

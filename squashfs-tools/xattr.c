@@ -93,7 +93,7 @@ extern unsigned int xattr_bytes, total_xattr_bytes;
 /* helper functions from mksquashfs.c */
 extern unsigned short get_checksum(char *, int, unsigned short);
 extern void write_destination(int, long long, int, char *);
-extern long long generic_write_table(int, char *, int, char *, int);
+extern long long generic_write_table(int, void *, int, void *, int);
 extern int mangle(char *, char *, int, int, int, int);
 
 /* helper functions and definitions from read_xattrs.c */
@@ -486,7 +486,7 @@ long long write_xattrs()
 	SQUASHFS_INSWAP_XATTR_TABLE(&header);
 
 	return generic_write_table(xattr_ids * sizeof(struct squashfs_xattr_id),
-		(char *) xattr_id_table, sizeof(header), (char *) &header, noX);
+		xattr_id_table, sizeof(header), &header, noX);
 
 failed:
 	ERROR("Out of memory in xattr_table reallocation!\n");
