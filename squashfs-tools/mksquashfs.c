@@ -2360,10 +2360,22 @@ again:
 		file_buffer = cache_get(reader_buffer, 0, 0);
 		file_buffer->sequence = seq ++;
 
+		/*
+		 * Always try to read block_size bytes from the file rather
+		 * than expected bytes (which will be less than the block_size
+		 * at the file tail) to check that the file hasn't grown
+		 * since being stated.  If it is longer (or shorter) than
+		 * expected, then restat, and try again.  Note the special
+		 * case where the file is an exact multiple of the block_size
+		 * is dealt with later.
+		 */
 		byte = file_buffer->size = read_bytes(file, file_buffer->data,
 			block_size);
 
 		file_buffer->file_size = read_size;
+
+		if(byte == -1)
+			goto read_err;
 
 		if(byte != expected)
 			goto restat;
@@ -2380,9 +2392,19 @@ again:
 		goto restat;
 
 	if(expected == block_size) {
+		/*
+		 * Special case where we've not tried to read past the end of
+		 * the file.  We expect to get EOF, i.e. the file isn't larger
+		 * than we expect.
+		 */
 		char buffer;
+		int res;
 
-		if(read_bytes(file, &buffer, 1) == 1)
+		res = read_bytes(file, &buffer, 1);
+		if(res == -1)
+			goto read_err;
+
+		if(res != 0)
 			goto restat;
 	}
 
