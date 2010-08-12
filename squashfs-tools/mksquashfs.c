@@ -280,6 +280,9 @@ struct file_info {
 /* count of how many times SIGINT or SIGQUIT has been sent */
 int interrupted = 0;
 
+/* flag if we're restoring existing filesystem */
+int restoring = 0;
+
 /* restore orignal filesystem state if appending to existing filesystem is
  * cancelled */
 jmp_buf env;
@@ -750,6 +753,16 @@ void restorefs()
 	if(thread == NULL || thread[0] == 0)
 		return;
 
+	if(restoring++)
+		/*
+		 * recursive failure when trying to restore filesystem!
+		 * Noting to do except to exit, otherwise we'll just appear
+		 * to hang.  The user should be able to restore from the
+		 * recovery file (which is it why was added, in case of
+		 * catestrophic failure in Mksquashfs)
+		 */
+		exit(1);
+
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
 	for(i = 0; i < 2 + processors * 2; i++)
@@ -1009,7 +1022,7 @@ void write_destination(int fd, long long byte, int bytes, char *buff)
 {
 	off_t off = byte;
 
-	if(interrupted < 2)
+	if(!restoring)
 		pthread_mutex_lock(&pos_mutex);
 
 	if(lseek(fd, off, SEEK_SET) == -1)
@@ -1019,7 +1032,7 @@ void write_destination(int fd, long long byte, int bytes, char *buff)
 	if(write_bytes(fd, buff, bytes) == -1)
 		BAD_ERROR("Write on destination failed\n");
 	
-	if(interrupted < 2)
+	if(!restoring)
 		pthread_mutex_unlock(&pos_mutex);
 }
 
@@ -4481,7 +4494,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.1-CVS (2010/08/07)\n");\
+	printf("mksquashfs version 4.1-CVS (2010/08/12)\n");\
 	printf("copyright (C) 2010 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5186,7 +5199,7 @@ restore_filesystem:
 
 	write_fragment();
 	sBlk.fragments = fragments;
-	if(interrupted < 2) {
+	if(!restoring) {
 		unlock_fragments();
 		pthread_mutex_lock(&fragment_mutex);
 		while(fragments_outstanding) {
