@@ -755,11 +755,11 @@ void restorefs()
 
 	if(restoring++)
 		/*
-		 * recursive failure when trying to restore filesystem!
-		 * Noting to do except to exit, otherwise we'll just appear
+		 * Recursive failure when trying to restore filesystem!
+		 * Nothing to do except to exit, otherwise we'll just appear
 		 * to hang.  The user should be able to restore from the
-		 * recovery file (which is it why was added, in case of
-		 * catestrophic failure in Mksquashfs)
+		 * recovery file (which is why it was added, in case of
+		 * catastrophic failure in Mksquashfs)
 		 */
 		exit(1);
 
