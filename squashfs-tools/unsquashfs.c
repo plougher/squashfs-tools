@@ -1799,7 +1799,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 			processors = 1;
 		}
 #else
-		processors = get_nprocs();
+		processors = sysconf(_SC_NPROCESSORS_ONLN);
 #endif
 	}
 

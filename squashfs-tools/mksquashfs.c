@@ -4048,7 +4048,7 @@ void initialise_threads()
 			processors = 1;
 		}
 #else
-		processors = get_nprocs();
+		processors = sysconf(_SC_NPROCESSORS_ONLN);
 #endif
 	}
 
