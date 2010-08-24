@@ -15,6 +15,12 @@
 #LZMA_SUPPORT = 1
 #LZMA_DIR = ../../../LZMA/lzma465
 
+#
+# Building XATTR support for Mksquashfs and Unsquashfs
+#
+# If your C library or build/target environment doesn't support XATTRs then
+# comment out next line to build Mksquashfs and Unsquashfs without XATTR
+# support
 XATTR_SUPPORT = 1
 
 #Compression default.
