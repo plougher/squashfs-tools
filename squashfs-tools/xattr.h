@@ -127,3 +127,20 @@ static inline struct xattr_list *get_xattr(int i, unsigned int *count)
 	return NULL;
 }
 #endif
+
+#ifdef XATTR_SUPPORT
+#ifdef XATTR_DEFAULT
+#define NOXOPT_STR
+#define XOPT_STR " (default)"
+#define XATTR_DEF 1
+#else
+#define NOXOPT_STR " (default)"
+#define XOPT_STR
+#define XATTR_DEF 0
+#endif
+#else
+#define NOXOPT_STR " (default)"
+#define XOPT_STR " (unsupported)"
+#define XATTR_DEF 0
+#endif
+

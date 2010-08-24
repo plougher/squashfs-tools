@@ -23,6 +23,14 @@
 # support
 XATTR_SUPPORT = 1
 
+# Select whether you wish xattrs to be stored by Mksquashfs and extracted
+# by Unsquashfs by default.  If selected users can disable xattr support by
+# using the -no-xattrs option
+#
+# If unselected, Mksquashfs/Unsquashfs won't store and extract xattrs by default,
+# this can be changed by users by using the -xattrs option.
+XATTR_DEFAULT = 1
+
 #Compression default.
 COMP_DEFAULT = gzip
 
@@ -56,7 +64,11 @@ LIBS += -llzma
 endif
 
 ifdef XATTR_SUPPORT
+ifdef XATTR_DEFAULT
+CFLAGS += -DXATTR_SUPPORT -DXATTR_DEFAULT
+else
 CFLAGS += -DXATTR_SUPPORT
+endif
 MKSQUASHFS_OBJS += xattr.o read_xattrs.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
 endif
@@ -68,7 +80,7 @@ mksquashfs: $(MKSQUASHFS_OBJS)
 	$(CC) $(MKSQUASHFS_OBJS) -lz -lpthread -lm $(LIBS) -o $@
 
 mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h \
-	squashfs_swap.h
+	squashfs_swap.h xattr.h
 
 read_fs.o: read_fs.c squashfs_fs.h read_fs.h global.h squashfs_swap.h
 
@@ -88,7 +100,7 @@ unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(UNSQUASHFS_OBJS) -lz -lpthread -lm $(LIBS) -o $@
 
 unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h \
-	squashfs_compat.h global.h
+	squashfs_compat.h global.h xattr.h
 
 unsquash-1.o: unsquashfs.h unsquash-1.c squashfs_fs.h squashfs_compat.h \
 	global.h

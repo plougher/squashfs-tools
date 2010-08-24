@@ -68,7 +68,7 @@ int progress = TRUE, progress_enabled = FALSE;
 unsigned int total_blocks = 0, total_files = 0, total_inodes = 0;
 unsigned int cur_blocks = 0;
 int inode_number = 1;
-int no_xattrs = FALSE;
+int no_xattrs = XATTR_DEF;
 
 int lookup_type[] = {
 	0,
@@ -1909,7 +1909,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.1-CVS (2010/07/08)\n");\
+	printf("unsquashfs version 4.1-CVS (2010/07/23)\n");\
 	printf("copyright (C) 2010 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
@@ -1961,6 +1961,9 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-no-xattrs") == 0 ||
 				strcmp(argv[i], "-no") == 0)
 			no_xattrs = TRUE;
+		else if(strcmp(argv[i], "-xattrs") == 0 ||
+				strcmp(argv[i], "-x") == 0)
+			no_xattrs = FALSE;
 		else if(strcmp(argv[i], "-dest") == 0 ||
 				strcmp(argv[i], "-d") == 0) {
 			if(++i == argc) {
@@ -2058,7 +2061,10 @@ options:
 				"default \"squashfs-root\"\n");
 			ERROR("\t-n[o-progress]\t\tdon't display the progress "
 				"bar\n");
-			ERROR("\t-no[-xattrs]\t\tdon't extract xattrs in file system\n");
+			ERROR("\t-no[-xattrs]\t\tdon't extract xattrs in file system"
+				NOXOPT_STR"\n");
+			ERROR("\t-x[attrs]\t\textract xattrs in file system"
+				XOPT_STR "\n");
 			ERROR("\t-p[rocessors] <number>\tuse <number> "
 				"processors.  By default will use\n");
 			ERROR("\t\t\t\tnumber of processors available\n");
