@@ -68,6 +68,7 @@ int progress = TRUE, progress_enabled = FALSE;
 unsigned int total_blocks = 0, total_files = 0, total_inodes = 0;
 unsigned int cur_blocks = 0;
 int inode_number = 1;
+int no_xattrs = FALSE;
 
 int lookup_type[] = {
 	0,
@@ -1957,6 +1958,9 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-no-progress") == 0 ||
 				strcmp(argv[i], "-n") == 0)
 			progress = FALSE;
+		else if(strcmp(argv[i], "-no-xattrs") == 0 ||
+				strcmp(argv[i], "-no") == 0)
+			no_xattrs = TRUE;
 		else if(strcmp(argv[i], "-dest") == 0 ||
 				strcmp(argv[i], "-d") == 0) {
 			if(++i == argc) {
@@ -2054,6 +2058,7 @@ options:
 				"default \"squashfs-root\"\n");
 			ERROR("\t-n[o-progress]\t\tdon't display the progress "
 				"bar\n");
+			ERROR("\t-no[-xattrs]\t\tdon't extract xattrs in file system\n");
 			ERROR("\t-p[rocessors] <number>\tuse <number> "
 				"processors.  By default will use\n");
 			ERROR("\t\t\t\tnumber of processors available\n");
@@ -2138,6 +2143,9 @@ options:
 
 	uncompress_directory_table(sBlk.s.directory_table_start,
 		sBlk.s.fragment_table_start);
+
+	if(no_xattrs)
+		sBlk.s.xattr_id_table_start = SQUASHFS_INVALID_BLK;
 
 	if(read_xattrs_from_disk(fd, &sBlk.s) == 0)
 		EXIT_UNSQUASH("failed to read the xattr table\n");
