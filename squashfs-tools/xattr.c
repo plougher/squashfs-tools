@@ -274,7 +274,7 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 		TRACE("Xattr block @ 0x%x, size %d\n", xattr_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, xattr_table + xattr_bytes, 1);
 		xattr_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
-		memcpy(data_cache, data_cache + SQUASHFS_METADATA_SIZE,
+		memmove(data_cache, data_cache + SQUASHFS_METADATA_SIZE,
 			cache_bytes - SQUASHFS_METADATA_SIZE);
 		cache_bytes -= SQUASHFS_METADATA_SIZE;
 	}
