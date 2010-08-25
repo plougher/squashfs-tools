@@ -123,7 +123,7 @@ int cur_uncompressed = 0, estimated_uncompressed = 0;
 int columns;
 
 /* filesystem flags for building */
-int no_xattrs = 0, noX = 0;
+int no_xattrs = XATTR_DEF, noX = 0;
 int duplicate_checking = 1, noF = 0, no_fragments = 0, always_use_fragments = 0;
 int noI = 0, noD = 0;
 int silent = TRUE;
@@ -4736,6 +4736,9 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-no-xattrs") == 0)
 			no_xattrs = TRUE;
 
+		else if(strcmp(argv[i], "-xattrs") == 0)
+			no_xattrs = FALSE;
+
 		else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;
 
@@ -4777,8 +4780,10 @@ printOptions:
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
 			ERROR("-no-sparse\t\tdon't detect sparse files\n");
-			ERROR("-no-xattrs\t\tdon't detect extended "
-				"attributes\n");
+			ERROR("-no-xattrs\t\tdon't detect extended attributes"
+				NOXOPT_STR "\n");
+			ERROR("-xattrs\t\t\tdetect extended attributes" XOPT_STR
+				"\n");
 			ERROR("-noI\t\t\tdo not compress inode table\n");
 			ERROR("-noD\t\t\tdo not compress data blocks\n");
 			ERROR("-noF\t\t\tdo not compress fragment blocks\n");
