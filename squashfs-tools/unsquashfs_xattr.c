@@ -62,7 +62,7 @@ void write_xattr(char *pathname, unsigned int xattr)
 					errno == ENOTSUP ?
 					"extended attributes are not supported "
 					"by the destination filesystem" :
-					"a weird eror occurred");
+					"a weird error occurred");
 		} else
 			ERROR("write_xattr: could not write xattr %s "
 					"for file %s because you're not "
