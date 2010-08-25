@@ -34,7 +34,7 @@ COMP_DEFAULT = gzip
 # If your C library or build/target environment doesn't support XATTRs then
 # comment out the next line to build Mksquashfs and Unsquashfs without XATTR
 # support
-XATTR_SUPPORT = 1
+#XATTR_SUPPORT = 1
 
 # Select whether you wish xattrs to be stored by Mksquashfs and extracted
 # by Unsquashfs by default.  If selected users can disable xattr support by

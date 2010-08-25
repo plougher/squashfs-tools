@@ -4780,9 +4780,9 @@ printOptions:
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
 			ERROR("-no-sparse\t\tdon't detect sparse files\n");
-			ERROR("-no-xattrs\t\tdon't detect extended attributes"
+			ERROR("-no-xattrs\t\tdon't store extended attributes"
 				NOXOPT_STR "\n");
-			ERROR("-xattrs\t\t\tdetect extended attributes" XOPT_STR
+			ERROR("-xattrs\t\t\tstore extended attributes" XOPT_STR
 				"\n");
 			ERROR("-noI\t\t\tdo not compress inode table\n");
 			ERROR("-noD\t\t\tdo not compress data blocks\n");
