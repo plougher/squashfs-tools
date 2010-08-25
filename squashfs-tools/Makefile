@@ -1,3 +1,6 @@
+###############################################
+#          Compression build options          #
+###############################################
 #
 # Building LZMA support
 #
@@ -15,11 +18,21 @@
 #LZMA_SUPPORT = 1
 #LZMA_DIR = ../../../LZMA/lzma465
 
+# Specifying default compression
+#
+# The next line specifies which compression algorithm is used by default
+# in Mksquashfs.  Obviously the compression algorithm must have been
+# selected to be built
+COMP_DEFAULT = gzip
+
+###############################################
+#              XATTR build options            #
+###############################################
 #
 # Building XATTR support for Mksquashfs and Unsquashfs
 #
 # If your C library or build/target environment doesn't support XATTRs then
-# comment out next line to build Mksquashfs and Unsquashfs without XATTR
+# comment out the next line to build Mksquashfs and Unsquashfs without XATTR
 # support
 XATTR_SUPPORT = 1
 
@@ -27,12 +40,14 @@ XATTR_SUPPORT = 1
 # by Unsquashfs by default.  If selected users can disable xattr support by
 # using the -no-xattrs option
 #
-# If unselected, Mksquashfs/Unsquashfs won't store and extract xattrs by default,
-# this can be changed by users by using the -xattrs option.
+# If unselected, Mksquashfs/Unsquashfs won't store and extract xattrs by
+# default.  Users can enable xattrs by using the -xattrs option.
 XATTR_DEFAULT = 1
 
-#Compression default.
-COMP_DEFAULT = gzip
+
+###############################################
+#        End of BUILD options section         #
+###############################################
 
 INCLUDEDIR = -I.
 INSTALL_DIR = /usr/local/bin
