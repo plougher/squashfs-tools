@@ -26,11 +26,13 @@
 #define XATTR_PREFIX_MASK	SQUASHFS_XATTR_PREFIX_MASK
 
 #define XATTR_VALUE_OOL_SIZE	sizeof(long long)
-#define XATTR_NAME_OOL_SIZE 	0 /* XXX dummy value */
 
+/* maximum size of xattr value data that will be inlined */
 #define XATTR_INLINE_MAX 	128
-#define XATTR_NAME_INLINE_MAX	65536
 
+/* the target size of an inode's xattr name:value list.  If it
+ * exceeds this, then xattr value data will be successively out of lined
+ * until it meets the target */
 #define XATTR_TARGET_MAX	65536
 
 #define IS_XATTR(a)		(a != SQUASHFS_INVALID_XATTR)
