@@ -134,15 +134,15 @@ static inline struct xattr_list *get_xattr(int i, unsigned int *count)
 #ifdef XATTR_DEFAULT
 #define NOXOPT_STR
 #define XOPT_STR " (default)"
-#define XATTR_DEF 1
+#define XATTR_DEF 0
 #else
 #define NOXOPT_STR " (default)"
 #define XOPT_STR
-#define XATTR_DEF 0
+#define XATTR_DEF 1
 #endif
 #else
 #define NOXOPT_STR " (default)"
 #define XOPT_STR " (unsupported)"
-#define XATTR_DEF 0
+#define XATTR_DEF 1
 #endif
 
