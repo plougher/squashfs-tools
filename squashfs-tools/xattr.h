@@ -78,7 +78,7 @@ static inline int get_xattrs(int fd, squashfs_super_block *sBlk)
 {
 	if(sBlk->xattr_id_table_start != SQUASHFS_INVALID_BLK) {
 		fprintf(stderr, "Xattrs in filesystem! These are not "
-			"supported in this version of Squashfs\n");
+			"supported on this version of Squashfs\n");
 		return 0;
 	} else
 		return SQUASHFS_INVALID_BLK;
@@ -117,7 +117,7 @@ static inline int read_xattrs_from_disk(int fd, squashfs_super_block *sBlk)
 {
 	if(sBlk->xattr_id_table_start != SQUASHFS_INVALID_BLK) {
 		fprintf(stderr, "Xattrs in filesystem! These are not "
-			"supported in this version of Squashfs\n");
+			"supported on this version of Squashfs\n");
 		return 0;
 	} else
 		return SQUASHFS_INVALID_BLK;
