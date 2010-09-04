@@ -1,14 +1,3 @@
 Squashfs is now in mainline at www.kernel.org.
-These files are a CVS sync of my git development tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/pkl/squashfs-devel.git.  I still
-intend to keep these files in sync because they contain the development
-history prior to mainlining.
 
-Unfortunately, these files are currently out of sync with the kernel.org
-git tree.
-
-Squashfs is targetted at mainline.  These files, however, should
-compile on 2.6.28, but not on anything older.
-
-The patch files in this directory are completely out of date, and won't work
-anymore.
+These files are obsolete and not updated.
