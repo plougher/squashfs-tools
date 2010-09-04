@@ -418,14 +418,6 @@ struct compressor *read_super(int fd, squashfs_super_block *sBlk, char *source)
 		goto failed_mount;
 	}
 
-#if 0
-	if(sBlk->xattr_id_table_start != SQUASHFS_INVALID_BLK) {
-		ERROR("Appending to filesystems with xattrs not yet "
-			"supported!\n");
-		goto failed_mount;
-	}
-#endif
-
 	printf("Found a valid %sSQUASHFS superblock on %s.\n",
 		SQUASHFS_EXPORTABLE(sBlk->flags) ? "exportable " : "", source);
 	printf("\tCompression used %s\n", comp->name);
