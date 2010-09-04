@@ -383,8 +383,6 @@ int processors = -1;
 /* default size of fragment buffer in Mbytes */
 #define FRAGMENT_BUFFER_DEFAULT 64
 int writer_buffer_size;
-int reader_buffer_size;
-int fragment_buffer_size;
 
 /* compression operations structure */
 static struct compressor *comp;
@@ -4017,10 +4015,19 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 }
 
 
-void initialise_threads()
+void initialise_threads(int readb_mbytes, int writeb_mbytes,
+	int fragmentb_mbytes)
 {
 	int i;
 	sigset_t sigmask, old_mask;
+	int reader_buffer_size = readb_mbytes << (20 - block_log);
+	int fragment_buffer_size = fragmentb_mbytes << (20 - block_log);
+
+	/*
+	 * writer_buffer_size is global because it is needed in
+	 * write_file_blocks_dup()
+	 */
+	writer_buffer_size = writeb_mbytes << (20 - block_log);
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
@@ -4870,10 +4877,6 @@ printOptions:
 		}
 	}
 
-	reader_buffer_size = readb_mbytes << (20 - block_log);
-	writer_buffer_size = writeb_mbytes << (20 - block_log);
-	fragment_buffer_size = fragmentb_mbytes << (20 - block_log);
-
 	for(i = 0; i < source; i++)
 		if(lstat(source_path[i], &source_buf) == -1) {
 			fprintf(stderr, "Cannot stat source directory \"%s\" "
@@ -5013,7 +5016,7 @@ printOptions:
 		}
 	}
 
-	initialise_threads();
+	initialise_threads(readb_mbytes, writeb_mbytes, fragmentb_mbytes);
 
 	if(delete) {
 		printf("Creating %d.%d filesystem on %s, block size %d.\n",
