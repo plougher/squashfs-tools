@@ -417,11 +417,6 @@ struct squashfs_xattr_val {
 	char			value[0];
 };
 
-struct squashfs_xattr_val_ool {
-	unsigned int		vsize;
-	long long		xattr;
-};
-
 struct squashfs_xattr_id {
 	long long		xattr;
 	unsigned int		count;

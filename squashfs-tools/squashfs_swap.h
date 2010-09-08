@@ -220,11 +220,6 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(32, vsize, squashfs_xattr_val);\
 }
 
-#define _SQUASHFS_SWAP_XATTR_VAL_OOL(s, d, SWAP_FUNC) {\
-	SWAP_FUNC(32, vsize, squashfs_xattr_val_ool);\
-	SWAP_FUNC(64, xattr, squashfs_xattr_val_ool);\
-}
-
 #define _SQUASHFS_SWAP_XATTR_ID(s, d, SWAP_FUNC) {\
 	_SWAP_FUNC(64, xattr, squashfs_xattr_id);\
 	_SWAP_FUNC(32, count, squashfs_xattr_id);\
@@ -270,8 +265,6 @@ extern void inswap_le64_num(long long *, int);
 			 _SQUASHFS_SWAP_XATTR_ENTRY(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_XATTR_VAL(s, d) \
 			_SQUASHFS_SWAP_XATTR_VAL(s, d, SWAP_LE)
-#define SQUASHFS_SWAP_XATTR_VAL_OOL(s, d) \
-			_SQUASHFS_SWAP_XATTR_VAL_OOL(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_XATTR_ID(s, d) \
 			 _SQUASHFS_SWAP_XATTR_ID(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_XATTR_TABLE(s, d) \
@@ -320,8 +313,6 @@ extern void inswap_le64_num(long long *, int);
 			 _SQUASHFS_SWAP_XATTR_ENTRY(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_XATTR_VAL(s) \
 			_SQUASHFS_SWAP_XATTR_VAL(s, s, INSWAP_LE)
-#define SQUASHFS_INSWAP_XATTR_VAL_OOL(s) \
-			_SQUASHFS_SWAP_XATTR_VAL_OOL(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_XATTR_ID(s) \
 			 _SQUASHFS_SWAP_XATTR_ID(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_XATTR_TABLE(s) \
@@ -371,8 +362,6 @@ extern void inswap_le64_num(long long *, int);
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_XATTR_VAL(s, d) \
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
-#define SQUASHFS_SWAP_XATTR_VAL_OOL(s, d) \
-		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_XATTR_ID(s, d) \
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_XATTR_TABLE(s, d) \
@@ -399,7 +388,6 @@ extern void inswap_le64_num(long long *, int);
 #define SQUASHFS_INSWAP_FRAGMENT_ENTRY(s)
 #define SQUASHFS_INSWAP_XATTR_ENTRY(s)
 #define SQUASHFS_INSWAP_XATTR_VAL(s)
-#define SQUASHFS_INSWAP_XATTR_VAL_OOL(s)
 #define SQUASHFS_INSWAP_XATTR_ID(s)
 #define SQUASHFS_INSWAP_XATTR_TABLE(s)
 #define SQUASHFS_INSWAP_INODE_T(s)
