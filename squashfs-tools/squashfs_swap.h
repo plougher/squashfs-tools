@@ -212,23 +212,23 @@ extern void inswap_le64_num(long long *, int);
 }
 
 #define _SQUASHFS_SWAP_XATTR_ENTRY(s, d, SWAP_FUNC) {\
-	SWAP_FUNC(16, s, d, type, squashfs_xattr_entry);\
-	SWAP_FUNC(16, s, d, size, squashfs_xattr_entry);\
+	SWAP_FUNC(16, s, d, type, struct squashfs_xattr_entry);\
+	SWAP_FUNC(16, s, d, size, struct squashfs_xattr_entry);\
 }
 
 #define _SQUASHFS_SWAP_XATTR_VAL(s, d, SWAP_FUNC) {\
-	SWAP_FUNC(32, vsize, squashfs_xattr_val);\
+	SWAP_FUNC(32, s, d, vsize, struct squashfs_xattr_val);\
 }
 
 #define _SQUASHFS_SWAP_XATTR_ID(s, d, SWAP_FUNC) {\
-	_SWAP_FUNC(64, xattr, squashfs_xattr_id);\
-	_SWAP_FUNC(32, count, squashfs_xattr_id);\
-	_SWAP_FUNC(32, size, squashfs_xattr_id);\
+	SWAP_FUNC(64, s, d, xattr, struct squashfs_xattr_id);\
+	SWAP_FUNC(32, s, d, count, struct squashfs_xattr_id);\
+	SWAP_FUNC(32, s, d, size, struct squashfs_xattr_id);\
 }
 
 #define _SQUASHFS_SWAP_XATTR_TABLE(s, d, SWAP_FUNC) {\
-	_SWAP_FUNC(64, xattr_table_start, squashfs_xattr_table);\
-	_SWAP_FUNC(32, xattr_ids, squashfs_xattr_table);\
+	SWAP_FUNC(64, s, d, xattr_table_start, struct squashfs_xattr_table);\
+	SWAP_FUNC(32, s, d, xattr_ids, struct squashfs_xattr_table);\
 }
 
 #define SQUASHFS_SWAP_SUPER_BLOCK(s, d)	\
