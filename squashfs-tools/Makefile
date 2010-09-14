@@ -121,6 +121,15 @@ $(error LZMA_SUPPORT requires LZMA_DIR to be also defined)
 endif
 endif
 
+#
+# Both XZ_SUPPORT and LZMA_SUPPORT cannot be specified
+#
+ifdef XZ_SUPPORT
+ifdef LZMA_SUPPORT
+$(error Both XZ_SUPPORT and LZMA_SUPPORT cannot be specified)
+endif
+endif
+
 .PHONY: all
 all: mksquashfs unsquashfs
 
