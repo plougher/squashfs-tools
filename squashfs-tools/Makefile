@@ -112,6 +112,15 @@ MKSQUASHFS_OBJS += xattr.o read_xattrs.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
 endif
 
+#
+# If LZMA_SUPPORT is specified then LZO_DIR must be specified too
+#
+ifdef LZMA_SUPPORT
+ifndef ZMA_DIR
+$(error LZMA_SUPPORT requires LZMA_DIR to be also defined)
+endif
+endif
+
 .PHONY: all
 all: mksquashfs unsquashfs
 
