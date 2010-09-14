@@ -33,7 +33,11 @@ extern int lzo_compress(void **, char *, char *, int, int, int *);
 extern int lzo_uncompress(char *, char *, int, int, int *);
 
 struct compressor compressor[] = {
+#ifdef GZIP_SUPPORT
 	{ gzip_compress, gzip_uncompress, ZLIB_COMPRESSION, "gzip", 1 },
+#else
+	{ NULL, NULL, ZLIB_COMPRESSION, "gzip", 0 },
+#endif
 #ifdef LZMA_SUPPORT
 	{ lzma_compress, lzma_uncompress, LZMA_COMPRESSION, "lzma", 1 },
 #else

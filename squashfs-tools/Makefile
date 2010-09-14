@@ -2,6 +2,22 @@
 #          Compression build options          #
 ###############################################
 #
+#
+############# Building gzip support ###########
+#
+# Gzip support is by default enabled, and the compression type default
+# (COMP_DEFAULT) is gzip.
+#
+# If you don't want/need gzip support then comment out the GZIP SUPPORT line
+# below, and change COMP_DEFAULT to one of the compression types you have
+# selected.
+#
+# Obviously, you must select at least one of the available gzip, lzma, lzo
+# compression types.
+#
+GZIP_SUPPORT = 1
+
+
 ########### Building LZMA support #############
 #
 # Both XZ Utils liblzma  (http://tukaani.org/xz/) and LZMA SDK
@@ -13,7 +29,7 @@
 # To build using the LZMA SDK (4.65 used in development, other versions may
 # work) - download and unpack it, uncomment and set LZMA_DIR to unpacked source,
 # and uncomment the LZMA_SUPPORT line below.
-
+#
 #XZ_SUPPORT = 1
 #LZMA_SUPPORT = 1
 #LZMA_DIR = ../../../LZMA/lzma465
@@ -36,6 +52,7 @@
 # The next line specifies which compression algorithm is used by default
 # in Mksquashfs.  Obviously the compression algorithm must have been
 # selected to be built
+#
 COMP_DEFAULT = gzip
 
 ###############################################
@@ -65,16 +82,22 @@ XATTR_DEFAULT = 1
 INCLUDEDIR = -I.
 INSTALL_DIR = /usr/local/bin
 
-MKSQUASHFS_OBJS = mksquashfs.o read_fs.o sort.o swap.o pseudo.o compressor.o \
-	gzip_wrapper.o
+MKSQUASHFS_OBJS = mksquashfs.o read_fs.o sort.o swap.o pseudo.o compressor.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
-	unsquash-4.o swap.o compressor.o gzip_wrapper.o
+	unsquash-4.o swap.o compressor.o
 
 CFLAGS = $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
 	-D_GNU_SOURCE -DCOMP_DEFAULT=\"$(COMP_DEFAULT)\"  -O2 -Wall
 
 LIBS =
+ifdef GZIP_SUPPORT
+CFLAGS += -DGZIP_SUPPORT
+MKSQUASHFS_OBJS += gzip_wrapper.o
+UNSQUASHFS_OBJS += gzip_wrapper.o
+LIBS += -lz
+endif
+
 ifdef LZMA_SUPPORT
 LZMA_OBJS = $(LZMA_DIR)/C/Alloc.o $(LZMA_DIR)/C/LzFind.o \
 	$(LZMA_DIR)/C/LzmaDec.o $(LZMA_DIR)/C/LzmaEnc.o $(LZMA_DIR)/C/LzmaLib.o
@@ -134,7 +157,7 @@ endif
 all: mksquashfs unsquashfs
 
 mksquashfs: $(MKSQUASHFS_OBJS)
-	$(CC) $(MKSQUASHFS_OBJS) -lz -lpthread -lm $(LIBS) -o $@
+	$(CC) $(MKSQUASHFS_OBJS) -lpthread -lm $(LIBS) -o $@
 
 mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h \
 	squashfs_swap.h xattr.h
@@ -154,7 +177,7 @@ xattr.o: xattr.h
 read_xattrs.o: xattr.h
 
 unsquashfs: $(UNSQUASHFS_OBJS)
-	$(CC) $(UNSQUASHFS_OBJS) -lz -lpthread -lm $(LIBS) -o $@
+	$(CC) $(UNSQUASHFS_OBJS) -lpthread -lm $(LIBS) -o $@
 
 unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h \
 	squashfs_compat.h global.h xattr.h
