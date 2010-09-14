@@ -116,7 +116,7 @@ endif
 # If LZMA_SUPPORT is specified then LZO_DIR must be specified too
 #
 ifdef LZMA_SUPPORT
-ifndef ZMA_DIR
+ifndef LZMA_DIR
 $(error LZMA_SUPPORT requires LZMA_DIR to be also defined)
 endif
 endif
