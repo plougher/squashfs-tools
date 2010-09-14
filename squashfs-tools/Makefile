@@ -96,6 +96,7 @@ CFLAGS += -DGZIP_SUPPORT
 MKSQUASHFS_OBJS += gzip_wrapper.o
 UNSQUASHFS_OBJS += gzip_wrapper.o
 LIBS += -lz
+HAVE_COMPRESSOR = 1
 endif
 
 ifdef LZMA_SUPPORT
@@ -105,6 +106,7 @@ INCLUDEDIR += -I$(LZMA_DIR)/C
 CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
 UNSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
+HAVE_COMPRESSOR = 1
 endif
 
 ifdef XZ_SUPPORT
@@ -112,6 +114,7 @@ CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += xz_wrapper.o
 UNSQUASHFS_OBJS += xz_wrapper.o
 LIBS += -llzma
+HAVE_COMPRESSOR = 1
 endif
 
 ifdef LZO_SUPPORT
@@ -123,6 +126,7 @@ endif
 MKSQUASHFS_OBJS += lzo_wrapper.o
 UNSQUASHFS_OBJS += lzo_wrapper.o
 LIBS += $(LZO_LIBDIR) -llzo2
+HAVE_COMPRESSOR = 1
 endif
 
 ifdef XATTR_SUPPORT
@@ -151,6 +155,13 @@ ifdef XZ_SUPPORT
 ifdef LZMA_SUPPORT
 $(error Both XZ_SUPPORT and LZMA_SUPPORT cannot be specified)
 endif
+endif
+
+#
+# At least one compressor must have been selected
+#
+ifndef HAVE_COMPRESSOR
+$(error No compressor selected! Select one or more of GZIP, LZMA, or LZO!)
 endif
 
 .PHONY: all
