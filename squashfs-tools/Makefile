@@ -2,7 +2,7 @@
 #          Compression build options          #
 ###############################################
 #
-# Building LZMA support
+########### Building LZMA support #############
 #
 # Both XZ Utils liblzma  (http://tukaani.org/xz/) and LZMA SDK
 # (http://www.7-zip.org/sdk.html) are supported
@@ -18,7 +18,20 @@
 #LZMA_SUPPORT = 1
 #LZMA_DIR = ../../../LZMA/lzma465
 
-# Specifying default compression
+
+############ Building LZO support ##############
+#
+# The LZO library (http://www.oberhumer.com/opensource/lzo/) is supported.
+#
+# To build using the LZO library - install the library and uncomment the
+# LZO_SUPPORT line below. If needed, uncomment and set LZO_DIR to the
+# installation prefix.
+#
+#LZO_SUPPORT = 1
+#LZO_DIR = /usr/local
+
+
+######## Specifying default compression ########
 #
 # The next line specifies which compression algorithm is used by default
 # in Mksquashfs.  Obviously the compression algorithm must have been
@@ -76,6 +89,17 @@ CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += xz_wrapper.o
 UNSQUASHFS_OBJS += xz_wrapper.o
 LIBS += -llzma
+endif
+
+ifdef LZO_SUPPORT
+CFLAGS += -DLZO_SUPPORT
+ifdef LZO_DIR
+INCLUDEDIR += -I$(LZO_DIR)/include
+LZO_LIBDIR = -L$(LZO_DIR)/lib
+endif
+MKSQUASHFS_OBJS += lzo_wrapper.o
+UNSQUASHFS_OBJS += lzo_wrapper.o
+LIBS += $(LZO_LIBDIR) -llzo2
 endif
 
 ifdef XATTR_SUPPORT
