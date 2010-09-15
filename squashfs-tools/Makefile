@@ -97,6 +97,7 @@ MKSQUASHFS_OBJS += gzip_wrapper.o
 UNSQUASHFS_OBJS += gzip_wrapper.o
 LIBS += -lz
 HAVE_COMPRESSOR = 1
+COMPRESSORS += gzip
 endif
 
 ifdef LZMA_SUPPORT
@@ -107,6 +108,7 @@ CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
 UNSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
 HAVE_COMPRESSOR = 1
+COMPRESSORS += lzma
 endif
 
 ifdef XZ_SUPPORT
@@ -115,6 +117,7 @@ MKSQUASHFS_OBJS += xz_wrapper.o
 UNSQUASHFS_OBJS += xz_wrapper.o
 LIBS += -llzma
 HAVE_COMPRESSOR = 1
+COMPRESSORS += lzma
 endif
 
 ifdef LZO_SUPPORT
@@ -127,6 +130,7 @@ MKSQUASHFS_OBJS += lzo_wrapper.o
 UNSQUASHFS_OBJS += lzo_wrapper.o
 LIBS += $(LZO_LIBDIR) -llzo2
 HAVE_COMPRESSOR = 1
+COMPRESSORS += lzo
 endif
 
 ifdef XATTR_SUPPORT
@@ -162,6 +166,13 @@ endif
 #
 ifndef HAVE_COMPRESSOR
 $(error No compressor selected! Select one or more of GZIP, LZMA, or LZO!)
+endif
+
+#
+# COMP_DEFAULT must be a selected compressor
+#
+ifeq (, $(findstring $(COMP_DEFAULT), $(COMPRESSORS)))
+$(error "COMP_DEFAULT isn't selected to be built!")
 endif
 
 .PHONY: all
