@@ -148,7 +148,7 @@ endif
 #
 ifdef LZMA_SUPPORT
 ifndef LZMA_DIR
-$(error LZMA_SUPPORT requires LZMA_DIR to be also defined)
+$(error "LZMA_SUPPORT requires LZMA_DIR to be also defined")
 endif
 endif
 
@@ -157,7 +157,7 @@ endif
 #
 ifdef XZ_SUPPORT
 ifdef LZMA_SUPPORT
-$(error Both XZ_SUPPORT and LZMA_SUPPORT cannot be specified)
+$(error "Both XZ_SUPPORT and LZMA_SUPPORT cannot be specified")
 endif
 endif
 
@@ -165,7 +165,7 @@ endif
 # At least one compressor must have been selected
 #
 ifndef HAVE_COMPRESSOR
-$(error No compressor selected! Select one or more of GZIP, LZMA, or LZO!)
+$(error "No compressor selected! Select one or more of GZIP, LZMA, or LZO!")
 endif
 
 #
