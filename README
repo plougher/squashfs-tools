@@ -1,10 +1,10 @@
 CVS status:
 
 Squashfs-tools: Squashfs 4.1 prerelease status.  These have new support for
-extended attributes, LZMA compressed filesystems, and pseudo dynamic files.
+extended attributes, LZMA and LZO compression, and pseudo dynamic files.
 
-kernel: obsolete - the kernel is now in mainline at www.kernel.org.
+kernel: obsolete, the kernel is now in mainline at www.kernel.org.
 
-kernel-2.4: prehistoric.  Not updated since the 3.1 release.  If you still need
+kernel-2.4: prehistoric, not updated since the 3.1 release.  If you still need
 Squashfs support in the 2.4 kernel then use the squashfs 3.1 release.  This
 is the last release that supported 2.4 kernels.
