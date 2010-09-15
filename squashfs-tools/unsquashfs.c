@@ -1534,8 +1534,7 @@ int read_super(char *source)
 	}
 
 	/*
-	 * 1.x, 2.x and 3.x filesystems use gzip compression.  Gzip is always
-	 * suppported.
+	 * 1.x, 2.x and 3.x filesystems use gzip compression.
 	 */
 	comp = lookup_compressor("gzip");
 	return TRUE;
