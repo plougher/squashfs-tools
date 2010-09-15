@@ -96,7 +96,6 @@ CFLAGS += -DGZIP_SUPPORT
 MKSQUASHFS_OBJS += gzip_wrapper.o
 UNSQUASHFS_OBJS += gzip_wrapper.o
 LIBS += -lz
-HAVE_COMPRESSOR = 1
 COMPRESSORS += gzip
 endif
 
@@ -107,7 +106,6 @@ INCLUDEDIR += -I$(LZMA_DIR)/C
 CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
 UNSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
-HAVE_COMPRESSOR = 1
 COMPRESSORS += lzma
 endif
 
@@ -116,7 +114,6 @@ CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += xz_wrapper.o
 UNSQUASHFS_OBJS += xz_wrapper.o
 LIBS += -llzma
-HAVE_COMPRESSOR = 1
 COMPRESSORS += lzma
 endif
 
@@ -164,7 +161,7 @@ endif
 #
 # At least one compressor must have been selected
 #
-ifndef HAVE_COMPRESSOR
+ifndef COMPRESSORS
 $(error "No compressor selected! Select one or more of GZIP, LZMA, or LZO!")
 endif
 
