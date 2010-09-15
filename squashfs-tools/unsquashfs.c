@@ -1443,13 +1443,6 @@ int read_super(char *source)
 		 * Check the compression type
 		 */
 		comp = lookup_compressor_id(sBlk.s.compression);
-		if(!comp->supported) {
-			ERROR("Filesystem uses %s compression, this is "
-				"unsupported by this version\n", comp->name);
-			ERROR("Decompressors available:\n");
-			display_compressors("", "");
-			goto failed_mount;
-		}
 		return TRUE;
 	}
 
@@ -2115,6 +2108,14 @@ options:
 	if(stat_sys) {
 		squashfs_stat(argv[i]);
 		exit(0);
+	}
+
+	if(!comp->supported) {
+		ERROR("Filesystem uses %s compression, this is "
+			"unsupported by this version\n", comp->name);
+		ERROR("Decompressors available:\n");
+		display_compressors("", "");
+		exit(1);
 	}
 
 	block_size = sBlk.s.block_size;
