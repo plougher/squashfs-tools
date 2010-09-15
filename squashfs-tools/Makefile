@@ -126,7 +126,6 @@ endif
 MKSQUASHFS_OBJS += lzo_wrapper.o
 UNSQUASHFS_OBJS += lzo_wrapper.o
 LIBS += $(LZO_LIBDIR) -llzo2
-HAVE_COMPRESSOR = 1
 COMPRESSORS += lzo
 endif
 
