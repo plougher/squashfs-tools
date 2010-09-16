@@ -231,6 +231,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(32, s, d, xattr_ids, struct squashfs_xattr_table);\
 }
 
+/* big endian architecture copy and swap macros */
 #define SQUASHFS_SWAP_SUPER_BLOCK(s, d)	\
 			_SQUASHFS_SWAP_SUPER_BLOCK(s, d, SWAP_LE)
 #define SQUASHFS_SWAP_DIR_INDEX(s, d) \
@@ -275,10 +276,12 @@ extern void inswap_le64_num(long long *, int);
 #define SWAP_LES(bits, s, d, field, type) \
 			SWAP_LE(bits, s, d, field, type)
 #define SQUASHFS_SWAP_INODE_T(s, d) SQUASHFS_SWAP_LONG_LONGS(s, d, 1)
-#define SQUASHFS_SWAP_FRAGMENT_INDEXES(s, d, n) SQUASHFS_SWAP_LONG_LONGS(s, d, n)
+#define SQUASHFS_SWAP_FRAGMENT_INDEXES(s, d, n) \
+			SQUASHFS_SWAP_LONG_LONGS(s, d, n)
 #define SQUASHFS_SWAP_LOOKUP_BLOCKS(s, d, n) SQUASHFS_SWAP_LONG_LONGS(s, d, n)
 #define SQUASHFS_SWAP_ID_BLOCKS(s, d, n) SQUASHFS_SWAP_LONG_LONGS(s, d, n)
 
+/* big endian architecture swap in-place macros */
 #define SQUASHFS_INSWAP_SUPER_BLOCK(s) \
 			_SQUASHFS_SWAP_SUPER_BLOCK(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_DIR_INDEX(s) \
@@ -317,9 +320,11 @@ extern void inswap_le64_num(long long *, int);
 			 _SQUASHFS_SWAP_XATTR_ID(s, s, INSWAP_LE)
 #define SQUASHFS_INSWAP_XATTR_TABLE(s) \
 			_SQUASHFS_SWAP_XATTR_TABLE(s, s, INSWAP_LE)
-#define INSWAP_LE(bits, s, d, field, type)	(s)->field = inswap_le##bits((s)->field)
+#define INSWAP_LE(bits, s, d, field, type) \
+			(s)->field = inswap_le##bits((s)->field)
 #define INSWAP_LES(bits, s, d, field, type) \
-		(s)->field = (short) inswap_le##bits((unsigned short) (s)->field)
+			(s)->field = (short) inswap_le##bits((unsigned short) \
+				(s)->field)
 #define SQUASHFS_INSWAP_INODE_T(s) s = inswap_le64(s)
 #define SQUASHFS_INSWAP_FRAGMENT_INDEXES(s, n) inswap_le64_num(s, n)
 #define SQUASHFS_INSWAP_LOOKUP_BLOCKS(s, n) inswap_le64_num(s, n)
@@ -328,6 +333,7 @@ extern void inswap_le64_num(long long *, int);
 #define SQUASHFS_INSWAP_INTS(s, n) inswap_le32_num(s, n)
 #define SQUASHFS_INSWAP_LONG_LONGS(s, n) inswap_le64_num(s, n)
 #else
+/* little endian architecture, just copy */
 #define SQUASHFS_SWAP_SUPER_BLOCK(s, d)	\
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_DIR_INDEX(s, d) \
@@ -367,10 +373,12 @@ extern void inswap_le64_num(long long *, int);
 #define SQUASHFS_SWAP_XATTR_TABLE(s, d) \
 		SQUASHFS_MEMCPY(s, d, sizeof(*(s)))
 #define SQUASHFS_SWAP_INODE_T(s, d) SQUASHFS_SWAP_LONG_LONGS(s, d, 1)
-#define SQUASHFS_SWAP_FRAGMENT_INDEXES(s, d, n) SQUASHFS_SWAP_LONG_LONGS(s, d, n)
+#define SQUASHFS_SWAP_FRAGMENT_INDEXES(s, d, n) \
+			SQUASHFS_SWAP_LONG_LONGS(s, d, n)
 #define SQUASHFS_SWAP_LOOKUP_BLOCKS(s, d, n) SQUASHFS_SWAP_LONG_LONGS(s, d, n)
 #define SQUASHFS_SWAP_ID_BLOCKS(s, d, n) SQUASHFS_SWAP_LONG_LONGS(s, d, n)
 
+/* little endian architecture, data already in place so do nothing */
 #define SQUASHFS_INSWAP_SUPER_BLOCK(s)
 #define SQUASHFS_INSWAP_DIR_INDEX(s)
 #define SQUASHFS_INSWAP_BASE_INODE_HEADER(s)
