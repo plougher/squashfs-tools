@@ -446,6 +446,7 @@ struct compressor *read_super(int fd, squashfs_super_block *sBlk, char *source)
 	TRACE("sBlk->id_table_start %llx\n", sBlk->id_table_start);
 	TRACE("sBlk->fragment_table_start %llx\n", sBlk->fragment_table_start);
 	TRACE("sBlk->lookup_table_start %llx\n", sBlk->lookup_table_start);
+	TRACE("sBlk->xattr_id_table_start %llx\n", sBlk->xattr_id_table_start);
 	printf("\n");
 
 	return comp;
