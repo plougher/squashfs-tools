@@ -1404,9 +1404,11 @@ void squashfs_stat(char *source)
 	TRACE("sBlk.s.inode_table_start 0x%llx\n", sBlk.s.inode_table_start);
 	TRACE("sBlk.s.directory_table_start 0x%llx\n",
 		sBlk.s.directory_table_start);
-	if(sBlk.s.s_major == 4)
+	if(sBlk.s.s_major == 4) {
 		TRACE("sBlk.s.id_table_start 0x%llx\n", sBlk.s.id_table_start);
-	else {
+		TRACE("sBlk.s.xattr_id_table_start 0x%llx\n",
+			sBlk.s.xattr_id_table_start);
+	} else {
 		TRACE("sBlk.uid_start 0x%llx\n", sBlk.uid_start);
 		TRACE("sBlk.guid_start 0x%llx\n", sBlk.guid_start);
 	}
