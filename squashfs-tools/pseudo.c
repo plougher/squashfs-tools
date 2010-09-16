@@ -468,10 +468,14 @@ error:
 }
 		
 
+
+#define MAX_LINE 2048
+
 int read_pseudo_file(struct pseudo **pseudo, char *filename)
 {
 	FILE *fd;
-	char line[2048];
+	char *line = NULL;
+	int size = 0;
 	int res = TRUE;
 
 	fd = fopen(filename, "r");
@@ -480,13 +484,41 @@ int read_pseudo_file(struct pseudo **pseudo, char *filename)
 				filename, strerror(errno));
 		return FALSE;
 	}
-	while(fscanf(fd, "%2047[^\n]\n", line) > 0) {
-		if (line[0] == '#')
-			continue;
+
+	while(1) {
+		int total = 0;
+
+		while(1) {
+			int n, err;
+
+			if(total + MAX_LINE > size) {
+				line = realloc(line, size += MAX_LINE);
+				if(line == NULL) {
+					ERROR("No space in read_pseudo_file\n");
+					return FALSE;
+				}
+			}
+
+			err = fscanf(fd, "%2047[^\n]%n\n", line + total, &n);
+			if(err <= 0)
+				goto done;
+
+			if(line[total] == '#')
+				continue;
+
+			if(line[total + n - 1] != '\\')
+				break;
+
+			total += n - 1;
+		}	
+
 		res = read_pseudo_def(pseudo, line);
 		if(res == FALSE)
 			break;
-	};
+	}
+
+done:
 	fclose(fd);
+	free(line);
 	return res;
 }
