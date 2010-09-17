@@ -56,7 +56,7 @@ GZIP_SUPPORT = 1
 COMP_DEFAULT = gzip
 
 ###############################################
-#              XATTR build options            #
+#  Extended attribute (XATTRs) build options  #
 ###############################################
 #
 # Building XATTR support for Mksquashfs and Unsquashfs
