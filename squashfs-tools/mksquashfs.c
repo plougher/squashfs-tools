@@ -3696,16 +3696,16 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
 		dir_ent = scan2_lookup(dir, pseudo_ent->name);
-		if(pseudo_ent->dev->type == 's') {
+		if(pseudo_ent->dev->type == 'm') {
 			struct stat *buf;
 			if(dir_ent == NULL) {
-				ERROR("Pseudo set file \"%s\" does not exist "
+				ERROR("Pseudo modify file \"%s\" does not exist "
 					"in source filesystem.  Ignoring.\n",
 					pseudo_ent->pathname);
 				continue;
 			}
 			if(dir_ent->inode->root_entry) {
-				ERROR("Pseudo set file \"%s\" is a pre-existing"
+				ERROR("Pseudo modify file \"%s\" is a pre-existing"
 					" file in the filesystem being appended"
 					"  to.  It cannot be modified. "
 					"Ignoring.\n", pseudo_ent->pathname);
@@ -3727,7 +3727,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 					pseudo_ent->pathname);
 			else
 				ERROR("Pseudo file \"%s\" exists in source "
-					"filesystem \"%s\"\n.  Ignoring, "
+					"filesystem \"%s\".\nIgnoring, "
 					"exclude it (-e/-ef) to override.\n",
 					pseudo_ent->pathname,
 					dir_ent->pathname);
