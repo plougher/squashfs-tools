@@ -100,11 +100,11 @@ MKSQUASHFS_OBJS = mksquashfs.o read_fs.o sort.o swap.o pseudo.o compressor.o
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o swap.o compressor.o
 
-CFLAGS = $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
+CFLAGS = $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
 	-D_GNU_SOURCE -DCOMP_DEFAULT=\"$(COMP_DEFAULT)\"  -O2 -Wall
 
 LIBS = -lpthread -lm
-ifdef GZIP_SUPPORT
+ifeq ($(GZIP_SUPPORT),1)
 CFLAGS += -DGZIP_SUPPORT
 MKSQUASHFS_OBJS += gzip_wrapper.o
 UNSQUASHFS_OBJS += gzip_wrapper.o
@@ -112,7 +112,7 @@ LIBS += -lz
 COMPRESSORS += gzip
 endif
 
-ifdef LZMA_SUPPORT
+ifeq ($(LZMA_SUPPORT),1)
 LZMA_OBJS = $(LZMA_DIR)/C/Alloc.o $(LZMA_DIR)/C/LzFind.o \
 	$(LZMA_DIR)/C/LzmaDec.o $(LZMA_DIR)/C/LzmaEnc.o $(LZMA_DIR)/C/LzmaLib.o
 INCLUDEDIR += -I$(LZMA_DIR)/C
@@ -122,7 +122,7 @@ UNSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
 COMPRESSORS += lzma
 endif
 
-ifdef LZMA_XZ_SUPPORT
+ifeq ($(LZMA_XZ_SUPPORT),1)
 CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += lzma_xz_wrapper.o
 UNSQUASHFS_OBJS += lzma_xz_wrapper.o
@@ -138,7 +138,7 @@ LIBS += -llzma
 COMPRESSORS += xz
 endif
 
-ifdef LZO_SUPPORT
+ifeq ($(LZO_SUPPORT),1)
 CFLAGS += -DLZO_SUPPORT
 ifdef LZO_DIR
 INCLUDEDIR += -I$(LZO_DIR)/include
@@ -150,8 +150,8 @@ LIBS += $(LZO_LIBDIR) -llzo2
 COMPRESSORS += lzo
 endif
 
-ifdef XATTR_SUPPORT
-ifdef XATTR_DEFAULT
+ifeq ($(XATTR_SUPPORT),1)
+ifeq ($(XATTR_DEFAULT),1)
 CFLAGS += -DXATTR_SUPPORT -DXATTR_DEFAULT
 else
 CFLAGS += -DXATTR_SUPPORT
@@ -163,7 +163,7 @@ endif
 #
 # If LZMA_SUPPORT is specified then LZMA_DIR must be specified too
 #
-ifdef LZMA_SUPPORT
+ifeq ($(LZMA_SUPPORT),1)
 ifndef LZMA_DIR
 $(error "LZMA_SUPPORT requires LZMA_DIR to be also defined")
 endif
@@ -172,8 +172,8 @@ endif
 #
 # Both LZMA_XZ_SUPPORT and LZMA_SUPPORT cannot be specified
 #
-ifdef LZMA_XZ_SUPPORT
-ifdef LZMA_SUPPORT
+ifeq ($(LZMA_XZ_SUPPORT),1)
+ifeq ($(LZMA_SUPPORT),1)
 $(error "Both LZMA_XZ_SUPPORT and LZMA_SUPPORT cannot be specified")
 endif
 endif
@@ -196,7 +196,7 @@ endif
 all: mksquashfs unsquashfs
 
 mksquashfs: $(MKSQUASHFS_OBJS)
-	$(CC) $(MKSQUASHFS_OBJS) $(LIBS) -o $@
+	$(CC) $(EXTRA_LDFLAGS) $(MKSQUASHFS_OBJS) $(LIBS) -o $@
 
 mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h sort.h squashfs_swap.h \
 	xattr.h pseudo.h compressor.h
@@ -227,7 +227,7 @@ lzo_wrapper.o: lzo_wrapper.c compressor.h squashfs_fs.h
 xz_wrapper.o: xz_wrapper.c compressor.h squashfs_fs.h
 
 unsquashfs: $(UNSQUASHFS_OBJS)
-	$(CC) $(UNSQUASHFS_OBJS) $(LIBS) -o $@
+	$(CC) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@
 
 unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h \
 	squashfs_compat.h xattr.h read_fs.h compressor.h
