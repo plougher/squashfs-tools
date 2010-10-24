@@ -737,7 +737,7 @@ int write_bytes(int fd, char *buff, int bytes)
 int lseek_broken = FALSE;
 char *zero_data = NULL;
 
-int write_block(int file_fd, char *buffer, int size, int hole, int sparse)
+int write_block(int file_fd, char *buffer, int size, long long hole, int sparse)
 {
 	off_t off = hole;
 
@@ -1604,7 +1604,7 @@ void *writer(void *arg)
 	while(1) {
 		struct squashfs_file *file = queue_get(to_writer);
 		int file_fd;
-		int hole = 0;
+		long long hole = 0;
 		int failed = FALSE;
 		int error;
 
