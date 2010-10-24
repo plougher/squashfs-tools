@@ -143,9 +143,9 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 			i.fragment = inode->fragment;
 			i.offset = inode->offset;
 			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(inode->file_size + sBlk.s.block_size - 1) >>
+				(i.data + sBlk.s.block_size - 1) >>
 				sBlk.s.block_log :
-				inode->file_size >> sBlk.s.block_log;
+				i.data >> sBlk.s.block_log;
 			i.start = inode->start_block;
 			i.sparse = 0;
 			i.block_ptr = block_ptr + sizeof(*inode);

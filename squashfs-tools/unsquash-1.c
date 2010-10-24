@@ -138,7 +138,7 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 
 			i.data = inode->file_size;
 			i.time = inode->mtime;
-			i.blocks = (inode->file_size + sBlk.s.block_size - 1) >>
+			i.blocks = (i.data + sBlk.s.block_size - 1) >>
 				sBlk.s.block_log;
 			i.start = inode->start_block;
 			i.block_ptr = block_ptr + sizeof(*inode);
