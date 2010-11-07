@@ -1,7 +1,6 @@
 CVS status:
 
-Squashfs-tools: Squashfs 4.1 prerelease status.  These have new support for
-extended attributes, LZMA and LZO compression, and pseudo dynamic files.
+Squashfs-tools: Squashfs 4.1 release with a couple of bug fixes.
 
 kernel: obsolete, the kernel is now in mainline at www.kernel.org.
 
