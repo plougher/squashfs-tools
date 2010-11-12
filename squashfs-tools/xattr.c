@@ -34,7 +34,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
-#include <attr/xattr.h>
+#include <sys/xattr.h>
 
 #include "squashfs_fs.h"
 #include "global.h"

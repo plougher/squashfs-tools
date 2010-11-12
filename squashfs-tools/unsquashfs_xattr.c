@@ -25,7 +25,7 @@
 #include "unsquashfs.h"
 #include "xattr.h"
 
-#include <attr/xattr.h>
+#include <sys/xattr.h>
 
 extern int root_process;
 
