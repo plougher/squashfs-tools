@@ -1299,9 +1299,12 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		print_filename(parent_name, i);
 
 	if(!lsonly && mkdir(parent_name, (mode_t) dir->mode) == -1 &&
-			(!force || errno != EEXIST))
-		ERROR("dir_scan: failed to open directory %s, because %s\n",
+			(!force || errno != EEXIST)) {
+		ERROR("dir_scan: failed to make directory %s, because %s\n",
 			parent_name, strerror(errno));
+		squashfs_closedir(dir);
+		return;
+	}
 
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
 		TRACE("dir_scan: name %s, start_block %d, offset %d, type %d\n",
