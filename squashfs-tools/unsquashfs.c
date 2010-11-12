@@ -2084,7 +2084,7 @@ options:
 			ERROR("\t-da[ta-queue] <size>\tSet data queue to "
 				"<size> Mbytes.  Default %d\n\t\t\t\tMbytes\n",
 				DATA_BUFFER_DEFAULT);
-			ERROR("\t-fr[ag-queue] <size>\tSet fagment queue to "
+			ERROR("\t-fr[ag-queue] <size>\tSet fragment queue to "
 				"<size> Mbytes.  Default %d\n\t\t\t\t Mbytes\n",
 				FRAGMENT_BUFFER_DEFAULT);
 			ERROR("\t-r[egex]\t\ttreat extract names as POSIX "

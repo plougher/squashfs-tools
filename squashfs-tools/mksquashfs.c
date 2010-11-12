@@ -4857,7 +4857,7 @@ printOptions:
 			ERROR("-write-queue <size>\tSet output queue to <size> "
 				"Mbytes.  Default %d Mbytes\n",
 				WRITER_BUFFER_DEFAULT);
-			ERROR("-fragment-queue <size>\tSet fagment queue to "
+			ERROR("-fragment-queue <size>\tSet fragment queue to "
 				"<size> Mbytes.  Default %d Mbytes\n",
 				FRAGMENT_BUFFER_DEFAULT);
 			ERROR("\nMiscellaneous options:\n");
