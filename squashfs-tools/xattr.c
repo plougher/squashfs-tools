@@ -219,6 +219,10 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 			break;
 		}
 		xattr_list[i].vsize = vsize;
+
+		TRACE("read_xattrs_from_system: filename %s, xattr name %s,"
+			" vsize %d\n", filename, xattr_list[i].full_name,
+			xattr_list[i].vsize);
 	}
 	free(xattr_names);
 	*xattrs = xattr_list;
