@@ -16,7 +16,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- * xz_wrapper.c
+ * lzma_xz_wrapper.c
+ *
+ * Support for LZMA1 compression using XZ Utils liblzma http://tukaani.org/xz/
  */
 
 #include <stdio.h>

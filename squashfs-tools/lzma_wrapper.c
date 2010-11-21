@@ -17,6 +17,9 @@
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
  * lzma_wrapper.c
+ *
+ * Support for LZMA1 compression using LZMA SDK (4.65 used in
+ * development, other versions may work) http://www.7-zip.org/sdk.html
  */
 
 #include <LzmaLib.h>
