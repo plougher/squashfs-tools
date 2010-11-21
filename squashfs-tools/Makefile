@@ -20,17 +20,19 @@ GZIP_SUPPORT = 1
 
 ########### Building LZMA support #############
 #
-# Both XZ Utils liblzma  (http://tukaani.org/xz/) and LZMA SDK
+# LZMA1 compression.
+#
+# Both XZ Utils liblzma (http://tukaani.org/xz/) and LZMA SDK
 # (http://www.7-zip.org/sdk.html) are supported
 #
 # To build using XZ Utils liblzma - install the library and uncomment
-# the XZ_SUPPORT line below.
+# the LZMA_XZ_SUPPORT line below.
 #
 # To build using the LZMA SDK (4.65 used in development, other versions may
 # work) - download and unpack it, uncomment and set LZMA_DIR to unpacked source,
 # and uncomment the LZMA_SUPPORT line below.
 #
-#XZ_SUPPORT = 1
+#LZMA_XZ_SUPPORT = 1
 #LZMA_SUPPORT = 1
 #LZMA_DIR = ../../../LZMA/lzma465
 
@@ -109,10 +111,10 @@ UNSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
 COMPRESSORS += lzma
 endif
 
-ifdef XZ_SUPPORT
+ifdef LZMA_XZ_SUPPORT
 CFLAGS += -DLZMA_SUPPORT
-MKSQUASHFS_OBJS += xz_wrapper.o
-UNSQUASHFS_OBJS += xz_wrapper.o
+MKSQUASHFS_OBJS += lzma_xz_wrapper.o
+UNSQUASHFS_OBJS += lzma_xz_wrapper.o
 LIBS += -llzma
 COMPRESSORS += lzma
 endif
@@ -149,9 +151,9 @@ endif
 endif
 
 #
-# Both XZ_SUPPORT and LZMA_SUPPORT cannot be specified
+# Both LZMA_XZ_SUPPORT and LZMA_SUPPORT cannot be specified
 #
-ifdef XZ_SUPPORT
+ifdef LZMA_XZ_SUPPORT
 ifdef LZMA_SUPPORT
 $(error "Both XZ_SUPPORT and LZMA_SUPPORT cannot be specified")
 endif
