@@ -23,6 +23,7 @@
 struct compressor {
 	int (*compress)(void **, char *, char *, int, int, int *);
 	int (*uncompress)(char *, char *, int, int, int *);
+	int (*options)(char **, int);
 	int id;
 	char *name;
 	int supported;
@@ -31,3 +32,11 @@ struct compressor {
 extern struct compressor *lookup_compressor(char *);
 extern struct compressor *lookup_compressor_id(int);
 extern void display_compressors(char *, char *);
+
+static inline int compressor_options(struct compressor *comp, char *argv[], int argc)
+{
+	if(comp->options == NULL)
+		return 0;
+
+	return comp->options(argv, argc);
+}

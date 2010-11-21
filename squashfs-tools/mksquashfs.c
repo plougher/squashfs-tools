@@ -4501,7 +4501,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.1 (2010/09/17)\n");\
+	printf("mksquashfs version 4.1-CVS (2010/11/20)\n");\
 	printf("copyright (C) 2010 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -4542,6 +4542,12 @@ int main(int argc, char *argv[])
 		goto printOptions;
 	source_path = argv + 1;
 	source = i - 2;
+	/*
+	 * lookup default compressor.  Note the Makefile ensures the default
+	 * compressor has been built, and so we don't need to to check
+	 * for failure here
+	 */
+	comp = lookup_compressor(comp_name);
 	for(; i < argc; i++) {
 		if(strcmp(argv[i], "-comp") == 0) {
 			if(++i == argc) {
@@ -4550,6 +4556,14 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			comp_name = argv[i];
+			comp = lookup_compressor(comp_name);
+			if(!comp->supported) {
+				ERROR("FATAL_ERROR: Compressor \"%s\" is not "
+					"supported!\n", comp_name);
+				ERROR("Compressors available:\n");
+				display_compressors("", COMP_DEFAULT);
+				exit(1);
+			}
 		} else if(strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -pf missing filename\n", argv[0]);
@@ -4772,6 +4786,18 @@ int main(int argc, char *argv[])
 			root_name = argv[i];
 		} else if(strcmp(argv[i], "-version") == 0) {
 			VERSION();
+
+		} else if(strncmp(argv[i], "-X", 2) == 0) {
+			int args = compressor_options(comp, argv + i, argc - i);
+			if(args == -1) {
+				ERROR("Unrecognised compressor option %s\n",
+					argv[i]);
+				ERROR("Did you forget to specify -comp,"
+					" or specify it after the compressor "
+					"specific option?\n");
+				exit(1);
+			}
+			i += args;
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
 printOptions:
@@ -5005,15 +5031,6 @@ printOptions:
 		always_use_fragments = SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags);
 		duplicate_checking = SQUASHFS_DUPLICATES(sBlk.flags);
 		exportable = SQUASHFS_EXPORTABLE(sBlk.flags);
-	} else {
-		comp = lookup_compressor(comp_name);
-		if(!comp->supported) {
-			ERROR("FATAL_ERROR: Compressor \"%s\" is not "
-				"supported!\n", comp_name);
-			ERROR("Compressors available:\n");
-			display_compressors("", COMP_DEFAULT);
-			EXIT_MKSQUASHFS();
-		}
 	}
 
 	initialise_threads(readb_mbytes, writeb_mbytes, fragmentb_mbytes);

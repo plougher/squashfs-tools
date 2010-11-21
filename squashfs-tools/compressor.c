@@ -34,24 +34,24 @@ extern int lzo_uncompress(char *, char *, int, int, int *);
 
 struct compressor compressor[] = {
 #ifdef GZIP_SUPPORT
-	{ gzip_compress, gzip_uncompress, ZLIB_COMPRESSION, "gzip", 1 },
+	{ gzip_compress, gzip_uncompress, NULL, ZLIB_COMPRESSION, "gzip", 1 },
 #else
-	{ NULL, NULL, ZLIB_COMPRESSION, "gzip", 0 },
+	{ NULL, NULL, NULL, ZLIB_COMPRESSION, "gzip", 0 },
 #endif
 #ifdef LZMA_SUPPORT
-	{ lzma_compress, lzma_uncompress, LZMA_COMPRESSION, "lzma", 1 },
+	{ lzma_compress, lzma_uncompress, NULL, LZMA_COMPRESSION, "lzma", 1 },
 #else
-	{ NULL, NULL, LZMA_COMPRESSION, "lzma", 0 },
+	{ NULL, NULL, NULL, LZMA_COMPRESSION, "lzma", 0 },
 #endif
 #ifdef LZO_SUPPORT
-	{ lzo_compress, lzo_uncompress, LZO_COMPRESSION, "lzo", 1 },
+	{ lzo_compress, lzo_uncompress, NULL, LZO_COMPRESSION, "lzo", 1 },
 #else
-	{ NULL, NULL, LZO_COMPRESSION, "lzo", 0 },
+	{ NULL, NULL, NULL, LZO_COMPRESSION, "lzo", 0 },
 #endif
 
-	{ NULL, NULL, XZ_COMPRESSION, "xz", 0 },
+	{ NULL, NULL, NULL, XZ_COMPRESSION, "xz", 0 },
 
-	{ NULL, NULL , 0, "unknown", 0}
+	{ NULL, NULL , NULL, 0, "unknown", 0}
 };
 
 
