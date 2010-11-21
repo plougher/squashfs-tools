@@ -49,6 +49,8 @@ struct compressor compressor[] = {
 	{ NULL, NULL, LZO_COMPRESSION, "lzo", 0 },
 #endif
 
+	{ NULL, NULL, XZ_COMPRESSION, "xz", 0 },
+
 	{ NULL, NULL , 0, "unknown", 0}
 };
 
