@@ -384,8 +384,9 @@ int processors = -1;
 #define FRAGMENT_BUFFER_DEFAULT 64
 int writer_buffer_size;
 
-/* compression operations structure */
+/* compression operations */
 static struct compressor *comp;
+int compressor_opts_parsed = 0;
 
 /* xattr stats */
 unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
@@ -4549,6 +4550,11 @@ int main(int argc, char *argv[])
 	comp = lookup_compressor(COMP_DEFAULT);
 	for(; i < argc; i++) {
 		if(strcmp(argv[i], "-comp") == 0) {
+			if(compressor_opts_parsed) {
+				ERROR("%s: -comp must appear before -X options"
+					"\n", argv[0]);
+				exit(1);
+			}
 			if(++i == argc) {
 				ERROR("%s: -comp missing compression type\n",
 					argv[0]);
@@ -4556,9 +4562,9 @@ int main(int argc, char *argv[])
 			}
 			comp = lookup_compressor(argv[i]);
 			if(!comp->supported) {
-				ERROR("FATAL_ERROR: Compressor \"%s\" is not "
-					"supported!\n", argv[i]);
-				ERROR("Compressors available:\n");
+				ERROR("%s: Compressor \"%s\" is not supported!"
+					"\n", argv[0], argv[i]);
+				ERROR("%s: Compressors available:\n", argv[0]);
 				display_compressors("", COMP_DEFAULT);
 				exit(1);
 			}
@@ -4566,14 +4572,15 @@ int main(int argc, char *argv[])
 		} else if(strncmp(argv[i], "-X", 2) == 0) {
 			int args = compressor_options(comp, argv + i, argc - i);
 			if(args == -1) {
-				ERROR("Unrecognised compressor option %s\n",
-					argv[i]);
-				ERROR("Did you forget to specify -comp,"
+				ERROR("%s: Unrecognised compressor option %s\n",
+					argv[0], argv[i]);
+				ERROR("%s: Did you forget to specify -comp,"
 					" or specify it after the compressor "
-					"specific option?\n");
+					"specific option?\n", argv[0]);
 				exit(1);
 			}
 			i += args;
+			compressor_opts_parsed = 1;
 
 		} else if(strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc) {
