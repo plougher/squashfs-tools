@@ -4562,6 +4562,19 @@ int main(int argc, char *argv[])
 				display_compressors("", COMP_DEFAULT);
 				exit(1);
 			}
+
+		} else if(strncmp(argv[i], "-X", 2) == 0) {
+			int args = compressor_options(comp, argv + i, argc - i);
+			if(args == -1) {
+				ERROR("Unrecognised compressor option %s\n",
+					argv[i]);
+				ERROR("Did you forget to specify -comp,"
+					" or specify it after the compressor "
+					"specific option?\n");
+				exit(1);
+			}
+			i += args;
+
 		} else if(strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -pf missing filename\n", argv[0]);
@@ -4784,18 +4797,6 @@ int main(int argc, char *argv[])
 			root_name = argv[i];
 		} else if(strcmp(argv[i], "-version") == 0) {
 			VERSION();
-
-		} else if(strncmp(argv[i], "-X", 2) == 0) {
-			int args = compressor_options(comp, argv + i, argc - i);
-			if(args == -1) {
-				ERROR("Unrecognised compressor option %s\n",
-					argv[i]);
-				ERROR("Did you forget to specify -comp,"
-					" or specify it after the compressor "
-					"specific option?\n");
-				exit(1);
-			}
-			i += args;
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
 printOptions:
