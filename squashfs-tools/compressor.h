@@ -36,7 +36,7 @@ extern void display_compressors(char *, char *);
 static inline int compressor_options(struct compressor *comp, char *argv[], int argc)
 {
 	if(comp->options == NULL)
-		return 0;
+		return -1;
 
 	return comp->options(argv, argc);
 }
