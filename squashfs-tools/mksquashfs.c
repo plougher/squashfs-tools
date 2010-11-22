@@ -386,7 +386,6 @@ int writer_buffer_size;
 
 /* compression operations structure */
 static struct compressor *comp;
-char *comp_name = COMP_DEFAULT;
 
 /* xattr stats */
 unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
@@ -4547,7 +4546,7 @@ int main(int argc, char *argv[])
 	 * compressor has been built, and so we don't need to to check
 	 * for failure here
 	 */
-	comp = lookup_compressor(comp_name);
+	comp = lookup_compressor(COMP_DEFAULT);
 	for(; i < argc; i++) {
 		if(strcmp(argv[i], "-comp") == 0) {
 			if(++i == argc) {
@@ -4555,11 +4554,10 @@ int main(int argc, char *argv[])
 					argv[0]);
 				exit(1);
 			}
-			comp_name = argv[i];
-			comp = lookup_compressor(comp_name);
+			comp = lookup_compressor(argv[i]);
 			if(!comp->supported) {
 				ERROR("FATAL_ERROR: Compressor \"%s\" is not "
-					"supported!\n", comp_name);
+					"supported!\n", argv[i]);
 				ERROR("Compressors available:\n");
 				display_compressors("", COMP_DEFAULT);
 				exit(1);
