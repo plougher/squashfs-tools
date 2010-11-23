@@ -37,7 +37,7 @@ struct lzo_stream {
 	lzo_bytep out;
 };
 
-static int lzo_compress(void **strm, char *d, char *s, int size, int block_size,
+static int lzo_compress(void **strm, void *d, void *s, int size, int block_size,
 		int *error)
 {
 	int res = 0;
@@ -55,7 +55,7 @@ static int lzo_compress(void **strm, char *d, char *s, int size, int block_size,
 			goto failed;
 	}
 
-	res = lzo1x_999_compress((lzo_bytep)s, size, stream->out, &outlen, stream->wrkmem);
+	res = lzo1x_999_compress(s, size, stream->out, &outlen, stream->wrkmem);
 	if(res != LZO_E_OK)
 		goto failed;
 	if(outlen >= size)
@@ -80,12 +80,12 @@ failed:
 }
 
 
-static int lzo_uncompress(char *d, char *s, int size, int block_size, int *error)
+static int lzo_uncompress(void *d, void *s, int size, int block_size, int *error)
 {
 	int res;
 	lzo_uint bytes = block_size;
 
-	res = lzo1x_decompress_safe((lzo_bytep)s, size, (lzo_bytep)d, &bytes, NULL);
+	res = lzo1x_decompress_safe(s, size, d, &bytes, NULL);
 
 	*error = res;
 	return res == LZO_E_OK ? bytes : -1;
