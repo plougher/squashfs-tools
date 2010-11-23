@@ -2,6 +2,9 @@
  * Copyright (c) 2010 LG Electronics
  * Chan Jeong <chan.jeong@lge.com>
  *
+ * All modifications Copyright (c) 2010
+ * Phillip Lougher <phillip@lougher.demon.co.uk>
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2,
