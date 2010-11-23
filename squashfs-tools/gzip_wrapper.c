@@ -22,7 +22,10 @@
 #include <stdlib.h>
 #include <zlib.h>
 
-int gzip_compress(void **strm, char *d, char *s, int size, int block_size,
+#include "squashfs_fs.h"
+#include "compressor.h"
+
+static int gzip_compress(void **strm, char *d, char *s, int size, int block_size,
 		int *error)
 {
 	int res = 0;
@@ -67,7 +70,7 @@ failed:
 }
 
 
-int gzip_uncompress(char *d, char *s, int size, int block_size, int *error)
+static int gzip_uncompress(char *d, char *s, int size, int block_size, int *error)
 {
 	int res;
 	unsigned long bytes = block_size;
@@ -78,3 +81,14 @@ int gzip_uncompress(char *d, char *s, int size, int block_size, int *error)
 	*error = res;
 	return res == Z_OK ? (int) bytes : -1;
 }
+
+
+struct compressor gzip_comp_ops = {
+	.compress = gzip_compress,
+	.uncompress = gzip_uncompress,
+	.options = NULL,
+	.id = ZLIB_COMPRESSION,
+	.name = "gzip",
+	.supported = 1
+};
+
