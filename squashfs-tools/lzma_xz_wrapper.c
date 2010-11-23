@@ -25,6 +25,9 @@
 #include <string.h>
 #include <lzma.h>
 
+#include "squashfs_fs.h"
+#include "compressor.h"
+
 #define LZMA_PROPS_SIZE 5
 #define LZMA_UNCOMP_SIZE 8
 #define LZMA_HEADER_SIZE (LZMA_PROPS_SIZE + LZMA_UNCOMP_SIZE)
@@ -32,7 +35,7 @@
 #define LZMA_OPTIONS 5
 #define MEMLIMIT (32 * 1024 * 1024)
 
-int lzma_compress(void **dummy, void *dest, void *src,  int size,
+static int lzma_compress(void **dummy, void *dest, void *src,  int size,
 	int block_size, int *error)
 {
 	unsigned char *d = (unsigned char *) dest;
@@ -92,7 +95,7 @@ failed:
 }
 
 
-int lzma_uncompress(void *dest, void *src, int size, int block_size,
+static int lzma_uncompress(void *dest, void *src, int size, int block_size,
 	int *error)
 {
 	lzma_stream strm = LZMA_STREAM_INIT;
@@ -138,3 +141,14 @@ failed:
 	*error = res;
 	return -1;
 }
+
+
+struct compressor lzma_comp_ops = {
+	.compress = lzma_compress,
+	.uncompress = lzma_uncompress,
+	.options = NULL,
+	.id = LZMA_COMPRESSION,
+	.name = "lzma",
+	.supported = 1
+};
+
