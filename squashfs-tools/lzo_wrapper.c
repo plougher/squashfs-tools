@@ -25,6 +25,9 @@
 #include <lzo/lzoconf.h>
 #include <lzo/lzo1x.h>
 
+#include "squashfs_fs.h"
+#include "compressor.h"
+
 /* worst-case expansion calculation during compression,
    see LZO FAQ for more information */
 #define LZO_OUTPUT_BUFFER_SIZE(size)	(size + (size/16) + 64 + 3)
@@ -34,7 +37,7 @@ struct lzo_stream {
 	lzo_bytep out;
 };
 
-int lzo_compress(void **strm, char *d, char *s, int size, int block_size,
+static int lzo_compress(void **strm, char *d, char *s, int size, int block_size,
 		int *error)
 {
 	int res = 0;
@@ -77,7 +80,7 @@ failed:
 }
 
 
-int lzo_uncompress(char *d, char *s, int size, int block_size, int *error)
+static int lzo_uncompress(char *d, char *s, int size, int block_size, int *error)
 {
 	int res;
 	lzo_uint bytes = block_size;
@@ -87,3 +90,14 @@ int lzo_uncompress(char *d, char *s, int size, int block_size, int *error)
 	*error = res;
 	return res == LZO_E_OK ? bytes : -1;
 }
+
+
+struct compressor lzo_comp_ops = {
+	.compress = lzo_compress,
+	.uncompress = lzo_uncompress,
+	.options = NULL,
+	.id = LZO_COMPRESSION,
+	.name = "lzo",
+	.supported = 1
+};
+
