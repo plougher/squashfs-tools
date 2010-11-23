@@ -21,8 +21,8 @@
  */
 
 struct compressor {
-	int (*compress)(void **, char *, char *, int, int, int *);
-	int (*uncompress)(char *, char *, int, int, int *);
+	int (*compress)(void **, void *, void *, int, int, int *);
+	int (*uncompress)(void *, void *, int, int, int *);
 	int (*options)(char **, int);
 	int id;
 	char *name;
