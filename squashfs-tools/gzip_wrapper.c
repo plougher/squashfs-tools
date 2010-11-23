@@ -25,7 +25,7 @@
 #include "squashfs_fs.h"
 #include "compressor.h"
 
-static int gzip_compress(void **strm, char *d, char *s, int size, int block_size,
+static int gzip_compress(void **strm, void *d, void *s, int size, int block_size,
 		int *error)
 {
 	int res = 0;
@@ -44,9 +44,9 @@ static int gzip_compress(void **strm, char *d, char *s, int size, int block_size
 	} else if((res = deflateReset(stream)) != Z_OK)
 		goto failed;
 
-	stream->next_in = (unsigned char *) s;
+	stream->next_in = s;
 	stream->avail_in = size;
-	stream->next_out = (unsigned char *) d;
+	stream->next_out = d;
 	stream->avail_out = block_size;
 
 	res = deflate(stream, Z_FINISH);
@@ -70,13 +70,12 @@ failed:
 }
 
 
-static int gzip_uncompress(char *d, char *s, int size, int block_size, int *error)
+static int gzip_uncompress(void *d, void *s, int size, int block_size, int *error)
 {
 	int res;
 	unsigned long bytes = block_size;
 
-	res = uncompress((unsigned char *) d, &bytes,
-		(const unsigned char *) s, size);
+	res = uncompress(d, &bytes, s, size);
 
 	*error = res;
 	return res == Z_OK ? (int) bytes : -1;
