@@ -155,7 +155,7 @@ endif
 #
 ifdef LZMA_XZ_SUPPORT
 ifdef LZMA_SUPPORT
-$(error "Both XZ_SUPPORT and LZMA_SUPPORT cannot be specified")
+$(error "Both LZMA_XZ_SUPPORT and LZMA_SUPPORT cannot be specified")
 endif
 endif
 
