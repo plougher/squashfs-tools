@@ -36,6 +36,17 @@ GZIP_SUPPORT = 1
 #LZMA_SUPPORT = 1
 #LZMA_DIR = ../../../LZMA/lzma465
 
+########### Building XZ support #############
+#
+# LZMA2 compression.
+#
+# XZ Utils liblzma (http://tukaani.org/xz/) is supported
+#
+# To build using XZ Utils liblzma - install the library and uncomment
+# the XZ_SUPPORT line below.
+#
+#XZ_SUPPORT = 1
+
 
 ############ Building LZO support ##############
 #
@@ -119,6 +130,14 @@ LIBS += -llzma
 COMPRESSORS += lzma
 endif
 
+ifdef XZ_SUPPORT
+CFLAGS += -DXZ_SUPPORT
+MKSQUASHFS_OBJS += xz_wrapper.o
+UNSQUASHFS_OBJS += xz_wrapper.o
+LIBS += -llzma
+COMPRESSORS += xz
+endif
+
 ifdef LZO_SUPPORT
 CFLAGS += -DLZO_SUPPORT
 ifdef LZO_DIR
@@ -163,7 +182,7 @@ endif
 # At least one compressor must have been selected
 #
 ifndef COMPRESSORS
-$(error "No compressor selected! Select one or more of GZIP, LZMA, or LZO!")
+$(error "No compressor selected! Select one or more of GZIP, LZMA, XZ or LZO!")
 endif
 
 #
