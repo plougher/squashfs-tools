@@ -29,15 +29,15 @@
 
 #define LZMA_HEADER_SIZE	(LZMA_PROPS_SIZE + 8)
 
-static int lzma_compress(void **strm, char *dest, char *src, int size, int block_size,
+static int lzma_compress(void **strm, void *dest, void *src, int size, int block_size,
 		int *error)
 {
-	unsigned char *d = (unsigned char *) dest, *s = (unsigned char *) src;
+	unsigned char *d = dest;
 	size_t props_size = LZMA_PROPS_SIZE,
 		outlen = block_size - LZMA_HEADER_SIZE;
 	int res;
 
-	res = LzmaCompress(d + LZMA_HEADER_SIZE, &outlen, s, size, d,
+	res = LzmaCompress(dest + LZMA_HEADER_SIZE, &outlen, src, size, dest,
 		&props_size, 5, block_size, 3, 0, 2, 32, 1);
 	
 	if(res == SZ_ERROR_OUTPUT_EOF) {
@@ -79,10 +79,10 @@ static int lzma_compress(void **strm, char *dest, char *src, int size, int block
 }
 
 
-static int lzma_uncompress(char *dest, char *src, int size, int block_size,
+static int lzma_uncompress(void *dest, void *src, int size, int block_size,
 	int *error)
 {
-	unsigned char *d = (unsigned char *) dest, *s = (unsigned char *) src;
+	unsigned char *s = src;
 	size_t outlen, inlen = size - LZMA_HEADER_SIZE;
 	int res;
 
@@ -91,8 +91,8 @@ static int lzma_uncompress(char *dest, char *src, int size, int block_size,
 		(s[LZMA_PROPS_SIZE + 2] << 16) |
 		(s[LZMA_PROPS_SIZE + 3] << 24);
 
-	res = LzmaUncompress(d, &outlen, s + LZMA_HEADER_SIZE, &inlen,
-		s, LZMA_PROPS_SIZE);
+	res = LzmaUncompress(dest, &outlen, src + LZMA_HEADER_SIZE, &inlen, src,
+		LZMA_PROPS_SIZE);
 	
 	*error = res;
 	return res == SZ_OK ? outlen : -1;
