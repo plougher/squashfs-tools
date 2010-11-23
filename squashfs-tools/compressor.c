@@ -25,26 +25,28 @@
 #include "compressor.h"
 #include "squashfs_fs.h"
 
-extern struct compressor gzip_comp_ops;
-extern struct compressor lzma_comp_ops;
-extern struct compressor lzo_comp_ops;
-
 #ifndef GZIP_SUPPORT
 static struct compressor gzip_comp_ops =  {
 	NULL, NULL, NULL, ZLIB_COMPRESSION, "gzip", 0
 };
+#else
+extern struct compressor gzip_comp_ops;
 #endif
 
 #ifndef LZMA_SUPPORT
 static struct compressor lzma_comp_ops = {
 	NULL, NULL, NULL, LZMA_COMPRESSION, "lzma", 0
 };
+#else
+extern struct compressor lzma_comp_ops;
 #endif
 
 #ifndef LZO_SUPPORT
 static struct compressor lzo_comp_ops = {
 	NULL, NULL, NULL, LZO_COMPRESSION, "lzo", 0
 };
+#else
+extern struct compressor lzo_comp_ops;
 #endif
 
 static struct compressor xz_comp_ops = {
