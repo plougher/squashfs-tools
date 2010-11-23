@@ -25,33 +25,44 @@
 #include "compressor.h"
 #include "squashfs_fs.h"
 
-extern int gzip_compress(void **, char *, char *, int, int, int *);
-extern int gzip_uncompress(char *, char *, int, int, int *);
-extern int lzma_compress(void **, char *, char *, int, int, int *);
-extern int lzma_uncompress(char *, char *, int, int, int *);
-extern int lzo_compress(void **, char *, char *, int, int, int *);
-extern int lzo_uncompress(char *, char *, int, int, int *);
+extern struct compressor gzip_comp_ops;
+extern struct compressor lzma_comp_ops;
+extern struct compressor lzo_comp_ops;
 
-struct compressor compressor[] = {
-#ifdef GZIP_SUPPORT
-	{ gzip_compress, gzip_uncompress, NULL, ZLIB_COMPRESSION, "gzip", 1 },
-#else
-	{ NULL, NULL, NULL, ZLIB_COMPRESSION, "gzip", 0 },
-#endif
-#ifdef LZMA_SUPPORT
-	{ lzma_compress, lzma_uncompress, NULL, LZMA_COMPRESSION, "lzma", 1 },
-#else
-	{ NULL, NULL, NULL, LZMA_COMPRESSION, "lzma", 0 },
-#endif
-#ifdef LZO_SUPPORT
-	{ lzo_compress, lzo_uncompress, NULL, LZO_COMPRESSION, "lzo", 1 },
-#else
-	{ NULL, NULL, NULL, LZO_COMPRESSION, "lzo", 0 },
+#ifndef GZIP_SUPPORT
+static struct compressor gzip_comp_ops =  {
+	NULL, NULL, NULL, ZLIB_COMPRESSION, "gzip", 0
+};
 #endif
 
-	{ NULL, NULL, NULL, XZ_COMPRESSION, "xz", 0 },
+#ifndef LZMA_SUPPORT
+static struct compressor lzma_comp_ops = {
+	NULL, NULL, NULL, LZMA_COMPRESSION, "lzma", 0
+};
+#endif
 
-	{ NULL, NULL , NULL, 0, "unknown", 0}
+#ifndef LZO_SUPPORT
+static struct compressor lzo_comp_ops = {
+	NULL, NULL, NULL, LZO_COMPRESSION, "lzo", 0
+};
+#endif
+
+static struct compressor xz_comp_ops = {
+	NULL, NULL, NULL, XZ_COMPRESSION, "xz", 0
+};
+
+
+static struct compressor unknown_comp_ops = {
+	NULL, NULL , NULL, 0, "unknown", 0
+};
+
+
+struct compressor *compressor[] = {
+	&gzip_comp_ops,
+	&lzma_comp_ops,
+	&lzo_comp_ops,
+	&xz_comp_ops,
+	&unknown_comp_ops
 };
 
 
@@ -59,11 +70,11 @@ struct compressor *lookup_compressor(char *name)
 {
 	int i;
 
-	for(i = 0; compressor[i].id; i++)
-		if(strcmp(compressor[i].name, name) == 0)
+	for(i = 0; compressor[i]->id; i++)
+		if(strcmp(compressor[i]->name, name) == 0)
 			break;
 
-	return &compressor[i];
+	return compressor[i];
 }
 
 
@@ -71,11 +82,11 @@ struct compressor *lookup_compressor_id(int id)
 {
 	int i;
 
-	for(i = 0; compressor[i].id; i++)
-		if(id == compressor[i].id)
+	for(i = 0; compressor[i]->id; i++)
+		if(id == compressor[i]->id)
 			break;
 
-	return &compressor[i];
+	return compressor[i];
 }
 
 
@@ -83,10 +94,10 @@ void display_compressors(char *indent, char *def_comp)
 {
 	int i;
 
-	for(i = 0; compressor[i].id; i++)
-		if(compressor[i].supported)
+	for(i = 0; compressor[i]->id; i++)
+		if(compressor[i]->supported)
 			fprintf(stderr, "%s\t%s%s\n", indent,
-				compressor[i].name,
-				strcmp(compressor[i].name, def_comp) == 0 ?
+				compressor[i]->name,
+				strcmp(compressor[i]->name, def_comp) == 0 ?
 				" (default)" : "");
 }
