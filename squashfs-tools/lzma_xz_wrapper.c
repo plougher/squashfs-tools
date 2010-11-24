@@ -35,7 +35,7 @@
 #define LZMA_OPTIONS 5
 #define MEMLIMIT (32 * 1024 * 1024)
 
-static int lzma_compress(void **dummy, void *dest, void *src,  int size,
+static int lzma_compress(void *dummy, void *dest, void *src,  int size,
 	int block_size, int *error)
 {
 	unsigned char *d = (unsigned char *) dest;
@@ -144,6 +144,7 @@ failed:
 
 
 struct compressor lzma_comp_ops = {
+	.init = NULL,
 	.compress = lzma_compress,
 	.uncompress = lzma_uncompress,
 	.options = NULL,
