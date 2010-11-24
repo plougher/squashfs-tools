@@ -27,7 +27,7 @@
 
 #ifndef GZIP_SUPPORT
 static struct compressor gzip_comp_ops =  {
-	NULL, NULL, NULL, ZLIB_COMPRESSION, "gzip", 0
+	NULL, NULL, NULL, NULL, ZLIB_COMPRESSION, "gzip", 0
 };
 #else
 extern struct compressor gzip_comp_ops;
@@ -35,7 +35,7 @@ extern struct compressor gzip_comp_ops;
 
 #ifndef LZMA_SUPPORT
 static struct compressor lzma_comp_ops = {
-	NULL, NULL, NULL, LZMA_COMPRESSION, "lzma", 0
+	NULL, NULL, NULL, NULL, LZMA_COMPRESSION, "lzma", 0
 };
 #else
 extern struct compressor lzma_comp_ops;
@@ -43,7 +43,7 @@ extern struct compressor lzma_comp_ops;
 
 #ifndef LZO_SUPPORT
 static struct compressor lzo_comp_ops = {
-	NULL, NULL, NULL, LZO_COMPRESSION, "lzo", 0
+	NULL, NULL, NULL, NULL, LZO_COMPRESSION, "lzo", 0
 };
 #else
 extern struct compressor lzo_comp_ops;
@@ -51,7 +51,7 @@ extern struct compressor lzo_comp_ops;
 
 #ifndef XZ_SUPPORT
 static struct compressor xz_comp_ops = {
-	NULL, NULL, NULL, XZ_COMPRESSION, "xz", 0
+	NULL, NULL, NULL, NULL, XZ_COMPRESSION, "xz", 0
 };
 #else
 extern struct compressor xz_comp_ops;
@@ -59,7 +59,7 @@ extern struct compressor xz_comp_ops;
 
 
 static struct compressor unknown_comp_ops = {
-	NULL, NULL , NULL, 0, "unknown", 0
+	NULL, NULL, NULL , NULL, 0, "unknown", 0
 };
 
 
