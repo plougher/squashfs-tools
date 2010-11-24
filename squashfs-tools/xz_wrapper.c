@@ -37,7 +37,7 @@ static lzma_filter filters[2] = {
 };
 
 
-static int xz_compress(void **dummy, void *dest, void *src,  int size,
+static int xz_compress(void *dummy, void *dest, void *src,  int size,
 	int block_size, int *error)
 {
 	size_t out_size = 0;
@@ -83,6 +83,7 @@ static int xz_uncompress(void *dest, void *src, int size, int block_size,
 
 
 struct compressor xz_comp_ops = {
+	.init = NULL,
 	.compress = xz_compress,
 	.uncompress = xz_uncompress,
 	.options = NULL,
