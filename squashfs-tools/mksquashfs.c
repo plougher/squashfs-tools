@@ -387,6 +387,7 @@ int writer_buffer_size;
 /* compression operations */
 static struct compressor *comp;
 int compressor_opts_parsed = 0;
+void *stream = NULL;
 
 /* xattr stats */
 unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
@@ -859,7 +860,7 @@ void sigalrm_handler()
 }
 
 
-int mangle2(void **strm, char *d, char *s, int size,
+int mangle2(void *strm, char *d, char *s, int size,
 	int block_size, int uncompressed, int data_block)
 {
 	int error, c_byte = 0;
@@ -884,9 +885,7 @@ int mangle2(void **strm, char *d, char *s, int size,
 int mangle(char *d, char *s, int size, int block_size,
 	int uncompressed, int data_block)
 {
-	static void *stream = NULL;
-
-	return mangle2(&stream, d, s, size, block_size, uncompressed,
+	return mangle2(stream, d, s, size, block_size, uncompressed,
 		data_block);
 }
 
@@ -2556,10 +2555,14 @@ int all_zero(struct file_buffer *file_buffer)
 void *deflator(void *arg)
 {
 	void *stream = NULL;
-	int oldstate;
+	int res, oldstate;
 
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldstate);
+
+	res = compressor_init(comp, &stream, block_size, 1);
+	if(res)
+		BAD_ERROR("deflator:: compressor_init failed\n");
 
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(from_reader);
@@ -2573,7 +2576,7 @@ void *deflator(void *arg)
 			queue_put(from_deflate, file_buffer);
 		} else {
 			write_buffer = cache_get(writer_buffer, 0, 0);
-			write_buffer->c_byte = mangle2(&stream,
+			write_buffer->c_byte = mangle2(stream,
 				write_buffer->data, file_buffer->data,
 				file_buffer->size, block_size, noD, 1);
 			write_buffer->sequence = file_buffer->sequence;
@@ -2593,10 +2596,14 @@ void *deflator(void *arg)
 void *frag_deflator(void *arg)
 {
 	void *stream = NULL;
-	int oldstate;
+	int res, oldstate;
 
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldstate);
+
+	res = compressor_init(comp, &stream, block_size, 1);
+	if(res)
+		BAD_ERROR("frag_deflator:: compressor_init failed\n");
 
 	while(1) {
 		int c_byte, compressed_size;
@@ -2605,7 +2612,7 @@ void *frag_deflator(void *arg)
 			cache_get(writer_buffer, file_buffer->block +
 			FRAG_INDEX, 1);
 
-		c_byte = mangle2(&stream, write_buffer->data, file_buffer->data,
+		c_byte = mangle2(stream, write_buffer->data, file_buffer->data,
 			file_buffer->size, block_size, noF, 1);
 		compressed_size = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
 		write_buffer->size = compressed_size;
@@ -4521,7 +4528,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 int main(int argc, char *argv[])
 {
 	struct stat buf, source_buf;
-	int i;
+	int res, i;
 	squashfs_super_block sBlk;
 	char *b, *root_name = NULL;
 	int nopad = FALSE, keep_as_directory = FALSE;
@@ -5040,6 +5047,10 @@ printOptions:
 	}
 
 	initialise_threads(readb_mbytes, writeb_mbytes, fragmentb_mbytes);
+
+	res = compressor_init(comp, &stream, SQUASHFS_METADATA_SIZE, 0);
+	if(res)
+		BAD_ERROR("compressor_init failed\n");
 
 	if(delete) {
 		printf("Creating %d.%d filesystem on %s, block size %d.\n",
