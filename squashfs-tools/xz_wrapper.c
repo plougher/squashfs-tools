@@ -23,6 +23,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <lzma.h>
 
 #include "squashfs_fs.h"
@@ -30,33 +31,163 @@
 
 #define MEMLIMIT (32 * 1024 * 1024)
 
-static lzma_options_lzma opt;
-static lzma_filter filters[2] = {
-	{ LZMA_FILTER_LZMA2, &opt },
-	{ LZMA_VLI_UNKNOWN, NULL }
+static struct bcj {
+	char	 	*name;
+	lzma_vli	id;
+	int		selected;
+} bcj[] = {
+	{ "x86", LZMA_FILTER_X86, 0 },
+	{ "powerpc", LZMA_FILTER_POWERPC, 0 },
+	{ "ia64", LZMA_FILTER_IA64, 0 },
+	{ "arm", LZMA_FILTER_ARM, 0 },
+	{ "armthumb", LZMA_FILTER_ARMTHUMB, 0 },
+	{ "sparc", LZMA_FILTER_SPARC, 0 },
+	{ NULL, LZMA_VLI_UNKNOWN, 0 }
 };
 
+struct filter {
+	void		*buffer;
+	lzma_filter	filter[3];
+	size_t		length;
+};
 
-static int xz_compress(void *dummy, void *dest, void *src,  int size,
+struct xz_stream {
+	struct filter	*filter;
+	int		filters;
+	lzma_options_lzma opt;
+};
+
+static int filter_count = 1;
+
+
+static int xz_options(char *argv[], int argc)
+{
+	int i;
+	char *name;
+
+	if(strcmp(argv[0], "-Xbcj") == 0) {
+		if(argc < 2) {
+			fprintf(stderr, "xz: -Xbcj missing filter\n");
+			goto failed;
+		}
+
+		name = argv[1];
+		while(name[0] != '\0') {
+			for(i = 0; bcj[i].name; i++) {
+				int n = strlen(bcj[i].name);
+				if((strncmp(name, bcj[i].name, n) == 0) &&
+						(name[n] == '\0' ||
+						 name[n] == ',')) {
+					if(bcj[i].selected == 0) {
+				 		bcj[i].selected = 1;
+						filter_count++;
+					}
+					name += name[n] == ',' ? n + 1 : n;
+					break;
+				}
+			}
+			if(bcj[i].name == NULL) {
+				fprintf(stderr, "xz: -Xbcj unrecognised filter\n");
+				goto failed;
+			}
+		}
+	
+		return 1;
+	}
+
+failed:
+	return -1;
+}
+		
+
+static int xz_init(void **strm, int block_size, int flags)
+{
+	int i, j, filters = flags ? filter_count : 1;
+	struct filter *filter = malloc(filters * sizeof(struct filter));
+	struct xz_stream *stream;
+
+	if(filter == NULL)
+		goto failed;
+
+	stream = *strm = malloc(sizeof(struct xz_stream));
+	if(stream == NULL)
+		goto failed2;
+
+	stream->filter = filter;
+	stream->filters = filters;
+
+	memset(filter, 0, filters * sizeof(struct filter));
+
+	filter[0].filter[0].id = LZMA_FILTER_LZMA2;
+	filter[0].filter[0].options = &stream->opt;
+	filter[0].filter[1].id = LZMA_VLI_UNKNOWN;
+
+	for(i = 0, j = 1; flags && bcj[i].name; i++) {
+		if(bcj[i].selected) {
+			filter[j].buffer = malloc(block_size);
+			if(filter[j].buffer == NULL)
+				goto failed3;
+			filter[j].filter[0].id = bcj[i].id;
+			filter[j].filter[1].id = LZMA_FILTER_LZMA2;
+			filter[j].filter[1].options = &stream->opt;
+			filter[j].filter[2].id = LZMA_VLI_UNKNOWN;
+			j++;
+		}
+	}
+
+	return 0;
+
+failed3:
+	for(i = 1; i < filters; i++)
+		free(filter[i].buffer);
+	free(stream);
+
+failed2:
+	free(filter);
+
+failed:
+	return -1;
+}
+
+
+static int xz_compress(void *strm, void *dest, void *src,  int size,
 	int block_size, int *error)
 {
-	size_t out_size = 0;
+	int i;
         lzma_ret res = 0;
+	struct xz_stream *stream = strm;
+	struct filter *selected = NULL;
 
-        if(lzma_lzma_preset(&opt, LZMA_PRESET_DEFAULT))
-                goto failed;
+	stream->filter[0].buffer = dest;
 
-	res = lzma_stream_buffer_encode(filters, LZMA_CHECK_CRC32, NULL,
-				src, size, dest, &out_size, block_size);
+	for(i = 0; i < stream->filters; i++) {
+		struct filter *filter = &stream->filter[i];
 
-	if(res == LZMA_OK)
-		return (int) out_size;
+        	if(lzma_lzma_preset(&stream->opt, LZMA_PRESET_DEFAULT))
+                	goto failed;
 
-	if(res == LZMA_BUF_ERROR)
+		filter->length = 0;
+		res = lzma_stream_buffer_encode(filter->filter,
+			LZMA_CHECK_CRC32, NULL, src, size, filter->buffer,
+			&filter->length, block_size);
+	
+		if(res == LZMA_OK) {
+			if(!selected || selected->length > filter->length)
+				selected = filter;
+		} else if(res != LZMA_BUF_ERROR)
+			goto failed;
+	}
+
+	if(!selected)
 		/*
 	 	 * Output buffer overflow.  Return out of buffer space
 	 	 */
 		return 0;
+
+	if(selected->buffer != dest)
+		memcpy(dest, selected->buffer, selected->length);
+
+	return (int) selected->length;
 
 failed:
 	/*
@@ -74,6 +205,7 @@ static int xz_uncompress(void *dest, void *src, int size, int block_size,
 	size_t src_pos = 0;
 	size_t dest_pos = 0;
 	uint64_t memlimit = MEMLIMIT;
+
 	lzma_ret res = lzma_stream_buffer_decode(&memlimit, 0, NULL,
 			src, &src_pos, size, dest, &dest_pos, block_size);
 
@@ -83,10 +215,10 @@ static int xz_uncompress(void *dest, void *src, int size, int block_size,
 
 
 struct compressor xz_comp_ops = {
-	.init = NULL,
+	.init = xz_init,
 	.compress = xz_compress,
 	.uncompress = xz_uncompress,
-	.options = NULL,
+	.options = xz_options,
 	.id = XZ_COMPRESSION,
 	.name = "xz",
 	.supported = 1
