@@ -95,8 +95,10 @@ static int xz_options(char *argv[], int argc)
 		return 1;
 	}
 
-failed:
 	return -1;
+	
+failed:
+	return -2;
 }
 		
 

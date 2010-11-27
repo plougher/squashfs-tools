@@ -4508,7 +4508,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.1-CVS (2010/11/20)\n");\
+	printf("mksquashfs version 4.1-CVS (2010/11/26)\n");\
 	printf("copyright (C) 2010 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -4578,12 +4578,16 @@ int main(int argc, char *argv[])
 
 		} else if(strncmp(argv[i], "-X", 2) == 0) {
 			int args = compressor_options(comp, argv + i, argc - i);
-			if(args == -1) {
-				ERROR("%s: Unrecognised compressor option %s\n",
-					argv[0], argv[i]);
-				ERROR("%s: Did you forget to specify -comp,"
-					" or specify it after the compressor "
-					"specific option?\n", argv[0]);
+			if(args < 0) {
+				if(args == -1) {
+					ERROR("%s: Unrecognised compressor"
+						" option %s\n", argv[0],
+						argv[i]);
+					ERROR("%s: Did you forget to specify"
+						" -comp, or specify it after"
+						" the compressor specific"
+						" option?\n", argv[0]);
+					}
 				exit(1);
 			}
 			i += args;
