@@ -712,11 +712,12 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk,
 	if(id_table == NULL)
 		goto error;
 
-	if((res = scan_inode_table(fd, start, end, root_inode_start,
-			root_inode_offset, sBlk, &inode, &inode_table,
-			&root_inode_block, root_inode_size, uncompressed_file,
-			uncompressed_directory, file_count, sym_count,
-			dev_count, dir_count, fifo_count, sock_count, id_table)) == 0) {
+	res = scan_inode_table(fd, start, end, root_inode_start,
+		root_inode_offset, sBlk, &inode, &inode_table,
+		&root_inode_block, root_inode_size, uncompressed_file,
+		uncompressed_directory, file_count, sym_count, dev_count,
+		dir_count, fifo_count, sock_count, id_table);
+	if(res == 0) {
 		ERROR("read_filesystem: inode table read failed\n");
 		goto error;
 	}
