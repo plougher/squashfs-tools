@@ -363,7 +363,8 @@ int scan_inode_table(int fd, long long start, long long end,
 		}
 	}
 	
-	return files;
+	printf("Read existing filesystem, %d inodes scanned\n", files);
+	return TRUE;
 
 
 failed:
@@ -691,7 +692,7 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk,
 		SQUASHFS_INODE_BLK(sBlk->root_inode);
 	unsigned int root_inode_offset =
 		SQUASHFS_INODE_OFFSET(sBlk->root_inode);
-	unsigned int root_inode_block, files;
+	unsigned int root_inode_block;
 	squashfs_inode_header inode;
 	unsigned int *id_table;
 	int res;
@@ -711,19 +712,16 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk,
 	if(id_table == NULL)
 		goto error;
 
-	if((files = scan_inode_table(fd, start, end, root_inode_start,
+	if((res = scan_inode_table(fd, start, end, root_inode_start,
 			root_inode_offset, sBlk, &inode, &inode_table,
 			&root_inode_block, root_inode_size, uncompressed_file,
 			uncompressed_directory, file_count, sym_count,
-			dev_count, dir_count, fifo_count, sock_count, id_table))
-			== 0) {
+			dev_count, dir_count, fifo_count, sock_count, id_table)) == 0) {
 		ERROR("read_filesystem: inode table read failed\n");
 		goto error;
 	}
 
 	*uncompressed_inode = root_inode_block;
-
-	printf("Read existing filesystem, %d inodes scanned\n", files);
 
 	if(inode.base.inode_type == SQUASHFS_DIR_TYPE ||
 			inode.base.inode_type == SQUASHFS_LDIR_TYPE) {
