@@ -168,6 +168,7 @@ static int xz_compress(void *strm, void *dest, void *src,  int size,
         	if(lzma_lzma_preset(&stream->opt, LZMA_PRESET_DEFAULT))
                 	goto failed;
 
+		stream->opt.dict_size = block_size;
 		filter->length = 0;
 		res = lzma_stream_buffer_encode(filter->filter,
 			LZMA_CHECK_CRC32, NULL, src, size, filter->buffer,
