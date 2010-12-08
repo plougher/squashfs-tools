@@ -4914,8 +4914,9 @@ printOptions:
 				"-noF\n");
 			ERROR("-noXattrCompression\talternative name for "
 				"-noX\n");
-			ERROR("\nCompressors available:\n");
-			display_compressors("", COMP_DEFAULT);
+			ERROR("\nCompressors available and compressor specific "
+				"options:\n");
+			display_compressor_usage(COMP_DEFAULT);
 			exit(1);
 		}
 	}
