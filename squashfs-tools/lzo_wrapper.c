@@ -114,6 +114,7 @@ struct compressor lzo_comp_ops = {
 	.compress = lzo_compress,
 	.uncompress = lzo_uncompress,
 	.options = NULL,
+	.usage = NULL,
 	.id = LZO_COMPRESSION,
 	.name = "lzo",
 	.supported = 1
