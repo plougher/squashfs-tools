@@ -102,6 +102,17 @@ failed:
 }
 		
 
+void xz_usage()
+{
+	fprintf(stderr, "\t  -Xbcj filter1,filter2,...,filterN\n");
+	fprintf(stderr, "\t\tCompress using filter1,filter2,...,filterN in");
+	fprintf(stderr, " turn\n\t\t(in addition to no filter), and choose");
+	fprintf(stderr, " the best compression.\n");
+	fprintf(stderr, "\t\tAvailable filters: x86, arm, armthumb,");
+	fprintf(stderr, " powerpc, sparc, ia64\n");
+}
+
+
 static int xz_init(void **strm, int block_size, int flags)
 {
 	int i, j, filters = flags ? filter_count : 1;
@@ -222,6 +233,7 @@ struct compressor xz_comp_ops = {
 	.compress = xz_compress,
 	.uncompress = xz_uncompress,
 	.options = xz_options,
+	.usage = xz_usage,
 	.id = XZ_COMPRESSION,
 	.name = "xz",
 	.supported = 1
