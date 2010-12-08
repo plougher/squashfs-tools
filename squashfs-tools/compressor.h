@@ -25,6 +25,7 @@ struct compressor {
 	int (*compress)(void *, void *, void *, int, int, int *);
 	int (*uncompress)(void *, void *, int, int, int *);
 	int (*options)(char **, int);
+	void (*usage)();
 	int id;
 	char *name;
 	int supported;
@@ -33,6 +34,7 @@ struct compressor {
 extern struct compressor *lookup_compressor(char *);
 extern struct compressor *lookup_compressor_id(int);
 extern void display_compressors(char *, char *);
+extern void display_compressor_usage(char *);
 
 static inline int compressor_options(struct compressor *comp, char *argv[],
 	int argc)
@@ -51,3 +53,6 @@ static inline int compressor_init(struct compressor *comp, void **stream,
 		return 0;
 	return comp->init(stream, block_size, flags);
 }
+
+
+
