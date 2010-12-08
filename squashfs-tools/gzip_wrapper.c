@@ -104,6 +104,7 @@ struct compressor gzip_comp_ops = {
 	.compress = gzip_compress,
 	.uncompress = gzip_uncompress,
 	.options = NULL,
+	.usage = NULL,
 	.id = ZLIB_COMPRESSION,
 	.name = "gzip",
 	.supported = 1
