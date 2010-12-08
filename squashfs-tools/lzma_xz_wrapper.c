@@ -148,6 +148,7 @@ struct compressor lzma_comp_ops = {
 	.compress = lzma_compress,
 	.uncompress = lzma_uncompress,
 	.options = NULL,
+	.usage = NULL,
 	.id = LZMA_COMPRESSION,
 	.name = "lzma",
 	.supported = 1
