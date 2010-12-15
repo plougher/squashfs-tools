@@ -429,6 +429,8 @@ struct compressor *read_super(int fd, squashfs_super_block *sBlk, char *source)
 		SQUASHFS_UNCOMPRESSED_DATA(sBlk->flags) ? "un" : "");
 	printf("\tFragments are %scompressed\n",
 		SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk->flags) ? "un" : "");
+	printf("\tXattrs are %scompressed\n",
+		SQUASHFS_UNCOMPRESSED_XATTRS(sBlk->flags) ? "un" : "");
 	printf("\tFragments are %spresent in the filesystem\n",
 		SQUASHFS_NO_FRAGMENTS(sBlk->flags) ? "not " : "");
 	printf("\tAlways_use_fragments option is %sspecified\n",
