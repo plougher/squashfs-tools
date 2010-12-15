@@ -1382,8 +1382,10 @@ void squashfs_stat(char *source)
 	if(sBlk.s.s_major == 4)
 		printf("Xattrs are %scompressed\n",
 			SQUASHFS_UNCOMPRESSED_XATTRS(sBlk.s.flags) ? "un" : "");
-	printf("Check data is %spresent in the filesystem\n",
-		SQUASHFS_CHECK_DATA(sBlk.s.flags) ? "" : "not ");
+	if(sBlk.s.s_major < 4)
+			printf("Check data is %spresent in the filesystem\n",
+				SQUASHFS_CHECK_DATA(sBlk.s.flags) ? "" :
+				"not ");
 	if(sBlk.s.s_major > 1) {
 		printf("Fragments are %spresent in the filesystem\n",
 			SQUASHFS_NO_FRAGMENTS(sBlk.s.flags) ? "not " : "");
