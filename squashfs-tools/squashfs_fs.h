@@ -62,6 +62,7 @@
 #define SQUASHFS_DUPLICATE		6
 #define SQUASHFS_EXPORT			7
 #define SQUASHFS_NOX			8
+#define SQUASHFS_NO_XATTR		9
 
 #define SQUASHFS_BIT(flag, bit)		((flag >> bit) & 1)
 
@@ -73,9 +74,6 @@
 
 #define SQUASHFS_UNCOMPRESSED_FRAGMENTS(flags)	SQUASHFS_BIT(flags, \
 						SQUASHFS_NOF)
-
-#define SQUASHFS_UNCOMPRESSED_XATTRS(flags)	SQUASHFS_BIT(flags, \
-						SQUASHFS_NOX)
 
 #define SQUASHFS_NO_FRAGMENTS(flags)		SQUASHFS_BIT(flags, \
 						SQUASHFS_NO_FRAG)
@@ -89,10 +87,17 @@
 #define SQUASHFS_EXPORTABLE(flags)		SQUASHFS_BIT(flags, \
 						SQUASHFS_EXPORT)
 
+#define SQUASHFS_UNCOMPRESSED_XATTRS(flags)	SQUASHFS_BIT(flags, \
+						SQUASHFS_NOX)
+
+#define SQUASHFS_NO_XATTRS(flags)		SQUASHFS_BIT(flags, \
+						SQUASHFS_NO_XATTR)
+
 #define SQUASHFS_MKFLAGS(noi, nod, nof, nox, no_frag, always_frag, \
-		duplicate_checking, exportable)	(noi | (nod << 1) | \
+		duplicate_checking, exportable, no_xattr) (noi | (nod << 1) | \
 		(nof << 3) | (no_frag << 4) | (always_frag << 5) | \
-		(duplicate_checking << 6) | (exportable << 7) | (nox << 8))
+		(duplicate_checking << 6) | (exportable << 7) | (nox << 8) | \
+		(no_xattr << 9))
 
 /* Max number of types and file types */
 #define SQUASHFS_DIR_TYPE		1
