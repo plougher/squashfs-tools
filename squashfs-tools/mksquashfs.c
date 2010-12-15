@@ -5045,6 +5045,7 @@ printOptions:
 		noI = SQUASHFS_UNCOMPRESSED_INODES(sBlk.flags);
 		noD = SQUASHFS_UNCOMPRESSED_DATA(sBlk.flags);
 		noF = SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.flags);
+		noX = SQUASHFS_UNCOMPRESSED_XATTRS(sBlk.flags);
 		no_fragments = SQUASHFS_NO_FRAGMENTS(sBlk.flags);
 		always_use_fragments = SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags);
 		duplicate_checking = SQUASHFS_DUPLICATES(sBlk.flags);
@@ -5100,7 +5101,7 @@ printOptions:
 		printf("Appending to existing %d.%d filesystem on %s, block "
 			"size %d\n", SQUASHFS_MAJOR, s_minor, argv[source + 1],
 			block_size);
-		printf("All -b, -noI, -noD, -noF, no-duplicates, no-fragments, "
+		printf("All -b, -noI, -noD, -noF, -noX, no-duplicates, no-fragments, "
 			"-always-use-fragments,\n-exportable and -comp options "
 			"ignored\n");
 		printf("\nIf appending is not wanted, please re-run with "
@@ -5234,7 +5235,7 @@ printOptions:
 	sBlk.s_minor = s_minor;
 	sBlk.block_size = block_size;
 	sBlk.block_log = block_log;
-	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, no_fragments,
+	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, no_fragments,
 		always_use_fragments, duplicate_checking, exportable);
 	sBlk.mkfs_time = time(NULL);
 
