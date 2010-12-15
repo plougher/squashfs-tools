@@ -437,6 +437,8 @@ struct compressor *read_super(int fd, squashfs_super_block *sBlk, char *source)
 		SQUASHFS_ALWAYS_FRAGMENTS(sBlk->flags) ? "" : "not ");
 	printf("\tDuplicates are %sremoved\n",
 		SQUASHFS_DUPLICATES(sBlk->flags) ? "" : "not ");
+	printf("\tXattrs are %sstored\n",
+		SQUASHFS_NO_XATTRS(sBlk->flags) ? "not " : "");
 	printf("\tFilesystem size %.2f Kbytes (%.2f Mbytes)\n",
 		sBlk->bytes_used / 1024.0, sBlk->bytes_used
 		/ (1024.0 * 1024.0));
