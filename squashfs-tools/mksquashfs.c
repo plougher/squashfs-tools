@@ -5050,6 +5050,7 @@ printOptions:
 		always_use_fragments = SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags);
 		duplicate_checking = SQUASHFS_DUPLICATES(sBlk.flags);
 		exportable = SQUASHFS_EXPORTABLE(sBlk.flags);
+		no_xattrs = SQUASHFS_NO_XATTRS(sBlk.flags);
 	}
 
 	initialise_threads(readb_mbytes, writeb_mbytes, fragmentb_mbytes);
@@ -5236,7 +5237,8 @@ printOptions:
 	sBlk.block_size = block_size;
 	sBlk.block_log = block_log;
 	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, no_fragments,
-		always_use_fragments, duplicate_checking, exportable);
+		always_use_fragments, duplicate_checking, exportable,
+		no_xattrs);
 	sBlk.mkfs_time = time(NULL);
 
 restore_filesystem:
