@@ -3491,7 +3491,8 @@ int scan1_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 {
 	struct dirent *d_name;
 
-	if((d_name = readdir(dir->linuxdir)) != NULL) {
+	d_name = readdir(dir->linuxdir);
+	if(d_name != NULL) {
 		strcpy(dir_name, d_name->d_name);
 		strcat(strcat(strcpy(pathname, dir->pathname), "/"),
 			d_name->d_name);
