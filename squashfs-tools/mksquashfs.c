@@ -2072,7 +2072,8 @@ void add_file(long long start, long long file_size, long long file_bytes,
 		return;
 	}
 
-	if((frg = malloc(sizeof(struct fragment))) == NULL)
+	frg = malloc(sizeof(struct fragment));
+	if(frg == NULL)
 		BAD_ERROR("Out of memory in fragment block allocation!\n");
 
 	frg->index = fragment;
