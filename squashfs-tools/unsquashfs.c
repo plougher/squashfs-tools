@@ -1375,10 +1375,19 @@ void squashfs_stat(char *source)
 		SQUASHFS_UNCOMPRESSED_INODES(sBlk.s.flags) ? "un" : "");
 	printf("Data is %scompressed\n",
 		SQUASHFS_UNCOMPRESSED_DATA(sBlk.s.flags) ? "un" : "");
-	if(sBlk.s.s_major > 1 && !SQUASHFS_NO_FRAGMENTS(sBlk.s.flags))
-		printf("Fragments are %scompressed\n",
-			SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.s.flags) ? "un" :
-			"");
+	if(sBlk.s.s_major > 1) {
+		if(SQUASHFS_NO_FRAGMENTS(sBlk.s.flags))
+			printf("Fragments are not stored\n");
+		else {
+			printf("Fragments are %scompressed\n",
+				SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.s.flags) ?
+				"un" : "");
+			printf("Always_use_fragments option is %sspecified\n",
+				SQUASHFS_ALWAYS_FRAGMENTS(sBlk.s.flags) ? "" :
+				"not ");
+		}
+	}
+
 	if(sBlk.s.s_major == 4)
 		printf("Xattrs are %scompressed\n",
 			SQUASHFS_UNCOMPRESSED_XATTRS(sBlk.s.flags) ? "un" : "");
@@ -1386,14 +1395,6 @@ void squashfs_stat(char *source)
 			printf("Check data is %spresent in the filesystem\n",
 				SQUASHFS_CHECK_DATA(sBlk.s.flags) ? "" :
 				"not ");
-	if(sBlk.s.s_major > 1) {
-		printf("Fragments are %spresent in the filesystem\n",
-			SQUASHFS_NO_FRAGMENTS(sBlk.s.flags) ? "not " : "");
-		printf("Always_use_fragments option is %sspecified\n",
-			SQUASHFS_ALWAYS_FRAGMENTS(sBlk.s.flags) ? "" : "not ");
-	} else
-		printf("Fragments are not supported by the filesystem\n");
-
 	if(sBlk.s.s_major > 1)
 		printf("Duplicates are %sremoved\n",
 			SQUASHFS_DUPLICATES(sBlk.s.flags) ? "" : "not ");
