@@ -3422,7 +3422,8 @@ int scan1_encomp_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 		}
 
 	while(index < source) {
-		if((basename = getbase(source_path[index])) == NULL) {
+		basename = getbase(source_path[index]);
+		if(basename == NULL) {
 			ERROR("Bad source directory %s - skipping ...\n",
 				source_path[index]);
 			index ++;
