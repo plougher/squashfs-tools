@@ -511,7 +511,8 @@ void add_entry(struct hash_table_entry *hash_table[], long long start,
 	int hash = CALCULATE_HASH(start);
 	struct hash_table_entry *hash_table_entry;
 
-	if((hash_table_entry = malloc(sizeof(struct hash_table_entry))) == NULL)
+	hash_table_entry = malloc(sizeof(struct hash_table_entry));
+	if(hash_table_entry == NULL)
 		EXIT_UNSQUASH("Out of memory in add_entry\n");
 
 	hash_table_entry->start = start;
