@@ -1510,10 +1510,10 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 	squashfs_dir_entry idir;
 	unsigned int start_block = inode >> 16;
 	unsigned int offset = inode & 0xffff;
-	unsigned int size;
+	unsigned int size = strlen(name);
 	size_t name_off = offsetof(squashfs_dir_entry, name);
 
-	if((size = strlen(name)) > SQUASHFS_NAME_LEN) {
+	if(size > SQUASHFS_NAME_LEN) {
 		size = SQUASHFS_NAME_LEN;
 		ERROR("Filename is greater than %d characters, truncating! ..."
 			"\n", SQUASHFS_NAME_LEN);
