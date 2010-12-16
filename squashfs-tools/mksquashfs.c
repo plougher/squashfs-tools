@@ -1489,7 +1489,8 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 
 void scan3_init_dir(struct directory *dir)
 {
-	if((dir->buff = malloc(SQUASHFS_METADATA_SIZE)) == NULL) {
+	dir->buff = malloc(SQUASHFS_METADATA_SIZE);
+	if(dir->buff == NULL) {
 		BAD_ERROR("Out of memory allocating directory buffer\n");
 	}
 
