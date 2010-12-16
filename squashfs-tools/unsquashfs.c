@@ -1388,9 +1388,15 @@ void squashfs_stat(char *source)
 		}
 	}
 
-	if(sBlk.s.s_major == 4)
-		printf("Xattrs are %scompressed\n",
-			SQUASHFS_UNCOMPRESSED_XATTRS(sBlk.s.flags) ? "un" : "");
+	if(sBlk.s.s_major == 4) {
+		if(SQUASHFS_NO_XATTRS(sBlk.s.flags))
+			printf("Xattrs are not stored\n");
+		else
+			printf("Xattrs are %scompressed\n",
+				SQUASHFS_UNCOMPRESSED_XATTRS(sBlk.s.flags) ?
+				"un" : "");
+	}
+
 	if(sBlk.s.s_major < 4)
 			printf("Check data is %spresent in the filesystem\n",
 				SQUASHFS_CHECK_DATA(sBlk.s.flags) ? "" :
