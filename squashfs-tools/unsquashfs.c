@@ -143,7 +143,8 @@ struct queue *queue_init(int size)
 	if(queue == NULL)
 		EXIT_UNSQUASH("Out of memory in queue_init\n");
 
-	if((queue->data = malloc(sizeof(void *) * (size + 1))) == NULL)
+	queue->data = malloc(sizeof(void *) * (size + 1));
+	if(queue->data == NULL)
 		EXIT_UNSQUASH("Out of memory in queue_init\n");
 
 	queue->size = size + 1;
