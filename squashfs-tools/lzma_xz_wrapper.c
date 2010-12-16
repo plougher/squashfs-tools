@@ -45,6 +45,7 @@ static int lzma_compress(void *dummy, void *dest, void *src,  int size,
 
 	lzma_lzma_preset(&opt, LZMA_OPTIONS);
 	opt.dict_size = block_size;
+
 	res = lzma_alone_encoder(&strm, &opt);
 	if(res != LZMA_OK) {
 		lzma_end(&strm);
