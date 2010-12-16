@@ -3409,16 +3409,19 @@ struct dir_info *scan1_opendir(char *pathname)
 
 int scan1_encomp_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 {
-	int i, n, pass;
+	int n, pass;
 	static int index = 0;
 
-	if(dir->count < old_root_entries)
+	if(dir->count < old_root_entries) {
+		int i;
+
 		for(i = 0; i < old_root_entries; i++) {
 			if(old_root_entry[i].inode.type == SQUASHFS_DIR_TYPE)
 				dir->directory_count ++;
 			add_dir_entry(old_root_entry[i].name, "", NULL,
 				&old_root_entry[i].inode, dir);
 		}
+	}
 
 	while(index < source) {
 		char *basename = getbase(source_path[index]);
