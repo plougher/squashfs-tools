@@ -2159,16 +2159,20 @@ options:
 	data_buffer_size <<= 20 - block_log;
 	initialise_threads(fragment_buffer_size, data_buffer_size);
 
-	if((fragment_data = malloc(block_size)) == NULL)
+	fragment_data = malloc(block_size);
+	if(fragment_data == NULL)
 		EXIT_UNSQUASH("failed to allocate fragment_data\n");
 
-	if((file_data = malloc(block_size)) == NULL)
+	file_data = malloc(block_size);
+	if(file_data == NULL)
 		EXIT_UNSQUASH("failed to allocate file_data");
 
-	if((data = malloc(block_size)) == NULL)
+	data = malloc(block_size);
+	if(data == NULL)
 		EXIT_UNSQUASH("failed to allocate data\n");
 
-	if((created_inode = malloc(sBlk.s.inodes * sizeof(char *))) == NULL)
+	created_inode = malloc(sBlk.s.inodes * sizeof(char *));
+	if(created_inode == NULL)
 		EXIT_UNSQUASH("failed to allocate created_inode\n");
 
 	memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
