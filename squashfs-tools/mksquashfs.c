@@ -2128,9 +2128,9 @@ struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned short checksum, unsigned short fragment_checksum,
 	int checksum_flag)
 {
-	struct file_info *dupl_ptr;
+	struct file_info *dupl_ptr = malloc(sizeof(struct file_info));
 
-	if((dupl_ptr = malloc(sizeof(struct file_info))) == NULL) {
+	if(dupl_ptr == NULL) {
 		BAD_ERROR("Out of memory in dup_files allocation!\n");
 	}
 
