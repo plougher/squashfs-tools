@@ -1406,7 +1406,8 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		char buff[65536];
 		size_t off = offsetof(squashfs_symlink_inode_header, symlink);
 
-		if((byte = readlink(filename, buff, 65536)) == -1) {
+		byte = readlink(filename, buff, 65536);
+		if(byte == -1) {
 			ERROR("Failed to read symlink %s, creating empty "
 				"symlink\n", filename);
 			byte = 0;
