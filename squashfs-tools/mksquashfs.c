@@ -2361,7 +2361,8 @@ again:
 	frag_block = !no_fragments && (always_use_fragments ||
 		(read_size < block_size)) ? read_size >> block_log : -1;
 
-	if((file = open(dir_ent->pathname, O_RDONLY)) == -1) {
+	file = open(dir_ent->pathname, O_RDONLY);
+	if(file == -1) {
 		file_buffer = cache_get(reader_buffer, 0, 0);
 		file_buffer->sequence = seq ++;
 		goto read_err;
