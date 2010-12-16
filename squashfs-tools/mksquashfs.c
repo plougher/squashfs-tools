@@ -440,7 +440,8 @@ struct queue *queue_init(int size)
 	if(queue == NULL)
 		goto failed;
 
-	if((queue->data = malloc(sizeof(void *) * (size + 1))) == NULL) {
+	queue->data = malloc(sizeof(void *) * (size + 1));
+	if(queue->data == NULL) {
 		free(queue);
 		goto failed;
 	}
