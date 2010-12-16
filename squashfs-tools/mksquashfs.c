@@ -1872,7 +1872,8 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
 	if(fragment_size + file_buffer->size > block_size)
 		write_fragment();
 
-	if((ffrg = malloc(sizeof(struct fragment))) == NULL)
+	ffrg = malloc(sizeof(struct fragment));
+	if(ffrg == NULL)
 		BAD_ERROR("Out of memory in fragment block allocation!\n");
 
 	if(fragment_size == 0)
