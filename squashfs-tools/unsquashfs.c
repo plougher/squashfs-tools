@@ -1075,7 +1075,8 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 	target = get_component(target, targname);
 
 	if(paths == NULL) {
-		if((paths = malloc(sizeof(struct pathname))) == NULL)
+		paths = malloc(sizeof(struct pathname));
+		if(paths == NULL)
 			EXIT_UNSQUASH("failed to allocate paths\n");
 
 		paths->names = 0;
