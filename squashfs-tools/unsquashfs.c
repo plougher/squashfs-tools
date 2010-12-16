@@ -1830,7 +1830,8 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 #endif
 	}
 
-	if((thread = malloc((3 + processors) * sizeof(pthread_t))) == NULL)
+	thread = malloc((3 + processors) * sizeof(pthread_t));
+	if(thread == NULL)
 		EXIT_UNSQUASH("Out of memory allocating thread descriptors\n");
 	deflator_thread = &thread[3];
 
