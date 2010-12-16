@@ -1597,7 +1597,7 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 	struct directory *dir)
 {
 	unsigned int dir_size = dir->p - dir->buff;
-	int data_space = (directory_cache_size - directory_cache_bytes);
+	int data_space = directory_cache_size - directory_cache_bytes;
 	unsigned int directory_block, directory_offset, i_count, index;
 	unsigned short c_byte;
 
