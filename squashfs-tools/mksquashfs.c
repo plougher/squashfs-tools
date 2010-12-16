@@ -2974,7 +2974,8 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	*duplicate_file = FALSE;
 
-	if((block_list = malloc(blocks * sizeof(unsigned int))) == NULL)
+	block_list = malloc(blocks * sizeof(unsigned int));
+	if(block_list == NULL)
 		BAD_ERROR("Out of memory allocating block_list\n");
 
 	lock_fragments();
