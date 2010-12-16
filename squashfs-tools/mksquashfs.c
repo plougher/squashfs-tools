@@ -3313,7 +3313,8 @@ struct inode_info *lookup_inode(struct stat *buf)
 		inode = inode->next;
 	}
 
-	if((inode = malloc(sizeof(struct inode_info))) == NULL)
+	inode = malloc(sizeof(struct inode_info));
+	if(inode == NULL)
 		BAD_ERROR("Out of memory in inode hash table entry allocation"
 			"\n");
 
