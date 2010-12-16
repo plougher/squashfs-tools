@@ -3453,19 +3453,21 @@ int scan1_encomp_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 int scan1_single_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 {
 	struct dirent *d_name;
-	int i, pass;
+	int i;
 
-	if(dir->count < old_root_entries)
+	if(dir->count < old_root_entries) {
 		for(i = 0; i < old_root_entries; i++) {
 			if(old_root_entry[i].inode.type == SQUASHFS_DIR_TYPE)
 				dir->directory_count ++;
 			add_dir_entry(old_root_entry[i].name, "", NULL,
 				&old_root_entry[i].inode, dir);
 		}
+	}
 
 	if((d_name = readdir(dir->linuxdir)) != NULL) {
+		int pass = 1;
+
 		strcpy(dir_name, d_name->d_name);
-		pass = 1;
 		for(;;) {
 			for(i = 0; i < dir->count &&
 				strcmp(dir->list[i]->name, dir_name) != 0; i++);
