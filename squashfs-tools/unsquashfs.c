@@ -1360,21 +1360,24 @@ void squashfs_stat(char *source)
 		sBlk.s.s_major == 4 ? "" : swap ? "big endian " :
 		"little endian ", sBlk.s.s_major, sBlk.s.s_minor, source);
 #endif
+
 	printf("Creation or last append time %s", mkfs_str ? mkfs_str :
 		"failed to get time\n");
 	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n",
 		sBlk.s.bytes_used / 1024.0, sBlk.s.bytes_used /
 		(1024.0 * 1024.0));
+
 	if(sBlk.s.s_major == 4)
 		printf("Compression %s\n", comp->name);
+
 	printf("Block size %d\n", sBlk.s.block_size);
 	printf("Filesystem is %sexportable via NFS\n",
 		SQUASHFS_EXPORTABLE(sBlk.s.flags) ? "" : "not ");
-
 	printf("Inodes are %scompressed\n",
 		SQUASHFS_UNCOMPRESSED_INODES(sBlk.s.flags) ? "un" : "");
 	printf("Data is %scompressed\n",
 		SQUASHFS_UNCOMPRESSED_DATA(sBlk.s.flags) ? "un" : "");
+
 	if(sBlk.s.s_major > 1) {
 		if(SQUASHFS_NO_FRAGMENTS(sBlk.s.flags))
 			printf("Fragments are not stored\n");
@@ -1401,14 +1404,18 @@ void squashfs_stat(char *source)
 			printf("Check data is %spresent in the filesystem\n",
 				SQUASHFS_CHECK_DATA(sBlk.s.flags) ? "" :
 				"not ");
+
 	if(sBlk.s.s_major > 1)
 		printf("Duplicates are %sremoved\n",
 			SQUASHFS_DUPLICATES(sBlk.s.flags) ? "" : "not ");
 	else
 		printf("Duplicates are removed\n");
+
 	if(sBlk.s.s_major > 1)
 		printf("Number of fragments %d\n", sBlk.s.fragments);
+
 	printf("Number of inodes %d\n", sBlk.s.inodes);
+
 	if(sBlk.s.s_major == 4)
 		printf("Number of ids %d\n", sBlk.s.no_ids);
 	else {
@@ -1419,6 +1426,7 @@ void squashfs_stat(char *source)
 	TRACE("sBlk.s.inode_table_start 0x%llx\n", sBlk.s.inode_table_start);
 	TRACE("sBlk.s.directory_table_start 0x%llx\n",
 		sBlk.s.directory_table_start);
+
 	if(sBlk.s.s_major == 4) {
 		TRACE("sBlk.s.id_table_start 0x%llx\n", sBlk.s.id_table_start);
 		TRACE("sBlk.s.xattr_id_table_start 0x%llx\n",
@@ -1427,6 +1435,7 @@ void squashfs_stat(char *source)
 		TRACE("sBlk.uid_start 0x%llx\n", sBlk.uid_start);
 		TRACE("sBlk.guid_start 0x%llx\n", sBlk.guid_start);
 	}
+
 	if(sBlk.s.s_major > 1)
 		TRACE("sBlk.s.fragment_table_start 0x%llx\n\n",
 			sBlk.s.fragment_table_start);
