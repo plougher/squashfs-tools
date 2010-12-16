@@ -454,13 +454,15 @@ int print_filename(char *pathname, struct inode *inode)
 		return 1;
 	}
 
-	if((user = getpwuid(inode->uid)) == NULL) {
+	user = getpwuid(inode->uid);
+	if(user == NULL) {
 		sprintf(dummy, "%d", inode->uid);
 		userstr = dummy;
 	} else
 		userstr = user->pw_name;
 		 
-	if((group = getgrgid(inode->gid)) == NULL) {
+	group = getgrgid(inode->gid);
+	if(group == NULL) {
 		sprintf(dummy2, "%d", inode->gid);
 		groupstr = dummy2;
 	} else
