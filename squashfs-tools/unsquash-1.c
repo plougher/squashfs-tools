@@ -226,7 +226,8 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 	bytes += (*i)->offset;
 	size = (*i)->data + bytes;
 
-	if((dir = malloc(sizeof(struct dir))) == NULL)
+	dir = malloc(sizeof(struct dir));
+	if(dir == NULL)
 		EXIT_UNSQUASH("squashfs_opendir: malloc failed!\n");
 
 	dir->dir_count = 0;
