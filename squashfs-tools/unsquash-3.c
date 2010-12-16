@@ -39,8 +39,9 @@ int read_fragment_table_3()
 	if(sBlk.s.fragments == 0)
 		return TRUE;
 
-	if((fragment_table = malloc(sBlk.s.fragments *
-			sizeof(squashfs_fragment_entry_3))) == NULL)
+	fragment_table = malloc(sBlk.s.fragments *
+		sizeof(squashfs_fragment_entry_3));
+	if(fragment_table == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
 			"fragment table\n");
 
