@@ -3410,7 +3410,6 @@ struct dir_info *scan1_opendir(char *pathname)
 int scan1_encomp_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 {
 	int i, n, pass;
-	char *basename;
 	static int index = 0;
 
 	if(dir->count < old_root_entries)
@@ -3422,7 +3421,8 @@ int scan1_encomp_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 		}
 
 	while(index < source) {
-		basename = getbase(source_path[index]);
+		char *basename = getbase(source_path[index]);
+
 		if(basename == NULL) {
 			ERROR("Bad source directory %s - skipping ...\n",
 				source_path[index]);
