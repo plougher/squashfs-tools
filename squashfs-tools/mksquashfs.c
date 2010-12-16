@@ -1700,7 +1700,8 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 				buffer[idir.size + 1] = '\0';
 				TRACE("\t\tname %s, inode offset 0x%x, type "
 					"%d\n", buffer, idir.offset, idir.type);
-				dirp += sizeof(squashfs_dir_entry) + idir.size +					 1;
+				dirp += sizeof(squashfs_dir_entry) + idir.size +
+					1;
 			}
 		}
 	}
