@@ -1582,7 +1582,8 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 	FILE *fd;
 	char name[16384];
 
-	if((fd = fopen(filename, "r")) == NULL)
+	fd = fopen(filename, "r");
+	if(fd == NULL)
 		EXIT_UNSQUASH("Could not open %s, because %s\n", filename,
 			strerror(errno));
 
