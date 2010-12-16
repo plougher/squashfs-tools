@@ -3351,7 +3351,8 @@ inline void add_dir_entry(char *name, char *pathname, struct dir_info *sub_dir,
 			BAD_ERROR("Out of memory in add_dir_entry\n");
 	}
 
-	if((dir->list[dir->count] = malloc(sizeof(struct dir_ent))) == NULL)
+	dir->list[dir->count] = malloc(sizeof(struct dir_ent));
+	if(dir->list[dir->count] == NULL)
 		BAD_ERROR("Out of memory in linux_opendir\n");
 
 	if(sub_dir)
