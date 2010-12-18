@@ -4416,7 +4416,8 @@ void write_recovery_data(squashfs_super_block *sBlk)
 		return;
 	}
 
-	if((metadata = malloc(bytes)) == NULL)
+	metadata = malloc(bytes);
+	if(metadata == NULL)
 		BAD_ERROR("Failed to alloc metadata buffer in "
 			"write_recovery_data\n");
 
