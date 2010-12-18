@@ -4085,7 +4085,8 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 #endif
 	}
 
-	if((thread = malloc((2 + processors * 2) * sizeof(pthread_t))) == NULL)
+	thread = malloc((2 + processors * 2) * sizeof(pthread_t));
+	if(thread == NULL)
 		BAD_ERROR("Out of memory allocating thread descriptors\n");
 	deflator_thread = &thread[2];
 	frag_deflator_thread = &deflator_thread[processors];
