@@ -3639,17 +3639,18 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 	int (_readdir)(char *, char *, struct dir_info *))
 {
-	struct dir_info *dir, *sub_dir;
-	struct stat buf;
 	char filename[8192], dir_name[8192];
-	struct pathnames *new;
+	struct dir_info *dir = scan1_opendir(pathname);
 
-	if((dir = scan1_opendir(pathname)) == NULL) {
+	if(dir == NULL) {
 		ERROR("Could not open %s, skipping...\n", pathname);
 		goto error;
 	}
 
 	while(_readdir(filename, dir_name, dir) != FALSE) {
+		struct dir_info *sub_dir;
+		struct stat buf;
+		struct pathnames *new;
 
 		if(strcmp(dir_name, ".") == 0 || strcmp(dir_name, "..") == 0)
 			continue;
