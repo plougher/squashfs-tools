@@ -3582,7 +3582,8 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 
 	dir_scan2(dir_info, pseudo);
 
-	if((dir_ent = malloc(sizeof(struct dir_ent))) == NULL)
+	dir_ent = malloc(sizeof(struct dir_ent));
+	if(dir_ent == NULL)
 		BAD_ERROR("Out of memory in dir_scan\n");
 
 	if(pathname[0] == '\0') {
