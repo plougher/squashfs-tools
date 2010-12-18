@@ -4465,7 +4465,8 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	char header[] = RECOVER_ID;
 	char header2[RECOVER_ID_SIZE];
 
-	if((recoverfd = open(recovery_file, O_RDONLY)) == -1)
+	recoverfd = open(recovery_file, O_RDONLY);
+	if(recoverfd == -1)
 		BAD_ERROR("Failed to open recovery file because %s\n",
 			strerror(errno));
 
@@ -4473,7 +4474,8 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 		BAD_ERROR("Failed to stat destination file, because %s\n",
 			strerror(errno));
 
-	if((fd = open(destination_file, O_RDWR)) == -1)
+	fd = open(destination_file, O_RDWR);
+	if(fd == -1)
 		BAD_ERROR("Failed to open destination file because %s\n",
 			strerror(errno));
 
@@ -4504,7 +4506,8 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 	bytes = sBlk.bytes_used - sBlk.inode_table_start;
 
-	if((metadata = malloc(bytes)) == NULL)
+	metadata = malloc(bytes);
+	if(metadata == NULL)
 		BAD_ERROR("Failed to alloc metadata buffer in "
 			"read_recovery_data\n");
 
