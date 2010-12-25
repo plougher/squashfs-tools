@@ -4534,7 +4534,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.1-CVS (2010/12/19)\n");\
+	printf("mksquashfs version 4.1-CVS (2010/12/25)\n");\
 	printf("copyright (C) 2010 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5101,6 +5101,11 @@ printOptions:
 		printf("Creating %d.%d filesystem on %s, block size %d.\n",
 			SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
 
+		/*
+		 * store any compressor specific options after the superblock,
+		 * and set the COMP_OPT flag to show that the filesystem has
+		 * compressor specfic options
+		 */
 		if(comp_data) {
 			unsigned short c_byte = size | SQUASHFS_COMPRESSED_BIT;
 	
