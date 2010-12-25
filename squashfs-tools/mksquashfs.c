@@ -4947,6 +4947,14 @@ printOptions:
 		}
 	}
 
+	/*
+	 * Some compressors may need the options to be checked for validity
+	 * once all the options have been processed
+	 */
+	res = compressor_options_post(comp, block_size);
+	if(res)
+		EXIT_MKSQUASHFS();
+
 	for(i = 0; i < source; i++)
 		if(lstat(source_path[i], &source_buf) == -1) {
 			fprintf(stderr, "Cannot stat source directory \"%s\" "
