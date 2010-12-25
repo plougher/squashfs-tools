@@ -63,6 +63,7 @@
 #define SQUASHFS_EXPORT			7
 #define SQUASHFS_NOX			8
 #define SQUASHFS_NO_XATTR		9
+#define SQUASHFS_COMP_OPT		10
 
 #define SQUASHFS_BIT(flag, bit)		((flag >> bit) & 1)
 
@@ -93,11 +94,15 @@
 #define SQUASHFS_NO_XATTRS(flags)		SQUASHFS_BIT(flags, \
 						SQUASHFS_NO_XATTR)
 
+#define SQUASHFS_COMP_OPTS(flags)		SQUASHFS_BIT(flags, \
+						SQUASHFS_COMP_OPT)
+
 #define SQUASHFS_MKFLAGS(noi, nod, nof, nox, no_frag, always_frag, \
-		duplicate_checking, exportable, no_xattr) (noi | (nod << 1) | \
-		(nof << 3) | (no_frag << 4) | (always_frag << 5) | \
-		(duplicate_checking << 6) | (exportable << 7) | (nox << 8) | \
-		(no_xattr << 9))
+		duplicate_checking, exportable, no_xattr, comp_opt) (noi | \
+		(nod << 1) | (nof << 3) | (no_frag << 4) | \
+		(always_frag << 5) | (duplicate_checking << 6) | \
+		(exportable << 7) | (nox << 8) | (no_xattr << 9) | \
+		(comp_opt << 10))
 
 /* Max number of types and file types */
 #define SQUASHFS_DIR_TYPE		1
