@@ -25,6 +25,7 @@ struct compressor {
 	int (*compress)(void *, void *, void *, int, int, int *);
 	int (*uncompress)(void *, void *, int, int, int *);
 	int (*options)(char **, int);
+	int (*options_post)(int);
 	void *(*dump_options)(int *);
 	void (*usage)();
 	int id;
@@ -61,4 +62,12 @@ static inline void *compressor_dump_options(struct compressor *comp, int *size)
 	if(comp->dump_options == NULL)
 		return NULL;
 	return comp->dump_options(size);
+}
+
+
+static inline int compressor_options_post(struct compressor *comp, int block_size)
+{
+	if(comp->options_post == NULL)
+		return 0;
+	return comp->options_post(block_size);
 }
