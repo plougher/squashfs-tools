@@ -25,6 +25,7 @@ struct compressor {
 	int (*compress)(void *, void *, void *, int, int, int *);
 	int (*uncompress)(void *, void *, int, int, int *);
 	int (*options)(char **, int);
+	void *(*dump_options)(int *);
 	void (*usage)();
 	int id;
 	char *name;
@@ -55,4 +56,9 @@ static inline int compressor_init(struct compressor *comp, void **stream,
 }
 
 
-
+static inline void *compressor_dump_options(struct compressor *comp, int *size)
+{
+	if(comp->dump_options == NULL)
+		return NULL;
+	return comp->dump_options(size);
+}
