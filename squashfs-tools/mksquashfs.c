@@ -123,6 +123,7 @@ int cur_uncompressed = 0, estimated_uncompressed = 0;
 int columns;
 
 /* filesystem flags for building */
+int comp_opts = FALSE;
 int no_xattrs = XATTR_DEF, noX = 0;
 int duplicate_checking = 1, noF = 0, no_fragments = 0, always_use_fragments = 0;
 int noI = 0, noD = 0;
@@ -5076,6 +5077,7 @@ printOptions:
 		duplicate_checking = SQUASHFS_DUPLICATES(sBlk.flags);
 		exportable = SQUASHFS_EXPORTABLE(sBlk.flags);
 		no_xattrs = SQUASHFS_NO_XATTRS(sBlk.flags);
+		comp_opts = SQUASHFS_COMP_OPTS(sBlk.flags);
 	}
 
 	initialise_threads(readb_mbytes, writeb_mbytes, fragmentb_mbytes);
@@ -5085,9 +5087,26 @@ printOptions:
 		BAD_ERROR("compressor_init failed\n");
 
 	if(delete) {
+		int size;
+		void *comp_data = compressor_dump_options(comp, &size);
+
 		printf("Creating %d.%d filesystem on %s, block size %d.\n",
 			SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
-		bytes = sizeof(squashfs_super_block);
+
+		if(comp_data) {
+			unsigned short c_byte = size | SQUASHFS_COMPRESSED_BIT;
+	
+			SQUASHFS_INSWAP_SHORTS(&c_byte, 1);
+			write_destination(fd, SQUASHFS_START, sizeof(c_byte),
+				(char *) &c_byte);
+			write_destination(fd, SQUASHFS_START + sizeof(c_byte),
+				size, comp_data);
+			bytes = sizeof(squashfs_super_block) + sizeof(c_byte)
+				+ size;
+			comp_opts = TRUE;
+			free(comp_data);
+		} else			
+			bytes = sizeof(squashfs_super_block);
 	} else {
 		unsigned int last_directory_block, inode_dir_offset,
 			inode_dir_file_size, root_inode_size,
@@ -5263,7 +5282,7 @@ printOptions:
 	sBlk.block_log = block_log;
 	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, no_fragments,
 		always_use_fragments, duplicate_checking, exportable,
-		no_xattrs);
+		no_xattrs, comp_opts);
 	sBlk.mkfs_time = time(NULL);
 
 restore_filesystem:
