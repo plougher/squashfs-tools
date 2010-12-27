@@ -102,20 +102,20 @@ static int xz_options(char *argv[], int argc)
 		}
 	
 		return 1;
-	} else if(strcmp(argv[0], "-Xdict_size") == 0) {
+	} else if(strcmp(argv[0], "-Xdict-size") == 0) {
 		char *b;
 		float size;
 
 		if(argc < 2) {
-			fprintf(stderr, "xz: -Xdict_size missing dict_size\n");
+			fprintf(stderr, "xz: -Xdict-size missing dict-size\n");
 			goto failed;
 		}
 
 		size = strtof(argv[1], &b);
 		if(*b == '%') {
 			if(size <= 0 || size > 100) {
-				fprintf(stderr, "xz: -Xdict_size percentage "
-					"should be 0 < dict_size <= 100\n");
+				fprintf(stderr, "xz: -Xdict-size percentage "
+					"should be 0 < dict-size <= 100\n");
 				goto failed;
 			}
 
@@ -123,7 +123,7 @@ static int xz_options(char *argv[], int argc)
 			dictionary_size = 0;
 		} else {
 			if((float) ((int) size) != size) {
-				fprintf(stderr, "xz: -Xdict_size can't be "
+				fprintf(stderr, "xz: -Xdict-size can't be "
 					"fractional unless a percentage of the"
 					" block size\n");
 				goto failed;
@@ -137,7 +137,7 @@ static int xz_options(char *argv[], int argc)
 			else if(*b == 'm' || *b == 'M')
 				dictionary_size *= 1024 * 1024;
 			else if(*b != '\0') {
-				fprintf(stderr, "xz: -Xdict_size invalid dict_size\n");
+				fprintf(stderr, "xz: -Xdict-size invalid dict-size\n");
 				goto failed;
 			}
 		}
@@ -158,7 +158,7 @@ static int xz_options_post(int block_size)
 
 	if(dictionary_size) {
 		if(dictionary_size > block_size) {
-			fprintf(stderr, "xz: -Xdict_size is larger than "
+			fprintf(stderr, "xz: -Xdict-size is larger than "
 				"block_size\n");
 			goto failed;
 		}
@@ -168,7 +168,7 @@ static int xz_options_post(int block_size)
 		dictionary_size = block_size;
 
 	if(dictionary_size < 4096) {
-		fprintf(stderr, "xz: -Xdict_size should be 4096 bytes or "
+		fprintf(stderr, "xz: -Xdict-size should be 4096 bytes or "
 			"larger\n");
 		goto failed;
 	}
@@ -182,9 +182,9 @@ static int xz_options_post(int block_size)
 			dictionary_size == ((1 << n) + (1 << (n + 1))))
 		return 0;
 
-	fprintf(stderr, "xz: -Xdict_size is an unsupported value, dict_size "
+	fprintf(stderr, "xz: -Xdict-size is an unsupported value, dict-size "
 		"must be storable in xz header\n");
-	fprintf(stderr, "as either 2^n or as 2^n+2^(n+1).  Example dict_sizes "
+	fprintf(stderr, "as either 2^n or as 2^n+2^(n+1).  Example dict-sizes "
 		"are 75%%, 50%%, 37.5%%, 25%%,\n");
 	fprintf(stderr, "or 32K, 16K, 8K etc.");
 
