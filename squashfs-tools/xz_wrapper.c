@@ -54,10 +54,19 @@ struct filter {
 struct xz_stream {
 	struct filter	*filter;
 	int		filters;
+	int		dictionary_size;
 	lzma_options_lzma opt;
 };
 
+struct comp_opts {
+	int dictionary_size;
+	int flags;
+};
+
+
 static int filter_count = 1;
+static int dictionary_size = 0;
+static float dictionary_percent = 0;
 
 
 static int xz_options(char *argv[], int argc)
@@ -93,6 +102,47 @@ static int xz_options(char *argv[], int argc)
 		}
 	
 		return 1;
+	} else if(strcmp(argv[0], "-Xdict_size") == 0) {
+		char *b;
+		float size;
+
+		if(argc < 2) {
+			fprintf(stderr, "xz: -Xdict_size missing dict_size\n");
+			goto failed;
+		}
+
+		size = strtof(argv[1], &b);
+		if(*b == '%') {
+			if(size <= 0 || size > 100) {
+				fprintf(stderr, "xz: -Xdict_size percentage "
+					"should be 0 < dict_size <= 100\n");
+				goto failed;
+			}
+
+			dictionary_percent = size;
+			dictionary_size = 0;
+		} else {
+			if((float) ((int) size) != size) {
+				fprintf(stderr, "xz: -Xdict_size can't be "
+					"fractional unless a percentage of the"
+					" block size\n");
+				goto failed;
+			}
+
+			dictionary_percent = 0;
+			dictionary_size = (int) size;
+
+			if(*b == 'k' || *b == 'K')
+				dictionary_size *= 1024;
+			else if(*b == 'm' || *b == 'M')
+				dictionary_size *= 1024 * 1024;
+			else if(*b != '\0') {
+				fprintf(stderr, "xz: -Xdict_size invalid dict_size\n");
+				goto failed;
+			}
+		}
+
+		return 1;
 	}
 
 	return -1;
@@ -100,7 +150,48 @@ static int xz_options(char *argv[], int argc)
 failed:
 	return -2;
 }
-		
+
+
+static int xz_options_post(int block_size)
+{
+	int n;
+
+	if(dictionary_size) {
+		if(dictionary_size > block_size) {
+			fprintf(stderr, "xz: -Xdict_size is larger than "
+				"block_size\n");
+			goto failed;
+		}
+	} else if(dictionary_percent)
+		dictionary_size = block_size * dictionary_percent / 100;
+	else
+		dictionary_size = block_size;
+
+	if(dictionary_size < 4096) {
+		fprintf(stderr, "xz: -Xdict_size should be 4096 bytes or "
+			"larger\n");
+		goto failed;
+	}
+
+	/*
+	 * dictionary_size must be storable in xz header as either 2^n or as
+	 * 2^n+2^(n+1)
+	 */
+	n = ffs(dictionary_size) - 1;
+	if(dictionary_size == (1 << n) || 
+			dictionary_size == ((1 << n) + (1 << (n + 1))))
+		return 0;
+
+	fprintf(stderr, "xz: -Xdict_size is an unsupported value, dict_size "
+		"must be storable in xz header\n");
+	fprintf(stderr, "as either 2^n or as 2^n+2^(n+1).  Example dict_sizes "
+		"are 75%%, 50%%, 37.5%%, 25%%,\n");
+	fprintf(stderr, "or 32K, 16K, 8K etc.");
+
+failed:
+	return -1;
+}
+
 
 void xz_usage()
 {
@@ -130,6 +221,10 @@ static int xz_init(void **strm, int block_size, int flags)
 	stream->filters = filters;
 
 	memset(filter, 0, filters * sizeof(struct filter));
+
+	stream->dictionary_size = flags ? dictionary_size :
+		dictionary_size < SQUASHFS_METADATA_SIZE ?
+		dictionary_size : SQUASHFS_METADATA_SIZE;
 
 	filter[0].filter[0].id = LZMA_FILTER_LZMA2;
 	filter[0].filter[0].options = &stream->opt;
@@ -179,7 +274,8 @@ static int xz_compress(void *strm, void *dest, void *src,  int size,
         	if(lzma_lzma_preset(&stream->opt, LZMA_PRESET_DEFAULT))
                 	goto failed;
 
-		stream->opt.dict_size = block_size;
+		stream->opt.dict_size = stream->dictionary_size;
+
 		filter->length = 0;
 		res = lzma_stream_buffer_encode(filter->filter,
 			LZMA_CHECK_CRC32, NULL, src, size, filter->buffer,
@@ -233,6 +329,7 @@ struct compressor xz_comp_ops = {
 	.compress = xz_compress,
 	.uncompress = xz_uncompress,
 	.options = xz_options,
+	.options_post = xz_options_post,
 	.usage = xz_usage,
 	.id = XZ_COMPRESSION,
 	.name = "xz",
