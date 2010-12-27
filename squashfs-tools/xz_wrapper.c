@@ -204,9 +204,9 @@ void xz_usage()
 }
 
 
-static int xz_init(void **strm, int block_size, int flags)
+static int xz_init(void **strm, int block_size, int datablock)
 {
-	int i, j, filters = flags ? filter_count : 1;
+	int i, j, filters = datablock ? filter_count : 1;
 	struct filter *filter = malloc(filters * sizeof(struct filter));
 	struct xz_stream *stream;
 
@@ -222,7 +222,7 @@ static int xz_init(void **strm, int block_size, int flags)
 
 	memset(filter, 0, filters * sizeof(struct filter));
 
-	stream->dictionary_size = flags ? dictionary_size :
+	stream->dictionary_size = datablock ? dictionary_size :
 		dictionary_size < SQUASHFS_METADATA_SIZE ?
 		dictionary_size : SQUASHFS_METADATA_SIZE;
 
@@ -230,7 +230,7 @@ static int xz_init(void **strm, int block_size, int flags)
 	filter[0].filter[0].options = &stream->opt;
 	filter[0].filter[1].id = LZMA_VLI_UNKNOWN;
 
-	for(i = 0, j = 1; flags && bcj[i].name; i++) {
+	for(i = 0, j = 1; datablock && bcj[i].name; i++) {
 		if(bcj[i].selected) {
 			filter[j].buffer = malloc(block_size);
 			if(filter[j].buffer == NULL)
