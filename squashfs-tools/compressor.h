@@ -49,11 +49,11 @@ static inline int compressor_options(struct compressor *comp, char *argv[],
 
 
 static inline int compressor_init(struct compressor *comp, void **stream,
-	int block_size, int flags)
+	int block_size, int datablock)
 {
 	if(comp->init == NULL)
 		return 0;
-	return comp->init(stream, block_size, flags);
+	return comp->init(stream, block_size, datablock);
 }
 
 
