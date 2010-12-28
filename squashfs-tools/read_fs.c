@@ -75,7 +75,7 @@ static struct compressor *comp;
 int read_block(int fd, long long start, long long *next, void *block)
 {
 	unsigned short c_byte;
-	int res, offset = 2;
+	int res;
 	
 	res = read_fs_bytes(fd, start, 2, &c_byte);
 	if(res == 0)
@@ -88,7 +88,7 @@ int read_block(int fd, long long start, long long *next, void *block)
 		int error, res;
 
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
-		res = read_fs_bytes(fd, start + offset, c_byte, buffer);
+		res = read_fs_bytes(fd, start + 2, c_byte, buffer);
 		if(res == 0)
 			return 0;
 
@@ -100,16 +100,16 @@ int read_block(int fd, long long start, long long *next, void *block)
 			return 0;
 		}
 		if(next)
-			*next = start + offset + c_byte;
+			*next = start + 2 + c_byte;
 		return res;
 	} else {
 		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
-		res = read_fs_bytes(fd, start + offset, c_byte, block);
+		res = read_fs_bytes(fd, start + 2, c_byte, block);
 		if(res == 0)
 			return 0;
 
 		if(next)
-			*next = start + offset + c_byte;
+			*next = start + 2 + c_byte;
 		return c_byte;
 	}
 }
