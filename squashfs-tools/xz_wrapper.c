@@ -58,15 +58,16 @@ struct xz_stream {
 	lzma_options_lzma opt;
 };
 
-struct comp_opts {
+static struct comp_opts {
 	int dictionary_size;
 	int flags;
-};
+} comp_opts;
 
 
 static int filter_count = 1;
 static int dictionary_size = 0;
 static float dictionary_percent = 0;
+static int defaults;
 
 
 static int xz_options(char *argv[], int argc)
@@ -178,18 +179,46 @@ static int xz_options_post(int block_size)
 	 * 2^n+2^(n+1)
 	 */
 	n = ffs(dictionary_size) - 1;
-	if(dictionary_size == (1 << n) || 
-			dictionary_size == ((1 << n) + (1 << (n + 1))))
-		return 0;
+	if(dictionary_size != (1 << n) && 
+			dictionary_size != ((1 << n) + (1 << (n + 1)))) {
+		fprintf(stderr, "xz: -Xdict-size is an unsupported value, "
+			"dict-size must be storable in xz header\n");
+		fprintf(stderr, "as either 2^n or as 2^n+2^(n+1).  Example "
+			"dict-sizes are 75%%, 50%%, 37.5%%, 25%%,\n");
+		fprintf(stderr, "or 32K, 16K, 8K etc.\n");
+		goto failed;
+	}
 
-	fprintf(stderr, "xz: -Xdict-size is an unsupported value, dict-size "
-		"must be storable in xz header\n");
-	fprintf(stderr, "as either 2^n or as 2^n+2^(n+1).  Example dict-sizes "
-		"are 75%%, 50%%, 37.5%%, 25%%,\n");
-	fprintf(stderr, "or 32K, 16K, 8K etc.");
+	defaults = filter_count == 1 && dictionary_size == block_size;
+
+	return 0;
 
 failed:
 	return -1;
+}
+
+
+static void *xz_dump_options(int *size)
+{
+	int flags = 0, i;
+
+	/*
+	 * don't store compressor specific options in file system if the
+	 * default options are being used - no compressor options in the
+	 * file system means the default options are always assumed
+	 */
+	if(defaults)
+		return NULL;
+
+	for(i = 0; bcj[i].name; i++)
+		if(bcj[i].selected)
+			flags |= 1 << i;
+
+	comp_opts.dictionary_size = dictionary_size;
+	comp_opts.flags = flags;
+
+	*size = sizeof(comp_opts);
+	return &comp_opts;
 }
 
 
@@ -340,6 +369,7 @@ struct compressor xz_comp_ops = {
 	.uncompress = xz_uncompress,
 	.options = xz_options,
 	.options_post = xz_options_post,
+	.dump_options = xz_dump_options,
 	.usage = xz_usage,
 	.id = XZ_COMPRESSION,
 	.name = "xz",
