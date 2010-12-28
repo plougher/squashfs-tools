@@ -27,6 +27,7 @@ struct compressor {
 	int (*options)(char **, int);
 	int (*options_post)(int);
 	void *(*dump_options)(int *);
+	int (*extract_options)(char *, int);
 	void (*usage)();
 	int id;
 	char *name;
@@ -70,4 +71,13 @@ static inline void *compressor_dump_options(struct compressor *comp, int *size)
 	if(comp->dump_options == NULL)
 		return NULL;
 	return comp->dump_options(size);
+}
+
+
+static inline int compressor_extract_options(struct compressor *comp,
+	void *buffer, int size)
+{
+	if(comp->extract_options == NULL)
+		return  -1;
+	return comp->extract_options(buffer, size);
 }
