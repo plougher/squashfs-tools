@@ -38,6 +38,15 @@ extern struct compressor *lookup_compressor_id(int);
 extern void display_compressors(char *, char *);
 extern void display_compressor_usage(char *);
 
+static inline int compressor_init(struct compressor *comp, void **stream,
+	int block_size, int datablock)
+{
+	if(comp->init == NULL)
+		return 0;
+	return comp->init(stream, block_size, datablock);
+}
+
+
 static inline int compressor_options(struct compressor *comp, char *argv[],
 	int argc)
 {
@@ -48,12 +57,11 @@ static inline int compressor_options(struct compressor *comp, char *argv[],
 }
 
 
-static inline int compressor_init(struct compressor *comp, void **stream,
-	int block_size, int datablock)
+static inline int compressor_options_post(struct compressor *comp, int block_size)
 {
-	if(comp->init == NULL)
+	if(comp->options_post == NULL)
 		return 0;
-	return comp->init(stream, block_size, datablock);
+	return comp->options_post(block_size);
 }
 
 
@@ -62,12 +70,4 @@ static inline void *compressor_dump_options(struct compressor *comp, int *size)
 	if(comp->dump_options == NULL)
 		return NULL;
 	return comp->dump_options(size);
-}
-
-
-static inline int compressor_options_post(struct compressor *comp, int block_size)
-{
-	if(comp->options_post == NULL)
-		return 0;
-	return comp->options_post(block_size);
 }
