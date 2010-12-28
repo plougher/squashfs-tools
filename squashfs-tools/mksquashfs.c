@@ -5117,7 +5117,6 @@ printOptions:
 			bytes = sizeof(squashfs_super_block) + sizeof(c_byte)
 				+ size;
 			comp_opts = TRUE;
-			free(comp_data);
 		} else			
 			bytes = sizeof(squashfs_super_block);
 	} else {
