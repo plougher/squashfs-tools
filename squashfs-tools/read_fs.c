@@ -420,6 +420,26 @@ struct compressor *read_super(int fd, squashfs_super_block *sBlk, char *source)
 		goto failed_mount;
 	}
 
+	/*
+	 * Read extended superblock information from disk.
+	 *
+	 * Read compressor specific options from disk if present, and pass
+	 * to compressor to set compressor options.
+	 */
+	if(SQUASHFS_COMP_OPTS(sBlk->flags)) {
+		char buffer[SQUASHFS_METADATA_SIZE];
+		int bytes = read_block(fd, sizeof(*sBlk), NULL, buffer);
+
+		if(bytes == 0)
+			goto failed_mount;
+
+		res = compressor_extract_options(comp, buffer, bytes);
+		if(res == -1) {
+			ERROR("Compressor failed to set compressor options\n");
+			goto failed_mount;
+		}
+	}
+
 	printf("Found a valid %sSQUASHFS superblock on %s.\n",
 		SQUASHFS_EXPORTABLE(sBlk->flags) ? "exportable " : "", source);
 	printf("\tCompression used %s\n", comp->name);
