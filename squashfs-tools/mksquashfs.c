@@ -5108,10 +5108,10 @@ printOptions:
 			unsigned short c_byte = size | SQUASHFS_COMPRESSED_BIT;
 	
 			SQUASHFS_INSWAP_SHORTS(&c_byte, 1);
-			write_destination(fd, SQUASHFS_START, sizeof(c_byte),
-				(char *) &c_byte);
-			write_destination(fd, SQUASHFS_START + sizeof(c_byte),
-				size, comp_data);
+			write_destination(fd, sizeof(squashfs_super_block),
+				sizeof(c_byte), (char *) &c_byte);
+			write_destination(fd, sizeof(squashfs_super_block) +
+				sizeof(c_byte), size, comp_data);
 			bytes = sizeof(squashfs_super_block) + sizeof(c_byte)
 				+ size;
 			comp_opts = TRUE;
