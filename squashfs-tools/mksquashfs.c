@@ -4562,7 +4562,6 @@ int main(int argc, char *argv[])
 	int readb_mbytes = READER_BUFFER_DEFAULT,
 		writeb_mbytes = WRITER_BUFFER_DEFAULT,
 		fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
-	int s_minor = SQUASHFS_MINOR;
 
 	pthread_mutex_init(&progress_mutex, NULL);
 	block_log = slog(block_size);
@@ -5075,7 +5074,6 @@ printOptions:
 		}
 
 		block_log = slog(block_size = sBlk.block_size);
-		s_minor = sBlk.s_minor;
 		noI = SQUASHFS_UNCOMPRESSED_INODES(sBlk.flags);
 		noD = SQUASHFS_UNCOMPRESSED_DATA(sBlk.flags);
 		noF = SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.flags);
@@ -5099,7 +5097,7 @@ printOptions:
 		void *comp_data = compressor_dump_options(comp, &size);
 
 		printf("Creating %d.%d filesystem on %s, block size %d.\n",
-			SQUASHFS_MAJOR, s_minor, argv[source + 1], block_size);
+			SQUASHFS_MAJOR, SQUASHFS_MINOR, argv[source + 1], block_size);
 
 		/*
 		 * store any compressor specific options after the superblock,
@@ -5156,7 +5154,7 @@ printOptions:
 		}
 
 		printf("Appending to existing %d.%d filesystem on %s, block "
-			"size %d\n", SQUASHFS_MAJOR, s_minor, argv[source + 1],
+			"size %d\n", SQUASHFS_MAJOR, SQUASHFS_MINOR, argv[source + 1],
 			block_size);
 		printf("All -b, -noI, -noD, -noF, -noX, no-duplicates, no-fragments, "
 			"-always-use-fragments,\n-exportable and -comp options "
@@ -5289,7 +5287,7 @@ printOptions:
 	sBlk.inodes = inode_count;
 	sBlk.s_magic = SQUASHFS_MAGIC;
 	sBlk.s_major = SQUASHFS_MAJOR;
-	sBlk.s_minor = s_minor;
+	sBlk.s_minor = SQUASHFS_MINOR;
 	sBlk.block_size = block_size;
 	sBlk.block_log = block_log;
 	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, no_fragments,
