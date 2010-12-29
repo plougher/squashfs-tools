@@ -211,8 +211,7 @@ static void *xz_dump_options(int *size)
 		return NULL;
 
 	for(i = 0; bcj[i].name; i++)
-		if(bcj[i].selected)
-			flags |= 1 << i;
+		flags |= bcj[i].selected << i;
 
 	comp_opts.dictionary_size = dictionary_size;
 	comp_opts.flags = flags;
