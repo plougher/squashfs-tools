@@ -222,6 +222,26 @@ static void *xz_dump_options(int *size)
 }
 
 
+static int xz_extract_options(int block_size, void *buffer, int size)
+{
+	struct comp_opts *comp_opts = buffer;
+	int flags, i;
+
+	if(size == 0) {
+		/* set defaults */
+		dictionary_size = block_size;
+		flags = 0;
+	} else {
+		dictionary_size = comp_opts->dictionary_size;
+		flags = comp_opts->flags;
+	}
+
+	for(i = 0; bcj[i].name; i++)
+		bcj[i].selected = (flags >> i) & 1;
+
+	return 0;
+}
+
 
 static int xz_init(void **strm, int block_size, int datablock)
 {
@@ -371,6 +391,7 @@ struct compressor xz_comp_ops = {
 	.options = xz_options,
 	.options_post = xz_options_post,
 	.dump_options = xz_dump_options,
+	.extract_options = xz_extract_options,
 	.usage = xz_usage,
 	.id = XZ_COMPRESSION,
 	.name = "xz",
