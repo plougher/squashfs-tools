@@ -375,7 +375,8 @@ failed:
 
 struct compressor *read_super(int fd, squashfs_super_block *sBlk, char *source)
 {
-	int res;
+	int res, bytes = 0;
+	char buffer[SQUASHFS_METADATA_SIZE];
 
 	res = read_fs_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block),
 		sBlk);
@@ -425,19 +426,23 @@ struct compressor *read_super(int fd, squashfs_super_block *sBlk, char *source)
 	 *
 	 * Read compressor specific options from disk if present, and pass
 	 * to compressor to set compressor options.
+	 *
+	 * Note, if there's no compressor options present, the compressor
+	 * is still called to set the default options (the defaults may have
+	 * been changed by the user specifying options on the command
+	 * line which need to be over-ridden).
 	 */
 	if(SQUASHFS_COMP_OPTS(sBlk->flags)) {
-		char buffer[SQUASHFS_METADATA_SIZE];
-		int bytes = read_block(fd, sizeof(*sBlk), NULL, buffer);
+		bytes = read_block(fd, sizeof(*sBlk), NULL, buffer);
 
 		if(bytes == 0)
 			goto failed_mount;
+	}
 
-		res = compressor_extract_options(comp, buffer, bytes);
-		if(res == -1) {
-			ERROR("Compressor failed to set compressor options\n");
-			goto failed_mount;
-		}
+	res = compressor_extract_options(comp, sBlk->block_size, buffer, bytes);
+	if(res == -1) {
+		ERROR("Compressor failed to set compressor options\n");
+		goto failed_mount;
 	}
 
 	printf("Found a valid %sSQUASHFS superblock on %s.\n",
