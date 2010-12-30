@@ -376,7 +376,7 @@ failed:
 struct compressor *read_super(int fd, squashfs_super_block *sBlk, char *source)
 {
 	int res, bytes = 0;
-	char buffer[SQUASHFS_METADATA_SIZE];
+	char buffer[SQUASHFS_METADATA_SIZE] __attribute__ ((aligned));
 
 	res = read_fs_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block),
 		sBlk);
