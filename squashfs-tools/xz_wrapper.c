@@ -27,6 +27,7 @@
 #include <lzma.h>
 
 #include "squashfs_fs.h"
+#include "xz_wrapper.h"
 #include "compressor.h"
 
 #define MEMLIMIT (32 * 1024 * 1024)
@@ -216,6 +217,8 @@ static void *xz_dump_options(int *size)
 	comp_opts.dictionary_size = dictionary_size;
 	comp_opts.flags = flags;
 
+	SQUASHFS_INSWAP_COMP_OPTS(&comp_opts);
+
 	*size = sizeof(comp_opts);
 	return &comp_opts;
 }
@@ -231,6 +234,8 @@ static int xz_extract_options(int block_size, void *buffer, int size)
 		dictionary_size = block_size;
 		flags = 0;
 	} else {
+		SQUASHFS_INSWAP_COMP_OPTS(&comp_opts);
+
 		dictionary_size = comp_opts->dictionary_size;
 		flags = comp_opts->flags;
 	}
