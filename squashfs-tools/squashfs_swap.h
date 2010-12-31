@@ -194,10 +194,10 @@ extern void inswap_le64_num(long long *, int);
 }
 
 #define _SQUASHFS_SWAP_DIR_ENTRY(s, d, SWAP_FUNC) {\
-	SWAP_FUNC(16, s, d, offset, squashfs_dir_entry);\
-	SWAP_FUNC##S(16, s, d, inode_number, squashfs_dir_entry);\
-	SWAP_FUNC(16, s, d, type, squashfs_dir_entry);\
-	SWAP_FUNC(16, s, d, size, squashfs_dir_entry);\
+	SWAP_FUNC(16, s, d, offset, struct squashfs_dir_entry);\
+	SWAP_FUNC##S(16, s, d, inode_number, struct squashfs_dir_entry);\
+	SWAP_FUNC(16, s, d, type, struct squashfs_dir_entry);\
+	SWAP_FUNC(16, s, d, size, struct squashfs_dir_entry);\
 }
 
 #define _SQUASHFS_SWAP_DIR_HEADER(s, d, SWAP_FUNC) {\

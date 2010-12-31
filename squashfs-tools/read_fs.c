@@ -493,9 +493,9 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 	void (push_directory_entry)(char *, squashfs_inode, int, int))
 {
 	struct squashfs_dir_header dirh;
-	char buffer[sizeof(squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1]
+	char buffer[sizeof(struct squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1]
 		__attribute__ ((aligned));
-	squashfs_dir_entry *dire = (squashfs_dir_entry *) buffer;
+	struct squashfs_dir_entry *dire = (struct squashfs_dir_entry *) buffer;
 	unsigned char *directory_table = NULL;
 	int byte, bytes = 0, dir_count;
 	long long start = sBlk->directory_table_start + directory_start_block,

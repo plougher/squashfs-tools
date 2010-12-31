@@ -26,5 +26,4 @@
 
 typedef struct squashfs_super_block squashfs_super_block;
 typedef struct squashfs_base_inode_header squashfs_base_inode_header;
-typedef struct squashfs_dir_entry squashfs_dir_entry;
 #endif

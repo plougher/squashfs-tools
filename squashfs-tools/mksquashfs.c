@@ -1506,11 +1506,11 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 	int type, struct directory *dir)
 {
 	unsigned char *buff;
-	squashfs_dir_entry idir;
+	struct squashfs_dir_entry idir;
 	unsigned int start_block = inode >> 16;
 	unsigned int offset = inode & 0xffff;
 	unsigned int size = strlen(name);
-	size_t name_off = offsetof(squashfs_dir_entry, name);
+	size_t name_off = offsetof(struct squashfs_dir_entry, name);
 
 	if(size > SQUASHFS_NAME_LEN) {
 		size = SQUASHFS_NAME_LEN;
@@ -1518,7 +1518,7 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 			"\n", SQUASHFS_NAME_LEN);
 	}
 
-	if(dir->p + sizeof(squashfs_dir_entry) + size +
+	if(dir->p + sizeof(struct squashfs_dir_entry) + size +
 			sizeof(struct squashfs_dir_header)
 			>= dir->buff + dir->size) {
 		buff = realloc(dir->buff, dir->size += SQUASHFS_METADATA_SIZE);
@@ -1537,7 +1537,7 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 
 	if(dir->entry_count == 256 || start_block != dir->start_block ||
 			((dir->entry_count_p != NULL) &&
-			((dir->p + sizeof(squashfs_dir_entry) + size -
+			((dir->p + sizeof(struct squashfs_dir_entry) + size -
 			dir->index_count_p) > SQUASHFS_METADATA_SIZE)) ||
 			((long long) inode_number - dir->inode_number) > 32767
 			|| ((long long) inode_number - dir->inode_number)
@@ -1545,7 +1545,7 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 		if(dir->entry_count_p) {
 			struct squashfs_dir_header dir_header;
 
-			if((dir->p + sizeof(squashfs_dir_entry) + size -
+			if((dir->p + sizeof(struct squashfs_dir_entry) + size -
 					dir->index_count_p) >
 					SQUASHFS_METADATA_SIZE) {
 				if(dir->i_count % I_COUNT_SIZE == 0) {
@@ -1588,7 +1588,7 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 	idir.inode_number = ((long long) inode_number - dir->inode_number);
 	SQUASHFS_SWAP_DIR_ENTRY(&idir, dir->p);
 	strncpy((char *) dir->p + name_off, name, size);
-	dir->p += sizeof(squashfs_dir_entry) + size;
+	dir->p += sizeof(struct squashfs_dir_entry) + size;
 	dir->entry_count ++;
 }
 
@@ -1683,7 +1683,7 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 		dirp = dir->buff;
 		while(dirp < dir->p) {
 			char buffer[SQUASHFS_NAME_LEN + 1];
-			squashfs_dir_entry idir, *idirp;
+			struct squashfs_dir_entry idir, *idirp;
 			struct squashfs_dir_header dirh;
 			SQUASHFS_SWAP_DIR_HEADER((struct squashfs_dir_header *) dirp,
 				&dirh);
@@ -1694,13 +1694,13 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 				dirh.start_block, count);
 
 			while(count--) {
-				idirp = (squashfs_dir_entry *) dirp;
+				idirp = (struct squashfs_dir_entry *) dirp;
 				SQUASHFS_SWAP_DIR_ENTRY(idirp, &idir);
 				strncpy(buffer, idirp->name, idir.size + 1);
 				buffer[idir.size + 1] = '\0';
 				TRACE("\t\tname %s, inode offset 0x%x, type "
 					"%d\n", buffer, idir.offset, idir.type);
-				dirp += sizeof(squashfs_dir_entry) + idir.size +
+				dirp += sizeof(struct squashfs_dir_entry) + idir.size +
 					1;
 			}
 		}
@@ -3363,7 +3363,7 @@ inline void add_dir_entry(char *name, char *pathname, struct dir_info *sub_dir,
 	dir->list[dir->count]->inode = inode_info;
 	dir->list[dir->count]->dir = sub_dir;
 	dir->list[dir->count++]->our_dir = dir;
-	dir->byte_count += strlen(name) + sizeof(squashfs_dir_entry);
+	dir->byte_count += strlen(name) + sizeof(struct squashfs_dir_entry);
 }
 
 
