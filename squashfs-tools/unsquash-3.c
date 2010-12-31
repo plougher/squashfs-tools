@@ -108,7 +108,7 @@ void read_fragment_3(unsigned int fragment, long long *start_block, int *size)
 
 struct inode *read_inode_3(unsigned int start_block, unsigned int offset)
 {
-	static squashfs_inode_header_3 header;
+	static union squashfs_inode_header_3 header;
 	long long start = sBlk.s.inode_table_start + start_block;
 	int bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
