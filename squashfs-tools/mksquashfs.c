@@ -1351,7 +1351,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 			offset, dir_ent->dir->directory_count + 2);
 	}
 	else if(type == SQUASHFS_CHRDEV_TYPE || type == SQUASHFS_BLKDEV_TYPE) {
-		squashfs_dev_inode_header *dev = &inode_header.dev;
+		struct squashfs_dev_inode_header *dev = &inode_header.dev;
 		unsigned int major = major(buf->st_rdev);
 		unsigned int minor = minor(buf->st_rdev);
 

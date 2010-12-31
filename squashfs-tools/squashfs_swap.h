@@ -101,14 +101,14 @@ extern void inswap_le64_num(long long *, int);
 }
 
 #define _SQUASHFS_SWAP_DEV_INODE_HEADER(s, d, SWAP_FUNC) {\
-	SWAP_FUNC(16, s, d, inode_type, squashfs_dev_inode_header);\
-	SWAP_FUNC(16, s, d, mode, squashfs_dev_inode_header);\
-	SWAP_FUNC(16, s, d, uid, squashfs_dev_inode_header);\
-	SWAP_FUNC(16, s, d, guid, squashfs_dev_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, squashfs_dev_inode_header);\
-	SWAP_FUNC(32, s, d, inode_number, squashfs_dev_inode_header);\
-	SWAP_FUNC(32, s, d, nlink, squashfs_dev_inode_header);\
-	SWAP_FUNC(32, s, d, rdev, squashfs_dev_inode_header);\
+	SWAP_FUNC(16, s, d, inode_type, struct squashfs_dev_inode_header);\
+	SWAP_FUNC(16, s, d, mode, struct squashfs_dev_inode_header);\
+	SWAP_FUNC(16, s, d, uid, struct squashfs_dev_inode_header);\
+	SWAP_FUNC(16, s, d, guid, struct squashfs_dev_inode_header);\
+	SWAP_FUNC(32, s, d, mtime, struct squashfs_dev_inode_header);\
+	SWAP_FUNC(32, s, d, inode_number, struct squashfs_dev_inode_header);\
+	SWAP_FUNC(32, s, d, nlink, struct squashfs_dev_inode_header);\
+	SWAP_FUNC(32, s, d, rdev, struct squashfs_dev_inode_header);\
 }
 
 #define _SQUASHFS_SWAP_LDEV_INODE_HEADER(s, d, SWAP_FUNC) {\
