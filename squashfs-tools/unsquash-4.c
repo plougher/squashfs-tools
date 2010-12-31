@@ -177,7 +177,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 		}	
 		case SQUASHFS_SYMLINK_TYPE:
 		case SQUASHFS_LSYMLINK_TYPE: {
-			squashfs_symlink_inode_header *inode = &header.symlink;
+			struct squashfs_symlink_inode_header *inode = &header.symlink;
 
 			SQUASHFS_SWAP_SYMLINK_INODE_HEADER(inode, block_ptr);
 
@@ -186,14 +186,14 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 				EXIT_UNSQUASH("read_inode: failed to malloc "
 					"symlink data\n");
 			strncpy(i.symlink, block_ptr +
-				sizeof(squashfs_symlink_inode_header),
+				sizeof(struct squashfs_symlink_inode_header),
 				inode->symlink_size);
 			i.symlink[inode->symlink_size] = '\0';
 			i.data = inode->symlink_size;
 
 			if(header.base.inode_type == SQUASHFS_LSYMLINK_TYPE)
 				SQUASHFS_SWAP_INTS(&i.xattr, block_ptr +
-					sizeof(squashfs_symlink_inode_header) +
+					sizeof(struct squashfs_symlink_inode_header) +
 					inode->symlink_size, 1);
 			else
 				i.xattr = SQUASHFS_INVALID_XATTR;

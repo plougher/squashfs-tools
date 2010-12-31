@@ -284,7 +284,7 @@ int scan_inode_table(int fd, long long start, long long end,
 			}	
 			case SQUASHFS_SYMLINK_TYPE:
 			case SQUASHFS_LSYMLINK_TYPE: {
-				squashfs_symlink_inode_header inodep;
+				struct squashfs_symlink_inode_header inodep;
 	
 				SQUASHFS_SWAP_SYMLINK_INODE_HEADER(&inodep,
 					cur_ptr);

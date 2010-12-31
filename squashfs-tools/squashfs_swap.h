@@ -124,14 +124,14 @@ extern void inswap_le64_num(long long *, int);
 }
 
 #define _SQUASHFS_SWAP_SYMLINK_INODE_HEADER(s, d, SWAP_FUNC) {\
-	SWAP_FUNC(16, s, d, inode_type, squashfs_symlink_inode_header);\
-	SWAP_FUNC(16, s, d, mode, squashfs_symlink_inode_header);\
-	SWAP_FUNC(16, s, d, uid, squashfs_symlink_inode_header);\
-	SWAP_FUNC(16, s, d, guid, squashfs_symlink_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, squashfs_symlink_inode_header);\
-	SWAP_FUNC(32, s, d, inode_number, squashfs_symlink_inode_header);\
-	SWAP_FUNC(32, s, d, nlink, squashfs_symlink_inode_header);\
-	SWAP_FUNC(32, s, d, symlink_size, squashfs_symlink_inode_header);\
+	SWAP_FUNC(16, s, d, inode_type, struct squashfs_symlink_inode_header);\
+	SWAP_FUNC(16, s, d, mode, struct squashfs_symlink_inode_header);\
+	SWAP_FUNC(16, s, d, uid, struct squashfs_symlink_inode_header);\
+	SWAP_FUNC(16, s, d, guid, struct squashfs_symlink_inode_header);\
+	SWAP_FUNC(32, s, d, mtime, struct squashfs_symlink_inode_header);\
+	SWAP_FUNC(32, s, d, inode_number, struct squashfs_symlink_inode_header);\
+	SWAP_FUNC(32, s, d, nlink, struct squashfs_symlink_inode_header);\
+	SWAP_FUNC(32, s, d, symlink_size, struct squashfs_symlink_inode_header);\
 }
 
 #define _SQUASHFS_SWAP_REG_INODE_HEADER(s, d, SWAP_FUNC) {\

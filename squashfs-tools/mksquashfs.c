@@ -1400,10 +1400,10 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		TRACE("Device inode, rdev 0x%x, nlink %d\n", dev->rdev, nlink);
 	}
 	else if(type == SQUASHFS_SYMLINK_TYPE) {
-		squashfs_symlink_inode_header *symlink = &inode_header.symlink;
+		struct squashfs_symlink_inode_header *symlink = &inode_header.symlink;
 		int byte;
 		char buff[65536];
-		size_t off = offsetof(squashfs_symlink_inode_header, symlink);
+		size_t off = offsetof(struct squashfs_symlink_inode_header, symlink);
 
 		byte = readlink(filename, buff, 65536);
 		if(byte == -1) {
@@ -1427,10 +1427,10 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 			nlink);
 	}
 	else if(type == SQUASHFS_LSYMLINK_TYPE) {
-		squashfs_symlink_inode_header *symlink = &inode_header.symlink;
+		struct squashfs_symlink_inode_header *symlink = &inode_header.symlink;
 		int byte;
 		char buff[65536];
-		size_t off = offsetof(squashfs_symlink_inode_header, symlink);
+		size_t off = offsetof(struct squashfs_symlink_inode_header, symlink);
 
 		byte = readlink(filename, buff, 65536);
 		if(byte == -1) {
