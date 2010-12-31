@@ -1204,7 +1204,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 {
 	struct stat *buf = &dir_ent->inode->buf;
 	union squashfs_inode_header inode_header;
-	squashfs_base_inode_header *base = &inode_header.base;
+	struct squashfs_base_inode_header *base = &inode_header.base;
 	void *inode;
 	char *filename = dir_ent->pathname;
 	int nlink = dir_ent->inode->nlink;

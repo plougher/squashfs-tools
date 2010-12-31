@@ -71,12 +71,12 @@ extern void inswap_le64_num(long long *, int);
 }
 
 #define _SQUASHFS_SWAP_BASE_INODE_HEADER(s, d, SWAP_FUNC) {\
-	SWAP_FUNC(16, s, d, inode_type, squashfs_base_inode_header);\
-	SWAP_FUNC(16, s, d, mode, squashfs_base_inode_header);\
-	SWAP_FUNC(16, s, d, uid, squashfs_base_inode_header);\
-	SWAP_FUNC(16, s, d, guid, squashfs_base_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, squashfs_base_inode_header);\
-	SWAP_FUNC(32, s, d, inode_number, squashfs_base_inode_header);\
+	SWAP_FUNC(16, s, d, inode_type, struct squashfs_base_inode_header);\
+	SWAP_FUNC(16, s, d, mode, struct squashfs_base_inode_header);\
+	SWAP_FUNC(16, s, d, uid, struct squashfs_base_inode_header);\
+	SWAP_FUNC(16, s, d, guid, struct squashfs_base_inode_header);\
+	SWAP_FUNC(32, s, d, mtime, struct squashfs_base_inode_header);\
+	SWAP_FUNC(32, s, d, inode_number, struct squashfs_base_inode_header);\
 }
 
 #define _SQUASHFS_SWAP_IPC_INODE_HEADER(s, d, SWAP_FUNC) {\
