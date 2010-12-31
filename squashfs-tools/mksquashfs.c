@@ -1015,7 +1015,7 @@ int write_bytes(int fd, void *buff, int bytes)
 }
 
 
-void write_destination(int fd, long long byte, int bytes, char *buff)
+void write_destination(int fd, long long byte, int bytes, void *buff)
 {
 	off_t off = byte;
 
@@ -1065,7 +1065,7 @@ long long write_inodes()
 		cache_bytes -= avail_bytes;
 	}
 
-	write_destination(fd, bytes, inode_bytes, (char *) inode_table);
+	write_destination(fd, bytes, inode_bytes,  inode_table);
 	bytes += inode_bytes;
 
 	return start_bytes;
@@ -1107,7 +1107,7 @@ long long write_directories()
 		directoryp += avail_bytes;
 		directory_cache_bytes -= avail_bytes;
 	}
-	write_destination(fd, bytes, directory_bytes, (char *) directory_table);
+	write_destination(fd, bytes, directory_bytes, directory_table);
 	bytes += directory_bytes;
 
 	return start_bytes;
@@ -1930,7 +1930,7 @@ long long generic_write_table(int length, void *buffer, int length2,
 	}
 		
 	SQUASHFS_INSWAP_LONG_LONGS(list, meta_blocks);
-	write_destination(fd, bytes, sizeof(list), (char *) list);
+	write_destination(fd, bytes, sizeof(list), list);
 	bytes += sizeof(list);
 	total_bytes += sizeof(list);
 
@@ -4517,7 +4517,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	if(res < bytes)
 		BAD_ERROR("Recovery file appears to be truncated\n");
 
-	write_destination(fd, 0, sizeof(squashfs_super_block), (char *) &sBlk);
+	write_destination(fd, 0, sizeof(squashfs_super_block), &sBlk);
 
 	write_destination(fd, sBlk.inode_table_start, bytes, metadata);
 
@@ -5107,7 +5107,7 @@ printOptions:
 	
 			SQUASHFS_INSWAP_SHORTS(&c_byte, 1);
 			write_destination(fd, sizeof(squashfs_super_block),
-				sizeof(c_byte), (char *) &c_byte);
+				sizeof(c_byte), &c_byte);
 			write_destination(fd, sizeof(squashfs_super_block) +
 				sizeof(c_byte), size, comp_data);
 			bytes = sizeof(squashfs_super_block) + sizeof(c_byte)
@@ -5336,8 +5336,7 @@ restore_filesystem:
 	sBlk.compression = comp->id;
 
 	SQUASHFS_INSWAP_SUPER_BLOCK(&sBlk); 
-	write_destination(fd, SQUASHFS_START, sizeof(squashfs_super_block),
-		(char *) &sBlk);
+	write_destination(fd, SQUASHFS_START, sizeof(sBlk), &sBlk);
 
 	if(!nopad && (i = bytes & (4096 - 1))) {
 		char temp[4096] = {0};
