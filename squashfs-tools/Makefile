@@ -221,7 +221,7 @@ unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(UNSQUASHFS_OBJS) -lpthread -lm $(LIBS) -o $@
 
 unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h \
-	squashfs_compat.h global.h xattr.h
+	squashfs_compat.h global.h xattr.h read_fs.h compressor.h
 
 unsquash-1.o: unsquashfs.h unsquash-1.c squashfs_fs.h squashfs_compat.h \
 	global.h
