@@ -201,9 +201,9 @@ extern void inswap_le64_num(long long *, int);
 }
 
 #define _SQUASHFS_SWAP_DIR_HEADER(s, d, SWAP_FUNC) {\
-	SWAP_FUNC(32, s, d, count, squashfs_dir_header);\
-	SWAP_FUNC(32, s, d, start_block, squashfs_dir_header);\
-	SWAP_FUNC(32, s, d, inode_number, squashfs_dir_header);\
+	SWAP_FUNC(32, s, d, count, struct squashfs_dir_header);\
+	SWAP_FUNC(32, s, d, start_block, struct squashfs_dir_header);\
+	SWAP_FUNC(32, s, d, inode_number, struct squashfs_dir_header);\
 }
 
 #define _SQUASHFS_SWAP_FRAGMENT_ENTRY(s, d, SWAP_FUNC) {\

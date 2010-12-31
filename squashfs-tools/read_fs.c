@@ -492,7 +492,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 	unsigned int *last_directory_block, squashfs_super_block *sBlk,
 	void (push_directory_entry)(char *, squashfs_inode, int, int))
 {
-	squashfs_dir_header dirh;
+	struct squashfs_dir_header dirh;
 	char buffer[sizeof(squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1]
 		__attribute__ ((aligned));
 	squashfs_dir_entry *dire = (squashfs_dir_entry *) buffer;

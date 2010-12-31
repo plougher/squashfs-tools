@@ -1519,7 +1519,8 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 	}
 
 	if(dir->p + sizeof(squashfs_dir_entry) + size +
-			sizeof(squashfs_dir_header) >= dir->buff + dir->size) {
+			sizeof(struct squashfs_dir_header)
+			>= dir->buff + dir->size) {
 		buff = realloc(dir->buff, dir->size += SQUASHFS_METADATA_SIZE);
 		if(buff == NULL)  {
 			BAD_ERROR("Out of memory reallocating directory buffer"
@@ -1542,7 +1543,7 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 			|| ((long long) inode_number - dir->inode_number)
 			< -32768) {
 		if(dir->entry_count_p) {
-			squashfs_dir_header dir_header;
+			struct squashfs_dir_header dir_header;
 
 			if((dir->p + sizeof(squashfs_dir_entry) + size -
 					dir->index_count_p) >
@@ -1578,7 +1579,7 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 		dir->start_block = start_block;
 		dir->entry_count = 0;
 		dir->inode_number = inode_number;
-		dir->p += sizeof(squashfs_dir_header);
+		dir->p += sizeof(struct squashfs_dir_header);
 	}
 
 	idir.offset = offset;
@@ -1615,7 +1616,7 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 	}
 
 	if(dir_size) {
-		squashfs_dir_header dir_header;
+		struct squashfs_dir_header dir_header;
 
 		dir_header.count = dir->entry_count - 1;
 		dir_header.start_block = dir->start_block;
@@ -1683,11 +1684,11 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 		while(dirp < dir->p) {
 			char buffer[SQUASHFS_NAME_LEN + 1];
 			squashfs_dir_entry idir, *idirp;
-			squashfs_dir_header dirh;
-			SQUASHFS_SWAP_DIR_HEADER((squashfs_dir_header *) dirp,
+			struct squashfs_dir_header dirh;
+			SQUASHFS_SWAP_DIR_HEADER((struct squashfs_dir_header *) dirp,
 				&dirh);
 			count = dirh.count + 1;
-			dirp += sizeof(squashfs_dir_header);
+			dirp += sizeof(struct squashfs_dir_header);
 
 			TRACE("\tStart block 0x%x, count %d\n",
 				dirh.start_block, count);

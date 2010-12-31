@@ -245,7 +245,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset,
 	struct inode **i)
 {
-	squashfs_dir_header dirh;
+	struct squashfs_dir_header dirh;
 	char buffer[sizeof(squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1]
 		__attribute__((aligned));
 	squashfs_dir_entry *dire = (squashfs_dir_entry *) buffer;
