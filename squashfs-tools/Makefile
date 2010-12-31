@@ -33,8 +33,8 @@ GZIP_SUPPORT = 1
 # and uncomment the LZMA_SUPPORT line below.
 #
 #LZMA_XZ_SUPPORT = 1
-#LZMA_SUPPORT = 1
-#LZMA_DIR = ../../../LZMA/lzma465
+LZMA_SUPPORT = 1
+LZMA_DIR = ../../../../LZMA/lzma465
 
 ########### Building XZ support #############
 #
@@ -45,7 +45,7 @@ GZIP_SUPPORT = 1
 # To build using XZ Utils liblzma - install the library and uncomment
 # the XZ_SUPPORT line below.
 #
-#XZ_SUPPORT = 1
+XZ_SUPPORT = 1
 
 
 ############ Building LZO support ##############
@@ -56,7 +56,7 @@ GZIP_SUPPORT = 1
 # LZO_SUPPORT line below. If needed, uncomment and set LZO_DIR to the
 # installation prefix.
 #
-#LZO_SUPPORT = 1
+LZO_SUPPORT = 1
 #LZO_DIR = /usr/local
 
 
@@ -161,7 +161,7 @@ UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
 endif
 
 #
-# If LZMA_SUPPORT is specified then LZO_DIR must be specified too
+# If LZMA_SUPPORT is specified then LZMA_DIR must be specified too
 #
 ifdef LZMA_SUPPORT
 ifndef LZMA_DIR
