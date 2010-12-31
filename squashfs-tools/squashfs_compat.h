@@ -653,7 +653,6 @@ typedef struct squashfs_ldir_inode_header_2 squashfs_ldir_inode_header_2;
 typedef struct squashfs_dir_entry_2 squashfs_dir_entry_2;
 typedef struct squashfs_dir_header_2 squashfs_dir_header_2;
 typedef struct squashfs_fragment_entry_2 squashfs_fragment_entry_2;
-typedef union squashfs_inode_header_2 squashfs_inode_header_2;
 
 #define SQUASHFS_SWAP_BASE_INODE_CORE_2(s, d, n)\
 	SQUASHFS_MEMSET(s, d, n);\
