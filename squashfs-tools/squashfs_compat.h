@@ -51,7 +51,7 @@ struct squashfs_super_block_3 {
 	unsigned int		no_uids:8;
 	unsigned int		no_guids:8;
 	unsigned int		mkfs_time /* time of filesystem creation */;
-	squashfs_inode_t	root_inode;
+	squashfs_inode		root_inode;
 	unsigned int		block_size;
 	unsigned int		fragments;
 	unsigned int		fragment_table_start_2;

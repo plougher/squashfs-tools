@@ -151,7 +151,7 @@
 
 #define SQUASHFS_INODE_OFFSET(a)	((unsigned int) ((a) & 0xffff))
 
-#define SQUASHFS_MKINODE(A, B)		((squashfs_inode_t)(((squashfs_inode_t) (A)\
+#define SQUASHFS_MKINODE(A, B)		((squashfs_inode)(((squashfs_inode) (A)\
 					<< 16) + (B)))
 
 /* Compute 32 bit VFS inode number from squashfs inode number */
@@ -178,7 +178,7 @@
 						sizeof(long long))
 
 /* inode lookup table defines */
-#define SQUASHFS_LOOKUP_BYTES(A)	((A) * sizeof(squashfs_inode_t))
+#define SQUASHFS_LOOKUP_BYTES(A)	((A) * sizeof(squashfs_inode))
 
 #define SQUASHFS_LOOKUP_BLOCK(A)		(SQUASHFS_LOOKUP_BYTES(A) / \
 						SQUASHFS_METADATA_SIZE)
@@ -268,7 +268,7 @@ struct meta_index {
  */
 
 typedef long long		squashfs_block_t;
-typedef long long		squashfs_inode_t;
+typedef long long		squashfs_inode;
 
 #define ZLIB_COMPRESSION	1
 #define LZMA_COMPRESSION	2
@@ -287,7 +287,7 @@ struct squashfs_super_block {
 	unsigned short		no_ids;
 	unsigned short		s_major;
 	unsigned short		s_minor;
-	squashfs_inode_t	root_inode;
+	squashfs_inode		root_inode;
 	long long		bytes_used;
 	long long		id_table_start;
 	long long		xattr_id_table_start;

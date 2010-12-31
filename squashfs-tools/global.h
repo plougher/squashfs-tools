@@ -43,7 +43,6 @@ typedef union squashfs_inode_header squashfs_inode_header;
 
 typedef unsigned int squashfs_id;
 typedef long long squashfs_fragment_index;
-typedef squashfs_inode_t squashfs_inode;
 typedef squashfs_block_t squashfs_block;
 
 #endif
