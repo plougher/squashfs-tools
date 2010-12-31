@@ -2512,7 +2512,7 @@ void *writer(void *arg)
 
 		if(file_buffer == NULL) {
 			queue_put(from_writer,
-				write_error ? (void *) &write_error : NULL);
+				write_error ? &write_error : NULL);
 			continue;
 		}
 
