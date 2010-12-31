@@ -1453,12 +1453,12 @@ void squashfs_stat(char *source)
 int read_super(char *source)
 {
 	squashfs_super_block_3 sBlk_3;
-	squashfs_super_block sBlk_4;
+	struct squashfs_super_block sBlk_4;
 
 	/*
 	 * Try to read a Squashfs 4 superblock
 	 */
-	read_fs_bytes(fd, SQUASHFS_START, sizeof(squashfs_super_block),
+	read_fs_bytes(fd, SQUASHFS_START, sizeof(struct squashfs_super_block),
 		&sBlk_4);
 	swap = sBlk_4.s_magic != SQUASHFS_MAGIC;
 	SQUASHFS_INSWAP_SUPER_BLOCK(&sBlk_4);

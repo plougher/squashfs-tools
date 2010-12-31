@@ -43,25 +43,25 @@ extern void inswap_le32_num(unsigned int *, int);
 extern void inswap_le64_num(long long *, int);
 
 #define _SQUASHFS_SWAP_SUPER_BLOCK(s, d, SWAP_FUNC) {\
-	SWAP_FUNC(32, s, d, s_magic, squashfs_super_block);\
-	SWAP_FUNC(32, s, d, inodes, squashfs_super_block);\
-	SWAP_FUNC(32, s, d, mkfs_time, squashfs_super_block);\
-	SWAP_FUNC(32, s, d, block_size, squashfs_super_block);\
-	SWAP_FUNC(32, s, d, fragments, squashfs_super_block);\
-	SWAP_FUNC(16, s, d, compression, squashfs_super_block);\
-	SWAP_FUNC(16, s, d, block_log, squashfs_super_block);\
-	SWAP_FUNC(16, s, d, flags, squashfs_super_block);\
-	SWAP_FUNC(16, s, d, no_ids, squashfs_super_block);\
-	SWAP_FUNC(16, s, d, s_major, squashfs_super_block);\
-	SWAP_FUNC(16, s, d, s_minor, squashfs_super_block);\
-	SWAP_FUNC(64, s, d, root_inode, squashfs_super_block);\
-	SWAP_FUNC(64, s, d, bytes_used, squashfs_super_block);\
-	SWAP_FUNC(64, s, d, id_table_start, squashfs_super_block);\
-	SWAP_FUNC(64, s, d, xattr_id_table_start, squashfs_super_block);\
-	SWAP_FUNC(64, s, d, inode_table_start, squashfs_super_block);\
-	SWAP_FUNC(64, s, d, directory_table_start, squashfs_super_block);\
-	SWAP_FUNC(64, s, d, fragment_table_start, squashfs_super_block);\
-	SWAP_FUNC(64, s, d, lookup_table_start, squashfs_super_block);\
+	SWAP_FUNC(32, s, d, s_magic, struct squashfs_super_block);\
+	SWAP_FUNC(32, s, d, inodes, struct squashfs_super_block);\
+	SWAP_FUNC(32, s, d, mkfs_time, struct squashfs_super_block);\
+	SWAP_FUNC(32, s, d, block_size, struct squashfs_super_block);\
+	SWAP_FUNC(32, s, d, fragments, struct squashfs_super_block);\
+	SWAP_FUNC(16, s, d, compression, struct squashfs_super_block);\
+	SWAP_FUNC(16, s, d, block_log, struct squashfs_super_block);\
+	SWAP_FUNC(16, s, d, flags, struct squashfs_super_block);\
+	SWAP_FUNC(16, s, d, no_ids, struct squashfs_super_block);\
+	SWAP_FUNC(16, s, d, s_major, struct squashfs_super_block);\
+	SWAP_FUNC(16, s, d, s_minor, struct squashfs_super_block);\
+	SWAP_FUNC(64, s, d, root_inode, struct squashfs_super_block);\
+	SWAP_FUNC(64, s, d, bytes_used, struct squashfs_super_block);\
+	SWAP_FUNC(64, s, d, id_table_start, struct squashfs_super_block);\
+	SWAP_FUNC(64, s, d, xattr_id_table_start, struct squashfs_super_block);\
+	SWAP_FUNC(64, s, d, inode_table_start, struct squashfs_super_block);\
+	SWAP_FUNC(64, s, d, directory_table_start, struct squashfs_super_block);\
+	SWAP_FUNC(64, s, d, fragment_table_start, struct squashfs_super_block);\
+	SWAP_FUNC(64, s, d, lookup_table_start, struct squashfs_super_block);\
 }
 
 #define _SQUASHFS_SWAP_DIR_INDEX(s, d, SWAP_FUNC) {\

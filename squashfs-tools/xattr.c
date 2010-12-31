@@ -97,7 +97,7 @@ extern long long generic_write_table(int, void *, int, void *, int);
 extern int mangle(char *, char *, int, int, int, int);
 
 /* helper functions and definitions from read_xattrs.c */
-extern int read_xattrs_from_disk(int, squashfs_super_block *);
+extern int read_xattrs_from_disk(int, struct squashfs_super_block *);
 extern struct xattr_list *get_xattr(int, unsigned int *);
 extern struct prefix prefix_table[];
 
@@ -659,7 +659,7 @@ int read_xattrs(void *d)
  * take place against the xattrs already in the file system being appended to,
  * and ensures the pre-existing xattrs are written out along with any new xattrs
  */
-int get_xattrs(int fd, squashfs_super_block *sBlk)
+int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 {
 	int ids, res, i, id;
 	unsigned int count;

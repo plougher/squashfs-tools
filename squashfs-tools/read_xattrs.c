@@ -168,7 +168,7 @@ static int read_xattr_entry(struct xattr_list *xattr,
  * Read and decompress the xattr id table and the xattr metadata.
  * This is cached in memory for later use by get_xattr()
  */
-int read_xattrs_from_disk(int fd, squashfs_super_block *sBlk)
+int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
 {
 	int res, bytes, i, indexes, index_bytes, ids;
 	long long *index, start, end;

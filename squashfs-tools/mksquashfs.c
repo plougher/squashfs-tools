@@ -393,10 +393,10 @@ unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
 char *read_from_disk(long long start, unsigned int avail_bytes);
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type);
-extern struct compressor  *read_super(int fd, squashfs_super_block *sBlk,
+extern struct compressor  *read_super(int fd, struct squashfs_super_block *sBlk,
 	char *source);
 extern long long read_filesystem(char *root_name, int fd,
-	squashfs_super_block *sBlk, char **cinode_table, char **data_cache,
+	struct squashfs_super_block *sBlk, char **cinode_table, char **data_cache,
 	char **cdirectory_table, char **directory_data_cache,
 	unsigned int *last_directory_block, unsigned int *inode_dir_offset,
 	unsigned int *inode_dir_file_size, unsigned int *root_inode_size,
@@ -4403,7 +4403,7 @@ empty_set:
 #define RECOVER_ID "Squashfs recovery file v1.0\n"
 #define RECOVER_ID_SIZE 28
 
-void write_recovery_data(squashfs_super_block *sBlk)
+void write_recovery_data(struct squashfs_super_block *sBlk)
 {
 	int res, recoverfd, bytes = sBlk->bytes_used - sBlk->inode_table_start;
 	pid_t pid = getpid();
@@ -4436,7 +4436,7 @@ void write_recovery_data(squashfs_super_block *sBlk)
 		BAD_ERROR("Failed to write recovery file, because %s\n",
 			strerror(errno));
 
-	if(write_bytes(recoverfd, sBlk, sizeof(squashfs_super_block)) == -1)
+	if(write_bytes(recoverfd, sBlk, sizeof(struct squashfs_super_block)) == -1)
 		BAD_ERROR("Failed to write recovery file, because %s\n",
 			strerror(errno));
 
@@ -4458,7 +4458,7 @@ void write_recovery_data(squashfs_super_block *sBlk)
 void read_recovery_data(char *recovery_file, char *destination_file)
 {
 	int fd, recoverfd, bytes;
-	squashfs_super_block orig_sBlk, sBlk;
+	struct squashfs_super_block orig_sBlk, sBlk;
 	char *metadata;
 	int res;
 	struct stat buf;
@@ -4488,19 +4488,19 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	if(strncmp(header, header2, RECOVER_ID_SIZE) !=0 )
 		BAD_ERROR("Not a recovery file\n");
 
-	res = read_bytes(recoverfd, &sBlk, sizeof(squashfs_super_block));
+	res = read_bytes(recoverfd, &sBlk, sizeof(struct squashfs_super_block));
 	if(res == -1)
 		BAD_ERROR("Failed to read recovery file, because %s\n",
 			strerror(errno));
-	if(res < sizeof(squashfs_super_block))
+	if(res < sizeof(struct squashfs_super_block))
 		BAD_ERROR("Recovery file appears to be truncated\n");
 
-	res = read_fs_bytes(fd, 0, sizeof(squashfs_super_block), &orig_sBlk);
+	res = read_fs_bytes(fd, 0, sizeof(struct squashfs_super_block), &orig_sBlk);
 	if(res == 0)
 		EXIT_MKSQUASHFS();
 
 	if(memcmp(((char *) &sBlk) + 4, ((char *) &orig_sBlk) + 4,
-			sizeof(squashfs_super_block) - 4) != 0)
+			sizeof(struct squashfs_super_block) - 4) != 0)
 		BAD_ERROR("Recovery file and destination file do not seem to "
 			"match\n");
 
@@ -4518,7 +4518,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 	if(res < bytes)
 		BAD_ERROR("Recovery file appears to be truncated\n");
 
-	write_destination(fd, 0, sizeof(squashfs_super_block), &sBlk);
+	write_destination(fd, 0, sizeof(struct squashfs_super_block), &sBlk);
 
 	write_destination(fd, sBlk.inode_table_start, bytes, metadata);
 
@@ -4554,7 +4554,7 @@ int main(int argc, char *argv[])
 {
 	struct stat buf, source_buf;
 	int res, i;
-	squashfs_super_block sBlk;
+	struct squashfs_super_block sBlk;
 	char *b, *root_name = NULL;
 	int nopad = FALSE, keep_as_directory = FALSE;
 	squashfs_inode inode;
@@ -5107,15 +5107,15 @@ printOptions:
 			unsigned short c_byte = size | SQUASHFS_COMPRESSED_BIT;
 	
 			SQUASHFS_INSWAP_SHORTS(&c_byte, 1);
-			write_destination(fd, sizeof(squashfs_super_block),
+			write_destination(fd, sizeof(struct squashfs_super_block),
 				sizeof(c_byte), &c_byte);
-			write_destination(fd, sizeof(squashfs_super_block) +
+			write_destination(fd, sizeof(struct squashfs_super_block) +
 				sizeof(c_byte), size, comp_data);
-			bytes = sizeof(squashfs_super_block) + sizeof(c_byte)
+			bytes = sizeof(struct squashfs_super_block) + sizeof(c_byte)
 				+ size;
 			comp_opts = TRUE;
 		} else			
-			bytes = sizeof(squashfs_super_block);
+			bytes = sizeof(struct squashfs_super_block);
 	} else {
 		unsigned int last_directory_block, inode_dir_offset,
 			inode_dir_file_size, root_inode_size,
@@ -5352,7 +5352,7 @@ restore_filesystem:
 		unlink(recovery_file);
 
 	total_bytes += total_inode_bytes + total_directory_bytes +
-		sizeof(squashfs_super_block) + total_xattr_bytes;
+		sizeof(struct squashfs_super_block) + total_xattr_bytes;
 
 	printf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
 		" %d\n", exportable ? "Exportable " : "", SQUASHFS_MAJOR,

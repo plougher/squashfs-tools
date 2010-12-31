@@ -24,5 +24,4 @@
  * global.h
  */
 
-typedef struct squashfs_super_block squashfs_super_block;
 #endif
