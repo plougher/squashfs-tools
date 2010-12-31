@@ -114,9 +114,6 @@
 #include "compressor.h"
 #include "xattr.h"
 
-/* offset of data in compressed metadata blocks (allowing room for
- * compressed size */
-#define BLOCK_OFFSET 2
 int delete = FALSE;
 int fd;
 int cur_uncompressed = 0, estimated_uncompressed = 0;
