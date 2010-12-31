@@ -92,7 +92,7 @@ extern unsigned int xattr_bytes, total_xattr_bytes;
 
 /* helper functions from mksquashfs.c */
 extern unsigned short get_checksum(char *, int, unsigned short);
-extern void write_destination(int, long long, int, char *);
+extern void write_destination(int, long long, int, void *);
 extern long long generic_write_table(int, void *, int, void *, int);
 extern int mangle(char *, char *, int, int, int, int);
 
@@ -476,7 +476,7 @@ long long write_xattrs()
 	/*
 	 * Write compressed xattr table to file system
 	 */
-	write_destination(fd, bytes, xattr_bytes, (char *) xattr_table);
+	write_destination(fd, bytes, xattr_bytes, xattr_table);
         bytes += xattr_bytes;
 
 	/*
