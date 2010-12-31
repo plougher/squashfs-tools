@@ -37,7 +37,6 @@
 #include <sys/xattr.h>
 
 #include "squashfs_fs.h"
-#include "global.h"
 #include "squashfs_swap.h"
 #include "mksquashfs.h"
 #include "xattr.h"

@@ -36,7 +36,6 @@
 #include <stdlib.h>
 
 #include "squashfs_fs.h"
-#include "global.h"
 #include "mksquashfs.h"
 #include "sort.h"
 

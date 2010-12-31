@@ -54,7 +54,6 @@
 #endif
 
 #include "squashfs_fs.h"
-#include "global.h"
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...) \

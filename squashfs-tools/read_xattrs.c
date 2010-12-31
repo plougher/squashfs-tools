@@ -42,7 +42,6 @@
 #include "squashfs_fs.h"
 #include "squashfs_swap.h"
 #include "read_fs.h"
-#include "global.h"
 #include "xattr.h"
 
 #include <stdlib.h>
