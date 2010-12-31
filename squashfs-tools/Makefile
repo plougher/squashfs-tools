@@ -209,7 +209,7 @@ swap.o: swap.c
 
 pseudo.o: pseudo.c pseudo.h
 
-compressor.o: compressor.c compressor.h
+compressor.o: compressor.c compressor.h squashfs_fs.h
 
 xattr.o: xattr.h
 
