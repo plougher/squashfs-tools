@@ -18,7 +18,8 @@
  *
  * xz_wrapper.c
  *
- * Support for XZ (LZMA2) compression using XZ Utils liblzma http://tukaani.org/xz/
+ * Support for XZ (LZMA2) compression using XZ Utils liblzma
+ * http://tukaani.org/xz/
  */
 
 #include <stdio.h>
@@ -75,7 +76,8 @@ static int xz_options(char *argv[], int argc)
 				}
 			}
 			if(bcj[i].name == NULL) {
-				fprintf(stderr, "xz: -Xbcj unrecognised filter\n");
+				fprintf(stderr, "xz: -Xbcj unrecognised "
+					"filter\n");
 				goto failed;
 			}
 		}
@@ -116,7 +118,8 @@ static int xz_options(char *argv[], int argc)
 			else if(*b == 'm' || *b == 'M')
 				dictionary_size *= 1024 * 1024;
 			else if(*b != '\0') {
-				fprintf(stderr, "xz: -Xdict-size invalid dict-size\n");
+				fprintf(stderr, "xz: -Xdict-size invalid "
+					"dict-size\n");
 				goto failed;
 			}
 		}
@@ -378,4 +381,3 @@ struct compressor xz_comp_ops = {
 	.name = "xz",
 	.supported = 1
 };
-
