@@ -136,7 +136,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 			break;
 		}
 		case SQUASHFS_FILE_TYPE: {
-			squashfs_reg_inode_header *inode = &header.reg;
+			struct squashfs_reg_inode_header *inode = &header.reg;
 
 			SQUASHFS_SWAP_REG_INODE_HEADER(inode, block_ptr);
 

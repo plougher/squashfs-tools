@@ -126,7 +126,7 @@ int scan_inode_table(int fd, long long start, long long end,
 {
 	unsigned char *cur_ptr;
 	int byte, bytes = 0, size = 0, files = 0;
-	squashfs_reg_inode_header inode;
+	struct squashfs_reg_inode_header inode;
 	unsigned int directory_start_block;
 
 	TRACE("scan_inode_table: start 0x%llx, end 0x%llx, root_inode_start "

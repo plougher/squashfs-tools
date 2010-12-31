@@ -1258,8 +1258,8 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 
 	if(type == SQUASHFS_FILE_TYPE) {
 		int i;
-		squashfs_reg_inode_header *reg = &inode_header.reg;
-		size_t off = offsetof(squashfs_reg_inode_header, block_list);
+		struct squashfs_reg_inode_header *reg = &inode_header.reg;
+		size_t off = offsetof(struct squashfs_reg_inode_header, block_list);
 
 		inode = get_inode(sizeof(*reg) + offset * sizeof(unsigned int));
 		reg->file_size = byte_size;
