@@ -1203,7 +1203,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	struct fragment *fragment, struct directory *dir_in, long long sparse)
 {
 	struct stat *buf = &dir_ent->inode->buf;
-	squashfs_inode_header inode_header;
+	union squashfs_inode_header inode_header;
 	squashfs_base_inode_header *base = &inode_header.base;
 	void *inode;
 	char *filename = dir_ent->pathname;

@@ -117,7 +117,7 @@ int read_block(int fd, long long start, long long *next, void *block)
 
 int scan_inode_table(int fd, long long start, long long end,
 	long long root_inode_start, int root_inode_offset,
-	squashfs_super_block *sBlk, squashfs_inode_header *dir_inode,
+	squashfs_super_block *sBlk, union squashfs_inode_header *dir_inode,
 	unsigned char **inode_table, unsigned int *root_inode_block,
 	unsigned int *root_inode_size, long long *uncompressed_file,
 	unsigned int *uncompressed_directory, int *file_count, int *sym_count,
@@ -723,7 +723,7 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk,
 	unsigned int root_inode_offset =
 		SQUASHFS_INODE_OFFSET(sBlk->root_inode);
 	unsigned int root_inode_block;
-	squashfs_inode_header inode;
+	union squashfs_inode_header inode;
 	unsigned int *id_table;
 	int res;
 
