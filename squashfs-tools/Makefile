@@ -235,7 +235,9 @@ unsquash-3.o: unsquashfs.h unsquash-3.c squashfs_fs.h squashfs_compat.h \
 unsquash-4.o: unsquashfs.h unsquash-4.c squashfs_fs.h squashfs_swap.h \
 	global.h read_fs.h
 
-unsquashfs_xattr.o: xattr.h
+unsquashfs_xattr.o: unsquashfs_xattr.c unsquashfs.h squashfs_fs.h global.h \
+	xattr.h
+	
 
 .PHONY: clean
 clean:
