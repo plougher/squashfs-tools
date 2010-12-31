@@ -199,7 +199,7 @@ mksquashfs: $(MKSQUASHFS_OBJS)
 	$(CC) $(MKSQUASHFS_OBJS) -lpthread -lm $(LIBS) -o $@
 
 mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h \
-	squashfs_swap.h xattr.h
+	squashfs_swap.h xattr.h pseudo.h compressor.h
 
 read_fs.o: read_fs.c squashfs_fs.h read_fs.h global.h squashfs_swap.h
 
