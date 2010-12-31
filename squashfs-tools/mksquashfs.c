@@ -1375,7 +1375,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		TRACE("Device inode, rdev 0x%x, nlink %d\n", dev->rdev, nlink);
 	}
 	else if(type == SQUASHFS_LCHRDEV_TYPE || type == SQUASHFS_LBLKDEV_TYPE) {
-		squashfs_ldev_inode_header *dev = &inode_header.ldev;
+		struct squashfs_ldev_inode_header *dev = &inode_header.ldev;
 		unsigned int major = major(buf->st_rdev);
 		unsigned int minor = minor(buf->st_rdev);
 

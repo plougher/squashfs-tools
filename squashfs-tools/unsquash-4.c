@@ -211,7 +211,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 		}
  		case SQUASHFS_LBLKDEV_TYPE:
 	 	case SQUASHFS_LCHRDEV_TYPE: {
-			squashfs_ldev_inode_header *inode = &header.ldev;
+			struct squashfs_ldev_inode_header *inode = &header.ldev;
 
 			SQUASHFS_SWAP_LDEV_INODE_HEADER(inode, block_ptr);
 

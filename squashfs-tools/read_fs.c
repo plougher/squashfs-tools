@@ -337,7 +337,7 @@ int scan_inode_table(int fd, long long start, long long end,
 		 	case SQUASHFS_LBLKDEV_TYPE:
 		 	case SQUASHFS_LCHRDEV_TYPE:
 				(*dev_count) ++;
-				cur_ptr += sizeof(squashfs_ldev_inode_header);
+				cur_ptr += sizeof(struct squashfs_ldev_inode_header);
 				break;
 			case SQUASHFS_FIFO_TYPE:
 				(*fifo_count) ++;
