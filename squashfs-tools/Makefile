@@ -219,6 +219,8 @@ read_xattrs.o: read_xattrs.c xattr.h squashfs_fs.h global.h squashfs_swap.h \
 
 gzip_wrapper.o: gzip_wrapper.c compressor.h squashfs_fs.h
 
+lzma_wrapper.o: lzma_wrapper.c compressor.h squashfs_fs.h
+
 unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(UNSQUASHFS_OBJS) -lpthread -lm $(LIBS) -o $@
 
