@@ -207,8 +207,8 @@ extern void inswap_le64_num(long long *, int);
 }
 
 #define _SQUASHFS_SWAP_FRAGMENT_ENTRY(s, d, SWAP_FUNC) {\
-	SWAP_FUNC(64, s, d, start_block, squashfs_fragment_entry);\
-	SWAP_FUNC(32, s, d, size, squashfs_fragment_entry);\
+	SWAP_FUNC(64, s, d, start_block, struct squashfs_fragment_entry);\
+	SWAP_FUNC(32, s, d, size, struct squashfs_fragment_entry);\
 }
 
 #define _SQUASHFS_SWAP_XATTR_ENTRY(s, d, SWAP_FUNC) {\

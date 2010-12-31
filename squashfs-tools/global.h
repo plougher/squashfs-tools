@@ -38,5 +38,4 @@ typedef struct squashfs_dir_inode_header squashfs_dir_inode_header;
 typedef struct squashfs_ldir_inode_header squashfs_ldir_inode_header;
 typedef struct squashfs_dir_entry squashfs_dir_entry;
 typedef struct squashfs_dir_header squashfs_dir_header;
-typedef struct squashfs_fragment_entry squashfs_fragment_entry;
 #endif

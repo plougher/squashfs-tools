@@ -42,7 +42,7 @@ int read_fragment_table_4()
 		return TRUE;
 
 	fragment_table = malloc(sBlk.s.fragments *
-		sizeof(squashfs_fragment_entry));
+		sizeof(struct squashfs_fragment_entry));
 	if(fragment_table == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
 			"fragment table\n");
@@ -81,7 +81,9 @@ void read_fragment_4(unsigned int fragment, long long *start_block, int *size)
 {
 	TRACE("read_fragment: reading fragment %d\n", fragment);
 
-	squashfs_fragment_entry *fragment_entry = &fragment_table[fragment];
+	struct squashfs_fragment_entry *fragment_entry;
+
+	fragment_entry = &fragment_table[fragment];
 	*start_block = fragment_entry->start_block;
 	*size = fragment_entry->size;
 }

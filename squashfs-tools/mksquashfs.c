@@ -242,7 +242,7 @@ struct fragment {
 #define FRAG_SIZE 32768
 #define FRAG_INDEX (1LL << 32)
 
-squashfs_fragment_entry *fragment_table = NULL;
+struct squashfs_fragment_entry *fragment_table = NULL;
 int fragments_outstanding = 0;
 
 /* current inode number for directories and non directories */
@@ -407,7 +407,7 @@ extern long long read_filesystem(char *root_name, int fd,
 	unsigned int *inode_dir_inode_number,
 	unsigned int *inode_dir_parent_inode,
 	void (push_directory_entry)(char *, squashfs_inode, int, int),
-	squashfs_fragment_entry **fragment_table,
+	struct squashfs_fragment_entry **fragment_table,
 	squashfs_inode **inode_lookup_table);
 extern int read_sort_file(char *filename, int source, char *source_path[]);
 extern void sort_files_and_write(struct dir_info *dir);
@@ -1716,7 +1716,7 @@ failed:
 
 struct file_buffer *get_fragment(struct fragment *fragment)
 {
-	squashfs_fragment_entry *disk_fragment;
+	struct squashfs_fragment_entry *disk_fragment;
 	int res, size;
 	long long start_block;
 	struct file_buffer *buffer, *compressed_buffer;
@@ -1841,7 +1841,7 @@ void write_fragment()
 	pthread_mutex_lock(&fragment_mutex);
 	if(fragments % FRAG_SIZE == 0) {
 		void *ft = realloc(fragment_table, (fragments +
-			FRAG_SIZE) * sizeof(squashfs_fragment_entry));
+			FRAG_SIZE) * sizeof(struct squashfs_fragment_entry));
 		if(ft == NULL) {
 			pthread_mutex_unlock(&fragment_mutex);
 			BAD_ERROR("Out of memory in fragment table\n");
@@ -1944,7 +1944,7 @@ long long generic_write_table(int length, void *buffer, int length2,
 long long write_fragment_table()
 {
 	unsigned int frag_bytes = SQUASHFS_FRAGMENT_BYTES(fragments);
-	squashfs_fragment_entry p[fragments];
+	struct squashfs_fragment_entry p[fragments];
 	int i;
 
 	TRACE("write_fragment_table: fragments %d, frag_bytes %d\n", fragments,
@@ -5146,7 +5146,7 @@ printOptions:
 		if((fragments = sBlk.fragments)) {
 			fragment_table = realloc((char *) fragment_table,
 				((fragments + FRAG_SIZE - 1) & ~(FRAG_SIZE - 1))
-				 * sizeof(squashfs_fragment_entry)); 
+				 * sizeof(struct squashfs_fragment_entry)); 
 			if(fragment_table == NULL)
 				BAD_ERROR("Out of memory in save filesystem state\n");
 		}

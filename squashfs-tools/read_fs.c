@@ -604,7 +604,7 @@ unsigned int *read_id_table(int fd, squashfs_super_block *sBlk)
 
 
 int read_fragment_table(int fd, squashfs_super_block *sBlk,
-	squashfs_fragment_entry **fragment_table)
+	struct squashfs_fragment_entry **fragment_table)
 {
 	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk->fragments);
 	long long fragment_table_index[indexes];
@@ -616,7 +616,7 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk,
 		return 1;
 
 	*fragment_table = malloc(sBlk->fragments *
-		sizeof(squashfs_fragment_entry));
+		sizeof(struct squashfs_fragment_entry));
 	if(*fragment_table == NULL) {
 		ERROR("Failed to allocate fragment table\n");
 		return 0;
@@ -712,7 +712,7 @@ long long read_filesystem(char *root_name, int fd, squashfs_super_block *sBlk,
 	unsigned int *inode_dir_inode_number,
 	unsigned int *inode_dir_parent_inode,
 	void (push_directory_entry)(char *, squashfs_inode, int, int),
-	squashfs_fragment_entry **fragment_table,
+	struct squashfs_fragment_entry **fragment_table,
 	squashfs_inode **inode_lookup_table)
 {
 	unsigned char *inode_table = NULL, *directory_table;
