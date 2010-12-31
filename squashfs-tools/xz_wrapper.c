@@ -30,13 +30,7 @@
 #include "xz_wrapper.h"
 #include "compressor.h"
 
-#define MEMLIMIT (32 * 1024 * 1024)
-
-static struct bcj {
-	char	 	*name;
-	lzma_vli	id;
-	int		selected;
-} bcj[] = {
+static struct bcj bcj[] = {
 	{ "x86", LZMA_FILTER_X86, 0 },
 	{ "powerpc", LZMA_FILTER_POWERPC, 0 },
 	{ "ia64", LZMA_FILTER_IA64, 0 },
@@ -46,24 +40,7 @@ static struct bcj {
 	{ NULL, LZMA_VLI_UNKNOWN, 0 }
 };
 
-struct filter {
-	void		*buffer;
-	lzma_filter	filter[3];
-	size_t		length;
-};
-
-struct xz_stream {
-	struct filter	*filter;
-	int		filters;
-	int		dictionary_size;
-	lzma_options_lzma opt;
-};
-
-static struct comp_opts {
-	int dictionary_size;
-	int flags;
-} comp_opts;
-
+static struct comp_opts comp_opts;
 
 static int filter_count = 1;
 static int dictionary_size = 0;
