@@ -868,7 +868,8 @@ int mangle2(void *strm, char *d, char *s, int size,
 	int error, c_byte = 0;
 
 	if(!uncompressed) {
-		c_byte = comp->compress(strm, d, s, size, block_size, &error);
+		c_byte = compressor_compress(comp, strm, d, s, size, block_size,
+			 &error);
 		if(c_byte == -1)
 			BAD_ERROR("mangle2:: %s compress failed with error "
 				"code %d\n", comp->name, error);
