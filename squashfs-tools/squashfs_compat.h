@@ -103,7 +103,7 @@ struct squashfs_symlink_inode_header_3 {
 
 struct squashfs_reg_inode_header_3 {
 	SQUASHFS_BASE_INODE_HEADER_3;
-	squashfs_block_t	start_block;
+	squashfs_block		start_block;
 	unsigned int		fragment;
 	unsigned int		offset;
 	unsigned int		file_size;
@@ -113,7 +113,7 @@ struct squashfs_reg_inode_header_3 {
 struct squashfs_lreg_inode_header_3 {
 	SQUASHFS_BASE_INODE_HEADER_3;
 	unsigned int		nlink;
-	squashfs_block_t	start_block;
+	squashfs_block		start_block;
 	unsigned int		fragment;
 	unsigned int		offset;
 	long long		file_size;

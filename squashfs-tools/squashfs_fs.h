@@ -267,7 +267,7 @@ struct meta_index {
  * definitions for structures on disk
  */
 
-typedef long long		squashfs_block_t;
+typedef long long		squashfs_block;
 typedef long long		squashfs_inode;
 
 #define ZLIB_COMPRESSION	1
@@ -390,7 +390,7 @@ struct squashfs_lreg_inode_header {
 	unsigned short		guid;
 	unsigned int		mtime;
 	unsigned int 		inode_number;
-	squashfs_block_t	start_block;
+	squashfs_block		start_block;
 	long long		file_size;
 	long long		sparse;
 	unsigned int		nlink;
