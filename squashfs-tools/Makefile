@@ -214,7 +214,8 @@ compressor.o: compressor.c compressor.h squashfs_fs.h
 
 xattr.o: xattr.c xattr.h squashfs_fs.h global.h squashfs_swap.h mksquashfs.h
 
-read_xattrs.o: xattr.h
+read_xattrs.o: read_xattrs.c xattr.h squashfs_fs.h global.h squashfs_swap.h \
+	read_fs.h
 
 unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(UNSQUASHFS_OBJS) -lpthread -lm $(LIBS) -o $@
