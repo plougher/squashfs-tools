@@ -170,8 +170,8 @@ squashfs_inode *inode_lookup_table = NULL;
 #define INODE_HASH(dev, ino)	(ino & INODE_HASH_MASK)
 
 struct cached_dir_index {
-	squashfs_dir_index	index;
-	char			*name;
+	struct squashfs_dir_index	index;
+	char				*name;
 };
 
 struct directory {
@@ -1326,7 +1326,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		p = inode + offsetof(squashfs_ldir_inode_header, index);
 		for(i = 0; i < i_count; i++) {
 			SQUASHFS_SWAP_DIR_INDEX(&index[i].index, p);
-			p += offsetof(squashfs_dir_index, name);
+			p += offsetof(struct squashfs_dir_index, name);
 			memcpy(p, index[i].name, index[i].index.size + 1);
 			p += index[i].index.size + 1;
 		}
@@ -1561,8 +1561,8 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 					dir->p - dir->buff;
 				dir->index[dir->i_count].index.size = size - 1;
 				dir->index[dir->i_count++].name = name;
-				dir->i_size += sizeof(squashfs_dir_index) +
-					size;
+				dir->i_size += sizeof(struct squashfs_dir_index)
+					+ size;
 				dir->index_count_p = dir->p;
 			}
 

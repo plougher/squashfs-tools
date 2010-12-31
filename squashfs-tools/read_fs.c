@@ -320,11 +320,11 @@ int scan_inode_table(int fd, long long start, long long end,
 				(*dir_count) ++;
 				cur_ptr += sizeof(squashfs_ldir_inode_header);
 				for(i = 0; i < dir_inode.i_count; i++) {
-					squashfs_dir_index index;
+					struct squashfs_dir_index index;
 
 					SQUASHFS_SWAP_DIR_INDEX(&index,
 						cur_ptr);
-					cur_ptr += sizeof(squashfs_dir_index) +
+					cur_ptr += sizeof(struct squashfs_dir_index) +
 						index.size + 1;
 				}
 				break;
