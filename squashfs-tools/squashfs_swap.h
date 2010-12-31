@@ -90,14 +90,14 @@ extern void inswap_le64_num(long long *, int);
 }
 
 #define _SQUASHFS_SWAP_LIPC_INODE_HEADER(s, d, SWAP_FUNC) {\
-	SWAP_FUNC(16, s, d, inode_type, squashfs_lipc_inode_header);\
-	SWAP_FUNC(16, s, d, mode, squashfs_lipc_inode_header);\
-	SWAP_FUNC(16, s, d, uid, squashfs_lipc_inode_header);\
-	SWAP_FUNC(16, s, d, guid, squashfs_lipc_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, squashfs_lipc_inode_header);\
-	SWAP_FUNC(32, s, d, inode_number, squashfs_lipc_inode_header);\
-	SWAP_FUNC(32, s, d, nlink, squashfs_lipc_inode_header);\
-	SWAP_FUNC(32, s, d, xattr, squashfs_lipc_inode_header);\
+	SWAP_FUNC(16, s, d, inode_type, struct squashfs_lipc_inode_header);\
+	SWAP_FUNC(16, s, d, mode, struct squashfs_lipc_inode_header);\
+	SWAP_FUNC(16, s, d, uid, struct squashfs_lipc_inode_header);\
+	SWAP_FUNC(16, s, d, guid, struct squashfs_lipc_inode_header);\
+	SWAP_FUNC(32, s, d, mtime, struct squashfs_lipc_inode_header);\
+	SWAP_FUNC(32, s, d, inode_number, struct squashfs_lipc_inode_header);\
+	SWAP_FUNC(32, s, d, nlink, struct squashfs_lipc_inode_header);\
+	SWAP_FUNC(32, s, d, xattr, struct squashfs_lipc_inode_header);\
 }
 
 #define _SQUASHFS_SWAP_DEV_INODE_HEADER(s, d, SWAP_FUNC) {\

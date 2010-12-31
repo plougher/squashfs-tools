@@ -226,7 +226,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 			break;
 		case SQUASHFS_LFIFO_TYPE:
 		case SQUASHFS_LSOCKET_TYPE: {
-			squashfs_lipc_inode_header *inode = &header.lipc;
+			struct squashfs_lipc_inode_header *inode = &header.lipc;
 
 			SQUASHFS_SWAP_LIPC_INODE_HEADER(inode, block_ptr);
 

@@ -1465,7 +1465,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 			SQUASHFS_FIFO_TYPE ? "fifo" : "socket", nlink);
 	}
 	else if(type == SQUASHFS_LFIFO_TYPE || type == SQUASHFS_LSOCKET_TYPE) {
-		squashfs_lipc_inode_header *ipc = &inode_header.lipc;
+		struct squashfs_lipc_inode_header *ipc = &inode_header.lipc;
 
 		inode = get_inode(sizeof(*ipc));
 		ipc->nlink = nlink;
