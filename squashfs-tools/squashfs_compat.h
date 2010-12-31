@@ -482,7 +482,6 @@ typedef struct squashfs_dev_inode_header_1 squashfs_dev_inode_header_1;
 typedef struct squashfs_symlink_inode_header_1 squashfs_symlink_inode_header_1;
 typedef struct squashfs_reg_inode_header_1 squashfs_reg_inode_header_1;
 typedef struct squashfs_dir_inode_header_1 squashfs_dir_inode_header_1;
-typedef union squashfs_inode_header_1 squashfs_inode_header_1;
 
 #define SQUASHFS_SWAP_BASE_INODE_CORE_1(s, d, n) \
 	SQUASHFS_MEMSET(s, d, n);\
