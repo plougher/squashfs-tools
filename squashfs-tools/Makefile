@@ -212,7 +212,7 @@ pseudo.o: pseudo.c pseudo.h
 
 compressor.o: compressor.c compressor.h squashfs_fs.h
 
-xattr.o: xattr.h
+xattr.o: xattr.c xattr.h squashfs_fs.h global.h squashfs_swap.h mksquashfs.h
 
 read_xattrs.o: xattr.h
 
