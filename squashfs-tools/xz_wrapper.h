@@ -42,4 +42,30 @@ extern unsigned int inswap_le32(unsigned int);
 #else
 #define SQUASHFS_INSWAP_COMP_OPTS(s)
 #endif
+
+#define MEMLIMIT (32 * 1024 * 1024)
+
+struct bcj {
+	char	 	*name;
+	lzma_vli	id;
+	int		selected;
+};
+
+struct filter {
+	void		*buffer;
+	lzma_filter	filter[3];
+	size_t		length;
+};
+
+struct xz_stream {
+	struct filter	*filter;
+	int		filters;
+	int		dictionary_size;
+	lzma_options_lzma opt;
+};
+
+struct comp_opts {
+	int dictionary_size;
+	int flags;
+};
 #endif
