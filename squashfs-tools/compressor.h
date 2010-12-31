@@ -53,6 +53,15 @@ static inline int compressor_compress(struct compressor *comp, void *strm,
 {
 	return comp->compress(strm, dest, src, size, block_size, error);
 }
+
+
+static inline int compressor_uncompress(struct compressor *comp, void *dest,
+	void *src, int size, int block_size, int *error)
+{
+	return comp->uncompress(dest, src, size, block_size, error);
+}
+
+
 static inline int compressor_options(struct compressor *comp, char *argv[],
 	int argc)
 {
