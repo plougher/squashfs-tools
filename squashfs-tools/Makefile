@@ -226,8 +226,8 @@ unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h \
 unsquash-1.o: unsquashfs.h unsquash-1.c squashfs_fs.h squashfs_compat.h \
 	global.h
 
-unsquash-2.o: unsquashfs.h unsquash-2.c unsquashfs.h squashfs_fs.h \
-	squashfs_compat.h global.h
+unsquash-2.o: unsquashfs.h unsquash-2.c squashfs_fs.h squashfs_compat.h \
+	global.h
 
 unsquash-3.o: unsquashfs.h unsquash-3.c squashfs_fs.h squashfs_compat.h \
 	global.h
