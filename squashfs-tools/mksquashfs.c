@@ -1302,7 +1302,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	else if(type == SQUASHFS_LDIR_TYPE) {
 		int i;
 		unsigned char *p;
-		squashfs_ldir_inode_header *dir = &inode_header.ldir;
+		struct squashfs_ldir_inode_header *dir = &inode_header.ldir;
 		struct cached_dir_index *index = dir_in->index;
 		unsigned int i_count = dir_in->i_count;
 		unsigned int i_size = dir_in->i_size;
@@ -1323,7 +1323,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		dir->xattr = xattr;
 
 		SQUASHFS_SWAP_LDIR_INODE_HEADER(dir, inode);
-		p = inode + offsetof(squashfs_ldir_inode_header, index);
+		p = inode + offsetof(struct squashfs_ldir_inode_header, index);
 		for(i = 0; i < i_count; i++) {
 			SQUASHFS_SWAP_DIR_INDEX(&index[i].index, p);
 			p += offsetof(struct squashfs_dir_index, name);

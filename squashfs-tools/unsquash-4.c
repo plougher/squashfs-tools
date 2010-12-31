@@ -125,7 +125,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 			break;
 		}
 		case SQUASHFS_LDIR_TYPE: {
-			squashfs_ldir_inode_header *inode = &header.ldir;
+			struct squashfs_ldir_inode_header *inode = &header.ldir;
 
 			SQUASHFS_SWAP_LDIR_INODE_HEADER(inode, block_ptr);
 
