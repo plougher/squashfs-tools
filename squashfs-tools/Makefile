@@ -103,7 +103,7 @@ UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 CFLAGS = $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
 	-D_GNU_SOURCE -DCOMP_DEFAULT=\"$(COMP_DEFAULT)\"  -O2 -Wall
 
-LIBS =
+LIBS = -lpthread -lm
 ifdef GZIP_SUPPORT
 CFLAGS += -DGZIP_SUPPORT
 MKSQUASHFS_OBJS += gzip_wrapper.o
@@ -196,7 +196,7 @@ endif
 all: mksquashfs unsquashfs
 
 mksquashfs: $(MKSQUASHFS_OBJS)
-	$(CC) $(MKSQUASHFS_OBJS) -lpthread -lm $(LIBS) -o $@
+	$(CC) $(MKSQUASHFS_OBJS) $(LIBS) -o $@
 
 mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h \
 	squashfs_swap.h xattr.h pseudo.h compressor.h
@@ -228,7 +228,7 @@ lzo_wrapper.o: lzo_wrapper.c compressor.h squashfs_fs.h
 xz_wrapper.o: xz_wrapper.c compressor.h squashfs_fs.h
 
 unsquashfs: $(UNSQUASHFS_OBJS)
-	$(CC) $(UNSQUASHFS_OBJS) -lpthread -lm $(LIBS) -o $@
+	$(CC) $(UNSQUASHFS_OBJS) $(LIBS) -o $@
 
 unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h \
 	squashfs_compat.h global.h xattr.h read_fs.h compressor.h
