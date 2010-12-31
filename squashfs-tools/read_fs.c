@@ -297,7 +297,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				break;
 			}
 			case SQUASHFS_DIR_TYPE: {
-				squashfs_dir_inode_header dir_inode;
+				struct squashfs_dir_inode_header dir_inode;
 
 				SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode,
 					cur_ptr);
@@ -305,7 +305,7 @@ int scan_inode_table(int fd, long long start, long long end,
 					*uncompressed_directory +=
 					dir_inode.file_size;
 				(*dir_count) ++;
-				cur_ptr += sizeof(squashfs_dir_inode_header);
+				cur_ptr += sizeof(struct squashfs_dir_inode_header);
 				break;
 			}
 			case SQUASHFS_LDIR_TYPE: {

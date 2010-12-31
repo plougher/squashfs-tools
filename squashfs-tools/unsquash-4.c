@@ -114,7 +114,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 
 	switch(header.base.inode_type) {
 		case SQUASHFS_DIR_TYPE: {
-			squashfs_dir_inode_header *inode = &header.dir;
+			struct squashfs_dir_inode_header *inode = &header.dir;
 
 			SQUASHFS_SWAP_DIR_INODE_HEADER(inode, block_ptr);
 

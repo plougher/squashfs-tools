@@ -1335,7 +1335,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 			start_block, offset, dir_ent->dir->directory_count + 2);
 	}
 	else if(type == SQUASHFS_DIR_TYPE) {
-		squashfs_dir_inode_header *dir = &inode_header.dir;
+		struct squashfs_dir_inode_header *dir = &inode_header.dir;
 
 		inode = get_inode(sizeof(*dir));
 		dir->nlink = dir_ent->dir->directory_count + 2;
