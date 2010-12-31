@@ -341,7 +341,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				break;
 			case SQUASHFS_FIFO_TYPE:
 				(*fifo_count) ++;
-				cur_ptr += sizeof(squashfs_ipc_inode_header);
+				cur_ptr += sizeof(struct squashfs_ipc_inode_header);
 				break;
 			case SQUASHFS_LFIFO_TYPE:
 				(*fifo_count) ++;
@@ -349,7 +349,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				break;
 			case SQUASHFS_SOCKET_TYPE:
 				(*sock_count) ++;
-				cur_ptr += sizeof(squashfs_ipc_inode_header);
+				cur_ptr += sizeof(struct squashfs_ipc_inode_header);
 				break;
 			case SQUASHFS_LSOCKET_TYPE:
 				(*sock_count) ++;

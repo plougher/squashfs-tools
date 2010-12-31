@@ -1456,7 +1456,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 			nlink);
 	}
 	else if(type == SQUASHFS_FIFO_TYPE || type == SQUASHFS_SOCKET_TYPE) {
-		squashfs_ipc_inode_header *ipc = &inode_header.ipc;
+		struct squashfs_ipc_inode_header *ipc = &inode_header.ipc;
 
 		inode = get_inode(sizeof(*ipc));
 		ipc->nlink = nlink;
