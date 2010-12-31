@@ -198,13 +198,13 @@ all: mksquashfs unsquashfs
 mksquashfs: $(MKSQUASHFS_OBJS)
 	$(CC) $(MKSQUASHFS_OBJS) $(LIBS) -o $@
 
-mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h global.h sort.h \
-	squashfs_swap.h xattr.h pseudo.h compressor.h
+mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h sort.h squashfs_swap.h \
+	xattr.h pseudo.h compressor.h
 
-read_fs.o: read_fs.c squashfs_fs.h read_fs.h global.h squashfs_swap.h \
-	compressor.h xattr.h
+read_fs.o: read_fs.c squashfs_fs.h read_fs.h squashfs_swap.h compressor.h \
+	xattr.h
 
-sort.o: sort.c squashfs_fs.h global.h sort.h mksquashfs.h
+sort.o: sort.c squashfs_fs.h sort.h mksquashfs.h
 
 swap.o: swap.c
 
@@ -212,10 +212,9 @@ pseudo.o: pseudo.c pseudo.h
 
 compressor.o: compressor.c compressor.h squashfs_fs.h
 
-xattr.o: xattr.c xattr.h squashfs_fs.h global.h squashfs_swap.h mksquashfs.h
+xattr.o: xattr.c xattr.h squashfs_fs.h squashfs_swap.h mksquashfs.h
 
-read_xattrs.o: read_xattrs.c xattr.h squashfs_fs.h global.h squashfs_swap.h \
-	read_fs.h
+read_xattrs.o: read_xattrs.c xattr.h squashfs_fs.h squashfs_swap.h read_fs.h
 
 gzip_wrapper.o: gzip_wrapper.c compressor.h squashfs_fs.h
 
@@ -231,23 +230,19 @@ unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(UNSQUASHFS_OBJS) $(LIBS) -o $@
 
 unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h \
-	squashfs_compat.h global.h xattr.h read_fs.h compressor.h
+	squashfs_compat.h xattr.h read_fs.h compressor.h
 
-unsquash-1.o: unsquashfs.h unsquash-1.c squashfs_fs.h squashfs_compat.h \
-	global.h
+unsquash-1.o: unsquashfs.h unsquash-1.c squashfs_fs.h squashfs_compat.h
 
-unsquash-2.o: unsquashfs.h unsquash-2.c squashfs_fs.h squashfs_compat.h \
-	global.h
+unsquash-2.o: unsquashfs.h unsquash-2.c squashfs_fs.h squashfs_compat.h
 
-unsquash-3.o: unsquashfs.h unsquash-3.c squashfs_fs.h squashfs_compat.h \
-	global.h
+unsquash-3.o: unsquashfs.h unsquash-3.c squashfs_fs.h squashfs_compat.h
 
 unsquash-4.o: unsquashfs.h unsquash-4.c squashfs_fs.h squashfs_swap.h \
-	global.h read_fs.h
+	read_fs.h
 
-unsquashfs_xattr.o: unsquashfs_xattr.c unsquashfs.h squashfs_fs.h global.h \
-	xattr.h
-	
+unsquashfs_xattr.o: unsquashfs_xattr.c unsquashfs.h squashfs_fs.h xattr.h
+
 
 .PHONY: clean
 clean:
