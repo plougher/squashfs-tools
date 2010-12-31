@@ -233,7 +233,7 @@ unsquash-3.o: unsquashfs.h unsquash-3.c squashfs_fs.h squashfs_compat.h \
 	global.h
 
 unsquash-4.o: unsquashfs.h unsquash-4.c squashfs_fs.h squashfs_swap.h \
-	global.h
+	global.h read_fs.h
 
 unsquashfs_xattr.o: xattr.h
 
