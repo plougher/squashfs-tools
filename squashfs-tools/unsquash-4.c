@@ -32,7 +32,7 @@ static unsigned int *id_table;
 int read_fragment_table_4()
 {
 	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.s.fragments);
-	squashfs_fragment_index fragment_table_index[indexes];
+	long long fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
 		"from 0x%llx\n", sBlk.s.fragments, indexes,

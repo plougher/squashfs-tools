@@ -607,7 +607,7 @@ int read_fragment_table(int fd, squashfs_super_block *sBlk,
 	squashfs_fragment_entry **fragment_table)
 {
 	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk->fragments);
-	squashfs_fragment_index fragment_table_index[indexes];
+	long long fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
 		"from 0x%llx\n", sBlk->fragments, indexes,

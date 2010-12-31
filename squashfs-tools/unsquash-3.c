@@ -30,7 +30,7 @@ static squashfs_fragment_entry_3 *fragment_table;
 int read_fragment_table_3()
 {
 	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES_3(sBlk.s.fragments);
-	squashfs_fragment_index fragment_table_index[indexes];
+	long long fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
 		"from 0x%llx\n", sBlk.s.fragments, indexes,
@@ -46,7 +46,7 @@ int read_fragment_table_3()
 			"fragment table\n");
 
 	if(swap) {
-		squashfs_fragment_index sfragment_table_index[indexes];
+		long long sfragment_table_index[indexes];
 
 		res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
 			SQUASHFS_FRAGMENT_INDEX_BYTES_3(sBlk.s.fragments),
