@@ -185,7 +185,6 @@ typedef struct squashfs_ldir_inode_header_3 squashfs_ldir_inode_header_3;
 typedef struct squashfs_dir_entry_3 squashfs_dir_entry_3;
 typedef struct squashfs_dir_header_3 squashfs_dir_header_3;
 typedef struct squashfs_fragment_entry_3 squashfs_fragment_entry_3;
-typedef union squashfs_inode_header_3 squashfs_inode_header_3;
 
 /*
  * macros to convert each packed bitfield structure from little endian to big
