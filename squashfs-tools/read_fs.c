@@ -233,7 +233,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				break;
 			}	
 			case SQUASHFS_LREG_TYPE: {
-				squashfs_lreg_inode_header inode;
+				struct squashfs_lreg_inode_header inode;
 				int frag_bytes;
 				int blocks;
 				long long file_bytes = 0;

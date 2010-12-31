@@ -1277,8 +1277,8 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	}
 	else if(type == SQUASHFS_LREG_TYPE) {
 		int i;
-		squashfs_lreg_inode_header *reg = &inode_header.lreg;
-		size_t off = offsetof(squashfs_lreg_inode_header, block_list);
+		struct squashfs_lreg_inode_header *reg = &inode_header.lreg;
+		size_t off = offsetof(struct squashfs_lreg_inode_header, block_list);
 
 		inode = get_inode(sizeof(*reg) + offset * sizeof(unsigned int));
 		reg->nlink = nlink;
