@@ -48,6 +48,11 @@ static inline int compressor_init(struct compressor *comp, void **stream,
 }
 
 
+static inline int compressor_compress(struct compressor *comp, void *strm,
+	void *dest, void *src, int size, int block_size, int *error)
+{
+	return comp->compress(strm, dest, src, size, block_size, error);
+}
 static inline int compressor_options(struct compressor *comp, char *argv[],
 	int argc)
 {
