@@ -597,7 +597,7 @@ int read_block(int fd, long long start, long long *next, void *block)
 		if(read_fs_bytes(fd, start + offset, c_byte, buffer) == FALSE)
 			goto failed;
 
-		res = comp->uncompress(block, buffer, c_byte,
+		res = compressor_uncompress(comp, block, buffer, c_byte,
 			SQUASHFS_METADATA_SIZE, &error);
 
 		if(res == -1) {
@@ -636,7 +636,8 @@ int read_data_block(long long start, unsigned int size, char *block)
 		if(read_fs_bytes(fd, start, c_byte, data) == FALSE)
 			goto failed;
 
-		res = comp->uncompress(block, data, c_byte, block_size, &error);
+		res = compressor_uncompress(comp, block, data, c_byte,
+			block_size, &error);
 
 		if(res == -1) {
 			ERROR("%s uncompress failed with error code %d\n",
@@ -1732,7 +1733,7 @@ void *deflator(void *arg)
 		struct cache_entry *entry = queue_get(to_deflate);
 		int error, res;
 
-		res = comp->uncompress(tmp, entry->data,
+		res = compressor_uncompress(comp, tmp, entry->data,
 			SQUASHFS_COMPRESSED_SIZE_BLOCK(entry->size), block_size,
 			&error);
 

@@ -1751,8 +1751,8 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 		else
 			data = read_from_disk(start_block, size);
 
-		res = comp->uncompress(buffer->data, data, size, block_size,
-			&error);
+		res = compressor_uncompress(comp, buffer->data, data, size,
+			block_size, &error);
 		if(res == -1)
 			BAD_ERROR("%s uncompress failed with error code %d\n",
 				comp->name, error);

@@ -92,7 +92,7 @@ int read_block(int fd, long long start, long long *next, void *block)
 		if(res == 0)
 			return 0;
 
-		res = comp->uncompress(block, buffer, c_byte,
+		res = compressor_uncompress(comp, block, buffer, c_byte,
 			SQUASHFS_METADATA_SIZE, &error);
 		if(res == -1) {
 			ERROR("%s uncompress failed with error code %d\n",
