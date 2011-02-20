@@ -5092,7 +5092,8 @@ printOptions:
 
 	if(delete) {
 		int size;
-		void *comp_data = compressor_dump_options(comp, &size);
+		void *comp_data = compressor_dump_options(comp, block_size,
+			&size);
 
 		printf("Creating %d.%d filesystem on %s, block size %d.\n",
 			SQUASHFS_MAJOR, SQUASHFS_MINOR, argv[source + 1], block_size);

@@ -46,7 +46,6 @@ static struct comp_opts comp_opts;
 static int filter_count = 1;
 static int dictionary_size = 0;
 static float dictionary_percent = 0;
-static int defaults;
 
 
 static int xz_options(char *argv[], int argc)
@@ -136,41 +135,48 @@ failed:
 
 static int xz_options_post(int block_size)
 {
-	int n;
+	/*
+	 * if -Xdict-size has been specified use this to compute the datablock
+	 * dictionary size
+	 */
+	if(dictionary_size || dictionary_percent) {
+		int n;
 
-	if(dictionary_size) {
-		if(dictionary_size > block_size) {
-			fprintf(stderr, "xz: -Xdict-size is larger than "
-				"block_size\n");
+		if(dictionary_size) {
+			if(dictionary_size > block_size) {
+				fprintf(stderr, "xz: -Xdict-size is larger than"
+				" block_size\n");
+				goto failed;
+			}
+		} else
+			dictionary_size = block_size * dictionary_percent / 100;
+
+		if(dictionary_size < 8192) {
+			fprintf(stderr, "xz: -Xdict-size should be 8192 bytes "
+				"or larger\n");
 			goto failed;
 		}
-	} else if(dictionary_percent)
-		dictionary_size = block_size * dictionary_percent / 100;
-	else
+
+		/*
+		 * dictionary_size must be storable in xz header as either
+		 * 2^n or as  2^n+2^(n+1)
+	 	*/
+		n = ffs(dictionary_size) - 1;
+		if(dictionary_size != (1 << n) && 
+				dictionary_size != ((1 << n) + (1 << (n + 1)))) {
+			fprintf(stderr, "xz: -Xdict-size is an unsupported "
+				"value, dict-size must be storable in xz "
+				"header\n");
+			fprintf(stderr, "as either 2^n or as 2^n+2^(n+1).  "
+				"Example dict-sizes are 75%%, 50%%, 37.5%%, "
+				"25%%,\n");
+			fprintf(stderr, "or 32K, 16K, 8K etc.\n");
+			goto failed;
+		}
+
+	} else
+		/* No -Xdict-size specified, use defaults */
 		dictionary_size = block_size;
-
-	if(dictionary_size < 4096) {
-		fprintf(stderr, "xz: -Xdict-size should be 4096 bytes or "
-			"larger\n");
-		goto failed;
-	}
-
-	/*
-	 * dictionary_size must be storable in xz header as either 2^n or as
-	 * 2^n+2^(n+1)
-	 */
-	n = ffs(dictionary_size) - 1;
-	if(dictionary_size != (1 << n) && 
-			dictionary_size != ((1 << n) + (1 << (n + 1)))) {
-		fprintf(stderr, "xz: -Xdict-size is an unsupported value, "
-			"dict-size must be storable in xz header\n");
-		fprintf(stderr, "as either 2^n or as 2^n+2^(n+1).  Example "
-			"dict-sizes are 75%%, 50%%, 37.5%%, 25%%,\n");
-		fprintf(stderr, "or 32K, 16K, 8K etc.\n");
-		goto failed;
-	}
-
-	defaults = filter_count == 1 && dictionary_size == block_size;
 
 	return 0;
 
@@ -179,7 +185,7 @@ failed:
 }
 
 
-static void *xz_dump_options(int *size)
+static void *xz_dump_options(int block_size, int *size)
 {
 	int flags = 0, i;
 
@@ -187,8 +193,13 @@ static void *xz_dump_options(int *size)
 	 * don't store compressor specific options in file system if the
 	 * default options are being used - no compressor options in the
 	 * file system means the default options are always assumed
+	 *
+	 * Defaults are:
+	 *  metadata dictionary size: SQUASHFS_METADATA_SIZE
+	 *  datablock dictionary size: block_size
+	 *  1 filter
 	 */
-	if(defaults)
+	if(dictionary_size == block_size && filter_count == 1)
 		return NULL;
 
 	for(i = 0; bcj[i].name; i++)
@@ -220,8 +231,14 @@ static int xz_extract_options(int block_size, void *buffer, int size)
 		flags = comp_opts->flags;
 	}
 
-	for(i = 0; bcj[i].name; i++)
-		bcj[i].selected = (flags >> i) & 1;
+	filter_count = 1;
+	for(i = 0; bcj[i].name; i++) {
+		if((flags >> i) & 1) {
+			bcj[i].selected = 1;
+			filter_count ++;
+		} else
+			bcj[i].selected = 0;
+	}
 
 	return 0;
 }
@@ -246,8 +263,7 @@ static int xz_init(void **strm, int block_size, int datablock)
 	memset(filter, 0, filters * sizeof(struct filter));
 
 	stream->dictionary_size = datablock ? dictionary_size :
-		dictionary_size < SQUASHFS_METADATA_SIZE ?
-		dictionary_size : SQUASHFS_METADATA_SIZE;
+		SQUASHFS_METADATA_SIZE;
 
 	filter[0].filter[0].id = LZMA_FILTER_LZMA2;
 	filter[0].filter[0].options = &stream->opt;
