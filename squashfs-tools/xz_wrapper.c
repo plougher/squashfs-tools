@@ -225,7 +225,7 @@ static int xz_extract_options(int block_size, void *buffer, int size)
 		dictionary_size = block_size;
 		flags = 0;
 	} else {
-		SQUASHFS_INSWAP_COMP_OPTS(&comp_opts);
+		SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
 
 		dictionary_size = comp_opts->dictionary_size;
 		flags = comp_opts->flags;
