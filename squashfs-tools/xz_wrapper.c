@@ -218,17 +218,30 @@ static void *xz_dump_options(int block_size, int *size)
 static int xz_extract_options(int block_size, void *buffer, int size)
 {
 	struct comp_opts *comp_opts = buffer;
-	int flags, i;
+	int flags, i, n;
 
 	if(size == 0) {
 		/* set defaults */
 		dictionary_size = block_size;
 		flags = 0;
 	} else {
+		/* check passed comp opts struct is of the correct length */
+		if(size != sizeof(struct comp_opts))
+			goto failed;
+					 
 		SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
 
 		dictionary_size = comp_opts->dictionary_size;
 		flags = comp_opts->flags;
+
+		/*
+		 * check that the dictionary size seems correct - the dictionary
+		 * size should 2^n or 2^n+2^(n+1)
+		 */
+		n = ffs(dictionary_size) - 1;
+		if(dictionary_size != (1 << n) && 
+				dictionary_size != ((1 << n) + (1 << (n + 1))))
+			goto failed;
 	}
 
 	filter_count = 1;
@@ -241,6 +254,12 @@ static int xz_extract_options(int block_size, void *buffer, int size)
 	}
 
 	return 0;
+
+failed:
+	fprintf(stderr, "xz: error reading stored compressor options from "
+		"filesystem!\n");
+
+	return -1;
 }
 
 
