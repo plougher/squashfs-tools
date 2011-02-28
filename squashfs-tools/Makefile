@@ -17,25 +17,6 @@
 #
 GZIP_SUPPORT = 1
 
-
-########### Building LZMA support #############
-#
-# LZMA1 compression.
-#
-# Both XZ Utils liblzma (http://tukaani.org/xz/) and LZMA SDK
-# (http://www.7-zip.org/sdk.html) are supported
-#
-# To build using XZ Utils liblzma - install the library and uncomment
-# the LZMA_XZ_SUPPORT line below.
-#
-# To build using the LZMA SDK (4.65 used in development, other versions may
-# work) - download and unpack it, uncomment and set LZMA_DIR to unpacked source,
-# and uncomment the LZMA_SUPPORT line below.
-#
-#LZMA_XZ_SUPPORT = 1
-#LZMA_SUPPORT = 1
-#LZMA_DIR = ../../../../LZMA/lzma465
-
 ########### Building XZ support #############
 #
 # LZMA2 compression.
@@ -59,6 +40,26 @@ GZIP_SUPPORT = 1
 #LZO_SUPPORT = 1
 #LZO_DIR = /usr/local
 
+########### Building LZMA support #############
+#
+# LZMA1 compression.
+#
+# LZMA1 compression is deprecated, and the newer and better XZ (LZMA2)
+# compression should be used in preference.
+#
+# Both XZ Utils liblzma (http://tukaani.org/xz/) and LZMA SDK
+# (http://www.7-zip.org/sdk.html) are supported
+#
+# To build using XZ Utils liblzma - install the library and uncomment
+# the LZMA_XZ_SUPPORT line below.
+#
+# To build using the LZMA SDK (4.65 used in development, other versions may
+# work) - download and unpack it, uncomment and set LZMA_DIR to unpacked source,
+# and uncomment the LZMA_SUPPORT line below.
+#
+#LZMA_XZ_SUPPORT = 1
+#LZMA_SUPPORT = 1
+#LZMA_DIR = ../../../../LZMA/lzma465
 
 ######## Specifying default compression ########
 #
