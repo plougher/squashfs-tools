@@ -1937,8 +1937,8 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.1-CVS (2010/12/31)\n");\
-	printf("copyright (C) 2010 Phillip Lougher "\
+	printf("unsquashfs version 4.2 (2011/02/28)\n");\
+	printf("copyright (C) 2011 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
 		"\n");\
@@ -2116,7 +2116,7 @@ options:
 				"<size> Mbytes.  Default %d\n\t\t\t\tMbytes\n",
 				DATA_BUFFER_DEFAULT);
 			ERROR("\t-fr[ag-queue] <size>\tSet fragment queue to "
-				"<size> Mbytes.  Default %d\n\t\t\t\t Mbytes\n",
+				"<size> Mbytes.  Default\n\t\t\t\t%d Mbytes\n",
 				FRAGMENT_BUFFER_DEFAULT);
 			ERROR("\t-r[egex]\t\ttreat extract names as POSIX "
 				"regular expressions\n");
