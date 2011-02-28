@@ -395,7 +395,7 @@ void xz_usage()
 	fprintf(stderr, " dictionary size\n\t\tcan be specified as a");
 	fprintf(stderr, " percentage of the block size, or as an\n\t\t");
 	fprintf(stderr, "absolute value.  The dictionary size must be less");
-	fprintf(stderr, " than or equal\n\t\tto the block size and 4096 bytes");
+	fprintf(stderr, " than or equal\n\t\tto the block size and 8192 bytes");
 	fprintf(stderr, " or larger.  It must also be\n\t\tstorable in the xz");
 	fprintf(stderr, " header as either 2^n or as 2^n+2^(n+1).\n\t\t");
 	fprintf(stderr, "Example dict-sizes are 75%%, 50%%, 37.5%%, 25%%, or");
