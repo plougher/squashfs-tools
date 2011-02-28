@@ -100,8 +100,9 @@ MKSQUASHFS_OBJS = mksquashfs.o read_fs.o sort.o swap.o pseudo.o compressor.o
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o swap.o compressor.o
 
-CFLAGS = $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
-	-D_GNU_SOURCE -DCOMP_DEFAULT=\"$(COMP_DEFAULT)\"  -O2 -Wall
+CFLAGS = $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 \
+	-D_LARGEFILE_SOURCE -D_GNU_SOURCE -DCOMP_DEFAULT=\"$(COMP_DEFAULT)\" \
+	-O2 -Wall
 
 LIBS = -lpthread -lm
 ifeq ($(GZIP_SUPPORT),1)
@@ -130,7 +131,7 @@ LIBS += -llzma
 COMPRESSORS += lzma
 endif
 
-ifdef XZ_SUPPORT
+ifeq ($(XZ_SUPPORT),1)
 CFLAGS += -DXZ_SUPPORT
 MKSQUASHFS_OBJS += xz_wrapper.o
 UNSQUASHFS_OBJS += xz_wrapper.o
