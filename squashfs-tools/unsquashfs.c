@@ -1259,6 +1259,9 @@ void pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct inode *i;
 	struct dir *dir = s_ops.squashfs_opendir(start_block, offset, &i);
 
+	if(dir == NULL)
+		return;
+
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
 		struct inode *i;
 
@@ -1302,6 +1305,12 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *new;
 	struct inode *i;
 	struct dir *dir = s_ops.squashfs_opendir(start_block, offset, &i);
+
+	if(dir == NULL) {
+		ERROR("dir_scan: failed to read directory %s, skipping\n",
+			parent_name);
+		return;
+	}
 
 	if(lsonly || info)
 		print_filename(parent_name, i);
@@ -1937,7 +1946,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2 (2011/02/28)\n");\
+	printf("unsquashfs version 4.2-CVS (2011/03/12)\n");\
 	printf("copyright (C) 2011 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\

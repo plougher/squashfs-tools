@@ -325,6 +325,10 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 			"%d, %d directory entries\n", bytes, dir_count);
 		bytes += sizeof(dirh);
 
+		/* dir_count should never be larger than 256 */
+		if(dir_count > 256)
+			goto corrupted;
+
 		while(dir_count--) {
 			if(swap) {
 				squashfs_dir_entry_3 sdire;
@@ -335,6 +339,10 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 				memcpy(dire, directory_table + bytes,
 					sizeof(*dire));
 			bytes += sizeof(*dire);
+
+			/* size should never be larger than SQUASHFS_NAME_LEN */
+			if(dire->size > SQUASHFS_NAME_LEN)
+				goto corrupted;
 
 			memcpy(dire->name, directory_table + bytes,
 				dire->size + 1);
@@ -361,4 +369,9 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 	}
 
 	return dir;
+
+corrupted:
+	free(dir->dirs);
+	free(dir);
+	return NULL;
 }
