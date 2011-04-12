@@ -21,6 +21,9 @@
  */
 
 struct compressor {
+	int id;
+	char *name;
+	int supported;
 	int (*init)(void **, int, int);
 	int (*compress)(void *, void *, void *, int, int, int *);
 	int (*uncompress)(void *, void *, int, int, int *);
@@ -29,9 +32,6 @@ struct compressor {
 	void *(*dump_options)(int, int *);
 	int (*extract_options)(int, void *, int);
 	void (*usage)();
-	int id;
-	char *name;
-	int supported;
 };
 
 extern struct compressor *lookup_compressor(char *);
