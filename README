@@ -3,11 +3,11 @@ Git status:
 This is the squashfs.sourceforge.net CVS repository imported into this
 new git repository.  All new development will be under git.
 
-Squashfs-tools: Squashfs 4.1 release with xz support and the usual bug fixes.
+Squashfs-tools: Squashfs 4.2 release with a couple of bug fixes.
 
 kernel: obsolete, the kernel code is now in mainline at www.kernel.org.
 
-	All Squashfs kernel development trees are stored on kernel.org,
+All Squashfs kernel development trees are stored on kernel.org,
 under git.kernel.org:/linux/kernel/git/pkl/...
 
 kernel-2.4: prehistoric, not updated since the 3.1 release.  If you still need
