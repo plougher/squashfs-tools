@@ -230,7 +230,6 @@ int excluded(struct pathnames *paths, char *name, struct pathnames **new);
 /* fragment block data structures */
 int fragments = 0;
 struct file_buffer *fragment_data = NULL;
-int fragment_size = 0;
 
 struct fragment {
 	unsigned int		index;
@@ -790,7 +789,7 @@ void restorefs()
 	sock_count = ssock_count;
 	dup_files = sdup_files;
 	fragments = sfragments;
-	fragment_size = 0;
+	fragment_data = NULL; /* XXX fixme - should free it? */
 	id_count = sid_count;
 	restore_xattrs();
 	longjmp(env, 1);
@@ -1835,7 +1834,7 @@ void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 
 void write_fragment()
 {
-	if(fragment_size == 0)
+	if(fragment_data == NULL)
 		return;
 
 	pthread_mutex_lock(&fragment_mutex);
@@ -1848,13 +1847,12 @@ void write_fragment()
 		}
 		fragment_table = ft;
 	}
-	fragment_data->size = fragment_size;
 	fragment_data->block = fragments;
 	fragment_table[fragments].unused = 0;
 	fragments_outstanding ++;
 	queue_put(to_frag, fragment_data);
 	fragments ++;
-	fragment_size = 0;
+	fragment_data = NULL;
 	pthread_mutex_unlock(&fragment_mutex);
 }
 
@@ -1868,22 +1866,24 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
 	if(file_buffer == NULL || file_buffer->size == 0)
 		return &empty_fragment;
 
-	if(fragment_size + file_buffer->size > block_size)
+	if(fragment_data && fragment_data->size + file_buffer->size > block_size)
 		write_fragment();
 
 	ffrg = malloc(sizeof(struct fragment));
 	if(ffrg == NULL)
 		BAD_ERROR("Out of memory in fragment block allocation!\n");
 
-	if(fragment_size == 0)
+	if(fragment_data == NULL) {
 		fragment_data = cache_get(fragment_buffer, fragments, 1);
+		fragment_data->size = 0;
+	}
 
 	ffrg->index = fragments;
-	ffrg->offset = fragment_size;
+	ffrg->offset = fragment_data->size;
 	ffrg->size = file_buffer->size;
-	memcpy(fragment_data->data + fragment_size, file_buffer->data,
+	memcpy(fragment_data->data + fragment_data->size, file_buffer->data,
 		file_buffer->size);
-	fragment_size += file_buffer->size;
+	fragment_data->size += file_buffer->size;
 
 	return ffrg;
 }
