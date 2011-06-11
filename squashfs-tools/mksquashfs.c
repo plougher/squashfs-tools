@@ -1832,9 +1832,9 @@ void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 }
 
 
-void write_fragment()
+void write_fragment(struct file_buffer *fragment)
 {
-	if(fragment_data == NULL)
+	if(fragment == NULL)
 		return;
 
 	pthread_mutex_lock(&fragment_mutex);
@@ -1847,12 +1847,11 @@ void write_fragment()
 		}
 		fragment_table = ft;
 	}
-	fragment_data->block = fragments;
+	fragment->block = fragments;
 	fragment_table[fragments].unused = 0;
 	fragments_outstanding ++;
-	queue_put(to_frag, fragment_data);
+	queue_put(to_frag, fragment);
 	fragments ++;
-	fragment_data = NULL;
 	pthread_mutex_unlock(&fragment_mutex);
 }
 
@@ -1866,8 +1865,10 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
 	if(file_buffer == NULL || file_buffer->size == 0)
 		return &empty_fragment;
 
-	if(fragment_data && fragment_data->size + file_buffer->size > block_size)
-		write_fragment();
+	if(fragment_data && fragment_data->size + file_buffer->size > block_size) {
+		write_fragment(fragment_data);
+		fragment_data = NULL;
+	}
 
 	ffrg = malloc(sizeof(struct fragment));
 	if(ffrg == NULL)
@@ -5300,7 +5301,7 @@ restore_filesystem:
 		progress_bar(cur_uncompressed, estimated_uncompressed, columns);
 	}
 
-	write_fragment();
+	write_fragment(fragment_data);
 	sBlk.fragments = fragments;
 	if(!restoring) {
 		unlock_fragments();
