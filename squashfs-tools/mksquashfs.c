@@ -1838,6 +1838,19 @@ void write_fragment(struct file_buffer *fragment)
 		return;
 
 	pthread_mutex_lock(&fragment_mutex);
+	fragment_table[fragment->block].unused = 0;
+	fragments_outstanding ++;
+	queue_put(to_frag, fragment);
+	pthread_mutex_unlock(&fragment_mutex);
+}
+
+
+struct file_buffer *allocate_fragment()
+{
+	struct file_buffer *fragment = cache_get(fragment_buffer, fragments, 1);
+
+	pthread_mutex_lock(&fragment_mutex);
+
 	if(fragments % FRAG_SIZE == 0) {
 		void *ft = realloc(fragment_table, (fragments +
 			FRAG_SIZE) * sizeof(struct squashfs_fragment_entry));
@@ -1847,12 +1860,13 @@ void write_fragment(struct file_buffer *fragment)
 		}
 		fragment_table = ft;
 	}
-	fragment->block = fragments;
-	fragment_table[fragments].unused = 0;
-	fragments_outstanding ++;
-	queue_put(to_frag, fragment);
-	fragments ++;
+
+	fragment->size = 0;
+	fragment->block = fragments ++;
+
 	pthread_mutex_unlock(&fragment_mutex);
+
+	return fragment;
 }
 
 
@@ -1874,12 +1888,10 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
 	if(ffrg == NULL)
 		BAD_ERROR("Out of memory in fragment block allocation!\n");
 
-	if(fragment_data == NULL) {
-		fragment_data = cache_get(fragment_buffer, fragments, 1);
-		fragment_data->size = 0;
-	}
+	if(fragment_data == NULL)
+		fragment_data = allocate_fragment();
 
-	ffrg->index = fragments;
+	ffrg->index = fragment_data->block;
 	ffrg->offset = fragment_data->size;
 	ffrg->size = file_buffer->size;
 	memcpy(fragment_data->data + fragment_data->size, file_buffer->data,
