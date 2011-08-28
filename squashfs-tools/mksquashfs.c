@@ -3687,13 +3687,12 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 			continue;
 		}
 
-		if(old_exclude) {
-			if(old_excluded(filename, &buf))
-				continue;
-		} else {
-			if(excluded(paths, dir_name, &new))
-				continue;
-		}
+		if(old_exclude && old_excluded(filename, &buf))
+			continue;
+		else if(excluded(paths, dir_name, &new))
+			continue;
+		else if(eval_exclude_actions(dir_name, filename, &buf))
+			continue;
 
 		if((buf.st_mode & S_IFMT) == S_IFDIR) {
 			sub_dir = dir_scan1(filename, new, scan1_readdir);

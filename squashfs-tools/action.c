@@ -518,6 +518,30 @@ void *get_frag_action(void *fragment)
 
 
 /*
+ * Exclude specific action code
+ */
+int eval_exclude_actions(char *name, char *pathname, struct stat *buf)
+{
+	int i, match = 0;
+	struct action_data action_data;
+
+	action_data.name = name;
+	action_data.pathname = pathname;
+	action_data.buf = buf;
+
+	for (i = 0; i < spec_count && !match; i++) {
+		if (spec_list[i].type != EXCLUDE_ACTION)
+			continue;
+
+		match = eval_expr(spec_list[i].expr, &spec_list[i],
+			&action_data);
+	}
+
+	return match;
+}
+
+
+/*
  * Test operation functions
  */
 int name_fn(struct action *action, int argc, char **argv,
@@ -544,5 +568,6 @@ static struct test_entry test_table[] = {
 
 static struct action_entry action_table[] = {
 	{ "fragment", FRAGMENT_ACTION, 1 },
+	{ "exclude", EXCLUDE_ACTION, 0 },
 	{ "", 0, -1 }
 };
