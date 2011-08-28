@@ -112,6 +112,7 @@
 #include "pseudo.h"
 #include "compressor.h"
 #include "xattr.h"
+#include "action.h"
 
 int delete = FALSE;
 int fd;
@@ -229,7 +230,6 @@ int excluded(struct pathnames *paths, char *name, struct pathnames **new);
 
 /* fragment block data structures */
 int fragments = 0;
-struct file_buffer *fragment_data = NULL;
 
 struct fragment {
 	unsigned int		index;
@@ -789,7 +789,6 @@ void restorefs()
 	sock_count = ssock_count;
 	dup_files = sdup_files;
 	fragments = sfragments;
-	fragment_data = NULL; /* XXX fixme - should free it? */
 	id_count = sid_count;
 	restore_xattrs();
 	longjmp(env, 1);
@@ -1871,32 +1870,35 @@ struct file_buffer *allocate_fragment()
 
 
 static struct fragment empty_fragment = {SQUASHFS_INVALID_FRAG, 0, 0};
-struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer)
+struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer,
+	struct dir_ent *dir_ent)
 {
 	struct fragment *ffrg;
-	
+	struct file_buffer **fragment;
 
 	if(file_buffer == NULL || file_buffer->size == 0)
 		return &empty_fragment;
 
-	if(fragment_data && fragment_data->size + file_buffer->size > block_size) {
-		write_fragment(fragment_data);
-		fragment_data = NULL;
+	fragment = eval_frag_actions(dir_ent);
+
+	if((*fragment) && (*fragment)->size + file_buffer->size > block_size) {
+		write_fragment(*fragment);
+		*fragment = NULL;
 	}
 
 	ffrg = malloc(sizeof(struct fragment));
 	if(ffrg == NULL)
 		BAD_ERROR("Out of memory in fragment block allocation!\n");
 
-	if(fragment_data == NULL)
-		fragment_data = allocate_fragment();
+	if(*fragment == NULL)
+		*fragment = allocate_fragment();
 
-	ffrg->index = fragment_data->block;
-	ffrg->offset = fragment_data->size;
+	ffrg->index = (*fragment)->block;
+	ffrg->offset = (*fragment)->size;
 	ffrg->size = file_buffer->size;
-	memcpy(fragment_data->data + fragment_data->size, file_buffer->data,
+	memcpy((*fragment)->data + (*fragment)->size, file_buffer->data,
 		file_buffer->size);
-	fragment_data->size += file_buffer->size;
+	(*fragment)->size += file_buffer->size;
 
 	return ffrg;
 }
@@ -2832,7 +2834,7 @@ void write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	if(dupl_ptr) {
 		*duplicate_file = FALSE;
-		fragment = get_and_fill_fragment(file_buffer);
+		fragment = get_and_fill_fragment(file_buffer, dir_ent);
 		dupl_ptr->fragment = fragment;
 	} else
 		*duplicate_file = TRUE;
@@ -2863,7 +2865,7 @@ void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size,
 		return;
 	}
 		
-	fragment = get_and_fill_fragment(file_buffer);
+	fragment = get_and_fill_fragment(file_buffer, dir_ent);
 
 	cache_block_put(file_buffer);
 
@@ -2933,7 +2935,7 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 	}
 
 	unlock_fragments();
-	fragment = get_and_fill_fragment(fragment_buffer);
+	fragment = get_and_fill_fragment(fragment_buffer, dir_ent);
 	cache_block_put(fragment_buffer);
 
 	if(duplicate_checking)
@@ -3021,7 +3023,7 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 	}
 
 	unlock_fragments();
-	fragment = get_and_fill_fragment(fragment_buffer);
+	fragment = get_and_fill_fragment(fragment_buffer, dir_ent);
 	cache_block_put(fragment_buffer);
 
 	if(duplicate_checking)
@@ -3142,7 +3144,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 		for(block = thresh; block < blocks; block ++)
 			if(buffer_list[block])
 				queue_put(to_writer, buffer_list[block]);
-		fragment = get_and_fill_fragment(fragment_buffer);
+		fragment = get_and_fill_fragment(fragment_buffer, dir_ent);
 		dupl_ptr->fragment = fragment;
 	} else {
 		*duplicate_file = TRUE;
@@ -4545,7 +4547,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2011/04/12)\n");\
+	printf("mksquashfs version 4.2-CVS (2011/08/27)\n");\
 	printf("copyright (C) 2011 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -4592,7 +4594,17 @@ int main(int argc, char *argv[])
 	 */
 	comp = lookup_compressor(COMP_DEFAULT);
 	for(; i < argc; i++) {
-		if(strcmp(argv[i], "-comp") == 0) {
+		if(strcmp(argv[i], "-action") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -action missing action\n",
+					argv[0]);
+				exit(1);
+			}
+			res = parse_action(argv[i]);
+			if(res == 0)
+				exit(1);
+
+		} else if(strcmp(argv[i], "-comp") == 0) {
 			if(compressor_opts_parsed) {
 				ERROR("%s: -comp must appear before -X options"
 					"\n", argv[0]);
@@ -5287,6 +5299,8 @@ printOptions:
 			paths = add_subdir(paths, stickypath);
 	}
 
+	dump_actions(); 
+
 	if(delete && !keep_as_directory && source == 1 &&
 			S_ISDIR(source_buf.st_mode))
 		dir_scan(&inode, source_path[0], scan1_readdir);
@@ -5313,9 +5327,11 @@ restore_filesystem:
 		progress_bar(cur_uncompressed, estimated_uncompressed, columns);
 	}
 
-	write_fragment(fragment_data);
 	sBlk.fragments = fragments;
 	if(!restoring) {
+		struct file_buffer **fragment = NULL;
+		while((fragment = get_frag_action(fragment)))
+			write_fragment(*fragment);
 		unlock_fragments();
 		pthread_mutex_lock(&fragment_mutex);
 		while(fragments_outstanding) {
