@@ -311,21 +311,21 @@ int recover = TRUE;
 /* struct describing a cache entry passed between threads */
 struct file_buffer {
 	struct cache *cache;
-	int keep;
+	struct file_buffer *hash_next;
+	struct file_buffer *hash_prev;
+	struct file_buffer *free_next;
+	struct file_buffer *free_prev;
+	struct file_buffer *next;
 	long long file_size;
 	long long index;
 	long long block;
 	long long sequence;
 	int size;
 	int c_byte;
-	int used;
-	int	fragment;
-	int error;
-	struct file_buffer *hash_next;
-	struct file_buffer *hash_prev;
-	struct file_buffer *free_next;
-	struct file_buffer *free_prev;
-	struct file_buffer *next;
+	char keep;
+	char used;
+	char fragment;
+	char error;
 	char data[0];
 };
 
