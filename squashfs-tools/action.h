@@ -122,6 +122,8 @@ struct test_entry {
  */
 #define FRAGMENT_ACTION 0
 #define EXCLUDE_ACTION 1
+#define FRAGMENTS_ACTION 2
+#define NO_FRAGMENTS_ACTION 3
 
 struct action_entry {
 	char *name;
@@ -153,3 +155,4 @@ extern void dump_actions();
 extern void *eval_frag_actions(struct dir_ent *);
 extern void *get_frag_action(void *);
 extern int eval_exclude_actions(char *, char *, struct stat *);
+extern void eval_fragment_actions(struct dir_ent *);

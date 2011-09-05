@@ -542,6 +542,34 @@ int eval_exclude_actions(char *name, char *pathname, struct stat *buf)
 
 
 /*
+ * Fragment specific action code
+ */
+void eval_fragment_actions(struct dir_ent *dir_ent)
+{
+	int i, match;
+	struct action_data action_data;
+	struct inode_info *inode = dir_ent->inode;
+
+	action_data.name = dir_ent->name;
+	action_data.pathname = dir_ent->pathname;
+	action_data.buf = &dir_ent->inode->buf;
+
+	for (i = 0; i < spec_count; i++) {
+		if (spec_list[i].type != FRAGMENTS_ACTION &&
+				spec_list[i].type != NO_FRAGMENTS_ACTION)
+			continue;
+
+		match = eval_expr(spec_list[i].expr, &spec_list[i],
+			&action_data);
+
+		if (match)
+			inode->no_fragments = spec_list[i].type ==
+				FRAGMENTS_ACTION ? 0 : 1;
+	}
+}
+
+
+/*
  * Test operation functions
  */
 int name_fn(struct action *action, int argc, char **argv,
@@ -569,5 +597,7 @@ static struct test_entry test_table[] = {
 static struct action_entry action_table[] = {
 	{ "fragment", FRAGMENT_ACTION, 1 },
 	{ "exclude", EXCLUDE_ACTION, 0 },
+	{ "fragments", FRAGMENTS_ACTION, 0 },
+	{ "no-fragments", NO_FRAGMENTS_ACTION, 0 },
 	{ "", 0, -1 }
 };
