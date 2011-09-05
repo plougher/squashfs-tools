@@ -556,15 +556,29 @@ void eval_fragment_actions(struct dir_ent *dir_ent)
 
 	for (i = 0; i < spec_count; i++) {
 		if (spec_list[i].type != FRAGMENTS_ACTION &&
-				spec_list[i].type != NO_FRAGMENTS_ACTION)
+				spec_list[i].type != NO_FRAGMENTS_ACTION &&
+				spec_list[i].type != ALWAYS_FRAGS_ACTION &&
+				spec_list[i].type != NO_ALWAYS_FRAGS_ACTION)
 			continue;
 
 		match = eval_expr(spec_list[i].expr, &spec_list[i],
 			&action_data);
 
 		if (match)
-			inode->no_fragments = spec_list[i].type ==
-				FRAGMENTS_ACTION ? 0 : 1;
+			switch(spec_list[i].type) {
+			case FRAGMENTS_ACTION:
+				inode->no_fragments = 0;
+				break;
+			case NO_FRAGMENTS_ACTION:
+				inode->no_fragments = 1;
+				break;
+			case ALWAYS_FRAGS_ACTION:
+				inode->always_use_fragments = 1;
+				break;
+			case NO_ALWAYS_FRAGS_ACTION:
+				inode->always_use_fragments = 0;
+				break;
+			}
 	}
 }
 
@@ -599,5 +613,7 @@ static struct action_entry action_table[] = {
 	{ "exclude", EXCLUDE_ACTION, 0 },
 	{ "fragments", FRAGMENTS_ACTION, 0 },
 	{ "no-fragments", NO_FRAGMENTS_ACTION, 0 },
+	{ "always-use-fragments", ALWAYS_FRAGS_ACTION, 0 },
+	{ "dont-always-use-fragments", NO_ALWAYS_FRAGS_ACTION, 0 },
 	{ "", 0, -1 }
 };

@@ -124,6 +124,8 @@ struct test_entry {
 #define EXCLUDE_ACTION 1
 #define FRAGMENTS_ACTION 2
 #define NO_FRAGMENTS_ACTION 3
+#define ALWAYS_FRAGS_ACTION 4
+#define NO_ALWAYS_FRAGS_ACTION 5
 
 struct action_entry {
 	char *name;
