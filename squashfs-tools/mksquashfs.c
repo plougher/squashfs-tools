@@ -2283,10 +2283,11 @@ struct file_info *duplicate(long long file_size, long long bytes,
 static int seq = 0;
 void reader_read_process(struct dir_ent *dir_ent)
 {
+	struct inode_info *inode = dir_ent->inode;
 	struct file_buffer *prev_buffer = NULL, *file_buffer;
 	int status, res, byte, count = 0;
-	int file = get_pseudo_file(dir_ent->inode->pseudo_id)->fd;
-	int child = get_pseudo_file(dir_ent->inode->pseudo_id)->child;
+	int file = get_pseudo_file(inode->pseudo_id)->fd;
+	int child = get_pseudo_file(inode->pseudo_id)->child;
 	long long bytes = 0;
 
 	while(1) {
@@ -2325,7 +2326,7 @@ void reader_read_process(struct dir_ent *dir_ent)
  	 * Update inode file size now that the size of the dynamic pseudo file
 	 * is known.  This is needed for the -info option.
 	 */
-	dir_ent->inode->buf.st_size = bytes;
+	inode->buf.st_size = bytes;
 
 	res = waitpid(child, &status, 0);
 	if(res == -1 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
@@ -2338,8 +2339,9 @@ void reader_read_process(struct dir_ent *dir_ent)
 		seq --;
 	}
 	prev_buffer->file_size = bytes;
-	prev_buffer->fragment = !no_fragments &&
-		(count == 2 || always_use_fragments) && (byte < block_size);
+	prev_buffer->fragment = !inode->no_fragments &&
+		(count == 2 || inode->always_use_fragments) &&
+		(byte < block_size);
 	queue_put(from_reader, prev_buffer);
 
 	return;
@@ -2361,18 +2363,19 @@ void reader_read_file(struct dir_ent *dir_ent)
 	struct file_buffer *file_buffer;
 	int blocks, byte, count, expected, file, frag_block;
 	long long bytes, read_size;
+	struct inode_info *inode = dir_ent->inode;
 
-	if(dir_ent->inode->read)
+	if(inode->read)
 		return;
 
-	dir_ent->inode->read = TRUE;
+	inode->read = TRUE;
 again:
 	bytes = 0;
 	count = 0;
 	file_buffer = NULL;
 	read_size = buf->st_size;
 	blocks = (read_size + block_size - 1) >> block_log;
-	frag_block = !no_fragments && (always_use_fragments ||
+	frag_block = !inode->no_fragments && (inode->always_use_fragments ||
 		(read_size < block_size)) ? read_size >> block_log : -1;
 
 	file = open(dir_ent->pathname, O_RDONLY);
@@ -3338,6 +3341,15 @@ struct inode_info *lookup_inode(struct stat *buf)
 	inode->pseudo_file = FALSE;
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
+
+	/*
+	 * Copy filesystem wide defaults into inode, these filesystem
+	 * wide defaults may be altered on an individual inode basis by
+	 * user specified actions
+	 *
+	*/
+	inode->no_fragments = no_fragments;
+	inode->always_use_fragments = always_use_fragments;
 
 	if((buf->st_mode & S_IFMT) == S_IFREG)
 		estimated_uncompressed += (buf->st_size + block_size - 1) >>

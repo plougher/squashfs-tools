@@ -71,6 +71,8 @@ struct inode_info {
 	char			read;
 	char			root_entry;
 	char			pseudo_file;
+	char			no_fragments;
+	char			always_use_fragments;
 };
 #endif
 
