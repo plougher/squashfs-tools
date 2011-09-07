@@ -2280,6 +2280,15 @@ struct file_info *duplicate(long long file_size, long long bytes,
 }
 
 
+inline int is_fragment(struct inode_info *inode)
+{
+	int file_size = inode->buf.st_size;
+
+	return !inode->no_fragments && (file_size < block_size ||
+		(inode->always_use_fragments && file_size & (block_size - 1)));
+}
+
+
 static int seq = 0;
 void reader_read_process(struct dir_ent *dir_ent)
 {
@@ -2339,9 +2348,7 @@ void reader_read_process(struct dir_ent *dir_ent)
 		seq --;
 	}
 	prev_buffer->file_size = bytes;
-	prev_buffer->fragment = !inode->no_fragments &&
-		(count == 2 || inode->always_use_fragments) &&
-		(byte < block_size);
+	prev_buffer->fragment = is_fragment(inode);
 	queue_put(from_reader, prev_buffer);
 
 	return;
@@ -2361,7 +2368,7 @@ void reader_read_file(struct dir_ent *dir_ent)
 {
 	struct stat *buf = &dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
-	int blocks, byte, count, expected, file, frag_block;
+	int blocks, byte, count, expected, file;
 	long long bytes, read_size;
 	struct inode_info *inode = dir_ent->inode;
 
@@ -2375,8 +2382,6 @@ again:
 	file_buffer = NULL;
 	read_size = buf->st_size;
 	blocks = (read_size + block_size - 1) >> block_log;
-	frag_block = !inode->no_fragments && (inode->always_use_fragments ||
-		(read_size < block_size)) ? read_size >> block_log : -1;
 
 	file = open(dir_ent->pathname, O_RDONLY);
 	if(file == -1) {
@@ -2417,7 +2422,7 @@ again:
 
 		file_buffer->block = count;
 		file_buffer->error = FALSE;
-		file_buffer->fragment = (file_buffer->block == frag_block);
+		file_buffer->fragment = FALSE;
 
 		bytes += byte;
 		count ++;
@@ -2443,6 +2448,7 @@ again:
 			goto restat;
 	}
 
+	file_buffer->fragment = is_fragment(inode);
 	queue_put(from_reader, file_buffer);
 
 	close(file);
