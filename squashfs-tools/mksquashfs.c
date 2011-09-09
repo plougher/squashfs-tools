@@ -2599,7 +2599,10 @@ void *deflator(void *arg)
 		struct file_buffer *file_buffer = queue_get(from_reader);
 		struct file_buffer *write_buffer;
 
-		if(sparse_files && all_zero(file_buffer)) { 
+		if(file_buffer->file_size == 0) {
+			file_buffer->c_byte = 0;
+			queue_put(from_deflate, file_buffer);
+		} else if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
 			queue_put(from_deflate, file_buffer);
 		} else if(file_buffer->fragment) {
