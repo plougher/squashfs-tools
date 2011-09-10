@@ -126,6 +126,8 @@ struct test_entry {
 #define NO_FRAGMENTS_ACTION 3
 #define ALWAYS_FRAGS_ACTION 4
 #define NO_ALWAYS_FRAGS_ACTION 5
+#define COMPRESSED_ACTION 6
+#define UNCOMPRESSED_ACTION 7
 
 struct action_entry {
 	char *name;
@@ -158,3 +160,4 @@ extern void *eval_frag_actions(struct dir_ent *);
 extern void *get_frag_action(void *);
 extern int eval_exclude_actions(char *, char *, struct stat *);
 extern void eval_fragment_actions(struct dir_ent *);
+extern void eval_compression_actions(struct dir_ent *);

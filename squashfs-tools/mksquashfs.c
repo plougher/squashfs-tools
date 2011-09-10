@@ -3765,8 +3765,10 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 		if((buf->st_mode & S_IFMT) == S_IFDIR)
 			dir_scan2(dir_ent->dir, pseudo_subdir(name, pseudo));
-		else if((buf->st_mode & S_IFMT) == S_IFREG)
+		else if((buf->st_mode & S_IFMT) == S_IFREG) {
 			eval_fragment_actions(dir_ent);
+			eval_compression_actions(dir_ent);
+		}
 
 	}
 

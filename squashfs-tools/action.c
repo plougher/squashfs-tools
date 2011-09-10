@@ -584,6 +584,41 @@ void eval_fragment_actions(struct dir_ent *dir_ent)
 
 
 /*
+ * Compression specific action code
+ */
+void eval_compression_actions(struct dir_ent *dir_ent)
+{
+	int i, match;
+	struct action_data action_data;
+	struct inode_info *inode = dir_ent->inode;
+
+	action_data.name = dir_ent->name;
+	action_data.pathname = dir_ent->pathname;
+	action_data.buf = &dir_ent->inode->buf;
+
+	for (i = 0; i < spec_count; i++) {
+		if (spec_list[i].type != COMPRESSED_ACTION &&
+				spec_list[i].type != UNCOMPRESSED_ACTION)
+			continue;
+
+		match = eval_expr(spec_list[i].expr, &spec_list[i],
+			&action_data);
+
+		if (match)
+			switch(spec_list[i].type) {
+			case COMPRESSED_ACTION:
+				inode->noD = inode->noF = 0;
+				break;
+			case UNCOMPRESSED_ACTION:
+				inode->noD = inode->noF = 1;
+				inode->no_fragments = 1;
+				break;
+			}
+	}
+}
+
+
+/*
  * Test operation functions
  */
 int name_fn(struct action *action, int argc, char **argv,
@@ -615,5 +650,7 @@ static struct action_entry action_table[] = {
 	{ "no-fragments", NO_FRAGMENTS_ACTION, 0 },
 	{ "always-use-fragments", ALWAYS_FRAGS_ACTION, 0 },
 	{ "dont-always-use-fragments", NO_ALWAYS_FRAGS_ACTION, 0 },
+	{ "compressed", COMPRESSED_ACTION, 0 },
+	{ "uncompressed", UNCOMPRESSED_ACTION, 0 },
 	{ "", 0, -1 }
 };
