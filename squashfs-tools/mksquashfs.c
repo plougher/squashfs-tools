@@ -326,6 +326,7 @@ struct file_buffer {
 	char used;
 	char fragment;
 	char error;
+	char noD;
 	char data[0];
 };
 
@@ -2284,6 +2285,13 @@ inline int is_fragment(struct inode_info *inode)
 {
 	int file_size = inode->buf.st_size;
 
+	/*
+	 * If this block is to be compressed differently to the
+	 * fragment compression then it cannot be a fragment
+	 */
+	if(inode->noF != noF)
+		return FALSE;
+
 	return !inode->no_fragments && (file_size < block_size ||
 		(inode->always_use_fragments && file_size & (block_size - 1)));
 }
@@ -2302,6 +2310,7 @@ void reader_read_process(struct dir_ent *dir_ent)
 	while(1) {
 		file_buffer = cache_get(reader_buffer, 0, 0);
 		file_buffer->sequence = seq ++;
+		file_buffer->noD = inode->noD;
 
 		byte = read_bytes(file, file_buffer->data, block_size);
 		if(byte == -1)
@@ -2399,6 +2408,7 @@ again:
 			queue_put(from_reader, file_buffer);
 		file_buffer = cache_get(reader_buffer, 0, 0);
 		file_buffer->sequence = seq ++;
+		file_buffer->noD = inode->noD;
 
 		/*
 		 * Always try to read block_size bytes from the file rather
@@ -2612,7 +2622,8 @@ void *deflator(void *arg)
 			write_buffer = cache_get(writer_buffer, 0, 0);
 			write_buffer->c_byte = mangle2(stream,
 				write_buffer->data, file_buffer->data,
-				file_buffer->size, block_size, noD, 1);
+				file_buffer->size, block_size,
+				file_buffer->noD, 1);
 			write_buffer->sequence = file_buffer->sequence;
 			write_buffer->file_size = file_buffer->file_size;
 			write_buffer->block = file_buffer->block;
@@ -3359,6 +3370,8 @@ struct inode_info *lookup_inode(struct stat *buf)
 	*/
 	inode->no_fragments = no_fragments;
 	inode->always_use_fragments = always_use_fragments;
+	inode->noD = noD;
+	inode->noF = noF;
 
 	if((buf->st_mode & S_IFMT) == S_IFREG)
 		estimated_uncompressed += (buf->st_size + block_size - 1) >>
