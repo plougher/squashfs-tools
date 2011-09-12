@@ -292,6 +292,7 @@ int parse_action(char *s)
 	int i, token;
 	struct expr *expr;
 	struct action_entry *action;
+	void *data = NULL;
 
 	cur_ptr = source = s;
 	token = get_token(&string);
@@ -372,7 +373,7 @@ skip_args:
 		goto failed;
 
 	if (action->parse_args) {
-		int res = action->parse_args(action->args, argv);
+		int res = action->parse_args(action, argv, &data);
 
 		if (res == 0)
 			goto failed;
@@ -385,7 +386,7 @@ skip_args:
 	spec_list[spec_count].action = action;
 	spec_list[spec_count].argv = argv;
 	spec_list[spec_count].expr = expr;
-	spec_list[spec_count ++].data = NULL;
+	spec_list[spec_count ++].data = data;
 
 	return 1;
 
@@ -630,6 +631,95 @@ void eval_compression_actions(struct dir_ent *dir_ent)
 /*
  * Uid/gid specific action code
  */
+static long long parse_uid(char *arg) {
+	char *b;
+	long long uid = strtoll(arg, &b, 10);
+
+	if (*b == '\0') {
+		if (uid < 0 || uid >= (1LL < 32)) {
+			printf("action: uid out of range\n");
+			return -1;
+		}
+	} else {
+		struct passwd *passwd = getpwnam(arg);
+
+		if (passwd)
+			uid = passwd->pw_uid;
+		else {
+			printf("action: invalid uid or unknown user\n");
+			return -1;
+		}
+	}
+
+	return uid;
+}
+
+
+static long long parse_gid(char *arg) {
+	char *b;
+	long long gid = strtoll(arg, &b, 10);
+
+	if (*b == '\0') {
+		if (gid < 0 || gid >= (1LL < 32)) {
+			printf("action: gid out of range\n");
+			return -1;
+		}
+	} else {
+		struct group *group = getgrnam(arg);
+
+		if (group)
+			gid = group->gr_gid;
+		else {
+			printf("action: invalid gid or unknown user\n");
+			return -1;
+		}
+	}
+
+	return gid;
+}
+
+
+int parse_uid_args(struct action_entry *action, char **argv, void **data)
+{
+	long long uid, gid;
+	struct uid_info *uid_info;
+	struct gid_info *gid_info;
+
+	switch(action->type) {
+	case UID_ACTION:
+		uid = parse_uid(argv[0]);
+		if (uid == -1)
+			return 0;
+
+		uid_info = malloc(sizeof(struct uid_info));
+		if (uid_info == NULL) {
+			printf("Out of memory in action uid\n");
+			return 0;
+		}
+
+		uid_info->uid = uid;
+		*data = uid_info;
+		break;
+	case GID_ACTION:
+		gid = parse_gid(argv[0]);
+		if (gid == -1)
+			return 0;
+
+		gid_info = malloc(sizeof(struct gid_info));
+		if (gid_info == NULL) {
+			printf("Out of memory in action gid\n");
+			return 0;
+		}
+
+		gid_info->gid = gid;
+		*data = gid_info;
+		break;
+	}
+
+	return 1;
+}
+
+
 void eval_uid_actions(struct dir_ent *dir_ent)
 {
 	int i, match;
@@ -650,85 +740,17 @@ void eval_uid_actions(struct dir_ent *dir_ent)
 		match = eval_expr(spec_list[i].expr, &spec_list[i],
 			&action_data);
 
-		if(!match)
-			continue;
-
-		switch(spec_list[i].type) {
-		case UID_ACTION:
-			uid_info = spec_list[i].data;
-
-			if (uid_info == NULL) {
-				char *b;
-				long long uid = strtoll(spec_list[i].argv[0],
-					&b, 10);
-
-				uid_info = malloc(sizeof(struct uid_info));
-				if (uid_info == NULL) {
-					printf("Out of memory in action uid\n");
-					continue;
-				}
-
-				if (*b == '\0') {
-					if (uid < 0 || uid >= (1LL < 32)) {
-						printf("action: uid out of "
-							"range\n");
-						continue;
-					}
-					uid_info->uid = uid;
-				} else {
-					struct passwd *uid =
-						getpwnam(spec_list[i].argv[0]);
-					if (uid)
-						uid_info->uid = uid->pw_uid;
-					else {
-						printf("action: invalid uid or "
-							"unknown user\n");
-						continue;
-					}
-				}
-				spec_list[i].data = uid_info;
+		if(match)
+			switch(spec_list[i].type) {
+			case UID_ACTION:
+				uid_info = spec_list[i].data;
+				inode->buf.st_uid = uid_info->uid;
+				break;
+			case GID_ACTION:
+				gid_info = spec_list[i].data;
+				inode->buf.st_gid = gid_info->gid;
+				break;
 			}
-
-			inode->buf.st_uid = uid_info->uid;
-			break;
-		case GID_ACTION:
-			gid_info = spec_list[i].data;
-
-			if (gid_info == NULL) {
-				char *b;
-				long long gid = strtoll(spec_list[i].argv[0],
-					&b, 10);
-
-				gid_info = malloc(sizeof(struct gid_info));
-				if (gid_info == NULL) {
-					printf("Out of memory in action gid\n");
-					continue;
-				}
-
-				if (*b == '\0') {
-					if (gid < 0 || gid >= (1LL < 32)) {
-						printf("action: gid out of "
-							"range\n");
-						continue;
-					}
-					gid_info->gid = gid;
-				} else {
-					struct group *gid =
-						getgrnam(spec_list[i].argv[0]);
-					if (gid)
-						gid_info->gid = gid->gr_gid;
-					else {
-						printf("action: invalid gid or "
-							"unknown user\n");
-						continue;
-					}
-				}
-				spec_list[i].data = gid_info;
-			}
-
-			inode->buf.st_gid = gid_info->gid;
-			break;
-		}
 	}
 }
 
@@ -767,7 +789,7 @@ static struct action_entry action_table[] = {
 	{ "dont-always-use-fragments", NO_ALWAYS_FRAGS_ACTION, 0, NULL},
 	{ "compressed", COMPRESSED_ACTION, 0, NULL},
 	{ "uncompressed", UNCOMPRESSED_ACTION, 0, NULL},
-	{ "uid", UID_ACTION, 1, NULL},
-	{ "gid", GID_ACTION, 1, NULL},
+	{ "uid", UID_ACTION, 1, parse_uid_args},
+	{ "gid", GID_ACTION, 1, parse_uid_args},
 	{ "", 0, -1, NULL}
 };
