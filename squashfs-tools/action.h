@@ -128,6 +128,8 @@ struct test_entry {
 #define NO_ALWAYS_FRAGS_ACTION 5
 #define COMPRESSED_ACTION 6
 #define UNCOMPRESSED_ACTION 7
+#define UID_ACTION 8
+#define GID_ACTION 9
 
 struct action_entry {
 	char *name;
@@ -151,6 +153,19 @@ struct action {
 	void *data;
 };
 
+
+/*
+ * Uid/gid action specific definitions
+ */
+struct uid_info {
+	uid_t uid;
+};
+
+struct gid_info {
+	gid_t gid;
+};
+
+
 /*
  * External function definitions
  */
@@ -161,3 +176,4 @@ extern void *get_frag_action(void *);
 extern int eval_exclude_actions(char *, char *, struct stat *);
 extern void eval_fragment_actions(struct dir_ent *);
 extern void eval_compression_actions(struct dir_ent *);
+extern void eval_uid_actions(struct dir_ent *);

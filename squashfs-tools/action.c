@@ -31,6 +31,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fnmatch.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
@@ -619,6 +621,112 @@ void eval_compression_actions(struct dir_ent *dir_ent)
 
 
 /*
+ * Uid/gid specific action code
+ */
+void eval_uid_actions(struct dir_ent *dir_ent)
+{
+	int i, match;
+	struct action_data action_data;
+	struct inode_info *inode = dir_ent->inode;
+	struct uid_info *uid_info;
+	struct gid_info *gid_info;
+
+	action_data.name = dir_ent->name;
+	action_data.pathname = dir_ent->pathname;
+	action_data.buf = &dir_ent->inode->buf;
+
+	for (i = 0; i < spec_count; i++) {
+		if (spec_list[i].type != UID_ACTION &&
+				spec_list[i].type != GID_ACTION)
+			continue;
+
+		match = eval_expr(spec_list[i].expr, &spec_list[i],
+			&action_data);
+
+		if(!match)
+			continue;
+
+		switch(spec_list[i].type) {
+		case UID_ACTION:
+			uid_info = spec_list[i].data;
+
+			if (uid_info == NULL) {
+				char *b;
+				long long uid = strtoll(spec_list[i].argv[0],
+					&b, 10);
+
+				uid_info = malloc(sizeof(struct uid_info));
+				if (uid_info == NULL) {
+					printf("Out of memory in action uid\n");
+					continue;
+				}
+
+				if (*b == '\0') {
+					if (uid < 0 || uid >= (1LL < 32)) {
+						printf("action: uid out of "
+							"range\n");
+						continue;
+					}
+					uid_info->uid = uid;
+				} else {
+					struct passwd *uid =
+						getpwnam(spec_list[i].argv[0]);
+					if (uid)
+						uid_info->uid = uid->pw_uid;
+					else {
+						printf("action: invalid uid or "
+							"unknown user\n");
+						continue;
+					}
+				}
+				spec_list[i].data = uid_info;
+			}
+
+			inode->buf.st_uid = uid_info->uid;
+			break;
+		case GID_ACTION:
+			gid_info = spec_list[i].data;
+
+			if (gid_info == NULL) {
+				char *b;
+				long long gid = strtoll(spec_list[i].argv[0],
+					&b, 10);
+
+				gid_info = malloc(sizeof(struct gid_info));
+				if (gid_info == NULL) {
+					printf("Out of memory in action gid\n");
+					continue;
+				}
+
+				if (*b == '\0') {
+					if (gid < 0 || gid >= (1LL < 32)) {
+						printf("action: gid out of "
+							"range\n");
+						continue;
+					}
+					gid_info->gid = gid;
+				} else {
+					struct group *gid =
+						getgrnam(spec_list[i].argv[0]);
+					if (gid)
+						gid_info->gid = gid->gr_gid;
+					else {
+						printf("action: invalid gid or "
+							"unknown user\n");
+						continue;
+					}
+				}
+				spec_list[i].data = gid_info;
+			}
+
+			inode->buf.st_gid = gid_info->gid;
+			break;
+		}
+	}
+}
+
+
+/*
  * Test operation functions
  */
 int name_fn(struct action *action, int argc, char **argv,
@@ -652,5 +760,7 @@ static struct action_entry action_table[] = {
 	{ "dont-always-use-fragments", NO_ALWAYS_FRAGS_ACTION, 0 },
 	{ "compressed", COMPRESSED_ACTION, 0 },
 	{ "uncompressed", UNCOMPRESSED_ACTION, 0 },
+	{ "uid", UID_ACTION, 1 },
+	{ "gid", GID_ACTION, 1 },
 	{ "", 0, -1 }
 };
