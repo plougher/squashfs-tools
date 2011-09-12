@@ -684,6 +684,7 @@ int parse_uid_args(struct action_entry *action, char **argv, void **data)
 	long long uid, gid;
 	struct uid_info *uid_info;
 	struct gid_info *gid_info;
+	struct guid_info *guid_info;
 
 	switch(action->type) {
 	case UID_ACTION:
@@ -714,6 +715,25 @@ int parse_uid_args(struct action_entry *action, char **argv, void **data)
 		gid_info->gid = gid;
 		*data = gid_info;
 		break;
+	case GUID_ACTION:
+		uid = parse_uid(argv[0]);
+		if (uid == -1)
+			return 0;
+
+		gid = parse_gid(argv[1]);
+		if (gid == -1)
+			return 0;
+
+		guid_info = malloc(sizeof(struct guid_info));
+		if (guid_info == NULL) {
+			printf("Out of memory in action guid\n");
+			return 0;
+		}
+
+		guid_info->uid = uid;
+		guid_info->gid = gid;
+		*data = guid_info;
+		break;
 	}
 
 	return 1;
@@ -727,6 +747,7 @@ void eval_uid_actions(struct dir_ent *dir_ent)
 	struct inode_info *inode = dir_ent->inode;
 	struct uid_info *uid_info;
 	struct gid_info *gid_info;
+	struct guid_info *guid_info;
 
 	action_data.name = dir_ent->name;
 	action_data.pathname = dir_ent->pathname;
@@ -734,7 +755,8 @@ void eval_uid_actions(struct dir_ent *dir_ent)
 
 	for (i = 0; i < spec_count; i++) {
 		if (spec_list[i].type != UID_ACTION &&
-				spec_list[i].type != GID_ACTION)
+				spec_list[i].type != GID_ACTION &&
+				spec_list[i].type != GUID_ACTION)
 			continue;
 
 		match = eval_expr(spec_list[i].expr, &spec_list[i],
@@ -749,6 +771,11 @@ void eval_uid_actions(struct dir_ent *dir_ent)
 			case GID_ACTION:
 				gid_info = spec_list[i].data;
 				inode->buf.st_gid = gid_info->gid;
+				break;
+			case GUID_ACTION:
+				guid_info = spec_list[i].data;
+				inode->buf.st_uid = guid_info->uid;
+				inode->buf.st_gid = guid_info->gid;
 				break;
 			}
 	}
@@ -791,5 +818,6 @@ static struct action_entry action_table[] = {
 	{ "uncompressed", UNCOMPRESSED_ACTION, 0, NULL},
 	{ "uid", UID_ACTION, 1, parse_uid_args},
 	{ "gid", GID_ACTION, 1, parse_uid_args},
+	{ "guid", GUID_ACTION, 2, parse_uid_args},
 	{ "", 0, -1, NULL}
 };

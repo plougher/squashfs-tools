@@ -130,6 +130,7 @@ struct test_entry {
 #define UNCOMPRESSED_ACTION 7
 #define UID_ACTION 8
 #define GID_ACTION 9
+#define GUID_ACTION 10
 
 struct action_entry {
 	char *name;
@@ -163,6 +164,11 @@ struct uid_info {
 };
 
 struct gid_info {
+	gid_t gid;
+};
+
+struct guid_info {
+	uid_t uid;
 	gid_t gid;
 };
 
