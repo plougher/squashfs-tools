@@ -371,6 +371,13 @@ skip_args:
 	if (expr == NULL)
 		goto failed;
 
+	if (action->parse_args) {
+		int res = action->parse_args(action->args, argv);
+
+		if (res == 0)
+			goto failed;
+	}
+
 	spec_list = realloc(spec_list, (spec_count + 1) *
 					sizeof(struct action));
 
@@ -752,15 +759,15 @@ static struct test_entry test_table[] = {
 
 
 static struct action_entry action_table[] = {
-	{ "fragment", FRAGMENT_ACTION, 1 },
-	{ "exclude", EXCLUDE_ACTION, 0 },
-	{ "fragments", FRAGMENTS_ACTION, 0 },
-	{ "no-fragments", NO_FRAGMENTS_ACTION, 0 },
-	{ "always-use-fragments", ALWAYS_FRAGS_ACTION, 0 },
-	{ "dont-always-use-fragments", NO_ALWAYS_FRAGS_ACTION, 0 },
-	{ "compressed", COMPRESSED_ACTION, 0 },
-	{ "uncompressed", UNCOMPRESSED_ACTION, 0 },
-	{ "uid", UID_ACTION, 1 },
-	{ "gid", GID_ACTION, 1 },
-	{ "", 0, -1 }
+	{ "fragment", FRAGMENT_ACTION, 1, NULL},
+	{ "exclude", EXCLUDE_ACTION, 0, NULL},
+	{ "fragments", FRAGMENTS_ACTION, 0, NULL},
+	{ "no-fragments", NO_FRAGMENTS_ACTION, 0, NULL},
+	{ "always-use-fragments", ALWAYS_FRAGS_ACTION, 0, NULL},
+	{ "dont-always-use-fragments", NO_ALWAYS_FRAGS_ACTION, 0, NULL},
+	{ "compressed", COMPRESSED_ACTION, 0, NULL},
+	{ "uncompressed", UNCOMPRESSED_ACTION, 0, NULL},
+	{ "uid", UID_ACTION, 1, NULL},
+	{ "gid", GID_ACTION, 1, NULL},
+	{ "", 0, -1, NULL}
 };

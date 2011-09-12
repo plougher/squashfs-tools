@@ -135,6 +135,7 @@ struct action_entry {
 	char *name;
 	int type;
 	int args;
+	int (*parse_args)(int args, char **argv);
 };
 
 
