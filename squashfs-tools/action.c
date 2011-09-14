@@ -621,7 +621,6 @@ void eval_compression_actions(struct dir_ent *dir_ent)
 				break;
 			case UNCOMPRESSED_ACTION:
 				inode->noD = inode->noF = 1;
-				inode->no_fragments = 1;
 				break;
 			}
 	}
