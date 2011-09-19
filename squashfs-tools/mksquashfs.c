@@ -3763,11 +3763,10 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		struct stat *buf = &inode_info->buf;
 		char *name = dir_ent->name;
 
+		eval_actions(dir_ent);
+
 		if((buf->st_mode & S_IFMT) == S_IFDIR)
 			dir_scan2(dir_ent->dir, pseudo_subdir(name, pseudo));
-		else if((buf->st_mode & S_IFMT) == S_IFREG)
-			eval_actions(dir_ent);
-
 	}
 
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
@@ -4583,7 +4582,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2011/08/27)\n");\
+	printf("mksquashfs version 4.2-CVS (2011/09/19)\n");\
 	printf("copyright (C) 2011 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

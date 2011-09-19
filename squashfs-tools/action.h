@@ -132,10 +132,20 @@ struct test_entry {
 #define GID_ACTION 9
 #define GUID_ACTION 10
 
+/*
+ * Define what file types each action operates over
+ */
+#define ACTION_DIR S_IFDIR
+#define ACTION_REG S_IFREG
+#define ACTION_ALL_LNK (S_IFDIR | S_IFREG | S_IFBLK | S_IFCHR | S_IFSOCK | \
+			S_IFIFO | S_IFLNK)
+#define ACTION_ALL (S_IFDIR | S_IFREG | S_IFBLK | S_IFCHR | S_IFSOCK | S_IFIFO)
+
 struct action_entry {
 	char *name;
 	int type;
 	int args;
+	int file_types;
 	int (*parse_args)(struct action_entry *, char **argv, void **data);
 	void (*run_action)(struct action *, struct dir_ent *);
 };

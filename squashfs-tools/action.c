@@ -482,6 +482,7 @@ void eval_actions(struct dir_ent *dir_ent)
 {
 	int i, match;
 	struct action_data action_data;
+	int file_type = dir_ent->inode->buf.st_mode & S_IFMT;
 
 	action_data.name = dir_ent->name;
 	action_data.pathname = dir_ent->pathname;
@@ -492,6 +493,10 @@ void eval_actions(struct dir_ent *dir_ent)
 
 		if (action->action->run_action == NULL)
 			/* specialised action handler exists */
+			continue;
+
+		if ((action->action->file_types & file_type) == 0)
+			/* action does not operate on this file type */
 			continue;
 
 		match = eval_expr(action->expr, action, &action_data);
@@ -803,18 +808,20 @@ static struct test_entry test_table[] = {
 
 
 static struct action_entry action_table[] = {
-	{ "fragment", FRAGMENT_ACTION, 1, NULL, NULL},
-	{ "exclude", EXCLUDE_ACTION, 0, NULL, NULL},
-	{ "fragments", FRAGMENTS_ACTION, 0, NULL, frag_action},
-	{ "no-fragments", NO_FRAGMENTS_ACTION, 0, NULL, no_frag_action},
-	{ "always-use-fragments", ALWAYS_FRAGS_ACTION, 0, NULL,
+	{ "fragment", FRAGMENT_ACTION, 1, ACTION_REG, NULL, NULL},
+	{ "exclude", EXCLUDE_ACTION, 0, ACTION_ALL_LNK, NULL, NULL},
+	{ "fragments", FRAGMENTS_ACTION, 0, ACTION_REG, NULL, frag_action},
+	{ "no-fragments", NO_FRAGMENTS_ACTION, 0, ACTION_REG, NULL,
+						no_frag_action},
+	{ "always-use-fragments", ALWAYS_FRAGS_ACTION, 0, ACTION_REG, NULL,
 						always_frag_action},
-	{ "dont-always-use-fragments", NO_ALWAYS_FRAGS_ACTION, 0, NULL,
-						no_always_frag_action},
-	{ "compressed", COMPRESSED_ACTION, 0, NULL, comp_action},
-	{ "uncompressed", UNCOMPRESSED_ACTION, 0, NULL, uncomp_action},
-	{ "uid", UID_ACTION, 1, parse_uid_args, uid_action},
-	{ "gid", GID_ACTION, 1, parse_gid_args, gid_action},
-	{ "guid", GUID_ACTION, 2, parse_guid_args, guid_action},
-	{ "", 0, -1, NULL}
+	{ "dont-always-use-fragments", NO_ALWAYS_FRAGS_ACTION, 0, ACTION_REG,	
+						NULL, no_always_frag_action},
+	{ "compressed", COMPRESSED_ACTION, 0, ACTION_REG, NULL, comp_action},
+	{ "uncompressed", UNCOMPRESSED_ACTION, 0, ACTION_REG, NULL,
+						uncomp_action},
+	{ "uid", UID_ACTION, 1, ACTION_ALL_LNK, parse_uid_args, uid_action},
+	{ "gid", GID_ACTION, 1, ACTION_ALL_LNK, parse_gid_args, gid_action},
+	{ "guid", GUID_ACTION, 2, ACTION_ALL_LNK, parse_guid_args, guid_action},
+	{ "", 0, -1, 0, NULL, NULL}
 };
