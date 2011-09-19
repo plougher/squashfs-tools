@@ -137,6 +137,7 @@ struct action_entry {
 	int type;
 	int args;
 	int (*parse_args)(struct action_entry *, char **argv, void **data);
+	void (*run_action)(struct action *, struct dir_ent *);
 };
 
 
@@ -181,6 +182,4 @@ extern void dump_actions();
 extern void *eval_frag_actions(struct dir_ent *);
 extern void *get_frag_action(void *);
 extern int eval_exclude_actions(char *, char *, struct stat *);
-extern void eval_fragment_actions(struct dir_ent *);
-extern void eval_compression_actions(struct dir_ent *);
-extern void eval_uid_actions(struct dir_ent *);
+extern void eval_actions(struct dir_ent *);

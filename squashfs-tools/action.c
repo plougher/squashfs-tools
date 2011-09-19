@@ -476,6 +476,33 @@ int eval_expr(struct expr *expr, struct action *action,
 
 
 /*
+ * General action evaluation code
+ */
+void eval_actions(struct dir_ent *dir_ent)
+{
+	int i, match;
+	struct action_data action_data;
+
+	action_data.name = dir_ent->name;
+	action_data.pathname = dir_ent->pathname;
+	action_data.buf = &dir_ent->inode->buf;
+
+	for (i = 0; i < spec_count; i++) {
+		struct action *action = &spec_list[i];
+
+		if (action->action->run_action == NULL)
+			/* specialised action handler exists */
+			continue;
+
+		match = eval_expr(action->expr, action, &action_data);
+
+		if (match)
+			action->action->run_action(action, dir_ent);
+	}
+}
+
+
+/*
  * Fragment specific action code
  */
 void *eval_frag_actions(struct dir_ent *dir_ent)
@@ -554,76 +581,50 @@ int eval_exclude_actions(char *name, char *pathname, struct stat *buf)
 /*
  * Fragment specific action code
  */
-void eval_fragment_actions(struct dir_ent *dir_ent)
+void frag_action(struct action *action, struct dir_ent *dir_ent)
 {
-	int i, match;
-	struct action_data action_data;
 	struct inode_info *inode = dir_ent->inode;
 
-	action_data.name = dir_ent->name;
-	action_data.pathname = dir_ent->pathname;
-	action_data.buf = &dir_ent->inode->buf;
+	inode->no_fragments = 0;
+}
 
-	for (i = 0; i < spec_count; i++) {
-		if (spec_list[i].type != FRAGMENTS_ACTION &&
-				spec_list[i].type != NO_FRAGMENTS_ACTION &&
-				spec_list[i].type != ALWAYS_FRAGS_ACTION &&
-				spec_list[i].type != NO_ALWAYS_FRAGS_ACTION)
-			continue;
+void no_frag_action(struct action *action, struct dir_ent *dir_ent)
+{
+	struct inode_info *inode = dir_ent->inode;
 
-		match = eval_expr(spec_list[i].expr, &spec_list[i],
-			&action_data);
+	inode->no_fragments = 1;
+}
 
-		if (match)
-			switch(spec_list[i].type) {
-			case FRAGMENTS_ACTION:
-				inode->no_fragments = 0;
-				break;
-			case NO_FRAGMENTS_ACTION:
-				inode->no_fragments = 1;
-				break;
-			case ALWAYS_FRAGS_ACTION:
-				inode->always_use_fragments = 1;
-				break;
-			case NO_ALWAYS_FRAGS_ACTION:
-				inode->always_use_fragments = 0;
-				break;
-			}
-	}
+void always_frag_action(struct action *action, struct dir_ent *dir_ent)
+{
+	struct inode_info *inode = dir_ent->inode;
+
+	inode->always_use_fragments = 1;
+}
+
+void no_always_frag_action(struct action *action, struct dir_ent *dir_ent)
+{
+	struct inode_info *inode = dir_ent->inode;
+
+	inode->always_use_fragments = 0;
 }
 
 
 /*
  * Compression specific action code
  */
-void eval_compression_actions(struct dir_ent *dir_ent)
+void comp_action(struct action *action, struct dir_ent *dir_ent)
 {
-	int i, match;
-	struct action_data action_data;
 	struct inode_info *inode = dir_ent->inode;
 
-	action_data.name = dir_ent->name;
-	action_data.pathname = dir_ent->pathname;
-	action_data.buf = &dir_ent->inode->buf;
+	inode->noD = inode->noF = 0;
+}
 
-	for (i = 0; i < spec_count; i++) {
-		if (spec_list[i].type != COMPRESSED_ACTION &&
-				spec_list[i].type != UNCOMPRESSED_ACTION)
-			continue;
+void uncomp_action(struct action *action, struct dir_ent *dir_ent)
+{
+	struct inode_info *inode = dir_ent->inode;
 
-		match = eval_expr(spec_list[i].expr, &spec_list[i],
-			&action_data);
-
-		if (match)
-			switch(spec_list[i].type) {
-			case COMPRESSED_ACTION:
-				inode->noD = inode->noF = 0;
-				break;
-			case UNCOMPRESSED_ACTION:
-				inode->noD = inode->noF = 1;
-				break;
-			}
-	}
+	inode->noD = inode->noF = 1;
 }
 
 
@@ -680,104 +681,99 @@ static long long parse_gid(char *arg) {
 
 int parse_uid_args(struct action_entry *action, char **argv, void **data)
 {
-	long long uid, gid;
+	long long uid;
 	struct uid_info *uid_info;
-	struct gid_info *gid_info;
-	struct guid_info *guid_info;
 
-	switch(action->type) {
-	case UID_ACTION:
-		uid = parse_uid(argv[0]);
-		if (uid == -1)
-			return 0;
+	uid = parse_uid(argv[0]);
+	if (uid == -1)
+		return 0;
 
-		uid_info = malloc(sizeof(struct uid_info));
-		if (uid_info == NULL) {
-			printf("Out of memory in action uid\n");
-			return 0;
-		}
-
-		uid_info->uid = uid;
-		*data = uid_info;
-		break;
-	case GID_ACTION:
-		gid = parse_gid(argv[0]);
-		if (gid == -1)
-			return 0;
-
-		gid_info = malloc(sizeof(struct gid_info));
-		if (gid_info == NULL) {
-			printf("Out of memory in action gid\n");
-			return 0;
-		}
-
-		gid_info->gid = gid;
-		*data = gid_info;
-		break;
-	case GUID_ACTION:
-		uid = parse_uid(argv[0]);
-		if (uid == -1)
-			return 0;
-
-		gid = parse_gid(argv[1]);
-		if (gid == -1)
-			return 0;
-
-		guid_info = malloc(sizeof(struct guid_info));
-		if (guid_info == NULL) {
-			printf("Out of memory in action guid\n");
-			return 0;
-		}
-
-		guid_info->uid = uid;
-		guid_info->gid = gid;
-		*data = guid_info;
-		break;
+	uid_info = malloc(sizeof(struct uid_info));
+	if (uid_info == NULL) {
+		printf("Out of memory in action uid\n");
+		return 0;
 	}
+
+	uid_info->uid = uid;
+	*data = uid_info;
 
 	return 1;
 }
 
 
-void eval_uid_actions(struct dir_ent *dir_ent)
+int parse_gid_args(struct action_entry *action, char **argv, void **data)
 {
-	int i, match;
-	struct action_data action_data;
-	struct inode_info *inode = dir_ent->inode;
-	struct uid_info *uid_info;
+	long long gid;
 	struct gid_info *gid_info;
+
+	gid = parse_gid(argv[0]);
+	if (gid == -1)
+		return 0;
+
+	gid_info = malloc(sizeof(struct gid_info));
+	if (gid_info == NULL) {
+		printf("Out of memory in action gid\n");
+		return 0;
+	}
+
+	gid_info->gid = gid;
+	*data = gid_info;
+
+	return 1;
+}
+
+
+int parse_guid_args(struct action_entry *action, char **argv, void **data)
+{
+	long long uid, gid;
 	struct guid_info *guid_info;
 
-	action_data.name = dir_ent->name;
-	action_data.pathname = dir_ent->pathname;
-	action_data.buf = &dir_ent->inode->buf;
+	uid = parse_uid(argv[0]);
+	if (uid == -1)
+		return 0;
 
-	for (i = 0; i < spec_count; i++) {
-		if (spec_list[i].type != UID_ACTION &&
-				spec_list[i].type != GID_ACTION &&
-				spec_list[i].type != GUID_ACTION)
-			continue;
+	gid = parse_gid(argv[1]);
+	if (gid == -1)
+		return 0;
 
-		match = eval_expr(spec_list[i].expr, &spec_list[i],
-			&action_data);
-
-		if(match)
-			switch(spec_list[i].type) {
-			case UID_ACTION:
-				uid_info = spec_list[i].data;
-				inode->buf.st_uid = uid_info->uid;
-				break;
-			case GID_ACTION:
-				gid_info = spec_list[i].data;
-				inode->buf.st_gid = gid_info->gid;
-				break;
-			case GUID_ACTION:
-				guid_info = spec_list[i].data;
-				inode->buf.st_uid = guid_info->uid;
-				inode->buf.st_gid = guid_info->gid;
-				break;
-			}
+	guid_info = malloc(sizeof(struct guid_info));
+	if (guid_info == NULL) {
+		printf("Out of memory in action guid\n");
+		return 0;
 	}
+
+	guid_info->uid = uid;
+	guid_info->gid = gid;
+	*data = guid_info;
+
+	return 1;
+}
+
+
+void uid_action(struct action *action, struct dir_ent *dir_ent)
+{
+	struct inode_info *inode = dir_ent->inode;
+	struct uid_info *uid_info = action->data;
+
+	inode->buf.st_uid = uid_info->uid;
+}
+
+void gid_action(struct action *action, struct dir_ent *dir_ent)
+{
+	struct inode_info *inode = dir_ent->inode;
+	struct gid_info *gid_info = action->data;
+
+	inode->buf.st_gid = gid_info->gid;
+}
+
+void guid_action(struct action *action, struct dir_ent *dir_ent)
+{
+	struct inode_info *inode = dir_ent->inode;
+	struct guid_info *guid_info = action->data;
+
+	inode->buf.st_uid = guid_info->uid;
+	inode->buf.st_gid = guid_info->gid;
+
 }
 
 
@@ -807,16 +803,18 @@ static struct test_entry test_table[] = {
 
 
 static struct action_entry action_table[] = {
-	{ "fragment", FRAGMENT_ACTION, 1, NULL},
-	{ "exclude", EXCLUDE_ACTION, 0, NULL},
-	{ "fragments", FRAGMENTS_ACTION, 0, NULL},
-	{ "no-fragments", NO_FRAGMENTS_ACTION, 0, NULL},
-	{ "always-use-fragments", ALWAYS_FRAGS_ACTION, 0, NULL},
-	{ "dont-always-use-fragments", NO_ALWAYS_FRAGS_ACTION, 0, NULL},
-	{ "compressed", COMPRESSED_ACTION, 0, NULL},
-	{ "uncompressed", UNCOMPRESSED_ACTION, 0, NULL},
-	{ "uid", UID_ACTION, 1, parse_uid_args},
-	{ "gid", GID_ACTION, 1, parse_uid_args},
-	{ "guid", GUID_ACTION, 2, parse_uid_args},
+	{ "fragment", FRAGMENT_ACTION, 1, NULL, NULL},
+	{ "exclude", EXCLUDE_ACTION, 0, NULL, NULL},
+	{ "fragments", FRAGMENTS_ACTION, 0, NULL, frag_action},
+	{ "no-fragments", NO_FRAGMENTS_ACTION, 0, NULL, no_frag_action},
+	{ "always-use-fragments", ALWAYS_FRAGS_ACTION, 0, NULL,
+						always_frag_action},
+	{ "dont-always-use-fragments", NO_ALWAYS_FRAGS_ACTION, 0, NULL,
+						no_always_frag_action},
+	{ "compressed", COMPRESSED_ACTION, 0, NULL, comp_action},
+	{ "uncompressed", UNCOMPRESSED_ACTION, 0, NULL, uncomp_action},
+	{ "uid", UID_ACTION, 1, parse_uid_args, uid_action},
+	{ "gid", GID_ACTION, 1, parse_gid_args, gid_action},
+	{ "guid", GUID_ACTION, 2, parse_guid_args, guid_action},
 	{ "", 0, -1, NULL}
 };
