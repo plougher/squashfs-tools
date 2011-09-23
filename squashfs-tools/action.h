@@ -146,7 +146,7 @@ struct action_entry {
 	int type;
 	int args;
 	int file_types;
-	int (*parse_args)(struct action_entry *, char **argv, void **data);
+	int (*parse_args)(struct action_entry *, int, char **, void **);
 	void (*run_action)(struct action *, struct dir_ent *);
 };
 
@@ -161,6 +161,7 @@ struct action_data {
 struct action {
 	int type;
 	struct action_entry *action;
+	int args;
 	char **argv;
 	struct expr *expr;
 	void *data;

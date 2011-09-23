@@ -289,7 +289,7 @@ static struct expr *parse_expr(int subexp)
 int parse_action(char *s)
 {
 	char *string, **argv = NULL;
-	int i, token;
+	int i, token, args = 0;
 	struct expr *expr;
 	struct action_entry *action;
 	void *data = NULL;
@@ -314,12 +314,10 @@ int parse_action(char *s)
 
 	action = &action_table[i];
 
-	if (action->args == 0)
-		goto skip_args;
-
-	argv = malloc(action->args * sizeof(char *));
-
 	token = get_token(&string);
+
+	if (token == TOK_EQUALS)
+		goto skip_args;
 
 	if (token != TOK_OPEN_BRACKET) {
 		SYNTAX_ERROR("Unexpected token \"%s\", expected \"(\"\n",
@@ -327,38 +325,59 @@ int parse_action(char *s)
 		goto failed;
 	}
 
-	for (i = 0; i < action->args; i++) {
-		token = get_token(&string);
+	/*
+	 * speculatively read all the arguments, and then see if the
+	 * number of arguments read is the number expected, this handles
+	 * actions with a variable number of arguments
+	 */
+	token = get_token(&string);
+	if (token == TOK_CLOSE_BRACKET)
+		goto skip_args;
 
+	while (1) {
 		if (token != TOK_STRING) {
 			SYNTAX_ERROR("Unexpected token \"%s\", expected "
 				"argument\n", TOK_TO_STR(token, string));
 			goto failed;
 		}
 
-		argv[i] = string;
-
-		if (i + 1 < action->args) {
-			token = get_token(&string);
-
-			if (token != TOK_COMMA) {
-				SYNTAX_ERROR("Unexpected token \"%s\", "
-					"expected \",\"\n",
-					TOK_TO_STR(token, string));
+		argv = realloc(argv, (args + 1) * sizeof(char *));
+		if (argv == NULL) {
+			printf("Realloc failed in parse_action\n");
 			goto failed;
-			}
 		}
-	}
+		argv[args ++] = string;
 
-	token = get_token(&string);
+		token = get_token(&string);
 
-	if (token != TOK_CLOSE_BRACKET) {
-		SYNTAX_ERROR("Unexpected token \"%s\", expected \")\"\n",
-						TOK_TO_STR(token, string));
-		goto failed;
+		if (token == TOK_CLOSE_BRACKET)
+			break;
+
+		if (token != TOK_COMMA) {
+			SYNTAX_ERROR("Unexpected token \"%s\", expected "
+				"\",\" or \")\"\n", TOK_TO_STR(token, string));
+			goto failed;
+		}
+		token = get_token(&string);
 	}
 
 skip_args:
+	/*
+	 * expected number of arguments?
+	 */
+	if(action->args != -2 && args != action->args) {
+		SYNTAX_ERROR("Unexpected number of arguments, expected %d, "
+			"got %d\n", action->args, args);
+		goto failed;
+	}
+
+	if (action->parse_args) {
+		int res = action->parse_args(action, args, argv, &data);
+
+		if (res == 0)
+			goto failed;
+	}
+
 	token = get_token(&string);
 
 	if (token != TOK_EQUALS) {
@@ -372,18 +391,12 @@ skip_args:
 	if (expr == NULL)
 		goto failed;
 
-	if (action->parse_args) {
-		int res = action->parse_args(action, argv, &data);
-
-		if (res == 0)
-			goto failed;
-	}
-
 	spec_list = realloc(spec_list, (spec_count + 1) *
 					sizeof(struct action));
 
 	spec_list[spec_count].type = action->type;
 	spec_list[spec_count].action = action;
+	spec_list[spec_count].args = args;
 	spec_list[spec_count].argv = argv;
 	spec_list[spec_count].expr = expr;
 	spec_list[spec_count ++].data = data;
@@ -684,7 +697,8 @@ static long long parse_gid(char *arg) {
 }
 
 
-int parse_uid_args(struct action_entry *action, char **argv, void **data)
+int parse_uid_args(struct action_entry *action, int args, char **argv,
+								void **data)
 {
 	long long uid;
 	struct uid_info *uid_info;
@@ -706,7 +720,8 @@ int parse_uid_args(struct action_entry *action, char **argv, void **data)
 }
 
 
-int parse_gid_args(struct action_entry *action, char **argv, void **data)
+int parse_gid_args(struct action_entry *action, int args, char **argv,
+								void **data)
 {
 	long long gid;
 	struct gid_info *gid_info;
@@ -728,7 +743,8 @@ int parse_gid_args(struct action_entry *action, char **argv, void **data)
 }
 
 
-int parse_guid_args(struct action_entry *action, char **argv, void **data)
+int parse_guid_args(struct action_entry *action, int args, char **argv,
+								void **data)
 {
 	long long uid, gid;
 	struct guid_info *guid_info;
