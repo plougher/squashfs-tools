@@ -799,6 +799,67 @@ void guid_action(struct action *action, struct dir_ent *dir_ent)
 
 
 /*
+ * Mode specific action code
+ */
+
+int parse_mode_args(struct action_entry *action, int args, char **argv,
+								void **data)
+{
+	int n, bytes;
+	unsigned int mode;
+	struct mode_data *mode_data;
+
+	if (args == 0) {
+		SYNTAX_ERROR("Mode action expects one or more arguments\n");
+		return 0;
+	}
+
+	/* octal mode number? */
+	n = sscanf(argv[0], "%o%n", &mode, &bytes);
+
+	if(n >= 1) {
+		/* check there's no trailing junk */
+		if (argv[0][bytes] != '\0') {
+			SYNTAX_ERROR("Unexpected trailing bytes after octal "
+				"mode number\n");
+			return 0;
+		}
+
+		/* check there's only one argument */
+		if (args > 1) {
+			SYNTAX_ERROR("Octal mode number is first argument, "
+				"expected one argument, got %d\n", args);
+			return 0;
+		}
+	} else {
+		/* symbolic modes not implemented yet */
+		printf("Symbolic modes not implemented yet\n");
+		return 0;
+	}
+
+	mode_data = malloc(sizeof(struct mode_data));
+	if (mode_data == NULL) {
+		printf("Out of memory in action mode\n");
+		return 0;
+	}
+
+	mode_data->mode = mode;
+	*data = mode_data;
+	
+	return 1;
+}
+
+
+void mode_action(struct action *action, struct dir_ent *dir_ent)
+{
+	struct inode_info *inode = dir_ent->inode;
+	struct mode_data *mode_data = action->data;
+
+	inode->buf.st_mode = (inode->buf.st_mode & S_IFMT) | mode_data->mode;
+}
+
+
+/*
  * Test operation functions
  */
 int name_fn(struct action *action, int argc, char **argv,
@@ -839,5 +900,6 @@ static struct action_entry action_table[] = {
 	{ "uid", UID_ACTION, 1, ACTION_ALL_LNK, parse_uid_args, uid_action},
 	{ "gid", GID_ACTION, 1, ACTION_ALL_LNK, parse_gid_args, gid_action},
 	{ "guid", GUID_ACTION, 2, ACTION_ALL_LNK, parse_guid_args, guid_action},
+	{ "mode", MODE_ACTION, -2, ACTION_ALL, parse_mode_args, mode_action },
 	{ "", 0, -1, 0, NULL, NULL}
 };

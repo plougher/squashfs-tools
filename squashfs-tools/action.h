@@ -131,6 +131,7 @@ struct test_entry {
 #define UID_ACTION 8
 #define GID_ACTION 9
 #define GUID_ACTION 10
+#define MODE_ACTION 11
 
 /*
  * Define what file types each action operates over
@@ -182,6 +183,14 @@ struct gid_info {
 struct guid_info {
 	uid_t uid;
 	gid_t gid;
+};
+
+
+/*
+ * Mode action specific definitions
+ */
+struct mode_data {
+	unsigned int mode;
 };
 
 
