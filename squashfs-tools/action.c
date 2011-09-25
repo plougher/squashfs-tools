@@ -826,7 +826,9 @@ int parse_octal_mode_args(unsigned int mode, int bytes, int args, char **argv,
 		return 0;
 	}
 
+	mode_data->operation = ACTION_MODE_OCT;
 	mode_data->mode = mode;
+	mode_data->next = NULL;
 	*data = mode_data;
 
 	return 1;
@@ -867,7 +869,18 @@ void mode_action(struct action *action, struct dir_ent *dir_ent)
 	struct inode_info *inode = dir_ent->inode;
 	struct mode_data *mode_data = action->data;
 
-	inode->buf.st_mode = (inode->buf.st_mode & S_IFMT) | mode_data->mode;
+	for (;mode_data; mode_data = mode_data->next) {
+		switch(mode_data->operation) {
+		case ACTION_MODE_OCT:
+			inode->buf.st_mode = (inode->buf.st_mode & S_IFMT) |
+				mode_data->mode;
+			break;
+		case ACTION_MODE_SET:
+		case ACTION_MODE_ADD:
+		case ACTION_MODE_REM:
+			printf("mode action unimplemented\n");
+		}
+	}
 }
 
 

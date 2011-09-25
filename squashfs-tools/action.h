@@ -189,8 +189,15 @@ struct guid_info {
 /*
  * Mode action specific definitions
  */
+#define ACTION_MODE_SET 0
+#define ACTION_MODE_ADD 1
+#define ACTION_MODE_REM 2
+#define ACTION_MODE_OCT 3
+
 struct mode_data {
+	int operation;
 	unsigned int mode;
+	struct mode_data *next;
 };
 
 
