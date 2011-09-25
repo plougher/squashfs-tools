@@ -801,39 +801,22 @@ void guid_action(struct action *action, struct dir_ent *dir_ent)
 /*
  * Mode specific action code
  */
-
-int parse_mode_args(struct action_entry *action, int args, char **argv,
+int parse_octal_mode_args(unsigned int mode, int bytes, int args, char **argv,
 								void **data)
 {
-	int n, bytes;
-	unsigned int mode;
 	struct mode_data *mode_data;
 
-	if (args == 0) {
-		SYNTAX_ERROR("Mode action expects one or more arguments\n");
+	/* check there's no trailing junk */
+	if (argv[0][bytes] != '\0') {
+		SYNTAX_ERROR("Unexpected trailing bytes after octal "
+			"mode number\n");
 		return 0;
 	}
 
-	/* octal mode number? */
-	n = sscanf(argv[0], "%o%n", &mode, &bytes);
-
-	if(n >= 1) {
-		/* check there's no trailing junk */
-		if (argv[0][bytes] != '\0') {
-			SYNTAX_ERROR("Unexpected trailing bytes after octal "
-				"mode number\n");
-			return 0;
-		}
-
-		/* check there's only one argument */
-		if (args > 1) {
-			SYNTAX_ERROR("Octal mode number is first argument, "
-				"expected one argument, got %d\n", args);
-			return 0;
-		}
-	} else {
-		/* symbolic modes not implemented yet */
-		printf("Symbolic modes not implemented yet\n");
+	/* check there's only one argument */
+	if (args > 1) {
+		SYNTAX_ERROR("Octal mode number is first argument, "
+			"expected one argument, got %d\n", args);
 		return 0;
 	}
 
@@ -845,8 +828,37 @@ int parse_mode_args(struct action_entry *action, int args, char **argv,
 
 	mode_data->mode = mode;
 	*data = mode_data;
-	
+
 	return 1;
+}
+
+
+int parse_sym_mode_args(struct action_entry *action, int args, char **argv,
+								void **data)
+{
+	printf("Symbolic mode arguments are unimplemented\n");
+	return 0;
+}
+
+
+int parse_mode_args(struct action_entry *action, int args, char **argv,
+								void **data)
+{
+	int n, bytes;
+	unsigned int mode;
+
+	if (args == 0) {
+		SYNTAX_ERROR("Mode action expects one or more arguments\n");
+		return 0;
+	}
+
+	/* octal mode number? */
+	n = sscanf(argv[0], "%o%n", &mode, &bytes);
+
+	if(n >= 1)
+		return parse_octal_mode_args(mode, bytes, args, argv, data);
+	else
+		return parse_sym_mode_args(action, args, argv, data);
 }
 
 
