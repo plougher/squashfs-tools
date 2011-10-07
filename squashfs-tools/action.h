@@ -32,7 +32,7 @@
 #define TOK_OR			4
 #define TOK_NOT			5
 #define TOK_COMMA		6
-#define TOK_EQUALS		7
+#define TOK_AT			7
 #define TOK_STRING		8
 #define TOK_EOF			9
 

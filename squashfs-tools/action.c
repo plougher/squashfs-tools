@@ -55,7 +55,7 @@ static struct token_entry token_table[] = {
 	{ "||", TOK_OR, 2 },
 	{ "!", TOK_NOT, 1 },
 	{ ",", TOK_COMMA, 1 },
-	{ "=", TOK_EQUALS, 1},
+	{ "@", TOK_AT, 1},
 	{ "", -1, 0 }
 };
 
@@ -316,7 +316,7 @@ int parse_action(char *s)
 
 	token = get_token(&string);
 
-	if (token == TOK_EQUALS)
+	if (token == TOK_AT)
 		goto skip_args;
 
 	if (token != TOK_OPEN_BRACKET) {
@@ -380,8 +380,8 @@ skip_args:
 
 	token = get_token(&string);
 
-	if (token != TOK_EQUALS) {
-		SYNTAX_ERROR("Unexpected token \"%s\", expected \"=\"\n",
+	if (token != TOK_AT) {
+		SYNTAX_ERROR("Unexpected token \"%s\", expected \"@\"\n",
 						TOK_TO_STR(token, string));
 		goto failed;
 	}
