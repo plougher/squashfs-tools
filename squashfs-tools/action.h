@@ -196,7 +196,8 @@ struct guid_info {
 
 struct mode_data {
 	int operation;
-	unsigned int mode;
+	int mode;
+	unsigned int mask;
 	struct mode_data *next;
 };
 

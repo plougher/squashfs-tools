@@ -835,11 +835,142 @@ int parse_octal_mode_args(unsigned int mode, int bytes, int args, char **argv,
 }
 
 
+/*
+ * Parse symbolic mode of format [ugoa]+[+-=]PERMS
+ * PERMS = [rwxXst]+ or [ugo]
+ */
+struct mode_data *parse_sym_mode_arg(char *arg)
+{
+	struct mode_data *mode_data = malloc(sizeof(*mode_data));
+	int mode = 0;
+	int mask = 0;
+	int op;
+
+	if (mode_data == NULL)
+		return NULL;
+
+	if (arg[0] != 'u' && arg[0] != 'g' && arg[0] != 'o' && arg[0] != 'a') {
+		/* no ownership specifiers, default to a */
+		mask = 0777;
+		goto parse_operation;
+	}
+
+	/* parse ownership specifiers */
+	while(1) {
+		switch(*arg) {
+		case 'u':
+			mask |= 0700;
+			break;
+		case 'g':
+			mask |= 070;
+			break;
+		case 'o':
+			mask |= 07;
+			break;
+		case 'a':
+			mask = 0777;
+			break;
+		default:
+			goto parse_operation;
+		}
+		arg ++;
+	}
+
+parse_operation:
+	switch(*arg) {
+	case '+':
+		op = ACTION_MODE_ADD;
+		break;
+	case '-':
+		op = ACTION_MODE_REM;
+		break;
+	case '=':
+		op = ACTION_MODE_SET;
+		break;
+	default:
+		printf("Action mode: Expected one of '+', '-' or '=', got '%c'"
+			"\n", *arg);
+		goto failed;
+	}
+
+	arg ++;
+
+	/* Parse PERMS */
+	if (*arg == 'u' || *arg == 'g' || *arg == 'o') {
+ 		/* PERMS = [ugo] */
+		mode = - *arg;
+		if (*++arg != '\0') {
+			printf("Action mode: permission 'u', 'g' or 'o'"
+				"has trailing characters\n");
+			goto failed;
+		}
+	} else {
+ 		/* PERMS = [rwxXst]+ */
+		while(*arg != '\0') {
+			switch(*arg) {
+			case 'r':
+				mode |= 0444;
+				break;
+			case 'w':
+				mode |= 0222;
+				break;
+			case 'x':
+				mode |= 0111;
+				break;
+			case 'X':
+			case 's':
+			case 't':
+				printf("Action mode: unimplemented permission"
+									"\n");
+				goto failed;
+			default:
+				printf("Action mode: unrecognised permission"
+							"'%c'\n", *arg);
+				goto failed;
+			}
+
+			arg ++;
+		}
+		mode &= mask;
+	}
+
+	mode_data->operation = op;
+	mode_data->mode = mode;
+	mode_data->mask = mask;
+	mode_data->next = NULL;
+
+	return mode_data;
+
+failed:
+	free(mode_data);
+	return NULL;
+}
+
+
 int parse_sym_mode_args(struct action_entry *action, int args, char **argv,
 								void **data)
 {
-	printf("Symbolic mode arguments are unimplemented\n");
-	return 0;
+	int i;
+	struct mode_data *head = NULL, *cur = NULL;
+
+	for (i = 0; i < args; i++) {
+		struct mode_data *entry = parse_sym_mode_arg(argv[i]);
+
+		if (entry == NULL) {
+			printf("Out of memory in action mode\n");
+			return 0;
+		}
+
+		if (cur) {
+			cur->next = entry;
+			cur = entry;
+		} else
+			head = cur = entry;
+	}
+
+	*data = head;
+
+	return 1;
 }
 
 
@@ -866,19 +997,41 @@ int parse_mode_args(struct action_entry *action, int args, char **argv,
 
 void mode_action(struct action *action, struct dir_ent *dir_ent)
 {
-	struct inode_info *inode = dir_ent->inode;
+	struct stat *buf = &dir_ent->inode->buf;
 	struct mode_data *mode_data = action->data;
+	int mode;
 
 	for (;mode_data; mode_data = mode_data->next) {
+		if (mode_data->mode < 0) {
+			/* 'u', 'g' or 'o' */
+			switch(-mode_data->mode) {
+			case 'u':
+				mode = (buf->st_mode >> 6) & 07;
+				break;
+			case 'g':
+				mode = (buf->st_mode >> 3) & 07;
+				break;
+			case 'o':
+				mode = buf->st_mode & 07;
+				break;
+			}
+			mode = ((mode << 6) | (mode << 3) | mode) &
+				mode_data->mask;
+		} else
+			mode = mode_data->mode;
+
 		switch(mode_data->operation) {
 		case ACTION_MODE_OCT:
-			inode->buf.st_mode = (inode->buf.st_mode & S_IFMT) |
-				mode_data->mode;
+			buf->st_mode = (buf->st_mode & ~S_IFMT) | mode;
 			break;
 		case ACTION_MODE_SET:
+			buf->st_mode = (buf->st_mode & ~mode_data->mask) | mode;
+			break;
 		case ACTION_MODE_ADD:
+			buf->st_mode |= mode;
+			break;
 		case ACTION_MODE_REM:
-			printf("mode action unimplemented\n");
+			buf->st_mode &= ~mode;
 		}
 	}
 }
