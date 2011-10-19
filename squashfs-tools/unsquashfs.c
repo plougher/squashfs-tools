@@ -1787,10 +1787,12 @@ int read_super(char *source)
 	 */
 	read_fs_bytes(fd, SQUASHFS_START, sizeof(struct squashfs_super_block),
 		&sBlk_4);
-	swap = sBlk_4.s_magic != SQUASHFS_MAGIC;
+	swap = (sBlk_4.s_magic != SQUASHFS_MAGIC &&
+		sBlk_4.s_magic != SQUASHFS_MAGIC_LZMA);
 	SQUASHFS_INSWAP_SUPER_BLOCK(&sBlk_4);
 
-	if(sBlk_4.s_magic == SQUASHFS_MAGIC && sBlk_4.s_major == 4 &&
+	if((sBlk_4.s_magic == SQUASHFS_MAGIC ||
+			sBlk_4.s_magic == SQUASHFS_MAGIC_LZMA) && sBlk_4.s_major == 4 &&
 			sBlk_4.s_minor == 0) {
 		read_filesystem_tables = read_filesystem_tables_4;
 		memcpy(&sBlk, &sBlk_4, sizeof(sBlk_4));
@@ -1798,7 +1800,11 @@ int read_super(char *source)
 		/*
 		 * Check the compression type
 		 */
-		comp = lookup_compressor_id(sBlk.s.compression);
+		if (sBlk_4.s_magic == SQUASHFS_MAGIC_LZMA)
+			comp = lookup_compressor("lzma");
+		else
+			comp = lookup_compressor_id(sBlk.s.compression);
+
 		return TRUE;
 	}
 
@@ -1813,8 +1819,10 @@ int read_super(char *source)
 	 * Check it is a SQUASHFS superblock
 	 */
 	swap = 0;
-	if(sBlk_3.s_magic != SQUASHFS_MAGIC) {
-		if(sBlk_3.s_magic == SQUASHFS_MAGIC_SWAP) {
+	if(sBlk_3.s_magic != SQUASHFS_MAGIC &&
+			sBlk_3.s_magic != SQUASHFS_MAGIC_LZMA) {
+		if(sBlk_3.s_magic == SQUASHFS_MAGIC_SWAP ||
+				sBlk_3.s_magic == SQUASHFS_MAGIC_LZMA_SWAP) {
 			squashfs_super_block_3 sblk;
 			ERROR("Reading a different endian SQUASHFS filesystem "
 				"on %s\n", source);
@@ -1878,7 +1886,11 @@ int read_super(char *source)
 	/*
 	 * 1.x, 2.x and 3.x filesystems use gzip compression.
 	 */
-	comp = lookup_compressor("gzip");
+	if (sBlk.s.s_magic == SQUASHFS_MAGIC_LZMA)
+		comp = lookup_compressor("lzma");
+	else
+		comp = lookup_compressor("gzip");
+
 	return TRUE;
 
 failed_mount:

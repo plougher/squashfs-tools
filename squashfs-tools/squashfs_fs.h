@@ -31,6 +31,12 @@
 #define SQUASHFS_MAGIC_SWAP		0x68737173
 #define SQUASHFS_START			0
 
+/*
+ * Squashfs + LZMA
+ */
+#define SQUASHFS_MAGIC_LZMA		0x71736873
+#define SQUASHFS_MAGIC_LZMA_SWAP	0x73687371
+
 /* size of metadata (inode and directory) blocks */
 #define SQUASHFS_METADATA_SIZE		8192
 #define SQUASHFS_METADATA_LOG		13
