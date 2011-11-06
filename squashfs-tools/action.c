@@ -859,16 +859,16 @@ struct mode_data *parse_sym_mode_arg(char *arg)
 	while(1) {
 		switch(*arg) {
 		case 'u':
-			mask |= 0700;
+			mask |= 04700;
 			break;
 		case 'g':
-			mask |= 070;
+			mask |= 02070;
 			break;
 		case 'o':
-			mask |= 07;
+			mask |= 01007;
 			break;
 		case 'a':
-			mask = 0777;
+			mask = 07777;
 			break;
 		default:
 			goto parse_operation;
@@ -917,9 +917,13 @@ parse_operation:
 			case 'x':
 				mode |= 0111;
 				break;
-			case 'X':
 			case 's':
+				mode |= 06000;
+				break;
 			case 't':
+				mode |= 01000;
+				break;
+			case 'X':
 				printf("Action mode: unimplemented permission"
 									"\n");
 				goto failed;
