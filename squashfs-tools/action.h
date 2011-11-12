@@ -195,10 +195,11 @@ struct guid_info {
 #define ACTION_MODE_OCT 3
 
 struct mode_data {
+	struct mode_data *next;
 	int operation;
 	int mode;
 	unsigned int mask;
-	struct mode_data *next;
+	char X;
 };
 
 

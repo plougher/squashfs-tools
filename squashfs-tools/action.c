@@ -845,6 +845,7 @@ struct mode_data *parse_sym_mode_arg(char *arg)
 	int mode = 0;
 	int mask = 0;
 	int op;
+	char X = 0;
 
 	if (mode_data == NULL)
 		return NULL;
@@ -924,9 +925,8 @@ parse_operation:
 				mode |= 01000;
 				break;
 			case 'X':
-				printf("Action mode: unimplemented permission"
-									"\n");
-				goto failed;
+				X = 1;
+				break;
 			default:
 				printf("Action mode: unrecognised permission"
 							"'%c'\n", *arg);
@@ -941,6 +941,7 @@ parse_operation:
 	mode_data->operation = op;
 	mode_data->mode = mode;
 	mode_data->mask = mask;
+	mode_data->X = X;
 	mode_data->next = NULL;
 
 	return mode_data;
@@ -1021,7 +1022,13 @@ void mode_action(struct action *action, struct dir_ent *dir_ent)
 			}
 			mode = ((mode << 6) | (mode << 3) | mode) &
 				mode_data->mask;
-		} else
+		} else if (mode_data->X &&
+				((buf->st_mode & S_IFMT) == S_IFDIR ||
+				(buf->st_mode & 0111)))
+			/* X permission, only takes effect if inode is a
+			 * directory or x is set for some owner */
+			mode = mode_data->mode | (0111 & mode_data->mask);
+		else
 			mode = mode_data->mode;
 
 		switch(mode_data->operation) {
