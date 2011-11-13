@@ -378,7 +378,8 @@ skip_args:
 			goto failed;
 	}
 
-	token = get_token(&string);
+	if (token == TOK_CLOSE_BRACKET)
+		token = get_token(&string);
 
 	if (token != TOK_AT) {
 		SYNTAX_ERROR("Unexpected token \"%s\", expected \"@\"\n",
