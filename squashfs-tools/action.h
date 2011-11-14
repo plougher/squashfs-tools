@@ -107,6 +107,10 @@ struct expr {
 /*
  * Test operation definitions
  */
+#define NUM_EQ		1
+#define NUM_LESS	2
+#define NUM_GREATER	3
+
 struct action;
 struct action_data;
 

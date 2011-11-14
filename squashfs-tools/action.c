@@ -1050,7 +1050,47 @@ void mode_action(struct action *action, struct dir_ent *dir_ent)
 
 
 /*
- * Test operation functions
+ * General test evaluation code
+ */
+int parse_number(char *arg, long long *size, int *range)
+{
+	char *b;
+
+	if (*arg == '+') {
+		*range = NUM_GREATER;
+		arg ++;
+	} else if (*arg == '-') {
+		*range = NUM_LESS;
+		arg ++;
+	} else
+		*range = NUM_EQ;
+
+	*size = strtoll(arg, &b, 10);
+
+	switch (*b) {
+	case 'g':
+	case 'G':
+		*size *= 1024;
+	case 'm':
+	case 'M':
+		*size *= 1024;
+	case 'k':
+	case 'K':
+		*size *= 1024;
+
+		b ++;
+		break;
+	}
+
+	if (*b != '\0')
+		return 0;
+
+	return 1;
+}
+
+
+/*
+ * name specific test code
  */
 int name_fn(struct action *action, int argc, char **argv,
 	struct action_data *action_data)
@@ -1060,16 +1100,43 @@ int name_fn(struct action *action, int argc, char **argv,
 }
 
 
-int size_fn(struct action *action, int argc, char **argv,
+/*
+ * filesize specific test code
+ */
+int filesize_fn(struct action *action, int argc, char **argv,
 	struct action_data *action_data)
 {
-	return 1;
+	long long size;
+	int match, range, res;
+
+	/* filesize operates on regular files */
+	if ((action_data->buf->st_mode & S_IFMT) != S_IFREG)
+		return 0;
+
+	res = parse_number(argv[0], &size, &range);
+
+	if (res == 0)
+		return 0;
+
+	switch (range) {
+	case NUM_EQ:
+		match = action_data->buf->st_size == size;
+		break;
+	case NUM_LESS:
+		match = action_data->buf->st_size < size;
+		break;
+	case NUM_GREATER:
+		match = action_data->buf->st_size > size;
+		break;
+	}
+
+	return match;
 }
 
 
 static struct test_entry test_table[] = {
 	{ "name", 1, name_fn},
-	{ "size", 2, size_fn},
+	{ "filesize", 1, filesize_fn},
 	{ "", -1 }
 };
 
