@@ -1088,50 +1088,59 @@ int parse_number(char *arg, long long *size, int *range)
 	return 1;
 }
 
+/*
+ * Generic test code macro
+ */
+#define TEST_FN(NAME, MATCH, CODE) \
+int NAME##_fn(struct action *action, int argc, char **argv, \
+	struct action_data *action_data) \
+{ \
+	/* test operates on MATCH file types only */ \
+	if (!(action_data->buf->st_mode & MATCH)) \
+		return 0; \
+ \
+	CODE \
+}
+
+/*
+ * Generic test code macro testing VAR for size (eq, less than, greater than)
+ */
+#define TEST_VAR_FN(NAME, MATCH, VAR) TEST_FN(NAME, MATCH, \
+	{ \
+	long long size; \
+	int match = 0; \
+	int range; \
+	int res = parse_number(argv[0], &size, &range); \
+	\
+	if (res == 0) \
+		return 0; \
+	\
+	switch (range) { \
+	case NUM_EQ: \
+		match = VAR == size; \
+		break; \
+	case NUM_LESS: \
+		match = VAR < size; \
+		break; \
+	case NUM_GREATER: \
+		match = VAR > size; \
+		break; \
+	} \
+	\
+	return match; \
+	})	
 
 /*
  * name specific test code
  */
-int name_fn(struct action *action, int argc, char **argv,
-	struct action_data *action_data)
-{
+TEST_FN(name, ACTION_ALL_LNK, \
 	return fnmatch(argv[0], action_data->name,
-				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
-}
-
+				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
 /*
  * filesize specific test code
  */
-int filesize_fn(struct action *action, int argc, char **argv,
-	struct action_data *action_data)
-{
-	long long size;
-	int match, range, res;
-
-	/* filesize operates on regular files */
-	if ((action_data->buf->st_mode & S_IFMT) != S_IFREG)
-		return 0;
-
-	res = parse_number(argv[0], &size, &range);
-
-	if (res == 0)
-		return 0;
-
-	switch (range) {
-	case NUM_EQ:
-		match = action_data->buf->st_size == size;
-		break;
-	case NUM_LESS:
-		match = action_data->buf->st_size < size;
-		break;
-	case NUM_GREATER:
-		match = action_data->buf->st_size > size;
-		break;
-	}
-
-	return match;
-}
+TEST_VAR_FN(filesize, ACTION_REG, action_data->buf->st_size)
 
 
 static struct test_entry test_table[] = {
