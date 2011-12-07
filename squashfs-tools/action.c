@@ -1130,22 +1130,43 @@ int NAME##_fn(struct action *action, int argc, char **argv, \
 	return match; \
 	})	
 
-/*
- * name specific test code
- */
+
 TEST_FN(name, ACTION_ALL_LNK, \
 	return fnmatch(argv[0], action_data->name,
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
-/*
- * filesize specific test code
- */
 TEST_VAR_FN(filesize, ACTION_REG, action_data->buf->st_size)
 
+TEST_VAR_FN(dirsize, ACTION_DIR, action_data->buf->st_size)
+
+TEST_VAR_FN(size, ACTION_ALL_LNK, action_data->buf->st_size)
+
+TEST_VAR_FN(inode, ACTION_ALL_LNK, action_data->buf->st_ino)
+
+TEST_VAR_FN(nlink, ACTION_ALL_LNK, action_data->buf->st_nlink)
+
+TEST_VAR_FN(fileblocks, ACTION_REG, action_data->buf->st_blocks)
+
+TEST_VAR_FN(dirblocks, ACTION_DIR, action_data->buf->st_blocks)
+
+TEST_VAR_FN(blocks, ACTION_ALL_LNK, action_data->buf->st_blocks)
+
+TEST_VAR_FN(gid, ACTION_ALL_LNK, action_data->buf->st_gid)
+
+TEST_VAR_FN(uid, ACTION_ALL_LNK, action_data->buf->st_uid)
 
 static struct test_entry test_table[] = {
 	{ "name", 1, name_fn},
 	{ "filesize", 1, filesize_fn},
+	{ "dirsize", 1, dirsize_fn},
+	{ "size", 1, size_fn},
+	{ "inode", 1, inode_fn},
+	{ "nlink", 1, nlink_fn},
+	{ "fileblocks", 1, fileblocks_fn},
+	{ "dirblocks", 1, dirblocks_fn},
+	{ "blocks", 1, blocks_fn},
+	{ "gid", 1, gid_fn},
+	{ "uid", 1, uid_fn},
 	{ "", -1 }
 };
 
