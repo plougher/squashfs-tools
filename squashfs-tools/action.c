@@ -174,6 +174,7 @@ static struct expr *parse_test(char *name)
 	expr->type = ATOM_TYPE;
 	expr->atom.argv = malloc(test->args * sizeof(char *));
 	expr->atom.test = test;
+	expr->atom.data = NULL;
 
 	token = get_token(&string);
 
@@ -204,6 +205,13 @@ static struct expr *parse_test(char *name)
 			goto failed;
 			}
 		}
+	}
+
+	if (test->parse_args) {
+		int res = test->parse_args(test, &expr->atom);
+
+		if (res == 0)		
+			goto failed;
 	}
 
 	token = get_token(&string);

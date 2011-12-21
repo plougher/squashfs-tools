@@ -86,6 +86,7 @@ struct expr_op {
 struct atom {
 	struct test_entry *test;
 	char **argv;
+	void *data;
 };
 
 
@@ -118,6 +119,7 @@ struct test_entry {
 	char *name;
 	int args;
 	int (*fn)(struct action *, int, char **, struct action_data *);
+	int (*parse_args)(struct test_entry *, struct atom *);
 };
 
 
