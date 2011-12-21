@@ -118,7 +118,7 @@ struct action_data;
 struct test_entry {
 	char *name;
 	int args;
-	int (*fn)(struct action *, int, char **, struct action_data *);
+	int (*fn)(struct atom *, struct action_data *);
 	int (*parse_args)(struct test_entry *, struct atom *);
 };
 

@@ -470,26 +470,23 @@ void dump_actions()
 /*
  * Evaluate expressions
  */
-int eval_expr(struct expr *expr, struct action *action,
-					struct action_data *action_data)
+int eval_expr(struct expr *expr, struct action_data *action_data)
 {
 	int match;
 
 	switch (expr->type) {
 	case ATOM_TYPE:
-		match = expr->atom.test->fn(action, expr->atom.test->args,
-					expr->atom.argv, action_data);
+		match = expr->atom.test->fn(&expr->atom, action_data);
 		break;
 	case UNARY_TYPE:
-		match = !eval_expr(expr->unary_op.expr, action, action_data);
+		match = !eval_expr(expr->unary_op.expr, action_data);
 		break;
 	default:
-		match = eval_expr(expr->expr_op.lhs, action, action_data);
+		match = eval_expr(expr->expr_op.lhs, action_data);
 
 		if ((expr->expr_op.op == TOK_AND && match) ||
 					(expr->expr_op.op == TOK_OR && !match))
-			match = eval_expr(expr->expr_op.rhs, action,
-					action_data);
+			match = eval_expr(expr->expr_op.rhs, action_data);
 		break;
 	}
 
@@ -521,7 +518,7 @@ void eval_actions(struct dir_ent *dir_ent)
 			/* action does not operate on this file type */
 			continue;
 
-		match = eval_expr(action->expr, action, &action_data);
+		match = eval_expr(action->expr, &action_data);
 
 		if (match)
 			action->action->run_action(action, dir_ent);
@@ -545,8 +542,7 @@ void *eval_frag_actions(struct dir_ent *dir_ent)
 		if (spec_list[i].type != FRAGMENT_ACTION)
 			continue;
 
-		match = eval_expr(spec_list[i].expr, &spec_list[i],
-			&action_data);
+		match = eval_expr(spec_list[i].expr, &action_data);
 
 		if (match)
 			return &spec_list[i].data;
@@ -597,8 +593,7 @@ int eval_exclude_actions(char *name, char *pathname, struct stat *buf)
 		if (spec_list[i].type != EXCLUDE_ACTION)
 			continue;
 
-		match = eval_expr(spec_list[i].expr, &spec_list[i],
-			&action_data);
+		match = eval_expr(spec_list[i].expr, &action_data);
 	}
 
 	return match;
@@ -1100,8 +1095,7 @@ int parse_number(char *arg, long long *size, int *range)
  * Generic test code macro
  */
 #define TEST_FN(NAME, MATCH, CODE) \
-int NAME##_fn(struct action *action, int argc, char **argv, \
-	struct action_data *action_data) \
+int NAME##_fn(struct atom *atom, struct action_data *action_data) \
 { \
 	/* test operates on MATCH file types only */ \
 	if (!(action_data->buf->st_mode & MATCH)) \
@@ -1118,7 +1112,7 @@ int NAME##_fn(struct action *action, int argc, char **argv, \
 	long long size; \
 	int match = 0; \
 	int range; \
-	int res = parse_number(argv[0], &size, &range); \
+	int res = parse_number(atom->argv[0], &size, &range); \
 	\
 	if (res == 0) \
 		return 0; \
@@ -1140,7 +1134,7 @@ int NAME##_fn(struct action *action, int argc, char **argv, \
 
 
 TEST_FN(name, ACTION_ALL_LNK, \
-	return fnmatch(argv[0], action_data->name,
+	return fnmatch(atom->argv[0], action_data->name,
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
 TEST_VAR_FN(filesize, ACTION_REG, action_data->buf->st_size)
