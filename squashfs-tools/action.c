@@ -1178,6 +1178,46 @@ TEST_VAR_FN(gid, ACTION_ALL_LNK, action_data->buf->st_gid)
 
 TEST_VAR_FN(uid, ACTION_ALL_LNK, action_data->buf->st_uid)
 
+/*
+ * Type test specific code
+ */
+struct type_entry type_table[] = {
+	{ S_IFSOCK, 's' },
+	{ S_IFLNK, 'l' },
+	{ S_IFREG, 'f' },
+	{ S_IFBLK, 'b' },
+	{ S_IFDIR, 'd' },
+	{ S_IFCHR, 'c' },
+	{ S_IFIFO, 'p' },
+	{ 0, 0 },
+};
+
+
+int parse_type_arg(struct test_entry *test, struct atom *atom)
+{
+	int i;
+
+	if (strlen(atom->argv[0]) != 1)
+		return 0;
+
+	for(i = 0; type_table[i].type != 0; i++)
+		if (type_table[i].type == atom->argv[0][0])
+			break;
+
+	atom->data = &type_table[i];
+
+	return type_table[i].type != 0;
+}
+	
+
+int type_fn(struct atom *atom, struct action_data *action_data)
+{
+	struct type_entry *type = atom->data;
+
+	return (action_data->buf->st_mode & S_IFMT) == type->value;
+}
+
+
 static struct test_entry test_table[] = {
 	{ "name", 1, name_fn},
 	{ "filesize", 1, filesize_fn, parse_number_arg},
@@ -1190,6 +1230,7 @@ static struct test_entry test_table[] = {
 	{ "blocks", 1, blocks_fn, parse_number_arg},
 	{ "gid", 1, gid_fn, parse_number_arg},
 	{ "uid", 1, uid_fn, parse_number_arg},
+	{ "type", 1, type_fn, parse_type_arg},
 	{ "", -1 }
 };
 

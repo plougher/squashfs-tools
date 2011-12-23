@@ -117,7 +117,6 @@ struct test_number_arg {
 	int range;
 };
 
-
 struct action;
 struct action_data;
 
@@ -126,6 +125,15 @@ struct test_entry {
 	int args;
 	int (*fn)(struct atom *, struct action_data *);
 	int (*parse_args)(struct test_entry *, struct atom *);
+};
+
+
+/*
+ * Type test specific definitions
+ */
+struct type_entry {
+	int value;
+	char type;
 };
 
 
