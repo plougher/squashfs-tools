@@ -1158,6 +1158,10 @@ TEST_FN(name, ACTION_ALL_LNK, \
 	return fnmatch(atom->argv[0], action_data->name,
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
+TEST_FN(pathname, ACTION_ALL_LNK, \
+	return fnmatch(atom->argv[0], action_data->pathname,
+				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
+
 TEST_VAR_FN(filesize, ACTION_REG, action_data->buf->st_size)
 
 TEST_VAR_FN(dirsize, ACTION_DIR, action_data->buf->st_size)
@@ -1220,6 +1224,7 @@ int type_fn(struct atom *atom, struct action_data *action_data)
 
 static struct test_entry test_table[] = {
 	{ "name", 1, name_fn},
+	{ "pathname", 1, pathname_fn},
 	{ "filesize", 1, filesize_fn, parse_number_arg},
 	{ "dirsize", 1, dirsize_fn, parse_number_arg},
 	{ "size", 1, size_fn, parse_number_arg},
