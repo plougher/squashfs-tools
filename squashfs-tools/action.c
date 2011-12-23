@@ -1091,6 +1091,32 @@ int parse_number(char *arg, long long *size, int *range)
 	return 1;
 }
 
+
+int parse_number_arg(struct test_entry *test, struct atom *atom)
+{
+	struct test_number_arg *number;
+	long long size;
+	int range;
+	int res = parse_number(atom->argv[0], &size, &range);
+
+	if (res == 0)
+		return 0;
+
+	number = malloc(sizeof(*number));
+	if (number == NULL) {
+		printf("Out of memory in parse test\n");
+		return 0;
+	}
+
+	number->range = range;
+	number->size = size;
+
+	atom->data = number;
+
+	return 1;
+}
+
+
 /*
  * Generic test code macro
  */
@@ -1109,23 +1135,18 @@ int NAME##_fn(struct atom *atom, struct action_data *action_data) \
  */
 #define TEST_VAR_FN(NAME, MATCH, VAR) TEST_FN(NAME, MATCH, \
 	{ \
-	long long size; \
 	int match = 0; \
-	int range; \
-	int res = parse_number(atom->argv[0], &size, &range); \
+	struct test_number_arg *number = atom->data; \
 	\
-	if (res == 0) \
-		return 0; \
-	\
-	switch (range) { \
+	switch (number->range) { \
 	case NUM_EQ: \
-		match = VAR == size; \
+		match = VAR == number->size; \
 		break; \
 	case NUM_LESS: \
-		match = VAR < size; \
+		match = VAR < number->size; \
 		break; \
 	case NUM_GREATER: \
-		match = VAR > size; \
+		match = VAR > number->size; \
 		break; \
 	} \
 	\
@@ -1159,16 +1180,16 @@ TEST_VAR_FN(uid, ACTION_ALL_LNK, action_data->buf->st_uid)
 
 static struct test_entry test_table[] = {
 	{ "name", 1, name_fn},
-	{ "filesize", 1, filesize_fn},
-	{ "dirsize", 1, dirsize_fn},
-	{ "size", 1, size_fn},
-	{ "inode", 1, inode_fn},
-	{ "nlink", 1, nlink_fn},
-	{ "fileblocks", 1, fileblocks_fn},
-	{ "dirblocks", 1, dirblocks_fn},
-	{ "blocks", 1, blocks_fn},
-	{ "gid", 1, gid_fn},
-	{ "uid", 1, uid_fn},
+	{ "filesize", 1, filesize_fn, parse_number_arg},
+	{ "dirsize", 1, dirsize_fn, parse_number_arg},
+	{ "size", 1, size_fn, parse_number_arg},
+	{ "inode", 1, inode_fn, parse_number_arg},
+	{ "nlink", 1, nlink_fn, parse_number_arg},
+	{ "fileblocks", 1, fileblocks_fn, parse_number_arg},
+	{ "dirblocks", 1, dirblocks_fn, parse_number_arg},
+	{ "blocks", 1, blocks_fn, parse_number_arg},
+	{ "gid", 1, gid_fn, parse_number_arg},
+	{ "uid", 1, uid_fn, parse_number_arg},
 	{ "", -1 }
 };
 

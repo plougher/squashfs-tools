@@ -112,6 +112,12 @@ struct expr {
 #define NUM_LESS	2
 #define NUM_GREATER	3
 
+struct test_number_arg {
+	long long size;
+	int range;
+};
+
+
 struct action;
 struct action_data;
 
