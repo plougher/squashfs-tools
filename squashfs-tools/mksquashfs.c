@@ -3446,8 +3446,10 @@ struct dir_info *scan1_opendir(char *pathname)
 		return NULL;
 	}
 	dir->pathname = strdup(pathname);
-	dir->count = dir->directory_count = dir->current_count = dir->byte_count
-		= 0;
+	dir->count = 0;
+	dir->directory_count = 0;
+	dir->current_count = 0;
+	dir->byte_count = 0;
 	dir->dir_is_ldir = TRUE;
 	dir->list = NULL;
 
