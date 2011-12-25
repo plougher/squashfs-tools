@@ -827,6 +827,12 @@ int parse_octal_mode_args(unsigned int mode, int bytes, int args, char **argv,
 		return 0;
 	}
 
+	/*  check mode is within range */
+	if (mode > 07777) {
+		SYNTAX_ERROR("Octal mode %o is out of range\n", mode);
+		return 0;
+	}
+
 	mode_data = malloc(sizeof(struct mode_data));
 	if (mode_data == NULL) {
 		printf("Out of memory in action mode\n");
