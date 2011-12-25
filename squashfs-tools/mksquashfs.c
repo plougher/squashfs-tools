@@ -3728,7 +3728,7 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 			continue;
 		else if(excluded(paths, dir_name, &new))
 			continue;
-		else if(eval_exclude_actions(dir_name, filename, &buf))
+		else if(eval_exclude_actions(dir_name, filename, &buf, depth))
 			continue;
 
 		if((buf.st_mode & S_IFMT) == S_IFDIR) {
@@ -4587,7 +4587,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2011/12/22)\n");\
+	printf("mksquashfs version 4.2-CVS (2011/12/24)\n");\
 	printf("copyright (C) 2011 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

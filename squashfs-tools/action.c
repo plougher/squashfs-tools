@@ -506,6 +506,7 @@ void eval_actions(struct dir_ent *dir_ent)
 	action_data.name = dir_ent->name;
 	action_data.pathname = dir_ent->pathname;
 	action_data.buf = &dir_ent->inode->buf;
+	action_data.depth = dir_ent->our_dir->depth;
 
 	for (i = 0; i < spec_count; i++) {
 		struct action *action = &spec_list[i];
@@ -537,6 +538,7 @@ void *eval_frag_actions(struct dir_ent *dir_ent)
 	action_data.name = dir_ent->name;
 	action_data.pathname = dir_ent->pathname;
 	action_data.buf = &dir_ent->inode->buf;
+	action_data.depth = dir_ent->our_dir->depth;
 
 	for (i = 0; i < spec_count; i++) {
 		if (spec_list[i].type != FRAGMENT_ACTION)
@@ -580,7 +582,7 @@ void *get_frag_action(void *fragment)
 /*
  * Exclude specific action code
  */
-int eval_exclude_actions(char *name, char *pathname, struct stat *buf)
+int eval_exclude_actions(char *name, char *pathname, struct stat *buf, int depth)
 {
 	int i, match = 0;
 	struct action_data action_data;
@@ -588,6 +590,7 @@ int eval_exclude_actions(char *name, char *pathname, struct stat *buf)
 	action_data.name = name;
 	action_data.pathname = pathname;
 	action_data.buf = buf;
+	action_data.depth = depth;
 
 	for (i = 0; i < spec_count && !match; i++) {
 		if (spec_list[i].type != EXCLUDE_ACTION)
@@ -1182,6 +1185,8 @@ TEST_VAR_FN(gid, ACTION_ALL_LNK, action_data->buf->st_gid)
 
 TEST_VAR_FN(uid, ACTION_ALL_LNK, action_data->buf->st_uid)
 
+TEST_VAR_FN(depth, ACTION_ALL_LNK, action_data->depth)
+
 /*
  * Type test specific code
  */
@@ -1235,6 +1240,7 @@ static struct test_entry test_table[] = {
 	{ "blocks", 1, blocks_fn, parse_number_arg},
 	{ "gid", 1, gid_fn, parse_number_arg},
 	{ "uid", 1, uid_fn, parse_number_arg},
+	{ "depth", 1, depth_fn, parse_number_arg},
 	{ "type", 1, type_fn, parse_type_arg},
 	{ "", -1 }
 };
