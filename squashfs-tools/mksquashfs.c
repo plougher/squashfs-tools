@@ -415,8 +415,8 @@ struct file_info *duplicate(long long file_size, long long bytes,
 	struct file_buffer *file_buffer, int blocks, unsigned short checksum,
 	unsigned short fragment_checksum, int checksum_flag);
 struct dir_info *dir_scan1(char *, struct pathnames *, int (_readdir)(char *,
-	char *, struct dir_info *));
-struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
+	char *, struct dir_info *), int);
+struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int);
 void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct fragment *fragment,
@@ -3433,7 +3433,7 @@ void sort_directory(struct dir_info *dir)
 }
 
 
-struct dir_info *scan1_opendir(char *pathname)
+struct dir_info *scan1_opendir(char *pathname, int depth)
 {
 	struct dir_info *dir;
 
@@ -3452,6 +3452,7 @@ struct dir_info *scan1_opendir(char *pathname)
 	dir->byte_count = 0;
 	dir->dir_is_ldir = TRUE;
 	dir->list = NULL;
+	dir->depth = depth;
 
 	return dir;
 }
@@ -3624,13 +3625,13 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	int (_readdir)(char *, char *, struct dir_info *))
 {
 	struct stat buf;
-	struct dir_info *dir_info = dir_scan1(pathname, paths, _readdir);
+	struct dir_info *dir_info = dir_scan1(pathname, paths, _readdir, 1);
 	struct dir_ent *dir_ent;
 	
 	if(dir_info == NULL)
 		return;
 
-	dir_scan2(dir_info, pseudo);
+	dir_scan2(dir_info, pseudo, 1);
 
 	dir_ent = malloc(sizeof(struct dir_ent));
 	if(dir_ent == NULL)
@@ -3687,10 +3688,10 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 
 
 struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
-	int (_readdir)(char *, char *, struct dir_info *))
+	int (_readdir)(char *, char *, struct dir_info *), int depth)
 {
 	char filename[8192], dir_name[8192];
-	struct dir_info *dir = scan1_opendir(pathname);
+	struct dir_info *dir = scan1_opendir(pathname, depth);
 
 	if(dir == NULL) {
 		ERROR("Could not open %s, skipping...\n", pathname);
@@ -3731,7 +3732,8 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 			continue;
 
 		if((buf.st_mode & S_IFMT) == S_IFDIR) {
-			sub_dir = dir_scan1(filename, new, scan1_readdir);
+			sub_dir = dir_scan1(filename, new, scan1_readdir,
+							depth + 1);
 			if(sub_dir == NULL)
 				continue;
 			dir->directory_count ++;
@@ -3749,7 +3751,7 @@ error:
 }
 
 
-struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
+struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int depth)
 {
 	struct dir_info *sub_dir;
 	struct dir_ent *dir_ent;
@@ -3757,7 +3759,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 	struct stat buf;
 	static int pseudo_ino = 1;
 	
-	if(dir == NULL && (dir = scan1_opendir("")) == NULL)
+	if(dir == NULL && (dir = scan1_opendir("", depth)) == NULL)
 		return NULL;
 	
 	while((dir_ent = scan2_readdir(dir)) != NULL) {
@@ -3768,7 +3770,8 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		eval_actions(dir_ent);
 
 		if((buf->st_mode & S_IFMT) == S_IFDIR)
-			dir_scan2(dir_ent->dir, pseudo_subdir(name, pseudo));
+			dir_scan2(dir_ent->dir, pseudo_subdir(name, pseudo),
+								depth + 1);
 	}
 
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
@@ -3812,7 +3815,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		}
 
 		if(pseudo_ent->dev->type == 'd') {
-			sub_dir = dir_scan2(NULL, pseudo_ent->pseudo);
+			sub_dir = dir_scan2(NULL, pseudo_ent->pseudo, depth + 1);
 			if(sub_dir == NULL) {
 				ERROR("Could not create pseudo directory \"%s\""
 					", skipping...\n",
