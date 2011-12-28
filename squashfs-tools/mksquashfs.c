@@ -3736,6 +3736,10 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 							depth + 1);
 			if(sub_dir == NULL)
 				continue;
+
+			if(eval_empty_actions(dir_name, filename, &buf, depth,
+						sub_dir->count))
+				continue;
 			dir->directory_count ++;
 		} else
 			sub_dir = NULL;

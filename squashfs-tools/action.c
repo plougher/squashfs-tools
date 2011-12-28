@@ -1062,6 +1062,37 @@ void mode_action(struct action *action, struct dir_ent *dir_ent)
 
 
 /*
+ *  Empty specific action code
+ */
+int eval_empty_actions(char *name, char *pathname, struct stat *buf, int depth,
+	int count)
+{
+	int i, match = 0;
+	struct action_data action_data;
+
+	/*
+	 * Empty action only works on empty directories
+	 */
+	if (count != 0)
+		return 0;
+
+	action_data.name = name;
+	action_data.pathname = pathname;
+	action_data.buf = buf;
+	action_data.depth = depth;
+
+	for (i = 0; i < spec_count && !match; i++) {
+		if (spec_list[i].type != EMPTY_ACTION)
+			continue;
+
+		match = eval_expr(spec_list[i].expr, &action_data);
+	}
+
+	return match;
+}
+
+
+/*
  * General test evaluation code
  */
 int parse_number(char *arg, long long *size, int *range)
@@ -1269,5 +1300,6 @@ static struct action_entry action_table[] = {
 	{ "gid", GID_ACTION, 1, ACTION_ALL_LNK, parse_gid_args, gid_action},
 	{ "guid", GUID_ACTION, 2, ACTION_ALL_LNK, parse_guid_args, guid_action},
 	{ "mode", MODE_ACTION, -2, ACTION_ALL, parse_mode_args, mode_action },
+	{ "empty", EMPTY_ACTION, 0, ACTION_DIR, NULL, NULL},
 	{ "", 0, -1, 0, NULL, NULL}
 };

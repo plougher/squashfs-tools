@@ -152,6 +152,7 @@ struct type_entry {
 #define GID_ACTION 9
 #define GUID_ACTION 10
 #define MODE_ACTION 11
+#define EMPTY_ACTION 12
 
 /*
  * Define what file types each action operates over
@@ -233,3 +234,4 @@ extern void *eval_frag_actions(struct dir_ent *);
 extern void *get_frag_action(void *);
 extern int eval_exclude_actions(char *, char *, struct stat *, int);
 extern void eval_actions(struct dir_ent *);
+extern int eval_empty_actions(char *, char *, struct stat *, int, int);
