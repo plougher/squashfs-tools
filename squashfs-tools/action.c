@@ -1273,6 +1273,15 @@ int true_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
+/*
+ *  False test specific code
+ */
+int false_fn(struct atom *atom, struct action_data *action_data)
+{
+	return 0;
+}
+
+
 static struct test_entry test_table[] = {
 	{ "name", 1, name_fn},
 	{ "pathname", 1, pathname_fn},
@@ -1289,6 +1298,7 @@ static struct test_entry test_table[] = {
 	{ "depth", 1, depth_fn, parse_number_arg},
 	{ "type", 1, type_fn, parse_type_arg},
 	{ "true", 0, true_fn, NULL},
+	{ "false", 0, false_fn, NULL},
 	{ "", -1 }
 };
 
