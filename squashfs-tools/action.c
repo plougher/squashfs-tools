@@ -1215,6 +1215,36 @@ int parse_number_arg(struct test_entry *test, struct atom *atom)
 }
 
 
+int parse_range_args(struct test_entry *test, struct atom *atom)
+{
+	struct test_range_args *range;
+	long long start, end;
+	int type;
+	int res;
+
+	res = parse_number(atom->argv[0], &start, &type);
+	if (res == 0 || type != NUM_EQ)
+		return 0;
+
+	res = parse_number(atom->argv[1], &end, &type);
+	if (res == 0 || type != NUM_EQ)
+		return 0;
+
+	range = malloc(sizeof(*range));
+	if (range == NULL) {
+		printf("Out of memory in parse test\n");
+		return 0;
+	}
+
+	range->start = start;
+	range->end = end;
+
+	atom->data = range;
+
+	return 1;
+}
+
+
 /*
  * Generic test code macro
  */
@@ -1252,6 +1282,18 @@ int NAME##_fn(struct atom *atom, struct action_data *action_data) \
 	})	
 
 
+/*
+ * Generic test code macro testing VAR for range [x, y] (value between x and y
+ * inclusive).
+ */
+#define TEST_VAR_RANGE_FN(NAME, MATCH, VAR) TEST_FN(NAME##_range, MATCH, \
+	{ \
+	struct test_range_args *range = atom->data; \
+	\
+	return range->start <= VAR && VAR <= range->end; \
+	})	
+
+
 TEST_FN(name, ACTION_ALL_LNK, \
 	return fnmatch(atom->argv[0], action_data->name,
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
@@ -1281,6 +1323,28 @@ TEST_VAR_FN(gid, ACTION_ALL_LNK, action_data->buf->st_gid)
 TEST_VAR_FN(uid, ACTION_ALL_LNK, action_data->buf->st_uid)
 
 TEST_VAR_FN(depth, ACTION_ALL_LNK, action_data->depth)
+
+TEST_VAR_RANGE_FN(filesize, ACTION_REG, action_data->buf->st_size)
+
+TEST_VAR_RANGE_FN(dirsize, ACTION_DIR, action_data->buf->st_size)
+
+TEST_VAR_RANGE_FN(size, ACTION_ALL_LNK, action_data->buf->st_size)
+
+TEST_VAR_RANGE_FN(inode, ACTION_ALL_LNK, action_data->buf->st_ino)
+
+TEST_VAR_RANGE_FN(nlink, ACTION_ALL_LNK, action_data->buf->st_nlink)
+
+TEST_VAR_RANGE_FN(fileblocks, ACTION_REG, action_data->buf->st_blocks)
+
+TEST_VAR_RANGE_FN(dirblocks, ACTION_DIR, action_data->buf->st_blocks)
+
+TEST_VAR_RANGE_FN(blocks, ACTION_ALL_LNK, action_data->buf->st_blocks)
+
+TEST_VAR_RANGE_FN(gid, ACTION_ALL_LNK, action_data->buf->st_gid)
+
+TEST_VAR_RANGE_FN(uid, ACTION_ALL_LNK, action_data->buf->st_uid)
+
+TEST_VAR_RANGE_FN(depth, ACTION_ALL_LNK, action_data->depth)
 
 /*
  * Type test specific code
@@ -1354,6 +1418,17 @@ static struct test_entry test_table[] = {
 	{ "gid", 1, gid_fn, parse_number_arg},
 	{ "uid", 1, uid_fn, parse_number_arg},
 	{ "depth", 1, depth_fn, parse_number_arg},
+	{ "filesize_range", 2, filesize_range_fn, parse_range_args},
+	{ "dirsize_range", 2, dirsize_range_fn, parse_range_args},
+	{ "size_range", 2, size_range_fn, parse_range_args},
+	{ "inode_range", 2, inode_range_fn, parse_range_args},
+	{ "nlink_range", 2, nlink_range_fn, parse_range_args},
+	{ "fileblocks_range", 2, fileblocks_range_fn, parse_range_args},
+	{ "dirblocks_range", 2, dirblocks_range_fn, parse_range_args},
+	{ "blocks_range", 2, blocks_range_fn, parse_range_args},
+	{ "gid_range", 2, gid_range_fn, parse_range_args},
+	{ "uid_range", 2, uid_range_fn, parse_range_args},
+	{ "depth_range", 2, depth_range_fn, parse_range_args},
 	{ "type", 1, type_fn, parse_type_arg},
 	{ "true", 0, true_fn, NULL},
 	{ "false", 0, false_fn, NULL},

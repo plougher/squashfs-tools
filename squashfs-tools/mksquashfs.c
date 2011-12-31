@@ -4602,7 +4602,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2011/12/24)\n");\
+	printf("mksquashfs version 4.2-CVS (2011/12/31)\n");\
 	printf("copyright (C) 2011 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

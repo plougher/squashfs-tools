@@ -117,6 +117,11 @@ struct test_number_arg {
 	int range;
 };
 
+struct test_range_args {
+	long long start;
+	long long end;
+};
+
 struct action;
 struct action_data;
 
