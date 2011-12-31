@@ -1064,16 +1064,54 @@ void mode_action(struct action *action, struct dir_ent *dir_ent)
 /*
  *  Empty specific action code
  */
+int parse_empty_args(struct action_entry *action, int args, char **argv,
+								void **data)
+{
+	struct empty_data *empty_data;
+	int val;
+
+	if (args >= 2) {
+		SYNTAX_ERROR("Empty action expects zero or one argument\n");
+		return 0;
+	}
+
+	if (args == 0 || strcmp(argv[0], "all") == 0)
+		val = EMPTY_ALL;
+	else if (strcmp(argv[0], "source") == 0)
+		val = EMPTY_SOURCE;
+	else if (strcmp(argv[0], "excluded") == 0)
+		val = EMPTY_EXCLUDED;
+	else {
+		SYNTAX_ERROR("Empty action expects zero arguments, or one"
+			"argument containing \"all\", \"source\", or \"excluded\""
+			"\n");
+		return 0;
+	}
+
+	empty_data = malloc(sizeof(*empty_data));
+	if (empty_data == NULL) {
+		printf("Out of memory in action empty\n");
+		return 0;
+	}
+
+	empty_data->val = val;
+	*data = empty_data;
+
+	return 1;
+}
+
+
 int eval_empty_actions(char *name, char *pathname, struct stat *buf, int depth,
-	int count)
+	struct dir_info *dir)
 {
 	int i, match = 0;
 	struct action_data action_data;
+	struct empty_data *data;
 
 	/*
 	 * Empty action only works on empty directories
 	 */
-	if (count != 0)
+	if (dir->count != 0)
 		return 0;
 
 	action_data.name = name;
@@ -1085,6 +1123,26 @@ int eval_empty_actions(char *name, char *pathname, struct stat *buf, int depth,
 		if (spec_list[i].type != EMPTY_ACTION)
 			continue;
 
+		data = spec_list[i].data;
+
+		/*
+		 * determine the cause of the empty directory and evaluate
+		 * the empty action specified.  Three empty actions:
+		 * - EMPTY_SOURCE: empty action triggers only if the directory
+		 *	was originally empty, i.e directories that are empty
+		 *	only due to excluding are ignored.
+		 * - EMPTY_EXCLUDED: empty action triggers only if the directory
+		 *	is empty because of excluding, i.e. directories that
+		 *	were originally empty are ignored.
+		 * - EMPTY_ALL (the default): empty action triggers if the
+		 *	directory is empty, irrespective of the reason, i.e.
+		 *	the directory could have been originally empty or could
+		 *	be empty due to excluding.
+		 */
+		if ((data->val == EMPTY_EXCLUDED && !dir->excluded) ||
+				(data->val == EMPTY_SOURCE && dir->excluded))
+			continue;
+		
 		match = eval_expr(spec_list[i].expr, &action_data);
 	}
 
@@ -1320,6 +1378,6 @@ static struct action_entry action_table[] = {
 	{ "gid", GID_ACTION, 1, ACTION_ALL_LNK, parse_gid_args, gid_action},
 	{ "guid", GUID_ACTION, 2, ACTION_ALL_LNK, parse_guid_args, guid_action},
 	{ "mode", MODE_ACTION, -2, ACTION_ALL, parse_mode_args, mode_action },
-	{ "empty", EMPTY_ACTION, 0, ACTION_DIR, NULL, NULL},
+	{ "empty", EMPTY_ACTION, -2, ACTION_DIR, parse_empty_args, NULL},
 	{ "", 0, -1, 0, NULL, NULL}
 };

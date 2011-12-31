@@ -3746,7 +3746,7 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 				continue;
 
 			if(eval_empty_actions(dir_name, filename, &buf, depth,
-						sub_dir->count)) {
+						sub_dir)) {
 				add_excluded(dir);
 				continue;
 			}

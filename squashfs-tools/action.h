@@ -226,6 +226,18 @@ struct mode_data {
 
 
 /*
+ * Empty action specific definitions
+ */
+#define EMPTY_ALL 0
+#define EMPTY_SOURCE 1
+#define EMPTY_EXCLUDED 2
+
+struct empty_data {
+	int val;
+};
+
+
+/*
  * External function definitions
  */
 extern int parse_action(char *);
@@ -234,4 +246,5 @@ extern void *eval_frag_actions(struct dir_ent *);
 extern void *get_frag_action(void *);
 extern int eval_exclude_actions(char *, char *, struct stat *, int);
 extern void eval_actions(struct dir_ent *);
-extern int eval_empty_actions(char *, char *, struct stat *, int, int);
+extern int eval_empty_actions(char *, char *, struct stat *, int,
+							struct dir_info *);
