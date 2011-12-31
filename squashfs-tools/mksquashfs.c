@@ -3415,6 +3415,12 @@ inline void add_dir_entry(char *name, char *pathname, struct dir_info *sub_dir,
 }
 
 
+inline void add_excluded(struct dir_info *dir)
+{
+	dir->excluded ++;
+}
+
+
 int compare_name(const void *ent1_ptr, const void *ent2_ptr)
 {
 	struct dir_ent *ent1 = *((struct dir_ent **) ent1_ptr);
@@ -3453,6 +3459,7 @@ struct dir_info *scan1_opendir(char *pathname, int depth)
 	dir->dir_is_ldir = TRUE;
 	dir->list = NULL;
 	dir->depth = depth;
+	dir->excluded = 0;
 
 	return dir;
 }
@@ -3724,12 +3731,13 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 			continue;
 		}
 
-		if(old_exclude && old_excluded(filename, &buf))
+		if((old_exclude && old_excluded(filename, &buf)) ||
+				excluded(paths, dir_name, &new) ||
+				eval_exclude_actions(dir_name, filename, &buf,
+							depth)) {
+			add_excluded(dir);
 			continue;
-		else if(excluded(paths, dir_name, &new))
-			continue;
-		else if(eval_exclude_actions(dir_name, filename, &buf, depth))
-			continue;
+		}
 
 		if((buf.st_mode & S_IFMT) == S_IFDIR) {
 			sub_dir = dir_scan1(filename, new, scan1_readdir,
@@ -3738,8 +3746,11 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 				continue;
 
 			if(eval_empty_actions(dir_name, filename, &buf, depth,
-						sub_dir->count))
+						sub_dir->count)) {
+				add_excluded(dir);
 				continue;
+			}
+
 			dir->directory_count ++;
 		} else
 			sub_dir = NULL;

@@ -47,6 +47,7 @@ struct dir_info {
 	unsigned int		current_count;
 	unsigned int		byte_count;
 	int			depth;
+	unsigned int		excluded;
 	char			dir_is_ldir;
 	struct dir_ent		*dir_ent;
 	struct dir_ent		**list;
