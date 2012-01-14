@@ -2,7 +2,8 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
+ * 2012
  * Phillip Lougher <phillip@lougher.demon.co.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -1444,6 +1445,14 @@ void squashfs_stat(char *source)
 	TRACE("sBlk.s.directory_table_start 0x%llx\n",
 		sBlk.s.directory_table_start);
 
+	if(sBlk.s.s_major > 1)
+		TRACE("sBlk.s.fragment_table_start 0x%llx\n\n",
+			sBlk.s.fragment_table_start);
+
+	if(sBlk.s.s_major > 2)
+		TRACE("sBlk.s.lookup_table_start 0x%llx\n\n",
+			sBlk.s.lookup_table_start);
+
 	if(sBlk.s.s_major == 4) {
 		TRACE("sBlk.s.id_table_start 0x%llx\n", sBlk.s.id_table_start);
 		TRACE("sBlk.s.xattr_id_table_start 0x%llx\n",
@@ -1452,10 +1461,6 @@ void squashfs_stat(char *source)
 		TRACE("sBlk.uid_start 0x%llx\n", sBlk.uid_start);
 		TRACE("sBlk.guid_start 0x%llx\n", sBlk.guid_start);
 	}
-
-	if(sBlk.s.s_major > 1)
-		TRACE("sBlk.s.fragment_table_start 0x%llx\n\n",
-			sBlk.s.fragment_table_start);
 }
 
 
@@ -1946,8 +1951,8 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-CVS (2011/04/12)\n");\
-	printf("copyright (C) 2011 Phillip Lougher "\
+	printf("unsquashfs version 4.2-CVS (2012/01/12)\n");\
+	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
 		"\n");\
