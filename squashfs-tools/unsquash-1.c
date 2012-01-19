@@ -217,14 +217,6 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 		block_start, offset);
 
 	*i = s_ops.read_inode(block_start, offset);
-	start = sBlk.s.directory_table_start + (*i)->start;
-	bytes = lookup_entry(directory_table_hash, start);
-	if(bytes == -1)
-		EXIT_UNSQUASH("squashfs_opendir: directory block %d not "
-			"found!\n", block_start);
-
-	bytes += (*i)->offset;
-	size = (*i)->data + bytes;
 
 	dir = malloc(sizeof(struct dir));
 	if(dir == NULL)
@@ -238,6 +230,24 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 	dir->mtime = (*i)->time;
 	dir->xattr = (*i)->xattr;
 	dir->dirs = NULL;
+
+	if ((*i)->data == 0)
+		/*
+		 * if the directory is empty, skip the unnecessary
+		 * lookup_entry, this fixes the corner case with
+		 * completely empty filesystems where lookup_entry correctly
+		 * returning -1 is incorrectly treated as an error
+		 */
+		return dir;
+		
+	start = sBlk.s.directory_table_start + (*i)->start;
+	bytes = lookup_entry(directory_table_hash, start);
+	if(bytes == -1)
+		EXIT_UNSQUASH("squashfs_opendir: directory block %d not "
+			"found!\n", block_start);
+
+	bytes += (*i)->offset;
+	size = (*i)->data + bytes;
 
 	while(bytes < size) {			
 		if(swap) {
