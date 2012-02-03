@@ -415,8 +415,8 @@ struct file_info *duplicate(long long file_size, long long bytes,
 	unsigned int **block_list, long long *start, struct fragment **fragment,
 	struct file_buffer *file_buffer, int blocks, unsigned short checksum,
 	unsigned short fragment_checksum, int checksum_flag);
-struct dir_info *dir_scan1(char *, struct pathnames *, int (_readdir)(char *,
-	char *, struct dir_info *), int);
+struct dir_info *dir_scan1(char *, struct pathnames *,
+	struct dir_ent *(_readdir)(struct dir_info *), int);
 struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int);
 void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes,
@@ -1196,6 +1196,35 @@ unsigned int get_guid(unsigned int guid)
 }
 
 
+char *_pathname(struct dir_ent *dir_ent, char *pathname)
+{
+	if (dir_ent->nonstandard_pathname)
+		return dir_ent->nonstandard_pathname;
+
+	strcpy(pathname, dir_ent->our_dir->pathname);
+	strcat(pathname, "/");
+	strcat(pathname, dir_ent->source_name ? : dir_ent->name);
+
+	return pathname;
+}
+
+
+char *pathname(struct dir_ent *dir_ent)
+{
+	static char pathname[1024];
+
+	return _pathname(dir_ent, pathname);
+}
+
+
+char *pathname_reader(struct dir_ent *dir_ent)
+{
+	static char pathname[1024];
+
+	return _pathname(dir_ent, pathname);
+}
+
+
 int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	struct dir_ent *dir_ent, int type, long long byte_size,
 	long long start_block, unsigned int offset, unsigned int *block_list,
@@ -1205,7 +1234,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	union squashfs_inode_header inode_header;
 	struct squashfs_base_inode_header *base = &inode_header.base;
 	void *inode;
-	char *filename = dir_ent->pathname;
+	char *filename = pathname(dir_ent);
 	int nlink = dir_ent->inode->nlink;
 	int inode_number = type == SQUASHFS_DIR_TYPE ?
 		dir_ent->inode->inode_number :
@@ -2393,7 +2422,7 @@ again:
 	read_size = buf->st_size;
 	blocks = (read_size + block_size - 1) >> block_log;
 
-	file = open(dir_ent->pathname, O_RDONLY);
+	file = open(pathname_reader(dir_ent), O_RDONLY);
 	if(file == -1) {
 		file_buffer = cache_get(reader_buffer, 0, 0);
 		file_buffer->sequence = seq ++;
@@ -3275,11 +3304,11 @@ again:
 file_err:
 	if(status == 2) {
 		ERROR("File %s changed size while reading filesystem, "
-			"attempting to re-read\n", dir_ent->pathname);
+			"attempting to re-read\n", pathname(dir_ent));
 		goto again;
 	} else if(status == 1) {
 		ERROR("Failed to read file %s, creating empty file\n",
-			dir_ent->pathname);
+			pathname(dir_ent));
 		write_file_empty(inode, dir_ent, duplicate_file);
 	}
 }
@@ -3390,9 +3419,27 @@ struct inode_info *lookup_inode(struct stat *buf)
 }
 
 
-inline void add_dir_entry(char *name, char *pathname, struct dir_info *sub_dir,
-	struct inode_info *inode_info, struct dir_info *dir)
+inline struct dir_ent *create_dir_entry(char *name, char *source_name,
+	char *nonstandard_pathname, struct dir_info *dir)
 {
+	struct dir_ent *dir_ent = malloc(sizeof(struct dir_ent));
+	if(dir_ent == NULL)
+		BAD_ERROR("Out of memory in linux_opendir\n");
+
+	dir_ent->name = name;
+	dir_ent->source_name = source_name;
+	dir_ent->nonstandard_pathname = nonstandard_pathname;
+	dir_ent->our_dir = dir;
+
+	return dir_ent;
+}
+
+
+inline void add_dir_entry(struct dir_ent *dir_ent, struct dir_info *sub_dir,
+	struct inode_info *inode_info)
+{
+	struct dir_info *dir = dir_ent->our_dir;
+
 	if((dir->count % DIR_ENTRIES) == 0) {
 		dir->list = realloc(dir->list, (dir->count + DIR_ENTRIES) *
 				sizeof(struct dir_ent *));
@@ -3400,19 +3447,26 @@ inline void add_dir_entry(char *name, char *pathname, struct dir_info *sub_dir,
 			BAD_ERROR("Out of memory in add_dir_entry\n");
 	}
 
-	dir->list[dir->count] = malloc(sizeof(struct dir_ent));
-	if(dir->list[dir->count] == NULL)
-		BAD_ERROR("Out of memory in linux_opendir\n");
-
 	if(sub_dir)
-		sub_dir->dir_ent = dir->list[dir->count];
-	dir->list[dir->count]->name = strdup(name);
-	dir->list[dir->count]->pathname = pathname != NULL ? strdup(pathname) :
-		NULL;
-	dir->list[dir->count]->inode = inode_info;
-	dir->list[dir->count]->dir = sub_dir;
-	dir->list[dir->count++]->our_dir = dir;
-	dir->byte_count += strlen(name) + sizeof(struct squashfs_dir_entry);
+		sub_dir->dir_ent = dir_ent;
+	dir_ent->inode = inode_info;
+	dir_ent->dir = sub_dir;
+
+	dir->list[dir->count++] = dir_ent;
+	dir->byte_count += strlen(dir_ent->name) +
+		sizeof(struct squashfs_dir_entry);
+}
+
+
+inline void add_dir_entry2(char *name, char *source_name,
+	char *nonstandard_pathname, struct dir_info *sub_dir,
+	struct inode_info *inode_info, struct dir_info *dir)
+{
+	struct dir_ent *dir_ent = create_dir_entry(name, source_name,
+		nonstandard_pathname, dir);
+
+
+	add_dir_entry(dir_ent, sub_dir, inode_info);
 }
 
 
@@ -3452,7 +3506,7 @@ struct dir_info *scan1_opendir(char *pathname, int depth)
 		free(dir);
 		return NULL;
 	}
-	dir->pathname = strdup(pathname);
+	dir->pathname = pathname;
 	dir->count = 0;
 	dir->directory_count = 0;
 	dir->current_count = 0;
@@ -3466,7 +3520,7 @@ struct dir_info *scan1_opendir(char *pathname, int depth)
 }
 
 
-int scan1_encomp_readdir(char *pathname, char *dir_name, struct dir_info *dir)
+struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 {
 	static int index = 0;
 
@@ -3476,14 +3530,15 @@ int scan1_encomp_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 		for(i = 0; i < old_root_entries; i++) {
 			if(old_root_entry[i].inode.type == SQUASHFS_DIR_TYPE)
 				dir->directory_count ++;
-			add_dir_entry(old_root_entry[i].name, "", NULL,
+			add_dir_entry2(old_root_entry[i].name, NULL, NULL, NULL,
 				&old_root_entry[i].inode, dir);
 		}
 	}
 
 	while(index < source) {
 		char *basename = getbase(source_path[index]);
-		int n, pass = 1;
+		char *dir_name = strdup(basename);
+		int n, pass = 1, res;
 
 		if(basename == NULL) {
 			ERROR("Bad source directory %s - skipping ...\n",
@@ -3491,7 +3546,6 @@ int scan1_encomp_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 			index ++;
 			continue;
 		}
-		strcpy(dir_name, basename);
 		for(;;) {
 			for(n = 0; n < dir->count &&
 				strcmp(dir->list[n]->name, dir_name) != 0; n++);
@@ -3499,17 +3553,21 @@ int scan1_encomp_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 				break;
 			ERROR("Source directory entry %s already used! - trying"
 				" ", dir_name);
-			sprintf(dir_name, "%s_%d", basename, pass++);
+			free(dir_name);
+			res = asprintf(&dir_name, "%s_%d", basename, pass++);
+			if(res == -1)
+				BAD_ERROR("asprintf failed in "
+					"scan1_encomp_readdir\n");
 			ERROR("%s\n", dir_name);
 		}
-		strcpy(pathname, source_path[index ++]);
-		return 1;
+		return create_dir_entry(dir_name, NULL, source_path[index ++],
+			dir);
 	}
-	return 0;
+	return NULL;
 }
 
 
-int scan1_single_readdir(char *pathname, char *dir_name, struct dir_info *dir)
+struct dir_ent *scan1_single_readdir(struct dir_info *dir)
 {
 	struct dirent *d_name;
 	int i;
@@ -3518,15 +3576,16 @@ int scan1_single_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 		for(i = 0; i < old_root_entries; i++) {
 			if(old_root_entry[i].inode.type == SQUASHFS_DIR_TYPE)
 				dir->directory_count ++;
-			add_dir_entry(old_root_entry[i].name, "", NULL,
+			add_dir_entry2(old_root_entry[i].name, NULL, NULL, NULL,
 				&old_root_entry[i].inode, dir);
 		}
 	}
 
 	if((d_name = readdir(dir->linuxdir)) != NULL) {
-		int pass = 1;
+		char *basename = strdup(d_name->d_name);
+		char *dir_name = basename;
+		int pass = 1, res;
 
-		strcpy(dir_name, d_name->d_name);
 		for(;;) {
 			for(i = 0; i < dir->count &&
 				strcmp(dir->list[i]->name, dir_name) != 0; i++);
@@ -3534,30 +3593,28 @@ int scan1_single_readdir(char *pathname, char *dir_name, struct dir_info *dir)
 				break;
 			ERROR("Source directory entry %s already used! - trying"
 				" ", dir_name);
-			sprintf(dir_name, "%s_%d", d_name->d_name, pass++);
+			if (pass > 1)
+				free(dir_name);
+			res = asprintf(&dir_name, "%s_%d", d_name->d_name, pass++);
+			if(res == -1)
+				BAD_ERROR("asprintf failed in "
+					"scan1_single_readdir\n");
 			ERROR("%s\n", dir_name);
 		}
-		strcat(strcat(strcpy(pathname, dir->pathname), "/"),
-			d_name->d_name);
-		return 1;
+		return create_dir_entry(dir_name, basename, NULL, dir);
 	}
 
-	return 0;
+	return NULL;
 }
 
 
-int scan1_readdir(char *pathname, char *dir_name, struct dir_info *dir)
+struct dir_ent *scan1_readdir(struct dir_info *dir)
 {
 	struct dirent *d_name = readdir(dir->linuxdir);
 
-	if(d_name != NULL) {
-		strcpy(dir_name, d_name->d_name);
-		strcat(strcat(strcpy(pathname, dir->pathname), "/"),
-			d_name->d_name);
-		return 1;
-	}
-
-	return 0;
+	return d_name ?
+		create_dir_entry(strdup(d_name->d_name), NULL, NULL, dir) :
+		NULL;
 }
 
 
@@ -3606,18 +3663,12 @@ void scan1_freedir(struct dir_info *dir)
 {
 	if(dir->pathname[0] != '\0')
 		closedir(dir->linuxdir);
-	free(dir->pathname);
-	dir->pathname = NULL;
 }
 
 
 void scan2_freedir(struct dir_info *dir)
 {
 	dir->current_count = 0;
-	if(dir->pathname) {
-		free(dir->pathname);
-		dir->pathname = NULL;
-	}
 }
 
 
@@ -3630,7 +3681,7 @@ void scan3_freedir(struct directory *dir)
 
 
 void dir_scan(squashfs_inode *inode, char *pathname,
-	int (_readdir)(char *, char *, struct dir_info *))
+	struct dir_ent *(_readdir)(struct dir_info *))
 {
 	struct stat buf;
 	struct dir_info *dir_info = dir_scan1(pathname, paths, _readdir, 1);
@@ -3641,9 +3692,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 
 	dir_scan2(dir_info, pseudo, 1);
 
-	dir_ent = malloc(sizeof(struct dir_ent));
-	if(dir_ent == NULL)
-		BAD_ERROR("Out of memory in dir_scan\n");
+	dir_ent = create_dir_entry(pathname, NULL, pathname, NULL);
 
 	if(pathname[0] == '\0') {
 		/*
@@ -3672,9 +3721,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		dir_ent->inode->inode_number = root_inode_number;
 		dir_inode_no --;
 	}
-	dir_ent->name = dir_ent->pathname = strdup(pathname);
 	dir_ent->dir = dir_info;
-	dir_ent->our_dir = NULL;
 	dir_info->dir_ent = dir_ent;
 
 	if(sorted) {
@@ -3695,28 +3742,33 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 }
 
 
-struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
-	int (_readdir)(char *, char *, struct dir_info *), int depth)
+struct dir_info *dir_scan1(char *filename, struct pathnames *paths,
+	struct dir_ent *(_readdir)(struct dir_info *), int depth)
 {
-	char filename[8192], dir_name[8192];
-	struct dir_info *dir = scan1_opendir(pathname, depth);
+	struct dir_info *dir = scan1_opendir(filename, depth);
+	struct dir_ent *dir_ent;
 
 	if(dir == NULL) {
-		ERROR("Could not open %s, skipping...\n", pathname);
+		ERROR("Could not open %s, skipping...\n", filename);
 		goto error;
 	}
 
-	while(_readdir(filename, dir_name, dir) != FALSE) {
+	while((dir_ent = _readdir(dir))) {
 		struct dir_info *sub_dir;
 		struct stat buf;
 		struct pathnames *new;
+		char *filename = pathname(dir_ent);
+		char *dir_name = dir_ent->name;
 
-		if(strcmp(dir_name, ".") == 0 || strcmp(dir_name, "..") == 0)
+		if(strcmp(dir_name, ".") == 0 || strcmp(dir_name, "..") == 0) {
+			free(dir_ent);
 			continue;
+		}
 
 		if(lstat(filename, &buf) == -1) {
 			ERROR("Cannot stat dir/file %s because %s, ignoring",
 				filename, strerror(errno));
+			free(dir_ent);
 			continue;
 		}
 
@@ -3729,6 +3781,7 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 			(buf.st_mode & S_IFMT) != S_IFSOCK) {
 			ERROR("File %s has unrecognised filetype %d, ignoring"
 				"\n", filename, buf.st_mode & S_IFMT);
+			free(dir_ent);
 			continue;
 		}
 
@@ -3737,18 +3790,24 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 				eval_exclude_actions(dir_name, filename, &buf,
 							depth)) {
 			add_excluded(dir);
+			free(dir_ent);
 			continue;
 		}
 
 		if((buf.st_mode & S_IFMT) == S_IFDIR) {
+			filename = strdup(filename);
 			sub_dir = dir_scan1(filename, new, scan1_readdir,
 							depth + 1);
-			if(sub_dir == NULL)
+			if(sub_dir == NULL) {
+				free(dir_ent);
+				free(filename);
 				continue;
+			}
 
 			if(eval_empty_actions(dir_name, filename, &buf, depth,
 						sub_dir)) {
 				add_excluded(dir);
+				free(dir_ent);
 				continue;
 			}
 
@@ -3756,8 +3815,7 @@ struct dir_info *dir_scan1(char *pathname, struct pathnames *paths,
 		} else
 			sub_dir = NULL;
 
-		add_dir_entry(dir_name, filename, sub_dir, lookup_inode(&buf),
-			dir);
+		add_dir_entry(dir_ent, sub_dir, lookup_inode(&buf));
 	}
 
 	scan1_freedir(dir);
@@ -3826,7 +3884,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
 					"filesystem \"%s\".\nIgnoring, "
 					"exclude it (-e/-ef) to override.\n",
 					pseudo_ent->pathname,
-					dir_ent->pathname);
+					pathname(dir_ent));
 			continue;
 		}
 
@@ -3864,21 +3922,21 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
 			buf.st_size = buf2.st_size;
 			inode = lookup_inode(&buf);
 			inode->pseudo_file = PSEUDO_FILE_OTHER;		
-			add_dir_entry(pseudo_ent->name,
+			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->dev->filename, sub_dir, inode,
 				dir);
 #else
 			struct inode_info *inode = lookup_inode(&buf);
 			inode->pseudo_id = pseudo_ent->dev->pseudo_id;
 			inode->pseudo_file = PSEUDO_FILE_PROCESS;		
-			add_dir_entry(pseudo_ent->name, pseudo_ent->pathname,
-				sub_dir, inode, dir);
+			add_dir_entry2(pseudo_ent->name, NULL,
+				pseudo_ent->pathname, sub_dir, inode, dir);
 #endif
 		} else {
 			struct inode_info *inode = lookup_inode(&buf);
 			inode->pseudo_file = PSEUDO_FILE_OTHER;		
-			add_dir_entry(pseudo_ent->name, pseudo_ent->pathname,
-				sub_dir, inode, dir);
+			add_dir_entry2(pseudo_ent->name, NULL,
+				pseudo_ent->pathname, sub_dir, inode, dir);
 		}
 	}
 
@@ -3893,7 +3951,6 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 {
 	int squashfs_type;
 	int duplicate_file;
-	char *pathname = dir_info->dir_ent->pathname;
 	struct directory dir;
 	struct dir_ent *dir_ent;
 	
@@ -3902,7 +3959,6 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 	while((dir_ent = scan3_readdir(&dir, dir_info)) != NULL) {
 		struct inode_info *inode_info = dir_ent->inode;
 		struct stat *buf = &inode_info->buf;
-		char *filename = dir_ent->pathname;
 		char *dir_name = dir_ent->name;
 		unsigned int inode_number = ((buf->st_mode & S_IFMT) == S_IFDIR)
 			?  dir_ent->inode->inode_number :
@@ -3915,7 +3971,7 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 					write_file(inode, dir_ent,
 						&duplicate_file);
 					INFO("file %s, uncompressed size %lld "
-						"bytes %s\n", filename,
+						"bytes %s\n", pathname(dir_ent),
 						(long long) buf->st_size,
 						duplicate_file ?  "DUPLICATE" :
 						 "");
@@ -3978,7 +4034,8 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 
 				default:
 					BAD_ERROR("%s unrecognised file type, "
-						"mode is %x\n", filename,
+						"mode is %x\n",
+						pathname(dir_ent),
 						buf->st_mode);
 			}
 			dir_ent->inode->inode = *inode;
@@ -3991,7 +4048,7 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 					if(!sorted)
 						INFO("file %s, uncompressed "
 							"size %lld bytes LINK"
-							"\n", filename,
+							"\n", pathname(dir_ent),
 							(long long)
 							buf->st_size);
 					break;
@@ -4024,7 +4081,7 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 	}
 
 	write_dir(inode, dir_info, &dir);
-	INFO("directory %s inode 0x%llx\n", pathname, *inode);
+	INFO("directory %s inode 0x%llx\n", pathname(dir_info->dir_ent), *inode);
 
 	scan3_freedir(&dir);
 }

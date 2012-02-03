@@ -56,7 +56,8 @@ struct dir_info {
 
 struct dir_ent {
 	char			*name;
-	char			*pathname;
+	char			*source_name;
+	char			*nonstandard_pathname;
 	struct inode_info	*inode;
 	struct dir_info		*dir;
 	struct dir_info		*our_dir;

@@ -220,7 +220,7 @@ xattr.o: xattr.c xattr.h squashfs_fs.h squashfs_swap.h mksquashfs.h
 
 read_xattrs.o: read_xattrs.c xattr.h squashfs_fs.h squashfs_swap.h read_fs.h
 
-action.o: action.h
+action.o: action.h squashfs_fs.h mksquashfs.h
 
 gzip_wrapper.o: gzip_wrapper.c compressor.h squashfs_fs.h
 

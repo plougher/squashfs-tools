@@ -66,6 +66,7 @@ static struct action_entry action_table[];
 
 static struct expr *parse_expr(int subexp);
 
+extern char *pathname(struct dir_ent *);
 
 /*
  * Lexical analyser
@@ -504,7 +505,7 @@ void eval_actions(struct dir_ent *dir_ent)
 	int file_type = dir_ent->inode->buf.st_mode & S_IFMT;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = dir_ent->pathname;
+	action_data.pathname = pathname(dir_ent);
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 
@@ -536,7 +537,7 @@ void *eval_frag_actions(struct dir_ent *dir_ent)
 	struct action_data action_data;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = dir_ent->pathname;
+	action_data.pathname = pathname(dir_ent);
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 
@@ -1299,10 +1300,12 @@ TEST_FN(name, ACTION_ALL_LNK, \
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
 TEST_FN(pathname, ACTION_ALL_LNK, \
+	printf("pathname %s\n", action_data->pathname); \
 	return fnmatch(atom->argv[0], action_data->pathname,
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
 TEST_FN(subpathname, ACTION_ALL_LNK, \
+	printf("pathname %s\n", action_data->pathname); \
 	return fnmatch(atom->argv[0], action_data->pathname,
 				FNM_PERIOD|FNM_EXTMATCH) == 0;)
 

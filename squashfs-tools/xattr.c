@@ -94,6 +94,7 @@ extern unsigned short get_checksum(char *, int, unsigned short);
 extern void write_destination(int, long long, int, void *);
 extern long long generic_write_table(int, void *, int, void *, int);
 extern int mangle(char *, char *, int, int, int, int);
+extern char *pathname(struct dir_ent *);
 
 /* helper functions and definitions from read_xattrs.c */
 extern int read_xattrs_from_disk(int, struct squashfs_super_block *);
@@ -637,7 +638,7 @@ int read_xattrs(void *d)
 {
 	struct dir_ent *dir_ent = d;
 	struct inode_info *inode = dir_ent->inode;
-	char *filename = dir_ent->pathname;
+	char *filename = pathname(dir_ent);
 	struct xattr_list *xattr_list;
 	int xattrs;
 

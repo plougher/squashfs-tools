@@ -74,6 +74,7 @@ struct priority_entry *priority_list[65536];
 extern int silent;
 extern void write_file(squashfs_inode *inode, struct dir_ent *dir_ent,
 	int *c_size);
+extern char *pathname(struct dir_ent *dir_ent);
 
 
 int add_priority_list(struct dir_ent *dir, int priority)
@@ -215,7 +216,7 @@ int generate_file_priorities(struct dir_info *dir, int priority,
 		switch(buf->st_mode & S_IFMT) {
 			case S_IFREG:
 				res = add_priority_list(dir_ent,
-					get_priority(dir_ent->pathname, buf,
+					get_priority(pathname(dir_ent), buf,
 					priority));
 				if(res == FALSE)
 					return FALSE;
@@ -268,11 +269,11 @@ void sort_files_and_write(struct dir_info *dir)
 
 	for(i = 65535; i >= 0; i--)
 		for(entry = priority_list[i]; entry; entry = entry->next) {
-			TRACE("%d: %s\n", i - 32768, entry->dir->pathname);
+			TRACE("%d: %s\n", i - 32768, pathname(entry->dir));
 			if(entry->dir->inode->inode == SQUASHFS_INVALID_BLK) {
 				write_file(&inode, entry->dir, &duplicate_file);
 				INFO("file %s, uncompressed size %lld bytes %s"
-					"\n", entry->dir->pathname,
+					"\n", pathname(entry->dir),
 					(long long)
 					entry->dir->inode->buf.st_size,
 					duplicate_file ? "DUPLICATE" : "");
@@ -280,7 +281,7 @@ void sort_files_and_write(struct dir_info *dir)
 				entry->dir->inode->type = SQUASHFS_FILE_TYPE;
 			} else
 				INFO("file %s, uncompressed size %lld bytes "
-					"LINK\n", entry->dir->pathname,
+					"LINK\n", pathname(entry->dir),
 					(long long)
 					entry->dir->inode->buf.st_size);
 		}
