@@ -66,7 +66,7 @@ static struct action_entry action_table[];
 
 static struct expr *parse_expr(int subexp);
 
-extern char *pathname(struct dir_ent *);
+extern char *subpathname(struct dir_ent *);
 
 /*
  * Lexical analyser
@@ -505,7 +505,7 @@ void eval_actions(struct dir_ent *dir_ent)
 	int file_type = dir_ent->inode->buf.st_mode & S_IFMT;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = pathname(dir_ent);
+	action_data.pathname = subpathname(dir_ent);
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 
@@ -537,7 +537,7 @@ void *eval_frag_actions(struct dir_ent *dir_ent)
 	struct action_data action_data;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = pathname(dir_ent);
+	action_data.pathname = subpathname(dir_ent);
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 

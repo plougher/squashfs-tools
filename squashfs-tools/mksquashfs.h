@@ -42,6 +42,7 @@
 
 struct dir_info {
 	char			*pathname;
+	char			*subpath;
 	unsigned int		count;
 	unsigned int		directory_count;
 	unsigned int		current_count;

@@ -415,7 +415,7 @@ struct file_info *duplicate(long long file_size, long long bytes,
 	unsigned int **block_list, long long *start, struct fragment **fragment,
 	struct file_buffer *file_buffer, int blocks, unsigned short checksum,
 	unsigned short fragment_checksum, int checksum_flag);
-struct dir_info *dir_scan1(char *, struct pathnames *,
+struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), int);
 struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int);
 void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info);
@@ -1222,6 +1222,21 @@ char *pathname_reader(struct dir_ent *dir_ent)
 	static char pathname[1024];
 
 	return _pathname(dir_ent, pathname);
+}
+
+
+char *subpathname(struct dir_ent *dir_ent)
+{
+	static char subpath[1024];
+
+	if(dir_ent->our_dir->subpath[0] != '\0') {
+		strcpy(subpath, dir_ent->our_dir->subpath);
+		strcat(subpath, "/");
+		strcat(subpath, dir_ent->source_name ? : dir_ent->name);
+	} else
+		strcpy(subpath, dir_ent->source_name ? : dir_ent->name);
+
+	return subpath;
 }
 
 
@@ -3494,7 +3509,7 @@ void sort_directory(struct dir_info *dir)
 }
 
 
-struct dir_info *scan1_opendir(char *pathname, int depth)
+struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 {
 	struct dir_info *dir;
 
@@ -3507,6 +3522,7 @@ struct dir_info *scan1_opendir(char *pathname, int depth)
 		return NULL;
 	}
 	dir->pathname = pathname;
+	dir->subpath = subpath;
 	dir->count = 0;
 	dir->directory_count = 0;
 	dir->current_count = 0;
@@ -3537,7 +3553,7 @@ struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 
 	while(index < source) {
 		char *basename = getbase(source_path[index]);
-		char *dir_name = strdup(basename);
+		char *dir_name;
 		int n, pass = 1, res;
 
 		if(basename == NULL) {
@@ -3546,6 +3562,7 @@ struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 			index ++;
 			continue;
 		}
+		dir_name = basename = strdup(basename);
 		for(;;) {
 			for(n = 0; n < dir->count &&
 				strcmp(dir->list[n]->name, dir_name) != 0; n++);
@@ -3553,15 +3570,16 @@ struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 				break;
 			ERROR("Source directory entry %s already used! - trying"
 				" ", dir_name);
-			free(dir_name);
+			if(pass > 1)
+				free(dir_name);
 			res = asprintf(&dir_name, "%s_%d", basename, pass++);
 			if(res == -1)
 				BAD_ERROR("asprintf failed in "
 					"scan1_encomp_readdir\n");
 			ERROR("%s\n", dir_name);
 		}
-		return create_dir_entry(dir_name, NULL, source_path[index ++],
-			dir);
+		return create_dir_entry(dir_name, basename,
+			source_path[index ++], dir);
 	}
 	return NULL;
 }
@@ -3684,7 +3702,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	struct dir_ent *(_readdir)(struct dir_info *))
 {
 	struct stat buf;
-	struct dir_info *dir_info = dir_scan1(pathname, paths, _readdir, 1);
+	struct dir_info *dir_info = dir_scan1(pathname, "", paths, _readdir, 1);
 	struct dir_ent *dir_ent;
 	
 	if(dir_info == NULL)
@@ -3742,10 +3760,11 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 }
 
 
-struct dir_info *dir_scan1(char *filename, struct pathnames *paths,
+struct dir_info *dir_scan1(char *filename, char *subpath,
+	struct pathnames *paths,
 	struct dir_ent *(_readdir)(struct dir_info *), int depth)
 {
-	struct dir_info *dir = scan1_opendir(filename, depth);
+	struct dir_info *dir = scan1_opendir(filename, subpath, depth);
 	struct dir_ent *dir_ent;
 
 	if(dir == NULL) {
@@ -3758,6 +3777,7 @@ struct dir_info *dir_scan1(char *filename, struct pathnames *paths,
 		struct stat buf;
 		struct pathnames *new;
 		char *filename = pathname(dir_ent);
+		char *subpath = subpathname(dir_ent);
 		char *dir_name = dir_ent->name;
 
 		if(strcmp(dir_name, ".") == 0 || strcmp(dir_name, "..") == 0) {
@@ -3787,7 +3807,7 @@ struct dir_info *dir_scan1(char *filename, struct pathnames *paths,
 
 		if((old_exclude && old_excluded(filename, &buf)) ||
 				excluded(paths, dir_name, &new) ||
-				eval_exclude_actions(dir_name, filename, &buf,
+				eval_exclude_actions(dir_name, subpath, &buf,
 							depth)) {
 			add_excluded(dir);
 			free(dir_ent);
@@ -3796,15 +3816,17 @@ struct dir_info *dir_scan1(char *filename, struct pathnames *paths,
 
 		if((buf.st_mode & S_IFMT) == S_IFDIR) {
 			filename = strdup(filename);
-			sub_dir = dir_scan1(filename, new, scan1_readdir,
-							depth + 1);
+			subpath = strdup(subpath);
+			sub_dir = dir_scan1(filename, subpath, new,
+					scan1_readdir, depth + 1);
 			if(sub_dir == NULL) {
 				free(dir_ent);
 				free(filename);
+				free(subpath);
 				continue;
 			}
 
-			if(eval_empty_actions(dir_name, filename, &buf, depth,
+			if(eval_empty_actions(dir_name, subpath, &buf, depth,
 						sub_dir)) {
 				add_excluded(dir);
 				free(dir_ent);
@@ -3833,7 +3855,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
 	struct stat buf;
 	static int pseudo_ino = 1;
 	
-	if(dir == NULL && (dir = scan1_opendir("", depth)) == NULL)
+	if(dir == NULL && (dir = scan1_opendir("", "", depth)) == NULL)
 		return NULL;
 	
 	while((dir_ent = scan2_readdir(dir)) != NULL) {
@@ -4660,8 +4682,8 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/01/24)\n");\
-	printf("copyright (C) 2011 Phillip Lougher "\
+	printf("mksquashfs version 4.2-CVS (2012/02/09)\n");\
+	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
 		"\n");\
