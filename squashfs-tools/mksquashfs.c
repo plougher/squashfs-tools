@@ -3485,6 +3485,18 @@ inline void add_dir_entry2(char *name, char *source_name,
 }
 
 
+inline void free_dir_entry(struct dir_ent *dir_ent)
+{
+	if(dir_ent->name != NULL)
+		free(dir_ent->name);
+
+	if(dir_ent->source_name && dir_ent->source_name != dir_ent->name)
+		free(dir_ent->source_name);
+
+	free(dir_ent);
+}
+
+
 inline void add_excluded(struct dir_info *dir)
 {
 	dir->excluded ++;
@@ -3781,14 +3793,14 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 		char *dir_name = dir_ent->name;
 
 		if(strcmp(dir_name, ".") == 0 || strcmp(dir_name, "..") == 0) {
-			free(dir_ent);
+			free_dir_entry(dir_ent);
 			continue;
 		}
 
 		if(lstat(filename, &buf) == -1) {
 			ERROR("Cannot stat dir/file %s because %s, ignoring",
 				filename, strerror(errno));
-			free(dir_ent);
+			free_dir_entry(dir_ent);
 			continue;
 		}
 
@@ -3801,7 +3813,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 			(buf.st_mode & S_IFMT) != S_IFSOCK) {
 			ERROR("File %s has unrecognised filetype %d, ignoring"
 				"\n", filename, buf.st_mode & S_IFMT);
-			free(dir_ent);
+			free_dir_entry(dir_ent);
 			continue;
 		}
 
@@ -3810,7 +3822,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 				eval_exclude_actions(dir_name, subpath, &buf,
 							depth)) {
 			add_excluded(dir);
-			free(dir_ent);
+			free_dir_entry(dir_ent);
 			continue;
 		}
 
@@ -3820,7 +3832,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 			sub_dir = dir_scan1(filename, subpath, new,
 					scan1_readdir, depth + 1);
 			if(sub_dir == NULL) {
-				free(dir_ent);
+				free_dir_entry(dir_ent);
 				free(filename);
 				free(subpath);
 				continue;
@@ -3829,7 +3841,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 			if(eval_empty_actions(dir_name, subpath, &buf, depth,
 						sub_dir)) {
 				add_excluded(dir);
-				free(dir_ent);
+				free_dir_entry(dir_ent);
 				continue;
 			}
 
