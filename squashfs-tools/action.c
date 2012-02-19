@@ -110,6 +110,17 @@ static int get_token(char **string)
 }
 
 
+static int peek_token(char **string)
+{
+	char *saved = cur_ptr;
+	int token = get_token(string);
+
+	cur_ptr = saved;
+
+	return token;
+}
+
+
 /*
  * Expression parser
  */
@@ -177,6 +188,17 @@ static struct expr *parse_test(char *name)
 	expr->atom.test = test;
 	expr->atom.data = NULL;
 
+	/*
+	 * If the test has no arguments, allow it to be typed
+	 *  without brackets
+	 */
+	if (test->args == 0) {
+		token = peek_token(&string);
+
+		if (token != TOK_OPEN_BRACKET)
+			goto skip_args;
+	}
+
 	token = get_token(&string);
 
 	if (token != TOK_OPEN_BRACKET) {
@@ -223,6 +245,7 @@ static struct expr *parse_test(char *name)
 		goto failed;
 	}
 
+skip_args:
 	return expr;
 
 failed:
