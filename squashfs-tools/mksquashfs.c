@@ -3841,7 +3841,10 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 			if(eval_empty_actions(dir_name, subpath, &buf, depth,
 						sub_dir)) {
 				add_excluded(dir);
+				free(sub_dir);
 				free_dir_entry(dir_ent);
+				free(filename);
+				free(subpath);
 				continue;
 			}
 
