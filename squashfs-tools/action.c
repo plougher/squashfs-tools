@@ -66,6 +66,8 @@ static struct action_entry action_table[];
 
 static struct expr *parse_expr(int subexp);
 
+extern char *pathname(struct dir_ent *);
+
 extern char *subpathname(struct dir_ent *);
 
 /*
@@ -528,7 +530,8 @@ void eval_actions(struct dir_ent *dir_ent)
 	int file_type = dir_ent->inode->buf.st_mode & S_IFMT;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = subpathname(dir_ent);
+	action_data.pathname = pathname(dir_ent);
+	action_data.subpath = subpathname(dir_ent);
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 
@@ -560,7 +563,8 @@ void *eval_frag_actions(struct dir_ent *dir_ent)
 	struct action_data action_data;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = subpathname(dir_ent);
+	action_data.pathname = pathname(dir_ent);
+	action_data.subpath = subpathname(dir_ent);
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 
@@ -606,13 +610,15 @@ void *get_frag_action(void *fragment)
 /*
  * Exclude specific action code
  */
-int eval_exclude_actions(char *name, char *pathname, struct stat *buf, int depth)
+int eval_exclude_actions(char *name, char *pathname, char *subpath,
+	struct stat *buf, int depth)
 {
 	int i, match = 0;
 	struct action_data action_data;
 
 	action_data.name = name;
 	action_data.pathname = pathname;
+	action_data.subpath = subpath;
 	action_data.buf = buf;
 	action_data.depth = depth;
 
@@ -1125,8 +1131,8 @@ int parse_empty_args(struct action_entry *action, int args, char **argv,
 }
 
 
-int eval_empty_actions(char *name, char *pathname, struct stat *buf, int depth,
-	struct dir_info *dir)
+int eval_empty_actions(char *name, char *pathname, char *subpath,
+	struct stat *buf, int depth, struct dir_info *dir)
 {
 	int i, match = 0;
 	struct action_data action_data;
@@ -1140,6 +1146,7 @@ int eval_empty_actions(char *name, char *pathname, struct stat *buf, int depth,
 
 	action_data.name = name;
 	action_data.pathname = pathname;
+	action_data.subpath = subpath;
 	action_data.buf = buf;
 	action_data.depth = depth;
 
@@ -1323,13 +1330,13 @@ TEST_FN(name, ACTION_ALL_LNK, \
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
 TEST_FN(pathname, ACTION_ALL_LNK, \
-	printf("pathname %s\n", action_data->pathname); \
-	return fnmatch(atom->argv[0], action_data->pathname,
+	printf("pathname %s\n", action_data->subpath); \
+	return fnmatch(atom->argv[0], action_data->subpath,
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
 TEST_FN(subpathname, ACTION_ALL_LNK, \
-	printf("pathname %s\n", action_data->pathname); \
-	return fnmatch(atom->argv[0], action_data->pathname,
+	printf("pathname %s\n", action_data->subpath); \
+	return fnmatch(atom->argv[0], action_data->subpath,
 				FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
 TEST_VAR_FN(filesize, ACTION_REG, action_data->buf->st_size)

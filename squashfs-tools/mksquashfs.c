@@ -3819,8 +3819,8 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 
 		if((old_exclude && old_excluded(filename, &buf)) ||
 				excluded(paths, dir_name, &new) ||
-				eval_exclude_actions(dir_name, subpath, &buf,
-							depth)) {
+				eval_exclude_actions(dir_name, filename, subpath,
+							&buf, depth)) {
 			add_excluded(dir);
 			free_dir_entry(dir_ent);
 			continue;
@@ -3838,8 +3838,8 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 				continue;
 			}
 
-			if(eval_empty_actions(dir_name, subpath, &buf, depth,
-						sub_dir)) {
+			if(eval_empty_actions(dir_name, filename, subpath, &buf,
+						depth, sub_dir)) {
 				add_excluded(dir);
 				free(sub_dir);
 				free_dir_entry(dir_ent);

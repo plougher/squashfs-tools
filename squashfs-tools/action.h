@@ -182,6 +182,7 @@ struct action_data {
 	int depth;
 	char *name;
 	char *pathname;
+	char *subpath;
 	struct stat *buf;
 };
 
@@ -249,7 +250,7 @@ extern int parse_action(char *);
 extern void dump_actions();
 extern void *eval_frag_actions(struct dir_ent *);
 extern void *get_frag_action(void *);
-extern int eval_exclude_actions(char *, char *, struct stat *, int);
+extern int eval_exclude_actions(char *, char *, char *, struct stat *, int);
 extern void eval_actions(struct dir_ent *);
-extern int eval_empty_actions(char *, char *, struct stat *, int,
+extern int eval_empty_actions(char *, char *, char *, struct stat *, int,
 							struct dir_info *);
