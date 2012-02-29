@@ -254,3 +254,4 @@ extern int eval_exclude_actions(char *, char *, char *, struct stat *, int);
 extern void eval_actions(struct dir_ent *);
 extern int eval_empty_actions(char *, char *, char *, struct stat *, int,
 							struct dir_info *);
+extern int read_bytes(int, void *, int);

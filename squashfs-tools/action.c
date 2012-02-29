@@ -33,6 +33,8 @@
 #include <fnmatch.h>
 #include <pwd.h>
 #include <grp.h>
+#include <sys/wait.h>
+#include <regex.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
@@ -1441,6 +1443,131 @@ int false_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
+/*
+ *  File test specific code
+ */
+int parse_file_arg(struct test_entry *test, struct atom *atom)
+{
+	int res;
+	regex_t *preg = malloc(sizeof(regex_t));
+
+	if (preg == NULL) {
+		printf("parse file arg malloc failed\n");
+		return 0;
+	}
+
+	res = regcomp(preg, atom->argv[0], REG_EXTENDED);
+	if (res) {
+		char str[1024];
+
+		regerror(res, preg, str, 1024);
+		printf("file(%s) invalid regex because %s\n", atom->argv[0],
+			str);
+		return 0;
+	}
+
+	atom->data = preg;
+
+	return 1;
+}
+
+
+int file_fn(struct atom *atom, struct action_data *action_data)
+{
+	int child, res, size = 0, status;
+	int pipefd[2];
+	char *buffer = NULL;
+	regex_t *preg = atom->data;
+
+	res = pipe(pipefd);
+	if (res == -1) {
+		printf("file_fn pipe failed\n");
+		return 0;
+	}
+
+	child = fork();
+	if (child == -1) {
+		printf("file_fn fork_failed\n");
+		goto failed;
+	}
+
+	if (child == 0) {
+		/*
+		 * Child process
+		 * Connect stdout to pipefd[1] and execute file command
+		 */
+		close(STDOUT_FILENO);
+		res = dup(pipefd[1]);
+		if (res == -1) {
+			printf("file_fn dup failed\n");
+			exit(EXIT_FAILURE);
+		}
+		execlp("file", "file", "-b", action_data->pathname,
+			(char *) NULL);
+		printf("file_fn execlp failed\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/*
+	 * Parent process.  Read stdout from file command
+ 	 */
+	close(pipefd[1]);
+
+	do {
+		buffer = realloc(buffer, size + 512);
+		if (buffer == NULL) {
+			printf("file_fn malloc failed\n");
+			goto failed2;
+		}
+
+		res = read_bytes(pipefd[0], buffer + size, 512);
+
+		if (res == -1) {
+			printf("file_fn pipe read error\n");
+			goto failed2;
+		}
+
+		size += 512;
+
+	} while (res == 512);
+
+	size = size + res - 512;
+
+	buffer[size] = '\0';
+
+	res = waitpid(child,  &status, 0);
+
+	if (res == -1) {
+		printf("file_fn waitpid failed\n");
+		goto failed;
+	}
+ 
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+		printf("file_fn file returned error\n");
+		goto failed;
+	}
+
+	close(pipefd[0]);
+
+	res = regexec(preg, buffer, (size_t) 0, NULL, 0);
+
+	free(buffer);
+
+	return res == 0;
+
+failed:
+	free(buffer);
+	close(pipefd[0]);
+	return 0;
+
+failed2:
+	free(buffer);
+	close(pipefd[0]);
+	waitpid(child,  &status, 0);
+	return 0;
+}
+
+
 static struct test_entry test_table[] = {
 	{ "name", 1, name_fn},
 	{ "pathname", 1, pathname_fn},
@@ -1470,6 +1597,7 @@ static struct test_entry test_table[] = {
 	{ "type", 1, type_fn, parse_type_arg},
 	{ "true", 0, true_fn, NULL},
 	{ "false", 0, false_fn, NULL},
+	{ "file", 1, file_fn, parse_file_arg},
 	{ "", -1 }
 };
 
