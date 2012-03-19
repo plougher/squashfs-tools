@@ -35,7 +35,12 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef linux
+#include <sys/sysctl.h>
+#else
+#include <sys/sysinfo.h>
 #include <sys/sysmacros.h>
+#endif
 #include <fcntl.h>
 #include <errno.h>
 #include <dirent.h>
@@ -50,7 +55,6 @@
 #include <sys/wait.h>
 #include <limits.h>
 #include <ctype.h>
-#include <sys/sysinfo.h>
 
 #ifndef FNM_EXTMATCH /* glibc extension */
 	#define FNM_EXTMATCH 0
@@ -5199,6 +5203,35 @@ int get_physical_memory()
 	long long page_size = sysconf(_SC_PAGESIZE);
 	int phys_mem;
 
+#ifndef linux
+	#ifdef HW_MEMSIZE
+		#define SYSCTL_PHYSMEM HW_MEMSIZE
+	#elif defined(HW_PHYSMEM64)
+		#define SYSCTL_PHYSMEM HW_PHYSMEM64
+	#else
+		#define SYSCTL_PHYSMEM HW_PHYSMEM
+	#endif
+
+	int mib[2];
+	uint64_t sysctl_physmem = 0;
+	size_t sysctl_len = sizeof(sysctl_physmem);
+
+	mib[0] = CTL_HW;
+	mib[1] = SYSCTL_PHYSMEM;
+
+	if(sysctl(mib, 2, &sysctl_physmem, &sysctl_len, NULL, 0) == 0) {
+		/* some systems use 32-bit values, work with what we're given */
+		if (sysctl_len == 4)
+			sysctl_physmem = *(uint32_t*)&sysctl_physmem;
+		phys_mem = sysctl_physmem >> 20;
+	} else {
+		ERROR_START("Failed to get amount of available "
+			"memory.");
+		ERROR_EXIT("  Defaulting to least viable amount\n");
+		phys_mem = SQUASHFS_LOWMEM;
+	}
+  #undef SYSCTL_PHYSMEM
+#else
 	if(num_pages == -1 || page_size == -1) {
 		struct sysinfo sys;
 		int res = sysinfo(&sys);
@@ -5211,6 +5244,7 @@ int get_physical_memory()
 	}
 
 	phys_mem = num_pages * page_size >> 20;
+#endif
 
 	if(phys_mem < SQUASHFS_LOWMEM)
 		BAD_ERROR("Mksquashfs requires more physical memory than is "

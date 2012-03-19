@@ -32,8 +32,12 @@
 #include "stdarg.h"
 #include "fnmatch_compat.h"
 
+#ifndef linux
+#include <sys/sysctl.h>
+#else
 #include <sys/sysinfo.h>
 #include <sys/sysmacros.h>
+#endif
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
