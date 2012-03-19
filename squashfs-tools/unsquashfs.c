@@ -31,7 +31,12 @@
 #include "unsquashfs_info.h"
 #include "stdarg.h"
 
+#ifndef linux
+#include <sys/sysctl.h>
+#else
 #include <sys/sysinfo.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
