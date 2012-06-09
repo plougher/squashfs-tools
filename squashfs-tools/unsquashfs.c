@@ -815,7 +815,7 @@ int write_file(struct inode *inode, char *pathname)
 
 	/*
 	 * the writer thread is queued a squashfs_file structure describing the
- 	 * file.  If the file has one or more blocks or a fragments they are
+ 	 * file.  If the file has one or more blocks or a fragment they are
  	 * queued separately (references to blocks in the cache).
  	 */
 	file->fd = file_fd;
@@ -839,7 +839,7 @@ int write_file(struct inode *inode, char *pathname)
 		block->offset = 0;
 		block->size = i == file_end ? inode->data & (block_size - 1) :
 			block_size;
-		if(block_list[i] == 0) /* sparse file */
+		if(block_list[i] == 0) /* sparse block */
 			block->buffer = NULL;
 		else {
 			block->buffer = cache_get(data_cache, start,
@@ -2170,6 +2170,10 @@ options:
 	block_size = sBlk.s.block_size;
 	block_log = sBlk.s.block_log;
 
+	/*
+	 * convert from queue size in Mbytes to queue size in
+	 * blocks
+	 */
 	fragment_buffer_size <<= 20 - block_log;
 	data_buffer_size <<= 20 - block_log;
 	initialise_threads(fragment_buffer_size, data_buffer_size);
