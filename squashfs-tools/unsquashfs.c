@@ -32,6 +32,8 @@
 
 #include <sys/sysinfo.h>
 #include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 struct cache *fragment_cache, *data_cache;
 struct queue *to_reader, *to_deflate, *to_writer, *from_writer;
@@ -785,6 +787,46 @@ failure:
 }
 
 
+pthread_mutex_t open_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t open_empty = PTHREAD_COND_INITIALIZER;
+int open_unlimited, open_count;
+#define OPEN_FILE_MARGIN 10
+
+
+void open_init(int count)
+{
+	open_count = count;
+	open_unlimited = count == -1;
+}
+
+
+int open_wait(char *pathname, int flags, mode_t mode)
+{
+	if (!open_unlimited) {
+		pthread_mutex_lock(&open_mutex);
+		while (open_count == 0)
+			pthread_cond_wait(&open_empty, &open_mutex);
+		open_count --;
+		pthread_mutex_unlock(&open_mutex);
+	}
+
+	return open(pathname, flags, mode);
+}
+
+
+void close_wake(int fd)
+{
+	close(fd);
+
+	if (!open_unlimited) {
+		pthread_mutex_lock(&open_mutex);
+		open_count ++;
+		pthread_cond_signal(&open_empty);
+		pthread_mutex_unlock(&open_mutex);
+	}
+}
+
+
 int write_file(struct inode *inode, char *pathname)
 {
 	unsigned int file_fd, i;
@@ -795,8 +837,8 @@ int write_file(struct inode *inode, char *pathname)
 
 	TRACE("write_file: regular file, blocks %d\n", inode->blocks);
 
-	file_fd = open(pathname, O_CREAT | O_WRONLY | (force ? O_TRUNC : 0),
-		(mode_t) inode->mode & 0777);
+	file_fd = open_wait(pathname, O_CREAT | O_WRONLY |
+		(force ? O_TRUNC : 0), (mode_t) inode->mode & 0777);
 	if(file_fd == -1) {
 		ERROR("write_file: failed to create file %s, because %s\n",
 			pathname, strerror(errno));
@@ -1721,7 +1763,7 @@ void *writer(void *arg)
 			}
 		}
 
-		close(file_fd);
+		close_wake(file_fd);
 		if(failed == FALSE)
 			set_attributes(file->pathname, file->mode, file->uid,
 				file->gid, file->time, file->xattr, force);
@@ -1812,9 +1854,9 @@ void *progress_thread(void *arg)
 
 void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 {
-	int i;
+	struct rlimit rlim;
+	int i, max_files, res;
 	sigset_t sigmask, old_mask;
-	int all_buffers_size = fragment_buffer_size + data_buffer_size;
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
@@ -1850,10 +1892,86 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 		EXIT_UNSQUASH("Out of memory allocating thread descriptors\n");
 	deflator_thread = &thread[3];
 
-	to_reader = queue_init(all_buffers_size);
-	to_deflate = queue_init(all_buffers_size);
-	to_writer = queue_init(1000);
+	/*
+	 * dimensioning the to_reader and to_deflate queues.  The size of
+	 * these queues is directly related to the amount of block
+	 * read-ahead possible.  To_reader queues block read requests to
+	 * the reader thread and to_deflate queues block decompression
+	 * requests to the deflate thread(s) (once the block has been read by
+	 * the reader thread).  The amount of read-ahead is determined by
+	 * the combined size of the data_block and fragment caches which
+	 * determine the total number of blocks which can be "in flight"
+	 * at any one time (either being read or being decompressed)
+	 *
+	 * The maximum file open limit, however, affects the read-ahead
+	 * possible, in that for normal sizes of the fragment and data block
+	 * caches, where the incoming files have few data blocks or one fragment
+	 * only, the file open limit is likely to be reached before the
+	 * caches are full.  This means the worst case sizing of the combined
+	 * sizes of the caches is unlikely to ever be necessary.  However, is is
+	 * obvious read-ahead up to the data block cache size is always possible
+	 * irrespective of the file open limit, because a single file could
+	 * contain that number of blocks.
+	 *
+	 * Choosing the size as "file open limit + data block cache size" seems
+	 * to be a reasonable estimate.  We can reasonably assume the maximum
+	 * likely read-ahead possible is data block cache size + one fragment
+	 * per open file.
+	 *
+	 * dimensioning the to_writer queue.  The size of this queue is
+	 * directly related to the amount of block read-ahead possible.
+	 * However, unlike the to_reader and to_deflate queues, this is
+	 * complicated by the fact the to_writer queue not only contains
+	 * entries for fragments and data_blocks but it also contains
+	 * file entries, one per open file in the read-ahead.
+	 *
+	 * Choosing the size as "2 * (file open limit) +
+	 * data block cache size" seems to be a reasonable estimate.
+	 * We can reasonably assume the maximum likely read-ahead possible
+	 * is data block cache size + one fragment per open file, and then
+	 * we will have a file_entry for each open file.
+	 */
+	res = getrlimit(RLIMIT_NOFILE, &rlim);
+	if (res == -1) {
+		ERROR("failed to get open file limit!  Defaulting to 1\n");
+		rlim.rlim_cur = 1;
+	}
+
+	if (rlim.rlim_cur != RLIM_INFINITY) {
+		/*
+		 * leave OPEN_FILE_MARGIN free (rlim_cur includes fds used by
+		 * stdin, stdout, stderr and filesystem fd
+		 */
+		if (rlim.rlim_cur <= OPEN_FILE_MARGIN)
+			/* no margin, use minimum possible */
+			max_files = 1;
+		else
+			max_files = rlim.rlim_cur - OPEN_FILE_MARGIN;
+	} else
+		max_files = -1;
+
+	/* set amount of available files for use by open_wait and close_wake */
+	open_init(max_files);
+
+	/*
+	 * allocate to_reader, to_deflate and to_writer queues.  Set based on
+	 * open file limit and cache size, unless open file limit is unlimited,
+	 * in which case set purely based on cache limits
+	 */
+	if (max_files != -1) {
+		to_reader = queue_init(max_files + data_buffer_size);
+		to_deflate = queue_init(max_files + data_buffer_size);
+		to_writer = queue_init(max_files * 2 + data_buffer_size);
+	} else {
+		int all_buffers_size = fragment_buffer_size + data_buffer_size;
+
+		to_reader = queue_init(all_buffers_size);
+		to_deflate = queue_init(all_buffers_size);
+		to_writer = queue_init(all_buffers_size * 2);
+	}
+
 	from_writer = queue_init(1);
+
 	fragment_cache = cache_init(block_size, fragment_buffer_size);
 	data_cache = cache_init(block_size, data_buffer_size);
 	pthread_create(&thread[0], NULL, reader, NULL);
@@ -1951,7 +2069,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-CVS (2012/01/18)\n");\
+	printf("unsquashfs version 4.2-CVS (2012/06/15)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
