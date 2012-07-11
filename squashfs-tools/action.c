@@ -1318,7 +1318,7 @@ int NAME##_fn(struct atom *atom, struct action_data *action_data) \
 /*
  * Generic test code macro testing VAR for range [x, y] (value between x and y
  * inclusive).
- */
+ */	
 #define TEST_VAR_RANGE_FN(NAME, MATCH, VAR) TEST_FN(NAME##_range, MATCH, \
 	{ \
 	struct test_range_args *range = atom->data; \
@@ -1336,10 +1336,52 @@ TEST_FN(pathname, ACTION_ALL_LNK, \
 	return fnmatch(atom->argv[0], action_data->subpath,
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
-TEST_FN(subpathname, ACTION_ALL_LNK, \
-	printf("pathname %s\n", action_data->subpath); \
-	return fnmatch(atom->argv[0], action_data->subpath,
-				FNM_PERIOD|FNM_EXTMATCH) == 0;)
+/*
+ * Subpathname test specific code
+ */
+int  count_components(char *path)
+{
+	int count;
+
+	for (count = 0; *path != '\0'; count ++) {
+		while (*path == '/')
+			path ++;
+
+		while (*path != '\0' && *path != '/')
+			path ++;
+	}
+
+	return count;
+}
+
+
+char *get_start(char *s, int n)
+{
+	int count;
+	char *path = s;
+
+	for (count = 0; *path != '\0' && count < n; count ++) {
+		while (*path == '/')
+			path ++;
+
+		while (*path != '\0' && *path != '/')
+			path ++;
+	}
+
+	if (count == n)
+		*path = '\0';
+
+	return s;
+}
+	
+
+int subpathname_fn(struct atom *atom, struct action_data *action_data)
+{
+	printf("pathname %s\n", action_data->subpath);
+	return fnmatch(atom->argv[0], get_start(strdupa(action_data->subpath),
+		count_components(atom->argv[0])),
+		FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
+}
 
 TEST_VAR_FN(filesize, ACTION_REG, action_data->buf->st_size)
 
