@@ -3382,7 +3382,7 @@ char *basename_r()
 }
 
 
-struct inode_info *lookup_inode(struct stat *buf)
+struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 {
 	int inode_hash = INODE_HASH(buf->st_dev, buf->st_ino);
 	struct inode_info *inode = inode_info[inode_hash];
@@ -3403,7 +3403,8 @@ struct inode_info *lookup_inode(struct stat *buf)
 	memcpy(&inode->buf, buf, sizeof(struct stat));
 	inode->read = FALSE;
 	inode->root_entry = FALSE;
-	inode->pseudo_file = FALSE;
+	inode->pseudo_file = pseudo;
+	inode->pseudo_id = id;
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
 
@@ -3431,6 +3432,12 @@ struct inode_info *lookup_inode(struct stat *buf)
 	inode_info[inode_hash] = inode;
 
 	return inode;
+}
+
+
+inline struct inode_info *lookup_inode(struct stat *buf)
+{
+	return lookup_inode2(buf, 0, 0);
 }
 
 
@@ -3736,8 +3743,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		buf.st_mtime = time(NULL);
 		buf.st_dev = 0;
 		buf.st_ino = 0;
-		dir_ent->inode = lookup_inode(&buf);
-		dir_ent->inode->pseudo_file = PSEUDO_FILE_OTHER;
+		dir_ent->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
 	} else {
 		if(lstat(pathname, &buf) == -1) {
 			ERROR("Cannot stat dir/file %s because %s, ignoring",
@@ -3950,30 +3956,25 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
 #ifdef USE_TMP_FILE
 			struct stat buf2;
 			int res = stat(pseudo_ent->dev->filename, &buf2);
-			struct inode_info *inode;
 			if(res == -1) {
 				ERROR("Stat on pseudo file \"%s\" failed, "
 					"skipping...", pseudo_ent->pathname);
 				continue;
 			}
 			buf.st_size = buf2.st_size;
-			inode = lookup_inode(&buf);
-			inode->pseudo_file = PSEUDO_FILE_OTHER;		
 			add_dir_entry2(pseudo_ent->name, NULL,
-				pseudo_ent->dev->filename, sub_dir, inode,
-				dir);
+				pseudo_ent->dev->filename, sub_dir, 
+				lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0), dir);
 #else
-			struct inode_info *inode = lookup_inode(&buf);
-			inode->pseudo_id = pseudo_ent->dev->pseudo_id;
-			inode->pseudo_file = PSEUDO_FILE_PROCESS;		
 			add_dir_entry2(pseudo_ent->name, NULL,
-				pseudo_ent->pathname, sub_dir, inode, dir);
+				pseudo_ent->pathname, sub_dir,
+				lookup_inode2(&buf, PSEUDO_FILE_PROCESS,
+				pseudo_ent->dev->pseudo_id), dir);
 #endif
 		} else {
-			struct inode_info *inode = lookup_inode(&buf);
-			inode->pseudo_file = PSEUDO_FILE_OTHER;		
 			add_dir_entry2(pseudo_ent->name, NULL,
-				pseudo_ent->pathname, sub_dir, inode, dir);
+				pseudo_ent->pathname, sub_dir,
+				lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0), dir);
 		}
 	}
 
