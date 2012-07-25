@@ -1240,6 +1240,22 @@ char *subpathname(struct dir_ent *dir_ent)
 }
 
 
+inline unsigned int inode_number(struct inode_info *inode)
+{
+	return (inode->buf.st_mode & S_IFMT) == S_IFDIR ?
+		inode->inode_number :
+		inode->inode_number + dir_inode_no;
+}
+
+
+inline unsigned int parent_inode(struct dir_info *dir)
+{
+	return dir ?
+		inode_number(dir->dir_ent->inode) :
+		dir_inode_no + inode_no;
+}
+
+	
 int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	struct dir_ent *dir_ent, int type, long long byte_size,
 	long long start_block, unsigned int offset, unsigned int *block_list,
@@ -1251,9 +1267,6 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	void *inode;
 	char *filename = pathname(dir_ent);
 	int nlink = dir_ent->inode->nlink;
-	int inode_number = type == SQUASHFS_DIR_TYPE ?
-		dir_ent->inode->inode_number :
-		dir_ent->inode->inode_number + dir_inode_no;
 	int xattr = read_xattrs(dir_ent);
 
 	switch(type) {
@@ -1297,7 +1310,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	base->guid = get_guid((unsigned int) global_gid == -1 ?
 		buf->st_gid : global_gid);
 	base->mtime = buf->st_mtime;
-	base->inode_number = inode_number;
+	base->inode_number = inode_number(dir_ent->inode);
 
 	if(type == SQUASHFS_FILE_TYPE) {
 		int i;
@@ -1360,9 +1373,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		dir->offset = offset;
 		dir->start_block = start_block;
 		dir->i_count = i_count;
-		dir->parent_inode = dir_ent->our_dir ?
-			dir_ent->our_dir->dir_ent->inode->inode_number :
-			dir_inode_no + inode_no;
+		dir->parent_inode = parent_inode(dir_ent->our_dir);
 		dir->xattr = xattr;
 
 		SQUASHFS_SWAP_LDIR_INODE_HEADER(dir, inode);
@@ -1385,9 +1396,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		dir->file_size = byte_size;
 		dir->offset = offset;
 		dir->start_block = start_block;
-		dir->parent_inode = dir_ent->our_dir ?
-			dir_ent->our_dir->dir_ent->inode->inode_number :
-			dir_inode_no + inode_no;
+		dir->parent_inode = parent_inode(dir_ent->our_dir);
 		SQUASHFS_SWAP_DIR_INODE_HEADER(dir, inode);
 		TRACE("Directory inode, file_size %lld, start_block 0x%llx, "
 			"offset 0x%x, nlink %d\n", byte_size, start_block,
@@ -3998,9 +4007,6 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 		struct inode_info *inode_info = dir_ent->inode;
 		struct stat *buf = &inode_info->buf;
 		char *dir_name = dir_ent->name;
-		unsigned int inode_number = ((buf->st_mode & S_IFMT) == S_IFDIR)
-			?  dir_ent->inode->inode_number :
-			dir_ent->inode->inode_number + dir_inode_no;
 
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
 			switch(buf->st_mode & S_IFMT) {
@@ -4114,7 +4120,7 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 			}
 		}
 		
-		add_dir(*inode, inode_number, dir_name, squashfs_type, &dir);
+		add_dir(*inode, inode_number(dir_ent->inode), dir_name, squashfs_type, &dir);
 		update_progress_bar();
 	}
 
@@ -4306,9 +4312,7 @@ long long write_inode_lookup_table()
 
 		for(inode = inode_info[i]; inode; inode = inode->next) {
 
-			inode_number = inode->type == SQUASHFS_DIR_TYPE ?
-				inode->inode_number : inode->inode_number +
-				dir_inode_no;
+			inode_number = inode_number(inode);
 
 			SQUASHFS_SWAP_LONG_LONGS(&inode->inode,
 				&inode_lookup_table[inode_number - 1], 1);
