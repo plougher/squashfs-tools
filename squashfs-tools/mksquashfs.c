@@ -1538,22 +1538,6 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 }
 
 
-void scan3_init_dir(struct directory *dir)
-{
-	dir->buff = malloc(SQUASHFS_METADATA_SIZE);
-	if(dir->buff == NULL) {
-		BAD_ERROR("Out of memory allocating directory buffer\n");
-	}
-
-	dir->size = SQUASHFS_METADATA_SIZE;
-	dir->p = dir->index_count_p = dir->buff;
-	dir->entry_count = 256;
-	dir->entry_count_p = NULL;
-	dir->index = NULL;
-	dir->i_count = dir->i_size = 0;
-}
-
-
 void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 	int type, struct directory *dir)
 {
@@ -3519,24 +3503,72 @@ inline void add_excluded(struct dir_info *dir)
 }
 
 
-int compare_name(const void *ent1_ptr, const void *ent2_ptr)
-{
-	struct dir_ent *ent1 = *((struct dir_ent **) ent1_ptr);
-	struct dir_ent *ent2 = *((struct dir_ent **) ent2_ptr);
 
-	return strcmp(ent1->name, ent2->name);
+void dir_scan(squashfs_inode *inode, char *pathname,
+	struct dir_ent *(_readdir)(struct dir_info *))
+{
+	struct stat buf;
+	struct dir_info *dir_info = dir_scan1(pathname, "", paths, _readdir, 1);
+	struct dir_ent *dir_ent;
+	
+	if(dir_info == NULL)
+		return;
+
+	dir_scan2(dir_info, pseudo, 1);
+
+	dir_ent = create_dir_entry(pathname, NULL, pathname, NULL);
+
+	if(pathname[0] == '\0') {
+		/*
+ 		 * dummy top level directory, if multiple sources specified on
+		 * command line
+		 */
+		memset(&buf, 0, sizeof(buf));
+		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+		buf.st_uid = getuid();
+		buf.st_gid = getgid();
+		buf.st_mtime = time(NULL);
+		buf.st_dev = 0;
+		buf.st_ino = 0;
+		dir_ent->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
+	} else {
+		if(lstat(pathname, &buf) == -1) {
+			ERROR("Cannot stat dir/file %s because %s, ignoring",
+				pathname, strerror(errno));
+			return;
+		}
+		dir_ent->inode = lookup_inode(&buf);
+	}
+
+	if(root_inode_number) {
+		dir_ent->inode->inode_number = root_inode_number;
+		dir_inode_no --;
+	}
+	dir_ent->dir = dir_info;
+	dir_info->dir_ent = dir_ent;
+
+	if(sorted) {
+		int res = generate_file_priorities(dir_info, 0,
+			&dir_info->dir_ent->inode->buf);
+
+		if(res == FALSE)
+			BAD_ERROR("generate_file_priorities failed\n");
+	}
+	queue_put(to_reader, dir_info);
+	if(sorted)
+		sort_files_and_write(dir_info);
+	if(progress)
+		enable_progress_bar();
+	dir_scan3(inode, dir_info);
+	dir_ent->inode->inode = *inode;
+	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 }
 
 
-void sort_directory(struct dir_info *dir)
-{
-	qsort(dir->list, dir->count, sizeof(struct dir_ent *), compare_name);
-
-	if((dir->count < 257 && dir->byte_count < SQUASHFS_METADATA_SIZE))
-		dir->dir_is_ldir = FALSE;
-}
-
-
+/*
+ * dir_scan1 routines...
+ * This scans the source directories into memory for processing
+ */
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 {
 	struct dir_info *dir;
@@ -3664,126 +3696,10 @@ struct dir_ent *scan1_readdir(struct dir_info *dir)
 }
 
 
-struct dir_ent *scan2_readdir(struct dir_info *dir_info)
-{
-	int current_count;
-
-	while((current_count = dir_info->current_count++) < dir_info->count)
-		if(dir_info->list[current_count]->inode->root_entry)
-			continue;
-		else 
-			return dir_info->list[current_count];
-	return NULL;	
-}
-
-
-struct dir_ent *scan2_lookup(struct dir_info *dir, char *name)
-{
-	int i;
-
-	for(i = 0; i < dir->count; i++)
-		if(strcmp(dir->list[i]->name, name) == 0)
-			return dir->list[i];
-
-	return NULL;
-}
-
-
-struct dir_ent *scan3_readdir(struct directory *dir, struct dir_info *dir_info)
-{
-	int current_count;
-
-	while((current_count = dir_info->current_count++) < dir_info->count)
-		if(dir_info->list[current_count]->inode->root_entry)
-			add_dir(dir_info->list[current_count]->inode->inode,
-				dir_info->list[current_count]->inode->inode_number,
-				dir_info->list[current_count]->name,
-				dir_info->list[current_count]->inode->type, dir);
-		else 
-			return dir_info->list[current_count];
-	return NULL;	
-}
-
-
 void scan1_freedir(struct dir_info *dir)
 {
 	if(dir->pathname[0] != '\0')
 		closedir(dir->linuxdir);
-}
-
-
-void scan2_freedir(struct dir_info *dir)
-{
-	dir->current_count = 0;
-}
-
-
-void scan3_freedir(struct directory *dir)
-{
-	if(dir->index)
-		free(dir->index);
-	free(dir->buff);
-}
-
-
-void dir_scan(squashfs_inode *inode, char *pathname,
-	struct dir_ent *(_readdir)(struct dir_info *))
-{
-	struct stat buf;
-	struct dir_info *dir_info = dir_scan1(pathname, "", paths, _readdir, 1);
-	struct dir_ent *dir_ent;
-	
-	if(dir_info == NULL)
-		return;
-
-	dir_scan2(dir_info, pseudo, 1);
-
-	dir_ent = create_dir_entry(pathname, NULL, pathname, NULL);
-
-	if(pathname[0] == '\0') {
-		/*
- 		 * dummy top level directory, if multiple sources specified on
-		 * command line
-		 */
-		memset(&buf, 0, sizeof(buf));
-		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-		buf.st_uid = getuid();
-		buf.st_gid = getgid();
-		buf.st_mtime = time(NULL);
-		buf.st_dev = 0;
-		buf.st_ino = 0;
-		dir_ent->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
-	} else {
-		if(lstat(pathname, &buf) == -1) {
-			ERROR("Cannot stat dir/file %s because %s, ignoring",
-				pathname, strerror(errno));
-			return;
-		}
-		dir_ent->inode = lookup_inode(&buf);
-	}
-
-	if(root_inode_number) {
-		dir_ent->inode->inode_number = root_inode_number;
-		dir_inode_no --;
-	}
-	dir_ent->dir = dir_info;
-	dir_info->dir_ent = dir_ent;
-
-	if(sorted) {
-		int res = generate_file_priorities(dir_info, 0,
-			&dir_info->dir_ent->inode->buf);
-
-		if(res == FALSE)
-			BAD_ERROR("generate_file_priorities failed\n");
-	}
-	queue_put(to_reader, dir_info);
-	if(sorted)
-		sort_files_and_write(dir_info);
-	if(progress)
-		enable_progress_bar();
-	dir_scan3(inode, dir_info);
-	dir_ent->inode->inode = *inode;
-	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 }
 
 
@@ -3874,6 +3790,59 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 
 error:
 	return dir;
+}
+
+
+/*
+ * dir_scan2 routines...
+ * This processes any pseudo files, and sorts every directory
+ */
+int compare_name(const void *ent1_ptr, const void *ent2_ptr)
+{
+	struct dir_ent *ent1 = *((struct dir_ent **) ent1_ptr);
+	struct dir_ent *ent2 = *((struct dir_ent **) ent2_ptr);
+
+	return strcmp(ent1->name, ent2->name);
+}
+
+
+void sort_directory(struct dir_info *dir)
+{
+	qsort(dir->list, dir->count, sizeof(struct dir_ent *), compare_name);
+
+	if((dir->count < 257 && dir->byte_count < SQUASHFS_METADATA_SIZE))
+		dir->dir_is_ldir = FALSE;
+}
+
+
+struct dir_ent *scan2_readdir(struct dir_info *dir_info)
+{
+	int current_count;
+
+	while((current_count = dir_info->current_count++) < dir_info->count)
+		if(dir_info->list[current_count]->inode->root_entry)
+			continue;
+		else 
+			return dir_info->list[current_count];
+	return NULL;	
+}
+
+
+struct dir_ent *scan2_lookup(struct dir_info *dir, char *name)
+{
+	int i;
+
+	for(i = 0; i < dir->count; i++)
+		if(strcmp(dir->list[i]->name, name) == 0)
+			return dir->list[i];
+
+	return NULL;
+}
+
+
+void scan2_freedir(struct dir_info *dir)
+{
+	dir->current_count = 0;
 }
 
 
@@ -3991,6 +3960,50 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
 	sort_directory(dir);
 
 	return dir;
+}
+
+
+/*
+ * dir_scan3 routines...
+ * This generates the filesystem metadata and writes it out to the destination
+ */
+void scan3_init_dir(struct directory *dir)
+{
+	dir->buff = malloc(SQUASHFS_METADATA_SIZE);
+	if(dir->buff == NULL) {
+		BAD_ERROR("Out of memory allocating directory buffer\n");
+	}
+
+	dir->size = SQUASHFS_METADATA_SIZE;
+	dir->p = dir->index_count_p = dir->buff;
+	dir->entry_count = 256;
+	dir->entry_count_p = NULL;
+	dir->index = NULL;
+	dir->i_count = dir->i_size = 0;
+}
+
+
+struct dir_ent *scan3_readdir(struct directory *dir, struct dir_info *dir_info)
+{
+	int current_count;
+
+	while((current_count = dir_info->current_count++) < dir_info->count)
+		if(dir_info->list[current_count]->inode->root_entry)
+			add_dir(dir_info->list[current_count]->inode->inode,
+				dir_info->list[current_count]->inode->inode_number,
+				dir_info->list[current_count]->name,
+				dir_info->list[current_count]->inode->type, dir);
+		else 
+			return dir_info->list[current_count];
+	return NULL;	
+}
+
+
+void scan3_freedir(struct directory *dir)
+{
+	if(dir->index)
+		free(dir->index);
+	free(dir->buff);
 }
 
 
@@ -4702,7 +4715,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/07/10)\n");\
+	printf("mksquashfs version 4.2-CVS (2012/07/24)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
