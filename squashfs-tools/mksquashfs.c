@@ -245,8 +245,7 @@ struct squashfs_fragment_entry *fragment_table = NULL;
 int fragments_outstanding = 0;
 
 /* current inode number for directories and non directories */
-unsigned int dir_inode_no = 1;
-unsigned int inode_no = 0;
+unsigned int inode_no = 1;
 unsigned int root_inode_number = 0;
 
 /* list of source dirs/files */
@@ -418,7 +417,8 @@ struct file_info *duplicate(long long file_size, long long bytes,
 struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), int);
 struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int);
-void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info);
+void dir_scan3(struct dir_info *dir);
+void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct fragment *fragment,
 	unsigned short checksum, unsigned short fragment_checksum,
@@ -1240,19 +1240,15 @@ char *subpathname(struct dir_ent *dir_ent)
 }
 
 
-inline unsigned int inode_number(struct inode_info *inode)
+inline unsigned int get_inode_no(struct inode_info *inode)
 {
-	return (inode->buf.st_mode & S_IFMT) == S_IFDIR ?
-		inode->inode_number :
-		inode->inode_number + dir_inode_no;
+	return inode->inode_number;
 }
 
 
-inline unsigned int parent_inode(struct dir_info *dir)
+inline unsigned int get_parent_no(struct dir_info *dir)
 {
-	return dir ?
-		inode_number(dir->dir_ent->inode) :
-		dir_inode_no + inode_no;
+	return dir ? get_inode_no(dir->dir_ent->inode) : inode_no;
 }
 
 	
@@ -1310,7 +1306,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	base->guid = get_guid((unsigned int) global_gid == -1 ?
 		buf->st_gid : global_gid);
 	base->mtime = buf->st_mtime;
-	base->inode_number = inode_number(dir_ent->inode);
+	base->inode_number = get_inode_no(dir_ent->inode);
 
 	if(type == SQUASHFS_FILE_TYPE) {
 		int i;
@@ -1373,7 +1369,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		dir->offset = offset;
 		dir->start_block = start_block;
 		dir->i_count = i_count;
-		dir->parent_inode = parent_inode(dir_ent->our_dir);
+		dir->parent_inode = get_parent_no(dir_ent->our_dir);
 		dir->xattr = xattr;
 
 		SQUASHFS_SWAP_LDIR_INODE_HEADER(dir, inode);
@@ -1396,7 +1392,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 		dir->file_size = byte_size;
 		dir->offset = offset;
 		dir->start_block = start_block;
-		dir->parent_inode = parent_inode(dir_ent->our_dir);
+		dir->parent_inode = get_parent_no(dir_ent->our_dir);
 		SQUASHFS_SWAP_DIR_INODE_HEADER(dir, inode);
 		TRACE("Directory inode, file_size %lld, start_block 0x%llx, "
 			"offset 0x%x, nlink %d\n", byte_size, start_block,
@@ -3400,6 +3396,7 @@ struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 	inode->pseudo_id = id;
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
+	inode->inode_number = 0;
 
 	/*
 	 * Copy filesystem wide defaults into inode, these filesystem
@@ -3416,11 +3413,6 @@ struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 		estimated_uncompressed += (buf->st_size + block_size - 1) >>
 			block_log;
 
-	if((buf->st_mode & S_IFMT) == S_IFDIR)
-		inode->inode_number = dir_inode_no ++;
-	else
-		inode->inode_number = inode_no ++;
-
 	inode->next = inode_info[inode_hash];
 	inode_info[inode_hash] = inode;
 
@@ -3431,6 +3423,13 @@ struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 inline struct inode_info *lookup_inode(struct stat *buf)
 {
 	return lookup_inode2(buf, 0, 0);
+}
+
+
+inline void alloc_inode_no(struct inode_info *inode, unsigned int use_this)
+{
+	if (inode->inode_number == 0)
+		inode->inode_number = use_this ? : inode_no ++;
 }
 
 
@@ -3515,6 +3514,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		return;
 
 	dir_scan2(dir_info, pseudo, 1);
+	dir_scan3(dir_info);
 
 	dir_ent = create_dir_entry(pathname, NULL, pathname, NULL);
 
@@ -3540,10 +3540,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		dir_ent->inode = lookup_inode(&buf);
 	}
 
-	if(root_inode_number) {
-		dir_ent->inode->inode_number = root_inode_number;
-		dir_inode_no --;
-	}
+	alloc_inode_no(dir_ent->inode, root_inode_number);
 	dir_ent->dir = dir_info;
 	dir_info->dir_ent = dir_ent;
 
@@ -3559,7 +3556,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		sort_files_and_write(dir_info);
 	if(progress)
 		enable_progress_bar();
-	dir_scan3(inode, dir_info);
+	dir_scan4(inode, dir_info);
 	dir_ent->inode->inode = *inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 }
@@ -3795,26 +3792,8 @@ error:
 
 /*
  * dir_scan2 routines...
- * This processes any pseudo files, and sorts every directory
+ * This processes most actions and any pseudo files
  */
-int compare_name(const void *ent1_ptr, const void *ent2_ptr)
-{
-	struct dir_ent *ent1 = *((struct dir_ent **) ent1_ptr);
-	struct dir_ent *ent2 = *((struct dir_ent **) ent2_ptr);
-
-	return strcmp(ent1->name, ent2->name);
-}
-
-
-void sort_directory(struct dir_info *dir)
-{
-	qsort(dir->list, dir->count, sizeof(struct dir_ent *), compare_name);
-
-	if((dir->count < 257 && dir->byte_count < SQUASHFS_METADATA_SIZE))
-		dir->dir_is_ldir = FALSE;
-}
-
-
 struct dir_ent *scan2_readdir(struct dir_info *dir_info)
 {
 	int current_count;
@@ -3957,7 +3936,6 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
 	}
 
 	scan2_freedir(dir);
-	sort_directory(dir);
 
 	return dir;
 }
@@ -3965,9 +3943,47 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
 
 /*
  * dir_scan3 routines...
+ * This sorts every directory and computes the inode numbers
+ */
+int compare_name(const void *ent1_ptr, const void *ent2_ptr)
+{
+	struct dir_ent *ent1 = *((struct dir_ent **) ent1_ptr);
+	struct dir_ent *ent2 = *((struct dir_ent **) ent2_ptr);
+
+	return strcmp(ent1->name, ent2->name);
+}
+
+
+void sort_directory(struct dir_info *dir)
+{
+	qsort(dir->list, dir->count, sizeof(struct dir_ent *), compare_name);
+
+	if((dir->count < 257 && dir->byte_count < SQUASHFS_METADATA_SIZE))
+		dir->dir_is_ldir = FALSE;
+}
+
+
+void dir_scan3(struct dir_info *dir)
+{
+	struct dir_ent *dir_ent;
+
+	sort_directory(dir);
+
+	while((dir_ent = scan2_readdir(dir)) != NULL) {
+		alloc_inode_no(dir_ent->inode, 0);
+		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
+			dir_scan3(dir_ent->dir);
+	}
+
+	scan2_freedir(dir);
+}
+
+
+/*
+ * dir_scan4 routines...
  * This generates the filesystem metadata and writes it out to the destination
  */
-void scan3_init_dir(struct directory *dir)
+void scan4_init_dir(struct directory *dir)
 {
 	dir->buff = malloc(SQUASHFS_METADATA_SIZE);
 	if(dir->buff == NULL) {
@@ -3983,7 +3999,7 @@ void scan3_init_dir(struct directory *dir)
 }
 
 
-struct dir_ent *scan3_readdir(struct directory *dir, struct dir_info *dir_info)
+struct dir_ent *scan4_readdir(struct directory *dir, struct dir_info *dir_info)
 {
 	int current_count;
 
@@ -3999,7 +4015,7 @@ struct dir_ent *scan3_readdir(struct directory *dir, struct dir_info *dir_info)
 }
 
 
-void scan3_freedir(struct directory *dir)
+void scan4_freedir(struct directory *dir)
 {
 	if(dir->index)
 		free(dir->index);
@@ -4007,16 +4023,16 @@ void scan3_freedir(struct directory *dir)
 }
 
 
-void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
+void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info)
 {
 	int squashfs_type;
 	int duplicate_file;
 	struct directory dir;
 	struct dir_ent *dir_ent;
 	
-	scan3_init_dir(&dir);
+	scan4_init_dir(&dir);
 	
-	while((dir_ent = scan3_readdir(&dir, dir_info)) != NULL) {
+	while((dir_ent = scan4_readdir(&dir, dir_info)) != NULL) {
 		struct inode_info *inode_info = dir_ent->inode;
 		struct stat *buf = &inode_info->buf;
 		char *dir_name = dir_ent->name;
@@ -4036,7 +4052,7 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 
 				case S_IFDIR:
 					squashfs_type = SQUASHFS_DIR_TYPE;
-					dir_scan3(inode, dir_ent->dir);
+					dir_scan4(inode, dir_ent->dir);
 					break;
 
 				case S_IFLNK:
@@ -4133,14 +4149,14 @@ void dir_scan3(squashfs_inode *inode, struct dir_info *dir_info)
 			}
 		}
 		
-		add_dir(*inode, inode_number(dir_ent->inode), dir_name, squashfs_type, &dir);
+		add_dir(*inode, get_inode_no(dir_ent->inode), dir_name, squashfs_type, &dir);
 		update_progress_bar();
 	}
 
 	write_dir(inode, dir_info, &dir);
 	INFO("directory %s inode 0x%llx\n", pathname(dir_info->dir_ent), *inode);
 
-	scan3_freedir(&dir);
+	scan4_freedir(&dir);
 }
 
 
@@ -4325,7 +4341,7 @@ long long write_inode_lookup_table()
 
 		for(inode = inode_info[i]; inode; inode = inode->next) {
 
-			inode_number = inode_number(inode);
+			inode_number = get_inode_no(inode);
 
 			SQUASHFS_SWAP_LONG_LONGS(&inode->inode,
 				&inode_lookup_table[inode_number - 1], 1);
@@ -4715,7 +4731,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/07/24)\n");\
+	printf("mksquashfs version 4.2-CVS (2012/07/29)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5414,7 +5430,7 @@ printOptions:
 			sdirectory_bytes = last_directory_block;
 			sdirectory_compressed_bytes = 0;
 			root_inode_number = inode_dir_parent_inode;
-			dir_inode_no = sBlk.inodes + 2;
+			inode_no = sBlk.inodes + 2;
 			directory_bytes = last_directory_block;
 			directory_cache_bytes = uncompressed_data;
 			memmove(directory_data_cache, directory_data_cache +
@@ -5437,7 +5453,7 @@ printOptions:
 				sdirectory_compressed_bytes); 
 			sdirectory_bytes = inode_dir_start_block;
 			root_inode_number = inode_dir_inode_number;
-			dir_inode_no = sBlk.inodes + 1;
+			inode_no = sBlk.inodes + 1;
 			directory_bytes = inode_dir_start_block;
 			directory_cache_bytes = inode_dir_offset;
 			cache_bytes = root_inode_offset;
