@@ -204,11 +204,11 @@ int generate_file_priorities(struct dir_info *dir, int priority,
 	struct stat *buf)
 {
 	int res;
+	struct dir_ent *dir_ent = dir->list;
 
 	priority = get_priority(dir->pathname, buf, priority);
 
-	while(dir->current_count < dir->count) {
-		struct dir_ent *dir_ent = dir->list[dir->current_count++];
+	for(; dir_ent; dir_ent = dir_ent->next) {
 		struct stat *buf = &dir_ent->inode->buf;
 		if(dir_ent->inode->root_entry)
 			continue;
@@ -229,7 +229,6 @@ int generate_file_priorities(struct dir_info *dir, int priority,
 				break;
 		}
 	}
-	dir->current_count = 0;
 
 	return TRUE;
 }

@@ -2515,10 +2515,9 @@ read_err:
 
 
 void reader_scan(struct dir_info *dir) {
-	int i;
+	struct dir_ent *dir_ent = dir->list;
 
-	for(i = 0; i < dir->count; i++) {
-		struct dir_ent *dir_ent = dir->list[i];
+	for(; dir_ent; dir_ent = dir_ent->next) {
 		struct stat *buf = &dir_ent->inode->buf;
 		if(dir_ent->inode->root_entry)
 			continue;
@@ -3444,6 +3443,7 @@ inline struct dir_ent *create_dir_entry(char *name, char *source_name,
 	dir_ent->source_name = source_name;
 	dir_ent->nonstandard_pathname = nonstandard_pathname;
 	dir_ent->our_dir = dir;
+	dir_ent->next = NULL;
 
 	return dir_ent;
 }
@@ -3454,19 +3454,14 @@ inline void add_dir_entry(struct dir_ent *dir_ent, struct dir_info *sub_dir,
 {
 	struct dir_info *dir = dir_ent->our_dir;
 
-	if((dir->count % DIR_ENTRIES) == 0) {
-		dir->list = realloc(dir->list, (dir->count + DIR_ENTRIES) *
-				sizeof(struct dir_ent *));
-		if(dir->list == NULL)
-			BAD_ERROR("Out of memory in add_dir_entry\n");
-	}
-
 	if(sub_dir)
 		sub_dir->dir_ent = dir_ent;
 	dir_ent->inode = inode_info;
 	dir_ent->dir = sub_dir;
 
-	dir->list[dir->count++] = dir_ent;
+	dir_ent->next = dir->list;
+	dir->list = dir_ent;
+	dir->count++;
 	dir->byte_count += strlen(dir_ent->name) +
 		sizeof(struct squashfs_dir_entry);
 }
@@ -3582,7 +3577,6 @@ struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 	dir->subpath = subpath;
 	dir->count = 0;
 	dir->directory_count = 0;
-	dir->current_count = 0;
 	dir->byte_count = 0;
 	dir->dir_is_ldir = TRUE;
 	dir->list = NULL;
@@ -3611,7 +3605,7 @@ struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 	while(index < source) {
 		char *basename = getbase(source_path[index]);
 		char *dir_name;
-		int n, pass = 1, res;
+		int pass = 1, res;
 
 		if(basename == NULL) {
 			ERROR("Bad source directory %s - skipping ...\n",
@@ -3621,9 +3615,11 @@ struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 		}
 		dir_name = basename = strdup(basename);
 		for(;;) {
-			for(n = 0; n < dir->count &&
-				strcmp(dir->list[n]->name, dir_name) != 0; n++);
-			if(n == dir->count)
+			struct dir_ent *dir_ent = dir->list;
+
+			for(; dir_ent && strcmp(dir_ent->name, dir_name) != 0;
+				dir_ent = dir_ent->next);
+			if(dir_ent == NULL)
 				break;
 			ERROR("Source directory entry %s already used! - trying"
 				" ", dir_name);
@@ -3662,9 +3658,11 @@ struct dir_ent *scan1_single_readdir(struct dir_info *dir)
 		int pass = 1, res;
 
 		for(;;) {
-			for(i = 0; i < dir->count &&
-				strcmp(dir->list[i]->name, dir_name) != 0; i++);
-			if(i == dir->count)
+			struct dir_ent *dir_ent = dir->list;
+
+			for(; dir_ent && strcmp(dir_ent->name, dir_name) != 0;
+				dir_ent = dir_ent->next);
+			if(dir_ent == NULL)
 				break;
 			ERROR("Source directory entry %s already used! - trying"
 				" ", dir_name);
@@ -3794,41 +3792,34 @@ error:
  * dir_scan2 routines...
  * This processes most actions and any pseudo files
  */
-struct dir_ent *scan2_readdir(struct dir_info *dir_info)
+struct dir_ent *scan2_readdir(struct dir_info *dir, struct dir_ent *dir_ent)
 {
-	int current_count;
+	if (dir_ent == NULL)
+		dir_ent = dir->list;
+	else
+		dir_ent = dir_ent->next;
 
-	while((current_count = dir_info->current_count++) < dir_info->count)
-		if(dir_info->list[current_count]->inode->root_entry)
-			continue;
-		else 
-			return dir_info->list[current_count];
-	return NULL;	
+	for(; dir_ent && dir_ent->inode->root_entry; dir_ent = dir_ent->next);
+
+	return dir_ent;	
 }
 
 
 struct dir_ent *scan2_lookup(struct dir_info *dir, char *name)
 {
-	int i;
+	struct dir_ent *dir_ent = dir->list;
 
-	for(i = 0; i < dir->count; i++)
-		if(strcmp(dir->list[i]->name, name) == 0)
-			return dir->list[i];
+	for(; dir_ent && strcmp(dir_ent->name, name) != 0;
+					dir_ent = dir_ent->next);
 
-	return NULL;
-}
-
-
-void scan2_freedir(struct dir_info *dir)
-{
-	dir->current_count = 0;
+	return dir_ent;
 }
 
 
 struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int depth)
 {
 	struct dir_info *sub_dir;
-	struct dir_ent *dir_ent;
+	struct dir_ent *dir_ent = NULL;
 	struct pseudo_entry *pseudo_ent;
 	struct stat buf;
 	static int pseudo_ino = 1;
@@ -3836,7 +3827,7 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
 	if(dir == NULL && (dir = scan1_opendir("", "", depth)) == NULL)
 		return NULL;
 	
-	while((dir_ent = scan2_readdir(dir)) != NULL) {
+	while((dir_ent = scan2_readdir(dir, dir_ent)) != NULL) {
 		struct inode_info *inode_info = dir_ent->inode;
 		struct stat *buf = &inode_info->buf;
 		char *name = dir_ent->name;
@@ -3935,8 +3926,6 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
 		}
 	}
 
-	scan2_freedir(dir);
-
 	return dir;
 }
 
@@ -3956,26 +3945,42 @@ int compare_name(const void *ent1_ptr, const void *ent2_ptr)
 
 void sort_directory(struct dir_info *dir)
 {
-	qsort(dir->list, dir->count, sizeof(struct dir_ent *), compare_name);
+	struct dir_ent **list, *ptr;
+	int i;
 
 	if((dir->count < 257 && dir->byte_count < SQUASHFS_METADATA_SIZE))
 		dir->dir_is_ldir = FALSE;
+
+	if (dir->count < 2)
+		return;
+
+	list = malloc(dir->count * sizeof(struct dir_ent *));
+
+	for(i = 0, ptr = dir->list; i < dir->count; i++, ptr = ptr->next)
+		list[i] = ptr;
+		
+	qsort(list, dir->count, sizeof(struct dir_ent *), compare_name);
+
+	for(i = 1; i < dir->count; i++)
+		list[i - 1]->next = list[i];
+	dir->list = list[0];
+	list[dir->count - 1]->next = NULL;
+ 
+	free(list);
 }
 
 
 void dir_scan3(struct dir_info *dir)
 {
-	struct dir_ent *dir_ent;
+	struct dir_ent *dir_ent = NULL;
 
 	sort_directory(dir);
 
-	while((dir_ent = scan2_readdir(dir)) != NULL) {
+	while((dir_ent = scan2_readdir(dir, dir_ent)) != NULL) {
 		alloc_inode_no(dir_ent->inode, 0);
 		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
 			dir_scan3(dir_ent->dir);
 	}
-
-	scan2_freedir(dir);
 }
 
 
@@ -3999,19 +4004,19 @@ void scan4_init_dir(struct directory *dir)
 }
 
 
-struct dir_ent *scan4_readdir(struct directory *dir, struct dir_info *dir_info)
+struct dir_ent *scan4_readdir(struct directory *dir, struct dir_info *dir_info,
+	struct dir_ent *dir_ent)
 {
-	int current_count;
+	if (dir_ent == NULL)
+		dir_ent = dir_info->list;
+	else
+		dir_ent = dir_ent->next;
 
-	while((current_count = dir_info->current_count++) < dir_info->count)
-		if(dir_info->list[current_count]->inode->root_entry)
-			add_dir(dir_info->list[current_count]->inode->inode,
-				dir_info->list[current_count]->inode->inode_number,
-				dir_info->list[current_count]->name,
-				dir_info->list[current_count]->inode->type, dir);
-		else 
-			return dir_info->list[current_count];
-	return NULL;	
+	for(; dir_ent && dir_ent->inode->root_entry; dir_ent = dir_ent->next)
+		add_dir(dir_ent->inode->inode, dir_ent->inode->inode_number,
+			dir_ent->name, dir_ent->inode->type, dir);
+
+	return dir_ent;	
 }
 
 
@@ -4028,11 +4033,11 @@ void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info)
 	int squashfs_type;
 	int duplicate_file;
 	struct directory dir;
-	struct dir_ent *dir_ent;
+	struct dir_ent *dir_ent = NULL;
 	
 	scan4_init_dir(&dir);
 	
-	while((dir_ent = scan4_readdir(&dir, dir_info)) != NULL) {
+	while((dir_ent = scan4_readdir(&dir, dir_info, dir_ent)) != NULL) {
 		struct inode_info *inode_info = dir_ent->inode;
 		struct stat *buf = &inode_info->buf;
 		char *dir_name = dir_ent->name;
@@ -4731,7 +4736,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/07/29)\n");\
+	printf("mksquashfs version 4.2-CVS (2012/08/04)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

@@ -45,13 +45,12 @@ struct dir_info {
 	char			*subpath;
 	unsigned int		count;
 	unsigned int		directory_count;
-	unsigned int		current_count;
 	unsigned int		byte_count;
 	int			depth;
 	unsigned int		excluded;
 	char			dir_is_ldir;
 	struct dir_ent		*dir_ent;
-	struct dir_ent		**list;
+	struct dir_ent		*list;
 	DIR			*linuxdir;
 };
 
@@ -62,6 +61,7 @@ struct dir_ent {
 	struct inode_info	*inode;
 	struct dir_info		*dir;
 	struct dir_info		*our_dir;
+	struct dir_ent		*next;
 };
 
 struct inode_info {
