@@ -3934,39 +3934,96 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
  * dir_scan3 routines...
  * This sorts every directory and computes the inode numbers
  */
-int compare_name(const void *ent1_ptr, const void *ent2_ptr)
-{
-	struct dir_ent *ent1 = *((struct dir_ent **) ent1_ptr);
-	struct dir_ent *ent2 = *((struct dir_ent **) ent2_ptr);
 
-	return strcmp(ent1->name, ent2->name);
-}
-
-
+/*
+ * Bottom up linked list merge sort.
+ *
+ * Qsort and other O(n log n) algorithms work well with arrays but not
+ * linked lists.  Merge sort another O(n log n) sort algorithm on the other hand
+ * is not ideal for arrays (as it needs an additonal n storage locations
+ * as sorting is not done in place), but it is ideal for linked lists because
+ * it doesn't require any extra storage,
+ */ 
 void sort_directory(struct dir_info *dir)
 {
-	struct dir_ent **list, *ptr;
-	int i;
+	struct dir_ent *cur, *l1, *l2, *next;
+	int len1, len2, stride = 1;
 
 	if((dir->count < 257 && dir->byte_count < SQUASHFS_METADATA_SIZE))
 		dir->dir_is_ldir = FALSE;
 
-	if (dir->count < 2)
+	if(dir->count < 2)
 		return;
 
-	list = malloc(dir->count * sizeof(struct dir_ent *));
+	/*
+	 * We can consider our linked-list to be made up of stride length
+	 * sublists.  Eacn iteration around this loop merges adjacent
+	 * stride length sublists into larger 2*stride sublists.  We stop
+	 * when stride becomes equal to the entire list.
+	 *
+	 * Initially stride = 1 (by definition a sublist of 1 is sorted), and
+	 * these 1 element sublists are merged into 2 element sublists,  which
+	 * are then merged into 4 element sublists and so on.
+	 */
+	do {
+		l2 = dir->list; /* head of current linked list */
+		cur = NULL; /* empty output list */
 
-	for(i = 0, ptr = dir->list; i < dir->count; i++, ptr = ptr->next)
-		list[i] = ptr;
-		
-	qsort(list, dir->count, sizeof(struct dir_ent *), compare_name);
+		/*
+		 * Iterate through the linked list, merging adjacent sublists.
+		 * On each interation l2 points to the next sublist pair to be
+		 * merged (if there's only one sublist left this is simply added
+		 * to the output list)
+		 */
+		while(l2) {
+			l1 = l2;
+			for(len1 = 0; l2 && len1 < stride; len1 ++, l2 = l2->next);
+			len2 = stride;
 
-	for(i = 1; i < dir->count; i++)
-		list[i - 1]->next = list[i];
-	dir->list = list[0];
-	list[dir->count - 1]->next = NULL;
- 
-	free(list);
+			/*
+			 * l1 points to first sublist.
+			 * l2 points to second sublist.
+			 * Merge them onto the output list
+			 */
+			while(len1 && l2 && len2) {
+				if(strcmp(l1->name, l2->name) <= 0) {
+					next = l1;
+					l1 = l1->next;
+					len1 --;
+				} else {
+					next = l2;
+					l2 = l2->next;
+					len2 --;
+				}
+
+				if(cur) {
+					cur->next = next;
+					cur = next;
+				} else
+					dir->list = cur = next;
+			}
+			/*
+			 * One sublist is now empty, copy the other one onto the
+			 * output list
+			 */
+			for(; len1; len1 --, l1 = l1->next) {
+				if(cur) {
+					cur->next = l1;
+					cur = l1;
+				} else
+					dir->list = cur = l1;
+			}
+			for(; l2 && len2; len2 --, l2 = l2->next) {
+				if(cur) {
+					cur->next = l2;
+					cur = l2;
+				} else
+					dir->list = cur = l2;
+			}
+		}
+		cur->next = NULL;
+		stride = stride << 1;
+	} while(stride < dir->count);
 }
 
 
@@ -4736,7 +4793,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/08/04)\n");\
+	printf("mksquashfs version 4.2-CVS (2012/08/23)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
