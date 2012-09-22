@@ -3511,7 +3511,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	dir_scan2(dir_info, pseudo, 1);
 	dir_scan3(dir_info);
 
-	dir_ent = create_dir_entry(pathname, NULL, pathname, NULL);
+	dir_ent = create_dir_entry(pathname, NULL, pathname, dir_info);
 
 	if(pathname[0] == '\0') {
 		/*
@@ -3538,6 +3538,8 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	alloc_inode_no(dir_ent->inode, root_inode_number);
 	dir_ent->dir = dir_info;
 	dir_info->dir_ent = dir_ent;
+
+	eval_actions(dir_ent);
 
 	if(sorted) {
 		int res = generate_file_priorities(dir_info, 0,
