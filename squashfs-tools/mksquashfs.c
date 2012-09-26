@@ -429,6 +429,7 @@ extern struct priority_entry *priority_list[65536];
 void progress_bar(long long current, long long max, int columns);
 long long generic_write_table(int, void *, int, void *, int);
 void restorefs();
+struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
 
 
 struct queue *queue_init(int size)
@@ -1248,7 +1249,7 @@ inline unsigned int get_inode_no(struct inode_info *inode)
 
 inline unsigned int get_parent_no(struct dir_info *dir)
 {
-	return dir ? get_inode_no(dir->dir_ent->inode) : inode_no;
+	return dir->depth ? get_inode_no(dir->dir_ent->inode) : inode_no;
 }
 
 	
@@ -3511,7 +3512,8 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	dir_scan2(dir_info, pseudo, 1);
 	dir_scan3(dir_info);
 
-	dir_ent = create_dir_entry(pathname, NULL, pathname, dir_info);
+	dir_ent = create_dir_entry(pathname, NULL, pathname,
+						scan1_opendir("", "", 0));
 
 	if(pathname[0] == '\0') {
 		/*
@@ -4795,7 +4797,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/08/23)\n");\
+	printf("mksquashfs version 4.2-CVS (2012/09/25)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
