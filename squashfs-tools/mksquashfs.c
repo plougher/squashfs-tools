@@ -3607,17 +3607,17 @@ struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 	}
 
 	while(index < source) {
-		char *basename = getbase(source_path[index]);
-		char *dir_name;
+		char *basename = NULL;
+		char *dir_name = getbase(source_path[index]);
 		int pass = 1, res;
 
-		if(basename == NULL) {
+		if(dir_name == NULL) {
 			ERROR("Bad source directory %s - skipping ...\n",
 				source_path[index]);
 			index ++;
 			continue;
 		}
-		dir_name = basename = strdup(basename);
+		dir_name = strdup(dir_name);
 		for(;;) {
 			struct dir_ent *dir_ent = dir->list;
 
@@ -3627,7 +3627,9 @@ struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 				break;
 			ERROR("Source directory entry %s already used! - trying"
 				" ", dir_name);
-			if(pass > 1)
+			if(pass == 1)
+				basename = dir_name;
+			else
 				free(dir_name);
 			res = asprintf(&dir_name, "%s_%d", basename, pass++);
 			if(res == -1)
@@ -3657,8 +3659,8 @@ struct dir_ent *scan1_single_readdir(struct dir_info *dir)
 	}
 
 	if((d_name = readdir(dir->linuxdir)) != NULL) {
-		char *basename = strdup(d_name->d_name);
-		char *dir_name = basename;
+		char *basename = NULL;
+		char *dir_name = strdup(d_name->d_name);
 		int pass = 1, res;
 
 		for(;;) {
@@ -3670,7 +3672,9 @@ struct dir_ent *scan1_single_readdir(struct dir_info *dir)
 				break;
 			ERROR("Source directory entry %s already used! - trying"
 				" ", dir_name);
-			if (pass > 1)
+			if (pass == 1)
+				basename = dir_name;
+			else
 				free(dir_name);
 			res = asprintf(&dir_name, "%s_%d", d_name->d_name, pass++);
 			if(res == -1)
