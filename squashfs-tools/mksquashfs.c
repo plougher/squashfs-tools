@@ -3482,10 +3482,10 @@ inline void add_dir_entry2(char *name, char *source_name,
 
 inline void free_dir_entry(struct dir_ent *dir_ent)
 {
-	if(dir_ent->name != NULL)
+	if(dir_ent->name)
 		free(dir_ent->name);
 
-	if(dir_ent->source_name && dir_ent->source_name != dir_ent->name)
+	if(dir_ent->source_name)
 		free(dir_ent->source_name);
 
 	free(dir_ent);
