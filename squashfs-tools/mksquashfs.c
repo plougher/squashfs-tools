@@ -3373,15 +3373,22 @@ char *basename_r()
 
 struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 {
-	int inode_hash = INODE_HASH(buf->st_dev, buf->st_ino);
-	struct inode_info *inode = inode_info[inode_hash];
+	int ino_hash = INODE_HASH(buf->st_dev, buf->st_ino);
+	struct inode_info *inode;
 
-	while(inode != NULL) {
-		if(memcmp(buf, &inode->buf, sizeof(struct stat)) == 0) {
-			inode->nlink ++;
-			return inode;
+	/*
+	 * Look-up inode in hash table, if it already exists we have a
+	 * hard-link, so increment the nlink count and return it.
+	 * Don't do the look-up for directories because we don't hard-link
+	 * directories.
+	 */
+	if ((buf->st_mode & S_IFMT) != S_IFDIR) {
+		for(inode = inode_info[ino_hash]; inode; inode = inode->next) {
+			if(memcmp(buf, &inode->buf, sizeof(struct stat)) == 0) {
+				inode->nlink ++;
+				return inode;
+			}
 		}
-		inode = inode->next;
 	}
 
 	inode = malloc(sizeof(struct inode_info));
@@ -3413,8 +3420,8 @@ struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 		estimated_uncompressed += (buf->st_size + block_size - 1) >>
 			block_log;
 
-	inode->next = inode_info[inode_hash];
-	inode_info[inode_hash] = inode;
+	inode->next = inode_info[ino_hash];
+	inode_info[ino_hash] = inode;
 
 	return inode;
 }
@@ -4801,7 +4808,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/09/25)\n");\
+	printf("mksquashfs version 4.2-CVS (2012/10/03)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
