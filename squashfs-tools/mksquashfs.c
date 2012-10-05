@@ -1234,8 +1234,10 @@ char *subpathname(struct dir_ent *dir_ent)
 		strcpy(subpath, dir_ent->our_dir->subpath);
 		strcat(subpath, "/");
 		strcat(subpath, dir_ent->name);
-	} else
-		strcpy(subpath, dir_ent->name);
+	} else {
+		strcpy(subpath, "/");
+		strcat(subpath, dir_ent->name);
+	}
 
 	return subpath;
 }
