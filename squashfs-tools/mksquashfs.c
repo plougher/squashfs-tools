@@ -4112,7 +4112,6 @@ void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info)
 	while((dir_ent = scan4_readdir(&dir, dir_info, dir_ent)) != NULL) {
 		struct inode_info *inode_info = dir_ent->inode;
 		struct stat *buf = &inode_info->buf;
-		char *dir_name = dir_ent->name;
 
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
 			switch(buf->st_mode & S_IFMT) {
@@ -4233,7 +4232,8 @@ void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info)
 			}
 		}
 		
-		add_dir(*inode, get_inode_no(dir_ent->inode), dir_name, squashfs_type, &dir);
+		add_dir(*inode, get_inode_no(dir_ent->inode), dir_ent->name,
+			squashfs_type, &dir);
 		update_progress_bar();
 	}
 
