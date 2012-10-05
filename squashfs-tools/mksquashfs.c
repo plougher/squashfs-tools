@@ -4110,8 +4110,7 @@ void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info)
 	scan4_init_dir(&dir);
 	
 	while((dir_ent = scan4_readdir(&dir, dir_info, dir_ent)) != NULL) {
-		struct inode_info *inode_info = dir_ent->inode;
-		struct stat *buf = &inode_info->buf;
+		struct stat *buf = &dir_ent->inode->buf;
 
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
 			switch(buf->st_mode & S_IFMT) {
