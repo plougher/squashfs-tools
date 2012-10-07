@@ -1327,6 +1327,32 @@ int NAME##_fn(struct atom *atom, struct action_data *action_data) \
 	})	
 
 
+/*
+ * Name, Pathname and Subpathname test specific code
+ */
+
+/*
+ * Add a leading "/" if subpathname and pathname lacks it
+ */
+int check_pathname(struct test_entry *test, struct atom *atom)
+{
+	int res;
+	char *name;
+
+	if(atom->argv[0][0] != '/') {
+		res = asprintf(&name, "/%s", atom->argv[0]);
+		if(res == -1) {
+			printf("asprintf failed in check_pathname\n");
+			return 0;
+		}
+		free(atom->argv[0]);
+		atom->argv[0] = name;
+	}
+
+	return 1;
+}
+
+
 TEST_FN(name, ACTION_ALL_LNK, \
 	return fnmatch(atom->argv[0], action_data->name,
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
@@ -1336,10 +1362,8 @@ TEST_FN(pathname, ACTION_ALL_LNK, \
 	return fnmatch(atom->argv[0], action_data->subpath,
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
-/*
- * Subpathname test specific code
- */
-int  count_components(char *path)
+
+int count_components(char *path)
 {
 	int count;
 
@@ -1612,8 +1636,8 @@ failed2:
 
 static struct test_entry test_table[] = {
 	{ "name", 1, name_fn},
-	{ "pathname", 1, pathname_fn},
-	{ "subpathname", 1, subpathname_fn},
+	{ "pathname", 1, pathname_fn, check_pathname},
+	{ "subpathname", 1, subpathname_fn, check_pathname},
 	{ "filesize", 1, filesize_fn, parse_number_arg},
 	{ "dirsize", 1, dirsize_fn, parse_number_arg},
 	{ "size", 1, size_fn, parse_number_arg},
