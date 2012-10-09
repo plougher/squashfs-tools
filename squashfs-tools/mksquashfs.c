@@ -3521,7 +3521,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	dir_scan2(dir_info, pseudo, 1);
 	dir_scan3(dir_info);
 
-	dir_ent = create_dir_entry(pathname, NULL, pathname,
+	dir_ent = create_dir_entry("", NULL, pathname,
 						scan1_opendir("", "", 0));
 
 	if(pathname[0] == '\0') {
@@ -4817,7 +4817,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/10/03)\n");\
+	printf("mksquashfs version 4.2-CVS (2012/10/08)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
