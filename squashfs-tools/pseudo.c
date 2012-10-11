@@ -154,8 +154,12 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 			 * component of a pre-existing pseudo file.
 			 */
 			if(target[0] != '\0') {
-				/* entry must exist as a 'd' type pseudo file */
-				if(pseudo->name[i].dev->type == 'd')
+				/*
+				 * entry must exist as either a 'd' type or
+				 * 'm' type pseudo file
+				 */
+				if(pseudo->name[i].dev->type == 'd' ||
+					pseudo->name[i].dev->type == 'm')
 					/* recurse adding child components */
 					pseudo->name[i].pseudo =
 						add_pseudo(NULL, pseudo_dev,
@@ -171,18 +175,21 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 			else ERROR("%s already exists as an identical "
 					"pseudo definition!\n", alltarget);
 		} else {
-			/* sub-directory exists which means this can only be a
-			 * 'd' type pseudo file */
 			if(target[0] == '\0') {
+				/*
+				 * sub-directory exists, which means we can only
+				 * add a pseudo file of type 'd' or type 'm'
+				 */
 				if(pseudo->name[i].dev == NULL &&
-						pseudo_dev->type == 'd') {
+						(pseudo_dev->type == 'd' ||
+						pseudo_dev->type == 'm')) {
 					pseudo->name[i].pathname =
 						strdup(alltarget);
 					pseudo->name[i].dev = pseudo_dev;
 				} else
-					ERROR("%s already exists as a "
-						"directory.  Ignoring %s!\n",
-						targname, alltarget);
+					ERROR("%s already exists as a different"
+						" pseudo definition.  Ignoring"
+						" %s!\n", targname, alltarget);
 			} else
 				/* recurse adding child components */
 				add_pseudo(pseudo->name[i].pseudo, pseudo_dev,
