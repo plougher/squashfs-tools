@@ -416,7 +416,7 @@ struct file_info *duplicate(long long file_size, long long bytes,
 	unsigned short fragment_checksum, int checksum_flag);
 struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), int);
-void dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int);
+void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
 void dir_scan3(struct dir_info *dir);
 void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes,
@@ -3518,7 +3518,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	if(dir_info == NULL)
 		return;
 
-	dir_scan2(dir_info, pseudo, 1);
+	dir_scan2(dir_info, pseudo);
 	dir_scan3(dir_info);
 
 	dir_ent = create_dir_entry("", NULL, pathname,
@@ -3833,7 +3833,7 @@ struct dir_ent *scan2_lookup(struct dir_info *dir, char *name)
 }
 
 
-void dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int depth)
+void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 {
 	struct dir_ent *dir_ent = NULL;
 	struct pseudo_entry *pseudo_ent;
@@ -3848,8 +3848,7 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int depth)
 		eval_actions(dir_ent);
 
 		if((buf->st_mode & S_IFMT) == S_IFDIR)
-			dir_scan2(dir_ent->dir, pseudo_subdir(name, pseudo),
-								depth + 1);
+			dir_scan2(dir_ent->dir, pseudo_subdir(name, pseudo));
 	}
 
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
@@ -3907,7 +3906,7 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int depth)
 						pseudo_ent->pathname, dir);
 			char *subpath = strdup(subpathname(dir_ent));
 			struct dir_info *sub_dir = scan1_opendir("", subpath,
-						depth + 1);
+						dir->depth + 1);
 			if(sub_dir == NULL) {
 				ERROR("Could not create pseudo directory \"%s\""
 					", skipping...\n",
@@ -3916,7 +3915,7 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int depth)
 				pseudo_ino --;
 				continue;
 			}
-			dir_scan2(sub_dir, pseudo_ent->pseudo, depth + 1);
+			dir_scan2(sub_dir, pseudo_ent->pseudo);
 			dir->directory_count ++;
 			add_dir_entry(dir_ent, sub_dir,
 				lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0));
@@ -4819,7 +4818,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/10/08)\n");\
+	printf("mksquashfs version 4.2-CVS (2012/10/12)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
