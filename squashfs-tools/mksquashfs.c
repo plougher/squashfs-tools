@@ -416,7 +416,7 @@ struct file_info *duplicate(long long file_size, long long bytes,
 	unsigned short fragment_checksum, int checksum_flag);
 struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), int);
-struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int);
+void dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int);
 void dir_scan3(struct dir_info *dir);
 void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes,
@@ -3833,16 +3833,12 @@ struct dir_ent *scan2_lookup(struct dir_info *dir, char *name)
 }
 
 
-struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int depth)
+void dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int depth)
 {
-	struct dir_info *sub_dir;
 	struct dir_ent *dir_ent = NULL;
 	struct pseudo_entry *pseudo_ent;
 	struct stat buf;
 	static int pseudo_ino = 1;
-	
-	if(dir == NULL && (dir = scan1_opendir("", "", depth)) == NULL)
-		return NULL;
 	
 	while((dir_ent = scan2_readdir(dir, dir_ent)) != NULL) {
 		struct inode_info *inode_info = dir_ent->inode;
@@ -3896,18 +3892,6 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
 			continue;
 		}
 
-		if(pseudo_ent->dev->type == 'd') {
-			sub_dir = dir_scan2(NULL, pseudo_ent->pseudo, depth + 1);
-			if(sub_dir == NULL) {
-				ERROR("Could not create pseudo directory \"%s\""
-					", skipping...\n",
-					pseudo_ent->pathname);
-				continue;
-			}
-			dir->directory_count ++;
-		} else
-			sub_dir = NULL;
-
 		memset(&buf, 0, sizeof(buf));
 		buf.st_mode = pseudo_ent->dev->mode;
 		buf.st_uid = pseudo_ent->dev->uid;
@@ -3917,33 +3901,51 @@ struct dir_info *dir_scan2(struct dir_info *dir, struct pseudo *pseudo, int dept
 		buf.st_mtime = time(NULL);
 		buf.st_ino = pseudo_ino ++;
 
-		if(pseudo_ent->dev->type == 'f') {
+		if(pseudo_ent->dev->type == 'd') {
+			struct dir_ent *dir_ent =
+				create_dir_entry(pseudo_ent->name, NULL,
+						pseudo_ent->pathname, dir);
+			char *subpath = strdup(subpathname(dir_ent));
+			struct dir_info *sub_dir = scan1_opendir("", subpath,
+						depth + 1);
+			if(sub_dir == NULL) {
+				ERROR("Could not create pseudo directory \"%s\""
+					", skipping...\n",
+					pseudo_ent->pathname);
+				free(subpath);
+				pseudo_ino --;
+				continue;
+			}
+			dir_scan2(sub_dir, pseudo_ent->pseudo, depth + 1);
+			dir->directory_count ++;
+			add_dir_entry(dir_ent, sub_dir,
+				lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0));
+		} else if(pseudo_ent->dev->type == 'f') {
 #ifdef USE_TMP_FILE
 			struct stat buf2;
 			int res = stat(pseudo_ent->dev->filename, &buf2);
 			if(res == -1) {
 				ERROR("Stat on pseudo file \"%s\" failed, "
 					"skipping...", pseudo_ent->pathname);
+				pseudo_ino --;
 				continue;
 			}
 			buf.st_size = buf2.st_size;
 			add_dir_entry2(pseudo_ent->name, NULL,
-				pseudo_ent->dev->filename, sub_dir, 
+				pseudo_ent->dev->filename, NULL, 
 				lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0), dir);
 #else
 			add_dir_entry2(pseudo_ent->name, NULL,
-				pseudo_ent->pathname, sub_dir,
+				pseudo_ent->pathname, NULL,
 				lookup_inode2(&buf, PSEUDO_FILE_PROCESS,
 				pseudo_ent->dev->pseudo_id), dir);
 #endif
 		} else {
 			add_dir_entry2(pseudo_ent->name, NULL,
-				pseudo_ent->pathname, sub_dir,
+				pseudo_ent->pathname, NULL,
 				lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0), dir);
 		}
 	}
-
-	return dir;
 }
 
 
