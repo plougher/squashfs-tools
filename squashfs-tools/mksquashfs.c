@@ -417,8 +417,9 @@ struct file_info *duplicate(long long file_size, long long bytes,
 struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), int);
 void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
-void dir_scan3(struct dir_info *dir);
-void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info);
+void dir_scan3(struct dir_info *root, struct dir_info *dir);
+void dir_scan4(struct dir_info *dir);
+void dir_scan5(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct fragment *fragment,
 	unsigned short checksum, unsigned short fragment_checksum,
@@ -3472,8 +3473,6 @@ inline void add_dir_entry(struct dir_ent *dir_ent, struct dir_info *sub_dir,
 	dir_ent->next = dir->list;
 	dir->list = dir_ent;
 	dir->count++;
-	dir->byte_count += strlen(dir_ent->name) +
-		sizeof(struct squashfs_dir_entry);
 }
 
 
@@ -3519,7 +3518,9 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		return;
 
 	dir_scan2(dir_info, pseudo);
-	dir_scan3(dir_info);
+	dir_scan3(dir_info, dir_info);
+	do_move_actions();
+	dir_scan4(dir_info);
 
 	dir_ent = create_dir_entry("", NULL, pathname,
 						scan1_opendir("", "", 0));
@@ -3564,7 +3565,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		sort_files_and_write(dir_info);
 	if(progress)
 		enable_progress_bar();
-	dir_scan4(inode, dir_info);
+	dir_scan5(inode, dir_info);
 	dir_ent->inode->inode = *inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 }
@@ -3590,7 +3591,6 @@ struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 	dir->subpath = subpath;
 	dir->count = 0;
 	dir->directory_count = 0;
-	dir->byte_count = 0;
 	dir->dir_is_ldir = TRUE;
 	dir->list = NULL;
 	dir->depth = depth;
@@ -3950,6 +3950,22 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 /*
  * dir_scan3 routines...
+ * This processes the move action
+ */
+void dir_scan3(struct dir_info *root, struct dir_info *dir)
+{
+	struct dir_ent *dir_ent = NULL;
+
+	while((dir_ent = scan2_readdir(dir, dir_ent)) != NULL) {
+
+		eval_move_actions(root, dir_ent);
+
+		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
+			dir_scan3(root, dir_ent->dir);
+	}
+}
+/*
+ * dir_scan4 routines...
  * This sorts every directory and computes the inode numbers
  */
 
@@ -3966,9 +3982,6 @@ void sort_directory(struct dir_info *dir)
 {
 	struct dir_ent *cur, *l1, *l2, *next;
 	int len1, len2, stride = 1;
-
-	if((dir->count < 257 && dir->byte_count < SQUASHFS_METADATA_SIZE))
-		dir->dir_is_ldir = FALSE;
 
 	if(dir->count < 2)
 		return;
@@ -4045,25 +4058,36 @@ void sort_directory(struct dir_info *dir)
 }
 
 
-void dir_scan3(struct dir_info *dir)
+void dir_scan4(struct dir_info *dir)
 {
-	struct dir_ent *dir_ent = NULL;
+	struct dir_ent *dir_ent;
+	unsigned int byte_count = 0;
 
 	sort_directory(dir);
 
-	while((dir_ent = scan2_readdir(dir, dir_ent)) != NULL) {
+	for(dir_ent = dir->list; dir_ent; dir_ent = dir_ent->next) {
+		byte_count += strlen(dir_ent->name) +
+			sizeof(struct squashfs_dir_entry);
+
+		if(dir_ent->inode->root_entry)
+			continue;
+
 		alloc_inode_no(dir_ent->inode, 0);
+
 		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
-			dir_scan3(dir_ent->dir);
+			dir_scan4(dir_ent->dir);
 	}
+
+	if((dir->count < 257 && byte_count < SQUASHFS_METADATA_SIZE))
+		dir->dir_is_ldir = FALSE;
 }
 
 
 /*
- * dir_scan4 routines...
+ * dir_scan5 routines...
  * This generates the filesystem metadata and writes it out to the destination
  */
-void scan4_init_dir(struct directory *dir)
+void scan5_init_dir(struct directory *dir)
 {
 	dir->buff = malloc(SQUASHFS_METADATA_SIZE);
 	if(dir->buff == NULL) {
@@ -4079,7 +4103,7 @@ void scan4_init_dir(struct directory *dir)
 }
 
 
-struct dir_ent *scan4_readdir(struct directory *dir, struct dir_info *dir_info,
+struct dir_ent *scan5_readdir(struct directory *dir, struct dir_info *dir_info,
 	struct dir_ent *dir_ent)
 {
 	if (dir_ent == NULL)
@@ -4095,7 +4119,7 @@ struct dir_ent *scan4_readdir(struct directory *dir, struct dir_info *dir_info,
 }
 
 
-void scan4_freedir(struct directory *dir)
+void scan5_freedir(struct directory *dir)
 {
 	if(dir->index)
 		free(dir->index);
@@ -4103,16 +4127,16 @@ void scan4_freedir(struct directory *dir)
 }
 
 
-void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info)
+void dir_scan5(squashfs_inode *inode, struct dir_info *dir_info)
 {
 	int squashfs_type;
 	int duplicate_file;
 	struct directory dir;
 	struct dir_ent *dir_ent = NULL;
 	
-	scan4_init_dir(&dir);
+	scan5_init_dir(&dir);
 	
-	while((dir_ent = scan4_readdir(&dir, dir_info, dir_ent)) != NULL) {
+	while((dir_ent = scan5_readdir(&dir, dir_info, dir_ent)) != NULL) {
 		struct stat *buf = &dir_ent->inode->buf;
 
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
@@ -4131,7 +4155,7 @@ void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info)
 
 				case S_IFDIR:
 					squashfs_type = SQUASHFS_DIR_TYPE;
-					dir_scan4(inode, dir_ent->dir);
+					dir_scan5(inode, dir_ent->dir);
 					break;
 
 				case S_IFLNK:
@@ -4243,7 +4267,7 @@ void dir_scan4(squashfs_inode *inode, struct dir_info *dir_info)
 	INFO("directory %s inode 0x%llx\n", subpathname(dir_info->dir_ent),
 		*inode);
 
-	scan4_freedir(&dir);
+	scan5_freedir(&dir);
 }
 
 
@@ -4818,7 +4842,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/10/12)\n");\
+	printf("mksquashfs version 4.2-CVS (2012/10/13)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

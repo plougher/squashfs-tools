@@ -158,6 +158,7 @@ struct type_entry {
 #define GUID_ACTION 10
 #define MODE_ACTION 11
 #define EMPTY_ACTION 12
+#define MOVE_ACTION 13
 
 /*
  * Define what file types each action operates over
@@ -244,6 +245,21 @@ struct empty_data {
 
 
 /*
+ * Move action specific definitions
+ */
+#define ACTION_MOVE_RENAME 1
+#define ACTION_MOVE_MOVE 2
+
+struct move_ent {
+	int ops;
+	struct dir_ent *dir_ent;
+	char *name;
+	struct dir_info *dest;
+	struct move_ent *next;
+};
+
+
+/*
  * External function definitions
  */
 extern int parse_action(char *);
@@ -254,4 +270,6 @@ extern int eval_exclude_actions(char *, char *, char *, struct stat *, int);
 extern void eval_actions(struct dir_ent *);
 extern int eval_empty_actions(char *, char *, char *, struct stat *, int,
 							struct dir_info *);
+extern void eval_move_actions(struct dir_info *, struct dir_ent *);
+extern void do_move_actions();
 extern int read_bytes(int, void *, int);

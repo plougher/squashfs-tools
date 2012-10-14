@@ -1184,6 +1184,366 @@ int eval_empty_actions(char *name, char *pathname, char *subpath,
 
 
 /*
+ *  Move specific action code
+ */
+static struct move_ent *move_list = NULL;
+
+#if 0
+struct move_expansion_ops move_expansion_ops[] = {
+	{ "{}", move_pathname },
+	{ "{dirname}", move_dirname },
+	{ "{basename}", move_basename },
+	{ "{basename_nosuffix}", move_basename_nosuffix }
+#endif
+
+int parse_move_args(struct action_entry *action, int args, char **argv,
+								void **data)
+{
+	return 1;
+}
+
+
+char *get_comp(char **pathname)
+{
+	char *path = *pathname, *start;
+
+	while(*path == '/')
+		path ++;
+
+	if(*path == '\0')
+		return NULL;
+
+	start = path;
+	while(*path != '/' && *path != '\0')
+		path ++;
+
+	*pathname = path;
+	return strndup(start, path - start);
+}
+
+
+struct dir_ent *lookup_comp(char *comp, struct dir_info *dest)
+{
+	struct dir_ent *dir_ent;
+
+	for(dir_ent = dest->list; dir_ent; dir_ent = dir_ent->next)
+		if(strcmp(comp, dir_ent->name) == 0)
+			break;
+
+	return dir_ent;
+}
+
+
+void eval_move(struct move_ent *move, struct dir_info *root,
+			struct dir_ent *dir_ent, char *pathname)
+{
+	struct dir_info *dest, *source = dir_ent->our_dir;
+	struct dir_ent *comp_ent;
+	char *comp;
+
+	/*
+	 * Walk pathname to get the destination directory
+	 *
+	 * Like the mv command, if the last component exists and it
+	 * is a directory, then move the file into that directory,
+	 * otherwise, move the file into parent directory of the last
+	 * component and rename to the last component.
+	 */
+	if (pathname[0] == '/')
+		/* absolute pathname, walk from root directory */
+		dest = root;
+	else
+		/* relative pathname, walk from current directory */
+		dest = source;
+
+	for(comp = get_comp(&pathname); comp; free(comp),
+						comp = get_comp(&pathname)) {
+
+		if (strcmp(comp, ".") == 0)
+			continue;
+
+		if (strcmp(comp, "..") == 0) {
+			dest = dest->dir_ent->our_dir;
+			continue;
+		}
+
+		/*
+		 * Look up comp in current directory, if it exists and it is a
+		 * directory continue walking the pathname, otherwise exit,
+		 * we've walked as far as we can go, normally this is because
+		 * we've arrived at the leaf component which we are going to
+		 * rename source to
+		 */
+		comp_ent = lookup_comp(comp, dest);
+		if (comp_ent == NULL || (comp_ent->inode->buf.st_mode & S_IFMT)
+							!= S_IFDIR)
+			break;
+
+		dest = comp_ent->dir;
+	}
+
+	if(comp) {
+		/* Leaf component? If so we're renaming to this  */
+		char *remainder = get_comp(&pathname);
+		free(remainder);
+
+		if(remainder) {
+			printf("Not leaf component\n");
+			free(comp);
+			return;
+		}
+
+		/*
+		 * Multiple move actions triggering on one file can be merged
+		 * if one is a RENAME and the other is a MOVE.  Multiple RENAMEs
+		 * can only merge if they're doing the same thing
+	 	 */
+		if(move->ops & ACTION_MOVE_RENAME) {
+			if(strcmp(comp, move->name) != 0) {
+				printf("conflicting renames\n");
+				free(comp);
+				return;
+			}
+			free(comp);
+		} else {
+			move->name = comp;
+			move->ops |= ACTION_MOVE_RENAME;
+		}
+	}
+
+	if(dest != source) {
+		/*
+		 * Multiple move actions triggering on one file can be merged
+		 * if one is a RENAME and the other is a MOVE.  Multiple MOVEs
+		 * can only merge if they're doing the same thing
+	 	 */
+		if(move->ops & ACTION_MOVE_MOVE) {
+			if(dest != move->dest) {
+				printf("Conflicting move\n");
+				return;
+			}
+		} else {
+			move->dest = dest;
+			move->ops |= ACTION_MOVE_MOVE;
+		}
+	}
+}
+
+
+int subdirectory(struct dir_info *source, struct dir_info *dest)
+{
+	if(source == NULL)
+		return 0;
+
+	return strlen(source->subpath) <= strlen(dest->subpath) &&
+		(dest->subpath[strlen(source->subpath)] == '/' ||
+		dest->subpath[strlen(source->subpath)] == '\0') &&
+		strncmp(source->subpath, dest->subpath,
+		strlen(source->subpath)) == 0;
+}
+
+
+void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
+{
+	int i;
+	struct action_data action_data;
+	struct move_ent *move = NULL;
+
+	action_data.name = dir_ent->name;
+	action_data.pathname = pathname(dir_ent);
+	action_data.subpath = subpathname(dir_ent);
+	action_data.buf = &dir_ent->inode->buf;
+	action_data.depth = dir_ent->our_dir->depth;
+
+	/*
+	 * Evaluate each move action against the current file.  For any
+	 * move actions that match don't actually perform the move now, but,
+	 * store it, and execute all the stored move actions together once the
+	 * directory scan is complete.  This is done to ensure each separate
+	 * move action does not nondeterministically interfere with other move
+	 * actions.  Each move action is considered to act independently, and
+	 * each move action sees the directory tree in the same state.
+	 */
+	for (i = 0; i < spec_count; i++) {
+		struct action *action = &spec_list[i];
+		int match;
+
+		if (action->type != MOVE_ACTION)
+			continue;
+
+		match = eval_expr(action->expr, &action_data);
+
+		if(match) {
+			if(move == NULL) {
+				move = malloc(sizeof(*move));
+				if(move == NULL) {
+					printf("Malloc failed\n");
+					return;
+				}
+				move->ops = 0;
+				move->dir_ent = dir_ent;
+			}
+			eval_move(move, root, dir_ent, action->argv[0]);
+		}
+	}
+
+	if(move) {
+		struct dir_ent *comp_ent;
+		struct dir_info *dest;
+		char *name;
+
+		/*
+		 * Move contains the result of all triggered move actions.
+		 * Check the destination doesn't already exist
+		 */
+		if(move->ops == 0) {
+			free(move);
+			return;
+		}
+
+		dest = (move->ops & ACTION_MOVE_MOVE) ?
+			move->dest : dir_ent->our_dir;
+		name = (move->ops & ACTION_MOVE_RENAME) ?
+			move->name : dir_ent->name;
+		comp_ent = lookup_comp(name, dest);
+		if(comp_ent) {
+			printf("Bad move, destination already exists\n");
+			free(move);
+			return;
+		}
+
+		/*
+		 * If we're moving a directory, check we're not moving it to a
+		 * subdirectory of itself
+		 */
+		if(subdirectory(dir_ent->dir, dest)) {
+			printf("Bad move, cannot move to a subdirectory of "
+						"itself\n");
+			free(move);
+			return;
+		}
+		move->next = move_list;
+		move_list = move;
+	}
+}
+
+
+void move_dir(struct dir_ent *dir_ent)
+{
+	struct dir_info *dir = dir_ent->dir;
+	struct dir_ent *comp_ent;
+
+	/* update our directory's subpath name */
+	dir->subpath = strdup(subpathname(dir_ent));
+
+	/* recursively update the subpaths of any sub-directories */
+	for(comp_ent = dir->list; comp_ent; comp_ent = comp_ent->next)
+		if(comp_ent->dir)
+			move_dir(comp_ent);
+}
+
+
+void move_file(struct move_ent *move_ent)
+{
+	struct dir_ent *dir_ent = move_ent ->dir_ent;
+
+	if(move_ent->ops & ACTION_MOVE_MOVE) {
+		struct dir_ent *comp_ent, *prev = NULL;
+		struct dir_info *source = dir_ent->our_dir,
+							*dest = move_ent->dest;
+		char *filename = pathname(dir_ent);
+
+		/*
+		 * If we're moving a directory, check we're not moving it to a
+		 * subdirectory of itself
+		 */
+		if(subdirectory(dir_ent->dir, dest)) {
+			printf("Bad move, cannot move to a subdirectory of "
+						"itself\n");
+			return;
+		}
+
+		/* Remove the file from source directory */
+		for(comp_ent = source->list; comp_ent != dir_ent;
+				prev = comp_ent, comp_ent = comp_ent->next);
+
+		if(prev)
+			prev->next = comp_ent->next;
+		else
+			source->list = comp_ent->next;
+
+		source->count --;
+		if((comp_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
+			source->directory_count --;
+
+		/* Add the file to dest directory */
+		comp_ent->next = dest->list;
+		dest->list = comp_ent;
+		comp_ent->our_dir = dest;
+
+		dest->count ++;
+		if((comp_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
+			dest->directory_count ++;
+
+		/*
+		 * We've moved the file, and so we can't now use the
+		 * parent directory's pathname to calculate the pathname
+		 */
+		if(dir_ent->nonstandard_pathname == NULL) {
+			dir_ent->nonstandard_pathname = strdup(filename);
+			if(dir_ent->source_name) {
+				free(dir_ent->source_name);
+				dir_ent->source_name = NULL;
+			}
+		}
+	}
+
+	if(move_ent->ops & ACTION_MOVE_RENAME) {
+		/*
+		 * If we're using name in conjunction with the parent
+		 * directory's pathname to calculate the pathname, we need
+		 * to use source_name to override.  Otherwise it's already being
+		 * over-ridden
+		 */
+		if(dir_ent->nonstandard_pathname == NULL &&
+						dir_ent->source_name == NULL)
+			dir_ent->source_name = dir_ent->name;
+		else
+			free(dir_ent->name);
+
+		dir_ent->name = move_ent->name;
+	}
+
+	if(dir_ent->dir)
+		/*
+		 * dir_ent is a directory, and we have to recursively fix-up
+		 * its subpath, and the subpaths of all of its sub-directories
+		 */
+		move_dir(dir_ent);
+}
+
+
+void do_move_actions()
+{
+	while(move_list) {
+		struct move_ent *temp = move_list;
+		struct dir_info *dest = (move_list->ops & ACTION_MOVE_MOVE) ?
+			move_list->dest : move_list->dir_ent->our_dir;
+		char *name = (move_list->ops & ACTION_MOVE_RENAME) ?
+			move_list->name : move_list->dir_ent->name;
+		struct dir_ent *comp_ent = lookup_comp(name, dest);
+		if(comp_ent)
+			printf("Bad move, destination already exists\n");
+		else
+			move_file(move_list);
+
+		move_list = move_list->next;
+		free(temp);
+	}
+}
+
+
+/*
  * General test evaluation code
  */
 int parse_number(char *arg, long long *size, int *range)
@@ -1686,5 +2046,6 @@ static struct action_entry action_table[] = {
 	{ "guid", GUID_ACTION, 2, ACTION_ALL_LNK, parse_guid_args, guid_action},
 	{ "mode", MODE_ACTION, -2, ACTION_ALL, parse_mode_args, mode_action },
 	{ "empty", EMPTY_ACTION, -2, ACTION_DIR, parse_empty_args, NULL},
+	{ "move", MOVE_ACTION, -2, ACTION_ALL_LNK, parse_move_args, NULL},
 	{ "", 0, -1, 0, NULL, NULL}
 };

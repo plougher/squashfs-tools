@@ -45,7 +45,6 @@ struct dir_info {
 	char			*subpath;
 	unsigned int		count;
 	unsigned int		directory_count;
-	unsigned int		byte_count;
 	int			depth;
 	unsigned int		excluded;
 	char			dir_is_ldir;
