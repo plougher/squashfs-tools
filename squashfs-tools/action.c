@@ -1761,7 +1761,6 @@ char *get_start(char *s, int n)
 
 int subpathname_fn(struct atom *atom, struct action_data *action_data)
 {
-	printf("pathname %s\n", action_data->subpath);
 	return fnmatch(atom->argv[0], get_start(strdupa(action_data->subpath),
 		count_components(atom->argv[0])),
 		FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
