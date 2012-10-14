@@ -1718,7 +1718,6 @@ TEST_FN(name, ACTION_ALL_LNK, \
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
 TEST_FN(pathname, ACTION_ALL_LNK, \
-	printf("pathname %s\n", action_data->subpath); \
 	return fnmatch(atom->argv[0], action_data->subpath,
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
