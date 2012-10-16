@@ -64,8 +64,6 @@
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...) \
 		do { \
-			if(progress_enabled) \
-				printf("\n"); \
 			printf("mksquashfs: "s, ## args); \
 		} while(0)
 #else
