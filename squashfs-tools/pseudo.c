@@ -255,20 +255,20 @@ int exec_file(char *command, struct pseudo_dev *dev)
 	sprintf(filename, "/tmp/squashfs_pseudo_%d_%d", pid, number ++);
 	pipefd[1] = open(filename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
 	if(pipefd[1] == -1) {
-		printf("open failed\n");
+		ERROR("Executing dynamic pseudo file, open failed\n");
 		return -1;
 	}
 #else
 	res = pipe(pipefd);
 	if(res == -1) {
-		printf("pipe failed\n");
+		ERROR("Executing dynamic pseudo file, pipe failed\n");
 		return -1;
 	}
 #endif
 
 	child = fork();
 	if(child == -1) {
-		printf("fork failed\n");
+		ERROR("Executing dynamic pseudo file, fork failed\n");
 		goto failed;
 	}
 
@@ -276,11 +276,11 @@ int exec_file(char *command, struct pseudo_dev *dev)
 		close(STDOUT_FILENO);
 		res = dup(pipefd[1]);
 		if(res == -1) {
-			printf("dup failed\n");
+			ERROR("Executing dynamic pseudo file, dup failed\n");
 			exit(EXIT_FAILURE);
 		}
 		execl("/bin/sh", "sh", "-c", command, (char *) NULL);
-		printf("execl failed\n");
+		ERROR("Executing dynamic pseudo file, execl failed\n");
 		exit(EXIT_FAILURE);
 	}
 
