@@ -97,7 +97,7 @@ INCLUDEDIR = -I.
 INSTALL_DIR = /usr/local/bin
 
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o sort.o swap.o pseudo.o compressor.o \
-	action.o
+	action.o progressbar.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o swap.o compressor.o
@@ -203,7 +203,7 @@ mksquashfs: $(MKSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(MKSQUASHFS_OBJS) $(LIBS) -o $@
 
 mksquashfs.o: mksquashfs.c squashfs_fs.h mksquashfs.h sort.h squashfs_swap.h \
-	xattr.h pseudo.h compressor.h action.h
+	xattr.h pseudo.h compressor.h action.h progressbar.h
 
 read_fs.o: read_fs.c squashfs_fs.h read_fs.h squashfs_swap.h compressor.h \
 	xattr.h
@@ -221,6 +221,8 @@ xattr.o: xattr.c xattr.h squashfs_fs.h squashfs_swap.h mksquashfs.h
 read_xattrs.o: read_xattrs.c xattr.h squashfs_fs.h squashfs_swap.h read_fs.h
 
 action.o: action.h squashfs_fs.h mksquashfs.h
+
+progressbar.o: progressbar.c
 
 gzip_wrapper.o: gzip_wrapper.c compressor.h squashfs_fs.h
 
