@@ -4681,7 +4681,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/10/18)\n");\
+	printf("mksquashfs version 4.2-CVS (2012/10/19)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -4709,6 +4709,7 @@ int main(int argc, char *argv[])
 	int readb_mbytes = READER_BUFFER_DEFAULT,
 		writeb_mbytes = WRITER_BUFFER_DEFAULT,
 		fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
+	int force_progress = FALSE;
 
 	block_log = slog(block_size);
 	if(argc > 1 && strcmp(argv[1], "-version") == 0) {
@@ -4808,6 +4809,8 @@ int main(int argc, char *argv[])
 			sparse_files = FALSE;
 		else if(strcmp(argv[i], "-no-progress") == 0)
 			progress = FALSE;
+		else if(strcmp(argv[i], "-progress") == 0)
+			force_progress = TRUE;
 		else if(strcmp(argv[i], "-no-exports") == 0)
 			exportable = FALSE;
 		else if(strcmp(argv[i], "-processors") == 0) {
@@ -4973,10 +4976,8 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;
 
-		else if(strcmp(argv[i], "-info") == 0) {
+		else if(strcmp(argv[i], "-info") == 0)
 			silent = FALSE;
-			progress = FALSE;
-		}
 
 		else if(strcmp(argv[i], "-e") == 0)
 			break;
@@ -5072,6 +5073,8 @@ printOptions:
 			ERROR("-info\t\t\tprint files written to filesystem\n");
 			ERROR("-no-progress\t\tdon't display the progress "
 				"bar\n");
+			ERROR("-progress\t\tdisplay progress bar when using "
+				"the -info option\n");
 			ERROR("-processors <number>\tUse <number> processors."
 				"  By default will use number of\n");
 			ERROR("\t\t\tprocessors available\n");
@@ -5109,6 +5112,18 @@ printOptions:
 	res = compressor_options_post(comp, block_size);
 	if(res)
 		EXIT_MKSQUASHFS();
+
+	/*
+	 * If the -info option has been selected then disable the
+	 * progress bar unless it has been explicitly enabled with
+	 * the -progress option
+	 */
+	if(!silent)
+		progress = force_progress;
+		
+#ifdef SQUASHFS_TRACE
+	progress = FALSE;
+#endif
 
 	for(i = 0; i < source; i++)
 		if(lstat(source_path[i], &source_buf) == -1) {
@@ -5214,10 +5229,6 @@ printOptions:
 				strcmp(argv[i], "-pf") == 0 ||
 				strcmp(argv[i], "-comp") == 0)
 			i++;
-
-#ifdef SQUASHFS_TRACE
-	progress = FALSE;
-#endif
 
 	if(!delete) {
 	        comp = read_super(fd, &sBlk, argv[source + 1]);
