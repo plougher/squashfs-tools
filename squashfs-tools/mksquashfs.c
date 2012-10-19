@@ -70,7 +70,7 @@
 #define INFO(s, args...) \
 		do {\
 			 if(!silent)\
-				printf("mksquashfs: "s, ## args);\
+				progressbar_info("mksquashfs: "s, ## args);\
 		} while(0)
 
 #define ERROR(s, args...) \

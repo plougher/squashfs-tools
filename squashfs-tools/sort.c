@@ -38,6 +38,7 @@
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "sort.h"
+#include "progressbar.h"
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...) \
@@ -50,7 +51,8 @@
 
 #define INFO(s, args...) \
 		do { \
-			if(!silent) printf("mksquashfs: "s, ## args); \
+			if(!silent) \
+				progressbar_info("mksquashfs: "s, ## args); \
 		} while(0)
 
 #define ERROR(s, args...) \

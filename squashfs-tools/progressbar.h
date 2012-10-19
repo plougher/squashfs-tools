@@ -30,3 +30,4 @@ extern void enable_progress_bar();
 extern void disable_progress_bar();
 extern void init_progress_bar();
 extern void progressbar_error(char *fmt, ...);
+extern void progressbar_info(char *fmt, ...);
