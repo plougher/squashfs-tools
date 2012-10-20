@@ -1550,10 +1550,10 @@ int parse_number(char *arg, long long *size, int *range)
 {
 	char *b;
 
-	if (*arg == '+') {
+	if (*arg == '>' || *arg == '+') {
 		*range = NUM_GREATER;
 		arg ++;
-	} else if (*arg == '-') {
+	} else if (*arg == '<' || *arg == '-') {
 		*range = NUM_LESS;
 		arg ++;
 	} else
