@@ -1546,6 +1546,18 @@ void do_move_actions()
 /*
  * General test evaluation code
  */
+
+/*
+ * A number can be of the form [range]number[size]
+ * [range] is either:
+ *	'<' or '-', match on less than number
+ *	'>' or '+', match on greater than number
+ *	'' (nothing), match on exactly number
+ * [size] is either:
+ *	'k' or 'K', number * 2^10
+ * 	'm' or 'M', number * 2^20
+ *	'g' or 'G', number * 2^30
+ */
 int parse_number(char *arg, long long *size, int *range)
 {
 	char *b;
