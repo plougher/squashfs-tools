@@ -186,7 +186,7 @@ void *progress_thrd(void *arg)
 			1000;
 		pthread_cond_timedwait(&progress_wait, &progress_mutex,
 			&timespec);
-		if(progress_enabled && estimated_uncompressed)
+		if(progress_enabled)
 			progress_bar(cur_uncompressed, estimated_uncompressed,
 				columns);
 	}
