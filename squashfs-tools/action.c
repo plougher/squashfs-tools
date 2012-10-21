@@ -1561,6 +1561,10 @@ int parse_number(char *arg, long long *size, int *range)
 
 	*size = strtoll(arg, &b, 10);
 
+	if (b == arg)
+		/* Couldn't read any number  */
+		return 0;
+
 	switch (*b) {
 	case 'g':
 	case 'G':
