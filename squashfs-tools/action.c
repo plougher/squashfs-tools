@@ -1646,13 +1646,29 @@ int parse_range_args(struct test_entry *test, struct atom *atom)
 	char *error;
 
 	res = parse_number(atom->argv[0], &start, &type, &error);
-	if (res == 0 || type != NUM_EQ)
+	if (res == 0) {
+		TEST_SYNTAX_ERROR(test, 0, "%s\n", error);
 		return 0;
+	}
 
+	if (type != NUM_EQ) {
+		TEST_SYNTAX_ERROR(test, 0, "Range specifier (<, >, -, +) not "
+			"expected\n");
+		return 0;
+	}
+ 
 	res = parse_number(atom->argv[1], &end, &type, &error);
-	if (res == 0 || type != NUM_EQ)
+	if (res == 0) {
+		TEST_SYNTAX_ERROR(test, 1, "%s\n", error);
 		return 0;
+	}
 
+	if (type != NUM_EQ) {
+		TEST_SYNTAX_ERROR(test, 1, "Range specifier (<, >, -, +) not "
+			"expected\n");
+		return 0;
+	}
+ 
 	range = malloc(sizeof(*range));
 	if (range == NULL) {
 		printf("Out of memory in parse test\n");
