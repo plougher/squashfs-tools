@@ -1937,8 +1937,8 @@ int parse_file_arg(struct test_entry *test, struct atom *atom)
 		char str[1024];
 
 		regerror(res, preg, str, 1024);
-		printf("file(%s) invalid regex because %s\n", atom->argv[0],
-			str);
+		TEST_SYNTAX_ERROR(test, 0, "invalid regex \"%s\" because "
+			"\"%s\"\n", atom->argv[0], str);
 		return 0;
 	}
 
