@@ -1617,8 +1617,10 @@ int parse_number_arg(struct test_entry *test, struct atom *atom)
 	char *error;
 	int res = parse_number(atom->argv[0], &size, &range, &error);
 
-	if (res == 0)
+	if (res == 0) {
+		TEST_SYNTAX_ERROR(test, 0, "%s\n", error);
 		return 0;
+	}
 
 	number = malloc(sizeof(*number));
 	if (number == NULL) {
