@@ -1558,7 +1558,7 @@ void do_move_actions()
  * 	'm' or 'M', number * 2^20
  *	'g' or 'G', number * 2^30
  */
-int parse_number(char *arg, long long *size, int *range)
+int parse_number(char *arg, long long *size, int *range, char **error)
 {
 	char *b;
 
@@ -1573,9 +1573,11 @@ int parse_number(char *arg, long long *size, int *range)
 
 	*size = strtoll(arg, &b, 10);
 
-	if (b == arg)
+	if (b == arg) {
 		/* Couldn't read any number  */
+		*error = "Number expected";
 		return 0;
+	}
 
 	switch (*b) {
 	case 'g':
@@ -1589,11 +1591,19 @@ int parse_number(char *arg, long long *size, int *range)
 		*size *= 1024;
 
 		b ++;
-		break;
-	}
 
-	if (*b != '\0')
+		if (*b != '\0') {
+			*error = "Trailing junk after size specifier";
+			return 0;
+		}
+
+		break;
+	case '\0':
+		break;
+	default:
+		*error = "Trailing junk after number";
 		return 0;
+	}
 
 	return 1;
 }
@@ -1604,7 +1614,8 @@ int parse_number_arg(struct test_entry *test, struct atom *atom)
 	struct test_number_arg *number;
 	long long size;
 	int range;
-	int res = parse_number(atom->argv[0], &size, &range);
+	char *error;
+	int res = parse_number(atom->argv[0], &size, &range, &error);
 
 	if (res == 0)
 		return 0;
@@ -1630,12 +1641,13 @@ int parse_range_args(struct test_entry *test, struct atom *atom)
 	long long start, end;
 	int type;
 	int res;
+	char *error;
 
-	res = parse_number(atom->argv[0], &start, &type);
+	res = parse_number(atom->argv[0], &start, &type, &error);
 	if (res == 0 || type != NUM_EQ)
 		return 0;
 
-	res = parse_number(atom->argv[1], &end, &type);
+	res = parse_number(atom->argv[1], &end, &type, &error);
 	if (res == 0 || type != NUM_EQ)
 		return 0;
 
