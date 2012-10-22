@@ -74,6 +74,15 @@ struct token_entry {
 	fprintf(stderr, "Got here \"%s\"\n", src); \
 }
 
+#define TEST_SYNTAX_ERROR(TEST, ARG, S, ARGS...) { \
+	char *src = strdup(source); \
+	src[cur_ptr - source] = '\0'; \
+	fprintf(stderr, "Failed to parse action \"%s\"\n", source); \
+	fprintf(stderr, "Syntax error in \"%s()\", arg %d: "S, TEST->name, \
+			 ARG, ##ARGS); \
+	fprintf(stderr, "Got here \"%s\"\n", src); \
+}
+
 struct expr;
 
 struct expr_op {
