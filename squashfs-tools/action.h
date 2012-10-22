@@ -69,9 +69,9 @@ struct token_entry {
 #define SYNTAX_ERROR(S, ARGS...) { \
 	char *src = strdup(source); \
 	src[cur_ptr - source] = '\0'; \
-	printf("Failed to parse action \"%s\"\n", source); \
-	printf("Syntax error: "S, ##ARGS); \
-	printf("Got here \"%s\"\n", src); \
+	fprintf(stderr, "Failed to parse action \"%s\"\n", source); \
+	fprintf(stderr, "Syntax error: "S, ##ARGS); \
+	fprintf(stderr, "Got here \"%s\"\n", src); \
 }
 
 struct expr;
