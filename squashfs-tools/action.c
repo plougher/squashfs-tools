@@ -1875,7 +1875,7 @@ int parse_type_arg(struct test_entry *test, struct atom *atom)
 	int i;
 
 	if (strlen(atom->argv[0]) != 1)
-		return 0;
+		goto failed;
 
 	for(i = 0; type_table[i].type != 0; i++)
 		if (type_table[i].type == atom->argv[0][0])
@@ -1883,7 +1883,13 @@ int parse_type_arg(struct test_entry *test, struct atom *atom)
 
 	atom->data = &type_table[i];
 
-	return type_table[i].type != 0;
+	if(type_table[i].type != 0)
+		return 1;
+
+failed:
+	TEST_SYNTAX_ERROR(test, 0, "Unexpected file type, expected 'f', 'd', "
+		"'c', 'b', 'l', 's' or 'p'\n");
+	return 0;
 }
 	
 
