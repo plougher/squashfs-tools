@@ -80,10 +80,7 @@
 
 #define EXIT_MKSQUASHFS() \
 		do {\
-			if(restore)\
-				restorefs();\
-			if(delete && destination_file && !block_device)\
-				unlink(destination_file);\
+			prep_exit_mksquashfs();\
 			exit(1);\
 		} while(0)
 
@@ -412,6 +409,16 @@ extern struct priority_entry *priority_list[65536];
 long long generic_write_table(int, void *, int, void *, int);
 void restorefs();
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
+
+
+void prep_exit_mksquashfs()
+{
+	if(restore)
+		restorefs();
+	if(delete && destination_file && !block_device)
+		unlink(destination_file);
+	exit(1);
+}
 
 
 struct queue *queue_init(int size)
