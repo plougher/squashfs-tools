@@ -42,25 +42,12 @@
 
 #include <stdlib.h>
 
-#ifdef SQUASHFS_TRACE
-#define TRACE(s, args...) \
-		do { \
-			printf("mksquashfs: "s, ## args); \
-		} while(0)
-#else
-#define TRACE(s, args...)
-#endif
-
-#define ERROR(s, args...) \
-		do { \
-			fprintf(stderr, s, ## args); \
-		} while(0)
-
 #include "squashfs_fs.h"
 #include "squashfs_swap.h"
 #include "read_fs.h"
 #include "compressor.h"
 #include "xattr.h"
+#include "error.h"
 
 extern int read_fs_bytes(int, long long, int, void *);
 extern int add_file(long long, long long, long long, unsigned int *, int,

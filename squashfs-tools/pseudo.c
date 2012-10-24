@@ -34,31 +34,7 @@
 #include <sys/wait.h>
 
 #include "pseudo.h"
-
-#ifdef SQUASHFS_TRACE
-#define TRACE(s, args...) \
-		do { \
-			printf("mksquashfs: "s, ## args); \
-		} while(0)
-#else
-#define TRACE(s, args...)
-#endif
-
-#define ERROR(s, args...) \
-		do { \
-			fprintf(stderr, s, ## args); \
-		} while(0)
-
-#define EXIT_MKSQUASHFS() \
-		do { \
-			exit(1); \
-		} while(0)
-
-#define BAD_ERROR(s, args...) \
-		do {\
-			fprintf(stderr, "FATAL ERROR:" s, ##args);\
-			EXIT_MKSQUASHFS();\
-		} while(0);
+#include "error.h"
 
 #define TRUE 1
 #define FALSE 0

@@ -40,21 +40,7 @@
 #include "squashfs_swap.h"
 #include "mksquashfs.h"
 #include "xattr.h"
-#include "progressbar.h"
-
-#ifdef SQUASHFS_TRACE
-#define TRACE(s, args...) \
-		do { \
-			printf("mksquashfs: "s, ## args); \
-		} while(0)
-#else
-#define TRACE(s, args...)
-#endif
-
-#define ERROR(s, args...) \
-		do { \
-			progressbar_error(s, ## args); \
-		} while(0)
+#include "error.h"
 
 /* compressed xattr table */
 static char *xattr_table = NULL;

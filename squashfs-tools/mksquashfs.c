@@ -58,38 +58,6 @@
 #include <sys/sysinfo.h>
 #endif
 
-#ifdef SQUASHFS_TRACE
-#define TRACE(s, args...) \
-		do { \
-			printf("mksquashfs: "s, ## args); \
-		} while(0)
-#else
-#define TRACE(s, args...)
-#endif
-
-#define INFO(s, args...) \
-		do {\
-			 if(!silent)\
-				progressbar_info("mksquashfs: "s, ## args);\
-		} while(0)
-
-#define ERROR(s, args...) \
-		do {\
-			progressbar_error(s, ## args); \
-		} while(0)
-
-#define EXIT_MKSQUASHFS() \
-		do {\
-			prep_exit_mksquashfs();\
-			exit(1);\
-		} while(0)
-
-#define BAD_ERROR(s, args...) \
-		do {\
-			progressbar_error("FATAL ERROR:" s, ##args); \
-			EXIT_MKSQUASHFS();\
-		} while(0)
-
 #include "squashfs_fs.h"
 #include "squashfs_swap.h"
 #include "mksquashfs.h"
@@ -98,7 +66,7 @@
 #include "compressor.h"
 #include "xattr.h"
 #include "action.h"
-#include "progressbar.h"
+#include "error.h"
 
 int delete = FALSE;
 int fd;
