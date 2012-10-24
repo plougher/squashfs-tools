@@ -80,7 +80,6 @@ struct inode_info {
 	char			noD;
 	char			noF;
 };
-#endif
 
 #define PSEUDO_FILE_OTHER	1
 #define PSEUDO_FILE_PROCESS	2
@@ -92,3 +91,4 @@ struct inode_info {
 /* offset of data in compressed metadata blocks (allowing room for
  * compressed size */
 #define BLOCK_OFFSET 2
+#endif
