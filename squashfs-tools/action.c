@@ -39,6 +39,7 @@
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "action.h"
+#include "error.h"
 
 /*
  * code to parse actions
@@ -378,10 +379,9 @@ int parse_action(char *s)
 		}
 
 		argv = realloc(argv, (args + 1) * sizeof(char *));
-		if (argv == NULL) {
-			printf("Realloc failed in parse_action\n");
-			goto failed;
-		}
+		if (argv == NULL)
+			BAD_ERROR("Realloc failed in parse_action\n");
+
 		argv[args ++] = string;
 
 		token = get_token(&string);
@@ -747,10 +747,8 @@ int parse_uid_args(struct action_entry *action, int args, char **argv,
 		return 0;
 
 	uid_info = malloc(sizeof(struct uid_info));
-	if (uid_info == NULL) {
-		printf("Out of memory in action uid\n");
-		return 0;
-	}
+	if (uid_info == NULL)
+		BAD_ERROR("Out of memory in action uid\n");
 
 	uid_info->uid = uid;
 	*data = uid_info;
@@ -770,10 +768,8 @@ int parse_gid_args(struct action_entry *action, int args, char **argv,
 		return 0;
 
 	gid_info = malloc(sizeof(struct gid_info));
-	if (gid_info == NULL) {
-		printf("Out of memory in action gid\n");
-		return 0;
-	}
+	if (gid_info == NULL)
+		BAD_ERROR("Out of memory in action gid\n");
 
 	gid_info->gid = gid;
 	*data = gid_info;
@@ -797,10 +793,8 @@ int parse_guid_args(struct action_entry *action, int args, char **argv,
 		return 0;
 
 	guid_info = malloc(sizeof(struct guid_info));
-	if (guid_info == NULL) {
-		printf("Out of memory in action guid\n");
-		return 0;
-	}
+	if (guid_info == NULL)
+		BAD_ERROR("Out of memory in action guid\n");
 
 	guid_info->uid = uid;
 	guid_info->gid = gid;
@@ -866,10 +860,8 @@ int parse_octal_mode_args(unsigned int mode, int bytes, int args, char **argv,
 	}
 
 	mode_data = malloc(sizeof(struct mode_data));
-	if (mode_data == NULL) {
-		printf("Out of memory in action mode\n");
-		return 0;
-	}
+	if (mode_data == NULL)
+		BAD_ERROR("Out of memory in action mode\n");
 
 	mode_data->operation = ACTION_MODE_OCT;
 	mode_data->mode = mode;
@@ -1006,10 +998,8 @@ int parse_sym_mode_args(struct action_entry *action, int args, char **argv,
 	for (i = 0; i < args; i++) {
 		struct mode_data *entry = parse_sym_mode_arg(argv[i]);
 
-		if (entry == NULL) {
-			printf("Out of memory in action mode\n");
-			return 0;
-		}
+		if (entry == NULL)
+			BAD_ERROR("Out of memory in action mode\n");
 
 		if (cur) {
 			cur->next = entry;
@@ -1121,10 +1111,8 @@ int parse_empty_args(struct action_entry *action, int args, char **argv,
 	}
 
 	empty_data = malloc(sizeof(*empty_data));
-	if (empty_data == NULL) {
-		printf("Out of memory in action empty\n");
-		return 0;
-	}
+	if (empty_data == NULL)
+		BAD_ERROR("Out of memory in action empty\n");
 
 	empty_data->val = val;
 	*data = empty_data;
@@ -1376,10 +1364,10 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 		if(match) {
 			if(move == NULL) {
 				move = malloc(sizeof(*move));
-				if(move == NULL) {
-					printf("Malloc failed\n");
-					return;
-				}
+				if(move == NULL)
+					BAD_ERROR("Out of memory in "
+						"eval_move_actions\n");
+
 				move->ops = 0;
 				move->dir_ent = dir_ent;
 			}
@@ -1623,10 +1611,8 @@ int parse_number_arg(struct test_entry *test, struct atom *atom)
 	}
 
 	number = malloc(sizeof(*number));
-	if (number == NULL) {
-		printf("Out of memory in parse test\n");
-		return 0;
-	}
+	if (number == NULL)
+		BAD_ERROR("Out of memory in parse test\n");
 
 	number->range = range;
 	number->size = size;
@@ -1670,10 +1656,8 @@ int parse_range_args(struct test_entry *test, struct atom *atom)
 	}
  
 	range = malloc(sizeof(*range));
-	if (range == NULL) {
-		printf("Out of memory in parse test\n");
-		return 0;
-	}
+	if (range == NULL)
+		BAD_ERROR("Out of memory in parse test\n");
 
 	range->start = start;
 	range->end = end;
@@ -1747,10 +1731,9 @@ int check_pathname(struct test_entry *test, struct atom *atom)
 
 	if(atom->argv[0][0] != '/') {
 		res = asprintf(&name, "/%s", atom->argv[0]);
-		if(res == -1) {
-			printf("asprintf failed in check_pathname\n");
-			return 0;
-		}
+		if(res == -1)
+			BAD_ERROR("asprintf failed in check_pathname\n");
+
 		free(atom->argv[0]);
 		atom->argv[0] = name;
 	}
@@ -1927,10 +1910,8 @@ int parse_file_arg(struct test_entry *test, struct atom *atom)
 	int res;
 	regex_t *preg = malloc(sizeof(regex_t));
 
-	if (preg == NULL) {
-		printf("parse file arg malloc failed\n");
-		return 0;
-	}
+	if (preg == NULL)
+		BAD_ERROR("parse file arg malloc failed\n");
 
 	res = regcomp(preg, atom->argv[0], REG_EXTENDED);
 	if (res) {
@@ -1956,16 +1937,12 @@ int file_fn(struct atom *atom, struct action_data *action_data)
 	regex_t *preg = atom->data;
 
 	res = pipe(pipefd);
-	if (res == -1) {
-		printf("file_fn pipe failed\n");
-		return 0;
-	}
+	if (res == -1)
+		BAD_ERROR("file_fn pipe failed\n");
 
 	child = fork();
-	if (child == -1) {
-		printf("file_fn fork_failed\n");
-		goto failed;
-	}
+	if (child == -1)
+		BAD_ERROR("file_fn fork_failed\n");
 
 	if (child == 0) {
 		/*
@@ -1975,12 +1952,12 @@ int file_fn(struct atom *atom, struct action_data *action_data)
 		close(STDOUT_FILENO);
 		res = dup(pipefd[1]);
 		if (res == -1) {
-			printf("file_fn dup failed\n");
+			ERROR("file_fn dup failed\n");
 			exit(EXIT_FAILURE);
 		}
 		execlp("file", "file", "-b", action_data->pathname,
 			(char *) NULL);
-		printf("file_fn execlp failed\n");
+		ERROR("file_fn execlp failed\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1991,17 +1968,13 @@ int file_fn(struct atom *atom, struct action_data *action_data)
 
 	do {
 		buffer = realloc(buffer, size + 512);
-		if (buffer == NULL) {
-			printf("file_fn malloc failed\n");
-			goto failed2;
-		}
+		if (buffer == NULL)
+			BAD_ERROR("file_fn malloc failed\n");
 
 		res = read_bytes(pipefd[0], buffer + size, 512);
 
-		if (res == -1) {
-			printf("file_fn pipe read error\n");
-			goto failed2;
-		}
+		if (res == -1)
+			BAD_ERROR("file_fn pipe read error\n");
 
 		size += 512;
 
@@ -2013,15 +1986,11 @@ int file_fn(struct atom *atom, struct action_data *action_data)
 
 	res = waitpid(child,  &status, 0);
 
-	if (res == -1) {
-		printf("file_fn waitpid failed\n");
-		goto failed;
-	}
+	if (res == -1)
+		BAD_ERROR("file_fn waitpid failed\n");
  
-	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-		printf("file_fn file returned error\n");
-		goto failed;
-	}
+	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+		BAD_ERROR("file_fn file returned error\n");
 
 	close(pipefd[0]);
 
@@ -2030,17 +1999,6 @@ int file_fn(struct atom *atom, struct action_data *action_data)
 	free(buffer);
 
 	return res == 0;
-
-failed:
-	free(buffer);
-	close(pipefd[0]);
-	return 0;
-
-failed2:
-	free(buffer);
-	close(pipefd[0]);
-	waitpid(child,  &status, 0);
-	return 0;
 }
 
 
