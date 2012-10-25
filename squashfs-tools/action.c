@@ -1049,7 +1049,7 @@ void mode_action(struct action *action, struct dir_ent *dir_ent)
 {
 	struct stat *buf = &dir_ent->inode->buf;
 	struct mode_data *mode_data = action->data;
-	int mode;
+	int mode = 0;
 
 	for (;mode_data; mode_data = mode_data->next) {
 		if (mode_data->mode < 0) {
