@@ -188,8 +188,15 @@ static struct expr *parse_test(char *name)
 	test = &test_table[i];
 
 	expr = malloc(sizeof(*expr));
+	if (expr == NULL)
+		BAD_ERROR("Out of memory in parse_test\n");
+
 	expr->type = ATOM_TYPE;
+
 	expr->atom.argv = malloc(test->args * sizeof(char *));
+	if (expr->atom.argv == NULL)
+		BAD_ERROR("Out of memory in parse_test\n");
+
 	expr->atom.test = test;
 	expr->atom.data = NULL;
 
@@ -430,6 +437,8 @@ skip_args:
 
 	spec_list = realloc(spec_list, (spec_count + 1) *
 					sizeof(struct action));
+	if (spec_list == NULL)
+		BAD_ERROR("Out of memory in parse_action\n");
 
 	spec_list[spec_count].type = action->type;
 	spec_list[spec_count].action = action;
