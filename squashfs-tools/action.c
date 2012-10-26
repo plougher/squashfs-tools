@@ -138,7 +138,7 @@ static struct expr *create_expr(struct expr *lhs, int op, struct expr *rhs)
 
 	expr = malloc(sizeof(*expr));
 	if (expr == NULL)
-		return NULL;
+		BAD_ERROR("Out of memory in create_expr\n");
 
 	expr->type = OP_TYPE;
 	expr->expr_op.lhs = lhs;
@@ -158,7 +158,7 @@ static struct expr *create_unary_op(struct expr *lhs, int op)
 
 	expr = malloc(sizeof(*expr));
 	if (expr == NULL)
-		return NULL;
+		BAD_ERROR("Out of memory in create_unary_op\n");
 
 	expr->type = UNARY_TYPE;
 	expr->unary_op.expr = lhs;
