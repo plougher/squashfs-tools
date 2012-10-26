@@ -703,7 +703,7 @@ static long long parse_uid(char *arg) {
 
 	if (*b == '\0') {
 		if (uid < 0 || uid >= (1LL < 32)) {
-			printf("action: uid out of range\n");
+			SYNTAX_ERROR("action: uid out of range\n");
 			return -1;
 		}
 	} else {
@@ -712,7 +712,7 @@ static long long parse_uid(char *arg) {
 		if (passwd)
 			uid = passwd->pw_uid;
 		else {
-			printf("action: invalid uid or unknown user\n");
+			SYNTAX_ERROR("action: invalid uid or unknown user\n");
 			return -1;
 		}
 	}
@@ -727,7 +727,7 @@ static long long parse_gid(char *arg) {
 
 	if (*b == '\0') {
 		if (gid < 0 || gid >= (1LL < 32)) {
-			printf("action: gid out of range\n");
+			SYNTAX_ERROR("action: gid out of range\n");
 			return -1;
 		}
 	} else {
@@ -736,7 +736,7 @@ static long long parse_gid(char *arg) {
 		if (group)
 			gid = group->gr_gid;
 		else {
-			printf("action: invalid gid or unknown user\n");
+			SYNTAX_ERROR("action: invalid gid or unknown user\n");
 			return -1;
 		}
 	}
@@ -935,8 +935,8 @@ parse_operation:
 		op = ACTION_MODE_SET;
 		break;
 	default:
-		printf("Action mode: Expected one of '+', '-' or '=', got '%c'"
-			"\n", *arg);
+		SYNTAX_ERROR("Action mode: Expected one of '+', '-' or '=', "
+			"got '%c'\n", *arg);
 		goto failed;
 	}
 
@@ -947,7 +947,7 @@ parse_operation:
  		/* PERMS = [ugo] */
 		mode = - *arg;
 		if (*++arg != '\0') {
-			printf("Action mode: permission 'u', 'g' or 'o'"
+			SYNTAX_ERROR("Action mode: permission 'u', 'g' or 'o' "
 				"has trailing characters\n");
 			goto failed;
 		}
@@ -974,8 +974,8 @@ parse_operation:
 				X = 1;
 				break;
 			default:
-				printf("Action mode: unrecognised permission"
-							"'%c'\n", *arg);
+				SYNTAX_ERROR("Action mode: unrecognised "
+						"permission '%c'\n", *arg);
 				goto failed;
 			}
 
