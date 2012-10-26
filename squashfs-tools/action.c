@@ -894,7 +894,7 @@ struct mode_data *parse_sym_mode_arg(char *arg)
 	char X = 0;
 
 	if (mode_data == NULL)
-		return NULL;
+		BAD_ERROR("Out of memory in action mode\n");
 
 	if (arg[0] != 'u' && arg[0] != 'g' && arg[0] != 'o' && arg[0] != 'a') {
 		/* no ownership specifiers, default to a */
@@ -1008,7 +1008,7 @@ int parse_sym_mode_args(struct action_entry *action, int args, char **argv,
 		struct mode_data *entry = parse_sym_mode_arg(argv[i]);
 
 		if (entry == NULL)
-			BAD_ERROR("Out of memory in action mode\n");
+			return 0;
 
 		if (cur) {
 			cur->next = entry;
