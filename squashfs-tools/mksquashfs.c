@@ -4656,7 +4656,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-CVS (2012/10/19)\n");\
+	printf("mksquashfs version 4.2-CVS (2012/10/26)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@lougher.demon.co.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -4703,10 +4703,11 @@ int main(int argc, char *argv[])
 	 */
 	comp = lookup_compressor(COMP_DEFAULT);
 	for(; i < argc; i++) {
-		if(strcmp(argv[i], "-action") == 0) {
+		if(strcmp(argv[i], "-action") == 0 ||
+				strcmp(argv[i], "-a") ==0) {
 			if(++i == argc) {
-				ERROR("%s: -action missing action\n",
-					argv[0]);
+				ERROR("%s: %s missing action\n",
+					argv[0], argv[i - 1]);
 				exit(1);
 			}
 			res = parse_action(argv[i]);
