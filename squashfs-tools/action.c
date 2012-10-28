@@ -1231,8 +1231,8 @@ struct dir_ent *lookup_comp(char *comp, struct dir_info *dest)
 }
 
 
-void eval_move(struct move_ent *move, struct dir_info *root,
-			struct dir_ent *dir_ent, char *pathname)
+void eval_move(struct action_data *action_data, struct move_ent *move,
+		struct dir_info *root, struct dir_ent *dir_ent, char *pathname)
 {
 	struct dir_info *dest, *source = dir_ent->our_dir;
 	struct dir_ent *comp_ent;
@@ -1380,7 +1380,8 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 				move->ops = 0;
 				move->dir_ent = dir_ent;
 			}
-			eval_move(move, root, dir_ent, action->argv[0]);
+			eval_move(&action_data, move, root, dir_ent,
+				action->argv[0]);
 		}
 	}
 
