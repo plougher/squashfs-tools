@@ -1200,6 +1200,29 @@ int parse_move_args(struct action_entry *action, int args, char **argv,
 }
 
 
+char *move_pathname(struct move_ent *move)
+{
+	struct dir_info *dest;
+	char *name, *pathname;
+	int res;
+
+	dest = (move->ops & ACTION_MOVE_MOVE) ?
+		move->dest : move->dir_ent->our_dir;
+	name = (move->ops & ACTION_MOVE_RENAME) ?
+		move->name : move->dir_ent->name;
+
+	if(dest->subpath[0] != '\0')
+		res = asprintf(&pathname, "%s/%s", dest->subpath, name);
+	else
+		res = asprintf(&pathname, "/%s", name);
+
+	if(res == -1)
+		BAD_ERROR("asprintf failed in move_pathname\n");
+
+	return pathname;
+}
+
+
 char *get_comp(char **pathname)
 {
 	char *path = *pathname, *start;
