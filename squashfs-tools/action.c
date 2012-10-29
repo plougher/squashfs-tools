@@ -1259,7 +1259,7 @@ void eval_move(struct action_data *action_data, struct move_ent *move,
 {
 	struct dir_info *dest, *source = dir_ent->our_dir;
 	struct dir_ent *comp_ent;
-	char *comp;
+	char *comp, *path = pathname;
 
 	/*
 	 * Walk pathname to get the destination directory
@@ -1308,7 +1308,19 @@ void eval_move(struct action_data *action_data, struct move_ent *move,
 		free(remainder);
 
 		if(remainder) {
-			printf("Not leaf component\n");
+			/*
+			 * trying to move source to a subdirectory of
+			 * comp, but comp either doesn't exist, or it isn't
+			 * a directory, which is impossible
+			 */
+			if (comp_ent == NULL)
+				ERROR("Move action: cannot move %s to %s, no "
+					"such directory %s\n",
+					action_data->subpath, path, comp);
+			else
+				ERROR("Move action: cannot move %s to %s, %s "
+					"is not a directory\n",
+					action_data->subpath, path, comp);
 			free(comp);
 			return;
 		}
@@ -1320,7 +1332,12 @@ void eval_move(struct action_data *action_data, struct move_ent *move,
 	 	 */
 		if(move->ops & ACTION_MOVE_RENAME) {
 			if(strcmp(comp, move->name) != 0) {
-				printf("conflicting renames\n");
+				char *conf_path = move_pathname(move);
+				ERROR("Move action: Cannot move %s to %s, "
+					"conflicting move, already moving "
+					"to %s via another move action!\n",
+					action_data->subpath, path, conf_path);
+				free(conf_path);
 				free(comp);
 				return;
 			}
@@ -1339,7 +1356,12 @@ void eval_move(struct action_data *action_data, struct move_ent *move,
 	 	 */
 		if(move->ops & ACTION_MOVE_MOVE) {
 			if(dest != move->dest) {
-				printf("Conflicting move\n");
+				char *conf_path = move_pathname(move);
+				ERROR("Move action: Cannot move %s to %s, "
+					"conflicting move, already moving "
+					"to %s via another move action!\n",
+					action_data->subpath, path, conf_path);
+				free(conf_path);
 				return;
 			}
 		} else {
