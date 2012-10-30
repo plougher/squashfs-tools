@@ -1920,7 +1920,6 @@ long long generic_write_table(int length, void *buffer, int length2,
 long long write_fragment_table()
 {
 	unsigned int frag_bytes = SQUASHFS_FRAGMENT_BYTES(fragments);
-	struct squashfs_fragment_entry p[fragments];
 	int i;
 
 	TRACE("write_fragment_table: fragments %d, frag_bytes %d\n", fragments,
@@ -1929,10 +1928,10 @@ long long write_fragment_table()
 		TRACE("write_fragment_table: fragment %d, start_block 0x%llx, "
 			"size %d\n", i, fragment_table[i].start_block,
 			fragment_table[i].size);
-		SQUASHFS_SWAP_FRAGMENT_ENTRY(&fragment_table[i], p + i);
+		SQUASHFS_INSWAP_FRAGMENT_ENTRY(&fragment_table[i]);
 	}
 
-	return generic_write_table(frag_bytes, p, 0, NULL, noF);
+	return generic_write_table(frag_bytes, fragment_table, 0, NULL, noF);
 }
 
 
