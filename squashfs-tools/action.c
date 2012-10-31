@@ -1186,13 +1186,6 @@ int eval_empty_actions(char *name, char *pathname, char *subpath,
 static struct move_ent *move_list = NULL;
 
 
-int parse_move_args(struct action_entry *action, int args, char **argv,
-								void **data)
-{
-	return 1;
-}
-
-
 char *move_pathname(struct move_ent *move)
 {
 	struct dir_info *dest;
@@ -2116,6 +2109,6 @@ static struct action_entry action_table[] = {
 	{ "guid", GUID_ACTION, 2, ACTION_ALL_LNK, parse_guid_args, guid_action},
 	{ "mode", MODE_ACTION, -2, ACTION_ALL, parse_mode_args, mode_action },
 	{ "empty", EMPTY_ACTION, -2, ACTION_DIR, parse_empty_args, NULL},
-	{ "move", MOVE_ACTION, -2, ACTION_ALL_LNK, parse_move_args, NULL},
+	{ "move", MOVE_ACTION, -2, ACTION_ALL_LNK, NULL, NULL},
 	{ "", 0, -1, 0, NULL, NULL}
 };
