@@ -1450,7 +1450,11 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 			move->name : dir_ent->name;
 		comp_ent = lookup_comp(name, dest);
 		if(comp_ent) {
-			printf("Bad move, destination already exists\n");
+			char *conf_path = move_pathname(move);
+			ERROR("Move action: Cannot move %s to %s, "
+				"destination already exists\n",
+				action_data.subpath, conf_path);
+			free(conf_path);
 			free(move);
 			return;
 		}
@@ -1460,8 +1464,11 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 		 * subdirectory of itself
 		 */
 		if(subdirectory(dir_ent->dir, dest)) {
-			printf("Bad move, cannot move to a subdirectory of "
-						"itself\n");
+			char *conf_path = move_pathname(move);
+			ERROR("Move action: Cannot move %s to %s, this is a "
+				"subdirectory of itself\n",
+				action_data.subpath, conf_path);
+			free(conf_path);
 			free(move);
 			return;
 		}
