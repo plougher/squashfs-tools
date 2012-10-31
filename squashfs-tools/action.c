@@ -1585,9 +1585,13 @@ void do_move_actions()
 		char *name = (move_list->ops & ACTION_MOVE_RENAME) ?
 			move_list->name : move_list->dir_ent->name;
 		struct dir_ent *comp_ent = lookup_comp(name, dest);
-		if(comp_ent)
-			printf("Bad move, destination already exists\n");
-		else
+		if(comp_ent) {
+			char *conf_path = move_pathname(move_list);
+			ERROR("Move action: Cannot move %s to %s, "
+				"destination already exists\n",
+				subpathname(move_list->dir_ent), conf_path);
+			free(conf_path);
+		} else
 			move_file(move_list);
 
 		move_list = move_list->next;
