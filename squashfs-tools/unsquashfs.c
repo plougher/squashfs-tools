@@ -4,7 +4,7 @@
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
  * 2012
- * Phillip Lougher <phillip@lougher.demon.co.uk>
+ * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -2071,7 +2071,7 @@ void progress_bar(long long current, long long max, int columns)
 #define VERSION() \
 	printf("unsquashfs version 4.2-CVS (2012/06/15)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
-		"<phillip@lougher.demon.co.uk>\n\n");\
+		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
 		"\n");\
 	printf("modify it under the terms of the GNU General Public License"\
