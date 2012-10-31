@@ -1508,8 +1508,11 @@ void move_file(struct move_ent *move_ent)
 		 * subdirectory of itself
 		 */
 		if(subdirectory(dir_ent->dir, dest)) {
-			printf("Bad move, cannot move to a subdirectory of "
-						"itself\n");
+			char *conf_path = move_pathname(move_ent);
+			ERROR("Move action: Cannot move %s to %s, this is a "
+				"subdirectory of itself\n",
+				subpathname(dir_ent), conf_path);
+			free(conf_path);
 			return;
 		}
 
