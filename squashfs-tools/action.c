@@ -1185,13 +1185,6 @@ int eval_empty_actions(char *name, char *pathname, char *subpath,
  */
 static struct move_ent *move_list = NULL;
 
-#if 0
-struct move_expansion_ops move_expansion_ops[] = {
-	{ "{}", move_pathname },
-	{ "{dirname}", move_dirname },
-	{ "{basename}", move_basename },
-	{ "{basename_nosuffix}", move_basename_nosuffix }
-#endif
 
 int parse_move_args(struct action_entry *action, int args, char **argv,
 								void **data)
