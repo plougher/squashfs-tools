@@ -1871,7 +1871,7 @@ long long generic_write_table(int length, void *buffer, int length2,
 	int meta_blocks = (length + SQUASHFS_METADATA_SIZE - 1) /
 		SQUASHFS_METADATA_SIZE;
 	long long *list, start_bytes;
-	int compressed_size, i;
+	int compressed_size, i, list_size = meta_blocks * sizeof(long long);
 	unsigned short c_byte;
 	char cbuffer[(SQUASHFS_METADATA_SIZE << 2) + 2];
 	
@@ -1880,7 +1880,7 @@ long long generic_write_table(int length, void *buffer, int length2,
 	int olength = length;
 #endif
 
-	list = malloc(meta_blocks * sizeof(long long));
+	list = malloc(list_size);
 	if(list == NULL)
 		BAD_ERROR("Out of memory in generic_write_table\n");
 
@@ -1910,9 +1910,9 @@ long long generic_write_table(int length, void *buffer, int length2,
 	}
 		
 	SQUASHFS_INSWAP_LONG_LONGS(list, meta_blocks);
-	write_destination(fd, bytes, sizeof(list), list);
-	bytes += sizeof(list);
-	total_bytes += sizeof(list);
+	write_destination(fd, bytes, list_size, list);
+	bytes += list_size;
+	total_bytes += list_size;
 
 	TRACE("generic_write_table: total uncompressed %d compressed %lld\n",
 		olength, bytes - obytes);
