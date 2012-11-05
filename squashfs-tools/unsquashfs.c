@@ -827,13 +827,49 @@ void close_wake(int fd)
 }
 
 
+void queue_file(char *pathname, int file_fd, struct inode *inode)
+{
+	struct squashfs_file *file = malloc(sizeof(struct squashfs_file));
+	if(file == NULL)
+		EXIT_UNSQUASH("queue_file: unable to malloc file\n");
+
+	file->fd = file_fd;
+	file->file_size = inode->data;
+	file->mode = inode->mode;
+	file->gid = inode->gid;
+	file->uid = inode->uid;
+	file->time = inode->time;
+	file->pathname = strdup(pathname);
+	file->blocks = inode->blocks + (inode->frag_bytes > 0);
+	file->sparse = inode->sparse;
+	file->xattr = inode->xattr;
+	queue_put(to_writer, file);
+}
+
+
+void queue_dir(char *pathname, struct dir *dir)
+{
+	struct squashfs_file *file = malloc(sizeof(struct squashfs_file));
+	if(file == NULL)
+		EXIT_UNSQUASH("queue_dir: unable to malloc file\n");
+
+	file->fd = -1;
+	file->mode = dir->mode;
+	file->gid = dir->guid;
+	file->uid = dir->uid;
+	file->time = dir->mtime;
+	file->pathname = strdup(pathname);
+	file->xattr = dir->xattr;
+	queue_put(to_writer, file);
+}
+
+
 int write_file(struct inode *inode, char *pathname)
 {
 	unsigned int file_fd, i;
 	unsigned int *block_list;
 	int file_end = inode->data / block_size;
 	long long start = inode->start;
-	struct squashfs_file *file;
 
 	TRACE("write_file: regular file, blocks %d\n", inode->blocks);
 
@@ -851,26 +887,12 @@ int write_file(struct inode *inode, char *pathname)
 
 	s_ops.read_block_list(block_list, inode->block_ptr, inode->blocks);
 
-	file = malloc(sizeof(struct squashfs_file));
-	if(file == NULL)
-		EXIT_UNSQUASH("write_file: unable to malloc file\n");
-
 	/*
 	 * the writer thread is queued a squashfs_file structure describing the
  	 * file.  If the file has one or more blocks or a fragment they are
  	 * queued separately (references to blocks in the cache).
  	 */
-	file->fd = file_fd;
-	file->file_size = inode->data;
-	file->mode = inode->mode;
-	file->gid = inode->gid;
-	file->uid = inode->uid;
-	file->time = inode->time;
-	file->pathname = strdup(pathname);
-	file->blocks = inode->blocks + (inode->frag_bytes > 0);
-	file->sparse = inode->sparse;
-	file->xattr = inode->xattr;
-	queue_put(to_writer, file);
+	queue_file(pathname, file_fd, inode);
 
 	for(i = 0; i < inode->blocks; i++) {
 		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
@@ -1358,12 +1380,37 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	if(lsonly || info)
 		print_filename(parent_name, i);
 
-	if(!lsonly && mkdir(parent_name, (mode_t) dir->mode) == -1 &&
-			(!force || errno != EEXIST)) {
-		ERROR("dir_scan: failed to make directory %s, because %s\n",
-			parent_name, strerror(errno));
-		squashfs_closedir(dir);
-		return;
+	if(!lsonly) {
+		/*
+		 * Make directory with default User rwx permissions rather than
+		 * the permissions from the filesystem, as these may not have
+		 * write/execute permission.  These are fixed up later in
+		 * set_attributes().
+		 */
+		int res = mkdir(parent_name, S_IRUSR|S_IWUSR|S_IXUSR);
+		if(res == -1) {
+			/*
+			 * Skip directory if mkdir fails, unless we're
+			 * forcing and the error is -EEXIST
+			 */
+			if(!force || errno != EEXIST) {
+				ERROR("dir_scan: failed to make directory %s, "
+					"because %s\n", parent_name,
+					strerror(errno));
+				squashfs_closedir(dir);
+				return;
+			} 
+
+			/*
+			 * Try to change permissions of existing directory so
+			 * that we can write to it
+			 */
+			res = chmod(parent_name, S_IRUSR|S_IWUSR|S_IXUSR);
+			if (res == -1)
+				ERROR("dir_scan: failed to change permissions "
+					"for directory %s, because %s\n",
+					parent_name, strerror(errno));
+		}
 	}
 
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
@@ -1398,8 +1445,7 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	}
 
 	if(!lsonly)
-		set_attributes(parent_name, dir->mode, dir->uid, dir->guid,
-			dir->mtime, dir->xattr, force);
+		queue_dir(parent_name, dir);
 
 	squashfs_closedir(dir);
 	dir_count ++;
@@ -1699,6 +1745,13 @@ void *writer(void *arg)
 
 		if(file == NULL) {
 			queue_put(from_writer, NULL);
+			continue;
+		} else if(file->fd == -1) {
+			/* write attributes for directory file->pathname */
+			set_attributes(file->pathname, file->mode, file->uid,
+				file->gid, file->time, file->xattr, TRUE);
+			free(file->pathname);
+			free(file);
 			continue;
 		}
 
@@ -2069,7 +2122,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2012/06/15)\n");\
+	printf("unsquashfs version 4.2-git (2012/11/04)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
