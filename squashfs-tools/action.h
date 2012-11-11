@@ -277,8 +277,7 @@ extern void *eval_frag_actions(struct dir_ent *);
 extern void *get_frag_action(void *);
 extern int eval_exclude_actions(char *, char *, char *, struct stat *, int);
 extern void eval_actions(struct dir_ent *);
-extern int eval_empty_actions(char *, char *, char *, struct stat *, int,
-							struct dir_info *);
+extern int eval_empty_actions(struct dir_ent *dir_ent);
 extern void eval_move_actions(struct dir_info *, struct dir_ent *);
 extern void do_move_actions();
 extern int read_bytes(int, void *, int);

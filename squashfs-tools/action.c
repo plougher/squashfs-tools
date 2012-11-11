@@ -1130,12 +1130,12 @@ int parse_empty_args(struct action_entry *action, int args, char **argv,
 }
 
 
-int eval_empty_actions(char *name, char *pathname, char *subpath,
-	struct stat *buf, int depth, struct dir_info *dir)
+int eval_empty_actions(struct dir_ent *dir_ent)
 {
 	int i, match = 0;
 	struct action_data action_data;
 	struct empty_data *data;
+	struct dir_info *dir = dir_ent->dir;
 
 	/*
 	 * Empty action only works on empty directories
@@ -1143,11 +1143,11 @@ int eval_empty_actions(char *name, char *pathname, char *subpath,
 	if (dir->count != 0)
 		return 0;
 
-	action_data.name = name;
-	action_data.pathname = pathname;
-	action_data.subpath = subpath;
-	action_data.buf = buf;
-	action_data.depth = depth;
+	action_data.name = dir_ent->name;
+	action_data.pathname = pathname(dir_ent);
+	action_data.subpath = subpathname(dir_ent);
+	action_data.buf = &dir_ent->inode->buf;
+	action_data.depth = dir_ent->our_dir->depth;
 
 	for (i = 0; i < spec_count && !match; i++) {
 		if (spec_list[i].type != EMPTY_ACTION)

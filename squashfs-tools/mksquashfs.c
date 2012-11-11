@@ -366,7 +366,8 @@ struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
 void dir_scan3(struct dir_info *root, struct dir_info *dir);
 void dir_scan4(struct dir_info *dir);
-void dir_scan5(squashfs_inode *inode, struct dir_info *dir_info);
+void dir_scan5(struct dir_info *dir);
+void dir_scan6(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct fragment *fragment,
 	unsigned short checksum, unsigned short fragment_checksum,
@@ -3340,6 +3341,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	dir_scan3(dir_info, dir_info);
 	do_move_actions();
 	dir_scan4(dir_info);
+	dir_scan5(dir_info);
 
 	dir_ent = create_dir_entry("", NULL, pathname,
 						scan1_opendir("", "", 0));
@@ -3384,7 +3386,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		sort_files_and_write(dir_info);
 	if(progress)
 		enable_progress_bar();
-	dir_scan5(inode, dir_info);
+	dir_scan6(inode, dir_info);
 	dir_ent->inode->inode = *inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 }
@@ -3602,16 +3604,6 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 				continue;
 			}
 
-			if(eval_empty_actions(dir_name, filename, subpath, &buf,
-						depth, sub_dir)) {
-				add_excluded(dir);
-				free(sub_dir);
-				free_dir_entry(dir_ent);
-				free(filename);
-				free(subpath);
-				continue;
-			}
-
 			dir->directory_count ++;
 		} else
 			sub_dir = NULL;
@@ -3785,8 +3777,51 @@ void dir_scan3(struct dir_info *root, struct dir_info *dir)
 			dir_scan3(root, dir_ent->dir);
 	}
 }
+
+
 /*
  * dir_scan4 routines...
+ * This processes the empty action.  This action has to be processed after
+ * all other actions because the previous exclude and move actions and the
+ * pseudo actions affect whether a directory is empty
+ */
+void dir_scan4(struct dir_info *dir)
+{
+	struct dir_ent *dir_ent = dir->list, *prev = NULL;
+
+	while(dir_ent) {
+		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR &&
+						eval_empty_actions(dir_ent)) {
+			struct dir_ent *tmp = dir_ent;
+
+			/* delete sub-directory, this is by definition empty */
+			free(dir_ent->dir->pathname);
+			free(dir_ent->dir->subpath);
+			free(dir_ent->dir);
+
+			/* remove dir_ent from list */
+			dir_ent = dir_ent->next;
+			if(prev)
+				prev->next = dir_ent;
+			else
+				dir->list = dir_ent;
+			
+			/* free it */
+			free_dir_entry(tmp);
+
+			/* update counts */
+			dir->directory_count --;
+			add_excluded(dir);
+		} else {
+			prev = dir_ent;
+			dir_ent = dir_ent->next;
+		}
+	}
+}
+
+
+/*
+ * dir_scan5 routines...
  * This sorts every directory and computes the inode numbers
  */
 
@@ -3879,7 +3914,7 @@ void sort_directory(struct dir_info *dir)
 }
 
 
-void dir_scan4(struct dir_info *dir)
+void dir_scan5(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent;
 	unsigned int byte_count = 0;
@@ -3905,10 +3940,10 @@ void dir_scan4(struct dir_info *dir)
 
 
 /*
- * dir_scan5 routines...
+ * dir_scan6 routines...
  * This generates the filesystem metadata and writes it out to the destination
  */
-void scan5_init_dir(struct directory *dir)
+void scan6_init_dir(struct directory *dir)
 {
 	dir->buff = malloc(SQUASHFS_METADATA_SIZE);
 	if(dir->buff == NULL) {
@@ -3924,7 +3959,7 @@ void scan5_init_dir(struct directory *dir)
 }
 
 
-struct dir_ent *scan5_readdir(struct directory *dir, struct dir_info *dir_info,
+struct dir_ent *scan6_readdir(struct directory *dir, struct dir_info *dir_info,
 	struct dir_ent *dir_ent)
 {
 	if (dir_ent == NULL)
@@ -3940,7 +3975,7 @@ struct dir_ent *scan5_readdir(struct directory *dir, struct dir_info *dir_info,
 }
 
 
-void scan5_freedir(struct directory *dir)
+void scan6_freedir(struct directory *dir)
 {
 	if(dir->index)
 		free(dir->index);
@@ -3948,16 +3983,16 @@ void scan5_freedir(struct directory *dir)
 }
 
 
-void dir_scan5(squashfs_inode *inode, struct dir_info *dir_info)
+void dir_scan6(squashfs_inode *inode, struct dir_info *dir_info)
 {
 	int squashfs_type;
 	int duplicate_file;
 	struct directory dir;
 	struct dir_ent *dir_ent = NULL;
 	
-	scan5_init_dir(&dir);
+	scan6_init_dir(&dir);
 	
-	while((dir_ent = scan5_readdir(&dir, dir_info, dir_ent)) != NULL) {
+	while((dir_ent = scan6_readdir(&dir, dir_info, dir_ent)) != NULL) {
 		struct stat *buf = &dir_ent->inode->buf;
 
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
@@ -3976,7 +4011,7 @@ void dir_scan5(squashfs_inode *inode, struct dir_info *dir_info)
 
 				case S_IFDIR:
 					squashfs_type = SQUASHFS_DIR_TYPE;
-					dir_scan5(inode, dir_ent->dir);
+					dir_scan6(inode, dir_ent->dir);
 					break;
 
 				case S_IFLNK:
@@ -4088,7 +4123,7 @@ void dir_scan5(squashfs_inode *inode, struct dir_info *dir_info)
 	INFO("directory %s inode 0x%llx\n", subpathname(dir_info->dir_ent),
 		*inode);
 
-	scan5_freedir(&dir);
+	scan6_freedir(&dir);
 }
 
 
