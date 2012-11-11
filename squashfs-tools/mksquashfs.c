@@ -3392,7 +3392,9 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 
 /*
  * dir_scan1 routines...
- * This scans the source directories into memory for processing
+ * These scan the source directories into memory for processing.
+ * Exclude actions are processed here (in contrast to the other actions)
+ * because they affect what is scanned.
  */
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 {
