@@ -3336,7 +3336,12 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	if(dir_info == NULL)
 		return;
 
-	dir_scan2(dir_info, pseudo);
+	/*
+	 * Process most actions and any pseudo files
+	 */
+	if(actions() || pseudo)
+		dir_scan2(dir_info, pseudo);
+
 	dir_scan3(dir_info, dir_info);
 	do_move_actions();
 	dir_scan4(dir_info);

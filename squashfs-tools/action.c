@@ -558,6 +558,12 @@ int eval_expr(struct expr *expr, struct action_data *action_data)
 /*
  * General action evaluation code
  */
+int actions()
+{
+	return other_count;
+}
+
+
 void eval_actions(struct dir_ent *dir_ent)
 {
 	int i, match;
