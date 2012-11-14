@@ -316,7 +316,6 @@ pthread_t *thread, *deflator_thread, *frag_deflator_thread;
 pthread_mutex_t	fragment_mutex;
 pthread_cond_t fragment_waiting;
 pthread_mutex_t	pos_mutex;
-struct pseudo *pseudo = NULL;
 
 /* user options that control parallelisation */
 int processors = -1;
@@ -3328,7 +3327,7 @@ inline void add_excluded(struct dir_info *dir)
 
 
 void dir_scan(squashfs_inode *inode, char *pathname,
-	struct dir_ent *(_readdir)(struct dir_info *))
+	struct dir_ent *(_readdir)(struct dir_info *), struct pseudo *pseudo)
 {
 	struct stat buf;
 	struct dir_info *dir_info = dir_scan1(pathname, "", paths, _readdir, 1);
@@ -4727,6 +4726,7 @@ int main(int argc, char *argv[])
 		writeb_mbytes = WRITER_BUFFER_DEFAULT,
 		fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
 	int force_progress = FALSE;
+	struct pseudo *pseudo = NULL;
 
 	block_log = slog(block_size);
 	if(argc > 1 && strcmp(argv[1], "-version") == 0) {
@@ -5465,12 +5465,12 @@ printOptions:
 
 	if(delete && !keep_as_directory && source == 1 &&
 			S_ISDIR(source_buf.st_mode))
-		dir_scan(&inode, source_path[0], scan1_readdir);
+		dir_scan(&inode, source_path[0], scan1_readdir, pseudo);
 	else if(!keep_as_directory && source == 1 &&
 			S_ISDIR(source_buf.st_mode))
-		dir_scan(&inode, source_path[0], scan1_single_readdir);
+		dir_scan(&inode, source_path[0], scan1_single_readdir, pseudo);
 	else
-		dir_scan(&inode, "", scan1_encomp_readdir);
+		dir_scan(&inode, "", scan1_encomp_readdir, pseudo);
 	sBlk.root_inode = inode;
 	sBlk.inodes = inode_count;
 	sBlk.s_magic = SQUASHFS_MAGIC;
