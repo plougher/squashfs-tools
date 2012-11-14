@@ -91,7 +91,8 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 	target = get_component(target, targname);
 
 	if(pseudo == NULL) {
-		if((pseudo = malloc(sizeof(struct pseudo))) == NULL)
+		pseudo = malloc(sizeof(struct pseudo));
+		if(pseudo == NULL)
 			BAD_ERROR("failed to allocate pseudo file\n");
 
 		pseudo->names = 0;
