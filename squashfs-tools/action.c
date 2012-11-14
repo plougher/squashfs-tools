@@ -48,6 +48,12 @@
 static char *cur_ptr, *source;
 static struct action *spec_list = NULL;
 static int spec_count = 0;
+static int fragment_count = 0;
+static int exclude_count = 0;
+static int empty_count = 0;
+static int move_count = 0;
+static int other_count = 0;
+
 static struct file_buffer *def_fragment = NULL;
 
 static struct token_entry token_table[] = {
@@ -447,6 +453,24 @@ skip_args:
 	spec_list[spec_count].expr = expr;
 	spec_list[spec_count ++].data = data;
 
+	/* increment action specific counters */
+	switch(action->type) {
+	case FRAGMENT_ACTION:
+		fragment_count ++;
+		break;
+	case EXCLUDE_ACTION:
+		exclude_count ++;
+		break;
+	case EMPTY_ACTION:
+		empty_count ++;
+		break;
+	case MOVE_ACTION:
+		move_count ++;
+		break;
+	default:
+		other_count ++;
+	}
+	
 	return 1;
 
 failed:
