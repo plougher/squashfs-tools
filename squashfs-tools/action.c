@@ -46,8 +46,11 @@
  */
 
 static char *cur_ptr, *source;
-static struct action *spec_list = NULL;
-static int spec_count = 0;
+static struct action *fragment_spec = NULL;
+static struct action *exclude_spec = NULL;
+static struct action *empty_spec = NULL;
+static struct action *move_spec = NULL;
+static struct action *other_spec = NULL;
 static int fragment_count = 0;
 static int exclude_count = 0;
 static int empty_count = 0;
@@ -343,6 +346,8 @@ int parse_action(char *s)
 	struct expr *expr;
 	struct action_entry *action;
 	void *data = NULL;
+	struct action **spec_list;
+	int spec_count;
 
 	cur_ptr = source = s;
 	token = get_token(&string);
@@ -441,36 +446,43 @@ skip_args:
 	if (expr == NULL)
 		goto failed;
 
-	spec_list = realloc(spec_list, (spec_count + 1) *
-					sizeof(struct action));
-	if (spec_list == NULL)
-		BAD_ERROR("Out of memory in parse_action\n");
-
-	spec_list[spec_count].type = action->type;
-	spec_list[spec_count].action = action;
-	spec_list[spec_count].args = args;
-	spec_list[spec_count].argv = argv;
-	spec_list[spec_count].expr = expr;
-	spec_list[spec_count ++].data = data;
-
-	/* increment action specific counters */
+	/*
+	 * choose action list and increment action counter
+	 */
 	switch(action->type) {
 	case FRAGMENT_ACTION:
-		fragment_count ++;
+		spec_count = fragment_count ++;
+		spec_list = &fragment_spec;
 		break;
 	case EXCLUDE_ACTION:
-		exclude_count ++;
+		spec_count = exclude_count ++;
+		spec_list = &exclude_spec;
 		break;
 	case EMPTY_ACTION:
-		empty_count ++;
+		spec_count = empty_count ++;
+		spec_list = &empty_spec;
 		break;
 	case MOVE_ACTION:
-		move_count ++;
+		spec_count = move_count ++;
+		spec_list = &move_spec;
 		break;
 	default:
-		other_count ++;
+		spec_count = other_count ++;
+		spec_list = &other_spec;
 	}
 	
+	*spec_list = realloc(*spec_list, (spec_count + 1) *
+					sizeof(struct action));
+	if (*spec_list == NULL)
+		BAD_ERROR("Out of memory in parse_action\n");
+
+	(*spec_list)[spec_count].type = action->type;
+	(*spec_list)[spec_count].action = action;
+	(*spec_list)[spec_count].args = args;
+	(*spec_list)[spec_count].argv = argv;
+	(*spec_list)[spec_count].expr = expr;
+	(*spec_list)[spec_count].data = data;
+
 	return 1;
 
 failed:
@@ -504,7 +516,7 @@ static void dump_parse_tree(struct expr *expr)
 }
 
 
-void dump_actions()
+void dump_action_list(struct action *spec_list, int spec_count)
 {
 	int i;
 
@@ -525,6 +537,16 @@ void dump_actions()
 		dump_parse_tree(spec_list[i].expr);
 		printf("\n");
 	}
+}
+
+
+void dump_actions()
+{
+	dump_action_list(exclude_spec, exclude_count);
+	dump_action_list(fragment_spec, fragment_count);
+	dump_action_list(other_spec, other_count);
+	dump_action_list(move_spec, move_count);
+	dump_action_list(empty_spec, empty_count);
 }
 
 
@@ -576,12 +598,8 @@ void eval_actions(struct dir_ent *dir_ent)
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 
-	for (i = 0; i < spec_count; i++) {
-		struct action *action = &spec_list[i];
-
-		if (action->action->run_action == NULL)
-			/* specialised action handler exists */
-			continue;
+	for (i = 0; i < other_count; i++) {
+		struct action *action = &other_spec[i];
 
 		if ((action->action->file_types & file_type) == 0)
 			/* action does not operate on this file type */
@@ -609,14 +627,10 @@ void *eval_frag_actions(struct dir_ent *dir_ent)
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 
-	for (i = 0; i < spec_count; i++) {
-		if (spec_list[i].type != FRAGMENT_ACTION)
-			continue;
-
-		match = eval_expr(spec_list[i].expr, &action_data);
-
+	for (i = 0; i < fragment_count; i++) {
+		match = eval_expr(fragment_spec[i].expr, &action_data);
 		if (match)
-			return &spec_list[i].data;
+			return &fragment_spec[i].data;
 	}
 
 	return &def_fragment;
@@ -625,24 +639,22 @@ void *eval_frag_actions(struct dir_ent *dir_ent)
 
 void *get_frag_action(void *fragment)
 {
-	struct action *spec_list_end = &spec_list[spec_count];
+	struct action *spec_list_end = &fragment_spec[fragment_count];
 	struct action *action;
 
 	if (fragment == NULL)
 		return &def_fragment;
 
-	if (spec_count == 0)
+	if (fragment_count == 0)
 		return NULL;
 
 	if (fragment == &def_fragment)
-		action = &spec_list[0] - 1;
+		action = &fragment_spec[0] - 1;
 	else 
 		action = fragment - offsetof(struct action, data);
 
-	do {
-		if (++action == spec_list_end)
-			return NULL;
-	} while (action->type != FRAGMENT_ACTION);
+	if (++action == spec_list_end)
+		return NULL;
 
 	return &action->data;
 }
@@ -663,12 +675,8 @@ int eval_exclude_actions(char *name, char *pathname, char *subpath,
 	action_data.buf = buf;
 	action_data.depth = depth;
 
-	for (i = 0; i < spec_count && !match; i++) {
-		if (spec_list[i].type != EXCLUDE_ACTION)
-			continue;
-
-		match = eval_expr(spec_list[i].expr, &action_data);
-	}
+	for (i = 0; i < exclude_count && !match; i++)
+		match = eval_expr(exclude_spec[i].expr, &action_data);
 
 	return match;
 }
@@ -1185,11 +1193,8 @@ int eval_empty_actions(struct dir_ent *dir_ent)
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 
-	for (i = 0; i < spec_count && !match; i++) {
-		if (spec_list[i].type != EMPTY_ACTION)
-			continue;
-
-		data = spec_list[i].data;
+	for (i = 0; i < empty_count && !match; i++) {
+		data = empty_spec[i].data;
 
 		/*
 		 * determine the cause of the empty directory and evaluate
@@ -1209,7 +1214,7 @@ int eval_empty_actions(struct dir_ent *dir_ent)
 				(data->val == EMPTY_SOURCE && dir->excluded))
 			continue;
 		
-		match = eval_expr(spec_list[i].expr, &action_data);
+		match = eval_expr(empty_spec[i].expr, &action_data);
 	}
 
 	return match;
@@ -1434,14 +1439,9 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	 * actions.  Each move action is considered to act independently, and
 	 * each move action sees the directory tree in the same state.
 	 */
-	for (i = 0; i < spec_count; i++) {
-		struct action *action = &spec_list[i];
-		int match;
-
-		if (action->type != MOVE_ACTION)
-			continue;
-
-		match = eval_expr(action->expr, &action_data);
+	for (i = 0; i < move_count; i++) {
+		struct action *action = &move_spec[i];
+		int match = eval_expr(action->expr, &action_data);
 
 		if(match) {
 			if(move == NULL) {
