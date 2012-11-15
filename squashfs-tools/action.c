@@ -1125,6 +1125,12 @@ void mode_action(struct action *action, struct dir_ent *dir_ent)
 /*
  *  Empty specific action code
  */
+int empty_actions()
+{
+	return empty_count;
+}
+
+
 int parse_empty_args(struct action_entry *action, int args, char **argv,
 								void **data)
 {

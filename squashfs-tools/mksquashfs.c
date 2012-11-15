@@ -3350,7 +3350,12 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		do_move_actions();
 	}
 
-	dir_scan4(dir_info);
+	/*
+	 * Process empty actions
+	 */
+	if(empty_actions())
+		dir_scan4(dir_info);
+
 	dir_scan5(dir_info);
 
 	dir_ent = create_dir_entry("", NULL, pathname,
