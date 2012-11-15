@@ -255,7 +255,7 @@ int sorted = 0;
 char *destination_file = NULL;
 
 /* recovery file for abnormal exit on appending */
-char recovery_file[1024] = "";
+char *recovery_file = NULL;
 int recover = TRUE;
 
 /* struct describing a cache entry passed between threads */
@@ -4608,8 +4608,11 @@ void write_recovery_data(struct squashfs_super_block *sBlk)
 	if(res == 0)
 		EXIT_MKSQUASHFS();
 
-	sprintf(recovery_file, "squashfs_recovery_%s_%d",
+	res = asprintf(&recovery_file, "squashfs_recovery_%s_%d",
 		getbase(destination_file), pid);
+	if(res == -1)
+		BAD_ERROR("Out of memory allocating recovery_file\n");
+
 	recoverfd = open(recovery_file, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
 	if(recoverfd == -1)
 		BAD_ERROR("Failed to create recovery file, because %s.  "
@@ -5556,7 +5559,7 @@ restore_filesystem:
 
 	delete_pseudo_files();
 
-	if(recovery_file[0] != '\0')
+	if(recovery_file)
 		unlink(recovery_file);
 
 	total_bytes += total_inode_bytes + total_directory_bytes +
