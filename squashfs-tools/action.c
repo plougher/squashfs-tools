@@ -1216,6 +1216,12 @@ int eval_empty_actions(struct dir_ent *dir_ent)
 static struct move_ent *move_list = NULL;
 
 
+int move_actions()
+{
+	return move_count;
+}
+
+
 char *move_pathname(struct move_ent *move)
 {
 	struct dir_info *dest;

@@ -3342,8 +3342,14 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	if(actions() || pseudo)
 		dir_scan2(dir_info, pseudo);
 
-	dir_scan3(dir_info, dir_info);
-	do_move_actions();
+	/*
+	 * Process move actions
+	 */
+	if(move_actions()) {
+		dir_scan3(dir_info, dir_info);
+		do_move_actions();
+	}
+
 	dir_scan4(dir_info);
 	dir_scan5(dir_info);
 

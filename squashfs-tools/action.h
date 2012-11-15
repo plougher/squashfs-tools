@@ -282,3 +282,4 @@ extern void eval_move_actions(struct dir_info *, struct dir_ent *);
 extern void do_move_actions();
 extern int read_bytes(int, void *, int);
 extern int actions();
+extern int move_actions();
