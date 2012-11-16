@@ -3808,32 +3808,40 @@ void dir_scan4(struct dir_info *dir)
 	struct dir_ent *dir_ent = dir->list, *prev = NULL;
 
 	while(dir_ent) {
-		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR &&
-						eval_empty_actions(dir_ent)) {
-			struct dir_ent *tmp = dir_ent;
+		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR) {
+			dir_scan4(dir_ent->dir);
 
-			/* delete sub-directory, this is by definition empty */
-			free(dir_ent->dir->pathname);
-			free(dir_ent->dir->subpath);
-			free(dir_ent->dir);
+			if(eval_empty_actions(dir_ent)) {
+				struct dir_ent *tmp = dir_ent;
 
-			/* remove dir_ent from list */
-			dir_ent = dir_ent->next;
-			if(prev)
-				prev->next = dir_ent;
-			else
-				dir->list = dir_ent;
+				/*
+				 * delete sub-directory, this is by definition
+				 * empty
+				 */
+				free(dir_ent->dir->pathname);
+				free(dir_ent->dir->subpath);
+				free(dir_ent->dir);
+
+				/* remove dir_ent from list */
+				dir_ent = dir_ent->next;
+				if(prev)
+					prev->next = dir_ent;
+				else
+					dir->list = dir_ent;
 			
-			/* free it */
-			free_dir_entry(tmp);
+				/* free it */
+				free_dir_entry(tmp);
 
-			/* update counts */
-			dir->directory_count --;
-			add_excluded(dir);
-		} else {
-			prev = dir_ent;
-			dir_ent = dir_ent->next;
+				/* update counts */
+				dir->directory_count --;
+				dir->count --;
+				add_excluded(dir);
+				continue;
+			}
 		}
+
+		prev = dir_ent;
+		dir_ent = dir_ent->next;
 	}
 }
 
