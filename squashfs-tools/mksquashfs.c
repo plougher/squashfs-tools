@@ -3589,12 +3589,12 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 		}
 
 		if((buf.st_mode & S_IFMT) != S_IFREG &&
-			(buf.st_mode & S_IFMT) != S_IFDIR &&
-			(buf.st_mode & S_IFMT) != S_IFLNK &&
-			(buf.st_mode & S_IFMT) != S_IFCHR &&
-			(buf.st_mode & S_IFMT) != S_IFBLK &&
-			(buf.st_mode & S_IFMT) != S_IFIFO &&
-			(buf.st_mode & S_IFMT) != S_IFSOCK) {
+					(buf.st_mode & S_IFMT) != S_IFDIR &&
+					(buf.st_mode & S_IFMT) != S_IFLNK &&
+					(buf.st_mode & S_IFMT) != S_IFCHR &&
+					(buf.st_mode & S_IFMT) != S_IFBLK &&
+					(buf.st_mode & S_IFMT) != S_IFIFO &&
+					(buf.st_mode & S_IFMT) != S_IFSOCK) {
 			ERROR("File %s has unrecognised filetype %d, ignoring"
 				"\n", filename, buf.st_mode & S_IFMT);
 			free_dir_entry(dir_ent);
