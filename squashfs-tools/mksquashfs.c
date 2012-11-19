@@ -1120,14 +1120,35 @@ unsigned int get_guid(unsigned int guid)
 }
 
 
-char *_pathname(struct dir_ent *dir_ent, char *pathname)
-{
-	if (dir_ent->nonstandard_pathname)
-		return dir_ent->nonstandard_pathname;
+#define ALLOC_SIZE 128
 
-	strcpy(pathname, dir_ent->our_dir->pathname);
-	strcat(pathname, "/");
-	strcat(pathname, dir_ent->source_name ? : dir_ent->name);
+char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size)
+{
+	if(pathname == NULL) {
+		pathname = malloc(ALLOC_SIZE);
+		if(pathname == NULL)
+			BAD_ERROR("Out of memory in pathname\n");
+	}
+
+	for(;;) {
+		int res = snprintf(pathname, *size, "%s/%s", 
+			dir_ent->our_dir->pathname,
+			dir_ent->source_name ? : dir_ent->name);
+
+		if(res < 0)
+			BAD_ERROR("snprintf failed in pathname\n");
+		else if(res >= *size) {
+			/*
+			 * pathname is too small to contain the result, so
+			 * increase it and try again
+			 */
+			*size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
+			pathname = realloc(pathname, *size);
+			if(pathname == NULL)
+				BAD_ERROR("Out of memory in pathname\n");
+		} else
+			break;
+	}
 
 	return pathname;
 }
@@ -1135,21 +1156,27 @@ char *_pathname(struct dir_ent *dir_ent, char *pathname)
 
 char *pathname(struct dir_ent *dir_ent)
 {
-	static char pathname[1024];
+	static char *pathname = NULL;
+	static int size = ALLOC_SIZE;
 
-	return _pathname(dir_ent, pathname);
+	if (dir_ent->nonstandard_pathname)
+		return dir_ent->nonstandard_pathname;
+
+	return pathname = _pathname(dir_ent, pathname, &size);
 }
 
 
 char *pathname_reader(struct dir_ent *dir_ent)
 {
-	static char pathname[1024];
+	static char *pathname = NULL;
+	static int size = ALLOC_SIZE;
 
-	return _pathname(dir_ent, pathname);
+	if (dir_ent->nonstandard_pathname)
+		return dir_ent->nonstandard_pathname;
+
+	return pathname = _pathname(dir_ent, pathname, &size);
 }
 
-
-#define ALLOC_SIZE 128
 
 char *subpathname(struct dir_ent *dir_ent)
 {
@@ -4750,7 +4777,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2012/10/31)\n");\
+	printf("mksquashfs version 4.2-git (2012/11/18)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
