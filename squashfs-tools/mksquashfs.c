@@ -3957,7 +3957,7 @@ void dir_scan5(struct dir_info *dir)
 		alloc_inode_no(dir_ent->inode, 0);
 
 		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
-			dir_scan4(dir_ent->dir);
+			dir_scan5(dir_ent->dir);
 	}
 
 	if((dir->count < 257 && byte_count < SQUASHFS_METADATA_SIZE))
