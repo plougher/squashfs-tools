@@ -1149,17 +1149,40 @@ char *pathname_reader(struct dir_ent *dir_ent)
 }
 
 
+#define ALLOC_SIZE 128
+
 char *subpathname(struct dir_ent *dir_ent)
 {
-	static char subpath[1024];
+	static char *subpath = NULL;
+	static int size = ALLOC_SIZE;
+	int res;
 
-	if(dir_ent->our_dir->subpath[0] != '\0') {
-		strcpy(subpath, dir_ent->our_dir->subpath);
-		strcat(subpath, "/");
-		strcat(subpath, dir_ent->name);
-	} else {
-		strcpy(subpath, "/");
-		strcat(subpath, dir_ent->name);
+	if(subpath == NULL) {
+		subpath = malloc(ALLOC_SIZE);
+		if(subpath == NULL)
+			BAD_ERROR("Out of memory in subpathname\n");
+	}
+
+	for(;;) {
+		if(dir_ent->our_dir->subpath[0] != '\0')
+			res = snprintf(subpath, size, "%s/%s",
+				dir_ent->our_dir->subpath, dir_ent->name);
+		else
+			res = snprintf(subpath, size, "/%s", dir_ent->name);
+
+		if(res < 0)
+			BAD_ERROR("snprintf failed in subpathname\n");
+		else if(res >= size) {
+			/*
+			 * subpath is too small to contain the result, so
+			 * increase it and try again
+			 */
+			size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
+			subpath = realloc(subpath, size);
+			if(subpath == NULL)
+				BAD_ERROR("Out of memory in subpathname\n");
+		} else
+			break;
 	}
 
 	return subpath;
