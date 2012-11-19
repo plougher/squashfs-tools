@@ -1639,6 +1639,7 @@ void do_move_actions()
  *	'>' or '+', match on greater than number
  *	'' (nothing), match on exactly number
  * [size] is either:
+ *	'' (nothing), number
  *	'k' or 'K', number * 2^10
  * 	'm' or 'M', number * 2^20
  *	'g' or 'G', number * 2^30
