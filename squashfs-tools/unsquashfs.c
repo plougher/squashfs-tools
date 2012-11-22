@@ -1099,15 +1099,18 @@ void squashfs_closedir(struct dir *dir)
 }
 
 
-char *get_component(char *target, char *targname)
+char *get_component(char *target, char **targname)
 {
+	char *start;
+
 	while(*target == '/')
 		target ++;
 
+	start = target;
 	while(*target != '/' && *target!= '\0')
-		*targname ++ = *target ++;
+		target ++;
 
-	*targname = '\0';
+	*targname = strndup(start, target - start);
 
 	return target;
 }
@@ -1133,12 +1136,12 @@ void free_path(struct pathname *paths)
 
 struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 {
-	char targname[1024];
+	char *targname;
 	int i, error;
 
 	TRACE("add_path: adding \"%s\" extract file\n", target);
 
-	target = get_component(target, targname);
+	target = get_component(target, &targname);
 
 	if(paths == NULL) {
 		paths = malloc(sizeof(struct pathname));
@@ -1162,7 +1165,7 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 			sizeof(struct path_entry));
 		if(paths->name == NULL)
 			EXIT_UNSQUASH("Out of memory in add_path\n");	
-		paths->name[i].name = strdup(targname);
+		paths->name[i].name = targname;
 		paths->name[i].paths = NULL;
 		if(use_regex) {
 			paths->name[i].preg = malloc(sizeof(regex_t));
@@ -1195,6 +1198,8 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		/*
 		 * existing matching entry
 		 */
+		free(targname);
+
 		if(paths->name[i].paths == NULL) {
 			/*
 			 * No sub-directory which means this is the leaf
@@ -2122,7 +2127,7 @@ void progress_bar(long long current, long long max, int columns)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2012/11/04)\n");\
+	printf("unsquashfs version 4.2-git (2012/11/21)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
