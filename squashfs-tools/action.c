@@ -1316,7 +1316,9 @@ void eval_move(struct action_data *action_data, struct move_ent *move,
 			continue;
 
 		if (strcmp(comp, "..") == 0) {
-			dest = dest->dir_ent->our_dir;
+			/* if we're in the root directory then ignore */
+			if(dest->depth > 1)
+				dest = dest->dir_ent->our_dir;
 			continue;
 		}
 
