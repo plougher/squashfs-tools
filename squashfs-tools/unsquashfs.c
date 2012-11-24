@@ -34,6 +34,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <limits.h>
 
 struct cache *fragment_cache, *data_cache;
 struct queue *to_reader, *to_deflate, *to_writer, *from_writer;
@@ -139,12 +140,34 @@ void sigalrm_handler()
 }
 
 
+int add_overflow(int a, int b)
+{
+	return (INT_MAX - a) < b;
+}
+
+
+int shift_overflow(int a, int shift)
+{
+	return (INT_MAX >> shift) < a;
+}
+
+ 
+int multiply_overflow(int a, int multiplier)
+{
+	return (INT_MAX / multiplier) < a;
+}
+
+
 struct queue *queue_init(int size)
 {
 	struct queue *queue = malloc(sizeof(struct queue));
 
 	if(queue == NULL)
 		EXIT_UNSQUASH("Out of memory in queue_init\n");
+
+	if(add_overflow(size, 1) ||
+				multiply_overflow(size + 1, sizeof(void *)))
+		EXIT_UNSQUASH("Size too large in queue_init\n");
 
 	queue->data = malloc(sizeof(void *) * (size + 1));
 	if(queue->data == NULL)
@@ -2015,13 +2038,30 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	 * allocate to_reader, to_deflate and to_writer queues.  Set based on
 	 * open file limit and cache size, unless open file limit is unlimited,
 	 * in which case set purely based on cache limits
+	 *
+	 * In doing so, check that the user supplied values do not overflow
+	 * a signed int
 	 */
 	if (max_files != -1) {
+		if(add_overflow(data_buffer_size, max_files) ||
+				add_overflow(data_buffer_size, max_files * 2))
+			EXIT_UNSQUASH("Data queue size is too large\n");
+
 		to_reader = queue_init(max_files + data_buffer_size);
 		to_deflate = queue_init(max_files + data_buffer_size);
 		to_writer = queue_init(max_files * 2 + data_buffer_size);
 	} else {
-		int all_buffers_size = fragment_buffer_size + data_buffer_size;
+		int all_buffers_size;
+
+		if(add_overflow(fragment_buffer_size, data_buffer_size))
+			EXIT_UNSQUASH("Data and fragment queues combined are"
+							" too large\n");
+
+		all_buffers_size = fragment_buffer_size + data_buffer_size;
+
+		if(add_overflow(all_buffers_size, all_buffers_size))
+			EXIT_UNSQUASH("Data and fragment queues combined are"
+							" too large\n");
 
 		to_reader = queue_init(all_buffers_size);
 		to_deflate = queue_init(all_buffers_size);
@@ -2126,8 +2166,34 @@ void progress_bar(long long current, long long max, int columns)
 }
 
 
+int parse_number(char *arg, int *res)
+{
+	char *b;
+	long number = strtol(arg, &b, 10);
+
+	/* check for trailing junk after number */
+	if(*b != '\0')
+		return 0;
+
+	/* check for strtol underflow or overflow in conversion */
+	if(number == LONG_MIN || number == LONG_MAX)
+		return 0;
+
+	/* reject negative numbers as invalid */
+	if(number < 0)
+		return 0;
+
+	/* check if long result will overflow signed int */
+	if(number > INT_MAX)
+		return 0;
+
+	*res = number;
+	return 1;
+}
+
+
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2012/11/21)\n");\
+	printf("unsquashfs version 4.2-git (2012/11/24)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
@@ -2207,8 +2273,8 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-data-queue") == 0 ||
 					 strcmp(argv[i], "-da") == 0) {
 			if((++i == argc) ||
-					(data_buffer_size = strtol(argv[i], &b,
-					 10), *b != '\0')) {
+					!parse_number(argv[i],
+						&data_buffer_size)) {
 				ERROR("%s: -data-queue missing or invalid "
 					"queue size\n", argv[0]);
 				exit(1);
@@ -2221,8 +2287,8 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-frag-queue") == 0 ||
 					strcmp(argv[i], "-fr") == 0) {
 			if((++i == argc) ||
-					(fragment_buffer_size = strtol(argv[i],
-					 &b, 10), *b != '\0')) {
+					!parse_number(argv[i],
+						&fragment_buffer_size)) {
 				ERROR("%s: -frag-queue missing or invalid "
 					"queue size\n", argv[0]);
 				exit(1);
@@ -2347,11 +2413,39 @@ options:
 	block_log = sBlk.s.block_log;
 
 	/*
-	 * convert from queue size in Mbytes to queue size in
-	 * blocks
+	 * Sanity check block size and block log.
+	 *
+	 * Check they're within correct limits
 	 */
-	fragment_buffer_size <<= 20 - block_log;
-	data_buffer_size <<= 20 - block_log;
+	if(block_size > SQUASHFS_FILE_MAX_SIZE ||
+					block_log > SQUASHFS_FILE_MAX_LOG)
+		EXIT_UNSQUASH("Block size or block_log too large."
+			"  File system is corrupt.\n");
+
+	/*
+	 * Check block_size and block_log match
+	 */
+	if(block_size != (1 << block_log))
+		EXIT_UNSQUASH("Block size and block_log do not match."
+			"  File system is corrupt.\n");
+
+	/*
+	 * convert from queue size in Mbytes to queue size in
+	 * blocks.
+	 *
+	 * In doing so, check that the user supplied values do not
+	 * overflow a signed int
+	 */
+	if(shift_overflow(fragment_buffer_size, 20 - block_log))
+		EXIT_UNSQUASH("Fragment queue size is too large\n");
+	else
+		fragment_buffer_size <<= 20 - block_log;
+
+	if(shift_overflow(data_buffer_size, 20 - block_log))
+		EXIT_UNSQUASH("Data queue size is too large\n");
+	else
+		data_buffer_size <<= 20 - block_log;
+
 	initialise_threads(fragment_buffer_size, data_buffer_size);
 
 	fragment_data = malloc(block_size);

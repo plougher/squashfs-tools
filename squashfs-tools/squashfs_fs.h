@@ -39,6 +39,7 @@
 #define SQUASHFS_FILE_LOG		17
 
 #define SQUASHFS_FILE_MAX_SIZE		1048576
+#define SQUASHFS_FILE_MAX_LOG		20
 
 /* Max number of uids and gids */
 #define SQUASHFS_IDS			65536
