@@ -2193,7 +2193,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2012/11/24)\n");\
+	printf("unsquashfs version 4.2-git (2012/11/25)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
@@ -2219,7 +2219,6 @@ int main(int argc, char *argv[])
 	struct pathname *path = NULL;
 	int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
 	int data_buffer_size = DATA_BUFFER_DEFAULT;
-	char *b;
 
 	pthread_mutex_init(&screen_mutex, NULL);
 	root_process = geteuid() == 0;
@@ -2259,8 +2258,8 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-processors") == 0 ||
 				strcmp(argv[i], "-p") == 0) {
 			if((++i == argc) || 
-					(processors = strtol(argv[i], &b, 10),
-					*b != '\0')) {
+					!parse_number(argv[i],
+						&processors)) {
 				ERROR("%s: -processors missing or invalid "
 					"processor number\n", argv[0]);
 				exit(1);
