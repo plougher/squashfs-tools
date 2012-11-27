@@ -553,7 +553,7 @@ void dump_actions()
 /*
  * Evaluate expressions
  */
-int eval_expr(struct expr *expr, struct action_data *action_data)
+static int eval_expr(struct expr *expr, struct action_data *action_data)
 {
 	int match;
 
@@ -685,28 +685,28 @@ int eval_exclude_actions(char *name, char *pathname, char *subpath,
 /*
  * Fragment specific action code
  */
-void frag_action(struct action *action, struct dir_ent *dir_ent)
+static void frag_action(struct action *action, struct dir_ent *dir_ent)
 {
 	struct inode_info *inode = dir_ent->inode;
 
 	inode->no_fragments = 0;
 }
 
-void no_frag_action(struct action *action, struct dir_ent *dir_ent)
+static void no_frag_action(struct action *action, struct dir_ent *dir_ent)
 {
 	struct inode_info *inode = dir_ent->inode;
 
 	inode->no_fragments = 1;
 }
 
-void always_frag_action(struct action *action, struct dir_ent *dir_ent)
+static void always_frag_action(struct action *action, struct dir_ent *dir_ent)
 {
 	struct inode_info *inode = dir_ent->inode;
 
 	inode->always_use_fragments = 1;
 }
 
-void no_always_frag_action(struct action *action, struct dir_ent *dir_ent)
+static void no_always_frag_action(struct action *action, struct dir_ent *dir_ent)
 {
 	struct inode_info *inode = dir_ent->inode;
 
@@ -717,14 +717,14 @@ void no_always_frag_action(struct action *action, struct dir_ent *dir_ent)
 /*
  * Compression specific action code
  */
-void comp_action(struct action *action, struct dir_ent *dir_ent)
+static void comp_action(struct action *action, struct dir_ent *dir_ent)
 {
 	struct inode_info *inode = dir_ent->inode;
 
 	inode->noD = inode->noF = 0;
 }
 
-void uncomp_action(struct action *action, struct dir_ent *dir_ent)
+static void uncomp_action(struct action *action, struct dir_ent *dir_ent)
 {
 	struct inode_info *inode = dir_ent->inode;
 
@@ -783,7 +783,7 @@ static long long parse_gid(char *arg) {
 }
 
 
-int parse_uid_args(struct action_entry *action, int args, char **argv,
+static int parse_uid_args(struct action_entry *action, int args, char **argv,
 								void **data)
 {
 	long long uid;
@@ -804,7 +804,7 @@ int parse_uid_args(struct action_entry *action, int args, char **argv,
 }
 
 
-int parse_gid_args(struct action_entry *action, int args, char **argv,
+static int parse_gid_args(struct action_entry *action, int args, char **argv,
 								void **data)
 {
 	long long gid;
@@ -825,7 +825,7 @@ int parse_gid_args(struct action_entry *action, int args, char **argv,
 }
 
 
-int parse_guid_args(struct action_entry *action, int args, char **argv,
+static int parse_guid_args(struct action_entry *action, int args, char **argv,
 								void **data)
 {
 	long long uid, gid;
@@ -851,7 +851,7 @@ int parse_guid_args(struct action_entry *action, int args, char **argv,
 }
 
 
-void uid_action(struct action *action, struct dir_ent *dir_ent)
+static void uid_action(struct action *action, struct dir_ent *dir_ent)
 {
 	struct inode_info *inode = dir_ent->inode;
 	struct uid_info *uid_info = action->data;
@@ -859,7 +859,7 @@ void uid_action(struct action *action, struct dir_ent *dir_ent)
 	inode->buf.st_uid = uid_info->uid;
 }
 
-void gid_action(struct action *action, struct dir_ent *dir_ent)
+static void gid_action(struct action *action, struct dir_ent *dir_ent)
 {
 	struct inode_info *inode = dir_ent->inode;
 	struct gid_info *gid_info = action->data;
@@ -867,7 +867,7 @@ void gid_action(struct action *action, struct dir_ent *dir_ent)
 	inode->buf.st_gid = gid_info->gid;
 }
 
-void guid_action(struct action *action, struct dir_ent *dir_ent)
+static void guid_action(struct action *action, struct dir_ent *dir_ent)
 {
 	struct inode_info *inode = dir_ent->inode;
 	struct guid_info *guid_info = action->data;
@@ -881,8 +881,8 @@ void guid_action(struct action *action, struct dir_ent *dir_ent)
 /*
  * Mode specific action code
  */
-int parse_octal_mode_args(unsigned int mode, int bytes, int args, char **argv,
-								void **data)
+static int parse_octal_mode_args(unsigned int mode, int bytes, int args,
+					char **argv, void **data)
 {
 	struct mode_data *mode_data;
 
@@ -923,7 +923,7 @@ int parse_octal_mode_args(unsigned int mode, int bytes, int args, char **argv,
  * Parse symbolic mode of format [ugoa]+[+-=]PERMS
  * PERMS = [rwxXst]+ or [ugo]
  */
-struct mode_data *parse_sym_mode_arg(char *arg)
+static struct mode_data *parse_sym_mode_arg(char *arg)
 {
 	struct mode_data *mode_data = malloc(sizeof(*mode_data));
 	int mode = 0;
@@ -1036,8 +1036,8 @@ failed:
 }
 
 
-int parse_sym_mode_args(struct action_entry *action, int args, char **argv,
-								void **data)
+static int parse_sym_mode_args(struct action_entry *action, int args,
+					char **argv, void **data)
 {
 	int i;
 	struct mode_data *head = NULL, *cur = NULL;
@@ -1061,8 +1061,8 @@ int parse_sym_mode_args(struct action_entry *action, int args, char **argv,
 }
 
 
-int parse_mode_args(struct action_entry *action, int args, char **argv,
-								void **data)
+static int parse_mode_args(struct action_entry *action, int args,
+					char **argv, void **data)
 {
 	int n, bytes;
 	unsigned int mode;
@@ -1082,7 +1082,7 @@ int parse_mode_args(struct action_entry *action, int args, char **argv,
 }
 
 
-void mode_action(struct action *action, struct dir_ent *dir_ent)
+static void mode_action(struct action *action, struct dir_ent *dir_ent)
 {
 	struct stat *buf = &dir_ent->inode->buf;
 	struct mode_data *mode_data = action->data;
@@ -1139,8 +1139,8 @@ int empty_actions()
 }
 
 
-int parse_empty_args(struct action_entry *action, int args, char **argv,
-								void **data)
+static int parse_empty_args(struct action_entry *action, int args,
+					char **argv, void **data)
 {
 	struct empty_data *empty_data;
 	int val;
@@ -1233,7 +1233,7 @@ int move_actions()
 }
 
 
-char *move_pathname(struct move_ent *move)
+static char *move_pathname(struct move_ent *move)
 {
 	struct dir_info *dest;
 	char *name, *pathname;
@@ -1256,7 +1256,7 @@ char *move_pathname(struct move_ent *move)
 }
 
 
-char *get_comp(char **pathname)
+static char *get_comp(char **pathname)
 {
 	char *path = *pathname, *start;
 
@@ -1275,7 +1275,7 @@ char *get_comp(char **pathname)
 }
 
 
-struct dir_ent *lookup_comp(char *comp, struct dir_info *dest)
+static struct dir_ent *lookup_comp(char *comp, struct dir_info *dest)
 {
 	struct dir_ent *dir_ent;
 
@@ -1407,7 +1407,7 @@ void eval_move(struct action_data *action_data, struct move_ent *move,
 }
 
 
-int subdirectory(struct dir_info *source, struct dir_info *dest)
+static int subdirectory(struct dir_info *source, struct dir_info *dest)
 {
 	if(source == NULL)
 		return 0;
@@ -1508,7 +1508,7 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 }
 
 
-void move_dir(struct dir_ent *dir_ent)
+static void move_dir(struct dir_ent *dir_ent)
 {
 	struct dir_info *dir = dir_ent->dir;
 	struct dir_ent *comp_ent;
@@ -1523,7 +1523,7 @@ void move_dir(struct dir_ent *dir_ent)
 }
 
 
-void move_file(struct move_ent *move_ent)
+static void move_file(struct move_ent *move_ent)
 {
 	struct dir_ent *dir_ent = move_ent ->dir_ent;
 
@@ -1646,7 +1646,7 @@ void do_move_actions()
  * 	'm' or 'M', number * 2^20
  *	'g' or 'G', number * 2^30
  */
-int parse_number(char *arg, long long *size, int *range, char **error)
+static int parse_number(char *arg, long long *size, int *range, char **error)
 {
 	char *b;
 
@@ -1697,7 +1697,7 @@ int parse_number(char *arg, long long *size, int *range, char **error)
 }
 
 
-int parse_number_arg(struct test_entry *test, struct atom *atom)
+static int parse_number_arg(struct test_entry *test, struct atom *atom)
 {
 	struct test_number_arg *number;
 	long long size;
@@ -1723,7 +1723,7 @@ int parse_number_arg(struct test_entry *test, struct atom *atom)
 }
 
 
-int parse_range_args(struct test_entry *test, struct atom *atom)
+static int parse_range_args(struct test_entry *test, struct atom *atom)
 {
 	struct test_range_args *range;
 	long long start, end;
@@ -1772,7 +1772,7 @@ int parse_range_args(struct test_entry *test, struct atom *atom)
  * Generic test code macro
  */
 #define TEST_FN(NAME, MATCH, CODE) \
-int NAME##_fn(struct atom *atom, struct action_data *action_data) \
+static int NAME##_fn(struct atom *atom, struct action_data *action_data) \
 { \
 	/* test operates on MATCH file types only */ \
 	if (!(action_data->buf->st_mode & MATCH)) \
@@ -1824,7 +1824,7 @@ int NAME##_fn(struct atom *atom, struct action_data *action_data) \
 /*
  * Add a leading "/" if subpathname and pathname lacks it
  */
-int check_pathname(struct test_entry *test, struct atom *atom)
+static int check_pathname(struct test_entry *test, struct atom *atom)
 {
 	int res;
 	char *name;
@@ -1851,7 +1851,7 @@ TEST_FN(pathname, ACTION_ALL_LNK, \
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;)
 
 
-int count_components(char *path)
+static int count_components(char *path)
 {
 	int count;
 
@@ -1867,7 +1867,7 @@ int count_components(char *path)
 }
 
 
-char *get_start(char *s, int n)
+static char *get_start(char *s, int n)
 {
 	int count;
 	char *path = s;
@@ -1887,7 +1887,7 @@ char *get_start(char *s, int n)
 }
 	
 
-int subpathname_fn(struct atom *atom, struct action_data *action_data)
+static int subpathname_fn(struct atom *atom, struct action_data *action_data)
 {
 	return fnmatch(atom->argv[0], get_start(strdupa(action_data->subpath),
 		count_components(atom->argv[0])),
@@ -1953,7 +1953,7 @@ struct type_entry type_table[] = {
 };
 
 
-int parse_type_arg(struct test_entry *test, struct atom *atom)
+static int parse_type_arg(struct test_entry *test, struct atom *atom)
 {
 	int i;
 
@@ -1976,7 +1976,7 @@ failed:
 }
 	
 
-int type_fn(struct atom *atom, struct action_data *action_data)
+static int type_fn(struct atom *atom, struct action_data *action_data)
 {
 	struct type_entry *type = atom->data;
 
@@ -1987,7 +1987,7 @@ int type_fn(struct atom *atom, struct action_data *action_data)
 /*
  * True test specific code
  */
-int true_fn(struct atom *atom, struct action_data *action_data)
+static int true_fn(struct atom *atom, struct action_data *action_data)
 {
 	return 1;
 }
@@ -1996,7 +1996,7 @@ int true_fn(struct atom *atom, struct action_data *action_data)
 /*
  *  False test specific code
  */
-int false_fn(struct atom *atom, struct action_data *action_data)
+static int false_fn(struct atom *atom, struct action_data *action_data)
 {
 	return 0;
 }
@@ -2005,7 +2005,7 @@ int false_fn(struct atom *atom, struct action_data *action_data)
 /*
  *  File test specific code
  */
-int parse_file_arg(struct test_entry *test, struct atom *atom)
+static int parse_file_arg(struct test_entry *test, struct atom *atom)
 {
 	int res;
 	regex_t *preg = malloc(sizeof(regex_t));
@@ -2029,7 +2029,7 @@ int parse_file_arg(struct test_entry *test, struct atom *atom)
 }
 
 
-int file_fn(struct atom *atom, struct action_data *action_data)
+static int file_fn(struct atom *atom, struct action_data *action_data)
 {
 	int child, res, size = 0, status;
 	int pipefd[2];
