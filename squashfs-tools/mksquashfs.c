@@ -47,6 +47,7 @@
 #include <regex.h>
 #include <fnmatch.h>
 #include <sys/wait.h>
+#include <limits.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -4781,6 +4782,64 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 }
 
 
+int multiply_overflow(int a, int multiplier)
+{
+	return (INT_MAX / multiplier) < a;
+}
+
+
+int parse_number(char *arg, int *res, int size)
+{
+	char *b;
+	long number = strtol(arg, &b, 10);
+
+	/* check for strtol underflow or overflow in conversion */
+	if(number == LONG_MIN || number == LONG_MAX)
+		return 0;
+
+	/* reject negative numbers as invalid */
+	if(number < 0)
+		return 0;
+
+	/* check if long result will overflow signed int */
+	if(number > INT_MAX)
+		return 0;
+
+	if(size) {
+		/* Check for multiplier and trailing junk */
+		switch(*b) {
+		case 'm':
+		case 'M':
+			if(multiply_overflow((int) number, 1048576))
+				return 0;
+			number *= 1048576;
+			break;
+		case 'k':
+		case 'K':
+			if(multiply_overflow((int) number, 1024))
+				return 0;
+			number *= 1024;
+		case '\0':
+			break;
+		default:
+			/* trailing junk after number */
+			return 0;
+		}
+	} else if(*b != '\0')
+		/* trailing junk after number */
+		return 0;
+
+	*res = number;
+	return 1;
+}
+
+
+int parse_num(char *arg, int *res)
+{
+	return parse_number(arg, res, 0);
+}
+
+
 #define VERSION() \
 	printf("mksquashfs version 4.2-git (2012/11/25)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
@@ -4917,8 +4976,7 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-no-exports") == 0)
 			exportable = FALSE;
 		else if(strcmp(argv[i], "-processors") == 0) {
-			if((++i == argc) || (processors =
-					strtol(argv[i], &b, 10), *b != '\0')) {
+			if((++i == argc) || !parse_num(argv[i], &processors)) {
 				ERROR("%s: -processors missing or invalid "
 					"processor number\n", argv[0]);
 				exit(1);
@@ -4929,8 +4987,8 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-read-queue") == 0) {
-			if((++i == argc) || (readb_mbytes =
-					strtol(argv[i], &b, 10), *b != '\0')) {
+			if((++i == argc) ||
+					!parse_num(argv[i], &readb_mbytes)) {
 				ERROR("%s: -read-queue missing or invalid "
 					"queue size\n", argv[0]);
 				exit(1);
@@ -4941,8 +4999,8 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-write-queue") == 0) {
-			if((++i == argc) || (writeb_mbytes =
-					strtol(argv[i], &b, 10), *b != '\0')) {
+			if((++i == argc) ||
+					!parse_num(argv[i], &writeb_mbytes)) {
 				ERROR("%s: -write-queue missing or invalid "
 					"queue size\n", argv[0]);
 				exit(1);
@@ -4954,8 +5012,8 @@ int main(int argc, char *argv[])
 			}
 		} else if(strcmp(argv[i], "-fragment-queue") == 0) {
 			if((++i == argc) ||
-					(fragmentb_mbytes =
-					strtol(argv[i], &b, 10), *b != '\0')) {
+					!parse_num(argv[i],
+						&fragmentb_mbytes)) {
 				ERROR("%s: -fragment-queue missing or invalid "
 					"queue size\n", argv[0]);
 				exit(1);
@@ -4970,12 +5028,7 @@ int main(int argc, char *argv[])
 				ERROR("%s: -b missing block size\n", argv[0]);
 				exit(1);
 			}
-			block_size = strtol(argv[i], &b, 10);
-			if(*b == 'm' || *b == 'M')
-				block_size *= 1048576;
-			else if(*b == 'k' || *b == 'K')
-				block_size *= 1024;
-			else if(*b != '\0') {
+			if(!parse_number(argv[i], &block_size, 1)) {
 				ERROR("%s: -b invalid block size\n", argv[0]);
 				exit(1);
 			}
