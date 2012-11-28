@@ -4788,10 +4788,10 @@ int multiply_overflow(int a, int multiplier)
 }
 
 
-int parse_number(char *arg, int *res, int size)
+int parse_number(char *start, int *res, int size)
 {
-	char *b;
-	long number = strtol(arg, &b, 10);
+	char *end;
+	long number = strtol(start, &end, 10);
 
 	/* check for strtol underflow or overflow in conversion */
 	if(number == LONG_MIN || number == LONG_MAX)
@@ -4811,18 +4811,17 @@ int parse_number(char *arg, int *res, int size)
 		 * But first check that a number exists before the
 		 * multiplier
 		 */
-		if(b == arg)
+		if(end == start)
 			return 0;
 
-		switch(*b) {
+		switch(end[0]) {
 		case 'm':
 		case 'M':
 			if(multiply_overflow((int) number, 1048576))
 				return 0;
 			number *= 1048576;
 
-			b ++;
-			if(*b == '\0')
+			if(end[1] == '\0')
 				/* trailing junk after number */
 				return 0;
 
@@ -4833,8 +4832,7 @@ int parse_number(char *arg, int *res, int size)
 				return 0;
 			number *= 1024;
 
-			b ++;
-			if(*b == '\0')
+			if(end[1] == '\0')
 				/* trailing junk after number */
 				return 0;
 		case '\0':
@@ -4843,7 +4841,7 @@ int parse_number(char *arg, int *res, int size)
 			/* trailing junk after number */
 			return 0;
 		}
-	} else if(*b != '\0')
+	} else if(end[0] != '\0')
 		/* trailing junk after number */
 		return 0;
 
