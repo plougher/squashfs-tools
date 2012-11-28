@@ -1646,28 +1646,28 @@ void do_move_actions()
  * 	'm' or 'M', number * 2^20
  *	'g' or 'G', number * 2^30
  */
-static int parse_number(char *arg, long long *size, int *range, char **error)
+static int parse_number(char *start, long long *size, int *range, char **error)
 {
-	char *b;
+	char *end;
 
-	if (*arg == '>' || *arg == '+') {
+	if (*start == '>' || *start == '+') {
 		*range = NUM_GREATER;
-		arg ++;
-	} else if (*arg == '<' || *arg == '-') {
+		start ++;
+	} else if (*start == '<' || *start == '-') {
 		*range = NUM_LESS;
-		arg ++;
+		start ++;
 	} else
 		*range = NUM_EQ;
 
-	*size = strtoll(arg, &b, 10);
+	*size = strtoll(start, &end, 10);
 
-	if (b == arg) {
+	if (end == start) {
 		/* Couldn't read any number  */
 		*error = "Number expected";
 		return 0;
 	}
 
-	switch (*b) {
+	switch (end[0]) {
 	case 'g':
 	case 'G':
 		*size *= 1024;
@@ -1678,9 +1678,7 @@ static int parse_number(char *arg, long long *size, int *range, char **error)
 	case 'K':
 		*size *= 1024;
 
-		b ++;
-
-		if (*b != '\0') {
+		if (end[1] != '\0') {
 			*error = "Trailing junk after size specifier";
 			return 0;
 		}
