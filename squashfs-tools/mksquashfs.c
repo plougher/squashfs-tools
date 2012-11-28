@@ -4820,12 +4820,23 @@ int parse_number(char *arg, int *res, int size)
 			if(multiply_overflow((int) number, 1048576))
 				return 0;
 			number *= 1048576;
+
+			b ++;
+			if(*b == '\0')
+				/* trailing junk after number */
+				return 0;
+
 			break;
 		case 'k':
 		case 'K':
 			if(multiply_overflow((int) number, 1024))
 				return 0;
 			number *= 1024;
+
+			b ++;
+			if(*b == '\0')
+				/* trailing junk after number */
+				return 0;
 		case '\0':
 			break;
 		default:
