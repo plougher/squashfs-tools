@@ -4806,7 +4806,14 @@ int parse_number(char *arg, int *res, int size)
 		return 0;
 
 	if(size) {
-		/* Check for multiplier and trailing junk */
+		/*
+		 * Check for multiplier and trailing junk.
+		 * But first check that a number exists before the
+		 * multiplier
+		 */
+		if(b == arg)
+			return 0;
+
 		switch(*b) {
 		case 'm':
 		case 'M':
