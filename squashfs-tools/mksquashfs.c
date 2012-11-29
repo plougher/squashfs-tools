@@ -2393,7 +2393,7 @@ void reader_read_file(struct dir_ent *dir_ent)
 {
 	struct stat *buf = &dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
-	int blocks, byte, count, expected, file;
+	int blocks, byte, count, expected, file, res;
 	long long bytes, read_size;
 	struct inode_info *inode = dir_ent->inode;
 
@@ -2482,8 +2482,14 @@ again:
 	return;
 
 restat:
-	fstat(file, &buf2);
+	res = fstat(file, &buf2);
 	close(file);
+	if(res == -1) {
+		ERROR("Cannot stat dir/file %s because %s, ignoring",
+			pathname_reader(dir_ent), strerror(errno));
+		goto read_err;
+	}
+
 	if(read_size != buf2.st_size) {
 		memcpy(buf, &buf2, sizeof(struct stat));
 		file_buffer->error = 2;
