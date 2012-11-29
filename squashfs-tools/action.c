@@ -35,6 +35,8 @@
 #include <grp.h>
 #include <sys/wait.h>
 #include <regex.h>
+#include <limits.h>
+#include <errno.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
@@ -1649,6 +1651,7 @@ void do_move_actions()
 static int parse_number(char *start, long long *size, int *range, char **error)
 {
 	char *end;
+	long long number;
 
 	if (*start == '>' || *start == '+') {
 		*range = NUM_GREATER;
@@ -1659,7 +1662,21 @@ static int parse_number(char *start, long long *size, int *range, char **error)
 	} else
 		*range = NUM_EQ;
 
-	*size = strtoll(start, &end, 10);
+	errno = 0; /* To enable failure after call to be determined */
+	number = strtoll(start, &end, 10);
+
+	if((errno == ERANGE && (number == LLONG_MAX || number == LLONG_MIN))
+				|| (errno != 0 && number == 0)) {
+		/* long long underflow or overflow in conversion, or other
+		 * conversion error.
+		 * Note: we don't check for LLONG_MIN and LLONG_MAX only
+		 * because strtoll can validly return that if the
+		 * user used these values
+		 */
+		*error = "Long long underflow, overflow or other conversion "
+								"error";
+		return 0;
+	}
 
 	if (end == start) {
 		/* Couldn't read any number  */
@@ -1690,6 +1707,8 @@ static int parse_number(char *start, long long *size, int *range, char **error)
 		*error = "Trailing junk after number";
 		return 0;
 	}
+
+	*size = number;
 
 	return 1;
 }
