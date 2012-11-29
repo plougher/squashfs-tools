@@ -2175,7 +2175,13 @@ int parse_number(char *arg, int *res)
 	if(*b != '\0')
 		return 0;
 
-	/* check for strtol underflow or overflow in conversion */
+	/*
+	 * check for strtol underflow or overflow in conversion.
+	 * Note: strtol can validly return LONG_MIN and LONG_MAX
+	 * if the user entered these values, but, additional code
+	 * to distinguish this scenario is unnecessary, because for
+	 * our purposes LONG_MIN and LONG_MAX are too large anyway
+	 */
 	if(number == LONG_MIN || number == LONG_MAX)
 		return 0;
 
