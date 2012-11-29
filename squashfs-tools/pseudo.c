@@ -330,6 +330,7 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 
 	switch(type) {
 	case 'b':
+		/* FALLTHROUGH */
 	case 'c':
 		n = sscanf(def + bytes,  "%u %u", &major, &minor);
 
