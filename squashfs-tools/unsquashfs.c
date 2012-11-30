@@ -1347,7 +1347,7 @@ void pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *paths)
 {
 	unsigned int type;
-	char *name, pathname[1024];
+	char *name;
 	struct pathnames *new;
 	struct inode *i;
 	struct dir *dir = s_ops.squashfs_opendir(start_block, offset, &i);
@@ -1357,6 +1357,8 @@ void pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
 		struct inode *i;
+		char *pathname;
+		int res;
 
 		TRACE("pre_scan: name %s, start_block %d, offset %d, type %d\n",
 			name, start_block, offset, type);
@@ -1364,7 +1366,9 @@ void pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		if(!matches(paths, name, &new))
 			continue;
 
-		strcat(strcat(strcpy(pathname, parent_name), "/"), name);
+		res = asprintf(&pathname, "%s/%s", parent_name, name);
+		if(res == -1)
+			EXIT_UNSQUASH("asprintf failed in dir_scan\n");
 
 		if(type == SQUASHFS_DIR_TYPE)
 			pre_scan(parent_name, start_block, offset, new);
@@ -1384,6 +1388,7 @@ void pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		}
 
 		free_subdir(new);
+		free(pathname);
 	}
 
 	squashfs_closedir(dir);
