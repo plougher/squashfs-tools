@@ -438,6 +438,7 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 		if(res == -1) {
 			ERROR("Failed to execute dynamic pseudo file definition"
 				" \"%s\"\n", def);
+			free(dev);
 			return FALSE;
 		}
 		add_pseudo_file(dev);
