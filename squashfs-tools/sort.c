@@ -108,7 +108,6 @@ int get_priority(char *filename, struct stat *buf, int priority)
 int add_sort_list(char *path, int priority, int source, char *source_path[])
 {
 	int i, n;
-	char filename[4096];
 	struct stat buf;
 
 	TRACE("add_sort_list: filename %s, priority %d\n", path, priority);
@@ -129,8 +128,13 @@ re_read:
 	}
 
 	for(i = 0, n = 0; i < source; i++) {
-		strcat(strcat(strcpy(filename, source_path[i]), "/"), path);
-		if(lstat(filename, &buf) == -1) {
+		char *filename;
+		int res = asprintf(&filename, "%s/%s", source_path[i], path);
+		if(res == -1)
+			BAD_ERROR("asprintf failed in add_sort_list\n");
+		res = lstat(filename, &buf);
+		free(filename);
+		if(res == -1) {
 			if(!(errno == ENOENT || errno == ENOTDIR))
 				goto error;
 			continue;
