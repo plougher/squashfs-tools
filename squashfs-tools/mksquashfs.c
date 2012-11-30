@@ -3435,11 +3435,10 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		buf.st_ino = 0;
 		dir_ent->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
 	} else {
-		if(lstat(pathname, &buf) == -1) {
-			ERROR("Cannot stat dir/file %s because %s, ignoring",
+		if(lstat(pathname, &buf) == -1)
+			/* source directory has disappeared? */
+			BAD_ERROR("Cannot stat source directory %s because %s",
 				pathname, strerror(errno));
-			return;
-		}
 		dir_ent->inode = lookup_inode(&buf);
 	}
 
