@@ -4479,7 +4479,7 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 			error = regcomp(paths->name[i].preg, targname,
 				REG_EXTENDED|REG_NOSUB);
 			if(error) {
-				char str[1024];
+				char str[1024]; /* overflow safe */
 
 				regerror(error, paths->name[i].preg, str, 1024);
 				BAD_ERROR("invalid regex %s in export %s, "

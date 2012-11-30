@@ -2032,7 +2032,7 @@ static int parse_file_arg(struct test_entry *test, struct atom *atom)
 
 	res = regcomp(preg, atom->argv[0], REG_EXTENDED);
 	if (res) {
-		char str[1024];
+		char str[1024]; /* overflow safe */
 
 		regerror(res, preg, str, 1024);
 		TEST_SYNTAX_ERROR(test, 0, "invalid regex \"%s\" because "
