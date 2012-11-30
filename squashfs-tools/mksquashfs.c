@@ -4245,7 +4245,7 @@ int old_excluded(char *filename, struct stat *buf)
 int old_add_exclude(char *path)
 {
 	int i;
-	char filename[4096];
+	char *filename;
 	struct stat buf;
 
 	if(path[0] == '/' || strncmp(path, "./", 2) == 0 ||
@@ -4260,14 +4260,18 @@ int old_add_exclude(char *path)
 	}
 
 	for(i = 0; i < source; i++) {
-		strcat(strcat(strcpy(filename, source_path[i]), "/"), path);
+		int res = asprintf(&filename, "%s/%s", source_path[i], path);
+		if(res == -1)
+			BAD_ERROR("asprintf failed in old_add_exclude\n");
 		if(lstat(filename, &buf) == -1) {
 			if(!(errno == ENOENT || errno == ENOTDIR))
 				ERROR("Cannot stat exclude dir/file %s because "
 					"%s, ignoring", filename,
 					strerror(errno));
+			free(filename);
 			continue;
 		}
+		free(filename);
 		ADD_ENTRY(buf);
 	}
 	return TRUE;
