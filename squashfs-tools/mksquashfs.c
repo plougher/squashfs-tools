@@ -4553,7 +4553,7 @@ void display_path(int depth, struct pathname *paths)
 void display_path2(struct pathname *paths, char *string)
 {
 	int i;
-	char path[1024];
+	char *path;
 
 	if(paths == NULL) {
 		printf("%s\n", string);
@@ -4561,8 +4561,11 @@ void display_path2(struct pathname *paths, char *string)
 	}
 
 	for(i = 0; i < paths->names; i++) {
-		strcat(strcat(strcpy(path, string), "/"), paths->name[i].name);
+		int res = asprintf(&path, "%s/%s", string, paths->name[i].name);
+		if(res == -1)
+			BAD_ERROR("asprintf failed in display_path2\n");
 		display_path2(paths->name[i].paths, path);
+		free(path);
 	}
 }
 
