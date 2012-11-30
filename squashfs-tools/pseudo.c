@@ -44,15 +44,17 @@ int pseudo_count = 0;
 
 static void dump_pseudo(struct pseudo *pseudo, char *string)
 {
-	int i;
-	char path[1024];
+	int i, res;
+	char *path;
 
 	for(i = 0; i < pseudo->names; i++) {
 		struct pseudo_entry *entry = &pseudo->name[i];
-		if(string)
-			strcat(strcat(strcpy(path, string), "/"), entry->name);
-		else
-			strcpy(path, entry->name);
+		if(string) {
+			res = asprintf(&path, "%s/%s", string, entry->name);
+			if(res == -1)
+				BAD_ERROR("asprintf failed in dump_pseudo\n");
+		} else
+			path = entry->name;
 		if(entry->pseudo == NULL)
 			ERROR("%s %c %o %d %d %d %d\n", path, entry->dev->type,
 				entry->dev->mode, entry->dev->uid,
@@ -60,6 +62,8 @@ static void dump_pseudo(struct pseudo *pseudo, char *string)
 				entry->dev->minor);
 		else
 			dump_pseudo(entry->pseudo, path);
+		if(string)
+			free(path);
 	}
 }
 
