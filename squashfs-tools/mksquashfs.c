@@ -3198,22 +3198,45 @@ file_err:
 }
 
 
-#define BUFF_SIZE 8192
-char b_buffer[BUFF_SIZE];
+#define BUFF_SIZE 512
 char *name;
 char *basename_r();
 
 char *getbase(char *pathname)
 {
+	static char *b_buffer = NULL;
+	static int b_size = BUFF_SIZE;
 	char *result;
 
-	if(*pathname != '/') {
-		result = getcwd(b_buffer, BUFF_SIZE);
-		if(result == NULL)
-			return NULL;
-		strcat(strcat(b_buffer, "/"), pathname);
-	} else
-		strcpy(b_buffer, pathname);
+	if(b_buffer == NULL) {
+		b_buffer = malloc(b_size);
+		if(b_buffer == NULL)
+			BAD_ERROR("Malloc failed in getbase\n");
+	}
+
+	while(1) {
+		if(*pathname != '/') {
+			result = getcwd(b_buffer, b_size);
+			if(result == NULL && errno != ERANGE)
+				BAD_ERROR("Getcwd failed in getbase\n");
+
+			/* enough room for pathname + "/" + '\0' terminator? */
+			if(result && strlen(pathname) + 2 <=
+						b_size - strlen(b_buffer)) {
+				strcat(strcat(b_buffer, "/"), pathname);
+				break;
+			}
+		} else if(strlen(pathname) < b_size) {
+			strcpy(b_buffer, pathname);
+			break;
+		}
+
+		/* Buffer not large enough, realloc and try again */
+		b_buffer = realloc(b_buffer, b_size += BUFF_SIZE);
+		if(b_buffer == NULL)
+			BAD_ERROR("Realloc failed in getbase\n");
+	}
+
 	name = b_buffer;
 	if(((result = basename_r()) == NULL) || (strcmp(result, "..") == 0))
 		return NULL;
