@@ -4839,7 +4839,7 @@ int parse_number(char *start, int *res, int size)
 				return 0;
 			number *= 1048576;
 
-			if(end[1] == '\0')
+			if(end[1] != '\0')
 				/* trailing junk after number */
 				return 0;
 
@@ -4850,7 +4850,7 @@ int parse_number(char *start, int *res, int size)
 				return 0;
 			number *= 1024;
 
-			if(end[1] == '\0')
+			if(end[1] != '\0')
 				/* trailing junk after number */
 				return 0;
 		case '\0':
@@ -4875,7 +4875,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2012/11/25)\n");\
+	printf("mksquashfs version 4.2-git (2012/12/03)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
