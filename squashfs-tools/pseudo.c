@@ -68,15 +68,18 @@ static void dump_pseudo(struct pseudo *pseudo, char *string)
 }
 
 
-static char *get_component(char *target, char *targname)
+static char *get_component(char *target, char **targname)
 {
+	char *start;
+
 	while(*target == '/')
 		target ++;
 
+	start = target;
 	while(*target != '/' && *target!= '\0')
-		*targname ++ = *target ++;
+		target ++;
 
-	*targname = '\0';
+	*targname = strndup(start, target - start);
 
 	return target;
 }
@@ -89,10 +92,10 @@ static char *get_component(char *target, char *targname)
 struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 	char *target, char *alltarget)
 {
-	char targname[1024];
+	char *targname;
 	int i;
 
-	target = get_component(target, targname);
+	target = get_component(target, &targname);
 
 	if(pseudo == NULL) {
 		pseudo = malloc(sizeof(struct pseudo));
@@ -115,7 +118,7 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 			sizeof(struct pseudo_entry));
 		if(pseudo->name == NULL)
 			BAD_ERROR("failed to allocate pseudo file\n");
-		pseudo->name[i].name = strdup(targname);
+		pseudo->name[i].name = targname;
 
 		if(target[0] == '\0') {
 			/* at leaf pathname component */
@@ -130,6 +133,8 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 		}
 	} else {
 		/* existing matching entry */
+		free(targname);
+
 		if(pseudo->name[i].pseudo == NULL) {
 			/* No sub-directory which means this is the leaf
 			 * component of a pre-existing pseudo file.
