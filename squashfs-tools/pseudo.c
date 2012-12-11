@@ -359,6 +359,7 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 			ERROR("Minor %d out of range\n", minor);
 			goto error;
 		}
+		/* FALLTHROUGH */
 
 	case 'f':
 		if(def[bytes] == '\0') {
@@ -368,6 +369,7 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 		}	
 		break;
 	case 'd':
+		/* FALLTHROUGH */
 	case 'm':
 		break;
 	default:
