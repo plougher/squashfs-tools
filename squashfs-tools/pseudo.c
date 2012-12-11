@@ -324,12 +324,13 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 {
 	int n, bytes;
 	unsigned int major = 0, minor = 0, mode;
-	char filename[2048], type, suid[100], sgid[100], *ptr;
+	char type, *ptr;
+	char filename[2048], suid[100], sgid[100]; /* overflow safe */
 	long long uid, gid;
 	struct pseudo_dev *dev;
 
-	n = sscanf(def, "%s %c %o %s %s %n", filename, &type, &mode, suid,
-			sgid, &bytes);
+	n = sscanf(def, "%2047s %c %o %99s %99s %n", filename, &type, &mode,
+			suid, sgid, &bytes);
 
 	if(n < 5) {
 		ERROR("Not enough or invalid arguments in pseudo file "
