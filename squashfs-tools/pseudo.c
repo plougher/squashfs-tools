@@ -229,7 +229,7 @@ int exec_file(char *command, struct pseudo_dev *dev)
 	static pid_t pid = -1;
 	int pipefd[2];
 #ifdef USE_TMP_FILE
-	char filename[1024];
+	char *filename;
 	int status;
 	static int number = 0;
 #endif
@@ -238,10 +238,15 @@ int exec_file(char *command, struct pseudo_dev *dev)
 		pid = getpid();
 
 #ifdef USE_TMP_FILE
-	sprintf(filename, "/tmp/squashfs_pseudo_%d_%d", pid, number ++);
+	res = asprintf(&filename, "/tmp/squashfs_pseudo_%d_%d", pid, number ++);
+	if(res == -1) {
+		ERROR("asprint failed in exec_file()\n");
+		return -1;
+	}
 	pipefd[1] = open(filename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
 	if(pipefd[1] == -1) {
 		ERROR("Executing dynamic pseudo file, open failed\n");
+		free(filename);
 		return -1;
 	}
 #else
@@ -274,11 +279,12 @@ int exec_file(char *command, struct pseudo_dev *dev)
 	res = waitpid(child, &status, 0);
 	close(pipefd[1]);
 	if(res != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-		dev->filename = strdup(filename);
+		dev->filename = filename;
 		return 0;
 	}
 failed:
 	unlink(filename);
+	free(filename);
 	return -1;
 #else
 	close(pipefd[1]);
