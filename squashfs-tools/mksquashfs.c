@@ -4898,7 +4898,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2012/12/03)\n");\
+	printf("mksquashfs version 4.2-git (2012/12/11)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5396,7 +5396,7 @@ printOptions:
 	for(i = source + 2; i < argc; i++)
 		if(strcmp(argv[i], "-ef") == 0) {
 			FILE *fd;
-			char filename[16385];
+			char filename[16385]; /* overflow safe */
 			if((fd = fopen(argv[++i], "r")) == NULL) {
 				perror("Could not open exclude file...");
 				EXIT_MKSQUASHFS();
