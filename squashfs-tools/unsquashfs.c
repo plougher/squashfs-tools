@@ -1722,7 +1722,7 @@ failed_mount:
 struct pathname *process_extract_files(struct pathname *path, char *filename)
 {
 	FILE *fd;
-	char name[16384];
+	char name[16385]; /* overflow safe */
 
 	fd = fopen(filename, "r");
 	if(fd == NULL)
@@ -2210,7 +2210,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2012/11/25)\n");\
+	printf("unsquashfs version 4.2-git (2012/12/11)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
