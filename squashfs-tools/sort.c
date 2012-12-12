@@ -230,16 +230,28 @@ int read_sort_file(char *filename, int source, char *source_path[])
 		perror("Could not open sort_list file...");
 		return FALSE;
 	}
-	while(fscanf(fd, "%16384s %d", sort_filename, &priority) != EOF)
-		if(priority >= -32768 && priority <= 32767) {
+	while(1) {
+		 res = fscanf(fd, "%16384s %d", sort_filename, &priority);
+		if (res < 1)
+			break;
+		else if(res == 1) {
+			/* missing priority */
+			ERROR("Sort file \"%s\", entry \"%s\" has missing "
+				"priority.\n", filename, sort_filename);
+			return FALSE;
+		} else if(priority >= -32768 && priority <= 32767) {
 			res = add_sort_list(sort_filename, priority, source,
 				source_path);
 			if(res == FALSE)
 				return FALSE;
-		} else
-			ERROR("Sort file %s, priority %d outside range of "
-				"-32767:32768 - skipping...\n", sort_filename,
-				priority);
+		} else {
+			ERROR("Sort file \"%s\", entry \"%s\" has priority %d "
+				"outside range of -32767:32768.\n", filename,
+				sort_filename, priority);
+			return FALSE;
+		}
+	}
+
 	fclose(fd);
 	return TRUE;
 }
