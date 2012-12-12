@@ -223,14 +223,14 @@ int generate_file_priorities(struct dir_info *dir, int priority,
 int read_sort_file(char *filename, int source, char *source_path[])
 {
 	FILE *fd;
-	char sort_filename[16385];
+	char sort_filename[16385]; /* overflow safe */
 	int res, priority;
 
 	if((fd = fopen(filename, "r")) == NULL) {
 		perror("Could not open sort_list file...");
 		return FALSE;
 	}
-	while(fscanf(fd, "%s %d", sort_filename, &priority) != EOF)
+	while(fscanf(fd, "%16384s %d", sort_filename, &priority) != EOF)
 		if(priority >= -32768 && priority <= 32767) {
 			res = add_sort_list(sort_filename, priority, source,
 				source_path);
