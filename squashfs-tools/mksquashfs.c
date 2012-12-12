@@ -1427,7 +1427,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	else if(type == SQUASHFS_SYMLINK_TYPE) {
 		struct squashfs_symlink_inode_header *symlink = &inode_header.symlink;
 		int byte;
-		char buff[65536];
+		char buff[65536]; /* overflow safe */
 		size_t off = offsetof(struct squashfs_symlink_inode_header, symlink);
 
 		byte = readlink(filename, buff, 65536);
@@ -1454,7 +1454,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	else if(type == SQUASHFS_LSYMLINK_TYPE) {
 		struct squashfs_symlink_inode_header *symlink = &inode_header.symlink;
 		int byte;
-		char buff[65536];
+		char buff[65536]; /* overflow safe */
 		size_t off = offsetof(struct squashfs_symlink_inode_header, symlink);
 
 		byte = readlink(filename, buff, 65536);
