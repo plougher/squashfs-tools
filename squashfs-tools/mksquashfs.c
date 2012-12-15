@@ -2485,7 +2485,7 @@ restat:
 	res = fstat(file, &buf2);
 	close(file);
 	if(res == -1) {
-		ERROR("Cannot stat dir/file %s because %s, ignoring",
+		ERROR("Cannot stat dir/file %s because %s, ignoring\n",
 			pathname_reader(dir_ent), strerror(errno));
 		goto read_err;
 	}
@@ -3460,7 +3460,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	} else {
 		if(lstat(pathname, &buf) == -1)
 			/* source directory has disappeared? */
-			BAD_ERROR("Cannot stat source directory %s because %s",
+			BAD_ERROR("Cannot stat source directory %s because %s\n",
 				pathname, strerror(errno));
 		dir_ent->inode = lookup_inode(&buf);
 	}
@@ -3661,7 +3661,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 		}
 
 		if(lstat(filename, &buf) == -1) {
-			ERROR("Cannot stat dir/file %s because %s, ignoring",
+			ERROR("Cannot stat dir/file %s because %s, ignoring\n",
 				filename, strerror(errno));
 			free_dir_entry(dir_ent);
 			continue;
@@ -3835,7 +3835,7 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			int res = stat(pseudo_ent->dev->filename, &buf2);
 			if(res == -1) {
 				ERROR("Stat on pseudo file \"%s\" failed, "
-					"skipping...", pseudo_ent->pathname);
+					"skipping...\n", pseudo_ent->pathname);
 				pseudo_ino --;
 				continue;
 			}
@@ -4274,7 +4274,7 @@ int old_add_exclude(char *path)
 			strncmp(path, "../", 3) == 0) {
 		if(lstat(path, &buf) == -1) {
 			ERROR("Cannot stat exclude dir/file %s because %s, "
-				"ignoring", path, strerror(errno));
+				"ignoring\n", path, strerror(errno));
 			return TRUE;
 		}
 		ADD_ENTRY(buf);
@@ -4288,7 +4288,7 @@ int old_add_exclude(char *path)
 		if(lstat(filename, &buf) == -1) {
 			if(!(errno == ENOENT || errno == ENOTDIR))
 				ERROR("Cannot stat exclude dir/file %s because "
-					"%s, ignoring", filename,
+					"%s, ignoring\n", filename,
 					strerror(errno));
 			free(filename);
 			continue;
