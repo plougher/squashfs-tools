@@ -469,7 +469,8 @@ char *modestr(char *str, int mode)
 #define TOTALCHARS  25
 int print_filename(char *pathname, struct inode *inode)
 {
-	char str[11], dummy[100], dummy2[100], *userstr, *groupstr;
+	char str[11], dummy[12], dummy2[12]; /* overflow safe */
+	char *userstr, *groupstr;
 	int padchars;
 	struct passwd *user;
 	struct group *group;
@@ -482,15 +483,29 @@ int print_filename(char *pathname, struct inode *inode)
 
 	user = getpwuid(inode->uid);
 	if(user == NULL) {
-		sprintf(dummy, "%d", inode->uid);
-		userstr = dummy;
+		int res = snprintf(dummy, 12, "%d", inode->uid);
+		if(res < 0)
+			EXIT_UNSQUASH("snprintf failed in print_filename()\n");
+		else if(res >= 12)
+			/* unsigned int shouldn't ever need more than 11 bytes
+			 * (including terminating '\0') to print in base 10 */
+			userstr = "*";
+		else
+			userstr = dummy;
 	} else
 		userstr = user->pw_name;
 		 
 	group = getgrgid(inode->gid);
 	if(group == NULL) {
-		sprintf(dummy2, "%d", inode->gid);
-		groupstr = dummy2;
+		int res = snprintf(dummy2, 12, "%d", inode->gid);
+		if(res < 0)
+			EXIT_UNSQUASH("snprintf failed in print_filename()\n");
+		else if(res >= 12)
+			/* unsigned int shouldn't ever need more than 11 bytes
+			 * (including terminating '\0') to print in base 10 */
+			groupstr = "*";
+		else
+			groupstr = dummy2;
 	} else
 		groupstr = group->gr_name;
 
@@ -2210,7 +2225,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2012/12/11)\n");\
+	printf("unsquashfs version 4.2-git (2012/12/12)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
