@@ -4682,6 +4682,26 @@ empty_set:
 }
 
 
+void process_exclude_file(char *argv)
+{
+	FILE *fd;
+	char filename[16385]; /* overflow safe */
+
+	if((fd = fopen(argv, "r")) == NULL) {
+		perror("Could not open exclude file...");
+		EXIT_MKSQUASHFS();
+	}
+
+	while(fscanf(fd, "%16384[^\n]\n", filename) != EOF)
+		if(old_exclude)
+			old_add_exclude(filename);
+		else
+			add_exclude(filename);
+
+	fclose(fd);
+}
+
+
 #define RECOVER_ID "Squashfs recovery file v1.0\n"
 #define RECOVER_ID_SIZE 28
 
@@ -5394,20 +5414,13 @@ printOptions:
 	 * been possibly created
 	 */
 	for(i = source + 2; i < argc; i++)
-		if(strcmp(argv[i], "-ef") == 0) {
-			FILE *fd;
-			char filename[16385]; /* overflow safe */
-			if((fd = fopen(argv[++i], "r")) == NULL) {
-				perror("Could not open exclude file...");
-				EXIT_MKSQUASHFS();
-			}
-			while(fscanf(fd, "%16384[^\n]\n", filename) != EOF)
-					if(old_exclude)
-						old_add_exclude(filename);
-					else
-						add_exclude(filename);
-			fclose(fd);
-		} else if(strcmp(argv[i], "-e") == 0)
+		if(strcmp(argv[i], "-ef") == 0)
+			/*
+			 * Note presence of filename arg has already
+			 * been checked
+			 */
+			process_exclude_file(argv[++i]);
+		else if(strcmp(argv[i], "-e") == 0)
 			break;
 		else if(strcmp(argv[i], "-root-becomes") == 0 ||
 				strcmp(argv[i], "-sort") == 0 ||
