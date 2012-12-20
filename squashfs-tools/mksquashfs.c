@@ -48,6 +48,7 @@
 #include <fnmatch.h>
 #include <sys/wait.h>
 #include <limits.h>
+#include <ctype.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -4685,18 +4686,58 @@ empty_set:
 void process_exclude_file(char *argv)
 {
 	FILE *fd;
-	char filename[16385]; /* overflow safe */
+	char buffer[16385]; /* overflow safe */
+	char *filename;
 
-	if((fd = fopen(argv, "r")) == NULL) {
-		perror("Could not open exclude file...");
-		EXIT_MKSQUASHFS();
-	}
+	fd = fopen(argv, "r");
+	if(fd == NULL)
+		BAD_ERROR("Failed to open exclude file \"%s\" because %s\n",
+			argv, strerror(errno));
 
-	while(fscanf(fd, "%16384[^\n]\n", filename) != EOF)
+	while(fgets(filename = buffer, 16384, fd) != NULL) {
+		int len = strlen(filename);
+
+		if(len == 16384 && filename[len] != '\n')
+			/* line too large */
+			BAD_ERROR("Line too long when reading "
+				"exclude file \"%s\", larger than 16384 "
+				"bytes\n", argv);
+
+		/*
+		 * Remove '\n' terminator if it exists (the last line
+		 * in the file may not be '\n' terminated)
+		 */
+		if(len && filename[len - 1] == '\n')
+			filename[len - 1] = '\0';
+
+		/* Skip any leading whitespace */
+		while(isspace(*filename))
+			filename ++;
+
+		/* if comment line, skip */
+		if(*filename == '#')
+			continue;
+
+		/*
+		 * check for initial backslash, to accommodate
+		 * filenames with leading space or leading # character
+		 */
+		if(*filename == '\\')
+			filename ++;
+
+		/* if line is now empty after skipping characters, skip it */
+		if(*filename == '\0')
+			continue;
+
 		if(old_exclude)
 			old_add_exclude(filename);
 		else
 			add_exclude(filename);
+	}
+
+	if(ferror(fd))
+		BAD_ERROR("Reading exclude file \"%s\" failed because %s\n",
+			argv, strerror(errno));
 
 	fclose(fd);
 }
@@ -4918,7 +4959,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2012/12/11)\n");\
+	printf("mksquashfs version 4.2-git (2012/12/20)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
