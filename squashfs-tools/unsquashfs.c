@@ -35,6 +35,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <limits.h>
+#include <ctype.h>
 
 struct cache *fragment_cache, *data_cache;
 struct queue *to_reader, *to_deflate, *to_writer, *from_writer;
@@ -1737,15 +1738,54 @@ failed_mount:
 struct pathname *process_extract_files(struct pathname *path, char *filename)
 {
 	FILE *fd;
-	char name[16385]; /* overflow safe */
+	char buffer[16385]; /* overflow safe */
+	char *name;
 
 	fd = fopen(filename, "r");
 	if(fd == NULL)
-		EXIT_UNSQUASH("Could not open %s, because %s\n", filename,
-			strerror(errno));
+		EXIT_UNSQUASH("Failed to open extract file \"%s\" because %s\n",
+			filename, strerror(errno));
 
-	while(fscanf(fd, "%16384[^\n]\n", name) != EOF)
+	while(fgets(name = buffer, 16384, fd) != NULL) {
+		int len = strlen(name);
+
+		if(len == 16384 && name[len] != '\n')
+			/* line too large */
+			EXIT_UNSQUASH("Line too long when reading "
+				"extract file \"%s\", larger than 16384 "
+				"bytes\n", filename);
+
+		/*
+		 * Remove '\n' terminator if it exists (the last line
+		 * in the file may not be '\n' terminated)
+		 */
+		if(len && name[len - 1] == '\n')
+			name[len - 1] = '\0';
+
+		/* Skip any leading whitespace */
+		while(isspace(*name))
+			name ++;
+
+		/* if comment line, skip */
+		if(*name == '#')
+			continue;
+
+		/* check for initial backslash, to accommodate
+		 * filenames with leading space or leading # character
+		 */
+		if(*name == '\\')
+			name ++;
+
+		/* if line is now empty after skipping characters, skip it */
+		if(*name == '\0')
+			continue;
+
 		path = add_path(path, name, name);
+	}
+
+	if(ferror(fd))
+		EXIT_UNSQUASH("Reading extract file \"%s\" failed because %s\n",
+			filename, strerror(errno));
 
 	fclose(fd);
 	return path;
@@ -2225,7 +2265,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2012/12/12)\n");\
+	printf("unsquashfs version 4.2-git (2012/12/20)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
