@@ -34,6 +34,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
@@ -223,37 +224,120 @@ int generate_file_priorities(struct dir_info *dir, int priority,
 int read_sort_file(char *filename, int source, char *source_path[])
 {
 	FILE *fd;
-	char sort_filename[16385]; /* overflow safe */
-	int res, priority;
+	char line_buffer[16385], sort_filename[16385]; /* overflow safe */
+	char *line, *name;
+	int n, priority, res;
 
 	if((fd = fopen(filename, "r")) == NULL) {
-		perror("Could not open sort_list file...");
+		ERROR("Failed to open sort file \"%s\" because %s\n",
+			filename, strerror(errno));
 		return FALSE;
 	}
-	while(1) {
-		 res = fscanf(fd, "%16384s %d", sort_filename, &priority);
-		if (res < 1)
-			break;
-		else if(res == 1) {
-			/* missing priority */
-			ERROR("Sort file \"%s\", entry \"%s\" has missing "
-				"priority.\n", filename, sort_filename);
-			return FALSE;
-		} else if(priority >= -32768 && priority <= 32767) {
-			res = add_sort_list(sort_filename, priority, source,
-				source_path);
-			if(res == FALSE)
-				return FALSE;
-		} else {
-			ERROR("Sort file \"%s\", entry \"%s\" has priority %d "
-				"outside range of -32767:32768.\n", filename,
-				sort_filename, priority);
-			return FALSE;
+
+	while(fgets(line = line_buffer, 16384, fd) != NULL) {
+		int len = strlen(line);
+
+		if(len == 16384 && line[len] != '\n') {
+			/* line too large */
+			ERROR("Line too long when reading "
+				"sort file \"%s\", larger than 16384 "
+				"bytes\n", filename);
+			goto failed;
 		}
+
+		/*
+		 * Remove '\n' terminator if it exists (the last line
+		 * in the file may not be '\n' terminated)
+		 */
+		if(len && line[len - 1] == '\n')
+			line[len - 1] = '\0';
+
+		/* Skip any leading whitespace */
+		while(isspace(*line))
+			line ++;
+
+		/* if comment line, skip */
+		if(*line == '#')
+			continue;
+
+		/*
+		 * Scan for filename, don't use sscanf() and "%s" because
+		 * that can't handle filenames with spaces
+		 */
+		for(name = sort_filename; !isspace(*line) && *line != '\0';) {
+			if(*line == '\\') {
+				line ++;
+				if (*line == '\0')
+					break;
+			}
+			*name ++ = *line ++;
+		}
+		*name = '\0';
+
+		/*
+		 * if filename empty, then line was empty of anything but
+		 * whitespace or a backslash character.  Skip empy lines
+		 */
+		if(sort_filename[0] == '\0')
+			continue;
+
+		/*
+		 * Scan the rest of the line, we expect a decimal number
+		 * which is the filename priority
+		 */
+		errno = 0;
+		res = sscanf(line, "%d%n", &priority, &n);
+
+		if((res < 1 || errno) && errno != ERANGE) {
+			if(errno == 0)
+				/* No error, assume EOL or match failure */
+				ERROR("Sort file \"%s\", can't find priority "
+					"in entry \"%s\", EOL or match "
+					"failure\n", filename, line_buffer);
+			else
+				/* Some other failure not ERANGE */
+				ERROR("Sscanf failed reading sort file \"%s\" "
+					"because %s\n", filename,
+					strerror(errno));
+			goto failed;
+		} else if((errno == ERANGE) ||
+				(priority < -32768 || priority > 32767)) {
+			ERROR("Sort file \"%s\", entry \"%s\" has priority "
+				"outside range of -32767:32768.\n", filename,
+				line_buffer);
+			goto failed;
+		}
+
+		/* Skip any trailing whitespace */
+		line += n;
+		while(isspace(*line))
+			line ++;
+
+		if(*line != '\0') {
+			ERROR("Sort file \"%s\", trailing characters after "
+				"priority in entry \"%s\"\n", filename,
+				line_buffer);
+			goto failed;
+		}
+
+		res = add_sort_list(sort_filename, priority, source,
+			source_path);
+		if(res == FALSE)
+			goto failed;
+	}
+
+	if(ferror(fd)) {
+		ERROR("Reading sort file \"%s\" failed because %s\n", filename,
+			strerror(errno));
+		goto failed;
 	}
 
 	fclose(fd);
 	return TRUE;
+
+failed:
+	fclose(fd);
+	return FALSE;
 }
 
 
