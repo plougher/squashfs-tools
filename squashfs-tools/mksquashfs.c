@@ -4694,10 +4694,10 @@ void process_exclude_file(char *argv)
 		BAD_ERROR("Failed to open exclude file \"%s\" because %s\n",
 			argv, strerror(errno));
 
-	while(fgets(filename = buffer, 16384, fd) != NULL) {
+	while(fgets(filename = buffer, 16385, fd) != NULL) {
 		int len = strlen(filename);
 
-		if(len == 16384 && filename[len] != '\n')
+		if(len == 16384 && filename[len - 1] != '\n')
 			/* line too large */
 			BAD_ERROR("Line too long when reading "
 				"exclude file \"%s\", larger than 16384 "
@@ -4959,7 +4959,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2012/12/20)\n");\
+	printf("mksquashfs version 4.2-git (2012/12/21)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

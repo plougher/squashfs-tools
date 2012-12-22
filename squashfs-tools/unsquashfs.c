@@ -1746,10 +1746,10 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 		EXIT_UNSQUASH("Failed to open extract file \"%s\" because %s\n",
 			filename, strerror(errno));
 
-	while(fgets(name = buffer, 16384, fd) != NULL) {
+	while(fgets(name = buffer, 16385, fd) != NULL) {
 		int len = strlen(name);
 
-		if(len == 16384 && name[len] != '\n')
+		if(len == 16384 && name[len - 1] != '\n')
 			/* line too large */
 			EXIT_UNSQUASH("Line too long when reading "
 				"extract file \"%s\", larger than 16384 "
@@ -2265,7 +2265,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2012/12/20)\n");\
+	printf("unsquashfs version 4.2-git (2012/12/21)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\

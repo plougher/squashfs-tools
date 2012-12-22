@@ -234,10 +234,10 @@ int read_sort_file(char *filename, int source, char *source_path[])
 		return FALSE;
 	}
 
-	while(fgets(line = line_buffer, 16384, fd) != NULL) {
+	while(fgets(line = line_buffer, 16385, fd) != NULL) {
 		int len = strlen(line);
 
-		if(len == 16384 && line[len] != '\n') {
+		if(len == 16384 && line[len - 1] != '\n') {
 			/* line too large */
 			ERROR("Line too long when reading "
 				"sort file \"%s\", larger than 16384 "
