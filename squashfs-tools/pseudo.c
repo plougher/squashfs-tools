@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <ctype.h>
 
 #include "pseudo.h"
 #include "error.h"
@@ -478,9 +479,8 @@ error:
 int read_pseudo_file(struct pseudo **pseudo, char *filename)
 {
 	FILE *fd;
-	char *line = NULL;
-	int size = 0;
-	int res = TRUE;
+	char *def, *err, *line = NULL;
+	int res, size = 0;
 
 	fd = fopen(filename, "r");
 	if(fd == NULL) {
@@ -493,7 +493,7 @@ int read_pseudo_file(struct pseudo **pseudo, char *filename)
 		int total = 0;
 
 		while(1) {
-			int n, err;
+			int len;
 
 			if(total + MAX_LINE > size) {
 				line = realloc(line, size += MAX_LINE);
@@ -503,26 +503,84 @@ int read_pseudo_file(struct pseudo **pseudo, char *filename)
 				}
 			}
 
-			err = fscanf(fd, "%2047[^\n]%n\n", line + total, &n);
-			if(err <= 0)
-				goto done;
-
-			if(line[total] == '#')
-				continue;
-
-			if(line[total + n - 1] != '\\')
+			err = fgets(line + total, 2048, fd);
+			if(err == NULL)
 				break;
 
-			total += n - 1;
+			len = strlen(line + total);
+			total += len;
+
+			if(len == 2047 && line[total - 1] != '\n') {
+				/* line too large */
+				ERROR("Line too long when reading "
+					"pseudo file \"%s\", larger than "
+					"2048 bytes\n", filename);
+				goto failed;
+			}
+
+			/*
+			 * Remove '\n' terminator if it exists (the last line
+			 * in the file may not be '\n' terminated)
+			 */
+			if(len && line[total - 1] == '\n') {
+				line[-- total] = '\0';
+				len --;
+			}
+
+			/*
+			 * If no line continuation then jump out to
+			 * process line.  Note, we have to be careful to
+			 * check for "\\" (backslashed backslash) and to
+			 * ensure we don't look at the previous line
+			 */
+			if(len == 0 || line[total - 1] != '\\' || (len >= 2 &&
+					strcmp(line + total - 2, "\\\\") == 0))
+				break;
+			else
+				total --;
 		}	
 
-		res = read_pseudo_def(pseudo, line);
+		if(err == NULL) {
+			if(ferror(fd)) {
+                		ERROR("Reading pseudo file \"%s\" failed "
+					"because %s\n", filename,
+					strerror(errno));
+				goto failed;
+			}
+
+			/*
+			 * At EOF, normally we'll be finished, but, have to
+			 * check for special case where we had "\" line
+			 * continuation and then hit EOF immediately afterwards
+			 */
+			if(total == 0)
+				break;
+			else
+				line[total] = '\0';
+		}
+
+		/* Skip any leading whitespace */
+		for(def = line; isspace(*def); def ++);
+
+		/* if line is now empty after skipping characters, skip it */
+		if(*def == '\0')
+			continue;
+
+		/* if comment line, skip */
+		if(*def == '#')
+			continue;
+
+		res = read_pseudo_def(pseudo, def);
 		if(res == FALSE)
 			break;
 	}
 
-done:
 	fclose(fd);
 	free(line);
-	return res;
+	return TRUE;
+
+failed:
+	fclose(fd);
+	free(line);
+	return FALSE;
 }
