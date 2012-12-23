@@ -25,6 +25,7 @@
 
 #define FALSE 0
 #define TRUE 1
+#define MAX_LINE 16384
 
 #include <pwd.h>
 #include <grp.h>
@@ -4686,7 +4687,7 @@ empty_set:
 void process_exclude_file(char *argv)
 {
 	FILE *fd;
-	char buffer[16385]; /* overflow safe */
+	char buffer[MAX_LINE + 1]; /* overflow safe */
 	char *filename;
 
 	fd = fopen(argv, "r");
@@ -4694,14 +4695,14 @@ void process_exclude_file(char *argv)
 		BAD_ERROR("Failed to open exclude file \"%s\" because %s\n",
 			argv, strerror(errno));
 
-	while(fgets(filename = buffer, 16385, fd) != NULL) {
+	while(fgets(filename = buffer, MAX_LINE + 1, fd) != NULL) {
 		int len = strlen(filename);
 
-		if(len == 16384 && filename[len - 1] != '\n')
+		if(len == MAX_LINE && filename[len - 1] != '\n')
 			/* line too large */
 			BAD_ERROR("Line too long when reading "
-				"exclude file \"%s\", larger than 16384 "
-				"bytes\n", argv);
+				"exclude file \"%s\", larger than %d "
+				"bytes\n", MAX_LINE, argv);
 
 		/*
 		 * Remove '\n' terminator if it exists (the last line
