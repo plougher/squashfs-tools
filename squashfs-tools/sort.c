@@ -24,6 +24,7 @@
 
 #define TRUE 1
 #define FALSE 0
+#define MAX_LINE 16384
 
 #include <unistd.h>
 #include <stdio.h>
@@ -224,7 +225,8 @@ int generate_file_priorities(struct dir_info *dir, int priority,
 int read_sort_file(char *filename, int source, char *source_path[])
 {
 	FILE *fd;
-	char line_buffer[16385], sort_filename[16385]; /* overflow safe */
+	char line_buffer[MAX_LINE + 1]; /* overflow safe */
+	char sort_filename[MAX_LINE + 1]; /* overflow safe */
 	char *line, *name;
 	int n, priority, res;
 
@@ -234,14 +236,14 @@ int read_sort_file(char *filename, int source, char *source_path[])
 		return FALSE;
 	}
 
-	while(fgets(line = line_buffer, 16385, fd) != NULL) {
+	while(fgets(line = line_buffer, MAX_LINE + 1, fd) != NULL) {
 		int len = strlen(line);
 
-		if(len == 16384 && line[len - 1] != '\n') {
+		if(len == MAX_LINE && line[len - 1] != '\n') {
 			/* line too large */
 			ERROR("Line too long when reading "
-				"sort file \"%s\", larger than 16384 "
-				"bytes\n", filename);
+				"sort file \"%s\", larger than %d "
+				"bytes\n", MAX_LINE, filename);
 			goto failed;
 		}
 
