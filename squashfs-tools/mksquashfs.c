@@ -4702,7 +4702,7 @@ void process_exclude_file(char *argv)
 			/* line too large */
 			BAD_ERROR("Line too long when reading "
 				"exclude file \"%s\", larger than %d "
-				"bytes\n", MAX_LINE, argv);
+				"bytes\n", argv, MAX_LINE);
 
 		/*
 		 * Remove '\n' terminator if it exists (the last line

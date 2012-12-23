@@ -243,7 +243,7 @@ int read_sort_file(char *filename, int source, char *source_path[])
 			/* line too large */
 			ERROR("Line too long when reading "
 				"sort file \"%s\", larger than %d "
-				"bytes\n", MAX_LINE, filename);
+				"bytes\n", filename, MAX_LINE);
 			goto failed;
 		}
 

@@ -539,7 +539,7 @@ int read_pseudo_file(struct pseudo **pseudo, char *filename)
 				/* line too large */
 				ERROR("Line too long when reading "
 					"pseudo file \"%s\", larger than "
-					"%d bytes\n", MAX_LINE, filename);
+					"%d bytes\n", filename, MAX_LINE);
 				goto failed;
 			}
 

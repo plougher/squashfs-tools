@@ -1755,7 +1755,7 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 			/* line too large */
 			EXIT_UNSQUASH("Line too long when reading "
 				"extract file \"%s\", larger than %d "
-				"bytes\n", MAX_LINE, filename);
+				"bytes\n", filename, MAX_LINE);
 
 		/*
 		 * Remove '\n' terminator if it exists (the last line
