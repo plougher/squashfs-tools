@@ -332,14 +332,39 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 	int n, bytes;
 	unsigned int major = 0, minor = 0, mode;
 	char type, *ptr;
-	char filename[2048], suid[100], sgid[100]; /* overflow safe */
+	char suid[100], sgid[100]; /* overflow safe */
+	char *filename, *name;
 	long long uid, gid;
 	struct pseudo_dev *dev;
 
-	n = sscanf(def, "%2047s %c %o %99s %99s %n", filename, &type, &mode,
-			suid, sgid, &bytes);
+	/*
+	 * Scan for filename, don't use sscanf() and "%s" because
+	 * that can't handle filenames with spaces
+	 */
+	filename = malloc(strlen(def) + 1);
+	if(filename == NULL)
+		BAD_ERROR("Out of memory in read_pseudo_def()\n");
 
-	if(n < 5) {
+	for(name = filename; !isspace(*def) && *def != '\0';) {
+		if(*def == '\\') {
+			def ++;
+			if (*def == '\0')
+				break;
+		}
+		*name ++ = *def ++;
+	}
+	*name = '\0';
+
+	if(*filename == '\0') {
+		ERROR("Not enough or invalid arguments in pseudo file "
+			"definition\n");
+		goto error;
+	}
+
+	n = sscanf(def, " %c %o %99s %99s %n", &type, &mode, suid, sgid,
+		&bytes);
+
+	if(n < 4) {
 		ERROR("Not enough or invalid arguments in pseudo file "
 			"definition\n");
 		goto error;
@@ -465,10 +490,12 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 
 	*pseudo = add_pseudo(*pseudo, dev, filename, filename);
 
+	free(filename);
 	return TRUE;
 
 error:
 	ERROR("Bad pseudo file definition \"%s\"\n", def);
+	free(filename);
 	return FALSE;
 }
 		
