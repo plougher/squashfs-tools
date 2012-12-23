@@ -39,6 +39,7 @@
 
 #define TRUE 1
 #define FALSE 0
+#define MAX_LINE 16384
 
 struct pseudo_dev **pseudo_file = NULL;
 int pseudo_count = 0;
@@ -498,10 +499,7 @@ error:
 	free(filename);
 	return FALSE;
 }
-		
 
-
-#define MAX_LINE 2048
 
 int read_pseudo_file(struct pseudo **pseudo, char *filename)
 {
@@ -522,26 +520,26 @@ int read_pseudo_file(struct pseudo **pseudo, char *filename)
 		while(1) {
 			int len;
 
-			if(total + MAX_LINE > size) {
-				line = realloc(line, size += MAX_LINE);
+			if(total + (MAX_LINE + 1) > size) {
+				line = realloc(line, size += (MAX_LINE + 1));
 				if(line == NULL) {
 					ERROR("No space in read_pseudo_file\n");
 					return FALSE;
 				}
 			}
 
-			err = fgets(line + total, 2048, fd);
+			err = fgets(line + total, MAX_LINE + 1, fd);
 			if(err == NULL)
 				break;
 
 			len = strlen(line + total);
 			total += len;
 
-			if(len == 2047 && line[total - 1] != '\n') {
+			if(len == MAX_LINE && line[total - 1] != '\n') {
 				/* line too large */
 				ERROR("Line too long when reading "
 					"pseudo file \"%s\", larger than "
-					"2048 bytes\n", filename);
+					"%d bytes\n", MAX_LINE, filename);
 				goto failed;
 			}
 
