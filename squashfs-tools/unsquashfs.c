@@ -121,6 +121,8 @@ struct test table[] = {
 void progress_bar(long long current, long long max, int columns);
 void update_progress_bar();
 
+#define MAX_LINE 16384
+
 void sigwinch_handler()
 {
 	struct winsize winsize;
@@ -1738,7 +1740,7 @@ failed_mount:
 struct pathname *process_extract_files(struct pathname *path, char *filename)
 {
 	FILE *fd;
-	char buffer[16385]; /* overflow safe */
+	char buffer[MAX_LINE + 1]; /* overflow safe */
 	char *name;
 
 	fd = fopen(filename, "r");
@@ -1746,14 +1748,14 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 		EXIT_UNSQUASH("Failed to open extract file \"%s\" because %s\n",
 			filename, strerror(errno));
 
-	while(fgets(name = buffer, 16385, fd) != NULL) {
+	while(fgets(name = buffer, MAX_LINE + 1, fd) != NULL) {
 		int len = strlen(name);
 
-		if(len == 16384 && name[len - 1] != '\n')
+		if(len == MAX_LINE && name[len - 1] != '\n')
 			/* line too large */
 			EXIT_UNSQUASH("Line too long when reading "
-				"extract file \"%s\", larger than 16384 "
-				"bytes\n", filename);
+				"extract file \"%s\", larger than %d "
+				"bytes\n", MAX_LINE, filename);
 
 		/*
 		 * Remove '\n' terminator if it exists (the last line
