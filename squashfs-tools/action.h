@@ -284,3 +284,4 @@ extern int read_bytes(int, void *, int);
 extern int actions();
 extern int move_actions();
 extern int empty_actions();
+extern int read_action_file(char *);

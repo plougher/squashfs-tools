@@ -84,6 +84,8 @@ extern char *pathname(struct dir_ent *);
 
 extern char *subpathname(struct dir_ent *);
 
+extern int read_file(char *filename, char *type, int (parse_line)(char *));
+
 /*
  * Lexical analyser
  */
@@ -576,6 +578,23 @@ static int eval_expr(struct expr *expr, struct action_data *action_data)
 	}
 
 	return match;
+}
+
+
+/*
+ * Read action file, passing each line to parse_action() for
+ * parsing.
+ *
+ * One action per line, of the form
+ *	action(arg1,arg2)@expr(arg1,arg2)....
+ *
+ * Actions can be split across multiple lines using "\".
+ * 
+ * Blank lines and comment lines indicated by # are supported.
+ */
+int read_action_file(char *filename)
+{
+	return read_file(filename, "action", parse_action);
 }
 
 

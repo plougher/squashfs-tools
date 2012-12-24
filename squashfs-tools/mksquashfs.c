@@ -4960,7 +4960,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2012/12/22)\n");\
+	printf("mksquashfs version 4.2-git (2012/12/24)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5016,6 +5016,14 @@ int main(int argc, char *argv[])
 			}
 			res = parse_action(argv[i]);
 			if(res == 0)
+				exit(1);
+
+		} else if(strcmp(argv[i], "-af") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -af missing filename\n", argv[0]);
+				exit(1);
+			}
+			if(read_action_file(argv[i]) == FALSE)
 				exit(1);
 
 		} else if(strcmp(argv[i], "-comp") == 0) {
@@ -5466,6 +5474,7 @@ printOptions:
 		else if(strcmp(argv[i], "-root-becomes") == 0 ||
 				strcmp(argv[i], "-sort") == 0 ||
 				strcmp(argv[i], "-pf") == 0 ||
+				strcmp(argv[i], "-af") == 0 ||
 				strcmp(argv[i], "-comp") == 0)
 			i++;
 
@@ -5494,6 +5503,7 @@ printOptions:
 		else if(strcmp(argv[i], "-root-becomes") == 0 ||
 				strcmp(argv[i], "-ef") == 0 ||
 				strcmp(argv[i], "-pf") == 0 ||
+				strcmp(argv[i], "-af") == 0 ||
 				strcmp(argv[i], "-comp") == 0)
 			i++;
 
