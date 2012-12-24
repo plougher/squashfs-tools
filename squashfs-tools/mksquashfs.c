@@ -3409,7 +3409,7 @@ inline void add_excluded(struct dir_info *dir)
 
 
 void dir_scan(squashfs_inode *inode, char *pathname,
-	struct dir_ent *(_readdir)(struct dir_info *), struct pseudo *pseudo)
+	struct dir_ent *(_readdir)(struct dir_info *))
 {
 	struct stat buf;
 	struct dir_info *dir_info = dir_scan1(pathname, "", paths, _readdir, 1);
@@ -3421,8 +3421,8 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	/*
 	 * Process most actions and any pseudo files
 	 */
-	if(actions() || pseudo)
-		dir_scan2(dir_info, pseudo);
+	if(actions() || get_pseudo())
+		dir_scan2(dir_info, get_pseudo());
 
 	/*
 	 * Process move actions
@@ -4989,7 +4989,6 @@ int main(int argc, char *argv[])
 		writeb_mbytes = WRITER_BUFFER_DEFAULT,
 		fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
 	int force_progress = FALSE;
-	struct pseudo *pseudo = NULL;
 
 	block_log = slog(block_size);
 	if(argc > 1 && strcmp(argv[1], "-version") == 0) {
@@ -5061,7 +5060,7 @@ int main(int argc, char *argv[])
 				ERROR("%s: -pf missing filename\n", argv[0]);
 				exit(1);
 			}
-			if(read_pseudo_file(&pseudo, argv[i]) == FALSE)
+			if(read_pseudo_file(argv[i]) == FALSE)
 				exit(1);
 		} else if(strcmp(argv[i], "-p") == 0) {
 			if(++i == argc) {
@@ -5069,7 +5068,7 @@ int main(int argc, char *argv[])
 					argv[0]);
 				exit(1);
 			}
-			if(read_pseudo_def(&pseudo, argv[i]) == FALSE)
+			if(read_pseudo_def(argv[i]) == FALSE)
 				exit(1);
 		} else if(strcmp(argv[i], "-recover") == 0) {
 			if(++i == argc) {
@@ -5715,12 +5714,12 @@ printOptions:
 
 	if(delete && !keep_as_directory && source == 1 &&
 			S_ISDIR(source_buf.st_mode))
-		dir_scan(&inode, source_path[0], scan1_readdir, pseudo);
+		dir_scan(&inode, source_path[0], scan1_readdir);
 	else if(!keep_as_directory && source == 1 &&
 			S_ISDIR(source_buf.st_mode))
-		dir_scan(&inode, source_path[0], scan1_single_readdir, pseudo);
+		dir_scan(&inode, source_path[0], scan1_single_readdir);
 	else
-		dir_scan(&inode, "", scan1_encomp_readdir, pseudo);
+		dir_scan(&inode, "", scan1_encomp_readdir);
 	sBlk.root_inode = inode;
 	sBlk.inodes = inode_count;
 	sBlk.s_magic = SQUASHFS_MAGIC;

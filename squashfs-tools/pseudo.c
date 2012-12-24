@@ -42,6 +42,7 @@
 #define MAX_LINE 16384
 
 struct pseudo_dev **pseudo_file = NULL;
+struct pseudo *pseudo = NULL;
 int pseudo_count = 0;
 
 static void dump_pseudo(struct pseudo *pseudo, char *string)
@@ -328,7 +329,7 @@ struct pseudo_dev *get_pseudo_file(int pseudo_id)
 }
 
 
-int read_pseudo_def(struct pseudo **pseudo, char *def)
+int read_pseudo_def(char *def)
 {
 	int n, bytes;
 	unsigned int major = 0, minor = 0, mode;
@@ -489,7 +490,7 @@ int read_pseudo_def(struct pseudo **pseudo, char *def)
 		add_pseudo_file(dev);
 	}
 
-	*pseudo = add_pseudo(*pseudo, dev, filename, filename);
+	pseudo = add_pseudo(pseudo, dev, filename, filename);
 
 	free(filename);
 	return TRUE;
@@ -501,7 +502,7 @@ error:
 }
 
 
-int read_pseudo_file(struct pseudo **pseudo, char *filename)
+int read_pseudo_file(char *filename)
 {
 	FILE *fd;
 	char *def, *err, *line = NULL;
@@ -595,7 +596,7 @@ int read_pseudo_file(struct pseudo **pseudo, char *filename)
 		if(*def == '#')
 			continue;
 
-		res = read_pseudo_def(pseudo, def);
+		res = read_pseudo_def(def);
 		if(res == FALSE)
 			break;
 	}
@@ -608,4 +609,10 @@ failed:
 	fclose(fd);
 	free(line);
 	return FALSE;
+}
+
+
+struct pseudo *get_pseudo()
+{
+	return pseudo;
 }
