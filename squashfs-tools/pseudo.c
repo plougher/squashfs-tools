@@ -485,6 +485,7 @@ int read_pseudo_def(char *def)
 		if(res == -1) {
 			ERROR("Failed to execute dynamic pseudo file definition"
 				" \"%s\"\n", def);
+			free(filename);
 			free(dev);
 			return FALSE;
 		}
