@@ -329,7 +329,7 @@ static struct expr *parse_expr(int subexp)
 		}
 		
 		if (op != TOK_AND && op != TOK_OR) {
-			SYNTAX_ERROR("Unexpected token \"(%s\"), expected "
+			SYNTAX_ERROR("Unexpected token \"%s\", expected "
 				"\"&&\" or \"||\"\n", TOK_TO_STR(op, string));
 			return NULL;
 		}
