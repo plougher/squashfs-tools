@@ -63,6 +63,7 @@ static struct file_buffer *def_fragment = NULL;
 
 static struct token_entry token_table[] = {
 	{ " ", 	TOK_WHITE_SPACE, 1 },
+	{ "\t ", TOK_WHITE_SPACE, 1 },
 	{ "(", TOK_OPEN_BRACKET, 1, },
 	{ ")", TOK_CLOSE_BRACKET, 1 },
 	{ "&&", TOK_AND, 2 },
