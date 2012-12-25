@@ -138,7 +138,7 @@ int read_file(char *filename, char *type, int (parse_line)(char *))
 
 		res = parse_line(def);
 		if(res == FALSE)
-			break;
+			goto failed;
 	}
 
 	fclose(fd);
