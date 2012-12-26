@@ -2,7 +2,8 @@
  * Read a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
+ * 2012
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -701,7 +702,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 	struct squashfs_fragment_entry **fragment_table,
 	squashfs_inode **inode_lookup_table)
 {
-	unsigned char *inode_table = NULL, *directory_table;
+	unsigned char *inode_table = NULL, *directory_table = NULL;
 	long long start = sBlk->inode_table_start;
 	long long end = sBlk->directory_table_start;
 	long long root_inode_start = start +
@@ -710,7 +711,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 		SQUASHFS_INODE_OFFSET(sBlk->root_inode);
 	unsigned int root_inode_block;
 	union squashfs_inode_header inode;
-	unsigned int *id_table;
+	unsigned int *id_table = NULL;
 	int res;
 
 	printf("Scanning existing filesystem...\n");
@@ -806,11 +807,15 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 		memcpy(*directory_data_cache, directory_table,
 			*inode_dir_offset + *inode_dir_file_size);
 
+		free(id_table);
 		free(inode_table);
 		free(directory_table);
 		return sBlk->inode_table_start;
 	}
 
 error:
+	free(id_table);
+	free(inode_table);
+	free(directory_table);
 	return 0;
 }
