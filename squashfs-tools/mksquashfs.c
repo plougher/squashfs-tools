@@ -2414,7 +2414,7 @@ again:
 	if(file == -1) {
 		file_buffer = cache_get(reader_buffer, 0, 0);
 		file_buffer->sequence = seq ++;
-		goto read_err;
+		goto read_err2;
 	}
 
 	do {
@@ -2485,7 +2485,6 @@ again:
 
 restat:
 	res = fstat(file, &buf2);
-	close(file);
 	if(res == -1) {
 		ERROR("Cannot stat dir/file %s because %s, ignoring\n",
 			pathname_reader(dir_ent), strerror(errno));
@@ -2493,12 +2492,15 @@ restat:
 	}
 
 	if(read_size != buf2.st_size) {
+		close(file);
 		memcpy(buf, &buf2, sizeof(struct stat));
 		file_buffer->error = 2;
 		queue_put(from_deflate, file_buffer);
 		goto again;
 	}
 read_err:
+	close(file);
+read_err2:
 	file_buffer->error = TRUE;
 	queue_put(from_deflate, file_buffer);
 }
@@ -4960,7 +4962,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2012/12/24)\n");\
+	printf("mksquashfs version 4.2-git (2012/12/26)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
