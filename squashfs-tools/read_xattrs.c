@@ -369,7 +369,7 @@ struct xattr_list *get_xattr(int i, unsigned int *count)
 	return xattr_list;
 
 failed:
-	free(xattr_list);
+	free_xattr(xattr_list, j);
 
 	return NULL;
 }
