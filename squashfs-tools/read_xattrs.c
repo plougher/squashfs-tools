@@ -2,7 +2,7 @@
  * Read a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010
+ * Copyright (c) 2010, 2012
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -285,6 +285,17 @@ failed1:
 	free(index);
 
 	return 0;
+}
+
+
+void free_xattr(struct xattr_list *xattr_list, int count)
+{
+	int i;
+
+	for(i = 0; i < count; i++)
+		free(xattr_list[i].full_name);
+
+	free(xattr_list);
 }
 
 
