@@ -28,6 +28,7 @@
 #include <sys/xattr.h>
 
 extern int root_process;
+extern int user_xattrs;
 
 void write_xattr(char *pathname, unsigned int xattr)
 {
@@ -48,6 +49,9 @@ void write_xattr(char *pathname, unsigned int xattr)
 	for(i = 0; i < count; i++) {
 		int prefix = xattr_list[i].type & SQUASHFS_XATTR_PREFIX_MASK;
 
+		if(user_xattrs && prefix != SQUASHFS_XATTR_USER)
+			continue;
+
 		if(root_process || prefix == SQUASHFS_XATTR_USER) {
 			int res = lsetxattr(pathname, xattr_list[i].full_name,
 				xattr_list[i].value, xattr_list[i].vsize, 0);
@@ -64,6 +68,10 @@ void write_xattr(char *pathname, unsigned int xattr)
 					"by the destination filesystem" :
 					"a weird error occurred");
 		} else
+			/*
+			 * if extract user xattrs only then
+			 * error message is suppressed
+			 */
 			ERROR("write_xattr: could not write xattr %s "
 					"for file %s because you're not "
 					"superuser!\n",

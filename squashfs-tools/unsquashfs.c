@@ -74,6 +74,7 @@ unsigned int total_blocks = 0, total_files = 0, total_inodes = 0;
 unsigned int cur_blocks = 0;
 int inode_number = 1;
 int no_xattrs = XATTR_DEF;
+int user_xattrs = FALSE;
 
 int lookup_type[] = {
 	0,
@@ -2321,7 +2322,11 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-xattrs") == 0 ||
 				strcmp(argv[i], "-x") == 0)
 			no_xattrs = FALSE;
-		else if(strcmp(argv[i], "-dest") == 0 ||
+		else if(strcmp(argv[i], "-user-xattrs") == 0 ||
+				strcmp(argv[i], "-u") == 0) {
+			user_xattrs = TRUE;
+			no_xattrs = FALSE;
+		} else if(strcmp(argv[i], "-dest") == 0 ||
 				strcmp(argv[i], "-d") == 0) {
 			if(++i == argc) {
 				fprintf(stderr, "%s: -dest missing filename\n",
@@ -2422,6 +2427,9 @@ options:
 				NOXOPT_STR"\n");
 			ERROR("\t-x[attrs]\t\textract xattrs in file system"
 				XOPT_STR "\n");
+			ERROR("\t-u[ser-xattrs]\t\tonly extract user xattrs in "
+				"file system.\n\t\t\t\tEnables extracting "
+				"xattrs\n");
 			ERROR("\t-p[rocessors] <number>\tuse <number> "
 				"processors.  By default will use\n");
 			ERROR("\t\t\t\tnumber of processors available\n");
