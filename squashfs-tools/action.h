@@ -25,14 +25,14 @@
 /*
  * Lexical analyser definitions
  */
-#define TOK_WHITE_SPACE		0
-#define TOK_OPEN_BRACKET	1
-#define TOK_CLOSE_BRACKET	2
-#define TOK_AND			3
-#define TOK_OR			4
-#define TOK_NOT			5
-#define TOK_COMMA		6
-#define TOK_AT			7
+#define TOK_OPEN_BRACKET	0
+#define TOK_CLOSE_BRACKET	1
+#define TOK_AND			2
+#define TOK_OR			3
+#define TOK_NOT			4
+#define TOK_COMMA		5
+#define TOK_AT			6
+#define TOK_WHITE_SPACE		7
 #define TOK_STRING		8
 #define TOK_EOF			9
 
