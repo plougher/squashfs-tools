@@ -39,7 +39,7 @@ void write_xattr(char *pathname, unsigned int xattr)
 			sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
 		return;
 
-	xattr_list = get_xattr(xattr, &count);
+	xattr_list = get_xattr(xattr, &count, 1);
 	if(xattr_list == NULL) {
 		ERROR("Failed to read xattrs for file %s\n", pathname);
 		return;

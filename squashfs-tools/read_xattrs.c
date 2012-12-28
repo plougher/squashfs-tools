@@ -302,14 +302,31 @@ void free_xattr(struct xattr_list *xattr_list, int count)
 /*
  * Construct and return the list of xattr name:value pairs for the passed xattr
  * id
+ *
+ * There are two users for get_xattr(), Mksquashfs uses it to read the
+ * xattrs from the filesystem on appending, and Unsquashfs uses it
+ * to retrieve the xattrs for writing to disk.
+ *
+ * Unfortunately, the two users disagree on what to do with unknown
+ * xattr prefixes, Mksquashfs wants to treat this as fatal otherwise
+ * this will cause xattrs to be be lost on appending.  Unsquashfs
+ * on the otherhand wants to retrieve the xattrs which are known and
+ * to ignore the rest, this allows Unsquashfs to cope more gracefully
+ * with future versions which may have unknown xattrs, as long as the
+ * general xattr structure is adhered to, Unsquashfs should be able
+ * to safely ignore unknown xattrs, and to write the ones it knows about,
+ * this is better than completely refusing to retrieve all the xattrs.
+ *
+ * If ignore is TRUE then don't treat unknown xattr prefixes as
+ * a failure to read the xattr.  
  */
-struct xattr_list *get_xattr(int i, unsigned int *count)
+struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
 {
 	long long start;
 	struct xattr_list *xattr_list = NULL;
 	unsigned int offset;
 	void *xptr;
-	int j;
+	int j = 0, res = 1;
 
 	TRACE("get_xattr\n");
 
@@ -321,23 +338,32 @@ struct xattr_list *get_xattr(int i, unsigned int *count)
 	TRACE("get_xattr: xattr_id %d, count %d, start %lld, offset %d\n", i,
 			*count, start, offset);
 
-	for(j = 0; j < *count; j++) {
+	while(j < *count) {
 		struct squashfs_xattr_entry entry;
 		struct squashfs_xattr_val val;
-		int res;
 
-		xattr_list = realloc(xattr_list, (j + 1) *
+		if(res != 0) {
+			xattr_list = realloc(xattr_list, (j + 1) *
 						sizeof(struct xattr_list));
-		if(xattr_list == NULL) {
-			ERROR("Out of memory in get_xattrs\n");
-			goto failed;
+			if(xattr_list == NULL) {
+				ERROR("Out of memory in get_xattrs\n");
+				goto failed;
+			}
 		}
 			
 		SQUASHFS_SWAP_XATTR_ENTRY(&entry, xptr);
 		xptr += sizeof(entry);
+
 		res = read_xattr_entry(&xattr_list[j], &entry, xptr);
+		if(ignore && res == 0) {
+			/* unknown prefix, but ignore flag is set */
+			(*count) --;
+			continue;
+		}
+
 		if(res != 1)
 			goto failed;
+
 		xptr += entry.size;
 			
 		TRACE("get_xattr: xattr %d, type %d, size %d, name %s\n", j,
@@ -363,8 +389,11 @@ struct xattr_list *get_xattr(int i, unsigned int *count)
 
 		TRACE("get_xattr: xattr %d, vsize %d\n", j, val.vsize);
 
-		xattr_list[j].vsize = val.vsize;
+		xattr_list[j ++].vsize = val.vsize;
 	}
+
+	if(*count == 0)
+		goto failed;
 
 	return xattr_list;
 
