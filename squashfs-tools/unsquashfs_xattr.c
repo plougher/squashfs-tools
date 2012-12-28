@@ -35,6 +35,7 @@ void write_xattr(char *pathname, unsigned int xattr)
 	unsigned int count;
 	struct xattr_list *xattr_list;
 	int i;
+	static int nonsuper_error = FALSE;
 
 	if(xattr == SQUASHFS_INVALID_XATTR ||
 			sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
@@ -67,15 +68,25 @@ void write_xattr(char *pathname, unsigned int xattr)
 					"extended attributes are not supported "
 					"by the destination filesystem" :
 					"a weird error occurred");
-		} else
+		} else if(nonsuper_error == FALSE) {
 			/*
 			 * if extract user xattrs only then
-			 * error message is suppressed
+			 * error message is suppressed, if not
+			 * print error, and then suppress further error
+			 * messages to avoid possible screenfulls of the
+			 * same error message!
 			 */
 			ERROR("write_xattr: could not write xattr %s "
 					"for file %s because you're not "
 					"superuser!\n",
 					xattr_list[i].full_name, pathname);
+			ERROR("write_xattr: to avoid this error message, either"
+				" specify -user-xattrs, -no-xattrs, or run as "
+				"superuser!\n");
+			ERROR("Further error messages of this type are "
+				"suppressed!\n");
+			nonsuper_error = TRUE;
+		}
 	}
 
 	free_xattr(xattr_list, count);
