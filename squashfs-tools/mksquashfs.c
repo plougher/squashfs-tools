@@ -1884,6 +1884,15 @@ struct file_buffer *allocate_fragment()
 
 
 static struct fragment empty_fragment = {SQUASHFS_INVALID_FRAG, 0, 0};
+
+
+void free_fragment(struct fragment *fragment)
+{
+	if(fragment != &empty_fragment)
+		free(fragment);
+}
+
+
 struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer,
 	struct dir_ent *dir_ent)
 {
@@ -2823,6 +2832,9 @@ void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size,
 	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, size, 0,
 			0, NULL, fragment, NULL, 0);
 
+	if(duplicate_checking == FALSE)
+		free_fragment(fragment);
+
 	return;
 }
 
@@ -2888,8 +2900,10 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size, start,
 		 block, block_list, fragment, NULL, sparse);
 
-	if(duplicate_checking == FALSE)
+	if(duplicate_checking == FALSE) {
 		free(block_list);
+		free_fragment(fragment);
+	}
 
 	return 0;
 
@@ -2987,8 +3001,10 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size, start,
 		 blocks, block_list, fragment, NULL, sparse);
 
-	if(duplicate_checking == FALSE)
+	if(duplicate_checking == FALSE) {
 		free(block_list);
+		free_fragment(fragment);
+	}
 
 	return 0;
 
