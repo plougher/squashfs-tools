@@ -27,6 +27,8 @@
 
 #include <sys/xattr.h>
 
+#define NOSPACE_MAX 10
+
 extern int root_process;
 extern int user_xattrs;
 
@@ -36,8 +38,10 @@ void write_xattr(char *pathname, unsigned int xattr)
 	struct xattr_list *xattr_list;
 	int i;
 	static int nonsuper_error = FALSE;
+	static int ignore_xattrs = FALSE;
+	static int nospace_error = 0;
 
-	if(xattr == SQUASHFS_INVALID_XATTR ||
+	if(ignore_xattrs || xattr == SQUASHFS_INVALID_XATTR ||
 			sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
 		return;
 
@@ -57,17 +61,59 @@ void write_xattr(char *pathname, unsigned int xattr)
 			int res = lsetxattr(pathname, xattr_list[i].full_name,
 				xattr_list[i].value, xattr_list[i].vsize, 0);
 
-			if(res == -1)
-				ERROR("write_xattr: failed to write xattr %s"
-					" for file %s because %s\n",
-					xattr_list[i].full_name, pathname,
-					errno == ENOSPC || errno == EDQUOT ?
-					"no extended attribute space remaining "
-					"on destination filesystem" :
-					errno == ENOTSUP ?
-					"extended attributes are not supported "
-					"by the destination filesystem" :
-					"a weird error occurred");
+			if(res == -1) {
+				if(errno == ENOTSUP) {
+					/*
+					 * If the destination filesystem cannot
+					 * suppport xattrs, print error, and
+					 * disable xattr output as this error is
+					 * unlikely to go away, and printing
+					 * screenfulls of the same error message
+					 * is rather annoying
+					 */
+					ERROR("write_xattr: failed to write "
+						"xattr %s for file %s because " 
+						"extended attributes are not "
+						"supported by the destination "
+						"filesystem\n",
+						xattr_list[i].full_name,
+						pathname);
+					ERROR("Ignoring xattrs in "
+								"filesystem\n");
+					ERROR("To avoid this error message, "
+						"specify -no-xattrs\n");
+					ignore_xattrs = TRUE;
+				} else if((errno == ENOSPC || errno == EDQUOT)
+						&& nospace_error < NOSPACE_MAX) {
+					/*
+					 * Many filesystems like ext2/3/4 have
+					 * limits on the amount of xattr
+					 * data that can be stored per file
+					 * (typically one block or 4K), so
+					 * we shouldn't disable xattr ouput,
+					 * as the error may be restriced to one
+					 * file only.  If we get a lot of these
+					 * then suppress the error messsage
+					 */
+					ERROR("write_xattr: failed to write "
+						"xattr %s for file %s because " 
+						"no extended attribute space "
+						"remaining (per file or "
+						"filesystem limit)\n",
+						xattr_list[i].full_name,
+						pathname);
+					if(++ nospace_error == NOSPACE_MAX)
+						ERROR("%d of these errors "
+							"printed, further error "
+							"messages of this type "
+							"are suppressed!\n",
+							NOSPACE_MAX);
+				} else
+					ERROR("write_xattr: failed to write "
+						"xattr %s for file %s because "
+						"%s\n", xattr_list[i].full_name,
+						pathname, strerror(errno));
+			}
 		} else if(nonsuper_error == FALSE) {
 			/*
 			 * if extract user xattrs only then
