@@ -337,6 +337,7 @@ int read_pseudo_def(char *def)
 	char type, *ptr;
 	char suid[100], sgid[100]; /* overflow safe */
 	char *filename, *name;
+	char *orig_def = def;
 	long long uid, gid;
 	struct pseudo_dev *dev;
 
@@ -360,16 +361,37 @@ int read_pseudo_def(char *def)
 
 	if(*filename == '\0') {
 		ERROR("Not enough or invalid arguments in pseudo file "
-			"definition\n");
+			"definition \"%s\"\n", orig_def);
 		goto error;
 	}
 
 	n = sscanf(def, " %c %o %99s %99s %n", &type, &mode, suid, sgid,
 		&bytes);
+	def += bytes;
 
 	if(n < 4) {
 		ERROR("Not enough or invalid arguments in pseudo file "
-			"definition\n");
+			"definition \"%s\"\n", orig_def);
+		switch(n) {
+		case -1:
+			/* FALLTHROUGH */
+		case 0:
+			ERROR("Read filename, but failed to read or match "
+				"type\n");
+			break;
+		case 1:
+			ERROR("Read filename and type, but failed to read or "
+				"match octal mode\n");
+			break;
+		case 2:
+			ERROR("Read filename, type and mode, but failed to "
+				"read or match uid\n");
+			break;
+		default:
+			ERROR("Read filename, type, mode and uid, but failed "
+				"to read or match gid\n");
+			break; 
+		}
 		goto error;
 	}
 
@@ -377,11 +399,20 @@ int read_pseudo_def(char *def)
 	case 'b':
 		/* FALLTHROUGH */
 	case 'c':
-		n = sscanf(def + bytes,  "%u %u", &major, &minor);
+		n = sscanf(def, "%u %u %n", &major, &minor, &bytes);
+		def += bytes;
 
 		if(n < 2) {
-			ERROR("Not enough or invalid arguments in pseudo file "
-				"definition\n");
+			ERROR("Not enough or invalid arguments in %s device "
+				"pseudo file definition \"%s\"\n", type == 'b' ?
+				"block" : "character", orig_def);
+			if(n < 1)
+				ERROR("Read filename, type, mode, uid and gid, "
+					"but failed to read or match major\n");
+			else
+				ERROR("Read filename, type, mode, uid, gid "
+					"and major, but failed to read  or "
+					"match minor\n");
 			goto error;
 		}	
 		
@@ -395,17 +426,26 @@ int read_pseudo_def(char *def)
 			goto error;
 		}
 		/* FALLTHROUGH */
-
-	case 'f':
-		if(def[bytes] == '\0') {
-			ERROR("Not enough arguments in pseudo file "
-				"definition\n");
-			goto error;
-		}	
-		break;
 	case 'd':
 		/* FALLTHROUGH */
 	case 'm':
+		/*
+		 * Check for trailing junk after expected arguments
+		 */
+		if(def[0] != '\0') {
+			ERROR("Unexpected tailing characters in pseudo file "
+				"definition \"%s\"\n", orig_def);
+			goto error;
+		}
+		break;
+	case 'f':
+		if(def[0] == '\0') {
+			ERROR("Not enough arguments in dynamic file pseudo "
+				"definition \"%s\"\n", orig_def);
+			ERROR("Expected command, which can be an executable "
+				"or a piece of shell script\n");
+			goto error;
+		}	
 		break;
 	default:
 		ERROR("Unsupported type %c\n", type);
@@ -480,11 +520,11 @@ int read_pseudo_def(char *def)
 		int res;
 
 		printf("Executing dynamic pseudo file\n");
-		printf("\t\"%s\"\n", def);
-		res = exec_file(def + bytes, dev);
+		printf("\t\"%s\"\n", orig_def);
+		res = exec_file(def, dev);
 		if(res == -1) {
 			ERROR("Failed to execute dynamic pseudo file definition"
-				" \"%s\"\n", def);
+				" \"%s\"\n", orig_def);
 			free(filename);
 			free(dev);
 			return FALSE;
@@ -498,7 +538,12 @@ int read_pseudo_def(char *def)
 	return TRUE;
 
 error:
-	ERROR("Bad pseudo file definition \"%s\"\n", def);
+	ERROR("Pseudo definitions should be of format\n");
+	ERROR("\tfilename d mode uid gid\n");
+	ERROR("\tfilename m mode uid gid\n");
+	ERROR("\tfilename b mode uid gid major minor\n");
+	ERROR("\tfilename c mode uid gid major minor\n");
+	ERROR("\tfilename f mode uid command\n");
 	free(filename);
 	return FALSE;
 }
