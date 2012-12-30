@@ -392,18 +392,38 @@ void prep_exit_mksquashfs()
 }
 
 
+int add_overflow(int a, int b)
+{
+	return (INT_MAX - a) < b;
+}
+
+
+int shift_overflow(int a, int shift)
+{
+	return (INT_MAX >> shift) < a;
+}
+
+ 
+int multiply_overflow(int a, int multiplier)
+{
+	return (INT_MAX / multiplier) < a;
+}
+
+
 struct queue *queue_init(int size)
 {
 	struct queue *queue = malloc(sizeof(struct queue));
 
 	if(queue == NULL)
-		goto failed;
+		BAD_ERROR("Out of memory in queue_init\n");
+
+	if(add_overflow(size, 1) ||
+				multiply_overflow(size + 1, sizeof(void *)))
+		BAD_ERROR("Size too large in queue_init\n");
 
 	queue->data = malloc(sizeof(void *) * (size + 1));
-	if(queue->data == NULL) {
-		free(queue);
-		goto failed;
-	}
+	if(queue->data == NULL)
+		BAD_ERROR("Out of memory in queue_init\n");
 
 	queue->size = size + 1;
 	queue->readp = queue->writep = 0;
@@ -412,9 +432,6 @@ struct queue *queue_init(int size)
 	pthread_cond_init(&queue->full, NULL);
 
 	return queue;
-
-failed:
-	BAD_ERROR("Out of memory in queue_init\n");
 }
 
 
@@ -4342,14 +4359,34 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 {
 	int i;
 	sigset_t sigmask, old_mask;
-	int reader_buffer_size = readb_mbytes << (20 - block_log);
-	int fragment_buffer_size = fragmentb_mbytes << (20 - block_log);
-
+	int reader_buffer_size;
+	int fragment_buffer_size;
 	/*
 	 * writer_buffer_size is global because it is needed in
 	 * write_file_blocks_dup()
 	 */
-	writer_buffer_size = writeb_mbytes << (20 - block_log);
+
+	/*
+	 * convert from queue size in Mbytes to queue size in
+	 * blocks.
+	 *
+	 * In doing so, check that the user supplied values do not
+	 * overflow a signed int
+	 */
+	if(shift_overflow(readb_mbytes, 20 - block_log))
+		BAD_ERROR("Read queue is too large\n");
+	else
+		reader_buffer_size = readb_mbytes << (20 - block_log);
+	
+	if(shift_overflow(fragmentb_mbytes, 20 - block_log))
+		BAD_ERROR("Fragment queue is too large\n");
+	else
+		fragment_buffer_size = fragmentb_mbytes << (20 - block_log);
+
+	if(shift_overflow(writeb_mbytes, 20 - block_log))
+		BAD_ERROR("Write queue is too large\n");
+	else
+		writer_buffer_size = writeb_mbytes << (20 - block_log);
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
@@ -4381,9 +4418,16 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 #endif
 	}
 
+	if(multiply_overflow(processors, 2) ||
+			add_overflow(processors * 2, 2) ||
+			multiply_overflow(processors * 2 + 2,
+							sizeof(pthread_t)))
+		BAD_ERROR("Processors too large\n");
+
 	thread = malloc((2 + processors * 2) * sizeof(pthread_t));
 	if(thread == NULL)
 		BAD_ERROR("Out of memory allocating thread descriptors\n");
+
 	deflator_thread = &thread[2];
 	frag_deflator_thread = &deflator_thread[processors];
 
@@ -4897,12 +4941,6 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 }
 
 
-int multiply_overflow(int a, int multiplier)
-{
-	return (INT_MAX / multiplier) < a;
-}
-
-
 int parse_number(char *start, int *res, int size)
 {
 	char *end;
@@ -4978,7 +5016,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2012/12/27)\n");\
+	printf("mksquashfs version 4.2-git (2012/12/30)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
