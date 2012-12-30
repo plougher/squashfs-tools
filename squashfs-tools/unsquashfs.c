@@ -2037,6 +2037,10 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 #endif
 	}
 
+	if(add_overflow(processors, 3) ||
+			multiply_overflow(processors + 3, sizeof(pthread_t)))
+		EXIT_UNSQUASH("Processors too large\n");
+
 	thread = malloc((3 + processors) * sizeof(pthread_t));
 	if(thread == NULL)
 		EXIT_UNSQUASH("Out of memory allocating thread descriptors\n");
@@ -2268,7 +2272,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2012/12/27)\n");\
+	printf("unsquashfs version 4.2-git (2012/12/30)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
