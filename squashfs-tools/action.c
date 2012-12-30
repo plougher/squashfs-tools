@@ -22,6 +22,7 @@
  * action.c
  */
 
+#include <fcntl.h>
 #include <dirent.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -2139,6 +2140,73 @@ static int file_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
+/*
+ *  Exec test specific code
+ */
+static int exec_fn(struct atom *atom, struct action_data *action_data)
+{
+	int child, i, res, status;
+
+	child = fork();
+	if (child == -1)
+		BAD_ERROR("exec_fn fork_failed\n");
+
+	if (child == 0) {
+		/*
+		 * Child process
+		 * redirect stdin, stdout & stderr to /dev/null and
+		 * execute atom->argv[0]
+		 */
+		int fd = open("/dev/null", O_RDWR);
+		if(fd == -1)
+			exit(EXIT_FAILURE);
+
+		close(STDIN_FILENO);
+		close(STDOUT_FILENO);
+		close(STDERR_FILENO);
+		for(i = 0; i < 3; i++) {
+			res = dup(fd);
+			if (res == -1)
+				exit(EXIT_FAILURE);
+		}
+		close(fd);
+
+		/*
+		 * Create environment variables
+		 * NAME: name of file
+		 * PATHNAME: pathname of file relative to squashfs root
+		 * SOURCE_PATHNAME: the pathname of the file in the source
+		 *                  directory
+		 */
+		res = setenv("NAME", action_data->name, 1);
+		if(res == -1)
+			exit(EXIT_FAILURE);
+
+		res = setenv("PATHNAME", action_data->subpath, 1);
+		if(res == -1)
+			exit(EXIT_FAILURE);
+
+		res = setenv("SOURCE_PATHNAME", action_data->pathname, 1);
+		if(res == -1)
+			exit(EXIT_FAILURE);
+
+		execl("/bin/sh", "sh", "-c", atom->argv[0], (char *) NULL);
+		exit(EXIT_FAILURE);
+	}
+
+	/*
+	 * Parent process. 
+ 	 */
+
+	res = waitpid(child,  &status, 0);
+
+	if (res == -1)
+		BAD_ERROR("exec_fn waitpid failed\n");
+ 
+	return WIFEXITED(status) ? WEXITSTATUS(status) == 0 : 0;
+}
+
+
 static struct test_entry test_table[] = {
 	{ "name", 1, name_fn},
 	{ "pathname", 1, pathname_fn, check_pathname},
@@ -2169,6 +2237,7 @@ static struct test_entry test_table[] = {
 	{ "true", 0, true_fn, NULL},
 	{ "false", 0, false_fn, NULL},
 	{ "file", 1, file_fn, parse_file_arg},
+	{ "exec", 1, exec_fn, NULL},
 	{ "", -1 }
 };
 
