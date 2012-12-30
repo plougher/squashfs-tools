@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (c) 2009, 2010, 2011
+ * Copyright (c) 2009, 2010, 2011, 2012
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -62,6 +62,11 @@ static inline int compressor_uncompress(struct compressor *comp, void *dest,
 }
 
 
+/*
+ * For the following functions, please see xz_wrapper.c for
+ * commented examples of how they are used (xz is currently
+ * the only compressor that uses compression options).
+ */
 static inline int compressor_options(struct compressor *comp, char *argv[],
 	int argc)
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011
+ * Copyright (c) 2010, 2011, 2012
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -48,6 +48,24 @@ static int dictionary_size = 0;
 static float dictionary_percent = 0;
 
 
+/*
+ * This function is called by the options parsing code in mksquashfs.c
+ * to parse any -X compressor option.
+ *
+ * Two specific options are supported:
+ *	-Xbcj
+ *	-Xdict-size
+ *
+ * This function returns 1 on successful parsing of an option
+ *			-1 if the option was unrecognised, or
+ *			-2 if the option was recognised, but otherwise bad in
+ *			   some way (e.g. invalid parameter) 
+ *
+ * Note: this function sets internal compressor state, but does not
+ * pass back the results of the parsing other than success/failure.
+ * The xz_dump_options() function is called later to get the options in
+ * a format suitable for writing to the filesystem.
+ */
 static int xz_options(char *argv[], int argc)
 {
 	int i;
@@ -133,6 +151,17 @@ failed:
 }
 
 
+/*
+ * This function is called after all options have been parsed.
+ * It is used to do post-processing on the compressor options using
+ * values that were not expected to be known at option parse time.
+ *
+ * In this case block_size may not be known until after -Xdict-size has
+ * been processed (in the case where -b is specified after -Xdict-size)
+ *
+ * This function returns 0 on successful post processing, or
+ *			-1 on error
+ */
 static int xz_options_post(int block_size)
 {
 	/*
@@ -185,6 +214,16 @@ failed:
 }
 
 
+/*
+ * This function is called by mksquashfs to dump the parsed
+ * compressor options in a format suitable for writing to the
+ * compressor options field in the filesystem (stored immediately
+ * after the superblock).
+ *
+ * This function returns a pointer to the compression options structure
+ * to be stored (and the size), or NULL if there are no compression
+ * options
+ */
 static void *xz_dump_options(int block_size, int *size)
 {
 	int flags = 0, i;
@@ -215,6 +254,26 @@ static void *xz_dump_options(int block_size, int *size)
 }
 
 
+/*
+ * This function is a helper specifically for the append mode of
+ * mksquashfs.  Its purpose is to set the internal compressor state
+ * to the stored compressor options in the passed compressor options
+ * structure.
+ *
+ * In effect this function sets up the compressor options
+ * to the same state they were when the filesystem was originally
+ * generated, this is to ensure on appending, the compressor uses
+ * the same compression options that were used to generate the
+ * original filesystem.
+ *
+ * Note, even if there are no compressor options, this function is still
+ * called with an empty compressor structure (size == 0), to explicitly
+ * set the default options, this is to ensure any user supplied
+ * -X options on the appending mksquashfs command line are over-ridden
+ *
+ * This function returns 0 on sucessful extraction of options, and
+ *			-1 on error
+ */
 static int xz_extract_options(int block_size, void *buffer, int size)
 {
 	struct comp_opts *comp_opts = buffer;
@@ -263,6 +322,13 @@ failed:
 }
 
 
+/*
+ * This function is called by mksquashfs to initialise the
+ * compressor, before compress() is called.
+ *
+ * This function returns 0 on success, and
+ *			-1 on error
+ */
 static int xz_init(void **strm, int block_size, int datablock)
 {
 	int i, j, filters = datablock ? filter_count : 1;
