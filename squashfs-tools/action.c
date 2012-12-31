@@ -2089,13 +2089,11 @@ static int file_fn(struct atom *atom, struct action_data *action_data)
 		 */
 		close(STDOUT_FILENO);
 		res = dup(pipefd[1]);
-		if (res == -1) {
-			ERROR("file_fn dup failed\n");
+		if (res == -1)
 			exit(EXIT_FAILURE);
-		}
+
 		execlp("file", "file", "-b", action_data->pathname,
 			(char *) NULL);
-		ERROR("file_fn execlp failed\n");
 		exit(EXIT_FAILURE);
 	}
 
