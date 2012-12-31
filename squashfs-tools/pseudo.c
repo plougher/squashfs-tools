@@ -270,12 +270,10 @@ int exec_file(char *command, struct pseudo_dev *dev)
 	if(child == 0) {
 		close(STDOUT_FILENO);
 		res = dup(pipefd[1]);
-		if(res == -1) {
-			ERROR("Executing dynamic pseudo file, dup failed\n");
+		if(res == -1)
 			exit(EXIT_FAILURE);
-		}
+
 		execl("/bin/sh", "sh", "-c", command, (char *) NULL);
-		ERROR("Executing dynamic pseudo file, execl failed\n");
 		exit(EXIT_FAILURE);
 	}
 
