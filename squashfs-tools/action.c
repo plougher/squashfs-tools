@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2011, 2012
+ * Copyright (c) 2011, 2012, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -91,9 +91,16 @@ extern int read_file(char *filename, char *type, int (parse_line)(char *));
 /*
  * Lexical analyser
  */
+#define STR_SIZE 256
+
 static int get_token(char **string)
 {
-	int i;
+	/* string buffer */
+	static char *str = NULL;
+	static int size = 0;
+
+	char *str_ptr;
+	int cur_size, i, quoted;
 
 	while (1) {
 		if (*cur_ptr == '\0')
@@ -107,26 +114,73 @@ static int get_token(char **string)
 		cur_ptr ++;
 	}
 
-	if (token_table[i].token == -1) { /* string */
-		char *start = cur_ptr ++;
-		while (1) {
-			if (*cur_ptr == '\0')
+	if (token_table[i].token != -1) {
+		cur_ptr += token_table[i].size;
+		return token_table[i].token;
+	}
+
+	/* string */
+	if(str == NULL) {
+		str = malloc(STR_SIZE);
+		if(str == NULL)
+			BAD_ERROR("Out of memory in get_token\n");
+		size = STR_SIZE;
+	}
+
+	/* Initialise string being read */
+	str_ptr = str;
+	cur_size = 0;
+	quoted = 0;
+
+	while(1) {
+		while(*cur_ptr == '"') {
+			cur_ptr ++;
+			quoted = !quoted;
+		}
+
+		if(*cur_ptr == '\0') {
+			/* inside quoted string EOF, otherwise end of string */
+			if(quoted)
+				return TOK_EOF;
+			else
 				break;
+		}
+
+		if(!quoted) {
 			for(i = 0; token_table[i].token != -1; i++)
 				if (strncmp(cur_ptr, token_table[i].string,
 						token_table[i].size) == 0)
 					break;
 			if (token_table[i].token != -1)
 				break;
-			cur_ptr ++;
 		}
-		
-         	*string = strndup(start, cur_ptr - start);
-		return TOK_STRING;
+
+		if(*cur_ptr == '\\') {
+			cur_ptr ++;
+			if(*cur_ptr == '\0')
+				return TOK_EOF;
+		}
+
+		if(cur_size + 2 > size) {
+			char *tmp;
+
+			size = (cur_size + 1  + STR_SIZE) & ~(STR_SIZE - 1);
+
+			tmp = realloc(str, size);
+			if(tmp == NULL)
+				BAD_ERROR("Out of memory in get_token\n");
+
+			str_ptr = str_ptr - str + tmp;
+			str = tmp;
+		}
+
+		*str_ptr ++ = *cur_ptr ++;
+		cur_size ++;
 	}
 
-	cur_ptr += token_table[i].size;
-	return token_table[i].token;
+	*str_ptr = '\0';
+	*string = str;
+	return TOK_STRING;
 }
 
 
@@ -243,7 +297,7 @@ static struct expr *parse_test(char *name)
 			goto failed;
 		}
 
-		expr->atom.argv[i] = string;
+		expr->atom.argv[i] = strdup(string);
 
 		if (i + 1 < test->args) {
 			token = get_token(&string);
@@ -406,7 +460,7 @@ int parse_action(char *s)
 		if (argv == NULL)
 			BAD_ERROR("Realloc failed in parse_action\n");
 
-		argv[args ++] = string;
+		argv[args ++] = strdup(string);
 
 		token = get_token(&string);
 
