@@ -3735,6 +3735,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 				free_dir_entry(dir_ent);
 				free(filename);
 				free(subpath);
+				free(new);
 				continue;
 			}
 
@@ -3743,6 +3744,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 			sub_dir = NULL;
 
 		add_dir_entry(dir_ent, sub_dir, lookup_inode(&buf));
+		free(new);
 	}
 
 	scan1_freedir(dir);
@@ -4682,12 +4684,6 @@ struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 }
 
 
-void free_subdir(struct pathnames *paths)
-{
-	free(paths);
-}
-
-
 int excluded(struct pathnames *paths, char *name, struct pathnames **new)
 {
 	int i, n, res;
@@ -4740,7 +4736,7 @@ int excluded(struct pathnames *paths, char *name, struct pathnames **new)
 	return FALSE;
 
 empty_set:
-	free_subdir(*new);
+	free(*new);
 	*new = NULL;
 	return res;
 }
