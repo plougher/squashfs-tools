@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012
+ * 2012, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -180,7 +180,7 @@ struct pathnames {
 struct pathnames *paths = NULL;
 struct pathname *path = NULL;
 struct pathname *stickypath = NULL;
-int excluded(struct pathnames *paths, char *name, struct pathnames **new);
+int excluded(char *name, struct pathnames *paths, struct pathnames **new);
 
 /* fragment block data structures */
 int fragments = 0;
@@ -3687,7 +3687,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 	while((dir_ent = _readdir(dir))) {
 		struct dir_info *sub_dir;
 		struct stat buf;
-		struct pathnames *new;
+		struct pathnames *new = NULL;
 		char *filename = pathname(dir_ent);
 		char *subpath = subpathname(dir_ent);
 		char *dir_name = dir_ent->name;
@@ -3718,7 +3718,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 		}
 
 		if((old_exclude && old_excluded(filename, &buf)) ||
-				excluded(paths, dir_name, &new) ||
+				excluded(dir_name, paths, &new) ||
 				eval_exclude_actions(dir_name, filename,
 						subpath, &buf, depth)) {
 			add_excluded(dir);
@@ -4659,64 +4659,40 @@ void display_path2(struct pathname *paths, char *string)
 }
 
 
-struct pathnames *init_subdir()
-{
-	struct pathnames *new = malloc(sizeof(struct pathnames));
-	if(new == NULL)
-		BAD_ERROR("Out of memory in init_subdir\n");
-	new->count = 0;
-	return new;
-}
-
-
 struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 {
-	if(paths->count % PATHS_ALLOC_SIZE == 0) {
-		paths = realloc(paths, sizeof(struct pathnames *) +
-			(paths->count + PATHS_ALLOC_SIZE) *
-			sizeof(struct pathname *));
+	int count = paths == NULL ? 0 : paths->count;
+
+	if(count % PATHS_ALLOC_SIZE == 0) {
+		paths = realloc(paths, sizeof(struct pathnames) +
+			(count + PATHS_ALLOC_SIZE) * sizeof(struct pathname *));
 		if(paths == NULL)
 			BAD_ERROR("Out of memory in add_subdir\n");
 	}
 
-	paths->path[paths->count++] = path;
+	paths->path[count] = path;
+	paths->count = count  + 1;
 	return paths;
 }
 
 
-int excluded(struct pathnames *paths, char *name, struct pathnames **new)
+int excluded_match(char *name, struct pathname *path, struct pathnames **new)
 {
-	int i, n, res;
-		
-	if(paths == NULL) {
-		*new = NULL;
-		return FALSE;
-	}
+	int i;
 
-
-	*new = init_subdir();
-	if(stickypath)
-		*new = add_subdir(*new, stickypath);
-
-	for(n = 0; n < paths->count; n++) {
-		struct pathname *path = paths->path[n];
-
-		for(i = 0; i < path->names; i++) {
-			int match = use_regex ?
-				regexec(path->name[i].preg, name, (size_t) 0,
+	for(i = 0; i < path->names; i++) {
+		int match = use_regex ?
+			regexec(path->name[i].preg, name, (size_t) 0,
 					NULL, 0) == 0 :
-				fnmatch(path->name[i].name, name,
-					FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) ==
-					 0;
+			fnmatch(path->name[i].name, name,
+				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
 
-			if(match && path->name[i].paths == NULL) {
+		if(match) {
+			 if(path->name[i].paths == NULL || new == NULL)
 				/* match on a leaf component, any subdirectories
-				 * in the filesystem should be excluded */
-				res = TRUE;
-				goto empty_set;
-			}
-
-			if(match)
+			 	* in the filesystem should be excluded */
+				return TRUE;
+			else
 				/* match on a non-leaf component, add any
 				 * subdirectories to the new set of
 				 * subdirectories to scan for this name */
@@ -4724,21 +4700,35 @@ int excluded(struct pathnames *paths, char *name, struct pathnames **new)
 		}
 	}
 
-	if((*new)->count == 0) {
-			/* no matching names found, return empty new search set
-			 */
-			res = FALSE;
-			goto empty_set;
+	return FALSE;
+}
+
+
+int excluded(char *name, struct pathnames *paths, struct pathnames **new)
+{
+	int n;
+		
+	if(stickypath && excluded_match(name, stickypath, NULL))
+		return TRUE;
+
+	for(n = 0; paths && n < paths->count; n++) {
+		int res = excluded_match(name, paths->path[n], new);
+		if(res) {
+			free(*new);
+			*new = NULL;
+			return TRUE;
+		}
 	}
 
-	/* one or more matches with sub-directories found (no leaf matches).
-	 * Return new set */
+	/*
+	 * Either:
+	 * -  no matching names found, return empty new search set, or
+	 * -  one or more matches with sub-directories found (no leaf matches),
+	 *    in which case return new search set.
+	 *
+	 * In either case return FALSE as we don't want to exclude this entry
+	 */
 	return FALSE;
-
-empty_set:
-	free(*new);
-	*new = NULL;
-	return res;
 }
 
 
@@ -5012,7 +5002,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/01/02)\n");\
+	printf("mksquashfs version 4.2-git (2013/01/07)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5764,13 +5754,8 @@ printOptions:
 		first_freelist = FALSE;
 	}
 
-	if(path || stickypath) {
-		paths = init_subdir();
-		if(path)
-			paths = add_subdir(paths, path);
-		if(stickypath)
-			paths = add_subdir(paths, stickypath);
-	}
+	if(path)
+		paths = add_subdir(paths, path);
 
 	dump_actions(); 
 
