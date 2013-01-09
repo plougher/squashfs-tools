@@ -3544,8 +3544,8 @@ struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 		free(dir);
 		return NULL;
 	}
-	dir->pathname = pathname;
-	dir->subpath = subpath;
+	dir->pathname = strdup(pathname);
+	dir->subpath = strdup(subpath);
 	dir->count = 0;
 	dir->directory_count = 0;
 	dir->dir_is_ldir = TRUE;
@@ -3727,14 +3727,10 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 		}
 
 		if((buf.st_mode & S_IFMT) == S_IFDIR) {
-			filename = strdup(filename);
-			subpath = strdup(subpath);
 			sub_dir = dir_scan1(filename, subpath, new,
 					scan1_readdir, depth + 1);
 			if(sub_dir == NULL) {
 				free_dir_entry(dir_ent);
-				free(filename);
-				free(subpath);
 				free(new);
 				continue;
 			}
@@ -5001,7 +4997,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/01/07)\n");\
+	printf("mksquashfs version 4.2-git (2013/01/08)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
