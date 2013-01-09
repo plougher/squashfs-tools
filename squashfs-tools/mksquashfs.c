@@ -3681,7 +3681,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 
 	if(dir == NULL) {
 		ERROR("Could not open %s, skipping...\n", filename);
-		goto error;
+		return NULL;
 	}
 
 	while((dir_ent = _readdir(dir))) {
@@ -3749,7 +3749,6 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 
 	scan1_freedir(dir);
 
-error:
 	return dir;
 }
 
