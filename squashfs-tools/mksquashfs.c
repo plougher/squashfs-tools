@@ -3540,10 +3540,14 @@ struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 	if(dir == NULL)
 		BAD_ERROR("Out of memory in scan1_opendir\n");
 
-	if(pathname[0] != '\0' && (dir->linuxdir = opendir(pathname)) == NULL) {
-		free(dir);
-		return NULL;
+	if(pathname[0] != '\0') {
+		dir->linuxdir = opendir(pathname);
+		if(dir->linuxdir == NULL) {
+			free(dir);
+			return NULL;
+		}
 	}
+
 	dir->pathname = strdup(pathname);
 	dir->subpath = strdup(subpath);
 	dir->count = 0;
