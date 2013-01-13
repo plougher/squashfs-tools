@@ -740,6 +740,12 @@ void *get_frag_action(void *fragment)
 /*
  * Exclude specific action code
  */
+int exclude_actions()
+{
+	return exclude_count;
+}
+
+
 int eval_exclude_actions(char *name, char *pathname, char *subpath,
 	struct stat *buf, int depth)
 {
@@ -1602,7 +1608,7 @@ static void move_dir(struct dir_ent *dir_ent)
 
 static void move_file(struct move_ent *move_ent)
 {
-	struct dir_ent *dir_ent = move_ent ->dir_ent;
+	struct dir_ent *dir_ent = move_ent->dir_ent;
 
 	if(move_ent->ops & ACTION_MOVE_MOVE) {
 		struct dir_ent *comp_ent, *prev = NULL;

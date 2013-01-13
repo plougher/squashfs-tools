@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2011, 2012
+ * Copyright (c) 2011, 2012, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -285,3 +285,4 @@ extern int actions();
 extern int move_actions();
 extern int empty_actions();
 extern int read_action_file(char *);
+extern int exclude_actions();

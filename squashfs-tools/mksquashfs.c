@@ -3693,7 +3693,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 		struct stat buf;
 		struct pathnames *new = NULL;
 		char *filename = pathname(dir_ent);
-		char *subpath = subpathname(dir_ent);
+		char *subpath = NULL;
 		char *dir_name = dir_ent->name;
 
 		if(strcmp(dir_name, ".") == 0 || strcmp(dir_name, "..") == 0) {
@@ -3722,15 +3722,27 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 		}
 
 		if((old_exclude && old_excluded(filename, &buf)) ||
-				excluded(dir_name, paths, &new) ||
-				eval_exclude_actions(dir_name, filename,
-						subpath, &buf, depth)) {
+			(!old_exclude && excluded(dir_name, paths, &new))) {
 			add_excluded(dir);
 			free_dir_entry(dir_ent);
 			continue;
 		}
 
+		if(exclude_actions()) {
+			subpath = subpathname(dir_ent);
+			
+			if(eval_exclude_actions(dir_name, filename, subpath,
+								&buf, depth)) {
+				add_excluded(dir);
+				free_dir_entry(dir_ent);
+				continue;
+			}
+		}
+
 		if((buf.st_mode & S_IFMT) == S_IFDIR) {
+			if(subpath == NULL)
+				subpath = subpathname(dir_ent);
+
 			sub_dir = dir_scan1(filename, subpath, new,
 					scan1_readdir, depth + 1);
 			if(sub_dir == NULL) {
