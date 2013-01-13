@@ -1597,6 +1597,7 @@ static void move_dir(struct dir_ent *dir_ent)
 	struct dir_ent *comp_ent;
 
 	/* update our directory's subpath name */
+	free(dir->subpath);
 	dir->subpath = strdup(subpathname(dir_ent));
 
 	/* recursively update the subpaths of any sub-directories */
