@@ -3081,6 +3081,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	for(block = 0; block < blocks;) {
 		if(read_buffer->fragment && read_buffer->c_byte) {
+			block_list[block] = 0;
 			fragment_buffer = read_buffer;
 			blocks = read_size >> block_log;
 		} else {
