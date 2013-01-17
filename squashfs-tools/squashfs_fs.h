@@ -3,7 +3,8 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2012,
+ * 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -468,12 +469,10 @@ struct squashfs_fragment_entry {
 struct squashfs_xattr_entry {
 	unsigned short		type;
 	unsigned short		size;
-	char			data[0];
 };
 
 struct squashfs_xattr_val {
 	unsigned int		vsize;
-	char			value[0];
 };
 
 struct squashfs_xattr_id {
