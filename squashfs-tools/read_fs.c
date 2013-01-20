@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2012
+ * 2012, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -59,46 +59,65 @@ extern unsigned int get_guid(unsigned int);
 
 static struct compressor *comp;
 
-int read_block(int fd, long long start, long long *next, void *block)
+int read_block(int fd, long long start, long long *next, int expected,
+								void *block)
 {
 	unsigned short c_byte;
-	int res;
+	int res, compressed;
+	int outlen = expected ? expected : SQUASHFS_METADATA_SIZE;
 	
+	/* Read block size */
 	res = read_fs_bytes(fd, start, 2, &c_byte);
 	if(res == 0)
 		return 0;
 
 	SQUASHFS_INSWAP_SHORTS(&c_byte, 1);
+	compressed = SQUASHFS_COMPRESSED(c_byte);
+	c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
 
-	if(SQUASHFS_COMPRESSED(c_byte)) {
-		char buffer[SQUASHFS_METADATA_SIZE];
-		int error, res;
+	/*
+	 * The block size should not be larger than
+	 * the uncompressed size (or max uncompressed size if
+	 * expected is 0)
+	 */
+	if (c_byte > outlen)
+		return 0;
 
-		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
+	if(compressed) {
+		char buffer[c_byte];
+		int error;
+
 		res = read_fs_bytes(fd, start + 2, c_byte, buffer);
 		if(res == 0)
 			return 0;
 
 		res = compressor_uncompress(comp, block, buffer, c_byte,
-			SQUASHFS_METADATA_SIZE, &error);
+			outlen, &error);
 		if(res == -1) {
 			ERROR("%s uncompress failed with error code %d\n",
 				comp->name, error);
 			return 0;
 		}
-		if(next)
-			*next = start + 2 + c_byte;
-		return res;
 	} else {
-		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
 		res = read_fs_bytes(fd, start + 2, c_byte, block);
 		if(res == 0)
 			return 0;
-
-		if(next)
-			*next = start + 2 + c_byte;
-		return c_byte;
+		res = c_byte;
 	}
+
+	if(next)
+		*next = start + 2 + c_byte;
+
+	/*
+	 * if expected, then check the (uncompressed) return data
+	 * is of the expected size
+	 */
+	if(expected && expected != res)
+		return 0;
+	else
+		return res;
+
+
 }
 
 
@@ -132,7 +151,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				return FALSE;
 		}
 		TRACE("scan_inode_table: reading block 0x%llx\n", start);
-		byte = read_block(fd, start, &start, *inode_table + bytes);
+		byte = read_block(fd, start, &start, 0, *inode_table + bytes);
 		if(byte == 0) {
 			free(*inode_table);
 			return FALSE;
@@ -420,7 +439,7 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 	 * line which need to be over-ridden).
 	 */
 	if(SQUASHFS_COMP_OPTS(sBlk->flags)) {
-		bytes = read_block(fd, sizeof(*sBlk), NULL, buffer);
+		bytes = read_block(fd, sizeof(*sBlk), NULL, 0, buffer);
 
 		if(bytes == 0)
 			goto failed_mount;
@@ -497,7 +516,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 		TRACE("squashfs_readdir: reading block 0x%llx, bytes read so "
 			"far %d\n", start, bytes);
 		last_start_block = start;
-		byte = read_block(fd, start, &start, directory_table + bytes);
+		byte = read_block(fd, start, &start, 0, directory_table + bytes);
 		if(byte == 0) {
 			free(directory_table);
 			return NULL;
@@ -566,7 +585,7 @@ unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 	SQUASHFS_INSWAP_ID_BLOCKS(index, indexes);
 
 	for(i = 0; i < indexes; i++) {
-		int length = read_block(fd, index[i], NULL,
+		int length = read_block(fd, index[i], NULL, 0,
 			((unsigned char *) id_table) +
 			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read id table block %d, from 0x%llx, length %d\n", i,
@@ -620,7 +639,7 @@ int read_fragment_table(int fd, struct squashfs_super_block *sBlk,
 	SQUASHFS_INSWAP_FRAGMENT_INDEXES(fragment_table_index, indexes);
 
 	for(i = 0; i < indexes; i++) {
-		int length = read_block(fd, fragment_table_index[i], NULL,
+		int length = read_block(fd, fragment_table_index[i], NULL, 0,
 			((unsigned char *) *fragment_table) +
 			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read fragment table block %d, from 0x%llx, length %d\n",
@@ -668,7 +687,7 @@ int read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk,
 	SQUASHFS_INSWAP_LONG_LONGS(index, indexes);
 
 	for(i = 0; i <  indexes; i++) {
-		int length = read_block(fd, index[i], NULL,
+		int length = read_block(fd, index[i], NULL, 0,
 			((unsigned char *) *inode_lookup_table) +
 			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read inode lookup table block %d, from 0x%llx, length "
