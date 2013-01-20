@@ -693,7 +693,9 @@ int read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk,
 	SQUASHFS_INSWAP_LONG_LONGS(index, indexes);
 
 	for(i = 0; i <  indexes; i++) {
-		int length = read_block(fd, index[i], NULL, 0,
+		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
+				lookup_bytes & (SQUASHFS_METADATA_SIZE - 1);
+		int length = read_block(fd, index[i], NULL, expected,
 			((unsigned char *) *inode_lookup_table) +
 			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read inode lookup table block %d, from 0x%llx, length "
