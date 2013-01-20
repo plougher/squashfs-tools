@@ -537,10 +537,14 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 	if(directory_table == NULL)
 		return NULL;
 	while(bytes < size) {
+		int expected = (size - bytes) >= SQUASHFS_METADATA_SIZE ?
+			SQUASHFS_METADATA_SIZE : 0;
+
 		TRACE("squashfs_readdir: reading block 0x%llx, bytes read so "
 			"far %d\n", start, bytes);
+
 		last_start_block = start;
-		byte = read_block(fd, start, &start, 0, directory_table + bytes);
+		byte = read_block(fd, start, &start, expected, directory_table + bytes);
 		if(byte == 0) {
 			free(directory_table);
 			return NULL;
