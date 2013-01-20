@@ -585,7 +585,9 @@ unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 	SQUASHFS_INSWAP_ID_BLOCKS(index, indexes);
 
 	for(i = 0; i < indexes; i++) {
-		int length = read_block(fd, index[i], NULL, 0,
+		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
+					bytes & (SQUASHFS_METADATA_SIZE - 1);
+		int length = read_block(fd, index[i], NULL, expected,
 			((unsigned char *) id_table) +
 			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read id table block %d, from 0x%llx, length %d\n", i,
