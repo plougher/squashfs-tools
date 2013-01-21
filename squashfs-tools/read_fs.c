@@ -156,7 +156,19 @@ int scan_inode_table(int fd, long long start, long long end,
 			free(*inode_table);
 			return FALSE;
 		}
+
 		bytes += byte;
+
+		/* If this is not the last metadata block in the inode table
+		 * then it should be SQUASHFS_METADATA_SIZE in size.
+		 * Note, we can't use expected in read_block() above for this
+		 * because we don't know if this is the last block until
+		 * after reading.
+		 */
+		if(start != end && byte != SQUASHFS_METADATA_SIZE) {
+			free(*inode_table);
+			return FALSE;
+		}
 	}
 
 	/*
