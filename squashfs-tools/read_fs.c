@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <limits.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -138,6 +139,7 @@ int scan_inode_table(int fd, long long start, long long end,
 	TRACE("scan_inode_table: start 0x%llx, end 0x%llx, root_inode_start "
 		"0x%llx\n", start, end, root_inode_start);
 
+	*root_inode_block = UINT_MAX;
 	while(start < end) {
 		if(start == root_inode_start) {
 			TRACE("scan_inode_table: read compressed block 0x%llx "
@@ -169,6 +171,16 @@ int scan_inode_table(int fd, long long start, long long end,
 			free(*inode_table);
 			return FALSE;
 		}
+	}
+
+	/*
+	 * We expect to have found the metadata block containing the
+	 * root inode in the above inode_table metadata block scan.  If it
+	 * hasn't been found then the filesystem is corrupted
+	 */
+	if(*root_inode_block == UINT_MAX) {
+		free(*inode_table);
+		return FALSE;
 	}
 
 	/*
