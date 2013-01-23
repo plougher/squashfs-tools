@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2010
+ * Copyright (c) 2009, 2010, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -87,10 +87,10 @@ failed:
 }
 
 
-static int gzip_uncompress(void *d, void *s, int size, int block_size, int *error)
+static int gzip_uncompress(void *d, void *s, int size, int outsize, int *error)
 {
 	int res;
-	unsigned long bytes = block_size;
+	unsigned long bytes = outsize;
 
 	res = uncompress(d, &bytes, s, size);
 

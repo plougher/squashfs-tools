@@ -2,7 +2,7 @@
  * Copyright (c) 2010 LG Electronics
  * Chan Jeong <chan.jeong@lge.com>
  *
- * All modifications Copyright (c) 2010
+ * All modifications Copyright (c) 2010, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -97,10 +97,10 @@ failed:
 }
 
 
-static int lzo_uncompress(void *d, void *s, int size, int block_size, int *error)
+static int lzo_uncompress(void *d, void *s, int size, int outsize, int *error)
 {
 	int res;
-	lzo_uint bytes = block_size;
+	lzo_uint bytes = outsize;
 
 	res = lzo1x_decompress_safe(s, size, d, &bytes, NULL);
 

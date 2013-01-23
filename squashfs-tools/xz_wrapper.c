@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012
+ * Copyright (c) 2010, 2011, 2012, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -433,7 +433,7 @@ failed:
 }
 
 
-static int xz_uncompress(void *dest, void *src, int size, int block_size,
+static int xz_uncompress(void *dest, void *src, int size, int outsize,
 	int *error)
 {
 	size_t src_pos = 0;
@@ -441,7 +441,7 @@ static int xz_uncompress(void *dest, void *src, int size, int block_size,
 	uint64_t memlimit = MEMLIMIT;
 
 	lzma_ret res = lzma_stream_buffer_decode(&memlimit, 0, NULL,
-			src, &src_pos, size, dest, &dest_pos, block_size);
+			src, &src_pos, size, dest, &dest_pos, outsize);
 
 	*error = res;
 	return res == LZMA_OK && size == (int) src_pos ? (int) dest_pos : -1;
