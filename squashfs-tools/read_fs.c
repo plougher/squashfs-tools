@@ -127,8 +127,8 @@ int read_block(int fd, long long start, long long *next, int expected,
 
 int scan_inode_table(int fd, long long start, long long end,
 	long long root_inode_start, int root_inode_offset,
-	struct squashfs_super_block *sBlk, union squashfs_inode_header *dir_inode,
-	unsigned char **inode_table, unsigned int *root_inode_block,
+	struct squashfs_super_block *sBlk, union squashfs_inode_header
+	*dir_inode, unsigned char **inode_table, unsigned int *root_inode_block,
 	unsigned int *root_inode_size, long long *uncompressed_file,
 	unsigned int *uncompressed_directory, int *file_count, int *sym_count,
 	int *dev_count, int *dir_count, int *fifo_count, int *sock_count,
@@ -241,257 +241,244 @@ int scan_inode_table(int fd, long long start, long long end,
 		get_guid(id_table[base.guid]);
 
 		switch(base.inode_type) {
-			case SQUASHFS_FILE_TYPE: {
-				struct squashfs_reg_inode_header inode;
-				int frag_bytes, blocks, i;
-				long long start, file_bytes = 0;
-				unsigned int *block_list;
+		case SQUASHFS_FILE_TYPE: {
+			struct squashfs_reg_inode_header inode;
+			int frag_bytes, blocks, i;
+			long long start, file_bytes = 0;
+			unsigned int *block_list;
 
-				if(NO_INODE_BYTES(squashfs_reg_inode_header))
-					/* corrupted filesystem */
-					goto failed;
-
-				SQUASHFS_SWAP_REG_INODE_HEADER(&inode, cur_ptr);
-
-				frag_bytes = inode.fragment ==
-					SQUASHFS_INVALID_FRAG ? 0 :
-					inode.file_size % sBlk->block_size;
-				blocks = inode.fragment ==
-					SQUASHFS_INVALID_FRAG ? (inode.file_size
-					+ sBlk->block_size - 1) >>
-					sBlk->block_log : inode.file_size >>
-					sBlk->block_log;
-				start = inode.start_block;
-
-				TRACE("scan_inode_table: regular file, "
-					"file_size %d, blocks %d\n",
-					inode.file_size, blocks);
-
-				if(NO_BYTES(blocks * sizeof(unsigned int)))
-					/* corrupted filesystem */
-					goto failed;
-
-				block_list = malloc(blocks *
-					sizeof(unsigned int));
-				if(block_list == NULL) {
-					ERROR("Out of memory in block list "
-						"malloc\n");
-					goto failed;
-				}
-
-				cur_ptr += sizeof(inode);
-				SQUASHFS_SWAP_INTS(block_list, cur_ptr, blocks);
-
-				*uncompressed_file += inode.file_size;
-				(*file_count) ++;
-
-				for(i = 0; i < blocks; i++)
-					file_bytes +=
-						SQUASHFS_COMPRESSED_SIZE_BLOCK
-						(block_list[i]);
-
-	                        add_file(start, inode.file_size, file_bytes,
-					block_list, blocks, inode.fragment,
-					inode.offset, frag_bytes);
-				cur_ptr += blocks * sizeof(unsigned int);
-				break;
-			}	
-			case SQUASHFS_LREG_TYPE: {
-				struct squashfs_lreg_inode_header inode;
-				int frag_bytes, blocks, i;
-				long long start, file_bytes = 0;
-				unsigned int *block_list;
-
-				if(NO_INODE_BYTES(squashfs_lreg_inode_header))
-					/* corrupted filesystem */
-					goto failed;
-
-				SQUASHFS_SWAP_LREG_INODE_HEADER(&inode, cur_ptr);
-
-				frag_bytes = inode.fragment ==
-					SQUASHFS_INVALID_FRAG ? 0 :
-					inode.file_size % sBlk->block_size;
-				blocks = inode.fragment == SQUASHFS_INVALID_FRAG
-					?  (inode.file_size +
-					sBlk->block_size - 1) >>
-					sBlk->block_log : inode.file_size >>
-					sBlk->block_log;
-				start = inode.start_block;
-
-				TRACE("scan_inode_table: extended regular "
-					"file, file_size %lld, blocks %d\n",
-					inode.file_size, blocks);
-
-				if(NO_BYTES(blocks * sizeof(unsigned int)))
-					/* corrupted filesystem */
-					goto failed;
-
-				block_list = malloc(blocks *
-					sizeof(unsigned int));
-				if(block_list == NULL) {
-					ERROR("Out of memory in block list "
-						"malloc\n");
-					goto failed;
-				}
-
-				cur_ptr += sizeof(inode);
-				SQUASHFS_SWAP_INTS(block_list, cur_ptr, blocks);
-
-				*uncompressed_file += inode.file_size;
-				(*file_count) ++;
-
-				for(i = 0; i < blocks; i++)
-					file_bytes +=
-						SQUASHFS_COMPRESSED_SIZE_BLOCK
-						(block_list[i]);
-
-	                        add_file(start, inode.file_size, file_bytes,
-					block_list, blocks, inode.fragment,
-					inode.offset, frag_bytes);
-				cur_ptr += blocks * sizeof(unsigned int);
-				break;
-			}	
-			case SQUASHFS_SYMLINK_TYPE:
-			case SQUASHFS_LSYMLINK_TYPE: {
-				struct squashfs_symlink_inode_header inode;
-
-				if(NO_INODE_BYTES(squashfs_symlink_inode_header))
-					/* corrupted filesystem */
-					goto failed;
-
-				SQUASHFS_SWAP_SYMLINK_INODE_HEADER(&inode, cur_ptr);
-
-				(*sym_count) ++;
-
-				if (inode.inode_type == SQUASHFS_LSYMLINK_TYPE) {
-					if(NO_BYTES(inode.symlink_size +
-							sizeof(unsigned int)))
-						/* corrupted filesystem */
-						goto failed;
-					cur_ptr += sizeof(inode) +
-						inode.symlink_size +
-						sizeof(unsigned int);
-				} else {
-					if(NO_BYTES(inode.symlink_size))
-						/* corrupted filesystem */
-						goto failed;
-					cur_ptr += sizeof(inode) +
-						inode.symlink_size;
-				}
-				break;
-			}
-			case SQUASHFS_DIR_TYPE: {
-				struct squashfs_dir_inode_header dir_inode;
-
-				if(NO_INODE_BYTES(squashfs_dir_inode_header))
-					/* corrupted filesystem */
-					goto failed;
-				
-				SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode,
-					cur_ptr);
-				if(dir_inode.start_block < directory_start_block)
-					*uncompressed_directory +=
-					dir_inode.file_size;
-				(*dir_count) ++;
-				cur_ptr += sizeof(struct squashfs_dir_inode_header);
-				break;
-			}
-			case SQUASHFS_LDIR_TYPE: {
-				struct squashfs_ldir_inode_header dir_inode;
-				int i;
-
-				if(NO_INODE_BYTES(squashfs_ldir_inode_header))
-					/* corrupted filesystem */
-					goto failed;
-
-				SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode,
-					cur_ptr);
-
-				if(dir_inode.start_block < directory_start_block)
-					*uncompressed_directory +=
-					dir_inode.file_size;
-				(*dir_count) ++;
-				cur_ptr += sizeof(struct squashfs_ldir_inode_header);
-
-				for(i = 0; i < dir_inode.i_count; i++) {
-					struct squashfs_dir_index index;
-
-					if(NO_BYTES(sizeof(index)))
-						/* corrupted filesystem */
-						goto failed;
-			
-					SQUASHFS_SWAP_DIR_INDEX(&index,
-						cur_ptr);
-
-					if(NO_BYTES(index.size + 1))
-						/* corrupted filesystem */
-						goto failed;
-
-					cur_ptr += sizeof(index) + index.size + 1;
-				}
-				break;
-			}
-		 	case SQUASHFS_BLKDEV_TYPE:
-		 	case SQUASHFS_CHRDEV_TYPE:
-				if(NO_INODE_BYTES(squashfs_dev_inode_header))
-					/* corrupted filesystem */
-					goto failed;
-
-				(*dev_count) ++;
-				cur_ptr += sizeof(struct squashfs_dev_inode_header);
-				break;
-		 	case SQUASHFS_LBLKDEV_TYPE:
-		 	case SQUASHFS_LCHRDEV_TYPE:
-				if(NO_INODE_BYTES(squashfs_ldev_inode_header))
-					/* corrupted filesystem */
-					goto failed;
-
-				(*dev_count) ++;
-				cur_ptr += sizeof(struct squashfs_ldev_inode_header);
-				break;
-			case SQUASHFS_FIFO_TYPE:
-				if(NO_INODE_BYTES(squashfs_ipc_inode_header))
-					/* corrupted filesystem */
-					goto failed;
-
-				(*fifo_count) ++;
-				cur_ptr += sizeof(struct squashfs_ipc_inode_header);
-				break;
-			case SQUASHFS_LFIFO_TYPE:
-				if(NO_INODE_BYTES(squashfs_lipc_inode_header))
-					/* corrupted filesystem */
-					goto failed;
-
-				(*fifo_count) ++;
-				cur_ptr += sizeof(struct squashfs_lipc_inode_header);
-				break;
-			case SQUASHFS_SOCKET_TYPE:
-				if(NO_INODE_BYTES(squashfs_ipc_inode_header))
-					/* corrupted filesystem */
-					goto failed;
-
-				(*sock_count) ++;
-				cur_ptr += sizeof(struct squashfs_ipc_inode_header);
-				break;
-			case SQUASHFS_LSOCKET_TYPE:
-				if(NO_INODE_BYTES(squashfs_lipc_inode_header))
-					/* corrupted filesystem */
-					goto failed;
-
-				(*sock_count) ++;
-				cur_ptr += sizeof(struct squashfs_lipc_inode_header);
-				break;
-		 	default:
-				ERROR("Unknown inode type %d in "
-					"scan_inode_table!\n",
-					base.inode_type);
+			if(NO_INODE_BYTES(squashfs_reg_inode_header))
+				/* corrupted filesystem */
 				goto failed;
+
+			SQUASHFS_SWAP_REG_INODE_HEADER(&inode, cur_ptr);
+
+			frag_bytes = inode.fragment == SQUASHFS_INVALID_FRAG ?
+				0 : inode.file_size % sBlk->block_size;
+			blocks = inode.fragment == SQUASHFS_INVALID_FRAG ?
+				(inode.file_size + sBlk->block_size - 1) >>
+				sBlk->block_log : inode.file_size >>
+				sBlk->block_log;
+			start = inode.start_block;
+
+			TRACE("scan_inode_table: regular file, file_size %d, "
+				"blocks %d\n", inode.file_size, blocks);
+
+			if(NO_BYTES(blocks * sizeof(unsigned int)))
+				/* corrupted filesystem */
+				goto failed;
+
+			block_list = malloc(blocks * sizeof(unsigned int));
+			if(block_list == NULL) {
+				ERROR("Out of memory in block list malloc\n");
+				goto failed;
+			}
+
+			cur_ptr += sizeof(inode);
+			SQUASHFS_SWAP_INTS(block_list, cur_ptr, blocks);
+
+			*uncompressed_file += inode.file_size;
+			(*file_count) ++;
+
+			for(i = 0; i < blocks; i++)
+				file_bytes +=
+					SQUASHFS_COMPRESSED_SIZE_BLOCK
+								(block_list[i]);
+
+			add_file(start, inode.file_size, file_bytes,
+				block_list, blocks, inode.fragment,
+				inode.offset, frag_bytes);
+				
+			cur_ptr += blocks * sizeof(unsigned int);
+			break;
+		}	
+		case SQUASHFS_LREG_TYPE: {
+			struct squashfs_lreg_inode_header inode;
+			int frag_bytes, blocks, i;
+			long long start, file_bytes = 0;
+			unsigned int *block_list;
+
+			if(NO_INODE_BYTES(squashfs_lreg_inode_header))
+				/* corrupted filesystem */
+				goto failed;
+
+			SQUASHFS_SWAP_LREG_INODE_HEADER(&inode, cur_ptr);
+
+			frag_bytes = inode.fragment == SQUASHFS_INVALID_FRAG ?
+				0 : inode.file_size % sBlk->block_size;
+			blocks = inode.fragment == SQUASHFS_INVALID_FRAG ?
+				(inode.file_size + sBlk->block_size - 1) >>
+				sBlk->block_log : inode.file_size >>
+				sBlk->block_log;
+			start = inode.start_block;
+
+			TRACE("scan_inode_table: extended regular "
+				"file, file_size %lld, blocks %d\n",
+				inode.file_size, blocks);
+
+			if(NO_BYTES(blocks * sizeof(unsigned int)))
+				/* corrupted filesystem */
+				goto failed;
+
+			block_list = malloc(blocks * sizeof(unsigned int));
+			if(block_list == NULL) {
+				ERROR("Out of memory in block list malloc\n");
+				goto failed;
+			}
+
+			cur_ptr += sizeof(inode);
+			SQUASHFS_SWAP_INTS(block_list, cur_ptr, blocks);
+
+			*uncompressed_file += inode.file_size;
+			(*file_count) ++;
+
+			for(i = 0; i < blocks; i++)
+				file_bytes +=
+					SQUASHFS_COMPRESSED_SIZE_BLOCK
+								(block_list[i]);
+
+			add_file(start, inode.file_size, file_bytes,
+				block_list, blocks, inode.fragment,
+				inode.offset, frag_bytes);
+
+			cur_ptr += blocks * sizeof(unsigned int);
+			break;
+		}	
+		case SQUASHFS_SYMLINK_TYPE:
+		case SQUASHFS_LSYMLINK_TYPE: {
+			struct squashfs_symlink_inode_header inode;
+
+			if(NO_INODE_BYTES(squashfs_symlink_inode_header))
+				/* corrupted filesystem */
+				goto failed;
+
+			SQUASHFS_SWAP_SYMLINK_INODE_HEADER(&inode, cur_ptr);
+
+			(*sym_count) ++;
+
+			if (inode.inode_type == SQUASHFS_LSYMLINK_TYPE) {
+				if(NO_BYTES(inode.symlink_size +
+							sizeof(unsigned int)))
+					/* corrupted filesystem */
+					goto failed;
+				cur_ptr += sizeof(inode) + inode.symlink_size +
+							sizeof(unsigned int);
+			} else {
+				if(NO_BYTES(inode.symlink_size))
+					/* corrupted filesystem */
+					goto failed;
+				cur_ptr += sizeof(inode) + inode.symlink_size;
+			}
+			break;
+		}
+		case SQUASHFS_DIR_TYPE: {
+			struct squashfs_dir_inode_header dir_inode;
+
+			if(NO_INODE_BYTES(squashfs_dir_inode_header))
+				/* corrupted filesystem */
+				goto failed;
+				
+			SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode, cur_ptr);
+
+			if(dir_inode.start_block < directory_start_block)
+				*uncompressed_directory += dir_inode.file_size;
+
+			(*dir_count) ++;
+			cur_ptr += sizeof(struct squashfs_dir_inode_header);
+			break;
+		}
+		case SQUASHFS_LDIR_TYPE: {
+			struct squashfs_ldir_inode_header dir_inode;
+			int i;
+
+			if(NO_INODE_BYTES(squashfs_ldir_inode_header))
+				/* corrupted filesystem */
+				goto failed;
+
+			SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode, cur_ptr);
+
+			if(dir_inode.start_block < directory_start_block)
+				*uncompressed_directory += dir_inode.file_size;
+
+			(*dir_count) ++;
+			cur_ptr += sizeof(struct squashfs_ldir_inode_header);
+
+			for(i = 0; i < dir_inode.i_count; i++) {
+				struct squashfs_dir_index index;
+
+				if(NO_BYTES(sizeof(index)))
+					/* corrupted filesystem */
+					goto failed;
+			
+				SQUASHFS_SWAP_DIR_INDEX(&index, cur_ptr);
+
+				if(NO_BYTES(index.size + 1))
+					/* corrupted filesystem */
+					goto failed;
+
+				cur_ptr += sizeof(index) + index.size + 1;
+			}
+			break;
+		}
+	 	case SQUASHFS_BLKDEV_TYPE:
+	 	case SQUASHFS_CHRDEV_TYPE:
+			if(NO_INODE_BYTES(squashfs_dev_inode_header))
+				/* corrupted filesystem */
+				goto failed;
+
+			(*dev_count) ++;
+			cur_ptr += sizeof(struct squashfs_dev_inode_header);
+			break;
+	 	case SQUASHFS_LBLKDEV_TYPE:
+	 	case SQUASHFS_LCHRDEV_TYPE:
+			if(NO_INODE_BYTES(squashfs_ldev_inode_header))
+				/* corrupted filesystem */
+				goto failed;
+
+			(*dev_count) ++;
+			cur_ptr += sizeof(struct squashfs_ldev_inode_header);
+			break;
+		case SQUASHFS_FIFO_TYPE:
+			if(NO_INODE_BYTES(squashfs_ipc_inode_header))
+				/* corrupted filesystem */
+				goto failed;
+
+			(*fifo_count) ++;
+			cur_ptr += sizeof(struct squashfs_ipc_inode_header);
+			break;
+		case SQUASHFS_LFIFO_TYPE:
+			if(NO_INODE_BYTES(squashfs_lipc_inode_header))
+				/* corrupted filesystem */
+				goto failed;
+
+			(*fifo_count) ++;
+			cur_ptr += sizeof(struct squashfs_lipc_inode_header);
+			break;
+		case SQUASHFS_SOCKET_TYPE:
+			if(NO_INODE_BYTES(squashfs_ipc_inode_header))
+				/* corrupted filesystem */
+				goto failed;
+
+			(*sock_count) ++;
+			cur_ptr += sizeof(struct squashfs_ipc_inode_header);
+			break;
+		case SQUASHFS_LSOCKET_TYPE:
+			if(NO_INODE_BYTES(squashfs_lipc_inode_header))
+				/* corrupted filesystem */
+				goto failed;
+
+			(*sock_count) ++;
+			cur_ptr += sizeof(struct squashfs_lipc_inode_header);
+			break;
+	 	default:
+			ERROR("Unknown inode type %d in scan_inode_table!\n",
+					base.inode_type);
+			goto failed;
 		}
 	}
 	
 	printf("Read existing filesystem, %d inodes scanned\n", files);
 	return TRUE;
-
 
 failed:
 	free(*inode_table);
