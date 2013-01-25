@@ -2,7 +2,7 @@
  * Read a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012
+ * Copyright (c) 2010, 2012, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -61,7 +61,7 @@
 		} while(0)
 
 extern int read_fs_bytes(int, long long, int, void *);
-extern int read_block(int, long long, long long *, void *);
+extern int read_block(int, long long, long long *, int, void *);
 
 static struct hash_entry {
 	long long		start;
@@ -222,7 +222,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
 	}
 
 	for(i = 0; i < indexes; i++) {
-		int length = read_block(fd, index[i], NULL,
+		int length = read_block(fd, index[i], NULL, 0,
 			((unsigned char *) xattr_ids) +
 			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read xattr id table block %d, from 0x%llx, length "
@@ -259,7 +259,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
 		if(res == -1)
 			goto failed3;
 
-		length = read_block(fd, start, &start,
+		length = read_block(fd, start, &start, 0,
 			((unsigned char *) xattrs) +
 			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read xattr block %d, length %d\n", i, length);

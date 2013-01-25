@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012
+ * 2012, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -615,10 +615,12 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 }
 
 
-int read_block(int fd, long long start, long long *next, void *block)
+int read_block(int fd, long long start, long long *next, int expected,
+								void *block)
 {
 	unsigned short c_byte;
-	int offset = 2;
+	int offset = 2, res, compressed;
+	int outlen = expected ? expected : SQUASHFS_METADATA_SIZE;
 	
 	if(swap) {
 		if(read_fs_bytes(fd, start, 2, &c_byte) == FALSE)
@@ -634,33 +636,52 @@ int read_block(int fd, long long start, long long *next, void *block)
 
 	if(SQUASHFS_CHECK_DATA(sBlk.s.flags))
 		offset = 3;
-	if(SQUASHFS_COMPRESSED(c_byte)) {
-		char buffer[SQUASHFS_METADATA_SIZE];
-		int error, res;
 
-		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
-		if(read_fs_bytes(fd, start + offset, c_byte, buffer) == FALSE)
+	compressed = SQUASHFS_COMPRESSED(c_byte);
+	c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
+
+	/*
+	 * The block size should not be larger than
+	 * the uncompressed size (or max uncompressed size if
+	 * expected is 0)
+	 */
+	if(c_byte > outlen)
+		return 0;
+
+	if(compressed) {
+		char buffer[c_byte];
+		int error;
+
+		res = read_fs_bytes(fd, start + offset, c_byte, buffer);
+		if(res == FALSE)
 			goto failed;
 
 		res = compressor_uncompress(comp, block, buffer, c_byte,
-			SQUASHFS_METADATA_SIZE, &error);
+			outlen, &error);
 
 		if(res == -1) {
 			ERROR("%s uncompress failed with error code %d\n",
 				comp->name, error);
 			goto failed;
 		}
-		if(next)
-			*next = start + offset + c_byte;
-		return res;
 	} else {
-		c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
-		if(read_fs_bytes(fd, start + offset, c_byte, block) == FALSE)
+		res = read_fs_bytes(fd, start + offset, c_byte, block);
+		if(res == FALSE)
 			goto failed;
-		if(next)
-			*next = start + offset + c_byte;
-		return c_byte;
+		res = c_byte;
 	}
+
+	if(next)
+		*next = start + offset + c_byte;
+
+	/*
+	 * if expected, then check the (uncompressed) return data
+	 * is of the expected size
+	 */
+	if(expected && expected != res)
+		return 0;
+	else
+		return res;
 
 failed:
 	ERROR("read_block: failed to read block @0x%llx\n", start);
@@ -720,7 +741,7 @@ void uncompress_inode_table(long long start, long long end)
 		}
 		TRACE("uncompress_inode_table: reading block 0x%llx\n", start);
 		add_entry(inode_table_hash, start, bytes);
-		res = read_block(fd, start, &start, inode_table + bytes);
+		res = read_block(fd, start, &start, 0, inode_table + bytes);
 		if(res == 0) {
 			free(inode_table);
 			EXIT_UNSQUASH("uncompress_inode_table: failed to read "
@@ -1109,7 +1130,7 @@ void uncompress_directory_table(long long start, long long end)
 		TRACE("uncompress_directory_table: reading block 0x%llx\n",
 				start);
 		add_entry(directory_table_hash, start, bytes);
-		res = read_block(fd, start, &start, directory_table + bytes);
+		res = read_block(fd, start, &start, 0, directory_table + bytes);
 		if(res == 0)
 			EXIT_UNSQUASH("uncompress_directory_table: failed to "
 				"read block\n");

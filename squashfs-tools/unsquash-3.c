@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2011, 2012
+ * Copyright (c) 2009, 2010, 2011, 2012, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -70,7 +70,7 @@ int read_fragment_table_3()
 	}
 
 	for(i = 0; i < indexes; i++) {
-		int length = read_block(fd, fragment_table_index[i], NULL,
+		int length = read_block(fd, fragment_table_index[i], NULL, 0,
 			((char *) fragment_table) + (i *
 			SQUASHFS_METADATA_SIZE));
 		TRACE("Read fragment table block %d, from 0x%llx, length %d\n",
