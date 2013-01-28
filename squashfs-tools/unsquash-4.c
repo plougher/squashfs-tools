@@ -31,7 +31,9 @@ static unsigned int *id_table;
 
 int read_fragment_table_4()
 {
-	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.s.fragments);
+	int res, i;
+	int bytes = SQUASHFS_FRAGMENT_BYTES(sBlk.s.fragments);
+	int  indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.s.fragments);
 	long long fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
@@ -41,8 +43,7 @@ int read_fragment_table_4()
 	if(sBlk.s.fragments == 0)
 		return TRUE;
 
-	fragment_table = malloc(sBlk.s.fragments *
-		sizeof(struct squashfs_fragment_entry));
+	fragment_table = malloc(bytes);
 	if(fragment_table == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
 			"fragment table\n");
@@ -58,8 +59,10 @@ int read_fragment_table_4()
 	SQUASHFS_INSWAP_FRAGMENT_INDEXES(fragment_table_index, indexes);
 
 	for(i = 0; i < indexes; i++) {
-		int length = read_block(fd, fragment_table_index[i], NULL, 0,
-			((char *) fragment_table) + (i *
+		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
+					bytes & (SQUASHFS_METADATA_SIZE - 1);
+		int length = read_block(fd, fragment_table_index[i], NULL,
+			expected, ((char *) fragment_table) + (i *
 			SQUASHFS_METADATA_SIZE));
 		TRACE("Read fragment table block %d, from 0x%llx, length %d\n",
 			i, fragment_table_index[i], length);
@@ -348,12 +351,14 @@ corrupted:
 
 int read_uids_guids_4()
 {
-	int res, i, indexes = SQUASHFS_ID_BLOCKS(sBlk.s.no_ids);
+	int res, i;
+	int bytes = SQUASHFS_ID_BYTES(sBlk.s.no_ids);
+	int indexes = SQUASHFS_ID_BLOCKS(sBlk.s.no_ids);
 	long long id_index_table[indexes];
 
 	TRACE("read_uids_guids: no_ids %d\n", sBlk.s.no_ids);
 
-	id_table = malloc(SQUASHFS_ID_BYTES(sBlk.s.no_ids));
+	id_table = malloc(bytes);
 	if(id_table == NULL) {
 		ERROR("read_uids_guids: failed to allocate id table\n");
 		return FALSE;
@@ -368,7 +373,9 @@ int read_uids_guids_4()
 	SQUASHFS_INSWAP_ID_BLOCKS(id_index_table, indexes);
 
 	for(i = 0; i < indexes; i++) {
-		res = read_block(fd, id_index_table[i], NULL, 0,
+		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
+					bytes & (SQUASHFS_METADATA_SIZE - 1);
+		res = read_block(fd, id_index_table[i], NULL, expected,
 			((char *) id_table) + i * SQUASHFS_METADATA_SIZE);
 		if(res == FALSE) {
 			ERROR("read_uids_guids: failed to read id table block"
