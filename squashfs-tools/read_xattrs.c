@@ -222,7 +222,9 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
 	}
 
 	for(i = 0; i < indexes; i++) {
-		int length = read_block(fd, index[i], NULL, 0,
+		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
+					bytes & (SQUASHFS_METADATA_SIZE - 1);
+		int length = read_block(fd, index[i], NULL, expected,
 			((unsigned char *) xattr_ids) +
 			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read xattr id table block %d, from 0x%llx, length "
@@ -265,6 +267,20 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
 		TRACE("Read xattr block %d, length %d\n", i, length);
 		if(length == 0) {
 			ERROR("Failed to read xattr block %d\n", i);
+			goto failed3;
+		}
+
+		/*
+		 * If this is not the last metadata block in the xattr metadata
+		 * then it should be SQUASHFS_METADATA_SIZE in size.
+		 * Note, we can't use expected in read_block() above for this
+		 * because we don't know if this is the last block until
+		 * after reading.
+		 */
+		if(start != end && length != SQUASHFS_METADATA_SIZE) {
+			ERROR("Xattr block %d should be %d bytes in length, "
+				"it is %d bytes\n", i, SQUASHFS_METADATA_SIZE,
+				length);
 			goto failed3;
 		}
 	}
