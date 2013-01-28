@@ -1136,27 +1136,31 @@ int create_inode(char *pathname, struct inode *i)
 }
 
 
-void uncompress_directory_table(long long start, long long end)
+int read_directory_table(long long start, long long end)
 {
 	int bytes = 0, size = 0, res;
 
-	TRACE("uncompress_directory_table: start %lld, end %lld\n", start, end);
+	TRACE("read_directory_table: start %lld, end %lld\n", start, end);
 
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
 			directory_table = realloc(directory_table, size +=
 				SQUASHFS_METADATA_SIZE);
-			if(directory_table == NULL)
-				EXIT_UNSQUASH("Out of memory in "
-					"uncompress_directory_table\n");
+			if(directory_table == NULL) {
+				ERROR("Out of memory in "
+						"read_directory_table\n");
+				goto failed;
+			}
 		}
-		TRACE("uncompress_directory_table: reading block 0x%llx\n",
-				start);
+
 		add_entry(directory_table_hash, start, bytes);
+
 		res = read_block(fd, start, &start, 0, directory_table + bytes);
-		if(res == 0)
-			EXIT_UNSQUASH("uncompress_directory_table: failed to "
-				"read block\n");
+		if(res == 0) {
+			ERROR("read_directory_table: failed to read block\n");
+			goto failed;
+		}
+
 		bytes += res;
 
 		/*
@@ -1166,11 +1170,19 @@ void uncompress_directory_table(long long start, long long end)
 		 * because we don't know if this is the last block until
 		 * after reading.
 		 */
-		if(start != end && res != SQUASHFS_METADATA_SIZE)
-			EXIT_UNSQUASH("uncompress_directory_table: metadata "
-				"block should be %d bytes in length, it is %d "
+		if(start != end && res != SQUASHFS_METADATA_SIZE) {
+			ERROR("uncompress_directory_table: metadata block "
+				"should be %d bytes in length, it is %d "
 				"bytes\n", SQUASHFS_METADATA_SIZE, res);
+			goto failed;
+		}
 	}
+
+	return TRUE;
+
+failed:
+	free(directory_table);
+	return FALSE;
 }
 
 
@@ -2329,7 +2341,7 @@ int parse_number(char *arg, int *res)
 
 #define VERSION() \
 	printf("unsquashfs version 4.2-git (2013/01/27)\n");\
-	printf("copyright (C) 2012 Phillip Lougher "\
+	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
 		"\n");\
@@ -2617,8 +2629,9 @@ options:
 				sBlk.s.directory_table_start) == FALSE)
 		EXIT_UNSQUASH("failed to read inode table\n");
 
-	uncompress_directory_table(sBlk.s.directory_table_start,
-		sBlk.s.fragment_table_start);
+	if(read_directory_table(sBlk.s.directory_table_start,
+				sBlk.s.fragment_table_start) == FALSE)
+		EXIT_UNSQUASH("failed to read directory table\n");
 
 	if(no_xattrs)
 		sBlk.s.xattr_id_table_start = SQUASHFS_INVALID_BLK;
