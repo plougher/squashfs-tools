@@ -748,6 +748,19 @@ void uncompress_inode_table(long long start, long long end)
 				"block \n");
 		}
 		bytes += res;
+
+		/*
+		 * If this is not the last metadata block in the inode table
+		 * then it should be SQUASHFS_METADATA_SIZE in size.
+		 * Note, we can't use expected in read_block() above for this
+		 * because we don't know if this is the last block until
+		 * after reading.
+		 */
+		if(start != end && res != SQUASHFS_METADATA_SIZE)
+			EXIT_UNSQUASH("uncompress_inode_table: metadata block "
+				"should be %d bytes in length, it is %d "
+				"bytes\n", SQUASHFS_METADATA_SIZE, res);
+			
 	}
 }
 
@@ -1135,6 +1148,18 @@ void uncompress_directory_table(long long start, long long end)
 			EXIT_UNSQUASH("uncompress_directory_table: failed to "
 				"read block\n");
 		bytes += res;
+
+		/*
+		 * If this is not the last metadata block in the directory table
+		 * then it should be SQUASHFS_METADATA_SIZE in size.
+		 * Note, we can't use expected in read_block() above for this
+		 * because we don't know if this is the last block until
+		 * after reading.
+		 */
+		if(start != end && res != SQUASHFS_METADATA_SIZE)
+			EXIT_UNSQUASH("uncompress_directory_table: metadata "
+				"block should be %d bytes in length, it is %d "
+				"bytes\n", SQUASHFS_METADATA_SIZE, res);
 	}
 }
 
@@ -2293,7 +2318,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2012/12/30)\n");\
+	printf("unsquashfs version 4.2-git (2013/01/27)\n");\
 	printf("copyright (C) 2012 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
