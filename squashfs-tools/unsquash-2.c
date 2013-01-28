@@ -42,7 +42,9 @@ void read_block_list_2(unsigned int *block_list, char *block_ptr, int blocks)
 
 int read_fragment_table_2()
 {
-	int res, i, indexes = SQUASHFS_FRAGMENT_INDEXES_2(sBlk.s.fragments);
+	int res, i;
+	int bytes = SQUASHFS_FRAGMENT_BYTES_2(sBlk.s.fragments);
+	int indexes = SQUASHFS_FRAGMENT_INDEXES_2(sBlk.s.fragments);
 	unsigned int fragment_table_index[indexes];
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
@@ -52,8 +54,7 @@ int read_fragment_table_2()
 	if(sBlk.s.fragments == 0)
 		return TRUE;
 
-	fragment_table = malloc(sBlk.s.fragments *
-		sizeof(squashfs_fragment_entry_2));
+	fragment_table = malloc(bytes);
 	if(fragment_table == NULL)
 		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
 			"fragment table\n");
@@ -83,8 +84,10 @@ int read_fragment_table_2()
 	}
 
 	for(i = 0; i < indexes; i++) {
-		int length = read_block(fd, fragment_table_index[i], NULL, 0,
-			((char *) fragment_table) + (i *
+		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
+					bytes & (SQUASHFS_METADATA_SIZE - 1);
+		int length = read_block(fd, fragment_table_index[i], NULL,
+			expected, ((char *) fragment_table) + (i *
 			SQUASHFS_METADATA_SIZE));
 		TRACE("Read fragment table block %d, from 0x%x, length %d\n", i,
 			fragment_table_index[i], length);
