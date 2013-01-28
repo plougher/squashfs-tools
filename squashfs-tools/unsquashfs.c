@@ -726,26 +726,28 @@ failed:
 }
 
 
-void uncompress_inode_table(long long start, long long end)
+int read_inode_table(long long start, long long end)
 {
 	int size = 0, bytes = 0, res;
 
-	TRACE("uncompress_inode_table: start %lld, end %lld\n", start, end);
+	TRACE("read_inode_table: start %lld, end %lld\n", start, end);
+
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
 			inode_table = realloc(inode_table, size +=
 				SQUASHFS_METADATA_SIZE);
-			if(inode_table == NULL)
-				EXIT_UNSQUASH("Out of memory in "
-					"uncompress_inode_table");
+			if(inode_table == NULL) {
+				ERROR("Out of memory in read_inode_table");
+				goto failed;
+			}
 		}
-		TRACE("uncompress_inode_table: reading block 0x%llx\n", start);
+
 		add_entry(inode_table_hash, start, bytes);
+
 		res = read_block(fd, start, &start, 0, inode_table + bytes);
 		if(res == 0) {
-			free(inode_table);
-			EXIT_UNSQUASH("uncompress_inode_table: failed to read "
-				"block \n");
+			ERROR("read_inode_table: failed to read block\n");
+			goto failed;
 		}
 		bytes += res;
 
@@ -756,12 +758,20 @@ void uncompress_inode_table(long long start, long long end)
 		 * because we don't know if this is the last block until
 		 * after reading.
 		 */
-		if(start != end && res != SQUASHFS_METADATA_SIZE)
-			EXIT_UNSQUASH("uncompress_inode_table: metadata block "
-				"should be %d bytes in length, it is %d "
-				"bytes\n", SQUASHFS_METADATA_SIZE, res);
+		if(start != end && res != SQUASHFS_METADATA_SIZE) {
+			ERROR("read_inode_table: metadata block should be %d "
+				"bytes in length, it is %d bytes\n",
+				SQUASHFS_METADATA_SIZE, res);
 			
+			goto failed;
+		}
 	}
+
+	return TRUE;
+
+failed:
+	free(inode_table);
+	return FALSE;
 }
 
 
@@ -2603,8 +2613,9 @@ options:
 	if(s_ops.read_fragment_table() == FALSE)
 		EXIT_UNSQUASH("failed to read fragment table\n");
 
-	uncompress_inode_table(sBlk.s.inode_table_start,
-		sBlk.s.directory_table_start);
+	if(read_inode_table(sBlk.s.inode_table_start,
+				sBlk.s.directory_table_start) == FALSE)
+		EXIT_UNSQUASH("failed to read inode table\n");
 
 	uncompress_directory_table(sBlk.s.directory_table_start,
 		sBlk.s.fragment_table_start);
