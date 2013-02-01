@@ -46,9 +46,10 @@ void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
 }
 
 
-int read_fragment_table_1()
+int read_fragment_table_1(long long *directory_table_end)
 {
 	TRACE("read_fragment_table\n");
+	*directory_table_end = sBlk.s.fragment_table_start;
 	return TRUE;
 }
 

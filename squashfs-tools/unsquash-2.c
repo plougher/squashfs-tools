@@ -40,7 +40,7 @@ void read_block_list_2(unsigned int *block_list, char *block_ptr, int blocks)
 }
 
 
-int read_fragment_table_2()
+int read_fragment_table_2(long long *directory_table_end)
 {
 	int res, i;
 	int bytes = SQUASHFS_FRAGMENT_BYTES_2(sBlk.s.fragments);
@@ -51,8 +51,10 @@ int read_fragment_table_2()
 		"from 0x%llx\n", sBlk.s.fragments, indexes,
 		sBlk.s.fragment_table_start);
 
-	if(sBlk.s.fragments == 0)
+	if(sBlk.s.fragments == 0) {
+		*directory_table_end = sBlk.s.fragment_table_start;
 		return TRUE;
+	}
 
 	fragment_table = malloc(bytes);
 	if(fragment_table == NULL)
@@ -108,6 +110,7 @@ int read_fragment_table_2()
 		}
 	}
 
+	*directory_table_end = fragment_table_index[0];
 	return TRUE;
 }
 

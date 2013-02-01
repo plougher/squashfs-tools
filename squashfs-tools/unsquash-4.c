@@ -29,7 +29,7 @@
 static struct squashfs_fragment_entry *fragment_table;
 static unsigned int *id_table;
 
-int read_fragment_table_4()
+int read_fragment_table_4(long long *directory_table_end)
 {
 	int res, i;
 	int bytes = SQUASHFS_FRAGMENT_BYTES(sBlk.s.fragments);
@@ -40,8 +40,10 @@ int read_fragment_table_4()
 		"from 0x%llx\n", sBlk.s.fragments, indexes,
 		sBlk.s.fragment_table_start);
 
-	if(sBlk.s.fragments == 0)
+	if(sBlk.s.fragments == 0) {
+		*directory_table_end = sBlk.s.fragment_table_start;
 		return TRUE;
+	}
 
 	fragment_table = malloc(bytes);
 	if(fragment_table == NULL)
@@ -76,6 +78,7 @@ int read_fragment_table_4()
 	for(i = 0; i < sBlk.s.fragments; i++) 
 		SQUASHFS_INSWAP_FRAGMENT_ENTRY(&fragment_table[i]);
 
+	*directory_table_end = fragment_table_index[0];
 	return TRUE;
 }
 

@@ -2340,7 +2340,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2013/01/27)\n");\
+	printf("unsquashfs version 4.2-git (2013/01/31)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
@@ -2364,6 +2364,7 @@ int main(int argc, char *argv[])
 	int n;
 	struct pathnames *paths = NULL;
 	struct pathname *path = NULL;
+	long long directory_table_end;
 	int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
 	int data_buffer_size = DATA_BUFFER_DEFAULT;
 
@@ -2622,7 +2623,7 @@ options:
 	if(s_ops.read_uids_guids() == FALSE)
 		EXIT_UNSQUASH("failed to uid/gid table\n");
 
-	if(s_ops.read_fragment_table() == FALSE)
+	if(s_ops.read_fragment_table(&directory_table_end) == FALSE)
 		EXIT_UNSQUASH("failed to read fragment table\n");
 
 	if(read_inode_table(sBlk.s.inode_table_start,
@@ -2630,7 +2631,7 @@ options:
 		EXIT_UNSQUASH("failed to read inode table\n");
 
 	if(read_directory_table(sBlk.s.directory_table_start,
-				sBlk.s.fragment_table_start) == FALSE)
+				directory_table_end) == FALSE)
 		EXIT_UNSQUASH("failed to read directory table\n");
 
 	if(no_xattrs)
