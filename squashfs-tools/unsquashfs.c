@@ -1171,7 +1171,7 @@ int read_directory_table(long long start, long long end)
 		 * after reading.
 		 */
 		if(start != end && res != SQUASHFS_METADATA_SIZE) {
-			ERROR("uncompress_directory_table: metadata block "
+			ERROR("read_directory_table: metadata block "
 				"should be %d bytes in length, it is %d "
 				"bytes\n", SQUASHFS_METADATA_SIZE, res);
 			goto failed;
