@@ -1599,8 +1599,22 @@ void squashfs_stat(char *source)
 		sBlk.s.bytes_used / 1024.0, sBlk.s.bytes_used /
 		(1024.0 * 1024.0));
 
-	if(sBlk.s.s_major == 4)
+	if(sBlk.s.s_major == 4) {
 		printf("Compression %s\n", comp->name);
+
+		if(SQUASHFS_COMP_OPTS(sBlk.s.flags)) {
+			char buffer[SQUASHFS_METADATA_SIZE];
+			int bytes;
+
+			bytes = read_block(fd, sizeof(sBlk.s), NULL, 0, buffer);
+			if(bytes == 0) {
+				ERROR("Failed to read compressor options\n");
+				return;
+			}
+
+			compressor_display_options(comp, buffer, bytes);
+		}
+	}
 
 	printf("Block size %d\n", sBlk.s.block_size);
 	printf("Filesystem is %sexportable via NFS\n",

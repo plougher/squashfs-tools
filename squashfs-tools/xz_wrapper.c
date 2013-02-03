@@ -322,6 +322,57 @@ failed:
 }
 
 
+void xz_display_options(void *buffer, int size)
+{
+	struct comp_opts *comp_opts = buffer;
+	int dictionary_size, flags, printed;
+	int i, n;
+
+	/* check passed comp opts struct is of the correct length */
+	if(size != sizeof(comp_opts))
+		goto failed;
+
+	SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
+
+	dictionary_size = comp_opts->dictionary_size;
+	flags = comp_opts->flags;
+
+	/*
+	 * check that the dictionary size seems correct - the dictionary
+	 * size should 2^n or 2^n+2^(n+1)
+	 */
+	n = ffs(dictionary_size) - 1;
+	if(dictionary_size != (1 << n) && 
+			dictionary_size != ((1 << n) + (1 << (n + 1))))
+		goto failed;
+
+	printf("\tDictionary size %d\n", dictionary_size);
+
+	printed = 0;
+	for(i = 0; bcj[i].name; i++) {
+		if((flags >> i) & 1) {
+			if(printed)
+				printf(", ");
+			else
+				printf("\tFilters selected: ");
+			printf("%s", bcj[i].name);
+			printed = 1;
+		}
+	}
+
+	if(!printed)
+		printf("\tNo filters specified\n");
+	else
+		printf("\n");
+
+	return;
+
+failed:
+	fprintf(stderr, "xz: error reading stored compressor options from "
+		"filesystem!\n");
+}	
+
+
 /*
  * This function is called by mksquashfs to initialise the
  * compressor, before compress() is called.
@@ -477,6 +528,7 @@ struct compressor xz_comp_ops = {
 	.options_post = xz_options_post,
 	.dump_options = xz_dump_options,
 	.extract_options = xz_extract_options,
+	.display_options = xz_display_options,
 	.usage = xz_usage,
 	.id = XZ_COMPRESSION,
 	.name = "xz",

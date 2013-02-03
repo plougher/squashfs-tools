@@ -31,6 +31,7 @@ struct compressor {
 	int (*options_post)(int);
 	void *(*dump_options)(int, int *);
 	int (*extract_options)(int, void *, int);
+	void (*display_options)(void *, int);
 	void (*usage)();
 };
 
@@ -100,4 +101,12 @@ static inline int compressor_extract_options(struct compressor *comp,
 	if(comp->extract_options == NULL)
 		return size ? -1 : 0;
 	return comp->extract_options(block_size, buffer, size);
+}
+
+
+static inline void compressor_display_options(struct compressor *comp,
+	void *buffer, int size)
+{
+	if(comp->display_options != NULL)
+		comp->display_options(buffer, size);
 }
