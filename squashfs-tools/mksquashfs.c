@@ -2607,8 +2607,8 @@ void *writer(void *arg)
 		pthread_mutex_lock(&pos_mutex);
 
 		if(!write_error && lseek(fd, off, SEEK_SET) == -1) {
-			ERROR("Lseek on destination failed because %s\n",
-				strerror(errno));
+			ERROR("writer: Lseek on destination failed because "
+				"%s, offset=0x%llx\n", strerror(errno), off);
 			write_error = TRUE;
 		}
 
