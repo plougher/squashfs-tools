@@ -919,8 +919,8 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 
 	pthread_mutex_lock(&pos_mutex);
 	if(lseek(fd, off, SEEK_SET) == -1) {
-		ERROR("Lseek on destination failed because %s\n",
-			strerror(errno));
+		ERROR("read_fs_bytes: Lseek on destination failed because %s, "
+			"offset=0x%llx\n", strerror(errno), off);
 		goto failed;
 	}
 
@@ -966,8 +966,9 @@ void write_destination(int fd, long long byte, int bytes, void *buff)
 		pthread_mutex_lock(&pos_mutex);
 
 	if(lseek(fd, off, SEEK_SET) == -1)
-		BAD_ERROR("Lseek on destination failed because %s\n",
-			strerror(errno));
+		BAD_ERROR("write_destination: Lseek on destination "
+			"failed because %s, offset=0x%llx\n", strerror(errno),
+			off);
 
 	if(write_bytes(fd, buff, bytes) == -1)
 		BAD_ERROR("Write on destination failed\n");
@@ -5016,7 +5017,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/01/12)\n");\
+	printf("mksquashfs version 4.2-git (2013/02/06)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
