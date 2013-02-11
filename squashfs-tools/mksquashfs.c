@@ -2586,7 +2586,6 @@ void *reader(void *arg)
 
 void *writer(void *arg)
 {
-	int write_error = FALSE;
 	int oldstate;
 
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
@@ -2597,8 +2596,7 @@ void *writer(void *arg)
 		off_t off;
 
 		if(file_buffer == NULL) {
-			queue_put(from_writer,
-				write_error ? &write_error : NULL);
+			queue_put(from_writer, NULL);
 			continue;
 		}
 
@@ -2606,22 +2604,33 @@ void *writer(void *arg)
 
 		pthread_mutex_lock(&pos_mutex);
 
-		if(!write_error && lseek(fd, off, SEEK_SET) == -1) {
+		if(lseek(fd, off, SEEK_SET) == -1) {
 			ERROR("writer: Lseek on destination failed because "
 				"%s, offset=0x%llx\n", strerror(errno), off);
-			write_error = TRUE;
+			goto outofspace;
 		}
 
-		if(!write_error && write_bytes(fd, file_buffer->data,
+		if(write_bytes(fd, file_buffer->data,
 				file_buffer->size) == -1) {
 			ERROR("Write on destination failed because %s\n",
 				strerror(errno));
-			write_error = TRUE;
+			goto outofspace;
 		}
 		pthread_mutex_unlock(&pos_mutex);
 
 		cache_block_put(file_buffer);
 	}
+
+outofspace:
+	/*
+	 * Probably out of space on the filesystem or block device,
+	 * tell the main process to exit, and restore the previous filsystem
+	 * if appending
+	 */
+	pthread_mutex_unlock(&pos_mutex);
+	thread[1] = 0;
+	kill(getpid(), SIGUSR2);
+	return NULL;
 }
 
 
@@ -4408,6 +4417,7 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
 	sigaddset(&sigmask, SIGQUIT);
+	sigaddset(&sigmask, SIGUSR2);
 	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
@@ -5017,7 +5027,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/02/06)\n");\
+	printf("mksquashfs version 4.2-git (2013/02/10)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5514,6 +5524,7 @@ printOptions:
 
 	signal(SIGTERM, sighandler2);
 	signal(SIGINT, sighandler2);
+	signal(SIGUSR2, sighandler2);
 
 	/*
 	 * process the exclude files - must be done afer destination file has
