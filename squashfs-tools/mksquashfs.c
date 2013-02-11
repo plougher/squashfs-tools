@@ -2607,6 +2607,9 @@ void *writer(void *arg)
 		if(lseek(fd, off, SEEK_SET) == -1) {
 			ERROR("writer: Lseek on destination failed because "
 				"%s, offset=0x%llx\n", strerror(errno), off);
+			ERROR("FATAL ERROR: Probably out of space on output "
+				"%s\n", block_device ? "block device" :
+				"filesystem");
 			goto outofspace;
 		}
 
