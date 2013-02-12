@@ -974,7 +974,8 @@ void write_destination(int fd, long long byte, int bytes, void *buff)
 	}
 
 	if(write_bytes(fd, buff, bytes) == -1)
-		BAD_ERROR("Write on destination failed\n");
+		BAD_ERROR("Failed to write to output %s\n",
+			block_device ? "block device" : "filesystem");
 	
 	if(!restoring)
 		pthread_mutex_unlock(&pos_mutex);
