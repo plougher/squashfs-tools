@@ -965,10 +965,13 @@ void write_destination(int fd, long long byte, int bytes, void *buff)
 	if(!restoring)
 		pthread_mutex_lock(&pos_mutex);
 
-	if(lseek(fd, off, SEEK_SET) == -1)
-		BAD_ERROR("write_destination: Lseek on destination "
+	if(lseek(fd, off, SEEK_SET) == -1) {
+		ERROR("write_destination: Lseek on destination "
 			"failed because %s, offset=0x%llx\n", strerror(errno),
 			off);
+		BAD_ERROR("Probably out of space on output %s\n",
+			block_device ? "block device" : "filesystem");
+	}
 
 	if(write_bytes(fd, buff, bytes) == -1)
 		BAD_ERROR("Write on destination failed\n");
