@@ -2619,8 +2619,8 @@ void *writer(void *arg)
 
 		if(write_bytes(fd, file_buffer->data,
 				file_buffer->size) == -1) {
-			ERROR("Write on destination failed because %s\n",
-				strerror(errno));
+			ERROR("Failed to write to output %s\n",
+				block_device ? "block device" : "filesystem");
 			goto outofspace;
 		}
 		pthread_mutex_unlock(&pos_mutex);
