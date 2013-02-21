@@ -123,7 +123,7 @@ static int get_token(char **string)
 	if(str == NULL) {
 		str = malloc(STR_SIZE);
 		if(str == NULL)
-			BAD_ERROR("Out of memory in get_token\n");
+			MEM_ERROR();
 		size = STR_SIZE;
 	}
 
@@ -168,7 +168,7 @@ static int get_token(char **string)
 
 			tmp = realloc(str, size);
 			if(tmp == NULL)
-				BAD_ERROR("Out of memory in get_token\n");
+				MEM_ERROR();
 
 			str_ptr = str_ptr - str + tmp;
 			str = tmp;
@@ -207,7 +207,7 @@ static struct expr *create_expr(struct expr *lhs, int op, struct expr *rhs)
 
 	expr = malloc(sizeof(*expr));
 	if (expr == NULL)
-		BAD_ERROR("Out of memory in create_expr\n");
+		MEM_ERROR();
 
 	expr->type = OP_TYPE;
 	expr->expr_op.lhs = lhs;
@@ -227,7 +227,7 @@ static struct expr *create_unary_op(struct expr *lhs, int op)
 
 	expr = malloc(sizeof(*expr));
 	if (expr == NULL)
-		BAD_ERROR("Out of memory in create_unary_op\n");
+		MEM_ERROR();
 
 	expr->type = UNARY_TYPE;
 	expr->unary_op.expr = lhs;
@@ -258,13 +258,13 @@ static struct expr *parse_test(char *name)
 
 	expr = malloc(sizeof(*expr));
 	if (expr == NULL)
-		BAD_ERROR("Out of memory in parse_test\n");
+		MEM_ERROR();
 
 	expr->type = ATOM_TYPE;
 
 	expr->atom.argv = malloc(test->args * sizeof(char *));
 	if (expr->atom.argv == NULL)
-		BAD_ERROR("Out of memory in parse_test\n");
+		MEM_ERROR();
 
 	expr->atom.test = test;
 	expr->atom.data = NULL;
@@ -458,7 +458,7 @@ int parse_action(char *s)
 
 		argv = realloc(argv, (args + 1) * sizeof(char *));
 		if (argv == NULL)
-			BAD_ERROR("Realloc failed in parse_action\n");
+			MEM_ERROR();
 
 		argv[args ++] = strdup(string);
 
@@ -534,7 +534,7 @@ skip_args:
 	*spec_list = realloc(*spec_list, (spec_count + 1) *
 					sizeof(struct action));
 	if (*spec_list == NULL)
-		BAD_ERROR("Out of memory in parse_action\n");
+		MEM_ERROR();
 
 	(*spec_list)[spec_count].type = action->type;
 	(*spec_list)[spec_count].action = action;
@@ -878,7 +878,7 @@ static int parse_uid_args(struct action_entry *action, int args, char **argv,
 
 	uid_info = malloc(sizeof(struct uid_info));
 	if (uid_info == NULL)
-		BAD_ERROR("Out of memory in action uid\n");
+		MEM_ERROR();
 
 	uid_info->uid = uid;
 	*data = uid_info;
@@ -899,7 +899,7 @@ static int parse_gid_args(struct action_entry *action, int args, char **argv,
 
 	gid_info = malloc(sizeof(struct gid_info));
 	if (gid_info == NULL)
-		BAD_ERROR("Out of memory in action gid\n");
+		MEM_ERROR();
 
 	gid_info->gid = gid;
 	*data = gid_info;
@@ -924,7 +924,7 @@ static int parse_guid_args(struct action_entry *action, int args, char **argv,
 
 	guid_info = malloc(sizeof(struct guid_info));
 	if (guid_info == NULL)
-		BAD_ERROR("Out of memory in action guid\n");
+		MEM_ERROR();
 
 	guid_info->uid = uid;
 	guid_info->gid = gid;
@@ -991,7 +991,7 @@ static int parse_octal_mode_args(unsigned int mode, int bytes, int args,
 
 	mode_data = malloc(sizeof(struct mode_data));
 	if (mode_data == NULL)
-		BAD_ERROR("Out of memory in action mode\n");
+		MEM_ERROR();
 
 	mode_data->operation = ACTION_MODE_OCT;
 	mode_data->mode = mode;
@@ -1015,7 +1015,7 @@ static struct mode_data *parse_sym_mode_arg(char *arg)
 	char X = 0;
 
 	if (mode_data == NULL)
-		BAD_ERROR("Out of memory in action mode\n");
+		MEM_ERROR();
 
 	if (arg[0] != 'u' && arg[0] != 'g' && arg[0] != 'o' && arg[0] != 'a') {
 		/* no ownership specifiers, default to a */
@@ -1248,7 +1248,7 @@ static int parse_empty_args(struct action_entry *action, int args,
 
 	empty_data = malloc(sizeof(*empty_data));
 	if (empty_data == NULL)
-		BAD_ERROR("Out of memory in action empty\n");
+		MEM_ERROR();
 
 	empty_data->val = val;
 	*data = empty_data;
@@ -1532,8 +1532,7 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 			if(move == NULL) {
 				move = malloc(sizeof(*move));
 				if(move == NULL)
-					BAD_ERROR("Out of memory in "
-						"eval_move_actions\n");
+					MEM_ERROR();
 
 				move->ops = 0;
 				move->dir_ent = dir_ent;
@@ -1811,7 +1810,7 @@ static int parse_number_arg(struct test_entry *test, struct atom *atom)
 
 	number = malloc(sizeof(*number));
 	if (number == NULL)
-		BAD_ERROR("Out of memory in parse test\n");
+		MEM_ERROR();
 
 	number->range = range;
 	number->size = size;
@@ -1856,7 +1855,7 @@ static int parse_range_args(struct test_entry *test, struct atom *atom)
  
 	range = malloc(sizeof(*range));
 	if (range == NULL)
-		BAD_ERROR("Out of memory in parse test\n");
+		MEM_ERROR();
 
 	range->start = start;
 	range->end = end;
@@ -2110,7 +2109,7 @@ static int parse_file_arg(struct test_entry *test, struct atom *atom)
 	regex_t *preg = malloc(sizeof(regex_t));
 
 	if (preg == NULL)
-		BAD_ERROR("parse file arg malloc failed\n");
+		MEM_ERROR();
 
 	res = regcomp(preg, atom->argv[0], REG_EXTENDED);
 	if (res) {
@@ -2166,7 +2165,7 @@ static int file_fn(struct atom *atom, struct action_data *action_data)
 	do {
 		buffer = realloc(buffer, size + 512);
 		if (buffer == NULL)
-			BAD_ERROR("file_fn malloc failed\n");
+			MEM_ERROR();
 
 		res = read_bytes(pipefd[0], buffer + size, 512);
 
