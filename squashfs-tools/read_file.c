@@ -63,10 +63,8 @@ int read_file(char *filename, char *type, int (parse_line)(char *))
 
 			if(total + (MAX_LINE + 1) > size) {
 				line = realloc(line, size += (MAX_LINE + 1));
-				if(line == NULL) {
-					ERROR("No space in read_file\n");
-					return FALSE;
-				}
+				if(line == NULL)
+					MEM_ERROR();
 			}
 
 			err = fgets(line + total, MAX_LINE + 1, fd);
