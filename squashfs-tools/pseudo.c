@@ -104,7 +104,7 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 	if(pseudo == NULL) {
 		pseudo = malloc(sizeof(struct pseudo));
 		if(pseudo == NULL)
-			BAD_ERROR("failed to allocate pseudo file\n");
+			MEM_ERROR();
 
 		pseudo->names = 0;
 		pseudo->count = 0;
@@ -121,7 +121,7 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 		pseudo->name = realloc(pseudo->name, (i + 1) *
 			sizeof(struct pseudo_entry));
 		if(pseudo->name == NULL)
-			BAD_ERROR("failed to allocate pseudo file\n");
+			MEM_ERROR();
 		pseudo->name[i].name = targname;
 
 		if(target[0] == '\0') {
@@ -304,7 +304,7 @@ void add_pseudo_file(struct pseudo_dev *dev)
 	pseudo_file = realloc(pseudo_file, (pseudo_count + 1) *
 		sizeof(struct pseudo_dev *));
 	if(pseudo_file == NULL)
-		BAD_ERROR("Failed to realloc pseudo_file\n");
+		MEM_ERROR();
 
 	dev->pseudo_id = pseudo_count;
 	pseudo_file[pseudo_count ++] = dev;
@@ -345,7 +345,7 @@ int read_pseudo_def(char *def)
 	 */
 	filename = malloc(strlen(def) + 1);
 	if(filename == NULL)
-		BAD_ERROR("Out of memory in read_pseudo_def()\n");
+		MEM_ERROR();
 
 	for(name = filename; !isspace(*def) && *def != '\0';) {
 		if(*def == '\\') {
@@ -505,7 +505,7 @@ int read_pseudo_def(char *def)
 
 	dev = malloc(sizeof(struct pseudo_dev));
 	if(dev == NULL)
-		BAD_ERROR("Failed to create pseudo_dev\n");
+		MEM_ERROR();
 
 	dev->type = type;
 	dev->mode = mode;
