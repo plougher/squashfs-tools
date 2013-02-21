@@ -66,10 +66,9 @@ int add_priority_list(struct dir_ent *dir, int priority)
 	struct priority_entry *new_priority_entry;
 
 	priority += 32768;
-	if((new_priority_entry = malloc(sizeof(struct priority_entry))) == NULL) {
-		ERROR("Out of memory allocating priority entry\n");
-		return FALSE;
-	}
+	new_priority_entry = malloc(sizeof(struct priority_entry));
+	if(new_priority_entry == NULL)
+		MEM_ERROR();
 
 	new_priority_entry->dir = dir;;
 	new_priority_entry->next = priority_list[priority];
@@ -97,10 +96,8 @@ int get_priority(char *filename, struct stat *buf, int priority)
 #define ADD_ENTRY(buf, priority) {\
 	int hash = buf.st_ino & 0xffff;\
 	struct sort_info *s;\
-	if((s = malloc(sizeof(struct sort_info))) == NULL) {\
-		ERROR("Out of memory allocating sort list entry\n");\
-		return FALSE;\
-	}\
+	if((s = malloc(sizeof(struct sort_info))) == NULL) \
+		MEM_ERROR(); \
 	s->st_dev = buf.st_dev;\
 	s->st_ino = buf.st_ino;\
 	s->priority = priority;\
