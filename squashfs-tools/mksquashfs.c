@@ -415,7 +415,7 @@ struct queue *queue_init(int size)
 	struct queue *queue = malloc(sizeof(struct queue));
 
 	if(queue == NULL)
-		BAD_ERROR("Out of memory in queue_init\n");
+		MEM_ERROR();
 
 	if(add_overflow(size, 1) ||
 				multiply_overflow(size + 1, sizeof(void *)))
@@ -423,7 +423,7 @@ struct queue *queue_init(int size)
 
 	queue->data = malloc(sizeof(void *) * (size + 1));
 	if(queue->data == NULL)
-		BAD_ERROR("Out of memory in queue_init\n");
+		MEM_ERROR();
 
 	queue->size = size + 1;
 	queue->readp = queue->writep = 0;
@@ -554,7 +554,7 @@ struct cache *cache_init(int buffer_size, int max_buffers)
 	struct cache *cache = malloc(sizeof(struct cache));
 
 	if(cache == NULL)
-		BAD_ERROR("Out of memory in cache_init\n");
+		MEM_ERROR();
 
 	cache->max_buffers = max_buffers;
 	cache->buffer_size = buffer_size;
@@ -645,7 +645,7 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 
 failed:
 	pthread_mutex_unlock(&cache->mutex);
-	BAD_ERROR("Out of memory in cache_get\n");
+	MEM_ERROR();
 }
 
 
@@ -843,9 +843,8 @@ void *get_inode(int req_size)
 				((SQUASHFS_METADATA_SIZE << 1)) + 2) {
 			void *it = realloc(inode_table, inode_size +
 				(SQUASHFS_METADATA_SIZE << 1) + 2);
-			if(it == NULL) {
-				goto failed;
-			}
+			if(it == NULL)
+				MEM_ERROR();
 			inode_table = it;
 			inode_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
@@ -871,9 +870,8 @@ void *get_inode(int req_size)
 
 			void *dc = realloc(data_cache, cache_size +
 				realloc_size);
-			if(dc == NULL) {
-				goto failed;
-			}
+			if(dc == NULL)
+				MEM_ERROR();
 			cache_size += realloc_size;
 			data_cache = dc;
 	}
@@ -881,9 +879,6 @@ void *get_inode(int req_size)
 	cache_bytes += req_size;
 
 	return data_cache + cache_bytes - req_size;
-
-failed:
-	BAD_ERROR("Out of memory in inode table reallocation!\n");
 }
 
 
@@ -994,10 +989,8 @@ long long write_inodes()
 				((SQUASHFS_METADATA_SIZE << 1) + 2)) {
 			void *it = realloc(inode_table, inode_size +
 				((SQUASHFS_METADATA_SIZE << 1) + 2));
-			if(it == NULL) {
-				BAD_ERROR("Out of memory in inode table "
-					"reallocation!\n");
-			}
+			if(it == NULL)
+				MEM_ERROR();
 			inode_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 			inode_table = it;
 		}
@@ -1033,10 +1026,8 @@ long long write_directories()
 			void *dt = realloc(directory_table,
 				directory_size + ((SQUASHFS_METADATA_SIZE << 1)
 				+ 2));
-			if(dt == NULL) {
-				BAD_ERROR("Out of memory in directory table "
-					"reallocation!\n");
-			}
+			if(dt == NULL)
+				MEM_ERROR();
 			directory_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 			directory_table = dt;
 		}
@@ -1096,7 +1087,7 @@ struct id *create_id(unsigned int id)
 	int hash = ID_HASH(id);
 	struct id *entry = malloc(sizeof(struct id));
 	if(entry == NULL)
-		BAD_ERROR("Out of memory in create_id\n");
+		MEM_ERROR();
 	entry->id = id;
 	entry->index = id_count ++;
 	entry->flags = 0;
@@ -1152,7 +1143,7 @@ char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size)
 	if(pathname == NULL) {
 		pathname = malloc(ALLOC_SIZE);
 		if(pathname == NULL)
-			BAD_ERROR("Out of memory in pathname\n");
+			MEM_ERROR();
 	}
 
 	for(;;) {
@@ -1170,7 +1161,7 @@ char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size)
 			*size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
 			pathname = realloc(pathname, *size);
 			if(pathname == NULL)
-				BAD_ERROR("Out of memory in pathname\n");
+				MEM_ERROR();
 		} else
 			break;
 	}
@@ -1212,7 +1203,7 @@ char *subpathname(struct dir_ent *dir_ent)
 	if(subpath == NULL) {
 		subpath = malloc(ALLOC_SIZE);
 		if(subpath == NULL)
-			BAD_ERROR("Out of memory in subpathname\n");
+			MEM_ERROR();
 	}
 
 	for(;;) {
@@ -1232,7 +1223,7 @@ char *subpathname(struct dir_ent *dir_ent)
 			size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
 			subpath = realloc(subpath, size);
 			if(subpath == NULL)
-				BAD_ERROR("Out of memory in subpathname\n");
+				MEM_ERROR();
 		} else
 			break;
 	}
@@ -1555,10 +1546,8 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 			sizeof(struct squashfs_dir_header)
 			>= dir->buff + dir->size) {
 		buff = realloc(dir->buff, dir->size += SQUASHFS_METADATA_SIZE);
-		if(buff == NULL)  {
-			BAD_ERROR("Out of memory reallocating directory buffer"
-				"\n");
-		}
+		if(buff == NULL)
+			MEM_ERROR();
 
 		dir->p = (dir->p - dir->buff) + buff;
 		if(dir->entry_count_p) 
@@ -1586,9 +1575,7 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 						(dir->i_count + I_COUNT_SIZE) *
 						sizeof(struct cached_dir_index));
 					if(dir->index == NULL)
-						BAD_ERROR("Out of memory in "
-							"directory index table "
-							"reallocation!\n");
+						MEM_ERROR();
 				}
 				dir->index[dir->i_count].index.index =
 					dir->p - dir->buff;
@@ -1641,9 +1628,8 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 
 		void *dc = realloc(directory_data_cache,
 			directory_cache_size + realloc_size);
-		if(dc == NULL) {
-			goto failed;
-		}
+		if(dc == NULL)
+			MEM_ERROR();
 		directory_cache_size += realloc_size;
 		directory_data_cache = dc;
 	}
@@ -1679,9 +1665,8 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 			void *dt = realloc(directory_table,
 				directory_size + (SQUASHFS_METADATA_SIZE << 1)
 				+ 2);
-			if(dt == NULL) {
-				goto failed;
-			}
+			if(dt == NULL)
+				MEM_ERROR();
 			directory_size += SQUASHFS_METADATA_SIZE << 1;
 			directory_table = dt;
 		}
@@ -1740,11 +1725,6 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 	}
 #endif
 	dir_count ++;
-
-	return;
-
-failed:
-	BAD_ERROR("Out of memory in directory table reallocation!\n");
 }
 
 
@@ -1856,7 +1836,7 @@ void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 {
 	struct frag_locked *entry = malloc(sizeof(struct frag_locked));
 	if(entry == NULL)
-		BAD_ERROR("Out of memory in add_pending fragment\n");
+		MEM_ERROR();
 	entry->buffer = write_buffer;
 	entry->c_byte = c_byte;
 	entry->fragment = fragment;
@@ -1891,7 +1871,7 @@ struct file_buffer *allocate_fragment()
 			FRAG_SIZE) * sizeof(struct squashfs_fragment_entry));
 		if(ft == NULL) {
 			pthread_mutex_unlock(&fragment_mutex);
-			BAD_ERROR("Out of memory in fragment table\n");
+			MEM_ERROR();
 		}
 		fragment_table = ft;
 	}
@@ -1933,7 +1913,7 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer,
 
 	ffrg = malloc(sizeof(struct fragment));
 	if(ffrg == NULL)
-		BAD_ERROR("Out of memory in fragment block allocation!\n");
+		MEM_ERROR();
 
 	if(*fragment == NULL)
 		*fragment = allocate_fragment();
@@ -1966,7 +1946,7 @@ long long generic_write_table(int length, void *buffer, int length2,
 
 	list = malloc(list_size);
 	if(list == NULL)
-		BAD_ERROR("Out of memory in generic_write_table\n");
+		MEM_ERROR();
 
 	for(i = 0; i < meta_blocks; i++) {
 		int avail_bytes = length > SQUASHFS_METADATA_SIZE ?
@@ -2138,7 +2118,7 @@ void add_file(long long start, long long file_size, long long file_bytes,
 
 	frg = malloc(sizeof(struct fragment));
 	if(frg == NULL)
-		BAD_ERROR("Out of memory in fragment block allocation!\n");
+		MEM_ERROR();
 
 	frg->index = fragment;
 	frg->offset = offset;
@@ -2194,9 +2174,8 @@ struct file_info *add_non_dup(long long file_size, long long bytes,
 {
 	struct file_info *dupl_ptr = malloc(sizeof(struct file_info));
 
-	if(dupl_ptr == NULL) {
-		BAD_ERROR("Out of memory in dup_files allocation!\n");
-	}
+	if(dupl_ptr == NULL)
+		MEM_ERROR();
 
 	dupl_ptr->file_size = file_size;
 	dupl_ptr->bytes = bytes;
@@ -2897,8 +2876,7 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 			block_list = realloc(block_list, (block + 1) *
 				sizeof(unsigned int));
 			if(block_list == NULL)
-				BAD_ERROR("Out of memory allocating block_list"
-					"\n");
+				MEM_ERROR();
 			block_list[block ++] = read_buffer->c_byte;
 			if(read_buffer->c_byte) {
 				read_buffer->block = bytes;
@@ -2979,7 +2957,7 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	block_list = malloc(blocks * sizeof(unsigned int));
 	if(block_list == NULL)
-		BAD_ERROR("Out of memory allocating block_list\n");
+		MEM_ERROR();
 
 	lock_fragments();
 
@@ -3082,12 +3060,12 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	block_list = malloc(blocks * sizeof(unsigned int));
 	if(block_list == NULL)
-		BAD_ERROR("Out of memory allocating block_list\n");
+		MEM_ERROR();
 	block_listp = block_list;
 
 	buffer_list = malloc(blocks * sizeof(struct file_buffer *));
 	if(buffer_list == NULL)
-		BAD_ERROR("Out of memory allocating file block list\n");
+		MEM_ERROR();
 
 	num_locked_fragments = lock_fragments();
 
@@ -3268,7 +3246,7 @@ char *getbase(char *pathname)
 	if(b_buffer == NULL) {
 		b_buffer = malloc(b_size);
 		if(b_buffer == NULL)
-			BAD_ERROR("Malloc failed in getbase\n");
+			MEM_ERROR();
 	}
 
 	while(1) {
@@ -3291,7 +3269,7 @@ char *getbase(char *pathname)
 		/* Buffer not large enough, realloc and try again */
 		b_buffer = realloc(b_buffer, b_size += BUFF_SIZE);
 		if(b_buffer == NULL)
-			BAD_ERROR("Realloc failed in getbase\n");
+			MEM_ERROR();
 	}
 
 	name = b_buffer;
@@ -3353,8 +3331,7 @@ struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 
 	inode = malloc(sizeof(struct inode_info));
 	if(inode == NULL)
-		BAD_ERROR("Out of memory in inode hash table entry allocation"
-			"\n");
+		MEM_ERROR();
 
 	memcpy(&inode->buf, buf, sizeof(struct stat));
 	inode->read = FALSE;
@@ -3404,7 +3381,7 @@ inline struct dir_ent *create_dir_entry(char *name, char *source_name,
 {
 	struct dir_ent *dir_ent = malloc(sizeof(struct dir_ent));
 	if(dir_ent == NULL)
-		BAD_ERROR("Out of memory in linux_opendir\n");
+		MEM_ERROR();
 
 	dir_ent->name = name;
 	dir_ent->source_name = source_name;
@@ -3558,7 +3535,7 @@ struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 
 	dir = malloc(sizeof(struct dir_info));
 	if(dir == NULL)
-		BAD_ERROR("Out of memory in scan1_opendir\n");
+		MEM_ERROR();
 
 	if(pathname[0] != '\0') {
 		dir->linuxdir = opendir(pathname);
@@ -4121,9 +4098,8 @@ void dir_scan5(struct dir_info *dir)
 void scan6_init_dir(struct directory *dir)
 {
 	dir->buff = malloc(SQUASHFS_METADATA_SIZE);
-	if(dir->buff == NULL) {
-		BAD_ERROR("Out of memory allocating directory buffer\n");
-	}
+	if(dir->buff == NULL)
+		MEM_ERROR();
 
 	dir->size = SQUASHFS_METADATA_SIZE;
 	dir->p = dir->index_count_p = dir->buff;
@@ -4330,7 +4306,7 @@ int old_excluded(char *filename, struct stat *buf)
 		exclude_paths = realloc(exclude_paths, (exclude + EXCLUDE_SIZE) \
 			* sizeof(struct exclude_info)); \
 		if(exclude_paths == NULL) \
-			BAD_ERROR("Out of memory in exclude dir/file table\n"); \
+			MEM_ERROR(); \
 	} \
 	exclude_paths[exclude].st_dev = buf.st_dev; \
 	exclude_paths[exclude++].st_ino = buf.st_ino;
@@ -4376,8 +4352,7 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	old_root_entry = realloc(old_root_entry,
 		sizeof(struct old_root_entry_info) * (old_root_entries + 1));
 	if(old_root_entry == NULL)
-		BAD_ERROR("Out of memory in old root directory entries "
-			"reallocation\n");
+		MEM_ERROR();
 
 	old_root_entry[old_root_entries].name = strdup(name);
 	old_root_entry[old_root_entries].inode.inode = inode;
@@ -4460,7 +4435,7 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 
 	thread = malloc((2 + processors * 2) * sizeof(pthread_t));
 	if(thread == NULL)
-		BAD_ERROR("Out of memory allocating thread descriptors\n");
+		MEM_ERROR();
 
 	deflator_thread = &thread[2];
 	frag_deflator_thread = &deflator_thread[processors];
@@ -4507,7 +4482,7 @@ long long write_inode_lookup_table()
 
 	it = realloc(inode_lookup_table, lookup_bytes);
 	if(it == NULL)
-		BAD_ERROR("Out of memory in write_inode_table\n");
+		MEM_ERROR();
 	inode_lookup_table = it;
 
 	for(i = 0; i < INODE_HASH_SIZE; i ++) {
@@ -4574,7 +4549,7 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 	if(paths == NULL) {
 		paths = malloc(sizeof(struct pathname));
 		if(paths == NULL)
-			BAD_ERROR("failed to allocate paths\n");
+			MEM_ERROR();
 
 		paths->names = 0;
 		paths->name = NULL;
@@ -4590,13 +4565,13 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		paths->name = realloc(paths->name, (i + 1) *
 			sizeof(struct path_entry));
 		if(paths->name == NULL)
-			BAD_ERROR("Out of memory in add path\n");
+			MEM_ERROR();
 		paths->name[i].name = targname;
 		paths->name[i].paths = NULL;
 		if(use_regex) {
 			paths->name[i].preg = malloc(sizeof(regex_t));
 			if(paths->name[i].preg == NULL)
-				BAD_ERROR("Out of memory in add_path\n");
+				MEM_ERROR();
 			error = regcomp(paths->name[i].preg, targname,
 				REG_EXTENDED|REG_NOSUB);
 			if(error) {
@@ -4699,7 +4674,7 @@ struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 		paths = realloc(paths, sizeof(struct pathnames) +
 			(count + PATHS_ALLOC_SIZE) * sizeof(struct pathname *));
 		if(paths == NULL)
-			BAD_ERROR("Out of memory in add_subdir\n");
+			MEM_ERROR();
 	}
 
 	paths->path[count] = path;
@@ -4842,8 +4817,7 @@ void write_recovery_data(struct squashfs_super_block *sBlk)
 
 	metadata = malloc(bytes);
 	if(metadata == NULL)
-		BAD_ERROR("Failed to alloc metadata buffer in "
-			"write_recovery_data\n");
+		MEM_ERROR();
 
 	res = read_fs_bytes(fd, sBlk->inode_table_start, bytes, metadata);
 	if(res == 0)
@@ -4852,7 +4826,7 @@ void write_recovery_data(struct squashfs_super_block *sBlk)
 	res = asprintf(&recovery_file, "squashfs_recovery_%s_%d",
 		getbase(destination_file), pid);
 	if(res == -1)
-		BAD_ERROR("Out of memory allocating recovery_file\n");
+		MEM_ERROR();
 
 	recoverfd = open(recovery_file, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
 	if(recoverfd == -1)
@@ -4935,8 +4909,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 
 	metadata = malloc(bytes);
 	if(metadata == NULL)
-		BAD_ERROR("Failed to alloc metadata buffer in "
-			"read_recovery_data\n");
+		MEM_ERROR();
 
 	res = read_bytes(recoverfd, metadata, bytes);
 	if(res == -1)
@@ -5034,7 +5007,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/02/10)\n");\
+	printf("mksquashfs version 4.2-git (2013/02/20)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
