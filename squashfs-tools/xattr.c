@@ -128,10 +128,8 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 		}
 
 		xattr_names = malloc(size);
-		if(xattr_names == NULL) {
-			ERROR("Out of memory in read_attrs\n");
-			return 0;
-		}
+		if(xattr_names == NULL)
+			MEM_ERROR();
 
 		size = llistxattr(filename, xattr_names, size);
 		if(size < 0) {
@@ -153,11 +151,9 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 	for(i = 0, p = xattr_names; p < xattr_names + size; i++) {
 		struct xattr_list *x = realloc(xattr_list, (i + 1) *
 						sizeof(struct xattr_list));
-		if(x == NULL) {
-			ERROR("Out of memory in read_attrs\n");
-			goto failed;
-		} else
-			xattr_list = x;
+		if(x == NULL)
+			MEM_ERROR();
+		xattr_list = x;
 
 		xattr_list[i].type = get_prefix(&xattr_list[i], p);
 		p += strlen(p) + 1;
@@ -181,11 +177,8 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 			}
 
 			xattr_list[i].value = malloc(vsize);
-			if(xattr_list[i].value == NULL) {
-				ERROR("Out of memory in read_attrs\n");
-				free(xattr_list[i].full_name);
-				goto failed;
-			}
+			if(xattr_list[i].value == NULL)
+				MEM_ERROR();
 
 			vsize = lgetxattr(filename, xattr_list[i].full_name,
 						xattr_list[i].value, vsize);
@@ -253,9 +246,8 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 				((SQUASHFS_METADATA_SIZE << 1)) + 2) {
 			xattr_table = realloc(xattr_table, xattr_size +
 				(SQUASHFS_METADATA_SIZE << 1) + 2);
-			if(xattr_table == NULL) {
-				goto failed;
-			}
+			if(xattr_table == NULL)
+				MEM_ERROR();
 			xattr_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 
@@ -278,9 +270,8 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 			int realloc_size = req_size - data_space;
 			data_cache = realloc(data_cache, cache_size +
 				realloc_size);
-			if(data_cache == NULL) {
-				goto failed;
-			}
+			if(data_cache == NULL)
+				MEM_ERROR();
 			cache_size += realloc_size;
 	}
 
@@ -288,10 +279,6 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 		*disk = ((long long) xattr_bytes << 16) | cache_bytes;
 	cache_bytes += req_size;
 	return data_cache + cache_bytes - req_size;
-
-failed:
-	ERROR("Out of memory in inode table reallocation!\n");
-	return NULL;
 }
 
 
@@ -333,10 +320,8 @@ static struct dupl_id *check_id_dupl(struct xattr_list *xattr_list, int xattrs)
 	if(entry == NULL) {
 		/* no duplicate exists */
 		entry = malloc(sizeof(*entry));
-		if(entry == NULL) {
-			ERROR("malloc failed in check_ip_dupl\n");
-			return NULL;
-		}
+		if(entry == NULL)
+			MEM_ERROR();
 		entry->xattrs = xattrs;
 		entry->xattr_list = xattr_list;
 		entry->xattr_id = SQUASHFS_INVALID_XATTR;
@@ -398,10 +383,8 @@ static int get_xattr_id(int xattrs, struct xattr_list *xattr_list,
 
 	xattr_id_table = realloc(xattr_id_table, (xattr_ids + 1) *
 		sizeof(struct squashfs_xattr_id));
-	if(xattr_id_table == NULL) {
-		ERROR("Out of memory in xattr_id_table reallocation!\n");
-		return -1;
-	}
+	if(xattr_id_table == NULL)
+		MEM_ERROR();
 
 	/* get total uncompressed size of xattr data, needed for stat */
 	for(i = 0; i < xattrs; i++)
@@ -443,9 +426,8 @@ long long write_xattrs()
 				((SQUASHFS_METADATA_SIZE << 1)) + 2) {
 			xattr_table = realloc(xattr_table, xattr_size +
 				(SQUASHFS_METADATA_SIZE << 1) + 2);
-			if(xattr_table == NULL) {
-				goto failed;
-			}
+			if(xattr_table == NULL)
+				MEM_ERROR();
 			xattr_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 
@@ -478,10 +460,6 @@ long long write_xattrs()
 
 	return generic_write_table(xattr_ids * sizeof(struct squashfs_xattr_id),
 		xattr_id_table, sizeof(header), &header, noX);
-
-failed:
-	ERROR("Out of memory in xattr_table reallocation!\n");
-	return -1;
 }
 
 
@@ -703,7 +681,7 @@ int save_xattrs()
 	 */
 	sdata_cache = malloc(cache_bytes);
 	if(sdata_cache == NULL)
-		goto failed;
+		MEM_ERROR();
 
 	memcpy(sdata_cache, data_cache, cache_bytes);
 	scache_bytes = cache_bytes;
@@ -712,10 +690,6 @@ int save_xattrs()
 	sxattr_ids = xattr_ids;
 
 	return TRUE;
-
-failed:
-	ERROR("Out of memory in save_xattrs\n");
-	return FALSE;
 }
 
 
