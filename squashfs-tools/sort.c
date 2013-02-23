@@ -61,7 +61,7 @@ extern void write_file(squashfs_inode *inode, struct dir_ent *dir_ent,
 extern char *pathname(struct dir_ent *dir_ent);
 
 
-int add_priority_list(struct dir_ent *dir, int priority)
+void add_priority_list(struct dir_ent *dir, int priority)
 {
 	struct priority_entry *new_priority_entry;
 
@@ -73,7 +73,6 @@ int add_priority_list(struct dir_ent *dir, int priority)
 	new_priority_entry->dir = dir;;
 	new_priority_entry->next = priority_list[priority];
 	priority_list[priority] = new_priority_entry;
-	return TRUE;
 }
 
 
@@ -200,11 +199,9 @@ int generate_file_priorities(struct dir_info *dir, int priority,
 
 		switch(buf->st_mode & S_IFMT) {
 			case S_IFREG:
-				res = add_priority_list(dir_ent,
+				add_priority_list(dir_ent,
 					get_priority(pathname(dir_ent), buf,
 					priority));
-				if(res == FALSE)
-					return FALSE;
 				break;
 			case S_IFDIR:
 				res = generate_file_priorities(dir_ent->dir,
