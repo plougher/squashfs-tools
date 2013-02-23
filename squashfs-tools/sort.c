@@ -184,10 +184,9 @@ error:
 }
 
 
-int generate_file_priorities(struct dir_info *dir, int priority,
+void generate_file_priorities(struct dir_info *dir, int priority,
 	struct stat *buf)
 {
-	int res;
 	struct dir_ent *dir_ent = dir->list;
 
 	priority = get_priority(dir->pathname, buf, priority);
@@ -204,15 +203,11 @@ int generate_file_priorities(struct dir_info *dir, int priority,
 					priority));
 				break;
 			case S_IFDIR:
-				res = generate_file_priorities(dir_ent->dir,
+				generate_file_priorities(dir_ent->dir,
 					priority, buf);
-				if(res == FALSE)
-					return FALSE;
 				break;
 		}
 	}
-
-	return TRUE;
 }
 
 
