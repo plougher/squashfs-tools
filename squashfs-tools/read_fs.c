@@ -865,10 +865,8 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 		&root_inode_block, root_inode_size, uncompressed_file,
 		uncompressed_directory, file_count, sym_count, dev_count,
 		dir_count, fifo_count, sock_count, id_table);
-	if(res == 0) {
-		ERROR("read_filesystem: inode table read failed\n");
+	if(res == 0)
 		goto error;
-	}
 
 	*uncompressed_inode = root_inode_block;
 
