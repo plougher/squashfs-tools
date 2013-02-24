@@ -476,8 +476,6 @@ int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 	 * id
 	 */
 	xattr_dupl = check_id_dupl(xattr_list, xattrs);
-	if (xattr_dupl == NULL)
-		return SQUASHFS_INVALID_XATTR;
 	if(xattr_dupl->xattr_id != SQUASHFS_INVALID_XATTR)
 		return xattr_dupl->xattr_id;
 	 
