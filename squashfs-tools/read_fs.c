@@ -153,7 +153,7 @@ int scan_inode_table(int fd, long long start, long long end,
 			*inode_table = realloc(*inode_table, size
 				+= SQUASHFS_METADATA_SIZE);
 			if(*inode_table == NULL)
-				goto failed;
+				MEM_ERROR();
 		}
 		TRACE("scan_inode_table: reading block 0x%llx\n", start);
 		byte = read_block(fd, start, &start, 0, *inode_table + bytes);
@@ -269,10 +269,8 @@ int scan_inode_table(int fd, long long start, long long end,
 				goto failed;
 
 			block_list = malloc(blocks * sizeof(unsigned int));
-			if(block_list == NULL) {
-				ERROR("Out of memory in block list malloc\n");
-				goto failed;
-			}
+			if(block_list == NULL)
+				MEM_ERROR();
 
 			cur_ptr += sizeof(inode);
 			SQUASHFS_SWAP_INTS(block_list, cur_ptr, blocks);
@@ -321,10 +319,8 @@ int scan_inode_table(int fd, long long start, long long end,
 				goto failed;
 
 			block_list = malloc(blocks * sizeof(unsigned int));
-			if(block_list == NULL) {
-				ERROR("Out of memory in block list malloc\n");
-				goto failed;
-			}
+			if(block_list == NULL)
+				MEM_ERROR();
 
 			cur_ptr += sizeof(inode);
 			SQUASHFS_SWAP_INTS(block_list, cur_ptr, blocks);
@@ -618,7 +614,8 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 	directory_table = malloc((size + SQUASHFS_METADATA_SIZE * 2 - 1) &
 		~(SQUASHFS_METADATA_SIZE - 1));
 	if(directory_table == NULL)
-		return NULL;
+		MEM_ERROR();
+
 	while(bytes < size) {
 		int expected = (size - bytes) >= SQUASHFS_METADATA_SIZE ?
 			SQUASHFS_METADATA_SIZE : 0;
@@ -681,10 +678,8 @@ unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 	int res, i;
 
 	id_table = malloc(bytes);
-	if(id_table == NULL) {
-		ERROR("Failed to allocate id table\n");
-		return NULL;
-	}
+	if(id_table == NULL)
+		MEM_ERROR();
 
 	res = read_fs_bytes(fd, sBlk->id_table_start,
 		SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), index);
@@ -738,10 +733,8 @@ int read_fragment_table(int fd, struct squashfs_super_block *sBlk,
 		return 1;
 
 	*fragment_table = malloc(bytes);
-	if(*fragment_table == NULL) {
-		ERROR("Failed to allocate fragment table\n");
-		return 0;
-	}
+	if(*fragment_table == NULL)
+		MEM_ERROR();
 
 	res = read_fs_bytes(fd, sBlk->fragment_table_start,
 		SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments),
@@ -789,10 +782,8 @@ int read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk,
 		return 1;
 
 	*inode_lookup_table = malloc(lookup_bytes);
-	if(*inode_lookup_table == NULL) {
-		ERROR("Failed to allocate inode lookup table\n");
-		return 0;
-	}
+	if(*inode_lookup_table == NULL)
+		MEM_ERROR();
 
 	res = read_fs_bytes(fd, sBlk->lookup_table_start,
 		SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), index);
@@ -907,41 +898,34 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 
 		root_inode_start -= start;
 		*cinode_table = malloc(root_inode_start);
-		if(*cinode_table == NULL) {
-			ERROR("read_filesystem: failed to alloc space for "
-				"existing filesystem inode table\n");
-			goto error;
-		}
+		if(*cinode_table == NULL)
+			MEM_ERROR();
+
 	       	res = read_fs_bytes(fd, start, root_inode_start, *cinode_table);
 		if(res == 0)
 			goto error;
 
 		*cdirectory_table = malloc(*last_directory_block);
-		if(*cdirectory_table == NULL) {
-			ERROR("read_filesystem: failed to alloc space for "
-				"existing filesystem directory table\n");
-			goto error;
-		}
+		if(*cdirectory_table == NULL)
+			MEM_ERROR();
+
 		res = read_fs_bytes(fd, sBlk->directory_table_start,
 			*last_directory_block, *cdirectory_table);
 		if(res == 0)
 			goto error;
 
 		*data_cache = malloc(root_inode_offset + *root_inode_size);
-		if(*data_cache == NULL) {
-			ERROR("read_filesystem: failed to alloc inode cache\n");
-			goto error;
-		}
+		if(*data_cache == NULL)
+			MEM_ERROR();
+
 		memcpy(*data_cache, inode_table + root_inode_block,
 			root_inode_offset + *root_inode_size);
 
 		*directory_data_cache = malloc(*inode_dir_offset +
 			*inode_dir_file_size);
-		if(*directory_data_cache == NULL) {
-			ERROR("read_filesystem: failed to alloc directory "
-				"cache\n");
-			goto error;
-		}
+		if(*directory_data_cache == NULL)
+			MEM_ERROR();
+
 		memcpy(*directory_data_cache, directory_table,
 			*inode_dir_offset + *inode_dir_file_size);
 
