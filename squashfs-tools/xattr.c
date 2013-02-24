@@ -666,7 +666,7 @@ done:
  * Save current state of xattrs, needed for restoring state in the event of an
  * abort in appending
  */
-int save_xattrs()
+void save_xattrs()
 {
 	/* save the current state of the compressed xattr data */
 	sxattr_bytes = xattr_bytes;
@@ -686,8 +686,6 @@ int save_xattrs()
 
 	/* save the current state of the xattr id table */
 	sxattr_ids = xattr_ids;
-
-	return TRUE;
 }
 
 

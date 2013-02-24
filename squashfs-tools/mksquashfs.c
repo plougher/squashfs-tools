@@ -5685,9 +5685,7 @@ printOptions:
 		sdup_files = dup_files;
 		sid_count = id_count;
 		write_recovery_data(&sBlk);
-		if(save_xattrs() == FALSE)
-			BAD_ERROR("Failed to save xattrs from existing "
-				"filesystem\n");
+		save_xattrs();
 		restore = TRUE;
 		if(setjmp(env))
 			goto restore_filesystem;
