@@ -491,8 +491,12 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 
 	res = read_fs_bytes(fd, SQUASHFS_START, sizeof(struct squashfs_super_block),
 		sBlk);
-	if(res == 0)
+	if(res == 0) {
+		ERROR("Can't find a SQUASHFS superblock on %s\n",
+				source);
+		ERROR("Wrong filesystem or filesystem is corrupted!\n");
 		goto failed_mount;
+	}
 
 	SQUASHFS_INSWAP_SUPER_BLOCK(sBlk);
 
