@@ -504,9 +504,11 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 		if(sBlk->s_magic == SQUASHFS_MAGIC_SWAP)
 			ERROR("Pre 4.0 big-endian filesystem on %s, appending"
 				" to this is unsupported\n", source);
-		else
+		else {
 			ERROR("Can't find a SQUASHFS superblock on %s\n",
 				source);
+			ERROR("Wrong filesystem or filesystem is corrupted!\n");
+		}
 		goto failed_mount;
 	}
 
