@@ -552,8 +552,11 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 	if(SQUASHFS_COMP_OPTS(sBlk->flags)) {
 		bytes = read_block(fd, sizeof(*sBlk), NULL, 0, buffer);
 
-		if(bytes == 0)
+		if(bytes == 0) {
+			ERROR("Failed to read compressor options from append"
+				"filesystem\n");
 			goto failed_mount;
+		}
 	}
 
 	res = compressor_extract_options(comp, sBlk->block_size, buffer, bytes);
