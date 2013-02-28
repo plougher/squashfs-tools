@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (c) 2009, 2010, 2011, 2012
+ * Copyright (c) 2009, 2010, 2011, 2012, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
