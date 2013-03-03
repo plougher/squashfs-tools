@@ -553,8 +553,9 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 		bytes = read_block(fd, sizeof(*sBlk), NULL, 0, buffer);
 
 		if(bytes == 0) {
-			ERROR("Failed to read compressor options from append"
+			ERROR("Failed to read compressor options from append "
 				"filesystem\n");
+			ERROR("Filesystem corrupted?\n");
 			goto failed_mount;
 		}
 	}
@@ -637,6 +638,8 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 		last_start_block = start;
 		byte = read_block(fd, start, &start, expected, directory_table + bytes);
 		if(byte == 0) {
+			ERROR("Failed to read directory\n");
+			ERROR("Filesystem corrupted?\n");
 			free(directory_table);
 			return NULL;
 		}
@@ -712,6 +715,7 @@ unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 		if(length == 0) {
 			ERROR("Failed to read id table block %d, from 0x%llx, "
 				"length %d\n", i, index[i], length);
+			ERROR("Filesystem corrupted?\n");
 			free(id_table);
 			return NULL;
 		}
@@ -769,6 +773,7 @@ int read_fragment_table(int fd, struct squashfs_super_block *sBlk,
 			ERROR("Failed to read fragment table block %d, from "
 				"0x%llx, length %d\n", i,
 				fragment_table_index[i], length);
+			ERROR("Filesystem corrupted?\n");
 			free(*fragment_table);
 			return 0;
 		}
@@ -817,6 +822,7 @@ int read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk,
 			ERROR("Failed to read inode lookup table block %d, "
 				"from 0x%llx, length %d\n", i, index[i],
 				length);
+			ERROR("Filesystem corrupted?\n");
 			free(*inode_lookup_table);
 			return 0;
 		}
