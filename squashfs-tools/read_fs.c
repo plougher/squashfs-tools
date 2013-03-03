@@ -698,6 +698,8 @@ unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 	res = read_fs_bytes(fd, sBlk->id_table_start,
 		SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), index);
 	if(res == 0) {
+		ERROR("Failed to read id table index\n");
+		ERROR("Filesystem corrupted?\n");
 		free(id_table);
 		return NULL;
 	}
@@ -755,6 +757,8 @@ int read_fragment_table(int fd, struct squashfs_super_block *sBlk,
 		SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments),
 		fragment_table_index);
 	if(res == 0) {
+		ERROR("Failed to read fragment table index\n");
+		ERROR("Filesystem corrupted?\n");
 		free(*fragment_table);
 		return 0;
 	}
@@ -804,6 +808,8 @@ int read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk,
 	res = read_fs_bytes(fd, sBlk->lookup_table_start,
 		SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), index);
 	if(res == 0) {
+		ERROR("Failed to read inode lookup table index\n");
+		ERROR("Filesystem corrupted?\n");
 		free(*inode_lookup_table);
 		return 0;
 	}
@@ -914,8 +920,11 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 			MEM_ERROR();
 
 	       	res = read_fs_bytes(fd, start, root_inode_start, *cinode_table);
-		if(res == 0)
+		if(res == 0) {
+			ERROR("Failed to read inode table\n");
+			ERROR("Filesystem corrupted?\n");
 			goto error;
+		}
 
 		*cdirectory_table = malloc(*last_directory_block);
 		if(*cdirectory_table == NULL)
@@ -923,8 +932,11 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 
 		res = read_fs_bytes(fd, sBlk->directory_table_start,
 			*last_directory_block, *cdirectory_table);
-		if(res == 0)
+		if(res == 0) {
+			ERROR("Failed to read directory table\n");
+			ERROR("Filesystem corruption?\n");
 			goto error;
+		}
 
 		*data_cache = malloc(root_inode_offset + *root_inode_size);
 		if(*data_cache == NULL)
