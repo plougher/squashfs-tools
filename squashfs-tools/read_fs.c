@@ -905,11 +905,8 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 			*inode_dir_start_block, *inode_dir_offset,
 			*inode_dir_file_size, last_directory_block, sBlk,
 			push_directory_entry);
-		if(directory_table == NULL) {
-			ERROR("read_filesystem: Could not read root directory"
-				"\n");
+		if(directory_table == NULL) 
 			goto error;
-		}
 
 		root_inode_start -= start;
 		*cinode_table = malloc(root_inode_start);
