@@ -4823,8 +4823,10 @@ void write_recovery_data(struct squashfs_super_block *sBlk)
 		MEM_ERROR();
 
 	res = read_fs_bytes(fd, sBlk->inode_table_start, bytes, metadata);
-	if(res == 0)
-		EXIT_MKSQUASHFS();
+	if(res == 0) {
+		ERROR("Failed to read append filesystem metadata\n");
+		BAD_ERROR("Filesystem corrupted?\n");
+	}
 
 	res = asprintf(&recovery_file, "squashfs_recovery_%s_%d",
 		getbase(destination_file), pid);
@@ -4900,8 +4902,10 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 		BAD_ERROR("Recovery file appears to be truncated\n");
 
 	res = read_fs_bytes(fd, 0, sizeof(struct squashfs_super_block), &orig_sBlk);
-	if(res == 0)
-		EXIT_MKSQUASHFS();
+	if(res == 0) {
+		ERROR("Failed to read superblock from output filesystem\n");
+		BAD_ERROR("Output filesystem is empty!\n");
+	}
 
 	if(memcmp(((char *) &sBlk) + 4, ((char *) &orig_sBlk) + 4,
 			sizeof(struct squashfs_super_block) - 4) != 0)
@@ -5010,7 +5014,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/02/28)\n");\
+	printf("mksquashfs version 4.2-git (2013/03/05)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
