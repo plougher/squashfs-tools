@@ -1771,8 +1771,11 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 		memcpy(buffer->data, compressed_buffer->data, size);
 	else {
 		res = read_fs_bytes(fd, start_block, size, buffer->data);
-		if(res == 0)
-			EXIT_MKSQUASHFS();
+		if(res == 0) {
+			ERROR("Failed to read fragment from output "
+				"filesystem\n");
+			BAD_ERROR("Output filesystem corrupted?\n");
+		}
 	}
 
 	cache_block_put(compressed_buffer);
@@ -2011,8 +2014,10 @@ char *read_from_disk(long long start, unsigned int avail_bytes)
 	int res;
 
 	res = read_fs_bytes(fd, start, avail_bytes, read_from_file_buffer);
-	if(res == 0)
-		EXIT_MKSQUASHFS();
+	if(res == 0) {
+		ERROR("Failed to read data from output filesystem\n");
+		BAD_ERROR("Output filesystem corrupted?\n");
+	}
 
 	return read_from_file_buffer;
 }
@@ -2024,8 +2029,10 @@ char *read_from_disk2(long long start, unsigned int avail_bytes)
 	int res;
 
 	res = read_fs_bytes(fd, start, avail_bytes, read_from_file_buffer2);
-	if(res == 0)
-		EXIT_MKSQUASHFS();
+	if(res == 0) {
+		ERROR("Failed to read data from output filesystem\n");
+		BAD_ERROR("Output filesystem corrupted?\n");
+	}
 
 	return read_from_file_buffer2;
 }

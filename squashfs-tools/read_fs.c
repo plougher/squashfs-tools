@@ -934,7 +934,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 			*last_directory_block, *cdirectory_table);
 		if(res == 0) {
 			ERROR("Failed to read directory table\n");
-			ERROR("Filesystem corruption?\n");
+			ERROR("Filesystem corrupted?\n");
 			goto error;
 		}
 
