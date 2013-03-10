@@ -22,7 +22,7 @@
  * error.h
  */
 
-extern void prep_exit_mksquashfs();
+extern void prep_exit();
 
 #include "progressbar.h"
 
@@ -48,7 +48,7 @@ extern void prep_exit_mksquashfs();
 
 #define EXIT_MKSQUASHFS() \
 		do {\
-			prep_exit_mksquashfs();\
+			prep_exit();\
 			exit(1);\
 		} while(0)
 

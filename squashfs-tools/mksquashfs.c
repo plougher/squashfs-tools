@@ -382,13 +382,12 @@ void restorefs();
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
 
 
-void prep_exit_mksquashfs()
+void prep_exit()
 {
 	if(restore)
 		restorefs();
 	if(delete && destination_file && !block_device)
 		unlink(destination_file);
-	exit(1);
 }
 
 
