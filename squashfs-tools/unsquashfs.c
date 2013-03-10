@@ -29,6 +29,7 @@
 #include "read_fs.h"
 #include "compressor.h"
 #include "xattr.h"
+#include "stdarg.h"
 
 #include <sys/sysinfo.h>
 #include <sys/types.h>
@@ -123,6 +124,11 @@ void progress_bar(long long current, long long max, int columns);
 void update_progress_bar();
 
 #define MAX_LINE 16384
+
+void prep_exit()
+{
+}
+
 
 void sigwinch_handler()
 {
@@ -2270,6 +2276,39 @@ void update_progress_bar()
 	pthread_mutex_unlock(&screen_mutex);
 }
 
+
+void progressbar_error(char *fmt, ...)
+{
+	va_list ap;
+
+	pthread_mutex_lock(&screen_mutex);
+
+	if(progress_enabled)
+		fprintf(stderr, "\n");
+
+	va_start(ap, fmt);
+	vfprintf(stderr, fmt, ap);
+	va_end(ap);
+
+	pthread_mutex_unlock(&screen_mutex);
+}
+
+
+void progressbar_info(char *fmt, ...)
+{
+	va_list ap;
+
+	pthread_mutex_lock(&screen_mutex);
+
+	if(progress_enabled)
+		printf("\n");
+
+	va_start(ap, fmt);
+	vprintf(fmt, ap);
+	va_end(ap);
+
+	pthread_mutex_unlock(&screen_mutex);
+}
 
 void progress_bar(long long current, long long max, int columns)
 {

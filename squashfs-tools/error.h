@@ -29,7 +29,7 @@ extern void progressbar_info(char *fmt, ...);
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...) \
 		do { \
-			progressbar_info("mksquashfs: "s, ## args);\
+			progressbar_info("squashfs: "s, ## args);\
 		} while(0)
 #else
 #define TRACE(s, args...)
@@ -38,7 +38,7 @@ extern void progressbar_info(char *fmt, ...);
 #define INFO(s, args...) \
 		do {\
 			 if(!silent)\
-				progressbar_info("mksquashfs: "s, ## args);\
+				progressbar_info("squashfs: "s, ## args);\
 		} while(0)
 
 #define ERROR(s, args...) \
@@ -57,6 +57,8 @@ extern void progressbar_info(char *fmt, ...);
 			progressbar_error("FATAL ERROR:" s, ##args); \
 			EXIT_MKSQUASHFS();\
 		} while(0)
+
+#define EXIT_UNSQUASH(s, args...) BAD_ERROR(s, ##args)
 
 #define MEM_ERROR() \
 	do {\

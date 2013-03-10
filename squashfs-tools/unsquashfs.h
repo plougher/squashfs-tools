@@ -54,36 +54,7 @@
 #endif
 
 #include "squashfs_fs.h"
-
-#ifdef SQUASHFS_TRACE
-#define TRACE(s, args...) \
-		do { \
-			pthread_mutex_lock(&screen_mutex); \
-			if(progress_enabled) \
-				printf("\n"); \
-			printf("unsquashfs: "s, ## args); \
-			pthread_mutex_unlock(&screen_mutex);\
-		} while(0)
-#else
-#define TRACE(s, args...)
-#endif
-
-#define ERROR(s, args...) \
-		do { \
-			pthread_mutex_lock(&screen_mutex); \
-			if(progress_enabled) \
-				fprintf(stderr, "\n"); \
-			fprintf(stderr, s, ## args); \
-			pthread_mutex_unlock(&screen_mutex);\
-		} while(0)
-
-#define EXIT_UNSQUASH(s, args...) \
-		do { \
-			pthread_mutex_lock(&screen_mutex); \
-			fprintf(stderr, "FATAL ERROR aborting: "s, ## args); \
-			pthread_mutex_unlock(&screen_mutex);\
-			exit(1); \
-		} while(0)
+#include "error.h"
 
 #define CALCULATE_HASH(start)	(start & 0xffff)
 
