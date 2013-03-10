@@ -23,8 +23,8 @@
  */
 
 extern void prep_exit();
-
-#include "progressbar.h"
+extern void progressbar_error(char *fmt, ...);
+extern void progressbar_info(char *fmt, ...);
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...) \

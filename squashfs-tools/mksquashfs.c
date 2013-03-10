@@ -70,6 +70,7 @@
 #include "xattr.h"
 #include "action.h"
 #include "error.h"
+#include "progressbar.h"
 
 int delete = FALSE;
 int fd;
