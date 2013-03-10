@@ -29,7 +29,7 @@ extern void progressbar_info(char *fmt, ...);
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...) \
 		do { \
-			printf("mksquashfs: "s, ## args); \
+			progressbar_info("mksquashfs: "s, ## args);\
 		} while(0)
 #else
 #define TRACE(s, args...)
