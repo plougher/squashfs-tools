@@ -43,22 +43,9 @@
 #include "squashfs_swap.h"
 #include "read_fs.h"
 #include "xattr.h"
+#include "error.h"
 
 #include <stdlib.h>
-
-#ifdef SQUASHFS_TRACE
-#define TRACE(s, args...) \
-		do { \
-			printf("read_xattrs: "s, ## args); \
-		} while(0)
-#else
-#define TRACE(s, args...)
-#endif
-
-#define ERROR(s, args...) \
-		do { \
-			fprintf(stderr, s, ## args); \
-		} while(0)
 
 extern int read_fs_bytes(int, long long, int, void *);
 extern int read_block(int, long long, long long *, int, void *);
