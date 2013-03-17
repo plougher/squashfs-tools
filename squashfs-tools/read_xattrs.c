@@ -131,10 +131,9 @@ static int read_xattr_entry(struct xattr_list *xattr,
 
 	len = strlen(prefix_table[i].prefix);
 	xattr->full_name = malloc(len + entry->size + 1);
-	if(xattr->full_name == NULL) {
-		ERROR("Out of memory in read_xattr_entry\n");
-		return -1;
-	}
+	if(xattr->full_name == NULL)
+		MEM_ERROR();
+
 	memcpy(xattr->full_name, prefix_table[i].prefix, len);
 	memcpy(xattr->full_name + len, name, entry->size);
 	xattr->full_name[len + entry->size] = '\0';
