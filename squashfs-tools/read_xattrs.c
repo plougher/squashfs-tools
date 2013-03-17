@@ -74,24 +74,20 @@ struct prefix prefix_table[] = {
  * store mapping from location of compressed block in fs ->
  * location of uncompressed block in memory
  */
-static int save_xattr_block(long long start, int offset)
+static void save_xattr_block(long long start, int offset)
 {
 	struct hash_entry *hash_entry = malloc(sizeof(*hash_entry));
 	int hash = start & 0xffff;
 
 	TRACE("save_xattr_block: start %lld, offset %d\n", start, offset);
 
-	if(hash_entry == NULL) {
-		ERROR("Failed to allocate hash entry\n");
-		return -1;
-	}
+	if(hash_entry == NULL)
+		MEM_ERROR();
 
 	hash_entry->start = start;
 	hash_entry->offset = offset;
 	hash_entry->next = hash_table[hash];
 	hash_table[hash] = hash_entry;
-
-	return 1;
 }
 
 
@@ -244,9 +240,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
 
 		/* store mapping from location of compressed block in fs ->
 		 * location of uncompressed block in memory */
-		res = save_xattr_block(start, i * SQUASHFS_METADATA_SIZE);
-		if(res == -1)
-			goto failed3;
+		save_xattr_block(start, i * SQUASHFS_METADATA_SIZE);
 
 		length = read_block(fd, start, &start, 0,
 			((unsigned char *) xattrs) +
