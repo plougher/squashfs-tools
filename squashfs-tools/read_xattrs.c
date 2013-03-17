@@ -334,10 +334,8 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
 		if(res != 0) {
 			xattr_list = realloc(xattr_list, (j + 1) *
 						sizeof(struct xattr_list));
-			if(xattr_list == NULL) {
-				ERROR("Out of memory in get_xattrs\n");
-				goto failed;
-			}
+			if(xattr_list == NULL)
+				MEM_ERROR();
 		}
 			
 		SQUASHFS_SWAP_XATTR_ENTRY(&entry, xptr);
