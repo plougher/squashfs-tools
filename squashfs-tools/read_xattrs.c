@@ -180,10 +180,8 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
 	index_bytes = SQUASHFS_XATTR_BLOCK_BYTES(ids);
 	indexes = SQUASHFS_XATTR_BLOCKS(ids);
 	index = malloc(index_bytes);
-	if(index == NULL) {
-		ERROR("Failed to allocate index array\n");
-		return 0;
-	}
+	if(index == NULL)
+		MEM_ERROR();
 
 	res = read_fs_bytes(fd, sBlk->xattr_id_table_start + sizeof(id_table),
 		index_bytes, index);
@@ -198,10 +196,8 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
 	 */
 	bytes = SQUASHFS_XATTR_BYTES(ids);
 	xattr_ids = malloc(bytes);
-	if(xattr_ids == NULL) {
-		ERROR("Failed to allocate xattr id table\n");
-		goto failed1;
-	}
+	if(xattr_ids == NULL)
+		MEM_ERROR();
 
 	for(i = 0; i < indexes; i++) {
 		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
@@ -230,12 +226,9 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
 	end = index[0];
 	for(i = 0; start < end; i++) {
 		int length;
-		void *x = realloc(xattrs, (i + 1) * SQUASHFS_METADATA_SIZE);
-		if(x == NULL) {
-			ERROR("Failed to realloc xattr data\n");
-			goto failed3;
-		}
-		xattrs = x;
+		xattrs = realloc(xattrs, (i + 1) * SQUASHFS_METADATA_SIZE);
+		if(xattrs == NULL)
+			MEM_ERROR();
 
 		/* store mapping from location of compressed block in fs ->
 		 * location of uncompressed block in memory */
