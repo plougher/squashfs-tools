@@ -4270,7 +4270,6 @@ void dir_scan6(squashfs_inode *inode, struct dir_info *dir_info)
 		
 		add_dir(*inode, get_inode_no(dir_ent->inode), dir_ent->name,
 			squashfs_type, &dir);
-		update_progress_bar();
 	}
 
 	write_dir(inode, dir_info, &dir);
@@ -5014,7 +5013,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/03/13)\n");\
+	printf("mksquashfs version 4.2-git (2013/03/19)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

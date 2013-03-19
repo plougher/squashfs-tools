@@ -79,14 +79,6 @@ void progress_bar_size(int count)
 }
 
 
-void update_progress_bar()
-{
-	pthread_mutex_lock(&progress_mutex);
-	pthread_cond_signal(&progress_wait);
-	pthread_mutex_unlock(&progress_mutex);
-}
-
-
 static void progress_bar(long long current, long long max, int columns)
 {
 	char rotate_list[] = { '|', '/', '-', '\\' };
