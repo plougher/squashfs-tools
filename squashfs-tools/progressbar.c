@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2012
+ * Copyright (c) 2012, 2013
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -30,6 +30,10 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdarg.h>
+#include <errno.h>
+#include <stdlib.h>
+
+#include "error.h"
 
 int progress_enabled = 0;
 int rotate = 0;
@@ -38,7 +42,6 @@ int columns;
 
 pthread_t progress_thread;
 pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t progress_wait;
 
 
 static void sigwinch_handler()
@@ -146,8 +149,7 @@ void disable_progress_bar()
 
 void *progress_thrd(void *arg)
 {
-	struct timeval timeval;
-	struct timespec timespec;
+	struct timespec requested_time, remaining;
 	struct itimerval itimerval;
 	struct winsize winsize;
 
@@ -167,27 +169,32 @@ void *progress_thrd(void *arg)
 	itimerval.it_interval.tv_usec = 250000;
 	setitimer(ITIMER_REAL, &itimerval, NULL);
 
-	pthread_mutex_lock(&progress_mutex);
+	requested_time.tv_sec = 0;
+	requested_time.tv_nsec = 250000000;
 
 	while(1) {
-		gettimeofday(&timeval, NULL);
-		timespec.tv_sec = timeval.tv_sec;
-		if(timeval.tv_usec + 250000 > 999999)
-			timespec.tv_sec++;
-		timespec.tv_nsec = ((timeval.tv_usec + 250000) % 1000000) *
-			1000;
-		pthread_cond_timedwait(&progress_wait, &progress_mutex,
-			&timespec);
-		if(progress_enabled)
+		int res = nanosleep(&requested_time, &remaining);
+
+		if(res == -1 && errno != EINTR)
+			goto exit_mksquashfs;
+
+		if(progress_enabled) {
+			pthread_mutex_lock(&progress_mutex);
 			progress_bar(cur_uncompressed, estimated_uncompressed,
 				columns);
+			pthread_mutex_unlock(&progress_mutex);
+		}
 	}
+
+exit_mksquashfs:
+	ERROR("nanosleep failed in progress thread\n");
+	kill(getpid(), SIGUSR2);
+	pthread_exit(NULL);
 }
 
 
 void init_progress_bar()
 {
-	pthread_cond_init(&progress_wait, NULL);
 	pthread_create(&progress_thread, NULL, progress_thrd, NULL);
 }
 
