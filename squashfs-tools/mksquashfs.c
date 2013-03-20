@@ -4398,13 +4398,39 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	else
 		writer_buffer_size = writeb_mbytes << (20 - block_log);
 
+	/*
+	 * setup signal handlers for the main thread, these cleanup
+	 * deleting the destination file, if appending the
+	 * handlers for SIGTERM and SIGINT will be replaced with handlers
+	 * allowing the user to press ^C twice to restore the existing
+	 * filesystem.
+	 *
+	 * SIGUSR2 is an internal signal, which is used by the sub-threads
+	 * to tell the main thread to terminate, deleting the destination file,
+	 * or if necessary restoring the filesystem on appending
+	 */
+	signal(SIGTERM, sighandler2);
+	signal(SIGINT, sighandler2);
+	signal(SIGUSR2, sighandler2);
+
+	/*
+	 * temporarily block these signals, so the created sub-threads
+	 * will ignore them, ensuring the main thread handles them
+	 */
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
+	sigaddset(&sigmask, SIGTERM);
 	sigaddset(&sigmask, SIGQUIT);
 	sigaddset(&sigmask, SIGUSR2);
 	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
+	/*
+	 * all sub-threads have a SIGUSR1 handler, this is an internal
+	 * signal used by the main thread on filesystem restoring to
+	 * ensure all sub-threads are in a passive state sleeping in the
+	 * SIGUSR1 handler
+	 */
 	signal(SIGUSR1, sigusr1_handler);
 
 	if(processors == -1) {
@@ -4469,6 +4495,7 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	printf("Parallel mksquashfs: Using %d processor%s\n", processors,
 			processors == 1 ? "" : "s");
 
+	/* Restore the signal mask for the main thread */
 	if(sigprocmask(SIG_SETMASK, &old_mask, NULL) == -1)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 }
@@ -5507,10 +5534,6 @@ printOptions:
 		}
 
 	}
-
-	signal(SIGTERM, sighandler2);
-	signal(SIGINT, sighandler2);
-	signal(SIGUSR2, sighandler2);
 
 	/*
 	 * process the exclude files - must be done afer destination file has
