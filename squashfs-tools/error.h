@@ -38,7 +38,7 @@ extern void progressbar_info(char *fmt, ...);
 #define INFO(s, args...) \
 		do {\
 			 if(!silent)\
-				progressbar_info("squashfs: "s, ## args);\
+				progressbar_info(s, ## args);\
 		} while(0)
 
 #define ERROR(s, args...) \

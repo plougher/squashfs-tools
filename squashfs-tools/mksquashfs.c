@@ -381,6 +381,8 @@ extern struct priority_entry *priority_list[65536];
 long long generic_write_table(int, void *, int, void *, int);
 void restorefs();
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
+extern void init_info();
+extern void update_info(struct dir_ent *);
 
 
 void prep_exit()
@@ -4149,6 +4151,8 @@ void dir_scan6(squashfs_inode *inode, struct dir_info *dir_info)
 	while((dir_ent = scan6_readdir(&dir, dir_info, dir_ent)) != NULL) {
 		struct stat *buf = &dir_ent->inode->buf;
 
+		update_info(dir_ent);
+
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
 			switch(buf->st_mode & S_IFMT) {
 				case S_IFREG:
@@ -4413,6 +4417,12 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	signal(SIGINT, sighandler2);
 	signal(SIGUSR2, sighandler2);
 
+	/* block SIGQUIT this is handled by the info thread */
+	sigemptyset(&sigmask);
+	sigaddset(&sigmask, SIGQUIT);
+	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
+		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
+
 	/*
 	 * temporarily block these signals, so the created sub-threads
 	 * will ignore them, ensuring the main thread handles them
@@ -4420,7 +4430,6 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
 	sigaddset(&sigmask, SIGTERM);
-	sigaddset(&sigmask, SIGQUIT);
 	sigaddset(&sigmask, SIGUSR2);
 	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
@@ -4480,6 +4489,7 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	pthread_create(&thread[0], NULL, reader, NULL);
 	pthread_create(&thread[1], NULL, writer, NULL);
 	init_progress_bar();
+	init_info();
 	pthread_mutex_init(&fragment_mutex, NULL);
 	pthread_cond_init(&fragment_waiting, NULL);
 
@@ -5040,7 +5050,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/03/19)\n");\
+	printf("mksquashfs version 4.2-git (2013/03/23)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
