@@ -2552,11 +2552,6 @@ void reader_scan(struct dir_info *dir) {
 
 void *reader(void *arg)
 {
-	int oldstate;
-
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldstate);
-
 	if(!sorted)
 		reader_scan(queue_get(to_reader));
 	else {
@@ -2578,11 +2573,6 @@ void *reader(void *arg)
 
 void *writer(void *arg)
 {
-	int oldstate;
-
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldstate);
-
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(to_writer);
 		off_t off;
@@ -2652,10 +2642,7 @@ int all_zero(struct file_buffer *file_buffer)
 void *deflator(void *arg)
 {
 	void *stream = NULL;
-	int res, oldstate;
-
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldstate);
+	int res;
 
 	res = compressor_init(comp, &stream, block_size, 1);
 	if(res)
@@ -2697,10 +2684,7 @@ void *deflator(void *arg)
 void *frag_deflator(void *arg)
 {
 	void *stream = NULL;
-	int res, oldstate;
-
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &oldstate);
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, &oldstate);
+	int res;
 
 	res = compressor_init(comp, &stream, block_size, 1);
 	if(res)
