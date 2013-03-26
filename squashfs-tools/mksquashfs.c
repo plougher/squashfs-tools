@@ -2552,6 +2552,13 @@ void reader_scan(struct dir_info *dir) {
 
 void *reader(void *arg)
 {
+	/*
+	 * signal used by the main thread on filesystem restoring to
+	 * ensure all sub-threads are in a passive state sleeping in the
+	 * SIGUSR1 handler
+	 */
+	signal(SIGUSR1, sigusr1_handler);
+
 	if(!sorted)
 		reader_scan(queue_get(to_reader));
 	else {
@@ -2573,6 +2580,13 @@ void *reader(void *arg)
 
 void *writer(void *arg)
 {
+	/*
+	 * signal used by the main thread on filesystem restoring to
+	 * ensure all sub-threads are in a passive state sleeping in the
+	 * SIGUSR1 handler
+	 */
+	signal(SIGUSR1, sigusr1_handler);
+
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(to_writer);
 		off_t off;
@@ -2644,6 +2658,13 @@ void *deflator(void *arg)
 	void *stream = NULL;
 	int res;
 
+	/*
+	 * signal used by the main thread on filesystem restoring to
+	 * ensure all sub-threads are in a passive state sleeping in the
+	 * SIGUSR1 handler
+	 */
+	signal(SIGUSR1, sigusr1_handler);
+
 	res = compressor_init(comp, &stream, block_size, 1);
 	if(res)
 		BAD_ERROR("deflator:: compressor_init failed\n");
@@ -2685,6 +2706,13 @@ void *frag_deflator(void *arg)
 {
 	void *stream = NULL;
 	int res;
+
+	/*
+	 * signal used by the main thread on filesystem restoring to
+	 * ensure all sub-threads are in a passive state sleeping in the
+	 * SIGUSR1 handler
+	 */
+	signal(SIGUSR1, sigusr1_handler);
 
 	res = compressor_init(comp, &stream, block_size, 1);
 	if(res)
@@ -4417,14 +4445,6 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	sigaddset(&sigmask, SIGUSR2);
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
-
-	/*
-	 * all sub-threads have a SIGUSR1 handler, this is an internal
-	 * signal used by the main thread on filesystem restoring to
-	 * ensure all sub-threads are in a passive state sleeping in the
-	 * SIGUSR1 handler
-	 */
-	signal(SIGUSR1, sigusr1_handler);
 
 	if(processors == -1) {
 #ifndef linux
