@@ -4404,7 +4404,7 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	/* block SIGQUIT this is handled by the info thread */
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGQUIT);
-	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
+	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
 	/*
@@ -4415,7 +4415,7 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	sigaddset(&sigmask, SIGINT);
 	sigaddset(&sigmask, SIGTERM);
 	sigaddset(&sigmask, SIGUSR2);
-	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
+	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
 	/*
@@ -4490,7 +4490,7 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 			processors == 1 ? "" : "s");
 
 	/* Restore the signal mask for the main thread */
-	if(sigprocmask(SIG_SETMASK, &old_mask, NULL) == -1)
+	if(pthread_sigmask(SIG_SETMASK, &old_mask, NULL) == -1)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 }
 
