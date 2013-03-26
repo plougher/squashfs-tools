@@ -5043,6 +5043,134 @@ int parse_number(char *start, int *res, int size)
 }
 
 
+void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
+{
+	int i;
+
+	sBlk->fragments = fragments;
+	if(!restoring) {
+		struct file_buffer **fragment = NULL;
+		while((fragment = get_frag_action(fragment)))
+			write_fragment(*fragment);
+		unlock_fragments();
+		pthread_mutex_lock(&fragment_mutex);
+		while(fragments_outstanding) {
+			pthread_mutex_unlock(&fragment_mutex);
+			sched_yield();
+			pthread_mutex_lock(&fragment_mutex);
+		}
+		queue_put(to_writer, NULL);
+		if(queue_get(from_writer) != 0)
+			EXIT_MKSQUASHFS();
+	}
+
+	sBlk->no_ids = id_count;
+	sBlk->inode_table_start = write_inodes();
+	sBlk->directory_table_start = write_directories();
+	sBlk->fragment_table_start = write_fragment_table();
+	sBlk->lookup_table_start = exportable ? write_inode_lookup_table() :
+		SQUASHFS_INVALID_BLK;
+	sBlk->id_table_start = write_id_table();
+	sBlk->xattr_id_table_start = write_xattrs();
+
+	TRACE("sBlk->inode_table_start 0x%llx\n", sBlk->inode_table_start);
+	TRACE("sBlk->directory_table_start 0x%llx\n",
+		sBlk->directory_table_start);
+	TRACE("sBlk->fragment_table_start 0x%llx\n", sBlk->fragment_table_start);
+	if(exportable)
+		TRACE("sBlk->lookup_table_start 0x%llx\n",
+			sBlk->lookup_table_start);
+
+	sBlk->bytes_used = bytes;
+
+	sBlk->compression = comp->id;
+
+	SQUASHFS_INSWAP_SUPER_BLOCK(sBlk); 
+	write_destination(fd, SQUASHFS_START, sizeof(*sBlk), sBlk);
+
+	if(!nopad && (i = bytes & (4096 - 1))) {
+		char temp[4096] = {0};
+		write_destination(fd, bytes, 4096 - i, temp);
+	}
+
+	close(fd);
+
+	delete_pseudo_files();
+
+	if(recovery_file)
+		unlink(recovery_file);
+
+	total_bytes += total_inode_bytes + total_directory_bytes +
+		sizeof(struct squashfs_super_block) + total_xattr_bytes;
+
+	printf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
+		" %d\n", exportable ? "Exportable " : "", SQUASHFS_MAJOR,
+		SQUASHFS_MINOR, comp->name, block_size);
+	printf("\t%s data, %s metadata, %s fragments, %s xattrs\n",
+		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" :
+		"compressed", no_fragments ? "no" : noF ? "uncompressed" :
+		"compressed", no_xattrs ? "no" : noX ? "uncompressed" :
+		"compressed");
+	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
+		"not ");
+	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0,
+		bytes / (1024.0 * 1024.0));
+	printf("\t%.2f%% of uncompressed filesystem size (%.2f Kbytes)\n",
+		((float) bytes / total_bytes) * 100.0, total_bytes / 1024.0);
+	printf("Inode table size %d bytes (%.2f Kbytes)\n",
+		inode_bytes, inode_bytes / 1024.0);
+	printf("\t%.2f%% of uncompressed inode table size (%d bytes)\n",
+		((float) inode_bytes / total_inode_bytes) * 100.0,
+		total_inode_bytes);
+	printf("Directory table size %d bytes (%.2f Kbytes)\n",
+		directory_bytes, directory_bytes / 1024.0);
+	printf("\t%.2f%% of uncompressed directory table size (%d bytes)\n",
+		((float) directory_bytes / total_directory_bytes) * 100.0,
+		total_directory_bytes);
+	if(total_xattr_bytes) {
+		printf("Xattr table size %d bytes (%.2f Kbytes)\n",
+			xattr_bytes, xattr_bytes / 1024.0);
+		printf("\t%.2f%% of uncompressed xattr table size (%d bytes)\n",
+			((float) xattr_bytes / total_xattr_bytes) * 100.0,
+			total_xattr_bytes);
+	}
+	if(duplicate_checking)
+		printf("Number of duplicate files found %d\n", file_count -
+			dup_files);
+	else
+		printf("No duplicate files removed\n");
+	printf("Number of inodes %d\n", inode_count);
+	printf("Number of files %d\n", file_count);
+	if(!no_fragments)
+		printf("Number of fragments %d\n", fragments);
+	printf("Number of symbolic links  %d\n", sym_count);
+	printf("Number of device nodes %d\n", dev_count);
+	printf("Number of fifo nodes %d\n", fifo_count);
+	printf("Number of socket nodes %d\n", sock_count);
+	printf("Number of directories %d\n", dir_count);
+	printf("Number of ids (unique uids + gids) %d\n", id_count);
+	printf("Number of uids %d\n", uid_count);
+
+	for(i = 0; i < id_count; i++) {
+		if(id_table[i]->flags & ISA_UID) {
+			struct passwd *user = getpwuid(id_table[i]->id);
+			printf("\t%s (%d)\n", user == NULL ? "unknown" :
+				user->pw_name, id_table[i]->id);
+		}
+	}
+
+	printf("Number of gids %d\n", guid_count);
+
+	for(i = 0; i < id_count; i++) {
+		if(id_table[i]->flags & ISA_GID) {
+			struct group *group = getgrgid(id_table[i]->id);
+			printf("\t%s (%d)\n", group == NULL ? "unknown" :
+				group->gr_name, id_table[i]->id);
+		}
+	}
+}
+
+
 int parse_num(char *arg, int *res)
 {
 	return parse_number(arg, res, 0);
@@ -5826,127 +5954,7 @@ restore_filesystem:
 	if(progress)
 		disable_progress_bar();
 
-	sBlk.fragments = fragments;
-	if(!restoring) {
-		struct file_buffer **fragment = NULL;
-		while((fragment = get_frag_action(fragment)))
-			write_fragment(*fragment);
-		unlock_fragments();
-		pthread_mutex_lock(&fragment_mutex);
-		while(fragments_outstanding) {
-			pthread_mutex_unlock(&fragment_mutex);
-			sched_yield();
-			pthread_mutex_lock(&fragment_mutex);
-		}
-		queue_put(to_writer, NULL);
-		if(queue_get(from_writer) != 0)
-			EXIT_MKSQUASHFS();
-	}
-
-	sBlk.no_ids = id_count;
-	sBlk.inode_table_start = write_inodes();
-	sBlk.directory_table_start = write_directories();
-	sBlk.fragment_table_start = write_fragment_table();
-	sBlk.lookup_table_start = exportable ? write_inode_lookup_table() :
-		SQUASHFS_INVALID_BLK;
-	sBlk.id_table_start = write_id_table();
-	sBlk.xattr_id_table_start = write_xattrs();
-
-	TRACE("sBlk->inode_table_start 0x%llx\n", sBlk.inode_table_start);
-	TRACE("sBlk->directory_table_start 0x%llx\n",
-		sBlk.directory_table_start);
-	TRACE("sBlk->fragment_table_start 0x%llx\n", sBlk.fragment_table_start);
-	if(exportable)
-		TRACE("sBlk->lookup_table_start 0x%llx\n",
-			sBlk.lookup_table_start);
-
-	sBlk.bytes_used = bytes;
-
-	sBlk.compression = comp->id;
-
-	SQUASHFS_INSWAP_SUPER_BLOCK(&sBlk); 
-	write_destination(fd, SQUASHFS_START, sizeof(sBlk), &sBlk);
-
-	if(!nopad && (i = bytes & (4096 - 1))) {
-		char temp[4096] = {0};
-		write_destination(fd, bytes, 4096 - i, temp);
-	}
-
-	close(fd);
-
-	delete_pseudo_files();
-
-	if(recovery_file)
-		unlink(recovery_file);
-
-	total_bytes += total_inode_bytes + total_directory_bytes +
-		sizeof(struct squashfs_super_block) + total_xattr_bytes;
-
-	printf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
-		" %d\n", exportable ? "Exportable " : "", SQUASHFS_MAJOR,
-		SQUASHFS_MINOR, comp->name, block_size);
-	printf("\t%s data, %s metadata, %s fragments, %s xattrs\n",
-		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" :
-		"compressed", no_fragments ? "no" : noF ? "uncompressed" :
-		"compressed", no_xattrs ? "no" : noX ? "uncompressed" :
-		"compressed");
-	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
-		"not ");
-	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0,
-		bytes / (1024.0 * 1024.0));
-	printf("\t%.2f%% of uncompressed filesystem size (%.2f Kbytes)\n",
-		((float) bytes / total_bytes) * 100.0, total_bytes / 1024.0);
-	printf("Inode table size %d bytes (%.2f Kbytes)\n",
-		inode_bytes, inode_bytes / 1024.0);
-	printf("\t%.2f%% of uncompressed inode table size (%d bytes)\n",
-		((float) inode_bytes / total_inode_bytes) * 100.0,
-		total_inode_bytes);
-	printf("Directory table size %d bytes (%.2f Kbytes)\n",
-		directory_bytes, directory_bytes / 1024.0);
-	printf("\t%.2f%% of uncompressed directory table size (%d bytes)\n",
-		((float) directory_bytes / total_directory_bytes) * 100.0,
-		total_directory_bytes);
-	if(total_xattr_bytes) {
-		printf("Xattr table size %d bytes (%.2f Kbytes)\n",
-			xattr_bytes, xattr_bytes / 1024.0);
-		printf("\t%.2f%% of uncompressed xattr table size (%d bytes)\n",
-			((float) xattr_bytes / total_xattr_bytes) * 100.0,
-			total_xattr_bytes);
-	}
-	if(duplicate_checking)
-		printf("Number of duplicate files found %d\n", file_count -
-			dup_files);
-	else
-		printf("No duplicate files removed\n");
-	printf("Number of inodes %d\n", inode_count);
-	printf("Number of files %d\n", file_count);
-	if(!no_fragments)
-		printf("Number of fragments %d\n", fragments);
-	printf("Number of symbolic links  %d\n", sym_count);
-	printf("Number of device nodes %d\n", dev_count);
-	printf("Number of fifo nodes %d\n", fifo_count);
-	printf("Number of socket nodes %d\n", sock_count);
-	printf("Number of directories %d\n", dir_count);
-	printf("Number of ids (unique uids + gids) %d\n", id_count);
-	printf("Number of uids %d\n", uid_count);
-
-	for(i = 0; i < id_count; i++) {
-		if(id_table[i]->flags & ISA_UID) {
-			struct passwd *user = getpwuid(id_table[i]->id);
-			printf("\t%s (%d)\n", user == NULL ? "unknown" :
-				user->pw_name, id_table[i]->id);
-		}
-	}
-
-	printf("Number of gids %d\n", guid_count);
-
-	for(i = 0; i < id_count; i++) {
-		if(id_table[i]->flags & ISA_GID) {
-			struct group *group = getgrgid(id_table[i]->id);
-			printf("\t%s (%d)\n", group == NULL ? "unknown" :
-				group->gr_name, id_table[i]->id);
-		}
-	}
+	write_filesystem_tables(&sBlk, nopad);
 
 	return 0;
 }
