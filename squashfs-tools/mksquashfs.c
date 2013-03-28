@@ -74,6 +74,7 @@
 
 int delete = FALSE;
 int fd;
+struct squashfs_super_block sBlk;
 
 /* filesystem flags for building */
 int comp_opts = FALSE;
@@ -88,6 +89,7 @@ int sparse_files = TRUE;
 int old_exclude = TRUE;
 int use_regex = FALSE;
 int first_freelist = TRUE;
+int nopad = FALSE;
 
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
@@ -227,15 +229,11 @@ struct file_info {
 	char			checksum_flag;
 };
 
-/* count of how many times SIGINT or SIGQUIT has been sent */
-int interrupted = 0;
-
 /* flag if we're restoring existing filesystem */
 int restoring = 0;
 
 /* restore orignal filesystem state if appending to existing filesystem is
  * cancelled */
-jmp_buf env;
 char *sdata_cache, *sdirectory_data_cache, *sdirectory_compressed;
 
 long long sbytes, stotal_bytes;
@@ -383,6 +381,8 @@ void restorefs();
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
 extern void init_info();
 extern void update_info(struct dir_ent *);
+extern void init_restore_thread(pthread_t);
+void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
 
 
 void prep_exit()
@@ -714,9 +714,6 @@ void restorefs()
 {
 	int i;
 
-	if(thread == NULL || thread[0] == 0)
-		return;
-
 	if(restoring++)
 		/*
 		 * Recursive failure when trying to restore filesystem!
@@ -759,20 +756,8 @@ void restorefs()
 	fragments = sfragments;
 	id_count = sid_count;
 	restore_xattrs();
-	longjmp(env, 1);
-}
-
-
-void sighandler()
-{
-	if(++interrupted > 2)
-		return;
-	if(interrupted == 2)
-		restorefs();
-	else {
-		ERROR("Interrupting will restore original filesystem!\n");
-		ERROR("Interrupt again to quit\n");
-	}
+	write_filesystem_tables(&sBlk, nopad);
+	exit(1);
 }
 
 
@@ -5052,22 +5037,6 @@ void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
 	int i;
 
 	sBlk->fragments = fragments;
-	if(!restoring) {
-		struct file_buffer **fragment = NULL;
-		while((fragment = get_frag_action(fragment)))
-			write_fragment(*fragment);
-		unlock_fragments();
-		pthread_mutex_lock(&fragment_mutex);
-		while(fragments_outstanding) {
-			pthread_mutex_unlock(&fragment_mutex);
-			sched_yield();
-			pthread_mutex_lock(&fragment_mutex);
-		}
-		queue_put(to_writer, NULL);
-		if(queue_get(from_writer) != 0)
-			EXIT_MKSQUASHFS();
-	}
-
 	sBlk->no_ids = id_count;
 	sBlk->inode_table_start = write_inodes();
 	sBlk->directory_table_start = write_directories();
@@ -5182,7 +5151,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/03/23)\n");\
+	printf("mksquashfs version 4.2-git (2013/03/27)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5203,14 +5172,14 @@ int main(int argc, char *argv[])
 {
 	struct stat buf, source_buf;
 	int res, i;
-	struct squashfs_super_block sBlk;
 	char *b, *root_name = NULL;
-	int nopad = FALSE, keep_as_directory = FALSE;
+	int keep_as_directory = FALSE;
 	squashfs_inode inode;
 	int readb_mbytes = READER_BUFFER_DEFAULT,
 		writeb_mbytes = WRITER_BUFFER_DEFAULT,
 		fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
 	int force_progress = FALSE;
+	struct file_buffer **fragment = NULL;
 
 	block_log = slog(block_size);
 	if(argc > 1 && strcmp(argv[1], "-version") == 0) {
@@ -5791,6 +5760,7 @@ printOptions:
 			SQUASHFS_INODE_BLK(sBlk.root_inode),
 			root_inode_offset =
 			SQUASHFS_INODE_OFFSET(sBlk.root_inode);
+		sigset_t sigmask, old_mask;
 
 		if((bytes = read_filesystem(root_name, fd, &sBlk, &inode_table,
 				&data_cache, &directory_table,
@@ -5862,10 +5832,13 @@ printOptions:
 		write_recovery_data(&sBlk);
 		save_xattrs();
 		restore = TRUE;
-		if(setjmp(env))
-			goto restore_filesystem;
-		signal(SIGTERM, sighandler);
-		signal(SIGINT, sighandler);
+		init_restore_thread(pthread_self());
+		sigemptyset(&sigmask);
+		sigaddset(&sigmask, SIGINT);
+		sigaddset(&sigmask, SIGTERM);
+		sigaddset(&sigmask, SIGUSR2);
+		if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
+			BAD_ERROR("Failed to set signal mask\n");
 		write_destination(fd, SQUASHFS_START, 4, "\0\0\0\0");
 
 		/*
@@ -5954,9 +5927,22 @@ printOptions:
 		no_xattrs, comp_opts);
 	sBlk.mkfs_time = time(NULL);
 
-restore_filesystem:
 	if(progress)
 		disable_progress_bar();
+
+	while((fragment = get_frag_action(fragment)))
+		write_fragment(*fragment);
+	unlock_fragments();
+	pthread_mutex_lock(&fragment_mutex);
+	while(fragments_outstanding) {
+		pthread_mutex_unlock(&fragment_mutex);
+		sched_yield();
+		pthread_mutex_lock(&fragment_mutex);
+	}
+
+	queue_put(to_writer, NULL);
+	if(queue_get(from_writer) != 0)
+		EXIT_MKSQUASHFS();
 
 	write_filesystem_tables(&sBlk, nopad);
 
