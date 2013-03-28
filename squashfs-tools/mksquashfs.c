@@ -761,7 +761,7 @@ void restorefs()
 }
 
 
-void sighandler2()
+void sighandler()
 {
 	EXIT_MKSQUASHFS();
 }
@@ -4410,9 +4410,9 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	 * to tell the main thread to terminate, deleting the destination file,
 	 * or if necessary restoring the filesystem on appending
 	 */
-	signal(SIGTERM, sighandler2);
-	signal(SIGINT, sighandler2);
-	signal(SIGUSR2, sighandler2);
+	signal(SIGTERM, sighandler);
+	signal(SIGINT, sighandler);
+	signal(SIGUSR2, sighandler);
 
 	/* block SIGQUIT this is handled by the info thread */
 	sigemptyset(&sigmask);
