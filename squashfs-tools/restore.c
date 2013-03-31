@@ -50,7 +50,7 @@ extern void restorefs();
 void *restore_thrd(void *arg)
 {
 	sigset_t sigmask, old_mask;
-	int sig, res;
+	int sig;
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
