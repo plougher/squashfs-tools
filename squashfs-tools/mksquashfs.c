@@ -5887,8 +5887,7 @@ printOptions:
 		no_xattrs, comp_opts);
 	sBlk.mkfs_time = time(NULL);
 
-	if(progress)
-		disable_progress_bar();
+	disable_progress_bar();
 
 	while((fragment = get_frag_action(fragment)))
 		write_fragment(*fragment);
