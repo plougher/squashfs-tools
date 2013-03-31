@@ -141,8 +141,11 @@ void enable_progress_bar()
 void disable_progress_bar()
 {
 	pthread_mutex_lock(&progress_mutex);
+	if(progress_enabled)  {
+		progress_bar(cur_uncompressed, estimated_uncompressed, columns);
+		printf("\n");
+	}
 	progress_enabled = 0;
-	progress_bar(cur_uncompressed, estimated_uncompressed, columns);
 	pthread_mutex_unlock(&progress_mutex);
 }
 
