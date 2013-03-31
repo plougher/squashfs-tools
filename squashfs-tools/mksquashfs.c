@@ -769,28 +769,6 @@ void sighandler()
 }
 
 
-void sigusr1_handler()
-{
-	int i;
-	sigset_t sigmask;
-	pthread_t thread_id = pthread_self();
-
-	for(i = 0; i < (2 + processors * 2) && thread[i] != thread_id; i++);
-	thread[i] = (pthread_t) 0;
-
-	TRACE("Thread %d(%p) in sigusr1_handler\n", i, &thread_id);
-
-	sigemptyset(&sigmask);
-	sigaddset(&sigmask, SIGINT);
-	sigaddset(&sigmask, SIGQUIT);
-	sigaddset(&sigmask, SIGUSR1);
-	while(1) {
-		sigsuspend(&sigmask);
-		TRACE("After wait in sigusr1_handler :(\n");
-	}
-}
-
-
 int mangle2(void *strm, char *d, char *s, int size,
 	int block_size, int uncompressed, int data_block)
 {
