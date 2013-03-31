@@ -2589,7 +2589,7 @@ outofspace:
 	 * if appending
 	 */
 	kill(getpid(), SIGUSR1);
-	return NULL;
+	pthread_exit(NULL);
 }
 
 
