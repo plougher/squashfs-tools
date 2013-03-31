@@ -441,6 +441,7 @@ void queue_put(struct queue *queue, void *data)
 {
 	int nextp;
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
 	pthread_mutex_lock(&queue->mutex);
 
 	while((nextp = (queue->writep + 1) % queue->size) == queue->readp)
@@ -449,13 +450,15 @@ void queue_put(struct queue *queue, void *data)
 	queue->data[queue->writep] = data;
 	queue->writep = nextp;
 	pthread_cond_signal(&queue->empty);
-	pthread_mutex_unlock(&queue->mutex);
+	pthread_cleanup_pop(1);
 }
 
 
 void *queue_get(struct queue *queue)
 {
 	void *data;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
 	pthread_mutex_lock(&queue->mutex);
 
 	while(queue->readp == queue->writep)
@@ -464,7 +467,7 @@ void *queue_get(struct queue *queue)
 	data = queue->data[queue->readp];
 	queue->readp = (queue->readp + 1) % queue->size;
 	pthread_cond_signal(&queue->full);
-	pthread_mutex_unlock(&queue->mutex);
+	pthread_cleanup_pop(1);
 
 	return data;
 }
@@ -577,6 +580,7 @@ struct file_buffer *cache_lookup(struct cache *cache, long long index)
 	int hash = CALCULATE_HASH(index);
 	struct file_buffer *entry;
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
 	for(entry = cache->hash_table[hash]; entry; entry = entry->hash_next)
@@ -591,7 +595,7 @@ struct file_buffer *cache_lookup(struct cache *cache, long long index)
 		remove_free_list(&cache->free_list, entry);
 	}
 
-	pthread_mutex_unlock(&cache->mutex);
+	pthread_cleanup_pop(1);
 
 	return entry;
 }
@@ -602,6 +606,7 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 	/* Get a free block out of the cache indexed on index. */
 	struct file_buffer *entry;
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
 	while(1) {
@@ -617,7 +622,7 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 			entry = malloc(sizeof(struct file_buffer) +
 				cache->buffer_size);
 			if(entry == NULL)
-				goto failed;
+				goto release_mutex;
 			entry->cache = cache;
 			entry->free_prev = entry->free_next = NULL;
 			cache->count ++;
@@ -641,13 +646,14 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 		entry->index = index;
 		insert_hash_table(cache, entry);
 	}
-	pthread_mutex_unlock(&cache->mutex);
+
+release_mutex:
+	pthread_cleanup_pop(1);
+
+	if(entry == NULL)
+		MEM_ERROR();
 
 	return entry;
-
-failed:
-	pthread_mutex_unlock(&cache->mutex);
-	MEM_ERROR();
 }
 
 
@@ -655,13 +661,14 @@ void cache_rehash(struct file_buffer *entry, long long index)
 {
 	struct cache *cache = entry->cache;
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 	if(entry->keep)
 		remove_hash_table(cache, entry);
 	entry->keep = TRUE;
 	entry->index = index;
 	insert_hash_table(cache, entry);
-	pthread_mutex_unlock(&cache->mutex);
+	pthread_cleanup_pop(1);
 }
 
 
@@ -679,6 +686,7 @@ void cache_block_put(struct file_buffer *entry)
 
 	cache = entry->cache;
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
 	entry->used --;
@@ -694,7 +702,7 @@ void cache_block_put(struct file_buffer *entry)
 		pthread_cond_signal(&cache->wait_for_free);
 	}
 
-	pthread_mutex_unlock(&cache->mutex);
+	pthread_cleanup_pop(1);
 }
 
 
@@ -728,9 +736,11 @@ void restorefs()
 
 	for(i = 0; i < 2 + processors * 2; i++)
 		if(thread[i])
-			pthread_kill(thread[i], SIGUSR1);
+			pthread_cancel(thread[i]);
 	for(i = 0; i < 2 + processors * 2; i++)
-		waitforthread(i);
+		if(thread[i])
+			pthread_join(thread[i], NULL);
+
 	TRACE("All threads in signal handler\n");
 	bytes = sbytes;
 	memcpy(data_cache, sdata_cache, cache_bytes = scache_bytes);
@@ -895,28 +905,28 @@ bytes_read:
 int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 {
 	off_t off = byte;
+	int res = 1;
 
 	TRACE("read_fs_bytes: reading from position 0x%llx, bytes %d\n",
 		byte, bytes);
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
 	pthread_mutex_lock(&pos_mutex);
 	if(lseek(fd, off, SEEK_SET) == -1) {
 		ERROR("read_fs_bytes: Lseek on destination failed because %s, "
 			"offset=0x%llx\n", strerror(errno), off);
-		goto failed;
+		res = 0;
+		goto mutex_unlock;
 	}
 
 	if(read_bytes(fd, buff, bytes) < bytes) {
 		ERROR("Read on destination failed\n");
-		goto failed;
+		res = 0;
 	}
 
-	pthread_mutex_unlock(&pos_mutex);
-	return 1;
-
-failed:
-	pthread_mutex_unlock(&pos_mutex);
-	return 0;
+mutex_unlock:
+	pthread_cleanup_pop(1);
+	return res;
 }
 
 
@@ -944,8 +954,8 @@ void write_destination(int fd, long long byte, int bytes, void *buff)
 {
 	off_t off = byte;
 
-	if(!restoring)
-		pthread_mutex_lock(&pos_mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
+	pthread_mutex_lock(&pos_mutex);
 
 	if(lseek(fd, off, SEEK_SET) == -1) {
 		ERROR("write_destination: Lseek on destination "
@@ -958,9 +968,8 @@ void write_destination(int fd, long long byte, int bytes, void *buff)
 	if(write_bytes(fd, buff, bytes) == -1)
 		BAD_ERROR("Failed to write to output %s\n",
 			block_device ? "block device" : "filesystem");
-	
-	if(!restoring)
-		pthread_mutex_unlock(&pos_mutex);
+
+	pthread_cleanup_pop(1);
 }
 
 
@@ -1734,11 +1743,12 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 
 	buffer = cache_get(fragment_buffer, fragment->index, 1);
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
 	disk_fragment = &fragment_table[fragment->index];
 	size = SQUASHFS_COMPRESSED_SIZE_BLOCK(disk_fragment->size);
 	start_block = disk_fragment->start_block;
-	pthread_mutex_unlock(&fragment_mutex);
+	pthread_cleanup_pop(1);
 
 	if(SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size)) {
 		int error;
@@ -1788,10 +1798,11 @@ REMOVE_LIST(fragment, struct frag_locked)
 int lock_fragments()
 {
 	int count;
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
 	fragments_locked = TRUE;
 	count = fragments_outstanding;
-	pthread_mutex_unlock(&fragment_mutex);
+	pthread_cleanup_pop(1);
 	return count;
 }
 
@@ -1801,6 +1812,7 @@ void unlock_fragments()
 	struct frag_locked *entry;
 	int compressed_size;
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
 	while(frag_locked_list) {
 		entry = frag_locked_list;
@@ -1817,23 +1829,21 @@ void unlock_fragments()
 		free(entry);
 	}
 	fragments_locked = FALSE;
-	pthread_mutex_unlock(&fragment_mutex);
+	pthread_cleanup_pop(1);
 }
 
-
+/* Called with the fragment_mutex locked */
 void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 	int fragment)
 {
 	struct frag_locked *entry = malloc(sizeof(struct frag_locked));
 	if(entry == NULL)
-		MEM_ERROR();
+		MEM_ERROR(); /* FIXME */
 	entry->buffer = write_buffer;
 	entry->c_byte = c_byte;
 	entry->fragment = fragment;
 	entry->fragment_prev = entry->fragment_next = NULL;
-	pthread_mutex_lock(&fragment_mutex);
 	insert_fragment_list(&frag_locked_list, entry);
-	pthread_mutex_unlock(&fragment_mutex);
 }
 
 
@@ -1842,26 +1852,29 @@ void write_fragment(struct file_buffer *fragment)
 	if(fragment == NULL)
 		return;
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
 	fragment_table[fragment->block].unused = 0;
 	fragments_outstanding ++;
 	queue_put(to_frag, fragment);
-	pthread_mutex_unlock(&fragment_mutex);
+	pthread_cleanup_pop(1);
 }
 
 
 struct file_buffer *allocate_fragment()
 {
+	int res = 1;
 	struct file_buffer *fragment = cache_get(fragment_buffer, fragments, 1);
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
 
 	if(fragments % FRAG_SIZE == 0) {
 		void *ft = realloc(fragment_table, (fragments +
 			FRAG_SIZE) * sizeof(struct squashfs_fragment_entry));
 		if(ft == NULL) {
-			pthread_mutex_unlock(&fragment_mutex);
-			MEM_ERROR();
+			res = 0;
+			goto release_mutex;
 		}
 		fragment_table = ft;
 	}
@@ -1869,7 +1882,11 @@ struct file_buffer *allocate_fragment()
 	fragment->size = 0;
 	fragment->block = fragments ++;
 
-	pthread_mutex_unlock(&fragment_mutex);
+release_mutex:
+	pthread_cleanup_pop(1);
+
+	if(res == 0)
+		MEM_ERROR();
 
 	return fragment;
 }
@@ -2537,13 +2554,6 @@ void reader_scan(struct dir_info *dir) {
 
 void *reader(void *arg)
 {
-	/*
-	 * signal used by the main thread on filesystem restoring to
-	 * ensure all sub-threads are in a passive state sleeping in the
-	 * SIGUSR1 handler
-	 */
-	signal(SIGUSR1, sigusr1_handler);
-
 	if(!sorted)
 		reader_scan(queue_get(to_reader));
 	else {
@@ -2565,16 +2575,10 @@ void *reader(void *arg)
 
 void *writer(void *arg)
 {
-	/*
-	 * signal used by the main thread on filesystem restoring to
-	 * ensure all sub-threads are in a passive state sleeping in the
-	 * SIGUSR1 handler
-	 */
-	signal(SIGUSR1, sigusr1_handler);
-
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(to_writer);
 		off_t off;
+		int err = 0;
 
 		if(file_buffer == NULL) {
 			queue_put(from_writer, NULL);
@@ -2583,6 +2587,7 @@ void *writer(void *arg)
 
 		off = file_buffer->block;
 
+		pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
 		pthread_mutex_lock(&pos_mutex);
 
 		if(lseek(fd, off, SEEK_SET) == -1) {
@@ -2591,16 +2596,22 @@ void *writer(void *arg)
 			ERROR("FATAL ERROR: Probably out of space on output "
 				"%s\n", block_device ? "block device" :
 				"filesystem");
-			goto outofspace;
+			err = 1;
+			goto release_mutex;
 		}
 
 		if(write_bytes(fd, file_buffer->data,
 				file_buffer->size) == -1) {
 			ERROR("Failed to write to output %s\n",
 				block_device ? "block device" : "filesystem");
-			goto outofspace;
+			err = 1;
 		}
-		pthread_mutex_unlock(&pos_mutex);
+
+release_mutex:
+		pthread_cleanup_pop(1);
+
+		if(err)
+			goto outofspace;
 
 		cache_block_put(file_buffer);
 	}
@@ -2611,7 +2622,6 @@ outofspace:
 	 * tell the main process to exit, and restore the previous filsystem
 	 * if appending
 	 */
-	pthread_mutex_unlock(&pos_mutex);
 	thread[1] = 0;
 	kill(getpid(), SIGUSR2);
 	return NULL;
@@ -2642,13 +2652,6 @@ void *deflator(void *arg)
 {
 	void *stream = NULL;
 	int res;
-
-	/*
-	 * signal used by the main thread on filesystem restoring to
-	 * ensure all sub-threads are in a passive state sleeping in the
-	 * SIGUSR1 handler
-	 */
-	signal(SIGUSR1, sigusr1_handler);
 
 	res = compressor_init(comp, &stream, block_size, 1);
 	if(res)
@@ -2692,13 +2695,6 @@ void *frag_deflator(void *arg)
 	void *stream = NULL;
 	int res;
 
-	/*
-	 * signal used by the main thread on filesystem restoring to
-	 * ensure all sub-threads are in a passive state sleeping in the
-	 * SIGUSR1 handler
-	 */
-	signal(SIGUSR1, sigusr1_handler);
-
 	res = compressor_init(comp, &stream, block_size, 1);
 	if(res)
 		BAD_ERROR("frag_deflator:: compressor_init failed\n");
@@ -2714,6 +2710,7 @@ void *frag_deflator(void *arg)
 			file_buffer->size, block_size, noF, 1);
 		compressed_size = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
 		write_buffer->size = compressed_size;
+		pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 		pthread_mutex_lock(&fragment_mutex);
 		if(fragments_locked == FALSE) {
 			fragment_table[file_buffer->block].size = c_byte;
@@ -2722,15 +2719,13 @@ void *frag_deflator(void *arg)
 			bytes += compressed_size;
 			fragments_outstanding --;
 			queue_put(to_writer, write_buffer);
-			pthread_mutex_unlock(&fragment_mutex);
 			TRACE("Writing fragment %lld, uncompressed size %d, "
 				"compressed size %d\n", file_buffer->block,
 				file_buffer->size, compressed_size);
-		} else {
-				pthread_mutex_unlock(&fragment_mutex);
+		} else 
 				add_pending_fragment(write_buffer, c_byte,
 					file_buffer->block);
-		}
+		pthread_cleanup_pop(1);
 		cache_block_put(file_buffer);
 	}
 }
@@ -5151,7 +5146,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/03/27)\n");\
+	printf("mksquashfs version 4.2-git (2013/03/31)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5933,12 +5928,14 @@ printOptions:
 	while((fragment = get_frag_action(fragment)))
 		write_fragment(*fragment);
 	unlock_fragments();
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
 	while(fragments_outstanding) {
 		pthread_mutex_unlock(&fragment_mutex);
 		sched_yield();
 		pthread_mutex_lock(&fragment_mutex);
 	}
+	pthread_cleanup_pop(1);
 
 	queue_put(to_writer, NULL);
 	if(queue_get(from_writer) != 0)
