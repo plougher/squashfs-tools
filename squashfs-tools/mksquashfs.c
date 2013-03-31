@@ -727,11 +727,9 @@ void restorefs()
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
 	for(i = 0; i < 2 + processors * 2; i++)
-		if(thread[i])
-			pthread_cancel(thread[i]);
+		pthread_cancel(thread[i]);
 	for(i = 0; i < 2 + processors * 2; i++)
-		if(thread[i])
-			pthread_join(thread[i], NULL);
+		pthread_join(thread[i], NULL);
 
 	TRACE("All threads in signal handler\n");
 	bytes = sbytes;
@@ -2537,8 +2535,6 @@ void *reader(void *arg)
 				reader_read_file(entry->dir);
 	}
 
-	thread[0] = 0;
-
 	pthread_exit(NULL);
 }
 
@@ -2592,7 +2588,6 @@ outofspace:
 	 * tell the main process to exit, and restore the previous filsystem
 	 * if appending
 	 */
-	thread[1] = 0;
 	kill(getpid(), SIGUSR1);
 	return NULL;
 }
