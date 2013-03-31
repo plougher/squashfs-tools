@@ -191,7 +191,7 @@ void *progress_thrd(void *arg)
 
 exit_mksquashfs:
 	ERROR("nanosleep failed in progress thread\n");
-	kill(getpid(), SIGUSR2);
+	kill(getpid(), SIGUSR1);
 	pthread_exit(NULL);
 }
 

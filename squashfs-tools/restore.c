@@ -55,7 +55,7 @@ void *restore_thrd(void *arg)
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
 	sigaddset(&sigmask, SIGTERM);
-	sigaddset(&sigmask, SIGUSR2);
+	sigaddset(&sigmask, SIGUSR1);
 	pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask);
 
 	while(1) {
@@ -71,7 +71,7 @@ void *restore_thrd(void *arg)
 			}
 		}
 
-		if(interrupted == 2 || sig == SIGUSR2) {
+		if(interrupted == 2 || sig == SIGUSR1) {
 			disable_progress_bar();
 			pthread_cancel(main_thread);
 			pthread_join(main_thread, NULL);

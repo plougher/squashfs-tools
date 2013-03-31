@@ -2593,7 +2593,7 @@ outofspace:
 	 * if appending
 	 */
 	thread[1] = 0;
-	kill(getpid(), SIGUSR2);
+	kill(getpid(), SIGUSR1);
 	return NULL;
 }
 
@@ -4371,13 +4371,13 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	 * allowing the user to press ^C twice to restore the existing
 	 * filesystem.
 	 *
-	 * SIGUSR2 is an internal signal, which is used by the sub-threads
+	 * SIGUSR1 is an internal signal, which is used by the sub-threads
 	 * to tell the main thread to terminate, deleting the destination file,
 	 * or if necessary restoring the filesystem on appending
 	 */
 	signal(SIGTERM, sighandler);
 	signal(SIGINT, sighandler);
-	signal(SIGUSR2, sighandler);
+	signal(SIGUSR1, sighandler);
 
 	/* block SIGQUIT this is handled by the info thread */
 	sigemptyset(&sigmask);
@@ -4392,7 +4392,7 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
 	sigaddset(&sigmask, SIGTERM);
-	sigaddset(&sigmask, SIGUSR2);
+	sigaddset(&sigmask, SIGUSR1);
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
@@ -5801,7 +5801,7 @@ printOptions:
 		sigemptyset(&sigmask);
 		sigaddset(&sigmask, SIGINT);
 		sigaddset(&sigmask, SIGTERM);
-		sigaddset(&sigmask, SIGUSR2);
+		sigaddset(&sigmask, SIGUSR1);
 		if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 			BAD_ERROR("Failed to set signal mask\n");
 		write_destination(fd, SQUASHFS_START, 4, "\0\0\0\0");
