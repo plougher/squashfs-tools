@@ -710,14 +710,6 @@ void cache_block_put(struct file_buffer *entry)
 			+ (((char *)A) - data_cache)))
 
 
-inline void waitforthread(int i)
-{
-	TRACE("Waiting for thread %d\n", i);
-	while(thread[i] != 0)
-		sched_yield();
-}
-
-
 void restorefs()
 {
 	int i;
