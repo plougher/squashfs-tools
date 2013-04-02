@@ -387,8 +387,11 @@ void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
 
 void prep_exit()
 {
-	if(restore)
-		restorefs();
+	if(restore) {
+		/* signal the restore thread to restore */
+		kill(getpid(), SIGUSR1);
+		pthread_exit(NULL);
+	}
 	if(delete && destination_file && !block_device)
 		unlink(destination_file);
 }
@@ -1806,7 +1809,7 @@ void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 {
 	struct frag_locked *entry = malloc(sizeof(struct frag_locked));
 	if(entry == NULL)
-		MEM_ERROR(); /* FIXME */
+		MEM_ERROR();
 	entry->buffer = write_buffer;
 	entry->c_byte = c_byte;
 	entry->fragment = fragment;
@@ -5111,7 +5114,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/03/31)\n");\
+	printf("mksquashfs version 4.2-git (2013/04/01)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
