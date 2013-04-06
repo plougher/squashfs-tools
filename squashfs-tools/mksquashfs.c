@@ -625,7 +625,7 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 			entry = malloc(sizeof(struct file_buffer) +
 				cache->buffer_size);
 			if(entry == NULL)
-				goto release_mutex;
+				MEM_ERROR();
 			entry->cache = cache;
 			entry->free_prev = entry->free_next = NULL;
 			cache->count ++;
@@ -650,11 +650,7 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 		insert_hash_table(cache, entry);
 	}
 
-release_mutex:
 	pthread_cleanup_pop(1);
-
-	if(entry == NULL)
-		MEM_ERROR();
 
 	return entry;
 }
@@ -1834,7 +1830,6 @@ void write_fragment(struct file_buffer *fragment)
 
 struct file_buffer *allocate_fragment()
 {
-	int res = 1;
 	struct file_buffer *fragment = cache_get(fragment_buffer, fragments, 1);
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
@@ -1843,21 +1838,15 @@ struct file_buffer *allocate_fragment()
 	if(fragments % FRAG_SIZE == 0) {
 		void *ft = realloc(fragment_table, (fragments +
 			FRAG_SIZE) * sizeof(struct squashfs_fragment_entry));
-		if(ft == NULL) {
-			res = 0;
-			goto release_mutex;
-		}
+		if(ft == NULL)
+			MEM_ERROR();
 		fragment_table = ft;
 	}
 
 	fragment->size = 0;
 	fragment->block = fragments ++;
 
-release_mutex:
 	pthread_cleanup_pop(1);
-
-	if(res == 0)
-		MEM_ERROR();
 
 	return fragment;
 }
@@ -2547,7 +2536,6 @@ void *writer(void *arg)
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(to_writer);
 		off_t off;
-		int err = 0;
 
 		if(file_buffer == NULL) {
 			queue_put(from_writer, NULL);
@@ -2562,36 +2550,20 @@ void *writer(void *arg)
 		if(lseek(fd, off, SEEK_SET) == -1) {
 			ERROR("writer: Lseek on destination failed because "
 				"%s, offset=0x%llx\n", strerror(errno), off);
-			ERROR("FATAL ERROR: Probably out of space on output "
+			BAD_ERROR("Probably out of space on output "
 				"%s\n", block_device ? "block device" :
 				"filesystem");
-			err = 1;
-			goto release_mutex;
 		}
 
 		if(write_bytes(fd, file_buffer->data,
-				file_buffer->size) == -1) {
-			ERROR("FATAL ERROR: Failed to write to output %s\n",
+				file_buffer->size) == -1)
+			BAD_ERROR("Failed to write to output %s\n",
 				block_device ? "block device" : "filesystem");
-			err = 1;
-		}
 
-release_mutex:
 		pthread_cleanup_pop(1);
-
-		if(err)
-			goto outofspace;
 
 		cache_block_put(file_buffer);
 	}
-
-outofspace:
-	/*
-	 * Probably out of space on the filesystem or block device,
-	 * tell the main process to exit, and restore the previous filsystem
-	 * if appending
-	 */
-	EXIT_MKSQUASHFS();
 }
 
 
@@ -5113,7 +5085,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/04/01)\n");\
+	printf("mksquashfs version 4.2-git (2013/04/05)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
