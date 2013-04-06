@@ -179,7 +179,7 @@ void *progress_thrd(void *arg)
 		int res = nanosleep(&requested_time, &remaining);
 
 		if(res == -1 && errno != EINTR)
-			goto exit_mksquashfs;
+			BAD_ERROR("nanosleep failed in progress thread\n");
 
 		if(progress_enabled) {
 			pthread_mutex_lock(&progress_mutex);
@@ -188,11 +188,6 @@ void *progress_thrd(void *arg)
 			pthread_mutex_unlock(&progress_mutex);
 		}
 	}
-
-exit_mksquashfs:
-	ERROR("nanosleep failed in progress thread\n");
-	kill(getpid(), SIGUSR1);
-	pthread_exit(NULL);
 }
 
 
