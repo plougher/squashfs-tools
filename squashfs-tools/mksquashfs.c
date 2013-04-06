@@ -2591,8 +2591,7 @@ outofspace:
 	 * tell the main process to exit, and restore the previous filsystem
 	 * if appending
 	 */
-	kill(getpid(), SIGUSR1);
-	pthread_exit(NULL);
+	EXIT_MKSQUASHFS();
 }
 
 
