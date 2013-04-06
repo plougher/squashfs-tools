@@ -2571,7 +2571,7 @@ void *writer(void *arg)
 
 		if(write_bytes(fd, file_buffer->data,
 				file_buffer->size) == -1) {
-			ERROR("Failed to write to output %s\n",
+			ERROR("FATAL ERROR: Failed to write to output %s\n",
 				block_device ? "block device" : "filesystem");
 			err = 1;
 		}
