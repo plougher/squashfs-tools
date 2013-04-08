@@ -82,8 +82,9 @@ void *restore_thrd(void *arg)
 }
 
 
-void init_restore_thread(pthread_t thread)
+pthread_t *init_restore_thread(pthread_t thread)
 {
 	main_thread = thread;
 	pthread_create(&restore_thread, NULL, restore_thrd, NULL);
+	return &restore_thread;
 }

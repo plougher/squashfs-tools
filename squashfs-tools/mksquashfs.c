@@ -229,9 +229,6 @@ struct file_info {
 	char			checksum_flag;
 };
 
-/* flag if we're restoring existing filesystem */
-int restoring = 0;
-
 /* restore orignal filesystem state if appending to existing filesystem is
  * cancelled */
 char *sdata_cache, *sdirectory_data_cache, *sdirectory_compressed;
@@ -244,7 +241,6 @@ unsigned int sinode_bytes, scache_bytes, sdirectory_bytes,
 	sinode_count = 0, sfile_count, ssym_count, sdev_count,
 	sdir_count, sfifo_count, ssock_count, sdup_files;
 int sfragments;
-int restore = 0;
 int threads;
 
 /* flag whether destination file is a block device */
@@ -315,6 +311,7 @@ struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
 struct queue *to_reader, *from_reader, *to_writer, *from_writer, *from_deflate,
 	*to_frag;
 pthread_t *thread, *deflator_thread, *frag_deflator_thread;
+pthread_t *restore_thread = NULL;
 pthread_mutex_t	fragment_mutex;
 pthread_cond_t fragment_waiting;
 pthread_mutex_t	pos_mutex;
@@ -381,16 +378,27 @@ void restorefs();
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
 extern void init_info();
 extern void update_info(struct dir_ent *);
-extern void init_restore_thread(pthread_t);
+extern pthread_t *init_restore_thread(pthread_t);
 void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
 
 
 void prep_exit()
 {
-	if(restore) {
-		/* signal the restore thread to restore */
-		kill(getpid(), SIGUSR1);
-		pthread_exit(NULL);
+	if(restore_thread) {
+		if(pthread_self() == *restore_thread) {
+			/*
+			 * Recursive failure when trying to restore filesystem!
+			 * Nothing to do except to exit, otherwise we'll just
+			 * appear to hang.  The user should be able to restore
+			 * from the recovery file (which is why it was added, in
+			 * case of catastrophic failure in Mksquashfs)
+			 */
+			exit(1);
+		} else {
+			/* signal the restore thread to restore */
+			kill(getpid(), SIGUSR1);
+			pthread_exit(NULL);
+		}
 	}
 	if(delete && destination_file && !block_device)
 		unlink(destination_file);
@@ -712,16 +720,6 @@ void cache_block_put(struct file_buffer *entry)
 void restorefs()
 {
 	int i;
-
-	if(restoring++)
-		/*
-		 * Recursive failure when trying to restore filesystem!
-		 * Nothing to do except to exit, otherwise we'll just appear
-		 * to hang.  The user should be able to restore from the
-		 * recovery file (which is why it was added, in case of
-		 * catastrophic failure in Mksquashfs)
-		 */
-		exit(1);
 
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
@@ -5085,7 +5083,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/04/05)\n");\
+	printf("mksquashfs version 4.2-git (2013/04/07)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5765,8 +5763,7 @@ printOptions:
 		sid_count = id_count;
 		write_recovery_data(&sBlk);
 		save_xattrs();
-		restore = TRUE;
-		init_restore_thread(pthread_self());
+		restore_thread = init_restore_thread(pthread_self());
 		sigemptyset(&sigmask);
 		sigaddset(&sigmask, SIGINT);
 		sigaddset(&sigmask, SIGTERM);
