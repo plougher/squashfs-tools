@@ -40,6 +40,7 @@
 #include "mksquashfs.h"
 #include "error.h"
 #include "progressbar.h"
+#include "info.h"
 
 pthread_t restore_thread, main_thread;
 int interrupted = 0;
@@ -73,6 +74,7 @@ void *restore_thrd(void *arg)
 
 		if(interrupted == 2 || sig == SIGUSR1) {
 			disable_progress_bar();
+			disable_info();
 			pthread_cancel(main_thread);
 			pthread_join(main_thread, NULL);
 
