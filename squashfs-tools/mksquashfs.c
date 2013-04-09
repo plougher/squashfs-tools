@@ -71,6 +71,7 @@
 #include "action.h"
 #include "error.h"
 #include "progressbar.h"
+#include "info.h"
 
 int delete = FALSE;
 int fd;
@@ -376,8 +377,6 @@ extern struct priority_entry *priority_list[65536];
 long long generic_write_table(int, void *, int, void *, int);
 void restorefs();
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
-extern void init_info();
-extern void update_info(struct dir_ent *);
 extern pthread_t *init_restore_thread(pthread_t);
 void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
 
