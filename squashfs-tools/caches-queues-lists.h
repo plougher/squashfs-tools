@@ -63,6 +63,7 @@ struct cache {
 	int	max_buffers;
 	int	count;
 	int	buffer_size;
+	int	first_freelist;
 	pthread_mutex_t	mutex;
 	pthread_cond_t wait_for_free;
 	struct file_buffer *free_list;
@@ -111,7 +112,7 @@ void remove_##NAME##_list(TYPE **list, TYPE *entry) { \
 extern struct queue *queue_init(int);
 extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);
-extern struct cache *cache_init(int, int);
+extern struct cache *cache_init(int, int, int);
 extern struct file_buffer *cache_lookup(struct cache *, long long);
 extern struct file_buffer *cache_get(struct cache *, long long, int);
 extern void cache_rehash(struct file_buffer *, long long);

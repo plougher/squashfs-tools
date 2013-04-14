@@ -3961,7 +3961,7 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 
 
 void initialise_threads(int readb_mbytes, int writeb_mbytes,
-	int fragmentb_mbytes)
+	int fragmentb_mbytes, int freelst)
 {
 	int i;
 	sigset_t sigmask, old_mask;
@@ -4067,9 +4067,9 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	from_writer = queue_init(1);
 	from_deflate = queue_init(reader_buffer_size);
 	to_frag = queue_init(fragment_buffer_size);
-	reader_buffer = cache_init(block_size, reader_buffer_size);
-	writer_buffer = cache_init(block_size, writer_buffer_size);
-	fragment_buffer = cache_init(block_size, fragment_buffer_size);
+	reader_buffer = cache_init(block_size, reader_buffer_size, 1);
+	writer_buffer = cache_init(block_size, writer_buffer_size, freelst);
+	fragment_buffer = cache_init(block_size, fragment_buffer_size, freelst);
 	pthread_create(&thread[0], NULL, reader, NULL);
 	pthread_create(&thread[1], NULL, writer, NULL);
 	init_progress_bar();
@@ -5313,7 +5313,8 @@ printOptions:
 		comp_opts = SQUASHFS_COMP_OPTS(sBlk.flags);
 	}
 
-	initialise_threads(readb_mbytes, writeb_mbytes, fragmentb_mbytes);
+	initialise_threads(readb_mbytes, writeb_mbytes, fragmentb_mbytes,
+		delete);
 
 	res = compressor_init(comp, &stream, SQUASHFS_METADATA_SIZE, 0);
 	if(res)
@@ -5482,18 +5483,6 @@ printOptions:
 
 		inode_count = file_count + dir_count + sym_count + dev_count +
 			fifo_count + sock_count;
-
-		/*
-		 * The default use freelist before growing cache policy behaves
-		 * poorly with appending - with many deplicates the caches
-		 * do not grow due to the fact that large queues of outstanding
-		 * fragments/writer blocks do not occur, leading to small caches
-		 * and un-uncessary performance loss to frequent cache
-		 * replacement in the small caches.  Therefore with appending
-		 * change the policy to grow the caches before reusing blocks
-		 * from the freelist
-		 */
-		first_freelist = FALSE;
 	}
 
 	if(path)

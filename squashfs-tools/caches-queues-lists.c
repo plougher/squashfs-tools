@@ -29,8 +29,6 @@
 #include "error.h"
 #include "caches-queues-lists.h"
 
-int first_freelist = 1;
-
 extern int add_overflow(int, int);
 extern int multiply_overflow(int, int);
 
@@ -139,7 +137,7 @@ INSERT_LIST(fragment, struct frag_locked)
 REMOVE_LIST(fragment, struct frag_locked)
 
 
-struct cache *cache_init(int buffer_size, int max_buffers)
+struct cache *cache_init(int buffer_size, int max_buffers, int first_freelist)
 {
 	struct cache *cache = malloc(sizeof(struct cache));
 
@@ -150,6 +148,19 @@ struct cache *cache_init(int buffer_size, int max_buffers)
 	cache->buffer_size = buffer_size;
 	cache->count = 0;
 	cache->free_list = NULL;
+
+	/*
+	 * The default use freelist before growing cache policy behaves
+	 * poorly with appending - with many deplicates the caches
+	 * do not grow due to the fact that large queues of outstanding
+	 * fragments/writer blocks do not occur, leading to small caches
+	 * and un-uncessary performance loss to frequent cache
+	 * replacement in the small caches.  Therefore with appending
+	 * change the policy to grow the caches before reusing blocks
+	 * from the freelist
+	 */
+	cache->first_freelist = first_freelist;
+
 	memset(cache->hash_table, 0, sizeof(struct file_buffer *) * 65536);
 	pthread_mutex_init(&cache->mutex, NULL);
 	pthread_cond_init(&cache->wait_for_free, NULL);
@@ -196,7 +207,7 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 
 	while(1) {
 		/* first try to get a block from the free list */
-		if(first_freelist && cache->free_list) {
+		if(cache->first_freelist && cache->free_list) {
 			/* a block on the free_list is a "keep" block */
 			entry = cache->free_list;
 			remove_free_list(&cache->free_list, entry);
@@ -212,7 +223,7 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 			entry->free_prev = entry->free_next = NULL;
 			cache->count ++;
 			break;
-		} else if(!first_freelist && cache->free_list) {
+		} else if(!cache->first_freelist && cache->free_list) {
 			/* a block on the free_list is a "keep" block */
 			entry = cache->free_list;
 			remove_free_list(&cache->free_list, entry);
