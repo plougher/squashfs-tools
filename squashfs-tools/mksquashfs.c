@@ -201,6 +201,9 @@ struct fragment {
 struct squashfs_fragment_entry *fragment_table = NULL;
 int fragments_outstanding = 0;
 
+int fragments_locked = FALSE;
+struct frag_locked *frag_locked_list = NULL;
+
 /* current inode number for directories and non directories */
 unsigned int inode_no = 1;
 unsigned int root_inode_number = 0;
@@ -1419,20 +1422,6 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 	return buffer;
 }
 
-
-struct frag_locked {
-	struct file_buffer *buffer;
-	int c_byte;
-	int fragment;
-	struct frag_locked *fragment_prev;
-	struct frag_locked *fragment_next;
-};
-
-int fragments_locked = FALSE;
-struct frag_locked *frag_locked_list = NULL;
-
-INSERT_LIST(fragment, struct frag_locked)
-REMOVE_LIST(fragment, struct frag_locked)
 
 int lock_fragments()
 {

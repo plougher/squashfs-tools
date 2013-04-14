@@ -135,6 +135,9 @@ INSERT_LIST(free, struct file_buffer)
 /* Called with the cache mutex held */
 REMOVE_LIST(free, struct file_buffer)
 
+INSERT_LIST(fragment, struct frag_locked)
+REMOVE_LIST(fragment, struct frag_locked)
+
 
 struct cache *cache_init(int buffer_size, int max_buffers)
 {
