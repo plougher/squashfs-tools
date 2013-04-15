@@ -322,8 +322,6 @@ extern long long read_filesystem(char *root_name, int fd,
 	void (push_directory_entry)(char *, squashfs_inode, int, int),
 	struct squashfs_fragment_entry **fragment_table,
 	squashfs_inode **inode_lookup_table);
-extern int read_sort_file(char *filename, int source, char *source_path[]);
-extern void sort_files_and_write(struct dir_info *dir);
 struct file_info *duplicate(long long file_size, long long bytes,
 	unsigned int **block_list, long long *start, struct fragment **fragment,
 	struct file_buffer *file_buffer, int blocks, unsigned short checksum,
@@ -339,9 +337,6 @@ struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct fragment *fragment,
 	unsigned short checksum, unsigned short fragment_checksum,
 	int checksum_flag);
-extern void generate_file_priorities(struct dir_info *dir, int priority,
-	struct stat *buf);
-extern struct priority_entry *priority_list[65536];
 long long generic_write_table(int, void *, int, void *, int);
 void restorefs();
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
