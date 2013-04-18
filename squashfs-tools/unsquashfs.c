@@ -2393,7 +2393,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2013/03/13)\n");\
+	printf("unsquashfs version 4.2-git (2013/04/16)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\

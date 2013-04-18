@@ -207,7 +207,7 @@ int scan_inode_table(int fd, long long start, long long end,
 	 */
 	*root_inode_size = bytes - (*root_inode_block + root_inode_offset);
 	bytes = *root_inode_block + root_inode_offset;
-	SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode->dir, *inode_table + bytes);
+	SQUASHFS_SWAP_DIR_INODE_HEADER(*inode_table + bytes, &dir_inode->dir);
 	
 	if(dir_inode->base.inode_type == SQUASHFS_DIR_TYPE)
 		directory_start_block = dir_inode->dir.start_block;
@@ -215,8 +215,8 @@ int scan_inode_table(int fd, long long start, long long end,
 		if(*root_inode_size < sizeof(struct squashfs_ldir_inode_header))
 			/* corrupted filesystem */
 			goto corrupted;
-		SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode->ldir,
-			*inode_table + bytes);
+		SQUASHFS_SWAP_LDIR_INODE_HEADER(*inode_table + bytes,
+			&dir_inode->ldir);
 		directory_start_block = dir_inode->ldir.start_block;
 	} else
 		/* bad type, corrupted filesystem */
@@ -230,7 +230,7 @@ int scan_inode_table(int fd, long long start, long long end,
 			/* corrupted filesystem */
 			goto corrupted;
 
-		SQUASHFS_SWAP_BASE_INODE_HEADER(&base, cur_ptr);
+		SQUASHFS_SWAP_BASE_INODE_HEADER(cur_ptr, &base);
 
 		TRACE("scan_inode_table: processing inode @ byte position "
 			"0x%x, type 0x%x\n",
@@ -251,7 +251,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				/* corrupted filesystem */
 				goto corrupted;
 
-			SQUASHFS_SWAP_REG_INODE_HEADER(&inode, cur_ptr);
+			SQUASHFS_SWAP_REG_INODE_HEADER(cur_ptr, &inode);
 
 			frag_bytes = inode.fragment == SQUASHFS_INVALID_FRAG ?
 				0 : inode.file_size % sBlk->block_size;
@@ -273,7 +273,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				MEM_ERROR();
 
 			cur_ptr += sizeof(inode);
-			SQUASHFS_SWAP_INTS(block_list, cur_ptr, blocks);
+			SQUASHFS_SWAP_INTS(cur_ptr, block_list, blocks);
 
 			*uncompressed_file += inode.file_size;
 			(*file_count) ++;
@@ -300,7 +300,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				/* corrupted filesystem */
 				goto corrupted;
 
-			SQUASHFS_SWAP_LREG_INODE_HEADER(&inode, cur_ptr);
+			SQUASHFS_SWAP_LREG_INODE_HEADER(cur_ptr, &inode);
 
 			frag_bytes = inode.fragment == SQUASHFS_INVALID_FRAG ?
 				0 : inode.file_size % sBlk->block_size;
@@ -323,7 +323,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				MEM_ERROR();
 
 			cur_ptr += sizeof(inode);
-			SQUASHFS_SWAP_INTS(block_list, cur_ptr, blocks);
+			SQUASHFS_SWAP_INTS(cur_ptr, block_list, blocks);
 
 			*uncompressed_file += inode.file_size;
 			(*file_count) ++;
@@ -348,7 +348,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				/* corrupted filesystem */
 				goto corrupted;
 
-			SQUASHFS_SWAP_SYMLINK_INODE_HEADER(&inode, cur_ptr);
+			SQUASHFS_SWAP_SYMLINK_INODE_HEADER(cur_ptr, &inode);
 
 			(*sym_count) ++;
 
@@ -374,7 +374,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				/* corrupted filesystem */
 				goto corrupted;
 				
-			SQUASHFS_SWAP_DIR_INODE_HEADER(&dir_inode, cur_ptr);
+			SQUASHFS_SWAP_DIR_INODE_HEADER(cur_ptr, &dir_inode);
 
 			if(dir_inode.start_block < directory_start_block)
 				*uncompressed_directory += dir_inode.file_size;
@@ -391,7 +391,7 @@ int scan_inode_table(int fd, long long start, long long end,
 				/* corrupted filesystem */
 				goto corrupted;
 
-			SQUASHFS_SWAP_LDIR_INODE_HEADER(&dir_inode, cur_ptr);
+			SQUASHFS_SWAP_LDIR_INODE_HEADER(cur_ptr, &dir_inode);
 
 			if(dir_inode.start_block < directory_start_block)
 				*uncompressed_directory += dir_inode.file_size;
@@ -406,7 +406,7 @@ int scan_inode_table(int fd, long long start, long long end,
 					/* corrupted filesystem */
 					goto corrupted;
 			
-				SQUASHFS_SWAP_DIR_INDEX(&index, cur_ptr);
+				SQUASHFS_SWAP_DIR_INDEX(cur_ptr, &index);
 
 				if(NO_BYTES(index.size + 1))
 					/* corrupted filesystem */
@@ -651,7 +651,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 
 	bytes = offset;
  	while(bytes < size) {			
-		SQUASHFS_SWAP_DIR_HEADER(&dirh, directory_table + bytes);
+		SQUASHFS_SWAP_DIR_HEADER(directory_table + bytes, &dirh);
 
 		dir_count = dirh.count + 1;
 		TRACE("squashfs_readdir: Read directory header @ byte position "
@@ -659,7 +659,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 		bytes += sizeof(dirh);
 
 		while(dir_count--) {
-			SQUASHFS_SWAP_DIR_ENTRY(dire, directory_table + bytes);
+			SQUASHFS_SWAP_DIR_ENTRY(directory_table + bytes, dire);
 			bytes += sizeof(*dire);
 
 			memcpy(dire->name, directory_table + bytes,

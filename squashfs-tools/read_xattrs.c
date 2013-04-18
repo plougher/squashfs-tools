@@ -338,7 +338,7 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
 				MEM_ERROR();
 		}
 			
-		SQUASHFS_SWAP_XATTR_ENTRY(&entry, xptr);
+		SQUASHFS_SWAP_XATTR_ENTRY(xptr, &entry);
 		xptr += sizeof(entry);
 
 		res = read_xattr_entry(&xattr_list[j], &entry, xptr);
@@ -361,15 +361,15 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
 			void *ool_xptr;
 
 			xptr += sizeof(val);
-			SQUASHFS_SWAP_LONG_LONGS(&xattr, xptr, 1);
+			SQUASHFS_SWAP_LONG_LONGS(xptr, &xattr, 1);
 			xptr += sizeof(xattr);	
 			start = SQUASHFS_XATTR_BLK(xattr) + xattr_table_start;
 			offset = SQUASHFS_XATTR_OFFSET(xattr);
 			ool_xptr = xattrs + get_xattr_block(start) + offset;
-			SQUASHFS_SWAP_XATTR_VAL(&val, ool_xptr);
+			SQUASHFS_SWAP_XATTR_VAL(ool_xptr, &val);
 			xattr_list[j].value = ool_xptr + sizeof(val);
 		} else {
-			SQUASHFS_SWAP_XATTR_VAL(&val, xptr);
+			SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
 			xattr_list[j].value = xptr + sizeof(val);
 			xptr += sizeof(val) + val.vsize;
 		}
