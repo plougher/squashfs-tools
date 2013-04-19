@@ -73,6 +73,7 @@
 #include "progressbar.h"
 #include "info.h"
 #include "caches-queues-lists.h"
+#include "read_fs.h"
 
 int delete = FALSE;
 int fd;
@@ -306,22 +307,6 @@ unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
 char *read_from_disk(long long start, unsigned int avail_bytes);
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type);
-extern struct compressor  *read_super(int fd, struct squashfs_super_block *sBlk,
-	char *source);
-extern long long read_filesystem(char *root_name, int fd,
-	struct squashfs_super_block *sBlk, char **cinode_table, char **data_cache,
-	char **cdirectory_table, char **directory_data_cache,
-	unsigned int *last_directory_block, unsigned int *inode_dir_offset,
-	unsigned int *inode_dir_file_size, unsigned int *root_inode_size,
-	unsigned int *inode_dir_start_block, int *file_count, int *sym_count,
-	int *dev_count, int *dir_count, int *fifo_count, int *sock_count,
-	long long *uncompressed_file, unsigned int *uncompressed_inode,
-	unsigned int *uncompressed_directory,
-	unsigned int *inode_dir_inode_number,
-	unsigned int *inode_dir_parent_inode,
-	void (push_directory_entry)(char *, squashfs_inode, int, int),
-	struct squashfs_fragment_entry **fragment_table,
-	squashfs_inode **inode_lookup_table);
 struct file_info *duplicate(long long file_size, long long bytes,
 	unsigned int **block_list, long long *start, struct fragment **fragment,
 	struct file_buffer *file_buffer, int blocks, unsigned short checksum,
