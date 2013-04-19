@@ -26,7 +26,6 @@
 #include "unsquashfs.h"
 #include "squashfs_swap.h"
 #include "squashfs_compat.h"
-#include "read_fs.h"
 #include "compressor.h"
 #include "xattr.h"
 #include "stdarg.h"

@@ -24,19 +24,4 @@
  *
  */
 
-#if __BYTE_ORDER == __BIG_ENDIAN
-#define SQUASHFS_SWAP_SHORTS(s, d, n) swap_le16_num(s, d, n)
-#define SQUASHFS_SWAP_INTS(s, d, n) swap_le32_num(s, d, n)
-#define SQUASHFS_SWAP_LONG_LONGS(s, d, n) swap_le64_num(s, d, n)
-
-#define SWAP_LE16(s, d)		swap_le16(s, d)
-#define SWAP_LE32(s, d)		swap_le32(s, d)
-#define SWAP_LE64(s, d)		swap_le64(s, d)
-#else
-#define SQUASHFS_MEMCPY(s, d, n)	memcpy(d, s, n)
-#define SQUASHFS_SWAP_SHORTS(s, d, n)	memcpy(d, s, n * sizeof(short))
-#define SQUASHFS_SWAP_INTS(s, d, n)	memcpy(d, s, n * sizeof(int))
-#define SQUASHFS_SWAP_LONG_LONGS(s, d, n) \
-					memcpy(d, s, n * sizeof(long long))
-#endif
 #endif
