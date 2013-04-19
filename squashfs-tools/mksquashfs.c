@@ -74,6 +74,7 @@
 #include "info.h"
 #include "caches-queues-lists.h"
 #include "read_fs.h"
+#include "restore.h"
 
 int delete = FALSE;
 int fd;
@@ -325,7 +326,6 @@ struct file_info *add_non_dup(long long file_size, long long bytes,
 long long generic_write_table(int, void *, int, void *, int);
 void restorefs();
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
-extern pthread_t *init_restore_thread(pthread_t);
 void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
 
 
