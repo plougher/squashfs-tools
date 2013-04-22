@@ -72,8 +72,10 @@ void print_filename()
 	else
 		res = asprintf(&subpath, "/%s", dir_ent->name);
 
-	if(res < 0)
-		printf("asprintf failed in info_thrd\n");
+	if(res < 0) {
+		ERROR("asprintf failed in info_thrd\n");
+		return;
+	}
 
 	INFO("%s\n", subpath);
 
