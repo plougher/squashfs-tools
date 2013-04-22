@@ -39,6 +39,8 @@
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "error.h"
+#include "progressbar.h"
+#include "caches-queues-lists.h"
 
 static int silent = 0;
 static struct dir_ent *dir_ent = NULL;
@@ -83,6 +85,28 @@ void print_filename()
 }
 
 
+void dump_state()
+{
+	disable_progress_bar();
+
+	printf("Queues\n======\n");
+	printf("from_reader queue (reader thread -> deflate thread(s)\n");
+	dump_queue(from_reader);
+
+	printf("from_deflate queue (deflate thread(s) -> main thread\n");
+	dump_queue(from_deflate);
+
+	printf("to_frag queue (main thread -> fragment deflate thread(s)\n");
+	dump_queue(to_frag);
+
+	printf("to_writer queue (main thread & fragment deflate threads(s)"
+		" -> writer thread\n");
+	dump_queue(to_writer);
+
+	enable_progress_bar();
+}
+
+
 void *info_thrd(void *arg)
 {
 	sigset_t sigmask;
@@ -90,11 +114,15 @@ void *info_thrd(void *arg)
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGQUIT);
+	sigaddset(&sigmask, SIGHUP);
 
 	while(1) {
 		sigwait(&sigmask, &sig);
 
-		print_filename();
+		if(sig == SIGQUIT)
+			print_filename();
+		else
+			dump_state();
 	}
 }
 

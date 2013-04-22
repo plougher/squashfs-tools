@@ -112,6 +112,7 @@ void remove_##NAME##_list(TYPE **list, TYPE *entry) { \
 extern struct queue *queue_init(int);
 extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);
+extern void dump_queue(struct queue *);
 extern struct cache *cache_init(int, int, int);
 extern struct file_buffer *cache_lookup(struct cache *, long long);
 extern struct file_buffer *cache_get(struct cache *, long long, int);

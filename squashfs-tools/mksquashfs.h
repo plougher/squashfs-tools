@@ -75,4 +75,8 @@ struct inode_info {
 /* offset of data in compressed metadata blocks (allowing room for
  * compressed size */
 #define BLOCK_OFFSET 2
+
+extern struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
+extern struct queue *to_reader, *from_reader, *to_writer, *from_writer,
+	*from_deflate, *to_frag;
 #endif

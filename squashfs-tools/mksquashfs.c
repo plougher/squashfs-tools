@@ -3987,9 +3987,10 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	signal(SIGINT, sighandler);
 	signal(SIGUSR1, sighandler);
 
-	/* block SIGQUIT this is handled by the info thread */
+	/* block SIGQUIT and SIGHUP, these are handled by the info thread */
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGQUIT);
+	sigaddset(&sigmask, SIGHUP);
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
@@ -4724,7 +4725,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/04/16)\n");\
+	printf("mksquashfs version 4.2-git (2013/04/21)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
