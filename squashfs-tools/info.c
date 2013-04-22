@@ -58,11 +58,33 @@ void update_info(struct dir_ent *ent)
 }
 
 
+void print_filename()
+{
+	int res;
+	char *subpath;
+
+	if(dir_ent == NULL)
+		return;
+
+	if(dir_ent->our_dir->subpath[0] != '\0')
+		res = asprintf(&subpath, "%s/%s",
+			dir_ent->our_dir->subpath, dir_ent->name);
+	else
+		res = asprintf(&subpath, "/%s", dir_ent->name);
+
+	if(res < 0)
+		printf("asprintf failed in info_thrd\n");
+
+	INFO("%s\n", subpath);
+
+	free(subpath);
+}
+
+
 void *info_thrd(void *arg)
 {
 	sigset_t sigmask;
-	int sig, res;
-	char *subpath;
+	int sig;
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGQUIT);
@@ -70,20 +92,7 @@ void *info_thrd(void *arg)
 	while(1) {
 		sigwait(&sigmask, &sig);
 
-		if(dir_ent == NULL)
-			continue;
-
-		if(dir_ent->our_dir->subpath[0] != '\0')
-			res = asprintf(&subpath, "%s/%s",
-				dir_ent->our_dir->subpath, dir_ent->name);
-		else
-			res = asprintf(&subpath, "/%s", dir_ent->name);
-
-		if(res < 0)
-			printf("asprintf failed in info_thrd\n");
-
-		INFO("%s\n", subpath);
-		free(subpath);
+		print_filename();
 	}
 }
 
