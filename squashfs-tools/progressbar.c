@@ -35,7 +35,12 @@
 
 #include "error.h"
 
+/* flag whether progressbar display is enabled or not */
+int display_progress_bar = 0;
+
+/* flag whether the progress bar is temporarily disbled */
 int progress_enabled = 0;
+
 int rotate = 0;
 int cur_uncompressed = 0, estimated_uncompressed = 0;
 int columns;
@@ -130,10 +135,16 @@ static void progress_bar(long long current, long long max, int columns)
 }
 
 
+void set_progressbar_state(int state)
+{
+	display_progress_bar = state;
+}
+
+
 void enable_progress_bar()
 {
 	pthread_mutex_lock(&progress_mutex);
-	progress_enabled = 1;
+	progress_enabled = display_progress_bar;
 	pthread_mutex_unlock(&progress_mutex);
 }
 

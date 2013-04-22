@@ -88,7 +88,6 @@ int noI = 0, noD = 0;
 int silent = TRUE;
 long long global_uid = -1, global_gid = -1;
 int exportable = TRUE;
-int progress = TRUE;
 int sparse_files = TRUE;
 int old_exclude = TRUE;
 int use_regex = FALSE;
@@ -3092,8 +3091,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	queue_put(to_reader, dir_info);
 	if(sorted)
 		sort_files_and_write(dir_info);
-	if(progress)
-		enable_progress_bar();
+	enable_progress_bar();
 	dir_scan6(inode, dir_info);
 	dir_ent->inode->inode = *inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
@@ -4753,6 +4751,7 @@ int main(int argc, char *argv[])
 	int readb_mbytes = READER_BUFFER_DEFAULT,
 		writeb_mbytes = WRITER_BUFFER_DEFAULT,
 		fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
+	int progress = TRUE;
 	int force_progress = FALSE;
 	struct file_buffer **fragment = NULL;
 
@@ -5177,6 +5176,8 @@ printOptions:
 	 */
 	progress = FALSE;
 #endif
+
+	set_progressbar_state(progress);
 
 	for(i = 0; i < source; i++)
 		if(lstat(source_path[i], &source_buf) == -1) {

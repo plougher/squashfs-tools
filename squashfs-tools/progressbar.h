@@ -28,3 +28,4 @@ extern void progress_bar_size(int count);
 extern void enable_progress_bar();
 extern void disable_progress_bar();
 extern void init_progress_bar();
+extern void set_progressbar_state(int);
