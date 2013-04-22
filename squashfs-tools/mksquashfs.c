@@ -5170,6 +5170,11 @@ printOptions:
 		progress = force_progress;
 		
 #ifdef SQUASHFS_TRACE
+	/*
+	 * Disable progress bar if full debug tracing is enabled.
+	 * The progress bar in this case just gets in the way of the
+	 * debug trace output
+	 */
 	progress = FALSE;
 #endif
 
