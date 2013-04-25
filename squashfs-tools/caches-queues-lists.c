@@ -25,6 +25,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "error.h"
 #include "caches-queues-lists.h"
