@@ -93,13 +93,13 @@ void dump_state()
 	printf("from_reader queue (reader thread -> deflate thread(s)\n");
 	dump_queue(from_reader);
 
-	printf("from_deflate queue (deflate thread(s) -> main thread\n");
+	printf("\nfrom_deflate queue (deflate thread(s) -> main thread\n");
 	dump_queue(from_deflate);
 
-	printf("to_frag queue (main thread -> fragment deflate thread(s)\n");
+	printf("\nto_frag queue (main thread -> fragment deflate thread(s)\n");
 	dump_queue(to_frag);
 
-	printf("to_writer queue (main thread & fragment deflate threads(s)"
+	printf("\nto_writer queue (main thread & fragment deflate threads(s)"
 		" -> writer thread\n");
 	dump_queue(to_writer);
 
