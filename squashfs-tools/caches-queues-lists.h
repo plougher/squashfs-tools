@@ -118,6 +118,7 @@ extern struct file_buffer *cache_lookup(struct cache *, long long);
 extern struct file_buffer *cache_get(struct cache *, long long, int);
 extern void cache_rehash(struct file_buffer *, long long);
 extern void cache_block_put(struct file_buffer *);
+extern void dump_cache(struct cache *);
 extern void insert_fragment_list(struct frag_locked **, struct frag_locked *);
 extern void remove_fragment_list(struct frag_locked **, struct frag_locked *);
 

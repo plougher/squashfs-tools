@@ -314,3 +314,17 @@ void cache_block_put(struct file_buffer *entry)
 
 	pthread_cleanup_pop(1);
 }
+
+
+void dump_cache(struct cache *cache)
+{
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
+	pthread_mutex_lock(&cache->mutex);
+
+	printf("Max buffers %d, Current count %d, %s\n", cache->max_buffers,
+		cache->count, cache->free_list ? "Free buffers" :
+		"No free buffers");
+
+	pthread_cleanup_pop(1);
+}
+
