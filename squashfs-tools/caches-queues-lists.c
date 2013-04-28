@@ -165,6 +165,7 @@ struct cache *cache_init(int buffer_size, int max_buffers, int first_freelist)
 	cache->max_buffers = max_buffers;
 	cache->buffer_size = buffer_size;
 	cache->count = 0;
+	cache->used = 0;
 	cache->free_list = NULL;
 
 	/*
@@ -230,6 +231,7 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 			entry = cache->free_list;
 			remove_free_list(&cache->free_list, entry);
 			remove_hash_table(cache, entry);
+			cache->used ++;
 			break;
 		} else if(cache->count < cache->max_buffers) {
 			/* next try to allocate new block */
@@ -240,12 +242,14 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 			entry->cache = cache;
 			entry->free_prev = entry->free_next = NULL;
 			cache->count ++;
+			cache->used ++;
 			break;
 		} else if(!cache->first_freelist && cache->free_list) {
 			/* a block on the free_list is a "keep" block */
 			entry = cache->free_list;
 			remove_free_list(&cache->free_list, entry);
 			remove_hash_table(cache, entry);
+			cache->used ++;
 			break;
 		} else
 			/* wait for a block */
@@ -308,6 +312,8 @@ void cache_block_put(struct file_buffer *entry)
 			cache->count --;
 		}
 
+		cache->used --;
+
 		/* One or more threads may be waiting on this block */
 		pthread_cond_signal(&cache->wait_for_free);
 	}
@@ -321,9 +327,9 @@ void dump_cache(struct cache *cache)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
-	printf("Max buffers %d, Current count %d, %s\n", cache->max_buffers,
-		cache->count, cache->free_list ? "Free buffers" :
-		"No free buffers");
+	printf("Max buffers %d, Current size %d, Used %d,  %s\n",
+		cache->max_buffers, cache->count, cache->used,
+		cache->free_list ?  "Free buffers" : "No free buffers");
 
 	pthread_cleanup_pop(1);
 }

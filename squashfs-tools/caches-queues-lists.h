@@ -62,6 +62,7 @@ struct queue {
 struct cache {
 	int	max_buffers;
 	int	count;
+	int	used;
 	int	buffer_size;
 	int	first_freelist;
 	pthread_mutex_t	mutex;
