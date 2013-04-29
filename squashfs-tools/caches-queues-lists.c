@@ -155,7 +155,8 @@ INSERT_LIST(fragment, struct frag_locked)
 REMOVE_LIST(fragment, struct frag_locked)
 
 
-struct cache *cache_init(int buffer_size, int max_buffers, int first_freelist)
+struct cache *cache_init(int buffer_size, int max_buffers, int noshrink_lookup,
+	int first_freelist)
 {
 	struct cache *cache = malloc(sizeof(struct cache));
 
@@ -167,6 +168,19 @@ struct cache *cache_init(int buffer_size, int max_buffers, int first_freelist)
 	cache->count = 0;
 	cache->used = 0;
 	cache->free_list = NULL;
+
+	/*
+	 * The cache will grow up to max_buffers in size in response to
+	 * an increase in readhead/number of buffers in flight.  But
+	 * once the outstanding buffers gets returned, we can either elect
+	 * to shrink the cache, or to put the freed blocks onto a free list.
+	 *
+	 * For the caches where we want to do lookup (fragment/writer),
+	 * a don't shrink policy is best, for the reader cache it
+	 * makes no sense to keep buffers around longer than necessary as
+	 * we don't do any lookup on those blocks.
+	 */
+	cache->noshrink_lookup = noshrink_lookup;
 
 	/*
 	 * The default use freelist before growing cache policy behaves
@@ -216,7 +230,8 @@ struct file_buffer *cache_lookup(struct cache *cache, long long index)
 }
 
 
-struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
+static struct file_buffer *_cache_get(struct cache *cache, long long index,
+	int hash)
 {
 	/* Get a free block out of the cache indexed on index. */
 	struct file_buffer *entry;
@@ -227,10 +242,12 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 	while(1) {
 		/* first try to get a block from the free list */
 		if(cache->first_freelist && cache->free_list) {
-			/* a block on the free_list is a "keep" block */
 			entry = cache->free_list;
 			remove_free_list(&cache->free_list, entry);
+
+			/* a block on the free_list is hashed */
 			remove_hash_table(cache, entry);
+
 			cache->used ++;
 			break;
 		} else if(cache->count < cache->max_buffers) {
@@ -245,10 +262,12 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 			cache->used ++;
 			break;
 		} else if(!cache->first_freelist && cache->free_list) {
-			/* a block on the free_list is a "keep" block */
 			entry = cache->free_list;
 			remove_free_list(&cache->free_list, entry);
+
+			/* a block on the free_list is hashed */
 			remove_hash_table(cache, entry);
+
 			cache->used ++;
 			break;
 		} else
@@ -256,11 +275,10 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 			pthread_cond_wait(&cache->wait_for_free, &cache->mutex);
 	}
 
-	/* initialise block and if a keep block insert into the hash table */
+	/* initialise block and if hash is set insert into the hash table */
 	entry->used = 1;
 	entry->error = FALSE;
-	entry->keep = keep;
-	if(keep) {
+	if(hash) {
 		entry->index = index;
 		insert_hash_table(cache, entry);
 	}
@@ -271,17 +289,31 @@ struct file_buffer *cache_get(struct cache *cache, long long index, int keep)
 }
 
 
+struct file_buffer *cache_get(struct cache *cache, long long index)
+{
+	return _cache_get(cache, index, 1);
+}
+
+
+struct file_buffer *cache_get_nohash(struct cache *cache)
+{
+	return _cache_get(cache, 0, 0);
+}
+
+
 void cache_rehash(struct file_buffer *entry, long long index)
 {
 	struct cache *cache = entry->cache;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
-	if(entry->keep)
+
+	if(cache->noshrink_lookup) {
 		remove_hash_table(cache, entry);
-	entry->keep = TRUE;
-	entry->index = index;
-	insert_hash_table(cache, entry);
+		entry->index = index;
+		insert_hash_table(cache, entry);
+	}
+
 	pthread_cleanup_pop(1);
 }
 
@@ -290,10 +322,16 @@ void cache_block_put(struct file_buffer *entry)
 {
 	struct cache *cache;
 
-	/* finished with this cache entry, once the usage count reaches zero it
- 	 * can be reused and if a keep block put onto the free list.  As keep
- 	 * blocks remain accessible via the hash table they can be found
- 	 * getting a new lease of life before they are reused. */
+	/*
+	 * Finished with this cache entry, once the usage count reaches zero it
+ 	 * can be reused.
+	 *
+	 * If noshrink_lookup is set, put the block onto the free list.
+ 	 * As blocks remain accessible via the hash table they can be found
+ 	 * getting a new lease of life before they are reused.
+	 *
+	 * if noshrink_lookup is not set then shrink the cache.
+	 */
 
 	if(entry == NULL)
 		return;
@@ -305,7 +343,7 @@ void cache_block_put(struct file_buffer *entry)
 
 	entry->used --;
 	if(entry->used == 0) {
-		if(entry->keep)
+		if(cache->noshrink_lookup)
 			insert_free_list(&cache->free_list, entry);
 		else {
 			free(entry);

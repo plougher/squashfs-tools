@@ -1362,7 +1362,7 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 	compressed_buffer = cache_lookup(writer_buffer, fragment->index +
 		FRAG_INDEX);
 
-	buffer = cache_get(fragment_buffer, fragment->index, 1);
+	buffer = cache_get(fragment_buffer, fragment->index);
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
@@ -1470,7 +1470,7 @@ void write_fragment(struct file_buffer *fragment)
 
 struct file_buffer *allocate_fragment()
 {
-	struct file_buffer *fragment = cache_get(fragment_buffer, fragments, 1);
+	struct file_buffer *fragment = cache_get(fragment_buffer, fragments);
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
@@ -1947,7 +1947,7 @@ void reader_read_process(struct dir_ent *dir_ent)
 	long long bytes = 0;
 
 	while(1) {
-		file_buffer = cache_get(reader_buffer, 0, 0);
+		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->sequence = seq ++;
 		file_buffer->noD = inode->noD;
 
@@ -2033,7 +2033,7 @@ again:
 
 	file = open(pathname_reader(dir_ent), O_RDONLY);
 	if(file == -1) {
-		file_buffer = cache_get(reader_buffer, 0, 0);
+		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->sequence = seq ++;
 		goto read_err2;
 	}
@@ -2045,7 +2045,7 @@ again:
 
 		if(file_buffer)
 			queue_put(from_reader, file_buffer);
-		file_buffer = cache_get(reader_buffer, 0, 0);
+		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->sequence = seq ++;
 		file_buffer->noD = inode->noD;
 
@@ -2250,7 +2250,7 @@ void *deflator(void *arg)
 			file_buffer->c_byte = file_buffer->size;
 			queue_put(from_deflate, file_buffer);
 		} else {
-			write_buffer = cache_get(writer_buffer, 0, 0);
+			write_buffer = cache_get_nohash(writer_buffer);
 			write_buffer->c_byte = mangle2(stream,
 				write_buffer->data, file_buffer->data,
 				file_buffer->size, block_size,
@@ -2283,7 +2283,7 @@ void *frag_deflator(void *arg)
 		struct file_buffer *file_buffer = queue_get(to_frag);
 		struct file_buffer *write_buffer =
 			cache_get(writer_buffer, file_buffer->block +
-			FRAG_INDEX, 1);
+			FRAG_INDEX);
 
 		c_byte = mangle2(stream, write_buffer->data, file_buffer->data,
 			file_buffer->size, block_size, noF, 1);
@@ -4046,9 +4046,10 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	from_writer = queue_init(1);
 	from_deflate = queue_init(reader_buffer_size);
 	to_frag = queue_init(fragment_buffer_size);
-	reader_buffer = cache_init(block_size, reader_buffer_size, 1);
-	writer_buffer = cache_init(block_size, writer_buffer_size, freelst);
-	fragment_buffer = cache_init(block_size, fragment_buffer_size, freelst);
+	reader_buffer = cache_init(block_size, reader_buffer_size, 0, 0);
+	writer_buffer = cache_init(block_size, writer_buffer_size, 1, freelst);
+	fragment_buffer = cache_init(block_size, fragment_buffer_size, 1,
+								freelst);
 	pthread_create(&thread[0], NULL, reader, NULL);
 	pthread_create(&thread[1], NULL, writer, NULL);
 	init_progress_bar();
@@ -4725,7 +4726,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/04/22)\n");\
+	printf("mksquashfs version 4.2-git (2013/04/28)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

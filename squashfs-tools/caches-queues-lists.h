@@ -36,7 +36,6 @@ struct file_buffer {
 	long long sequence;
 	int size;
 	int c_byte;
-	char keep;
 	char used;
 	char fragment;
 	char error;
@@ -64,6 +63,7 @@ struct cache {
 	int	count;
 	int	used;
 	int	buffer_size;
+	int	noshrink_lookup;
 	int	first_freelist;
 	pthread_mutex_t	mutex;
 	pthread_cond_t wait_for_free;
@@ -114,9 +114,10 @@ extern struct queue *queue_init(int);
 extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);
 extern void dump_queue(struct queue *);
-extern struct cache *cache_init(int, int, int);
+extern struct cache *cache_init(int, int, int, int);
 extern struct file_buffer *cache_lookup(struct cache *, long long);
-extern struct file_buffer *cache_get(struct cache *, long long, int);
+extern struct file_buffer *cache_get(struct cache *, long long);
+extern struct file_buffer *cache_get_nohash(struct cache *);
 extern void cache_rehash(struct file_buffer *, long long);
 extern void cache_block_put(struct file_buffer *);
 extern void dump_cache(struct cache *);
