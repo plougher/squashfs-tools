@@ -114,7 +114,7 @@ void dump_queue(struct queue *queue)
 }
 
 
-#define CALCULATE_HASH(start)	(start & 0xffff) \
+#define CALCULATE_HASH(start)	(llabs(start) & 0xffff) \
 
 
 /* Called with the cache mutex held */
@@ -235,7 +235,7 @@ static struct file_buffer *_cache_get(struct cache *cache, long long index,
 {
 	/* Get a free block out of the cache indexed on index. */
 	struct file_buffer *entry;
-
+ 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
