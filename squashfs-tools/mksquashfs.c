@@ -2297,14 +2297,17 @@ void *frag_deflator(void *arg)
 			write_buffer->block = bytes;
 			bytes += compressed_size;
 			fragments_outstanding --;
+			pthread_mutex_unlock(&fragment_mutex);
 			queue_put(to_writer, write_buffer);
 			TRACE("Writing fragment %lld, uncompressed size %d, "
 				"compressed size %d\n", file_buffer->block,
 				file_buffer->size, compressed_size);
-		} else 
+		} else {
 				add_pending_fragment(write_buffer, c_byte,
 					file_buffer->block);
-		pthread_cleanup_pop(1);
+				pthread_mutex_unlock(&fragment_mutex);
+		}
+		pthread_cleanup_pop(0);
 		cache_block_put(file_buffer);
 	}
 }
