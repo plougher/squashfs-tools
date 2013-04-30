@@ -197,7 +197,7 @@ struct fragment {
 };
 
 #define FRAG_SIZE 32768
-#define FRAG_INDEX (1LL << 32)
+#define FRAG_INDEX(n) (-(n + 2))
 
 struct squashfs_fragment_entry *fragment_table = NULL;
 int fragments_outstanding = 0;
@@ -1359,8 +1359,8 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 	if(buffer)
 		return buffer;
 
-	compressed_buffer = cache_lookup(writer_buffer, fragment->index +
-		FRAG_INDEX);
+	compressed_buffer = cache_lookup(writer_buffer,
+						FRAG_INDEX(fragment->index));
 
 	buffer = cache_get(fragment_buffer, fragment->index);
 
@@ -2250,7 +2250,7 @@ void *deflator(void *arg)
 			file_buffer->c_byte = file_buffer->size;
 			queue_put(from_deflate, file_buffer);
 		} else {
-			write_buffer = cache_get_nohash(writer_buffer);
+			write_buffer = cache_get(writer_buffer, -1);
 			write_buffer->c_byte = mangle2(stream,
 				write_buffer->data, file_buffer->data,
 				file_buffer->size, block_size,
@@ -2282,8 +2282,8 @@ void *frag_deflator(void *arg)
 		int c_byte, compressed_size;
 		struct file_buffer *file_buffer = queue_get(to_frag);
 		struct file_buffer *write_buffer =
-			cache_get(writer_buffer, file_buffer->block +
-			FRAG_INDEX);
+			cache_get(writer_buffer,
+						FRAG_INDEX(file_buffer->block));
 
 		c_byte = mangle2(stream, write_buffer->data, file_buffer->data,
 			file_buffer->size, block_size, noF, 1);
@@ -4726,7 +4726,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/04/28)\n");\
+	printf("mksquashfs version 4.2-git (2013/04/29)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
