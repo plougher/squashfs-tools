@@ -2278,6 +2278,8 @@ void *frag_deflator(void *arg)
 	if(res)
 		BAD_ERROR("frag_deflator:: compressor_init failed\n");
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
+
 	while(1) {
 		int c_byte, compressed_size;
 		struct file_buffer *file_buffer = queue_get(to_frag);
@@ -2289,7 +2291,6 @@ void *frag_deflator(void *arg)
 			file_buffer->size, block_size, noF, 1);
 		compressed_size = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
 		write_buffer->size = compressed_size;
-		pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 		pthread_mutex_lock(&fragment_mutex);
 		if(fragments_locked == FALSE) {
 			fragment_table[file_buffer->block].size = c_byte;
@@ -2307,9 +2308,10 @@ void *frag_deflator(void *arg)
 					file_buffer->block);
 				pthread_mutex_unlock(&fragment_mutex);
 		}
-		pthread_cleanup_pop(0);
 		cache_block_put(file_buffer);
 	}
+
+	pthread_cleanup_pop(0);
 }
 
 
