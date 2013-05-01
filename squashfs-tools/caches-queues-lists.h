@@ -61,10 +61,13 @@ struct queue {
 struct cache {
 	int	max_buffers;
 	int	count;
-	int	used;
 	int	buffer_size;
 	int	noshrink_lookup;
 	int	first_freelist;
+	union {
+		int	used;
+		int	max_count;
+	};
 	pthread_mutex_t	mutex;
 	pthread_cond_t wait_for_free;
 	struct file_buffer *free_list;

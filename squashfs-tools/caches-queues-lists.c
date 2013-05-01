@@ -220,8 +220,11 @@ struct file_buffer *cache_lookup(struct cache *cache, long long index)
 		/* found the block in the cache, increment used count and
  		 * if necessary remove from free list so it won't disappear
  		 */
+		if(entry->used == 0) {
+			remove_free_list(&cache->free_list, entry);
+			cache->used ++;
+		}
 		entry->used ++;
-		remove_free_list(&cache->free_list, entry);
 	}
 
 	pthread_cleanup_pop(1);
@@ -230,49 +233,67 @@ struct file_buffer *cache_lookup(struct cache *cache, long long index)
 }
 
 
+
+static struct file_buffer *cache_freelist(struct cache *cache)
+{
+	struct file_buffer *entry = cache->free_list;
+
+	remove_free_list(&cache->free_list, entry);
+
+	/* a block on the free_list is hashed */
+	remove_hash_table(cache, entry);
+
+	cache->used ++;
+	return entry;
+}
+
+
+static struct file_buffer *cache_alloc(struct cache *cache)
+{
+	struct file_buffer *entry = malloc(sizeof(struct file_buffer) +
+							cache->buffer_size);
+	if(entry == NULL)
+			MEM_ERROR();
+
+	entry->cache = cache;
+	entry->free_prev = entry->free_next = NULL;
+	cache->count ++;
+	return entry;
+}
+
+
 static struct file_buffer *_cache_get(struct cache *cache, long long index,
 	int hash)
 {
 	/* Get a free block out of the cache indexed on index. */
-	struct file_buffer *entry;
+	struct file_buffer *entry = NULL;
  
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
 	while(1) {
-		/* first try to get a block from the free list */
-		if(cache->first_freelist && cache->free_list) {
-			entry = cache->free_list;
-			remove_free_list(&cache->free_list, entry);
+		if(cache->noshrink_lookup) {	
+			/* first try to get a block from the free list */
+			if(cache->first_freelist && cache->free_list)
+				entry = cache_freelist(cache);
+			else if(cache->count < cache->max_buffers) {
+				entry = cache_alloc(cache);
+				cache->used ++;
+			} else if(!cache->first_freelist && cache->free_list)
+				entry = cache_freelist(cache);
+		} else { /* shrinking non-lookup cache */
+			if(cache->count < cache->max_buffers) {
+				entry = cache_alloc(cache);
+				if(cache->count > cache->max_count)
+					cache->max_count = cache->count;
+			}
+		}
 
-			/* a block on the free_list is hashed */
-			remove_hash_table(cache, entry);
-
-			cache->used ++;
+		if(entry)
 			break;
-		} else if(cache->count < cache->max_buffers) {
-			/* next try to allocate new block */
-			entry = malloc(sizeof(struct file_buffer) +
-				cache->buffer_size);
-			if(entry == NULL)
-				MEM_ERROR();
-			entry->cache = cache;
-			entry->free_prev = entry->free_next = NULL;
-			cache->count ++;
-			cache->used ++;
-			break;
-		} else if(!cache->first_freelist && cache->free_list) {
-			entry = cache->free_list;
-			remove_free_list(&cache->free_list, entry);
 
-			/* a block on the free_list is hashed */
-			remove_hash_table(cache, entry);
-
-			cache->used ++;
-			break;
-		} else
-			/* wait for a block */
-			pthread_cond_wait(&cache->wait_for_free, &cache->mutex);
+		/* wait for a block */
+		pthread_cond_wait(&cache->wait_for_free, &cache->mutex);
 	}
 
 	/* initialise block and if hash is set insert into the hash table */
@@ -343,14 +364,13 @@ void cache_block_put(struct file_buffer *entry)
 
 	entry->used --;
 	if(entry->used == 0) {
-		if(cache->noshrink_lookup)
+		if(cache->noshrink_lookup) {
 			insert_free_list(&cache->free_list, entry);
-		else {
+			cache->used --;
+		} else {
 			free(entry);
 			cache->count --;
 		}
-
-		cache->used --;
 
 		/* One or more threads may be waiting on this block */
 		pthread_cond_signal(&cache->wait_for_free);
