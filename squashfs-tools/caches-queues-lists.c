@@ -233,7 +233,6 @@ struct file_buffer *cache_lookup(struct cache *cache, long long index)
 }
 
 
-
 static struct file_buffer *cache_freelist(struct cache *cache)
 {
 	struct file_buffer *entry = cache->free_list;
@@ -385,9 +384,14 @@ void dump_cache(struct cache *cache)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
-	printf("Max buffers %d, Current size %d, Used %d,  %s\n",
-		cache->max_buffers, cache->count, cache->used,
-		cache->free_list ?  "Free buffers" : "No free buffers");
+	if(cache->noshrink_lookup)
+		printf("Max buffers %d, Current size %d, Used %d,  %s\n",
+			cache->max_buffers, cache->count, cache->used,
+			cache->free_list ?  "Free buffers" : "No free buffers");
+	else
+		printf("Max buffers %d, Current size %d, Maximum historical "
+			"size %d\n", cache->max_buffers, cache->count,
+			cache->max_count);
 
 	pthread_cleanup_pop(1);
 }
