@@ -123,14 +123,13 @@ INSERT_HASH_TABLE(cache, struct cache, CALCULATE_CACHE_HASH, index)
 /* Called with the cache mutex held */
 REMOVE_HASH_TABLE(cache, struct cache, CALCULATE_CACHE_HASH, index);
 
+/* define cache free list */
+
 /* Called with the cache mutex held */
 INSERT_LIST(free, struct file_buffer)
 
 /* Called with the cache mutex held */
 REMOVE_LIST(free, struct file_buffer)
-
-INSERT_LIST(fragment, struct frag_locked)
-REMOVE_LIST(fragment, struct frag_locked)
 
 
 struct cache *cache_init(int buffer_size, int max_buffers, int noshrink_lookup,
@@ -374,3 +373,5 @@ void dump_cache(struct cache *cache)
 	pthread_cleanup_pop(1);
 }
 
+INSERT_LIST(fragment, struct frag_locked)
+REMOVE_LIST(fragment, struct frag_locked)
