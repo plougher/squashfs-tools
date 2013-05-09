@@ -113,6 +113,35 @@ void remove_##NAME##_list(TYPE **list, TYPE *entry) { \
 	entry->NAME##_prev = entry->NAME##_next = NULL; \
 }
 
+
+#define INSERT_HASH_TABLE(NAME, TYPE, HASH_FUNCTION, FIELD) \
+void insert_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
+{ \
+	int hash = HASH_FUNCTION(entry->FIELD); \
+\
+	entry->hash_next = container->hash_table[hash]; \
+	container->hash_table[hash] = entry; \
+	entry->hash_prev = NULL; \
+	if(entry->hash_next) \
+		entry->hash_next->hash_prev = entry; \
+}
+
+
+#define REMOVE_HASH_TABLE(NAME, TYPE, HASH_FUNCTION, FIELD) \
+void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
+{ \
+	if(entry->hash_prev) \
+		entry->hash_prev->hash_next = entry->hash_next; \
+	else \
+		container->hash_table[HASH_FUNCTION(entry->FIELD)] = \
+			entry->hash_next; \
+	if(entry->hash_next) \
+		entry->hash_next->hash_prev = entry->hash_prev; \
+\
+	entry->hash_prev = entry->hash_next = NULL; \
+}
+
+
 extern struct queue *queue_init(int);
 extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);

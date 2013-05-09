@@ -114,36 +114,14 @@ void dump_queue(struct queue *queue)
 }
 
 
-#define CALCULATE_HASH(start)	(llabs(start) & 0xffff) \
-
-
-/* Called with the cache mutex held */
-void insert_hash_table(struct cache *cache, struct file_buffer *entry)
-{
-	int hash = CALCULATE_HASH(entry->index);
-
-	entry->hash_next = cache->hash_table[hash];
-	cache->hash_table[hash] = entry;
-	entry->hash_prev = NULL;
-	if(entry->hash_next)
-		entry->hash_next->hash_prev = entry;
-}
-
+/* * define cache hash tables */
+#define CALCULATE_CACHE_HASH(N) (llabs(N) & 0xffff)
 
 /* Called with the cache mutex held */
-void remove_hash_table(struct cache *cache, struct file_buffer *entry)
-{
-	if(entry->hash_prev)
-		entry->hash_prev->hash_next = entry->hash_next;
-	else
-		cache->hash_table[CALCULATE_HASH(entry->index)] =
-			entry->hash_next;
-	if(entry->hash_next)
-		entry->hash_next->hash_prev = entry->hash_prev;
+INSERT_HASH_TABLE(cache, struct cache, CALCULATE_CACHE_HASH, index)
 
-	entry->hash_prev = entry->hash_next = NULL;
-}
-
+/* Called with the cache mutex held */
+REMOVE_HASH_TABLE(cache, struct cache, CALCULATE_CACHE_HASH, index);
 
 /* Called with the cache mutex held */
 INSERT_LIST(free, struct file_buffer)
@@ -206,7 +184,7 @@ struct file_buffer *cache_lookup(struct cache *cache, long long index)
 {
 	/* Lookup block in the cache, if found return with usage count
  	 * incremented, if not found return NULL */
-	int hash = CALCULATE_HASH(index);
+	int hash = CALCULATE_CACHE_HASH(index);
 	struct file_buffer *entry;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
@@ -240,7 +218,7 @@ static struct file_buffer *cache_freelist(struct cache *cache)
 	remove_free_list(&cache->free_list, entry);
 
 	/* a block on the free_list is hashed */
-	remove_hash_table(cache, entry);
+	remove_cache_hash_table(cache, entry);
 
 	cache->used ++;
 	return entry;
@@ -300,7 +278,7 @@ static struct file_buffer *_cache_get(struct cache *cache, long long index,
 	entry->error = FALSE;
 	if(hash) {
 		entry->index = index;
-		insert_hash_table(cache, entry);
+		insert_cache_hash_table(cache, entry);
 	}
 
 	pthread_cleanup_pop(1);
@@ -329,9 +307,9 @@ void cache_rehash(struct file_buffer *entry, long long index)
 	pthread_mutex_lock(&cache->mutex);
 
 	if(cache->noshrink_lookup) {
-		remove_hash_table(cache, entry);
+		remove_cache_hash_table(cache, entry);
 		entry->index = index;
-		insert_hash_table(cache, entry);
+		insert_cache_hash_table(cache, entry);
 	}
 
 	pthread_cleanup_pop(1);
