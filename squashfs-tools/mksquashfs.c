@@ -278,8 +278,9 @@ unsigned int uid_count = 0, guid_count = 0;
 unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 
 struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
-struct queue *to_reader, *from_reader, *to_writer, *from_writer, *from_deflate,
+struct queue *to_reader, *from_reader, *to_writer, *from_writer,
 	*to_frag;
+struct seq_queue *from_deflate;
 pthread_t *thread, *deflator_thread, *frag_deflator_thread;
 pthread_t *restore_thread = NULL;
 pthread_mutex_t	fragment_mutex;
@@ -2008,7 +2009,7 @@ read_err:
 		file_buffer = prev_buffer;
 	}
 	file_buffer->error = TRUE;
-	queue_put(from_deflate, file_buffer);
+	seq_queue_put(from_deflate, file_buffer);
 }
 
 
@@ -2116,14 +2117,14 @@ restat:
 		close(file);
 		memcpy(buf, &buf2, sizeof(struct stat));
 		file_buffer->error = 2;
-		queue_put(from_deflate, file_buffer);
+		seq_queue_put(from_deflate, file_buffer);
 		goto again;
 	}
 read_err:
 	close(file);
 read_err2:
 	file_buffer->error = TRUE;
-	queue_put(from_deflate, file_buffer);
+	seq_queue_put(from_deflate, file_buffer);
 }
 
 
@@ -2242,13 +2243,13 @@ void *deflator(void *arg)
 
 		if(file_buffer->file_size == 0) {
 			file_buffer->c_byte = 0;
-			queue_put(from_deflate, file_buffer);
+			seq_queue_put(from_deflate, file_buffer);
 		} else if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
-			queue_put(from_deflate, file_buffer);
+			seq_queue_put(from_deflate, file_buffer);
 		} else if(file_buffer->fragment) {
 			file_buffer->c_byte = file_buffer->size;
-			queue_put(from_deflate, file_buffer);
+			seq_queue_put(from_deflate, file_buffer);
 		} else {
 			write_buffer = cache_get(writer_buffer, -1);
 			write_buffer->c_byte = mangle2(stream,
@@ -2263,7 +2264,7 @@ void *deflator(void *arg)
 			write_buffer->fragment = FALSE;
 			write_buffer->error = FALSE;
 			cache_block_put(file_buffer);
-			queue_put(from_deflate, write_buffer);
+			seq_queue_put(from_deflate, write_buffer);
 		}
 	}
 }
@@ -2315,46 +2316,9 @@ void *frag_deflator(void *arg)
 }
 
 
-#define HASH_ENTRIES		256
-#define BLOCK_HASH(a)		(a % HASH_ENTRIES)
-struct file_buffer		*block_hash[HASH_ENTRIES];
-
-void push_buffer(struct file_buffer *file_buffer)
+struct file_buffer *get_file_buffer(struct seq_queue *queue)
 {
-	int hash = BLOCK_HASH(file_buffer->sequence);
-
-	file_buffer->next = block_hash[hash];
-	block_hash[hash] = file_buffer;
-}
-
-
-struct file_buffer *get_file_buffer(struct queue *queue)
-{
-	static unsigned int sequence = 0;
-	int hash = BLOCK_HASH(sequence);
-	struct file_buffer *file_buffer = block_hash[hash], *prev = NULL;
-
-	for(;file_buffer; prev = file_buffer, file_buffer = file_buffer->next)
-		if(file_buffer->sequence == sequence)
-			break;
-
-	if(file_buffer) {
-		if(prev)
-			prev->next = file_buffer->next;
-		else
-			block_hash[hash] = file_buffer->next;
-	} else {
-		while(1) {
-			file_buffer = queue_get(queue);
-			if(file_buffer->sequence == sequence)
-				break;
-			push_buffer(file_buffer);
-		}
-	}
-
-	sequence ++;
-
-	return file_buffer;
+	return seq_queue_get(queue);
 }
 
 
@@ -4049,8 +4013,8 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	from_reader = queue_init(reader_buffer_size);
 	to_writer = queue_init(writer_buffer_size);
 	from_writer = queue_init(1);
-	from_deflate = queue_init(reader_buffer_size);
 	to_frag = queue_init(fragment_buffer_size);
+	from_deflate = seq_queue_init();
 	reader_buffer = cache_init(block_size, reader_buffer_size, 0, 0);
 	writer_buffer = cache_init(block_size, writer_buffer_size, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_buffer_size, 1,
@@ -4731,7 +4695,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/05/01)\n");\
+	printf("mksquashfs version 4.2-git (2013/05/10)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

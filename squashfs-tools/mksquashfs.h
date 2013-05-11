@@ -78,5 +78,6 @@ struct inode_info {
 
 extern struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
 extern struct queue *to_reader, *from_reader, *to_writer, *from_writer,
-	*from_deflate, *to_frag;
+	*to_frag;
+extern struct seq_queue *from_deflate;
 #endif
