@@ -56,6 +56,19 @@ struct queue {
 };
 
 
+/*
+ * struct describing seq_queues used to pass data between the read
+ * thread and the deflate and main threads
+ */
+struct seq_queue {
+	int			fragment_count;
+	int			block_count;
+	struct file_buffer	*hash_table[65536];
+	pthread_mutex_t		mutex;
+	pthread_cond_t		wait;
+};
+
+
 /* Cache status struct.  Caches are used to keep
   track of memory buffers passed between different threads */
 struct cache {
@@ -146,6 +159,9 @@ extern struct queue *queue_init(int);
 extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);
 extern void dump_queue(struct queue *);
+extern struct seq_queue *seq_queue_init();
+extern void seq_queue_put(struct seq_queue *, struct file_buffer *);
+extern struct file_buffer *seq_queue_get(struct seq_queue *);
 extern struct cache *cache_init(int, int, int, int);
 extern struct file_buffer *cache_lookup(struct cache *, long long);
 extern struct file_buffer *cache_get(struct cache *, long long);

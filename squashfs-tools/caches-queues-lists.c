@@ -114,7 +114,98 @@ void dump_queue(struct queue *queue)
 }
 
 
-/* * define cache hash tables */
+/* define seq queue hash tables */
+#define CALCULATE_SEQ_HASH(N) ((N) & 0xffff)
+
+/* Called with the seq queue mutex held */
+INSERT_HASH_TABLE(seq, struct seq_queue, CALCULATE_SEQ_HASH, sequence)
+
+/* Called with the cache mutex held */
+REMOVE_HASH_TABLE(seq, struct seq_queue, CALCULATE_SEQ_HASH, sequence);
+
+static unsigned int sequence = 0;
+
+
+struct seq_queue *seq_queue_init()
+{
+	struct seq_queue *queue = malloc(sizeof(struct seq_queue));
+	if(queue == NULL)
+		MEM_ERROR();
+
+	memset(queue, 0, sizeof(struct seq_queue));
+
+	pthread_mutex_init(&queue->mutex, NULL);
+	pthread_cond_init(&queue->wait, NULL);
+
+	return queue;
+}
+
+
+void seq_queue_put(struct seq_queue *queue, struct file_buffer *entry)
+{
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	insert_seq_hash_table(queue, entry);
+
+	if(entry->fragment)
+		queue->fragment_count ++;
+	else
+		queue->block_count ++;
+
+	if(entry->sequence == sequence)
+		pthread_cond_signal(&queue->wait);
+
+	pthread_cleanup_pop(1);
+}
+
+
+struct file_buffer *seq_queue_get(struct seq_queue *queue)
+{
+	/*
+	 * Look-up buffer matching sequence in the queue, if found return
+	 * it, otherwise wait until it arrives
+	 */
+	int hash = CALCULATE_SEQ_HASH(sequence);
+	struct file_buffer *entry;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	while(1) {
+		for(entry = queue->hash_table[hash]; entry;
+						entry = entry->hash_next)
+			if(entry->sequence == sequence)
+				break;
+
+		if(entry) {
+			/*
+			 * found the buffer in the queue, decrement the
+			 * appropriate count, and remove from hash list
+			 */
+			if(entry->fragment)
+				queue->fragment_count --;
+			else
+				queue->block_count --;
+
+			remove_seq_hash_table(queue, entry);
+
+			sequence ++;
+
+			break;
+		}
+
+		/* entry not found, wait for it to arrive */	
+		pthread_cond_wait(&queue->wait, &queue->mutex);
+	}
+
+	pthread_cleanup_pop(1);
+
+	return entry;
+}
+
+
+/* define cache hash tables */
 #define CALCULATE_CACHE_HASH(N) (llabs(N) & 0xffff)
 
 /* Called with the cache mutex held */
