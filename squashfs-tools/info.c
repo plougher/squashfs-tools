@@ -93,32 +93,33 @@ void dump_state()
 	printf("Queue and Cache status dump\n");
 	printf("===========================\n");
 
-	printf("from_reader queue (reader thread -> deflate thread(s))\n");
+	printf("file buffer queue (reader thread -> deflate thread(s))\n");
 	dump_queue(from_reader);
 
-	printf("\nuncompressed fragment queue (deflate thread(s) -> main thread)"
-									"\n");
+	printf("\nuncompressed fragment queue (deflate thread(s) -> main"
+						" thread)\n");
 	dump_seq_queue(from_deflate, 1);
 
 	printf("\ncompressed block queue (deflate thread(s) -> main thread)\n");
 	dump_seq_queue(from_deflate, 0);
 
-	printf("\nto_frag queue (main thread -> fragment deflate thread(s))\n");
+	printf("\nuncompressed packed fragment queue (main thread -> fragment"
+						" deflate thread(s))\n");
 	dump_queue(to_frag);
 
-	printf("\nto_writer queue (main thread & fragment deflate threads(s)"
-		" -> writer thread)\n");
+	printf("\ncompressed block queue (main & fragment deflate threads(s) ->"
+						" writer thread)\n");
 	dump_queue(to_writer);
 
 	printf("\nread cache (uncompressed blocks read by reader thread)\n");
 	dump_cache(reader_buffer);
 
 	printf("\nwrite cache (compressed blocks waiting to be written by the"
-		" writer thread)\n");
+						" writer thread)\n");
 	dump_cache(writer_buffer);
 
 	printf("\nfragment cache (frags waiting to be compressed by fragment"
-		" deflate thread(s))\n");
+						" deflate thread(s))\n");
 	dump_cache(fragment_buffer);
 
 	enable_progress_bar();
