@@ -205,6 +205,22 @@ struct file_buffer *seq_queue_get(struct seq_queue *queue)
 }
 
 
+void dump_seq_queue(struct seq_queue *queue, int fragment_queue)
+{
+	int size;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	size = fragment_queue ? queue->fragment_count : queue->block_count;
+
+	printf("Max size unlimited, size %d%s\n", size,
+						size == 0 ? " (EMPTY)" : "");
+
+	pthread_cleanup_pop(1);
+}
+
+
 /* define cache hash tables */
 #define CALCULATE_CACHE_HASH(N) (llabs(N) & 0xffff)
 
