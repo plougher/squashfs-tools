@@ -102,8 +102,7 @@ void dump_queue(struct queue *queue)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
 	pthread_mutex_lock(&queue->mutex);
 
-	printf("Max size %d, readp %d, writep %d, size %d%s\n",
-		queue->size - 1, queue->readp, queue->writep,  
+	printf("Max size %d, size %d%s\n", queue->size - 1,  
 		queue->readp <= queue->writep ? queue->writep - queue->readp :
 			queue->size - queue->readp + queue->writep,
 		queue->readp == queue->writep ? " (EMPTY)" :
