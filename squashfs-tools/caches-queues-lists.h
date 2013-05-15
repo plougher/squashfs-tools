@@ -27,8 +27,14 @@ struct file_buffer {
 	struct cache *cache;
 	struct file_buffer *hash_next;
 	struct file_buffer *hash_prev;
-	struct file_buffer *free_next;
-	struct file_buffer *free_prev;
+	union {
+		struct file_buffer *free_next;
+		struct file_buffer *seq_next;
+	};
+	union {
+		struct file_buffer *free_prev;
+		struct file_buffer *seq_prev;
+	};
 	struct file_buffer *next;
 	long long file_size;
 	long long index;
@@ -127,31 +133,31 @@ void remove_##NAME##_list(TYPE **list, TYPE *entry) { \
 }
 
 
-#define INSERT_HASH_TABLE(NAME, TYPE, HASH_FUNCTION, FIELD) \
+#define INSERT_HASH_TABLE(NAME, TYPE, HASH_FUNCTION, FIELD, LINK) \
 void insert_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
 { \
 	int hash = HASH_FUNCTION(entry->FIELD); \
 \
-	entry->hash_next = container->hash_table[hash]; \
+	entry->LINK##_next = container->hash_table[hash]; \
 	container->hash_table[hash] = entry; \
-	entry->hash_prev = NULL; \
-	if(entry->hash_next) \
-		entry->hash_next->hash_prev = entry; \
+	entry->LINK##_prev = NULL; \
+	if(entry->LINK##_next) \
+		entry->LINK##_next->LINK##_prev = entry; \
 }
 
 
-#define REMOVE_HASH_TABLE(NAME, TYPE, HASH_FUNCTION, FIELD) \
+#define REMOVE_HASH_TABLE(NAME, TYPE, HASH_FUNCTION, FIELD, LINK) \
 void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
 { \
-	if(entry->hash_prev) \
-		entry->hash_prev->hash_next = entry->hash_next; \
+	if(entry->LINK##_prev) \
+		entry->LINK##_prev->LINK##_next = entry->LINK##_next; \
 	else \
 		container->hash_table[HASH_FUNCTION(entry->FIELD)] = \
-			entry->hash_next; \
-	if(entry->hash_next) \
-		entry->hash_next->hash_prev = entry->hash_prev; \
+			entry->LINK##_next; \
+	if(entry->LINK##_next) \
+		entry->LINK##_next->LINK##_prev = entry->LINK##_prev; \
 \
-	entry->hash_prev = entry->hash_next = NULL; \
+	entry->LINK##_prev = entry->LINK##_next = NULL; \
 }
 
 

@@ -117,10 +117,10 @@ void dump_queue(struct queue *queue)
 #define CALCULATE_SEQ_HASH(N) ((N) & 0xffff)
 
 /* Called with the seq queue mutex held */
-INSERT_HASH_TABLE(seq, struct seq_queue, CALCULATE_SEQ_HASH, sequence)
+INSERT_HASH_TABLE(seq, struct seq_queue, CALCULATE_SEQ_HASH, sequence, seq)
 
 /* Called with the cache mutex held */
-REMOVE_HASH_TABLE(seq, struct seq_queue, CALCULATE_SEQ_HASH, sequence);
+REMOVE_HASH_TABLE(seq, struct seq_queue, CALCULATE_SEQ_HASH, sequence, seq);
 
 static unsigned int sequence = 0;
 
@@ -224,10 +224,10 @@ void dump_seq_queue(struct seq_queue *queue, int fragment_queue)
 #define CALCULATE_CACHE_HASH(N) (llabs(N) & 0xffff)
 
 /* Called with the cache mutex held */
-INSERT_HASH_TABLE(cache, struct cache, CALCULATE_CACHE_HASH, index)
+INSERT_HASH_TABLE(cache, struct cache, CALCULATE_CACHE_HASH, index, hash)
 
 /* Called with the cache mutex held */
-REMOVE_HASH_TABLE(cache, struct cache, CALCULATE_CACHE_HASH, index);
+REMOVE_HASH_TABLE(cache, struct cache, CALCULATE_CACHE_HASH, index, hash);
 
 /* define cache free list */
 
