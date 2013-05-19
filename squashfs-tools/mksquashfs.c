@@ -1378,8 +1378,14 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 
 		if(compressed_buffer)
 			data = compressed_buffer->data;
-		else
+		else {
 			data = read_from_disk(start_block, size);
+			if(data == NULL) {
+				ERROR("Failed to read fragment from output"
+					" filesystem\n");
+				BAD_ERROR("Output filesystem corrupted?\n");
+			}
+		}
 
 		res = compressor_uncompress(comp, buffer->data, data, size,
 			block_size, &error);
@@ -1619,10 +1625,8 @@ char *read_from_disk(long long start, unsigned int avail_bytes)
 	int res;
 
 	res = read_fs_bytes(fd, start, avail_bytes, read_from_file_buffer);
-	if(res == 0) {
-		ERROR("Failed to read data from output filesystem\n");
-		BAD_ERROR("Output filesystem corrupted?\n");
-	}
+	if(res == 0)
+		return NULL;
 
 	return read_from_file_buffer;
 }
@@ -1634,10 +1638,8 @@ char *read_from_disk2(long long start, unsigned int avail_bytes)
 	int res;
 
 	res = read_fs_bytes(fd, start, avail_bytes, read_from_file_buffer2);
-	if(res == 0) {
-		ERROR("Failed to read data from output filesystem\n");
-		BAD_ERROR("Output filesystem corrupted?\n");
-	}
+	if(res == 0)
+		return NULL;
 
 	return read_from_file_buffer2;
 }
@@ -1676,9 +1678,17 @@ unsigned short get_checksum_disk(long long start, long long l,
 			chksum = get_checksum(write_buffer->data, bytes,
 				chksum);
 			cache_block_put(write_buffer);
-		} else
-			chksum = get_checksum(read_from_disk(start, bytes),
-				bytes, chksum);
+		} else {
+			void *data = read_from_disk(start, bytes);
+			if(data == NULL) {	
+				ERROR("Failed to checksum data from output"
+					" filesystem\n");
+				BAD_ERROR("Output filesystem corrupted?\n");
+			}
+
+			chksum = get_checksum(data, bytes, chksum);
+		}
+
 		l -= bytes;
 		start += bytes;
 	}
@@ -1864,18 +1874,32 @@ struct file_info *duplicate(long long file_size, long long bytes,
 					target_start);
 				if(target_buffer)
 					target_data = target_buffer->data;
-				else
+				else {
 					target_data =
 						read_from_disk(target_start,
 						size);
+					if(target_data == NULL) {
+						ERROR("Failed to read data from"
+							" output filesystem\n");
+						BAD_ERROR("Output filesystem"
+							" corrupted?\n");
+					}
+				}
 
 				dup_buffer = cache_lookup(writer_buffer,
 					dup_start);
 				if(dup_buffer)
 					dup_data = dup_buffer->data;
-				else
+				else {
 					dup_data = read_from_disk2(dup_start,
 						size);
+					if(dup_data == NULL) {
+						ERROR("Failed to read data from"
+							" output filesystem\n");
+						BAD_ERROR("Output filesystem"
+							" corrupted?\n");
+					}
+				}
 
 				res = memcmp(target_data, dup_data, size);
 				cache_block_put(target_buffer);
