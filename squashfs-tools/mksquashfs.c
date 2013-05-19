@@ -1361,7 +1361,7 @@ struct file_buffer *get_fragment(struct fragment *fragment)
 		return buffer;
 
 	compressed_buffer = cache_lookup(writer_buffer,
-						FRAG_INDEX(fragment->index));
+					FRAG_INDEX((long long) fragment->index));
 
 	buffer = cache_get(fragment_buffer, fragment->index);
 
@@ -4739,7 +4739,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/05/14)\n");\
+	printf("mksquashfs version 4.2-git (2013/05/18)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
