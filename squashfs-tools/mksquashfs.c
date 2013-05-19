@@ -1932,8 +1932,25 @@ inline int is_fragment(struct inode_info *inode)
 	if(inode->noF != noF)
 		return FALSE;
 
-	return !inode->no_fragments && (file_size < block_size ||
+	return !inode->no_fragments && file_size && (file_size < block_size ||
 		(inode->always_use_fragments && file_size & (block_size - 1)));
+}
+
+
+void put_file_buffer(struct file_buffer *file_buffer)
+{
+	/*
+	 * Decide where to send the file buffer - only compressible non-
+	 * fragment blocks need to be send to the deflate threads, all
+	 * others can be sent directly to the main thread
+	 */
+	if(file_buffer->error) {
+		file_buffer->fragment = 0;
+		seq_queue_put(from_deflate, file_buffer);
+	} else if (file_buffer->file_size == 0 || file_buffer->fragment)
+		seq_queue_put(from_deflate, file_buffer);
+	else
+		queue_put(from_reader, file_buffer);
 }
 
 
@@ -1976,7 +1993,7 @@ void reader_read_process(struct dir_ent *dir_ent)
 		progress_bar_size(1);
 
 		if(prev_buffer)
-			queue_put(from_reader, prev_buffer);
+			put_file_buffer(prev_buffer);
 		prev_buffer = file_buffer;
 	}
 
@@ -1998,7 +2015,7 @@ void reader_read_process(struct dir_ent *dir_ent)
 	}
 	prev_buffer->file_size = bytes;
 	prev_buffer->fragment = is_fragment(inode);
-	queue_put(from_reader, prev_buffer);
+	put_file_buffer(prev_buffer);
 
 	return;
 
@@ -2009,7 +2026,7 @@ read_err:
 		file_buffer = prev_buffer;
 	}
 	file_buffer->error = TRUE;
-	seq_queue_put(from_deflate, file_buffer);
+	put_file_buffer(file_buffer);
 }
 
 
@@ -2045,7 +2062,7 @@ again:
 			read_size - ((long long) count * block_size);
 
 		if(file_buffer)
-			queue_put(from_reader, file_buffer);
+			put_file_buffer(file_buffer);
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->sequence = seq ++;
 		file_buffer->noD = inode->noD;
@@ -2099,7 +2116,7 @@ again:
 	}
 
 	file_buffer->fragment = is_fragment(inode);
-	queue_put(from_reader, file_buffer);
+	put_file_buffer(file_buffer);
 
 	close(file);
 
@@ -2117,14 +2134,14 @@ restat:
 		close(file);
 		memcpy(buf, &buf2, sizeof(struct stat));
 		file_buffer->error = 2;
-		seq_queue_put(from_deflate, file_buffer);
+		put_file_buffer(file_buffer);
 		goto again;
 	}
 read_err:
 	close(file);
 read_err2:
 	file_buffer->error = TRUE;
-	seq_queue_put(from_deflate, file_buffer);
+	put_file_buffer(file_buffer);
 }
 
 
@@ -2241,14 +2258,8 @@ void *deflator(void *arg)
 		struct file_buffer *file_buffer = queue_get(from_reader);
 		struct file_buffer *write_buffer;
 
-		if(file_buffer->file_size == 0) {
+		if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
-			seq_queue_put(from_deflate, file_buffer);
-		} else if(sparse_files && all_zero(file_buffer)) { 
-			file_buffer->c_byte = 0;
-			seq_queue_put(from_deflate, file_buffer);
-		} else if(file_buffer->fragment) {
-			file_buffer->c_byte = file_buffer->size;
 			seq_queue_put(from_deflate, file_buffer);
 		} else {
 			write_buffer = cache_get(writer_buffer, -1);
@@ -2318,7 +2329,16 @@ void *frag_deflator(void *arg)
 
 struct file_buffer *get_file_buffer(struct seq_queue *queue)
 {
-	return seq_queue_get(queue);
+	struct file_buffer *file_buffer = seq_queue_get(queue);
+
+	if(file_buffer->fragment) {
+		if(sparse_files && all_zero(file_buffer))
+			file_buffer->c_byte = 0;
+		else
+			file_buffer->c_byte = file_buffer->size;
+	}
+
+	return file_buffer;
 }
 
 
