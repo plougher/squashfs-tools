@@ -2356,9 +2356,10 @@ struct file_buffer *get_file_buffer()
 	struct file_buffer *file_buffer = seq_queue_get(to_main);
 
 	if(file_buffer->fragment) {
-		if(sparse_files && all_zero(file_buffer))
+		if(sparse_files && all_zero(file_buffer)) {
 			file_buffer->c_byte = 0;
-		else
+			file_buffer->fragment = FALSE;
+		} else
 			file_buffer->c_byte = file_buffer->size;
 	}
 
@@ -2463,7 +2464,7 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 	start = bytes;
 	while (1) {
 		read_size = read_buffer->file_size;
-		if(read_buffer->fragment && read_buffer->c_byte)
+		if(read_buffer->fragment)
 			fragment_buffer = read_buffer;
 		else {
 			block_list = realloc(block_list, (block + 1) *
@@ -2557,7 +2558,7 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 	file_bytes = 0;
 	start = bytes;
 	for(block = 0; block < blocks;) {
-		if(read_buffer->fragment && read_buffer->c_byte) {
+		if(read_buffer->fragment) {
 			block_list[block] = 0;
 			fragment_buffer = read_buffer;
 			blocks = read_size >> block_log;
@@ -2668,7 +2669,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 		blocks - (writer_buffer_size - num_locked_fragments): 0;
 
 	for(block = 0; block < blocks;) {
-		if(read_buffer->fragment && read_buffer->c_byte) {
+		if(read_buffer->fragment) {
 			block_list[block] = 0;
 			buffer_list[block] = NULL;
 			fragment_buffer = read_buffer;
