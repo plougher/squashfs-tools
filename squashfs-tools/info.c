@@ -96,7 +96,7 @@ void dump_state()
 	printf("file buffer queue (reader thread -> deflate thread(s))\n");
 	dump_queue(from_reader);
 
-	printf("\nuncompressed fragment queue (deflate thread(s) -> main"
+	printf("\nuncompressed fragment queue (reader thread -> main"
 						" thread)\n");
 	dump_seq_queue(to_main, 1);
 
