@@ -98,10 +98,10 @@ void dump_state()
 
 	printf("\nuncompressed fragment queue (deflate thread(s) -> main"
 						" thread)\n");
-	dump_seq_queue(from_deflate, 1);
+	dump_seq_queue(to_main, 1);
 
 	printf("\ncompressed block queue (deflate thread(s) -> main thread)\n");
-	dump_seq_queue(from_deflate, 0);
+	dump_seq_queue(to_main, 0);
 
 	printf("\nuncompressed packed fragment queue (main thread -> fragment"
 						" deflate thread(s))\n");

@@ -280,7 +280,7 @@ unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
 struct queue *to_reader, *from_reader, *to_writer, *from_writer,
 	*to_frag;
-struct seq_queue *from_deflate;
+struct seq_queue *to_main;
 pthread_t *thread, *deflator_thread, *frag_deflator_thread;
 pthread_t *restore_thread = NULL;
 pthread_mutex_t	fragment_mutex;
@@ -1970,9 +1970,9 @@ void put_file_buffer(struct file_buffer *file_buffer)
 	 */
 	if(file_buffer->error) {
 		file_buffer->fragment = 0;
-		seq_queue_put(from_deflate, file_buffer);
+		seq_queue_put(to_main, file_buffer);
 	} else if (file_buffer->file_size == 0 || file_buffer->fragment)
-		seq_queue_put(from_deflate, file_buffer);
+		seq_queue_put(to_main, file_buffer);
 	else
 		queue_put(from_reader, file_buffer);
 }
@@ -2284,7 +2284,7 @@ void *deflator(void *arg)
 
 		if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
-			seq_queue_put(from_deflate, file_buffer);
+			seq_queue_put(to_main, file_buffer);
 		} else {
 			write_buffer = cache_get(writer_buffer, -1);
 			write_buffer->c_byte = mangle2(stream,
@@ -2299,7 +2299,7 @@ void *deflator(void *arg)
 			write_buffer->fragment = FALSE;
 			write_buffer->error = FALSE;
 			cache_block_put(file_buffer);
-			seq_queue_put(from_deflate, write_buffer);
+			seq_queue_put(to_main, write_buffer);
 		}
 	}
 }
@@ -2487,7 +2487,7 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 		if(read_size != -1)
 			break;
 
-		read_buffer = get_file_buffer(from_deflate);
+		read_buffer = get_file_buffer(to_main);
 		if(read_buffer->error)
 			goto read_err;
 	}
@@ -2577,7 +2577,7 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 		inc_progress_bar();
 
 		if(++block < blocks) {
-			read_buffer = get_file_buffer(from_deflate);
+			read_buffer = get_file_buffer(to_main);
 			if(read_buffer->error)
 				goto read_err;
 		}
@@ -2695,7 +2695,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 		inc_progress_bar();
 
 		if(++block < blocks) {
-			read_buffer = get_file_buffer(from_deflate);
+			read_buffer = get_file_buffer(to_main);
 			if(read_buffer->error)
 				goto read_err;
 		}
@@ -2787,7 +2787,7 @@ void write_file(squashfs_inode *inode, struct dir_ent *dir_ent,
 	long long read_size;
 
 again:
-	read_buffer = get_file_buffer(from_deflate);
+	read_buffer = get_file_buffer(to_main);
 
 	status = read_buffer->error;
 	if(status) {
@@ -4058,7 +4058,7 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	to_writer = queue_init(writer_buffer_size);
 	from_writer = queue_init(1);
 	to_frag = queue_init(fragment_buffer_size);
-	from_deflate = seq_queue_init();
+	to_main = seq_queue_init();
 	reader_buffer = cache_init(block_size, reader_buffer_size, 0, 0);
 	writer_buffer = cache_init(block_size, writer_buffer_size, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_buffer_size, 1,
