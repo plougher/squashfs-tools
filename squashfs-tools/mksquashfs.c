@@ -2351,9 +2351,9 @@ void *frag_deflator(void *arg)
 }
 
 
-struct file_buffer *get_file_buffer(struct seq_queue *queue)
+struct file_buffer *get_file_buffer()
 {
-	struct file_buffer *file_buffer = seq_queue_get(queue);
+	struct file_buffer *file_buffer = seq_queue_get(to_main);
 
 	if(file_buffer->fragment) {
 		if(sparse_files && all_zero(file_buffer))
@@ -2487,7 +2487,7 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 		if(read_size != -1)
 			break;
 
-		read_buffer = get_file_buffer(to_main);
+		read_buffer = get_file_buffer();
 		if(read_buffer->error)
 			goto read_err;
 	}
@@ -2577,7 +2577,7 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 		inc_progress_bar();
 
 		if(++block < blocks) {
-			read_buffer = get_file_buffer(to_main);
+			read_buffer = get_file_buffer();
 			if(read_buffer->error)
 				goto read_err;
 		}
@@ -2695,7 +2695,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 		inc_progress_bar();
 
 		if(++block < blocks) {
-			read_buffer = get_file_buffer(to_main);
+			read_buffer = get_file_buffer();
 			if(read_buffer->error)
 				goto read_err;
 		}
@@ -2787,7 +2787,7 @@ void write_file(squashfs_inode *inode, struct dir_ent *dir_ent,
 	long long read_size;
 
 again:
-	read_buffer = get_file_buffer(to_main);
+	read_buffer = get_file_buffer();
 
 	status = read_buffer->error;
 	if(status) {
