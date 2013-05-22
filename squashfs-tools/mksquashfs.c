@@ -2340,6 +2340,8 @@ void *frag_deflator(void *arg)
 				"compressed size %d\n", file_buffer->block,
 				file_buffer->size, compressed_size);
 		} else {
+				fragment_table[file_buffer->block].size =
+					c_byte;
 				add_pending_fragment(write_buffer, c_byte,
 					file_buffer->block);
 				pthread_mutex_unlock(&fragment_mutex);
@@ -4740,7 +4742,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/05/18)\n");\
+	printf("mksquashfs version 4.2-git (2013/05/19)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
