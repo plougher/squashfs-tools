@@ -35,7 +35,6 @@ struct file_buffer {
 		struct file_buffer *free_prev;
 		struct file_buffer *seq_prev;
 	};
-	struct file_buffer *next;
 	long long file_size;
 	long long index;
 	long long block;
