@@ -267,7 +267,7 @@ struct cache *cache_init(int buffer_size, int max_buffers, int noshrink_lookup,
 
 	/*
 	 * The default use freelist before growing cache policy behaves
-	 * poorly with appending - with many deplicates the caches
+	 * poorly with appending - with many duplicates the caches
 	 * do not grow due to the fact that large queues of outstanding
 	 * fragments/writer blocks do not occur, leading to small caches
 	 * and un-uncessary performance loss to frequent cache
