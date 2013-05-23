@@ -163,6 +163,7 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
 extern struct queue *queue_init(int);
 extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);
+extern int queue_empty(struct queue *);
 extern void dump_queue(struct queue *);
 extern struct seq_queue *seq_queue_init();
 extern void seq_queue_put(struct seq_queue *, struct file_buffer *);

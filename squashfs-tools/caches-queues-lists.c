@@ -97,6 +97,21 @@ void *queue_get(struct queue *queue)
 }
 
 
+int queue_empty(struct queue *queue)
+{
+	int empty;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	empty = queue->readp == queue->writep;
+
+	pthread_cleanup_pop(1);
+
+	return empty;
+}
+
+
 void dump_queue(struct queue *queue)
 {
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
