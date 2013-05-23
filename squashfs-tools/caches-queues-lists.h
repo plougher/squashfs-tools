@@ -93,15 +93,6 @@ struct cache {
 };
 
 
-struct frag_locked {
-	struct file_buffer *buffer;
-	int c_byte;
-	int fragment;
-	struct frag_locked *fragment_prev;
-	struct frag_locked *fragment_next;
-};
-
-
 #define INSERT_LIST(NAME, TYPE) \
 void insert_##NAME##_list(TYPE **list, TYPE *entry) { \
 	if(*list) { \
@@ -176,8 +167,6 @@ extern struct file_buffer *cache_get_nohash(struct cache *);
 extern void cache_rehash(struct file_buffer *, long long);
 extern void cache_block_put(struct file_buffer *);
 extern void dump_cache(struct cache *);
-extern void insert_fragment_list(struct frag_locked **, struct frag_locked *);
-extern void remove_fragment_list(struct frag_locked **, struct frag_locked *);
 
 extern int first_freelist;
 

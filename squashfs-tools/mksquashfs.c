@@ -203,7 +203,6 @@ struct squashfs_fragment_entry *fragment_table = NULL;
 int fragments_outstanding = 0;
 
 int fragments_locked = FALSE;
-struct frag_locked *frag_locked_list = NULL;
 
 /* current inode number for directories and non directories */
 unsigned int inode_no = 1;
@@ -279,7 +278,7 @@ unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 
 struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
 struct queue *to_reader, *from_reader, *to_writer, *from_writer,
-	*to_frag;
+	*to_frag, *locked_fragment;
 struct seq_queue *to_main;
 pthread_t *thread, *deflator_thread, *frag_deflator_thread;
 pthread_t *restore_thread = NULL;
@@ -1423,24 +1422,22 @@ int lock_fragments()
 
 void unlock_fragments()
 {
-	struct frag_locked *entry;
-	int compressed_size;
+	int fragment;
+	struct file_buffer *write_buffer;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
-	while(frag_locked_list) {
-		entry = frag_locked_list;
-		remove_fragment_list(&frag_locked_list, entry);
-		compressed_size = SQUASHFS_COMPRESSED_SIZE_BLOCK(entry->c_byte);
-		fragment_table[entry->fragment].size = entry->c_byte;
-		fragment_table[entry->fragment].start_block = bytes;
-		entry->buffer->block = bytes;
-		bytes += compressed_size;
+	while(!queue_empty(locked_fragment)) {
+		write_buffer = queue_get(locked_fragment);
+		fragment = write_buffer->block;	
+		fragment_table[fragment].start_block = bytes;
+		write_buffer->block = bytes;
+		bytes +=
+			SQUASHFS_COMPRESSED_SIZE_BLOCK(fragment_table[fragment].size);
 		fragments_outstanding --;
-		queue_put(to_writer, entry->buffer);
+		queue_put(to_writer, write_buffer);
 		TRACE("fragment_locked writing fragment %d, compressed size %d"
-			"\n", entry->fragment, compressed_size);
-		free(entry);
+			"\n", fragment, fragment_table[fragment].size);
 	}
 	fragments_locked = FALSE;
 	pthread_cleanup_pop(1);
@@ -1450,14 +1447,10 @@ void unlock_fragments()
 void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 	int fragment)
 {
-	struct frag_locked *entry = malloc(sizeof(struct frag_locked));
-	if(entry == NULL)
-		MEM_ERROR();
-	entry->buffer = write_buffer;
-	entry->c_byte = c_byte;
-	entry->fragment = fragment;
-	entry->fragment_prev = entry->fragment_next = NULL;
-	insert_fragment_list(&frag_locked_list, entry);
+	fragment_table[fragment].size = c_byte;
+	write_buffer->block = fragment;
+
+	queue_put(locked_fragment, write_buffer);
 }
 
 
@@ -2340,8 +2333,6 @@ void *frag_deflator(void *arg)
 				"compressed size %d\n", file_buffer->block,
 				file_buffer->size, compressed_size);
 		} else {
-				fragment_table[file_buffer->block].size =
-					c_byte;
 				add_pending_fragment(write_buffer, c_byte,
 					file_buffer->block);
 				pthread_mutex_unlock(&fragment_mutex);
@@ -4061,6 +4052,7 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	to_writer = queue_init(writer_buffer_size);
 	from_writer = queue_init(1);
 	to_frag = queue_init(fragment_buffer_size);
+	locked_fragment = queue_init(fragment_buffer_size);
 	to_main = seq_queue_init();
 	reader_buffer = cache_init(block_size, reader_buffer_size, 0, 0);
 	writer_buffer = cache_init(block_size, writer_buffer_size, 1, freelst);
@@ -4742,7 +4734,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/05/19)\n");\
+	printf("mksquashfs version 4.2-git (2013/05/22)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

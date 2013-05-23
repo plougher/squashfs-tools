@@ -493,6 +493,3 @@ void dump_cache(struct cache *cache)
 
 	pthread_cleanup_pop(1);
 }
-
-INSERT_LIST(fragment, struct frag_locked)
-REMOVE_LIST(fragment, struct frag_locked)
