@@ -1427,6 +1427,13 @@ void unlock_fragments()
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
+
+	/*
+	 * Note queue_empty() is inherently racy with respect to concurrent
+	 * queue get and pushes.  We avoid this because we're holding the
+	 * fragment_mutex which ensures no other threads can be using the
+	 * queue at this time.
+	 */
 	while(!queue_empty(locked_fragment)) {
 		write_buffer = queue_get(locked_fragment);
 		fragment = write_buffer->block;	
