@@ -1422,7 +1422,7 @@ int lock_fragments()
 
 void unlock_fragments()
 {
-	int fragment;
+	int frg, size;
 	struct file_buffer *write_buffer;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
@@ -1436,15 +1436,15 @@ void unlock_fragments()
 	 */
 	while(!queue_empty(locked_fragment)) {
 		write_buffer = queue_get(locked_fragment);
-		fragment = write_buffer->block;	
-		fragment_table[fragment].start_block = bytes;
+		frg = write_buffer->block;	
+		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(fragment_table[frg].size);
+		fragment_table[frg].start_block = bytes;
 		write_buffer->block = bytes;
-		bytes +=
-			SQUASHFS_COMPRESSED_SIZE_BLOCK(fragment_table[fragment].size);
+		bytes += size;
 		fragments_outstanding --;
 		queue_put(to_writer, write_buffer);
 		TRACE("fragment_locked writing fragment %d, compressed size %d"
-			"\n", fragment, fragment_table[fragment].size);
+			"\n", frg, size);
 	}
 	fragments_locked = FALSE;
 	pthread_cleanup_pop(1);
@@ -4741,7 +4741,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2013/05/22)\n");\
+	printf("mksquashfs version 4.2-git (2013/05/28)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
