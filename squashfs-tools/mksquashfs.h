@@ -77,7 +77,7 @@ struct inode_info {
 #define BLOCK_OFFSET 2
 
 extern struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
-extern struct queue *to_reader, *from_reader, *to_writer, *from_writer,
+extern struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
 	*to_frag, *locked_fragment;
 extern struct seq_queue *to_main;
 #endif
