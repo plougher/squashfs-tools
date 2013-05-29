@@ -120,7 +120,6 @@ struct test table[] = {
 };
 
 void progress_bar(long long current, long long max, int columns);
-void update_progress_bar();
 
 #define MAX_LINE 16384
 
@@ -1561,10 +1560,8 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			if(lsonly || info)
 				print_filename(pathname, i);
 
-			if(!lsonly) {
+			if(!lsonly)
 				create_inode(pathname, i);
-				update_progress_bar();
-				}
 
 			if(i->type == SQUASHFS_SYMLINK_TYPE ||
 					i->type == SQUASHFS_LSYMLINK_TYPE)
@@ -2268,14 +2265,6 @@ void disable_progress_bar()
 }
 
 
-void update_progress_bar()
-{
-	pthread_mutex_lock(&screen_mutex);
-	pthread_cond_signal(&progress_wait);
-	pthread_mutex_unlock(&screen_mutex);
-}
-
-
 void progressbar_error(char *fmt, ...)
 {
 	va_list ap;
@@ -2392,7 +2381,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2013/04/16)\n");\
+	printf("unsquashfs version 4.2-git (2013/05/28)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
