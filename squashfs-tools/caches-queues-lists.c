@@ -188,7 +188,7 @@ struct file_buffer *seq_queue_get(struct seq_queue *queue)
 
 	while(1) {
 		for(entry = queue->hash_table[hash]; entry;
-						entry = entry->hash_next)
+						entry = entry->seq_next)
 			if(entry->sequence == sequence)
 				break;
 
