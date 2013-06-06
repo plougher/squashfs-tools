@@ -23,5 +23,5 @@
  */
 
 extern void disable_info();
-extern void update_info();
+extern void update_info(struct dir_ent *);
 extern void init_info();
