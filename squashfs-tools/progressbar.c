@@ -55,7 +55,7 @@ static void sigwinch_handler()
 
 	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
 		if(isatty(STDOUT_FILENO))
-			printf("TIOCGWINSZ ioctl failed, defaulting to 80 "
+			ERROR("TIOCGWINSZ ioctl failed, defaulting to 80 "
 				"columns\n");
 		columns = 80;
 	} else
@@ -169,7 +169,7 @@ void *progress_thrd(void *arg)
 
 	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
 		if(isatty(STDOUT_FILENO))
-			printf("TIOCGWINSZ ioctl failed, defaulting to 80 "
+			ERROR("TIOCGWINSZ ioctl failed, defaulting to 80 "
 				"columns\n");
 		columns = 80;
 	} else
