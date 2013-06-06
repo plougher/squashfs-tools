@@ -44,20 +44,20 @@
 #include "caches-queues-lists.h"
 
 static int silent = 0;
-static struct dir_ent *dir_ent = NULL;
+static struct dir_ent *ent = NULL;
 
 pthread_t info_thread;
 
 
 void disable_info()
 {
-	dir_ent = NULL;
+	ent = NULL;
 }
 
 
-void update_info(struct dir_ent *ent)
+void update_info(struct dir_ent *dir_ent)
 {
-	dir_ent = ent;
+	ent = dir_ent;
 }
 
 
@@ -65,6 +65,7 @@ void print_filename()
 {
 	int res;
 	char *subpath;
+	struct dir_ent *dir_ent = ent;
 
 	if(dir_ent == NULL)
 		return;
