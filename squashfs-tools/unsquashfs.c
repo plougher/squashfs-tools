@@ -2098,18 +2098,18 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGQUIT);
 	sigaddset(&sigmask, SIGHUP);
-	if(sigprocmask(SIG_BLOCK, &sigmask, NULL) == -1)
+	if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) == -1)
 		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads"
 			"\n");
 
 	/*
-	 * temporarily block these signalsm so the created sub-threads will
+	 * temporarily block these signals so the created sub-threads will
 	 * ignore them, ensuring the main thread handles them
 	 */
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
 	sigaddset(&sigmask, SIGTERM);
-	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
+	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads"
 			"\n");
 
@@ -2258,7 +2258,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	printf("Parallel unsquashfs: Using %d processor%s\n", processors,
 			processors == 1 ? "" : "s");
 
-	if(sigprocmask(SIG_SETMASK, &old_mask, NULL) == -1)
+	if(pthread_sigmask(SIG_SETMASK, &old_mask, NULL) == -1)
 		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads"
 			"\n");
 }
