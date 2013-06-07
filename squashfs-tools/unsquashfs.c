@@ -2099,7 +2099,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	sigaddset(&sigmask, SIGQUIT);
 	sigaddset(&sigmask, SIGHUP);
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) == -1)
-		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads"
+		EXIT_UNSQUASH("Failed to set signal mask in initialise_threads"
 			"\n");
 
 	/*
@@ -2110,7 +2110,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	sigaddset(&sigmask, SIGINT);
 	sigaddset(&sigmask, SIGTERM);
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
-		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads"
+		EXIT_UNSQUASH("Failed to set signal mask in initialise_threads"
 			"\n");
 
 	if(processors == -1) {
@@ -2259,7 +2259,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 			processors == 1 ? "" : "s");
 
 	if(pthread_sigmask(SIG_SETMASK, &old_mask, NULL) == -1)
-		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads"
+		EXIT_UNSQUASH("Failed to set signal mask in initialise_threads"
 			"\n");
 }
 
