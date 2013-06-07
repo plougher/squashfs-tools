@@ -2267,7 +2267,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 void enable_progress_bar()
 {
 	pthread_mutex_lock(&screen_mutex);
-	progress_enabled = TRUE;
+	progress_enabled = progress;
 	pthread_mutex_unlock(&screen_mutex);
 }
 
@@ -2275,6 +2275,11 @@ void enable_progress_bar()
 void disable_progress_bar()
 {
 	pthread_mutex_lock(&screen_mutex);
+	if(progress_enabled) {
+		progress_bar(sym_count + dev_count + fifo_count + cur_blocks,
+			total_inodes - total_files + total_blocks, columns);
+		printf("\n");
+	}
 	progress_enabled = FALSE;
 	pthread_mutex_unlock(&screen_mutex);
 }
@@ -2710,8 +2715,7 @@ options:
 	printf("%d inodes (%d blocks) to write\n\n", total_inodes,
 		total_inodes - total_files + total_blocks);
 
-	if(progress)
-		enable_progress_bar();
+	enable_progress_bar();
 
 	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths);
@@ -2719,11 +2723,7 @@ options:
 	queue_put(to_writer, NULL);
 	queue_get(from_writer);
 
-	if(progress) {
-		disable_progress_bar();
-		progress_bar(sym_count + dev_count + fifo_count + cur_blocks,
-			total_inodes - total_files + total_blocks, columns);
-	}
+	disable_progress_bar();
 
 	if(!lsonly) {
 		printf("\n");
