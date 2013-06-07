@@ -101,7 +101,7 @@ MKSQUASHFS_OBJS = mksquashfs.o read_fs.o sort.o swap.o pseudo.o compressor.o \
 	caches-queues-lists.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
-	unsquash-4.o swap.o compressor.o
+	unsquash-4.o swap.o compressor.o unsquashfs_info.o
 
 CFLAGS ?= -O2
 CFLAGS += $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 \
@@ -260,6 +260,7 @@ unsquash-4.o: unsquashfs.h unsquash-4.c squashfs_fs.h squashfs_swap.h \
 
 unsquashfs_xattr.o: unsquashfs_xattr.c unsquashfs.h squashfs_fs.h xattr.h
 
+unsquashfs_info.o: unsquashfs.h squashfs_fs.h
 
 .PHONY: clean
 clean:

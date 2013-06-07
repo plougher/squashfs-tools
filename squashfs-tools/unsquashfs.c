@@ -28,6 +28,7 @@
 #include "squashfs_compat.h"
 #include "compressor.h"
 #include "xattr.h"
+#include "unsquashfs_info.h"
 #include "stdarg.h"
 
 #include <sys/sysinfo.h>
@@ -1551,9 +1552,12 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		if(res == -1)
 			EXIT_UNSQUASH("asprintf failed in dir_scan\n");
 
-		if(type == SQUASHFS_DIR_TYPE)
+		if(type == SQUASHFS_DIR_TYPE) {
 			dir_scan(pathname, start_block, offset, new);
-		else if(new == NULL) {
+			free(pathname);
+		} else if(new == NULL) {
+			update_info(pathname);
+
 			i = s_ops.read_inode(start_block, offset);
 
 			if(lsonly || info)
@@ -1565,10 +1569,10 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			if(i->type == SQUASHFS_SYMLINK_TYPE ||
 					i->type == SQUASHFS_LSYMLINK_TYPE)
 				free(i->symlink);
-		}
+		} else
+			free(pathname);
 
 		free_subdir(new);
-		free(pathname);
 	}
 
 	if(!lsonly)
@@ -2090,9 +2094,21 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	int i, max_files, res;
 	sigset_t sigmask, old_mask;
 
+	/* block SIGQUIT and SIGHUP, these are handled by the info thread */
+	sigemptyset(&sigmask);
+	sigaddset(&sigmask, SIGQUIT);
+	sigaddset(&sigmask, SIGHUP);
+	if(sigprocmask(SIG_BLOCK, &sigmask, NULL) == -1)
+		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads"
+			"\n");
+
+	/*
+	 * temporarily block these signalsm so the created sub-threads will
+	 * ignore them, ensuring the main thread handles them
+	 */
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
-	sigaddset(&sigmask, SIGQUIT);
+	sigaddset(&sigmask, SIGTERM);
 	if(sigprocmask(SIG_BLOCK, &sigmask, &old_mask) == -1)
 		EXIT_UNSQUASH("Failed to set signal mask in intialise_threads"
 			"\n");
@@ -2230,6 +2246,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	pthread_create(&thread[0], NULL, reader, NULL);
 	pthread_create(&thread[1], NULL, writer, NULL);
 	pthread_create(&thread[2], NULL, progress_thread, NULL);
+	init_info();
 	pthread_mutex_init(&fragment_mutex, NULL);
 
 	for(i = 0; i < processors; i++) {
@@ -2379,7 +2396,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2013/05/30)\n");\
+	printf("unsquashfs version 4.2-git (2013/06/06)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
