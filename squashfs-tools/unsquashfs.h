@@ -232,11 +232,15 @@ extern int progress_enabled;
 extern int inode_number;
 extern int lookup_type[];
 extern int fd;
+struct queue *to_reader, *to_deflate, *to_writer;
 
 /* unsquashfs.c */
 extern int lookup_entry(struct hash_table_entry **, long long);
 extern int read_fs_bytes(int fd, long long, int, void *);
 extern int read_block(int, long long, long long *, int, void *);
+extern void enable_progress_bar();
+extern void disable_progress_bar();
+extern void dump_queue(struct queue *);
 
 /* unsquash-1.c */
 extern void read_block_list_1(unsigned int *, char *, int);
