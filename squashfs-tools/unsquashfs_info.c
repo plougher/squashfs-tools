@@ -38,6 +38,7 @@
 #include <string.h>
 
 #include "squashfs_fs.h"
+#include "unsquashfs.h"
 #include "error.h"
 
 static int silent = 0;
@@ -66,6 +67,22 @@ void update_info(char *name)
 
 void dump_state()
 {
+	disable_progress_bar();
+
+	printf("Queue status dump\n");
+	printf("=================\n");
+
+	printf("file buffer read queue (main thread -> reader thread)\n");
+	dump_queue(to_reader);
+
+	printf("file buffer decompress queue (reader thread -> inflate"
+							" thread(s))\n");
+	dump_queue(to_deflate);
+
+	printf("file buffer write queue (main thread -> writer thread)\n");
+	dump_queue(to_writer);
+
+	enable_progress_bar();
 }
 
 
@@ -107,9 +124,9 @@ void *info_thrd(void *arg)
 
 			/* set one second interval period, if ^\ received
 			   within then, dump queue and cache status */
-			waiting = 0; // 1;
+			waiting = 1;
 		} else
-			dump_state(); /* disabled */
+			dump_state();
 	}
 }
 
