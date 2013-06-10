@@ -40,7 +40,7 @@
 
 struct cache *fragment_cache, *data_cache;
 struct queue *to_reader, *to_inflate, *to_writer, *from_writer;
-pthread_t *thread, *deflator_thread;
+pthread_t *thread, *inflator_thread;
 pthread_mutex_t	fragment_mutex;
 
 /* user options that control parallelisation */
@@ -329,7 +329,7 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 {
 	/*
 	 * Get a block out of the cache.  If the block isn't in the cache
- 	 * it is added and queued to the reader() and deflate() threads for
+ 	 * it is added and queued to the reader() and inflate() threads for
  	 * reading off disk and decompression.  The cache grows until max_blocks
  	 * is reached, once this occurs existing discarded blocks on the free
  	 * list are reused
@@ -1911,7 +1911,7 @@ void *reader(void *arg)
 
 		if(res && SQUASHFS_COMPRESSED_BLOCK(entry->size))
 			/*
-			 * queue successfully read block to the deflate
+			 * queue successfully read block to the inflate
 			 * thread(s) for further processing
  			 */
 			queue_put(to_inflate, entry);
@@ -2033,7 +2033,7 @@ void *writer(void *arg)
 /*
  * decompress thread.  This decompresses buffers queued by the read thread
  */
-void *deflator(void *arg)
+void *inflator(void *arg)
 {
 	char tmp[block_size];
 
@@ -2157,14 +2157,14 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	thread = malloc((3 + processors) * sizeof(pthread_t));
 	if(thread == NULL)
 		EXIT_UNSQUASH("Out of memory allocating thread descriptors\n");
-	deflator_thread = &thread[3];
+	inflator_thread = &thread[3];
 
 	/*
 	 * dimensioning the to_reader and to_inflate queues.  The size of
 	 * these queues is directly related to the amount of block
 	 * read-ahead possible.  To_reader queues block read requests to
 	 * the reader thread and to_inflate queues block decompression
-	 * requests to the deflate thread(s) (once the block has been read by
+	 * requests to the inflate thread(s) (once the block has been read by
 	 * the reader thread).  The amount of read-ahead is determined by
 	 * the combined size of the data_block and fragment caches which
 	 * determine the total number of blocks which can be "in flight"
@@ -2265,7 +2265,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	pthread_mutex_init(&fragment_mutex, NULL);
 
 	for(i = 0; i < processors; i++) {
-		if(pthread_create(&deflator_thread[i], NULL, deflator, NULL) !=
+		if(pthread_create(&inflator_thread[i], NULL, inflator, NULL) !=
 				 0)
 			EXIT_UNSQUASH("Failed to create thread\n");
 	}
