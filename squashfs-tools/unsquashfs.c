@@ -39,7 +39,7 @@
 #include <ctype.h>
 
 struct cache *fragment_cache, *data_cache;
-struct queue *to_reader, *to_deflate, *to_writer, *from_writer;
+struct queue *to_reader, *to_inflate, *to_writer, *from_writer;
 pthread_t *thread, *deflator_thread;
 pthread_mutex_t	fragment_mutex;
 
@@ -1914,7 +1914,7 @@ void *reader(void *arg)
 			 * queue successfully read block to the deflate
 			 * thread(s) for further processing
  			 */
-			queue_put(to_deflate, entry);
+			queue_put(to_inflate, entry);
 		else
 			/*
 			 * block has either been successfully read and is
@@ -2038,7 +2038,7 @@ void *deflator(void *arg)
 	char tmp[block_size];
 
 	while(1) {
-		struct cache_entry *entry = queue_get(to_deflate);
+		struct cache_entry *entry = queue_get(to_inflate);
 		int error, res;
 
 		res = compressor_uncompress(comp, tmp, entry->data,
@@ -2160,10 +2160,10 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	deflator_thread = &thread[3];
 
 	/*
-	 * dimensioning the to_reader and to_deflate queues.  The size of
+	 * dimensioning the to_reader and to_inflate queues.  The size of
 	 * these queues is directly related to the amount of block
 	 * read-ahead possible.  To_reader queues block read requests to
-	 * the reader thread and to_deflate queues block decompression
+	 * the reader thread and to_inflate queues block decompression
 	 * requests to the deflate thread(s) (once the block has been read by
 	 * the reader thread).  The amount of read-ahead is determined by
 	 * the combined size of the data_block and fragment caches which
@@ -2187,7 +2187,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	 *
 	 * dimensioning the to_writer queue.  The size of this queue is
 	 * directly related to the amount of block read-ahead possible.
-	 * However, unlike the to_reader and to_deflate queues, this is
+	 * However, unlike the to_reader and to_inflate queues, this is
 	 * complicated by the fact the to_writer queue not only contains
 	 * entries for fragments and data_blocks but it also contains
 	 * file entries, one per open file in the read-ahead.
@@ -2221,7 +2221,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 	open_init(max_files);
 
 	/*
-	 * allocate to_reader, to_deflate and to_writer queues.  Set based on
+	 * allocate to_reader, to_inflate and to_writer queues.  Set based on
 	 * open file limit and cache size, unless open file limit is unlimited,
 	 * in which case set purely based on cache limits
 	 *
@@ -2234,7 +2234,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 			EXIT_UNSQUASH("Data queue size is too large\n");
 
 		to_reader = queue_init(max_files + data_buffer_size);
-		to_deflate = queue_init(max_files + data_buffer_size);
+		to_inflate = queue_init(max_files + data_buffer_size);
 		to_writer = queue_init(max_files * 2 + data_buffer_size);
 	} else {
 		int all_buffers_size;
@@ -2250,7 +2250,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 							" too large\n");
 
 		to_reader = queue_init(all_buffers_size);
-		to_deflate = queue_init(all_buffers_size);
+		to_inflate = queue_init(all_buffers_size);
 		to_writer = queue_init(all_buffers_size * 2);
 	}
 

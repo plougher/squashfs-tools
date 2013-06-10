@@ -77,7 +77,7 @@ void dump_state()
 
 	printf("file buffer decompress queue (reader thread -> inflate"
 							" thread(s))\n");
-	dump_queue(to_deflate);
+	dump_queue(to_inflate);
 
 	printf("file buffer write queue (main thread -> writer thread)\n");
 	dump_queue(to_writer);
