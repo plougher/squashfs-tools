@@ -121,6 +121,7 @@ struct test {
 struct cache {
 	int	max_buffers;
 	int	count;
+	int	used;
 	int	buffer_size;
 	int	wait_free;
 	int	wait_pending;

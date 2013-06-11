@@ -313,6 +313,7 @@ struct cache *cache_init(int buffer_size, int max_buffers)
 	cache->max_buffers = max_buffers;
 	cache->buffer_size = buffer_size;
 	cache->count = 0;
+	cache->used = 0;
 	cache->free_list = NULL;
 	memset(cache->hash_table, 0, sizeof(struct cache_entry *) * 65536);
 	cache->wait_free = FALSE;
@@ -382,7 +383,11 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 		}
 
 		/*
-		 * initialise block and insert into the hash table
+		 * Initialise block and insert into the hash table.
+		 * Increment used which tracks how many buffers in the
+		 * cache are actively in use (the other blocks, count - used,
+		 * are in the cache and available for lookup, but can also be
+		 * re-used).
 		 */
 		entry->block = block;
 		entry->size = size;
@@ -390,6 +395,7 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 		entry->error = FALSE;
 		entry->pending = TRUE;
 		insert_hash_table(cache, entry);
+		cache->used ++;
 
 		/*
 		 * queue to read thread to read and ultimately (via the
@@ -459,6 +465,7 @@ void cache_block_put(struct cache_entry *entry)
 	entry->used --;
 	if(entry->used == 0) {
 		insert_free_list(entry->cache, entry);
+		entry->cache->used --;
 
 		/*
 		 * if the wait_free flag is set, one or more threads may be
