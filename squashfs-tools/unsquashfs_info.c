@@ -69,8 +69,8 @@ void dump_state()
 {
 	disable_progress_bar();
 
-	printf("Queue status dump\n");
-	printf("=================\n");
+	printf("Queue and cache status dump\n");
+	printf("===========================\n");
 
 	printf("file buffer read queue (main thread -> reader thread)\n");
 	dump_queue(to_reader);
@@ -81,6 +81,14 @@ void dump_state()
 
 	printf("file buffer write queue (main thread -> writer thread)\n");
 	dump_queue(to_writer);
+
+	printf("\nbuffer cache (uncompressed blocks and compressed blocks "
+							"'in flight')\n");
+	dump_cache(data_cache);
+
+	printf("fragment buffer cache (uncompressed frags and compressed"
+						" frags 'in flight')\n");
+	dump_cache(fragment_cache);
 
 	enable_progress_bar();
 }
