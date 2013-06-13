@@ -481,6 +481,18 @@ void cache_block_put(struct cache_entry *entry)
 }
 
 
+void dump_cache(struct cache *cache)
+{
+	pthread_mutex_lock(&cache->mutex);
+
+	printf("Max buffers %d, Current size %d, Used %d,  %s\n",
+		cache->max_buffers, cache->count, cache->used,
+		cache->free_list ?  "Free buffers" : "No free buffers");
+
+	pthread_mutex_unlock(&cache->mutex);
+}
+
+
 char *modestr(char *str, int mode)
 {
 	int i;
@@ -2423,7 +2435,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2013/06/08)\n");\
+	printf("unsquashfs version 4.2-git (2013/06/11)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
