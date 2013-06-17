@@ -40,6 +40,17 @@ GZIP_SUPPORT = 1
 #LZO_SUPPORT = 1
 #LZO_DIR = /usr/local
 
+
+########### Building LZ4 support #############
+#
+# LZ4 (http://xxx/) is supported
+#
+# To build install the library and uncomment
+# the LZ4_SUPPORT line below.
+#
+LZ4_SUPPORT = 1
+
+
 ########### Building LZMA support #############
 #
 # LZMA1 compression.
@@ -155,6 +166,14 @@ LIBS += $(LZO_LIBDIR) -llzo2
 COMPRESSORS += lzo
 endif
 
+ifeq ($(LZ4_SUPPORT),1)
+CFLAGS += -DLZ4_SUPPORT
+MKSQUASHFS_OBJS += lz4_wrapper.o
+UNSQUASHFS_OBJS += lz4_wrapper.o
+LIBS += -llz4
+COMPRESSORS += lz4
+endif
+
 ifeq ($(XATTR_SUPPORT),1)
 ifeq ($(XATTR_DEFAULT),1)
 CFLAGS += -DXATTR_SUPPORT -DXATTR_DEFAULT
@@ -240,6 +259,8 @@ lzma_wrapper.o: lzma_wrapper.c compressor.h squashfs_fs.h
 lzma_xz_wrapper.o: lzma_xz_wrapper.c compressor.h squashfs_fs.h
 
 lzo_wrapper.o: lzo_wrapper.c compressor.h squashfs_fs.h
+
+lz4_wrapper.o: lz4_wrapper.c compressor.h squashfs_fs.h
 
 xz_wrapper.o: xz_wrapper.c compressor.h squashfs_fs.h
 
