@@ -37,6 +37,7 @@ extern unsigned int inswap_le32(unsigned int);
 
 #define SQUASHFS_INSWAP_COMP_OPTS(s) { \
 	(s)->version = inswap_le32((s)->version); \
+	(s)->flags = inswap_le32((s)->flags); \
 }
 #else
 #define SQUASHFS_INSWAP_COMP_OPTS(s)
@@ -51,5 +52,6 @@ extern unsigned int inswap_le32(unsigned int);
 
 struct lz4_comp_opts {
 	int version;
+	int flags;
 };
 #endif

@@ -92,6 +92,7 @@ failed:
 static void *lz4_dump_options(int block_size, int *size)
 {
 	comp_opts.version = LZ4_LEGACY;
+	comp_opts.flags = 0;
 	SQUASHFS_INSWAP_COMP_OPTS(&comp_opts);
 
 	*size = sizeof(comp_opts);
@@ -133,6 +134,14 @@ static int lz4_extract_options(int block_size, void *buffer, int size)
 	if(comp_opts->version != LZ4_LEGACY)
 		goto failed;
 
+	/*
+	 * we currently don't know about any flags, so if the flags field is not
+	 * zero we don't know how that affects compression or decompression,
+	 * which is a comp_opts read failure
+	 */
+	if(comp_opts->flags != 0)
+		goto failed;
+
 	return 0;
 
 failed:
@@ -155,6 +164,13 @@ void lz4_display_options(void *buffer, int size)
 
 	/* we expect the stream format to be LZ4_LEGACY */
 	if(comp_opts->version != LZ4_LEGACY)
+		goto failed;
+
+	/*
+	 * we currently don't know about any flags, so if the flags field is not
+	 * zero we don't know how to display that, which is a failure
+	 */
+	if(comp_opts->flags != 0)
 		goto failed;
 
 	return;
