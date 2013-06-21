@@ -1731,6 +1731,42 @@ void squashfs_stat(char *source)
 }
 
 
+int check_compression(struct compressor *comp)
+{
+	int res, bytes = 0;
+	char buffer[SQUASHFS_METADATA_SIZE] __attribute__ ((aligned));
+
+	if(!comp->supported) {
+		ERROR("Filesystem uses %s compression, this is "
+			"unsupported by this version\n", comp->name);
+		ERROR("Decompressors available:\n");
+		display_compressors("", "");
+		return 0;
+	}
+
+	/*
+	 * Read compression options from disk if present, and pass to
+	 * the compressor to ensure we know how to decompress a filesystem
+	 * compressed with these compression options.
+	 *
+	 * Note, even if there is no compression options we still call the
+	 * compressor because some compression options may be mandatory
+	 * for some compressors.
+	 */
+	if(SQUASHFS_COMP_OPTS(sBlk.s.flags)) {
+		bytes = read_block(fd, sizeof(sBlk.s), NULL, 0, buffer);
+		if(bytes == 0) {
+			ERROR("Failed to read compressor options\n");
+			return 0;
+		}
+	}
+
+	res = compressor_extract_options(comp, sBlk.s.block_size, buffer, bytes);
+
+	return res != -1;
+}
+
+
 int read_super(char *source)
 {
 	squashfs_super_block_3 sBlk_3;
@@ -2435,7 +2471,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2013/06/11)\n");\
+	printf("unsquashfs version 4.2-git (2013/06/20)\n");\
 	printf("copyright (C) 2013 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
@@ -2650,13 +2686,8 @@ options:
 		exit(0);
 	}
 
-	if(!comp->supported) {
-		ERROR("Filesystem uses %s compression, this is "
-			"unsupported by this version\n", comp->name);
-		ERROR("Decompressors available:\n");
-		display_compressors("", "");
+	if(!check_compression(comp))
 		exit(1);
-	}
 
 	block_size = sBlk.s.block_size;
 	block_log = sBlk.s.block_log;
