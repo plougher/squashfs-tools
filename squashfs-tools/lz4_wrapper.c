@@ -83,17 +83,19 @@ failed:
  * This function returns a pointer to the compression options structure
  * to be stored (and the size), or NULL if there are no compression
  * options
+ *
+ * Currently LZ4 always returns a comp_opts structure, with
+ * the version indicating LZ4_LEGACY stream fomat.  This is to
+ * easily accomodate changes in the kernel code to different
+ * stream formats 
  */
 static void *lz4_dump_options(int block_size, int *size)
 {
-#if 0
-	//SQUASHFS_INSWAP_COMP_OPTS(&comp_opts);
+	comp_opts.version = LZ4_LEGACY;
+	SQUASHFS_INSWAP_COMP_OPTS(&comp_opts);
 
 	*size = sizeof(comp_opts);
 	return &comp_opts;
-#endif
-
-	return NULL;
 }
 
 
@@ -119,12 +121,17 @@ static void *lz4_dump_options(int block_size, int *size)
  */
 static int lz4_extract_options(int block_size, void *buffer, int size)
 {
-	struct comp_opts *comp_opts = buffer;
+	struct lz4_comp_opts *comp_opts = buffer;
 
-	if(size == 0) {
-		/* set defaults */
-	} else {
-	}
+	/* we expect a comp_opts structure to be present */
+	if(size < sizeof(*comp_opts))
+		goto failed;
+
+	SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
+
+	/* we expect the stream format to be LZ4_LEGACY */
+	if(comp_opts->version != LZ4_LEGACY)
+		goto failed;
 
 	return 0;
 
@@ -138,13 +145,17 @@ failed:
 
 void lz4_display_options(void *buffer, int size)
 {
-	struct comp_opts *comp_opts = buffer;
+	struct lz4_comp_opts *comp_opts = buffer;
 
 	/* check passed comp opts struct is of the correct length */
-	if(size != sizeof(comp_opts))
+	if(size < sizeof(*comp_opts))
 		goto failed;
 
-	//SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
+	SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
+
+	/* we expect the stream format to be LZ4_LEGACY */
+	if(comp_opts->version != LZ4_LEGACY)
+		goto failed;
 
 	return;
 

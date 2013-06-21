@@ -36,13 +36,20 @@
 extern unsigned int inswap_le32(unsigned int);
 
 #define SQUASHFS_INSWAP_COMP_OPTS(s) { \
-	(s)->dictionary_size = inswap_le32((s)->dictionary_size); \
-	(s)->flags = inswap_le32((s)->flags); \
+	(s)->version = inswap_le32((s)->version); \
 }
 #else
 #define SQUASHFS_INSWAP_COMP_OPTS(s)
 #endif
 
+/*
+ * Define the various stream formats recognised.
+ * Currently omly legacy stream format is supported by the
+ * kernel
+ */
+#define LZ4_LEGACY	1
+
 struct lz4_comp_opts {
+	int version;
 };
 #endif
