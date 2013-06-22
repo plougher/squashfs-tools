@@ -494,8 +494,12 @@ static int xz_uncompress(void *dest, void *src, int size, int outsize,
 	lzma_ret res = lzma_stream_buffer_decode(&memlimit, 0, NULL,
 			src, &src_pos, size, dest, &dest_pos, outsize);
 
-	*error = res;
-	return res == LZMA_OK && size == (int) src_pos ? (int) dest_pos : -1;
+	if(res == LZMA_OK && size == (int) src_pos)
+		return (int) dest_pos;
+	else {
+		*error = res;
+		return -1;
+	}
 }
 
 
