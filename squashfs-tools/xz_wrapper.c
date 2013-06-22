@@ -329,7 +329,7 @@ void xz_display_options(void *buffer, int size)
 	int i, n;
 
 	/* check passed comp opts struct is of the correct length */
-	if(size != sizeof(comp_opts))
+	if(size != sizeof(struct comp_opts))
 		goto failed;
 
 	SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
