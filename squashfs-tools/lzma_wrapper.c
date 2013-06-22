@@ -99,8 +99,12 @@ static int lzma_uncompress(void *dest, void *src, int size, int outsize,
 	res = LzmaUncompress(dest, &outlen, src + LZMA_HEADER_SIZE, &inlen, src,
 		LZMA_PROPS_SIZE);
 	
-	*error = res;
-	return res == SZ_OK ? outlen : -1;
+	if(res == SZ_OK)
+		return outlen;
+	else {
+		*error = res;
+		return -1;
+	}
 }
 
 
