@@ -104,8 +104,12 @@ static int lzo_uncompress(void *d, void *s, int size, int outsize, int *error)
 
 	res = lzo1x_decompress_safe(s, size, d, &bytes, NULL);
 
-	*error = res;
-	return res == LZO_E_OK ? bytes : -1;
+	if(res == LZO_E_OK)
+		return bytes;
+	else {
+		*error = res;
+		return -1;
+	}
 }
 
 
