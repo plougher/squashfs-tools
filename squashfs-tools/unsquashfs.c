@@ -1642,7 +1642,7 @@ void squashfs_stat(char *source)
 		printf("Compression %s\n", comp->name);
 
 		if(SQUASHFS_COMP_OPTS(sBlk.s.flags)) {
-			char buffer[SQUASHFS_METADATA_SIZE];
+			char buffer[SQUASHFS_METADATA_SIZE] __attribute__ ((aligned));
 			int bytes;
 
 			bytes = read_block(fd, sizeof(sBlk.s), NULL, 0, buffer);
