@@ -94,8 +94,12 @@ static int gzip_uncompress(void *d, void *s, int size, int outsize, int *error)
 
 	res = uncompress(d, &bytes, s, size);
 
-	*error = res;
-	return res == Z_OK ? (int) bytes : -1;
+	if(res == Z_OK)
+		return (int) bytes;
+	else {
+		*error = res;
+		return -1;
+	}
 }
 
 
