@@ -30,8 +30,6 @@
 #include "lz4_wrapper.h"
 #include "compressor.h"
 
-static struct lz4_comp_opts comp_opts;
-
 /*
  * This function is called by the options parsing code in mksquashfs.c
  * to parse any -X compressor option.
@@ -91,6 +89,8 @@ failed:
  */
 static void *lz4_dump_options(int block_size, int *size)
 {
+	static struct lz4_comp_opts comp_opts;
+
 	comp_opts.version = LZ4_LEGACY;
 	comp_opts.flags = 0;
 	SQUASHFS_INSWAP_COMP_OPTS(&comp_opts);
