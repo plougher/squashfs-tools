@@ -54,10 +54,11 @@ static float dictionary_percent = 0;
  *	-Xbcj
  *	-Xdict-size
  *
- * This function returns 1 on successful parsing of an option
- *			-1 if the option was unrecognised, or
- *			-2 if the option was recognised, but otherwise bad in
- *			   some way (e.g. invalid parameter) 
+ * This function returns:
+ *	>=0 (number of additional args parsed) on success
+ *	-1 if the option was unrecognised, or
+ *	-2 if the option was recognised, but otherwise bad in
+ *	   some way (e.g. invalid parameter)
  *
  * Note: this function sets internal compressor state, but does not
  * pass back the results of the parsing other than success/failure.
