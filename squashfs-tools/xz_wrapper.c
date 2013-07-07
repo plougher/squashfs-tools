@@ -41,8 +41,6 @@ static struct bcj bcj[] = {
 	{ NULL, LZMA_VLI_UNKNOWN, 0 }
 };
 
-static struct comp_opts comp_opts;
-
 static int filter_count = 1;
 static int dictionary_size = 0;
 static float dictionary_percent = 0;
@@ -226,6 +224,7 @@ failed:
  */
 static void *xz_dump_options(int block_size, int *size)
 {
+	static struct comp_opts comp_opts;
 	int flags = 0, i;
 
 	/*
