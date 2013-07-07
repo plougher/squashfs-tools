@@ -49,6 +49,10 @@ extern unsigned int inswap_le32(unsigned int);
  * kernel
  */
 #define LZ4_LEGACY	1
+#define LZ4_FLAGS_MASK	1
+
+/* Define the compression flags recognised. */
+#define LZ4_HC		1
 
 struct lz4_comp_opts {
 	int version;

@@ -25,19 +25,23 @@
 #include <string.h>
 #include <stdlib.h>
 #include <lz4.h>
+#include <lz4hc.h>
 
 #include "squashfs_fs.h"
 #include "lz4_wrapper.h"
 #include "compressor.h"
 
+static int hc = 0;
+
 /*
  * This function is called by the options parsing code in mksquashfs.c
  * to parse any -X compressor option.
  *
- * This function returns 1 on successful parsing of an option
- *			-1 if the option was unrecognised, or
- *			-2 if the option was recognised, but otherwise bad in
- *			   some way (e.g. invalid parameter) 
+ * This function returns:
+ *	>=0 (number of additional args parsed) on success
+ *	-1 if the option was unrecognised, or
+ *	-2 if the option was recognised, but otherwise bad in
+ *	   some way (e.g. invalid parameter)
  *
  * Note: this function sets internal compressor state, but does not
  * pass back the results of the parsing other than success/failure.
@@ -46,10 +50,12 @@
  */
 static int lz4_options(char *argv[], int argc)
 {
+	if(strcmp(argv[0], "-Xhc") == 0) {
+		hc = 1;
+		return 0;
+	}
+
 	return -1;
-	
-failed:
-	return -2;
 }
 
 
@@ -92,7 +98,7 @@ static void *lz4_dump_options(int block_size, int *size)
 	static struct lz4_comp_opts comp_opts;
 
 	comp_opts.version = LZ4_LEGACY;
-	comp_opts.flags = 0;
+	comp_opts.flags = hc ? LZ4_HC : 0;
 	SQUASHFS_INSWAP_COMP_OPTS(&comp_opts);
 
 	*size = sizeof(comp_opts);
@@ -135,11 +141,12 @@ static int lz4_extract_options(int block_size, void *buffer, int size)
 		goto failed;
 
 	/*
-	 * we currently don't know about any flags, so if the flags field is not
-	 * zero we don't know how that affects compression or decompression,
-	 * which is a comp_opts read failure
+	 * Check compression flags, currently only LZ4_HC ("high compression")
+	 * can be set.
 	 */
-	if(comp_opts->flags != 0)
+	if(comp_opts->flags == LZ4_HC)
+		hc = 1;
+	else if(comp_opts->flags != 0)
 		goto failed;
 
 	return 0;
@@ -167,10 +174,10 @@ void lz4_display_options(void *buffer, int size)
 		goto failed;
 
 	/*
-	 * we currently don't know about any flags, so if the flags field is not
-	 * zero we don't know how to display that, which is a failure
+	 * Check compression flags, currently only LZ4_HC ("high compression")
+	 * can be set.
 	 */
-	if(comp_opts->flags != 0)
+	if(comp_opts->flags & ~LZ4_FLAGS_MASK)
 		goto failed;
 
 	return;
@@ -209,7 +216,13 @@ static int lz4_compress(void *strm, void *dest, void *src,  int size,
 	int block_size, int *error)
 {
 	//struct lz4_stream *stream = strm;
-	int res = LZ4_compress_limitedOutput(src, dest, size, block_size);
+	int res;
+
+	if(hc)
+		res = LZ4_compressHC_limitedOutput(src, dest, size, block_size);
+	else
+		res = LZ4_compress_limitedOutput(src, dest, size, block_size);
+
 	if(res == 0) {
 		/*
 	 	 * Output buffer overflow.  Return out of buffer space
