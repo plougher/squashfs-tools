@@ -60,25 +60,6 @@ static int lz4_options(char *argv[], int argc)
 
 
 /*
- * This function is called after all options have been parsed.
- * It is used to do post-processing on the compressor options using
- * values that were not expected to be known at option parse time.
- *
- * XXX needed?
- *
- * This function returns 0 on successful post processing, or
- *			-1 on error
- */
-static int lz4_options_post(int block_size)
-{
-	return 0;
-
-failed:
-	return -1;
-}
-
-
-/*
  * This function is called by mksquashfs to dump the parsed
  * compressor options in a format suitable for writing to the
  * compressor options field in the filesystem (stored immediately
@@ -269,7 +250,6 @@ struct compressor lz4_comp_ops = {
 	.compress = lz4_compress,
 	.uncompress = lz4_uncompress,
 	.options = lz4_options,
-	.options_post = lz4_options_post,
 	.dump_options = lz4_dump_options,
 	.extract_options = lz4_extract_options,
 	.display_options = lz4_display_options,
