@@ -48,7 +48,7 @@ GZIP_SUPPORT = 1
 # To build install the library and uncomment
 # the LZ4_SUPPORT line below.
 #
-LZ4_SUPPORT = 1
+#LZ4_SUPPORT = 1
 
 
 ########### Building LZMA support #############
