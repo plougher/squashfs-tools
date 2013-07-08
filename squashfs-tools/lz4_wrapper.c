@@ -172,30 +172,6 @@ failed:
 }	
 
 
-/*
- * This function is called by mksquashfs to initialise the
- * compressor, before compress() is called.
- *
- * This function returns 0 on success, and
- *			-1 on error
- */
-static int lz4_init(void **strm, int block_size, int datablock)
-{
-#if 0
-	struct lz4_stream *stream;
-
-	stream = *strm = malloc(sizeof(struct xz_stream));
-	if(stream == NULL)
-		goto failed;
-#endif
-
-	return 0;
-
-failed:
-	return -1;
-}
-
-
 static int lz4_compress(void *strm, void *dest, void *src,  int size,
 	int block_size, int *error)
 {
@@ -246,7 +222,6 @@ void lz4_usage()
 
 
 struct compressor lz4_comp_ops = {
-	.init = lz4_init,
 	.compress = lz4_compress,
 	.uncompress = lz4_uncompress,
 	.options = lz4_options,
