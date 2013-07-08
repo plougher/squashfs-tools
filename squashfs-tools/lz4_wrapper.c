@@ -180,6 +180,9 @@ void lz4_display_options(void *buffer, int size)
 	if(comp_opts->flags & ~LZ4_FLAGS_MASK)
 		goto failed;
 
+	if(comp_opts->flags & LZ4_HC)
+		printf("\tHigh Compression option specified (-Xhc)\n");
+
 	return;
 
 failed:
