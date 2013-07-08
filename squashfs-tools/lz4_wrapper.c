@@ -259,6 +259,8 @@ static int lz4_uncompress(void *dest, void *src, int size, int outsize,
 
 void lz4_usage()
 {
+	fprintf(stderr, "\t  -Xhc\n");
+	fprintf(stderr, "\t\tCompress using LZ4 High Compression\n");
 }
 
 
