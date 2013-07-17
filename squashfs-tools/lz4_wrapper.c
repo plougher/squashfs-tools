@@ -183,7 +183,6 @@ failed:
 static int lz4_compress(void *strm, void *dest, void *src,  int size,
 	int block_size, int *error)
 {
-	//struct lz4_stream *stream = strm;
 	int res;
 
 	if(hc)
