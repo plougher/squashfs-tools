@@ -155,15 +155,19 @@ void lz4_display_options(void *buffer, int size)
 	SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
 
 	/* we expect the stream format to be LZ4_LEGACY */
-	if(comp_opts->version != LZ4_LEGACY)
+	if(comp_opts->version != LZ4_LEGACY) {
+		fprintf(stderr, "lz4: unknown LZ4 version\n");
 		goto failed;
+	}
 
 	/*
 	 * Check compression flags, currently only LZ4_HC ("high compression")
 	 * can be set.
 	 */
-	if(comp_opts->flags & ~LZ4_FLAGS_MASK)
+	if(comp_opts->flags & ~LZ4_FLAGS_MASK) {
+		fprintf(stderr, "lz4: unknown LZ4 flags\n");
 		goto failed;
+	}
 
 	if(comp_opts->flags & LZ4_HC)
 		printf("\tHigh Compression option specified (-Xhc)\n");
