@@ -118,8 +118,10 @@ static int lz4_extract_options(int block_size, void *buffer, int size)
 	SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
 
 	/* we expect the stream format to be LZ4_LEGACY */
-	if(comp_opts->version != LZ4_LEGACY)
+	if(comp_opts->version != LZ4_LEGACY) {
+		fprintf(stderr, "lz4: unknown LZ4 version\n");
 		goto failed;
+	}
 
 	/*
 	 * Check compression flags, currently only LZ4_HC ("high compression")
@@ -127,8 +129,10 @@ static int lz4_extract_options(int block_size, void *buffer, int size)
 	 */
 	if(comp_opts->flags == LZ4_HC)
 		hc = 1;
-	else if(comp_opts->flags != 0)
+	else if(comp_opts->flags != 0) {
+		fprintf(stderr, "lz4: unknown LZ4 flags\n");
 		goto failed;
+	}
 
 	return 0;
 
