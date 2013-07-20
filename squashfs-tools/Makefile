@@ -43,9 +43,12 @@ GZIP_SUPPORT = 1
 
 ########### Building LZ4 support #############
 #
-# LZ4 (http://xxx/) is supported
+# Yann Collet's LZ4 tools are supported
+# LZ4 homepage: http://fastcompression.blogspot.com/p/lz4.html
+# LZ4 source repository: http://code.google.com/p/lz4
 #
-# To build install the library and uncomment
+# To build configure the tools using cmake to build shared libraries,
+# install and uncomment
 # the LZ4_SUPPORT line below.
 #
 #LZ4_SUPPORT = 1
