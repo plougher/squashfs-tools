@@ -18,7 +18,7 @@
  *
  * lz4_wrapper.c
  *
- * Support for LZ4 compression http://xxx
+ * Support for LZ4 compression http://fastcompression.blogspot.com/p/lz4.html
  */
 
 #include <stdio.h>
