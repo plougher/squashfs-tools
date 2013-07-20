@@ -536,15 +536,11 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 		ERROR("read_fs_bytes: Lseek on destination failed because %s, "
 			"offset=0x%llx\n", strerror(errno), off);
 		res = 0;
-		goto mutex_unlock;
-	}
-
-	if(read_bytes(fd, buff, bytes) < bytes) {
+	} else if(read_bytes(fd, buff, bytes) < bytes) {
 		ERROR("Read on destination failed\n");
 		res = 0;
 	}
 
-mutex_unlock:
 	pthread_cleanup_pop(1);
 	return res;
 }
