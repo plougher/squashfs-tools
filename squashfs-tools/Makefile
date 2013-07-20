@@ -217,7 +217,8 @@ endif
 # COMP_DEFAULT must be a selected compressor
 #
 ifeq (, $(findstring $(COMP_DEFAULT), $(COMPRESSORS)))
-$(error "COMP_DEFAULT isn't selected to be built!")
+$(error "COMP_DEFAULT is set to ${COMP_DEFAULT}, which  isn't selected to be \
+	built!")
 endif
 
 .PHONY: all
