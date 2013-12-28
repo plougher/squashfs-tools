@@ -41,9 +41,13 @@ static struct compressor lzma_comp_ops = {
 extern struct compressor lzma_comp_ops;
 #endif
 
+#ifndef LZO_SUPPORT
 static struct compressor lzo_comp_ops = {
 	LZO_COMPRESSION, "lzo"
 };
+#else
+extern struct compressor lzo_comp_ops;
+#endif
 
 #ifndef LZ4_SUPPORT
 static struct compressor lz4_comp_ops = {
