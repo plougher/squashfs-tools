@@ -346,11 +346,14 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 
 	if(entry) {
 		/*
- 		 * found the block in the cache, increment used count and
- 		 * if necessary remove from free list so it won't disappear
+ 		 * found the block in the cache.  If the block is currently unused
+		 * remove it from the free list and increment cache used count.
  		 */
+		if(entry->used == 0) {
+			cache->used ++;
+			remove_free_list(cache, entry);
+		}
 		entry->used ++;
-		remove_free_list(cache, entry);
 		pthread_mutex_unlock(&cache->mutex);
 	} else {
 		/*
