@@ -70,7 +70,8 @@ static int lzo_options(char *argv[], int argc)
 	if(strcmp(argv[0], "-Xlzo_algo") == 0) {
 		if(argc < 2) {
 			fprintf(stderr, "lzo: -Xlzo_algo missing algorithm\n");
-			goto failed;
+			fprintf(stderr, "lzo: -Xlzo_algo <algorithm>\n");
+			goto failed2;
 		}
 
 		for(i = 0; lzo[i].name; i++) {
@@ -81,7 +82,7 @@ static int lzo_options(char *argv[], int argc)
 		}
 
 		fprintf(stderr, "lzo: -Xlzo_algo unrecognised algorithm\n");
-		goto failed;
+		goto failed2;
 	} else if(strcmp(argv[0], "-Xcompression_level") == 0) {
 		if(argc < 2) {
 			fprintf(stderr, "lzo: -Xcompression_level missing "
@@ -102,6 +103,12 @@ static int lzo_options(char *argv[], int argc)
 	return -1;
 
 failed:
+	return -2;
+
+failed2:
+	fprintf(stderr, "lzo: compression algorithm should be one of:\n");
+	for(i = 0; lzo[i].name; i++)
+		fprintf(stderr, "\t%s\n", lzo[i].name);
 	return -2;
 }
 
