@@ -128,7 +128,7 @@ static int lzo_options_post(int block_size)
 			fprintf(stderr, "lzo: -Xcompression_level not "
 				"supported by selected %s algorithm\n",
 				lzo[algorithm].name);
-			fprintf(stderr, "lzo: -Xcompression_level is only"
+			fprintf(stderr, "lzo: -Xcompression_level is only "
 				"applicable for the lzo1x_999 algorithm\n");
 			goto failed;
 		}
