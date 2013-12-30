@@ -87,6 +87,8 @@ static int lzo_options(char *argv[], int argc)
 		if(argc < 2) {
 			fprintf(stderr, "lzo: -Xcompression_level missing "
 				"compression level\n");
+			fprintf(stderr, "lzo: -Xcompression_level it "
+				"should be 1 >= n <= 9\n");
 			goto failed;
 		}
 
