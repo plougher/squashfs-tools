@@ -270,7 +270,7 @@ void lzo_display_options(void *buffer, int size)
 	case SQUASHFS_LZO1X_1_11:
 	case SQUASHFS_LZO1X_1_12:
 	case SQUASHFS_LZO1X_1_15:
-		printf("algorithm %s\n", lzo[comp_opts->algorithm].name);
+		printf("\talgorithm %s\n", lzo[comp_opts->algorithm].name);
 		break;
 	case SQUASHFS_LZO1X_999:
 		if(comp_opts->compression_level < 1 ||
