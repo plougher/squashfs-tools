@@ -64,9 +64,8 @@ static inline int compressor_uncompress(struct compressor *comp, void *dest,
 
 
 /*
- * For the following functions, please see xz_wrapper.c for
- * commented examples of how they are used (xz is currently
- * the only compressor that uses compression options).
+ * For the following functions please see the lzo, lz4 or xz
+ * compressors for commented examples of how they are used.
  */
 static inline int compressor_options(struct compressor *comp, char *argv[],
 	int argc)
