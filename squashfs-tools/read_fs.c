@@ -530,7 +530,7 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 	/* Check the compression type */
 	comp = lookup_compressor_id(sBlk->compression);
 	if(!comp->supported) {
-		ERROR("Filesystem on %s uses %s compression, this is"
+		ERROR("Filesystem on %s uses %s compression, this is "
 			"unsupported by this version\n", source, comp->name);
 		ERROR("Compressors available:\n");
 		display_compressors("", "");
