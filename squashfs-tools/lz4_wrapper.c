@@ -144,6 +144,46 @@ failed:
 }
 
 
+/*
+ * This function is a helper specifically for unsquashfs.
+ * Its purpose is to check that the compression options are
+ * understood by this version of LZ4.
+ *
+ * This is important for LZ4 because the format understood by the
+ * Linux kernel may change from the already obsolete legacy format
+ * currently supported.
+ *
+ * If this does happen, then this version of LZ4 will not be able to decode
+ * the newer format.  So we need to check for this.
+ *
+ * This function returns 0 on sucessful checking of options, and
+ *			-1 on error
+ */
+static int lz4_check_options(int block_size, void *buffer, int size)
+{
+	struct lz4_comp_opts *comp_opts = buffer;
+
+	/* we expect a comp_opts structure to be present */
+	if(size < sizeof(*comp_opts))
+		goto failed;
+
+	SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
+
+	/* we expect the stream format to be LZ4_LEGACY */
+	if(comp_opts->version != LZ4_LEGACY) {
+		fprintf(stderr, "lz4: unknown LZ4 version\n");
+		goto failed;
+	}
+
+	return 0;
+
+failed:
+	fprintf(stderr, "lz4: error reading stored compressor options from "
+		"filesystem!\n");
+	return -1;
+}
+
+
 void lz4_display_options(void *buffer, int size)
 {
 	struct lz4_comp_opts *comp_opts = buffer;
@@ -234,6 +274,7 @@ struct compressor lz4_comp_ops = {
 	.options = lz4_options,
 	.dump_options = lz4_dump_options,
 	.extract_options = lz4_extract_options,
+	.check_options = lz4_check_options,
 	.display_options = lz4_display_options,
 	.usage = lz4_usage,
 	.id = LZ4_COMPRESSION,

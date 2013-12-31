@@ -1764,7 +1764,7 @@ int check_compression(struct compressor *comp)
 		}
 	}
 
-	res = compressor_extract_options(comp, sBlk.s.block_size, buffer, bytes);
+	res = compressor_check_options(comp, sBlk.s.block_size, buffer, bytes);
 
 	return res != -1;
 }
