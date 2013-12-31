@@ -18,7 +18,7 @@
  *
  * lzo_wrapper.c
  *
- * Support for LZO compression http://xxx
+ * Support for LZO compression http://www.oberhumer.com/opensource/lzo
  */
 
 #include <stdio.h>
