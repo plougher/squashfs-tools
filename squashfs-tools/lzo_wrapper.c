@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013
+ * Copyright (c) 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -67,10 +67,10 @@ static int lzo_options(char *argv[], int argc)
 {
 	int i;
 
-	if(strcmp(argv[0], "-Xlzo_algo") == 0) {
+	if(strcmp(argv[0], "-Xalgorithm") == 0) {
 		if(argc < 2) {
-			fprintf(stderr, "lzo: -Xlzo_algo missing algorithm\n");
-			fprintf(stderr, "lzo: -Xlzo_algo <algorithm>\n");
+			fprintf(stderr, "lzo: -Xalgorithm missing algorithm\n");
+			fprintf(stderr, "lzo: -Xalgorithm <algorithm>\n");
 			goto failed2;
 		}
 
@@ -81,7 +81,7 @@ static int lzo_options(char *argv[], int argc)
 			}
 		}
 
-		fprintf(stderr, "lzo: -Xlzo_algo unrecognised algorithm\n");
+		fprintf(stderr, "lzo: -Xalgorithm unrecognised algorithm\n");
 		goto failed2;
 	} else if(strcmp(argv[0], "-Xcompression_level") == 0) {
 		if(argc < 2) {
@@ -121,7 +121,7 @@ failed2:
  * values that were not expected to be known at option parse time.
  *
  * In this case the LZO algorithm may not be known until after the
- * compression level has been set (-Xlzo_algo used after -Xcompression_level)
+ * compression level has been set (-Xalgorithm used after -Xcompression_level)
  *
  * This function returns 0 on successful post processing, or
  *			-1 on error
@@ -395,7 +395,7 @@ void lzo_usage()
 {
 	int i;
 
-	fprintf(stderr, "\t  -Xlzo_algo <algorithm>\n");
+	fprintf(stderr, "\t  -Xalgorithm <algorithm>\n");
 	fprintf(stderr, "\t\tWhere <algorithm> is one of:\n");
 
 	for(i = 0; lzo[i].name; i++)
