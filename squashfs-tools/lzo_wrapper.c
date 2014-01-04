@@ -83,18 +83,18 @@ static int lzo_options(char *argv[], int argc)
 
 		fprintf(stderr, "lzo: -Xalgorithm unrecognised algorithm\n");
 		goto failed2;
-	} else if(strcmp(argv[0], "-Xcompression_level") == 0) {
+	} else if(strcmp(argv[0], "-Xcompression-level") == 0) {
 		if(argc < 2) {
-			fprintf(stderr, "lzo: -Xcompression_level missing "
+			fprintf(stderr, "lzo: -Xcompression-level missing "
 				"compression level\n");
-			fprintf(stderr, "lzo: -Xcompression_level it "
+			fprintf(stderr, "lzo: -Xcompression-level it "
 				"should be 1 >= n <= 9\n");
 			goto failed;
 		}
 
 		user_comp_level = atoi(argv[1]);
 		if(user_comp_level < 1 || user_comp_level > 9) {
-			fprintf(stderr, "lzo: -Xcompression_level invalid, it "
+			fprintf(stderr, "lzo: -Xcompression-level invalid, it "
 				"should be 1 >= n <= 9\n");
 			goto failed;
 		}
@@ -121,7 +121,7 @@ failed2:
  * values that were not expected to be known at option parse time.
  *
  * In this case the LZO algorithm may not be known until after the
- * compression level has been set (-Xalgorithm used after -Xcompression_level)
+ * compression level has been set (-Xalgorithm used after -Xcompression-level)
  *
  * This function returns 0 on successful post processing, or
  *			-1 on error
@@ -134,10 +134,10 @@ static int lzo_options_post(int block_size)
 	 */
 	if(user_comp_level != -1) {
 		if(algorithm != SQUASHFS_LZO1X_999) {
-			fprintf(stderr, "lzo: -Xcompression_level not "
+			fprintf(stderr, "lzo: -Xcompression-level not "
 				"supported by selected %s algorithm\n",
 				lzo[algorithm].name);
-			fprintf(stderr, "lzo: -Xcompression_level is only "
+			fprintf(stderr, "lzo: -Xcompression-level is only "
 				"applicable for the lzo1x_999 algorithm\n");
 			goto failed;
 		}
@@ -402,8 +402,8 @@ void lzo_usage()
 		fprintf(stderr, "\t\t\t%s%s\n", lzo[i].name,
 				i == SQUASHFS_LZO1X_999 ? " (default)" : "");
 
-	fprintf(stderr, "\t  -Xcompression_level <compression_level>\n");
-	fprintf(stderr, "\t\t<compression_level> should be 1 .. 9 (default "
+	fprintf(stderr, "\t  -Xcompression-level <compression-level>\n");
+	fprintf(stderr, "\t\t<compression-level> should be 1 .. 9 (default "
 								"8)\n");
 	fprintf(stderr, "\t\tOnly applies to lzo1x_999 algorithm\n");
 }
@@ -411,7 +411,7 @@ void lzo_usage()
 
 /*
  * Helper function for lzo1x_999 compression algorithm.
- * All other lzo1x_xxx compressors do not take a compression_level,
+ * All other lzo1x_xxx compressors do not take a compression level,
  * so we need to wrap lzo1x_999 to pass the compression level which
  * is applicable to it
  */
