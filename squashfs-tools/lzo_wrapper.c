@@ -404,7 +404,7 @@ void lzo_usage()
 
 	fprintf(stderr, "\t  -Xcompression-level <compression-level>\n");
 	fprintf(stderr, "\t\t<compression-level> should be 1 .. 9 (default "
-								"8)\n");
+		"%d)\n", SQUASHFS_LZO1X_999_COMP_DEFAULT);
 	fprintf(stderr, "\t\tOnly applies to lzo1x_999 algorithm\n");
 }
 
