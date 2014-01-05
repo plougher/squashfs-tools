@@ -582,7 +582,7 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 		SQUASHFS_UNCOMPRESSED_XATTRS(sBlk->flags) ? "un" : "");
 	printf("\tFragments are %spresent in the filesystem\n",
 		SQUASHFS_NO_FRAGMENTS(sBlk->flags) ? "not " : "");
-	printf("\tAlways_use_fragments option is %sspecified\n",
+	printf("\tAlways-use-fragments option is %sspecified\n",
 		SQUASHFS_ALWAYS_FRAGMENTS(sBlk->flags) ? "" : "not ");
 	printf("\tDuplicates are %sremoved\n",
 		SQUASHFS_DUPLICATES(sBlk->flags) ? "" : "not ");

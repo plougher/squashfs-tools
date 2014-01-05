@@ -1673,7 +1673,7 @@ void squashfs_stat(char *source)
 			printf("Fragments are %scompressed\n",
 				SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.s.flags) ?
 				"un" : "");
-			printf("Always_use_fragments option is %sspecified\n",
+			printf("Always-use-fragments option is %sspecified\n",
 				SQUASHFS_ALWAYS_FRAGMENTS(sBlk.s.flags) ? "" :
 				"not ");
 		}
