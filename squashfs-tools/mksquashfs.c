@@ -296,8 +296,8 @@ int processors = -1;
 int writer_buffer_size;
 
 /* compression operations */
-static struct compressor *comp;
-int compressor_opts_parsed = 0;
+static struct compressor *comp = NULL;
+int compressor_opt_parsed = 0;
 void *stream = NULL;
 
 /* xattr stats */
@@ -4735,7 +4735,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2014/01/02)\n");\
+	printf("mksquashfs version 4.2-git (2014/01/05)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -4776,13 +4776,57 @@ int main(int argc, char *argv[])
 		goto printOptions;
 	source_path = argv + 1;
 	source = i - 2;
+
 	/*
-	 * lookup default compressor.  Note the Makefile ensures the default
-	 * compressor has been built, and so we don't need to to check
-	 * for failure here
+	 * Scan the command line for -comp xxx option, this is to ensure
+	 * any -X compressor specific options are passed to the
+	 * correct compressor
 	 */
-	comp = lookup_compressor(COMP_DEFAULT);
 	for(; i < argc; i++) {
+		struct compressor *prev_comp = comp;
+		
+		if(strcmp(argv[i], "-comp") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -comp missing compression type\n",
+					argv[0]);
+				exit(1);
+			}
+			comp = lookup_compressor(argv[i]);
+			if(!comp->supported) {
+				ERROR("%s: Compressor \"%s\" is not supported!"
+					"\n", argv[0], argv[i]);
+				ERROR("%s: Compressors available:\n", argv[0]);
+				display_compressors("", COMP_DEFAULT);
+				exit(1);
+			}
+			if(prev_comp != NULL && prev_comp != comp) {
+				ERROR("%s: -comp multiple conflicting -comp"
+					" options specified on command line"
+					", previously %s, now %s\n", argv[0],
+					prev_comp->name, comp->name);
+				exit(1);
+			}
+			compressor_opt_parsed = 1;
+
+		} else if(strcmp(argv[i], "-e") == 0)
+			break;
+		else if(strcmp(argv[i], "-root-becomes") == 0 ||
+				strcmp(argv[i], "-ef") == 0 ||
+				strcmp(argv[i], "-pf") == 0 ||
+				strcmp(argv[i], "-af") == 0 ||
+				strcmp(argv[i], "-comp") == 0)
+			i++;
+	}
+
+	/*
+	 * if no -comp option specified lookup default compressor.  Note the
+	 * Makefile ensures the default compressor has been built, and so we
+	 * don't need to to check for failure here
+	 */
+	if(comp == NULL)
+		comp = lookup_compressor(COMP_DEFAULT);
+
+	for(i = source + 2; i < argc; i++) {
 		if(strcmp(argv[i], "-action") == 0 ||
 				strcmp(argv[i], "-a") ==0) {
 			if(++i == argc) {
@@ -4802,42 +4846,25 @@ int main(int argc, char *argv[])
 			if(read_action_file(argv[i]) == FALSE)
 				exit(1);
 
-		} else if(strcmp(argv[i], "-comp") == 0) {
-			if(compressor_opts_parsed) {
-				ERROR("%s: -comp must appear before -X options"
-					"\n", argv[0]);
-				exit(1);
-			}
-			if(++i == argc) {
-				ERROR("%s: -comp missing compression type\n",
-					argv[0]);
-				exit(1);
-			}
-			comp = lookup_compressor(argv[i]);
-			if(!comp->supported) {
-				ERROR("%s: Compressor \"%s\" is not supported!"
-					"\n", argv[0], argv[i]);
-				ERROR("%s: Compressors available:\n", argv[0]);
-				display_compressors("", COMP_DEFAULT);
-				exit(1);
-			}
+		} else if(strcmp(argv[i], "-comp") == 0)
+			/* parsed previously */
+			i++;
 
-		} else if(strncmp(argv[i], "-X", 2) == 0) {
+		else if(strncmp(argv[i], "-X", 2) == 0) {
 			int args = compressor_options(comp, argv + i, argc - i);
 			if(args < 0) {
 				if(args == -1) {
 					ERROR("%s: Unrecognised compressor"
 						" option %s\n", argv[0],
 						argv[i]);
-					ERROR("%s: Did you forget to specify"
-						" -comp, or specify it after"
-						" the compressor specific"
-						" option?\n", argv[0]);
-					}
+					if(!compressor_opt_parsed)
+						ERROR("%s: Did you forget to"
+							" specify -comp?\n",
+							argv[0]);
+				}
 				exit(1);
 			}
 			i += args;
-			compressor_opts_parsed = 1;
 
 		} else if(strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc) {
