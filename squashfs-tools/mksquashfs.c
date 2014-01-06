@@ -4861,6 +4861,12 @@ int main(int argc, char *argv[])
 						ERROR("%s: Did you forget to"
 							" specify -comp?\n",
 							argv[0]);
+					ERROR("%s: selected compressor \"%s\""
+						".  Options supported: %s\n",
+						argv[0], comp->name,
+						comp->usage ? "" : "none");
+					if(comp->usage)
+						comp->usage();
 				}
 				exit(1);
 			}
