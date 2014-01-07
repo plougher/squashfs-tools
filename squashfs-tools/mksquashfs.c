@@ -4735,7 +4735,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2014/01/05)\n");\
+	printf("mksquashfs version 4.2-git (2014/01/06)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -4851,7 +4851,12 @@ int main(int argc, char *argv[])
 			i++;
 
 		else if(strncmp(argv[i], "-X", 2) == 0) {
-			int args = compressor_options(comp, argv + i, argc - i);
+			int args;
+
+			if(strcmp(argv[i] + 2, "help") == 0)
+				goto print_compressor_options;
+
+			args = compressor_options(comp, argv + i, argc - i);
 			if(args < 0) {
 				if(args == -1) {
 					ERROR("%s: Unrecognised compressor"
@@ -4861,6 +4866,7 @@ int main(int argc, char *argv[])
 						ERROR("%s: Did you forget to"
 							" specify -comp?\n",
 							argv[0]);
+print_compressor_options:
 					ERROR("%s: selected compressor \"%s\""
 						".  Options supported: %s\n",
 						argv[0], comp->name,
@@ -5189,6 +5195,8 @@ printOptions:
 				"-noF\n");
 			ERROR("-noXattrCompression\talternative name for "
 				"-noX\n");
+			ERROR("\n-Xhelp\t\t\tprint compressor options for"
+				" selected compressor\n");
 			ERROR("\nCompressors available and compressor specific "
 				"options:\n");
 			display_compressor_usage(COMP_DEFAULT);
