@@ -3,7 +3,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2008, 2009, 2010, 2013
+ * Copyright (c) 2008, 2009, 2010, 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -45,7 +45,7 @@ extern void inswap_le64_num(long long *, int);
 #define _SQUASHFS_SWAP_SUPER_BLOCK(s, d, SWAP_FUNC) {\
 	SWAP_FUNC(32, s, d, s_magic, struct squashfs_super_block);\
 	SWAP_FUNC(32, s, d, inodes, struct squashfs_super_block);\
-	SWAP_FUNC(32, s, d, mkfs_time, struct squashfs_super_block);\
+	SWAP_FUNC##S(32, s, d, mkfs_time, struct squashfs_super_block);\
 	SWAP_FUNC(32, s, d, block_size, struct squashfs_super_block);\
 	SWAP_FUNC(32, s, d, fragments, struct squashfs_super_block);\
 	SWAP_FUNC(16, s, d, compression, struct squashfs_super_block);\
@@ -75,7 +75,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(16, s, d, mode, struct squashfs_base_inode_header);\
 	SWAP_FUNC(16, s, d, uid, struct squashfs_base_inode_header);\
 	SWAP_FUNC(16, s, d, guid, struct squashfs_base_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, struct squashfs_base_inode_header);\
+	SWAP_FUNC##S(32, s, d, mtime, struct squashfs_base_inode_header);\
 	SWAP_FUNC(32, s, d, inode_number, struct squashfs_base_inode_header);\
 }
 
@@ -84,7 +84,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(16, s, d, mode, struct squashfs_ipc_inode_header);\
 	SWAP_FUNC(16, s, d, uid, struct squashfs_ipc_inode_header);\
 	SWAP_FUNC(16, s, d, guid, struct squashfs_ipc_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, struct squashfs_ipc_inode_header);\
+	SWAP_FUNC##S(32, s, d, mtime, struct squashfs_ipc_inode_header);\
 	SWAP_FUNC(32, s, d, inode_number, struct squashfs_ipc_inode_header);\
 	SWAP_FUNC(32, s, d, nlink, struct squashfs_ipc_inode_header);\
 }
@@ -94,7 +94,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(16, s, d, mode, struct squashfs_lipc_inode_header);\
 	SWAP_FUNC(16, s, d, uid, struct squashfs_lipc_inode_header);\
 	SWAP_FUNC(16, s, d, guid, struct squashfs_lipc_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, struct squashfs_lipc_inode_header);\
+	SWAP_FUNC##S(32, s, d, mtime, struct squashfs_lipc_inode_header);\
 	SWAP_FUNC(32, s, d, inode_number, struct squashfs_lipc_inode_header);\
 	SWAP_FUNC(32, s, d, nlink, struct squashfs_lipc_inode_header);\
 	SWAP_FUNC(32, s, d, xattr, struct squashfs_lipc_inode_header);\
@@ -105,7 +105,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(16, s, d, mode, struct squashfs_dev_inode_header);\
 	SWAP_FUNC(16, s, d, uid, struct squashfs_dev_inode_header);\
 	SWAP_FUNC(16, s, d, guid, struct squashfs_dev_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, struct squashfs_dev_inode_header);\
+	SWAP_FUNC##S(32, s, d, mtime, struct squashfs_dev_inode_header);\
 	SWAP_FUNC(32, s, d, inode_number, struct squashfs_dev_inode_header);\
 	SWAP_FUNC(32, s, d, nlink, struct squashfs_dev_inode_header);\
 	SWAP_FUNC(32, s, d, rdev, struct squashfs_dev_inode_header);\
@@ -116,7 +116,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(16, s, d, mode, struct squashfs_ldev_inode_header);\
 	SWAP_FUNC(16, s, d, uid, struct squashfs_ldev_inode_header);\
 	SWAP_FUNC(16, s, d, guid, struct squashfs_ldev_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, struct squashfs_ldev_inode_header);\
+	SWAP_FUNC##S(32, s, d, mtime, struct squashfs_ldev_inode_header);\
 	SWAP_FUNC(32, s, d, inode_number, struct squashfs_ldev_inode_header);\
 	SWAP_FUNC(32, s, d, nlink, struct squashfs_ldev_inode_header);\
 	SWAP_FUNC(32, s, d, rdev, struct squashfs_ldev_inode_header);\
@@ -128,7 +128,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(16, s, d, mode, struct squashfs_symlink_inode_header);\
 	SWAP_FUNC(16, s, d, uid, struct squashfs_symlink_inode_header);\
 	SWAP_FUNC(16, s, d, guid, struct squashfs_symlink_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, struct squashfs_symlink_inode_header);\
+	SWAP_FUNC##S(32, s, d, mtime, struct squashfs_symlink_inode_header);\
 	SWAP_FUNC(32, s, d, inode_number, struct squashfs_symlink_inode_header);\
 	SWAP_FUNC(32, s, d, nlink, struct squashfs_symlink_inode_header);\
 	SWAP_FUNC(32, s, d, symlink_size, struct squashfs_symlink_inode_header);\
@@ -139,7 +139,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(16, s, d, mode, struct squashfs_reg_inode_header);\
 	SWAP_FUNC(16, s, d, uid, struct squashfs_reg_inode_header);\
 	SWAP_FUNC(16, s, d, guid, struct squashfs_reg_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, struct squashfs_reg_inode_header);\
+	SWAP_FUNC##S(32, s, d, mtime, struct squashfs_reg_inode_header);\
 	SWAP_FUNC(32, s, d, inode_number, struct squashfs_reg_inode_header);\
 	SWAP_FUNC(32, s, d, start_block, struct squashfs_reg_inode_header);\
 	SWAP_FUNC(32, s, d, fragment, struct squashfs_reg_inode_header);\
@@ -152,7 +152,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(16, s, d, mode, struct squashfs_lreg_inode_header);\
 	SWAP_FUNC(16, s, d, uid, struct squashfs_lreg_inode_header);\
 	SWAP_FUNC(16, s, d, guid, struct squashfs_lreg_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, struct squashfs_lreg_inode_header);\
+	SWAP_FUNC##S(32, s, d, mtime, struct squashfs_lreg_inode_header);\
 	SWAP_FUNC(32, s, d, inode_number, struct squashfs_lreg_inode_header);\
 	SWAP_FUNC(64, s, d, start_block, struct squashfs_lreg_inode_header);\
 	SWAP_FUNC(64, s, d, file_size, struct squashfs_lreg_inode_header);\
@@ -168,7 +168,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(16, s, d, mode, struct squashfs_dir_inode_header);\
 	SWAP_FUNC(16, s, d, uid, struct squashfs_dir_inode_header);\
 	SWAP_FUNC(16, s, d, guid, struct squashfs_dir_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, struct squashfs_dir_inode_header);\
+	SWAP_FUNC##S(32, s, d, mtime, struct squashfs_dir_inode_header);\
 	SWAP_FUNC(32, s, d, inode_number, struct squashfs_dir_inode_header);\
 	SWAP_FUNC(32, s, d, start_block, struct squashfs_dir_inode_header);\
 	SWAP_FUNC(32, s, d, nlink, struct squashfs_dir_inode_header);\
@@ -182,7 +182,7 @@ extern void inswap_le64_num(long long *, int);
 	SWAP_FUNC(16, s, d, mode, struct squashfs_ldir_inode_header);\
 	SWAP_FUNC(16, s, d, uid, struct squashfs_ldir_inode_header);\
 	SWAP_FUNC(16, s, d, guid, struct squashfs_ldir_inode_header);\
-	SWAP_FUNC(32, s, d, mtime, struct squashfs_ldir_inode_header);\
+	SWAP_FUNC##S(32, s, d, mtime, struct squashfs_ldir_inode_header);\
 	SWAP_FUNC(32, s, d, inode_number, struct squashfs_ldir_inode_header);\
 	SWAP_FUNC(32, s, d, nlink, struct squashfs_ldir_inode_header);\
 	SWAP_FUNC(32, s, d, file_size, struct squashfs_ldir_inode_header);\
@@ -331,8 +331,9 @@ extern void inswap_le64_num(long long *, int);
 #define INSWAP_LE(bits, s, d, field, type) \
 			(s)->field = inswap_le##bits((s)->field)
 #define INSWAP_LES(bits, s, d, field, type) \
-			(s)->field = (short) inswap_le##bits((unsigned short) \
-				(s)->field)
+			(s)->field = INSWAP_LES##bits((s)->field)
+#define INSWAP_LES16(num) (short) inswap_le16((unsigned short) (num))
+#define INSWAP_LES32(num) (int) inswap_le32((unsigned int) (num))
 #define SQUASHFS_INSWAP_INODE_T(s) s = inswap_le64(s)
 #define SQUASHFS_INSWAP_FRAGMENT_INDEXES(s, n) inswap_le64_num(s, n)
 #define SQUASHFS_INSWAP_LOOKUP_BLOCKS(s, n) inswap_le64_num(s, n)
