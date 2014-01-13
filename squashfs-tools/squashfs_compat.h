@@ -3,7 +3,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -50,7 +50,7 @@ struct squashfs_super_block_3 {
 	unsigned int		flags:8;
 	unsigned int		no_uids:8;
 	unsigned int		no_guids:8;
-	unsigned int		mkfs_time /* time of filesystem creation */;
+	int			mkfs_time /* time of filesystem creation */;
 	squashfs_inode		root_inode;
 	unsigned int		block_size;
 	unsigned int		fragments;
@@ -76,7 +76,7 @@ struct squashfs_dir_index_3 {
 	unsigned int		mode:12;	\
 	unsigned int		uid:8;		\
 	unsigned int		guid:8;		\
-	unsigned int		mtime;		\
+	int			mtime;		\
 	unsigned int 		inode_number;
 
 struct squashfs_base_inode_header_3 {
@@ -449,7 +449,7 @@ struct squashfs_reg_inode_header_1 {
 	unsigned int		mode:12; /* protection */
 	unsigned int		uid:4; /* index into uid table */
 	unsigned int		guid:4; /* index into guid table */
-	unsigned int		mtime;
+	int			mtime;
 	unsigned int		start_block;
 	unsigned int		file_size:32;
 	unsigned short		block_list[0];
@@ -462,7 +462,7 @@ struct squashfs_dir_inode_header_1 {
 	unsigned int		guid:4; /* index into guid table */
 	unsigned int		file_size:19;
 	unsigned int		offset:13;
-	unsigned int		mtime;
+	int			mtime;
 	unsigned int		start_block:24;
 } __attribute__  ((packed));
 
@@ -582,7 +582,7 @@ struct squashfs_reg_inode_header_2 {
 	unsigned int		mode:12; /* protection */
 	unsigned int		uid:8; /* index into uid table */
 	unsigned int		guid:8; /* index into guid table */
-	unsigned int		mtime;
+	int			mtime;
 	unsigned int		start_block;
 	unsigned int		fragment;
 	unsigned int		offset;
@@ -597,7 +597,7 @@ struct squashfs_dir_inode_header_2 {
 	unsigned int		guid:8; /* index into guid table */
 	unsigned int		file_size:19;
 	unsigned int		offset:13;
-	unsigned int		mtime;
+	int			mtime;
 	unsigned int		start_block:24;
 } __attribute__  ((packed));
 
@@ -608,7 +608,7 @@ struct squashfs_ldir_inode_header_2 {
 	unsigned int		guid:8; /* index into guid table */
 	unsigned int		file_size:27;
 	unsigned int		offset:13;
-	unsigned int		mtime;
+	int			mtime;
 	unsigned int		start_block:24;
 	unsigned int		i_count:16;
 	struct squashfs_dir_index_2	index[0];
