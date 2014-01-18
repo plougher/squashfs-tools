@@ -63,27 +63,15 @@ void update_info(struct dir_ent *dir_ent)
 
 void print_filename()
 {
-	int res;
-	char *subpath;
 	struct dir_ent *dir_ent = ent;
 
 	if(dir_ent == NULL)
 		return;
 
 	if(dir_ent->our_dir->subpath[0] != '\0')
-		res = asprintf(&subpath, "%s/%s",
-			dir_ent->our_dir->subpath, dir_ent->name);
+		INFO("%s/%s\n", dir_ent->our_dir->subpath, dir_ent->name);
 	else
-		res = asprintf(&subpath, "/%s", dir_ent->name);
-
-	if(res < 0) {
-		ERROR("asprintf failed in info_thrd\n");
-		return;
-	}
-
-	INFO("%s\n", subpath);
-
-	free(subpath);
+		INFO("/%s\n", dir_ent->name);
 }
 
 
