@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2012, 2013
+ * Copyright (c) 2012, 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -35,11 +35,14 @@
 
 #include "error.h"
 
+#define FALSE 0
+#define TRUE 1
+
 /* flag whether progressbar display is enabled or not */
-int display_progress_bar = 0;
+int display_progress_bar = FALSE;
 
 /* flag whether the progress bar is temporarily disbled */
-int progress_enabled = 0;
+int temp_disabled = FALSE;
 
 int rotate = 0;
 int cur_uncompressed = 0, estimated_uncompressed = 0;
@@ -135,16 +138,12 @@ static void progress_bar(long long current, long long max, int columns)
 }
 
 
-void set_progressbar_state(int state)
-{
-	display_progress_bar = state;
-}
-
-
 void enable_progress_bar()
 {
 	pthread_mutex_lock(&progress_mutex);
-	progress_enabled = display_progress_bar;
+	if(display_progress_bar)
+		progress_bar(cur_uncompressed, estimated_uncompressed, columns);
+	temp_disabled = FALSE;
 	pthread_mutex_unlock(&progress_mutex);
 }
 
@@ -152,11 +151,24 @@ void enable_progress_bar()
 void disable_progress_bar()
 {
 	pthread_mutex_lock(&progress_mutex);
-	if(progress_enabled)  {
-		progress_bar(cur_uncompressed, estimated_uncompressed, columns);
+	if(display_progress_bar)
 		printf("\n");
+	temp_disabled = TRUE;
+	pthread_mutex_unlock(&progress_mutex);
+}
+
+
+void set_progressbar_state(int state)
+{
+	pthread_mutex_lock(&progress_mutex);
+	if(display_progress_bar != state) {
+		if(display_progress_bar && !temp_disabled) {
+			progress_bar(cur_uncompressed, estimated_uncompressed,
+				columns);
+			printf("\n");
+		}
+		display_progress_bar = state;
 	}
-	progress_enabled = 0;
 	pthread_mutex_unlock(&progress_mutex);
 }
 
@@ -192,12 +204,11 @@ void *progress_thrd(void *arg)
 		if(res == -1 && errno != EINTR)
 			BAD_ERROR("nanosleep failed in progress thread\n");
 
-		if(progress_enabled) {
-			pthread_mutex_lock(&progress_mutex);
+		pthread_mutex_lock(&progress_mutex);
+		if(display_progress_bar && !temp_disabled)
 			progress_bar(cur_uncompressed, estimated_uncompressed,
 				columns);
-			pthread_mutex_unlock(&progress_mutex);
-		}
+		pthread_mutex_unlock(&progress_mutex);
 	}
 }
 
@@ -214,7 +225,7 @@ void progressbar_error(char *fmt, ...)
 
 	pthread_mutex_lock(&progress_mutex);
 
-	if(progress_enabled)
+	if(display_progress_bar && !temp_disabled)
 		fprintf(stderr, "\n");
 
 	va_start(ap, fmt);
@@ -231,7 +242,7 @@ void progressbar_info(char *fmt, ...)
 
 	pthread_mutex_lock(&progress_mutex);
 
-	if(progress_enabled)
+	if(display_progress_bar && !temp_disabled)
 		printf("\n");
 
 	va_start(ap, fmt);

@@ -3028,9 +3028,8 @@ inline void add_excluded(struct dir_info *dir)
 }
 
 
-
 void dir_scan(squashfs_inode *inode, char *pathname,
-	struct dir_ent *(_readdir)(struct dir_info *))
+	struct dir_ent *(_readdir)(struct dir_info *), int progress)
 {
 	struct stat buf;
 	struct dir_info *dir_info = dir_scan1(pathname, "", paths, _readdir, 1);
@@ -3100,7 +3099,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	queue_put(to_reader, dir_info);
 	if(sorted)
 		sort_files_and_write(dir_info);
-	enable_progress_bar();
+	set_progressbar_state(progress);
 	dir_scan6(inode, dir_info);
 	dir_ent->inode->inode = *inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
@@ -4735,7 +4734,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2014/01/06)\n");\
+	printf("mksquashfs version 4.2-git (2014/01/19)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5229,8 +5228,6 @@ printOptions:
 	progress = FALSE;
 #endif
 
-	set_progressbar_state(progress);
-
 	for(i = 0; i < source; i++)
 		if(lstat(source_path[i], &source_buf) == -1) {
 			fprintf(stderr, "Cannot stat source directory \"%s\" "
@@ -5530,12 +5527,12 @@ printOptions:
 
 	if(delete && !keep_as_directory && source == 1 &&
 			S_ISDIR(source_buf.st_mode))
-		dir_scan(&inode, source_path[0], scan1_readdir);
+		dir_scan(&inode, source_path[0], scan1_readdir, progress);
 	else if(!keep_as_directory && source == 1 &&
 			S_ISDIR(source_buf.st_mode))
-		dir_scan(&inode, source_path[0], scan1_single_readdir);
+		dir_scan(&inode, source_path[0], scan1_single_readdir, progress);
 	else
-		dir_scan(&inode, "", scan1_encomp_readdir);
+		dir_scan(&inode, "", scan1_encomp_readdir, progress);
 	sBlk.root_inode = inode;
 	sBlk.inodes = inode_count;
 	sBlk.s_magic = SQUASHFS_MAGIC;
@@ -5548,7 +5545,7 @@ printOptions:
 		no_xattrs, comp_opts);
 	sBlk.mkfs_time = time(NULL);
 
-	disable_progress_bar();
+	set_progressbar_state(FALSE);
 	disable_info();
 
 	while((fragment = get_frag_action(fragment)))

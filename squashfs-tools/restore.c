@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013
+ * Copyright (c) 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -42,6 +42,8 @@
 #include "progressbar.h"
 #include "info.h"
 
+#define FALSE 0
+
 pthread_t restore_thread, main_thread;
 int interrupted = 0;
 
@@ -73,7 +75,7 @@ void *restore_thrd(void *arg)
 		}
 
 		if(interrupted == 2 || sig == SIGUSR1) {
-			disable_progress_bar();
+			set_progressbar_state(FALSE);
 			disable_info();
 			pthread_cancel(main_thread);
 			pthread_join(main_thread, NULL);
