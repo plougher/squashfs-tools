@@ -82,16 +82,22 @@ struct squashfs_super_block sBlk;
 
 /* filesystem flags for building */
 int comp_opts = FALSE;
-int no_xattrs = XATTR_DEF, noX = 0;
-int duplicate_checking = 1, noF = 0, no_fragments = 0, always_use_fragments = 0;
-int noI = 0, noD = 0;
+int no_xattrs = XATTR_DEF;
+int noX = FALSE;
+int duplicate_checking = TRUE;
+int noF = FALSE;
+int no_fragments = FALSE;
+int always_use_fragments = FALSE;
+int noI = FALSE;
+int noD = FALSE;
 int silent = TRUE;
-long long global_uid = -1, global_gid = -1;
 int exportable = TRUE;
 int sparse_files = TRUE;
 int old_exclude = TRUE;
 int use_regex = FALSE;
 int nopad = FALSE;
+
+long long global_uid = -1, global_gid = -1;
 
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
@@ -248,10 +254,10 @@ int sfragments;
 int threads;
 
 /* flag whether destination file is a block device */
-int block_device = 0;
+int block_device = FALSE;
 
 /* flag indicating whether files are sorted using sort list(s) */
-int sorted = 0;
+int sorted = FALSE;
 
 /* save destination file name for deleting on error */
 char *destination_file = NULL;
@@ -297,7 +303,7 @@ int writer_buffer_size;
 
 /* compression operations */
 static struct compressor *comp = NULL;
-int compressor_opt_parsed = 0;
+int compressor_opt_parsed = FALSE;
 void *stream = NULL;
 
 /* xattr stats */
