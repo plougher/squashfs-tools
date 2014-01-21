@@ -124,7 +124,7 @@ static inline int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBl
 }
 
 
-static inline struct xattr_list *get_xattr(int i, unsigned int *count, int)
+static inline struct xattr_list *get_xattr(int i, unsigned int *count, int j)
 {
 	return NULL;
 }
