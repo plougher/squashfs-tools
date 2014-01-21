@@ -5551,7 +5551,6 @@ printOptions:
 		no_xattrs, comp_opts);
 	sBlk.mkfs_time = time(NULL);
 
-	set_progressbar_state(FALSE);
 	disable_info();
 
 	while((fragment = get_frag_action(fragment)))
@@ -5570,6 +5569,7 @@ printOptions:
 	if(queue_get(from_writer) != 0)
 		EXIT_MKSQUASHFS();
 
+	set_progressbar_state(FALSE);
 	write_filesystem_tables(&sBlk, nopad);
 
 	return 0;
