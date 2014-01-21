@@ -2616,6 +2616,11 @@ int main(int argc, char *argv[])
 		progress = FALSE;
 
 #ifdef SQUASHFS_TRACE
+	/*
+	 * Disable progress bar if full debug tracing is enabled.
+	 * The progress bar in this case just gets in the way of the
+	 * debug trace output
+	 */
 	progress = FALSE;
 #endif
 
