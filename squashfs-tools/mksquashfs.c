@@ -380,16 +380,8 @@ int multiply_overflow(int a, int multiplier)
 
 void restorefs()
 {
-	int i;
-
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
-	for(i = 0; i < 2 + processors * 2; i++)
-		pthread_cancel(thread[i]);
-	for(i = 0; i < 2 + processors * 2; i++)
-		pthread_join(thread[i], NULL);
-
-	TRACE("All threads in signal handler\n");
 	bytes = sbytes;
 	memcpy(data_cache, sdata_cache, cache_bytes = scache_bytes);
 	memcpy(directory_data_cache, sdirectory_data_cache,

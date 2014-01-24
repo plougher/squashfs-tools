@@ -49,12 +49,14 @@ pthread_t restore_thread, main_thread;
 int interrupted = 0;
 
 extern void restorefs();
+extern pthread_t *thread;
+extern int processors;
 
 
 void *restore_thrd(void *arg)
 {
 	sigset_t sigmask, old_mask;
-	int sig;
+	int i, sig;
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
@@ -78,6 +80,14 @@ void *restore_thrd(void *arg)
 		disable_info();
 		pthread_cancel(main_thread);
 		pthread_join(main_thread, NULL);
+
+		for(i = 0; i < 2 + processors * 2; i++)
+			pthread_cancel(thread[i]);
+		for(i = 0; i < 2 + processors * 2; i++)
+			pthread_join(thread[i], NULL);
+
+		TRACE("All threads cancelled\n");
+
 		restorefs();
 	}
 }
