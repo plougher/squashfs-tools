@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013
+ * Copyright (c) 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -155,6 +155,7 @@ extern struct queue *queue_init(int);
 extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);
 extern int queue_empty(struct queue *);
+extern void queue_flush(struct queue *);
 extern void dump_queue(struct queue *);
 extern struct seq_queue *seq_queue_init();
 extern void seq_queue_put(struct seq_queue *, struct file_buffer *);
