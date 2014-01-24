@@ -22,77 +22,6 @@
  * caches-queues-lists.h
  */
 
-/* struct describing a cache entry passed between threads */
-struct file_buffer {
-	struct cache *cache;
-	struct file_buffer *hash_next;
-	struct file_buffer *hash_prev;
-	union {
-		struct file_buffer *free_next;
-		struct file_buffer *seq_next;
-	};
-	union {
-		struct file_buffer *free_prev;
-		struct file_buffer *seq_prev;
-	};
-	long long file_size;
-	long long index;
-	long long block;
-	long long sequence;
-	int size;
-	int c_byte;
-	char used;
-	char fragment;
-	char error;
-	char noD;
-	char data[0];
-};
-
-
-/* struct describing queues used to pass data between threads */
-struct queue {
-	int			size;
-	int			readp;
-	int			writep;
-	pthread_mutex_t		mutex;
-	pthread_cond_t		empty;
-	pthread_cond_t		full;
-	void			**data;
-};
-
-
-/*
- * struct describing seq_queues used to pass data between the read
- * thread and the deflate and main threads
- */
-struct seq_queue {
-	int			fragment_count;
-	int			block_count;
-	struct file_buffer	*hash_table[65536];
-	pthread_mutex_t		mutex;
-	pthread_cond_t		wait;
-};
-
-
-/* Cache status struct.  Caches are used to keep
-  track of memory buffers passed between different threads */
-struct cache {
-	int	max_buffers;
-	int	count;
-	int	buffer_size;
-	int	noshrink_lookup;
-	int	first_freelist;
-	union {
-		int	used;
-		int	max_count;
-	};
-	pthread_mutex_t	mutex;
-	pthread_cond_t wait_for_free;
-	struct file_buffer *free_list;
-	struct file_buffer *hash_table[65536];
-};
-
-
 #define INSERT_LIST(NAME, TYPE) \
 void insert_##NAME##_list(TYPE **list, TYPE *entry) { \
 	if(*list) { \
@@ -149,6 +78,80 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
 \
 	entry->LINK##_prev = entry->LINK##_next = NULL; \
 }
+
+#define HASH_SIZE 65536
+#define CALCULATE_HASH(n) ((n) & 0xffff)
+
+
+/* struct describing a cache entry passed between threads */
+struct file_buffer {
+	struct cache *cache;
+	struct file_buffer *hash_next;
+	struct file_buffer *hash_prev;
+	union {
+		struct file_buffer *free_next;
+		struct file_buffer *seq_next;
+	};
+	union {
+		struct file_buffer *free_prev;
+		struct file_buffer *seq_prev;
+	};
+	long long file_size;
+	long long index;
+	long long block;
+	long long sequence;
+	int size;
+	int c_byte;
+	char used;
+	char fragment;
+	char error;
+	char noD;
+	char data[0];
+};
+
+
+/* struct describing queues used to pass data between threads */
+struct queue {
+	int			size;
+	int			readp;
+	int			writep;
+	pthread_mutex_t		mutex;
+	pthread_cond_t		empty;
+	pthread_cond_t		full;
+	void			**data;
+};
+
+
+/*
+ * struct describing seq_queues used to pass data between the read
+ * thread and the deflate and main threads
+ */
+struct seq_queue {
+	int			fragment_count;
+	int			block_count;
+	struct file_buffer	*hash_table[HASH_SIZE];
+	pthread_mutex_t		mutex;
+	pthread_cond_t		wait;
+};
+
+
+/* Cache status struct.  Caches are used to keep
+  track of memory buffers passed between different threads */
+struct cache {
+	int	max_buffers;
+	int	count;
+	int	buffer_size;
+	int	noshrink_lookup;
+	int	first_freelist;
+	union {
+		int	used;
+		int	max_count;
+	};
+	pthread_mutex_t	mutex;
+	pthread_cond_t wait_for_free;
+	struct file_buffer *free_list;
+	struct file_buffer *hash_table[HASH_SIZE];
+};
 
 
 extern struct queue *queue_init(int);

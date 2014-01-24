@@ -140,7 +140,7 @@ void dump_queue(struct queue *queue)
 
 
 /* define seq queue hash tables */
-#define CALCULATE_SEQ_HASH(N) ((N) & 0xffff)
+#define CALCULATE_SEQ_HASH(N) CALCULATE_HASH(N)
 
 /* Called with the seq queue mutex held */
 INSERT_HASH_TABLE(seq, struct seq_queue, CALCULATE_SEQ_HASH, sequence, seq)
@@ -247,7 +247,7 @@ void dump_seq_queue(struct seq_queue *queue, int fragment_queue)
 
 
 /* define cache hash tables */
-#define CALCULATE_CACHE_HASH(N) (llabs(N) & 0xffff)
+#define CALCULATE_CACHE_HASH(N) CALCULATE_HASH(llabs(N))
 
 /* Called with the cache mutex held */
 INSERT_HASH_TABLE(cache, struct cache, CALCULATE_CACHE_HASH, index, hash)
