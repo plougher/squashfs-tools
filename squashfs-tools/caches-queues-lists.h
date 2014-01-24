@@ -164,6 +164,7 @@ extern struct seq_queue *seq_queue_init();
 extern void seq_queue_put(struct seq_queue *, struct file_buffer *);
 extern void dump_seq_queue(struct seq_queue *, int);
 extern struct file_buffer *seq_queue_get(struct seq_queue *);
+extern void seq_queue_flush(struct seq_queue *);
 extern struct cache *cache_init(int, int, int, int);
 extern struct file_buffer *cache_lookup(struct cache *, long long);
 extern struct file_buffer *cache_get(struct cache *, long long);

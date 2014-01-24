@@ -230,6 +230,22 @@ struct file_buffer *seq_queue_get(struct seq_queue *queue)
 }
 
 
+void seq_queue_flush(struct seq_queue *queue)
+{
+	int i;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	for(i = 0; i < HASH_SIZE; i++)
+		queue->hash_table[i] = NULL;
+
+	queue->fragment_count = queue->block_count = 0;
+
+	pthread_cleanup_pop(1);
+}
+
+
 void dump_seq_queue(struct seq_queue *queue, int fragment_queue)
 {
 	int size;
