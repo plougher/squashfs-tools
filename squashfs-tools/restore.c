@@ -43,6 +43,7 @@
 #include "info.h"
 
 #define FALSE 0
+#define TRUE 1
 
 pthread_t restore_thread, main_thread;
 int interrupted = 0;
@@ -64,24 +65,20 @@ void *restore_thrd(void *arg)
 	while(1) {
 		sigwait(&sigmask, &sig);
 
-		if(sig == SIGINT || sig == SIGTERM) {
-			interrupted ++;
-
-			if(interrupted == 1) {
-				ERROR("Interrupting will restore original "
-					"filesystem!\n");
-                		ERROR("Interrupt again to quit\n");
-			}
+		if((sig == SIGINT || sig == SIGTERM) && !interrupted) {
+			ERROR("Interrupting will restore original "
+				"filesystem!\n");
+                	ERROR("Interrupt again to quit\n");
+			interrupted = TRUE;
+			continue;
 		}
 
-		if(interrupted == 2 || sig == SIGUSR1) {
-			set_progressbar_state(FALSE);
-			disable_info();
-			pthread_cancel(main_thread);
-			pthread_join(main_thread, NULL);
-
-			restorefs();
-		}
+		/* kill main thread/worker threads and restore */
+		set_progressbar_state(FALSE);
+		disable_info();
+		pthread_cancel(main_thread);
+		pthread_join(main_thread, NULL);
+		restorefs();
 	}
 }
 
