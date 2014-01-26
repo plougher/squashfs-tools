@@ -84,6 +84,8 @@ static int gzip_options(char *argv[], int argc)
 				"should be 8 >= n <= 15\n");
 			goto failed;
 		}
+
+		return 1;
 	}
 
 	return -1;
