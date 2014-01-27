@@ -36,6 +36,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "caches-queues-lists.h"
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "error.h"
@@ -45,13 +46,15 @@
 #define FALSE 0
 #define TRUE 1
 
-pthread_t restore_thread, main_thread;
-int interrupted = 0;
-
+extern pthread_t reader_thread, writer_thread, main_thread;
+extern pthread_t *deflator_thread, *frag_deflator_thread;
+extern struct queue *to_deflate, *to_writer, *to_frag;
+extern struct seq_queue *to_main;
 extern void restorefs();
-extern pthread_t *thread;
 extern int processors;
 
+static int interrupted = 0;
+static pthread_t restore_thread;
 
 void *restore_thrd(void *arg)
 {
@@ -78,13 +81,53 @@ void *restore_thrd(void *arg)
 		/* kill main thread/worker threads and restore */
 		set_progressbar_state(FALSE);
 		disable_info();
+
+		/* first kill the reader thread */
+		pthread_cancel(reader_thread);
+		pthread_join(reader_thread, NULL);
+
+		/*
+		 * then flush the reader to deflator thread(s) output queue.
+		 * The deflator thread(s) will idle
+		 */
+		queue_flush(to_deflate);
+
+		/* now kill the deflator thread(s) */
+		for(i = 0; i < processors; i++)
+			pthread_cancel(deflator_thread[i]);
+		for(i = 0; i < processors; i++)
+			pthread_join(deflator_thread[i], NULL);
+
+		/*
+		 * then flush the reader/deflator to main thread output
+		 * queue.  The main thread will idle
+		 */
+		seq_queue_flush(to_main);
+
+		/* now kill the main thread */
 		pthread_cancel(main_thread);
 		pthread_join(main_thread, NULL);
 
-		for(i = 0; i < 2 + processors * 2; i++)
-			pthread_cancel(thread[i]);
-		for(i = 0; i < 2 + processors * 2; i++)
-			pthread_join(thread[i], NULL);
+		/* then flush the main thread to fragment deflator thread(s)
+		 * queue.  The fragment deflator thread(s) will idle
+		 */
+		queue_flush(to_frag);
+
+		/* now kill the fragment deflator thread(s) */
+		for(i = 0; i < processors; i++)
+			pthread_cancel(frag_deflator_thread[i]);
+		for(i = 0; i < processors; i++)
+			pthread_join(frag_deflator_thread[i], NULL);
+
+		/*
+		 * then flush the main thread/fragment deflator thread(s)
+		 * to writer thread queue.  The writer thread will idle
+		 */
+		queue_flush(to_writer);
+
+		/* now kill the writer thread */
+		pthread_cancel(writer_thread);
+		pthread_join(writer_thread, NULL);
 
 		TRACE("All threads cancelled\n");
 
@@ -93,9 +136,8 @@ void *restore_thrd(void *arg)
 }
 
 
-pthread_t *init_restore_thread(pthread_t thread)
+pthread_t *init_restore_thread()
 {
-	main_thread = thread;
 	pthread_create(&restore_thread, NULL, restore_thrd, NULL);
 	return &restore_thread;
 }

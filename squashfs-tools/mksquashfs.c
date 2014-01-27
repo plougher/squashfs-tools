@@ -286,7 +286,8 @@ struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
 struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
 	*to_frag, *locked_fragment;
 struct seq_queue *to_main;
-pthread_t *thread, *deflator_thread, *frag_deflator_thread;
+pthread_t reader_thread, writer_thread, main_thread;
+pthread_t *deflator_thread, *frag_deflator_thread;
 pthread_t *restore_thread = NULL;
 pthread_mutex_t	fragment_mutex;
 pthread_mutex_t	pos_mutex;
@@ -4039,11 +4040,10 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 							sizeof(pthread_t)))
 		BAD_ERROR("Processors too large\n");
 
-	thread = malloc((2 + processors * 2) * sizeof(pthread_t));
-	if(thread == NULL)
+	deflator_thread = malloc(processors * 2 * sizeof(pthread_t));
+	if(deflator_thread == NULL)
 		MEM_ERROR();
 
-	deflator_thread = &thread[2];
 	frag_deflator_thread = &deflator_thread[processors];
 
 	to_reader = queue_init(1);
@@ -4057,8 +4057,8 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	writer_buffer = cache_init(block_size, writer_buffer_size, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_buffer_size, 1,
 								freelst);
-	pthread_create(&thread[0], NULL, reader, NULL);
-	pthread_create(&thread[1], NULL, writer, NULL);
+	pthread_create(&reader_thread, NULL, reader, NULL);
+	pthread_create(&writer_thread, NULL, writer, NULL);
 	init_progress_bar();
 	init_info();
 	pthread_mutex_init(&fragment_mutex, NULL);
@@ -4071,6 +4071,8 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 				NULL) != 0)
 			BAD_ERROR("Failed to create thread\n");
 	}
+
+	main_thread = pthread_self();
 
 	printf("Parallel mksquashfs: Using %d processor%s\n", processors,
 			processors == 1 ? "" : "s");
@@ -4732,7 +4734,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2014/01/19)\n");\
+	printf("mksquashfs version 4.2-git (2014/01/25)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5460,7 +5462,7 @@ printOptions:
 		sid_count = id_count;
 		write_recovery_data(&sBlk);
 		save_xattrs();
-		restore_thread = init_restore_thread(pthread_self());
+		restore_thread = init_restore_thread();
 		sigemptyset(&sigmask);
 		sigaddset(&sigmask, SIGINT);
 		sigaddset(&sigmask, SIGTERM);

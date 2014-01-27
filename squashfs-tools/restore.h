@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013
+ * Copyright (c) 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -22,4 +22,4 @@
  * restore.h
  */
 
-extern pthread_t *init_restore_thread(pthread_t);
+extern pthread_t *init_restore_thread();
