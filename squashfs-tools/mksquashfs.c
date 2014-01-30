@@ -348,7 +348,7 @@ void prep_exit()
 			exit(1);
 		} else {
 			/* signal the restore thread to restore */
-			kill(getpid(), SIGUSR1);
+			pthread_kill(*restore_thread, SIGUSR1);
 			pthread_exit(NULL);
 		}
 	}
