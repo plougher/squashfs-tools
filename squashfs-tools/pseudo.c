@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2012
+ * Copyright (c) 2009, 2010, 2012, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -36,6 +36,7 @@
 
 #include "pseudo.h"
 #include "error.h"
+#include "progressbar.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -154,16 +155,22 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 					pseudo->name[i].pseudo =
 						add_pseudo(NULL, pseudo_dev,
 						target, alltarget);
-				else
-					ERROR("%s already exists as a non "
-						"directory.  Ignoring %s!\n",
-						 targname, alltarget);
+				else {
+					ERROR_START("%s already exists as a "
+						"non directory.", targname);
+					ERROR_EXIT(".  Ignoring %s!\n",
+						alltarget);
+				}
 			} else if(memcmp(pseudo_dev, pseudo->name[i].dev,
-					sizeof(struct pseudo_dev)) != 0)
-				ERROR("%s already exists as a different pseudo "
-					"definition.  Ignoring!\n", alltarget);
-			else ERROR("%s already exists as an identical "
-					"pseudo definition!\n", alltarget);
+					sizeof(struct pseudo_dev)) != 0) {
+				ERROR_START("%s already exists as a different "
+					"pseudo definition.", alltarget);
+				ERROR_EXIT("  Ignoring!\n");
+			} else {
+				ERROR_START("%s already exists as an identical "
+					"pseudo definition!", alltarget);
+				ERROR_EXIT("  Ignoring!\n");
+			}
 		} else {
 			if(target[0] == '\0') {
 				/*
@@ -176,10 +183,13 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 					pseudo->name[i].pathname =
 						strdup(alltarget);
 					pseudo->name[i].dev = pseudo_dev;
-				} else
-					ERROR("%s already exists as a different"
-						" pseudo definition.  Ignoring"
-						" %s!\n", targname, alltarget);
+				} else {
+					ERROR_START("%s already exists as a "
+						"different pseudo definition.",
+						targname);
+					ERROR_EXIT("  Ignoring %s!\n",
+						alltarget);
+				}
 			} else
 				/* recurse adding child components */
 				add_pseudo(pseudo->name[i].pseudo, pseudo_dev,

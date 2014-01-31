@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2012,
- * 2013
+ * 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -42,6 +42,7 @@
 #include "mksquashfs.h"
 #include "sort.h"
 #include "error.h"
+#include "progressbar.h"
 
 int mkisofs_style = -1;
 
@@ -170,9 +171,10 @@ re_read:
 	}
 
 error:
-        ERROR("Cannot stat sortlist entry \"%s\"\n", path);
+        ERROR_START("Cannot stat sortlist entry \"%s\"\n", path);
         ERROR("This is probably because you're using the wrong file\n");
-        ERROR("path relative to the source directories\n");
+        ERROR("path relative to the source directories.");
+	ERROR_EXIT("  Ignoring");
 	/*
 	 * Historical note
 	 * Failure to stat a sortlist entry is deliberately ignored, even

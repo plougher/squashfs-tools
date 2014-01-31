@@ -96,6 +96,7 @@ int sparse_files = TRUE;
 int old_exclude = TRUE;
 int use_regex = FALSE;
 int nopad = FALSE;
+int exit_on_error = FALSE;
 
 long long global_uid = -1, global_gid = -1;
 
@@ -1058,14 +1059,15 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 
 		byte = readlink(filename, buff, 65536);
 		if(byte == -1) {
-			ERROR("Failed to read symlink %s, creating empty "
-				"symlink\n", filename);
+			ERROR_START("Failed to read symlink %s", filename);
+			ERROR_EXIT(", creating empty symlink\n");
 			byte = 0;
 		}
 
 		if(byte == 65536) {
-			ERROR("Symlink %s is greater than 65536 bytes! "
-				"Creating empty symlink\n", filename);
+			ERROR_START("Symlink %s is greater than 65536 bytes!",
+				filename);
+			ERROR_EXIT("  Creating empty symlink\n");
 			byte = 0;
 		}
 
@@ -1085,14 +1087,15 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 
 		byte = readlink(filename, buff, 65536);
 		if(byte == -1) {
-			ERROR("Failed to read symlink %s, creating empty "
-				"symlink\n", filename);
+			ERROR_START("Failed to read symlink %s", filename);
+			ERROR_EXIT(", creating empty symlink\n");
 			byte = 0;
 		}
 
 		if(byte == 65536) {
-			ERROR("Symlink %s is greater than 65536 bytes! "
-				"Creating empty symlink\n", filename);
+			ERROR_START("Symlink %s is greater than 65536 bytes!",
+				filename);
+			ERROR_EXIT("  Creating empty symlink\n");
 			byte = 0;
 		}
 
@@ -2143,7 +2146,7 @@ again:
 restat:
 	res = fstat(file, &buf2);
 	if(res == -1) {
-		ERROR("Cannot stat dir/file %s because %s, ignoring\n",
+		ERROR("Cannot stat dir/file %s because %s\n",
 			pathname_reader(dir_ent), strerror(errno));
 		goto read_err;
 	}
@@ -2814,8 +2817,8 @@ file_err:
 			"attempting to re-read\n", pathname(dir_ent));
 		goto again;
 	} else if(status == 1) {
-		ERROR("Failed to read file %s, creating empty file\n",
-			pathname(dir_ent));
+		ERROR_START("Failed to read file %s", pathname(dir_ent));
+		ERROR_EXIT(", creating empty file\n");
 		write_file_empty(inode, dir_ent, duplicate_file);
 	}
 }
@@ -3161,8 +3164,9 @@ struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 		int pass = 1, res;
 
 		if(dir_name == NULL) {
-			ERROR("Bad source directory %s - skipping ...\n",
+			ERROR_START("Bad source directory %s",
 				source_path[index]);
+			ERROR_EXIT(" - skipping ...\n");
 			index ++;
 			continue;
 		}
@@ -3263,7 +3267,8 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 	struct dir_ent *dir_ent;
 
 	if(dir == NULL) {
-		ERROR("Could not open %s, skipping...\n", filename);
+		ERROR_START("Could not open %s", filename);
+		ERROR_EXIT(", skipping...\n");
 		return NULL;
 	}
 
@@ -3281,8 +3286,9 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 		}
 
 		if(lstat(filename, &buf) == -1) {
-			ERROR("Cannot stat dir/file %s because %s, ignoring\n",
+			ERROR_START("Cannot stat dir/file %s because %s",
 				filename, strerror(errno));
+			ERROR_EXIT(", ignoring\n");
 			free_dir_entry(dir_ent);
 			continue;
 		}
@@ -3294,8 +3300,9 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 					(buf.st_mode & S_IFMT) != S_IFBLK &&
 					(buf.st_mode & S_IFMT) != S_IFIFO &&
 					(buf.st_mode & S_IFMT) != S_IFSOCK) {
-			ERROR("File %s has unrecognised filetype %d, ignoring"
-				"\n", filename, buf.st_mode & S_IFMT);
+			ERROR_START("File %s has unrecognised filetype %d",
+				filename, buf.st_mode & S_IFMT);
+			ERROR_EXIT(", ignoring\n");
 			free_dir_entry(dir_ent);
 			continue;
 		}
@@ -3395,16 +3402,18 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		if(pseudo_ent->dev->type == 'm') {
 			struct stat *buf;
 			if(dir_ent == NULL) {
-				ERROR("Pseudo modify file \"%s\" does not exist "
-					"in source filesystem.  Ignoring.\n",
+				ERROR_START("Pseudo modify file \"%s\" does "
+					"not exist in source filesystem.",
 					pseudo_ent->pathname);
+				ERROR_EXIT("  Ignoring.\n");
 				continue;
 			}
 			if(dir_ent->inode->root_entry) {
-				ERROR("Pseudo modify file \"%s\" is a pre-existing"
-					" file in the filesystem being appended"
-					"  to.  It cannot be modified. "
-					"Ignoring.\n", pseudo_ent->pathname);
+				ERROR_START("Pseudo modify file \"%s\" is a "
+					"pre-existing file in the filesystem "
+					"being appended to.  It cannot be "\
+					"modified.", pseudo_ent->pathname);
+				ERROR_EXIT("  Ignoring.\n");
 				continue;
 			}
 			buf = &dir_ent->inode->buf;
@@ -3416,17 +3425,20 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		}
 
 		if(dir_ent) {
-			if(dir_ent->inode->root_entry)
-				ERROR("Pseudo file \"%s\" is a pre-existing"
-					" file in the filesystem being appended"
-					"  to.  Ignoring.\n",
+			if(dir_ent->inode->root_entry) {
+				ERROR_START("Pseudo file \"%s\" is a "
+					"pre-existing file in the filesystem "
+					"being appended to.",
 					pseudo_ent->pathname);
-			else
-				ERROR("Pseudo file \"%s\" exists in source "
-					"filesystem \"%s\".\nIgnoring, "
-					"exclude it (-e/-ef) to override.\n",
+				ERROR_EXIT("  Ignoring.\n");
+			} else {
+				ERROR_START("Pseudo file \"%s\" exists in "
+					"source filesystem \"%s\".",
 					pseudo_ent->pathname,
 					pathname(dir_ent));
+				ERROR_EXIT("\nIgnoring, exclude it (-e/-ef) to "
+					"override.\n");
+			}
 			continue;
 		}
 
@@ -3447,9 +3459,9 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			struct dir_info *sub_dir = scan1_opendir("", subpath,
 						dir->depth + 1);
 			if(sub_dir == NULL) {
-				ERROR("Could not create pseudo directory \"%s\""
-					", skipping...\n",
-					pseudo_ent->pathname);
+				ERROR_START("Could not create pseudo directory "
+					"\"%s\"", pseudo_ent->pathname);
+				ERROR_EXIT(", skipping...\n");
 				free(subpath);
 				pseudo_ino --;
 				continue;
@@ -3463,8 +3475,9 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			struct stat buf2;
 			int res = stat(pseudo_ent->dev->filename, &buf2);
 			if(res == -1) {
-				ERROR("Stat on pseudo file \"%s\" failed, "
-					"skipping...\n", pseudo_ent->pathname);
+				ERROR_START("Stat on pseudo file \"%s\" failed"
+					pseudo_ent->pathname);
+				ERROR_EXIT(", skipping...\n");
 				pseudo_ino --;
 				continue;
 			}
@@ -3902,8 +3915,9 @@ int old_add_exclude(char *path)
 	if(path[0] == '/' || strncmp(path, "./", 2) == 0 ||
 			strncmp(path, "../", 3) == 0) {
 		if(lstat(path, &buf) == -1) {
-			ERROR("Cannot stat exclude dir/file %s because %s, "
-				"ignoring\n", path, strerror(errno));
+			ERROR_START("Cannot stat exclude dir/file %s because "
+				"%s", path, strerror(errno));
+			ERROR_EXIT(", ignoring\n");
 			return TRUE;
 		}
 		ADD_ENTRY(buf);
@@ -3915,10 +3929,11 @@ int old_add_exclude(char *path)
 		if(res == -1)
 			BAD_ERROR("asprintf failed in old_add_exclude\n");
 		if(lstat(filename, &buf) == -1) {
-			if(!(errno == ENOENT || errno == ENOTDIR))
-				ERROR("Cannot stat exclude dir/file %s because "
-					"%s, ignoring\n", filename,
-					strerror(errno));
+			if(!(errno == ENOENT || errno == ENOTDIR)) {
+				ERROR_START("Cannot stat exclude dir/file %s "
+					"because %s", filename, strerror(errno));
+				ERROR_EXIT(", ignoring\n");
+			}
 			free(filename);
 			continue;
 		}
@@ -4025,8 +4040,9 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 #endif
 
 		if(sysctl(mib, 2, &processors, &len, NULL, 0) == -1) {
-			ERROR("Failed to get number of available processors.  "
-				"Defaulting to 1\n");
+			ERROR_START("Failed to get number of available "
+				"processors.");
+			ERROR_EXIT("  Defaulting to 1\n");
 			processors = 1;
 		}
 #else
@@ -4734,7 +4750,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2014/01/25)\n");\
+	printf("mksquashfs version 4.2-git (2014/01/29)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5084,6 +5100,9 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-keep-as-directory") == 0)
 			keep_as_directory = TRUE;
 
+		else if(strcmp(argv[i], "-exit-on-error") == 0)
+			exit_on_error = TRUE;
+
 		else if(strcmp(argv[i], "-root-becomes") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -root-becomes: missing name\n",
@@ -5162,6 +5181,8 @@ printOptions:
 			ERROR("\nMksquashfs runtime options:\n");
 			ERROR("-version\t\tprint version, licence and "
 				"copyright message\n");
+			ERROR("-exit-on-error\t\ttreat normally ignored errors "
+				"as fatal\n");
 			ERROR("-recover <name>\t\trecover filesystem data "
 				"using recovery file <name>\n");
 			ERROR("-no-recovery\t\tdon't generate a recovery "

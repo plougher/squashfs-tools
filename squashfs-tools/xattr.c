@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2008, 2009, 2010, 2012
+ * Copyright (c) 2008, 2009, 2010, 2012, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -121,8 +121,8 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 		size = llistxattr(filename, NULL, 0);
 		if(size <= 0) {
 			if(size < 0 && errno != ENOTSUP)
-				ERROR("llistxattr for %s failed in read_attrs,"
-					" because %s\n", filename,
+				ERROR_START("llistxattr for %s failed in "
+					"read_attrs, because %s", filename,
 					strerror(errno));
 			return 0;
 		}
@@ -138,8 +138,8 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 				/* xattr list grew?  Try again */
 				continue;
 			else {
-				ERROR("llistxattr for %s failed in read_attrs,"
-					" because %s\n", filename,
+				ERROR_START("llistxattr for %s failed in "
+					"read_attrs, because %s", filename,
 					strerror(errno));
 				return 0;
 			}
@@ -169,8 +169,8 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 			vsize = lgetxattr(filename, xattr_list[i].full_name,
 								NULL, 0);
 			if(vsize < 0) {
-				ERROR("lgetxattr failed for %s in read_attrs,"
-					" because %s\n", filename,
+				ERROR_START("lgetxattr failed for %s in "
+					"read_attrs, because %s", filename,
 					strerror(errno));
 				free(xattr_list[i].full_name);
 				goto failed;
@@ -188,8 +188,8 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 					/* xattr grew?  Try again */
 					continue;
 				else {
-					ERROR("lgetxattr failed for %s in "
-						"read_attrs, because %s\n",
+					ERROR_START("lgetxattr failed for %s "
+						"in read_attrs, because %s",
 						filename, strerror(errno));
 					free(xattr_list[i].full_name);
 					goto failed;
@@ -609,8 +609,10 @@ int read_xattrs(void *d)
 		return SQUASHFS_INVALID_XATTR;
 
 	xattrs = read_xattrs_from_system(filename, &xattr_list);
-	if(xattrs == 0)
+	if(xattrs == 0) {
+		ERROR_EXIT(".  Ignoring");
 		return SQUASHFS_INVALID_XATTR;
+	}
 
 	return generate_xattrs(xattrs, xattr_list);
 }
