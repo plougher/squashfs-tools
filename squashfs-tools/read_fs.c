@@ -33,6 +33,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <limits.h>
+#include <dirent.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -49,13 +50,7 @@
 #include "compressor.h"
 #include "xattr.h"
 #include "error.h"
-
-extern int read_fs_bytes(int, long long, int, void *);
-extern int add_file(long long, long long, long long, unsigned int *, int,
-	unsigned int, int, int);
-extern void *create_id(unsigned int);
-extern unsigned int get_uid(unsigned int);
-extern unsigned int get_guid(unsigned int);
+#include "mksquashfs.h"
 
 static struct compressor *comp;
 

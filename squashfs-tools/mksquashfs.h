@@ -65,6 +65,40 @@ struct inode_info {
 	char			noF;
 };
 
+/* in memory file info */
+struct file_info {
+	long long		file_size;
+	long long		bytes;
+	long long		start;
+	unsigned int		*block_list;
+	struct file_info	*next;
+	struct fragment		*fragment;
+	unsigned short		checksum;
+	unsigned short		fragment_checksum;
+	char			have_frag_checksum;
+	char			have_checksum;
+};
+
+/* fragment block data structures */
+struct fragment {
+	unsigned int		index;
+	int			offset;
+	int			size;
+};
+
+/* in memory uid tables */
+#define ID_ENTRIES 256
+#define ID_HASH(id) (id & (ID_ENTRIES - 1))
+#define ISA_UID 1
+#define ISA_GID 2
+
+struct id {
+	unsigned int id;
+	int	index;
+	char	flags;
+	struct id *next;
+};
+
 #define PSEUDO_FILE_OTHER	1
 #define PSEUDO_FILE_PROCESS	2
 
@@ -80,4 +114,10 @@ extern struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
 extern struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
 	*to_frag, *locked_fragment;
 extern struct seq_queue *to_main;
+extern int read_fs_bytes(int, long long, int, void *);
+extern void add_file(long long, long long, long long, unsigned int *, int,
+	unsigned int, int, int);
+extern struct id *create_id(unsigned int);
+extern unsigned int get_uid(unsigned int);
+extern unsigned int get_guid(unsigned int);
 #endif

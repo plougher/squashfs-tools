@@ -230,8 +230,8 @@ mksquashfs: $(MKSQUASHFS_OBJS)
 mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h mksquashfs.h sort.h \
 	squashfs_swap.h xattr.h pseudo.h compressor.h action.h progressbar.h
 
-read_fs.o: read_fs.c squashfs_fs.h read_fs.h squashfs_swap.h compressor.h \
-	xattr.h
+read_fs.o: mksquashfs.h read_fs.c squashfs_fs.h read_fs.h squashfs_swap.h \
+	compressor.h xattr.h
 
 sort.o: sort.c squashfs_fs.h sort.h mksquashfs.h
 

@@ -194,14 +194,7 @@ struct pathname *path = NULL;
 struct pathname *stickypath = NULL;
 int excluded(char *name, struct pathnames *paths, struct pathnames **new);
 
-/* fragment block data structures */
 int fragments = 0;
-
-struct fragment {
-	unsigned int		index;
-	int			offset;
-	int			size;
-};
 
 #define FRAG_SIZE 32768
 #define FRAG_INDEX(n) (-(n + 2))
@@ -226,20 +219,6 @@ struct old_root_entry_info {
 	struct inode_info	inode;
 };
 struct old_root_entry_info *old_root_entry;
-
-/* in memory file info */
-struct file_info {
-	long long		file_size;
-	long long		bytes;
-	long long		start;
-	unsigned int		*block_list;
-	struct file_info	*next;
-	struct fragment		*fragment;
-	unsigned short		checksum;
-	unsigned short		fragment_checksum;
-	char			have_frag_checksum;
-	char			have_checksum;
-};
 
 /* restore orignal filesystem state if appending to existing filesystem is
  * cancelled */
@@ -268,17 +247,6 @@ char *destination_file = NULL;
 char *recovery_file = NULL;
 int recover = TRUE;
 
-/* in memory uid tables */
-#define ID_ENTRIES 256
-#define ID_HASH(id) (id & (ID_ENTRIES - 1))
-#define ISA_UID 1
-#define ISA_GID 2
-struct id {
-	unsigned int id;
-	int	index;
-	char	flags;
-	struct id *next;
-};
 struct id *id_hash_table[ID_ENTRIES];
 struct id *id_table[SQUASHFS_IDS], *sid_table[SQUASHFS_IDS];
 unsigned int uid_count = 0, guid_count = 0;
