@@ -231,12 +231,12 @@ struct old_root_entry_info *old_root_entry;
 struct file_info {
 	long long		file_size;
 	long long		bytes;
-	unsigned short		checksum;
-	unsigned short		fragment_checksum;
 	long long		start;
 	unsigned int		*block_list;
 	struct file_info	*next;
 	struct fragment		*fragment;
+	unsigned short		checksum;
+	unsigned short		fragment_checksum;
 	char			checksum_flag;
 };
 
