@@ -237,7 +237,8 @@ struct file_info {
 	struct fragment		*fragment;
 	unsigned short		checksum;
 	unsigned short		fragment_checksum;
-	char			checksum_flag;
+	char			have_frag_checksum;
+	char			have_checksum;
 };
 
 /* restore orignal filesystem state if appending to existing filesystem is
@@ -1766,17 +1767,14 @@ int pre_duplicate_frag(long long file_size, unsigned short checksum)
 	for(; dupl_ptr; dupl_ptr = dupl_ptr->next)
 		if(file_size == dupl_ptr->file_size && file_size ==
 				dupl_ptr->fragment->size) {
-			if(dupl_ptr->checksum_flag == FALSE) {
+			if(!dupl_ptr->have_frag_checksum) {
 				struct file_buffer *frag_buffer =
 					get_fragment(dupl_ptr->fragment);
-				dupl_ptr->checksum =
-					get_checksum_disk(dupl_ptr->start,
-					dupl_ptr->bytes, dupl_ptr->block_list);
 				dupl_ptr->fragment_checksum =
 					get_checksum_mem(frag_buffer->data +
 					dupl_ptr->fragment->offset, file_size);
 				cache_block_put(frag_buffer);
-				dupl_ptr->checksum_flag = TRUE;
+				dupl_ptr->have_frag_checksum = TRUE;
 			}
 			if(dupl_ptr->fragment_checksum == checksum)
 				return TRUE;
@@ -1803,7 +1801,8 @@ struct file_info *add_non_dup(long long file_size, long long bytes,
 	dupl_ptr->fragment = fragment;
 	dupl_ptr->checksum = checksum;
 	dupl_ptr->fragment_checksum = fragment_checksum;
-	dupl_ptr->checksum_flag = checksum_flag;
+	dupl_ptr->have_frag_checksum = checksum_flag;
+	dupl_ptr->have_checksum = checksum_flag;
 	dupl_ptr->next = dupl[DUP_HASH(file_size)];
 	dupl[DUP_HASH(file_size)] = dupl_ptr;
 	dup_files ++;
@@ -1838,17 +1837,21 @@ struct file_info *duplicate(long long file_size, long long bytes,
 				checksum_flag = TRUE;
 			}
 
-			if(dupl_ptr->checksum_flag == FALSE) {
+			if(!dupl_ptr->have_frag_checksum) {
 				struct file_buffer *frag_buffer =
 					get_fragment(dupl_ptr->fragment);
-				dupl_ptr->checksum =
-					get_checksum_disk(dupl_ptr->start,
-					dupl_ptr->bytes, dupl_ptr->block_list);
 				dupl_ptr->fragment_checksum =
 					get_checksum_mem(frag_buffer->data +
 					dupl_ptr->fragment->offset, frag_bytes);
 				cache_block_put(frag_buffer);
-				dupl_ptr->checksum_flag = TRUE;
+				dupl_ptr->have_frag_checksum = TRUE;
+			}
+
+			if(!dupl_ptr->have_checksum) {
+				dupl_ptr->checksum =
+					get_checksum_disk(dupl_ptr->start,
+					dupl_ptr->bytes, dupl_ptr->block_list);
+				dupl_ptr->have_checksum = TRUE;
 			}
 
 			if(checksum != dupl_ptr->checksum ||
