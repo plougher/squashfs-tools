@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2012, 2013
+ * 2012, 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -219,6 +219,11 @@ int scan_inode_table(int fd, long long start, long long end,
 	get_uid(id_table[dir_inode->base.uid]);
 	get_guid(id_table[dir_inode->base.guid]);
 
+	/* allocate fragment to file mapping table */
+	file_mapping = calloc(sBlk->fragments, sizeof(struct append_file *));
+	if(file_mapping == NULL)
+		MEM_ERROR();
+
 	for(cur_ptr = *inode_table; cur_ptr < *inode_table + bytes; files ++) {
 		if(NO_INODE_BYTES(squashfs_base_inode_header))
 			/* corrupted filesystem */
@@ -277,6 +282,10 @@ int scan_inode_table(int fd, long long start, long long end,
 					SQUASHFS_COMPRESSED_SIZE_BLOCK
 								(block_list[i]);
 
+			if(inode.fragment != SQUASHFS_INVALID_FRAG &&
+					inode.fragment >= sBlk->fragments)
+				goto corrupted;
+
 			add_file(start, inode.file_size, file_bytes,
 				block_list, blocks, inode.fragment,
 				inode.offset, frag_bytes);
@@ -326,6 +335,10 @@ int scan_inode_table(int fd, long long start, long long end,
 				file_bytes +=
 					SQUASHFS_COMPRESSED_SIZE_BLOCK
 								(block_list[i]);
+
+			if(inode.fragment != SQUASHFS_INVALID_FRAG &&
+					inode.fragment >= sBlk->fragments)
+				goto corrupted;
 
 			add_file(start, inode.file_size, file_bytes,
 				block_list, blocks, inode.fragment,

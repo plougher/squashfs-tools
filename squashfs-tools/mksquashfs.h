@@ -4,7 +4,7 @@
  * Squashfs
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
- * 2012, 2013
+ * 2012, 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -99,6 +99,12 @@ struct id {
 	struct id *next;
 };
 
+/* fragment to file mapping used when appending */
+struct append_file {
+	struct file_info *file;
+	struct append_file *next;
+};
+
 #define PSEUDO_FILE_OTHER	1
 #define PSEUDO_FILE_PROCESS	2
 
@@ -113,6 +119,7 @@ struct id {
 extern struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
 extern struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
 	*to_frag, *locked_fragment;
+extern struct append_file **file_mapping;
 extern struct seq_queue *to_main;
 extern int read_fs_bytes(int, long long, int, void *);
 extern void add_file(long long, long long, long long, unsigned int *, int,
