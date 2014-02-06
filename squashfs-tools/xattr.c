@@ -41,6 +41,7 @@
 #include "mksquashfs.h"
 #include "xattr.h"
 #include "error.h"
+#include <progressbar.h>
 
 /* compressed xattr table */
 static char *xattr_table = NULL;
@@ -120,10 +121,12 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 	while(1) {
 		size = llistxattr(filename, NULL, 0);
 		if(size <= 0) {
-			if(size < 0 && errno != ENOTSUP)
+			if(size < 0 && errno != ENOTSUP) {
 				ERROR_START("llistxattr for %s failed in "
 					"read_attrs, because %s", filename,
 					strerror(errno));
+				ERROR_EXIT(".  Ignoring");
+			}
 			return 0;
 		}
 
@@ -141,6 +144,7 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 				ERROR_START("llistxattr for %s failed in "
 					"read_attrs, because %s", filename,
 					strerror(errno));
+				ERROR_EXIT(".  Ignoring");
 				return 0;
 			}
 		}
@@ -172,6 +176,7 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 				ERROR_START("lgetxattr failed for %s in "
 					"read_attrs, because %s", filename,
 					strerror(errno));
+				ERROR_EXIT(".  Ignoring");
 				free(xattr_list[i].full_name);
 				goto failed;
 			}
@@ -191,6 +196,7 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 					ERROR_START("lgetxattr failed for %s "
 						"in read_attrs, because %s",
 						filename, strerror(errno));
+					ERROR_EXIT(".  Ignoring");
 					free(xattr_list[i].full_name);
 					goto failed;
 				}
@@ -609,10 +615,8 @@ int read_xattrs(void *d)
 		return SQUASHFS_INVALID_XATTR;
 
 	xattrs = read_xattrs_from_system(filename, &xattr_list);
-	if(xattrs == 0) {
-		ERROR_EXIT(".  Ignoring");
+	if(xattrs == 0)
 		return SQUASHFS_INVALID_XATTR;
-	}
 
 	return generate_xattrs(xattrs, xattr_list);
 }
