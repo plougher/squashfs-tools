@@ -823,7 +823,7 @@ static long long parse_uid(char *arg) {
 	long long uid = strtoll(arg, &b, 10);
 
 	if (*b == '\0') {
-		if (uid < 0 || uid >= (1LL < 32)) {
+		if (uid < 0 || uid >= (1LL << 32)) {
 			SYNTAX_ERROR("action: uid out of range\n");
 			return -1;
 		}
@@ -847,7 +847,7 @@ static long long parse_gid(char *arg) {
 	long long gid = strtoll(arg, &b, 10);
 
 	if (*b == '\0') {
-		if (gid < 0 || gid >= (1LL < 32)) {
+		if (gid < 0 || gid >= (1LL << 32)) {
 			SYNTAX_ERROR("action: gid out of range\n");
 			return -1;
 		}
