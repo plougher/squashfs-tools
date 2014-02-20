@@ -47,8 +47,8 @@
 #define TRUE 1
 
 extern pthread_t reader_thread, writer_thread, main_thread;
-extern pthread_t *deflator_thread, *frag_deflator_thread;
-extern struct queue *to_deflate, *to_writer, *to_frag;
+extern pthread_t *deflator_thread, *frag_deflator_thread, *frag_thread;
+extern struct queue *to_deflate, *to_writer, *to_frag, *to_process_frag;
 extern struct seq_queue *to_main;
 extern void restorefs();
 extern int processors;
@@ -99,8 +99,20 @@ void *restore_thrd(void *arg)
 			pthread_join(deflator_thread[i], NULL);
 
 		/*
-		 * then flush the reader/deflator to main thread output
-		 * queue.  The main thread will idle
+		 * then flush the reader to process fragment thread(s) output
+		 * queue.  The process fragment thread(s) will idle
+		 */
+		queue_flush(to_process_frag);
+
+		/* now kill the process fragment thread(s) */
+		for(i = 0; i < processors; i++)
+			pthread_cancel(frag_thread[i]);
+		for(i = 0; i < processors; i++)
+			pthread_join(frag_thread[i], NULL);
+
+		/*
+		 * then flush the reader/deflator/process fragment to main
+		 * thread output queue.  The main thread will idle
 		 */
 		seq_queue_flush(to_main);
 

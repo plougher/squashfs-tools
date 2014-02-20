@@ -75,6 +75,7 @@
 #include "caches-queues-lists.h"
 #include "read_fs.h"
 #include "restore.h"
+#include "process_fragments.h"
 
 int delete = FALSE;
 int fd;
@@ -254,10 +255,10 @@ unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 
 struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
 struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
-	*to_frag, *locked_fragment;
+	*to_frag, *locked_fragment, *to_process_frag;
 struct seq_queue *to_main;
 pthread_t reader_thread, writer_thread, main_thread;
-pthread_t *deflator_thread, *frag_deflator_thread;
+pthread_t *deflator_thread, *frag_deflator_thread, *frag_thread;
 pthread_t *restore_thread = NULL;
 pthread_mutex_t	fragment_mutex;
 pthread_mutex_t	pos_mutex;
@@ -1979,15 +1980,18 @@ inline int is_fragment(struct inode_info *inode)
 void put_file_buffer(struct file_buffer *file_buffer)
 {
 	/*
-	 * Decide where to send the file buffer - only compressible non-
-	 * fragment blocks need to be send to the deflate threads, all
-	 * others can be sent directly to the main thread
+	 * Decide where to send the file buffer:
+	 * - compressible non-fragment blocks go to the deflate threads,
+	 * - fragments go to the process fragment threads,
+	 * - all others go directly to the main thread
 	 */
 	if(file_buffer->error) {
 		file_buffer->fragment = 0;
 		seq_queue_put(to_main, file_buffer);
-	} else if (file_buffer->file_size == 0 || file_buffer->fragment)
+	} else if (file_buffer->file_size == 0)
 		seq_queue_put(to_main, file_buffer);
+ 	else if(file_buffer->fragment)
+		queue_put(to_process_frag, file_buffer);
 	else
 		queue_put(to_deflate, file_buffer);
 }
@@ -2369,14 +2373,6 @@ void *frag_deflator(void *arg)
 struct file_buffer *get_file_buffer()
 {
 	struct file_buffer *file_buffer = seq_queue_get(to_main);
-
-	if(file_buffer->fragment) {
-		if(sparse_files && all_zero(file_buffer)) {
-			file_buffer->c_byte = 0;
-			file_buffer->fragment = FALSE;
-		} else
-			file_buffer->c_byte = file_buffer->size;
-	}
 
 	return file_buffer;
 }
@@ -4068,20 +4064,20 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 #endif
 	}
 
-	if(multiply_overflow(processors, 2) ||
-			add_overflow(processors * 2, 2) ||
-			multiply_overflow(processors * 2 + 2,
-							sizeof(pthread_t)))
+	if(multiply_overflow(processors, 3) ||
+			multiply_overflow(processors * 3, sizeof(pthread_t)))
 		BAD_ERROR("Processors too large\n");
 
-	deflator_thread = malloc(processors * 2 * sizeof(pthread_t));
+	deflator_thread = malloc(processors * 3 * sizeof(pthread_t));
 	if(deflator_thread == NULL)
 		MEM_ERROR();
 
 	frag_deflator_thread = &deflator_thread[processors];
+	frag_thread = &frag_deflator_thread[processors];
 
 	to_reader = queue_init(1);
 	to_deflate = queue_init(reader_buffer_size);
+	to_process_frag = queue_init(reader_buffer_size);
 	to_writer = queue_init(writer_buffer_size);
 	from_writer = queue_init(1);
 	to_frag = queue_init(fragment_buffer_size);
@@ -4103,6 +4099,8 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 			BAD_ERROR("Failed to create thread\n");
 		if(pthread_create(&frag_deflator_thread[i], NULL, frag_deflator,
 				NULL) != 0)
+			BAD_ERROR("Failed to create thread\n");
+		if(pthread_create(&frag_thread[i], NULL, frag_thrd, NULL) != 0)
 			BAD_ERROR("Failed to create thread\n");
 	}
 
