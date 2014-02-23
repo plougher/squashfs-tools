@@ -89,12 +89,14 @@ struct file_buffer {
 	struct file_buffer *hash_next;
 	struct file_buffer *hash_prev;
 	union {
-		struct file_buffer *free_next;
-		struct file_buffer *seq_next;
-	};
-	union {
-		struct file_buffer *free_prev;
-		struct file_buffer *seq_prev;
+		struct {
+			struct file_buffer *free_next;
+			struct file_buffer *free_prev;
+		};
+		struct {
+			struct file_buffer *seq_next;
+			struct file_buffer *seq_prev;
+		};
 	};
 	long long file_size;
 	long long index;
