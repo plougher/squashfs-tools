@@ -1768,13 +1768,13 @@ static int parse_number(char *start, long long *size, int *range, char **error)
 	switch (end[0]) {
 	case 'g':
 	case 'G':
-		*size *= 1024;
+		number *= 1024;
 	case 'm':
 	case 'M':
-		*size *= 1024;
+		number *= 1024;
 	case 'k':
 	case 'K':
-		*size *= 1024;
+		number *= 1024;
 
 		if (end[1] != '\0') {
 			*error = "Trailing junk after size specifier";
