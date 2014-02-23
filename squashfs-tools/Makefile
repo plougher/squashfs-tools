@@ -238,7 +238,7 @@ sort.o: sort.c squashfs_fs.h mksquashfs.h sort.h error.h progressbar.h
 
 swap.o: swap.c
 
-pseudo.o: pseudo.c pseudo.h
+pseudo.o: pseudo.c pseudo.h error.h progressbar.h
 
 compressor.o: Makefile compressor.c compressor.h squashfs_fs.h
 
