@@ -247,7 +247,7 @@ xattr.o: xattr.c squashfs_fs.h squashfs_swap.h mksquashfs.h xattr.h error.h \
 
 read_xattrs.o: read_xattrs.c squashfs_fs.h squashfs_swap.h xattr.h error.h
 
-action.o: action.h squashfs_fs.h mksquashfs.h
+action.o: action.c squashfs_fs.h mksquashfs.h action.h error.h
 
 progressbar.o: progressbar.c
 
