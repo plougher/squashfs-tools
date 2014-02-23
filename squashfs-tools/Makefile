@@ -251,7 +251,7 @@ action.o: action.c squashfs_fs.h mksquashfs.h action.h error.h
 
 progressbar.o: progressbar.c error.h
 
-read_file.o: read_file.c
+read_file.o: read_file.c error.h
 
 info.o: info.c
 
