@@ -234,7 +234,7 @@ mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h squashfs_swap.h mksquashfs.h \
 read_fs.o: read_fs.c squashfs_fs.h squashfs_swap.h compressor.h xattr.h \
 	error.h mksquashfs.h
 
-sort.o: sort.c squashfs_fs.h sort.h mksquashfs.h
+sort.o: sort.c squashfs_fs.h mksquashfs.h sort.h error.h progressbar.h
 
 swap.o: swap.c
 
