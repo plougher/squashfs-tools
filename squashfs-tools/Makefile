@@ -261,7 +261,7 @@ restore.o: restore.c caches-queues-lists.h squashfs_fs.h mksquashfs.h error.h \
 
 process_fragments.o: process_fragments.c process_fragments.h
 
-caches-queues-lists.o: caches-queues-lists.c
+caches-queues-lists.o: caches-queues-lists.c error.h caches-queues-lists.h
 
 gzip_wrapper.o: gzip_wrapper.c compressor.h squashfs_fs.h
 
