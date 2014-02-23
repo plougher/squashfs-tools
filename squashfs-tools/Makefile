@@ -253,7 +253,8 @@ progressbar.o: progressbar.c error.h
 
 read_file.o: read_file.c error.h
 
-info.o: info.c
+info.o: info.c squashfs_fs.h mksquashfs.h error.h progressbar.h \
+	caches-queues-lists.h
 
 restore.o: restore.c
 
