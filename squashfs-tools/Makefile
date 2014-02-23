@@ -227,8 +227,9 @@ all: mksquashfs unsquashfs
 mksquashfs: $(MKSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(MKSQUASHFS_OBJS) $(LIBS) -o $@
 
-mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h mksquashfs.h sort.h \
-	squashfs_swap.h xattr.h pseudo.h compressor.h action.h progressbar.h
+mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h squashfs_swap.h mksquashfs.h \
+	sort.h pseudo.h compressor.h xattr.h action.h error.h progressbar.h \
+	info.h caches-queues-lists.h read_fs.h restore.h process_fragments.h 
 
 read_fs.o: mksquashfs.h read_fs.c squashfs_fs.h read_fs.h squashfs_swap.h \
 	compressor.h xattr.h
