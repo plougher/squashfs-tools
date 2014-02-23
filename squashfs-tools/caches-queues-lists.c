@@ -446,18 +446,15 @@ struct file_buffer *cache_get_nohash(struct cache *cache)
 }
 
 
-void cache_rehash(struct file_buffer *entry, long long index)
+void cache_hash(struct file_buffer *entry, long long index)
 {
 	struct cache *cache = entry->cache;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
-	if(cache->noshrink_lookup) {
-		remove_cache_hash_table(cache, entry);
-		entry->index = index;
-		insert_cache_hash_table(cache, entry);
-	}
+	entry->index = index;
+	insert_cache_hash_table(cache, entry);
 
 	pthread_cleanup_pop(1);
 }

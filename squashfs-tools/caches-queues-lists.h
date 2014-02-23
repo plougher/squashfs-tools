@@ -169,7 +169,7 @@ extern struct cache *cache_init(int, int, int, int);
 extern struct file_buffer *cache_lookup(struct cache *, long long);
 extern struct file_buffer *cache_get(struct cache *, long long);
 extern struct file_buffer *cache_get_nohash(struct cache *);
-extern void cache_rehash(struct file_buffer *, long long);
+extern void cache_hash(struct file_buffer *, long long);
 extern void cache_block_put(struct file_buffer *);
 extern void dump_cache(struct cache *);
 

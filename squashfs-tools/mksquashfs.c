@@ -2305,7 +2305,7 @@ void *deflator(void *arg)
 			file_buffer->c_byte = 0;
 			seq_queue_put(to_main, file_buffer);
 		} else {
-			write_buffer = cache_get(writer_buffer, -1);
+			write_buffer = cache_get_nohash(writer_buffer);
 			write_buffer->c_byte = mangle2(stream,
 				write_buffer->data, file_buffer->data,
 				file_buffer->size, block_size,
@@ -2486,7 +2486,7 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 			if(read_buffer->c_byte) {
 				read_buffer->block = bytes;
 				bytes += read_buffer->size;
-				cache_rehash(read_buffer, read_buffer->block);
+				cache_hash(read_buffer, read_buffer->block);
 				file_bytes += read_buffer->size;
 				queue_put(to_writer, read_buffer);
 			} else {
@@ -2578,7 +2578,7 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 			if(read_buffer->c_byte) {
 				read_buffer->block = bytes;
 				bytes += read_buffer->size;
-				cache_rehash(read_buffer, read_buffer->block);
+				cache_hash(read_buffer, read_buffer->block);
 				file_bytes += read_buffer->size;
 				queue_put(to_writer, read_buffer);
 			} else {
@@ -2692,7 +2692,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 				read_buffer->block = bytes;
 				bytes += read_buffer->size;
 				file_bytes += read_buffer->size;
-				cache_rehash(read_buffer, read_buffer->block);
+				cache_hash(read_buffer, read_buffer->block);
 				if(block < thresh) {
 					buffer_list[block] = NULL;
 					queue_put(to_writer, read_buffer);
