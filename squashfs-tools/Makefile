@@ -263,7 +263,7 @@ process_fragments.o: process_fragments.c process_fragments.h
 
 caches-queues-lists.o: caches-queues-lists.c error.h caches-queues-lists.h
 
-gzip_wrapper.o: gzip_wrapper.c compressor.h squashfs_fs.h
+gzip_wrapper.o: gzip_wrapper.c squashfs_fs.h gzip_wrapper.h compressor.h
 
 lzma_wrapper.o: lzma_wrapper.c compressor.h squashfs_fs.h
 
