@@ -269,7 +269,7 @@ lzma_wrapper.o: lzma_wrapper.c compressor.h squashfs_fs.h
 
 lzma_xz_wrapper.o: lzma_xz_wrapper.c compressor.h squashfs_fs.h
 
-lzo_wrapper.o: lzo_wrapper.c compressor.h squashfs_fs.h
+lzo_wrapper.o: lzo_wrapper.c squashfs_fs.h lzo_wrapper.h compressor.h
 
 lz4_wrapper.o: lz4_wrapper.c compressor.h squashfs_fs.h
 
