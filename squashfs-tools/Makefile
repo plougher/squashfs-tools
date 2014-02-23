@@ -242,9 +242,10 @@ pseudo.o: pseudo.c pseudo.h error.h progressbar.h
 
 compressor.o: Makefile compressor.c compressor.h squashfs_fs.h
 
-xattr.o: xattr.c xattr.h squashfs_fs.h squashfs_swap.h mksquashfs.h
+xattr.o: xattr.c squashfs_fs.h squashfs_swap.h mksquashfs.h xattr.h error.h \
+	progressbar.h
 
-read_xattrs.o: read_xattrs.c xattr.h squashfs_fs.h squashfs_swap.h read_fs.h
+read_xattrs.o: read_xattrs.c squashfs_fs.h squashfs_swap.h xattr.h error.h
 
 action.o: action.h squashfs_fs.h mksquashfs.h
 
