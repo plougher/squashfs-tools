@@ -256,7 +256,8 @@ read_file.o: read_file.c error.h
 info.o: info.c squashfs_fs.h mksquashfs.h error.h progressbar.h \
 	caches-queues-lists.h
 
-restore.o: restore.c
+restore.o: restore.c caches-queues-lists.h squashfs_fs.h mksquashfs.h error.h \
+	progressbar.h info.h
 
 process_fragments.o: process_fragments.c process_fragments.h
 
