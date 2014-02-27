@@ -85,6 +85,10 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
 
 /* struct describing a cache entry passed between threads */
 struct file_buffer {
+	long long file_size;
+	long long index;
+	long long block;
+	long long sequence;
 	struct cache *cache;
 	struct file_buffer *hash_next;
 	struct file_buffer *hash_prev;
@@ -98,10 +102,6 @@ struct file_buffer {
 			struct file_buffer *seq_prev;
 		};
 	};
-	long long file_size;
-	long long index;
-	long long block;
-	long long sequence;
 	int size;
 	int c_byte;
 	char used;
