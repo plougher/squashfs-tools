@@ -2801,8 +2801,8 @@ void write_file(squashfs_inode *inode, struct dir_ent *dir_ent,
 again:
 	read_buffer = get_file_buffer();
 
-	status = read_buffer->error;
-	if(status) {
+	if(read_buffer->error) {
+		status = read_buffer->error;
 		cache_block_put(read_buffer);
 		goto file_err;
 	}
