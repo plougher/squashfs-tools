@@ -2796,7 +2796,6 @@ void write_file(squashfs_inode *inode, struct dir_ent *dir_ent,
 {
 	int status;
 	struct file_buffer *read_buffer;
-	long long read_size;
 
 again:
 	read_buffer = get_file_buffer();
@@ -2807,23 +2806,21 @@ again:
 		goto file_err;
 	}
 	
-	read_size = read_buffer->file_size;
-
-	if(read_size == -1)
+	if(read_buffer->file_size == -1)
 		status = write_file_process(inode, dir_ent, read_buffer,
 			duplicate_file);
-	else if(read_size == 0) {
+	else if(read_buffer->file_size == 0) {
 		write_file_empty(inode, dir_ent, duplicate_file);
 		cache_block_put(read_buffer);
 	} else if(read_buffer->fragment && read_buffer->c_byte)
-		write_file_frag(inode, dir_ent, read_size, read_buffer,
-			duplicate_file);
-	else if(pre_duplicate(read_size))
-		status = write_file_blocks_dup(inode, dir_ent, read_size,
+		write_file_frag(inode, dir_ent, read_buffer->file_size,
 			read_buffer, duplicate_file);
+	else if(pre_duplicate(read_buffer->file_size))
+		status = write_file_blocks_dup(inode, dir_ent,
+			read_buffer->file_size, read_buffer, duplicate_file);
 	else
-		status = write_file_blocks(inode, dir_ent, read_size,
-			read_buffer, duplicate_file);
+		status = write_file_blocks(inode, dir_ent,
+			read_buffer->file_size, read_buffer, duplicate_file);
 
 file_err:
 	if(status == 2) {
