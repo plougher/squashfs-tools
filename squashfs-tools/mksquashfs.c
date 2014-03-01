@@ -2650,10 +2650,10 @@ read_err:
 
 
 int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
-	long long read_size, struct file_buffer *read_buffer,
-	int *duplicate_file)
+	struct file_buffer *read_buffer, int *duplicate_file)
 {
 	int block, thresh;
+	long long read_size = read_buffer->file_size;
 	long long file_bytes, dup_start, start;
 	struct fragment *fragment;
 	struct file_info *dupl_ptr;
@@ -2816,8 +2816,8 @@ again:
 	} else if(read_buffer->fragment && read_buffer->c_byte)
 		write_file_frag(inode, dir_ent, read_buffer, duplicate_file);
 	else if(pre_duplicate(read_buffer->file_size))
-		status = write_file_blocks_dup(inode, dir_ent,
-			read_buffer->file_size, read_buffer, duplicate_file);
+		status = write_file_blocks_dup(inode, dir_ent, read_buffer,
+			duplicate_file);
 	else
 		status = write_file_blocks(inode, dir_ent,
 			read_buffer->file_size, read_buffer, duplicate_file);
