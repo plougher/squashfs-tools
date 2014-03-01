@@ -2419,9 +2419,10 @@ void write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 }
 
 
-void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent, int size,
+void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent,
 	struct file_buffer *file_buffer, int *duplicate_file)
 {
+	int size = file_buffer->file_size;
 	struct fragment *fragment;
 	unsigned short checksum;
 
@@ -2813,8 +2814,7 @@ again:
 		write_file_empty(inode, dir_ent, duplicate_file);
 		cache_block_put(read_buffer);
 	} else if(read_buffer->fragment && read_buffer->c_byte)
-		write_file_frag(inode, dir_ent, read_buffer->file_size,
-			read_buffer, duplicate_file);
+		write_file_frag(inode, dir_ent, read_buffer, duplicate_file);
 	else if(pre_duplicate(read_buffer->file_size))
 		status = write_file_blocks_dup(inode, dir_ent,
 			read_buffer->file_size, read_buffer, duplicate_file);
