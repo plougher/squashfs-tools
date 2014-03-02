@@ -2129,7 +2129,6 @@ again:
 		if(byte != expected)
 			goto restat;
 
-		file_buffer->block = count;
 		file_buffer->error = FALSE;
 		file_buffer->fragment = FALSE;
 
