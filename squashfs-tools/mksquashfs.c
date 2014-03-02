@@ -2076,7 +2076,7 @@ void reader_read_file(struct dir_ent *dir_ent)
 {
 	struct stat *buf = &dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
-	int blocks, byte, count, expected, file, res;
+	int blocks, byte, expected, file, res;
 	long long bytes, read_size;
 	struct inode_info *inode = dir_ent->inode;
 
@@ -2086,7 +2086,6 @@ void reader_read_file(struct dir_ent *dir_ent)
 	inode->read = TRUE;
 again:
 	bytes = 0;
-	count = 0;
 	file_buffer = NULL;
 	read_size = buf->st_size;
 	blocks = (read_size + block_size - 1) >> block_log;
@@ -2099,9 +2098,7 @@ again:
 	}
 
 	do {
-		expected = read_size - ((long long) count * block_size) >
-			block_size ? block_size :
-			read_size - ((long long) count * block_size);
+		expected = blocks > 1 ? block_size : read_size % block_size;
 
 		if(file_buffer)
 			put_file_buffer(file_buffer);
@@ -2133,8 +2130,7 @@ again:
 		file_buffer->fragment = FALSE;
 
 		bytes += byte;
-		count ++;
-	} while(count < blocks);
+	} while(-- blocks > 0);
 
 	if(read_size != bytes)
 		goto restat;
