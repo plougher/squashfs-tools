@@ -2542,108 +2542,6 @@ read_err:
 }
 
 
-int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
-	struct file_buffer *read_buffer, int *duplicate_file)
-{
-	long long read_size = read_buffer->file_size;
-	long long file_bytes, start;
-	struct fragment *fragment;
-	unsigned int *block_list;
-	int block, status;
-	int blocks = (read_size + block_size - 1) >> block_log;
-	long long sparse = 0;
-	struct file_buffer *fragment_buffer = NULL;
-
-	*duplicate_file = FALSE;
-
-	block_list = malloc(blocks * sizeof(unsigned int));
-	if(block_list == NULL)
-		MEM_ERROR();
-
-	lock_fragments();
-
-	file_bytes = 0;
-	start = bytes;
-	for(block = 0; block < blocks;) {
-		if(read_buffer->fragment) {
-			block_list[block] = 0;
-			fragment_buffer = read_buffer;
-			blocks = read_size >> block_log;
-		} else {
-			block_list[block] = read_buffer->c_byte;
-			if(read_buffer->c_byte) {
-				read_buffer->block = bytes;
-				bytes += read_buffer->size;
-				cache_hash(read_buffer, read_buffer->block);
-				file_bytes += read_buffer->size;
-				queue_put(to_writer, read_buffer);
-			} else {
-				sparse += read_buffer->size;
-				cache_block_put(read_buffer);
-			}
-		}
-		inc_progress_bar();
-
-		if(++block < blocks) {
-			read_buffer = get_file_buffer();
-			if(read_buffer->error)
-				goto read_err;
-		}
-	}
-
-	unlock_fragments();
-	fragment = get_and_fill_fragment(fragment_buffer, dir_ent);
-	cache_block_put(fragment_buffer);
-
-	if(duplicate_checking)
-		add_non_dup(read_size, file_bytes, block_list, start, fragment,
-			0, 0, FALSE);
-	file_count ++;
-	total_bytes += read_size;
-
-	/*
-	 * sparse count is needed to ensure squashfs correctly reports a
- 	 * a smaller block count on stat calls to sparse files.  This is
- 	 * to ensure intelligent applications like cp correctly handle the
- 	 * file as a sparse file.  If the file in the original filesystem isn't
- 	 * stored as a sparse file then still store it sparsely in squashfs, but
- 	 * report it as non-sparse on stat calls to preserve semantics
- 	 */
-	if(sparse && (dir_ent->inode->buf.st_blocks << 9) >= read_size)
-		sparse = 0;
-
-	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size, start,
-		 blocks, block_list, fragment, NULL, sparse);
-
-	if(duplicate_checking == FALSE) {
-		free(block_list);
-		free_fragment(fragment);
-	}
-
-	return 0;
-
-read_err:
-	dec_progress_bar(block);
-	status = read_buffer->error;
-	bytes = start;
-	if(!block_device) {
-		int res;
-
-		queue_put(to_writer, NULL);
-		if(queue_get(from_writer) != 0)
-			EXIT_MKSQUASHFS();
-		res = ftruncate(fd, bytes);
-		if(res != 0)
-			BAD_ERROR("Failed to truncate dest file because %s\n",
-				strerror(errno));
-	}
-	unlock_fragments();
-	free(block_list);
-	cache_block_put(read_buffer);
-	return status;
-}
-
-
 int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 	struct file_buffer *read_buffer, int *duplicate_file)
 {
@@ -2787,6 +2685,111 @@ read_err:
 }
 
 
+int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
+	struct file_buffer *read_buffer, int *dup)
+{
+	long long read_size = read_buffer->file_size;
+	long long file_bytes, start;
+	struct fragment *fragment;
+	unsigned int *block_list;
+	int block, status;
+	int blocks = (read_size + block_size - 1) >> block_log;
+	long long sparse = 0;
+	struct file_buffer *fragment_buffer = NULL;
+
+	if(pre_duplicate(read_size))
+		return write_file_blocks_dup(inode, dir_ent, read_buffer, dup);
+
+	*dup = FALSE;
+
+	block_list = malloc(blocks * sizeof(unsigned int));
+	if(block_list == NULL)
+		MEM_ERROR();
+
+	lock_fragments();
+
+	file_bytes = 0;
+	start = bytes;
+	for(block = 0; block < blocks;) {
+		if(read_buffer->fragment) {
+			block_list[block] = 0;
+			fragment_buffer = read_buffer;
+			blocks = read_size >> block_log;
+		} else {
+			block_list[block] = read_buffer->c_byte;
+			if(read_buffer->c_byte) {
+				read_buffer->block = bytes;
+				bytes += read_buffer->size;
+				cache_hash(read_buffer, read_buffer->block);
+				file_bytes += read_buffer->size;
+				queue_put(to_writer, read_buffer);
+			} else {
+				sparse += read_buffer->size;
+				cache_block_put(read_buffer);
+			}
+		}
+		inc_progress_bar();
+
+		if(++block < blocks) {
+			read_buffer = get_file_buffer();
+			if(read_buffer->error)
+				goto read_err;
+		}
+	}
+
+	unlock_fragments();
+	fragment = get_and_fill_fragment(fragment_buffer, dir_ent);
+	cache_block_put(fragment_buffer);
+
+	if(duplicate_checking)
+		add_non_dup(read_size, file_bytes, block_list, start, fragment,
+			0, 0, FALSE);
+	file_count ++;
+	total_bytes += read_size;
+
+	/*
+	 * sparse count is needed to ensure squashfs correctly reports a
+ 	 * a smaller block count on stat calls to sparse files.  This is
+ 	 * to ensure intelligent applications like cp correctly handle the
+ 	 * file as a sparse file.  If the file in the original filesystem isn't
+ 	 * stored as a sparse file then still store it sparsely in squashfs, but
+ 	 * report it as non-sparse on stat calls to preserve semantics
+ 	 */
+	if(sparse && (dir_ent->inode->buf.st_blocks << 9) >= read_size)
+		sparse = 0;
+
+	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size, start,
+		 blocks, block_list, fragment, NULL, sparse);
+
+	if(duplicate_checking == FALSE) {
+		free(block_list);
+		free_fragment(fragment);
+	}
+
+	return 0;
+
+read_err:
+	dec_progress_bar(block);
+	status = read_buffer->error;
+	bytes = start;
+	if(!block_device) {
+		int res;
+
+		queue_put(to_writer, NULL);
+		if(queue_get(from_writer) != 0)
+			EXIT_MKSQUASHFS();
+		res = ftruncate(fd, bytes);
+		if(res != 0)
+			BAD_ERROR("Failed to truncate dest file because %s\n",
+				strerror(errno));
+	}
+	unlock_fragments();
+	free(block_list);
+	cache_block_put(read_buffer);
+	return status;
+}
+
+
 void write_file(squashfs_inode *inode, struct dir_ent *dir, int *dup)
 {
 	int status;
@@ -2804,8 +2807,6 @@ again:
 		write_file_empty(inode, dir, read_buffer, dup);
 	else if(read_buffer->fragment && read_buffer->c_byte)
 		write_file_frag(inode, dir, read_buffer, dup);
-	else if(pre_duplicate(read_buffer->file_size))
-		status = write_file_blocks_dup(inode, dir, read_buffer, dup);
 	else
 		status = write_file_blocks(inode, dir, read_buffer, dup);
 
