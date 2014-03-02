@@ -2002,7 +2002,7 @@ void reader_read_process(struct dir_ent *dir_ent)
 {
 	struct inode_info *inode = dir_ent->inode;
 	struct file_buffer *prev_buffer = NULL, *file_buffer;
-	int status, res, byte, count = 0;
+	int status, res, byte;
 	int file = get_pseudo_file(inode->pseudo_id)->fd;
 	int child = get_pseudo_file(inode->pseudo_id)->child;
 	long long bytes = 0;
@@ -2018,7 +2018,6 @@ void reader_read_process(struct dir_ent *dir_ent)
 
 		file_buffer->size = byte;
 		file_buffer->file_size = -1;
-		file_buffer->block = count ++;
 		file_buffer->error = FALSE;
 		file_buffer->fragment = FALSE;
 		bytes += byte;
