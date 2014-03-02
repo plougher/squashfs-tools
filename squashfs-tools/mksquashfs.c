@@ -2792,45 +2792,37 @@ read_err:
 }
 
 
-void write_file(squashfs_inode *inode, struct dir_ent *dir_ent,
-	int *duplicate_file)
+void write_file(squashfs_inode *inode, struct dir_ent *dir, int *dup)
 {
 	int status;
 	struct file_buffer *read_buffer;
 
 again:
 	read_buffer = get_file_buffer();
+	status = read_buffer->error;
 
-	if(read_buffer->error) {
-		status = read_buffer->error;
+	if(status)
 		cache_block_put(read_buffer);
-		goto file_err;
-	}
-	
-	if(read_buffer->file_size == -1)
-		status = write_file_process(inode, dir_ent, read_buffer,
-			duplicate_file);
+	else if(read_buffer->file_size == -1)
+		status = write_file_process(inode, dir, read_buffer, dup);
 	else if(read_buffer->file_size == 0) {
-		write_file_empty(inode, dir_ent, duplicate_file);
+		write_file_empty(inode, dir, dup);
 		cache_block_put(read_buffer);
 	} else if(read_buffer->fragment && read_buffer->c_byte)
-		write_file_frag(inode, dir_ent, read_buffer, duplicate_file);
+		write_file_frag(inode, dir, read_buffer, dup);
 	else if(pre_duplicate(read_buffer->file_size))
-		status = write_file_blocks_dup(inode, dir_ent, read_buffer,
-			duplicate_file);
+		status = write_file_blocks_dup(inode, dir, read_buffer, dup);
 	else
-		status = write_file_blocks(inode, dir_ent, read_buffer,
-			duplicate_file);
+		status = write_file_blocks(inode, dir, read_buffer, dup);
 
-file_err:
 	if(status == 2) {
 		ERROR("File %s changed size while reading filesystem, "
-			"attempting to re-read\n", pathname(dir_ent));
+			"attempting to re-read\n", pathname(dir));
 		goto again;
 	} else if(status == 1) {
-		ERROR_START("Failed to read file %s", pathname(dir_ent));
+		ERROR_START("Failed to read file %s", pathname(dir));
 		ERROR_EXIT(", creating empty file\n");
-		write_file_empty(inode, dir_ent, duplicate_file);
+		write_file_empty(inode, dir, dup);
 	}
 }
 
