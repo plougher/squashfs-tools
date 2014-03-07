@@ -2384,12 +2384,13 @@ void write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 
 void write_file_frag_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
-	int size, int *duplicate_file, struct file_buffer *file_buffer,
+	int *duplicate_file, struct file_buffer *file_buffer,
 	unsigned short checksum)
 {
 	struct file_info *dupl_ptr;
 	struct fragment *fragment;
 	unsigned int *block_listp = NULL;
+	int size = file_buffer->size;
 	long long start = 0;
 
 	dupl_ptr = duplicate(size, 0, &block_listp, &start, &fragment,
@@ -2424,8 +2425,8 @@ void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent,
 	checksum = get_checksum_mem_buffer(file_buffer);
 
 	if(pre_duplicate_frag(size, checksum)) {
-		write_file_frag_dup(inode, dir_ent, size, duplicate_file,
-			file_buffer, checksum);
+		write_file_frag_dup(inode, dir_ent, duplicate_file, file_buffer,
+			 checksum);
 		return;
 	}
 		
