@@ -2076,7 +2076,7 @@ void reader_read_file(struct dir_ent *dir_ent)
 {
 	struct stat *buf = &dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
-	int blocks, byte, file, res;
+	int blocks, file, res;
 	long long bytes, read_size;
 	struct inode_info *inode = dir_ent->inode;
 
@@ -2086,7 +2086,6 @@ void reader_read_file(struct dir_ent *dir_ent)
 	inode->read = TRUE;
 again:
 	bytes = 0;
-	file_buffer = NULL;
 	read_size = buf->st_size;
 	blocks = (read_size + block_size - 1) >> block_log;
 
@@ -2098,11 +2097,11 @@ again:
 	}
 
 	do {
-		if(file_buffer)
-			put_file_buffer(file_buffer);
 		file_buffer = cache_get_nohash(reader_buffer);
+		file_buffer->file_size = read_size;
 		file_buffer->sequence = seq ++;
 		file_buffer->noD = inode->noD;
+		file_buffer->error = FALSE;
 
 		/*
 		 * Always try to read block_size bytes from the file rather
@@ -2113,23 +2112,24 @@ again:
 		 * case where the file is an exact multiple of the block_size
 		 * is dealt with later.
 		 */
-		byte = file_buffer->size = read_bytes(file, file_buffer->data,
+		file_buffer->size = read_bytes(file, file_buffer->data,
 			block_size);
-
-		file_buffer->file_size = read_size;
-
-		if(byte == -1)
+		if(file_buffer->size == -1)
 			goto read_err;
 
-		if(byte != block_size && blocks > 1)
-			goto restat;
+		bytes += file_buffer->size;
 
-		file_buffer->error = FALSE;
-		file_buffer->fragment = FALSE;
+		if(blocks > 1) {
+			/* non-tail block should be exactly block_size */
+			if(file_buffer->size < block_size)
+				goto restat;
 
-		bytes += byte;
+			file_buffer->fragment = FALSE;
+			put_file_buffer(file_buffer);
+		}
 	} while(-- blocks > 0);
 
+	/* Overall size including tail should match */
 	if(read_size != bytes)
 		goto restat;
 
@@ -4749,7 +4749,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2014/02/23)\n");\
+	printf("mksquashfs version 4.2-git (2014/03/10)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
