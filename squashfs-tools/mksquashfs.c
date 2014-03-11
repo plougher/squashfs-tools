@@ -2076,7 +2076,7 @@ void reader_read_file(struct dir_ent *dir_ent)
 {
 	struct stat *buf = &dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
-	int blocks, byte, expected, file, res;
+	int blocks, byte, file, res;
 	long long bytes, read_size;
 	struct inode_info *inode = dir_ent->inode;
 
@@ -2098,8 +2098,6 @@ again:
 	}
 
 	do {
-		expected = blocks > 1 ? block_size : read_size % block_size;
-
 		if(file_buffer)
 			put_file_buffer(file_buffer);
 		file_buffer = cache_get_nohash(reader_buffer);
@@ -2123,7 +2121,7 @@ again:
 		if(byte == -1)
 			goto read_err;
 
-		if(byte != expected)
+		if(byte != block_size && blocks > 1)
 			goto restat;
 
 		file_buffer->error = FALSE;
@@ -2135,7 +2133,7 @@ again:
 	if(read_size != bytes)
 		goto restat;
 
-	if(expected == block_size) {
+	if(read_size && read_size % block_size == 0) {
 		/*
 		 * Special case where we've not tried to read past the end of
 		 * the file.  We expect to get EOF, i.e. the file isn't larger
