@@ -261,7 +261,7 @@ pthread_t reader_thread, writer_thread, main_thread;
 pthread_t *deflator_thread, *frag_deflator_thread, *frag_thread;
 pthread_t *restore_thread = NULL;
 pthread_mutex_t	fragment_mutex;
-pthread_mutex_t	pos_mutex;
+pthread_mutex_t	pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* user options that control parallelisation */
 int processors = -1;
