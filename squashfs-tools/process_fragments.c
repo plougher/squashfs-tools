@@ -49,7 +49,29 @@
 extern struct queue *to_process_frag;
 extern struct seq_queue *to_main;
 extern int sparse_files;
-extern int all_zero(struct file_buffer *);
+
+/*
+ * Compute 16 bit BSD checksum over the data, and check for sparseness
+ */
+int checksum_sparse(struct file_buffer *file_buffer)
+{
+	unsigned char *b = (unsigned char *) file_buffer->data;
+	unsigned short chksum = 0;
+	int bytes = file_buffer->size, sparse = TRUE, value;
+
+	while(bytes --) {
+		chksum = (chksum & 1) ? (chksum >> 1) | 0x8000 : chksum >> 1;
+		value = *b++;
+		if(value) {
+			sparse = FALSE;
+			chksum += value;
+		}
+	}
+
+	file_buffer->checksum = chksum;
+	return sparse;
+}
+
 
 void *frag_thrd(void *arg)
 {
@@ -63,8 +85,9 @@ void *frag_thrd(void *arg)
 
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(to_process_frag);
+		int sparse = checksum_sparse(file_buffer);
 
-		if(sparse_files && all_zero(file_buffer)) {
+		if(sparse_files && sparse) {
 			file_buffer->c_byte = 0;
 			file_buffer->fragment = FALSE;
 		} else

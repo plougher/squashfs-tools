@@ -90,7 +90,10 @@ struct file_buffer {
 		long long sequence;
 	};
 	long long file_size;
-	long long block;
+	union {
+		long long block;
+		unsigned short checksum;
+	};
 	struct cache *cache;
 	struct file_buffer *hash_next;
 	struct file_buffer *hash_prev;
