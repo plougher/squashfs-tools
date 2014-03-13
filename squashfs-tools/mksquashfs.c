@@ -260,7 +260,7 @@ struct seq_queue *to_main;
 pthread_t reader_thread, writer_thread, main_thread;
 pthread_t *deflator_thread, *frag_deflator_thread, *frag_thread;
 pthread_t *restore_thread = NULL;
-pthread_mutex_t	fragment_mutex;
+pthread_mutex_t	fragment_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t	pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* user options that control parallelisation */
@@ -4074,7 +4074,6 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	pthread_create(&writer_thread, NULL, writer, NULL);
 	init_progress_bar();
 	init_info();
-	pthread_mutex_init(&fragment_mutex, NULL);
 
 	for(i = 0; i < processors; i++) {
 		if(pthread_create(&deflator_thread[i], NULL, deflator, NULL) !=
