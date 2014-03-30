@@ -66,7 +66,7 @@ static int scache_bytes = 0;
 static int sxattr_ids = 0;
 
 /* xattr hash table for value duplicate detection */
-static struct xattr_list *dupl[65536];
+static struct xattr_list *dupl_value[65536];
 
 /* xattr hash table for id duplicate detection */
 static struct dupl_id *dupl_id[65536];
@@ -348,7 +348,7 @@ static void check_value_dupl(struct xattr_list *xattr)
 
 	/* Check if this is a duplicate of an existing value */
 	xattr->vchecksum = get_checksum(xattr->value, xattr->vsize, 0);
-	for(entry = dupl[xattr->vchecksum]; entry; entry = entry->vnext) {
+	for(entry = dupl_value[xattr->vchecksum]; entry; entry = entry->vnext) {
 		if(entry->vsize != xattr->vsize)
 			continue;
 		
@@ -361,8 +361,8 @@ static void check_value_dupl(struct xattr_list *xattr)
 		 * No duplicate exists, add to hash table, and mark as
 		 * requiring writing
 		 */
-		xattr->vnext = dupl[xattr->vchecksum];
-		dupl[xattr->vchecksum] = xattr;
+		xattr->vnext = dupl_value[xattr->vchecksum];
+		dupl_value[xattr->vchecksum] = xattr;
 		xattr->ool_value = SQUASHFS_INVALID_BLK;
 	} else {
 		/*
