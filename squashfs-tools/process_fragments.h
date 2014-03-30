@@ -22,4 +22,7 @@
  * process_fragments.h
  */
 
+#define FRAG_INDEX(n) (-(n + 2))
+#define DUP_HASH(a) (a & 0xffff)
+
 extern void *frag_thrd(void *);

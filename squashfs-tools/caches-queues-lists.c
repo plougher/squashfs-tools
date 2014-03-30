@@ -322,6 +322,7 @@ struct cache *cache_init(int buffer_size, int max_buffers, int noshrink_lookup,
 	memset(cache->hash_table, 0, sizeof(struct file_buffer *) * 65536);
 	pthread_mutex_init(&cache->mutex, NULL);
 	pthread_cond_init(&cache->wait_for_free, NULL);
+	pthread_cond_init(&cache->wait_for_unlock, NULL);
 
 	return cache;
 }
@@ -422,6 +423,8 @@ static struct file_buffer *_cache_get(struct cache *cache, long long index,
 
 	/* initialise block and if hash is set insert into the hash table */
 	entry->used = 1;
+	entry->locked = FALSE;
+	entry->wait_on_unlock = FALSE;
 	entry->error = FALSE;
 	if(hash) {
 		entry->index = index;
@@ -514,6 +517,126 @@ void dump_cache(struct cache *cache)
 		printf("Max buffers %d, Current size %d, Maximum historical "
 			"size %d\n", cache->max_buffers, cache->count,
 			cache->max_count);
+
+	pthread_cleanup_pop(1);
+}
+
+
+struct file_buffer *cache_get_nowait(struct cache *cache, long long index)
+{
+	struct file_buffer *entry = NULL;
+	/*
+	 * block doesn't exist, create it, but return it with the
+	 * locked flag set, so nothing tries to use it while it doesn't
+	 * contain data.
+	 *
+	 * If there's no space in the cache then return NULL.
+	 */
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
+	pthread_mutex_lock(&cache->mutex);
+
+	/* first try to get a block from the free list */
+	if(cache->first_freelist && cache->free_list)
+		entry = cache_freelist(cache);
+	else if(cache->count < cache->max_buffers) {
+		entry = cache_alloc(cache);
+		cache->used ++;
+	} else if(!cache->first_freelist && cache->free_list)
+		entry = cache_freelist(cache);
+
+	if(entry) {
+		/* initialise block and insert into the hash table */
+		entry->used = 1;
+		entry->locked = TRUE;
+		entry->wait_on_unlock = FALSE;
+		entry->error = FALSE;
+		entry->index = index;
+		insert_cache_hash_table(cache, entry);
+	}
+
+	pthread_cleanup_pop(1);
+
+	return entry;
+}
+
+
+struct file_buffer *cache_lookup_nowait(struct cache *cache, long long index,
+	char *locked)
+{
+	/*
+	 * Lookup block in the cache, if found return it with the locked flag
+	 * indicating whether it is currently locked.  In both cases increment
+	 * the used count.
+	 *
+	 * If it doesn't exist in the cache return NULL;
+	 */
+	int hash = CALCULATE_CACHE_HASH(index);
+	struct file_buffer *entry;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
+	pthread_mutex_lock(&cache->mutex);
+
+	/* first check if the entry already exists */
+	for(entry = cache->hash_table[hash]; entry; entry = entry->hash_next)
+		if(entry->index == index)
+			break;
+
+	if(entry) {
+		if(entry->used == 0)
+			remove_free_list(&cache->free_list, entry);
+		entry->used ++;
+		*locked = entry->locked;
+	}
+
+	pthread_cleanup_pop(1);
+
+	return entry;
+}
+
+
+void cache_wait_unlock(struct file_buffer *buffer)
+{
+	struct cache *cache = buffer->cache;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
+	pthread_mutex_lock(&cache->mutex);
+
+	while(buffer->locked) {
+		/*
+		 * another thread is filling this in, wait until it
+		 * becomes unlocked.  Used has been incremented to ensure it
+		 * doesn't get reused.  By definition a block can't be
+		 * locked and unused, and so we don't need to worry
+		 * about it being on the freelist now, but, it may
+		 * become unused when unlocked unless used is
+		 * incremented
+		 */
+		buffer->wait_on_unlock = TRUE;
+		pthread_cond_wait(&cache->wait_for_unlock, &cache->mutex);
+	}
+
+	pthread_cleanup_pop(1);
+}
+
+
+void cache_unlock(struct file_buffer *entry)
+{
+	struct cache *cache = entry->cache;
+
+	/*
+	 * Unlock this locked cache entry.  If anything is waiting for this
+	 * to become unlocked, wake it up.
+	 */
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
+	pthread_mutex_lock(&cache->mutex);
+
+	entry->locked = FALSE;
+
+	if(entry->wait_on_unlock) {
+		entry->wait_on_unlock = FALSE;
+		pthread_cond_broadcast(&cache->wait_for_unlock);
+	}
 
 	pthread_cleanup_pop(1);
 }

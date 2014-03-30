@@ -95,8 +95,14 @@ struct file_buffer {
 		unsigned short checksum;
 	};
 	struct cache *cache;
-	struct file_buffer *hash_next;
-	struct file_buffer *hash_prev;
+	union {
+		struct file_info *dupl_start;
+		struct file_buffer *hash_next;
+	};
+	union {
+		int duplicate;
+		struct file_buffer *hash_prev;
+	};
 	union {
 		struct {
 			struct file_buffer *free_next;
@@ -112,6 +118,8 @@ struct file_buffer {
 	char used;
 	char fragment;
 	char error;
+	char locked;
+	char wait_on_unlock;
 	char noD;
 	char data[0];
 };
@@ -156,6 +164,7 @@ struct cache {
 	};
 	pthread_mutex_t	mutex;
 	pthread_cond_t wait_for_free;
+	pthread_cond_t wait_for_unlock;
 	struct file_buffer *free_list;
 	struct file_buffer *hash_table[HASH_SIZE];
 };
@@ -179,6 +188,11 @@ extern struct file_buffer *cache_get_nohash(struct cache *);
 extern void cache_hash(struct file_buffer *, long long);
 extern void cache_block_put(struct file_buffer *);
 extern void dump_cache(struct cache *);
+extern struct file_buffer *cache_get_nowait(struct cache *, long long);
+extern struct file_buffer *cache_lookup_nowait(struct cache *, long long,
+	char *);
+extern void cache_wait_unlock(struct file_buffer *);
+extern void cache_unlock(struct file_buffer *);
 
 extern int first_freelist;
 

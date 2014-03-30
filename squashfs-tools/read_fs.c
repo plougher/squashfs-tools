@@ -52,8 +52,6 @@
 #include "error.h"
 #include "mksquashfs.h"
 
-static struct compressor *comp;
-
 int read_block(int fd, long long start, long long *next, int expected,
 								void *block)
 {

@@ -116,15 +116,23 @@ struct append_file {
  * compressed size */
 #define BLOCK_OFFSET 2
 
-extern struct cache *reader_buffer, *writer_buffer, *fragment_buffer;
+extern struct cache *reader_buffer, *writer_buffer, *fragment_buffer,
+	*reserve_cache;
 extern struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
 	*to_frag, *locked_fragment;
 extern struct append_file **file_mapping;
 extern struct seq_queue *to_main;
+extern pthread_mutex_t fragment_mutex, dup_mutex;
+extern struct squashfs_fragment_entry *fragment_table;
+extern struct compressor *comp;
+extern int block_size;
+extern struct file_info *dupl[];
 extern int read_fs_bytes(int, long long, int, void *);
 extern void add_file(long long, long long, long long, unsigned int *, int,
 	unsigned int, int, int);
 extern struct id *create_id(unsigned int);
 extern unsigned int get_uid(unsigned int);
 extern unsigned int get_guid(unsigned int);
+extern int read_bytes(int, void *, int);
+extern unsigned short get_checksum_mem(char *, int);
 #endif
