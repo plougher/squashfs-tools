@@ -71,38 +71,55 @@ struct squashfs_dir_index_3 {
 	unsigned char		name[0];
 } __attribute__ ((packed));
 
-#define SQUASHFS_BASE_INODE_HEADER_3		\
-	unsigned int		inode_type:4;	\
-	unsigned int		mode:12;	\
-	unsigned int		uid:8;		\
-	unsigned int		guid:8;		\
-	int			mtime;		\
-	unsigned int 		inode_number;
-
 struct squashfs_base_inode_header_3 {
-	SQUASHFS_BASE_INODE_HEADER_3;
+	unsigned int		inode_type:4;
+	unsigned int		mode:12;
+	unsigned int		uid:8;
+	unsigned int		guid:8;
+	int			mtime;
+	unsigned int 		inode_number;
 } __attribute__ ((packed));
 
 struct squashfs_ipc_inode_header_3 {
-	SQUASHFS_BASE_INODE_HEADER_3;
+	unsigned int		inode_type:4;
+	unsigned int		mode:12;
+	unsigned int		uid:8;
+	unsigned int		guid:8;
+	int			mtime;
+	unsigned int 		inode_number;
 	unsigned int		nlink;
 } __attribute__ ((packed));
 
 struct squashfs_dev_inode_header_3 {
-	SQUASHFS_BASE_INODE_HEADER_3;
+	unsigned int		inode_type:4;
+	unsigned int		mode:12;
+	unsigned int		uid:8;
+	unsigned int		guid:8;
+	int			mtime;
+	unsigned int 		inode_number;
 	unsigned int		nlink;
 	unsigned short		rdev;
 } __attribute__ ((packed));
 	
 struct squashfs_symlink_inode_header_3 {
-	SQUASHFS_BASE_INODE_HEADER_3;
+	unsigned int		inode_type:4;
+	unsigned int		mode:12;
+	unsigned int		uid:8;
+	unsigned int		guid:8;
+	int			mtime;
+	unsigned int 		inode_number;
 	unsigned int		nlink;
 	unsigned short		symlink_size;
 	char			symlink[0];
 } __attribute__ ((packed));
 
 struct squashfs_reg_inode_header_3 {
-	SQUASHFS_BASE_INODE_HEADER_3;
+	unsigned int		inode_type:4;
+	unsigned int		mode:12;
+	unsigned int		uid:8;
+	unsigned int		guid:8;
+	int			mtime;
+	unsigned int 		inode_number;
 	squashfs_block		start_block;
 	unsigned int		fragment;
 	unsigned int		offset;
@@ -111,7 +128,12 @@ struct squashfs_reg_inode_header_3 {
 } __attribute__ ((packed));
 
 struct squashfs_lreg_inode_header_3 {
-	SQUASHFS_BASE_INODE_HEADER_3;
+	unsigned int		inode_type:4;
+	unsigned int		mode:12;
+	unsigned int		uid:8;
+	unsigned int		guid:8;
+	int			mtime;
+	unsigned int 		inode_number;
 	unsigned int		nlink;
 	squashfs_block		start_block;
 	unsigned int		fragment;
@@ -121,7 +143,12 @@ struct squashfs_lreg_inode_header_3 {
 } __attribute__ ((packed));
 
 struct squashfs_dir_inode_header_3 {
-	SQUASHFS_BASE_INODE_HEADER_3;
+	unsigned int		inode_type:4;
+	unsigned int		mode:12;
+	unsigned int		uid:8;
+	unsigned int		guid:8;
+	int			mtime;
+	unsigned int 		inode_number;
 	unsigned int		nlink;
 	unsigned int		file_size:19;
 	unsigned int		offset:13;
@@ -130,7 +157,12 @@ struct squashfs_dir_inode_header_3 {
 } __attribute__  ((packed));
 
 struct squashfs_ldir_inode_header_3 {
-	SQUASHFS_BASE_INODE_HEADER_3;
+	unsigned int		inode_type:4;
+	unsigned int		mode:12;
+	unsigned int		uid:8;
+	unsigned int		guid:8;
+	int			mtime;
+	unsigned int 		inode_number;
 	unsigned int		nlink;
 	unsigned int		file_size:27;
 	unsigned int		offset:13;
