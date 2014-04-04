@@ -226,6 +226,7 @@ void progressbar_error(char *fmt, ...)
 {
 	va_list ap;
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &progress_mutex);
 	pthread_mutex_lock(&progress_mutex);
 
 	if(display_progress_bar && !temp_disabled)
@@ -235,7 +236,7 @@ void progressbar_error(char *fmt, ...)
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 
-	pthread_mutex_unlock(&progress_mutex);
+	pthread_cleanup_pop(1);
 }
 
 
