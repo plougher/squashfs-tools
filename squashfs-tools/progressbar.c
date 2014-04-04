@@ -140,21 +140,23 @@ static void progress_bar(long long current, long long max, int columns)
 
 void enable_progress_bar()
 {
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &progress_mutex);
 	pthread_mutex_lock(&progress_mutex);
 	if(display_progress_bar)
 		progress_bar(cur_uncompressed, estimated_uncompressed, columns);
 	temp_disabled = FALSE;
-	pthread_mutex_unlock(&progress_mutex);
+	pthread_cleanup_pop(1);
 }
 
 
 void disable_progress_bar()
 {
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &progress_mutex);
 	pthread_mutex_lock(&progress_mutex);
 	if(display_progress_bar)
 		printf("\n");
 	temp_disabled = TRUE;
-	pthread_mutex_unlock(&progress_mutex);
+	pthread_cleanup_pop(1);
 }
 
 
