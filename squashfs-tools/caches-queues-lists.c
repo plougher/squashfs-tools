@@ -583,8 +583,10 @@ struct file_buffer *cache_lookup_nowait(struct cache *cache, long long index,
 			break;
 
 	if(entry) {
-		if(entry->used == 0)
+		if(entry->used == 0) {
 			remove_free_list(&cache->free_list, entry);
+			cache->used ++;
+		}
 		entry->used ++;
 		*locked = entry->locked;
 	}
