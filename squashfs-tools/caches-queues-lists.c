@@ -128,7 +128,7 @@ void dump_queue(struct queue *queue)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
 	pthread_mutex_lock(&queue->mutex);
 
-	printf("Max size %d, size %d%s\n", queue->size - 1,  
+	printf("\tMax size %d, size %d%s\n", queue->size - 1,  
 		queue->readp <= queue->writep ? queue->writep - queue->readp :
 			queue->size - queue->readp + queue->writep,
 		queue->readp == queue->writep ? " (EMPTY)" :
@@ -255,7 +255,7 @@ void dump_seq_queue(struct seq_queue *queue, int fragment_queue)
 
 	size = fragment_queue ? queue->fragment_count : queue->block_count;
 
-	printf("Max size unlimited, size %d%s\n", size,
+	printf("\tMax size unlimited, size %d%s\n", size,
 						size == 0 ? " (EMPTY)" : "");
 
 	pthread_cleanup_pop(1);
@@ -510,11 +510,11 @@ void dump_cache(struct cache *cache)
 	pthread_mutex_lock(&cache->mutex);
 
 	if(cache->noshrink_lookup)
-		printf("Max buffers %d, Current size %d, Used %d,  %s\n",
+		printf("\tMax buffers %d, Current size %d, Used %d,  %s\n",
 			cache->max_buffers, cache->count, cache->used,
 			cache->free_list ?  "Free buffers" : "No free buffers");
 	else
-		printf("Max buffers %d, Current size %d, Maximum historical "
+		printf("\tMax buffers %d, Current size %d, Maximum historical "
 			"size %d\n", cache->max_buffers, cache->count,
 			cache->max_count);
 
