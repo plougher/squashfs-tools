@@ -120,6 +120,10 @@ void dump_state()
 						" deflate thread(s))\n");
 	dump_cache(fragment_buffer);
 
+	printf("fragment reserve cache (avoids pipeline stall if frag cache"
+						" full in dup check)\n");
+	dump_cache(reserve_cache);
+
 	enable_progress_bar();
 }
 
