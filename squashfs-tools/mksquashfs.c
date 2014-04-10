@@ -1457,12 +1457,14 @@ unsigned short get_fragment_checksum(struct file_info *file)
 	pthread_mutex_lock(&dup_mutex);
 	res = file->have_frag_checksum;
 	checksum = file->fragment_checksum;
-	pthread_mutex_unlock(&dup_mutex);
+	pthread_cleanup_pop(1);
 
 	if(res)
 		return checksum;
 
 	frag_buffer = get_fragment(file->fragment);
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &dup_mutex);
 
 	for(append = file_mapping[index]; append; append = append->next) {
 		int offset = append->file->fragment->offset;
@@ -4825,7 +4827,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2014/04/03)\n");\
+	printf("mksquashfs version 4.2-git (2014/04/09)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
