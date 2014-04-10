@@ -223,6 +223,7 @@ struct old_root_entry_info *old_root_entry;
 
 /* restore orignal filesystem state if appending to existing filesystem is
  * cancelled */
+int appending = FALSE;
 char *sdata_cache, *sdirectory_data_cache, *sdirectory_compressed;
 
 long long sbytes, stotal_bytes;
@@ -328,9 +329,11 @@ void prep_exit()
 			pthread_kill(*restore_thread, SIGUSR1);
 			pthread_exit(NULL);
 		}
-	}
-	if(delete && destination_file && !block_device)
-		unlink(destination_file);
+	} else if(delete) {
+		if(destination_file && !block_device)
+			unlink(destination_file);
+	} else if(recovery_file)
+		unlink(recovery_file);
 }
 
 
@@ -3151,9 +3154,25 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	if(sorted)
 		generate_file_priorities(dir_info, 0,
 			&dir_info->dir_ent->inode->buf);
+
+	if(appending) {
+		sigset_t sigmask;
+
+		restore_thread = init_restore_thread();
+		sigemptyset(&sigmask);
+		sigaddset(&sigmask, SIGINT);
+		sigaddset(&sigmask, SIGTERM);
+		sigaddset(&sigmask, SIGUSR1);
+		if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) == -1)
+			BAD_ERROR("Failed to set signal mask\n");
+		write_destination(fd, SQUASHFS_START, 4, "\0\0\0\0");
+	}
+
 	queue_put(to_reader, dir_info);
+
 	if(sorted)
 		sort_files_and_write(dir_info);
+
 	set_progressbar_state(progress);
 	dir_scan6(inode, dir_info);
 	dir_ent->inode->inode = *inode;
@@ -5468,7 +5487,6 @@ printOptions:
 			SQUASHFS_INODE_BLK(sBlk.root_inode),
 			root_inode_offset =
 			SQUASHFS_INODE_OFFSET(sBlk.root_inode);
-		sigset_t sigmask;
 
 		if((bytes = read_filesystem(root_name, fd, &sBlk, &inode_table,
 				&data_cache, &directory_table,
@@ -5539,14 +5557,7 @@ printOptions:
 		sid_count = id_count;
 		write_recovery_data(&sBlk);
 		save_xattrs();
-		restore_thread = init_restore_thread();
-		sigemptyset(&sigmask);
-		sigaddset(&sigmask, SIGINT);
-		sigaddset(&sigmask, SIGTERM);
-		sigaddset(&sigmask, SIGUSR1);
-		if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) == -1)
-			BAD_ERROR("Failed to set signal mask\n");
-		write_destination(fd, SQUASHFS_START, 4, "\0\0\0\0");
+		appending = TRUE;
 
 		/*
 		 * set the filesystem state up to be able to append to the
