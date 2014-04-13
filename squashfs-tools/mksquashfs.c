@@ -273,7 +273,7 @@ int processors = -1;
 #define READER_BUFFER_DEFAULT 64
 /* default size of fragment buffer in Mbytes */
 #define FRAGMENT_BUFFER_DEFAULT 64
-int writer_buffer_size;
+int writer_size;
 
 /* compression operations */
 struct compressor *comp = NULL;
@@ -2629,8 +2629,8 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	file_bytes = 0;
 	start = dup_start = bytes;
-	thresh = blocks > (writer_buffer_size - num_locked_fragments) ?
-		blocks - (writer_buffer_size - num_locked_fragments): 0;
+	thresh = blocks > (writer_size - num_locked_fragments) ?
+		blocks - (writer_size - num_locked_fragments): 0;
 
 	for(block = 0; block < blocks;) {
 		if(read_buffer->fragment) {
@@ -4039,10 +4039,10 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 {
 	int i;
 	sigset_t sigmask, old_mask;
-	int reader_buffer_size;
-	int fragment_buffer_size;
+	int reader_size;
+	int fragment_size;
 	/*
-	 * writer_buffer_size is global because it is needed in
+	 * writer_size is global because it is needed in
 	 * write_file_blocks_dup()
 	 */
 
@@ -4056,17 +4056,17 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	if(shift_overflow(readb_mbytes, 20 - block_log))
 		BAD_ERROR("Read queue is too large\n");
 	else
-		reader_buffer_size = readb_mbytes << (20 - block_log);
+		reader_size = readb_mbytes << (20 - block_log);
 	
 	if(shift_overflow(fragmentb_mbytes, 20 - block_log))
 		BAD_ERROR("Fragment queue is too large\n");
 	else
-		fragment_buffer_size = fragmentb_mbytes << (20 - block_log);
+		fragment_size = fragmentb_mbytes << (20 - block_log);
 
 	if(shift_overflow(writeb_mbytes, 20 - block_log))
 		BAD_ERROR("Write queue is too large\n");
 	else
-		writer_buffer_size = writeb_mbytes << (20 - block_log);
+		writer_size = writeb_mbytes << (20 - block_log);
 
 	/*
 	 * setup signal handlers for the main thread, these cleanup
@@ -4136,17 +4136,16 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	frag_thread = &frag_deflator_thread[processors];
 
 	to_reader = queue_init(1);
-	to_deflate = queue_init(reader_buffer_size);
-	to_process_frag = queue_init(reader_buffer_size);
-	to_writer = queue_init(writer_buffer_size);
+	to_deflate = queue_init(reader_size);
+	to_process_frag = queue_init(reader_size);
+	to_writer = queue_init(writer_size);
 	from_writer = queue_init(1);
-	to_frag = queue_init(fragment_buffer_size);
-	locked_fragment = queue_init(fragment_buffer_size);
+	to_frag = queue_init(fragment_size);
+	locked_fragment = queue_init(fragment_size);
 	to_main = seq_queue_init();
-	reader_buffer = cache_init(block_size, reader_buffer_size, 0, 0);
-	writer_buffer = cache_init(block_size, writer_buffer_size, 1, freelst);
-	fragment_buffer = cache_init(block_size, fragment_buffer_size, 1,
-								freelst);
+	reader_buffer = cache_init(block_size, reader_size, 0, 0);
+	writer_buffer = cache_init(block_size, writer_size, 1, freelst);
+	fragment_buffer = cache_init(block_size, fragment_size, 1, freelst);
 	reserve_cache = cache_init(block_size, processors + 1, 1, freelst);
 	pthread_create(&reader_thread, NULL, reader, NULL);
 	pthread_create(&writer_thread, NULL, writer, NULL);
