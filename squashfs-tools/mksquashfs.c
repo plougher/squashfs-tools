@@ -198,7 +198,6 @@ int excluded(char *name, struct pathnames *paths, struct pathnames **new);
 int fragments = 0;
 
 #define FRAG_SIZE 32768
-#define FRAG_INDEX(n) (-(n + 2))
 
 struct squashfs_fragment_entry *fragment_table = NULL;
 int fragments_outstanding = 0;
@@ -254,7 +253,8 @@ struct id *id_table[SQUASHFS_IDS], *sid_table[SQUASHFS_IDS];
 unsigned int uid_count = 0, guid_count = 0;
 unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 
-struct cache *reader_buffer, *writer_buffer, *fragment_buffer, *reserve_cache;
+struct cache *reader_buffer, *fragment_buffer, *reserve_cache;
+struct cache *bwriter_buffer, *fwriter_buffer;
 struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
 	*to_frag, *locked_fragment, *to_process_frag;
 struct seq_queue *to_main;
@@ -1392,8 +1392,7 @@ again:
 
 	pthread_mutex_unlock(&dup_mutex);
 
-	compressed_buffer = cache_lookup(writer_buffer,
-		FRAG_INDEX((long long) index));
+	compressed_buffer = cache_lookup(fwriter_buffer, index);
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
@@ -1488,15 +1487,12 @@ unsigned short get_fragment_checksum(struct file_info *file)
 }
 
 
-int lock_fragments()
+void lock_fragments()
 {
-	int count;
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
 	fragments_locked = TRUE;
-	count = fragments_outstanding;
 	pthread_cleanup_pop(1);
-	return count;
 }
 
 
@@ -1753,7 +1749,7 @@ unsigned short get_checksum_disk(long long start, long long l,
 		bytes = SQUASHFS_COMPRESSED_SIZE_BLOCK(blocks[i]);
 		if(bytes == 0) /* sparse block */
 			continue;
-		write_buffer = cache_lookup(writer_buffer, start);
+		write_buffer = cache_lookup(bwriter_buffer, start);
 		if(write_buffer) {
 			chksum = get_checksum(write_buffer->data, bytes,
 				chksum);
@@ -1981,7 +1977,7 @@ struct file_info *duplicate(long long file_size, long long bytes,
 
 				if(size == 0)
 					continue;
-				target_buffer = cache_lookup(writer_buffer,
+				target_buffer = cache_lookup(bwriter_buffer,
 					target_start);
 				if(target_buffer)
 					target_data = target_buffer->data;
@@ -1997,7 +1993,7 @@ struct file_info *duplicate(long long file_size, long long bytes,
 					}
 				}
 
-				dup_buffer = cache_lookup(writer_buffer,
+				dup_buffer = cache_lookup(bwriter_buffer,
 					dup_start);
 				if(dup_buffer)
 					dup_data = dup_buffer->data;
@@ -2377,6 +2373,7 @@ int all_zero(struct file_buffer *file_buffer)
 
 void *deflator(void *arg)
 {
+	struct file_buffer *write_buffer = cache_get_nohash(bwriter_buffer);
 	void *stream = NULL;
 	int res;
 
@@ -2386,13 +2383,11 @@ void *deflator(void *arg)
 
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(to_deflate);
-		struct file_buffer *write_buffer;
 
 		if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
 			seq_queue_put(to_main, file_buffer);
 		} else {
-			write_buffer = cache_get_nohash(writer_buffer);
 			write_buffer->c_byte = mangle2(stream,
 				write_buffer->data, file_buffer->data,
 				file_buffer->size, block_size,
@@ -2406,6 +2401,7 @@ void *deflator(void *arg)
 			write_buffer->error = FALSE;
 			cache_block_put(file_buffer);
 			seq_queue_put(to_main, write_buffer);
+			write_buffer = cache_get_nohash(bwriter_buffer);
 		}
 	}
 }
@@ -2426,8 +2422,7 @@ void *frag_deflator(void *arg)
 		int c_byte, compressed_size;
 		struct file_buffer *file_buffer = queue_get(to_frag);
 		struct file_buffer *write_buffer =
-			cache_get(writer_buffer,
-						FRAG_INDEX(file_buffer->block));
+			cache_get(fwriter_buffer, file_buffer->block);
 
 		c_byte = mangle2(stream, write_buffer->data, file_buffer->data,
 			file_buffer->size, block_size, noF, 1);
@@ -2612,7 +2607,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 	int blocks = (read_size + block_size - 1) >> block_log;
 	unsigned int *block_list, *block_listp;
 	struct file_buffer **buffer_list;
-	int status, num_locked_fragments;
+	int status;
 	long long sparse = 0;
 	struct file_buffer *fragment_buffer = NULL;
 
@@ -2625,12 +2620,11 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 	if(buffer_list == NULL)
 		MEM_ERROR();
 
-	num_locked_fragments = lock_fragments();
+	lock_fragments();
 
 	file_bytes = 0;
 	start = dup_start = bytes;
-	thresh = blocks > (writer_size - num_locked_fragments) ?
-		blocks - (writer_size - num_locked_fragments): 0;
+	thresh = blocks > (writer_size >> 1) ? blocks - (writer_size >> 1) : 0;
 
 	for(block = 0; block < blocks;) {
 		if(read_buffer->fragment) {
@@ -4144,7 +4138,8 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	locked_fragment = queue_init(fragment_size);
 	to_main = seq_queue_init();
 	reader_buffer = cache_init(block_size, reader_size, 0, 0);
-	writer_buffer = cache_init(block_size, writer_size, 1, freelst);
+	bwriter_buffer = cache_init(block_size, writer_size >> 1, 1, freelst);
+	fwriter_buffer = cache_init(block_size, writer_size >> 1, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_size, 1, freelst);
 	reserve_cache = cache_init(block_size, processors + 1, 1, freelst);
 	pthread_create(&reader_thread, NULL, reader, NULL);
@@ -4153,8 +4148,7 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	init_info();
 
 	for(i = 0; i < processors; i++) {
-		if(pthread_create(&deflator_thread[i], NULL, deflator, NULL) !=
-				 0)
+		if(pthread_create(&deflator_thread[i], NULL, deflator, NULL))
 			BAD_ERROR("Failed to create thread\n");
 		if(pthread_create(&frag_deflator_thread[i], NULL, frag_deflator,
 				NULL) != 0)
@@ -4826,7 +4820,7 @@ int parse_num(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2014/04/09)\n");\
+	printf("mksquashfs version 4.2-git (2014/04/16)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

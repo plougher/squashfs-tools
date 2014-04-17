@@ -166,8 +166,7 @@ again:
 
 	pthread_mutex_unlock(&dup_mutex);
 
-	compressed_buffer = cache_lookup(writer_buffer,
-		FRAG_INDEX((long long) index));
+	compressed_buffer = cache_lookup(fwriter_buffer, index);
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);

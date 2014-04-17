@@ -109,12 +109,15 @@ void dump_state()
 						" writer thread)\n");
 	dump_queue(to_writer);
 
-	printf("\nread cache (uncompressed blocks read by reader thread)\n");
+	printf("read cache (uncompressed blocks read by reader thread)\n");
 	dump_cache(reader_buffer);
 
-	printf("write cache (compressed blocks waiting to be written by the"
+	printf("block write cache (compressed blocks waiting for the writer"
+						" thread)\n");
+	dump_cache(bwriter_buffer);
+	printf("fragment write cache (compressed fragments waiting for the"
 						" writer thread)\n");
-	dump_cache(writer_buffer);
+	dump_cache(fwriter_buffer);
 
 	printf("fragment cache (frags waiting to be compressed by fragment"
 						" deflate thread(s))\n");
