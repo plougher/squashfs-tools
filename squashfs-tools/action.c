@@ -198,12 +198,34 @@ static int peek_token(char **string)
 /*
  * Expression parser
  */
+static void free_parse_tree(struct expr *expr)
+{
+	if(expr->type == ATOM_TYPE) {
+		int i;
+
+		for(i = 0; i < expr->atom.test->args; i++)
+			free(expr->atom.argv[i]);
+
+		free(expr->atom.argv);
+	} else if (expr->type == UNARY_TYPE)
+		free_parse_tree(expr->unary_op.expr);
+	else {
+		free_parse_tree(expr->expr_op.lhs);
+		free_parse_tree(expr->expr_op.rhs);
+	}
+
+	free(expr);
+}
+
+
 static struct expr *create_expr(struct expr *lhs, int op, struct expr *rhs)
 {
 	struct expr *expr;
 
-	if (rhs == NULL)
+	if (rhs == NULL) {
+		free_parse_tree(lhs);
 		return NULL;
+	}
 
 	expr = malloc(sizeof(*expr));
 	if (expr == NULL)
@@ -367,6 +389,7 @@ static struct expr *parse_expr(int subexp)
 
 		if (op == TOK_EOF) {
 			if (subexp) {
+				free_parse_tree(expr);
 				SYNTAX_ERROR("Expected \"&&\", \"||\" or "
 						"\")\", got EOF\n");
 				return NULL;
@@ -376,6 +399,7 @@ static struct expr *parse_expr(int subexp)
 
 		if (op == TOK_CLOSE_BRACKET) {
 			if (!subexp) {
+				free_parse_tree(expr);
 				SYNTAX_ERROR("Unexpected \")\", expected "
 						"\"&&\", \"!!\" or EOF\n");
 				return NULL;
@@ -384,6 +408,7 @@ static struct expr *parse_expr(int subexp)
 		}
 		
 		if (op != TOK_AND && op != TOK_OR) {
+			free_parse_tree(expr);
 			SYNTAX_ERROR("Unexpected token \"%s\", expected "
 				"\"&&\" or \"||\"\n", TOK_TO_STR(op, string));
 			return NULL;
