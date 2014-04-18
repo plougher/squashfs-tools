@@ -285,7 +285,7 @@ void insert_free_list(struct cache *cache, struct cache_entry *entry)
 /* Called with the cache mutex held */
 void remove_free_list(struct cache *cache, struct cache_entry *entry)
 {
-	if(entry->free_prev == NULL && entry->free_next == NULL)
+	if(entry->free_prev == NULL || entry->free_next == NULL)
 		/* not in free list */
 		return;
 	else if(entry->free_prev == entry && entry->free_next == entry) {
