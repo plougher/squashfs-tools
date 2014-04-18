@@ -3654,7 +3654,7 @@ void sort_directory(struct dir_info *dir)
 	struct dir_ent *cur, *l1, *l2, *next;
 	int len1, len2, stride = 1;
 
-	if(dir->count < 2)
+	if(dir->list == NULL || dir->count < 2)
 		return;
 
 	/*
