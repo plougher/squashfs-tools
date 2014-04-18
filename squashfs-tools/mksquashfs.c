@@ -4183,7 +4183,7 @@ long long write_inode_lookup_table()
 	inode_lookup_table = it;
 
 	for(i = 0; i < INODE_HASH_SIZE; i ++) {
-		struct inode_info *inode = inode_info[i];
+		struct inode_info *inode;
 
 		for(inode = inode_info[i]; inode; inode = inode->next) {
 
