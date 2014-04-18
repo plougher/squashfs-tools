@@ -281,8 +281,10 @@ int scan_inode_table(int fd, long long start, long long end,
 								(block_list[i]);
 
 			if(inode.fragment != SQUASHFS_INVALID_FRAG &&
-					inode.fragment >= sBlk->fragments)
+					inode.fragment >= sBlk->fragments) {
+				free(block_list);
 				goto corrupted;
+			}
 
 			add_file(start, inode.file_size, file_bytes,
 				block_list, blocks, inode.fragment,
@@ -335,8 +337,10 @@ int scan_inode_table(int fd, long long start, long long end,
 								(block_list[i]);
 
 			if(inode.fragment != SQUASHFS_INVALID_FRAG &&
-					inode.fragment >= sBlk->fragments)
+					inode.fragment >= sBlk->fragments) {
+				free(block_list);
 				goto corrupted;
+			}
 
 			add_file(start, inode.file_size, file_bytes,
 				block_list, blocks, inode.fragment,
