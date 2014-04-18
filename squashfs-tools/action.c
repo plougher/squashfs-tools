@@ -2141,6 +2141,7 @@ static int parse_file_arg(struct test_entry *test, struct atom *atom)
 		char str[1024]; /* overflow safe */
 
 		regerror(res, preg, str, 1024);
+		free(preg);
 		TEST_SYNTAX_ERROR(test, 0, "invalid regex \"%s\" because "
 			"\"%s\"\n", atom->argv[0], str);
 		return 0;
