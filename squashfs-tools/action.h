@@ -82,6 +82,7 @@ struct token_entry {
 	fprintf(stderr, "Syntax error in \"%s()\", arg %d: "S, TEST->name, \
 			 ARG, ##ARGS); \
 	fprintf(stderr, "Got here \"%s\"\n", src); \
+	free(src); \
 }
 
 struct expr;
