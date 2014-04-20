@@ -1258,10 +1258,13 @@ char *get_component(char *target, char **targname)
 		target ++;
 
 	start = target;
-	while(*target != '/' && *target!= '\0')
+	while(*target != '/' && *target != '\0')
 		target ++;
 
 	*targname = strndup(start, target - start);
+
+	while(*target == '/')
+		target ++;
 
 	return target;
 }
@@ -2474,7 +2477,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.2-git (2014/01/02)\n");\
+	printf("unsquashfs version 4.2-git (2014/04/20)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
