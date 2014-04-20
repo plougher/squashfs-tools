@@ -576,65 +576,6 @@ failed:
 }
 
 
-static void dump_parse_tree(struct expr *expr)
-{
-	if(expr->type == ATOM_TYPE) {
-		int i;
-
-		printf("%s(", expr->atom.test->name);
-		for(i = 0; i < expr->atom.test->args; i++) {
-			printf("%s", expr->atom.argv[i]);
-			if (i + 1 < expr->atom.test->args)
-				printf(",");
-		}
-		printf(")");
-	} else if (expr->type == UNARY_TYPE) {
-		printf("%s", token_table[expr->unary_op.op].string);
-		dump_parse_tree(expr->unary_op.expr);
-	} else {
-		printf("(");
-		dump_parse_tree(expr->expr_op.lhs);
-		printf("%s", token_table[expr->expr_op.op].string);
-		dump_parse_tree(expr->expr_op.rhs);
-		printf(")");
-	}
-}
-
-
-void dump_action_list(struct action *spec_list, int spec_count)
-{
-	int i;
-
-	for (i = 0; i < spec_count; i++) {
-		printf("%s", spec_list[i].action->name);
-		if (spec_list[i].action->args) {
-			int n;
-
-			printf("(");
-			for (n = 0; n < spec_list[i].action->args; n++) {
-				printf("%s", spec_list[i].argv[n]);
-				if (n + 1 < spec_list[i].action->args)
-					printf(",");
-			}
-			printf(")");
-		}
-		printf("=");
-		dump_parse_tree(spec_list[i].expr);
-		printf("\n");
-	}
-}
-
-
-void dump_actions()
-{
-	dump_action_list(exclude_spec, exclude_count);
-	dump_action_list(fragment_spec, fragment_count);
-	dump_action_list(other_spec, other_count);
-	dump_action_list(move_spec, move_count);
-	dump_action_list(empty_spec, empty_count);
-}
-
-
 /*
  * Evaluate expressions
  */
@@ -2289,6 +2230,71 @@ static int exec_fn(struct atom *atom, struct action_data *action_data)
  
 	return WIFEXITED(status) ? WEXITSTATUS(status) == 0 : 0;
 }
+
+
+#ifdef SQUASHFS_TRACE
+static void dump_parse_tree(struct expr *expr)
+{
+	if(expr->type == ATOM_TYPE) {
+		int i;
+
+		printf("%s(", expr->atom.test->name);
+		for(i = 0; i < expr->atom.test->args; i++) {
+			printf("%s", expr->atom.argv[i]);
+			if (i + 1 < expr->atom.test->args)
+				printf(",");
+		}
+		printf(")");
+	} else if (expr->type == UNARY_TYPE) {
+		printf("%s", token_table[expr->unary_op.op].string);
+		dump_parse_tree(expr->unary_op.expr);
+	} else {
+		printf("(");
+		dump_parse_tree(expr->expr_op.lhs);
+		printf("%s", token_table[expr->expr_op.op].string);
+		dump_parse_tree(expr->expr_op.rhs);
+		printf(")");
+	}
+}
+
+
+void dump_action_list(struct action *spec_list, int spec_count)
+{
+	int i;
+
+	for (i = 0; i < spec_count; i++) {
+		printf("%s", spec_list[i].action->name);
+		if (spec_list[i].action->args) {
+			int n;
+
+			printf("(");
+			for (n = 0; n < spec_list[i].action->args; n++) {
+				printf("%s", spec_list[i].argv[n]);
+				if (n + 1 < spec_list[i].action->args)
+					printf(",");
+			}
+			printf(")");
+		}
+		printf("=");
+		dump_parse_tree(spec_list[i].expr);
+		printf("\n");
+	}
+}
+
+
+void dump_actions()
+{
+	dump_action_list(exclude_spec, exclude_count);
+	dump_action_list(fragment_spec, fragment_count);
+	dump_action_list(other_spec, other_count);
+	dump_action_list(move_spec, move_count);
+	dump_action_list(empty_spec, empty_count);
+}
+#else
+void dump_actions()
+{
+}
+#endif
 
 
 static struct test_entry test_table[] = {
