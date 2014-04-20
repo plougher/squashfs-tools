@@ -90,7 +90,7 @@ void dump_state()
 	dump_queue(to_process_frag);
 
 	printf("processed fragment queue (fragment thread(s) -> main"
-						" thread\n");
+						" thread)\n");
 	dump_seq_queue(to_main, 1);
 
 	printf("compressed block queue (deflate thread(s) -> main thread)\n");
