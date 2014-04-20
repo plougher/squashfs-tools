@@ -547,6 +547,7 @@ struct pseudo *get_pseudo()
 }
 
 
+#ifdef SQUASHFS_TRACE
 static void dump_pseudo(struct pseudo *pseudo, char *string)
 {
 	int i, res;
@@ -577,3 +578,8 @@ void dump_pseudos()
 {
 	dump_pseudo(pseudo, NULL);
 }
+#else
+void dump_pseudos()
+{
+}
+#endif
