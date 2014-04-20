@@ -157,7 +157,8 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 						target, alltarget);
 				else {
 					ERROR_START("%s already exists as a "
-						"non directory.", targname);
+						"non directory.",
+						pseudo->name[i].name);
 					ERROR_EXIT(".  Ignoring %s!\n",
 						alltarget);
 				}
@@ -186,7 +187,7 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 				} else {
 					ERROR_START("%s already exists as a "
 						"different pseudo definition.",
-						targname);
+						pseudo->name[i].name);
 					ERROR_EXIT("  Ignoring %s!\n",
 						alltarget);
 				}
