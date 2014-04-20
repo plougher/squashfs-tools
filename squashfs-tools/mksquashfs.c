@@ -5610,6 +5610,7 @@ printOptions:
 		paths = add_subdir(paths, path);
 
 	dump_actions(); 
+	dump_pseudos();
 
 	if(delete && !keep_as_directory && source == 1 &&
 			S_ISDIR(source_buf.st_mode))

@@ -47,32 +47,6 @@ struct pseudo_dev **pseudo_file = NULL;
 struct pseudo *pseudo = NULL;
 int pseudo_count = 0;
 
-static void dump_pseudo(struct pseudo *pseudo, char *string)
-{
-	int i, res;
-	char *path;
-
-	for(i = 0; i < pseudo->names; i++) {
-		struct pseudo_entry *entry = &pseudo->name[i];
-		if(string) {
-			res = asprintf(&path, "%s/%s", string, entry->name);
-			if(res == -1)
-				BAD_ERROR("asprintf failed in dump_pseudo\n");
-		} else
-			path = entry->name;
-		if(entry->pseudo == NULL)
-			ERROR("%s %c %o %d %d %d %d\n", path, entry->dev->type,
-				entry->dev->mode, entry->dev->uid,
-				entry->dev->gid, entry->dev->major,
-				entry->dev->minor);
-		else
-			dump_pseudo(entry->pseudo, path);
-		if(string)
-			free(path);
-	}
-}
-
-
 static char *get_component(char *target, char **targname)
 {
 	char *start;
@@ -570,4 +544,36 @@ int read_pseudo_file(char *filename)
 struct pseudo *get_pseudo()
 {
 	return pseudo;
+}
+
+
+static void dump_pseudo(struct pseudo *pseudo, char *string)
+{
+	int i, res;
+	char *path;
+
+	for(i = 0; i < pseudo->names; i++) {
+		struct pseudo_entry *entry = &pseudo->name[i];
+		if(string) {
+			res = asprintf(&path, "%s/%s", string, entry->name);
+			if(res == -1)
+				BAD_ERROR("asprintf failed in dump_pseudo\n");
+		} else
+			path = entry->name;
+		if(entry->dev)
+			ERROR("%s %c 0%o %d %d %d %d\n", path, entry->dev->type,
+				entry->dev->mode & ~S_IFMT, entry->dev->uid,
+				entry->dev->gid, entry->dev->major,
+				entry->dev->minor);
+		if(entry->pseudo)
+			dump_pseudo(entry->pseudo, path);
+		if(string)
+			free(path);
+	}
+}
+
+
+void dump_pseudos()
+{
+	dump_pseudo(pseudo, NULL);
 }
