@@ -4209,10 +4209,13 @@ char *get_component(char *target, char **targname)
 		target ++;
 
 	start = target;
-	while(*target != '/' && *target!= '\0')
+	while(*target != '/' && *target != '\0')
 		target ++;
 
 	*targname = strndup(start, target - start);
+
+	while(*target == '/')
+		target ++;
 
 	return target;
 }
