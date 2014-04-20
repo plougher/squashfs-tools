@@ -72,6 +72,7 @@ struct token_entry {
 	fprintf(stderr, "Failed to parse action \"%s\"\n", source); \
 	fprintf(stderr, "Syntax error: "S, ##ARGS); \
 	fprintf(stderr, "Got here \"%s\"\n", src); \
+	free(src); \
 }
 
 #define TEST_SYNTAX_ERROR(TEST, ARG, S, ARGS...) { \
