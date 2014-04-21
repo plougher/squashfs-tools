@@ -112,6 +112,21 @@ struct append_file {
 #define IS_PSEUDO_PROCESS(a)	((a)->pseudo_file & PSEUDO_FILE_PROCESS)
 #define IS_PSEUDO_OTHER(a)	((a)->pseudo_file & PSEUDO_FILE_OTHER)
 
+/*
+ * Amount of physical memory to use by default, and the default queue
+ * ratios
+ */
+#define SQUASHFS_TAKE 4
+#define SQUASHFS_READQ_MEM 4
+#define SQUASHFS_BWRITEQ_MEM 4
+#define SQUASHFS_FWRITEQ_MEM 4
+
+/*
+ * Lowest amount of physical memory considered viable for Mksquashfs
+ * to run in Mbytes
+ */
+#define SQUASHFS_LOWMEM 64
+
 /* offset of data in compressed metadata blocks (allowing room for
  * compressed size */
 #define BLOCK_OFFSET 2

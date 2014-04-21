@@ -267,13 +267,7 @@ pthread_mutex_t	dup_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* user options that control parallelisation */
 int processors = -1;
-/* default size of output buffer in Mbytes */
-#define WRITER_BUFFER_DEFAULT 512
-/* default size of input buffer in Mbytes */
-#define READER_BUFFER_DEFAULT 64
-/* default size of fragment buffer in Mbytes */
-#define FRAGMENT_BUFFER_DEFAULT 64
-int writer_size;
+int bwriter_size;
 
 /* compression operations */
 struct compressor *comp = NULL;
@@ -310,6 +304,7 @@ void restorefs();
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
 void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
 unsigned short get_checksum_mem(char *buff, int bytes);
+int get_physical_memory();
 
 
 void prep_exit()
@@ -2624,7 +2619,7 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	file_bytes = 0;
 	start = dup_start = bytes;
-	thresh = blocks > (writer_size >> 1) ? blocks - (writer_size >> 1) : 0;
+	thresh = blocks > bwriter_size ? blocks - bwriter_size : 0;
 
 	for(block = 0; block < blocks;) {
 		if(read_buffer->fragment) {
@@ -4028,39 +4023,55 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 }
 
 
-void initialise_threads(int readb_mbytes, int writeb_mbytes,
-	int fragmentb_mbytes, int freelst, char *destination_file)
+void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
+	int freelst, char *destination_file)
 {
 	int i;
 	sigset_t sigmask, old_mask;
+	int phys_mem = get_physical_memory();
+	int total_mem = readq;
 	int reader_size;
 	int fragment_size;
+	int fwriter_size;
 	/*
-	 * writer_size is global because it is needed in
+	 * bwriter_size is global because it is needed in
 	 * write_file_blocks_dup()
 	 */
+
+	/*
+	 * Never allow the total size of the queues to be larger than
+	 * physical memory
+	 *
+	 * When adding together the possibly user supplied values, make
+	 * sure they've not been deliberately contrived to overflow an int
+	 */
+	if(add_overflow(total_mem, fragq))
+		BAD_ERROR("Queue sizes rediculously too large\n");
+	total_mem += fragq;
+	if(add_overflow(total_mem, bwriteq))
+		BAD_ERROR("Queue sizes rediculously too large\n");
+	total_mem += bwriteq;
+	if(add_overflow(total_mem, fwriteq))
+		BAD_ERROR("Queue sizes rediculously too large\n");
+	total_mem += fwriteq;
+
+	if(total_mem >= phys_mem) {
+		ERROR("Total queue sizes larger than physical memory.\n");
+		ERROR("Mksquashfs will exhaust physical memory and thrash.\n");
+		BAD_ERROR("Queues too large\n");
+	}
 
 	/*
 	 * convert from queue size in Mbytes to queue size in
 	 * blocks.
 	 *
-	 * In doing so, check that the user supplied values do not
-	 * overflow a signed int
+	 * This isn't going to overflow an int unless there exists
+	 * systems with more than 8 Petabytes of RAM!
 	 */
-	if(shift_overflow(readb_mbytes, 20 - block_log))
-		BAD_ERROR("Read queue is too large\n");
-	else
-		reader_size = readb_mbytes << (20 - block_log);
-	
-	if(shift_overflow(fragmentb_mbytes, 20 - block_log))
-		BAD_ERROR("Fragment queue is too large\n");
-	else
-		fragment_size = fragmentb_mbytes << (20 - block_log);
-
-	if(shift_overflow(writeb_mbytes, 20 - block_log))
-		BAD_ERROR("Write queue is too large\n");
-	else
-		writer_size = writeb_mbytes << (20 - block_log);
+	reader_size = readq << (20 - block_log);
+	fragment_size = fragq << (20 - block_log);
+	bwriter_size = bwriteq << (20 - block_log);
+	fwriter_size = fwriteq << (20 - block_log);
 
 	/*
 	 * setup signal handlers for the main thread, these cleanup
@@ -4132,14 +4143,14 @@ void initialise_threads(int readb_mbytes, int writeb_mbytes,
 	to_reader = queue_init(1);
 	to_deflate = queue_init(reader_size);
 	to_process_frag = queue_init(reader_size);
-	to_writer = queue_init(writer_size);
+	to_writer = queue_init(bwriter_size + fwriter_size);
 	from_writer = queue_init(1);
 	to_frag = queue_init(fragment_size);
 	locked_fragment = queue_init(fragment_size);
 	to_main = seq_queue_init();
 	reader_buffer = cache_init(block_size, reader_size, 0, 0);
-	bwriter_buffer = cache_init(block_size, writer_size >> 1, 1, freelst);
-	fwriter_buffer = cache_init(block_size, writer_size >> 1, 1, freelst);
+	bwriter_buffer = cache_init(block_size, bwriter_size, 1, freelst);
+	fwriter_buffer = cache_init(block_size, fwriter_size, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_size, 1, freelst);
 	reserve_cache = cache_init(block_size, processors + 1, 1, freelst);
 	pthread_create(&reader_thread, NULL, reader, NULL);
@@ -4822,6 +4833,36 @@ int parse_num(char *arg, int *res)
 }
 
 
+int get_physical_memory()
+{
+	/* Long longs are used here because with PAE, a 32-bit
+	  machine can have more than 4GB of physical memory */
+
+	long long num_pages = sysconf(_SC_PHYS_PAGES);
+	long long page_size = sysconf(_SC_PAGESIZE);
+
+	return num_pages * page_size >> 20;
+}
+
+
+void calculate_queue_sizes(int *readq, int *fragq, int *bwriteq, int *fwriteq)
+{
+	int phys_mem = get_physical_memory();
+
+	if(phys_mem < SQUASHFS_LOWMEM)
+		BAD_ERROR("Mksquashfs requires more physical memory than is "
+			"available!\n");
+
+	/* Only take 1/SQUASHFS_TAKE of physical memory */
+	phys_mem /= SQUASHFS_TAKE;
+
+	*readq = phys_mem / SQUASHFS_READQ_MEM;
+	*bwriteq = phys_mem / SQUASHFS_BWRITEQ_MEM;
+	*fwriteq = phys_mem / SQUASHFS_FWRITEQ_MEM;
+	*fragq = phys_mem - *readq - *bwriteq - *fwriteq;
+}
+
+
 #define VERSION() \
 	printf("mksquashfs version 4.2-git (2014/04/20)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
@@ -4847,18 +4888,22 @@ int main(int argc, char *argv[])
 	char *b, *root_name = NULL;
 	int keep_as_directory = FALSE;
 	squashfs_inode inode;
-	int readb_mbytes = READER_BUFFER_DEFAULT,
-		writeb_mbytes = WRITER_BUFFER_DEFAULT,
-		fragmentb_mbytes = FRAGMENT_BUFFER_DEFAULT;
+	int readq;
+	int fragq;
+	int bwriteq;
+	int fwriteq;
 	int progress = TRUE;
 	int force_progress = FALSE;
 	struct file_buffer **fragment = NULL;
 
-	block_log = slog(block_size);
 	if(argc > 1 && strcmp(argv[1], "-version") == 0) {
 		VERSION();
 		exit(0);
 	}
+
+	block_log = slog(block_size);
+	calculate_queue_sizes(&readq, &fragq, &bwriteq, &fwriteq);
+
         for(i = 1; i < argc && argv[i][0] != '-'; i++);
 	if(i < 3)
 		goto printOptions;
@@ -5016,38 +5061,36 @@ print_compressor_options:
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-read-queue") == 0) {
-			if((++i == argc) ||
-					!parse_num(argv[i], &readb_mbytes)) {
+			if((++i == argc) || !parse_num(argv[i], &readq)) {
 				ERROR("%s: -read-queue missing or invalid "
 					"queue size\n", argv[0]);
 				exit(1);
 			}
-			if(readb_mbytes < 1) {
+			if(readq < 1) {
 				ERROR("%s: -read-queue should be 1 megabyte or "
 					"larger\n", argv[0]);
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-write-queue") == 0) {
-			if((++i == argc) ||
-					!parse_num(argv[i], &writeb_mbytes)) {
+			if((++i == argc) || !parse_num(argv[i], &bwriteq)) {
 				ERROR("%s: -write-queue missing or invalid "
 					"queue size\n", argv[0]);
 				exit(1);
 			}
-			if(writeb_mbytes < 1) {
-				ERROR("%s: -write-queue should be 1 megabyte "
+			if(bwriteq < 2) {
+				ERROR("%s: -write-queue should be 2 megabytes "
 					"or larger\n", argv[0]);
 				exit(1);
 			}
+			fwriteq = bwriteq >> 1;
+			bwriteq -= fwriteq;
 		} else if(strcmp(argv[i], "-fragment-queue") == 0) {
-			if((++i == argc) ||
-					!parse_num(argv[i],
-						&fragmentb_mbytes)) {
+			if((++i == argc) || !parse_num(argv[i], &fragq)) {
 				ERROR("%s: -fragment-queue missing or invalid "
 					"queue size\n", argv[0]);
 				exit(1);
 			}
-			if(fragmentb_mbytes < 1) {
+			if(fragq < 1) {
 				ERROR("%s: -fragment-queue should be 1 "
 					"megabyte or larger\n", argv[0]);
 				exit(1);
@@ -5269,14 +5312,12 @@ printOptions:
 				"  By default will use number of\n");
 			ERROR("\t\t\tprocessors available\n");
 			ERROR("-read-queue <size>\tSet input queue to <size> "
-				"Mbytes.  Default %d Mbytes\n",
-				READER_BUFFER_DEFAULT);
+				"Mbytes.  Default %d Mbytes\n", readq);
 			ERROR("-write-queue <size>\tSet output queue to <size> "
 				"Mbytes.  Default %d Mbytes\n",
-				WRITER_BUFFER_DEFAULT);
+				bwriteq + fwriteq);
 			ERROR("-fragment-queue <size>\tSet fragment queue to "
-				"<size> Mbytes.  Default %d Mbytes\n",
-				FRAGMENT_BUFFER_DEFAULT);
+				"<size> Mbytes.  Default %d Mbytes\n", fragq);
 			ERROR("\nMiscellaneous options:\n");
 			ERROR("-root-owned\t\talternative name for -all-root"
 				"\n");
@@ -5442,8 +5483,8 @@ printOptions:
 		comp_opts = SQUASHFS_COMP_OPTS(sBlk.flags);
 	}
 
-	initialise_threads(readb_mbytes, writeb_mbytes, fragmentb_mbytes,
-		delete, destination_file);
+	initialise_threads(readq, fragq, bwriteq, fwriteq, delete,
+		destination_file);
 
 	res = compressor_init(comp, &stream, SQUASHFS_METADATA_SIZE, 0);
 	if(res)
