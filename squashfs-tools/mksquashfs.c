@@ -5325,14 +5325,6 @@ printOptions:
 			ERROR("\t\t\tprocessors available\n");
 			ERROR("-mem <size>\t\tUse <size> Mbytes.  Currently "
 				"set to %d Mbytes\n", total_mem);
-			ERROR("-read-queue <size>\tSet input queue to <size> "
-				"Mbytes.  Currently set to %d Mbytes\n", readq);
-			ERROR("-write-queue <size>\tSet output queue to <size> "
-				"Mbytes.  Currently set to %d Mbytes\n",
-				bwriteq + fwriteq);
-			ERROR("-fragment-queue <size>\tSet fragment queue to "
-				"<size> Mbytes.  Currently set to %d Mbytes\n",
-				fragq);
 			ERROR("\nMiscellaneous options:\n");
 			ERROR("-root-owned\t\talternative name for -all-root"
 				"\n");
