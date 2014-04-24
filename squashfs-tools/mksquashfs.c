@@ -4840,31 +4840,29 @@ int get_physical_memory()
 
 	long long num_pages = sysconf(_SC_PHYS_PAGES);
 	long long page_size = sysconf(_SC_PAGESIZE);
-
-	return num_pages * page_size >> 20;
-}
-
-
-void calculate_queue_sizes(int *readq, int *fragq, int *bwriteq, int *fwriteq)
-{
-	int phys_mem = get_physical_memory();
+	int phys_mem = num_pages * page_size >> 20;
 
 	if(phys_mem < SQUASHFS_LOWMEM)
 		BAD_ERROR("Mksquashfs requires more physical memory than is "
 			"available!\n");
 
 	/* Only take 1/SQUASHFS_TAKE of physical memory */
-	phys_mem /= SQUASHFS_TAKE;
+	return phys_mem / SQUASHFS_TAKE;
+}
 
-	*readq = phys_mem / SQUASHFS_READQ_MEM;
-	*bwriteq = phys_mem / SQUASHFS_BWRITEQ_MEM;
-	*fwriteq = phys_mem / SQUASHFS_FWRITEQ_MEM;
-	*fragq = phys_mem - *readq - *bwriteq - *fwriteq;
+
+void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
+							int *fwriteq)
+{
+	*readq = mem / SQUASHFS_READQ_MEM;
+	*bwriteq = mem / SQUASHFS_BWRITEQ_MEM;
+	*fwriteq = mem / SQUASHFS_FWRITEQ_MEM;
+	*fragq = mem - *readq - *bwriteq - *fwriteq;
 }
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2014/04/20)\n");\
+	printf("mksquashfs version 4.2-git (2014/04/23)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -4892,6 +4890,7 @@ int main(int argc, char *argv[])
 	int fragq;
 	int bwriteq;
 	int fwriteq;
+	int total_mem = get_physical_memory();
 	int progress = TRUE;
 	int force_progress = FALSE;
 	struct file_buffer **fragment = NULL;
@@ -4902,7 +4901,7 @@ int main(int argc, char *argv[])
 	}
 
 	block_log = slog(block_size);
-	calculate_queue_sizes(&readq, &fragq, &bwriteq, &fwriteq);
+	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
 
         for(i = 1; i < argc && argv[i][0] != '-'; i++);
 	if(i < 3)
@@ -5095,6 +5094,19 @@ print_compressor_options:
 					"megabyte or larger\n", argv[0]);
 				exit(1);
 			}
+		} else if(strcmp(argv[i], "-mem") == 0) {
+			if((++i == argc) || !parse_num(argv[i], &total_mem)) {
+				ERROR("%s: -mem missing or invalid mem size\n",
+					 argv[0]);
+				exit(1);
+			}
+			if(total_mem < SQUASHFS_LOWMEM) {
+				ERROR("%s: -mem should be %d Mbytes or "
+					"larger\n", SQUASHFS_LOWMEM, argv[0]);
+				exit(1);
+			}
+			calculate_queue_sizes(total_mem, &readq, &fragq,
+				&bwriteq, &fwriteq);
 		} else if(strcmp(argv[i], "-b") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -b missing block size\n", argv[0]);
@@ -5311,13 +5323,16 @@ printOptions:
 			ERROR("-processors <number>\tUse <number> processors."
 				"  By default will use number of\n");
 			ERROR("\t\t\tprocessors available\n");
+			ERROR("-mem <size>\t\tUse <size> Mbytes.  Currently "
+				"set to %d Mbytes\n", total_mem);
 			ERROR("-read-queue <size>\tSet input queue to <size> "
-				"Mbytes.  Default %d Mbytes\n", readq);
+				"Mbytes.  Currently set to %d Mbytes\n", readq);
 			ERROR("-write-queue <size>\tSet output queue to <size> "
-				"Mbytes.  Default %d Mbytes\n",
+				"Mbytes.  Currently set to %d Mbytes\n",
 				bwriteq + fwriteq);
 			ERROR("-fragment-queue <size>\tSet fragment queue to "
-				"<size> Mbytes.  Default %d Mbytes\n", fragq);
+				"<size> Mbytes.  Currently set to %d Mbytes\n",
+				fragq);
 			ERROR("\nMiscellaneous options:\n");
 			ERROR("-root-owned\t\talternative name for -all-root"
 				"\n");
