@@ -4028,7 +4028,6 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 {
 	int i;
 	sigset_t sigmask, old_mask;
-	int phys_mem = get_physical_memory();
 	int total_mem = readq;
 	int reader_size;
 	int fragment_size;
@@ -4055,7 +4054,7 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 		BAD_ERROR("Queue sizes rediculously too large\n");
 	total_mem += fwriteq;
 
-	if(total_mem >= phys_mem) {
+	if(total_mem > get_physical_memory()) {
 		ERROR("Total queue sizes larger than physical memory.\n");
 		ERROR("Mksquashfs will exhaust physical memory and thrash.\n");
 		BAD_ERROR("Queues too large\n");
@@ -4846,8 +4845,7 @@ int get_physical_memory()
 		BAD_ERROR("Mksquashfs requires more physical memory than is "
 			"available!\n");
 
-	/* Only take 1/SQUASHFS_TAKE of physical memory */
-	return phys_mem / SQUASHFS_TAKE;
+	return phys_mem;
 }
 
 
@@ -4890,7 +4888,7 @@ int main(int argc, char *argv[])
 	int fragq;
 	int bwriteq;
 	int fwriteq;
-	int total_mem = get_physical_memory();
+	int total_mem = get_physical_memory() / SQUASHFS_TAKE;
 	int progress = TRUE;
 	int force_progress = FALSE;
 	struct file_buffer **fragment = NULL;
