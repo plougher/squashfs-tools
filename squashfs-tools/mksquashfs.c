@@ -2086,12 +2086,17 @@ void put_file_buffer(struct file_buffer *file_buffer)
 static int seq = 0;
 void reader_read_process(struct dir_ent *dir_ent)
 {
+	long long bytes = 0;
 	struct inode_info *inode = dir_ent->inode;
 	struct file_buffer *prev_buffer = NULL, *file_buffer;
-	int status, res, byte;
-	int file = get_pseudo_file(inode->pseudo_id)->fd;
-	int child = get_pseudo_file(inode->pseudo_id)->child;
-	long long bytes = 0;
+	int status, byte, res, child;
+	int file = pseudo_exec_file(get_pseudo_file(inode->pseudo_id), &child);
+
+	if(!file) {
+		file_buffer = cache_get_nohash(reader_buffer);
+		file_buffer->sequence = seq ++;
+		goto read_err;
+	}
 
 	while(1) {
 		file_buffer = cache_get_nohash(reader_buffer);
@@ -2100,7 +2105,7 @@ void reader_read_process(struct dir_ent *dir_ent)
 
 		byte = read_bytes(file, file_buffer->data, block_size);
 		if(byte == -1)
-			goto read_err;
+			goto read_err2;
 
 		file_buffer->size = byte;
 		file_buffer->file_size = -1;
@@ -2132,6 +2137,8 @@ void reader_read_process(struct dir_ent *dir_ent)
 	inode->buf.st_size = bytes;
 
 	res = waitpid(child, &status, 0);
+	close(file);
+
 	if(res == -1 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		goto read_err;
 
@@ -2147,6 +2154,8 @@ void reader_read_process(struct dir_ent *dir_ent)
 
 	return;
 
+read_err2:
+	close(file);
 read_err:
 	if(prev_buffer) {
 		cache_block_put(file_buffer);
@@ -3534,26 +3543,10 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			add_dir_entry(dir_ent, sub_dir,
 				lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0));
 		} else if(pseudo_ent->dev->type == 'f') {
-#ifdef USE_TMP_FILE
-			struct stat buf2;
-			int res = stat(pseudo_ent->dev->filename, &buf2);
-			if(res == -1) {
-				ERROR_START("Stat on pseudo file \"%s\" failed"
-					pseudo_ent->pathname);
-				ERROR_EXIT(", skipping...\n");
-				pseudo_ino --;
-				continue;
-			}
-			buf.st_size = buf2.st_size;
-			add_dir_entry2(pseudo_ent->name, NULL,
-				pseudo_ent->dev->filename, NULL, 
-				lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0), dir);
-#else
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,
 				lookup_inode2(&buf, PSEUDO_FILE_PROCESS,
 				pseudo_ent->dev->pseudo_id), dir);
-#endif
 		} else {
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,
@@ -4750,8 +4743,6 @@ void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
 
 	close(fd);
 
-	delete_pseudo_files();
-
 	if(recovery_file)
 		unlink(recovery_file);
 
@@ -4860,7 +4851,7 @@ void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.2-git (2014/04/23)\n");\
+	printf("mksquashfs version 4.2-git (2014/04/27)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

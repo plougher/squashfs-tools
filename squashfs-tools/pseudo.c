@@ -215,75 +215,40 @@ struct pseudo_entry *pseudo_readdir(struct pseudo *pseudo)
 }
 
 
-int exec_file(char *command, struct pseudo_dev *dev)
+int pseudo_exec_file(struct pseudo_dev *dev, int *child)
 {
-	int child, res;
-	static pid_t pid = -1;
-	int pipefd[2];
-#ifdef USE_TMP_FILE
-	char *filename;
-	int status;
-	static int number = 0;
-#endif
+	int res, pipefd[2];
 
-	if(pid == -1)
-		pid = getpid();
-
-#ifdef USE_TMP_FILE
-	res = asprintf(&filename, "/tmp/squashfs_pseudo_%d_%d", pid, number ++);
-	if(res == -1) {
-		ERROR("asprint failed in exec_file()\n");
-		return -1;
-	}
-	pipefd[1] = open(filename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
-	if(pipefd[1] == -1) {
-		ERROR("Executing dynamic pseudo file, open failed\n");
-		free(filename);
-		return -1;
-	}
-#else
 	res = pipe(pipefd);
 	if(res == -1) {
 		ERROR("Executing dynamic pseudo file, pipe failed\n");
-		return -1;
+		return 0;
 	}
-#endif
 
-	child = fork();
-	if(child == -1) {
+	*child = fork();
+	if(*child == -1) {
 		ERROR("Executing dynamic pseudo file, fork failed\n");
 		goto failed;
 	}
 
-	if(child == 0) {
+	if(*child == 0) {
+		close(pipefd[0]);
 		close(STDOUT_FILENO);
 		res = dup(pipefd[1]);
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-		execl("/bin/sh", "sh", "-c", command, (char *) NULL);
+		execl("/bin/sh", "sh", "-c", dev->command, (char *) NULL);
 		exit(EXIT_FAILURE);
 	}
 
-#ifdef USE_TMP_FILE
-	res = waitpid(child, &status, 0);
 	close(pipefd[1]);
-	if(res != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-		dev->filename = filename;
-		return 0;
-	}
+	return pipefd[0];
+
 failed:
-	unlink(filename);
-	free(filename);
-	return -1;
-#else
+	close(pipefd[0]);
 	close(pipefd[1]);
-	dev->fd = pipefd[0];
-	dev->child = child;
 	return 0;
-failed:
-	return -1;
-#endif
 }
 
 
@@ -296,17 +261,6 @@ void add_pseudo_file(struct pseudo_dev *dev)
 
 	dev->pseudo_id = pseudo_count;
 	pseudo_file[pseudo_count ++] = dev;
-}
-
-
-void delete_pseudo_files()
-{
-#ifdef USE_TMP_FILE
-	int i;
-
-	for(i = 0; i < pseudo_count; i++)
-		unlink(pseudo_file[i]->filename);
-#endif
 }
 
 
@@ -501,20 +455,8 @@ int read_pseudo_def(char *def)
 	dev->gid = gid;
 	dev->major = major;
 	dev->minor = minor;
-
 	if(type == 'f') {
-		int res;
-
-		printf("Executing dynamic pseudo file\n");
-		printf("\t\"%s\"\n", orig_def);
-		res = exec_file(def, dev);
-		if(res == -1) {
-			ERROR("Failed to execute dynamic pseudo file definition"
-				" \"%s\"\n", orig_def);
-			free(filename);
-			free(dev);
-			return FALSE;
-		}
+		dev->command = strdup(def);
 		add_pseudo_file(dev);
 	}
 
