@@ -4679,8 +4679,10 @@ int parse_number(char *start, int *res, int size)
 			number *= 1048576;
 
 			if(end[1] != '\0')
-				/* trailing junk after number */
-				return 0;
+				/* trailing junk after multiplier, but
+				 * allow it to be "bytes" */
+				if(strcmp(end + 1, "bytes"))
+					return 0;
 
 			break;
 		case 'k':
@@ -4690,8 +4692,12 @@ int parse_number(char *start, int *res, int size)
 			number *= 1024;
 
 			if(end[1] != '\0')
-				/* trailing junk after number */
-				return 0;
+				/* trailing junk after multiplier, but
+				 * allow it to be "bytes" */
+				if(strcmp(end + 1, "bytes"))
+					return 0;
+
+			break;
 		case '\0':
 			break;
 		default:
