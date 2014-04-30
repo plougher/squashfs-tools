@@ -5239,8 +5239,10 @@ printOptions:
 			ERROR("\t\t\tCompressors available:\n");
 			display_compressors("\t\t\t", COMP_DEFAULT);
 			ERROR("-b <block_size>\t\tset data block to "
-				"<block_size>.  Default %d bytes\n",
-				SQUASHFS_FILE_SIZE);
+				"<block_size>.  Default 128 Kbytes\n");
+			ERROR("\t\t\tOptionally a suffix of K or M can be"
+				" given to specify\n\t\t\tKbytes or Mbytes"
+				" respectively\n");
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
 			ERROR("-no-sparse\t\tdon't detect sparse files\n");
