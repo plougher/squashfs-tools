@@ -1,3 +1,5 @@
+#ifndef ERROR_H
+#define ERROR_H
 /*
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
@@ -85,3 +87,4 @@ extern void progressbar_info(char *fmt, ...);
 								__func__); \
 		EXIT_MKSQUASHFS();\
 	} while(0)
+#endif
