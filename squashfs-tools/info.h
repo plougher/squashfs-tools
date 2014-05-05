@@ -1,8 +1,10 @@
+#ifndef INFO_H
+#define INFO_H
 /*
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013
+ * Copyright (c) 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -25,3 +27,4 @@
 extern void disable_info();
 extern void update_info(struct dir_ent *);
 extern void init_info();
+#endif
