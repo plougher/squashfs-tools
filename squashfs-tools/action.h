@@ -1,3 +1,5 @@
+#ifndef ACTION_H
+#define ACTION_H
 /*
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
@@ -288,3 +290,4 @@ extern int move_actions();
 extern int empty_actions();
 extern int read_action_file(char *);
 extern int exclude_actions();
+#endif
