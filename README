@@ -3,7 +3,7 @@ Git status:
 This is the squashfs.sourceforge.net CVS repository imported into this
 new git repository.  All new development will be under git.
 
-Squashfs-tools: Squashfs 4.2 release with a couple of bug fixes.
+Squashfs-tools: The new Squashfs 4.3 release (2014/05/05).
 
 kernel: obsolete, the kernel code is now in mainline at www.kernel.org.
 
