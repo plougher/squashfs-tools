@@ -1,8 +1,10 @@
+#ifndef XATTR_H
+#define XATTR_H
 /*
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2013
+ * Copyright (c) 2010, 2012, 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -145,4 +147,4 @@ static inline struct xattr_list *get_xattr(int i, unsigned int *count, int j)
 #define XOPT_STR " (unsupported)"
 #define XATTR_DEF 1
 #endif
-
+#endif
