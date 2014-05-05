@@ -1,6 +1,8 @@
+#ifndef COMPRESSOR_H
+#define COMPRESSOR_H
 /*
  *
- * Copyright (c) 2009, 2010, 2011, 2012, 2013
+ * Copyright (c) 2009, 2010, 2011, 2012, 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -119,3 +121,4 @@ static inline void compressor_display_options(struct compressor *comp,
 	if(comp->display_options != NULL)
 		comp->display_options(buffer, size);
 }
+#endif
