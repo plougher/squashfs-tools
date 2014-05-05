@@ -1,8 +1,10 @@
+#ifndef UNSQUASHFS_H
+#define UNSQUASHFS_H
 /*
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2013
+ * Copyright (c) 2009, 2010, 2013, 2014
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -273,3 +275,4 @@ extern struct inode *read_inode_4(unsigned int, unsigned int);
 extern struct dir *squashfs_opendir_4(unsigned int, unsigned int,
 	struct inode **);
 extern int read_uids_guids_4();
+#endif
