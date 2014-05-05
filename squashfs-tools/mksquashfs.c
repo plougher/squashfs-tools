@@ -350,6 +350,12 @@ int multiply_overflow(int a, int multiplier)
 }
 
 
+int multiply_overflowll(long long a, int multiplier)
+{
+	return (LLONG_MAX / multiplier) < a;
+}
+
+
 #define MKINODE(A)	((squashfs_inode)(((squashfs_inode) inode_bytes << 16) \
 			+ (((char *)A) - data_cache)))
 
@@ -4639,80 +4645,6 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 }
 
 
-int parse_number(char *start, int *res, int size)
-{
-	char *end;
-	long number = strtol(start, &end, 10);
-
-	/*
-	 * check for strtol underflow or overflow in conversion.
-	 * Note: strtol can validly return LONG_MIN and LONG_MAX
-	 * if the user entered these values, but, additional code
-	 * to distinguish this scenario is unnecessary, because for
-	 * our purposes LONG_MIN and LONG_MAX are too large anyway
-	 */
-	if(number == LONG_MIN || number == LONG_MAX)
-		return 0;
-
-	/* reject negative numbers as invalid */
-	if(number < 0)
-		return 0;
-
-	/* check if long result will overflow signed int */
-	if(number > INT_MAX)
-		return 0;
-
-	if(size) {
-		/*
-		 * Check for multiplier and trailing junk.
-		 * But first check that a number exists before the
-		 * multiplier
-		 */
-		if(end == start)
-			return 0;
-
-		switch(end[0]) {
-		case 'm':
-		case 'M':
-			if(multiply_overflow((int) number, 1048576))
-				return 0;
-			number *= 1048576;
-
-			if(end[1] != '\0')
-				/* trailing junk after multiplier, but
-				 * allow it to be "bytes" */
-				if(strcmp(end + 1, "bytes"))
-					return 0;
-
-			break;
-		case 'k':
-		case 'K':
-			if(multiply_overflow((int) number, 1024))
-				return 0;
-			number *= 1024;
-
-			if(end[1] != '\0')
-				/* trailing junk after multiplier, but
-				 * allow it to be "bytes" */
-				if(strcmp(end + 1, "bytes"))
-					return 0;
-
-			break;
-		case '\0':
-			break;
-		default:
-			/* trailing junk after number */
-			return 0;
-		}
-	} else if(end[0] != '\0')
-		/* trailing junk after number */
-		return 0;
-
-	*res = number;
-	return 1;
-}
-
-
 void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
 {
 	int i;
@@ -4820,6 +4752,107 @@ void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
 				group->gr_name, id_table[i]->id);
 		}
 	}
+}
+
+
+int parse_numberll(char *start, long long *res, int size)
+{
+	char *end;
+	long long number;
+
+	errno = 0; /* To distinguish success/failure after call */
+
+	number = strtoll(start, &end, 10);
+
+	/*
+	 * check for strtoll underflow or overflow in conversion, and other
+	 * errors.
+	 */
+	if((errno == ERANGE && (number == LLONG_MIN || number == LLONG_MAX)) ||
+			(errno != 0 && number == 0))
+		return 0;
+
+	/* reject negative numbers as invalid */
+	if(number < 0)
+		return 0;
+
+	if(size) {
+		/*
+		 * Check for multiplier and trailing junk.
+		 * But first check that a number exists before the
+		 * multiplier
+		 */
+		if(end == start)
+			return 0;
+
+		switch(end[0]) {
+		case 'g':
+		case 'G':
+			if(multiply_overflowll(number, 1073741824))
+				return 0;
+			number *= 1073741824;
+
+			if(end[1] != '\0')
+				/* trailing junk after multiplier, but
+				 * allow it to be "bytes" */
+				if(strcmp(end + 1, "bytes"))
+					return 0;
+
+			break;
+		case 'm':
+		case 'M':
+			if(multiply_overflowll(number, 1048576))
+				return 0;
+			number *= 1048576;
+
+			if(end[1] != '\0')
+				/* trailing junk after multiplier, but
+				 * allow it to be "bytes" */
+				if(strcmp(end + 1, "bytes"))
+					return 0;
+
+			break;
+		case 'k':
+		case 'K':
+			if(multiply_overflowll(number, 1024))
+				return 0;
+			number *= 1024;
+
+			if(end[1] != '\0')
+				/* trailing junk after multiplier, but
+				 * allow it to be "bytes" */
+				if(strcmp(end + 1, "bytes"))
+					return 0;
+
+			break;
+		case '\0':
+			break;
+		default:
+			/* trailing junk after number */
+			return 0;
+		}
+	} else if(end[0] != '\0')
+		/* trailing junk after number */
+		return 0;
+
+	*res = number;
+	return 1;
+}
+
+
+int parse_number(char *start, int *res, int size)
+{
+	long long number;
+
+	if(!parse_numberll(start, &number, size))
+		return 0;
+	
+	/* check if long result will overflow signed int */
+	if(number > INT_MAX)
+		return 0;
+
+	*res = (int) number;
+	return 1;
 }
 
 
@@ -5090,14 +5123,19 @@ print_compressor_options:
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-mem") == 0) {
-			if((++i == argc) || !parse_num(argv[i], &total_mem)) {
+			long long number;
+
+			if((++i == argc) ||
+					!parse_numberll(argv[i], &number, 1)) {
 				ERROR("%s: -mem missing or invalid mem size\n",
 					 argv[0]);
 				exit(1);
 			}
+			/* convert from bytes to Mbytes */
+			total_mem = number / 1048576;
 			if(total_mem < SQUASHFS_LOWMEM) {
 				ERROR("%s: -mem should be %d Mbytes or "
-					"larger\n", SQUASHFS_LOWMEM, argv[0]);
+					"larger\n", argv[0], SQUASHFS_LOWMEM);
 				exit(1);
 			}
 			calculate_queue_sizes(total_mem, &readq, &fragq,
@@ -5320,8 +5358,11 @@ printOptions:
 			ERROR("-processors <number>\tUse <number> processors."
 				"  By default will use number of\n");
 			ERROR("\t\t\tprocessors available\n");
-			ERROR("-mem <size>\t\tUse <size> Mbytes.  Currently "
-				"set to %d Mbytes\n", total_mem);
+			ERROR("-mem <size>\t\tUse <size> physical memory.  "
+				"Currently set to %dM\n", total_mem);
+			ERROR("\t\t\tOptionally a suffix of K, M or G can be"
+				" given to specify\n\t\t\tKbytes, Mbytes or"
+				" Gbytes respectively\n");
 			ERROR("\nMiscellaneous options:\n");
 			ERROR("-root-owned\t\talternative name for -all-root"
 				"\n");
