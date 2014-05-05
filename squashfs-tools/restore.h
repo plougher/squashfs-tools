@@ -1,3 +1,5 @@
+#ifndef RESTORE_H
+#define RESTORE_H
 /*
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
@@ -23,3 +25,4 @@
  */
 
 extern pthread_t *init_restore_thread();
+#endif
