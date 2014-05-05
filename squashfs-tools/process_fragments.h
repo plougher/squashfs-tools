@@ -1,3 +1,5 @@
+#ifndef PROCESS_FRAGMENTS_H
+#define PROCESS_FRAGMENTS_H
 /*
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
@@ -25,3 +27,4 @@
 #define DUP_HASH(a) (a & 0xffff)
 
 extern void *frag_thrd(void *);
+#endif
