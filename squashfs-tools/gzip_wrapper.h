@@ -1,5 +1,5 @@
-#ifndef LZO_WRAPPER_H
-#define LZO_WRAPPER_H
+#ifndef GZIP_WRAPPER_H
+#define GZIP_WRAPPER_H
 /*
  * Squashfs
  *
