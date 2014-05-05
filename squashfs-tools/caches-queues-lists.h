@@ -1,3 +1,5 @@
+#ifndef CACHES_QUEUES_LISTS_H
+#define CACHES_QUEUES_LISTS_H
 /*
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
@@ -195,4 +197,4 @@ extern void cache_wait_unlock(struct file_buffer *);
 extern void cache_unlock(struct file_buffer *);
 
 extern int first_freelist;
-
+#endif
