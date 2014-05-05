@@ -1,4 +1,3 @@
-//#define SQUASHFS_TRACE
 /*
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
