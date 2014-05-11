@@ -250,7 +250,7 @@ static int gzip_init(void **strm, int block_size, int flags)
 	stream->opaque = 0;
 
 	res = deflateInit2(stream, compression_level, Z_DEFLATED,
-			window_size, 9, Z_DEFAULT_STRATEGY);
+			window_size, 8, Z_DEFAULT_STRATEGY);
 	if(res != Z_OK)
 		goto failed2;
 
