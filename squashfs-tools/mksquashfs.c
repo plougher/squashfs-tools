@@ -5133,9 +5133,10 @@ print_compressor_options:
 			}
 			/* convert from bytes to Mbytes */
 			total_mem = number / 1048576;
-			if(total_mem < SQUASHFS_LOWMEM) {
+			if(total_mem < (SQUASHFS_LOWMEM / SQUASHFS_TAKE)) {
 				ERROR("%s: -mem should be %d Mbytes or "
-					"larger\n", argv[0], SQUASHFS_LOWMEM);
+					"larger\n", argv[0],
+					SQUASHFS_LOWMEM / SQUASHFS_TAKE);
 				exit(1);
 			}
 			calculate_queue_sizes(total_mem, &readq, &fragq,
