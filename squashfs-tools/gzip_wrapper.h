@@ -33,11 +33,13 @@
 #endif
 
 #if __BYTE_ORDER == __BIG_ENDIAN
+extern unsigned int inswap_le16(unsigned short);
 extern unsigned int inswap_le32(unsigned int);
 
 #define SQUASHFS_INSWAP_COMP_OPTS(s) { \
 	(s)->compression_level = inswap_le32((s)->compression_level); \
-	(s)->window_size = inswap_le32((s)->window_size); \
+	(s)->window_size = inswap_le16((s)->window_size); \
+	(s)->strategy = inswap_le16((s)->strategy); \
 }
 #else
 #define SQUASHFS_INSWAP_COMP_OPTS(s)
@@ -49,7 +51,25 @@ extern unsigned int inswap_le32(unsigned int);
 
 struct gzip_comp_opts {
 	int compression_level;
-	int window_size;
+	short window_size;
+	short strategy;
 };
 
+struct strategy {
+	char *name;
+	int strategy;
+	int selected;
+};
+
+struct gzip_strategy {
+	int strategy;
+	int length;
+	void *buffer;
+};
+
+struct gzip_stream {
+	z_stream stream;
+	int strategies;
+	struct gzip_strategy strategy[0];
+};
 #endif
