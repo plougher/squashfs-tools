@@ -4890,7 +4890,7 @@ void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.3 (2014/05/05)\n");\
+	printf("mksquashfs version 4.3 (2014/05/12)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
