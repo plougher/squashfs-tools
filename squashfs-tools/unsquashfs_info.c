@@ -97,31 +97,22 @@ void dump_state()
 void *info_thrd(void *arg)
 {
 	sigset_t sigmask;
-	struct timespec timespec = { .tv_sec = 1, .tv_nsec = 0 };
-	int sig, waiting = 0;
+	int sig, err, waiting = 0;
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGQUIT);
 	sigaddset(&sigmask, SIGHUP);
+	sigaddset(&sigmask, SIGALRM);
 
 	while(1) {
-		if(waiting)
-			sig = sigtimedwait(&sigmask, NULL, &timespec);
-		else
-			sig = sigwaitinfo(&sigmask, NULL);
+		err = sigwait(&sigmask, &sig);
 
-		if(sig == -1) {
+		if(err == -1) {
 			switch(errno) {
-			case EAGAIN:
-				/* interval timed out */
-				waiting = 0;
-				/* FALLTHROUGH */
 			case EINTR:
-				/* if waiting, the wait will be longer, but
-				   that's OK */
 				continue;
 			default:
-				BAD_ERROR("sigtimedwait/sigwaitinfo failed "
+				BAD_ERROR("sigwait failed "
 					"because %s\n", strerror(errno));
 			}
 		}
@@ -133,8 +124,12 @@ void *info_thrd(void *arg)
 			/* set one second interval period, if ^\ received
 			   within then, dump queue and cache status */
 			waiting = 1;
-		} else
+			alarm(1);
+		} else if (sig == SIGQUIT) {
 			dump_state();
+		} else if (sig == SIGALRM) {
+			waiting = 0;
+		}
 	}
 }
 
