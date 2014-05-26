@@ -4094,6 +4094,7 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGQUIT);
 	sigaddset(&sigmask, SIGHUP);
+	sigaddset(&sigmask, SIGALRM);
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) == -1)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
