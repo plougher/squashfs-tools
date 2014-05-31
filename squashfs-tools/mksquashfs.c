@@ -828,13 +828,13 @@ char *subpathname(struct dir_ent *dir_ent)
 }
 
 
-inline unsigned int get_inode_no(struct inode_info *inode)
+static inline unsigned int get_inode_no(struct inode_info *inode)
 {
 	return inode->inode_number;
 }
 
 
-inline unsigned int get_parent_no(struct dir_info *dir)
+static inline unsigned int get_parent_no(struct dir_info *dir)
 {
 	return dir->depth ? get_inode_no(dir->dir_ent->inode) : inode_no;
 }
@@ -2057,7 +2057,7 @@ struct file_info *duplicate(long long file_size, long long bytes,
 }
 
 
-inline int is_fragment(struct inode_info *inode)
+static inline int is_fragment(struct inode_info *inode)
 {
 	int file_size = inode->buf.st_size;
 
@@ -3020,20 +3020,20 @@ struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 }
 
 
-inline struct inode_info *lookup_inode(struct stat *buf)
+static inline struct inode_info *lookup_inode(struct stat *buf)
 {
 	return lookup_inode2(buf, 0, 0);
 }
 
 
-inline void alloc_inode_no(struct inode_info *inode, unsigned int use_this)
+static inline void alloc_inode_no(struct inode_info *inode, unsigned int use_this)
 {
 	if (inode->inode_number == 0)
 		inode->inode_number = use_this ? : inode_no ++;
 }
 
 
-inline struct dir_ent *create_dir_entry(char *name, char *source_name,
+static inline struct dir_ent *create_dir_entry(char *name, char *source_name,
 	char *nonstandard_pathname, struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = malloc(sizeof(struct dir_ent));
@@ -3050,7 +3050,7 @@ inline struct dir_ent *create_dir_entry(char *name, char *source_name,
 }
 
 
-inline void add_dir_entry(struct dir_ent *dir_ent, struct dir_info *sub_dir,
+static inline void add_dir_entry(struct dir_ent *dir_ent, struct dir_info *sub_dir,
 	struct inode_info *inode_info)
 {
 	struct dir_info *dir = dir_ent->our_dir;
@@ -3066,7 +3066,7 @@ inline void add_dir_entry(struct dir_ent *dir_ent, struct dir_info *sub_dir,
 }
 
 
-inline void add_dir_entry2(char *name, char *source_name,
+static inline void add_dir_entry2(char *name, char *source_name,
 	char *nonstandard_pathname, struct dir_info *sub_dir,
 	struct inode_info *inode_info, struct dir_info *dir)
 {
@@ -3078,7 +3078,7 @@ inline void add_dir_entry2(char *name, char *source_name,
 }
 
 
-inline void free_dir_entry(struct dir_ent *dir_ent)
+static inline void free_dir_entry(struct dir_ent *dir_ent)
 {
 	if(dir_ent->name)
 		free(dir_ent->name);
@@ -3090,7 +3090,7 @@ inline void free_dir_entry(struct dir_ent *dir_ent)
 }
 
 
-inline void add_excluded(struct dir_info *dir)
+static inline void add_excluded(struct dir_info *dir)
 {
 	dir->excluded ++;
 }
