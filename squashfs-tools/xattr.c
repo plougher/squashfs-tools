@@ -36,6 +36,13 @@
 #include <stdlib.h>
 #include <sys/xattr.h>
 
+#ifdef XATTR_NOFOLLOW /* Apple's xattrs */
+	#define llistxattr(path_, buf_, sz_) \
+		listxattr(path_, buf_, sz_, XATTR_NOFOLLOW)
+	#define lgetxattr(path_, name_, val_, sz_) \
+		getxattr(path_, name_, val_, sz_, 0, XATTR_NOFOLLOW)
+#endif
+
 #include "squashfs_fs.h"
 #include "squashfs_swap.h"
 #include "mksquashfs.h"
