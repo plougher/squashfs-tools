@@ -39,12 +39,12 @@
 #include <endian.h>
 #endif
 
+#include <stdlib.h>
+
 #include "squashfs_fs.h"
 #include "squashfs_swap.h"
 #include "xattr.h"
 #include "error.h"
-
-#include <stdlib.h>
 
 extern int read_fs_bytes(int, long long, int, void *);
 extern int read_block(int, long long, long long *, int, void *);
