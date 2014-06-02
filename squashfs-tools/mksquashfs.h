@@ -24,6 +24,7 @@
  * mksquashfs.h
  *
  */
+#include <pthread.h>
 
 struct dir_info {
 	char			*pathname;
