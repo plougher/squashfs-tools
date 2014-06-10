@@ -304,7 +304,7 @@ void restorefs();
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
 void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
 unsigned short get_checksum_mem(char *buff, int bytes);
-int get_physical_memory();
+void check_usable_phys_mem(int total_mem);
 
 
 void prep_exit()
@@ -4053,11 +4053,7 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 		BAD_ERROR("Queue sizes rediculously too large\n");
 	total_mem += fwriteq;
 
-	if(total_mem > get_physical_memory()) {
-		ERROR("Total queue sizes larger than physical memory.\n");
-		ERROR("Mksquashfs will exhaust physical memory and thrash.\n");
-		BAD_ERROR("Queues too large\n");
-	}
+	check_usable_phys_mem(total_mem);
 
 	/*
 	 * convert from queue size in Mbytes to queue size in
@@ -4879,6 +4875,72 @@ int get_physical_memory()
 }
 
 
+void check_usable_phys_mem(int total_mem)
+{
+	/*
+	 * We want to allow users to use as much of their physical
+	 * memory as they wish.  However, for practical reasons there are
+	 * limits which need to be imposed, to protect users from themselves
+	 * and to prevent people from using Mksquashfs as a DOS attack by using
+	 * all physical memory.   Mksquashfs uses memory to cache data from disk
+	 * to optimise performance.  It is pointless to ask it to use more
+	 * than 75% of physical memory, as this causes thrashing and it is thus
+	 * self-defeating.
+	 */
+	int mem = get_physical_memory();
+
+	mem = (mem >> 1) + (mem >> 2); /* 75% */
+						
+	if(total_mem > mem) {
+		ERROR("Total memory requested is more than 75%% of physical "
+						"memory.\n");
+		ERROR("Mksquashfs uses memory to cache data from disk to "
+						"optimise performance.\n");
+		ERROR("It is pointless to ask it to use more than this amount "
+						"of memory, as this\n");
+		ERROR("causes thrashing and it is thus self-defeating.\n");
+		BAD_ERROR("Requested memory size too large\n");
+	}
+
+	if(sizeof(void *) == 4 && total_mem > 2048) {
+		/*
+		 * If we're running on a kernel with PAE or on a 64-bit kernel,
+		 * then the 75% physical memory limit can still easily exceed
+		 * the addressable memory by this process.
+		 *
+		 * Due to the typical kernel/user-space split (1GB/3GB, or
+		 * 2GB/2GB), we have to conservatively assume the 32-bit
+		 * processes can only address 2-3GB.  So refuse if the user
+		 * tries to allocate more than 2GB.
+		 */
+		ERROR("Total memory requested may exceed maximum "
+				"addressable memory by this process\n");
+		BAD_ERROR("Requested memory size too large\n");
+	}
+}
+
+
+int get_default_phys_mem()
+{
+	int mem = get_physical_memory() / SQUASHFS_TAKE;
+
+	if(sizeof(void *) == 4 && mem > 640) {
+		/*
+		 * If we're running on a kernel with PAE or on a 64-bit kernel,
+		 * the default memory usage can exceed the addressable
+		 * memory by this process.
+		 * Due to the typical kernel/user-space split (1GB/3GB, or
+		 * 2GB/2GB), we have to conservatively assume the 32-bit
+		 * processes can only address 2-3GB.  So limit the  default
+		 * usage to 640M, which gives room for other data.
+		 */
+		mem = 640;
+	}
+
+	return mem;
+}
+
+
 void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 							int *fwriteq)
 {
@@ -4890,7 +4952,7 @@ void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.3 (2014/05/12)\n");\
+	printf("mksquashfs version 4.3-git (2014/06/09)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -4918,7 +4980,7 @@ int main(int argc, char *argv[])
 	int fragq;
 	int bwriteq;
 	int fwriteq;
-	int total_mem = get_physical_memory() / SQUASHFS_TAKE;
+	int total_mem = get_default_phys_mem();
 	int progress = TRUE;
 	int force_progress = FALSE;
 	struct file_buffer **fragment = NULL;
