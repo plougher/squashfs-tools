@@ -5193,7 +5193,16 @@ print_compressor_options:
 					 argv[0]);
 				exit(1);
 			}
-			/* convert from bytes to Mbytes */
+
+			/*
+			 * convert from bytes to Mbytes, ensuring the value
+			 * does not overflow a signed int
+			 */
+			if(number >= (1LL << 51)) {
+				ERROR("%s: -mem invalid mem size\n", argv[0]);
+				exit(1);
+			}
+
 			total_mem = number / 1048576;
 			if(total_mem < (SQUASHFS_LOWMEM / SQUASHFS_TAKE)) {
 				ERROR("%s: -mem should be %d Mbytes or "
