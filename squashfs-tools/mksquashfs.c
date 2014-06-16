@@ -4860,12 +4860,19 @@ int parse_num(char *arg, int *res)
 
 int get_physical_memory()
 {
-	/* Long longs are used here because with PAE, a 32-bit
-	  machine can have more than 4GB of physical memory */
-
+	/*
+	 * Long longs are used here because with PAE, a 32-bit
+	 * machine can have more than 4GB of physical memory
+	 *
+	 * sysconf(_SC_PHYS_PAGES) relies on /proc being mounted.
+	 * If it isn't fail.
+	 */
 	long long num_pages = sysconf(_SC_PHYS_PAGES);
 	long long page_size = sysconf(_SC_PAGESIZE);
 	int phys_mem = num_pages * page_size >> 20;
+
+	if(num_pages == -1 || page_size == -1)
+		return 0;
 
 	if(phys_mem < SQUASHFS_LOWMEM)
 		BAD_ERROR("Mksquashfs requires more physical memory than is "
@@ -4891,7 +4898,7 @@ void check_usable_phys_mem(int total_mem)
 
 	mem = (mem >> 1) + (mem >> 2); /* 75% */
 						
-	if(total_mem > mem) {
+	if(total_mem > mem && mem) {
 		ERROR("Total memory requested is more than 75%% of physical "
 						"memory.\n");
 		ERROR("Mksquashfs uses memory to cache data from disk to "
@@ -4922,7 +4929,24 @@ void check_usable_phys_mem(int total_mem)
 
 int get_default_phys_mem()
 {
-	int mem = get_physical_memory() / SQUASHFS_TAKE;
+	/*
+	 * get_physical_memory() relies on /proc being mounted.
+	 * If it fails, issue a warning, and use
+	 * SQUASHFS_LOWMEM / SQUASHFS_TAKE as default,
+	 * and allow a larger value to be set with -mem.
+	 */
+	int mem = get_physical_memory();
+
+	if(mem == 0) {
+		mem = SQUASHFS_LOWMEM / SQUASHFS_TAKE;
+
+		ERROR("Warning: Cannot get size of physical memory, probably "
+				"because /proc is missing.\n");
+		ERROR("Warning: Defaulting to minimal use of %d Mbytes, use "
+				"-mem to set a better value,\n", mem);
+		ERROR("Warning: or fix /proc.\n");
+	} else
+		mem /= SQUASHFS_TAKE;
 
 	if(sizeof(void *) == 4 && mem > 640) {
 		/*
@@ -4952,7 +4976,7 @@ void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.3-git (2014/06/09)\n");\
+	printf("mksquashfs version 4.3-git (2014/06/15)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
