@@ -2232,6 +2232,23 @@ static int exec_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
+/*
+ * Symbolic link specific test code
+ */
+static int exists_fn(struct atom *atom, struct action_data *action_data)
+{
+	/*
+	 * exists operates on symlinks only, other files by definition
+	 * exist
+	 */
+	if (!(action_data->buf->st_mode & ACTION_LNK))
+		return 1;
+
+	/* dereference the symlink, and return TRUE if it exists */
+	return access(action_data->pathname, F_OK) == 0;
+}
+
+
 #ifdef SQUASHFS_TRACE
 static void dump_parse_tree(struct expr *expr)
 {
@@ -2328,6 +2345,7 @@ static struct test_entry test_table[] = {
 	{ "false", 0, false_fn, NULL},
 	{ "file", 1, file_fn, parse_file_arg},
 	{ "exec", 1, exec_fn, NULL},
+	{ "exists", 0, exists_fn, NULL},
 	{ "", -1 }
 };
 

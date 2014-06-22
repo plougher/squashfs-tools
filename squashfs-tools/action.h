@@ -181,6 +181,7 @@ struct type_entry {
 #define ACTION_ALL_LNK (S_IFDIR | S_IFREG | S_IFBLK | S_IFCHR | S_IFSOCK | \
 			S_IFIFO | S_IFLNK)
 #define ACTION_ALL (S_IFDIR | S_IFREG | S_IFBLK | S_IFCHR | S_IFSOCK | S_IFIFO)
+#define ACTION_LNK S_IFLNK
 
 struct action_entry {
 	char *name;
