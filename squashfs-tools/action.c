@@ -2249,6 +2249,36 @@ static int exists_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
+static int absolute_fn(struct atom *atom, struct action_data *action_data)
+{
+	int bytes;
+	char buff[1]; /* overflow safe */
+	/*
+	 * Test if a symlink has an absolute path, which by definition
+	 * means the symbolic link may be broken (even if the absolute path
+	 * does point into the filesystem being squashed, because the resultant
+	 * filesystem can be mounted/unsquashed anywhere, it is unlikely the
+	 * absolute path will still point to the right place).  If you know that
+	 * an absolute symlink will point to the right place then you don't need
+	 * to use this function, and/or these symlinks can be excluded by
+	 * use of other test operators.
+	 *
+	 * absolute operates on symlinks only, other files by definition
+	 * don't have problems
+	 */
+	if (!(action_data->buf->st_mode & ACTION_LNK))
+		return 0;
+
+	bytes = readlink(action_data->pathname, buff, 1);
+	if(bytes == -1)
+		/* reading symlink failed, this will be flagged up and dealt
+		 * with later in Mksquashfs, and so here just return FALSE */
+		return 0;
+
+	return buff[0] == '/';
+}
+
+
 #ifdef SQUASHFS_TRACE
 static void dump_parse_tree(struct expr *expr)
 {
@@ -2346,6 +2376,7 @@ static struct test_entry test_table[] = {
 	{ "file", 1, file_fn, parse_file_arg},
 	{ "exec", 1, exec_fn, NULL},
 	{ "exists", 0, exists_fn, NULL},
+	{ "absolute", 0, absolute_fn, NULL},
 	{ "", -1 }
 };
 
