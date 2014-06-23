@@ -2279,6 +2279,65 @@ static int absolute_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
+static int contained_fn(struct atom *atom, struct action_data *action_data)
+{
+	int bytes, depth = action_data->depth;
+	char buff[65536]; /* overflow safe */
+	char *p, *s = buff;
+
+	/*
+	 * Test if a symlink appears to be within the source filesystem,
+	 * that is, it has a relative path, and the relative path does not
+	 * appear to backtrack outside the source filesystem using "..".
+	 *
+	 * This test function does not evaluate the path for symlinks - this
+	 * is deliberate, as this makes the test fast, but in the presence
+	 * of symlinks in the path it can fail to identify paths which do go
+	 * outside the sourcefilesystem.  If this circumstance may occur, then
+	 * you should use contained_realpath(), which does follow symlinks,
+	 * but which is hence a much more expensive test.
+	 *
+	 * contained operates on symlinks only, other files by definition
+	 * are contained within the source filesystem.
+	 */
+	if (!(action_data->buf->st_mode & ACTION_LNK))
+		return 1;
+
+	bytes = readlink(action_data->pathname, s, 65536);
+	if(bytes == -1 || bytes == 65536)
+		/* reading symlink failed or (unlikely) the symlink was longer
+		 * than the implementation limit. This will be flagged up and
+		 * dealt with later in Mksquashfs, and so here just return
+		 * FALSE */
+		return 0;
+
+	if (s[0] == '/')
+		/* absolute symlinks are not contained within the source
+		 * filesystem */
+		return 0;
+
+	while(s != '\0' && depth) {
+		while(*s == '/')
+			s ++;
+
+		if(*s == '\0')
+			break;
+
+		for(p = s; *s != '\0' && *s != '/'; s ++);
+
+		if(strncmp(p, ".", s - p) == 0)
+			continue;
+
+		if(strncmp(p, "..", s - p) == 0)
+			depth --;
+		else
+			depth ++;
+	}
+
+	return depth;
+}
+
+
 #ifdef SQUASHFS_TRACE
 static void dump_parse_tree(struct expr *expr)
 {
@@ -2377,6 +2436,7 @@ static struct test_entry test_table[] = {
 	{ "exec", 1, exec_fn, NULL},
 	{ "exists", 0, exists_fn, NULL},
 	{ "absolute", 0, absolute_fn, NULL},
+	{ "contained", 0, contained_fn, NULL},
 	{ "", -1 }
 };
 
