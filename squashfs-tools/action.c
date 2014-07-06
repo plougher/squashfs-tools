@@ -2316,7 +2316,10 @@ static int contained_fn(struct atom *atom, struct action_data *action_data)
 		 * filesystem */
 		return 0;
 
-	while(s != '\0' && depth) {
+	/* readlink doesn't 0 terminate the returned path */
+	s[bytes] = '\0';
+
+	while(depth) {
 		while(*s == '/')
 			s ++;
 
