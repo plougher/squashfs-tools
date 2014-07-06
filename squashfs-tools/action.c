@@ -2270,7 +2270,7 @@ static int absolute_fn(struct atom *atom, struct action_data *action_data)
 		return 0;
 
 	bytes = readlink(action_data->pathname, buff, 1);
-	if(bytes == -1)
+	if(bytes < 1)
 		/* reading symlink failed, this will be flagged up and dealt
 		 * with later in Mksquashfs, and so here just return FALSE */
 		return 0;
@@ -2304,7 +2304,7 @@ static int contained_fn(struct atom *atom, struct action_data *action_data)
 		return 1;
 
 	bytes = readlink(action_data->pathname, s, 65536);
-	if(bytes == -1 || bytes == 65536)
+	if(bytes < 1 || bytes == 65536)
 		/* reading symlink failed or (unlikely) the symlink was longer
 		 * than the implementation limit. This will be flagged up and
 		 * dealt with later in Mksquashfs, and so here just return
