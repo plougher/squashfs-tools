@@ -176,12 +176,11 @@ struct type_entry {
 /*
  * Define what file types each action operates over
  */
-#define ACTION_DIR S_IFDIR
-#define ACTION_REG S_IFREG
-#define ACTION_ALL_LNK (S_IFDIR | S_IFREG | S_IFBLK | S_IFCHR | S_IFSOCK | \
-			S_IFIFO | S_IFLNK)
-#define ACTION_ALL (S_IFDIR | S_IFREG | S_IFBLK | S_IFCHR | S_IFSOCK | S_IFIFO)
-#define ACTION_LNK S_IFLNK
+#define ACTION_DIR 1
+#define ACTION_REG 2
+#define ACTION_ALL_LNK 3
+#define ACTION_ALL 4
+#define ACTION_LNK 5
 
 struct action_entry {
 	char *name;

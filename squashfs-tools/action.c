@@ -621,6 +621,29 @@ int read_action_file(char *filename)
 
 
 /*
+ * helper to evaluate whether action/test acts on this file type
+ */
+static int file_type_match(int st_mode, int type)
+{
+	switch(type) {
+	case ACTION_DIR:
+		return S_ISDIR(st_mode);
+	case ACTION_REG:
+		return S_ISREG(st_mode);
+	case ACTION_ALL:
+		return S_ISREG(st_mode) || S_ISDIR(st_mode) ||
+			S_ISCHR(st_mode) || S_ISBLK(st_mode) ||
+			S_ISFIFO(st_mode) || S_ISSOCK(st_mode);
+	case ACTION_LNK:
+		return S_ISLNK(st_mode);
+	case ACTION_ALL_LNK:
+	default:
+		return 1;
+	}
+}
+
+
+/*
  * General action evaluation code
  */
 int actions()
@@ -633,7 +656,7 @@ void eval_actions(struct dir_ent *dir_ent)
 {
 	int i, match;
 	struct action_data action_data;
-	int file_type = dir_ent->inode->buf.st_mode & S_IFMT;
+	int st_mode = dir_ent->inode->buf.st_mode;
 
 	action_data.name = dir_ent->name;
 	action_data.pathname = pathname(dir_ent);
@@ -644,7 +667,7 @@ void eval_actions(struct dir_ent *dir_ent)
 	for (i = 0; i < other_count; i++) {
 		struct action *action = &other_spec[i];
 
-		if ((action->action->file_types & file_type) == 0)
+		if (!file_type_match(st_mode, action->action->file_types))
 			/* action does not operate on this file type */
 			continue;
 
@@ -1839,7 +1862,7 @@ static int parse_range_args(struct test_entry *test, struct atom *atom)
 static int NAME##_fn(struct atom *atom, struct action_data *action_data) \
 { \
 	/* test operates on MATCH file types only */ \
-	if (!(action_data->buf->st_mode & MATCH)) \
+	if (!file_type_match(action_data->buf->st_mode, MATCH)) \
 		return 0; \
  \
 	CODE \
@@ -2241,7 +2264,7 @@ static int exists_fn(struct atom *atom, struct action_data *action_data)
 	 * exists operates on symlinks only, other files by definition
 	 * exist
 	 */
-	if (!(action_data->buf->st_mode & ACTION_LNK))
+	if (!file_type_match(action_data->buf->st_mode, ACTION_LNK))
 		return 1;
 
 	/* dereference the symlink, and return TRUE if it exists */
@@ -2266,7 +2289,7 @@ static int absolute_fn(struct atom *atom, struct action_data *action_data)
 	 * absolute operates on symlinks only, other files by definition
 	 * don't have problems
 	 */
-	if (!(action_data->buf->st_mode & ACTION_LNK))
+	if (!file_type_match(action_data->buf->st_mode, ACTION_LNK))
 		return 0;
 
 	bytes = readlink(action_data->pathname, buff, 1);
@@ -2300,7 +2323,7 @@ static int contained_fn(struct atom *atom, struct action_data *action_data)
 	 * contained operates on symlinks only, other files by definition
 	 * are contained within the source filesystem.
 	 */
-	if (!(action_data->buf->st_mode & ACTION_LNK))
+	if (!file_type_match(action_data->buf->st_mode, ACTION_LNK))
 		return 1;
 
 	bytes = readlink(action_data->pathname, s, 65536);
