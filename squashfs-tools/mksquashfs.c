@@ -4194,6 +4194,15 @@ long long write_inode_lookup_table()
 
 			inode_number = get_inode_no(inode);
 
+			/* The empty action will produce orphaned inode
+			 * entries in the inode_info[] table.  These
+			 * entries because they are orphaned will not be
+			 * allocated an inode number in dir_scan5(), so
+			 * skip any entries with the default dummy inode
+			 * number of 0 */
+			if(inode_number == 0)
+				continue;
+
 			SQUASHFS_SWAP_LONG_LONGS(&inode->inode,
 				&inode_lookup_table[inode_number - 1], 1);
 
