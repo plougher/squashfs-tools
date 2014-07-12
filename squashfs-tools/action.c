@@ -2331,6 +2331,11 @@ static int contained_fn(struct atom *atom, struct action_data *action_data)
 	if (!file_type_match(action_data->buf->st_mode, ACTION_LNK))
 		return 1;
 
+	/* if nonstandard_pathname is set, then this is a symlink entered on the
+	 * command line, this by definition is a dangling symlink */
+	if(action_data->dir_ent->nonstandard_pathname)
+		return 0;
+
 	bytes = readlink(action_data->pathname, s, 65536);
 	if(bytes < 1 || bytes == 65536)
 		/* reading symlink failed or (unlikely) the symlink was longer
