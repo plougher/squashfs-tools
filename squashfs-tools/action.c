@@ -2369,6 +2369,134 @@ static int contained_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
+static int follow_link(char *pathname, char *symlink, int depth)
+{
+	int bytes;
+	char buff[65536]; /* overflow safe */
+	char *name, *p, *s = symlink;
+	int pathname_size = strlen(pathname) + 2;
+
+	while(depth) {
+		while(*s == '/')
+			s ++;
+
+		if(*s == '\0')
+			break;
+
+		for(p = s; *s != '\0' && *s != '/'; s ++);
+
+		if(strncmp(p, ".", s - p) == 0)
+			continue;
+
+		if(strncmp(p, "..", s - p) == 0) {
+			depth --;
+			continue;
+		}
+
+		/* Try to read the pathname component as a symlink */
+		/* Compose pathname, pathname + "/" + symlink[0 .. s] */
+		name=malloc(pathname_size + s - symlink);
+		strcat(strcpy(name, pathname), "/");
+		strncat(name, symlink, s - symlink);
+		bytes = readlink(name, buff, 65536);
+		free(name);
+		if(bytes == -1) {
+			if(errno == EINVAL) {
+				/* Not a symlink, continue processing */
+				depth ++;
+			} else {
+				/* all other errors are treated as failure
+				 * to resolve as contained within filesystem,
+				 * this most likely indicates the symlink
+				 * component doesn't exist or is unreadable in a
+				 * another way */
+				return 0;
+			}
+		} else if(bytes < 1 || bytes == 65536) {
+			/* the symlink was longer than the implementation
+			 * limit.  Treat as failure to resolve as contained
+			 * within filesystem.  If this symlink is within the
+			 * filesystem it will be flagged up and dealt with
+			 * later in Mksquashfs, and so here just return
+			 * FALSE */
+			return 0;
+		} else if (buff[0] == '/') {
+			/* absolute symlinks are not contained within the source
+			 * filesystem */
+			return 0;
+		} else {
+			/* recursively process this symlink */
+			/* readlink doesn't 0 terminate the returned path */
+			buff[bytes] = '\0';
+
+			/* the symlink is relative to the parent directory */
+			/* Compose pathname, pathname + "/" + symlink[0 .. p] */
+			name=malloc(pathname_size + p - symlink);
+			strcat(strcpy(name, pathname), "/");
+			strncat(name, symlink, p - symlink);
+
+			depth = follow_link(name, buff, depth);
+			free(name);
+		}
+	}
+
+	return depth;
+}
+
+
+static int contained_followlink_fn(struct atom *atom,
+				struct action_data *action_data)
+{
+	int bytes;
+	char buff[65536]; /* overflow safe */
+	char *parent;
+
+	/*
+	 * Test if a symlink appears to be within the source filesystem,
+	 * that is, it has a relative path, and the relative path does not
+	 * appear to backtrack outside the source filesystem using "..".
+	 *
+	 * This test function evaluates the path for symlinks - that is it
+	 * follows any symlinks (and any symlinks that it may contain etc.), to
+	 * discover the canonicalised relative path.
+	 *
+	 * This is expensive, if possible consider using the faster
+	 * contained() alternative which does not try to follow symlinks
+	 *
+	 * contained_followlink operates on symlinks only, other files by
+	 * definition are contained within the source filesystem.
+	 */
+	if (!file_type_match(action_data->buf->st_mode, ACTION_LNK))
+		return 1;
+
+	/* if nonstandard_pathname is set, then this is a symlink entered on the
+	 * command line, this by definition is a dangling symlink */
+	if(action_data->dir_ent->nonstandard_pathname)
+		return 0;
+
+	bytes = readlink(action_data->pathname, buff, 65536);
+	if(bytes < 1 || bytes == 65536)
+		/* reading symlink failed or (unlikely) the symlink was longer
+		 * than the implementation limit. This will be flagged up and
+		 * dealt with later in Mksquashfs, and so here just return
+		 * FALSE */
+		return 0;
+
+	if (buff[0] == '/')
+		/* absolute symlinks are not contained within the source
+		 * filesystem */
+		return 0;
+
+	/* readlink doesn't 0 terminate the returned path */
+	buff[bytes] = '\0';
+
+	/* the symlink is relative to the parent directory */
+	parent = action_data->dir_ent->our_dir->pathname;
+
+	return follow_link(parent, buff, action_data->depth);
+}
+
+
 #ifdef SQUASHFS_TRACE
 static void dump_parse_tree(struct expr *expr)
 {
@@ -2468,6 +2596,7 @@ static struct test_entry test_table[] = {
 	{ "exists", 0, exists_fn, NULL},
 	{ "absolute", 0, absolute_fn, NULL},
 	{ "contained", 0, contained_fn, NULL},
+	{ "contained_followlink", 0, contained_followlink_fn, NULL},
 	{ "", -1 }
 };
 
