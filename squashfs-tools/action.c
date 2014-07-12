@@ -663,6 +663,7 @@ void eval_actions(struct dir_ent *dir_ent)
 	action_data.subpath = subpathname(dir_ent);
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
+	action_data.dir_ent = dir_ent;
 
 	for (i = 0; i < other_count; i++) {
 		struct action *action = &other_spec[i];
@@ -692,6 +693,7 @@ void *eval_frag_actions(struct dir_ent *dir_ent)
 	action_data.subpath = subpathname(dir_ent);
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
+	action_data.dir_ent = dir_ent;
 
 	for (i = 0; i < fragment_count; i++) {
 		match = eval_expr(fragment_spec[i].expr, &action_data);
@@ -736,7 +738,7 @@ int exclude_actions()
 
 
 int eval_exclude_actions(char *name, char *pathname, char *subpath,
-	struct stat *buf, int depth)
+	struct stat *buf, int depth, struct dir_ent *dir_ent)
 {
 	int i, match = 0;
 	struct action_data action_data;
@@ -746,6 +748,7 @@ int eval_exclude_actions(char *name, char *pathname, char *subpath,
 	action_data.subpath = subpath;
 	action_data.buf = buf;
 	action_data.depth = depth;
+	action_data.dir_ent = dir_ent;
 
 	for (i = 0; i < exclude_count && !match; i++)
 		match = eval_expr(exclude_spec[i].expr, &action_data);
@@ -1264,6 +1267,7 @@ int eval_empty_actions(struct dir_ent *dir_ent)
 	action_data.subpath = subpathname(dir_ent);
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
+	action_data.dir_ent = dir_ent;
 
 	for (i = 0; i < empty_count && !match; i++) {
 		data = empty_spec[i].data;
@@ -1503,6 +1507,7 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	action_data.subpath = subpathname(dir_ent);
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
+	action_data.dir_ent = dir_ent;
 
 	/*
 	 * Evaluate each move action against the current file.  For any

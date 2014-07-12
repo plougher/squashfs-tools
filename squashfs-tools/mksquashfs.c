@@ -3396,7 +3396,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 			subpath = subpathname(dir_ent);
 			
 			if(eval_exclude_actions(dir_name, filename, subpath,
-								&buf, depth)) {
+							&buf, depth, dir_ent)) {
 				add_excluded(dir);
 				free_dir_entry(dir_ent);
 				continue;
