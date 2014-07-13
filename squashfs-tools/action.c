@@ -2379,7 +2379,12 @@ static int follow_link(char *pathname, char *symlink, int depth)
 	int bytes;
 	char buff[65536]; /* overflow safe */
 	char *name, *p, *s = symlink;
-	int pathname_size = strlen(pathname) + 2;
+	int pathname_size = strlen(pathname) + 1;
+
+	name = malloc(pathname_size + strlen(symlink) + 1);
+	if(name == NULL)
+			MEM_ERROR();
+	strcat(strcpy(name, pathname), "/");
 
 	while(depth) {
 		while(*s == '/')
@@ -2400,11 +2405,10 @@ static int follow_link(char *pathname, char *symlink, int depth)
 
 		/* Try to read the pathname component as a symlink */
 		/* Compose pathname, pathname + "/" + symlink[0 .. s] */
-		name=malloc(pathname_size + s - symlink);
-		strcat(strcpy(name, pathname), "/");
-		strncat(name, symlink, s - symlink);
+		memcpy(name + pathname_size, symlink, s - symlink);
+		name[pathname_size + s - symlink] = '\0';
+
 		bytes = readlink(name, buff, 65536);
-		free(name);
 		if(bytes == -1) {
 			if(errno == EINVAL) {
 				/* Not a symlink, continue processing */
@@ -2415,6 +2419,7 @@ static int follow_link(char *pathname, char *symlink, int depth)
 				 * this most likely indicates the symlink
 				 * component doesn't exist or is unreadable in a
 				 * another way */
+				free(name);
 				return 0;
 			}
 		} else if(bytes < 1 || bytes == 65536) {
@@ -2424,10 +2429,12 @@ static int follow_link(char *pathname, char *symlink, int depth)
 			 * filesystem it will be flagged up and dealt with
 			 * later in Mksquashfs, and so here just return
 			 * FALSE */
+			free(name);
 			return 0;
 		} else if (buff[0] == '/') {
 			/* absolute symlinks are not contained within the source
 			 * filesystem */
+			free(name);
 			return 0;
 		} else {
 			/* recursively process this symlink */
@@ -2435,13 +2442,9 @@ static int follow_link(char *pathname, char *symlink, int depth)
 			buff[bytes] = '\0';
 
 			/* the symlink is relative to the parent directory */
-			/* Compose pathname, pathname + "/" + symlink[0 .. p] */
-			name=malloc(pathname_size + p - symlink);
-			strcat(strcpy(name, pathname), "/");
-			strncat(name, symlink, p - symlink);
-
+			/* so just truncate previously computed path */
+			name[pathname_size + p - symlink] = '\0';
 			depth = follow_link(name, buff, depth);
-			free(name);
 		}
 	}
 
