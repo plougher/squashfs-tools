@@ -2482,6 +2482,14 @@ static int contained_followlink_fn(struct atom *atom,
 	if(action_data->dir_ent->nonstandard_pathname)
 		return 0;
 
+	/* if access() returns error then the symlink cannot be dereferenced
+	 * for some reason, and it is pointless walking the symlink because it
+	 * will fail.  This also deals with cases where a symbolic link is
+	 * circular, generating -ELOOP, and so we don't have to worry about
+	 * dealing with loops ourselves */
+	if(access(action_data->pathname, F_OK) == -1)
+		return 0;
+
 	bytes = readlink(action_data->pathname, buff, 65536);
 	if(bytes < 1 || bytes == 65536)
 		/* reading symlink failed or (unlikely) the symlink was longer
