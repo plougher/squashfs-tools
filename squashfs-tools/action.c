@@ -2513,6 +2513,66 @@ static int contained_followlink_fn(struct atom *atom,
 }
 
 
+static int parse_stat_arg(struct test_entry *test, struct atom *atom)
+{
+	/* Call parse_expr to parse argument, which should be an expression */
+
+	 /* save the current parser state */
+	char *save_cur_ptr = cur_ptr;
+	char *save_source = source;
+
+	cur_ptr = source = atom->argv[0];
+	atom->data = parse_expr(0);
+
+	cur_ptr = save_cur_ptr;
+	source = save_source;
+
+	if(atom->data == NULL) {
+		/* parse_expr(0) will have reported the exact syntax error,
+		 * but, because we recursively evaluated the expression, it
+		 * will have been reported without the context of the stat
+		 * test().  So here additionally report our failure to parse
+		 * the expression in the stat() test to give context */
+		TEST_SYNTAX_ERROR(test, 0, "Failed to parse expression\n");
+		return 0;
+	}
+
+	return 1;
+}
+
+
+static int stat_fn(struct atom *atom, struct action_data *action_data)
+{
+	struct stat buf;
+	int res;
+
+	/* evaluate the expression using the context of the inode
+	 * pointed to by the symlink.  This allows the inode attributes
+	 * of the file pointed to by the symlink to be evaluated, rather
+	 * than the symlink itself.
+	 *
+	 * Note, stat() deliberately does not evaluate the pathname, name or
+	 * depth of the symlink, these are left with the symlink values.
+	 * This allows stat() to be used on any symlink, rather than
+	 * just symlinks which are contained (if the symlink is *not*
+	 * contained then pathname, name and depth are meaningless as they
+	 * are relative to the filesystem being squashed). */
+
+	/* if this isn't a symlink then stat will just return the current
+	 * information, i.e. stat(expr) == expr.  This is harmless and
+	 * is better than returning TRUE or FALSE in a non symlink case */
+	res = stat(action_data->pathname, &buf);
+	if(res == -1)
+		return 0;
+
+	/* fill in the inode values of the file pointed to by the
+	 * symlink, but, leave everything else the same */
+	action_data->buf = &buf;
+
+	return eval_expr(atom->data, action_data);
+}
+
+
 #ifdef SQUASHFS_TRACE
 static void dump_parse_tree(struct expr *expr)
 {
@@ -2613,6 +2673,7 @@ static struct test_entry test_table[] = {
 	{ "absolute", 0, absolute_fn, NULL},
 	{ "contained", 0, contained_fn, NULL},
 	{ "contained_followlink", 0, contained_followlink_fn, NULL},
+	{ "stat", 1, stat_fn, parse_stat_arg},
 	{ "", -1 }
 };
 
