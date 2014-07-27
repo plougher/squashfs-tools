@@ -1034,58 +1034,28 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	}
 	else if(type == SQUASHFS_SYMLINK_TYPE) {
 		struct squashfs_symlink_inode_header *symlink = &inode_header.symlink;
-		int byte;
-		char buff[65536]; /* overflow safe */
+		int byte = strlen(dir_ent->inode->symlink);
 		size_t off = offsetof(struct squashfs_symlink_inode_header, symlink);
-
-		byte = readlink(filename, buff, 65536);
-		if(byte == -1) {
-			ERROR_START("Failed to read symlink %s", filename);
-			ERROR_EXIT(", creating empty symlink\n");
-			byte = 0;
-		}
-
-		if(byte == 65536) {
-			ERROR_START("Symlink %s is greater than 65536 bytes!",
-				filename);
-			ERROR_EXIT("  Creating empty symlink\n");
-			byte = 0;
-		}
 
 		inode = get_inode(sizeof(*symlink) + byte);
 		symlink->nlink = nlink;
 		symlink->symlink_size = byte;
 		SQUASHFS_SWAP_SYMLINK_INODE_HEADER(symlink, inode);
-		strncpy(inode + off, buff, byte);
+		strncpy(inode + off, dir_ent->inode->symlink, byte);
 		TRACE("Symbolic link inode, symlink_size %d, nlink %d\n", byte,
 			nlink);
 	}
 	else if(type == SQUASHFS_LSYMLINK_TYPE) {
 		struct squashfs_symlink_inode_header *symlink = &inode_header.symlink;
-		int byte;
-		char buff[65536]; /* overflow safe */
+		int byte = strlen(dir_ent->inode->symlink);
 		size_t off = offsetof(struct squashfs_symlink_inode_header, symlink);
-
-		byte = readlink(filename, buff, 65536);
-		if(byte == -1) {
-			ERROR_START("Failed to read symlink %s", filename);
-			ERROR_EXIT(", creating empty symlink\n");
-			byte = 0;
-		}
-
-		if(byte == 65536) {
-			ERROR_START("Symlink %s is greater than 65536 bytes!",
-				filename);
-			ERROR_EXIT("  Creating empty symlink\n");
-			byte = 0;
-		}
 
 		inode = get_inode(sizeof(*symlink) + byte +
 						sizeof(unsigned int));
 		symlink->nlink = nlink;
 		symlink->symlink_size = byte;
 		SQUASHFS_SWAP_SYMLINK_INODE_HEADER(symlink, inode);
-		strncpy(inode + off, buff, byte);
+		strncpy(inode + off, dir_ent->inode->symlink, byte);
 		SQUASHFS_SWAP_INTS(&xattr, inode + off + byte, 1);
 		TRACE("Symbolic link inode, symlink_size %d, nlink %d\n", byte,
 			nlink);
@@ -2963,7 +2933,8 @@ char *basename_r()
 }
 
 
-struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
+struct inode_info *lookup_inode3(struct stat *buf, int pseudo, int id,
+	char *symlink, int bytes)
 {
 	int ino_hash = INODE_HASH(buf->st_dev, buf->st_ino);
 	struct inode_info *inode;
@@ -2983,10 +2954,12 @@ struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 		}
 	}
 
-	inode = malloc(sizeof(struct inode_info));
+	inode = malloc(sizeof(struct inode_info) + bytes);
 	if(inode == NULL)
 		MEM_ERROR();
 
+	if(bytes)
+		memcpy(&inode->symlink, symlink, bytes);
 	memcpy(&inode->buf, buf, sizeof(struct stat));
 	inode->read = FALSE;
 	inode->root_entry = FALSE;
@@ -3011,6 +2984,12 @@ struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 	inode_info[ino_hash] = inode;
 
 	return inode;
+}
+
+
+struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
+{
+	return lookup_inode3(buf, pseudo, id, NULL, 0);
 }
 
 
@@ -3421,23 +3400,46 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 			}
 		}
 
-		if((buf.st_mode & S_IFMT) == S_IFDIR) {
+		switch(buf.st_mode & S_IFMT) {
+		case S_IFDIR:
 			if(subpath == NULL)
 				subpath = subpathname(dir_ent);
 
 			sub_dir = dir_scan1(filename, subpath, new,
 					scan1_readdir, depth + 1);
-			if(sub_dir == NULL) {
+			if(sub_dir) {
+				dir->directory_count ++;
+				add_dir_entry(dir_ent, sub_dir,
+							lookup_inode(&buf));
+			} else
 				free_dir_entry(dir_ent);
-				free(new);
-				continue;
+			break;
+		case S_IFLNK: {
+			int byte;
+			static char buff[65536]; /* overflow safe */
+
+			byte = readlink(filename, buff, 65536);
+			if(byte == -1) {
+				ERROR_START("Failed to read symlink %s",
+								filename);
+				ERROR_EXIT(", ignoring\n");
+			} else if(byte == 65536) {
+				ERROR_START("Symlink %s is greater than 65536 "
+							"bytes!", filename);
+				ERROR_EXIT(", ignoring\n");
+			} else {
+				/* readlink doesn't 0 terminate the returned
+				 * path */
+				buff[byte] = '\0';
+				add_dir_entry(dir_ent, NULL, lookup_inode3(&buf,
+							 0, 0, buff, byte + 1));
 			}
+			break;
+		}
+		default:
+			add_dir_entry(dir_ent, NULL, lookup_inode(&buf));
+		}
 
-			dir->directory_count ++;
-		} else
-			sub_dir = NULL;
-
-		add_dir_entry(dir_ent, sub_dir, lookup_inode(&buf));
 		free(new);
 	}
 
@@ -5075,7 +5077,7 @@ void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.3-git (2014/07/25)\n");\
+	printf("mksquashfs version 4.3-git (2014/07/26)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

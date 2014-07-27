@@ -63,6 +63,7 @@ struct inode_info {
 	char			always_use_fragments;
 	char			noD;
 	char			noF;
+	char			symlink[0];
 };
 
 /* in memory file info */
