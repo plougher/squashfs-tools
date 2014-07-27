@@ -53,11 +53,13 @@ static struct action *fragment_spec = NULL;
 static struct action *exclude_spec = NULL;
 static struct action *empty_spec = NULL;
 static struct action *move_spec = NULL;
+static struct action *prune_spec = NULL;
 static struct action *other_spec = NULL;
 static int fragment_count = 0;
 static int exclude_count = 0;
 static int empty_count = 0;
 static int move_count = 0;
+static int prune_count = 0;
 static int other_count = 0;
 
 static struct file_buffer *def_fragment = NULL;
@@ -550,6 +552,10 @@ skip_args:
 	case MOVE_ACTION:
 		spec_count = move_count ++;
 		spec_list = &move_spec;
+		break;
+	case PRUNE_ACTION:
+		spec_count = prune_count ++;
+		spec_list = &prune_spec;
 		break;
 	default:
 		spec_count = other_count ++;
@@ -1708,6 +1714,34 @@ void do_move_actions()
 
 
 /*
+ * Prune specific action code
+ */
+int prune_actions()
+{
+	return prune_count;
+}
+
+
+int eval_prune_actions(struct dir_ent *dir_ent)
+{
+	int i, match = 0;
+	struct action_data action_data;
+
+	action_data.name = dir_ent->name;
+	action_data.pathname = pathname(dir_ent);
+	action_data.subpath = subpathname(dir_ent);
+	action_data.buf = &dir_ent->inode->buf;
+	action_data.depth = dir_ent->our_dir->depth;
+	action_data.dir_ent = dir_ent;
+
+	for (i = 0; i < prune_count && !match; i++)
+		match = eval_expr(prune_spec[i].expr, &action_data);
+
+	return match;
+}
+
+
+/*
  * General test evaluation code
  */
 
@@ -2697,5 +2731,6 @@ static struct action_entry action_table[] = {
 	{ "mode", MODE_ACTION, -2, ACTION_ALL, parse_mode_args, mode_action },
 	{ "empty", EMPTY_ACTION, -2, ACTION_DIR, parse_empty_args, NULL},
 	{ "move", MOVE_ACTION, -2, ACTION_ALL_LNK, NULL, NULL},
+	{ "prune", PRUNE_ACTION, 0, ACTION_ALL_LNK, NULL, NULL},
 	{ "", 0, -1, 0, NULL, NULL}
 };

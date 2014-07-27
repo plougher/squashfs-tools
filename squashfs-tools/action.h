@@ -172,6 +172,7 @@ struct type_entry {
 #define MODE_ACTION 11
 #define EMPTY_ACTION 12
 #define MOVE_ACTION 13
+#define PRUNE_ACTION 14
 
 /*
  * Define what file types each action operates over
@@ -285,6 +286,7 @@ extern int eval_exclude_actions(char *, char *, char *, struct stat *, int,
 extern void eval_actions(struct dir_ent *);
 extern int eval_empty_actions(struct dir_ent *dir_ent);
 extern void eval_move_actions(struct dir_info *, struct dir_ent *);
+extern int eval_prune_actions(struct dir_ent *);
 extern void do_move_actions();
 extern int read_bytes(int, void *, int);
 extern int actions();
@@ -292,4 +294,5 @@ extern int move_actions();
 extern int empty_actions();
 extern int read_action_file(char *);
 extern int exclude_actions();
+extern int prune_actions();
 #endif

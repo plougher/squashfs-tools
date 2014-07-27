@@ -294,7 +294,8 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
 void dir_scan3(struct dir_info *root, struct dir_info *dir);
 void dir_scan4(struct dir_info *dir);
 void dir_scan5(struct dir_info *dir);
-void dir_scan6(squashfs_inode *inode, struct dir_info *dir_info);
+void dir_scan6(struct dir_info *dir);
+void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info);
 struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct fragment *fragment,
 	unsigned short checksum, unsigned short fragment_checksum,
@@ -3006,9 +3007,6 @@ struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 	inode->noD = noD;
 	inode->noF = noF;
 
-	if((buf->st_mode & S_IFMT) == S_IFREG)
-		progress_bar_size((buf->st_size + block_size - 1) >> block_log);
-
 	inode->next = inode_info[ino_hash];
 	inode_info[ino_hash] = inode;
 
@@ -3024,8 +3022,12 @@ inline struct inode_info *lookup_inode(struct stat *buf)
 
 inline void alloc_inode_no(struct inode_info *inode, unsigned int use_this)
 {
-	if (inode->inode_number == 0)
+	if (inode->inode_number == 0) {
 		inode->inode_number = use_this ? : inode_no ++;
+		if((inode->buf.st_mode & S_IFMT) == S_IFREG)
+			progress_bar_size((inode->buf.st_size + block_size - 1)
+								 >> block_log);
+	}
 }
 
 
@@ -3040,6 +3042,7 @@ inline struct dir_ent *create_dir_entry(char *name, char *source_name,
 	dir_ent->source_name = source_name;
 	dir_ent->nonstandard_pathname = nonstandard_pathname;
 	dir_ent->our_dir = dir;
+	dir_ent->inode = NULL;
 	dir_ent->next = NULL;
 
 	return dir_ent;
@@ -3082,6 +3085,15 @@ inline void free_dir_entry(struct dir_ent *dir_ent)
 	if(dir_ent->source_name)
 		free(dir_ent->source_name);
 
+	if(dir_ent->nonstandard_pathname)
+		free(dir_ent->nonstandard_pathname);
+
+	/* if this entry has been associated with an inode, then we need
+	 * to update the inode nlink count.  Orphaned inodes are harmless, and
+	 * is easier to leave them than go to the bother of deleting them */
+	if(dir_ent->inode && !dir_ent->inode->root_entry)
+		dir_ent->inode->nlink --;
+
 	free(dir_ent);
 }
 
@@ -3117,15 +3129,21 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	}
 
 	/*
+	 * Process prune actions
+	 */
+	if(prune_actions())
+		dir_scan4(dir_info);
+
+	/*
 	 * Process empty actions
 	 */
 	if(empty_actions())
-		dir_scan4(dir_info);
+		dir_scan5(dir_info);
 
  	/*
 	 * Sort directories and compute the inode numbers
 	 */
-	dir_scan5(dir_info);
+	dir_scan6(dir_info);
 
 	dir_ent = create_dir_entry("", NULL, pathname,
 						scan1_opendir("", "", 0));
@@ -3180,7 +3198,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		sort_files_and_write(dir_info);
 
 	set_progressbar_state(progress);
-	dir_scan6(inode, dir_info);
+	dir_scan7(inode, dir_info);
 	dir_ent->inode->inode = *inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 }
@@ -3582,17 +3600,89 @@ void dir_scan3(struct dir_info *root, struct dir_info *dir)
 
 /*
  * dir_scan4 routines...
- * This processes the empty action.  This action has to be processed after
- * all other actions because the previous exclude and move actions and the
- * pseudo actions affect whether a directory is empty
+ * This processes the prune action.  This action is designed to do fine
+ * grained tuning of the in-core directory structure after the exclude,
+ * move and pseudo actions have been performed.  This allows complex
+ * tests to be performed which are impossible at exclude time (i.e.
+ * tests which rely on the in-core directory structure)
  */
+void free_dir(struct dir_info *dir)
+{
+	struct dir_ent *dir_ent = dir->list;
+
+	while(dir_ent) {
+		struct dir_ent *tmp = dir_ent;
+
+		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
+			free_dir(dir_ent->dir);
+
+		dir_ent = dir_ent->next;
+		free_dir_entry(tmp);
+	}
+
+	free(dir->pathname);
+	free(dir->subpath);
+	free(dir);
+}
+	
+
 void dir_scan4(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = dir->list, *prev = NULL;
 
 	while(dir_ent) {
-		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR) {
+		if(dir_ent->inode->root_entry) {
+			prev = dir_ent;
+			dir_ent = dir_ent->next;
+			continue;
+		}
+
+		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
 			dir_scan4(dir_ent->dir);
+
+		if(eval_prune_actions(dir_ent)) {
+			struct dir_ent *tmp = dir_ent;
+
+			if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR) {
+				free_dir(dir_ent->dir);
+				dir->directory_count --;
+			}
+
+			dir->count --;
+
+			/* remove dir_ent from list */
+			dir_ent = dir_ent->next;
+			if(prev)
+				prev->next = dir_ent;
+			else
+				dir->list = dir_ent;
+			
+			/* free it */
+			free_dir_entry(tmp);
+
+			add_excluded(dir);
+			continue;
+		}
+
+		prev = dir_ent;
+		dir_ent = dir_ent->next;
+	}
+}
+
+
+/*
+ * dir_scan5 routines...
+ * This processes the empty action.  This action has to be processed after
+ * all other actions because the previous exclude and move actions and the
+ * pseudo actions affect whether a directory is empty
+ */
+void dir_scan5(struct dir_info *dir)
+{
+	struct dir_ent *dir_ent = dir->list, *prev = NULL;
+
+	while(dir_ent) {
+		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR) {
+			dir_scan5(dir_ent->dir);
 
 			if(eval_empty_actions(dir_ent)) {
 				struct dir_ent *tmp = dir_ent;
@@ -3630,7 +3720,7 @@ void dir_scan4(struct dir_info *dir)
 
 
 /*
- * dir_scan5 routines...
+ * dir_scan6 routines...
  * This sorts every directory and computes the inode numbers
  */
 
@@ -3723,7 +3813,7 @@ void sort_directory(struct dir_info *dir)
 }
 
 
-void dir_scan5(struct dir_info *dir)
+void dir_scan6(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent;
 	unsigned int byte_count = 0;
@@ -3740,7 +3830,7 @@ void dir_scan5(struct dir_info *dir)
 		alloc_inode_no(dir_ent->inode, 0);
 
 		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
-			dir_scan5(dir_ent->dir);
+			dir_scan6(dir_ent->dir);
 	}
 
 	if((dir->count < 257 && byte_count < SQUASHFS_METADATA_SIZE))
@@ -3752,7 +3842,7 @@ void dir_scan5(struct dir_info *dir)
  * dir_scan6 routines...
  * This generates the filesystem metadata and writes it out to the destination
  */
-void scan6_init_dir(struct directory *dir)
+void scan7_init_dir(struct directory *dir)
 {
 	dir->buff = malloc(SQUASHFS_METADATA_SIZE);
 	if(dir->buff == NULL)
@@ -3767,7 +3857,7 @@ void scan6_init_dir(struct directory *dir)
 }
 
 
-struct dir_ent *scan6_readdir(struct directory *dir, struct dir_info *dir_info,
+struct dir_ent *scan7_readdir(struct directory *dir, struct dir_info *dir_info,
 	struct dir_ent *dir_ent)
 {
 	if (dir_ent == NULL)
@@ -3783,7 +3873,7 @@ struct dir_ent *scan6_readdir(struct directory *dir, struct dir_info *dir_info,
 }
 
 
-void scan6_freedir(struct directory *dir)
+void scan7_freedir(struct directory *dir)
 {
 	if(dir->index)
 		free(dir->index);
@@ -3791,16 +3881,16 @@ void scan6_freedir(struct directory *dir)
 }
 
 
-void dir_scan6(squashfs_inode *inode, struct dir_info *dir_info)
+void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 {
 	int squashfs_type;
 	int duplicate_file;
 	struct directory dir;
 	struct dir_ent *dir_ent = NULL;
 	
-	scan6_init_dir(&dir);
+	scan7_init_dir(&dir);
 	
-	while((dir_ent = scan6_readdir(&dir, dir_info, dir_ent)) != NULL) {
+	while((dir_ent = scan7_readdir(&dir, dir_info, dir_ent)) != NULL) {
 		struct stat *buf = &dir_ent->inode->buf;
 
 		update_info(dir_ent);
@@ -3821,7 +3911,7 @@ void dir_scan6(squashfs_inode *inode, struct dir_info *dir_info)
 
 				case S_IFDIR:
 					squashfs_type = SQUASHFS_DIR_TYPE;
-					dir_scan6(inode, dir_ent->dir);
+					dir_scan7(inode, dir_ent->dir);
 					break;
 
 				case S_IFLNK:
@@ -3932,7 +4022,7 @@ void dir_scan6(squashfs_inode *inode, struct dir_info *dir_info)
 	INFO("directory %s inode 0x%llx\n", subpathname(dir_info->dir_ent),
 		*inode);
 
-	scan6_freedir(&dir);
+	scan7_freedir(&dir);
 }
 
 
@@ -4985,7 +5075,7 @@ void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.3-git (2014/07/13)\n");\
+	printf("mksquashfs version 4.3-git (2014/07/25)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
