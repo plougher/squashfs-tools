@@ -61,6 +61,7 @@ static int empty_count = 0;
 static int move_count = 0;
 static int prune_count = 0;
 static int other_count = 0;
+static struct action_entry *parsing_action;
 
 static struct file_buffer *def_fragment = NULL;
 
@@ -273,12 +274,20 @@ static struct expr *parse_test(char *name)
 		if (strcmp(name, test_table[i].name) == 0)
 			break;
 
-	if (test_table[i].args == -1) {
+	test = &test_table[i];
+
+	if (test->args == -1) {
 		SYNTAX_ERROR("Non-existent test \"%s\"\n", name);
 		return NULL;
 	}
 
-	test = &test_table[i];
+	if(parsing_action->type == EXCLUDE_ACTION && !test->exclude_ok) {
+		fprintf(stderr, "Failed to parse action \"%s\"\n", source);
+		fprintf(stderr, "Test \"%s\" cannot be used in exclude "
+							"actions\n", name);
+		fprintf(stderr, "Use prune action instead ...\n");
+		return NULL;
+	}
 
 	expr = malloc(sizeof(*expr));
 	if (expr == NULL)
@@ -528,6 +537,7 @@ skip_args:
 		goto failed;
 	}
 	
+	parsing_action = action;
 	expr = parse_expr(0);
 
 	if (expr == NULL)
@@ -2673,41 +2683,41 @@ void dump_actions()
 
 
 static struct test_entry test_table[] = {
-	{ "name", 1, name_fn},
-	{ "pathname", 1, pathname_fn, check_pathname},
-	{ "subpathname", 1, subpathname_fn, check_pathname},
-	{ "filesize", 1, filesize_fn, parse_number_arg},
-	{ "dirsize", 1, dirsize_fn, parse_number_arg},
-	{ "size", 1, size_fn, parse_number_arg},
-	{ "inode", 1, inode_fn, parse_number_arg},
-	{ "nlink", 1, nlink_fn, parse_number_arg},
-	{ "fileblocks", 1, fileblocks_fn, parse_number_arg},
-	{ "dirblocks", 1, dirblocks_fn, parse_number_arg},
-	{ "blocks", 1, blocks_fn, parse_number_arg},
-	{ "gid", 1, gid_fn, parse_number_arg},
-	{ "uid", 1, uid_fn, parse_number_arg},
-	{ "depth", 1, depth_fn, parse_number_arg},
-	{ "filesize_range", 2, filesize_range_fn, parse_range_args},
-	{ "dirsize_range", 2, dirsize_range_fn, parse_range_args},
-	{ "size_range", 2, size_range_fn, parse_range_args},
-	{ "inode_range", 2, inode_range_fn, parse_range_args},
-	{ "nlink_range", 2, nlink_range_fn, parse_range_args},
-	{ "fileblocks_range", 2, fileblocks_range_fn, parse_range_args},
-	{ "dirblocks_range", 2, dirblocks_range_fn, parse_range_args},
-	{ "blocks_range", 2, blocks_range_fn, parse_range_args},
-	{ "gid_range", 2, gid_range_fn, parse_range_args},
-	{ "uid_range", 2, uid_range_fn, parse_range_args},
-	{ "depth_range", 2, depth_range_fn, parse_range_args},
-	{ "type", 1, type_fn, parse_type_arg},
-	{ "true", 0, true_fn, NULL},
-	{ "false", 0, false_fn, NULL},
-	{ "file", 1, file_fn, parse_file_arg},
-	{ "exec", 1, exec_fn, NULL},
-	{ "exists", 0, exists_fn, NULL},
-	{ "absolute", 0, absolute_fn, NULL},
-	{ "contained", 0, contained_fn, NULL},
-	{ "contained_followlink", 0, contained_followlink_fn, NULL},
-	{ "stat", 1, stat_fn, parse_stat_arg},
+	{ "name", 1, name_fn, NULL, 1},
+	{ "pathname", 1, pathname_fn, check_pathname, 1},
+	{ "subpathname", 1, subpathname_fn, check_pathname, 1},
+	{ "filesize", 1, filesize_fn, parse_number_arg, 1},
+	{ "dirsize", 1, dirsize_fn, parse_number_arg, 1},
+	{ "size", 1, size_fn, parse_number_arg, 1},
+	{ "inode", 1, inode_fn, parse_number_arg, 1},
+	{ "nlink", 1, nlink_fn, parse_number_arg, 1},
+	{ "fileblocks", 1, fileblocks_fn, parse_number_arg, 1},
+	{ "dirblocks", 1, dirblocks_fn, parse_number_arg, 1},
+	{ "blocks", 1, blocks_fn, parse_number_arg, 1},
+	{ "gid", 1, gid_fn, parse_number_arg, 1},
+	{ "uid", 1, uid_fn, parse_number_arg, 1},
+	{ "depth", 1, depth_fn, parse_number_arg, 1},
+	{ "filesize_range", 2, filesize_range_fn, parse_range_args, 1},
+	{ "dirsize_range", 2, dirsize_range_fn, parse_range_args, 1},
+	{ "size_range", 2, size_range_fn, parse_range_args, 1},
+	{ "inode_range", 2, inode_range_fn, parse_range_args, 1},
+	{ "nlink_range", 2, nlink_range_fn, parse_range_args, 1},
+	{ "fileblocks_range", 2, fileblocks_range_fn, parse_range_args, 1},
+	{ "dirblocks_range", 2, dirblocks_range_fn, parse_range_args, 1},
+	{ "blocks_range", 2, blocks_range_fn, parse_range_args, 1},
+	{ "gid_range", 2, gid_range_fn, parse_range_args, 1},
+	{ "uid_range", 2, uid_range_fn, parse_range_args, 1},
+	{ "depth_range", 2, depth_range_fn, parse_range_args, 1},
+	{ "type", 1, type_fn, parse_type_arg, 1},
+	{ "true", 0, true_fn, NULL, 1},
+	{ "false", 0, false_fn, NULL, 1},
+	{ "file", 1, file_fn, parse_file_arg, 1},
+	{ "exec", 1, exec_fn, NULL, 1},
+	{ "exists", 0, exists_fn, NULL, 1},
+	{ "absolute", 0, absolute_fn, NULL, 1},
+	{ "contained", 0, contained_fn, NULL, 1},
+	{ "contained_followlink", 0, contained_followlink_fn, NULL, 1},
+	{ "stat", 1, stat_fn, parse_stat_arg, 1},
 	{ "", -1 }
 };
 

@@ -143,6 +143,7 @@ struct test_entry {
 	int args;
 	int (*fn)(struct atom *, struct action_data *);
 	int (*parse_args)(struct test_entry *, struct atom *);
+	int exclude_ok;
 };
 
 
