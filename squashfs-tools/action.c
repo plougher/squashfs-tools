@@ -2323,8 +2323,6 @@ static int exists_fn(struct atom *atom, struct action_data *action_data)
 
 static int absolute_fn(struct atom *atom, struct action_data *action_data)
 {
-	int bytes;
-	char buff[1]; /* overflow safe */
 	/*
 	 * Test if a symlink has an absolute path, which by definition
 	 * means the symbolic link may be broken (even if the absolute path
@@ -2341,13 +2339,7 @@ static int absolute_fn(struct atom *atom, struct action_data *action_data)
 	if (!file_type_match(action_data->buf->st_mode, ACTION_LNK))
 		return 0;
 
-	bytes = readlink(action_data->pathname, buff, 1);
-	if(bytes < 1)
-		/* reading symlink failed, this will be flagged up and dealt
-		 * with later in Mksquashfs, and so here just return FALSE */
-		return 0;
-
-	return buff[0] == '/';
+	return action_data->dir_ent->inode->symlink[0] == '/';
 }
 
 
@@ -2714,7 +2706,7 @@ static struct test_entry test_table[] = {
 	{ "file", 1, file_fn, parse_file_arg, 1},
 	{ "exec", 1, exec_fn, NULL, 1},
 	{ "exists", 0, exists_fn, NULL, 1},
-	{ "absolute", 0, absolute_fn, NULL, 1},
+	{ "absolute", 0, absolute_fn, NULL, 0},
 	{ "contained", 0, contained_fn, NULL, 1},
 	{ "contained_followlink", 0, contained_followlink_fn, NULL, 1},
 	{ "stat", 1, stat_fn, parse_stat_arg, 1},
