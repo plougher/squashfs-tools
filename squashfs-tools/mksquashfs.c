@@ -3093,6 +3093,35 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	if(dir_info == NULL)
 		return;
 
+	/* Create root directory dir_ent and associated inode, and connect
+	 * it to the root directory dir_info structure */
+	dir_ent = create_dir_entry("", NULL, pathname,
+						scan1_opendir("", "", 0));
+
+	if(pathname[0] == '\0') {
+		/*
+ 		 * dummy top level directory, if multiple sources specified on
+		 * command line
+		 */
+		memset(&buf, 0, sizeof(buf));
+		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+		buf.st_uid = getuid();
+		buf.st_gid = getgid();
+		buf.st_mtime = time(NULL);
+		buf.st_dev = 0;
+		buf.st_ino = 0;
+		dir_ent->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
+	} else {
+		if(lstat(pathname, &buf) == -1)
+			/* source directory has disappeared? */
+			BAD_ERROR("Cannot stat source directory %s because %s\n",
+				pathname, strerror(errno));
+		dir_ent->inode = lookup_inode(&buf);
+	}
+
+	dir_ent->dir = dir_info;
+	dir_info->dir_ent = dir_ent;
+
 	/*
 	 * Process most actions and any pseudo files
 	 */
@@ -3124,33 +3153,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	 */
 	dir_scan6(dir_info);
 
-	dir_ent = create_dir_entry("", NULL, pathname,
-						scan1_opendir("", "", 0));
-
-	if(pathname[0] == '\0') {
-		/*
- 		 * dummy top level directory, if multiple sources specified on
-		 * command line
-		 */
-		memset(&buf, 0, sizeof(buf));
-		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-		buf.st_uid = getuid();
-		buf.st_gid = getgid();
-		buf.st_mtime = time(NULL);
-		buf.st_dev = 0;
-		buf.st_ino = 0;
-		dir_ent->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
-	} else {
-		if(lstat(pathname, &buf) == -1)
-			/* source directory has disappeared? */
-			BAD_ERROR("Cannot stat source directory %s because %s\n",
-				pathname, strerror(errno));
-		dir_ent->inode = lookup_inode(&buf);
-	}
-
 	alloc_inode_no(dir_ent->inode, root_inode_number);
-	dir_ent->dir = dir_info;
-	dir_info->dir_ent = dir_ent;
 
 	eval_actions(dir_ent);
 
