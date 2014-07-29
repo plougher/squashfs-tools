@@ -2307,9 +2307,103 @@ static int exec_fn(struct atom *atom, struct action_data *action_data)
 /*
  * Symbolic link specific test code
  */
+
+/*
+ * Walk the supplied pathname and return the directory entry corresponding
+ * to the pathname.  If any symlinks are encountered whilst walking the
+ * pathname, then recursively walk these, to obtain the fully
+ * dereferenced canonicalised directory entry.
+ *
+ * If follow_path fails to walk a pathname either because a component
+ * doesn't exist, it is a non directory component when a directory
+ * component is expected, a symlink with an absolute path is encountered,
+ * or a symlink is encountered which cannot be recursively walked due to
+ * the above failures, then return NULL.
+ */
+static struct dir_ent *follow_path(struct dir_info *dir, char *pathname)
+{
+	char *comp, *path = pathname;
+	struct dir_ent *dir_ent = NULL;
+
+	/* We cannot follow absolute paths */
+	if(pathname[0] == '/')
+		return NULL;
+
+	for(comp = get_comp(&path); comp; free(comp), comp = get_comp(&path)) {
+		if(strcmp(comp, ".") == 0)
+			continue;
+
+		if(strcmp(comp, "..") == 0) {
+			/* Move to parent if we're not in the root directory */
+			if(dir->depth > 1) {
+				dir = dir->dir_ent->our_dir;
+				dir_ent = NULL; /* lazily eval at loop exit */
+				continue;
+			} else
+				/* Failed to walk pathname */
+				return NULL;
+		}
+
+		/* Lookup comp in current directory */
+		dir_ent = lookup_comp(comp, dir);
+		if(dir_ent == NULL)
+			/* Doesn't exist, failed to walk pathname */
+			return NULL;
+
+		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFLNK) {
+			/* Symbolic link, try to walk it */
+			dir_ent = follow_path(dir, dir_ent->inode->symlink);
+			if(dir_ent == NULL)
+				/* Failed to follow symlink */
+				return NULL;
+		}
+
+		if((dir_ent->inode->buf.st_mode & S_IFMT) != S_IFDIR)
+			/* Cannot walk further */
+			break;
+
+		dir = dir_ent->dir;
+	}
+
+	/* We will have exited the loop either because we've processed
+	 * all the components, which means we've successfully walked the
+	 * pathname, or because we've hit a non-directory, in which case
+	 * it's success if this is the leaf component */
+	if(comp) {
+		free(comp);
+		comp = get_comp(&path);
+		free(comp);
+		if(comp != NULL)
+			/* Not a leaf component */
+			return NULL;
+	} else {
+		/* Fully walked pathname, dir_ent contains correct value unless
+		 * we've walked to the parent ("..") in which case we need
+		 * to resolve it here */
+		if(!dir_ent)
+			dir_ent = dir->dir_ent;
+	}
+
+	return dir_ent;
+}
+
+
 static int exists_fn(struct atom *atom, struct action_data *action_data)
 {
 	/*
+	 * Test if a symlink exists within the output filesystem, that is,
+	 * the symlink has a relative path, and the relative path refers
+	 * to an entry within the output filesystem.
+	 *
+	 * This test function evaluates the path for symlinks - that is it
+	 * follows any symlinks in the path (and any symlinks that it contains
+ 	 * etc.), to discover the fully dereferenced canonicalised relative
+	 * path.
+	 *
+	 * If any symlinks within the path do not exist or are absolute
+	 * then the symlink is considered to not exist, as it cannot be
+	 * fully dereferenced.
+	 *
 	 * exists operates on symlinks only, other files by definition
 	 * exist
 	 */
@@ -2317,7 +2411,8 @@ static int exists_fn(struct atom *atom, struct action_data *action_data)
 		return 1;
 
 	/* dereference the symlink, and return TRUE if it exists */
-	return access(action_data->pathname, F_OK) == 0;
+	return follow_path(action_data->dir_ent->our_dir,
+			action_data->dir_ent->inode->symlink) ? 1 : 0;
 }
 
 
@@ -2705,7 +2800,7 @@ static struct test_entry test_table[] = {
 	{ "false", 0, false_fn, NULL, 1},
 	{ "file", 1, file_fn, parse_file_arg, 1},
 	{ "exec", 1, exec_fn, NULL, 1},
-	{ "exists", 0, exists_fn, NULL, 1},
+	{ "exists", 0, exists_fn, NULL, 0},
 	{ "absolute", 0, absolute_fn, NULL, 0},
 	{ "contained", 0, contained_fn, NULL, 1},
 	{ "contained_followlink", 0, contained_followlink_fn, NULL, 1},
