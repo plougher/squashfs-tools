@@ -2438,7 +2438,7 @@ static int absolute_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
-static int parse_stat_arg(struct test_entry *test, struct atom *atom)
+static int parse_expr_arg(struct test_entry *test, struct atom *atom)
 {
 	/* Call parse_expr to parse argument, which should be an expression */
 
@@ -2493,6 +2493,45 @@ static int stat_fn(struct atom *atom, struct action_data *action_data)
 	/* fill in the inode values of the file pointed to by the
 	 * symlink, but, leave everything else the same */
 	action_data->buf = &buf;
+
+	return eval_expr(atom->data, action_data);
+}
+
+
+static int readlink_fn(struct atom *atom, struct action_data *action_data)
+{
+	struct dir_ent *dir_ent;
+
+	/* Dereference the symlink and evaluate the expression in the
+	 * context of the file pointed to by the symlink.
+	 * All attributes are updated to refer to the file that is pointed to.
+	 * Thus the inode attributes, pathname, name and depth all refer to
+	 * the dereferenced file, and not the symlink.
+	 *
+	 * If the symlink cannot be dereferenced because it doesn't exist in
+	 * the output filesystem, or due to some other failure to
+	 * walk the pathname (see follow_path above), then FALSE is returned.
+	 *
+	 * If you wish to evaluate the inode attributes of symlinks which
+	 * exist in the source filestem (but not in the output filesystem then
+	 * use stat instead (see above).
+	 *
+	 * readlink operates on symlinks only */
+	if (!file_type_match(action_data->buf->st_mode, ACTION_LNK))
+		return 0;
+
+	/* dereference the symlink, and get the directory entry it points to */
+	dir_ent = follow_path(action_data->dir_ent->our_dir,
+			action_data->dir_ent->inode->symlink);
+	if(dir_ent == NULL)
+		return 0;
+
+	action_data->name = dir_ent->name;
+	action_data->pathname = pathname(dir_ent);
+	action_data->subpath = subpathname(dir_ent);
+	action_data->buf = &dir_ent->inode->buf;
+	action_data->depth = dir_ent->our_dir->depth;
+	action_data->dir_ent = dir_ent;
 
 	return eval_expr(atom->data, action_data);
 }
@@ -2596,7 +2635,8 @@ static struct test_entry test_table[] = {
 	{ "exec", 1, exec_fn, NULL, 1},
 	{ "exists", 0, exists_fn, NULL, 0},
 	{ "absolute", 0, absolute_fn, NULL, 0},
-	{ "stat", 1, stat_fn, parse_stat_arg, 1},
+	{ "stat", 1, stat_fn, parse_expr_arg, 1},
+	{ "readlink", 1, readlink_fn, parse_expr_arg, 0},
 	{ "", -1 }
 };
 
