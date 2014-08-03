@@ -865,7 +865,7 @@ static long long parse_gid(char *arg) {
 		if (group)
 			gid = group->gr_gid;
 		else {
-			SYNTAX_ERROR("action: invalid gid or unknown user\n");
+			SYNTAX_ERROR("action: invalid gid or unknown group\n");
 			return -1;
 		}
 	}
