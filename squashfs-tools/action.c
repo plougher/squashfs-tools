@@ -2048,8 +2048,6 @@ TEST_VAR_FN(blocks, ACTION_ALL_LNK, action_data->buf->st_blocks)
 
 TEST_VAR_FN(gid, ACTION_ALL_LNK, action_data->buf->st_gid)
 
-TEST_VAR_FN(uid, ACTION_ALL_LNK, action_data->buf->st_uid)
-
 TEST_VAR_FN(depth, ACTION_ALL_LNK, action_data->depth)
 
 TEST_VAR_RANGE_FN(filesize, ACTION_REG, action_data->buf->st_size)
@@ -2073,6 +2071,51 @@ TEST_VAR_RANGE_FN(gid, ACTION_ALL_LNK, action_data->buf->st_gid)
 TEST_VAR_RANGE_FN(uid, ACTION_ALL_LNK, action_data->buf->st_uid)
 
 TEST_VAR_RANGE_FN(depth, ACTION_ALL_LNK, action_data->depth)
+
+/*
+ * uid specific test code
+ */
+TEST_VAR_FN(uid, ACTION_ALL_LNK, action_data->buf->st_uid)
+
+static int parse_uid_arg(struct test_entry *test, struct atom *atom)
+{
+	struct test_number_arg *number;
+	long long size;
+	int range;
+	char *error;
+
+	if(parse_number(atom->argv[0], &size, &range, &error)) {
+		/* managed to fully parse argument as a number */
+		if(size < 0 || size > (((long long) 1 << 32) - 1)) {
+			TEST_SYNTAX_ERROR(test, 1, "Numeric uid out of "
+								"range\n");
+			return 0;
+		}
+	} else {
+		/* couldn't parse (fully) as a number, is it a user name? */
+		struct passwd *uid = getpwnam(atom->argv[0]);
+		if(uid) {
+			size = uid->pw_uid;
+			range = NUM_EQ;
+		} else {
+			TEST_SYNTAX_ERROR(test, 1, "Invalid uid or unknown "
+								"user\n");
+			return 0;
+		}
+	}
+
+	number = malloc(sizeof(*number));
+	if(number == NULL)
+		MEM_ERROR();
+
+	number->range = range;
+	number->size= size;
+
+	atom->data = number;
+
+	return 1;
+}
+
 
 /*
  * Type test specific code
@@ -2615,7 +2658,7 @@ static struct test_entry test_table[] = {
 	{ "dirblocks", 1, dirblocks_fn, parse_number_arg, 1},
 	{ "blocks", 1, blocks_fn, parse_number_arg, 1},
 	{ "gid", 1, gid_fn, parse_number_arg, 1},
-	{ "uid", 1, uid_fn, parse_number_arg, 1},
+	{ "uid", 1, uid_fn, parse_uid_arg, 1},
 	{ "depth", 1, depth_fn, parse_number_arg, 1},
 	{ "filesize_range", 2, filesize_range_fn, parse_range_args, 1},
 	{ "dirsize_range", 2, dirsize_range_fn, parse_range_args, 1},
