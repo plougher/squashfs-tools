@@ -2030,6 +2030,12 @@ static int subpathname_fn(struct atom *atom, struct action_data *action_data)
 		FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
 }
 
+/*
+ * Inode attribute test operations using generic
+ * TEST_VAR_FN(test name, file scope, attribute name) macro.
+ * This is for tests that do not need to be specially handled in any way.
+ * They just take a variable and compare it against a number.
+ */
 TEST_VAR_FN(filesize, ACTION_REG, action_data->buf->st_size)
 
 TEST_VAR_FN(dirsize, ACTION_DIR, action_data->buf->st_size)
