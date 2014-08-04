@@ -2629,6 +2629,43 @@ static int readlink_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
+/*
+ * dircount specific test code 
+ */
+static int dircount_fn(struct atom *atom, struct action_data *action_data)
+{
+	int match = 0;
+	struct test_number_arg *number = atom->data;
+
+	/*
+	 * Compare the number of items in the directory (in the output
+	 * filesystem as opposed to the source filesystem) against the supplied
+	 * value and return TRUE or FALSE.
+	 *
+	 * The comparison can be less than ([<-]value), more than ([>+]value),
+	 * or equal (value).
+	 *
+	 * All non directory types return FALSE
+	 */
+	if (!file_type_match(action_data->buf->st_mode, ACTION_DIR))
+		return 0;
+
+	switch (number->range) {
+	case NUM_EQ:
+		match = action_data->dir_ent->dir->count == number->size;
+		break;
+	case NUM_LESS:
+		match = action_data->dir_ent->dir->count < number->size;
+		break;
+	case NUM_GREATER:
+		match = action_data->dir_ent->dir->count > number->size;
+		break;
+	}
+
+	return match;
+}
+
+
 #ifdef SQUASHFS_TRACE
 static void dump_parse_tree(struct expr *expr)
 {
@@ -2729,6 +2766,7 @@ static struct test_entry test_table[] = {
 	{ "absolute", 0, absolute_fn, NULL, 0},
 	{ "stat", 1, stat_fn, parse_expr_arg, 1},
 	{ "readlink", 1, readlink_fn, parse_expr_arg, 0},
+	{ "dircount", 1, dircount_fn, parse_number_arg, 0},
 	{ "", -1 }
 };
 
