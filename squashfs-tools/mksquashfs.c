@@ -3686,6 +3686,12 @@ void dir_scan5(struct dir_info *dir)
 	struct dir_ent *dir_ent = dir->list, *prev = NULL;
 
 	while(dir_ent) {
+		if(dir_ent->inode->root_entry) {
+			prev = dir_ent;
+			dir_ent = dir_ent->next;
+			continue;
+		}
+
 		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR) {
 			dir_scan5(dir_ent->dir);
 
