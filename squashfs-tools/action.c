@@ -2052,6 +2052,8 @@ TEST_VAR_FN(dirblocks, ACTION_DIR, action_data->buf->st_blocks)
 
 TEST_VAR_FN(blocks, ACTION_ALL_LNK, action_data->buf->st_blocks)
 
+TEST_VAR_FN(dircount, ACTION_DIR, action_data->dir_ent->dir->count)
+
 TEST_VAR_FN(depth, ACTION_ALL_LNK, action_data->depth)
 
 TEST_VAR_RANGE_FN(filesize, ACTION_REG, action_data->buf->st_size)
@@ -2075,6 +2077,8 @@ TEST_VAR_RANGE_FN(gid, ACTION_ALL_LNK, action_data->buf->st_gid)
 TEST_VAR_RANGE_FN(uid, ACTION_ALL_LNK, action_data->buf->st_uid)
 
 TEST_VAR_RANGE_FN(depth, ACTION_ALL_LNK, action_data->depth)
+
+TEST_VAR_RANGE_FN(dircount, ACTION_DIR, action_data->dir_ent->dir->count)
 
 /*
  * uid specific test code
@@ -2629,43 +2633,6 @@ static int readlink_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
-/*
- * dircount specific test code 
- */
-static int dircount_fn(struct atom *atom, struct action_data *action_data)
-{
-	int match = 0;
-	struct test_number_arg *number = atom->data;
-
-	/*
-	 * Compare the number of items in the directory (in the output
-	 * filesystem as opposed to the source filesystem) against the supplied
-	 * value and return TRUE or FALSE.
-	 *
-	 * The comparison can be less than ([<-]value), more than ([>+]value),
-	 * or equal (value).
-	 *
-	 * All non directory types return FALSE
-	 */
-	if (!file_type_match(action_data->buf->st_mode, ACTION_DIR))
-		return 0;
-
-	switch (number->range) {
-	case NUM_EQ:
-		match = action_data->dir_ent->dir->count == number->size;
-		break;
-	case NUM_LESS:
-		match = action_data->dir_ent->dir->count < number->size;
-		break;
-	case NUM_GREATER:
-		match = action_data->dir_ent->dir->count > number->size;
-		break;
-	}
-
-	return match;
-}
-
-
 #ifdef SQUASHFS_TRACE
 static void dump_parse_tree(struct expr *expr)
 {
@@ -2746,6 +2713,7 @@ static struct test_entry test_table[] = {
 	{ "gid", 1, gid_fn, parse_gid_arg, 1},
 	{ "uid", 1, uid_fn, parse_uid_arg, 1},
 	{ "depth", 1, depth_fn, parse_number_arg, 1},
+	{ "dircount", 1, dircount_fn, parse_number_arg, 0},
 	{ "filesize_range", 2, filesize_range_fn, parse_range_args, 1},
 	{ "dirsize_range", 2, dirsize_range_fn, parse_range_args, 1},
 	{ "size_range", 2, size_range_fn, parse_range_args, 1},
@@ -2757,6 +2725,7 @@ static struct test_entry test_table[] = {
 	{ "gid_range", 2, gid_range_fn, parse_range_args, 1},
 	{ "uid_range", 2, uid_range_fn, parse_range_args, 1},
 	{ "depth_range", 2, depth_range_fn, parse_range_args, 1},
+	{ "dircount_range", 2, dircount_range_fn, parse_range_args, 0},
 	{ "type", 1, type_fn, parse_type_arg, 1},
 	{ "true", 0, true_fn, NULL, 1},
 	{ "false", 0, false_fn, NULL, 1},
@@ -2766,7 +2735,6 @@ static struct test_entry test_table[] = {
 	{ "absolute", 0, absolute_fn, NULL, 0},
 	{ "stat", 1, stat_fn, parse_expr_arg, 1},
 	{ "readlink", 1, readlink_fn, parse_expr_arg, 0},
-	{ "dircount", 1, dircount_fn, parse_number_arg, 0},
 	{ "", -1 }
 };
 
