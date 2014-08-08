@@ -1,10 +1,10 @@
-	SQUASHFS 1.3r2 - A squashed read-only filesystem for Linux
+	SQUASHFS 1.3r3 - A squashed read-only filesystem for Linux
 
-	Copyright 2003 Phillip Lougher (phillip@lougher.demon.co.uk)
+	Copyright 2004 Phillip Lougher (phillip@lougher.demon.co.uk)
 
 	Released under the GPL licence (version 2 or later).
 
-Squashfs is currently at version 1.3 release 2.  Please see the CHANGES file
+Squashfs is currently at version 1.3 release 3.  Please see the CHANGES file
 for recent changes to squashfs.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
@@ -57,7 +57,7 @@ create populated squashfs filesystems.  Beginning with Squashfs 1.2, mksquashfs
 will also append directories and files to pre-existing squashfs filesystems, see
 the following 'appending to squashfs filesystems' subsection.
 
-SYNTAX:./mksquashfs source1 source2 ...  dest [options] [-e list of exclude dirs/files]
+SYNTAX:mksquashfs source1 source2 ...  dest [options] [-e list of exclude dirs/files]
 
 Options are
 	-info				print files written to filesystem
@@ -75,6 +75,7 @@ Options are
 	-check_data			add checkdata for greater filesystem checks
 	-le				create a little endian filesystem
 	-be				create a big endian filesystem
+	-ef exclude file		file is a list of exclude dirs/files - one per line
 	-version			print version, licence and copyright message
 
 Source1 source2 ... are the source directories/files containing the
@@ -139,22 +140,28 @@ doesn't exist it will be created, if it does exist and a squashfs
 filesystem exists on it, mksquashfs will append.  The -noappend option will
 write a new filesystem irrespective of whether an existing filesystem is present.
 
-The -e option allows files/directories to be specified which are
-excluded from the output filesystem.  If an exclude file/directory is
-absolute (i.e. prefixed with /, ../, or ./) the entry is treated as
-absolute, however, if an exclude file/directory is relative, it is
-treated as being relative to each of the sources in turn, i.e.
+The -e and -ef options allow files/directories to be specified which are
+excluded from the output filesystem.  The -e option takes the exclude
+files/directories from the command line, the -ef option takes the
+exlude files/directories from the specified exclude file, one file/directory
+per line. If an exclude file/directory is absolute (i.e. prefixed with /, ../,
+or ./) the entry is treated as absolute, however, if an exclude file/directory
+is relative, it is treated as being relative to each of the sources in turn,
+i.e.
 
 %mksquashfs /tmp/source1 source2  output_fs -e ex1 /tmp/source1/ex2 out/ex3
 
 Will generate exclude files /tmp/source1/ex2, /tmp/source1/ex1, source2/ex1,
 /tmp/source1/out/ex3 and source2/out/ex3.
 
-The -e exclude option is usefully used in archiving the entire filesystem,
-where it is wished to avoid archiving /proc, and the filesystem being
-generated, i.e.
+The -e and -ef exclude options are usefully used in archiving the entire
+filesystem, where it is wished to avoid archiving /proc, and the filesystem
+being generated, i.e.
 
 %mksquashfs / /tmp/root.sqsh -e proc /tmp/root.sqsh
+
+Multiple -ef options can be specified on the command line, and the -ef
+option can be used in conjuction with the -e option.
 
 The -info option displays the files/directories as they are compressed and
 added to the filesystem.  The compression percentage achieved is printed, with

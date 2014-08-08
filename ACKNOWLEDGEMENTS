@@ -46,3 +46,15 @@ Drew Scott Daniels has been a good advocate for Squashfs.
 
 Erik Andersen has made some nice suggestions, unfortunately, I have
 not had time to implement anything.
+
+Artemiy I. Pavlov has written a useful LDP mini-howto for Squashfs
+(http://linuxdoc.artemio.net/squashfs).
+
+Yves Combe reported the Apple G5 bug, when using Squashfs for
+his PPC Knoppix-mib livecd project.
+
+Jaco Greeff (mklivecd project, and maintainer of the Mandrake
+squashfs-tools package) suggested the new mksquashfs -ef option, and the
+standalone build for mksquashfs.
+
+Mike Schaudies made a donation.

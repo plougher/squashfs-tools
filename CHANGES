@@ -68,3 +68,19 @@
 	   (2.4.7) but it broke somewhere along the line since then,
 	3. New patch for Linux 2.4.22,
 	4. New patch for 2.6.0-test7, this replaces the patch for 2.6.0-test1.
+
+1.3r3	18 JAN 2004	Third release of 1.3, this adds a new mksquashfs option,
+			some bug fixes, and extra patches for new kernels
+
+	1. New mksquashfs -ef exclude option.  This option reads the exclude
+	   dirs/files from an exclude file, one exclude dir/file per line.  This
+	   avoids the command line size limit when using the -e exclude option,
+	2. When appending to existing filesystems, if mksquashfs experiences a
+	   fatal error (e.g. out of space when adding to the destination), the
+	   original filesystem is restored,
+	3. Mksquashfs now builds standalone, without the kernel needing to be patched.
+	4. Bug fix in the kernel squashfs filesystem, where the pages being
+	   filled were not kmapped.  This seems to only have caused problems
+	   on an Apple G5,
+	5. New patch for Linux 2.4.24,
+	6. New patch for Linux 2.6.1, this replaces the patch for 2.6.0-test7.
