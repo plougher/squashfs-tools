@@ -1,6 +1,6 @@
 			INSTALLING SQUASHFS
 
-The squashfs3.2.tar.gz file contains this file, a README-3.2 file, another
+The squashfs3.2-r2.tar.gz file contains this file, a README-3.2 file, another
 README file, an ACKNOWLEDGEMENTS file, a CHANGES file, the kernel-patches
 directory containing the squashfs patches, and the squashfs-tools directory
 (mksquashfs and unsquashfs).

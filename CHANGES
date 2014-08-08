@@ -1,5 +1,12 @@
 			SQUASHFS CHANGE LOG
 
+3.2-r2	15 JAN 2007	Kernel patch update and progress bar bug fix
+
+	1. Kernel patches 2.6.19/2.6.20 have been updated to use
+	   const structures and mutexes rather than older semaphores.
+	2. Minor SMP bug fixes.
+	3. Progress bar broken on x86-64.  Fixed.
+
 3.2	2 JAN 2007	NFS support, improvements to the Squashfs-tools, major
 			bug fixes, lots of small improvements/bug fixes, and new
 			kernel patches.
