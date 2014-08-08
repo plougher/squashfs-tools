@@ -1,0 +1,20 @@
+			ACKNOWLEDGEMENTS
+
+Thanks to everyone who have download squashfs.  I appreciate people
+using it, and any feedback you have.
+
+The following have provided useful feedback, which has guided
+some of the extra features in squashfs.
+
+Mark Robson - pointed out early on that initrds didn't work
+
+Adam Warner - pointed out that greater than 2GB filesystems didn't work.
+
+John Sutton - raised the problem when archiving the entire filesystem
+(/) there was no way to prevent /proc being archived.  This prompted
+exclude files.
+
+Martin Mueller (LinuxTV) - noticed that the filesystem length in the
+superblock doesn't match the output filesystem length.  This is due to
+padding to a 4K boundary.  This prompted the addition of the -nopad option.
+

@@ -1,0 +1,19 @@
+			SQUASHFS CHANGE LOG
+
+1.0 	23 OCT 2002	Initial release
+
+1.0c 	14 NOV 2002	Bug fix release
+
+	Fixed bugs with initrds and device nodes
+
+1.1	8 JAN 2002	Added features
+
+	1. Kernel squashfs can now mount different byte order filesystems.
+	2. Additional features added to mksquashfs.  Mksquashfs now supports
+	   exclude files and multiple source files/directories can be
+	   specified.  A nopad option has also been added, which
+	   informs mksquashfs not to pad filesystems to a multiple of 4K.
+	   See README for mksquashfs usage changes.
+	3. Greater than 2GB filesystems bug fix.  Filesystems greater than 2GB
+	   can now be created.
+	4. Patch for 2.4.20 kernels.

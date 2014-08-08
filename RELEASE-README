@@ -1,6 +1,6 @@
-	SQUASHFS - A squashed read-only filesystem for Linux
+	SQUASHFS 1.1 - A squashed read-only filesystem for Linux
 
-	Copyright 2002 Phillip Lougher (phillip@lougher.demon.co.uk)
+	Copyright 2003 Phillip Lougher (phillip@lougher.demon.co.uk)
 
 	Released under the GPL licence (version 2 or later).
 
@@ -39,27 +39,8 @@ Squashfs overview
 
 6. File duplicates are detected and removed.
 
-7. Both big and little endian architectures are supported.  The mksquashfs
-   program can generate filesystems for different endian architectures for
-   cases where the host byte ordering is different to the target.  This is
-   useful for embedded systems.
-
-
-Installing squashfs
--------------------
-
-The squashfs1.0c.tar.gz file contains this README, the squashfs patch file
-(squashfs-patch), and the squashfs-tools directory (mksquashfs).
-
-The squashfs-patch file has been generated against linux-2.4.19, but may work
-with older 2.4.x kernels.  It assumes the kernel has inflatefs support, and
-therefore definately will not work with anything much older than 2.4.17.
-
-The squashfs patch patches the relevant kernel files to add configure support,
-initrd support, include files, and the squashfs directory under linux/fs/.
-
-Once patched, the kernel must be reconfigured, with squashfs support turned on
-(either Y/M) to ensure that inflatefs is built into the kernel.
+7. Both big and little endian architectures are supported.  Squashfs can
+   mount filesystems created on different byte order machines.
 
 
 mksquashfs
@@ -68,23 +49,60 @@ mksquashfs
 As squashfs is a read-only filesystem, the mksquashfs program must be used to
 create populated squashfs filesystems.
 
-mksquashfs usage: mksquashfs source dest [options]
+SYNTAX:./mksquashfs source1 source2 ...  dest [options] [-e list of exclude dirs/files]
 
 Options are
 	-info				print files written to filesystem
 	-b block size			size of blocks in filesystem, default 32768
 	-noI -noInodeCompression	do not compress inode table
 	-noD -noDataCompression		do not compress data blocks
+	-nopad				do not pad filesystem to a multiple of 4K
 	-check_data			add checkdata for greater filesystem integrity checks
 	-le				create a little endian filesystem
 	-be				create a big endian filesystem
 
-Source is the source directory containing the files/directories that will
-form the squashfs filesystem.
+Source1 source2 ... are the source directories/files containing the
+files/directories that will form the squashfs filesystem.  If a single
+directory is specified (i.e. mksquashfs source output_fs) the squashfs
+filesystem will consist of that directory, with the top-level root
+directory corresponding to the source directory.
+
+If multiple source directories or files are specified, mksquashfs will merge
+the specified sources into a single filesystem, with the root directory
+containing each of the source files/directories.  The name of each directory
+entry will be the basename of the source path.   If more than one source
+entry maps to the same name, the conflicts are named xxx_1, xxx_2, etc. where
+xxx is the original name, i.e.
+
+%mksquashfs /home/phillip/test /tmp/source2 source3 /tmp/test output_fs
+
+Will create a filesystem with the root directory containing directory
+entries test source2 source3 test_1
+
+Multiple sources allow filesystems to be generated without needing to
+copy all source files into a common directory.  This simplifies creating
+filesystems.
 
 Dest is the destination where the squashfs filesystem will be written.  This
 can either be a conventional file or a block device.  If the file doesn't exist
 it will be created, if it does exist it will be truncated.
+
+The -e option allows files/directories to be specified which are
+excluded from the output filesystem.  If an exclude file/directory is
+absolute (i.e. prefixed with /, ../, or ./) the entry is treated as
+absolute, however, if an exclude file/directory is relative, it is
+treated as being relative to each of the sources in turn, i.e.
+
+%mksquashfs /tmp/source1 source2  output_fs -e ex1 /tmp/source1/ex2 out/ex3
+
+Will generate exclude files /tmp/source1/ex2, /tmp/source1/ex1, source2/ex1,
+/tmp/source1/out/ex3 and source2/out/ex3.
+
+The -e exclude option is usefully used in archiving the entire filesystem,
+where it is wished to avoid archiving /proc, and the filesystem being
+generated, i.e.
+
+%mksquashfs / /tmp/root.sqsh -e proc /tmp/root.sqsh
 
 The -info option displays the files/directories as they are compressed and
 added to the filesystem.  The compression percentage achieved is printed, with
@@ -100,8 +118,16 @@ respectively.  Giving both options generates an uncompressed filesystem.
 
 The -le and -be options can be used to force mksquashfs to generate a little
 endian or big endian filesystem.  Normally mksquashfs will generate a
-filesystem in the host byte order.
+filesystem in the host byte order.  Squashfs, for portability, will
+mount different ordered filesystems (i.e. it can mount big endian filesystems
+running on a little endian machine), but these options can be used for
+greater optimisation.
 
+The -nopad option informs mksquashfs to not pad the filesystem to a 4K multiple.
+This is performed by default to enable the output filesystem file to be mounted
+by loopback, which requires files to be a 4K multiple.  If the filesystem is
+being written to a block device, or is to be stored in a bootimage, the extra
+pad bytes are not needed.
 
 Filesystem layout
 -----------------
