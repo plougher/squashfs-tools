@@ -1,3 +1,8 @@
+NOTE:  This the original README for version 2.0.  It is retained as it
+contains information about the fragment design.  A description of the new 2.0
+mksquashfs options has been added to the main README file, and that
+file should now be consulted for these.
+
 	SQUASHFS 2.0 - A squashed read-only filesystem for Linux
 
 	Copyright 2004 Phillip Lougher (plougher@users.sourceforge.net)

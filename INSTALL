@@ -1,24 +1,23 @@
 			INSTALLING SQUASHFS
 
-The squashfs2.0.tar.gz file contains this file, a README file,
+The squashfs2.1.tar.gz file contains this file, a README file,
 an ACKNOWLEDGEMENTS file, a CHANGES file, the squashfs patch
 directories/files, and the squashfs-tools directory (mksquashfs).
 
 1. Patching the kernel
 ----------------------
 
-There are eight kernel patch directories depending on your linux kernel version.
-In each directory there are patches to provide squashfs2.0 release
-from a base kernel.  If your kernel version isn't listed then try the patch for
-the nearest kernel listed.
+There are ten kernel patch directories depending on your linux kernel version.
+If your kernel version isn't listed then try the patch for the nearest kernel
+listed.
 
 To patch your kernel, cd into the top level directory, and run the "patch"
 comand, e.g. assuming linux-2.4.20
 
 %cd /usr/src/linux-2.4.20
-%patch -p1 < location-of-squashfs/linux-2.4.20/squashfs2.0-patch
+%patch -p1 < location-of-squashfs/linux-2.4.20/squashfs2.1-patch
 
-Where "location-of-squashfs" is the path to the squashfs2.0 source directory.
+Where "location-of-squashfs" is the path to the squashfs2.1 source directory.
 
 The squashfs patches patch the relevant kernel files to add configure support,
 initrd support, include files, and the squashfs directory under linux/fs/.
