@@ -1,5 +1,10 @@
 			SQUASHFS CHANGE LOG
 
+3.1-r2	30 AUG 2006	Mksquashfs -sort bug fix
+
+			A code optimisation after testing unfortunately
+			broke sorting in Mksquashfs.  This has been fixed.
+
 3.1	19 AUG 2006	This release has some major improvements to
 			the squashfs-tools, a couple of major bug
 			fixes, lots of small improvements/bug fixes,
