@@ -1,24 +1,23 @@
 			INSTALLING SQUASHFS
 
-The squashfs3.3.tar.gz file contains this file, a README-3.3 file, another
-README file, an ACKNOWLEDGEMENTS file, a CHANGES file, the kernel-patches
-directory containing the squashfs patches, and the squashfs-tools directory
-(mksquashfs and unsquashfs).
+The squashfs3.4.tar.gz file contains the kernel-patches directory containing
+the squashfs patches, and the squashfs-tools directory containing mksquashfs
+and unsquashfs.
 
 1. Patching the kernel
 ----------------------
 
-There are eleven kernel patch directories depending on your linux kernel
-version.  If your kernel version isn't listed then try the patch for the nearest
-kernel listed.
+There are twelve kernel patch directories depending on your linux kernel
+version.  If your kernel version isn't there then try the patch for the nearest
+kernel.
 
 To patch your kernel, cd into the top level directory, and run the "patch"
 command, e.g. assuming linux-2.6.22
 
 %cd /usr/src/linux-2.6.22
-%patch -p1 < location-of-squashfs/kernel-patches/linux-2.6.22/squashfs3.3-patch
+%patch -p1 < location-of-squashfs/kernel-patches/linux-2.6.22/squashfs3.4-patch
 
-Where "location-of-squashfs" is the path to the squashfs3.3 source directory.
+Where "location-of-squashfs" is the path to the squashfs3.4 source directory.
 
 The squashfs patches patch the relevant kernel files to add configure support,
 initrd support, include files, and the squashfs directory under linux/fs/.

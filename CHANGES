@@ -1,5 +1,46 @@
 			SQUASHFS CHANGE LOG
 
+3.4	26 AUG 2008	Performance improvements to Unsquashfs, Mksquashfs
+			and the kernel code.  Plus many small bug fixes.
+
+	1. Kernel code improvements:
+
+	    1.1 Internal Squashfs kernel metadata and fragment cache
+		implementations have been merged and optimised.  Spinlocks are
+		now used, locks are held for smaller periods and wakeups have
+		been minimised.  Small race condition fixed where if two or
+		more processes tried to read the same cache block
+		simultaneously they would both read and decompress it.  10-20%+
+		speed improvement has been seen on tests.
+	    1.2 NFS export code rewritten following VFS changes in
+		linux-2.6.24.
+	    1.3 New patches for linux-2.6.25, linux-2.6.26, and linux-2.6.27.
+		Fixed patch for linux-2.6.24.
+	    1.4 Fixed small buffer_head leak in squashfs_read_data when
+		handling badly corrupted filesystems.
+	    1.5 Fixed bug in get_dir_index_using_offset.
+
+	2. Unsquashfs improvements:
+
+	    2.1 Unsquashfs has been parallelised.  Filesystem reading, writing
+		and decompression is now multi-threaded.  Up to 40% speed
+		improvement seen on tests.
+	    2.2 Unsquashfs now has a progress bar.  Use -no-progress to
+		disable it.
+	    2.3 Fixed small bug where unistd.h wasn't being included on
+		some distributions, leading to lseek being used rather than
+		lseek64 - which meant on these distributions Unsquashfs
+		couldn't unsquash filesystems larger than 4GB.
+
+       3. Mksquashfs improvements:
+
+	    3.1 Removed some small remaining parallelisation bottlenecks.
+		Depending on source filesystem, up to 10%+ speed improvement.
+	    3.2 Progress bar improved, and moved to separate thread.
+	    3.3 Sparse file handling bug in Mksquashfs 3.3 fixed.
+	    3.4 Two rare appending restore bugs fixed (when ^C hit twice).
+
+
 3.3	1 NOV 2007	Increase in block size, sparse file support,
 			Mksquashfs and Unsquashfs extended to use
 			pattern matching in exclude/extract files, plus
