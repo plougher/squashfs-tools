@@ -1,5 +1,24 @@
 			SQUASHFS CHANGE LOG
 
+3.2	2 JAN 2007	NFS support, improvements to the Squashfs-tools, major
+			bug fixes, lots of small improvements/bug fixes, and new
+			kernel patches.
+
+	Improvements:
+
+	1. Squashfs filesystems can now be exported via NFS.
+	2. Unsquashfs now supports 2.x filesystems.
+	3. Mksquashfs now displays a progress bar.
+	4. Squashfs kernel code has been hardened against accidently or
+	   maliciously corrupted Squashfs filesystems.
+
+	Bug fixes:
+
+	5. Race condition occurring on S390 in readpage() fixed.
+	6. Odd behaviour of MIPS memcpy in read_data() routine worked-around.
+	7. Missing cache_flush in Squashfs symlink_readpage() added.
+	
+
 3.1-r2	30 AUG 2006	Mksquashfs -sort bug fix
 
 			A code optimisation after testing unfortunately

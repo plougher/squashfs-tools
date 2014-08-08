@@ -8,6 +8,12 @@ some of the extra features in squashfs.  This is a randomly ordered
 (roughly in chronological order) list, which is updated when
 I remember...
 
+Acknowledgements for Squashfs-3.2
+---------------------------------
+
+Peter Korsgaard sent a patch updating Squashfs to changes in the VFS interface
+in Linux 2.6.20.
+
 Acknowledgements for Squashfs-3.1
 ---------------------------------
 

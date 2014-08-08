@@ -1,10 +1,10 @@
-	SQUASHFS 3.1 - A squashed read-only filesystem for Linux
+	SQUASHFS 3.2 - A squashed read-only filesystem for Linux
 
-	Copyright 2002-2006 Phillip Lougher <phillip@lougher.org.uk>
+	Copyright 2002-2007 Phillip Lougher <phillip@lougher.org.uk>
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs version 3.1-r2.  Please read the README-3.1 and CHANGES
+Welcome to Squashfs version 3.2.  Please read the README-3.2 and CHANGES
 files for details of changes.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
@@ -362,14 +362,14 @@ refuse to overwrite any existing files, or to create any directories if they
 already exist.  This is done to protect data in case of mistakes, and
 so the "-force" option should be used with caution.
 
-Unsquashfs can decompress 3.0 filesystems.  Support for 2.x and 1.x
-filesystems will be added in the future.
+Unsquashfs can decompress 2.x and 3.x filesystems.  Support for 1.x filesystems
+will be added in the future.
 
 5. FILESYSTEM LAYOUT
 --------------------
 
 Brief filesystem design notes follow for the original 1.x filesystem
-layout.  A description of the 2.x and 3.0 filesystem layouts will be written
+layout.  A description of the 2.x and 3.x filesystem layouts will be written
 sometime!
 
 A squashfs filesystem consists of five parts, packed together on a byte

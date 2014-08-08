@@ -1,32 +1,31 @@
 			INSTALLING SQUASHFS
 
-The squashfs3.1.tar.gz file contains this file, a README file,
-an ACKNOWLEDGEMENTS file, a CHANGES file, the squashfs patch
-directories/files, and the squashfs-tools directory (mksquashfs and unsquashfs).
+The squashfs3.2.tar.gz file contains this file, a README-3.2 file, another
+README file, an ACKNOWLEDGEMENTS file, a CHANGES file, the kernel-patches
+directory containing the squashfs patches, and the squashfs-tools directory
+(mksquashfs and unsquashfs).
 
 1. Patching the kernel
 ----------------------
 
-There are twenty kernel patch directories depending on your linux kernel
+There are eleven kernel patch directories depending on your linux kernel
 version.  If your kernel version isn't listed then try the patch for the nearest
 kernel listed.
 
 To patch your kernel, cd into the top level directory, and run the "patch"
-command, e.g. assuming linux-2.6.18
+command, e.g. assuming linux-2.6.20
 
-%cd /usr/src/linux-2.6.18
-%patch -p1 < location-of-squashfs/linux-2.6.18/squashfs3.1-patch
+%cd /usr/src/linux-2.6.20
+%patch -p1 < location-of-squashfs/kernel-patches/linux-2.6.20/squashfs3.2-patch
 
-Where "location-of-squashfs" is the path to the squashfs3.1 source directory.
+Where "location-of-squashfs" is the path to the squashfs3.2 source directory.
 
 The squashfs patches patch the relevant kernel files to add configure support,
 initrd support, include files, and the squashfs directory under linux/fs/.
 Once patched, the kernel must be reconfigured, with squashfs support turned on
 (either Y/M) to ensure that inflate support is built into the kernel.  The
-squashfs kernel option can be found in the filesystems submenu of the
-configure menus.  In the 2.6.x kernels, the squashfs option is hiding in
-the new miscellaneous filesystems submenu near the bottom of the filesystems
-submenu.
+squashfs kernel option can be found in the miscellaneous filesystems submenu
+near the bottom of the filesystems submenu.
 
 There are a set of options which are intended for use by embedded systems with
 low memory.  At the "Additional options for memory-constrained systems" prompt,
@@ -54,7 +53,5 @@ Vmalloc to allocate the fragment cache memory.
 The squashfs-tools directory contains the mksquashfs and unsquashfs programs.
 These can be made by typing make.  The source files use a local copy of
 squashfs_fs.h (included in the kernel patches) allowing the tools to be made
-without needing to patch the kernel.  The Mksquashfs built by default is
-the new multi-threaded parallelised Mksquashfs.   If you wish to use the
-old non multi-threaded version this is included in the sub-directory
-"single_threaded_mksquashfs".
+without needing to patch the kernel.
+
