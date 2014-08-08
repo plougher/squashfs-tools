@@ -4,7 +4,7 @@
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs version 2.2.  Please see the CHANGES file for details
+Welcome to Squashfs version 2.2-r2.  Please see the CHANGES file for details
 of changes.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
@@ -451,6 +451,6 @@ cache.
 5. AUTHOR INFO
 --------------
 
-Squashfs was written by Phillip Lougher, email plougher@users.sourceforge.net,
+Squashfs was written by Phillip Lougher, email phillip@lougher.demon.co.uk,
 in Chepstow, Wales, UK.   If you like the program, or have any problems,
 then please email me, as it's nice to get feedback!

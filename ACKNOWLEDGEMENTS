@@ -68,3 +68,14 @@ which allowed myself to track down these bugs.
 
 Miles Roper, Peter Kjellerstedt and Willy Tarreau reported that release 2.1 did
 not compile with gcc < 3.x.
+
+Marcel J.E. Mol reported lack of kernel memory issues when using Squashfs
+on small memory embedded systems.  This prompted the addition of the embedded
+system kernel configuration options.
+
+Era Scarecrow noticed that Mksquashfs had not been updated to reflect that
+smaller than 4K blocks are no longer supported.
+
+Kenichi Shima reported the Kconfig file had not been updated to 2.2.
+
+Aaron Ten Clay made a donation!

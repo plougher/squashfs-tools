@@ -1,6 +1,6 @@
 			INSTALLING SQUASHFS
 
-The squashfs2.2.tar.gz file contains this file, a README file,
+The squashfs2.2-r2.tar.gz file contains this file, a README file,
 an ACKNOWLEDGEMENTS file, a CHANGES file, the squashfs patch
 directories/files, and the squashfs-tools directory (mksquashfs).
 

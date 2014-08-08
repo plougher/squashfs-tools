@@ -1,5 +1,22 @@
 			SQUASHFS CHANGE LOG
  
+2.2-r2	8 SEPT 2005	Second release of 2.2, this release fixes a couple
+			of small bugs, a couple of small documentation
+			mistakes, and adds a patch for kernel 2.6.13. 
+
+	1. Mksquashfs now deletes the output filesystem image file if an
+	   error occurs whilst generating the filesystem.  Previously on
+	   error the image file was left empty or partially written.
+	2. Updated mksquashfs so that it doesn't allow you to generate
+	   filesystems with block sizes smaller than 4K.  Squashfs hasn't
+	   supported block sizes less than 4K since 2.0-alpha.
+	3. Mksquashfs now ignores missing files/directories in sort files.
+	   This was the original behaviour before 2.2.
+	4. Fixed small mistake in fs/Kconfig where the version was still
+	   listed as 2.0.
+	5. Updated ACKNOWLEDGEMENTS file.
+
+
 2.2	3 JUL 2005	This release has some small improvements, bug fixes
 			and patches for new kernels.
 
