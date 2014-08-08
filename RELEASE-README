@@ -48,7 +48,7 @@ Squashfs overview
 Installing squashfs
 -------------------
 
-The squashfs1.0.tar.gz file contains this README, the squashfs patch file
+The squashfs1.0b.tar.gz file contains this README, the squashfs patch file
 (squashfs-patch), and the squashfs-tools directory (mksquashfs).
 
 The squashfs-patch file has been generated against linux-2.4.19, but may work
