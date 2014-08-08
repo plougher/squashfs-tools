@@ -1,11 +1,11 @@
-	SQUASHFS 3.4 - A squashed read-only filesystem for Linux
+	SQUASHFS 4.0 - A squashed read-only filesystem for Linux
 
-	Copyright 2002-2008 Phillip Lougher <phillip@lougher.demon.co.uk>
+	Copyright 2002-2009 Phillip Lougher <phillip@lougher.demon.co.uk>
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs version 3.4.  Please read the CHANGES file for details of
-changes.
+Welcome to Squashfs version 4.0.  Please read the README-4.0 and CHANGES files
+for details of changes.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
 It uses zlib compression to compress both files, inodes and directories.
@@ -72,7 +72,7 @@ the directory "/mnt".
 As squashfs is a read-only filesystem, the mksquashfs program must be used to
 create populated squashfs filesystems.
 
-SYNTAX:mksquashfs source1 source2 ...  dest [options] [-e list of exclude
+SYNTAX:./mksquashfs source1 source2 ...  dest [options] [-e list of exclude
 dirs/files]
 
 Options are
@@ -106,10 +106,7 @@ Options are
 -all-root		make all files owned by root
 -force-uid uid		set all file uids to uid
 -force-gid gid		set all file gids to gid
--le			create a little endian filesystem
--be			create a big endian filesystem
 -nopad			do not pad filesystem to a multiple of 4K
--check_data		add checkdata for greater filesystem checks
 -root-owned		alternative name for -all-root
 -noInodeCompression	alternative name for -noI
 -noDataCompression	alternative name for -noD
@@ -122,6 +119,8 @@ Options are
 			exclude dirs/files
 -regex			Allow POSIX regular expressions to be used in exclude
 			dirs/files
+-p <pseudo-definition>	Add pseudo file definition
+-pf <pseudo-file>	Add list of pseudo file definitions
 
 Source1 source2 ... are the source directories/files containing the
 files/directories that will form the squashfs filesystem.  If a single
@@ -416,13 +415,6 @@ The -info option displays the files/directories as they are compressed and
 added to the filesystem.  The original uncompressed size of each file
 is printed, along with DUPLICATE if the file is a duplicate of a
 file in the filesystem.
-
-The -le and -be options can be used to force mksquashfs to generate a little
-endian or big endian filesystem.  Normally mksquashfs will generate a
-filesystem in the host byte order.  Squashfs, for portability, will
-mount different ordered filesystems (i.e. it can mount big endian filesystems
-running on a little endian machine), but these options can be used for
-greater optimisation.
 
 The -nopad option informs mksquashfs to not pad the filesystem to a 4K multiple.
 This is performed by default to enable the output filesystem file to be mounted
