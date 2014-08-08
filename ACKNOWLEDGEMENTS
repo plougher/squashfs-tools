@@ -19,9 +19,16 @@ superblock doesn't match the output filesystem length.  This is due to
 padding to a 4K boundary.  This prompted the addition of the -nopad option.
 He also reported a problem where 32K block filesystems hung when used as initrds.
 
-Arkadiusz Patyk reported a problem where 32K block filesystems hung when used
-as a root filesystem mounted as a loopback device.
+Arkadiusz Patyk (Polish Linux Distribution - PLD) reported a problem where 32K block
+filesystems hung when used as a root filesystem mounted as a loopback device.
 
 Joe Blow emailed me that I'd forgotten to put anything in the README about
 mounting the squashfs filesystem.
 
+David Fox (Lindows) noticed that the exit codes returned by Mksquashfs were
+wrong.  He also noticed that a lot of time was spent in the duplicate scan routine.
+
+Cameron Rich complained that Squashfs did not support FIFOs or sockets.
+
+Steve Chadsey and Thomas Weissmuller noticed that files larger than the
+available memory could not be compressed by Mksquashfs.

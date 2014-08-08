@@ -1,13 +1,13 @@
-	SQUASHFS 1.2 - A squashed read-only filesystem for Linux
+	SQUASHFS 1.3 - A squashed read-only filesystem for Linux
 
 	Copyright 2003 Phillip Lougher (phillip@lougher.demon.co.uk)
 
 	Released under the GPL licence (version 2 or later).
 
-Squashfs is currently at release 1.2.  Please see the CHANGES file, and
-read the following mksquashfs section for recent changes to squashfs.
+Squashfs is currently at release 1.3.  Please see the CHANGES file
+for recent changes to squashfs.
 
-Squashfs is a highly compressed read-only filesystem for Linux (kernel 2.4.x).
+Squashfs is a highly compressed read-only filesystem for Linux.
 It uses zlib compression to compress both files, inodes and directories.
 Inodes in the system are very small and all blocks are packed to minimise
 data overhead. Block sizes greater than 4K are supported up to a maximum

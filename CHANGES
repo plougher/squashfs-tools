@@ -41,3 +41,15 @@
 	the unchanged files will be detected as duplicates.
 
 	See the README file for usage changes.
+
+1.3	29 JUL 2003	FIFO/Socket support added plus optimisations/improvements
+
+		1. FIFOs and Socket inodes are now supported,
+		2. Mksquashfs can now compress files larger than available memory,
+		3. File duplicate check routine optimised,
+		4. Exit codes fixed in Mksquashfs,
+		5. Patch for Linux 2.4.21,
+		6. Patch for Linux 2.6.0-test1.  Hopefully, this will work for the next
+		   few releases of 2.6.0-testx, otherwise, I'll be releasing a lot of
+		   updates to the 2.6.0 patch...
+
