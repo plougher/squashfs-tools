@@ -1,5 +1,31 @@
 			SQUASHFS CHANGE LOG
  
+2.2	3 JUL 2005	This release has some small improvements, bug fixes
+			and patches for new kernels.
+
+	1. Sort routine re-worked and debugged from release 2.1.  It now allows
+	   you to give Mkisofs style sort files and checks for filenames that
+	   don't match anything.  Sort priority has also been changed to
+	   conform to Mkisofs usage, highest priority files are now placed
+	   at the start of the filesystem (this means they will be on the
+	   inside of a CD or DVD).
+	2. New Configure options for embedded systems (memory constrained
+	   systems).  See INSTALL file for further details.
+	3. Directory index bug fixed where chars were treated as signed on
+           some architectures.  A file would not be found in the rare case
+	   that the filename started with a chracter greater than 127.
+	4. Bug introduced into the read_data() routine when sped up to use data
+	   block queueing fixed.  If the second or later block resulted in an
+	   I/O error this was not checked.
+	5. Append bug introduced in 2.1 fixed.  The code to compute the new
+	   compressed and uncompressed directory parts after appending was
+	   wrong.
+	6. Metadata block length read routine altered to not perform a
+	   misaligned short read.  This was to fix reading on an ARM7 running
+	   uCLinux without a misaligned read interrupt handler.
+	7. Checkdata bug introduced in 2.1 fixed.
+	
+
 2.1-r2  15 DEC 2004	Code changed so it can be compiled with gcc 2.x
 
 	1.  In some of the code added for release 2.1 I unknowingly used some
