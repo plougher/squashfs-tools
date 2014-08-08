@@ -1,10 +1,10 @@
-	SQUASHFS 2.0-ALPHA - A squashed read-only filesystem for Linux
+	SQUASHFS 2.0 - A squashed read-only filesystem for Linux
 
 	Copyright 2004 Phillip Lougher (plougher@users.sourceforge.net)
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to the alpha release of Squashfs version 2.0!  A lot of changes
+Welcome to the final release of Squashfs version 2.0.  A lot of changes
 to the filesystem have been made under the bonnet (hood).  Please see
 the README-2.0 and CHANGES files for further details.
 
@@ -24,6 +24,7 @@ create and append to squashfs filesystems.  The 'using squashfs' section
 gives information on mounting and using squashfs filesystems stored on block
 devices and as normal files using the loopback device.
 
+The README-2.0 file gives descriptions of the new 2.0 mksquashfs options.
 
 1. Squashfs overview
 --------------------
@@ -58,26 +59,52 @@ create populated squashfs filesystems.  Beginning with Squashfs 1.2, mksquashfs
 will also append directories and files to pre-existing squashfs filesystems, see
 the following 'appending to squashfs filesystems' subsection.
 
-SYNTAX:mksquashfs source1 source2 ...  dest [options] [-e list of exclude dirs/files]
+SYNTAX:mksquashfs source1 source2 ...  dest [options] [-e list of exclude
+dirs/files]
 
 Options are
 	-info				print files written to filesystem
-	-b block size			size of blocks in filesystem, default 32768
-	-noappend			Do not append to existing filesystem on dest, write a new filesystem
-					This is the default action if dest does not exist, or if no filesystem is on it
-	-keep-as-directory		If one source directory is specified, create a root directory
-					containing that directory, rather than the contents of the directory
-	-root-becomes name		When appending source files/directories, make the original
-					root become a subdirectory in the new root called name, rather
-					than adding the new source items to the original root
+	-sort sort file			sort files according to priorities in
+					sort file.  One file or dir with
+					priority per line.  Priority -32768 to
+					32767, default priority 0
+	-b block size			size of blocks in filesystem, default
+					65536
+	-noappend			Do not append to existing filesystem on
+					dest, write a new filesystem
+					This is the default action if dest does
+					not exist, or if no filesystem is on it
+	-keep-as-directory		If one source directory is specified,
+					create a root directory containing that
+					directory, rather than the contents of
+					the directory
+	-root-becomes name		When appending source files/directories,
+					make the original root become a
+					subdirectory in the new root called
+					name, rather than adding the new source
+					items to the original root
 	-noI -noInodeCompression	do not compress inode table
 	-noD -noDataCompression		do not compress data blocks
-	-nopad				do not pad filesystem to a multiple of 4K
-	-check_data			add checkdata for greater filesystem checks
+	-noF -noFragmentCompression	do not compress fragment blocks
+	-no-duplicates			do not perform duplicate checking
+	-no-fragments			do not use fragments
+	-always-use-fragments		use fragment blocks for files larger
+					than block size
+	-nopad				do not pad filesystem to a multiple of
+					4K
+	-check_data			add checkdata for greater filesystem
+					checks
 	-le				create a little endian filesystem
 	-be				create a big endian filesystem
-	-ef exclude file		file is a list of exclude dirs/files - one per line
-	-version			print version, licence and copyright message
+	-ef exclude file		file is a list of exclude dirs/files -
+					one per line
+	-all-root			override file uid/gid and make all file
+					uid/gids owned by root
+	-root-owned			alternative name for -all-root
+	-force-uid uid			set all file uids to uid
+	-force-gid gid			set all file gids to gid
+	-version			print version, licence and copyright
+					message
 
 Source1 source2 ... are the source directories/files containing the
 files/directories that will form the squashfs filesystem.  If a single
@@ -139,7 +166,8 @@ The Dest argument is the destination where the squashfs filesystem will be
 written.  This can either be a conventional file or a block device.  If the file
 doesn't exist it will be created, if it does exist and a squashfs
 filesystem exists on it, mksquashfs will append.  The -noappend option will
-write a new filesystem irrespective of whether an existing filesystem is present.
+write a new filesystem irrespective of whether an existing filesystem is
+present.
 
 The -e and -ef options allow files/directories to be specified which are
 excluded from the output filesystem.  The -e option takes the exclude
@@ -165,12 +193,12 @@ Multiple -ef options can be specified on the command line, and the -ef
 option can be used in conjuction with the -e option.
 
 The -info option displays the files/directories as they are compressed and
-added to the filesystem.  The compression percentage achieved is printed, with
-the original uncompressed size.  If the compression percentage is listed as
-0% it means the file is a duplicate.
+added to the filesystem.  The original uncompressed size of each file
+is printed, along with DUPLICATE if the file is a duplicate of a
+file in the filesystem.
 
 The -b option allows the block size to be selected, this can be either
-512, 1024, 2048, 4096, 8192, 16384, or 32768 bytes.
+4096, 8192, 16384, 32768 or 65536 bytes.
 
 The -noI and -noD options (also -noInodeCompression and -noDataCompression)
 can be used to force mksquashfs to not compress inodes/directories and data
@@ -222,7 +250,8 @@ contents of the directory.
 
 example 3:
 
-%mksquashfs /home/phillip/test image -keep-as-directory -root-becomes original-root
+%mksquashfs /home/phillip/test image -keep-as-directory -root-becomes
+original-root
 
 Will create a new "image" with root entries "original-root", and "test".  The
 '-root-becomes' option specifies that the original root becomes a subdirectory
@@ -259,9 +288,11 @@ the directory "/mnt".
 4. Filesystem layout
 --------------------
 
-Brief filesystem design notes follow.
+Brief filesystem design notes follow for the original 1.x filesystem
+layout.  A description of the 2.0 filesystem layout will be written sometime!
 
-A squashfs filesystem consists of five parts, packed together on a byte alignment:
+A squashfs filesystem consists of five parts, packed together on a byte
+alignment:
 
 	 ---------------
 	|  superblock 	|
