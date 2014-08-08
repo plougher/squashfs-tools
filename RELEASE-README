@@ -1,11 +1,11 @@
-	SQUASHFS 3.0 - A squashed read-only filesystem for Linux
+	SQUASHFS 3.1 - A squashed read-only filesystem for Linux
 
 	Copyright 2002-2006 Phillip Lougher <phillip@lougher.org.uk>
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to the first release of Squashfs version 3.0.  Please see the README-3.0
-and CHANGES files for details of changes.
+Welcome to Squashfs version 3.1.  Please read the README-3.1 and CHANGES files
+for details of changes.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
 It uses zlib compression to compress both files, inodes and directories.
@@ -79,6 +79,10 @@ Options are
 -version		print version, licence and copyright message
 -info			print files written to filesystem
 -b <block_size>		set data block to <block_size>.  Default 65536 bytes
+-processors <number>	Use <number> processors.  By default will use number of
+			processors available
+-read-queue <size>	Set input queue to <size> Mbytes.  Default 64 Mbytes
+-write-queue <size>	Set output queue to <size> Mbytes.  Default 512 Mbytes
 -noI			do not compress inode table
 -noD			do not compress data blocks
 -noF			do not compress fragment blocks
@@ -318,7 +322,50 @@ by loopback, which requires files to be a 4K multiple.  If the filesystem is
 being written to a block device, or is to be stored in a bootimage, the extra
 pad bytes are not needed.
 
-4. FILESYSTEM LAYOUT
+4. UNSQUASHFS
+-------------
+
+Unsquashfs allows you to decompress and extract a Squashfs filesystem without
+mounting it.  It can extract the entire filesystem, or a specific
+file or directory.
+
+The Unsquashfs usage info is:
+
+SYNTAX: ./unsquashfs [options] filesystem [directory or file to extract]
+	-v[ersion]		print version, licence and copyright information
+	-i[nfo]			print files as they are unsquashed
+	-l[s]			list filesystem only
+	-d[est] <pathname>	unsquash to <pathname>, default "squashfs-root"
+	-f[orce]		if file already exists then overwrite
+
+
+To extract a subset of the filesystem, the filename or directory
+tree that is to be extracted can now be specified on the command line.  The
+file/directory should be specified using the full path to the file/directory
+as it appears within the Squashfs filesystem.  The file/directory will also be
+extracted to that position within the specified destination directory.
+
+The "-ls" option can be used to list the contents of a filesystem without
+decompressing the filesystem data itself.
+
+The "-info" option forces Unsquashfs to print each file as it is decompressed.
+
+The "-dest" option specifies the directory that is used to decompress
+the filesystem data.  If this option is not given then the filesystem is
+decompressed to the directory "squashfs-root" in the current working directory.
+
+The "-force" option forces Unsquashfs to output to the destination
+directory even if files or directories already exist.  This allows you
+to update an existing directory tree, or to Unsquashfs to a partially
+filled directory.  Without the "-force" option, Unsquashfs will
+refuse to overwrite any existing files, or to create any directories if they
+already exist.  This is done to protect data in case of mistakes, and
+so the "-force" option should be used with caution.
+
+Unsquashfs can decompress 3.0 filesystems.  Support for 2.x and 1.x
+filesystems will be added in the future.
+
+5. FILESYSTEM LAYOUT
 --------------------
 
 Brief filesystem design notes follow for the original 1.x filesystem
@@ -346,7 +393,7 @@ Compressed data blocks are written to the filesystem as files are read from
 the source directory, and checked for duplicates.  Once all file data has been
 written the completed inode, directory and uid/gid lookup tables are written.
 
-4.1 Metadata
+5.1 Metadata
 ------------
 
 Metadata (inodes and directories) are compressed in 8Kbyte blocks.  Each
@@ -398,7 +445,7 @@ file are stored contiguously in the filesystem.  The top bit of each block
 length is set if the block is uncompressed, either because the -noD option is
 set, or if the compressed block was larger than the uncompressed block.
 
-4.2 Directories
+5.2 Directories
 ---------------
 
 Like inodes, directories are packed into the metadata blocks, and are not
@@ -432,7 +479,7 @@ as necessary.  The organisation is as follows:
 			
 This organisation saves on average 3 bytes per filename.
 
-4.3 File data
+5.3 File data
 -------------
 
 File data is compressed on a block by block basis and written to the
@@ -448,7 +495,7 @@ solves this problem by explicitly pushing the extra pages into the page
 cache.
 
 
-5. AUTHOR INFO
+6. AUTHOR INFO
 --------------
 
 Squashfs was written by Phillip Lougher, email phillip@lougher.org.uk,

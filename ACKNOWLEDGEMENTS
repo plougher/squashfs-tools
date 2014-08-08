@@ -8,6 +8,36 @@ some of the extra features in squashfs.  This is a randomly ordered
 (roughly in chronological order) list, which is updated when
 I remember...
 
+Acknowledgements for Squashfs-3.1
+---------------------------------
+
+Kenneth Duda and Ed Swierk of Arastra Inc. identified numerous bugs with
+Squashfs, and provided patches which were the basis for some of the
+fixes.  In particular they identified the fragment rounding bug, the
+NFS bug, the initrd bug, and helped identify the 4K stack overflow bug.
+
+Scott James Remnant (Ubuntu) also identified the fragment rounding bug,
+and he also provided a patch.
+
+Ming Zhang identified the Lseek bug in Mksquashfs.  His tests on the
+performance of Mksquashfs on SMP systems encouraged the rewrite of
+Mksquashfs.
+
+Peter Korsgaard, Daniel Olivera and Zilvinas Valinskas noticed
+Squashfs 3.0 didn't compile on Linux-2.6.18-rc[1-4] due to changes
+in the Linux VFS interfaces, and provided patches.
+
+Tomas Matejicek (SLAX) suggested the -force option on Unsquashfs, and noticed
+Unsquashfs didn't return the correct exit status.
+
+Yann Le Doare reported a kernel oops and provided a Qemu image that led
+to the identification of the simultaneously accessing multiply mounted Squashfs
+filesystems bug.
+
+
+Older acknowledgements
+----------------------
+
 Mark Robson - pointed out early on that initrds didn't work
 
 Adam Warner - pointed out that greater than 2GB filesystems didn't work.
@@ -79,3 +109,5 @@ smaller than 4K blocks are no longer supported.
 Kenichi Shima reported the Kconfig file had not been updated to 2.2.
 
 Aaron Ten Clay made a donation!
+
+Tomas Matejicek (SLAX) made a donation!
