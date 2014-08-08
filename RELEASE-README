@@ -1,10 +1,10 @@
-	SQUASHFS 4.1 - A squashed read-only filesystem for Linux
+	SQUASHFS 4.2 - A squashed read-only filesystem for Linux
 
-	Copyright 2002-2010 Phillip Lougher <phillip@lougher.demon.co.uk>
+	Copyright 2002-2011 Phillip Lougher <phillip@lougher.demon.co.uk>
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs version 4.1.  Please read the README-4.1 and CHANGES files
+Welcome to Squashfs version 4.2.  Please read the README-4.2 and CHANGES files
 for details of changes.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
@@ -39,9 +39,31 @@ needed.
 
 6. File duplicates are detected and removed.
 
-7. Both big and little endian architectures are supported.  Squashfs can
-   mount filesystems created on different byte order machines.
+1.1 Extended attributes (xattrs)
+--------------------------------
 
+Squashfs filesystems now have extended attribute support.  The
+extended attribute implementation has the following features:
+
+1. Layout can store up to 2^48 bytes of compressed xattr data.
+2. Number of xattrs per inode unlimited.
+3. Total size of xattr data per inode 2^48 bytes of compressed data.
+4. Up to 4 Gbytes of data per xattr value.
+5. Inline and out-of-line xattr values supported for higher performance
+   in xattr scanning (listxattr & getxattr), and to allow xattr value
+   de-duplication.
+6. Both whole inode xattr duplicate detection and individual xattr value
+   duplicate detection supported.  These can obviously nest, file C's
+   xattrs can be a complete duplicate of file B, and file B's xattrs
+   can be a partial duplicate of file A.
+7. Xattr name prefix types stored, allowing the redundant "user.", "trusted."
+   etc. characters to be eliminated and more concisely stored.
+8. Support for files, directories, symbolic links, device nodes, fifos
+   and sockets.
+
+Extended attribute support is in 2.6.35 and later kernels.  Filesystems
+with extended attributes can be mounted on 2.6.29 and later kernels, the
+extended attributes will be ignored with a warning.
 
 2. USING SQUASHFS
 -----------------
@@ -72,15 +94,15 @@ the directory "/mnt".
 As squashfs is a read-only filesystem, the mksquashfs program must be used to
 create populated squashfs filesystems.
 
-SYNTAX:mksquashfs source1 source2 ...  dest [options] [-e list of exclude
+SYNTAX:./mksquashfs source1 source2 ...  dest [options] [-e list of exclude
 dirs/files]
 
 Filesystem build options:
 -comp <comp>		select <comp> compression
 			Compressors available:
 				gzip (default)
-				lzma
 				lzo
+				xz
 -b <block_size>		set data block to <block_size>.  Default 131072 bytes
 -no-exports		don't make the filesystem exportable via NFS
 -no-sparse		don't detect sparse files
@@ -130,7 +152,7 @@ Mksquashfs runtime options:
 			processors available
 -read-queue <size>	Set input queue to <size> Mbytes.  Default 64 Mbytes
 -write-queue <size>	Set output queue to <size> Mbytes.  Default 512 Mbytes
--fragment-queue <size>	Set fagment queue to <size> Mbytes.  Default 64 Mbytes
+-fragment-queue <size>	Set fragment queue to <size> Mbytes.  Default 64 Mbytes
 
 Miscellaneous options:
 -root-owned		alternative name for -all-root
@@ -139,10 +161,22 @@ Miscellaneous options:
 -noFragmentCompression	alternative name for -noF
 -noXattrCompression	alternative name for -noX
 
-Compressors available:
-	gzip (default)
-	lzma
-	lzo
+Compressors available and compressor specific options:
+	gzip (no options) (default)
+	lzo (no options)
+	xz
+	  -Xbcj filter1,filter2,...,filterN
+		Compress using filter1,filter2,...,filterN in turn
+		(in addition to no filter), and choose the best compression.
+		Available filters: x86, arm, armthumb, powerpc, sparc, ia64
+	  -Xdict-size <dict-size>
+		Use <dict-size> as the XZ dictionary size.  The dictionary size
+		can be specified as a percentage of the block size, or as an
+		absolute value.  The dictionary size must be less than or equal
+		to the block size and 8192 bytes or larger.  It must also be
+		storable in the xz header as either 2^n or as 2^n+2^(n+1).
+		Example dict-sizes are 75%, 50%, 37.5%, 25%, or 32K, 16K, 8K
+		etc.
 
 
 Source1 source2 ... are the source directories/files containing the
@@ -208,8 +242,47 @@ filesystem exists on it, mksquashfs will append.  The -noappend option will
 write a new filesystem irrespective of whether an existing filesystem is
 present.
 
-3.2 Changing compression defaults used in mksquashfs
-----------------------------------------------------
+3.2 Changing compression algorithm and compression specific options
+-------------------------------------------------------------------
+
+By default Mksquashfs will compress using the gzip compression
+algorithm.  This algorithm offers a good trade-off between compression
+ratio, and memory and time taken to decompress.
+
+Squashfs also supports LZO and XZ (LZMA2) compression.  LZO offers worse
+compression ratio than gzip, but is faster to decompress.  XZ offers better
+compression ratio than gzip, but at the expense of greater memory and time
+to decompress (and significantly more time to compress).
+
+If you're not building the squashfs-tools and kernel from source, then
+the tools and kernel may or may not have been built with support for LZO or
+XZ compression.  The compression algorithms supported by the build of
+Mksquashfs can be found by typing mksquashfs without any arguments.  The
+compressors available are displayed at the end of the help message, e.g. 
+
+Compressors available and compressor specific options:
+        gzip (no options) (default)
+        lzo (no options)
+        xz
+          -Xbcj filter1,filter2,...,filterN
+                Compress using filter1,filter2,...,filterN in turn
+                (in addition to no filter), and choose the best compression.
+                Available filters: x86, arm, armthumb, powerpc, sparc, ia64
+          -Xdict-size <dict-size>
+                Use <dict-size> as the XZ dictionary size.  The dictionary size
+                can be specified as a percentage of the block size, or as an
+                absolute value.  The dictionary size must be less than or equal
+                to the block size and 8192 bytes or larger.  It must also be
+                storable in the xz header as either 2^n or as 2^n+2^(n+1).
+                Example dict-sizes are 75%, 50%, 37.5%, 25%, or 32K, 16K, 8K
+                etc.
+
+If the compressor offers compression specific options then these
+options are also displayed (.i.e. in the above XZ is shown with two
+compression specific options).
+
+3.3 Changing global compression defaults used in mksquashfs
+-----------------------------------------------------------
 
 There are a large number of options that can be used to control the 
 compression in mksquashfs.  By and large the defaults are the most
@@ -246,7 +319,7 @@ The -b option allows the block size to be selected, both "K" and "M" postfixes
 are supported, this can be either 4K, 8K, 16K, 32K, 64K, 128K, 256K, 512K or
 1M bytes.
 
-3.3 Specifying the UIDs/GIDs used in the filesystem
+3.4 Specifying the UIDs/GIDs used in the filesystem
 ---------------------------------------------------
 
 By default files in the generated filesystem inherit the UID and GID ownership
@@ -265,7 +338,7 @@ The "-force-gid gid" option forces all files in the generated Squashfs
 filesystem to be group owned by the specified gid.  The gid can be specified
 either by name (i.e. "root") or by number.
 
-3.4 Excluding files from the filesystem
+3.5 Excluding files from the filesystem
 ---------------------------------------
 
 The -e and -ef options allow files/directories to be specified which are
@@ -279,7 +352,7 @@ extended wildcard matching.  Basic exclude matching is a legacy feature
 retained for backwards compatibility with earlier versions of Mksquashfs.
 Extended wildcard matching should be used in preference.
 
-3.4.1 Basic exclude matching
+3.5.1 Basic exclude matching
 
 Each exclude file is treated as an exact match of a file/directory in
 the source directories.  If an exclude file/directory is absolute (i.e.
@@ -292,7 +365,7 @@ the sources in turn, i.e.
 Will generate exclude files /tmp/source1/ex2, /tmp/source1/ex1, source2/ex1,
 /tmp/source1/out/ex3 and source2/out/ex3.
 
-3.4.2 Extended exclude file handling
+3.5.2 Extended exclude file handling
 
 Extended exclude file matching treats each exclude file as a wildcard or
 regex expression.  To enable wildcard matching specify the -wildcards
@@ -355,7 +428,7 @@ Non-anchored excludes
      Exclude all files matching "*.gz" anywhere in the source directories,
      except those with "data" in the name.
 
-3.4.3 Exclude files summary
+3.5.3 Exclude files summary
 
 The -e and -ef exclude options are usefully used in archiving the entire
 filesystem, where it is wished to avoid archiving /proc, and the filesystem
@@ -366,7 +439,7 @@ being generated, i.e.
 Multiple -ef options can be specified on the command line, and the -ef
 option can be used in conjuction with the -e option.
 
-3.5 Appending to squashfs filesystems
+3.6 Appending to squashfs filesystems
 -------------------------------------
 
 Running squashfs with the destination directory containing an existing
@@ -409,7 +482,7 @@ source will create a filesystem with the two source trees, but only the
 changed files will take extra room, the unchanged files will be detected as
 duplicates.
 
-3.6 Appending recovery file feature
+3.7 Appending recovery file feature
 -----------------------------------
 
 Recovery files are created when appending to existing Squashfs
@@ -431,7 +504,146 @@ mksquashfs dummy image.sqsh -recover squashfs_recovery_image.sqsh_1234
 The writing of the recovery file can be disabled by specifying the
 "-no-recovery" option.
 
-3.7 Miscellaneous options
+3.8 Pseudo file support
+-----------------------
+
+Mksquashfs supports pseudo files, these allow fake files, directories, character
+and block devices to be specified and added to the Squashfs filesystem being
+built, rather than requiring them to be present in the source directories.
+This, for example, allows device nodes to be added to the filesystem without
+requiring root access.
+
+Mksquashfs 4.1 adds support for "dynamic pseudo files" and a modify operation.
+Dynamic pseudo files allow files to be dynamically created when Mksquashfs
+is run, their contents being the result of running a command or piece of
+shell script.  The modifiy operation allows the mode/uid/gid of an existing
+file in the source filesystem to be modified.
+
+Two Mksquashfs options are supported, -p allows one pseudo file to be specified
+on the command line, and -pf allows a pseudo file to be specified containing a
+list of pseduo definitions, one per line.
+
+Pseudo operations
+-----------------
+
+3.8.1. Creating a dynamic file
+--------------------------
+
+Pseudo definition
+
+Filename f mode uid gid command
+
+mode is the octal mode specifier, similar to that expected by chmod.
+
+uid and gid can be either specified as a decimal number, or by name.
+
+command can be an executable or a piece of shell script, and it is executed
+by running "/bin/sh -c command".   The stdout becomes the contents of
+"Filename".
+
+Examples:
+
+Running a basic command
+-----------------------
+
+/somedir/dmesg f 444 root root dmesg
+
+creates a file "/somedir/dmesg" containing the output from dmesg.
+
+Executing shell script
+----------------------
+
+RELEASE f 444 root root \
+		if [ ! -e /tmp/ver ]; then \
+			echo 0 > /tmp/ver; \
+		fi; \
+                ver=`cat /tmp/ver`; \
+                ver=$((ver +1)); \
+                echo $ver > /tmp/ver; \
+                echo -n `cat /tmp/release`; \
+                echo "-dev #"$ver `date` "Build host" `hostname`
+
+Creates a file RELEASE containing the release name, date, build host, and
+an incrementing version number.  The incrementing version is a side-effect
+of executing the shell script, and ensures every time Mksquashfs is run a
+new version number is used without requiring any other shell scripting.
+
+The above example also shows that commands can be split across multiple lines
+using "\".  Obviously as the script will be presented to the shell as a single
+line, a semicolon is need to separate individual shell commands within the
+shell script.
+
+Reading from a device (or fifo/named socket)
+--------------------------------------------
+
+input f 444 root root dd if=/dev/sda1 bs=1024 count=10
+
+Copies 10K from the device /dev/sda1 into the file input.  Ordinarily Mksquashfs
+given a device, fifo, or named socket will place that special file within the
+Squashfs filesystem, the above allows input from these special files to be
+captured and placed in the Squashfs filesystem.
+
+3.8.2. Creating a block or character device
+---------------------------------------
+
+Pseudo definition
+
+Filename type mode uid gid major minor
+
+Where type is either
+	b - for block devices, and
+	c - for character devices
+
+mode is the octal mode specifier, similar to that expected by chmod.
+
+uid and gid can be either specified as a decimal number, or by name.
+
+For example:
+
+/dev/chr_dev c 666 root root 100 1
+/dev/blk_dev b 666 0 0 200 200
+
+creates a character device "/dev/chr_dev" with major:minor 100:1 and
+a block device "/dev/blk_dev" with major:minor 200:200, both with root
+uid/gid and a mode of rw-rw-rw.
+
+3.8.3. Creating a directory
+-----------------------
+
+Pseudo definition
+
+Filename d mode uid gid
+
+mode is the octal mode specifier, similar to that expected by chmod.
+
+uid and gid can be either specified as a decimal number, or by name.
+
+For example:
+
+/pseudo_dir d 666 root root
+
+creates a directory "/pseudo_dir" with root uid/gid and mode of rw-rw-rw.
+
+4.8.4. Modifying attributes of an existing file
+-------------------------------------------
+
+Pseudo definition
+
+Filename m mode uid gid
+
+mode is the octal mode specifier, similar to that expected by chmod.
+
+uid and gid can be either specified as a decimal number, or by name.
+
+For example:
+
+dmesg m 666 root root
+
+Changes the attributes of the file "dmesg" in the filesystem to have
+root uid/gid and a mode of rw-rw-rw, overriding the attributes obtained
+from the source filesystem.
+
+3.9 Miscellaneous options
 -------------------------
 
 The -info option displays the files/directories as they are compressed and
@@ -483,7 +695,7 @@ SYNTAX: unsquashfs [options] filesystem [directories or files to extract]
 Decompressors available:
 	gzip
 	lzma
-	lzo
+	xz	
 
 
 To extract a subset of the filesystem, the filenames or directory
@@ -549,11 +761,14 @@ filesystems.
 5. FILESYSTEM LAYOUT
 --------------------
 
-A squashfs filesystem consists of a maximum of eight parts, packed
-together on a byte alignment:
+A squashfs filesystem consists of a maximum of nine parts, packed together on a
+byte alignment:
 
 	 ---------------
 	|  superblock 	|
+	|---------------|
+	|  compression  |
+	|    options    |
 	|---------------|
 	|  datablocks   |
 	|  & fragments  |
@@ -581,7 +796,14 @@ the source directory, and checked for duplicates.  Once all file data has been
 written the completed inode, directory, fragment, export and uid/gid lookup
 tables are written.
 
-5.1 Inodes
+5.1 Compression options
+-----------------------
+
+Compressors can optionally support compression specific options (e.g.
+dictionary size).  If non-default compression options have been used, then
+these are stored here.
+
+5.2 Inodes
 ----------
 
 Metadata (inodes and directories) are compressed in 8Kbyte blocks.  Each
@@ -604,7 +826,7 @@ directory inode are defined: inodes optimised for frequently occurring
 regular files and directories, and extended types where extra
 information has to be stored.
 
-5.2 Directories
+5.3 Directories
 ---------------
 
 Like inodes, directories are packed into compressed metadata blocks, stored
@@ -634,7 +856,7 @@ decompressed to do a lookup irrespective of the length of the directory.
 This scheme has the advantage that it doesn't require extra memory overhead
 and doesn't require much extra storage on disk.
 
-5.3 File data
+5.4 File data
 -------------
 
 Regular files consist of a sequence of contiguous compressed blocks, and/or a
@@ -653,7 +875,7 @@ Larger files use multiple slots, with 1.75 TiB files using all 8 slots.
 The index cache is designed to be memory efficient, and by default uses
 16 KiB.
 
-5.4 Fragment lookup table
+5.5 Fragment lookup table
 -------------------------
 
 Regular files can contain a fragment index which is mapped to a fragment
@@ -663,7 +885,7 @@ A second index table is used to locate these.  This second index table for
 speed of access (and because it is small) is read at mount time and cached
 in memory.
 
-5.5 Uid/gid lookup table
+5.6 Uid/gid lookup table
 ------------------------
 
 For space efficiency regular files store uid and gid indexes, which are
@@ -672,7 +894,7 @@ stored compressed into metadata blocks.  A second index table is used to
 locate these.  This second index table for speed of access (and because it
 is small) is read at mount time and cached in memory.
 
-5.6 Export table
+5.7 Export table
 ----------------
 
 To enable Squashfs filesystems to be exportable (via NFS etc.) filesystems
@@ -686,7 +908,7 @@ This table is stored compressed into metadata blocks.  A second index table is
 used to locate these.  This second index table for speed of access (and because
 it is small) is read at mount time and cached in memory.
 
-5.7 Xattr table
+5.8 Xattr table
 ---------------
 
 The xattr table contains extended attributes for each inode.  The xattrs
