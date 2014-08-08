@@ -1,10 +1,10 @@
-	SQUASHFS 4.0 - A squashed read-only filesystem for Linux
+	SQUASHFS 4.1 - A squashed read-only filesystem for Linux
 
-	Copyright 2002-2009 Phillip Lougher <phillip@lougher.demon.co.uk>
+	Copyright 2002-2010 Phillip Lougher <phillip@lougher.demon.co.uk>
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs version 4.0.  Please read the README-4.0 and CHANGES files
+Welcome to Squashfs version 4.1.  Please read the README-4.1 and CHANGES files
 for details of changes.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
@@ -72,45 +72,38 @@ the directory "/mnt".
 As squashfs is a read-only filesystem, the mksquashfs program must be used to
 create populated squashfs filesystems.
 
-SYNTAX:./mksquashfs source1 source2 ...  dest [options] [-e list of exclude
+SYNTAX:mksquashfs source1 source2 ...  dest [options] [-e list of exclude
 dirs/files]
 
-Options are
--version		print version, licence and copyright message
--recover <name>		recover filesystem data using recovery file <name>
--no-recovery		don't generate a recovery file
--info			print files written to filesystem
--no-exports		don't make the filesystem exportable via NFS
--no-progress		don't display the progress bar
--no-sparse		don't detect sparse files
+Filesystem build options:
+-comp <comp>		select <comp> compression
+			Compressors available:
+				gzip (default)
+				lzma
+				lzo
 -b <block_size>		set data block to <block_size>.  Default 131072 bytes
--processors <number>	Use <number> processors.  By default will use number of
-			processors available
--read-queue <size>	Set input queue to <size> Mbytes.  Default 64 Mbytes
--write-queue <size>	Set output queue to <size> Mbytes.  Default 512 Mbytes
--fragment-queue <size>	Set fagment queue to <size> Mbytes.  Default 64 Mbytes
+-no-exports		don't make the filesystem exportable via NFS
+-no-sparse		don't detect sparse files
+-no-xattrs		don't store extended attributes
+-xattrs			store extended attributes (default)
 -noI			do not compress inode table
 -noD			do not compress data blocks
 -noF			do not compress fragment blocks
+-noX			do not compress extended attributes
 -no-fragments		do not use fragments
 -always-use-fragments	use fragment blocks for files larger than block size
 -no-duplicates		do not perform duplicate checking
--noappend		do not append to existing filesystem
--keep-as-directory	if one source directory is specified, create a root
-			directory containing that directory, rather than the
-			contents of the directory
--root-becomes <name>	when appending source files/directories, make the
-			original root become a subdirectory in the new root
-			called <name>, rather than adding the new source items
-			to the original root
 -all-root		make all files owned by root
 -force-uid uid		set all file uids to uid
 -force-gid gid		set all file gids to gid
 -nopad			do not pad filesystem to a multiple of 4K
--root-owned		alternative name for -all-root
--noInodeCompression	alternative name for -noI
--noDataCompression	alternative name for -noD
--noFragmentCompression	alternative name for -noF
+-keep-as-directory	if one source directory is specified, create a root
+			directory containing that directory, rather than the
+			contents of the directory
+
+Filesystem filter options:
+-p <pseudo-definition>	Add pseudo file definition
+-pf <pseudo-file>	Add list of pseudo file definitions
 -sort <sort_file>	sort files according to priorities in <sort_file>.  One
 			file or dir with priority per line.  Priority -32768 to
 			32767, default priority 0
@@ -119,8 +112,38 @@ Options are
 			exclude dirs/files
 -regex			Allow POSIX regular expressions to be used in exclude
 			dirs/files
--p <pseudo-definition>	Add pseudo file definition
--pf <pseudo-file>	Add list of pseudo file definitions
+
+Filesystem append options:
+-noappend		do not append to existing filesystem
+-root-becomes <name>	when appending source files/directories, make the
+			original root become a subdirectory in the new root
+			called <name>, rather than adding the new source items
+			to the original root
+
+Mksquashfs runtime options:
+-version		print version, licence and copyright message
+-recover <name>		recover filesystem data using recovery file <name>
+-no-recovery		don't generate a recovery file
+-info			print files written to filesystem
+-no-progress		don't display the progress bar
+-processors <number>	Use <number> processors.  By default will use number of
+			processors available
+-read-queue <size>	Set input queue to <size> Mbytes.  Default 64 Mbytes
+-write-queue <size>	Set output queue to <size> Mbytes.  Default 512 Mbytes
+-fragment-queue <size>	Set fagment queue to <size> Mbytes.  Default 64 Mbytes
+
+Miscellaneous options:
+-root-owned		alternative name for -all-root
+-noInodeCompression	alternative name for -noI
+-noDataCompression	alternative name for -noD
+-noFragmentCompression	alternative name for -noF
+-noXattrCompression	alternative name for -noX
+
+Compressors available:
+	gzip (default)
+	lzma
+	lzo
+
 
 Source1 source2 ... are the source directories/files containing the
 files/directories that will form the squashfs filesystem.  If a single
@@ -435,6 +458,8 @@ SYNTAX: unsquashfs [options] filesystem [directories or files to extract]
 	-v[ersion]		print version, licence and copyright information
 	-d[est] <pathname>	unsquash to <pathname>, default "squashfs-root"
 	-n[o-progress]		don't display the progress bar
+	-no[-xattrs]		don't extract xattrs in file system
+	-x[attrs]		extract xattrs in file system (default)
 	-p[rocessors] <number>	use <number> processors.  By default will use
 				number of processors available
 	-i[nfo]			print files as they are unsquashed
@@ -450,10 +475,16 @@ SYNTAX: unsquashfs [options] filesystem [directories or files to extract]
 	-da[ta-queue] <size>	Set data queue to <size> Mbytes.  Default 256
 				Mbytes
 	-fr[ag-queue] <size>	Set fagment queue to <size> Mbytes.  Default 256
-				Mbytes
+				 Mbytes
 	-r[egex]		treat extract names as POSIX regular expressions
 				rather than use the default shell wildcard
 				expansion (globbing)
+
+Decompressors available:
+	gzip
+	lzma
+	lzo
+
 
 To extract a subset of the filesystem, the filenames or directory
 trees that are to be extracted can be specified on the command line.  The
@@ -518,33 +549,40 @@ filesystems.
 5. FILESYSTEM LAYOUT
 --------------------
 
-Brief filesystem design notes follow for the original 1.x filesystem
-layout.  A description of the 2.x and 3.x filesystem layouts will be written
-sometime!
-
-A squashfs filesystem consists of five parts, packed together on a byte
-alignment:
+A squashfs filesystem consists of a maximum of eight parts, packed
+together on a byte alignment:
 
 	 ---------------
 	|  superblock 	|
 	|---------------|
-	|     data	|
-	|    blocks	|
+	|  datablocks   |
+	|  & fragments  |
 	|---------------|
-	|    inodes	|
+	|  inode table	|
 	|---------------|
-	|   directories	|
+	|   directory	|
+	|     table     |
+	|---------------|
+	|   fragment	|
+	|    table      |
+	|---------------|
+	|    export     |
+	|    table      |
 	|---------------|
 	|    uid/gid	|
 	|  lookup table	|
+	|---------------|
+	|     xattr     |
+	|     table	|
 	 ---------------
 
 Compressed data blocks are written to the filesystem as files are read from
 the source directory, and checked for duplicates.  Once all file data has been
-written the completed inode, directory and uid/gid lookup tables are written.
+written the completed inode, directory, fragment, export and uid/gid lookup
+tables are written.
 
-5.1 Metadata
-------------
+5.1 Inodes
+----------
 
 Metadata (inodes and directories) are compressed in 8Kbyte blocks.  Each
 compressed block is prefixed by a two byte length, the top bit is set if the
@@ -552,98 +590,122 @@ block is uncompressed.  A block will be uncompressed if the -noI option is set,
 or if the compressed block was larger than the uncompressed block.
 
 Inodes are packed into the metadata blocks, and are not aligned to block
-boundaries, therefore inodes overlap compressed blocks.  An inode is
-identified by a two field tuple <start address of compressed block : offset
-into de-compressed block>.
+boundaries, therefore inodes overlap compressed blocks.  Inodes are identified
+by a 48-bit number which encodes the location of the compressed metadata block
+containing the inode, and the byte offset into that block where the inode is
+placed (<block, offset>).
 
-Inode contents vary depending on the file type.  The base inode consists of:
+To maximise compression there are different inodes for each file type
+(regular file, directory, device, etc.), the inode contents and length
+varying with the type.
 
-	base inode:
-		Inode type
-		Mode
-		uid index
-		gid index
-
-The inode type is 4 bits in size, and the mode is 12 bits.
-
-The uid and gid indexes are 4 bits in length.  Ordinarily, this will allow 16
-unique indexes into the uid table.  To minimise overhead, the uid index is
-used in conjunction with the spare bit in the file type to form a 48 entry
-index as follows:
-
-	inode type 1 - 5: uid index = uid
-	inode type 5 -10: uid index = 16 + uid
-	inode type 11 - 15: uid index = 32 + uid
-
-In this way 48 unique uids are supported using 4 bits, minimising data inode
-overhead.  The 4 bit gid index is used to index into a 15 entry gid table.
-Gid index 15 is used to indicate that the gid is the same as the uid.
-This prevents the 15 entry gid table filling up with the common case where
-the uid/gid is the same.
-
-The data contents of symbolic links are stored immediately after the symbolic
-link inode, inside the inode table.  This allows the normally small symbolic
-link to be compressed as part of the inode table, achieving much greater
-compression than if the symbolic link was compressed individually.
-
-Similarly, the block index for regular files is stored immediately after the
-regular file inode.  The block index is a list of block lengths (two bytes
-each), rather than block addresses, saving two bytes per block.  The block
-address for a given block is computed by the summation of the previous
-block lengths.  This takes advantage of the fact that the blocks making up a
-file are stored contiguously in the filesystem.  The top bit of each block
-length is set if the block is uncompressed, either because the -noD option is
-set, or if the compressed block was larger than the uncompressed block.
+To further maximise compression, two types of regular file inode and
+directory inode are defined: inodes optimised for frequently occurring
+regular files and directories, and extended types where extra
+information has to be stored.
 
 5.2 Directories
 ---------------
 
-Like inodes, directories are packed into the metadata blocks, and are not
-aligned on block boundaries, therefore directories can overlap compressed
-blocks.  A directory is, again, identified by a two field tuple
-<start address of compressed block containing directory start : offset
-into de-compressed block>.
+Like inodes, directories are packed into compressed metadata blocks, stored
+in a directory table.  Directories are accessed using the start address of
+the metablock containing the directory and the offset into the
+decompressed block (<block, offset>).
 
 Directories are organised in a slightly complex way, and are not simply
-a list of file names and inode tuples.  The organisation takes advantage of the
-observation that in most cases, the inodes of the files in the directory
-will be in the same compressed metadata block, and therefore, the
-inode tuples will have the same start block.
-
+a list of file names.  The organisation takes advantage of the
+fact that (in most cases) the inodes of the files will be in the same
+compressed metadata block, and therefore, can share the start block.
 Directories are therefore organised in a two level list, a directory
-header containing the shared start block value, and a sequence of
-directory entries, each of which share the shared start block.  A
-new directory header is written once/if the inode start block
-changes.  The directory header/directory entry list is repeated as many times
-as necessary.  The organisation is as follows:
+header containing the shared start block value, and a sequence of directory
+entries, each of which share the shared start block.  A new directory header
+is written once/if the inode start block changes.  The directory
+header/directory entry list is repeated as many times as necessary.
 
-	directory_header:
-		count (8 bits)
-		inode start block (24 bits)
-		
-		directory entry: * count
-			inode offset (13 bits)
-			inode type (3 bits)
-			filename size (8 bits)
-			filename
-			
-This organisation saves on average 3 bytes per filename.
+Directories are sorted, and can contain a directory index to speed up
+file lookup.  Directory indexes store one entry per metablock, each entry
+storing the index/filename mapping to the first directory header
+in each metadata block.  Directories are sorted in alphabetical order,
+and at lookup the index is scanned linearly looking for the first filename
+alphabetically larger than the filename being looked up.  At this point the
+location of the metadata block the filename is in has been found.
+The general idea of the index is ensure only one metadata block needs to be
+decompressed to do a lookup irrespective of the length of the directory.
+This scheme has the advantage that it doesn't require extra memory overhead
+and doesn't require much extra storage on disk.
 
 5.3 File data
 -------------
 
-File data is compressed on a block by block basis and written to the
-filesystem.  The filesystem supports up to 32K blocks, which achieves
-greater compression ratios than the Linux 4K page size.
+Regular files consist of a sequence of contiguous compressed blocks, and/or a
+compressed fragment block (tail-end packed block).   The compressed size
+of each datablock is stored in a block list contained within the
+file inode.
 
-The disadvantage with using greater than 4K blocks (and the reason why
-most filesystems do not), is that the VFS reads data in 4K pages.
-The filesystem reads and decompresses a larger block containing that page
-(e.g. 32K).  However, only 4K can be returned to the VFS, resulting in a
-very inefficient filesystem, as 28K must be thrown away.   Squashfs,
-solves this problem by explicitly pushing the extra pages into the page
-cache.
+To speed up access to datablocks when reading 'large' files (256 Mbytes or
+larger), the code implements an index cache that caches the mapping from
+block index to datablock location on disk.
 
+The index cache allows Squashfs to handle large files (up to 1.75 TiB) while
+retaining a simple and space-efficient block list on disk.  The cache
+is split into slots, caching up to eight 224 GiB files (128 KiB blocks).
+Larger files use multiple slots, with 1.75 TiB files using all 8 slots.
+The index cache is designed to be memory efficient, and by default uses
+16 KiB.
+
+5.4 Fragment lookup table
+-------------------------
+
+Regular files can contain a fragment index which is mapped to a fragment
+location on disk and compressed size using a fragment lookup table.  This
+fragment lookup table is itself stored compressed into metadata blocks.
+A second index table is used to locate these.  This second index table for
+speed of access (and because it is small) is read at mount time and cached
+in memory.
+
+5.5 Uid/gid lookup table
+------------------------
+
+For space efficiency regular files store uid and gid indexes, which are
+converted to 32-bit uids/gids using an id look up table.  This table is
+stored compressed into metadata blocks.  A second index table is used to
+locate these.  This second index table for speed of access (and because it
+is small) is read at mount time and cached in memory.
+
+5.6 Export table
+----------------
+
+To enable Squashfs filesystems to be exportable (via NFS etc.) filesystems
+can optionally (disabled with the -no-exports Mksquashfs option) contain
+an inode number to inode disk location lookup table.  This is required to
+enable Squashfs to map inode numbers passed in filehandles to the inode
+location on disk, which is necessary when the export code reinstantiates
+expired/flushed inodes.
+
+This table is stored compressed into metadata blocks.  A second index table is
+used to locate these.  This second index table for speed of access (and because
+it is small) is read at mount time and cached in memory.
+
+5.7 Xattr table
+---------------
+
+The xattr table contains extended attributes for each inode.  The xattrs
+for each inode are stored in a list, each list entry containing a type,
+name and value field.  The type field encodes the xattr prefix
+("user.", "trusted." etc) and it also encodes how the name/value fields
+should be interpreted.  Currently the type indicates whether the value
+is stored inline (in which case the value field contains the xattr value),
+or if it is stored out of line (in which case the value field stores a
+reference to where the actual value is stored).  This allows large values
+to be stored out of line improving scanning and lookup performance and it
+also allows values to be de-duplicated, the value being stored once, and
+all other occurences holding an out of line reference to that value.
+
+The xattr lists are packed into compressed 8K metadata blocks.
+To reduce overhead in inodes, rather than storing the on-disk
+location of the xattr list inside each inode, a 32-bit xattr id
+is stored.  This xattr id is mapped into the location of the xattr
+list using a second xattr id lookup table.
 
 6. AUTHOR INFO
 --------------

@@ -8,6 +8,20 @@ some of the extra features in squashfs.  This is a randomly ordered
 (roughly in chronological order) list, which is updated when
 I remember...
 
+
+Acknowledgements for Squashfs 4.1
+---------------------------------
+
+Thanks to Chan Jeong <chan.jeong@lge.com> and LG for the patches to support LZO
+compression.
+
+Acknowledgements for Squashfs 4.0
+---------------------------------
+
+Thanks to Tim Bird and CELF (Consumer Electronics Linux Forum) for helping
+fund mainstreaming of Squashfs into the 2.6.29 kernel and the 
+changes to the Squashfs tools to support the new 4.0 file system layout.
+
 Acknowledgements for Squashfs-3.3
 ------------------------------------
 

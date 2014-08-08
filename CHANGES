@@ -1,5 +1,32 @@
 			SQUASHFS CHANGE LOG
 
+4.1	19 SEPT 2010	Major filesystem and tools improvements
+
+	1. Filesystem improvements:
+
+	    1.1 Extended attribute support
+	    1.2 New compression framework
+	    1.3 Support for LZO compression
+	    1.4 Support for LZMA compression (not yet in mainline)
+
+	2. Mksquashfs improvements:
+
+	    1.1 Enhanced pseudo file support
+	    1.2 New options for choosing compression algorithm used
+	    1.3 New options for controlling extended attributes
+	    1.4 Fix misalignment issues with memcpy etc. seen on ARM
+	    1.5 Fix floating point error in progress_bar when max == 0
+	    1.6 Removed use of get_nproc() call unavailable in ulibc
+	    1.7 Reorganised help text
+	  
+	3. Unsquashfs improvements:
+
+	    1.1 New options for controlling extended attributes
+	    1.2 Fix misalignment issues with memcpy etc. seen on ARM
+	    1.3 Fix floating point error in progress_bar when max == 0
+	    1.4 Removed use of get_nproc() call unavailable in ulibc
+
+	  
 4.0	5 APR 2009	Major filesystems improvements
 
 	1. Kernel code improvements:
