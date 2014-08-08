@@ -1,4 +1,12 @@
 			SQUASHFS CHANGE LOG
+ 
+2.1-r2  15 DEC 2004	Code changed so it can be compiled with gcc 2.x
+
+	1.  In some of the code added for release 2.1 I unknowingly used some
+	    gcc extensions only supported by 3.x compilers.  I have received
+	    a couple of reports that the 2.1 release doesn't build on 2.x and so
+	    people are clearly still using gcc 2.x.  The code has been
+	    rewritten to remove these extensions.
 
 2.1	10 DEC 2004	Significantly improved directory handling plus numerous
 			other smaller improvements

@@ -65,3 +65,6 @@ Mike Schaudies made a donation.
 Arkadiusz Patyk from the Polish Linux Distribution reported that Squashfs
 didn't work on amd64 machines. He gave me an account on a PLD amd64 machine
 which allowed myself to track down these bugs.
+
+Miles Roper, Peter Kjellerstedt and Willy Tarreau reported that release 2.1 did
+not compile with gcc < 3.x.

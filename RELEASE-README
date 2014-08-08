@@ -4,9 +4,9 @@
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs version 2.1.  Significant improvements to directory
-handling and numerous other smaller improvements have been made.  Please
-see the README-2.1 and CHANGES files for further details.
+Welcome to Squashfs version 2.1-r2.  Significant improvements to
+directory handling and numerous other smaller improvements have been made.
+Please see the README-2.1 and CHANGES files for further details.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
 It uses zlib compression to compress both files, inodes and directories.
