@@ -17,3 +17,11 @@
 	3. Greater than 2GB filesystems bug fix.  Filesystems greater than 2GB
 	   can now be created.
 	4. Patch for 2.4.20 kernels.
+
+1.1b	16 JAN 2002	Bug fix release
+
+	Fixed readpage deadlock bug.  This was a rare deadlock bug that happened when
+	pushing pages into the page cache when using greater than 4K blocks.  I never
+	got this bug when I tested the filesystem, but two people emailed me on the same
+	day about the problem!  I fixed it by using a page cache function that wasn't
+	there when I originally did the work, which was nice :-)

@@ -17,4 +17,9 @@ exclude files.
 Martin Mueller (LinuxTV) - noticed that the filesystem length in the
 superblock doesn't match the output filesystem length.  This is due to
 padding to a 4K boundary.  This prompted the addition of the -nopad option.
+He also reported a problem where 32K block filesystems hung when used as initrds.
+
+Arkadiusz Patyk reported a problem where 32K block filesystems hung when used
+as a root filesystem mounted as a loopback device.
+
 

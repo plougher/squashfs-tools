@@ -1,12 +1,12 @@
 			INSTALLING SQUASHFS
 
-The squashfs1.1.tar.gz file contains this file, a readme file, a changes file,
+The squashfs1.1b.tar.gz file contains this file, a readme file, a changes file,
 the squashfs patch files, and the squashfs-tools directory (mksquashfs).
 
 There are three kernel patch files depending on your 2.4.x kernel version.
-squashfs1.1-2.4.19-patch will patch 2.4.19 kernels.  squashfs1.1-2.4.20-patch
-will patch 2.4.20 kernels, and squashfs1.0d-1.1-patch will upgrade a
-squashfs1.0d patched 2.4.19 kernel to a new squashfs1.1 patched 2.4.19 kernel.
+squashfs1.1b-2.4.19-patch will patch 2.4.19 kernels.  squashfs1.1b-2.4.20-patch
+will patch 2.4.20 kernels, and squashfs1.0c-1.1b-patch will upgrade a
+squashfs1.0c patched 2.4.19 kernel to a new squashfs1.1b patched 2.4.19 kernel.
 
 The squashfs patches patch the relevant kernel files to add configure support,
 initrd support, include files, and the squashfs directory under linux/fs/.
