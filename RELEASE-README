@@ -1,0 +1,230 @@
+	SQUASHFS - A squashed read-only filesystem for Linux
+
+	Copyright 2002 Phillip Lougher (phillip@lougher.demon.co.uk)
+
+	Released under the GPL licence (version 2 or later).
+
+Squashfs is a highly compressed read-only filesystem for Linux (kernel 2.4.x).
+It uses zlib compression to compress both files, inodes and directories.
+Inodes in the system are very small and all blocks are packed to minimise
+data overhead. Block sizes greater than 4K are supported up to a maximum
+of 32K.
+
+Squashfs is intended for general read-only filesystem use, for archival
+use (i.e. in cases where a .tar.gz file may be used), and in constrained
+block device/memory systems (e.g. embedded systems) where low overhead is
+needed.
+
+The filesystem is currently stable, and has been tested on PowerPC, i586
+and Sparc architectures.
+
+Squashfs overview
+-----------------
+
+1. Data, inodes and directories are compressed.
+
+2. Squashfs stores full uid/gids (32 bits), and file creation time.
+
+3. Files up to 2^32 bytes are supported.  Filesystems can be up to
+   2^32 bytes.
+
+4. Inode and directory data are highly compacted, and packed on byte
+   boundaries.  Each compressed inode is on average 8 bytes in length
+   (the exact length varies on file type, i.e. regular file, directory,
+   symbolic link, and block/char device inodes have different sizes).
+
+5. Squashfs can use block sizes up to 32K (the default size is 32K).
+   Using 32K blocks achieves greater compression ratios than the normal
+   4K block size.
+
+6. File duplicates are detected and removed.
+
+7. Both big and little endian architectures are supported.  The mksquashfs
+   program can generate filesystems for different endian architectures for
+   cases where the host byte ordering is different to the target.  This is
+   useful for embedded systems.
+
+
+Installing squashfs
+-------------------
+
+The squashfs1.0.tar.gz file contains this README, the squashfs patch file
+(squashfs-patch), and the squashfs-tools directory (mksquashfs).
+
+The squashfs-patch file has been generated against linux-2.4.19, but may work
+with older 2.4.x kernels.  It assumes the kernel has inflatefs support, and
+therefore definately will not work with anything much older than 2.4.17.
+
+The squashfs patch patches the relevant kernel files to add configure support,
+initrd support, include files, and the squashfs directory under linux/fs/.
+
+Once patched, the kernel must be reconfigured, with squashfs support turned on
+(either Y/M) to ensure that inflatefs is built into the kernel.
+
+
+mksquashfs
+----------
+
+As squashfs is a read-only filesystem, the mksquashfs program must be used to
+create populated squashfs filesystems.
+
+mksquashfs usage: mksquashfs source dest [options]
+
+Options are
+	-info				print files written to filesystem
+	-b block size			size of blocks in filesystem, default 32768
+	-noI -noInodeCompression	do not compress inode table
+	-noD -noDataCompression		do not compress data blocks
+	-check_data			add checkdata for greater filesystem integrity checks
+	-le				create a little endian filesystem
+	-be				create a big endian filesystem
+
+Source is the source directory containing the files/directories that will
+form the squashfs filesystem.
+
+Dest is the destination where the squashfs filesystem will be written.  This
+can either be a conventional file or a block device.  If the file doesn't exist
+it will be created, if it does exist it will be truncated.
+
+The -info option displays the files/directories as they are compressed and
+added to the filesystem.  The compression percentage achieved is printed, with
+the original uncompressed size.  If the compression percentage is listed as
+0% it means the file is a duplicate.
+
+The -b option allows the block size to be selected, this can be either
+512, 1024, 2048, 4096, 8192, 16384, or 32768 bytes.
+
+The -noI and -noD options (also -noInodeCompression and -noDataCompression)
+can be used to force mksquashfs to not compress inodes/directories and data
+respectively.  Giving both options generates an uncompressed filesystem.
+
+The -le and -be options can be used to force mksquashfs to generate a little
+endian or big endian filesystem.  Normally mksquashfs will generate a
+filesystem in the host byte order.
+
+
+Filesystem layout
+-----------------
+
+Brief filesystem design notes follow.
+
+A squashfs filesystem consists of five parts, packed together on a byte alignment:
+
+	 ---------------
+	|  superblock 	|
+	|---------------|
+	|     data	|
+	|    blocks	|
+	|---------------|
+	|    inodes	|
+	|---------------|
+	|   directories	|
+	|---------------|
+	|    uid/gid	|
+	|  lookup table	|
+	 ---------------
+
+Compressed data blocks are written to the filesystem as files are read from
+the source directory, and checked for duplicates.  Once all file data has been
+written the completed inode, directory and uid/gid lookup tables are written.
+
+Metadata
+--------
+
+Metadata (inodes and directories) are compressed in 8Kbyte blocks.  Each
+compressed block is prefixed by a two byte length, the top bit is set if the
+block is uncompressed.  A block will be uncompressed if the -noI option is set,
+or if the compressed block was larger than the uncompressed block.
+
+Inodes are packed into the metadata blocks, and are not aligned to block
+boundaries, therefore inodes overlap compressed blocks.  An inode is
+identified by a two field tuple <start address of compressed block : offset
+into de-compressed block>.
+
+Inode contents vary depending on the file type.  The base inode consists of:
+
+	base inode:
+		Inode type
+		Mode
+		uid index
+		gid index
+
+The inode type is 4 bits in size, and the mode is 12 bits.
+
+The uid and gid indexes are 4 bits in length.  Ordinarily, this will allow 16
+unique indexes into the uid table.  To minimise overhead, the uid index is
+used in conjunction with the spare bit in the file type to form a 48 entry
+index as follows:
+
+	inode type 1 - 5: uid index = uid
+	inode type 5 -10: uid index = 16 + uid
+	inode type 11 - 15: uid index = 32 + uid
+
+In this way 48 unique uids are supported using 4 bits, minimising data inode
+overhead.  The 4 bit gid index is used to index into a 15 entry gid table.
+Gid index 15 is used to indicate that the gid is the same as the uid.
+This prevents the 15 entry gid table filling up with the common case where
+the uid/gid is the same.
+
+The data contents of symbolic links are stored immediately after the symbolic
+link inode, inside the inode table.  This allows the normally small symbolic
+link to be compressed as part of the inode table, achieving much greater
+compression than if the symbolic link was compressed individually.
+
+Similarly, the block index for regular files is stored immediately after the
+regular file inode.  The block index is a list of block lengths (two bytes
+each), rather than block addresses, saving two bytes per block.  The block
+address for a given block is computed by the summation of the previous
+block lengths.  This takes advantage of the fact that the blocks making up a
+file are stored contiguously in the filesystem.  The top bit of each block
+length is set if the block is uncompressed, either because the -noD option is
+set, or if the compressed block was larger than the uncompressed block.
+
+Directories
+-----------
+
+Like inodes, directories are packed into the metadata blocks, and are not
+aligned on block boundaries, therefore directories can overlap compressed
+blocks.  A directory is, again, identified by a two field tuple
+<start address of compressed block containing directory start : offset
+into de-compressed block>.
+
+Directories are organised in a slightly complex way, and are not simply
+a list of file names and inode tuples.  The organisation takes advantage of the
+observation that in most cases, the inodes of the files in the directory
+will be in the same compressed metadata block, and therefore, the
+inode tuples will have the same start block.
+
+Directories are therefore organised in a two level list, a directory
+header containing the shared start block value, and a sequence of
+directory entries, each of which share the shared start block.  A
+new directory header is written once/if the inode start block
+changes.  The directory header/directory entry list is repeated as many times
+as necessary.  The organisation is as follows:
+
+	directory_header:
+		count (8 bits)
+		inode start block (24 bits)
+		
+		directory entry: * count
+			inode offset (13 bits)
+			inode type (3 bits)
+			filename size (8 bits)
+			filename
+			
+This organisation saves on average 3 bytes per filename.
+
+File data
+---------
+
+File data is compressed on a block by block basis and written to the
+filesystem.  The filesystem supports up to 32K blocks, which achieves
+greater compression ratios than the Linux 4K page size.
+
+The disadvantage with using greater than 4K blocks (and the reason why
+most filesystems do not), is that the VFS reads data in 4K pages.
+The filesystem reads and decompresses a larger block containing that page
+(e.g. 32K).  However, only 4K can be returned to the VFS, resulting in a
+very inefficient filesystem, as 28K must be thrown away.   Squashfs,
+solves this problem by explicitly pushing the extra pages into the page
+cache.
