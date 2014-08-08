@@ -4,7 +4,9 @@ Thanks to everyone who have download squashfs.  I appreciate people
 using it, and any feedback you have.
 
 The following have provided useful feedback, which has guided
-some of the extra features in squashfs.
+some of the extra features in squashfs.  This is a randomly ordered
+(roughly in chronological order) list, which is updated when
+I remember...
 
 Mark Robson - pointed out early on that initrds didn't work
 
@@ -32,3 +34,15 @@ Cameron Rich complained that Squashfs did not support FIFOs or sockets.
 
 Steve Chadsey and Thomas Weissmuller noticed that files larger than the
 available memory could not be compressed by Mksquashfs.
+
+"Ptwahyu" and "Hoan" (I have no full names and I don't like giving people's email
+addresses), noticed that Mksquashfs 1.3 SEGV'd occasionally.  Even though I
+had already noticed this bug, it is useful to be informed by other people.
+
+Don Elwell, Murray Jensen and Cameron Rich, have all sent in patches.  Thanks,
+I have not had time to do anything about them yet...
+
+Drew Scott Daniels has been a good advocate for Squashfs.
+
+Erik Andersen has made some nice suggestions, unfortunately, I have
+not had time to implement anything.

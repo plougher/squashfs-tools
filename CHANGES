@@ -42,14 +42,29 @@
 
 	See the README file for usage changes.
 
-1.3	29 JUL 2003	FIFO/Socket support added plus optimisations/improvements
+1.3	29 JUL 2003	FIFO/Socket support added plus optimisations and
+		        improvements
 
-		1. FIFOs and Socket inodes are now supported,
-		2. Mksquashfs can now compress files larger than available memory,
-		3. File duplicate check routine optimised,
-		4. Exit codes fixed in Mksquashfs,
-		5. Patch for Linux 2.4.21,
-		6. Patch for Linux 2.6.0-test1.  Hopefully, this will work for the next
-		   few releases of 2.6.0-testx, otherwise, I'll be releasing a lot of
-		   updates to the 2.6.0 patch...
+	1. FIFOs and Socket inodes are now supported,
+	2. Mksquashfs can now compress files larger than available
+	   memory,
+	3. File duplicate check routine optimised,
+	4. Exit codes fixed in Mksquashfs,
+	5. Patch for Linux 2.4.21,
+	6. Patch for Linux 2.6.0-test1.  Hopefully, this will work for
+	   the next few releases of 2.6.0-testx, otherwise, I'll be
+	   releasing a lot of updates to the 2.6.0 patch...
 
+1.3r2	14 OCT 2003	Second release of 1.3, bug fixes and extra patches for
+		        new kernels
+
+	1. Bug fix in routine that adds files to the filesystem being
+	   generated in mksquashfs.  This bug was introduced in 1.3
+	   (not enough testing...) when I rewrote it to handle files larger
+	   than available memory.  This bug caused a SEGV, so if you've ever
+	   got that, it is now fixed,
+	2. Long running bug where ls -s and du reported wrong block size
+	   fixed.  I'm pretty sure this used to work many kernel versions ago
+	   (2.4.7) but it broke somewhere along the line since then,
+	3. New patch for Linux 2.4.22,
+	4. New patch for 2.6.0-test7, this replaces the patch for 2.6.0-test1.
