@@ -22,4 +22,6 @@ He also reported a problem where 32K block filesystems hung when used as initrds
 Arkadiusz Patyk reported a problem where 32K block filesystems hung when used
 as a root filesystem mounted as a loopback device.
 
+Joe Blow emailed me that I'd forgotten to put anything in the README about
+mounting the squashfs filesystem.
 

@@ -1,17 +1,38 @@
 			INSTALLING SQUASHFS
 
-The squashfs1.1b.tar.gz file contains this file, a readme file, a changes file,
-the squashfs patch files, and the squashfs-tools directory (mksquashfs).
+The squashfs1.2.tar.gz file contains this file, a readme file,
+an acknowledgements file, a changes file, the squashfs patch files, and
+the squashfs-tools directory (mksquashfs).
+
+1. Patching the kernel
+----------------------
 
 There are three kernel patch files depending on your 2.4.x kernel version.
-squashfs1.1b-2.4.19-patch will patch 2.4.19 kernels.  squashfs1.1b-2.4.20-patch
-will patch 2.4.20 kernels, and squashfs1.0c-1.1b-patch will upgrade a
-squashfs1.0c patched 2.4.19 kernel to a new squashfs1.1b patched 2.4.19 kernel.
+squashfs1.2-2.4.19-patch will patch 2.4.19 kernels.  squashfs1.2-2.4.20-patch
+will patch 2.4.20 kernels, and squashfs1.0c-1.2-patch will upgrade a
+squashfs1.0c patched 2.4.19 kernel to a new squashfs1.2 patched 2.4.19 kernel.
+
+IMPORTANT: if you are upgrading from 1.1b, you do not need to repatch
+your kernel, the kernel patch files are unchanged from 1.1b, only
+the squashfs-tools directory and mksquashfs need to be updated.
+
+To patch your kernel, cd into the top level directory, and run the "patch"
+comand, e.g. assuming linux-2.4.20
+
+%cd /usr/src/linux-2.4.20
+%patch -p1 < location-of-squashfs/squashfs1.2-2.4.20-patch
+
+Where "location-of-squashfs" is the path to the squashfs1.2 source directory.
 
 The squashfs patches patch the relevant kernel files to add configure support,
 initrd support, include files, and the squashfs directory under linux/fs/.
 Once patched, the kernel must be reconfigured, with squashfs support turned on
-(either Y/M) to ensure that inflatefs is built into the kernel.
+(either Y/M) to ensure that inflatefs is built into the kernel.  The
+squashfs kernel option can be found in the filesystems subsection of the
+configure menus.
+
+2. Building squashfs tools
+--------------------------
 
 The squashfs-tools directory contains the mksquashfs program.  This can be
 made by typing make.  The Makefile assumes that the squashfs patched

@@ -1,8 +1,11 @@
-	SQUASHFS 1.1 - A squashed read-only filesystem for Linux
+	SQUASHFS 1.2 - A squashed read-only filesystem for Linux
 
 	Copyright 2003 Phillip Lougher (phillip@lougher.demon.co.uk)
 
 	Released under the GPL licence (version 2 or later).
+
+Squashfs is currently at release 1.2.  Please see the CHANGES file, and
+read the following mksquashfs section for recent changes to squashfs.
 
 Squashfs is a highly compressed read-only filesystem for Linux (kernel 2.4.x).
 It uses zlib compression to compress both files, inodes and directories.
@@ -15,11 +18,14 @@ use (i.e. in cases where a .tar.gz file may be used), and in constrained
 block device/memory systems (e.g. embedded systems) where low overhead is
 needed.
 
-The filesystem is currently stable, and has been tested on PowerPC, i586
-and Sparc architectures.
+The section 'mksquashfs' gives information on using the mksquashfs tool to
+create and append to squashfs filesystems.  The 'using squashfs' section
+gives information on mounting and using squashfs filesystems stored on block
+devices and as normal files using the loopback device.
 
-Squashfs overview
------------------
+
+1. Squashfs overview
+--------------------
 
 1. Data, inodes and directories are compressed.
 
@@ -43,23 +49,33 @@ Squashfs overview
    mount filesystems created on different byte order machines.
 
 
-mksquashfs
-----------
+2. mksquashfs
+-------------
 
 As squashfs is a read-only filesystem, the mksquashfs program must be used to
-create populated squashfs filesystems.
+create populated squashfs filesystems.  Beginning with Squashfs 1.2, mksquashfs
+will also append directories and files to pre-existing squashfs filesystems, see
+the following 'appending to squashfs filesystems' subsection.
 
 SYNTAX:./mksquashfs source1 source2 ...  dest [options] [-e list of exclude dirs/files]
 
 Options are
 	-info				print files written to filesystem
 	-b block size			size of blocks in filesystem, default 32768
+	-noappend			Do not append to existing filesystem on dest, write a new filesystem
+					This is the default action if dest does not exist, or if no filesystem is on it
+	-keep-as-directory		If one source directory is specified, create a root directory
+					containing that directory, rather than the contents of the directory
+	-root-becomes name		When appending source files/directories, make the original
+					root become a subdirectory in the new root called name, rather
+					than adding the new source items to the original root
 	-noI -noInodeCompression	do not compress inode table
 	-noD -noDataCompression		do not compress data blocks
 	-nopad				do not pad filesystem to a multiple of 4K
-	-check_data			add checkdata for greater filesystem integrity checks
+	-check_data			add checkdata for greater filesystem checks
 	-le				create a little endian filesystem
 	-be				create a big endian filesystem
+	-version			print version, licence and copyright message
 
 Source1 source2 ... are the source directories/files containing the
 files/directories that will form the squashfs filesystem.  If a single
@@ -72,20 +88,56 @@ the specified sources into a single filesystem, with the root directory
 containing each of the source files/directories.  The name of each directory
 entry will be the basename of the source path.   If more than one source
 entry maps to the same name, the conflicts are named xxx_1, xxx_2, etc. where
-xxx is the original name, i.e.
+xxx is the original name.
 
-%mksquashfs /home/phillip/test /tmp/source2 source3 /tmp/test output_fs
+To make this clear, take two example directories.  Source directory
+"/home/phillip/test" contains  "file1", "file2" and "dir1".
+Source directory "goodies" contains "goodies1", "goodies2" and "goodies3".
 
-Will create a filesystem with the root directory containing directory
-entries test source2 source3 test_1
+usage example 1:
+
+%mksquashfs /home/phillip/test output_fs
+
+This will generate a squashfs filesystem with root entries
+"file1", "file2" and "dir1".
+
+example 2:
+
+%mksquashfs /home/phillip/test goodies output_fs
+
+This will create a squashfs filesystem with the root containing
+entries "test" and "goodies" corresponding to the source
+directories "/home/phillip/test" and "goodies".
+
+example 3:
+
+%mksquashfs /home/phillip/test goodies test output_fs
+
+This is the same as the previous example, except a third
+source directory "test" has been specified.  This conflicts
+with the first directory named "test" and will be renamed "test_1".
 
 Multiple sources allow filesystems to be generated without needing to
 copy all source files into a common directory.  This simplifies creating
 filesystems.
 
-Dest is the destination where the squashfs filesystem will be written.  This
-can either be a conventional file or a block device.  If the file doesn't exist
-it will be created, if it does exist it will be truncated.
+The -keep-as-directory option can be used when only one source directory
+is specified, and you wish the root to contain that directory, rather than
+the contents of the directory.  For example:
+
+example 4:
+
+%mksquashfs /home/phillip/test output_fs -keep-as-directory
+
+This is the same as example 1, except for -keep-as-directory.
+This will generate a root directory containing directory "test",
+rather than the "test" directory contents "file1", "file2" and "dir1".
+
+The Dest argument is the destination where the squashfs filesystem will be
+written.  This can either be a conventional file or a block device.  If the file
+doesn't exist it will be created, if it does exist and a squashfs
+filesystem exists on it, mksquashfs will append.  The -noappend option will
+write a new filesystem irrespective of whether an existing filesystem is present.
 
 The -e option allows files/directories to be specified which are
 excluded from the output filesystem.  If an exclude file/directory is
@@ -129,8 +181,75 @@ by loopback, which requires files to be a 4K multiple.  If the filesystem is
 being written to a block device, or is to be stored in a bootimage, the extra
 pad bytes are not needed.
 
-Filesystem layout
+2.1 appending to squashfs filesystems
+-------------------------------------
+
+Beginning with squashfs1.2, mksquashfs can append to existing squashfs
+filesystems.  Three extra options "-noappend", "-keep-as-directory",
+and "root-becomes" have been added.
+
+Running squashfs with the destination directory containing an existing
+filesystem, will add the source items to the existing filesystem.  By default,
+the source items are added to the existing root directory.
+
+To make this clear... An existing filesystem "image" contains root entries
+"old1", and "old2".  Source directory "/home/phillip/test" contains  "file1",
+"file2" and "dir1".
+
+example 1:
+
+%mksquashfs /home/phillip/test image
+
+Will create a new "image" with root entries "old1", "old2", "file1", "file2" and
+"dir1"
+
+example 2:
+
+%mksquashfs /home/phillip/test image -keep-as-directory
+
+Will create a new "image" with root entries "old1", "old2", and "test".
+As shown in the previous section, for single source directories
+'-keep-as-directory' adds the source directory rather than the
+contents of the directory.
+
+example 3:
+
+%mksquashfs /home/phillip/test image -keep-as-directory -root-becomes original-root
+
+Will create a new "image" with root entries "original-root", and "test".  The
+'-root-becomes' option specifies that the original root becomes a subdirectory
+in the new root, with the specified name.
+
+The append option with file duplicate detection, means squashfs can be
+used as a simple versioning archiving filesystem. A squashfs filesystem can
+be created with for example the linux-2.4.19 source.  Appending the linux-2.4.20
+source will create a filesystem with the two source trees, but only the
+changed files will take extra room, the unchanged files will be detected as
+duplicates.
+
+
+3. Using squashfs
 -----------------
+
+Squashfs filesystems should be mounted with 'mount' with the filesystem type
+'squashfs'.  If the filesystem is on a block device, the filesystem can be
+mounted directly, e.g.
+
+%mount -t squashfs /dev/sda1 /mnt
+
+Will mount the squashfs filesystem on "/dev/sda1" under the directory "/mnt".
+
+If the squashfs filesystem has been written to a file, the loopback device
+can be used to mount it (loopback support must be in the kernel), e.g.
+
+%mount -t squashfs image /mnt -o loop
+
+Will mount the squashfs filesystem in the file "image" under
+the directory "/mnt".
+
+
+4. Filesystem layout
+--------------------
 
 Brief filesystem design notes follow.
 
@@ -154,8 +273,8 @@ Compressed data blocks are written to the filesystem as files are read from
 the source directory, and checked for duplicates.  Once all file data has been
 written the completed inode, directory and uid/gid lookup tables are written.
 
-Metadata
---------
+4.1 Metadata
+------------
 
 Metadata (inodes and directories) are compressed in 8Kbyte blocks.  Each
 compressed block is prefixed by a two byte length, the top bit is set if the
@@ -206,8 +325,8 @@ file are stored contiguously in the filesystem.  The top bit of each block
 length is set if the block is uncompressed, either because the -noD option is
 set, or if the compressed block was larger than the uncompressed block.
 
-Directories
------------
+4.2 Directories
+---------------
 
 Like inodes, directories are packed into the metadata blocks, and are not
 aligned on block boundaries, therefore directories can overlap compressed
@@ -240,8 +359,8 @@ as necessary.  The organisation is as follows:
 			
 This organisation saves on average 3 bytes per filename.
 
-File data
----------
+4.3 File data
+-------------
 
 File data is compressed on a block by block basis and written to the
 filesystem.  The filesystem supports up to 32K blocks, which achieves
@@ -254,3 +373,12 @@ The filesystem reads and decompresses a larger block containing that page
 very inefficient filesystem, as 28K must be thrown away.   Squashfs,
 solves this problem by explicitly pushing the extra pages into the page
 cache.
+
+
+5. Author info
+--------------
+
+Squashfs was written by Phillip Lougher, email phillip@lougher.demon.co.uk,
+in Chepstow, Wales, UK.   If you like the program, or have any problems,
+then please email me, as it's nice to get feedback!
+

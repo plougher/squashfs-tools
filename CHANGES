@@ -6,7 +6,7 @@
 
 	Fixed bugs with initrds and device nodes
 
-1.1	8 JAN 2002	Added features
+1.1	8 JAN 2003	Added features
 
 	1. Kernel squashfs can now mount different byte order filesystems.
 	2. Additional features added to mksquashfs.  Mksquashfs now supports
@@ -18,10 +18,26 @@
 	   can now be created.
 	4. Patch for 2.4.20 kernels.
 
-1.1b	16 JAN 2002	Bug fix release
+1.1b	16 JAN 2003	Bug fix release
 
-	Fixed readpage deadlock bug.  This was a rare deadlock bug that happened when
-	pushing pages into the page cache when using greater than 4K blocks.  I never
-	got this bug when I tested the filesystem, but two people emailed me on the same
-	day about the problem!  I fixed it by using a page cache function that wasn't
-	there when I originally did the work, which was nice :-)
+	Fixed readpage deadlock bug.  This was a rare deadlock bug that
+	happened when pushing pages into the page cache when using greater
+	than 4K blocks.  I never got this bug when I tested the filesystem,
+	but two people emailed me on the same day about the problem!
+	I fixed it by using a page cache function that wasn't there when
+	I originally did the work, which was nice :-)
+
+1.2	13 MAR 2003	Append feature and new mksquashfs options added
+
+	Mksquashfs can now add to existing squashfs filesystems.  Three extra
+	options "-noappend", "-keep-as-directory", and "root-becomes"
+	have been added.
+
+	The append option with file duplicate detection, means squashfs can be
+	used as a simple versioning archiving filesystem. A squashfs
+	filesystem can be created with for example the linux-2.4.19 source.
+	Appending the linux-2.4.20 source will create a filesystem with the
+	two source trees, but only the changed files will take extra room,
+	the unchanged files will be detected as duplicates.
+
+	See the README file for usage changes.
