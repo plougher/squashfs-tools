@@ -1,5 +1,68 @@
 			SQUASHFS CHANGE LOG
 
+3.3	1 NOV 2007	Increase in block size, sparse file support,
+			Mksquashfs and Unsquashfs extended to use
+			pattern matching in exclude/extract files, plus
+			many more improvements and bug fixes.
+
+	1. Filesystem improvements:
+
+	     1.1. Maximum block size has been increased to 1Mbyte, and the
+	    	  default block size has been increased to 128 Kbytes.
+		  This improves compression.
+
+	     1.2. Sparse files are now supported.  Sparse files are files
+		  which have large areas of unallocated data commonly called
+		  holes.  These files are now detected by Squashfs and stored
+		  more efficiently.  This improves compression and read
+		  performance for sparse files.
+
+	2. Mksquashfs improvements:
+
+	   2.1.  Exclude files have been extended to use wildcard pattern
+		 matching and regular expressions.  Support has also been
+		 added for non-anchored excludes, which means it is
+		 now possible to specify excludes which match anywhere
+		 in the filesystem (i.e. leaf files), rather than always
+		 having to specify exclude files starting from the root
+		 directory (anchored excludes).
+
+	   2.2.  Recovery files are now created when appending to existing
+		 Squashfs filesystems.  This allows the original filesystem
+		 to be recovered if Mksquashfs aborts unexpectedly
+		 (i.e. power failure).
+
+	3. Unsquashfs improvements:
+
+	    3.1. Multiple extract files can now be specified on the
+		 command line, and the files/directories to be extracted can
+		 now also be given in a file.
+
+	    3.2. Extract files have been extended to use wildcard pattern
+		 matching and regular expressions.
+
+	    3.3. Filename printing has been enhanced and Unquashfs can
+		 now display filenames with file attributes
+		 ('ls -l' style output).
+
+	    3.4. A -stat option has been added which displays the filesystem
+		 superblock information.
+
+	    3.5. Unsquashfs now supports 1.x filesystems.
+
+	4. Miscellaneous improvements/bug fixes:
+
+	    4.1. Squashfs kernel code improved to use SetPageError in
+		 squashfs_readpage() if I/O error occurs.
+
+	    4.2. Fixed Squashfs kernel code bug preventing file
+		 seeking beyond 2GB.
+
+	    4.3. Mksquashfs now detects file size changes between
+		 first phase directory scan and second phase filesystem create.
+		 It also deals better with file I/O errors.
+
+
 3.2-r2	15 JAN 2007	Kernel patch update and progress bar bug fix
 
 	1. Kernel patches 2.6.19/2.6.20 have been updated to use

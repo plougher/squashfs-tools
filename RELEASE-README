@@ -1,17 +1,17 @@
-	SQUASHFS 3.2 - A squashed read-only filesystem for Linux
+	SQUASHFS 3.3 - A squashed read-only filesystem for Linux
 
-	Copyright 2002-2007 Phillip Lougher <phillip@lougher.org.uk>
+	Copyright 2002-2007 Phillip Lougher <phillip@lougher.demon.co.uk>
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs version 3.2.  Please read the README-3.2 and CHANGES
+Welcome to Squashfs version 3.3.  Please read the README-3.3 and CHANGES
 files for details of changes.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
 It uses zlib compression to compress both files, inodes and directories.
 Inodes in the system are very small and all blocks are packed to minimise
 data overhead. Block sizes greater than 4K are supported up to a maximum
-of 64K.
+of 1Mbytes (default block size 128K).
 
 Squashfs is intended for general read-only filesystem use, for archival
 use (i.e. in cases where a .tar.gz file may be used), and in constrained
@@ -33,8 +33,8 @@ needed.
    (the exact length varies on file type, i.e. regular file, directory,
    symbolic link, and block/char device inodes have different sizes).
 
-5. Squashfs can use block sizes up to 64K (the default size is 64K).
-   Using 64K blocks achieves greater compression ratios than the normal
+5. Squashfs can use block sizes up to 1Mbyte (the default size is 128K).
+   Using 128K blocks achieves greater compression ratios than the normal
    4K block size.
 
 6. File duplicates are detected and removed.
@@ -76,42 +76,51 @@ SYNTAX:mksquashfs source1 source2 ...  dest [options] [-e list of exclude
 dirs/files]
 
 Options are
--version		print version, licence and copyright message
--info			print files written to filesystem
--b <block_size>		set data block to <block_size>.  Default 65536 bytes
--processors <number>	Use <number> processors.  By default will use number of
-			processors available
--read-queue <size>	Set input queue to <size> Mbytes.  Default 64 Mbytes
--write-queue <size>	Set output queue to <size> Mbytes.  Default 512 Mbytes
--noI			do not compress inode table
--noD			do not compress data blocks
--noF			do not compress fragment blocks
--no-fragments		do not use fragments
--always-use-fragments	use fragment blocks for files larger than block size
--no-duplicates		do not perform duplicate checking
--noappend		do not append to existing filesystem
--keep-as-directory	if one source directory is specified, create a root
-			directory containing that directory, rather than the
-			contents of the directory
--root-becomes <name>	when appending source files/directories, make the
-			original root become a subdirectory in the new root
-			called <name>, rather than adding the new source items
-			to the original root
--all-root		make all files owned by root
--force-uid uid		set all file uids to uid
--force-gid gid		set all file gids to gid
--le			create a little endian filesystem
--be			create a big endian filesystem
--nopad			do not pad filesystem to a multiple of 4K
--check_data		add checkdata for greater filesystem checks
--root-owned		alternative name for -all-root
--noInodeCompression	alternative name for -noI
--noDataCompression	alternative name for -noD
--noFragmentCompression	alternative name for -noF
--sort <sort_file>	sort files according to priorities in <sort_file>.  One
-			file or dir with priority per line.  Priority -32768 to
-			32767, default priority 0
--ef <exclude_file>	list of exclude dirs/files.  One per line
+-version                print version, licence and copyright message
+-recover <name>         recover filesystem data using recovery file <name>
+-no-recovery            don't generate a recovery file
+-info                   print files written to filesystem
+-no-exports             don't make the filesystem exportable via NFS
+-no-progress            don't display the progress bar
+-no-sparse              don't detect sparse files
+-b <block_size>         set data block to <block_size>.  Default 131072 bytes
+-processors <number>    Use <number> processors.  By default will use number of
+                        processors available
+-read-queue <size>      Set input queue to <size> Mbytes.  Default 64 Mbytes
+-write-queue <size>     Set output queue to <size> Mbytes.  Default 512 Mbytes
+-noI                    do not compress inode table
+-noD                    do not compress data blocks
+-noF                    do not compress fragment blocks
+-no-fragments           do not use fragments
+-always-use-fragments   use fragment blocks for files larger than block size
+-no-duplicates          do not perform duplicate checking
+-noappend               do not append to existing filesystem
+-keep-as-directory      if one source directory is specified, create a root
+                        directory containing that directory, rather than the
+                        contents of the directory
+-root-becomes <name>    when appending source files/directories, make the
+                        original root become a subdirectory in the new root
+                        called <name>, rather than adding the new source items
+                        to the original root
+-all-root               make all files owned by root
+-force-uid uid          set all file uids to uid
+-force-gid gid          set all file gids to gid
+-le                     create a little endian filesystem
+-be                     create a big endian filesystem
+-nopad                  do not pad filesystem to a multiple of 4K
+-check_data             add checkdata for greater filesystem checks
+-root-owned             alternative name for -all-root
+-noInodeCompression     alternative name for -noI
+-noDataCompression      alternative name for -noD
+-noFragmentCompression  alternative name for -noF
+-sort <sort_file>       sort files according to priorities in <sort_file>.  One
+                        file or dir with priority per line.  Priority -32768 to
+                        32767, default priority 0
+-ef <exclude_file>      list of exclude dirs/files.  One per line
+-wildcards              Allow extended shell wildcards (globbing) to be used in
+                        exclude dirs/files
+-regex                  Allow POSIX regular expressions to be used in exclude
+                        dirs/files
 
 Source1 source2 ... are the source directories/files containing the
 files/directories that will form the squashfs filesystem.  If a single
@@ -190,7 +199,7 @@ generates an uncompressed filesystem.
 
 The -no-fragments tells mksquashfs to not generate fragment blocks, and rather
 generate a filesystem similar to a Squashfs 1.x filesystem.  It will of course
-still be a Squashfs 2.0 filesystem but without fragments, and so it won't be
+still be a Squashfs 3.1 filesystem but without fragments, and so it won't be
 mountable on a Squashfs 1.x system.
 
 The -always-use-fragments option tells mksquashfs to always generate
@@ -210,8 +219,9 @@ added to the filesystem for duplicates.  This can result in quicker filesystem
 generation and appending although obviously compression will suffer badly if
 there is a lot of duplicate files.
 
-The -b option allows the block size to be selected, this can be either
-4096, 8192, 16384, 32768 or 65536 bytes.
+The -b option allows the block size to be selected, both "K" and "M" postfixes
+are supported, this can be either 4K, 8K, 16K, 32K, 64K, 128K, 256K, 512K or
+1M bytes.
 
 3.3 Specifying the UIDs/GIDs used in the filesystem
 ---------------------------------------------------
@@ -234,6 +244,10 @@ either by name (i.e. "root") or by number.
 
 3.4 Excluding files from the filesystem
 ---------------------------------------
+
+For new wildcard exclude file handling please refer to the README-3.3 file.
+The older exclude functionality described here is used if the -wildcard
+or -regex options are not specified.
 
 The -e and -ef options allow files/directories to be specified which are
 excluded from the output filesystem.  The -e option takes the exclude
@@ -331,19 +345,32 @@ file or directory.
 
 The Unsquashfs usage info is:
 
-SYNTAX: ./unsquashfs [options] filesystem [directory or file to extract]
-	-v[ersion]		print version, licence and copyright information
-	-i[nfo]			print files as they are unsquashed
-	-l[s]			list filesystem only
-	-d[est] <pathname>	unsquash to <pathname>, default "squashfs-root"
-	-f[orce]		if file already exists then overwrite
+SYNTAX: unsquashfs [options] filesystem [directories or files to extract]
+        -v[ersion]              print version, licence and copyright information
+        -i[nfo]                 print files as they are unsquashed
+        -li[nfo]                print files as they are unsquashed with file
+                                attributes (like ls -l output)
+        -l[s]                   list filesystem, but don't unsquash
+        -ll[s]                  list filesystem with file attributes (like
+                                ls -l output), but don't unsquash
+        -d[est] <pathname>      unsquash to <pathname>, default "squashfs-root"
+        -f[orce]                if file already exists then overwrite
+        -s[tat]                 display filesystem superblock information
+        -e[f] <extract file>    list of directories or files to extract.
+                                One per line
+        -r[egex]                treat extract names as POSIX regular expressions
+                                rather than use the default shell wildcard
+                                expansion (globbing)
 
+To extract a subset of the filesystem, the filenames or directory
+trees that are to be extracted can now be specified on the command line.  The
+files/directories should be specified using the full path to the
+files/directories as they appear within the Squashfs filesystem.  The
+files/directories will also be extracted to those positions within the specified
+destination directory.
 
-To extract a subset of the filesystem, the filename or directory
-tree that is to be extracted can now be specified on the command line.  The
-file/directory should be specified using the full path to the file/directory
-as it appears within the Squashfs filesystem.  The file/directory will also be
-extracted to that position within the specified destination directory.
+Please refer to the README-3.3 file for a description of the new wildcard
+pattern matching functionality for extract files.
 
 The "-ls" option can be used to list the contents of a filesystem without
 decompressing the filesystem data itself.
@@ -362,8 +389,8 @@ refuse to overwrite any existing files, or to create any directories if they
 already exist.  This is done to protect data in case of mistakes, and
 so the "-force" option should be used with caution.
 
-Unsquashfs can decompress 2.x and 3.x filesystems.  Support for 1.x filesystems
-will be added in the future.
+Unsquashfs can decompress all Squashfs filesystem versions, 1.x, 2.x and 3.x
+filesystems.
 
 5. FILESYSTEM LAYOUT
 --------------------

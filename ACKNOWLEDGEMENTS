@@ -8,6 +8,19 @@ some of the extra features in squashfs.  This is a randomly ordered
 (roughly in chronological order) list, which is updated when
 I remember...
 
+Acknowledgements for Squashfs-3.3
+------------------------------------
+
+Peter Korsgaard and others sent patches updating Squashfs to changes in the
+VFS interface for 2.6.22/2.6.23/2.6.24-rc1.  Peter also sent some small patches
+for the Squashfs kernel code.
+
+Vito Di Leo sent a patch extending Mksquashfs to support regex filters.
+While his patched worked, it unfortunately made it easy to make Mksquashfs
+perform unpredictably with poorly choosen regex expressions.  It, however,
+encouraged myself to add support for wildcard pattern matching and regex
+filters in a different way.
+
 Acknowledgements for Squashfs-3.2-r2
 ------------------------------------
 
