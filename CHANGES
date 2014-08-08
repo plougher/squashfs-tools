@@ -116,3 +116,21 @@
 	4. Check-data and gid bug fixes.  With 2.0-alpha when mounting 1.x
 	   filesystems in certain cases file gids were corrupted.
 	5. New patch for Linux 2.6.7.
+
+2.0r2	29 AUG 2004	Workaround for kernel bug in kernels 2.6.8 and newer
+			added
+
+	1. New patch for kernel 2.6.8.1.  This includes a workaround for a
+	   kernel bug introduced in 2.6.7bk14, which is present in all later
+	   versions of the kernel.  
+
+	   If you're using a 2.6.8 kernel or later then you must use this
+	   2.6.8.1 patch.  If you've experienced hangs or oopses using Squashfs
+	   with a 2.6.8 or later kernel then you've hit this bug, and this
+	   patch will fix it.
+
+	   It is worth mentioning that this kernel bug potentially affects
+	   other filesystems.  If you receive odd results with other
+	   filesystems you may be experiencing this bug with that filesystem.
+	   I submitted a patch but this has not yet gone into the
+	   kernel, hopefully the bug will be fixed in later kernels. 
