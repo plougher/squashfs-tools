@@ -58,3 +58,8 @@ squashfs-tools package) suggested the new mksquashfs -ef option, and the
 standalone build for mksquashfs.
 
 Mike Schaudies made a donation.
+
+A lot of people have emailed patches, suggestions etc. since
+the release of 1.3r3.  I have not got time to properly
+mention names here.  I'll try and get this done for the BETA
+or later versions of Squashfs 2.0.
