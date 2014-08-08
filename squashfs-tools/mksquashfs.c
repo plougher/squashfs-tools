@@ -281,6 +281,9 @@ unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
 int append_fragments = 0;
 struct append_file **file_mapping;
 
+/* root of the in-core directory structure */
+struct dir_info *root_dir;
+
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type);
@@ -291,7 +294,7 @@ struct file_info *duplicate(long long file_size, long long bytes,
 struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), int);
 void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
-void dir_scan3(struct dir_info *root, struct dir_info *dir);
+void dir_scan3(struct dir_info *dir);
 void dir_scan4(struct dir_info *dir);
 void dir_scan5(struct dir_info *dir);
 void dir_scan6(struct dir_info *dir);
@@ -1566,7 +1569,7 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer,
 	if(file_buffer == NULL || file_buffer->size == 0)
 		return &empty_fragment;
 
-	fragment = eval_frag_actions(dir_ent);
+	fragment = eval_frag_actions(root_dir, dir_ent);
 
 	if((*fragment) && (*fragment)->size + file_buffer->size > block_size) {
 		write_fragment(*fragment);
@@ -3087,10 +3090,10 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	struct dir_ent *(_readdir)(struct dir_info *), int progress)
 {
 	struct stat buf;
-	struct dir_info *dir_info = dir_scan1(pathname, "", paths, _readdir, 1);
 	struct dir_ent *dir_ent;
 	
-	if(dir_info == NULL)
+	root_dir = dir_scan1(pathname, "", paths, _readdir, 1);
+	if(root_dir == NULL)
 		return;
 
 	/* Create root directory dir_ent and associated inode, and connect
@@ -3119,20 +3122,20 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		dir_ent->inode = lookup_inode(&buf);
 	}
 
-	dir_ent->dir = dir_info;
-	dir_info->dir_ent = dir_ent;
+	dir_ent->dir = root_dir;
+	root_dir->dir_ent = dir_ent;
 
 	/*
 	 * Process most actions and any pseudo files
 	 */
 	if(actions() || get_pseudo())
-		dir_scan2(dir_info, get_pseudo());
+		dir_scan2(root_dir, get_pseudo());
 
 	/*
 	 * Process move actions
 	 */
 	if(move_actions()) {
-		dir_scan3(dir_info, dir_info);
+		dir_scan3(root_dir);
 		do_move_actions();
 	}
 
@@ -3140,26 +3143,26 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	 * Process prune actions
 	 */
 	if(prune_actions())
-		dir_scan4(dir_info);
+		dir_scan4(root_dir);
 
 	/*
 	 * Process empty actions
 	 */
 	if(empty_actions())
-		dir_scan5(dir_info);
+		dir_scan5(root_dir);
 
  	/*
 	 * Sort directories and compute the inode numbers
 	 */
-	dir_scan6(dir_info);
+	dir_scan6(root_dir);
 
 	alloc_inode_no(dir_ent->inode, root_inode_number);
 
-	eval_actions(dir_ent);
+	eval_actions(root_dir, dir_ent);
 
 	if(sorted)
-		generate_file_priorities(dir_info, 0,
-			&dir_info->dir_ent->inode->buf);
+		generate_file_priorities(root_dir, 0,
+			&root_dir->dir_ent->inode->buf);
 
 	if(appending) {
 		sigset_t sigmask;
@@ -3174,13 +3177,13 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		write_destination(fd, SQUASHFS_START, 4, "\0\0\0\0");
 	}
 
-	queue_put(to_reader, dir_info);
+	queue_put(to_reader, root_dir);
 
 	if(sorted)
-		sort_files_and_write(dir_info);
+		sort_files_and_write(root_dir);
 
 	set_progressbar_state(progress);
-	dir_scan7(inode, dir_info);
+	dir_scan7(inode, root_dir);
 	dir_ent->inode->inode = *inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 }
@@ -3492,7 +3495,7 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		struct stat *buf = &inode_info->buf;
 		char *name = dir_ent->name;
 
-		eval_actions(dir_ent);
+		eval_actions(root_dir, dir_ent);
 
 		if((buf->st_mode & S_IFMT) == S_IFDIR)
 			dir_scan2(dir_ent->dir, pseudo_subdir(name, pseudo));
@@ -3589,16 +3592,16 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
  * dir_scan3 routines...
  * This processes the move action
  */
-void dir_scan3(struct dir_info *root, struct dir_info *dir)
+void dir_scan3(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = NULL;
 
 	while((dir_ent = scan2_readdir(dir, dir_ent)) != NULL) {
 
-		eval_move_actions(root, dir_ent);
+		eval_move_actions(root_dir, dir_ent);
 
 		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
-			dir_scan3(root, dir_ent->dir);
+			dir_scan3(dir_ent->dir);
 	}
 }
 
@@ -3645,7 +3648,7 @@ void dir_scan4(struct dir_info *dir)
 		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
 			dir_scan4(dir_ent->dir);
 
-		if(eval_prune_actions(dir_ent)) {
+		if(eval_prune_actions(root_dir, dir_ent)) {
 			struct dir_ent *tmp = dir_ent;
 
 			if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR) {
@@ -3695,7 +3698,7 @@ void dir_scan5(struct dir_info *dir)
 		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR) {
 			dir_scan5(dir_ent->dir);
 
-			if(eval_empty_actions(dir_ent)) {
+			if(eval_empty_actions(root_dir, dir_ent)) {
 				struct dir_ent *tmp = dir_ent;
 
 				/*

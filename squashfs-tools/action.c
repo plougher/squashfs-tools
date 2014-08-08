@@ -668,7 +668,7 @@ int actions()
 }
 
 
-void eval_actions(struct dir_ent *dir_ent)
+void eval_actions(struct dir_info *root, struct dir_ent *dir_ent)
 {
 	int i, match;
 	struct action_data action_data;
@@ -680,6 +680,7 @@ void eval_actions(struct dir_ent *dir_ent)
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
+	action_data.root = root;
 
 	for (i = 0; i < other_count; i++) {
 		struct action *action = &other_spec[i];
@@ -699,7 +700,7 @@ void eval_actions(struct dir_ent *dir_ent)
 /*
  * Fragment specific action code
  */
-void *eval_frag_actions(struct dir_ent *dir_ent)
+void *eval_frag_actions(struct dir_info *root, struct dir_ent *dir_ent)
 {
 	int i, match;
 	struct action_data action_data;
@@ -710,6 +711,7 @@ void *eval_frag_actions(struct dir_ent *dir_ent)
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
+	action_data.root = root;
 
 	for (i = 0; i < fragment_count; i++) {
 		match = eval_expr(fragment_spec[i].expr, &action_data);
@@ -1265,7 +1267,7 @@ static int parse_empty_args(struct action_entry *action, int args,
 }
 
 
-int eval_empty_actions(struct dir_ent *dir_ent)
+int eval_empty_actions(struct dir_info *root, struct dir_ent *dir_ent)
 {
 	int i, match = 0;
 	struct action_data action_data;
@@ -1284,6 +1286,7 @@ int eval_empty_actions(struct dir_ent *dir_ent)
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
+	action_data.root = root;
 
 	for (i = 0; i < empty_count && !match; i++) {
 		data = empty_spec[i].data;
@@ -1524,6 +1527,7 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
+	action_data.root = root;
 
 	/*
 	 * Evaluate each move action against the current file.  For any
@@ -1732,7 +1736,7 @@ int prune_actions()
 }
 
 
-int eval_prune_actions(struct dir_ent *dir_ent)
+int eval_prune_actions(struct dir_info *root, struct dir_ent *dir_ent)
 {
 	int i, match = 0;
 	struct action_data action_data;
@@ -1743,6 +1747,7 @@ int eval_prune_actions(struct dir_ent *dir_ent)
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
+	action_data.root = root;
 
 	for (i = 0; i < prune_count && !match; i++)
 		match = eval_expr(prune_spec[i].expr, &action_data);
