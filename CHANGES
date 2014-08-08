@@ -1,5 +1,23 @@
 			SQUASHFS CHANGE LOG
  
+3.0	15 MAR 2006	Major filesystem improvements
+
+	1. Filesystems are no longer limited to 4 GB.  In
+	   theory 2^64 or 4 exabytes is now supported.
+	2. Files are no longer limited to 4 GB.  In theory the maximum
+	   file size is 4 exabytes.
+	3. Metadata (inode table and directory tables) are no longer
+	   restricted to 16 Mbytes.
+	4. Hardlinks are now suppported.
+	5. Nlink counts are now supported.
+	6. Readdir now returns '.' and '..' entries.
+	7. Special support for files larger than 256 MB has been added to
+	   the Squashfs kernel code for faster read access.
+	8. Inode numbers are now stored within the inode rather than being
+	   computed from inode location on disk (this is not so much an
+	   improvement, but a change forced by the previously listed
+	   improvements).
+
 2.2-r2	8 SEPT 2005	Second release of 2.2, this release fixes a couple
 			of small bugs, a couple of small documentation
 			mistakes, and adds a patch for kernel 2.6.13. 

@@ -1,11 +1,11 @@
-	SQUASHFS 2.2 - A squashed read-only filesystem for Linux
+	SQUASHFS 3.0 - A squashed read-only filesystem for Linux
 
-	Copyright 2005 Phillip Lougher (phillip@lougher.demon.co.uk)
+	Copyright 2002-2006 Phillip Lougher <phillip@lougher.org.uk>
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs version 2.2-r2.  Please see the CHANGES file for details
-of changes.
+Welcome to the first release of Squashfs version 3.0.  Please see the README-3.0
+and CHANGES files for details of changes.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
 It uses zlib compression to compress both files, inodes and directories.
@@ -25,8 +25,8 @@ needed.
 
 2. Squashfs stores full uid/gids (32 bits), and file creation time.
 
-3. Files up to 2^32 bytes are supported.  Filesystems can be up to
-   2^32 bytes.
+3. In theory files up to 2^64 bytes are supported.  In theory filesystems can
+   be up to 2^64 bytes.
 
 4. Inode and directory data are highly compacted, and packed on byte
    boundaries.  Each compressed inode is on average 8 bytes in length
@@ -79,7 +79,6 @@ Options are
 -version		print version, licence and copyright message
 -info			print files written to filesystem
 -b <block_size>		set data block to <block_size>.  Default 65536 bytes
--2.0			create a 2.0 filesystem
 -noI			do not compress inode table
 -noD			do not compress data blocks
 -noF			do not compress fragment blocks
@@ -323,7 +322,8 @@ pad bytes are not needed.
 --------------------
 
 Brief filesystem design notes follow for the original 1.x filesystem
-layout.  A description of the 2.0 filesystem layout will be written sometime!
+layout.  A description of the 2.x and 3.0 filesystem layouts will be written
+sometime!
 
 A squashfs filesystem consists of five parts, packed together on a byte
 alignment:
@@ -451,6 +451,6 @@ cache.
 5. AUTHOR INFO
 --------------
 
-Squashfs was written by Phillip Lougher, email phillip@lougher.demon.co.uk,
+Squashfs was written by Phillip Lougher, email phillip@lougher.org.uk,
 in Chepstow, Wales, UK.   If you like the program, or have any problems,
 then please email me, as it's nice to get feedback!

@@ -1,13 +1,13 @@
 			INSTALLING SQUASHFS
 
-The squashfs2.2-r2.tar.gz file contains this file, a README file,
+The squashfs3.0.tar.gz file contains this file, a README file,
 an ACKNOWLEDGEMENTS file, a CHANGES file, the squashfs patch
-directories/files, and the squashfs-tools directory (mksquashfs).
+directories/files, and the squashfs-tools directory (mksquashfs and unsquashfs).
 
 1. Patching the kernel
 ----------------------
 
-There are twelve kernel patch directories depending on your linux kernel
+There are sixteen kernel patch directories depending on your linux kernel
 version.  If your kernel version isn't listed then try the patch for the nearest
 kernel listed.
 
@@ -15,9 +15,9 @@ To patch your kernel, cd into the top level directory, and run the "patch"
 comand, e.g. assuming linux-2.4.20
 
 %cd /usr/src/linux-2.4.20
-%patch -p1 < location-of-squashfs/linux-2.4.20/squashfs2.2-patch
+%patch -p1 < location-of-squashfs/linux-2.4.20/squashfs3.0-patch
 
-Where "location-of-squashfs" is the path to the squashfs2.2 source directory.
+Where "location-of-squashfs" is the path to the squashfs3.0 source directory.
 
 The squashfs patches patch the relevant kernel files to add configure support,
 initrd support, include files, and the squashfs directory under linux/fs/.
@@ -28,11 +28,10 @@ configure menus.  In the 2.6.x kernels, the squashfs option is hiding in
 the new miscellaneous filesystems submenu near the bottom of the filesystems
 submenu.
 
-In SquashFS 2.2 there are a new set of options which are intended for use by
-embedded systems with low memory.  At the "Additional options for
-memory-constrained systems" prompt, please say NO unless you know what you're
-doing!  Saying Y here allows you to specify cache sizes and how Squashfs
-allocates memory.
+There are a set of options which are intended for use by embedded systems with
+low memory.  At the "Additional options for memory-constrained systems" prompt,
+please say NO unless you're using an embedded system!  Saying Y here allows you
+to specify cache sizes and how Squashfs allocates memory.
 
 The "Number of fragments cached" prompt allows the number of fragments cached
 to be controlled.  By default SquashFS caches the last 3 fragments read from
@@ -52,8 +51,8 @@ Vmalloc to allocate the fragment cache memory.
 2. Building squashfs tools
 --------------------------
 
-The squashfs-tools directory contains the mksquashfs program.  This can be
-made by typing make.  The source files use a local copy of squashfs_fs.h
-(included in the kernel patches) allowing the tools to be made without needing
-to patch the kernel.  The program uses Large File Support
+The squashfs-tools directory contains the mksquashfs and unsquashfs programs.
+These can be made by typing make.  The source files use a local copy of
+squashfs_fs.h (included in the kernel patches) allowing the tools to be made
+without needing to patch the kernel.  The programs use Large File Support
 (64 bit offsets etc.) and so a relatively recent glibc is needed.
