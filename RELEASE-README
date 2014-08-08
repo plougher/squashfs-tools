@@ -1,17 +1,17 @@
-	SQUASHFS 4.2 - A squashed read-only filesystem for Linux
+	SQUASHFS 4.3 - A squashed read-only filesystem for Linux
 
-	Copyright 2002-2011 Phillip Lougher <phillip@lougher.demon.co.uk>
+	Copyright 2002-2014 Phillip Lougher <phillip@lougher.demon.co.uk>
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs version 4.2.  Please read the README-4.2 and CHANGES files
+Welcome to Squashfs version 4.3.  Please read the README-4.3 and CHANGES files
 for details of changes.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
-It uses zlib compression to compress both files, inodes and directories.
-Inodes in the system are very small and all blocks are packed to minimise
-data overhead. Block sizes greater than 4K are supported up to a maximum
-of 1Mbytes (default block size 128K).
+It uses either gzip/xz/lzo/lz4 compression to compress both files, inodes
+and directories.  Inodes in the system are very small and all blocks are
+packed to minimise data overhead. Block sizes greater than 4K are supported
+up to a maximum of 1Mbytes (default block size 128K).
 
 Squashfs is intended for general read-only filesystem use, for archival
 use (i.e. in cases where a .tar.gz file may be used), and in constrained
@@ -38,6 +38,9 @@ needed.
    4K block size.
 
 6. File duplicates are detected and removed.
+
+7. Filesystems can be compressed with gzip, xz (lzma2), lzo or lz4
+   compression algorithms.
 
 1.1 Extended attributes (xattrs)
 --------------------------------
@@ -84,12 +87,11 @@ can be used to mount it (loopback support must be in the kernel), e.g.
 Will mount the squashfs filesystem in the file "image" under
 the directory "/mnt".
 
-
 3. MKSQUASHFS
 -------------
 
-3.1 Mksquashfs options and overview.
-------------------------------------
+3.1 Mksquashfs options and overview
+-----------------------------------
 
 As squashfs is a read-only filesystem, the mksquashfs program must be used to
 create populated squashfs filesystems.
@@ -102,8 +104,11 @@ Filesystem build options:
 			Compressors available:
 				gzip (default)
 				lzo
+				lz4
 				xz
--b <block_size>		set data block to <block_size>.  Default 131072 bytes
+-b <block_size>		set data block to <block_size>.  Default 128 Kbytes
+			Optionally a suffix of K or M can be given to specify
+			Kbytes or Mbytes respectively
 -no-exports		don't make the filesystem exportable via NFS
 -no-sparse		don't detect sparse files
 -no-xattrs		don't store extended attributes
@@ -144,15 +149,17 @@ Filesystem append options:
 
 Mksquashfs runtime options:
 -version		print version, licence and copyright message
+-exit-on-error		treat normally ignored errors as fatal
 -recover <name>		recover filesystem data using recovery file <name>
 -no-recovery		don't generate a recovery file
 -info			print files written to filesystem
 -no-progress		don't display the progress bar
+-progress		display progress bar when using the -info option
 -processors <number>	Use <number> processors.  By default will use number of
 			processors available
--read-queue <size>	Set input queue to <size> Mbytes.  Default 64 Mbytes
--write-queue <size>	Set output queue to <size> Mbytes.  Default 512 Mbytes
--fragment-queue <size>	Set fragment queue to <size> Mbytes.  Default 64 Mbytes
+-mem <size>		Use <size> physical memory.  Currently set to 1922M
+			Optionally a suffix of K, M or G can be given to specify
+			Kbytes, Mbytes or Gbytes respectively
 
 Miscellaneous options:
 -root-owned		alternative name for -all-root
@@ -161,9 +168,33 @@ Miscellaneous options:
 -noFragmentCompression	alternative name for -noF
 -noXattrCompression	alternative name for -noX
 
+-Xhelp			print compressor options for selected compressor
+
 Compressors available and compressor specific options:
-	gzip (no options) (default)
-	lzo (no options)
+	gzip (default)
+	  -Xcompression-level <compression-level>
+		<compression-level> should be 1 .. 9 (default 9)
+	  -Xwindow-size <window-size>
+		<window-size> should be 8 .. 15 (default 15)
+	  -Xstrategy strategy1,strategy2,...,strategyN
+		Compress using strategy1,strategy2,...,strategyN in turn
+		and choose the best compression.
+		Available strategies: default, filtered, huffman_only,
+		run_length_encoded and fixed
+	lzo
+	  -Xalgorithm <algorithm>
+		Where <algorithm> is one of:
+			lzo1x_1
+			lzo1x_1_11
+			lzo1x_1_12
+			lzo1x_1_15
+			lzo1x_999 (default)
+	  -Xcompression-level <compression-level>
+		<compression-level> should be 1 .. 9 (default 8)
+		Only applies to lzo1x_999 algorithm
+	lz4
+	  -Xhc
+		Compress using LZ4 High Compression
 	xz
 	  -Xbcj filter1,filter2,...,filterN
 		Compress using filter1,filter2,...,filterN in turn
@@ -177,7 +208,6 @@ Compressors available and compressor specific options:
 		storable in the xz header as either 2^n or as 2^n+2^(n+1).
 		Example dict-sizes are 75%, 50%, 37.5%, 25%, or 32K, 16K, 8K
 		etc.
-
 
 Source1 source2 ... are the source directories/files containing the
 files/directories that will form the squashfs filesystem.  If a single
@@ -249,37 +279,70 @@ By default Mksquashfs will compress using the gzip compression
 algorithm.  This algorithm offers a good trade-off between compression
 ratio, and memory and time taken to decompress.
 
-Squashfs also supports LZO and XZ (LZMA2) compression.  LZO offers worse
+Squashfs also supports LZ4, LZO and XZ (LZMA2) compression.  LZO offers worse
 compression ratio than gzip, but is faster to decompress.  XZ offers better
 compression ratio than gzip, but at the expense of greater memory and time
-to decompress (and significantly more time to compress).
+to decompress (and significantly more time to compress).  LZ4 is similar
+to LZO, but, support for it is not yet in the mainline kernel, and so
+its usefulness is currently limited to using Squashfs with Mksquashfs/Unsquashfs
+as an archival system like tar.
 
 If you're not building the squashfs-tools and kernel from source, then
-the tools and kernel may or may not have been built with support for LZO or
+the tools and kernel may or may not have been built with support for LZ4, LZO or
 XZ compression.  The compression algorithms supported by the build of
 Mksquashfs can be found by typing mksquashfs without any arguments.  The
 compressors available are displayed at the end of the help message, e.g. 
 
 Compressors available and compressor specific options:
-        gzip (no options) (default)
-        lzo (no options)
-        xz
-          -Xbcj filter1,filter2,...,filterN
-                Compress using filter1,filter2,...,filterN in turn
-                (in addition to no filter), and choose the best compression.
-                Available filters: x86, arm, armthumb, powerpc, sparc, ia64
-          -Xdict-size <dict-size>
-                Use <dict-size> as the XZ dictionary size.  The dictionary size
-                can be specified as a percentage of the block size, or as an
-                absolute value.  The dictionary size must be less than or equal
-                to the block size and 8192 bytes or larger.  It must also be
-                storable in the xz header as either 2^n or as 2^n+2^(n+1).
-                Example dict-sizes are 75%, 50%, 37.5%, 25%, or 32K, 16K, 8K
-                etc.
+	gzip (default)
+	  -Xcompression-level <compression-level>
+		<compression-level> should be 1 .. 9 (default 9)
+	  -Xwindow-size <window-size>
+		<window-size> should be 8 .. 15 (default 15)
+	  -Xstrategy strategy1,strategy2,...,strategyN
+		Compress using strategy1,strategy2,...,strategyN in turn
+		and choose the best compression.
+		Available strategies: default, filtered, huffman_only,
+		run_length_encoded and fixed
+	lzo
+	  -Xalgorithm <algorithm>
+		Where <algorithm> is one of:
+			lzo1x_1
+			lzo1x_1_11
+			lzo1x_1_12
+			lzo1x_1_15
+			lzo1x_999 (default)
+	  -Xcompression-level <compression-level>
+		<compression-level> should be 1 .. 9 (default 8)
+		Only applies to lzo1x_999 algorithm
+	lz4
+	  -Xhc
+		Compress using LZ4 High Compression
+	xz
+	  -Xbcj filter1,filter2,...,filterN
+		Compress using filter1,filter2,...,filterN in turn
+		(in addition to no filter), and choose the best compression.
+		Available filters: x86, arm, armthumb, powerpc, sparc, ia64
+	  -Xdict-size <dict-size>
+		Use <dict-size> as the XZ dictionary size.  The dictionary size
+		can be specified as a percentage of the block size, or as an
+		absolute value.  The dictionary size must be less than or equal
+		to the block size and 8192 bytes or larger.  It must also be
+		storable in the xz header as either 2^n or as 2^n+2^(n+1).
+		Example dict-sizes are 75%, 50%, 37.5%, 25%, or 32K, 16K, 8K
+		etc.
 
-If the compressor offers compression specific options then these
-options are also displayed (.i.e. in the above XZ is shown with two
-compression specific options).
+If the compressor offers compression specific options (all the compressors now
+have compression specific options except the deprecated lzma1 compressor)
+then these options are also displayed (.i.e. in the above XZ is shown with two
+compression specific options).  The compression specific options are, obviously,
+specific to the compressor in question, and the compressor documentation and
+web sites should be consulted to understand their behaviour.  In general
+the Mksquashfs compression defaults for each compressor are optimised to
+give the best performance for each compressor, where what constitutes
+best depends on the compressor.  For gzip/xz best means highest compression,
+for LZO/LZ4 best means a tradeoff between compression and (de)-compression
+overhead (LZO/LZ4 by definition are intended for weaker processors).
 
 3.3 Changing global compression defaults used in mksquashfs
 -----------------------------------------------------------
@@ -287,6 +350,14 @@ compression specific options).
 There are a large number of options that can be used to control the 
 compression in mksquashfs.  By and large the defaults are the most
 optimum settings and should only be changed in exceptional circumstances!
+Note, this does not apply to the block size, increasing the block size
+from the default of 128Kbytes will increase compression (especially
+for the xz compressor) and should increase I/O performance too.  However,
+a block size of greater than 128Kbytes may increase latency in certain
+cases (where the filesystem contains lots of fragments, and no locality
+of reference is observed).  For this reason the block size default is
+configured to the less optimal 128Kbytes.  Users should experiment
+with 256Kbyte sizes or above.
 
 The -noI, -noD and -noF options (also -noInodeCompression, -noDataCompression
 and -noFragmentCompression) can be used to force mksquashfs to not compress
@@ -295,7 +366,7 @@ generates an uncompressed filesystem.
 
 The -no-fragments tells mksquashfs to not generate fragment blocks, and rather
 generate a filesystem similar to a Squashfs 1.x filesystem.  It will of course
-still be a Squashfs 3.1 filesystem but without fragments, and so it won't be
+still be a Squashfs 4.0 filesystem but without fragments, and so it won't be
 mountable on a Squashfs 1.x system.
 
 The -always-use-fragments option tells mksquashfs to always generate
@@ -353,6 +424,7 @@ retained for backwards compatibility with earlier versions of Mksquashfs.
 Extended wildcard matching should be used in preference.
 
 3.5.1 Basic exclude matching
+----------------------------
 
 Each exclude file is treated as an exact match of a file/directory in
 the source directories.  If an exclude file/directory is absolute (i.e.
@@ -366,6 +438,7 @@ Will generate exclude files /tmp/source1/ex2, /tmp/source1/ex1, source2/ex1,
 /tmp/source1/out/ex3 and source2/out/ex3.
 
 3.5.2 Extended exclude file handling
+------------------------------------
 
 Extended exclude file matching treats each exclude file as a wildcard or
 regex expression.  To enable wildcard matching specify the -wildcards
@@ -429,6 +502,7 @@ Non-anchored excludes
      except those with "data" in the name.
 
 3.5.3 Exclude files summary
+---------------------------
 
 The -e and -ef exclude options are usefully used in archiving the entire
 filesystem, where it is wished to avoid archiving /proc, and the filesystem
@@ -513,7 +587,7 @@ built, rather than requiring them to be present in the source directories.
 This, for example, allows device nodes to be added to the filesystem without
 requiring root access.
 
-Mksquashfs 4.1 adds support for "dynamic pseudo files" and a modify operation.
+Mksquashfs 4.1 added support for "dynamic pseudo files" and a modify operation.
 Dynamic pseudo files allow files to be dynamically created when Mksquashfs
 is run, their contents being the result of running a command or piece of
 shell script.  The modifiy operation allows the mode/uid/gid of an existing
@@ -523,11 +597,8 @@ Two Mksquashfs options are supported, -p allows one pseudo file to be specified
 on the command line, and -pf allows a pseudo file to be specified containing a
 list of pseduo definitions, one per line.
 
-Pseudo operations
------------------
-
 3.8.1. Creating a dynamic file
---------------------------
+------------------------------
 
 Pseudo definition
 
@@ -584,7 +655,7 @@ Squashfs filesystem, the above allows input from these special files to be
 captured and placed in the Squashfs filesystem.
 
 3.8.2. Creating a block or character device
----------------------------------------
+-------------------------------------------
 
 Pseudo definition
 
@@ -608,7 +679,7 @@ a block device "/dev/blk_dev" with major:minor 200:200, both with root
 uid/gid and a mode of rw-rw-rw.
 
 3.8.3. Creating a directory
------------------------
+---------------------------
 
 Pseudo definition
 
@@ -624,8 +695,8 @@ For example:
 
 creates a directory "/pseudo_dir" with root uid/gid and mode of rw-rw-rw.
 
-4.8.4. Modifying attributes of an existing file
--------------------------------------------
+3.8.4. Modifying attributes of an existing file
+-----------------------------------------------
 
 Pseudo definition
 
@@ -666,12 +737,14 @@ file or directory.
 
 The Unsquashfs usage info is:
 
-SYNTAX: unsquashfs [options] filesystem [directories or files to extract]
+SYNTAX: ./unsquashfs [options] filesystem [directories or files to extract]
 	-v[ersion]		print version, licence and copyright information
 	-d[est] <pathname>	unsquash to <pathname>, default "squashfs-root"
 	-n[o-progress]		don't display the progress bar
 	-no[-xattrs]		don't extract xattrs in file system
 	-x[attrs]		extract xattrs in file system (default)
+	-u[ser-xattrs]		only extract user xattrs in file system.
+				Enables extracting xattrs
 	-p[rocessors] <number>	use <number> processors.  By default will use
 				number of processors available
 	-i[nfo]			print files as they are unsquashed
@@ -686,17 +759,17 @@ SYNTAX: unsquashfs [options] filesystem [directories or files to extract]
 				One per line
 	-da[ta-queue] <size>	Set data queue to <size> Mbytes.  Default 256
 				Mbytes
-	-fr[ag-queue] <size>	Set fagment queue to <size> Mbytes.  Default 256
-				 Mbytes
+	-fr[ag-queue] <size>	Set fragment queue to <size> Mbytes.  Default
+				256 Mbytes
 	-r[egex]		treat extract names as POSIX regular expressions
 				rather than use the default shell wildcard
 				expansion (globbing)
 
 Decompressors available:
 	gzip
-	lzma
-	xz	
-
+	lzo
+	lz4
+	xz
 
 To extract a subset of the filesystem, the filenames or directory
 trees that are to be extracted can be specified on the command line.  The
@@ -755,8 +828,8 @@ The "-stat" option displays filesystem superblock information.  This is
 useful to discover the filesystem version, byte ordering, whether it has a NFS
 export table, and what options were used to compress the filesystem, etc.
 
-Unsquashfs can decompress all Squashfs filesystem versions, 1.x, 2.x and 3.x
-filesystems.
+Unsquashfs can decompress all Squashfs filesystem versions, 1.x, 2.x, 3.x and
+4.0 filesystems.
 
 5. FILESYSTEM LAYOUT
 --------------------
@@ -793,8 +866,8 @@ byte alignment:
 
 Compressed data blocks are written to the filesystem as files are read from
 the source directory, and checked for duplicates.  Once all file data has been
-written the completed inode, directory, fragment, export and uid/gid lookup
-tables are written.
+written the completed super-block, compression options, inode, directory,
+fragment, export, uid/gid lookup and xattr tables are written.
 
 5.1 Compression options
 -----------------------

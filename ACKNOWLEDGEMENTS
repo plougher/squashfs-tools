@@ -1,6 +1,6 @@
 			ACKNOWLEDGEMENTS
 
-Thanks to everyone who have download squashfs.  I appreciate people
+Thanks to everyone who have downloaded Squashfs.  I appreciate people
 using it, and any feedback you have.
 
 The following have provided useful feedback, which has guided
@@ -8,6 +8,11 @@ some of the extra features in squashfs.  This is a randomly ordered
 (roughly in chronological order) list, which is updated when
 I remember...
 
+Acknowledgements for Squashfs 4.3
+---------------------------------
+
+Thanks to Bruno Wolff III and Andy Lutomirski for useful feedback
+during the long development process of Squashfs 4.3.
 
 Acknowledgements for Squashfs 4.2
 ---------------------------------
