@@ -2621,7 +2621,9 @@ static int stat_fn(struct atom *atom, struct action_data *action_data)
 
 static int readlink_fn(struct atom *atom, struct action_data *action_data)
 {
+	int match;
 	struct dir_ent *dir_ent;
+	struct action_data eval_action;
 
 	/* Dereference the symlink and evaluate the expression in the
 	 * context of the file pointed to by the symlink.
@@ -2647,14 +2649,20 @@ static int readlink_fn(struct atom *atom, struct action_data *action_data)
 	if(dir_ent == NULL)
 		return 0;
 
-	action_data->name = dir_ent->name;
-	action_data->pathname = pathname(dir_ent);
-	action_data->subpath = subpathname(dir_ent);
-	action_data->buf = &dir_ent->inode->buf;
-	action_data->depth = dir_ent->our_dir->depth;
-	action_data->dir_ent = dir_ent;
+	eval_action.name = dir_ent->name;
+	eval_action.pathname = strdup(pathname(dir_ent));
+	eval_action.subpath = strdup(subpathname(dir_ent));
+	eval_action.buf = &dir_ent->inode->buf;
+	eval_action.depth = dir_ent->our_dir->depth;
+	eval_action.dir_ent = dir_ent;
+	eval_action.root = action_data->root;
 
-	return eval_expr(atom->data, action_data);
+	match = eval_expr(atom->data, &eval_action);
+
+	free(eval_action.pathname);
+	free(eval_action.subpath);
+
+	return match;
 }
 
 
