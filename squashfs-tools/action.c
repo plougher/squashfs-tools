@@ -2557,7 +2557,8 @@ static int absolute_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
-static int parse_expr_arg(struct test_entry *test, struct atom *atom)
+static int parse_expr_argX(struct test_entry *test, struct atom *atom,
+	int argno)
 {
 	/* Call parse_expr to parse argument, which should be an expression */
 
@@ -2565,7 +2566,7 @@ static int parse_expr_arg(struct test_entry *test, struct atom *atom)
 	char *save_cur_ptr = cur_ptr;
 	char *save_source = source;
 
-	cur_ptr = source = atom->argv[0];
+	cur_ptr = source = atom->argv[argno];
 	atom->data = parse_expr(0);
 
 	cur_ptr = save_cur_ptr;
@@ -2582,6 +2583,18 @@ static int parse_expr_arg(struct test_entry *test, struct atom *atom)
 	}
 
 	return 1;
+}
+
+
+static int parse_expr_arg0(struct test_entry *test, struct atom *atom)
+{
+	return parse_expr_argX(test, atom, 0);
+}
+
+
+static int parse_expr_arg1(struct test_entry *test, struct atom *atom)
+{
+	return parse_expr_argX(test, atom, 1);
 }
 
 
@@ -2646,6 +2659,82 @@ static int readlink_fn(struct atom *atom, struct action_data *action_data)
 	/* dereference the symlink, and get the directory entry it points to */
 	dir_ent = follow_path(action_data->dir_ent->our_dir,
 			action_data->dir_ent->inode->symlink);
+	if(dir_ent == NULL)
+		return 0;
+
+	eval_action.name = dir_ent->name;
+	eval_action.pathname = strdup(pathname(dir_ent));
+	eval_action.subpath = strdup(subpathname(dir_ent));
+	eval_action.buf = &dir_ent->inode->buf;
+	eval_action.depth = dir_ent->our_dir->depth;
+	eval_action.dir_ent = dir_ent;
+	eval_action.root = action_data->root;
+
+	match = eval_expr(atom->data, &eval_action);
+
+	free(eval_action.pathname);
+	free(eval_action.subpath);
+
+	return match;
+}
+
+
+static int eval_fn(struct atom *atom, struct action_data *action_data)
+{
+	int match;
+	char *path = atom->argv[0];
+	struct dir_ent *dir_ent = action_data->dir_ent;
+	struct stat *buf = action_data->buf;
+	struct action_data eval_action;
+
+	/* Follow path (arg1) and evaluate the expression (arg2)
+	 * in the context of the file discovered.  All attributes are updated
+	 * to refer to the file that is pointed to.
+	 *
+	 * This test operation allows you to add additional context to the
+	 * evaluation of the file being scanned, such as "if current file is
+	 * XXX and the parent is YYY, then ..."  Often times you need or
+	 * want to test a combination of file status
+	 *
+	 * If the file referenced by the path does not exist in
+	 * the output filesystem, or some other failure is experienced in
+	 * walking the path (see follow_path above), then FALSE is returned.
+	 *
+	 * If you wish to evaluate the inode attributes of files which
+	 * exist in the source filestem (but not in the output filesystem then
+	 * use stat instead (see above). */
+
+	/* try to follow path, and get the directory entry it points to */
+	if(path[0] == '/') {
+		/* absolute, walk from root - first skip the leading / */
+		while(path[0] == '/')
+			path ++;
+		if(path[0] == '\0')
+			dir_ent = action_data->root->dir_ent;
+		else
+			dir_ent = follow_path(action_data->root, path);
+	} else {
+		/* relative, if first component is ".." walk from parent,
+		 * otherwise walk from dir_ent.
+		 * Note: this has to be handled here because follow_path
+		 * will quite correctly refuse to execute ".." on anything
+		 * which isn't a directory */
+		if(strncmp(path, "..", 2) == 0 && (path[2] == '\0' ||
+							path[2] == '/')) {
+			/* walk from parent */
+			path += 2;
+			while(path[0] == '/')
+				path ++;
+			if(path[0] == '\0')
+				dir_ent = dir_ent->our_dir->dir_ent;
+			else 
+				dir_ent = follow_path(dir_ent->our_dir, path);
+		} else if(!file_type_match(buf->st_mode, ACTION_DIR))
+			dir_ent = NULL;
+		else
+			dir_ent = follow_path(dir_ent->dir, path);
+	}
+
 	if(dir_ent == NULL)
 		return 0;
 
@@ -2766,8 +2855,9 @@ static struct test_entry test_table[] = {
 	{ "exec", 1, exec_fn, NULL, 1},
 	{ "exists", 0, exists_fn, NULL, 0},
 	{ "absolute", 0, absolute_fn, NULL, 0},
-	{ "stat", 1, stat_fn, parse_expr_arg, 1},
-	{ "readlink", 1, readlink_fn, parse_expr_arg, 0},
+	{ "stat", 1, stat_fn, parse_expr_arg0, 1},
+	{ "readlink", 1, readlink_fn, parse_expr_arg0, 0},
+	{ "eval", 2, eval_fn, parse_expr_arg1, 0},
 	{ "", -1 }
 };
 
