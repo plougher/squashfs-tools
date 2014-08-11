@@ -675,8 +675,8 @@ void eval_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	int st_mode = dir_ent->inode->buf.st_mode;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = pathname(dir_ent);
-	action_data.subpath = subpathname(dir_ent);
+	action_data.pathname = strdup(pathname(dir_ent));
+	action_data.subpath = strdup(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -694,6 +694,9 @@ void eval_actions(struct dir_info *root, struct dir_ent *dir_ent)
 		if (match)
 			action->action->run_action(action, dir_ent);
 	}
+
+	free(action_data.pathname);
+	free(action_data.subpath);
 }
 
 
@@ -706,8 +709,8 @@ void *eval_frag_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	struct action_data action_data;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = pathname(dir_ent);
-	action_data.subpath = subpathname(dir_ent);
+	action_data.pathname = strdup(pathname(dir_ent));
+	action_data.subpath = strdup(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -715,10 +718,15 @@ void *eval_frag_actions(struct dir_info *root, struct dir_ent *dir_ent)
 
 	for (i = 0; i < fragment_count; i++) {
 		match = eval_expr(fragment_spec[i].expr, &action_data);
-		if (match)
+		if (match) {
+			free(action_data.pathname);
+			free(action_data.subpath);
 			return &fragment_spec[i].data;
+		}
 	}
 
+	free(action_data.pathname);
+	free(action_data.subpath);
 	return &def_fragment;
 }
 
@@ -1281,8 +1289,8 @@ int eval_empty_actions(struct dir_info *root, struct dir_ent *dir_ent)
 		return 0;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = pathname(dir_ent);
-	action_data.subpath = subpathname(dir_ent);
+	action_data.pathname = strdup(pathname(dir_ent));
+	action_data.subpath = strdup(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -1311,6 +1319,9 @@ int eval_empty_actions(struct dir_info *root, struct dir_ent *dir_ent)
 		
 		match = eval_expr(empty_spec[i].expr, &action_data);
 	}
+
+	free(action_data.pathname);
+	free(action_data.subpath);
 
 	return match;
 }
@@ -1522,8 +1533,8 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	struct move_ent *move = NULL;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = pathname(dir_ent);
-	action_data.subpath = subpathname(dir_ent);
+	action_data.pathname = strdup(pathname(dir_ent));
+	action_data.subpath = strdup(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -1567,7 +1578,7 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 		 */
 		if(move->ops == 0) {
 			free(move);
-			return;
+			goto finish;
 		}
 
 		dest = (move->ops & ACTION_MOVE_MOVE) ?
@@ -1582,7 +1593,7 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 				action_data.subpath, conf_path);
 			free(conf_path);
 			free(move);
-			return;
+			goto finish;
 		}
 
 		/*
@@ -1596,11 +1607,15 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 				action_data.subpath, conf_path);
 			free(conf_path);
 			free(move);
-			return;
+			goto finish;
 		}
 		move->next = move_list;
 		move_list = move;
 	}
+
+finish:
+	free(action_data.pathname);
+	free(action_data.subpath);
 }
 
 
@@ -1742,8 +1757,8 @@ int eval_prune_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	struct action_data action_data;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = pathname(dir_ent);
-	action_data.subpath = subpathname(dir_ent);
+	action_data.pathname = strdup(pathname(dir_ent));
+	action_data.subpath = strdup(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -1751,6 +1766,9 @@ int eval_prune_actions(struct dir_info *root, struct dir_ent *dir_ent)
 
 	for (i = 0; i < prune_count && !match; i++)
 		match = eval_expr(prune_spec[i].expr, &action_data);
+
+	free(action_data.pathname);
+	free(action_data.subpath);
 
 	return match;
 }
