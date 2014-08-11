@@ -2588,6 +2588,7 @@ static int parse_expr_arg(struct test_entry *test, struct atom *atom)
 static int stat_fn(struct atom *atom, struct action_data *action_data)
 {
 	struct stat buf;
+	struct action_data eval_action;
 	int res;
 
 	/* evaluate the expression using the context of the inode
@@ -2611,9 +2612,10 @@ static int stat_fn(struct atom *atom, struct action_data *action_data)
 
 	/* fill in the inode values of the file pointed to by the
 	 * symlink, but, leave everything else the same */
-	action_data->buf = &buf;
+	memcpy(&eval_action, action_data, sizeof(struct action_data));
+	eval_action.buf = &buf;
 
-	return eval_expr(atom->data, action_data);
+	return eval_expr(atom->data, &eval_action);
 }
 
 
