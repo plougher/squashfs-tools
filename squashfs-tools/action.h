@@ -144,6 +144,7 @@ struct test_entry {
 	int (*fn)(struct atom *, struct action_data *);
 	int (*parse_args)(struct test_entry *, struct atom *);
 	int exclude_ok;
+	int handle_logging;
 };
 
 
@@ -212,6 +213,7 @@ struct action {
 	char **argv;
 	struct expr *expr;
 	void *data;
+	int verbose;
 };
 
 
@@ -279,7 +281,7 @@ struct move_ent {
 /*
  * External function definitions
  */
-extern int parse_action(char *);
+extern int parse_action(char *, int verbose);
 extern void dump_actions();
 extern void *eval_frag_actions(struct dir_info *, struct dir_ent *);
 extern void *get_frag_action(void *);

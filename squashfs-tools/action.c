@@ -435,7 +435,7 @@ static struct expr *parse_expr(int subexp)
 /*
  * Action parser
  */
-int parse_action(char *s)
+int parse_action(char *s, int verbose)
 {
 	char *string, **argv = NULL;
 	int i, token, args = 0;
@@ -583,6 +583,7 @@ skip_args:
 	(*spec_list)[spec_count].argv = argv;
 	(*spec_list)[spec_count].expr = expr;
 	(*spec_list)[spec_count].data = data;
+	(*spec_list)[spec_count].verbose = verbose;
 
 	return 1;
 
@@ -595,6 +596,127 @@ failed:
 /*
  * Evaluate expressions
  */
+
+#define ALLOC_SZ 128
+
+#define LOG_ENABLE	0
+#define LOG_DISABLE	1
+#define LOG_PRINT	2
+#define LOG_ENABLED	3
+
+char *_expr_log(char *string, int cmnd)
+{
+	static char *expr_msg = NULL;
+	static int cur_size = 0, alloc_size = 0;
+	int size;
+
+	switch(cmnd) {
+	case LOG_ENABLE:
+		expr_msg = malloc(ALLOC_SZ);
+		alloc_size = ALLOC_SZ;
+		cur_size = 0;
+		return expr_msg;
+	case LOG_DISABLE:
+		free(expr_msg);
+		alloc_size = cur_size = 0;
+		return expr_msg = NULL;
+	case LOG_ENABLED:
+		return expr_msg;
+	default:
+		if(expr_msg == NULL)
+			return NULL;
+		break;
+	}
+
+	/* if string is empty append '\0' */
+	size = strlen(string) ? : 1; 
+
+	if(alloc_size - cur_size < size) {
+		/* buffer too small, expand */
+		alloc_size = (cur_size + size + ALLOC_SZ - 1) & ~(ALLOC_SZ - 1);
+
+		expr_msg = realloc(expr_msg, alloc_size);
+		if(expr_msg == NULL)
+			MEM_ERROR();
+	}
+
+	memcpy(expr_msg + cur_size, string, size);
+	cur_size += size; 
+
+	return expr_msg;
+}
+
+
+char *expr_log_cmnd(int cmnd)
+{
+	return _expr_log(NULL, cmnd);
+}
+
+
+char *expr_log(char *string)
+{
+	return _expr_log(string, LOG_PRINT);
+}
+
+
+void expr_log_atom(struct atom *atom)
+{
+	int i;
+
+	if(atom->test->handle_logging)
+		return;
+
+	expr_log(atom->test->name);
+	expr_log("(");
+	for(i = 0; i < atom->test->args; i++) {
+		expr_log(atom->argv[i]);
+		if (i + 1 < atom->test->args)
+			expr_log(",");
+	}
+	expr_log(")");
+}
+
+
+void expr_log_match(struct atom *atom, int match)
+{
+	if(match)
+		expr_log("=True");
+	else
+		expr_log("=False");
+}
+
+
+static int eval_expr_log(struct expr *expr, struct action_data *action_data)
+{
+	int match;
+
+	switch (expr->type) {
+	case ATOM_TYPE:
+		expr_log_atom(&expr->atom);
+		match = expr->atom.test->fn(&expr->atom, action_data);
+		expr_log_match(&expr->atom, match);
+		break;
+	case UNARY_TYPE:
+		expr_log("!");
+		match = !eval_expr_log(expr->unary_op.expr, action_data);
+		break;
+	default:
+		expr_log("(");
+		match = eval_expr_log(expr->expr_op.lhs, action_data);
+
+		if ((expr->expr_op.op == TOK_AND && match) ||
+				(expr->expr_op.op == TOK_OR && !match)) {
+			expr_log(token_table[expr->expr_op.op].string);
+			match = eval_expr_log(expr->expr_op.rhs, action_data);
+		}
+		expr_log(")");
+		break;
+	}
+
+	return match;
+}
+
+
 static int eval_expr(struct expr *expr, struct action_data *action_data)
 {
 	int match;
@@ -619,6 +741,44 @@ static int eval_expr(struct expr *expr, struct action_data *action_data)
 }
 
 
+static int eval_expr_top(struct action *action, struct action_data *action_data)
+{
+	if(action->verbose) {
+		int match, n;
+
+		expr_log_cmnd(LOG_ENABLE);
+
+		if(action_data->pathname)
+			expr_log(action_data->pathname);
+
+		expr_log("=");
+		expr_log(action->action->name);
+
+		if(action->action->args) {
+			expr_log("(");
+			for (n = 0; n < action->action->args; n++) {
+				expr_log(action->argv[n]);
+				if(n + 1 < action->action->args)
+					expr_log(",");
+			}
+			expr_log(")");
+		}
+
+		expr_log("@");
+
+		match = eval_expr_log(action->expr, action_data);
+
+		/* Print the evaluated expression log */
+		progressbar_info("%s\n", expr_log(""));
+
+		expr_log_cmnd(LOG_DISABLE);
+
+		return match;
+	} else
+		return eval_expr(action->expr, action_data);
+}
+
+
 /*
  * Read action file, passing each line to parse_action() for
  * parsing.
@@ -630,9 +790,15 @@ static int eval_expr(struct expr *expr, struct action_data *action_data)
  * 
  * Blank lines and comment lines indicated by # are supported.
  */
+int parse_action_nonverbose(char *s)
+{
+	return parse_action(s, 0);
+}
+
+
 int read_action_file(char *filename)
 {
-	return read_file(filename, "action", parse_action);
+	return read_file(filename, "action", parse_action_nonverbose);
 }
 
 
@@ -689,7 +855,7 @@ void eval_actions(struct dir_info *root, struct dir_ent *dir_ent)
 			/* action does not operate on this file type */
 			continue;
 
-		match = eval_expr(action->expr, &action_data);
+		match = eval_expr_top(action, &action_data);
 
 		if (match)
 			action->action->run_action(action, dir_ent);
@@ -717,7 +883,7 @@ void *eval_frag_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	action_data.root = root;
 
 	for (i = 0; i < fragment_count; i++) {
-		match = eval_expr(fragment_spec[i].expr, &action_data);
+		match = eval_expr_top(&fragment_spec[i], &action_data);
 		if (match) {
 			free(action_data.pathname);
 			free(action_data.subpath);
@@ -777,7 +943,7 @@ int eval_exclude_actions(char *name, char *pathname, char *subpath,
 	action_data.dir_ent = dir_ent;
 
 	for (i = 0; i < exclude_count && !match; i++)
-		match = eval_expr(exclude_spec[i].expr, &action_data);
+		match = eval_expr_top(&exclude_spec[i], &action_data);
 
 	return match;
 }
@@ -1317,7 +1483,7 @@ int eval_empty_actions(struct dir_info *root, struct dir_ent *dir_ent)
 				(data->val == EMPTY_SOURCE && dir->excluded))
 			continue;
 		
-		match = eval_expr(empty_spec[i].expr, &action_data);
+		match = eval_expr_top(&empty_spec[i], &action_data);
 	}
 
 	free(action_data.pathname);
@@ -1551,7 +1717,7 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	 */
 	for (i = 0; i < move_count; i++) {
 		struct action *action = &move_spec[i];
-		int match = eval_expr(action->expr, &action_data);
+		int match = eval_expr_top(action, &action_data);
 
 		if(match) {
 			if(move == NULL) {
@@ -1765,7 +1931,7 @@ int eval_prune_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	action_data.root = root;
 
 	for (i = 0; i < prune_count && !match; i++)
-		match = eval_expr(prune_spec[i].expr, &action_data);
+		match = eval_expr_top(&prune_spec[i], &action_data);
 
 	free(action_data.pathname);
 	free(action_data.subpath);
@@ -2822,42 +2988,42 @@ void dump_actions()
 
 static struct test_entry test_table[] = {
 	{ "name", 1, name_fn, NULL, 1},
-	{ "pathname", 1, pathname_fn, check_pathname, 1},
-	{ "subpathname", 1, subpathname_fn, check_pathname, 1},
-	{ "filesize", 1, filesize_fn, parse_number_arg, 1},
-	{ "dirsize", 1, dirsize_fn, parse_number_arg, 1},
-	{ "size", 1, size_fn, parse_number_arg, 1},
-	{ "inode", 1, inode_fn, parse_number_arg, 1},
-	{ "nlink", 1, nlink_fn, parse_number_arg, 1},
-	{ "fileblocks", 1, fileblocks_fn, parse_number_arg, 1},
-	{ "dirblocks", 1, dirblocks_fn, parse_number_arg, 1},
-	{ "blocks", 1, blocks_fn, parse_number_arg, 1},
-	{ "gid", 1, gid_fn, parse_gid_arg, 1},
-	{ "uid", 1, uid_fn, parse_uid_arg, 1},
-	{ "depth", 1, depth_fn, parse_number_arg, 1},
-	{ "dircount", 1, dircount_fn, parse_number_arg, 0},
-	{ "filesize_range", 2, filesize_range_fn, parse_range_args, 1},
-	{ "dirsize_range", 2, dirsize_range_fn, parse_range_args, 1},
-	{ "size_range", 2, size_range_fn, parse_range_args, 1},
-	{ "inode_range", 2, inode_range_fn, parse_range_args, 1},
-	{ "nlink_range", 2, nlink_range_fn, parse_range_args, 1},
-	{ "fileblocks_range", 2, fileblocks_range_fn, parse_range_args, 1},
-	{ "dirblocks_range", 2, dirblocks_range_fn, parse_range_args, 1},
-	{ "blocks_range", 2, blocks_range_fn, parse_range_args, 1},
-	{ "gid_range", 2, gid_range_fn, parse_range_args, 1},
-	{ "uid_range", 2, uid_range_fn, parse_range_args, 1},
-	{ "depth_range", 2, depth_range_fn, parse_range_args, 1},
-	{ "dircount_range", 2, dircount_range_fn, parse_range_args, 0},
-	{ "type", 1, type_fn, parse_type_arg, 1},
-	{ "true", 0, true_fn, NULL, 1},
-	{ "false", 0, false_fn, NULL, 1},
-	{ "file", 1, file_fn, parse_file_arg, 1},
-	{ "exec", 1, exec_fn, NULL, 1},
-	{ "exists", 0, exists_fn, NULL, 0},
-	{ "absolute", 0, absolute_fn, NULL, 0},
-	{ "stat", 1, stat_fn, parse_expr_arg0, 1},
-	{ "readlink", 1, readlink_fn, parse_expr_arg0, 0},
-	{ "eval", 2, eval_fn, parse_expr_arg1, 0},
+	{ "pathname", 1, pathname_fn, check_pathname, 1, 0},
+	{ "subpathname", 1, subpathname_fn, check_pathname, 1, 0},
+	{ "filesize", 1, filesize_fn, parse_number_arg, 1, 0},
+	{ "dirsize", 1, dirsize_fn, parse_number_arg, 1, 0},
+	{ "size", 1, size_fn, parse_number_arg, 1, 0},
+	{ "inode", 1, inode_fn, parse_number_arg, 1, 0},
+	{ "nlink", 1, nlink_fn, parse_number_arg, 1, 0},
+	{ "fileblocks", 1, fileblocks_fn, parse_number_arg, 1, 0},
+	{ "dirblocks", 1, dirblocks_fn, parse_number_arg, 1, 0},
+	{ "blocks", 1, blocks_fn, parse_number_arg, 1, 0},
+	{ "gid", 1, gid_fn, parse_gid_arg, 1, 0},
+	{ "uid", 1, uid_fn, parse_uid_arg, 1, 0},
+	{ "depth", 1, depth_fn, parse_number_arg, 1, 0},
+	{ "dircount", 1, dircount_fn, parse_number_arg, 0, 0},
+	{ "filesize_range", 2, filesize_range_fn, parse_range_args, 1, 0},
+	{ "dirsize_range", 2, dirsize_range_fn, parse_range_args, 1, 0},
+	{ "size_range", 2, size_range_fn, parse_range_args, 1, 0},
+	{ "inode_range", 2, inode_range_fn, parse_range_args, 1, 0},
+	{ "nlink_range", 2, nlink_range_fn, parse_range_args, 1, 0},
+	{ "fileblocks_range", 2, fileblocks_range_fn, parse_range_args, 1, 0},
+	{ "dirblocks_range", 2, dirblocks_range_fn, parse_range_args, 1, 0},
+	{ "blocks_range", 2, blocks_range_fn, parse_range_args, 1, 0},
+	{ "gid_range", 2, gid_range_fn, parse_range_args, 1, 0},
+	{ "uid_range", 2, uid_range_fn, parse_range_args, 1, 0},
+	{ "depth_range", 2, depth_range_fn, parse_range_args, 1, 0},
+	{ "dircount_range", 2, dircount_range_fn, parse_range_args, 0, 0},
+	{ "type", 1, type_fn, parse_type_arg, 1, 0},
+	{ "true", 0, true_fn, NULL, 1, 0},
+	{ "false", 0, false_fn, NULL, 1, 0},
+	{ "file", 1, file_fn, parse_file_arg, 1, 0},
+	{ "exec", 1, exec_fn, NULL, 1, 0},
+	{ "exists", 0, exists_fn, NULL, 0, 0},
+	{ "absolute", 0, absolute_fn, NULL, 0, 0},
+	{ "stat", 1, stat_fn, parse_expr_arg0, 1, 1},
+	{ "readlink", 1, readlink_fn, parse_expr_arg0, 0, 1},
+	{ "eval", 2, eval_fn, parse_expr_arg1, 0, 1},
 	{ "", -1 }
 };
 

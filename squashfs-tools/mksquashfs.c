@@ -5089,7 +5089,7 @@ void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.3-git (2014/08/10)\n");\
+	printf("mksquashfs version 4.3-git (2014/08/17)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5193,7 +5193,18 @@ int main(int argc, char *argv[])
 					argv[0], argv[i - 1]);
 				exit(1);
 			}
-			res = parse_action(argv[i]);
+			res = parse_action(argv[i], 0);
+			if(res == 0)
+				exit(1);
+
+		} else if(strcmp(argv[i], "-verbose_action") == 0 ||
+				strcmp(argv[i], "-va") ==0) {
+			if(++i == argc) {
+				ERROR("%s: %s missing action\n",
+					argv[0], argv[i - 1]);
+				exit(1);
+			}
+			res = parse_action(argv[i], 1);
 			if(res == 0)
 				exit(1);
 
