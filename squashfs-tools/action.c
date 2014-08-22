@@ -677,7 +677,7 @@ void expr_log_atom(struct atom *atom)
 }
 
 
-void expr_log_match(struct atom *atom, int match)
+void expr_log_match(int match)
 {
 	if(match)
 		expr_log("=True");
@@ -694,7 +694,7 @@ static int eval_expr_log(struct expr *expr, struct action_data *action_data)
 	case ATOM_TYPE:
 		expr_log_atom(&expr->atom);
 		match = expr->atom.test->fn(&expr->atom, action_data);
-		expr_log_match(&expr->atom, match);
+		expr_log_match(match);
 		break;
 	case UNARY_TYPE:
 		expr_log("!");
@@ -2901,8 +2901,18 @@ static int eval_fn(struct atom *atom, struct action_data *action_data)
 			dir_ent = follow_path(dir_ent->dir, path);
 	}
 
-	if(dir_ent == NULL)
+	if(dir_ent == NULL) {
+		if(expr_log_cmnd(LOG_ENABLED)) {
+			expr_log(atom->test->name);
+			expr_log("(");
+			expr_log(atom->argv[0]);
+			expr_log(",");
+			expr_log_match(0);
+			expr_log(")");
+		}
+
 		return 0;
+	}
 
 	eval_action.name = dir_ent->name;
 	eval_action.pathname = strdup(pathname(dir_ent));
@@ -2912,7 +2922,15 @@ static int eval_fn(struct atom *atom, struct action_data *action_data)
 	eval_action.dir_ent = dir_ent;
 	eval_action.root = action_data->root;
 
-	match = eval_expr(atom->data, &eval_action);
+	if(expr_log_cmnd(LOG_ENABLED)) {
+		expr_log(atom->test->name);
+		expr_log("(");
+		expr_log(eval_action.subpath);
+		expr_log(",");
+		match = eval_expr_log(atom->data, &eval_action);
+		expr_log(")");
+	} else
+		match = eval_expr(atom->data, &eval_action);
 
 	free(eval_action.pathname);
 	free(eval_action.subpath);
