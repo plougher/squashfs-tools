@@ -2800,7 +2800,7 @@ static int stat_fn(struct atom *atom, struct action_data *action_data)
 
 static int readlink_fn(struct atom *atom, struct action_data *action_data)
 {
-	int match;
+	int match = 0;
 	struct dir_ent *dir_ent;
 	struct action_data eval_action;
 
@@ -2820,13 +2820,13 @@ static int readlink_fn(struct atom *atom, struct action_data *action_data)
 	 *
 	 * readlink operates on symlinks only */
 	if (!file_type_match(action_data->buf->st_mode, ACTION_LNK))
-		return 0;
+		goto finish;
 
 	/* dereference the symlink, and get the directory entry it points to */
 	dir_ent = follow_path(action_data->dir_ent->our_dir,
 			action_data->dir_ent->inode->symlink);
 	if(dir_ent == NULL)
-		return 0;
+		goto finish;
 
 	eval_action.name = dir_ent->name;
 	eval_action.pathname = strdup(pathname(dir_ent));
@@ -2836,12 +2836,28 @@ static int readlink_fn(struct atom *atom, struct action_data *action_data)
 	eval_action.dir_ent = dir_ent;
 	eval_action.root = action_data->root;
 
-	match = eval_expr(atom->data, &eval_action);
+	if(expr_log_cmnd(LOG_ENABLED)) {
+		expr_log(atom->test->name);
+		expr_log("(");
+		match = eval_expr_log(atom->data, &eval_action);
+		expr_log(")");
+	} else
+		match = eval_expr(atom->data, &eval_action);
 
 	free(eval_action.pathname);
 	free(eval_action.subpath);
 
 	return match;
+
+finish:
+	if(expr_log_cmnd(LOG_ENABLED)) {
+		expr_log(atom->test->name);
+		expr_log("(");
+		expr_log_match(0);
+		expr_log(")");
+	}
+
+	return 0;
 }
 
 
