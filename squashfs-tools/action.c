@@ -2768,7 +2768,7 @@ static int stat_fn(struct atom *atom, struct action_data *action_data)
 {
 	struct stat buf;
 	struct action_data eval_action;
-	int res;
+	int match, res;
 
 	/* evaluate the expression using the context of the inode
 	 * pointed to by the symlink.  This allows the inode attributes
@@ -2786,15 +2786,30 @@ static int stat_fn(struct atom *atom, struct action_data *action_data)
 	 * information, i.e. stat(expr) == expr.  This is harmless and
 	 * is better than returning TRUE or FALSE in a non symlink case */
 	res = stat(action_data->pathname, &buf);
-	if(res == -1)
+	if(res == -1) {
+		if(expr_log_cmnd(LOG_ENABLED)) {
+			expr_log(atom->test->name);
+			expr_log("(");
+			expr_log_match(0);
+			expr_log(")");
+		}
 		return 0;
+	}
 
 	/* fill in the inode values of the file pointed to by the
 	 * symlink, but, leave everything else the same */
 	memcpy(&eval_action, action_data, sizeof(struct action_data));
 	eval_action.buf = &buf;
 
-	return eval_expr(atom->data, &eval_action);
+	if(expr_log_cmnd(LOG_ENABLED)) {
+		expr_log(atom->test->name);
+		expr_log("(");
+		match = eval_expr_log(atom->data, &eval_action);
+		expr_log(")");
+	} else
+		match = eval_expr(atom->data, &eval_action);
+
+	return match;
 }
 
 
