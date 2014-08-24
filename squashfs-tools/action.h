@@ -296,7 +296,7 @@ extern int read_bytes(int, void *, int);
 extern int actions();
 extern int move_actions();
 extern int empty_actions();
-extern int read_action_file(char *);
+extern int read_action_file(char *, int);
 extern int exclude_actions();
 extern int prune_actions();
 #endif

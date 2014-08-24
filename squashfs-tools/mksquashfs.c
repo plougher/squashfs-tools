@@ -5172,7 +5172,7 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-root-becomes") == 0 ||
 				strcmp(argv[i], "-ef") == 0 ||
 				strcmp(argv[i], "-pf") == 0 ||
-				strcmp(argv[i], "-af") == 0 ||
+				strcmp(argv[i], "-vaf") == 0 ||
 				strcmp(argv[i], "-comp") == 0)
 			i++;
 	}
@@ -5213,7 +5213,15 @@ int main(int argc, char *argv[])
 				ERROR("%s: -af missing filename\n", argv[0]);
 				exit(1);
 			}
-			if(read_action_file(argv[i]) == FALSE)
+			if(read_action_file(argv[i], 0) == FALSE)
+				exit(1);
+
+		} else if(strcmp(argv[i], "-vaf") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -vaf missing filename\n", argv[0]);
+				exit(1);
+			}
+			if(read_action_file(argv[i], 1) == FALSE)
 				exit(1);
 
 		} else if(strcmp(argv[i], "-comp") == 0)
@@ -5693,6 +5701,7 @@ printOptions:
 				strcmp(argv[i], "-sort") == 0 ||
 				strcmp(argv[i], "-pf") == 0 ||
 				strcmp(argv[i], "-af") == 0 ||
+				strcmp(argv[i], "-vaf") == 0 ||
 				strcmp(argv[i], "-comp") == 0)
 			i++;
 
@@ -5722,6 +5731,7 @@ printOptions:
 				strcmp(argv[i], "-ef") == 0 ||
 				strcmp(argv[i], "-pf") == 0 ||
 				strcmp(argv[i], "-af") == 0 ||
+				strcmp(argv[i], "-vaf") == 0 ||
 				strcmp(argv[i], "-comp") == 0)
 			i++;
 
