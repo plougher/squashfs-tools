@@ -797,22 +797,24 @@ static int eval_expr_top(struct action *action, struct action_data *action_data)
  */
 int parse_action_verbose(char *s)
 {
-	return parse_action(s, 1);
+	return parse_action(s, ACTION_LOG_VERBOSE);
 }
 
 
 int parse_action_nonverbose(char *s)
 {
-	return parse_action(s, 0);
+	return parse_action(s, ACTION_LOG_NONE);
 }
 
 
 int read_action_file(char *filename, int verbose)
 {
-	if(verbose)
+	switch(verbose) {
+	case ACTION_LOG_VERBOSE:
 		return read_file(filename, "action", parse_action_verbose);
-	else
+	default:
 		return read_file(filename, "action", parse_action_nonverbose);
+	}
 }
 
 
