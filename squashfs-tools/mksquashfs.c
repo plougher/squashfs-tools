@@ -5219,6 +5219,17 @@ int main(int argc, char *argv[])
 			if(res == 0)
 				exit(1);
 
+		} else if(strcmp(argv[i], "-false_action") == 0 ||
+				strcmp(argv[i], "-fa") ==0) {
+			if(++i == argc) {
+				ERROR("%s: %s missing action\n",
+					argv[0], argv[i - 1]);
+				exit(1);
+			}
+			res = parse_action(argv[i], ACTION_LOG_FALSE);
+			if(res == 0)
+				exit(1);
+
 		} else if(strcmp(argv[i], "-af") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -af missing filename\n", argv[0]);
