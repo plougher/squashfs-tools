@@ -795,6 +795,12 @@ static int eval_expr_top(struct action *action, struct action_data *action_data)
  * 
  * Blank lines and comment lines indicated by # are supported.
  */
+int parse_action_true(char *s)
+{
+	return parse_action(s, ACTION_LOG_TRUE);
+}
+
+
 int parse_action_verbose(char *s)
 {
 	return parse_action(s, ACTION_LOG_VERBOSE);
@@ -810,6 +816,8 @@ int parse_action_nonverbose(char *s)
 int read_action_file(char *filename, int verbose)
 {
 	switch(verbose) {
+	case ACTION_LOG_TRUE:
+		return read_file(filename, "action", parse_action_true);
 	case ACTION_LOG_VERBOSE:
 		return read_file(filename, "action", parse_action_verbose);
 	default:
