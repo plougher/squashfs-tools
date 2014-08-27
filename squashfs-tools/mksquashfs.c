@@ -5250,7 +5250,7 @@ int main(int argc, char *argv[])
 			if(read_action_file(argv[i], ACTION_LOG_VERBOSE) == FALSE)
 				exit(1);
 
-		} else if(strcmp(argv[i], "-true_action_file") == 0 ||
+		} else if(strcmp(argv[i], "-true-action-file") == 0 ||
 				strcmp(argv[i], "-taf") ==0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing filename\n", argv[0],
