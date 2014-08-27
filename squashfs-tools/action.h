@@ -185,6 +185,17 @@ struct type_entry {
 #define ACTION_ALL 4
 #define ACTION_LNK 5
 
+
+/*
+ * Action logging requested, specified by the various
+ * -action, -true_action, -false_action and -verbose_action
+ * options
+ */
+#define ACTION_LOG_NONE	0
+#define ACTION_LOG_TRUE 1
+#define ACTION_LOG_FALSE 2
+#define ACTION_LOG_VERBOSE ACTION_LOG_TRUE | ACTION_LOG_FALSE
+
 struct action_entry {
 	char *name;
 	int type;

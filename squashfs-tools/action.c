@@ -768,8 +768,13 @@ static int eval_expr_top(struct action *action, struct action_data *action_data)
 
 		match = eval_expr_log(action->expr, action_data);
 
-		/* Print the evaluated expression log */
-		progressbar_info("%s\n", expr_log(""));
+		/*
+		 * Print the evaluated expression log, if the
+		 * result matches the logging specified
+		 */
+		if((match && (action->verbose & ACTION_LOG_TRUE)) || (!match
+				&& (action->verbose & ACTION_LOG_FALSE)))
+			progressbar_info("%s\n", expr_log(""));
 
 		expr_log_cmnd(LOG_DISABLE);
 
