@@ -5230,9 +5230,11 @@ int main(int argc, char *argv[])
 			if(res == 0)
 				exit(1);
 
-		} else if(strcmp(argv[i], "-af") == 0) {
+		} else if(strcmp(argv[i], "-action_file") == 0 ||
+				strcmp(argv[i], "-af") ==0) {
 			if(++i == argc) {
-				ERROR("%s: -af missing filename\n", argv[0]);
+				ERROR("%s: %s missing filename\n", argv[0],
+							argv[i - 1]);
 				exit(1);
 			}
 			if(read_action_file(argv[i], 0) == FALSE)
