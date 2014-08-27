@@ -5237,7 +5237,7 @@ int main(int argc, char *argv[])
 							argv[i - 1]);
 				exit(1);
 			}
-			if(read_action_file(argv[i], 0) == FALSE)
+			if(read_action_file(argv[i], ACTION_LOG_NONE) == FALSE)
 				exit(1);
 
 		} else if(strcmp(argv[i], "-verbose_action_file") == 0 ||
@@ -5247,7 +5247,7 @@ int main(int argc, char *argv[])
 							argv[i - 1]);
 				exit(1);
 			}
-			if(read_action_file(argv[i], 1) == FALSE)
+			if(read_action_file(argv[i], ACTION_LOG_VERBOSE) == FALSE)
 				exit(1);
 
 		} else if(strcmp(argv[i], "-comp") == 0)
