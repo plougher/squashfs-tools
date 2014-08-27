@@ -5197,7 +5197,7 @@ int main(int argc, char *argv[])
 			if(res == 0)
 				exit(1);
 
-		} else if(strcmp(argv[i], "-verbose_action") == 0 ||
+		} else if(strcmp(argv[i], "-verbose-action") == 0 ||
 				strcmp(argv[i], "-va") ==0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing action\n",
@@ -5208,7 +5208,7 @@ int main(int argc, char *argv[])
 			if(res == 0)
 				exit(1);
 
-		} else if(strcmp(argv[i], "-true_action") == 0 ||
+		} else if(strcmp(argv[i], "-true-action") == 0 ||
 				strcmp(argv[i], "-ta") ==0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing action\n",
@@ -5219,7 +5219,7 @@ int main(int argc, char *argv[])
 			if(res == 0)
 				exit(1);
 
-		} else if(strcmp(argv[i], "-false_action") == 0 ||
+		} else if(strcmp(argv[i], "-false-action") == 0 ||
 				strcmp(argv[i], "-fa") ==0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing action\n",
@@ -5230,7 +5230,7 @@ int main(int argc, char *argv[])
 			if(res == 0)
 				exit(1);
 
-		} else if(strcmp(argv[i], "-action_file") == 0 ||
+		} else if(strcmp(argv[i], "-action-file") == 0 ||
 				strcmp(argv[i], "-af") ==0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing filename\n", argv[0],
@@ -5240,7 +5240,7 @@ int main(int argc, char *argv[])
 			if(read_action_file(argv[i], ACTION_LOG_NONE) == FALSE)
 				exit(1);
 
-		} else if(strcmp(argv[i], "-verbose_action_file") == 0 ||
+		} else if(strcmp(argv[i], "-verbose-action-file") == 0 ||
 				strcmp(argv[i], "-vaf") ==0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing filename\n", argv[0],
