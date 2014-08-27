@@ -5193,7 +5193,7 @@ int main(int argc, char *argv[])
 					argv[0], argv[i - 1]);
 				exit(1);
 			}
-			res = parse_action(argv[i], 0);
+			res = parse_action(argv[i], ACTION_LOG_NONE);
 			if(res == 0)
 				exit(1);
 
@@ -5204,7 +5204,7 @@ int main(int argc, char *argv[])
 					argv[0], argv[i - 1]);
 				exit(1);
 			}
-			res = parse_action(argv[i], 1);
+			res = parse_action(argv[i], ACTION_LOG_VERBOSE);
 			if(res == 0)
 				exit(1);
 
