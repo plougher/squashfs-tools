@@ -801,6 +801,12 @@ int parse_action_true(char *s)
 }
 
 
+int parse_action_false(char *s)
+{
+	return parse_action(s, ACTION_LOG_FALSE);
+}
+
+
 int parse_action_verbose(char *s)
 {
 	return parse_action(s, ACTION_LOG_VERBOSE);
@@ -818,6 +824,8 @@ int read_action_file(char *filename, int verbose)
 	switch(verbose) {
 	case ACTION_LOG_TRUE:
 		return read_file(filename, "action", parse_action_true);
+	case ACTION_LOG_FALSE:
+		return read_file(filename, "action", parse_action_false);
 	case ACTION_LOG_VERBOSE:
 		return read_file(filename, "action", parse_action_verbose);
 	default:

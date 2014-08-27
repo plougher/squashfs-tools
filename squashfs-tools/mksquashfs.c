@@ -5260,6 +5260,16 @@ int main(int argc, char *argv[])
 			if(read_action_file(argv[i], ACTION_LOG_TRUE) == FALSE)
 				exit(1);
 
+		} else if(strcmp(argv[i], "-false-action-file") == 0 ||
+				strcmp(argv[i], "-faf") ==0) {
+			if(++i == argc) {
+				ERROR("%s: %s missing filename\n", argv[0],
+							argv[i - 1]);
+				exit(1);
+			}
+			if(read_action_file(argv[i], ACTION_LOG_FALSE) == FALSE)
+				exit(1);
+
 		} else if(strcmp(argv[i], "-comp") == 0)
 			/* parsed previously */
 			i++;
