@@ -188,7 +188,7 @@ struct type_entry {
 
 /*
  * Action logging requested, specified by the various
- * -action, -true_action, -false_action and -verbose_action
+ * -action, -true-action, -false-action and -verbose-action
  * options
  */
 #define ACTION_LOG_NONE	0
