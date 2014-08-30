@@ -748,8 +748,8 @@ static int eval_expr_top(struct action *action, struct action_data *action_data)
 
 		expr_log_cmnd(LOG_ENABLE);
 
-		if(action_data->pathname)
-			expr_log(action_data->pathname);
+		if(action_data->subpath)
+			expr_log(action_data->subpath);
 
 		expr_log("=");
 		expr_log(action->action->name);
