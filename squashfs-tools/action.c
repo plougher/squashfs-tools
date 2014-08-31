@@ -1219,19 +1219,17 @@ static int parse_octal_mode_args(unsigned int mode, int bytes, int args,
 
 
 /*
- * Parse symbolic mode of format [ugoa]+[+-=]PERMS
+ * Parse symbolic mode of format [ugoa]*[[+-=]PERMS]+
  * PERMS = [rwxXst]+ or [ugo]
  */
-static struct mode_data *parse_sym_mode_arg(char *arg)
+static int parse_sym_mode_arg(char *arg, struct mode_data **head,
+	struct mode_data **cur)
 {
-	struct mode_data *mode_data = malloc(sizeof(*mode_data));
-	int mode = 0;
+	struct mode_data *mode_data;
+	int mode;
 	int mask = 0;
 	int op;
-	char X = 0;
-
-	if (mode_data == NULL)
-		MEM_ERROR();
+	char X;
 
 	if (arg[0] != 'u' && arg[0] != 'g' && arg[0] != 'o' && arg[0] != 'a') {
 		/* no ownership specifiers, default to a */
@@ -1261,102 +1259,116 @@ static struct mode_data *parse_sym_mode_arg(char *arg)
 	}
 
 parse_operation:
-	switch(*arg) {
-	case '+':
-		op = ACTION_MODE_ADD;
-		break;
-	case '-':
-		op = ACTION_MODE_REM;
-		break;
-	case '=':
-		op = ACTION_MODE_SET;
-		break;
-	default:
+	/* trap a symbolic mode with just an ownership specification */
+	if(*arg == '\0') {
 		SYNTAX_ERROR("Action mode: Expected one of '+', '-' or '=', "
-			"got '%c'\n", *arg);
+			"got EOF\n");
 		goto failed;
 	}
 
-	arg ++;
+	while(*arg != '\0') {
+		mode = 0;
+		X = 0;
 
-	/* Parse PERMS */
-	if (*arg == 'u' || *arg == 'g' || *arg == 'o') {
- 		/* PERMS = [ugo] */
-		mode = - *arg;
-		if (*++arg != '\0') {
-			SYNTAX_ERROR("Action mode: permission 'u', 'g' or 'o' "
-				"has trailing characters\n");
+		switch(*arg) {
+		case '+':
+			op = ACTION_MODE_ADD;
+			break;
+		case '-':
+			op = ACTION_MODE_REM;
+			break;
+		case '=':
+			op = ACTION_MODE_SET;
+			break;
+		default:
+			SYNTAX_ERROR("Action mode: Expected one of '+', '-' or "
+				"'=', got '%c'\n", *arg);
 			goto failed;
 		}
-	} else {
- 		/* PERMS = [rwxXst]+ */
-		while(*arg != '\0') {
-			switch(*arg) {
-			case 'r':
-				mode |= 0444;
-				break;
-			case 'w':
-				mode |= 0222;
-				break;
-			case 'x':
-				mode |= 0111;
-				break;
-			case 's':
-				mode |= 06000;
-				break;
-			case 't':
-				mode |= 01000;
-				break;
-			case 'X':
-				X = 1;
-				break;
-			default:
-				SYNTAX_ERROR("Action mode: unrecognised "
-						"permission '%c'\n", *arg);
-				goto failed;
-			}
-
+	
+		arg ++;
+	
+		/* Parse PERMS */
+		if (*arg == 'u' || *arg == 'g' || *arg == 'o') {
+	 		/* PERMS = [ugo] */
+			mode = - *arg;
 			arg ++;
+		} else {
+	 		/* PERMS = [rwxXst]* */
+			while(1) {
+				switch(*arg) {
+				case 'r':
+					mode |= 0444;
+					break;
+				case 'w':
+					mode |= 0222;
+					break;
+				case 'x':
+					mode |= 0111;
+					break;
+				case 's':
+					mode |= 06000;
+					break;
+				case 't':
+					mode |= 01000;
+					break;
+				case 'X':
+					X = 1;
+					break;
+				case '+':
+				case '-':
+				case '=':
+				case '\0':
+					mode &= mask;
+					goto perms_parsed;
+				default:
+					SYNTAX_ERROR("Action mode: "
+						"unrecognised permission "
+						"'%c'\n", *arg);
+					goto failed;
+				}
+	
+				arg ++;
+			}
 		}
-		mode &= mask;
+	
+perms_parsed:
+		mode_data = malloc(sizeof(*mode_data));
+		if (mode_data == NULL)
+			MEM_ERROR();
+
+		mode_data->operation = op;
+		mode_data->mode = mode;
+		mode_data->mask = mask;
+		mode_data->X = X;
+		mode_data->next = NULL;
+
+		if (*cur) {
+			(*cur)->next = mode_data;
+			*cur = mode_data;
+		} else
+			*head = *cur = mode_data;
 	}
 
-	mode_data->operation = op;
-	mode_data->mode = mode;
-	mode_data->mask = mask;
-	mode_data->X = X;
-	mode_data->next = NULL;
-
-	return mode_data;
+	return 1;
 
 failed:
-	free(mode_data);
-	return NULL;
+	return 0;
 }
 
 
 static int parse_sym_mode_args(struct action_entry *action, int args,
 					char **argv, void **data)
 {
-	int i;
+	int i, res = 1;
 	struct mode_data *head = NULL, *cur = NULL;
 
-	for (i = 0; i < args; i++) {
-		struct mode_data *entry = parse_sym_mode_arg(argv[i]);
-
-		if (entry == NULL)
-			return 0;
-
-		if (cur) {
-			cur->next = entry;
-			cur = entry;
-		} else
-			head = cur = entry;
-	}
+	for (i = 0; i < args && res; i++)
+		res = parse_sym_mode_arg(argv[i], &head, &cur);
 
 	*data = head;
 
-	return 1;
+	return res;
 }
 
 
