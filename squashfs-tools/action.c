@@ -1040,7 +1040,7 @@ static long long parse_uid(char *arg) {
 
 	if (*b == '\0') {
 		if (uid < 0 || uid >= (1LL << 32)) {
-			SYNTAX_ERROR("action: uid out of range\n");
+			SYNTAX_ERROR("Uid out of range\n");
 			return -1;
 		}
 	} else {
@@ -1049,7 +1049,7 @@ static long long parse_uid(char *arg) {
 		if (passwd)
 			uid = passwd->pw_uid;
 		else {
-			SYNTAX_ERROR("action: invalid uid or unknown user\n");
+			SYNTAX_ERROR("Invalid uid or unknown user\n");
 			return -1;
 		}
 	}
@@ -1064,7 +1064,7 @@ static long long parse_gid(char *arg) {
 
 	if (*b == '\0') {
 		if (gid < 0 || gid >= (1LL << 32)) {
-			SYNTAX_ERROR("action: gid out of range\n");
+			SYNTAX_ERROR("Gid out of range\n");
 			return -1;
 		}
 	} else {
@@ -1073,7 +1073,7 @@ static long long parse_gid(char *arg) {
 		if (group)
 			gid = group->gr_gid;
 		else {
-			SYNTAX_ERROR("action: invalid gid or unknown group\n");
+			SYNTAX_ERROR("Invalid gid or unknown group\n");
 			return -1;
 		}
 	}
