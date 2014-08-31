@@ -3141,5 +3141,6 @@ static struct action_entry action_table[] = {
 	{ "empty", EMPTY_ACTION, -2, ACTION_DIR, parse_empty_args, NULL},
 	{ "move", MOVE_ACTION, -2, ACTION_ALL_LNK, NULL, NULL},
 	{ "prune", PRUNE_ACTION, 0, ACTION_ALL_LNK, NULL, NULL},
+	{ "chmod", MODE_ACTION, -2, ACTION_ALL, parse_mode_args, mode_action },
 	{ "", 0, -1, 0, NULL, NULL}
 };
