@@ -1261,8 +1261,7 @@ static int parse_sym_mode_arg(char *arg, struct mode_data **head,
 parse_operation:
 	/* trap a symbolic mode with just an ownership specification */
 	if(*arg == '\0') {
-		SYNTAX_ERROR("Action mode: Expected one of '+', '-' or '=', "
-			"got EOF\n");
+		SYNTAX_ERROR("Expected one of '+', '-' or '=', got EOF\n");
 		goto failed;
 	}
 
@@ -1281,8 +1280,8 @@ parse_operation:
 			op = ACTION_MODE_SET;
 			break;
 		default:
-			SYNTAX_ERROR("Action mode: Expected one of '+', '-' or "
-				"'=', got '%c'\n", *arg);
+			SYNTAX_ERROR("Expected one of '+', '-' or '=', got "
+				"'%c'\n", *arg);
 			goto failed;
 		}
 	
@@ -1322,9 +1321,8 @@ parse_operation:
 					mode &= mask;
 					goto perms_parsed;
 				default:
-					SYNTAX_ERROR("Action mode: "
-						"unrecognised permission "
-						"'%c'\n", *arg);
+					SYNTAX_ERROR("Unrecognised permission "
+								"'%c'\n", *arg);
 					goto failed;
 				}
 	
