@@ -754,11 +754,11 @@ static int eval_expr_top(struct action *action, struct action_data *action_data)
 		expr_log("=");
 		expr_log(action->action->name);
 
-		if(action->action->args) {
+		if(action->args) {
 			expr_log("(");
-			for (n = 0; n < action->action->args; n++) {
+			for (n = 0; n < action->args; n++) {
 				expr_log(action->argv[n]);
-				if(n + 1 < action->action->args)
+				if(n + 1 < action->args)
 					expr_log(",");
 			}
 			expr_log(")");
@@ -3046,13 +3046,13 @@ void dump_action_list(struct action *spec_list, int spec_count)
 
 	for (i = 0; i < spec_count; i++) {
 		printf("%s", spec_list[i].action->name);
-		if (spec_list[i].action->args) {
+		if (spec_list[i].args) {
 			int n;
 
 			printf("(");
-			for (n = 0; n < spec_list[i].action->args; n++) {
+			for (n = 0; n < spec_list[i].args; n++) {
 				printf("%s", spec_list[i].argv[n]);
-				if (n + 1 < spec_list[i].action->args)
+				if (n + 1 < spec_list[i].args)
 					printf(",");
 			}
 			printf(")");
