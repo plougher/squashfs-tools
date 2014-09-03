@@ -3272,7 +3272,7 @@ struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 			ERROR("%s\n", dir_name);
 		}
 		return create_dir_entry(dir_name, basename,
-			source_path[index ++], dir);
+			strdup(source_path[index ++]), dir);
 	}
 	return NULL;
 }
