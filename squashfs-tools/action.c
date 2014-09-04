@@ -1391,10 +1391,8 @@ static int parse_mode_args(struct action_entry *action, int args,
 }
 
 
-static void mode_action(struct action *action, struct dir_ent *dir_ent)
+static int mode_execute(struct mode_data *mode_data, int st_mode)
 {
-	struct stat *buf = &dir_ent->inode->buf;
-	struct mode_data *mode_data = action->data;
 	int mode = 0;
 
 	for (;mode_data; mode_data = mode_data->next) {
@@ -1402,20 +1400,20 @@ static void mode_action(struct action *action, struct dir_ent *dir_ent)
 			/* 'u', 'g' or 'o' */
 			switch(-mode_data->mode) {
 			case 'u':
-				mode = (buf->st_mode >> 6) & 07;
+				mode = (st_mode >> 6) & 07;
 				break;
 			case 'g':
-				mode = (buf->st_mode >> 3) & 07;
+				mode = (st_mode >> 3) & 07;
 				break;
 			case 'o':
-				mode = buf->st_mode & 07;
+				mode = st_mode & 07;
 				break;
 			}
 			mode = ((mode << 6) | (mode << 3) | mode) &
 				mode_data->mask;
 		} else if (mode_data->X &&
-				((buf->st_mode & S_IFMT) == S_IFDIR ||
-				(buf->st_mode & 0111)))
+				((st_mode & S_IFMT) == S_IFDIR ||
+				(st_mode & 0111)))
 			/* X permission, only takes effect if inode is a
 			 * directory or x is set for some owner */
 			mode = mode_data->mode | (0111 & mode_data->mask);
@@ -1424,18 +1422,27 @@ static void mode_action(struct action *action, struct dir_ent *dir_ent)
 
 		switch(mode_data->operation) {
 		case ACTION_MODE_OCT:
-			buf->st_mode = (buf->st_mode & ~S_IFMT) | mode;
+			st_mode = (st_mode & ~S_IFMT) | mode;
 			break;
 		case ACTION_MODE_SET:
-			buf->st_mode = (buf->st_mode & ~mode_data->mask) | mode;
+			st_mode = (st_mode & ~mode_data->mask) | mode;
 			break;
 		case ACTION_MODE_ADD:
-			buf->st_mode |= mode;
+			st_mode |= mode;
 			break;
 		case ACTION_MODE_REM:
-			buf->st_mode &= ~mode;
+			st_mode &= ~mode;
 		}
 	}
+
+	return st_mode;
+}
+
+
+static void mode_action(struct action *action, struct dir_ent *dir_ent)
+{
+	dir_ent->inode->buf.st_mode = mode_execute(action->data,
+					dir_ent->inode->buf.st_mode);
 }
 
 
