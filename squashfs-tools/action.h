@@ -98,6 +98,7 @@ struct expr_op {
 
 struct atom {
 	struct test_entry *test;
+	int args;
 	char **argv;
 	void *data;
 };

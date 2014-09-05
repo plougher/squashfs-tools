@@ -264,8 +264,8 @@ static struct expr *create_unary_op(struct expr *lhs, int op)
 
 static struct expr *parse_test(char *name)
 {
-	char *string;
-	int token;
+	char *string, **argv = NULL;
+	int token, args = 0;
 	int i;
 	struct test_entry *test;
 	struct expr *expr;
@@ -295,54 +295,67 @@ static struct expr *parse_test(char *name)
 
 	expr->type = ATOM_TYPE;
 
-	expr->atom.argv = malloc(test->args * sizeof(char *));
-	if (expr->atom.argv == NULL)
-		MEM_ERROR();
-
 	expr->atom.test = test;
 	expr->atom.data = NULL;
 
 	/*
-	 * If the test has no arguments, allow it to be typed
-	 *  without brackets
+	 * If the test has no arguments, then go straight to checking if there's
+	 * enough arguments
 	 */
-	if (test->args == 0) {
-		token = peek_token(&string);
+	token = peek_token(&string);
 
-		if (token != TOK_OPEN_BRACKET)
+	if (token != TOK_OPEN_BRACKET)
 			goto skip_args;
-	}
 
+	get_token(&string);
+
+	/*
+	 * speculatively read all the arguments, and then see if the
+	 * number of arguments read is the number expected, this handles
+	 * tests with a variable number of arguments
+	 */
 	token = get_token(&string);
+	if (token == TOK_CLOSE_BRACKET)
+		goto skip_args;
 
-	if (token != TOK_OPEN_BRACKET) {
-		SYNTAX_ERROR("Unexpected token \"%s\", expected \"(\"\n",
-						TOK_TO_STR(token, string));
-		goto failed;
-	}
-
-	for (i = 0; i < test->args; i++) {
-		token = get_token(&string);
-
+	while(1) {
 		if (token != TOK_STRING) {
 			SYNTAX_ERROR("Unexpected token \"%s\", expected "
 				"argument\n", TOK_TO_STR(token, string));
 			goto failed;
 		}
 
-		expr->atom.argv[i] = strdup(string);
+		argv = realloc(argv, (args + 1) * sizeof(char *));
+		if (argv == NULL)
+			MEM_ERROR();
 
-		if (i + 1 < test->args) {
-			token = get_token(&string);
+		argv[args ++ ] = strdup(string);
 
-			if (token != TOK_COMMA) {
-				SYNTAX_ERROR("Unexpected token \"%s\", "
-					"expected \",\"\n",
-					TOK_TO_STR(token, string));
+		token = get_token(&string);
+
+		if (token == TOK_CLOSE_BRACKET)
+			break;
+
+		if (token != TOK_COMMA) {
+			SYNTAX_ERROR("Unexpected token \"%s\", expected "
+				"\",\" or \")\"\n", TOK_TO_STR(token, string));
 			goto failed;
-			}
 		}
+		token = get_token(&string);
 	}
+
+skip_args:
+	/*
+	 * expected number of arguments?
+	 */
+	if(test->args != -2 && args != test->args) {
+		SYNTAX_ERROR("Unexpected number of arguments, expected %d, "
+			"got %d\n", test->args, args);
+		goto failed;
+	}
+
+	expr->atom.args = args;
+	expr->atom.argv = argv;
 
 	if (test->parse_args) {
 		int res = test->parse_args(test, &expr->atom);
@@ -351,19 +364,10 @@ static struct expr *parse_test(char *name)
 			goto failed;
 	}
 
-	token = get_token(&string);
-
-	if (token != TOK_CLOSE_BRACKET) {
-		SYNTAX_ERROR("Unexpected token \"%s\", expected \")\"\n",
-						TOK_TO_STR(token, string));
-		goto failed;
-	}
-
-skip_args:
 	return expr;
 
 failed:
-	free(expr->atom.argv);
+	free(argv);
 	free(expr);
 	return NULL;
 }
