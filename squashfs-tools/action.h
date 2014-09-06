@@ -291,6 +291,19 @@ struct move_ent {
 
 
 /*
+ * Perm test function specific definitions
+ */
+#define PERM_ALL 1
+#define PERM_ANY 2
+#define PERM_EXACT 3
+
+struct perm_data {
+	int op;
+	int mode;
+};
+
+
+/*
  * External function definitions
  */
 extern int parse_action(char *, int verbose);

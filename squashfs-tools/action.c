@@ -3023,6 +3023,90 @@ static int eval_fn(struct atom *atom, struct action_data *action_data)
 }
 
 
+/*
+ * Perm specific test code
+ */
+static int parse_perm_args(struct test_entry *test, struct atom *atom)
+{
+	int res = 1, mode, op, i;
+	char *arg;
+	struct mode_data *head = NULL, *cur = NULL;
+	struct perm_data *perm_data;
+
+	if(atom->args == 0) {
+		TEST_SYNTAX_ERROR(test, 0, "One or more arguments expected\n");
+		return 0;
+	}
+
+	switch(atom->argv[0][0]) {
+	case '-':
+		op = PERM_ALL;
+		arg = atom->argv[0] + 1;
+		break;
+	case '/':
+		op = PERM_ANY;
+		arg = atom->argv[0] + 1;
+		break;
+	default:
+		op = PERM_EXACT;
+		arg = atom->argv[0];
+		break;
+	}
+
+	for(i = 0; i < atom->args && res; i++, arg = atom->argv[i])
+		res = parse_sym_mode_arg(arg, &head, &cur);
+
+	if (res == 0)
+		goto finish;
+
+	/*
+	 * Evaluate the symbolic mode against a permission of 0000 octal
+	 */
+	mode = mode_execute(head, 0);
+
+	perm_data = malloc(sizeof(struct perm_data));
+	if (perm_data == NULL)
+		MEM_ERROR();
+
+	perm_data->op = op;
+	perm_data->mode = mode;
+
+	atom->data = perm_data;
+	
+finish:
+	while(head) {
+		struct mode_data *tmp = head;
+		head = head->next;
+		free(tmp);
+	}
+
+	return res;
+}
+
+
+static int perm_fn(struct atom *atom, struct action_data *action_data)
+{
+	struct perm_data *perm_data = atom->data;
+	struct stat *buf = action_data->buf;
+
+	switch(perm_data->op) {
+	case PERM_EXACT:
+		return (buf->st_mode & ~S_IFMT) == perm_data->mode;
+	case PERM_ALL:
+		return (buf->st_mode & perm_data->mode) == perm_data->mode;
+	case PERM_ANY:
+	default:
+		/*
+		 * if no permission bits are set in perm_data->mode match
+		 * on any file, this is to be consistent with find, which
+		 * does this to be consistent with the behaviour of
+		 * -perm -000
+		 */
+		return perm_data->mode == 0 || (buf->st_mode & perm_data->mode);
+	}
+}
+
+
 #ifdef SQUASHFS_TRACE
 static void dump_parse_tree(struct expr *expr)
 {
@@ -3126,6 +3210,7 @@ static struct test_entry test_table[] = {
 	{ "stat", 1, stat_fn, parse_expr_arg0, 1, 1},
 	{ "readlink", 1, readlink_fn, parse_expr_arg0, 0, 1},
 	{ "eval", 2, eval_fn, parse_expr_arg1, 0, 1},
+	{ "perm", -2, perm_fn, parse_perm_args, 1, 0},
 	{ "", -1 }
 };
 
