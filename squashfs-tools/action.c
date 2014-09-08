@@ -1184,29 +1184,36 @@ static void guid_action(struct action *action, struct dir_ent *dir_ent)
 /*
  * Mode specific action code
  */
-static int parse_octal_mode_args(unsigned int mode, int bytes, int args,
-					char **argv, void **data)
+static int parse_octal_mode_args(int args, char **argv, void **data)
 {
+	int n, bytes;
+	unsigned int mode;
 	struct mode_data *mode_data;
+
+	/* octal mode number? */
+	n = sscanf(argv[0], "%o%n", &mode, &bytes);
+	if (n == 0)
+		return -1; /* not an octal number arg */
+
 
 	/* check there's no trailing junk */
 	if (argv[0][bytes] != '\0') {
 		SYNTAX_ERROR("Unexpected trailing bytes after octal "
 			"mode number\n");
-		return 0;
+		return 0; /* bad octal number arg */
 	}
 
 	/* check there's only one argument */
 	if (args > 1) {
 		SYNTAX_ERROR("Octal mode number is first argument, "
 			"expected one argument, got %d\n", args);
-		return 0;
+		return 0; /* bad octal number arg */
 	}
 
 	/*  check mode is within range */
 	if (mode > 07777) {
 		SYNTAX_ERROR("Octal mode %o is out of range\n", mode);
-		return 0;
+		return 0; /* bad octal number arg */
 	}
 
 	mode_data = malloc(sizeof(struct mode_data));
@@ -1377,20 +1384,18 @@ static int parse_sym_mode_args(struct action_entry *action, int args,
 static int parse_mode_args(struct action_entry *action, int args,
 					char **argv, void **data)
 {
-	int n, bytes;
-	unsigned int mode;
+	int res;
 
 	if (args == 0) {
 		SYNTAX_ERROR("Mode action expects one or more arguments\n");
 		return 0;
 	}
 
-	/* octal mode number? */
-	n = sscanf(argv[0], "%o%n", &mode, &bytes);
-
-	if(n >= 1)
-		return parse_octal_mode_args(mode, bytes, args, argv, data);
-	else
+	res = parse_octal_mode_args(args, argv, data);
+	if(res >= 0)
+		/* Got an octal mode argument */
+		return res;
+	else  /* not an octal mode argument */
 		return parse_sym_mode_args(action, args, argv, data);
 }
 
