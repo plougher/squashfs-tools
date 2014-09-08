@@ -1184,7 +1184,8 @@ static void guid_action(struct action *action, struct dir_ent *dir_ent)
 /*
  * Mode specific action code
  */
-static int parse_octal_mode_args(int args, char **argv, void **data)
+static int parse_octal_mode_args(int args, char **argv,
+			void **data)
 {
 	int n, bytes;
 	unsigned int mode;
@@ -3058,8 +3059,13 @@ static int parse_perm_args(struct test_entry *test, struct atom *atom)
 		break;
 	}
 
-	for(i = 0; i < atom->args && res; i++, arg = atom->argv[i])
-		res = parse_sym_mode_arg(arg, &head, &cur);
+	/* try to parse as an octal number */
+	res = parse_octal_mode_args(atom->args, atom->argv, (void **) &head);
+	if(res == -1) {
+		/* parse as sym mode argument */
+		for(i = 0; i < atom->args && res; i++, arg = atom->argv[i])
+			res = parse_sym_mode_arg(arg, &head, &cur);
+	}
 
 	if (res == 0)
 		goto finish;
