@@ -1432,7 +1432,7 @@ static int mode_execute(struct mode_data *mode_data, int st_mode)
 
 		switch(mode_data->operation) {
 		case ACTION_MODE_OCT:
-			st_mode = (st_mode & ~S_IFMT) | mode;
+			st_mode = (st_mode & S_IFMT) | mode;
 			break;
 		case ACTION_MODE_SET:
 			st_mode = (st_mode & ~mode_data->mask) | mode;
