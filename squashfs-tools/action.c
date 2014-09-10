@@ -672,9 +672,9 @@ void expr_log_atom(struct atom *atom)
 
 	expr_log(atom->test->name);
 	expr_log("(");
-	for(i = 0; i < atom->test->args; i++) {
+	for(i = 0; i < atom->args; i++) {
 		expr_log(atom->argv[i]);
-		if (i + 1 < atom->test->args)
+		if (i + 1 < atom->args)
 			expr_log(",");
 	}
 	expr_log(")");
@@ -3125,9 +3125,9 @@ static void dump_parse_tree(struct expr *expr)
 		int i;
 
 		printf("%s(", expr->atom.test->name);
-		for(i = 0; i < expr->atom.test->args; i++) {
+		for(i = 0; i < expr->atom.args; i++) {
 			printf("%s", expr->atom.argv[i]);
-			if (i + 1 < expr->atom.test->args)
+			if (i + 1 < expr->atom.args)
 				printf(",");
 		}
 		printf(")");
