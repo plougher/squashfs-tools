@@ -671,13 +671,16 @@ void expr_log_atom(struct atom *atom)
 		return;
 
 	expr_log(atom->test->name);
-	expr_log("(");
-	for(i = 0; i < atom->args; i++) {
-		expr_log(atom->argv[i]);
-		if (i + 1 < atom->args)
-			expr_log(",");
+
+	if(atom->args) {
+		expr_log("(");
+		for(i = 0; i < atom->args; i++) {
+			expr_log(atom->argv[i]);
+			if (i + 1 < atom->args)
+				expr_log(",");
+		}
+		expr_log(")");
 	}
-	expr_log(")");
 }
 
 
@@ -3121,16 +3124,19 @@ static int perm_fn(struct atom *atom, struct action_data *action_data)
 #ifdef SQUASHFS_TRACE
 static void dump_parse_tree(struct expr *expr)
 {
-	if(expr->type == ATOM_TYPE) {
-		int i;
+	int i;
 
-		printf("%s(", expr->atom.test->name);
-		for(i = 0; i < expr->atom.args; i++) {
-			printf("%s", expr->atom.argv[i]);
-			if (i + 1 < expr->atom.args)
-				printf(",");
+	if(expr->type == ATOM_TYPE) {
+		printf("%s", expr->atom.test->name);
+		if(expr->atom.args) {
+			printf("(");
+			for(i = 0; i < expr->atom.args; i++) {
+				printf("%s", expr->atom.argv[i]);
+				if (i + 1 < expr->atom.args)
+					printf(",");
+			}
+			printf(")");
 		}
-		printf(")");
 	} else if (expr->type == UNARY_TYPE) {
 		printf("%s", token_table[expr->unary_op.op].string);
 		dump_parse_tree(expr->unary_op.expr);
