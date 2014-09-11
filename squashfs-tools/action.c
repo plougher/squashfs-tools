@@ -2003,6 +2003,14 @@ int eval_prune_actions(struct dir_info *root, struct dir_ent *dir_ent)
 
 
 /*
+ * Noop specific action code
+ */
+static void noop_action(struct action *action, struct dir_ent *dir_ent)
+{
+}
+
+
+/*
  * General test evaluation code
  */
 
@@ -3253,5 +3261,6 @@ static struct action_entry action_table[] = {
 	{ "move", MOVE_ACTION, 1, ACTION_ALL_LNK, NULL, NULL},
 	{ "prune", PRUNE_ACTION, 0, ACTION_ALL_LNK, NULL, NULL},
 	{ "chmod", MODE_ACTION, -2, ACTION_ALL, parse_mode_args, mode_action },
+	{ "noop", NOOP_ACTION, 0, ACTION_ALL, NULL, noop_action },
 	{ "", 0, -1, 0, NULL, NULL}
 };

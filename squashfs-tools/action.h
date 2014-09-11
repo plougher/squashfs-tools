@@ -176,6 +176,7 @@ struct type_entry {
 #define EMPTY_ACTION 12
 #define MOVE_ACTION 13
 #define PRUNE_ACTION 14
+#define NOOP_ACTION 15
 
 /*
  * Define what file types each action operates over
