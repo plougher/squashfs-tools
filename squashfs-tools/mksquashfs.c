@@ -3179,10 +3179,11 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 
 	queue_put(to_reader, root_dir);
 
+	set_progressbar_state(progress);
+
 	if(sorted)
 		sort_files_and_write(root_dir);
 
-	set_progressbar_state(progress);
 	dir_scan7(inode, root_dir);
 	dir_ent->inode->inode = *inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
@@ -5089,7 +5090,7 @@ void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.3-git (2014/09/10)\n");\
+	printf("mksquashfs version 4.3-git (2014/09/12)\n");\
 	printf("copyright (C) 2014 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
