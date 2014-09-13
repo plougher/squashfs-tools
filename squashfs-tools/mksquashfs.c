@@ -2029,7 +2029,7 @@ struct file_info *duplicate(long long file_size, long long bytes,
 
 inline int is_fragment(struct inode_info *inode)
 {
-	int file_size = inode->buf.st_size;
+	off_t file_size = inode->buf.st_size;
 
 	/*
 	 * If this block is to be compressed differently to the
