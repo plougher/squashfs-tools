@@ -821,8 +821,6 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 {
 	struct utimbuf times = { time, time };
 
-	write_xattr(pathname, xattr);
-
 	if(utime(pathname, &times) == -1) {
 		ERROR("set_attributes: failed to set time on %s, because %s\n",
 			pathname, strerror(errno));
@@ -844,6 +842,8 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 			pathname, strerror(errno));
 		return FALSE;
 	}
+
+	write_xattr(pathname, xattr);
 
 	return TRUE;
 }
