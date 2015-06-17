@@ -32,9 +32,9 @@ static unsigned int *id_table;
 static int read_fragment_table(long long *directory_table_end)
 {
 	int res, i;
-	int bytes = SQUASHFS_FRAGMENT_BYTES(sBlk.s.fragments);
-	int  indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.s.fragments);
-	long long fragment_table_index[indexes];
+	size_t bytes = SQUASHFS_FRAGMENT_BYTES(sBlk.s.fragments);
+	size_t indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.s.fragments);
+	long long *fragment_table_index;
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
 		"from 0x%llx\n", sBlk.s.fragments, indexes,
@@ -44,6 +44,11 @@ static int read_fragment_table(long long *directory_table_end)
 		*directory_table_end = sBlk.s.fragment_table_start;
 		return TRUE;
 	}
+
+	fragment_table_index = malloc(indexes*sizeof(long long));
+	if(fragment_table_index == NULL)
+		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
+			"fragment table index\n");
 
 	fragment_table = malloc(bytes);
 	if(fragment_table == NULL)
