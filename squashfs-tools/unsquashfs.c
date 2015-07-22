@@ -1117,7 +1117,11 @@ int create_inode(char *pathname, struct inode *i)
 	 	case SQUASHFS_CHRDEV_TYPE:
  		case SQUASHFS_LBLKDEV_TYPE:
 	 	case SQUASHFS_LCHRDEV_TYPE: {
-			int chrdev = i->type == SQUASHFS_CHRDEV_TYPE;
+			int chrdev = 0;
+			if ( i->type == SQUASHFS_CHRDEV_TYPE ||
+					i->type == SQUASHFS_LCHRDEV_TYPE)
+				chrdev = 1;
+
 			TRACE("create_inode: dev, rdev 0x%llx\n", i->data);
 
 			if(root_process) {
