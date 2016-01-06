@@ -46,7 +46,6 @@
 #include <sys/mman.h>
 #include <pthread.h>
 #include <regex.h>
-#include <fnmatch.h>
 #include <sys/wait.h>
 #include <limits.h>
 #include <ctype.h>
@@ -76,6 +75,7 @@
 #include "read_fs.h"
 #include "restore.h"
 #include "process_fragments.h"
+#include "fnmatch_compat.h"
 
 int delete = FALSE;
 int fd;

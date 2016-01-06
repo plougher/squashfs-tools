@@ -31,7 +31,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <fnmatch.h>
 #include <pwd.h>
 #include <grp.h>
 #include <sys/wait.h>
@@ -43,6 +42,7 @@
 #include "mksquashfs.h"
 #include "action.h"
 #include "error.h"
+#include "fnmatch_compat.h"
 
 /*
  * code to parse actions

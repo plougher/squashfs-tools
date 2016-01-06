@@ -40,7 +40,6 @@
 #include <grp.h>
 #include <time.h>
 #include <regex.h>
-#include <fnmatch.h>
 #include <signal.h>
 #include <pthread.h>
 #include <math.h>

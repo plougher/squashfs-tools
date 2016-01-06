@@ -30,6 +30,7 @@
 #include "xattr.h"
 #include "unsquashfs_info.h"
 #include "stdarg.h"
+#include "fnmatch_compat.h"
 
 #include <sys/sysinfo.h>
 #include <sys/types.h>
