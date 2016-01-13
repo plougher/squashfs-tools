@@ -78,6 +78,7 @@
 #include "process_fragments.h"
 
 int delete = FALSE;
+int quiet = FALSE;
 int fd;
 struct squashfs_super_block sBlk;
 
@@ -4270,7 +4271,7 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 
 	main_thread = pthread_self();
 
-	printf("Parallel mksquashfs: Using %d processor%s\n", processors,
+	quiet || printf("Parallel mksquashfs: Using %d processor%s\n", processors,
 			processors == 1 ? "" : "s");
 
 	/* Restore the signal mask for the main thread */
@@ -4796,6 +4797,9 @@ void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
 
 	total_bytes += total_inode_bytes + total_directory_bytes +
 		sizeof(struct squashfs_super_block) + total_xattr_bytes;
+
+	if(quiet)
+		return;
 
 	printf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
 		" %d\n", exportable ? "Exportable " : "", SQUASHFS_MAJOR,
@@ -5533,6 +5537,9 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-noappend") == 0)
 			delete = TRUE;
 
+		else if(strcmp(argv[i], "-quiet") == 0)
+			quiet = TRUE;
+
 		else if(strcmp(argv[i], "-keep-as-directory") == 0)
 			keep_as_directory = TRUE;
 
@@ -5625,6 +5632,7 @@ printOptions:
 				"using recovery file <name>\n");
 			ERROR("-no-recovery\t\tdon't generate a recovery "
 				"file\n");
+			ERROR("-quiet\t\t\tno verbose output\n");
 			ERROR("-info\t\t\tprint files written to filesystem\n");
 			ERROR("-no-progress\t\tdon't display the progress "
 				"bar\n");
@@ -5817,7 +5825,7 @@ printOptions:
 		void *comp_data = compressor_dump_options(comp, block_size,
 			&size);
 
-		printf("Creating %d.%d filesystem on %s, block size %d.\n",
+		quiet || printf("Creating %d.%d filesystem on %s, block size %d.\n",
 			SQUASHFS_MAJOR, SQUASHFS_MINOR, argv[source + 1], block_size);
 
 		/*
