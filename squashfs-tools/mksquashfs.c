@@ -48,6 +48,7 @@
 #include <regex.h>
 #include <fnmatch.h>
 #include <sys/wait.h>
+#include <stdarg.h>
 #include <limits.h>
 #include <ctype.h>
 
@@ -98,6 +99,7 @@ int old_exclude = TRUE;
 int use_regex = FALSE;
 int nopad = FALSE;
 int exit_on_error = FALSE;
+int quiet = FALSE;
 
 long long global_uid = -1, global_gid = -1;
 
@@ -310,6 +312,15 @@ void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
 unsigned short get_checksum_mem(char *buff, int bytes);
 void check_usable_phys_mem(int total_mem);
 
+static void msgf(const char *fmt, ...)
+{
+	va_list ptr;
+
+	va_start(ptr, fmt);
+	if (!quiet)
+		vprintf(fmt, ptr);
+	va_end(ptr);
+}
 
 void prep_exit()
 {
@@ -4270,7 +4281,7 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 
 	main_thread = pthread_self();
 
-	printf("Parallel mksquashfs: Using %d processor%s\n", processors,
+	msgf("Parallel mksquashfs: Using %d processor%s\n", processors,
 			processors == 1 ? "" : "s");
 
 	/* Restore the signal mask for the main thread */
@@ -4797,68 +4808,68 @@ void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
 	total_bytes += total_inode_bytes + total_directory_bytes +
 		sizeof(struct squashfs_super_block) + total_xattr_bytes;
 
-	printf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
+	msgf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
 		" %d\n", exportable ? "Exportable " : "", SQUASHFS_MAJOR,
 		SQUASHFS_MINOR, comp->name, block_size);
-	printf("\t%s data, %s metadata, %s fragments, %s xattrs\n",
+	msgf("\t%s data, %s metadata, %s fragments, %s xattrs\n",
 		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" :
 		"compressed", no_fragments ? "no" : noF ? "uncompressed" :
 		"compressed", no_xattrs ? "no" : noX ? "uncompressed" :
 		"compressed");
-	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
+	msgf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
 		"not ");
-	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0,
+	msgf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0,
 		bytes / (1024.0 * 1024.0));
-	printf("\t%.2f%% of uncompressed filesystem size (%.2f Kbytes)\n",
+	msgf("\t%.2f%% of uncompressed filesystem size (%.2f Kbytes)\n",
 		((float) bytes / total_bytes) * 100.0, total_bytes / 1024.0);
-	printf("Inode table size %d bytes (%.2f Kbytes)\n",
+	msgf("Inode table size %d bytes (%.2f Kbytes)\n",
 		inode_bytes, inode_bytes / 1024.0);
-	printf("\t%.2f%% of uncompressed inode table size (%d bytes)\n",
+	msgf("\t%.2f%% of uncompressed inode table size (%d bytes)\n",
 		((float) inode_bytes / total_inode_bytes) * 100.0,
 		total_inode_bytes);
-	printf("Directory table size %d bytes (%.2f Kbytes)\n",
+	msgf("Directory table size %d bytes (%.2f Kbytes)\n",
 		directory_bytes, directory_bytes / 1024.0);
-	printf("\t%.2f%% of uncompressed directory table size (%d bytes)\n",
+	msgf("\t%.2f%% of uncompressed directory table size (%d bytes)\n",
 		((float) directory_bytes / total_directory_bytes) * 100.0,
 		total_directory_bytes);
 	if(total_xattr_bytes) {
-		printf("Xattr table size %d bytes (%.2f Kbytes)\n",
+		msgf("Xattr table size %d bytes (%.2f Kbytes)\n",
 			xattr_bytes, xattr_bytes / 1024.0);
-		printf("\t%.2f%% of uncompressed xattr table size (%d bytes)\n",
+		msgf("\t%.2f%% of uncompressed xattr table size (%d bytes)\n",
 			((float) xattr_bytes / total_xattr_bytes) * 100.0,
 			total_xattr_bytes);
 	}
 	if(duplicate_checking)
-		printf("Number of duplicate files found %d\n", file_count -
+		msgf("Number of duplicate files found %d\n", file_count -
 			dup_files);
 	else
-		printf("No duplicate files removed\n");
-	printf("Number of inodes %d\n", inode_count);
-	printf("Number of files %d\n", file_count);
+		msgf("No duplicate files removed\n");
+	msgf("Number of inodes %d\n", inode_count);
+	msgf("Number of files %d\n", file_count);
 	if(!no_fragments)
-		printf("Number of fragments %d\n", fragments);
-	printf("Number of symbolic links  %d\n", sym_count);
-	printf("Number of device nodes %d\n", dev_count);
-	printf("Number of fifo nodes %d\n", fifo_count);
-	printf("Number of socket nodes %d\n", sock_count);
-	printf("Number of directories %d\n", dir_count);
-	printf("Number of ids (unique uids + gids) %d\n", id_count);
-	printf("Number of uids %d\n", uid_count);
+		msgf("Number of fragments %d\n", fragments);
+	msgf("Number of symbolic links  %d\n", sym_count);
+	msgf("Number of device nodes %d\n", dev_count);
+	msgf("Number of fifo nodes %d\n", fifo_count);
+	msgf("Number of socket nodes %d\n", sock_count);
+	msgf("Number of directories %d\n", dir_count);
+	msgf("Number of ids (unique uids + gids) %d\n", id_count);
+	msgf("Number of uids %d\n", uid_count);
 
 	for(i = 0; i < id_count; i++) {
 		if(id_table[i]->flags & ISA_UID) {
 			struct passwd *user = getpwuid(id_table[i]->id);
-			printf("\t%s (%d)\n", user == NULL ? "unknown" :
+			msgf("\t%s (%d)\n", user == NULL ? "unknown" :
 				user->pw_name, id_table[i]->id);
 		}
 	}
 
-	printf("Number of gids %d\n", guid_count);
+	msgf("Number of gids %d\n", guid_count);
 
 	for(i = 0; i < id_count; i++) {
 		if(id_table[i]->flags & ISA_GID) {
 			struct group *group = getgrgid(id_table[i]->id);
-			printf("\t%s (%d)\n", group == NULL ? "unknown" :
+			msgf("\t%s (%d)\n", group == NULL ? "unknown" :
 				group->gr_name, id_table[i]->id);
 		}
 	}
@@ -5337,7 +5348,10 @@ print_compressor_options:
 			sparse_files = FALSE;
 		else if(strcmp(argv[i], "-no-progress") == 0)
 			progress = FALSE;
-		else if(strcmp(argv[i], "-progress") == 0)
+		else if(strcmp(argv[i], "-q") == 0) {
+			quiet = TRUE;
+			progress = FALSE;
+		} else if(strcmp(argv[i], "-progress") == 0)
 			force_progress = TRUE;
 		else if(strcmp(argv[i], "-no-exports") == 0)
 			exportable = FALSE;
@@ -5817,7 +5831,7 @@ printOptions:
 		void *comp_data = compressor_dump_options(comp, block_size,
 			&size);
 
-		printf("Creating %d.%d filesystem on %s, block size %d.\n",
+		msgf("Creating %d.%d filesystem on %s, block size %d.\n",
 			SQUASHFS_MAJOR, SQUASHFS_MINOR, argv[source + 1], block_size);
 
 		/*
@@ -5874,13 +5888,13 @@ printOptions:
 				BAD_ERROR("Out of memory in save filesystem state\n");
 		}
 
-		printf("Appending to existing %d.%d filesystem on %s, block "
+		msgf("Appending to existing %d.%d filesystem on %s, block "
 			"size %d\n", SQUASHFS_MAJOR, SQUASHFS_MINOR, argv[source + 1],
 			block_size);
-		printf("All -b, -noI, -noD, -noF, -noX, no-duplicates, no-fragments, "
+		msgf("All -b, -noI, -noD, -noF, -noX, no-duplicates, no-fragments, "
 			"-always-use-fragments,\n-exportable and -comp options "
 			"ignored\n");
-		printf("\nIf appending is not wanted, please re-run with "
+		msgf("\nIf appending is not wanted, please re-run with "
 			"-noappend specified!\n\n");
 
 		compressed_data = (inode_dir_offset + inode_dir_file_size) &
