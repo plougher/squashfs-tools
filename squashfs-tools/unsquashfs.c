@@ -43,6 +43,7 @@ struct cache *fragment_cache, *data_cache;
 struct queue *to_reader, *to_inflate, *to_writer, *from_writer;
 pthread_t *thread, *inflator_thread;
 pthread_mutex_t	fragment_mutex;
+static off_t squashfs_start_offset = 0;
 
 /* user options that control parallelisation */
 int processors = -1;
@@ -632,7 +633,7 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 	TRACE("read_bytes: reading from position 0x%llx, bytes %d\n", byte,
 		bytes);
 
-	if(lseek(fd, off, SEEK_SET) == -1) {
+	if(lseek(fd, off + squashfs_start_offset, SEEK_SET) == -1) {
 		ERROR("Lseek failed because %s\n", strerror(errno));
 		return FALSE;
 	}
@@ -2549,6 +2550,14 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			dest = argv[i];
+        		} else if (strcmp(argv[i], "-offset") == 0 ||
+				strcmp(argv[i], "-o") == 0) {
+			if(++i == argc) {
+				fprintf(stderr, "%s: -offset missing argument\n",
+					argv[0]);
+				exit(1);
+			}
+			squashfs_start_offset = (off_t)atol(argv[i]);
 		} else if(strcmp(argv[i], "-processors") == 0 ||
 				strcmp(argv[i], "-p") == 0) {
 			if((++i == argc) || 
@@ -2641,6 +2650,8 @@ options:
 				"copyright information\n");
 			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, "
 				"default \"squashfs-root\"\n");
+			ERROR("\t-o[ffset] <bytes>\tskip <bytes> at start of input file, "
+				"default \"0\"\n");
 			ERROR("\t-n[o-progress]\t\tdon't display the progress "
 				"bar\n");
 			ERROR("\t-no[-xattrs]\t\tdon't extract xattrs in file system"
