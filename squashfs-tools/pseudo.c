@@ -518,7 +518,8 @@ static void dump_pseudo(struct pseudo *pseudo, char *string)
 
 void dump_pseudos()
 {
-	dump_pseudo(pseudo, NULL);
+    if (pseudo)
+        dump_pseudo(pseudo, NULL);
 }
 #else
 void dump_pseudos()
