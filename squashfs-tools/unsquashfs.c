@@ -1645,9 +1645,9 @@ void squashfs_stat(char *source)
 
 	printf("Creation or last append time %s", mkfs_str ? mkfs_str :
 		"failed to get time\n");
-	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n",
-		sBlk.s.bytes_used / 1024.0, sBlk.s.bytes_used /
-		(1024.0 * 1024.0));
+	printf("Filesystem size %llu bytes (%.2f Kbytes / %.2f Mbytes)\n",
+		sBlk.s.bytes_used, sBlk.s.bytes_used / 1024.0,
+		sBlk.s.bytes_used / (1024.0 * 1024.0));
 
 	if(sBlk.s.s_major == 4) {
 		printf("Compression %s\n", comp->name);
