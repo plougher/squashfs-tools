@@ -398,7 +398,7 @@ int read_pseudo_def(char *def)
 
 		if(strlen(def) > 65535) {
 			ERROR("Symlink pseudo definition %s is greater than 65535"
-								" bytes!", def);
+								" bytes!\n", def);
 			goto error;
 		}
 		break;
