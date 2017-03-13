@@ -388,6 +388,20 @@ int read_pseudo_def(char *def)
 			goto error;
 		}	
 		break;
+	case 's':
+		if(def[0] == '\0') {
+			ERROR("Not enough arguments in symlink pseudo "
+				"definition \"%s\"\n", orig_def);
+			ERROR("Expected symlink\n");
+			goto error;
+		}
+
+		if(strlen(def) > 65535) {
+			ERROR("Symlink pseudo definition %s is greater than 65535"
+								" bytes!", def);
+			goto error;
+		}
+		break;
 	default:
 		ERROR("Unsupported type %c\n", type);
 		goto error;
@@ -444,6 +458,10 @@ int read_pseudo_def(char *def)
 	case 'f':
 		mode |= S_IFREG;
 		break;
+	case 's':
+		/* permissions on symlinks are always rwxrwxrwx */
+		mode = 0777 | S_IFLNK;
+		break;
 	}
 
 	dev = malloc(sizeof(struct pseudo_dev));
@@ -460,6 +478,8 @@ int read_pseudo_def(char *def)
 		dev->command = strdup(def);
 		add_pseudo_file(dev);
 	}
+	if(type == 's')
+		dev->symlink = strdup(def);
 
 	pseudo = add_pseudo(pseudo, dev, filename, filename);
 
@@ -473,6 +493,7 @@ error:
 	ERROR("\tfilename b mode uid gid major minor\n");
 	ERROR("\tfilename c mode uid gid major minor\n");
 	ERROR("\tfilename f mode uid command\n");
+	ERROR("\tfilename s mode uid gid symlink\n");
 	free(filename);
 	return FALSE;
 }

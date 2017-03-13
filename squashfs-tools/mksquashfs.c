@@ -3582,6 +3582,12 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				pseudo_ent->pathname, NULL,
 				lookup_inode2(&buf, PSEUDO_FILE_PROCESS,
 				pseudo_ent->dev->pseudo_id), dir);
+		} else if(pseudo_ent->dev->type == 's') {
+			add_dir_entry2(pseudo_ent->name, NULL,
+				pseudo_ent->pathname, NULL,
+				lookup_inode3(&buf, PSEUDO_FILE_OTHER, 0,
+				pseudo_ent->dev->symlink,
+				strlen(pseudo_ent->dev->symlink) + 1), dir);
 		} else {
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,
