@@ -88,6 +88,7 @@ int no_xattrs = XATTR_DEF;
 int noX = FALSE;
 int duplicate_checking = TRUE;
 int noF = FALSE;
+int half_fragments = FALSE;
 int no_fragments = FALSE;
 int always_use_fragments = FALSE;
 int noI = FALSE;
@@ -2032,6 +2033,8 @@ struct file_info *duplicate(long long file_size, long long bytes,
 inline int is_fragment(struct inode_info *inode)
 {
 	off_t file_size = inode->buf.st_size;
+	int fragment_size = block_size / 2;
+	int reminder = file_size & (block_size - 1);
 
 	/*
 	 * If this block is to be compressed differently to the
@@ -2040,8 +2043,11 @@ inline int is_fragment(struct inode_info *inode)
 	if(inode->noF != noF)
 		return FALSE;
 
-	return !inode->no_fragments && file_size && (file_size < block_size ||
-		(inode->always_use_fragments && file_size & (block_size - 1)));
+	return file_size && !inode->no_fragments &&
+	       ((file_size <= fragment_size ||
+	         (!half_fragments && file_size < block_size)) ||
+		(inode->always_use_fragments && reminder &&
+		 (!half_fragments || reminder <= fragment_size)));
 }
 
 
@@ -5458,6 +5464,9 @@ print_compressor_options:
 		} else if(strcmp(argv[i], "-no-duplicates") == 0)
 			duplicate_checking = FALSE;
 
+		else if(strcmp(argv[i], "-half-fragments") == 0)
+			half_fragments = TRUE;
+
 		else if(strcmp(argv[i], "-no-fragments") == 0)
 			no_fragments = TRUE;
 
@@ -5597,6 +5606,8 @@ printOptions:
 			ERROR("-noF\t\t\tdo not compress fragment blocks\n");
 			ERROR("-noX\t\t\tdo not compress extended "
 				"attributes\n");
+			ERROR("-half-fragments\t\tavoid using fragments for "
+				"files/tails larger than half block size\n");
 			ERROR("-no-fragments\t\tdo not use fragments\n");
 			ERROR("-always-use-fragments\tuse fragment blocks for "
 				"files larger than block size\n");
