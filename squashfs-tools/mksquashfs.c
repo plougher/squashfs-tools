@@ -5686,14 +5686,6 @@ printOptions:
 	}
 
 	/*
-	 * Some compressors may need the options to be checked for validity
-	 * once all the options have been processed
-	 */
-	res = compressor_options_post(comp, block_size);
-	if(res)
-		EXIT_MKSQUASHFS();
-
-	/*
 	 * If the -info option has been selected then disable the
 	 * progress bar unless it has been explicitly enabled with
 	 * the -progress option
@@ -5831,6 +5823,14 @@ printOptions:
 		no_xattrs = SQUASHFS_NO_XATTRS(sBlk.flags);
 		comp_opts = SQUASHFS_COMP_OPTS(sBlk.flags);
 	}
+
+	/*
+	 * Some compressors may need the options to be checked for validity
+	 * once all the options have been processed
+	 */
+	res = compressor_options_post(comp, block_size);
+	if(res)
+		EXIT_MKSQUASHFS();
 
 	initialise_threads(readq, fragq, bwriteq, fwriteq, delete,
 		destination_file);
