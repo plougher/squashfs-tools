@@ -89,7 +89,6 @@ int noX = FALSE;
 int duplicate_checking = TRUE;
 int noF = FALSE;
 int no_fragments = FALSE;
-int always_use_fragments = FALSE;
 int noI = FALSE;
 int noD = FALSE;
 int silent = TRUE;
@@ -100,6 +99,9 @@ int use_regex = FALSE;
 int nopad = FALSE;
 int exit_on_error = FALSE;
 static off_t squashfs_start_offset = 0;
+#define DEFAULT_MIN_TAIL (16*1024)
+int min_tail = DEFAULT_MIN_TAIL;
+int fblock_size = 0;
 
 long long global_uid = -1, global_gid = -1;
 
@@ -1573,7 +1575,7 @@ struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer,
 
 	fragment = eval_frag_actions(root_dir, dir_ent);
 
-	if((*fragment) && (*fragment)->size + file_buffer->size > block_size) {
+	if((*fragment) && (*fragment)->size + file_buffer->size > fblock_size) {
 		write_fragment(*fragment);
 		*fragment = NULL;
 	}
@@ -2032,6 +2034,7 @@ struct file_info *duplicate(long long file_size, long long bytes,
 inline int is_fragment(struct inode_info *inode)
 {
 	off_t file_size = inode->buf.st_size;
+	int tail = file_size & (block_size - 1);
 
 	/*
 	 * If this block is to be compressed differently to the
@@ -2040,8 +2043,13 @@ inline int is_fragment(struct inode_info *inode)
 	if(inode->noF != noF)
 		return FALSE;
 
-	return !inode->no_fragments && file_size && (file_size < block_size ||
-		(inode->always_use_fragments && file_size & (block_size - 1)));
+	/*
+	 * (tail!=0) implies (file_size!=0)
+	 * (tail < min_tail) inplies (file_size < min_tail)
+	 */
+	return !inode->no_fragments && tail &&
+		(file_size < fblock_size/2 || tail < min_tail ||
+		inode->always_use_fragments);
 }
 
 
@@ -2981,9 +2989,12 @@ struct inode_info *lookup_inode3(struct stat *buf, int pseudo, int id,
 	 *
 	*/
 	inode->no_fragments = no_fragments;
-	inode->always_use_fragments = always_use_fragments;
 	inode->noD = noD;
 	inode->noF = noF;
+	/* Use filesystem wide min_tail instead of always_use_fragments
+	 * by default, but always_use_fragments can be set by user specified
+	 * actions */
+	inode->always_use_fragments = FALSE;
 
 	inode->next = inode_info[ino_hash];
 	inode_info[ino_hash] = inode;
@@ -5450,6 +5461,24 @@ print_compressor_options:
 					argv[0]);
 				exit(1);
 			}
+		} else if(strcmp(argv[i], "-fb") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -fb missing fragment block size\n",
+					argv[0]);
+				exit(1);
+			}
+			if(!parse_number(argv[i], &fblock_size, 1)) {
+				ERROR("%s: -fb invalid fragment block size\n",
+					argv[0]);
+				exit(1);
+			}
+			if((slog(fblock_size)) == 0) {
+				ERROR("%s: -fb fragment block size not power "
+					"of two or not between 4096 and "
+					"1Mbyte\n",
+					argv[0]);
+				exit(1);
+			}
 		} else if(strcmp(argv[i], "-ef") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -ef missing filename\n", argv[0]);
@@ -5461,8 +5490,21 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-no-fragments") == 0)
 			no_fragments = TRUE;
 
-		 else if(strcmp(argv[i], "-always-use-fragments") == 0)
-			always_use_fragments = TRUE;
+		 else if(strcmp(argv[i], "-min-tail") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -min-tail missing "
+					"minimal tail size\n",
+					argv[0]);
+				exit(1);
+			}
+			if(!parse_number(argv[i], &min_tail, 1)) {
+				ERROR("%s: -min-tail invalid"
+					"minimal tail size\n",
+					argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-always-use-fragments") == 0)
+			min_tail = 1024*1024;
 
 		 else if(strcmp(argv[i], "-sort") == 0) {
 			if(++i == argc) {
@@ -5585,6 +5627,9 @@ printOptions:
 			ERROR("\t\t\tOptionally a suffix of K or M can be"
 				" given to specify\n\t\t\tKbytes or Mbytes"
 				" respectively\n");
+			ERROR("-fb <fblock_size>\tset fragment block size to "
+				"<fblock_size>.\n"
+				"\t\t\tDefault same as block size\n");
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
 			ERROR("-no-sparse\t\tdon't detect sparse files\n");
@@ -5598,8 +5643,13 @@ printOptions:
 			ERROR("-noX\t\t\tdo not compress extended "
 				"attributes\n");
 			ERROR("-no-fragments\t\tdo not use fragments\n");
-			ERROR("-always-use-fragments\tuse fragment blocks for "
-				"files larger than block size\n");
+			ERROR("-min-tail <tail_size>\tdon't keep tail of the "
+				"file in separate block if size\n"
+				"\t\t\tless than <tail_size>. "
+				"Default 16 Kbytes\n");
+			ERROR("-always-use-fragments\talways use fragment "
+				"blocks for last block of the file.\n"
+				"\t\t\tAlias for \"-min-tail 1M\"\n");
 			ERROR("-no-duplicates\t\tdo not perform duplicate "
 				"checking\n");
 			ERROR("-all-root\t\tmake all files owned by root\n");
@@ -5684,14 +5734,6 @@ printOptions:
 			exit(1);
 		}
 	}
-
-	/*
-	 * Some compressors may need the options to be checked for validity
-	 * once all the options have been processed
-	 */
-	res = compressor_options_post(comp, block_size);
-	if(res)
-		EXIT_MKSQUASHFS();
 
 	/*
 	 * If the -info option has been selected then disable the
@@ -5825,11 +5867,29 @@ printOptions:
 		noF = SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.flags);
 		noX = SQUASHFS_UNCOMPRESSED_XATTRS(sBlk.flags);
 		no_fragments = SQUASHFS_NO_FRAGMENTS(sBlk.flags);
-		always_use_fragments = SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags);
+		min_tail = (SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags)?
+			1024*1024 : DEFAULT_MIN_TAIL);
 		duplicate_checking = SQUASHFS_DUPLICATES(sBlk.flags);
 		exportable = SQUASHFS_EXPORTABLE(sBlk.flags);
 		no_xattrs = SQUASHFS_NO_XATTRS(sBlk.flags);
 		comp_opts = SQUASHFS_COMP_OPTS(sBlk.flags);
+	}
+
+	/*
+	 * Some compressors may need the options to be checked for validity
+	 * once all the options have been processed
+	 */
+	res = compressor_options_post(comp, block_size);
+	if(res)
+		EXIT_MKSQUASHFS();
+
+	if(fblock_size == 0) {
+		fblock_size = block_size;
+	} else if(fblock_size > block_size) {
+		ERROR("%s: -fb fragment block size couldn't be more than "
+			"data block size (%d)\n",
+			argv[0], block_size);
+		EXIT_MKSQUASHFS();
 	}
 
 	initialise_threads(readq, fragq, bwriteq, fwriteq, delete,
@@ -6018,8 +6078,8 @@ printOptions:
 	sBlk.block_size = block_size;
 	sBlk.block_log = block_log;
 	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, no_fragments,
-		always_use_fragments, duplicate_checking, exportable,
-		no_xattrs, comp_opts);
+		(min_tail < fblock_size ? FALSE : TRUE) , duplicate_checking,
+		exportable, no_xattrs, comp_opts);
 	sBlk.mkfs_time = time(NULL);
 
 	disable_info();
