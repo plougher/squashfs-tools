@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2012, 2014
+ * Copyright (c) 2009, 2010, 2012, 2014, 2017
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -274,6 +274,7 @@ struct pseudo_dev *get_pseudo_file(int pseudo_id)
 int read_pseudo_def(char *def)
 {
 	int n, bytes;
+	int quoted = 0;
 	unsigned int major = 0, minor = 0, mode;
 	char type, *ptr;
 	char suid[100], sgid[100]; /* overflow safe */
@@ -284,13 +285,22 @@ int read_pseudo_def(char *def)
 
 	/*
 	 * Scan for filename, don't use sscanf() and "%s" because
-	 * that can't handle filenames with spaces
+	 * that can't handle filenames with spaces.
+	 *
+	 * Filenames with spaces should either escape (backslash) the
+	 * space or use double quotes.
 	 */
 	filename = malloc(strlen(def) + 1);
 	if(filename == NULL)
 		MEM_ERROR();
 
-	for(name = filename; !isspace(*def) && *def != '\0';) {
+	for(name = filename; (quoted || !isspace(*def)) && *def != '\0';) {
+		if(*def == '"') {
+			quoted = !quoted;
+			def ++;
+			continue;
+		}
+
 		if(*def == '\\') {
 			def ++;
 			if (*def == '\0')
