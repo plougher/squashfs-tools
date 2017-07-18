@@ -327,12 +327,11 @@ int read_pseudo_def(char *def)
 		case -1:
 			/* FALLTHROUGH */
 		case 0:
-			ERROR("Read filename, but failed to read or match "
-				"type\n");
-			break;
+			/* FALLTHROUGH */
 		case 1:
-			ERROR("Read filename and type, but failed to read or "
-				"match octal mode\n");
+			ERROR("Couldn't parse filename, type or octal mode\n");
+			ERROR("If the filename has spaces, either quote it, or "
+				"backslash the spaces\n");
 			break;
 		case 2:
 			ERROR("Read filename, type and mode, but failed to "
@@ -502,7 +501,7 @@ error:
 	ERROR("\tfilename m mode uid gid\n");
 	ERROR("\tfilename b mode uid gid major minor\n");
 	ERROR("\tfilename c mode uid gid major minor\n");
-	ERROR("\tfilename f mode uid command\n");
+	ERROR("\tfilename f mode uid gid command\n");
 	ERROR("\tfilename s mode uid gid symlink\n");
 	free(filename);
 	return FALSE;
