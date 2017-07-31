@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014
+ * 2012, 2013, 2014, 2017
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -5618,6 +5618,14 @@ printOptions:
 				"definition\n");
 			ERROR("-pf <pseudo-file>\tAdd list of pseudo file "
 				"definitions\n");
+			ERROR("\t\t\tPseudo definitions should be of the "
+				"format\n");
+			ERROR("\t\t\t\tfilename d mode uid gid\n");
+			ERROR("\t\t\t\tfilename m mode uid gid\n");
+			ERROR("\t\t\t\tfilename b mode uid gid major minor\n");
+			ERROR("\t\t\t\tfilename c mode uid gid major minor\n");
+			ERROR("\t\t\t\tfilename f mode uid gid command\n");
+			ERROR("\t\t\t\tfilename s mode uid gid symlink\n");
 			ERROR("-sort <sort_file>\tsort files according to "
 				"priorities in <sort_file>.  One\n");
 			ERROR("\t\t\tfile or dir with priority per line.  "
