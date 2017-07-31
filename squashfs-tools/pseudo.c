@@ -496,7 +496,7 @@ int read_pseudo_def(char *def)
 	return TRUE;
 
 error:
-	ERROR("Pseudo definitions should be of format\n");
+	ERROR("Pseudo definitions should be of the format\n");
 	ERROR("\tfilename d mode uid gid\n");
 	ERROR("\tfilename m mode uid gid\n");
 	ERROR("\tfilename b mode uid gid major minor\n");
