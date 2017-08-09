@@ -263,7 +263,7 @@ failed:
 }
 
 
-void lzo_display_options(void *buffer, int size)
+static void lzo_display_options(void *buffer, int size)
 {
 	struct lzo_comp_opts *comp_opts = buffer;
 
@@ -391,7 +391,7 @@ static int lzo_uncompress(void *dest, void *src, int size, int outsize,
 }
 
 
-void lzo_usage()
+static void lzo_usage()
 {
 	int i;
 

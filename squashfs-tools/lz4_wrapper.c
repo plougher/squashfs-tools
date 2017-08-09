@@ -184,7 +184,7 @@ failed:
 }
 
 
-void lz4_display_options(void *buffer, int size)
+static void lz4_display_options(void *buffer, int size)
 {
 	struct lz4_comp_opts *comp_opts = buffer;
 
@@ -261,7 +261,7 @@ static int lz4_uncompress(void *dest, void *src, int size, int outsize,
 }
 
 
-void lz4_usage()
+static void lz4_usage()
 {
 	fprintf(stderr, "\t  -Xhc\n");
 	fprintf(stderr, "\t\tCompress using LZ4 High Compression\n");

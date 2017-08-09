@@ -276,7 +276,7 @@ failed:
 }
 
 
-void gzip_display_options(void *buffer, int size)
+static void gzip_display_options(void *buffer, int size)
 {
 	struct gzip_comp_opts *comp_opts = buffer;
 	int i, printed;
@@ -467,7 +467,7 @@ static int gzip_uncompress(void *d, void *s, int size, int outsize, int *error)
 }
 
 
-void gzip_usage()
+static void gzip_usage()
 {
 	fprintf(stderr, "\t  -Xcompression-level <compression-level>\n");
 	fprintf(stderr, "\t\t<compression-level> should be 1 .. 9 (default "
