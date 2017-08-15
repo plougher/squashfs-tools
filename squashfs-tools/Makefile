@@ -75,6 +75,18 @@ GZIP_SUPPORT = 1
 #LZMA_SUPPORT = 1
 #LZMA_DIR = ../../../../LZMA/lzma465
 
+
+########### Building ZSTD support ############
+#
+# The ZSTD library is supported
+# ZSTD homepage: http://zstd.net
+# ZSTD source repository: https://github.com/facebook/zstd
+#
+# To build using the ZSTD library - install the library and uncomment the
+# ZSTD_SUPPORT line below.
+#
+#ZSTD_SUPPORT = 1
+
 ######## Specifying default compression ########
 #
 # The next line specifies which compression algorithm is used by default
@@ -175,6 +187,14 @@ MKSQUASHFS_OBJS += lz4_wrapper.o
 UNSQUASHFS_OBJS += lz4_wrapper.o
 LIBS += -llz4
 COMPRESSORS += lz4
+endif
+
+ifeq ($(ZSTD_SUPPORT),1)
+CFLAGS += -DZSTD_SUPPORT
+MKSQUASHFS_OBJS += zstd_wrapper.o
+UNSQUASHFS_OBJS += zstd_wrapper.o
+LIBS += -lzstd
+COMPRESSORS += zstd
 endif
 
 ifeq ($(XATTR_SUPPORT),1)
