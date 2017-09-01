@@ -608,7 +608,7 @@ failed:
 #define LOG_PRINT	2
 #define LOG_ENABLED	3
 
-char *_expr_log(char *string, int cmnd)
+char *_expr_log(const char *string, int cmnd)
 {
 	static char *expr_msg = NULL;
 	static int cur_size = 0, alloc_size = 0;
@@ -631,6 +631,9 @@ char *_expr_log(char *string, int cmnd)
 			return NULL;
 		break;
 	}
+
+	if(!string)
+		string = "";
 
 	/* if string is empty append '\0' */
 	size = strlen(string) ? : 1; 
