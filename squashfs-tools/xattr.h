@@ -76,6 +76,12 @@ extern void write_xattr(char *, unsigned int);
 extern int read_xattrs_from_disk(int, struct squashfs_super_block *);
 extern struct xattr_list *get_xattr(int, unsigned int *, int);
 extern void free_xattr(struct xattr_list *, int);
+
+#ifdef __APPLE__
+#define llistxattr(f, buf, len) (listxattr(f, buf, len, XATTR_NOFOLLOW))
+#define lgetxattr(f, nam, buf, len) (getxattr(f, nam, buf, len, 0, XATTR_NOFOLLOW))
+#endif
+
 #else
 static inline int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 {
