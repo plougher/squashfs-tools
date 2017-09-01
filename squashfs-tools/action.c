@@ -325,9 +325,7 @@ static struct expr *parse_test(char *name)
 			goto failed;
 		}
 
-		argv = realloc(argv, (args + 1) * sizeof(char *));
-		if (argv == NULL)
-			MEM_ERROR();
+		REALLOC_OR_ABORT(argv, (args + 1) * sizeof(char *));
 
 		argv[args ++ ] = strdup(string);
 
@@ -496,9 +494,7 @@ int parse_action(char *s, int verbose)
 			goto failed;
 		}
 
-		argv = realloc(argv, (args + 1) * sizeof(char *));
-		if (argv == NULL)
-			MEM_ERROR();
+		REALLOC_OR_ABORT(argv, (args + 1) * sizeof(char *));
 
 		argv[args ++] = strdup(string);
 
@@ -575,11 +571,9 @@ skip_args:
 		spec_count = other_count ++;
 		spec_list = &other_spec;
 	}
-	
-	*spec_list = realloc(*spec_list, (spec_count + 1) *
+
+	REALLOC_OR_ABORT(*spec_list, (spec_count + 1) *
 					sizeof(struct action));
-	if (*spec_list == NULL)
-		MEM_ERROR();
 
 	(*spec_list)[spec_count].type = action->type;
 	(*spec_list)[spec_count].action = action;
@@ -642,9 +636,7 @@ char *_expr_log(const char *string, int cmnd)
 		/* buffer too small, expand */
 		alloc_size = (cur_size + size + ALLOC_SZ - 1) & ~(ALLOC_SZ - 1);
 
-		expr_msg = realloc(expr_msg, alloc_size);
-		if(expr_msg == NULL)
-			MEM_ERROR();
+		REALLOC_OR_ABORT(expr_msg, alloc_size);
 	}
 
 	memcpy(expr_msg + cur_size, string, size);
@@ -2560,9 +2552,7 @@ static int file_fn(struct atom *atom, struct action_data *action_data)
 	close(pipefd[1]);
 
 	do {
-		buffer = realloc(buffer, size + 512);
-		if (buffer == NULL)
-			MEM_ERROR();
+		REALLOC_OR_ABORT(buffer, size + 512);
 
 		res = read_bytes(pipefd[0], buffer + size, 512);
 

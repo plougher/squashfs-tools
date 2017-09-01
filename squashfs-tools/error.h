@@ -87,4 +87,14 @@ extern void progressbar_info(char *fmt, ...);
 								__func__); \
 		EXIT_MKSQUASHFS();\
 	} while(0)
+
+#define REALLOC_OR_ABORT(ptr, size) \
+	do { \
+		void *old = ptr; \
+		ptr = realloc(ptr, (size)); \
+		if (ptr == NULL) { \
+			free(old); \
+			MEM_ERROR(); \
+		} \
+	} while (0)
 #endif

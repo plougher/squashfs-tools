@@ -153,11 +153,8 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 	}
 
 	for(i = 0, p = xattr_names; p < xattr_names + size; i++) {
-		struct xattr_list *x = realloc(xattr_list, (i + 1) *
+		REALLOC_OR_ABORT(xattr_list, (i + 1) *
 						sizeof(struct xattr_list));
-		if(x == NULL)
-			MEM_ERROR();
-		xattr_list = x;
 
 		xattr_list[i].type = get_prefix(&xattr_list[i], p);
 		p += strlen(p) + 1;
@@ -250,10 +247,8 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 	while(cache_bytes >= SQUASHFS_METADATA_SIZE) {
 		if((xattr_size - xattr_bytes) <
 				((SQUASHFS_METADATA_SIZE << 1)) + 2) {
-			xattr_table = realloc(xattr_table, xattr_size +
+			REALLOC_OR_ABORT(xattr_table, xattr_size +
 				(SQUASHFS_METADATA_SIZE << 1) + 2);
-			if(xattr_table == NULL)
-				MEM_ERROR();
 			xattr_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 
@@ -274,10 +269,8 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 	data_space = cache_size - cache_bytes;
 	if(data_space < req_size) {
 			int realloc_size = req_size - data_space;
-			data_cache = realloc(data_cache, cache_size +
+			REALLOC_OR_ABORT(data_cache, cache_size +
 				realloc_size);
-			if(data_cache == NULL)
-				MEM_ERROR();
 			cache_size += realloc_size;
 	}
 
@@ -387,10 +380,8 @@ static int get_xattr_id(int xattrs, struct xattr_list *xattr_list,
 	int i, size = 0;
 	struct squashfs_xattr_id *xattr_id;
 
-	xattr_id_table = realloc(xattr_id_table, (xattr_ids + 1) *
+	REALLOC_OR_ABORT(xattr_id_table, (xattr_ids + 1) *
 		sizeof(struct squashfs_xattr_id));
-	if(xattr_id_table == NULL)
-		MEM_ERROR();
 
 	/* get total uncompressed size of xattr data, needed for stat */
 	for(i = 0; i < xattrs; i++)
@@ -430,10 +421,8 @@ long long write_xattrs()
 	while(cache_bytes) {
 		if((xattr_size - xattr_bytes) <
 				((SQUASHFS_METADATA_SIZE << 1)) + 2) {
-			xattr_table = realloc(xattr_table, xattr_size +
+			REALLOC_OR_ABORT(xattr_table, xattr_size +
 				(SQUASHFS_METADATA_SIZE << 1) + 2);
-			if(xattr_table == NULL)
-				MEM_ERROR();
 			xattr_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 

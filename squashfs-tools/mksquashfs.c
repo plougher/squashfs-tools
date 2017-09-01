@@ -445,11 +445,8 @@ void *get_inode(int req_size)
 	while(cache_bytes >= SQUASHFS_METADATA_SIZE) {
 		if((inode_size - inode_bytes) <
 				((SQUASHFS_METADATA_SIZE << 1)) + 2) {
-			void *it = realloc(inode_table, inode_size +
+			REALLOC_OR_ABORT(inode_table, inode_size +
 				(SQUASHFS_METADATA_SIZE << 1) + 2);
-			if(it == NULL)
-				MEM_ERROR();
-			inode_table = it;
 			inode_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 
@@ -472,12 +469,9 @@ void *get_inode(int req_size)
 				~(SQUASHFS_METADATA_SIZE - 1)) : req_size -
 				data_space;
 
-			void *dc = realloc(data_cache, cache_size +
+			REALLOC_OR_ABORT(data_cache, cache_size +
 				realloc_size);
-			if(dc == NULL)
-				MEM_ERROR();
 			cache_size += realloc_size;
-			data_cache = dc;
 	}
 
 	cache_bytes += req_size;
@@ -586,12 +580,9 @@ long long write_inodes()
 	while(cache_bytes) {
 		if(inode_size - inode_bytes <
 				((SQUASHFS_METADATA_SIZE << 1) + 2)) {
-			void *it = realloc(inode_table, inode_size +
+			REALLOC_OR_ABORT(inode_table, inode_size +
 				((SQUASHFS_METADATA_SIZE << 1) + 2));
-			if(it == NULL)
-				MEM_ERROR();
 			inode_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
-			inode_table = it;
 		}
 		avail_bytes = cache_bytes > SQUASHFS_METADATA_SIZE ?
 			SQUASHFS_METADATA_SIZE : cache_bytes;
@@ -622,13 +613,10 @@ long long write_directories()
 	while(directory_cache_bytes) {
 		if(directory_size - directory_bytes <
 				((SQUASHFS_METADATA_SIZE << 1) + 2)) {
-			void *dt = realloc(directory_table,
+			REALLOC_OR_ABORT(directory_table,
 				directory_size + ((SQUASHFS_METADATA_SIZE << 1)
 				+ 2));
-			if(dt == NULL)
-				MEM_ERROR();
 			directory_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
-			directory_table = dt;
 		}
 		avail_bytes = directory_cache_bytes > SQUASHFS_METADATA_SIZE ?
 			SQUASHFS_METADATA_SIZE : directory_cache_bytes;
@@ -758,9 +746,7 @@ char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size)
 			 * increase it and try again
 			 */
 			*size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
-			pathname = realloc(pathname, *size);
-			if(pathname == NULL)
-				MEM_ERROR();
+			REALLOC_OR_ABORT(pathname, *size);
 		} else
 			break;
 	}
@@ -820,9 +806,7 @@ char *subpathname(struct dir_ent *dir_ent)
 			 * increase it and try again
 			 */
 			size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
-			subpath = realloc(subpath, size);
-			if(subpath == NULL)
-				MEM_ERROR();
+			REALLOC_OR_ABORT(subpath, size);
 		} else
 			break;
 	}
@@ -1142,11 +1126,9 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 					dir->index_count_p) >
 					SQUASHFS_METADATA_SIZE) {
 				if(dir->i_count % I_COUNT_SIZE == 0) {
-					dir->index = realloc(dir->index,
+					REALLOC_OR_ABORT(dir->index,
 						(dir->i_count + I_COUNT_SIZE) *
 						sizeof(struct cached_dir_index));
-					if(dir->index == NULL)
-						MEM_ERROR();
 				}
 				dir->index[dir->i_count].index.index =
 					dir->p - dir->buff;
@@ -1197,12 +1179,9 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 			((dir_size + SQUASHFS_METADATA_SIZE) &
 			~(SQUASHFS_METADATA_SIZE - 1)) : dir_size - data_space;
 
-		void *dc = realloc(directory_data_cache,
+		REALLOC_OR_ABORT(directory_data_cache,
 			directory_cache_size + realloc_size);
-		if(dc == NULL)
-			MEM_ERROR();
 		directory_cache_size += realloc_size;
-		directory_data_cache = dc;
 	}
 
 	if(dir_size) {
@@ -1233,13 +1212,10 @@ void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 
 		if((directory_size - directory_bytes) <
 					((SQUASHFS_METADATA_SIZE << 1) + 2)) {
-			void *dt = realloc(directory_table,
+			REALLOC_OR_ABORT(directory_table,
 				directory_size + (SQUASHFS_METADATA_SIZE << 1)
 				+ 2);
-			if(dt == NULL)
-				MEM_ERROR();
 			directory_size += SQUASHFS_METADATA_SIZE << 1;
-			directory_table = dt;
 		}
 
 		c_byte = mangle(directory_table + directory_bytes +
@@ -1537,11 +1513,8 @@ struct file_buffer *allocate_fragment()
 	pthread_mutex_lock(&fragment_mutex);
 
 	if(fragments % FRAG_SIZE == 0) {
-		void *ft = realloc(fragment_table, (fragments +
+		REALLOC_OR_ABORT(fragment_table, (fragments +
 			FRAG_SIZE) * sizeof(struct squashfs_fragment_entry));
-		if(ft == NULL)
-			MEM_ERROR();
-		fragment_table = ft;
 	}
 
 	fragment->size = 0;
@@ -2514,10 +2487,8 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 		if(read_buffer->fragment)
 			fragment_buffer = read_buffer;
 		else {
-			block_list = realloc(block_list, (block + 1) *
+			REALLOC_OR_ABORT(block_list, (block + 1) *
 				sizeof(unsigned int));
-			if(block_list == NULL)
-				MEM_ERROR();
 			block_list[block ++] = read_buffer->c_byte;
 			if(read_buffer->c_byte) {
 				read_buffer->block = bytes;
@@ -2897,9 +2868,7 @@ char *getbase(char *pathname)
 		}
 
 		/* Buffer not large enough, realloc and try again */
-		b_buffer = realloc(b_buffer, b_size += BUFF_SIZE);
-		if(b_buffer == NULL)
-			MEM_ERROR();
+		REALLOC_OR_ABORT(b_buffer, b_size += BUFF_SIZE);
 	}
 
 	name = b_buffer;
@@ -4075,10 +4044,8 @@ int old_excluded(char *filename, struct stat *buf)
 
 #define ADD_ENTRY(buf) \
 	if(exclude % EXCLUDE_SIZE == 0) { \
-		exclude_paths = realloc(exclude_paths, (exclude + EXCLUDE_SIZE) \
+		REALLOC_OR_ABORT(exclude_paths, (exclude + EXCLUDE_SIZE) \
 			* sizeof(struct exclude_info)); \
-		if(exclude_paths == NULL) \
-			MEM_ERROR(); \
 	} \
 	exclude_paths[exclude].st_dev = buf.st_dev; \
 	exclude_paths[exclude++].st_ino = buf.st_ino;
@@ -4123,10 +4090,8 @@ int old_add_exclude(char *path)
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type)
 {
-	old_root_entry = realloc(old_root_entry,
+	REALLOC_OR_ABORT(old_root_entry,
 		sizeof(struct old_root_entry_info) * (old_root_entries + 1));
-	if(old_root_entry == NULL)
-		MEM_ERROR();
 
 	old_root_entry[old_root_entries].name = strdup(name);
 	old_root_entry[old_root_entries].inode.inode = inode;
@@ -4292,15 +4257,11 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 long long write_inode_lookup_table()
 {
 	int i, inode_number, lookup_bytes = SQUASHFS_LOOKUP_BYTES(inode_count);
-	void *it;
 
 	if(inode_count == sinode_count)
 		goto skip_inode_hash_table;
 
-	it = realloc(inode_lookup_table, lookup_bytes);
-	if(it == NULL)
-		MEM_ERROR();
-	inode_lookup_table = it;
+	REALLOC_OR_ABORT(inode_lookup_table, lookup_bytes);
 
 	for(i = 0; i < INODE_HASH_SIZE; i ++) {
 		struct inode_info *inode;
@@ -4391,10 +4352,8 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 	if(i == paths->names) {
 		/* allocate new name entry */
 		paths->names ++;
-		paths->name = realloc(paths->name, (i + 1) *
+		REALLOC_OR_ABORT(paths->name, (i + 1) *
 			sizeof(struct path_entry));
-		if(paths->name == NULL)
-			MEM_ERROR();
 		paths->name[i].name = targname;
 		paths->name[i].paths = NULL;
 		if(use_regex) {
@@ -4500,10 +4459,8 @@ struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 	int count = paths == NULL ? 0 : paths->count;
 
 	if(count % PATHS_ALLOC_SIZE == 0) {
-		paths = realloc(paths, sizeof(struct pathnames) +
+		REALLOC_OR_ABORT(paths, sizeof(struct pathnames) +
 			(count + PATHS_ALLOC_SIZE) * sizeof(struct pathname *));
-		if(paths == NULL)
-			MEM_ERROR();
 	}
 
 	paths->path[count] = path;
@@ -5922,11 +5879,9 @@ printOptions:
 			EXIT_MKSQUASHFS();
 		}
 		if((append_fragments = fragments = sBlk.fragments)) {
-			fragment_table = realloc((char *) fragment_table,
+			REALLOC_OR_ABORT(fragment_table,
 				((fragments + FRAG_SIZE - 1) & ~(FRAG_SIZE - 1))
 				 * sizeof(struct squashfs_fragment_entry)); 
-			if(fragment_table == NULL)
-				BAD_ERROR("Out of memory in save filesystem state\n");
 		}
 
 		printf("Appending to existing %d.%d filesystem on %s, block "

@@ -97,10 +97,8 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 	if(i == pseudo->names) {
 		/* allocate new name entry */
 		pseudo->names ++;
-		pseudo->name = realloc(pseudo->name, (i + 1) *
+		REALLOC_OR_ABORT(pseudo->name, (i + 1) *
 			sizeof(struct pseudo_entry));
-		if(pseudo->name == NULL)
-			MEM_ERROR();
 		pseudo->name[i].name = targname;
 
 		if(target[0] == '\0') {
@@ -255,10 +253,8 @@ failed:
 
 void add_pseudo_file(struct pseudo_dev *dev)
 {
-	pseudo_file = realloc(pseudo_file, (pseudo_count + 1) *
+	REALLOC_OR_ABORT(pseudo_file, (pseudo_count + 1) *
 		sizeof(struct pseudo_dev *));
-	if(pseudo_file == NULL)
-		MEM_ERROR();
 
 	dev->pseudo_id = pseudo_count;
 	pseudo_file[pseudo_count ++] = dev;
