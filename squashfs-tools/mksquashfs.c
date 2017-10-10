@@ -102,6 +102,7 @@ int exit_on_error = FALSE;
 static off_t squashfs_start_offset = 0;
 
 long long global_uid = -1, global_gid = -1;
+int pseudo_override = 0;
 
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
@@ -854,6 +855,10 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	char *filename = pathname(dir_ent);
 	int nlink = dir_ent->inode->nlink;
 	int xattr = read_xattrs(dir_ent);
+	
+	int is_pseudo_def = pseudo_override == 1 &&
+		(IS_PSEUDO(dir_ent->inode) || IS_PSEUDO_M(dir_ent->inode)) ?
+		1 : 0;
 
 	switch(type) {
 	case SQUASHFS_FILE_TYPE:
@@ -890,10 +895,10 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	}
 			
 	base->mode = SQUASHFS_MODE(buf->st_mode);
-	base->uid = get_uid((unsigned int) global_uid == -1 ?
+	base->uid = get_uid((unsigned int) global_uid == -1 || is_pseudo_def == 1 ?
 		buf->st_uid : global_uid);
 	base->inode_type = type;
-	base->guid = get_guid((unsigned int) global_gid == -1 ?
+	base->guid = get_guid((unsigned int) global_gid == -1 || is_pseudo_def == 1 ?
 		buf->st_gid : global_gid);
 	base->mtime = buf->st_mtime;
 	base->inode_number = get_inode_no(dir_ent->inode);
@@ -2969,6 +2974,7 @@ struct inode_info *lookup_inode3(struct stat *buf, int pseudo, int id,
 	inode->read = FALSE;
 	inode->root_entry = FALSE;
 	inode->pseudo_file = pseudo;
+	inode->pseudo_file_m = pseudo;
 	inode->pseudo_id = id;
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
@@ -3528,6 +3534,7 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				pseudo_ent->dev->mode;
 			buf->st_uid = pseudo_ent->dev->uid;
 			buf->st_gid = pseudo_ent->dev->gid;
+			dir_ent->inode->pseudo_file_m = 1;
 			continue;
 		}
 
@@ -5330,6 +5337,8 @@ print_compressor_options:
 			}
 			if(read_pseudo_def(argv[i]) == FALSE)
 				exit(1);
+		}else if(strcmp(argv[i], "-pseudo-override") == 0) {
+			pseudo_override = 1;
 		} else if(strcmp(argv[i], "-recover") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -recover missing recovery file\n",
@@ -5618,6 +5627,8 @@ printOptions:
 				"definition\n");
 			ERROR("-pf <pseudo-file>\tAdd list of pseudo file "
 				"definitions\n");
+			ERROR("-pseudo-override\tPseudo definitions override"
+				"-all-root, -root-owned, -force-uid, and -force-gid\n");
 			ERROR("\t\t\tPseudo definitions should be of the "
 				"format\n");
 			ERROR("\t\t\t\tfilename d mode uid gid\n");

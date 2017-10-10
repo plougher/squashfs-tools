@@ -59,6 +59,7 @@ struct inode_info {
 	char			read;
 	char			root_entry;
 	char			pseudo_file;
+	char			pseudo_file_m;
 	char			no_fragments;
 	char			always_use_fragments;
 	char			noD;
@@ -110,6 +111,7 @@ struct append_file {
 #define PSEUDO_FILE_PROCESS	2
 
 #define IS_PSEUDO(a)		((a)->pseudo_file)
+#define IS_PSEUDO_M(a)		((a)->pseudo_file_m)
 #define IS_PSEUDO_PROCESS(a)	((a)->pseudo_file & PSEUDO_FILE_PROCESS)
 #define IS_PSEUDO_OTHER(a)	((a)->pseudo_file & PSEUDO_FILE_OTHER)
 
