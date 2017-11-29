@@ -1069,7 +1069,12 @@ int create_inode(char *pathname, struct inode *i)
 				FAILED = TRUE;
 			break;
 		case SQUASHFS_SYMLINK_TYPE:
-		case SQUASHFS_LSYMLINK_TYPE:
+		case SQUASHFS_LSYMLINK_TYPE: {
+			struct timespec times[2] = {
+				{ i->time, 0 },
+				{ i->time, 0 }
+			};
+
 			TRACE("create_inode: symlink, symlink_size %lld\n",
 				i->data);
 
@@ -1084,6 +1089,13 @@ int create_inode(char *pathname, struct inode *i)
 				break;
 			}
 
+			if (utimensat(AT_FDCWD, pathname, times,
+					AT_SYMLINK_NOFOLLOW) == -1) {
+				ERROR("create_inode: failed to set time on "
+					"%s, because %s\n", pathname,
+					strerror(errno));
+			}
+
 			write_xattr(pathname, i->xattr);
 	
 			if(root_process) {
@@ -1096,6 +1108,7 @@ int create_inode(char *pathname, struct inode *i)
 
 			sym_count ++;
 			break;
+		}
  		case SQUASHFS_BLKDEV_TYPE:
 	 	case SQUASHFS_CHRDEV_TYPE:
  		case SQUASHFS_LBLKDEV_TYPE:
