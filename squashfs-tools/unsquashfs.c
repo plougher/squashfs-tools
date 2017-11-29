@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014
+ * 2012, 2013, 2014, 2017
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -1675,6 +1675,11 @@ void squashfs_stat(char *source)
 	printf("Data is %scompressed\n",
 		SQUASHFS_UNCOMPRESSED_DATA(sBlk.s.flags) ? "un" : "");
 
+	if(sBlk.s.s_major >= 4)
+		printf("Uids/Gids (Id table) are %scompressed\n",
+			SQUASHFS_UNCOMPRESSED_INODES(sBlk.s.flags) ||
+			SQUASHFS_UNCOMPRESSED_IDS(sBlk.s.flags) ? "un" : "");
+
 	if(sBlk.s.s_major > 1) {
 		if(SQUASHFS_NO_FRAGMENTS(sBlk.s.flags))
 			printf("Fragments are not stored\n");
@@ -2483,8 +2488,8 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.3 (2014/05/12)\n");\
-	printf("copyright (C) 2014 Phillip Lougher "\
+	printf("unsquashfs version 4.3-git (2017/11/29)\n");\
+	printf("copyright (C) 2017 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
 		"\n");\
