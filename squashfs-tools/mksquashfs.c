@@ -76,6 +76,7 @@
 #include "restore.h"
 #include "process_fragments.h"
 #include "fnmatch_compat.h"
+#include "selinux.h"
 
 int delete = FALSE;
 int quiet = FALSE;
@@ -286,6 +287,11 @@ struct append_file **file_mapping;
 
 /* root of the in-core directory structure */
 struct dir_info *root_dir;
+
+/* selinux label */
+squashfs_selinux_handle *sehnd = NULL;
+char *context_file = NULL;
+char *mount_point = NULL;
 
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
@@ -5547,6 +5553,15 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-xattrs") == 0)
 			no_xattrs = FALSE;
 
+		else if(strcmp(argv[i], "-context-file") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -context-file: missing filename\n",
+					argv[0]);
+				exit(1);
+			}
+			context_file = argv[i];
+		}
+
 		else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;
 
@@ -5564,6 +5579,15 @@ print_compressor_options:
 
 		else if(strcmp(argv[i], "-keep-as-directory") == 0)
 			keep_as_directory = TRUE;
+
+		else if(strcmp(argv[i], "-mount-point") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -mount-point: missing mount point name\n",
+					argv[0]);
+				exit(1);
+			}
+			mount_point = argv[i];
+		}
 
 		else if(strcmp(argv[i], "-exit-on-error") == 0)
 			exit_on_error = TRUE;
@@ -5598,6 +5622,9 @@ printOptions:
 				NOXOPT_STR "\n");
 			ERROR("-xattrs\t\t\tstore extended attributes" XOPT_STR
 				"\n");
+			ERROR("-context-file <file>\tApply SELinux context "
+				"xattr from <file> instead\n\t\t\t"
+				"of reading xattr from filesystem\n");
 			ERROR("-noI\t\t\tdo not compress inode table\n");
 			ERROR("-noId\t\t\tdo not compress the uid/gid table"
 				" (implied by -noI)\n");
@@ -5620,6 +5647,9 @@ printOptions:
 			ERROR("\t\t\tdirectory containing that directory, "
 				"rather than the\n");
 			ERROR("\t\t\tcontents of the directory\n");
+			ERROR("-mount-point <name>\tWhen applying attributes such "
+				"as SELinux context, treat\n\t\t\t"
+				"the filesystem as mounted at <name>\n");
 			ERROR("\nFilesystem filter options:\n");
 			ERROR("-p <pseudo-definition>\tAdd pseudo file "
 				"definition\n");

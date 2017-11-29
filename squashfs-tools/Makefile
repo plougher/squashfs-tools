@@ -114,6 +114,22 @@ XATTR_SUPPORT = 1
 # default.  Users can enable xattrs by using the -xattrs option.
 XATTR_DEFAULT = 1
 
+###############################################
+#  SELinux labelling support build options    #
+###############################################
+#
+# Building SELinux labelling support for Mksquashfs. This provides an
+# alternative to reading SELinux labels from the filesystem with XATTR
+# support. It is possible to label the files in the Squashfs filesystem
+# differently than the source filesystem with this option.
+#
+# Note that SELinux labelling support requries that XATTR is also
+# supported.
+#
+# If your build/target environment does not have support for SELinux then
+# comment out the next line to build Mksquashfs without SELinux labelling
+# support.
+SELINUX_SUPPORT = 1
 
 ###############################################
 #        End of BUILD options section         #
@@ -205,6 +221,14 @@ CFLAGS += -DXATTR_SUPPORT
 endif
 MKSQUASHFS_OBJS += xattr.o read_xattrs.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
+
+# SELinux support is only available if XATTR support is available
+ifeq ($(SELINUX_SUPPORT),1)
+CFLAGS += -DSELINUX_SUPPORT
+MKSQUASHFS_OBJS += selinux.o
+LIBS += -lselinux
+endif
+
 endif
 
 #

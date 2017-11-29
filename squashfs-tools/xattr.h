@@ -24,6 +24,8 @@
  * xattr.h
  */
 
+#include "squashfs_fs.h"
+
 #define XATTR_VALUE_OOL		SQUASHFS_XATTR_VALUE_OOL
 #define XATTR_PREFIX_MASK	SQUASHFS_XATTR_PREFIX_MASK
 
@@ -66,6 +68,7 @@ struct prefix {
 extern int generate_xattrs(int, struct xattr_list *);
 
 #ifdef XATTR_SUPPORT
+extern int get_prefix(struct xattr_list *xattr, char *name);
 extern int get_xattrs(int, struct squashfs_super_block *);
 extern int read_xattrs(void *);
 extern long long write_xattrs();
@@ -77,6 +80,12 @@ extern int read_xattrs_from_disk(int, struct squashfs_super_block *);
 extern struct xattr_list *get_xattr(int, unsigned int *, int);
 extern void free_xattr(struct xattr_list *, int);
 #else
+static inline int get_prefix(struct xattr_list *xattr, char *name)
+{
+	return -1;
+}
+
+
 static inline int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 {
 	if(sBlk->xattr_id_table_start != SQUASHFS_INVALID_BLK) {

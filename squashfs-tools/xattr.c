@@ -33,6 +33,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <string.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <sys/xattr.h>
 
@@ -40,6 +41,7 @@
 #include "squashfs_swap.h"
 #include "mksquashfs.h"
 #include "xattr.h"
+#include "selinux.h"
 #include "error.h"
 #include "progressbar.h"
 
@@ -76,6 +78,8 @@ extern int no_xattrs, noX;
 extern long long bytes;
 extern int fd;
 extern unsigned int xattr_bytes, total_xattr_bytes;
+extern char *context_file;
+extern char *mount_point;
 
 /* helper functions from mksquashfs.c */
 extern unsigned short get_checksum(char *, int, unsigned short);
@@ -83,14 +87,35 @@ extern void write_destination(int, long long, int, void *);
 extern long long generic_write_table(int, void *, int, void *, int);
 extern int mangle(char *, char *, int, int, int, int);
 extern char *pathname(struct dir_ent *);
+extern char *subpathname(struct dir_ent *);
 
 /* helper functions and definitions from read_xattrs.c */
 extern int read_xattrs_from_disk(int, struct squashfs_super_block *);
 extern struct xattr_list *get_xattr(int, unsigned int *, int);
 extern struct prefix prefix_table[];
 
+/* selinux label */
+extern squashfs_selinux_handle *sehnd;
 
-static int get_prefix(struct xattr_list *xattr, char *name)
+
+void alloc_mounted_path(const char *mount_point, const char *subpath, char **new_path) {
+	size_t mount_point_len = strlen(mount_point);
+	size_t subpath_len = strlen(subpath);
+	size_t new_path_len = mount_point_len + subpath_len + 1;
+
+	if(new_path_len < mount_point_len || new_path_len < subpath_len)
+		BAD_ERROR("Cannot allocate mounted path length; it is over %d\n",
+			SIZE_MAX);
+
+	*new_path = malloc(new_path_len);
+	if (*new_path == NULL)
+		MEM_ERROR();
+
+	strcpy(*new_path, mount_point);
+	strcat(*new_path, subpath);
+}
+
+int get_prefix(struct xattr_list *xattr, char *name)
 {
 	int i;
 
@@ -110,13 +135,49 @@ static int get_prefix(struct xattr_list *xattr, char *name)
 	return prefix_table[i].type;
 }
 
-	
-static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
+static struct xattr_list *xattr_list_add(int *xattr_count, struct xattr_list **xattrs) {
+	struct xattr_list *x, *next_xattr;
+
+	x = realloc(*xattrs, ++*xattr_count * sizeof(struct xattr_list));
+	if(x == NULL)
+		MEM_ERROR();
+
+	next_xattr = &x[*xattr_count - 1];
+	memset(next_xattr, 0, sizeof(struct xattr_list));
+
+	*xattrs = x;
+	return next_xattr;
+}
+
+static struct xattr_list *xattr_list_trim(int *xattr_count, struct xattr_list **xattrs) {
+	struct xattr_list *x, *last_xattr;
+
+	if (*xattr_count == 0 || *xattrs == NULL)
+		return NULL;
+	x = *xattrs;
+
+	last_xattr = &x[*xattr_count - 1];
+	free(last_xattr->full_name);
+	free(last_xattr->value);
+
+	if (--*xattr_count == 0) {
+		free(*xattrs);
+		*xattrs = NULL;
+		return NULL;
+	}
+
+	x = realloc(*xattrs, *xattr_count * sizeof(struct xattr_list));
+	if(x == NULL)
+		MEM_ERROR();
+
+	*xattrs = x;
+	return &x[*xattr_count - 1];
+}
+
+static int read_xattrs_from_system(char *filename, int *xattr_count, struct xattr_list **xattrs)
 {
 	ssize_t size, vsize;
 	char *xattr_names, *p;
-	int i;
-	struct xattr_list *xattr_list = NULL;
 
 	while(1) {
 		size = llistxattr(filename, NULL, 0);
@@ -152,74 +213,69 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 		break;
 	}
 
-	for(i = 0, p = xattr_names; p < xattr_names + size; i++) {
-		struct xattr_list *x = realloc(xattr_list, (i + 1) *
-						sizeof(struct xattr_list));
-		if(x == NULL)
-			MEM_ERROR();
-		xattr_list = x;
+	for(p = xattr_names; p < xattr_names + size; ) {
+		struct xattr_list *next_xattr = xattr_list_add(xattr_count, xattrs);
 
-		xattr_list[i].type = get_prefix(&xattr_list[i], p);
+		next_xattr->type = get_prefix(next_xattr, p);
 		p += strlen(p) + 1;
-		if(xattr_list[i].type == -1) {
+		if(next_xattr->type == -1) {
 			ERROR("Unrecognised xattr prefix %s\n",
-				xattr_list[i].full_name);
-			free(xattr_list[i].full_name);
-			i--;
+				next_xattr->full_name);
+			xattr_list_trim(xattr_count, xattrs);
 			continue;
 		}
 
 		while(1) {
-			vsize = lgetxattr(filename, xattr_list[i].full_name,
+			errno = 0;
+			vsize = lgetxattr(filename, next_xattr->full_name,
 								NULL, 0);
 			if(vsize < 0) {
-				ERROR_START("lgetxattr failed for %s in "
-					"read_attrs, because %s", filename,
-					strerror(errno));
+				ERROR_START("lgetxattr failed for %s attrib %s "
+					"in read_attrs, because %s", filename,
+					next_xattr->full_name, strerror(errno));
 				ERROR_EXIT(".  Ignoring");
-				free(xattr_list[i].full_name);
+				xattr_list_trim(xattr_count, xattrs);
 				goto failed;
 			}
 
-			xattr_list[i].value = malloc(vsize);
-			if(xattr_list[i].value == NULL)
+			next_xattr->value = malloc(vsize);
+			if(next_xattr->value == NULL)
 				MEM_ERROR();
 
-			vsize = lgetxattr(filename, xattr_list[i].full_name,
-						xattr_list[i].value, vsize);
+			errno = 0;
+			vsize = lgetxattr(filename, next_xattr->full_name,
+						next_xattr->value, vsize);
 			if(vsize < 0) {
-				free(xattr_list[i].value);
+				free(next_xattr->value);
+				next_xattr->value = NULL;
 				if(errno == ERANGE)
 					/* xattr grew?  Try again */
 					continue;
 				else {
 					ERROR_START("lgetxattr failed for %s "
-						"in read_attrs, because %s",
-						filename, strerror(errno));
+						"attrib %s in read_attrs, "
+						"because %s", filename,
+						next_xattr->full_name,
+						strerror(errno));
 					ERROR_EXIT(".  Ignoring");
-					free(xattr_list[i].full_name);
+					xattr_list_trim(xattr_count, xattrs);
 					goto failed;
 				}
 			}
-			
+
 			break;
 		}
-		xattr_list[i].vsize = vsize;
+		next_xattr->vsize = vsize;
 
 		TRACE("read_xattrs_from_system: filename %s, xattr name %s,"
-			" vsize %d\n", filename, xattr_list[i].full_name,
-			xattr_list[i].vsize);
+			" vsize %d\n", filename, next_xattr->full_name,
+			next_xattr->vsize);
 	}
 	free(xattr_names);
-	*xattrs = xattr_list;
-	return i;
+	return 1;
 
 failed:
-	while(--i >= 0) {
-		free(xattr_list[i].full_name);
-		free(xattr_list[i].value);
-	}
-	free(xattr_list);
+	while(xattr_list_trim(xattr_count, xattrs) != NULL);
 	free(xattr_names);
 	return 0;
 }
@@ -608,13 +664,31 @@ int read_xattrs(void *d)
 	struct dir_ent *dir_ent = d;
 	struct inode_info *inode = dir_ent->inode;
 	char *filename = pathname(dir_ent);
-	struct xattr_list *xattr_list;
-	int xattrs;
+	struct xattr_list *xattr_list = NULL, *next_xattr = NULL;
+	int xattrs = 0;
 
 	if(no_xattrs || IS_PSEUDO(inode) || inode->root_entry)
 		return SQUASHFS_INVALID_XATTR;
 
-	xattrs = read_xattrs_from_system(filename, &xattr_list);
+	read_xattrs_from_system(filename, &xattrs, &xattr_list);
+
+	if(context_file) {
+		if(sehnd == NULL)
+			sehnd = get_sehnd(context_file);
+		if(mount_point) {
+			char *mounted_path;
+			alloc_mounted_path(mount_point, subpathname(dir_ent), &mounted_path);
+			next_xattr = xattr_list_add(&xattrs, &xattr_list);
+			read_selinux_xattr_from_context_file(mounted_path, inode->buf.st_mode,
+					sehnd, next_xattr);
+			free(mounted_path);
+		} else {
+			next_xattr = xattr_list_add(&xattrs, &xattr_list);
+			read_selinux_xattr_from_context_file(filename, inode->buf.st_mode,
+					sehnd, next_xattr);
+		}
+	}
+
 	if(xattrs == 0)
 		return SQUASHFS_INVALID_XATTR;
 
