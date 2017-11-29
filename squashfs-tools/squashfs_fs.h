@@ -4,7 +4,7 @@
  * Squashfs
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2012,
- * 2013, 2014
+ * 2013, 2014, 2017
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -65,6 +65,7 @@
 #define SQUASHFS_NOX			8
 #define SQUASHFS_NO_XATTR		9
 #define SQUASHFS_COMP_OPT		10
+#define SQUASHFS_NOID			11
 
 #define SQUASHFS_BIT(flag, bit)		((flag >> bit) & 1)
 
@@ -98,12 +99,15 @@
 #define SQUASHFS_COMP_OPTS(flags)		SQUASHFS_BIT(flags, \
 						SQUASHFS_COMP_OPT)
 
-#define SQUASHFS_MKFLAGS(noi, nod, nof, nox, no_frag, always_frag, \
+#define SQUASHFS_UNCOMPRESSED_IDS(flags)	SQUASHFS_BIT(flags, \
+						SQUASHFS_NOID)
+
+#define SQUASHFS_MKFLAGS(noi, nod, nof, nox, noid, no_frag, always_frag, \
 		duplicate_checking, exportable, no_xattr, comp_opt) (noi | \
 		(nod << 1) | (nof << 3) | (no_frag << 4) | \
 		(always_frag << 5) | (duplicate_checking << 6) | \
 		(exportable << 7) | (nox << 8) | (no_xattr << 9) | \
-		(comp_opt << 10))
+		(comp_opt << 10) | (noid << 11))
 
 /* Max number of types and file types */
 #define SQUASHFS_DIR_TYPE		1

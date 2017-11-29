@@ -4813,11 +4813,11 @@ void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
 	printf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
 		" %d\n", exportable ? "Exportable " : "", SQUASHFS_MAJOR,
 		SQUASHFS_MINOR, comp->name, block_size);
-	printf("\t%s data, %s metadata, %s fragments, %s xattrs\n",
+	printf("\t%s data, %s metadata, %s fragments,\n\t%s xattrs, %s ids\n",
 		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" :
 		"compressed", no_fragments ? "no" : noF ? "uncompressed" :
 		"compressed", no_xattrs ? "no" : noX ? "uncompressed" :
-		"compressed");
+		"compressed", noI || noId ? "uncompressed" : "compressed");
 	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
 		"not ");
 	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0,
@@ -5103,7 +5103,7 @@ void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.3-git (2017/07/18)\n");\
+	printf("mksquashfs version 4.3-git (2017/11/29)\n");\
 	printf("copyright (C) 2017 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5704,6 +5704,13 @@ printOptions:
 	}
 
 	/*
+	 * The -noI option implies -noId for backwards compatibility, so reset noId
+	 * if both have been specified
+	 */
+	if(noI && noId)
+		noId = FALSE;
+
+	/*
 	 * Some compressors may need the options to be checked for validity
 	 * once all the options have been processed
 	 */
@@ -5842,6 +5849,7 @@ printOptions:
 		noD = SQUASHFS_UNCOMPRESSED_DATA(sBlk.flags);
 		noF = SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.flags);
 		noX = SQUASHFS_UNCOMPRESSED_XATTRS(sBlk.flags);
+		noId = SQUASHFS_UNCOMPRESSED_IDS(sBlk.flags);
 		no_fragments = SQUASHFS_NO_FRAGMENTS(sBlk.flags);
 		always_use_fragments = SQUASHFS_ALWAYS_FRAGMENTS(sBlk.flags);
 		duplicate_checking = SQUASHFS_DUPLICATES(sBlk.flags);
@@ -5924,9 +5932,9 @@ printOptions:
 		printf("Appending to existing %d.%d filesystem on %s, block "
 			"size %d\n", SQUASHFS_MAJOR, SQUASHFS_MINOR, argv[source + 1],
 			block_size);
-		printf("All -b, -noI, -noD, -noF, -noX, no-duplicates, no-fragments, "
-			"-always-use-fragments,\n-exportable and -comp options "
-			"ignored\n");
+		printf("All -b, -noI, -noD, -noF, -noX, -noId, -no-duplicates, "
+			"-no-fragments,\n-always-use-fragments, -exportable and "
+			"-comp options ignored\n");
 		printf("\nIf appending is not wanted, please re-run with "
 			"-noappend specified!\n\n");
 
@@ -6037,7 +6045,7 @@ printOptions:
 	sBlk.s_minor = SQUASHFS_MINOR;
 	sBlk.block_size = block_size;
 	sBlk.block_log = block_log;
-	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, no_fragments,
+	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, noId, no_fragments,
 		always_use_fragments, duplicate_checking, exportable,
 		no_xattrs, comp_opts);
 	sBlk.mkfs_time = time(NULL);
