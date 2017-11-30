@@ -3095,14 +3095,14 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 	struct stat buf;
 	struct dir_ent *dir_ent;
 	
-	root_dir = dir_scan1(pathname, "", paths, _readdir, 1);
+	root_dir = dir_scan1(pathname, (char *) "", paths, _readdir, 1);
 	if(root_dir == NULL)
 		return;
 
 	/* Create root directory dir_ent and associated inode, and connect
 	 * it to the root directory dir_info structure */
-	dir_ent = create_dir_entry("", NULL, pathname,
-						scan1_opendir("", "", 0));
+	dir_ent = create_dir_entry((char *) "", NULL, pathname,
+						scan1_opendir((char *) "", (char *) "", 0));
 
 	if(pathname[0] == '\0') {
 		/*
@@ -3177,7 +3177,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		sigaddset(&sigmask, SIGUSR1);
 		if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) == -1)
 			BAD_ERROR("Failed to set signal mask\n");
-		write_destination(fd, SQUASHFS_START, 4, "\0\0\0\0");
+		write_destination(fd, SQUASHFS_START, 4, (char *) "\0\0\0\0");
 	}
 
 	queue_put(to_reader, root_dir);
@@ -3564,7 +3564,7 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				create_dir_entry(pseudo_ent->name, NULL,
 						pseudo_ent->pathname, dir);
 			char *subpath = strdup(subpathname(dir_ent));
-			struct dir_info *sub_dir = scan1_opendir("", subpath,
+			struct dir_info *sub_dir = scan1_opendir((char *) "", subpath,
 						dir->depth + 1);
 			if(sub_dir == NULL) {
 				ERROR_START("Could not create pseudo directory "
@@ -6037,7 +6037,7 @@ printOptions:
 			S_ISDIR(source_buf.st_mode))
 		dir_scan(&inode, source_path[0], scan1_single_readdir, progress);
 	else
-		dir_scan(&inode, "", scan1_encomp_readdir, progress);
+		dir_scan(&inode, (char *) "", scan1_encomp_readdir, progress);
 	sBlk.root_inode = inode;
 	sBlk.inodes = inode_count;
 	sBlk.s_magic = SQUASHFS_MAGIC;
