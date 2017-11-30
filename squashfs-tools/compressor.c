@@ -89,7 +89,7 @@ struct compressor *compressor[] = {
 };
 
 
-struct compressor *lookup_compressor(char *name)
+struct compressor *lookup_compressor(const char *name)
 {
 	int i;
 
@@ -113,7 +113,7 @@ struct compressor *lookup_compressor_id(int id)
 }
 
 
-void display_compressors(char *indent, char *def_comp)
+void display_compressors(const char *indent, const char *def_comp)
 {
 	int i;
 
@@ -126,13 +126,13 @@ void display_compressors(char *indent, char *def_comp)
 }
 
 
-void display_compressor_usage(char *def_comp)
+void display_compressor_usage(const char *def_comp)
 {
 	int i;
 
 	for(i = 0; compressor[i]->id; i++)
 		if(compressor[i]->supported) {
-			char *str = strcmp(compressor[i]->name, def_comp) == 0 ?
+			const char *str = strcmp(compressor[i]->name, def_comp) == 0 ?
 				" (default)" : "";
 			if(compressor[i]->usage) {
 				fprintf(stderr, "\t%s%s\n",

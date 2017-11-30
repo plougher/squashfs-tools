@@ -27,8 +27,8 @@
 extern int exit_on_error;
 
 extern void prep_exit();
-extern void progressbar_error(char *fmt, ...);
-extern void progressbar_info(char *fmt, ...);
+extern void progressbar_error(const char *fmt, ...);
+extern void progressbar_info(const char *fmt, ...);
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...) \

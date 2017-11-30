@@ -222,7 +222,7 @@ void init_progress_bar()
 }
 
 
-void progressbar_error(char *fmt, ...)
+void progressbar_error(const char *fmt, ...)
 {
 	va_list ap;
 
@@ -240,7 +240,7 @@ void progressbar_error(char *fmt, ...)
 }
 
 
-void progressbar_info(char *fmt, ...)
+void progressbar_info(const char *fmt, ...)
 {
 	va_list ap;
 

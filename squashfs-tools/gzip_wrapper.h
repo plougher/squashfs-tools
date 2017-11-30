@@ -56,7 +56,7 @@ struct gzip_comp_opts {
 };
 
 struct strategy {
-	char *name;
+	const char *name;
 	int strategy;
 	int selected;
 };

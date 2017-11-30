@@ -46,7 +46,7 @@ extern unsigned int inswap_le32(unsigned int);
 #define MEMLIMIT (32 * 1024 * 1024)
 
 struct bcj {
-	char	 	*name;
+	const char 	*name;
 	lzma_vli	id;
 	int		selected;
 };

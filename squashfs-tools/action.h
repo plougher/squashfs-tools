@@ -39,7 +39,7 @@
 #define TOK_EOF			9
 
 #define TOK_TO_STR(OP, S) ({ \
-	char *s; \
+	const char *s; \
 	switch(OP) { \
 	case TOK_EOF: \
 		s = "EOF"; \
@@ -56,7 +56,7 @@
 
 
 struct token_entry {
-	char *string;
+	const char *string;
 	int token;
 	int size;
 };
@@ -140,7 +140,7 @@ struct action;
 struct action_data;
 
 struct test_entry {
-	char *name;
+	const char *name;
 	int args;
 	int (*fn)(struct atom *, struct action_data *);
 	int (*parse_args)(struct test_entry *, struct atom *);
@@ -199,7 +199,7 @@ struct type_entry {
 #define ACTION_LOG_VERBOSE ACTION_LOG_TRUE | ACTION_LOG_FALSE
 
 struct action_entry {
-	char *name;
+	const char *name;
 	int type;
 	int args;
 	int file_types;

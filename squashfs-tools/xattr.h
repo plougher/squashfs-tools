@@ -59,7 +59,7 @@ struct dupl_id {
 };
 
 struct prefix {
-	char			*prefix;
+	const char		*prefix;
 	int			type;
 };
 

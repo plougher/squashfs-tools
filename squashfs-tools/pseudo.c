@@ -42,7 +42,7 @@
 #define TRUE 1
 #define FALSE 0
 
-extern int read_file(char *filename, char *type, int (parse_line)(char *));
+extern int read_file(const char *filename, const char *type, int (parse_line)(char *));
 
 struct pseudo_dev **pseudo_file = NULL;
 struct pseudo *pseudo = NULL;
@@ -185,7 +185,7 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
  * filename.  If filename doesn't exist or if filename is a leaf file
  * return NULL
  */
-struct pseudo *pseudo_subdir(char *filename, struct pseudo *pseudo)
+struct pseudo *pseudo_subdir(const char *filename, struct pseudo *pseudo)
 {
 	int i;
 

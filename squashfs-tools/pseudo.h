@@ -52,7 +52,7 @@ struct pseudo {
 
 extern int read_pseudo_def(char *);
 extern int read_pseudo_file(char *);
-extern struct pseudo *pseudo_subdir(char *, struct pseudo *);
+extern struct pseudo *pseudo_subdir(const char *, struct pseudo *);
 extern struct pseudo_entry *pseudo_readdir(struct pseudo *);
 extern struct pseudo_dev *get_pseudo_file(int);
 extern int pseudo_exec_file(struct pseudo_dev *, int *);

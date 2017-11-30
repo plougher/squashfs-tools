@@ -514,10 +514,10 @@ char *modestr(char *str, int mode)
 
 
 #define TOTALCHARS  25
-int print_filename(char *pathname, struct inode *inode)
+int print_filename(const char *pathname, struct inode *inode)
 {
 	char str[11], dummy[12], dummy2[12]; /* overflow safe */
-	char *userstr, *groupstr;
+	const char *userstr, *groupstr;
 	int padchars;
 	struct passwd *user;
 	struct group *group;
@@ -851,7 +851,7 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 }
 
 
-int write_bytes(int fd, char *buff, int bytes)
+int write_bytes(int fd, const char *buff, int bytes)
 {
 	int res, count;
 
@@ -874,7 +874,7 @@ int write_bytes(int fd, char *buff, int bytes)
 int lseek_broken = FALSE;
 char *zero_data = NULL;
 
-int write_block(int file_fd, char *buffer, int size, long long hole, int sparse)
+int write_block(int file_fd, const char *buffer, int size, long long hole, int sparse)
 {
 	off_t off = hole;
 
@@ -976,7 +976,7 @@ void queue_file(char *pathname, int file_fd, struct inode *inode)
 }
 
 
-void queue_dir(char *pathname, struct dir *dir)
+void queue_dir(const char *pathname, struct dir *dir)
 {
 	struct squashfs_file *file = malloc(sizeof(struct squashfs_file));
 	if(file == NULL)
@@ -1480,7 +1480,7 @@ empty_set:
 }
 
 
-void pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
+void pre_scan(const char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *paths)
 {
 	unsigned int type;
@@ -1532,7 +1532,7 @@ void pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 }
 
 
-void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
+void dir_scan(const char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *paths)
 {
 	unsigned int type;
@@ -2372,7 +2372,7 @@ void disable_progress_bar()
 }
 
 
-void progressbar_error(char *fmt, ...)
+void progressbar_error(const char *fmt, ...)
 {
 	va_list ap;
 
@@ -2389,7 +2389,7 @@ void progressbar_error(char *fmt, ...)
 }
 
 
-void progressbar_info(char *fmt, ...)
+void progressbar_info(const char *fmt, ...)
 {
 	va_list ap;
 
@@ -2507,7 +2507,7 @@ int parse_number(char *arg, int *res)
 	printf("GNU General Public License for more details.\n");
 int main(int argc, char *argv[])
 {
-	char *dest = "squashfs-root";
+	const char *dest = "squashfs-root";
 	int i, stat_sys = FALSE, version = FALSE;
 	int n;
 	struct pathnames *paths = NULL;

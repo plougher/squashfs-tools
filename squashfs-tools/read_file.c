@@ -42,7 +42,7 @@
  * 
  * Blank lines and comment lines indicated by # are supported.
  */
-int read_file(char *filename, char *type, int (parse_line)(char *))
+int read_file(const char *filename, const char *type, int (parse_line)(char *))
 {
 	FILE *fd;
 	char *def, *err, *line = NULL;

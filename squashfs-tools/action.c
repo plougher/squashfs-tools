@@ -89,7 +89,7 @@ extern char *pathname(struct dir_ent *);
 
 extern char *subpathname(struct dir_ent *);
 
-extern int read_file(char *filename, char *type, int (parse_line)(char *));
+extern int read_file(const char *filename, const char *type, int (parse_line)(char *));
 
 /*
  * Lexical analyser
@@ -608,7 +608,7 @@ failed:
 #define LOG_PRINT	2
 #define LOG_ENABLED	3
 
-char *_expr_log(char *string, int cmnd)
+const char *_expr_log(const char *string, int cmnd)
 {
 	static char *expr_msg = NULL;
 	static int cur_size = 0, alloc_size = 0;
@@ -651,13 +651,13 @@ char *_expr_log(char *string, int cmnd)
 }
 
 
-char *expr_log_cmnd(int cmnd)
+const char *expr_log_cmnd(int cmnd)
 {
 	return _expr_log(NULL, cmnd);
 }
 
 
-char *expr_log(char *string)
+const char *expr_log(const char *string)
 {
 	return _expr_log(string, LOG_PRINT);
 }
@@ -2026,7 +2026,7 @@ static void noop_action(struct action *action, struct dir_ent *dir_ent)
  * 	'm' or 'M', number * 2^20
  *	'g' or 'G', number * 2^30
  */
-static int parse_number(char *start, long long *size, int *range, char **error)
+static int parse_number(char *start, long long *size, int *range, const char **error)
 {
 	char *end;
 	long long number;
@@ -2097,7 +2097,7 @@ static int parse_number_arg(struct test_entry *test, struct atom *atom)
 	struct test_number_arg *number;
 	long long size;
 	int range;
-	char *error;
+	const char *error;
 	int res = parse_number(atom->argv[0], &size, &range, &error);
 
 	if (res == 0) {
@@ -2124,7 +2124,7 @@ static int parse_range_args(struct test_entry *test, struct atom *atom)
 	long long start, end;
 	int type;
 	int res;
-	char *error;
+	const char *error;
 
 	res = parse_number(atom->argv[0], &start, &type, &error);
 	if (res == 0) {
@@ -2349,7 +2349,7 @@ static int parse_uid_arg(struct test_entry *test, struct atom *atom)
 	struct test_number_arg *number;
 	long long size;
 	int range;
-	char *error;
+	const char *error;
 
 	if(parse_number(atom->argv[0], &size, &range, &error)) {
 		/* managed to fully parse argument as a number */
@@ -2394,7 +2394,7 @@ static int parse_gid_arg(struct test_entry *test, struct atom *atom)
 	struct test_number_arg *number;
 	long long size;
 	int range;
-	char *error;
+	const char *error;
 
 	if(parse_number(atom->argv[0], &size, &range, &error)) {
 		/* managed to fully parse argument as a number */
