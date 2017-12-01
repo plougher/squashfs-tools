@@ -2716,8 +2716,8 @@ options:
 			ERROR("\t-ll[s]\t\t\tlist filesystem with file "
 				"attributes (like\n");
 			ERROR("\t\t\t\tls -l output), but don't unsquash\n");
-			ERROR("\t-llx\t\t\tsame as -ll with file extended "
-				"attributes\n");
+			ERROR("\t-llx[attr]\t\t\tsame as -ll with file extended "
+				"attributes (xattr)\n");
 			ERROR("\t-f[orce]\t\tif file already exists then "
 				"overwrite\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
