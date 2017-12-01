@@ -527,9 +527,9 @@ int print_xattr(char *pathname, struct inode *inode)
 	struct xattr_list *xattr_list;
 	int i;
 	//printf("%x\n", inode->xattr);
-	if (inode->xattr == 0xffffffff) {
+	if(inode->xattr == SQUASHFS_INVALID_XATTR ||
+			sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
 		return 1;
-	}
 	xattr_list = get_xattr(inode->xattr, &count, 1);
 	if(xattr_list == NULL) {
 		ERROR("Failed to read xattrs for file %s\n", pathname);
