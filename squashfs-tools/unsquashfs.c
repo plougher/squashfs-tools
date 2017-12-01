@@ -512,19 +512,10 @@ char *modestr(char *str, int mode)
 	return str;
 }
 
-struct vfs_cap_data {
-        __le32 magic_etc;            /* Little endian */
-        struct {
-                __le32 permitted;    /* Little endian */
-                __le32 inheritable;  /* Little endian */
-        } data[1];
-};
-
 int print_xattr(char *pathname, struct inode *inode)
 {
 	unsigned int count;
 	struct xattr_list *xattr_list;
-	struct vfs_cap_data *cap_data;
 	int i;
 	if(inode->xattr == SQUASHFS_INVALID_XATTR ||
 			sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
@@ -534,21 +525,12 @@ int print_xattr(char *pathname, struct inode *inode)
 		ERROR("Failed to read xattrs for file %s\n", pathname);
 		return 1;
 	}
-	for(i = 0; i < count; i++) {
-		printf("> %s\n", xattr_list[i].full_name);
-
-		/*
-		for (int x = 0; x < xattr_list[i].vsize; x += 1)
-		{
+	for (i = 0; i < count; i++) {
+		printf("xattr %s:%s = ", pathname, xattr_list[i].full_name);
+		for (int x = 0; x < xattr_list[i].vsize; x += 1) {
 			printf("%.2x", ((char*)xattr_list[i].value)[x]);
 		}
 		printf("\n");
-		*/
-		cap_data =  xattr_list[i].value;
-		printf("p: %x\nh: %x\n",
-			cap_data->data->permitted,
-			cap_data->data->inheritable
-		);
 	}
 	return 0;
 }
