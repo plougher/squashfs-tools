@@ -87,6 +87,7 @@ struct squashfs_super_block sBlk;
 int comp_opts = FALSE;
 int no_xattrs = XATTR_DEF;
 int ignore_missing_modify = FALSE;
+int no_system_xattrs = FALSE;
 int noX = FALSE;
 int duplicate_checking = TRUE;
 int noF = FALSE;
@@ -3509,7 +3510,8 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
 		dir_ent = scan2_lookup(dir, pseudo_ent->name);
-		if(pseudo_ent->dev->type == 'm') {
+		char type = pseudo_ent->dev->type;
+		if(type == 'm' || type == 'x') {
 			struct stat *buf;
 			if(dir_ent == NULL) {
 				if (!ignore_missing_modify) {
@@ -5552,6 +5554,9 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-no-xattrs") == 0)
 			no_xattrs = TRUE;
 
+		else if(strcmp(argv[i], "-no-system-xattrs") == 0)
+			no_system_xattrs = TRUE;
+
 		else if(strcmp(argv[i], "-xattrs") == 0)
 			no_xattrs = FALSE;
 
@@ -5606,6 +5611,8 @@ printOptions:
 			        "if modified file is missing (from pseudo)\n");
 			ERROR("-no-xattrs\t\tdon't store extended attributes"
 				NOXOPT_STR "\n");
+			ERROR("-no-system-xattrs\tdon't read xattrs from "
+			        "system, just from pseudo" NOXOPT_STR "\n");
 			ERROR("-xattrs\t\t\tstore extended attributes" XOPT_STR
 				"\n");
 			ERROR("-noI\t\t\tdo not compress inode table\n");
@@ -5643,6 +5650,7 @@ printOptions:
 			ERROR("\t\t\t\tfilename c mode uid gid major minor\n");
 			ERROR("\t\t\t\tfilename f mode uid gid command\n");
 			ERROR("\t\t\t\tfilename s mode uid gid symlink\n");
+			ERROR("\t\t\t\tfilename x mode uid gid xattr\n");
 			ERROR("-sort <sort_file>\tsort files according to "
 				"priorities in <sort_file>.  One\n");
 			ERROR("\t\t\tfile or dir with priority per line.  "

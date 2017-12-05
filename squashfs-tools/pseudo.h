@@ -34,6 +34,7 @@ struct pseudo_dev {
 	union {
 		char		*command;
 		char		*symlink;
+		char		*xattr;
 	};
 };
 

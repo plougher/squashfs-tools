@@ -41,6 +41,7 @@
 #include "mksquashfs.h"
 #include "xattr.h"
 #include "error.h"
+#include "pseudo.h"
 #include "progressbar.h"
 
 /* compressed xattr table */
@@ -72,7 +73,7 @@ static struct xattr_list *dupl_value[65536];
 static struct dupl_id *dupl_id[65536];
 
 /* file system globals from mksquashfs.c */
-extern int no_xattrs, noX;
+extern int no_xattrs, noX, no_system_xattrs;
 extern long long bytes;
 extern int fd;
 extern unsigned int xattr_bytes, total_xattr_bytes;
@@ -83,6 +84,7 @@ extern void write_destination(int, long long, int, void *);
 extern long long generic_write_table(int, void *, int, void *, int);
 extern int mangle(char *, char *, int, int, int, int);
 extern char *pathname(struct dir_ent *);
+extern char *subpathname(struct dir_ent *);
 
 /* helper functions and definitions from read_xattrs.c */
 extern int read_xattrs_from_disk(int, struct squashfs_super_block *);
@@ -603,18 +605,169 @@ int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 }
 
 
+/* Read an xattr from a string */
+static int read_xattr_from_string(const char *xattr, struct xattr_list *dest)
+{
+	const char *key = xattr;
+	const char *value = strchr(key, ':');
+	if(!value) {
+		ERROR("Pseudo xattr value \"%s\" does not contain "
+		      "'key:value', skipping\n", xattr);
+		return 0;
+	}
+
+	size_t keylen = value - key;
+	/* Skip : */
+	++value;
+	size_t valuelen = strlen(value) + 1;
+	if(valuelen + keylen > XATTR_INLINE_MAX) {
+		ERROR("Pseudo xattr value \"%s\" too long, skipping\n",
+		      xattr);
+		return 0;
+	}
+
+	memset(dest, 0, sizeof *dest);
+
+	char *name = malloc(keylen + 1);
+	if(!name)
+		MEM_ERROR();
+	memcpy(name, key, keylen);
+	name[keylen] = '\0';
+	dest->type = get_prefix(dest, name);
+	free(name);
+	if(dest->type == -1) {
+		ERROR("Unrecognised xattr prefix %s\n", dest->full_name);
+		return 0;
+	}
+
+	dest->value = malloc(valuelen);
+	if(!dest->value)
+		MEM_ERROR();
+
+	memcpy(dest->value, value, valuelen);
+	dest->vsize = valuelen;
+
+	return 1;
+}
+
+
+static struct pseudo *get_pseudo_for_dir(char *dirname)
+{
+	struct pseudo *pseudo = get_pseudo();
+	while(pseudo && *dirname) {
+		if(*dirname == '/')
+			++dirname;
+		char *next = strchr(dirname, '/');
+		if(!next)
+			return pseudo_subdir(dirname, pseudo);
+		*next = '\0';
+		++next;
+		pseudo = pseudo_subdir(dirname, pseudo);
+		dirname = next;
+	}
+	return NULL;
+}
+
+
+static struct pseudo_dev *get_xattr_pseudo_for_dentry(struct dir_ent *d)
+{
+	struct pseudo *pseudo;
+	char *subdir = subpathname(d);
+	char *filename = strrchr(subdir, '/');
+	struct pseudo_dev *dev = NULL;
+
+	if(filename && filename != subdir) {
+		*filename = '\0';
+		++filename;
+		pseudo = get_pseudo_for_dir(subdir);
+	} else {
+		pseudo = get_pseudo();
+		filename = subdir;
+	}
+
+	if(!pseudo)
+		return NULL;
+
+	/* If we are searching for a directory at the top of the
+	 * tree, we need to remove the leading slash, since entries
+	 * in the pseudo table are dentry names, not paths. */
+	 if (*filename == '/')
+		 ++filename;
+
+	for(int i = 0; dev == NULL && i < pseudo->names; ++i) {
+		struct pseudo_entry *p = &pseudo->name[i];
+		if(!p->dev || p->dev->type != 'x')
+			continue;
+		const char *basename = strrchr(p->name, '/');
+		if(!basename)
+			basename = p->name;
+		if(strcmp(basename, filename) == 0)
+			dev = p->dev;
+	}
+
+	return dev;
+}
+
+
+static struct dir_ent *next_ent(struct dir_ent *d)
+{
+	if (*d->name == '\0' || !d->our_dir)
+		return NULL;
+	return d->our_dir->dir_ent;
+}
+
+
+static struct pseudo_dev *get_xattr_pseudo_for_file(struct dir_ent *d)
+{
+	while(d) {
+		struct pseudo_dev *dev = get_xattr_pseudo_for_dentry(d);
+		if (dev)
+			return dev;
+		d = next_ent(d);
+	}
+
+	return NULL;
+}
+
+
+static int get_xattrs_from_pseudo(
+	struct dir_ent *d, struct xattr_list **xattr, int xattrs)
+{
+	struct pseudo_dev *dev = get_xattr_pseudo_for_file(d);
+	if(!dev || !dev->xattr)
+		return xattrs;
+
+	struct xattr_list new;
+	if(!read_xattr_from_string(dev->xattr, &new))
+		return xattrs;
+
+	struct xattr_list *xl = realloc(*xattr, sizeof *xl * (xattrs + 1));
+	if(!xl)
+		MEM_ERROR();
+
+	memcpy(&xl[xattrs], &new, sizeof new);
+
+	*xattr = xl;
+
+	return xattrs + 1;
+}
+
+
 int read_xattrs(void *d)
 {
 	struct dir_ent *dir_ent = d;
 	struct inode_info *inode = dir_ent->inode;
 	char *filename = pathname(dir_ent);
-	struct xattr_list *xattr_list;
-	int xattrs;
+	struct xattr_list *xattr_list = NULL;
+	int xattrs = 0;
 
 	if(no_xattrs || IS_PSEUDO(inode) || inode->root_entry)
 		return SQUASHFS_INVALID_XATTR;
 
-	xattrs = read_xattrs_from_system(filename, &xattr_list);
+	if(!no_system_xattrs)
+		xattrs = read_xattrs_from_system(filename, &xattr_list);
+
+	xattrs = get_xattrs_from_pseudo(dir_ent, &xattr_list, xattrs);
 	if(xattrs == 0)
 		return SQUASHFS_INVALID_XATTR;
 

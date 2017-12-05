@@ -128,7 +128,8 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 				 * 'm' type pseudo file
 				 */
 				if(pseudo->name[i].dev->type == 'd' ||
-					pseudo->name[i].dev->type == 'm')
+					pseudo->name[i].dev->type == 'm' ||
+					pseudo->name[i].dev->type == 'x')
 					/* recurse adding child components */
 					pseudo->name[i].pseudo =
 						add_pseudo(NULL, pseudo_dev,
@@ -411,6 +412,14 @@ int read_pseudo_def(char *def)
 			goto error;
 		}
 		break;
+	case 'x':
+		if(def[0] == '\0') {
+			ERROR("Not enough arguments in xattr pseudo "
+			        "definition \"%s\"\n", orig_def);
+			ERROR("Expected xattr name=value\n");
+			goto error;
+		}
+		break;
 	default:
 		ERROR("Unsupported type %c\n", type);
 		goto error;
@@ -489,6 +498,10 @@ int read_pseudo_def(char *def)
 	}
 	if(type == 's')
 		dev->symlink = strdup(def);
+	if(type == 'x') {
+		dev->xattr = strdup(def);
+		add_pseudo_file(dev);
+	}
 
 	pseudo = add_pseudo(pseudo, dev, filename, filename);
 
@@ -499,6 +512,7 @@ error:
 	ERROR("Pseudo definitions should be of the format\n");
 	ERROR("\tfilename d mode uid gid\n");
 	ERROR("\tfilename m mode uid gid\n");
+	ERROR("\tfilename x mode uid gid xattr\n");
 	ERROR("\tfilename b mode uid gid major minor\n");
 	ERROR("\tfilename c mode uid gid major minor\n");
 	ERROR("\tfilename f mode uid gid command\n");
