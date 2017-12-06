@@ -419,7 +419,7 @@ long long write_xattrs()
 	int i, avail_bytes;
 	char *datap = data_cache;
 	long long start_bytes = bytes;
-	struct squashfs_xattr_table header;
+	struct squashfs_xattr_table header = {};
 
 	if(xattr_ids == 0)
 		return SQUASHFS_INVALID_BLK;
