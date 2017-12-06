@@ -86,6 +86,7 @@ struct squashfs_super_block sBlk;
 /* filesystem flags for building */
 int comp_opts = FALSE;
 int no_xattrs = XATTR_DEF;
+int ignore_missing_modify = FALSE;
 int noX = FALSE;
 int duplicate_checking = TRUE;
 int noF = FALSE;
@@ -3511,10 +3512,13 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		if(pseudo_ent->dev->type == 'm') {
 			struct stat *buf;
 			if(dir_ent == NULL) {
-				ERROR_START("Pseudo modify file \"%s\" does "
-					"not exist in source filesystem.",
-					pseudo_ent->pathname);
-				ERROR_EXIT("  Ignoring.\n");
+				if (!ignore_missing_modify) {
+					ERROR_START(
+						"Pseudo modify file \"%s\" does "
+						"not exist in source filesystem.",
+						pseudo_ent->pathname);
+					ERROR_EXIT("  Ignoring.\n");
+				}
 				continue;
 			}
 			if(dir_ent->inode->root_entry) {
@@ -5542,6 +5546,9 @@ print_compressor_options:
 				strcmp(argv[i], "-noXattrCompression") == 0)
 			noX = TRUE;
 
+		else if(strcmp(argv[i], "-ignore-missing-modify") == 0)
+			ignore_missing_modify = TRUE;
+
 		else if(strcmp(argv[i], "-no-xattrs") == 0)
 			no_xattrs = TRUE;
 
@@ -5595,6 +5602,8 @@ printOptions:
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
 			ERROR("-no-sparse\t\tdon't detect sparse files\n");
+			ERROR("-ignore-missing-modify\tdon't warn "
+			        "if modified file is missing (from pseudo)\n");
 			ERROR("-no-xattrs\t\tdon't store extended attributes"
 				NOXOPT_STR "\n");
 			ERROR("-xattrs\t\t\tstore extended attributes" XOPT_STR
