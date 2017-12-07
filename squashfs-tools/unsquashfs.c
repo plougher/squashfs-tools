@@ -528,7 +528,7 @@ int print_xattr(char *pathname, struct inode *inode)
 	for (i = 0; i < count; i++) {
 		printf("xattr %s:%s = ", pathname, xattr_list[i].full_name);
 		for (int x = 0; x < xattr_list[i].vsize; x += 1) {
-			printf("\\x%.2x", ((char*)xattr_list[i].value)[x]);
+			printf("%.2x", ((char*)xattr_list[i].value)[x]);
 		}
 		printf("\n");
 	}
