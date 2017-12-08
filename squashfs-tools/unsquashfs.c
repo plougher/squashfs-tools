@@ -64,7 +64,7 @@ char *file_data;
 char *data;
 unsigned int block_size;
 unsigned int block_log;
-int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE;
+int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE, xattr_ls = FALSE;
 int use_regex = FALSE;
 char **created_inode;
 int root_process;
@@ -161,7 +161,7 @@ int shift_overflow(int a, int shift)
 	return (INT_MAX >> shift) < a;
 }
 
- 
+
 int multiply_overflow(int a, int multiplier)
 {
 	return (INT_MAX / multiplier) < a;
@@ -230,7 +230,7 @@ void dump_queue(struct queue *queue)
 {
 	pthread_mutex_lock(&queue->mutex);
 
-	printf("Max size %d, size %d%s\n", queue->size - 1,  
+	printf("Max size %d, size %d%s\n", queue->size - 1,
 		queue->readp <= queue->writep ? queue->writep - queue->readp :
 			queue->size - queue->readp + queue->writep,
 		queue->readp == queue->writep ? " (EMPTY)" :
@@ -413,13 +413,13 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 	return entry;
 }
 
-	
+
 void cache_block_ready(struct cache_entry *entry, int error)
 {
 	/*
 	 * mark cache entry as being complete, reading and (if necessary)
  	 * decompression has taken place, and the buffer is valid for use.
- 	 * If an error occurs reading or decompressing, the buffer also 
+ 	 * If an error occurs reading or decompressing, the buffer also
  	 * becomes ready but with an error...
  	 */
 	pthread_mutex_lock(&entry->cache->mutex);
@@ -512,6 +512,28 @@ char *modestr(char *str, int mode)
 	return str;
 }
 
+int print_xattr(char *pathname, struct inode *inode)
+{
+	unsigned int count;
+	struct xattr_list *xattr_list;
+	int i;
+	if(inode->xattr == SQUASHFS_INVALID_XATTR ||
+			sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
+		return 1;
+	xattr_list = get_xattr(inode->xattr, &count, 1);
+	if(xattr_list == NULL) {
+		ERROR("Failed to read xattrs for file %s\n", pathname);
+		return 1;
+	}
+	for (i = 0; i < count; i++) {
+    printf("xattr %d %s:%s = ", xattr_list[i].vsize, pathname, xattr_list[i].full_name);
+		for (int x = 0; x < xattr_list[i].vsize; x += 1) {
+      printf("%.2x\n", ((unsigned char*)xattr_list[i].value)[x]);
+		}
+		printf("\n");
+	}
+	return 0;
+}
 
 #define TOTALCHARS  25
 int print_filename(char *pathname, struct inode *inode)
@@ -522,6 +544,10 @@ int print_filename(char *pathname, struct inode *inode)
 	struct passwd *user;
 	struct group *group;
 	struct tm *t;
+
+	if (xattr_ls) {
+		print_xattr(pathname, inode);
+	}
 
 	if(short_ls) {
 		printf("%s\n", pathname);
@@ -541,7 +567,7 @@ int print_filename(char *pathname, struct inode *inode)
 			userstr = dummy;
 	} else
 		userstr = user->pw_name;
-		 
+
 	group = getgrgid(inode->gid);
 	if(group == NULL) {
 		int res = snprintf(dummy2, 12, "%d", inode->gid);
@@ -573,7 +599,7 @@ int print_filename(char *pathname, struct inode *inode)
 		case S_IFCHR:
 		case S_IFBLK:
 			padchars = TOTALCHARS - strlen(userstr) -
-				strlen(groupstr) - 7; 
+				strlen(groupstr) - 7;
 
 			printf("%*s%3d,%3d ", padchars > 0 ? padchars : 0, " ",
 				(int) inode->data >> 8, (int) inode->data &
@@ -588,10 +614,10 @@ int print_filename(char *pathname, struct inode *inode)
 	if((inode->mode & S_IFMT) == S_IFLNK)
 		printf(" -> %s", inode->symlink);
 	printf("\n");
-		
+
 	return 1;
 }
-	
+
 
 void add_entry(struct hash_table_entry *hash_table[], long long start,
 	int bytes)
@@ -664,12 +690,12 @@ int read_block(int fd, long long start, long long *next, int expected,
 	unsigned short c_byte;
 	int offset = 2, res, compressed;
 	int outlen = expected ? expected : SQUASHFS_METADATA_SIZE;
-	
+
 	if(swap) {
 		if(read_fs_bytes(fd, start, 2, &c_byte) == FALSE)
 			goto failed;
 		c_byte = (c_byte >> 8) | ((c_byte & 0xff) << 8);
-	} else 
+	} else
 		if(read_fs_bytes(fd, start, 2, &c_byte) == FALSE)
 			goto failed;
 
@@ -805,7 +831,7 @@ int read_inode_table(long long start, long long end)
 			ERROR("read_inode_table: metadata block should be %d "
 				"bytes in length, it is %d bytes\n",
 				SQUASHFS_METADATA_SIZE, res);
-			
+
 			goto failed;
 		}
 	}
@@ -1104,7 +1130,7 @@ int create_inode(char *pathname, struct inode *i)
 			}
 
 			write_xattr(pathname, i->xattr);
-	
+
 			if(root_process) {
 				if(lchown(pathname, i->uid, i->gid) == -1)
 					ERROR("create_inode: failed to change "
@@ -1324,7 +1350,7 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		paths->name = realloc(paths->name, (i + 1) *
 			sizeof(struct path_entry));
 		if(paths->name == NULL)
-			EXIT_UNSQUASH("Out of memory in add_path\n");	
+			EXIT_UNSQUASH("Out of memory in add_path\n");
 		paths->name[i].name = targname;
 		paths->name[i].paths = NULL;
 		if(use_regex) {
@@ -1569,7 +1595,7 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 					strerror(errno));
 				squashfs_closedir(dir);
 				return;
-			} 
+			}
 
 			/*
 			 * Try to change permissions of existing directory so
@@ -1868,7 +1894,7 @@ int read_super(char *source)
 		sBlk.guid_start = sBlk_3.guid_start_2;
 		sBlk.s.inode_table_start = sBlk_3.inode_table_start_2;
 		sBlk.s.directory_table_start = sBlk_3.directory_table_start_2;
-		
+
 		if(sBlk.s.s_major == 1) {
 			sBlk.s.block_size = sBlk_3.block_size_1;
 			sBlk.s.fragment_table_start = sBlk.uid_start;
@@ -1967,7 +1993,7 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 	fclose(fd);
 	return path;
 }
-		
+
 
 /*
  * reader thread.  This thread processes read requests queued by the
@@ -2127,7 +2153,7 @@ void *inflator(void *arg)
 		 * block has been either successfully decompressed, or an error
  		 * occurred, clear pending flag, set error appropriately and
  		 * wake up any threads waiting on this block
- 		 */ 
+ 		 */
 		cache_block_ready(entry, res == -1);
 	}
 }
@@ -2520,7 +2546,7 @@ int main(int argc, char *argv[])
 	root_process = geteuid() == 0;
 	if(root_process)
 		umask(0);
-	
+
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
@@ -2565,7 +2591,7 @@ int main(int argc, char *argv[])
 			squashfs_start_offset = (off_t)atol(argv[i]);
 		} else if(strcmp(argv[i], "-processors") == 0 ||
 				strcmp(argv[i], "-p") == 0) {
-			if((++i == argc) || 
+			if((++i == argc) ||
 					!parse_number(argv[i],
 						&processors)) {
 				ERROR("%s: -processors missing or invalid "
@@ -2615,6 +2641,11 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-ll") == 0) {
 			lsonly = TRUE;
 			short_ls = FALSE;
+		} else if(strcmp(argv[i], "-llxattr") == 0 ||
+				strcmp(argv[i], "-llx") == 0) {
+			lsonly = TRUE;
+			short_ls = FALSE;
+			xattr_ls = TRUE;
 		} else if(strcmp(argv[i], "-linfo") == 0 ||
 				strcmp(argv[i], "-li") == 0) {
 			info = TRUE;
@@ -2679,6 +2710,8 @@ options:
 			ERROR("\t-ll[s]\t\t\tlist filesystem with file "
 				"attributes (like\n");
 			ERROR("\t\t\t\tls -l output), but don't unsquash\n");
+			ERROR("\t-llx[attr]\t\tsame as -ll but with file extended "
+				"attributes (xattr)\n");
 			ERROR("\t-f[orce]\t\tif file already exists then "
 				"overwrite\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
