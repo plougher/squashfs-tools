@@ -532,6 +532,7 @@ int print_xattr(char *pathname, struct inode *inode)
 		}
 		printf("\n");
 	}
+	free_xattr(xattr_list, count);
 	return 0;
 }
 
