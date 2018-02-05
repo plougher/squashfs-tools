@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <sys/sysmacros.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
