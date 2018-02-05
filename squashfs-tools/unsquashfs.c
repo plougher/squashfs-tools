@@ -33,6 +33,7 @@
 #include "fnmatch_compat.h"
 
 #include <sys/sysinfo.h>
+#include <sys/sysmacros.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
