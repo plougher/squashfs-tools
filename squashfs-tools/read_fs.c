@@ -214,8 +214,8 @@ int scan_inode_table(int fd, long long start, long long end,
 		/* bad type, corrupted filesystem */
 		goto corrupted;
 
-	get_uid(id_table[dir_inode->base.uid]);
-	get_guid(id_table[dir_inode->base.guid]);
+	get_uid(id_table[dir_inode->base.uid], 0);
+	get_guid(id_table[dir_inode->base.guid], 0);
 
 	/* allocate fragment to file mapping table */
 	file_mapping = calloc(sBlk->fragments, sizeof(struct append_file *));
@@ -234,8 +234,8 @@ int scan_inode_table(int fd, long long start, long long end,
 			(unsigned int) (cur_ptr - *inode_table),
 			base.inode_type);
 
-		get_uid(id_table[base.uid]);
-		get_guid(id_table[base.guid]);
+		get_uid(id_table[base.uid], 0);
+		get_guid(id_table[base.guid], 0);
 
 		switch(base.inode_type) {
 		case SQUASHFS_FILE_TYPE: {

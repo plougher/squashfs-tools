@@ -251,6 +251,17 @@ char *destination_file = NULL;
 char *recovery_file = NULL;
 int recover = TRUE;
 
+/* uid/gid mapping tables */
+#define UGID_ENTRIES 340
+
+struct ugid_map_entry {
+	unsigned int child_id;
+	unsigned int parent_id;
+	unsigned int length;
+};
+struct ugid_map_entry uid_mapping[UGID_ENTRIES], gid_mapping[UGID_ENTRIES];
+unsigned int uid_map_count = 0, gid_map_count = 0;
+
 struct id *id_hash_table[ID_ENTRIES];
 struct id *id_table[SQUASHFS_IDS], *sid_table[SQUASHFS_IDS];
 unsigned int uid_count = 0, guid_count = 0;
@@ -697,9 +708,33 @@ struct id *create_id(unsigned int id)
 }
 
 
-unsigned int get_uid(unsigned int uid)
+int resolve_child_ugid(unsigned int *ugid,
+		       const struct ugid_map_entry *ugid_mapping,
+		       unsigned int ugid_map_count)
 {
-	struct id *entry = get_id(uid);
+	unsigned int i;
+
+	for (i = 0; i < ugid_map_count; i++) {
+		if (ugid_mapping[i].parent_id <= *ugid &&
+		    *ugid <
+			ugid_mapping[i].parent_id + ugid_mapping[i].length) {
+			*ugid = ugid_mapping[i].child_id + *ugid -
+				ugid_mapping[i].parent_id;
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+
+unsigned int get_uid(unsigned int uid, int resolve)
+{
+	struct id *entry;
+
+	if (resolve && !resolve_child_ugid(&uid, uid_mapping, uid_map_count))
+		BAD_ERROR("uid not found in mapping: %d\n", uid);
+	entry = get_id(uid);
 
 	if(entry == NULL) {
 		if(id_count == SQUASHFS_IDS)
@@ -716,9 +751,13 @@ unsigned int get_uid(unsigned int uid)
 }
 
 
-unsigned int get_guid(unsigned int guid)
+unsigned int get_guid(unsigned int guid, int resolve)
 {
-	struct id *entry = get_id(guid);
+	struct id *entry;
+
+	if (resolve && !resolve_child_ugid(&guid, gid_mapping, gid_map_count))
+		BAD_ERROR("gid not found in mapping: %d\n", guid);
+	entry = get_id(guid);
 
 	if(entry == NULL) {
 		if(id_count == SQUASHFS_IDS)
@@ -892,10 +931,10 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 			
 	base->mode = SQUASHFS_MODE(buf->st_mode);
 	base->uid = get_uid((unsigned int) global_uid == -1 ?
-		buf->st_uid : global_uid);
+		buf->st_uid : global_uid, 1);
 	base->inode_type = type;
 	base->guid = get_guid((unsigned int) global_gid == -1 ?
-		buf->st_gid : global_gid);
+		buf->st_gid : global_gid, 1);
 	base->mtime = buf->st_mtime;
 	base->inode_number = get_inode_no(dir_ent->inode);
 
@@ -4985,6 +5024,60 @@ int parse_num(char *arg, int *res)
 }
 
 
+int parse_ugid_map(char *map_str,
+		   struct ugid_map_entry ugid_mapping[UGID_ENTRIES],
+		   unsigned int *ugid_map_count)
+{
+	char *line_state, *token_state;
+	char *line, *line_str, *token, *token_str;
+	long long numbers[3];
+	int i;
+
+	for (*ugid_map_count = 0, line_str = map_str;;
+	     ++*ugid_map_count, line_str = NULL) {
+		line = strtok_r(line_str, "\n", &line_state);
+		if (line == NULL)
+			break;
+		if (*ugid_map_count >= UGID_ENTRIES) {
+			ERROR("Too many entries for u/gid mapping\n");
+			return -1;
+		}
+
+		for (i = 0, token_str = line; i < 3; i++, token_str = NULL) {
+			token = strtok_r(token_str, " ", &token_state);
+			if (token == NULL ||
+			    !parse_numberll(token, &numbers[i], 0) ||
+			    numbers[i] < 0 || numbers[i] > ULONG_MAX) {
+				ERROR("Malformed u/gid mapping line\n");
+				return -1;
+			}
+		}
+
+		if (numbers[0] + numbers[2] > ULONG_MAX) {
+			ERROR("u/gid mapping overflow\n");
+			return -1;
+		}
+		if (numbers[1] + numbers[2] > ULONG_MAX) {
+			ERROR("u/gid mapping overflow\n");
+			return -1;
+		}
+
+		if (strtok_r(NULL, " ", &token_state) != NULL) {
+			ERROR("Malformed u/gid mapping line\n");
+			return -1;
+		}
+
+		ugid_mapping[*ugid_map_count].child_id =
+		    (unsigned int)numbers[0];
+		ugid_mapping[*ugid_map_count].parent_id =
+		    (unsigned int)numbers[1];
+		ugid_mapping[*ugid_map_count].length = (unsigned int)numbers[2];
+	}
+
+	return 0;
+}
+
+
 int get_physical_memory()
 {
 	/*
@@ -5575,6 +5668,30 @@ print_compressor_options:
 				exit(1);
 			}	
 			root_name = argv[i];
+		} else if (strcmp(argv[i], "-uid-map") == 0) {
+			if (++i == argc) {
+				ERROR("%s: -uid-map: missing mapping\n",
+				      argv[0]);
+				exit(1);
+			}
+			if (parse_ugid_map(argv[i], uid_mapping,
+					   &uid_map_count) != 0) {
+				ERROR("%s: -uid-map: invalid mapping\n",
+				      argv[0]);
+				exit(1);
+			}
+		} else if (strcmp(argv[i], "-gid-map") == 0) {
+			if (++i == argc) {
+				ERROR("%s: -gid-map: missing mapping\n",
+				      argv[0]);
+				exit(1);
+			}
+			if (parse_ugid_map(argv[i], gid_mapping,
+					   &uid_map_count) != 0) {
+				ERROR("%s: -gid-map: invalid mapping\n",
+				      argv[0]);
+				exit(1);
+			}
 		} else if(strcmp(argv[i], "-version") == 0) {
 			VERSION();
 		} else {
@@ -5645,6 +5762,12 @@ printOptions:
 				"dirs/files\n");
 			ERROR("-regex\t\t\tAllow POSIX regular expressions to "
 				"be used in exclude\n\t\t\tdirs/files\n");
+			ERROR("-uid-map <mapping>\tUser ID mapping.\n");
+			ERROR("\t\t\tFollows the format described in "
+				"user_namespaces(7).\n");
+			ERROR("-gid-map <mapping>\tGroup ID mapping.\n");
+			ERROR("\t\t\tFollows the format described in "
+				"user_namespaces(7).\n");
 			ERROR("\nFilesystem append options:\n");
 			ERROR("-noappend\t\tdo not append to existing "
 				"filesystem\n");
@@ -5701,6 +5824,19 @@ printOptions:
 			display_compressor_usage(COMP_DEFAULT);
 			exit(1);
 		}
+	}
+
+	if (!uid_map_count) {
+		uid_mapping[0].child_id = 0;
+		uid_mapping[0].parent_id = 0;
+		uid_mapping[0].length = 4294967295u;
+		uid_map_count = 1;
+	}
+	if (!gid_map_count) {
+		gid_mapping[0].child_id = 0;
+		gid_mapping[0].parent_id = 0;
+		gid_mapping[0].length = 4294967295u;
+		gid_map_count = 1;
 	}
 
 	/*

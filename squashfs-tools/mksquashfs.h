@@ -147,8 +147,8 @@ extern int read_fs_bytes(int, long long, int, void *);
 extern void add_file(long long, long long, long long, unsigned int *, int,
 	unsigned int, int, int);
 extern struct id *create_id(unsigned int);
-extern unsigned int get_uid(unsigned int);
-extern unsigned int get_guid(unsigned int);
+extern unsigned int get_uid(unsigned int, int);
+extern unsigned int get_guid(unsigned int, int);
 extern int read_bytes(int, void *, int);
 extern unsigned short get_checksum_mem(char *, int);
 #endif
