@@ -5687,7 +5687,7 @@ print_compressor_options:
 				exit(1);
 			}
 			if (parse_ugid_map(argv[i], gid_mapping,
-					   &uid_map_count) != 0) {
+					   &gid_map_count) != 0) {
 				ERROR("%s: -gid-map: invalid mapping\n",
 				      argv[0]);
 				exit(1);
