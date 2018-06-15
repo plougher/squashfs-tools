@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/plougher/squashfs-tools.svg?branch=master)](https://travis-ci.org/plougher/squashfs-tools)
+
+
 Git status:
 
 This is the squashfs.sourceforge.net CVS repository imported into this
