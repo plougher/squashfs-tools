@@ -780,12 +780,8 @@ int read_inode_table(long long start, long long end)
 
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
-			inode_table = realloc(inode_table, size +=
+			REALLOC_OR_ABORT(inode_table, size +=
 				SQUASHFS_METADATA_SIZE);
-			if(inode_table == NULL) {
-				ERROR("Out of memory in read_inode_table");
-				goto failed;
-			}
 		}
 
 		add_entry(inode_table_hash, start, bytes);
@@ -1201,13 +1197,8 @@ int read_directory_table(long long start, long long end)
 
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
-			directory_table = realloc(directory_table, size +=
+			REALLOC_OR_ABORT(directory_table, size +=
 				SQUASHFS_METADATA_SIZE);
-			if(directory_table == NULL) {
-				ERROR("Out of memory in "
-						"read_directory_table\n");
-				goto failed;
-			}
 		}
 
 		add_entry(directory_table_hash, start, bytes);
@@ -1332,10 +1323,8 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		 * allocate new name entry
 		 */
 		paths->names ++;
-		paths->name = realloc(paths->name, (i + 1) *
+		REALLOC_OR_ABORT(paths->name, (i + 1) *
 			sizeof(struct path_entry));
-		if(paths->name == NULL)
-			EXIT_UNSQUASH("Out of memory in add_path\n");	
 		paths->name[i].name = targname;
 		paths->name[i].paths = NULL;
 		if(use_regex) {
@@ -1410,11 +1399,9 @@ struct pathnames *init_subdir()
 struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 {
 	if(paths->count % PATHS_ALLOC_SIZE == 0) {
-		paths = realloc(paths, sizeof(struct pathnames *) +
+		REALLOC_OR_ABORT(paths, sizeof(struct pathnames *) +
 			(paths->count + PATHS_ALLOC_SIZE) *
 			sizeof(struct pathname *));
-		if(paths == NULL)
-			EXIT_UNSQUASH("Out of memory in add_subdir\n");
 	}
 
 	paths->path[paths->count++] = path;

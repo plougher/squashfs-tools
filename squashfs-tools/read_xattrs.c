@@ -225,9 +225,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
 	end = index[0];
 	for(i = 0; start < end; i++) {
 		int length;
-		xattrs = realloc(xattrs, (i + 1) * SQUASHFS_METADATA_SIZE);
-		if(xattrs == NULL)
-			MEM_ERROR();
+		REALLOC_OR_ABORT(xattrs, (i + 1) * SQUASHFS_METADATA_SIZE);
 
 		/* store mapping from location of compressed block in fs ->
 		 * location of uncompressed block in memory */
@@ -331,10 +329,8 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
 		struct squashfs_xattr_val val;
 
 		if(res != 0) {
-			xattr_list = realloc(xattr_list, (j + 1) *
+			REALLOC_OR_ABORT(xattr_list, (j + 1) *
 						sizeof(struct xattr_list));
-			if(xattr_list == NULL)
-				MEM_ERROR();
 		}
 			
 		SQUASHFS_SWAP_XATTR_ENTRY(xptr, &entry);

@@ -62,9 +62,7 @@ int read_file(char *filename, char *type, int (parse_line)(char *))
 			int len;
 
 			if(total + (MAX_LINE + 1) > size) {
-				line = realloc(line, size += (MAX_LINE + 1));
-				if(line == NULL)
-					MEM_ERROR();
+				REALLOC_OR_ABORT(line, size += (MAX_LINE + 1));
 			}
 
 			err = fgets(line + total, MAX_LINE + 1, fd);

@@ -288,7 +288,6 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 	long long start;
 	int bytes;
 	int dir_count, size;
-	struct dir_ent *new_dir;
 	struct dir *dir;
 
 	TRACE("squashfs_opendir: inode start block %d, offset %d\n",
@@ -367,12 +366,8 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 				"%d:%d, type %d\n", dire->name,
 				dirh.start_block, dire->offset, dire->type);
 			if((dir->dir_count % DIR_ENT_SIZE) == 0) {
-				new_dir = realloc(dir->dirs, (dir->dir_count +
+				REALLOC_OR_ABORT(dir->dirs, (dir->dir_count +
 					DIR_ENT_SIZE) * sizeof(struct dir_ent));
-				if(new_dir == NULL)
-					EXIT_UNSQUASH("squashfs_opendir: "
-						"realloc failed!\n");
-				dir->dirs = new_dir;
 			}
 			strcpy(dir->dirs[dir->dir_count].name, dire->name);
 			dir->dirs[dir->dir_count].start_block =
