@@ -800,7 +800,7 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 {
 	struct utimbuf times = { time, time };
 	/* Mode bits that are only useful with root privileges */
-	mode_t root_mask = S_ISUID | S_ISGID | S_ISVTX;
+	mode_t root_mask = S_ISUID | S_ISGID;
 
 	if(utime(pathname, &times) == -1) {
 		ERROR("set_attributes: failed to set time on %s, because %s\n",
@@ -819,9 +819,18 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 		mode &= ~(root_mask);
 
 	if((set_mode || (mode & root_mask)) && chmod(pathname, (mode_t) mode) == -1) {
-		ERROR("set_attributes: failed to change mode %s, because %s\n",
-			pathname, strerror(errno));
-		return FALSE;
+		/*
+		 * Some filesystems require root privileges to use the sticky
+		 * bit. If we're not root and chmod() failed with EPERM when the
+		 * sticky bit was included in the mode, try again without the
+		 * sticky bit. Otherwise, fail with an error message.
+		 */
+		if (root_process || errno != EPERM || !(mode & S_ISVTX) ||
+				chmod(pathname, (mode_t) (mode & ~S_ISVTX)) == -1) {
+			ERROR("set_attributes: failed to change mode %s, because %s\n",
+				pathname, strerror(errno));
+			return FALSE;
+		}
 	}
 
 	write_xattr(pathname, xattr);
