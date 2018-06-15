@@ -170,8 +170,10 @@ static int get_token(char **string)
 			size = (cur_size + 1  + STR_SIZE) & ~(STR_SIZE - 1);
 
 			tmp = realloc(str, size);
-			if(tmp == NULL)
+			if(tmp == NULL) {
+				free(str);
 				MEM_ERROR();
+			}
 
 			str_ptr = str_ptr - str + tmp;
 			str = tmp;

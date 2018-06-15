@@ -1101,8 +1101,10 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 			sizeof(struct squashfs_dir_header)
 			>= dir->buff + dir->size) {
 		buff = realloc(dir->buff, dir->size += SQUASHFS_METADATA_SIZE);
-		if(buff == NULL)
+		if(buff == NULL) {
+			free(dir->buff);
 			MEM_ERROR();
+		}
 
 		dir->p = (dir->p - dir->buff) + buff;
 		if(dir->entry_count_p) 
