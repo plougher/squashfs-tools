@@ -132,6 +132,9 @@ unsigned int cache_bytes = 0, cache_size = 0, inode_count = 0;
 /* inode lookup table */
 squashfs_inode *inode_lookup_table = NULL;
 
+/* override filesystem creation time */
+time_t mkfs_fixed_time = -1;
+
 /* in memory directory data */
 #define I_COUNT_SIZE		128
 #define DIR_ENTRIES		32
@@ -5354,6 +5357,15 @@ print_compressor_options:
 			force_progress = TRUE;
 		else if(strcmp(argv[i], "-no-exports") == 0)
 			exportable = FALSE;
+		else if(strcmp(argv[i], "-mkfs-fixed-time") == 0) {
+			if((++i == argc) || (mkfs_fixed_time =
+					strtoll(argv[i], &b, 10), *b != '\0')) {
+				ERROR("%s: -mkfs-fixed-time missing or invalid "
+					"timestamp\n", argv[0]);
+
+				exit(1);
+			}
+		}
         else if(strcmp(argv[i], "-offset") == 0 ||
 				strcmp(argv[i], "-o") ==0) {
 			if(++i == argc) {
@@ -6048,7 +6060,7 @@ printOptions:
 	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, noId, no_fragments,
 		always_use_fragments, duplicate_checking, exportable,
 		no_xattrs, comp_opts);
-	sBlk.mkfs_time = time(NULL);
+	sBlk.mkfs_time = mkfs_fixed_time != -1 ? mkfs_fixed_time : time(NULL);
 
 	disable_info();
 
