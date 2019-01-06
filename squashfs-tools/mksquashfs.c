@@ -5339,6 +5339,9 @@ int main(int argc, char *argv[])
 	int total_mem = get_default_phys_mem();
 	int progress = TRUE;
 	int force_progress = FALSE;
+	char *source_date_epoch, *endptr;
+	unsigned long long epoch;
+
 	struct file_buffer **fragment = NULL;
 
 	if(argc > 1 && strcmp(argv[1], "-version") == 0) {
@@ -5937,6 +5940,36 @@ printOptions:
 			display_compressor_usage(COMP_DEFAULT);
 			exit(1);
 		}
+	}
+
+	/* if SOURCE_DATE_EPOCH is set, use that timestamp for the mkfs time */
+	source_date_epoch = getenv("SOURCE_DATE_EPOCH");
+	if(source_date_epoch) {
+		errno = 0;
+		epoch = strtoull(source_date_epoch, &endptr, 10);
+		if((errno == ERANGE && (epoch == ULLONG_MAX || epoch == 0))
+				|| (errno != 0 && epoch == 0)) {
+			ERROR("Environment variable $SOURCE_DATE_EPOCH: "
+				"strtoull: %s\n", strerror(errno));
+			EXIT_MKSQUASHFS();
+		}
+		if(endptr == source_date_epoch) {
+			ERROR("Environment variable $SOURCE_DATE_EPOCH: "
+				"No digits were found: %s\n", endptr);
+			EXIT_MKSQUASHFS();
+		}
+		if(*endptr != '\0') {
+			ERROR("Environment variable $SOURCE_DATE_EPOCH: "
+				"Trailing garbage: %s\n", endptr);
+			EXIT_MKSQUASHFS();
+		}
+		if(epoch > ULONG_MAX) {
+			ERROR("Environment variable $SOURCE_DATE_EPOCH: "
+				"value must be smaller than or equal to "
+				"%lu but was found to be: %llu \n", ULONG_MAX, epoch);
+			EXIT_MKSQUASHFS();
+		}
+		forced_time = (time_t)epoch;
 	}
 
 	/*
