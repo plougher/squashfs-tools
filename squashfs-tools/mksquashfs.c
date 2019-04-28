@@ -100,7 +100,7 @@ int old_exclude = TRUE;
 int use_regex = FALSE;
 int nopad = FALSE;
 int exit_on_error = FALSE;
-static off_t squashfs_start_offset = 0;
+long long start_offset = 0;
 
 long long global_uid = -1, global_gid = -1;
 
@@ -519,9 +519,9 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
 	pthread_mutex_lock(&pos_mutex);
-	if(lseek(fd, off+squashfs_start_offset, SEEK_SET) == -1) {
+	if(lseek(fd, start_offset + off, SEEK_SET) == -1) {
 		ERROR("read_fs_bytes: Lseek on destination failed because %s, "
-			"offset=0x%llx\n", strerror(errno), off+squashfs_start_offset);
+			"offset=0x%llx\n", strerror(errno), start_offset + off);
 		res = 0;
 	} else if(read_bytes(fd, buff, bytes) < bytes) {
 		ERROR("Read on destination failed\n");
@@ -560,10 +560,10 @@ void write_destination(int fd, long long byte, int bytes, void *buff)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
 	pthread_mutex_lock(&pos_mutex);
 
-	if(lseek(fd, off+squashfs_start_offset, SEEK_SET) == -1) {
+	if(lseek(fd, start_offset + off, SEEK_SET) == -1) {
 		ERROR("write_destination: Lseek on destination "
 			"failed because %s, offset=0x%llx\n", strerror(errno),
-			off+squashfs_start_offset);
+			start_offset + off);
 		BAD_ERROR("Probably out of space on output %s\n",
 			block_device ? "block device" : "filesystem");
 	}
@@ -2318,9 +2318,9 @@ void *writer(void *arg)
 		pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
 		pthread_mutex_lock(&pos_mutex);
 
-		if(lseek(fd, off+squashfs_start_offset, SEEK_SET) == -1) {
+		if(lseek(fd, start_offset + off, SEEK_SET) == -1) {
 			ERROR("writer: Lseek on destination failed because "
-				"%s, offset=0x%llx\n", strerror(errno), off+squashfs_start_offset);
+				"%s, offset=0x%llx\n", strerror(errno), start_offset + off);
 			BAD_ERROR("Probably out of space on output "
 				"%s\n", block_device ? "block device" :
 				"filesystem");
@@ -5355,11 +5355,10 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-no-exports") == 0)
 			exportable = FALSE;
 		else if(strcmp(argv[i], "-offset") == 0 || strcmp(argv[i], "-o") == 0) {
-			if(++i == argc) {
-				ERROR("%s: %s offset missing argument\n", argv[0], argv[i - 1]);
+			if((++i == argc) || !parse_numberll(argv[i], &start_offset, 1)) {
+				ERROR("%s: %s missing or invalid offset size\n", argv[0], argv[i - 1]);
 				exit(1);
 			}
-			squashfs_start_offset = (off_t) atol(argv[i]);
 		} else if(strcmp(argv[i], "-processors") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &processors)) {
 				ERROR("%s: -processors missing or invalid "
@@ -5679,8 +5678,11 @@ printOptions:
 			ERROR("-root-owned\t\talternative name for -all-root"
 				"\n");
 			ERROR("-o <offset>\t\tSkip <offset> bytes at the "
-				"beginning of the file.\n\t\t\t"
-				"Default 0 bytes\n");            
+				"beginning of <dest>.\n");
+			ERROR("\t\t\tOptionally a suffix of K, M or G can be"
+				" given to specify\n\t\t\tKbytes, Mbytes or"
+				" Gbytes respectively.\n");
+			ERROR("\t\t\tDefault 0 bytes.\n");
 			ERROR("-noInodeCompression\talternative name for -noI"
 				"\n");
 			ERROR("-noIdTableCompression\talternative name for -noId"

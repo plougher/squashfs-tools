@@ -53,6 +53,7 @@
 extern struct queue *to_process_frag;
 extern struct seq_queue *to_main;
 extern int sparse_files;
+extern long long start_offset;
 
 /*
  * Compute 16 bit BSD checksum over the data, and check for sparseness
@@ -84,9 +85,9 @@ static int read_filesystem(int fd, long long byte, int bytes, void *buff)
 	TRACE("read_filesystem: reading from position 0x%llx, bytes %d\n",
 		byte, bytes);
 
-	if(lseek(fd, off, SEEK_SET) == -1) {
+	if(lseek(fd, start_offset + off, SEEK_SET) == -1) {
 		ERROR("read_filesystem: Lseek on destination failed because %s, "
-			"offset=0x%llx\n", strerror(errno), off);
+			"offset=0x%llx\n", strerror(errno), start_offset + off);
 		return 0;
 	} else if(read_bytes(fd, buff, bytes) < bytes) {
 		ERROR("Read on destination failed\n");
