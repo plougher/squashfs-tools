@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2014
+ * Copyright (c) 2013, 2014, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -146,6 +146,7 @@ struct queue {
 struct seq_queue {
 	int			fragment_count;
 	int			block_count;
+	long long		sequence;
 	struct file_buffer	*hash_table[HASH_SIZE];
 	pthread_mutex_t		mutex;
 	pthread_cond_t		wait;

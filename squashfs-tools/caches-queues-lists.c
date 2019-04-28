@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2014
+ * Copyright (c) 2013, 2014, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -148,8 +148,6 @@ INSERT_HASH_TABLE(seq, struct seq_queue, CALCULATE_SEQ_HASH, sequence, seq)
 /* Called with the cache mutex held */
 REMOVE_HASH_TABLE(seq, struct seq_queue, CALCULATE_SEQ_HASH, sequence, seq);
 
-static unsigned int sequence = 0;
-
 
 struct seq_queue *seq_queue_init()
 {
@@ -178,7 +176,7 @@ void seq_queue_put(struct seq_queue *queue, struct file_buffer *entry)
 	else
 		queue->block_count ++;
 
-	if(entry->sequence == sequence)
+	if(entry->sequence == queue->sequence)
 		pthread_cond_signal(&queue->wait);
 
 	pthread_cleanup_pop(1);
@@ -188,10 +186,10 @@ void seq_queue_put(struct seq_queue *queue, struct file_buffer *entry)
 struct file_buffer *seq_queue_get(struct seq_queue *queue)
 {
 	/*
-	 * Look-up buffer matching sequence in the queue, if found return
-	 * it, otherwise wait until it arrives
+	 * Return next buffer from queue in sequence order (queue->sequence).  If
+	 * found return it, otherwise wait for it to arrive.
 	 */
-	int hash = CALCULATE_SEQ_HASH(sequence);
+	int hash = CALCULATE_SEQ_HASH(queue->sequence);
 	struct file_buffer *entry;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
@@ -200,7 +198,7 @@ struct file_buffer *seq_queue_get(struct seq_queue *queue)
 	while(1) {
 		for(entry = queue->hash_table[hash]; entry;
 						entry = entry->seq_next)
-			if(entry->sequence == sequence)
+			if(entry->sequence == queue->sequence)
 				break;
 
 		if(entry) {
@@ -215,7 +213,7 @@ struct file_buffer *seq_queue_get(struct seq_queue *queue)
 
 			remove_seq_hash_table(queue, entry);
 
-			sequence ++;
+			queue->sequence ++;
 
 			break;
 		}
