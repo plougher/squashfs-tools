@@ -287,6 +287,10 @@ struct append_file **file_mapping;
 /* root of the in-core directory structure */
 struct dir_info *root_dir;
 
+/* log file */
+FILE *log_fd;
+int logging=FALSE;
+
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type);
@@ -1474,6 +1478,13 @@ void lock_fragments()
 }
 
 
+void log_fragment(unsigned int fragment, long long start)
+{
+	if(logging)
+		fprintf(log_fd, "Fragment %u, %lld\n", fragment, start);
+}
+
+
 void unlock_fragments()
 {
 	int frg, size;
@@ -1497,6 +1508,7 @@ void unlock_fragments()
 		bytes += size;
 		fragments_outstanding --;
 		queue_put(to_writer, write_buffer);
+		log_fragment(frg, fragment_table[frg].start_block);
 		TRACE("fragment_locked writing fragment %d, compressed size %d"
 			"\n", frg, size);
 	}
@@ -2423,6 +2435,7 @@ void *frag_deflator(void *arg)
 			bytes += compressed_size;
 			fragments_outstanding --;
 			queue_put(to_writer, write_buffer);
+			log_fragment(file_buffer->block, fragment_table[file_buffer->block].start_block);
 			pthread_mutex_unlock(&fragment_mutex);
 			TRACE("Writing fragment %lld, uncompressed size %d, "
 				"compressed size %d\n", file_buffer->block,
@@ -2493,6 +2506,13 @@ void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent,
 }
 
 
+void log_file(struct dir_ent *dir_ent, long long start)
+{
+	if(logging && start)
+		fprintf(log_fd, "%s, %lld\n", pathname(dir_ent), start);
+}
+
+
 int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 	struct file_buffer *read_buffer, int *duplicate_file)
 {
@@ -2511,9 +2531,11 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 	start = bytes;
 	while (1) {
 		read_size = read_buffer->file_size;
-		if(read_buffer->fragment)
+		if(read_buffer->fragment) {
 			fragment_buffer = read_buffer;
-		else {
+			if(block == 0)
+				start=0;
+		} else {
 			block_list = realloc(block_list, (block + 1) *
 				sizeof(unsigned int));
 			if(block_list == NULL)
@@ -2553,6 +2575,7 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size, start,
 		 block, block_list, fragment, NULL, sparse);
+	log_file(dir_ent, start);
 
 	if(duplicate_checking == FALSE) {
 		free(block_list);
@@ -2697,6 +2720,8 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	if(*duplicate_file == TRUE)
 		free(block_list);
+	else
+		log_file(dir_ent, dup_start);
 
 	return 0;
 
@@ -2801,6 +2826,7 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	create_inode(inode, NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size, start,
 		 blocks, block_list, fragment, NULL, sparse);
+	log_file(dir_ent, start);
 
 	if(duplicate_checking == FALSE) {
 		free(block_list);
@@ -5102,8 +5128,18 @@ void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 }
 
 
+void open_log_file(char *filename)
+{
+	log_fd=fopen(filename, "w");
+	if(log_fd == NULL)
+		BAD_ERROR("Failed to open log file \"%s\" because %s\n", filename, strerror(errno));
+
+	logging=TRUE;
+}
+
+
 #define VERSION() \
-	printf("mksquashfs version 4.3-git (2017/11/29)\n");\
+	printf("mksquashfs version 4.3-git (2019/04/27)\n");\
 	printf("copyright (C) 2017 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5187,7 +5223,7 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-ef") == 0 ||
 				strcmp(argv[i], "-pf") == 0 ||
 				strcmp(argv[i], "-vaf") == 0 ||
-				strcmp(argv[i], "-comp") == 0)
+				strcmp(argv[i], "-log") == 0)
 			i++;
 	}
 
@@ -5200,7 +5236,15 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = source + 2; i < argc; i++) {
-		if(strcmp(argv[i], "-action") == 0 ||
+		if(strcmp(argv[i], "-log") == 0) {
+			if(++i == argc) {
+				ERROR("%s: %s missing log file\n",
+					argv[0], argv[i - 1]);
+				exit(1);
+			}
+			open_log_file(argv[i]);
+
+		} else if(strcmp(argv[i], "-action") == 0 ||
 				strcmp(argv[i], "-a") ==0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing action\n",
@@ -5800,7 +5844,8 @@ printOptions:
 				strcmp(argv[i], "-pf") == 0 ||
 				strcmp(argv[i], "-af") == 0 ||
 				strcmp(argv[i], "-vaf") == 0 ||
-				strcmp(argv[i], "-comp") == 0)
+				strcmp(argv[i], "-comp") == 0 ||
+				strcmp(argv[i], "-log") == 0)
 			i++;
 
 	if(i != argc) {
@@ -5830,7 +5875,8 @@ printOptions:
 				strcmp(argv[i], "-pf") == 0 ||
 				strcmp(argv[i], "-af") == 0 ||
 				strcmp(argv[i], "-vaf") == 0 ||
-				strcmp(argv[i], "-comp") == 0)
+				strcmp(argv[i], "-comp") == 0 ||
+				strcmp(argv[i], "-log") == 0)
 			i++;
 
 	if(!delete) {
@@ -6069,6 +6115,9 @@ printOptions:
 
 	set_progressbar_state(FALSE);
 	write_filesystem_tables(&sBlk, nopad);
+
+	if(logging)
+		fclose(log_fd);
 
 	return 0;
 }
