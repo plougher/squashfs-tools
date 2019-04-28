@@ -5354,16 +5354,13 @@ print_compressor_options:
 			force_progress = TRUE;
 		else if(strcmp(argv[i], "-no-exports") == 0)
 			exportable = FALSE;
-        else if(strcmp(argv[i], "-offset") == 0 ||
-				strcmp(argv[i], "-o") ==0) {
+		else if(strcmp(argv[i], "-offset") == 0 || strcmp(argv[i], "-o") == 0) {
 			if(++i == argc) {
-				ERROR("%s: %s offset missing argument\n", argv[0],
-							argv[i - 1]);
+				ERROR("%s: %s offset missing argument\n", argv[0], argv[i - 1]);
 				exit(1);
 			}
-			squashfs_start_offset = (off_t)atol(argv[i]);
-        }        
-		else if(strcmp(argv[i], "-processors") == 0) {
+			squashfs_start_offset = (off_t) atol(argv[i]);
+		} else if(strcmp(argv[i], "-processors") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &processors)) {
 				ERROR("%s: -processors missing or invalid "
 					"processor number\n", argv[0]);
