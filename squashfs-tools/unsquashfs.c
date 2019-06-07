@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2017
+ * 2012, 2013, 2014, 2017, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -1669,13 +1669,18 @@ void squashfs_stat(char *source)
 			char buffer[SQUASHFS_METADATA_SIZE] __attribute__ ((aligned));
 			int bytes;
 
-			bytes = read_block(fd, sizeof(sBlk.s), NULL, 0, buffer);
-			if(bytes == 0) {
-				ERROR("Failed to read compressor options\n");
-				return;
-			}
+			if(!comp->supported)
+				printf("\tCould not display compressor options, because %s compression is not supported\n",
+						comp->name);
+			else {
+				bytes = read_block(fd, sizeof(sBlk.s), NULL, 0, buffer);
+				if(bytes == 0) {
+					ERROR("Failed to read compressor options\n");
+					return;
+				}
 
-			compressor_display_options(comp, buffer, bytes);
+				compressor_display_options(comp, buffer, bytes);
+			}
 		}
 	}
 
@@ -2500,8 +2505,8 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.3-git (2017/11/29)\n");\
-	printf("copyright (C) 2017 Phillip Lougher "\
+	printf("unsquashfs version 4.3-git (2019/06/07)\n");\
+	printf("copyright (C) 2019 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
 		"\n");\
