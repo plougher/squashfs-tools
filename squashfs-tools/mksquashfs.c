@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2017
+ * 2012, 2013, 2014, 2017, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -267,6 +267,13 @@ pthread_t *restore_thread = NULL;
 pthread_mutex_t	fragment_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t	pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t	dup_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* reproducible image queues and threads */
+struct seq_queue *to_order;
+pthread_t order_thread;
+pthread_cond_t fragment_waiting = PTHREAD_COND_INITIALIZER;
+
+int reproducible = TRUE;
 
 /* user options that control parallelisation */
 int processors = -1;
@@ -1469,6 +1476,18 @@ unsigned short get_fragment_checksum(struct file_info *file)
 }
 
 
+void ensure_fragments_flushed()
+{
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
+	pthread_mutex_lock(&fragment_mutex);
+
+	while(fragments_outstanding)
+		pthread_cond_wait(&fragment_waiting, &fragment_mutex);
+
+	pthread_cleanup_pop(1);
+}
+
+
 void lock_fragments()
 {
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
@@ -1529,12 +1548,15 @@ void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 
 void write_fragment(struct file_buffer *fragment)
 {
+	static long long sequence = 0;
+
 	if(fragment == NULL)
 		return;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
 	fragment_table[fragment->block].unused = 0;
+	fragment->sequence = sequence ++;
 	fragments_outstanding ++;
 	queue_put(to_frag, fragment);
 	pthread_cleanup_pop(1);
@@ -2452,6 +2474,60 @@ void *frag_deflator(void *arg)
 }
 
 
+void *frag_order_deflator(void *arg)
+{
+	void *stream = NULL;
+	int res;
+
+	res = compressor_init(comp, &stream, block_size, 1);
+	if(res)
+		BAD_ERROR("frag_deflator:: compressor_init failed\n");
+
+	while(1) {
+		int c_byte;
+		struct file_buffer *file_buffer = queue_get(to_frag);
+		struct file_buffer *write_buffer =
+			cache_get(fwriter_buffer, file_buffer->block);
+
+		c_byte = mangle2(stream, write_buffer->data, file_buffer->data,
+			file_buffer->size, block_size, noF, 1);
+		write_buffer->block = file_buffer->block;
+		write_buffer->sequence = file_buffer->sequence;
+		write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
+		write_buffer->fragment = FALSE;
+		seq_queue_put(to_order, write_buffer);
+		TRACE("Writing fragment %lld, uncompressed size %d, "
+			"compressed size %d\n", file_buffer->block,
+			file_buffer->size, SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte));
+		cache_block_put(file_buffer);
+	}
+}
+
+
+void *frag_orderer(void *arg)
+{
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
+
+	while(1) {
+		struct file_buffer *write_buffer = seq_queue_get(to_order);
+		int block = write_buffer->block;
+
+		pthread_mutex_lock(&fragment_mutex);
+		fragment_table[block].size = write_buffer->size;
+		fragment_table[block].start_block = bytes;
+		write_buffer->block = bytes;
+		bytes += SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size);
+		fragments_outstanding --;
+		log_fragment(block, write_buffer->block);
+		queue_put(to_writer, write_buffer);
+		pthread_cond_signal(&fragment_waiting);
+		pthread_mutex_unlock(&fragment_mutex);
+	}
+
+	pthread_cleanup_pop(0);
+}
+
+
 struct file_buffer *get_file_buffer()
 {
 	struct file_buffer *file_buffer = seq_queue_get(to_main);
@@ -2525,7 +2601,10 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	*duplicate_file = FALSE;
 
-	lock_fragments();
+	if(reproducible)
+		ensure_fragments_flushed();
+	else
+		lock_fragments();
 
 	file_bytes = 0;
 	start = bytes;
@@ -2562,7 +2641,9 @@ int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 			goto read_err;
 	}
 
-	unlock_fragments();
+	if(!reproducible)
+		unlock_fragments();
+
 	fragment = get_and_fill_fragment(fragment_buffer, dir_ent);
 
 	if(duplicate_checking)
@@ -2599,7 +2680,8 @@ read_err:
 			BAD_ERROR("Failed to truncate dest file because %s\n",
 				strerror(errno));
 	}
-	unlock_fragments();
+	if(!reproducible)
+		unlock_fragments();
 	free(block_list);
 	cache_block_put(read_buffer);
 	return status;
@@ -2630,7 +2712,10 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 	if(buffer_list == NULL)
 		MEM_ERROR();
 
-	lock_fragments();
+	if(reproducible)
+		ensure_fragments_flushed();
+	else
+		lock_fragments();
 
 	file_bytes = 0;
 	start = dup_start = bytes;
@@ -2698,7 +2783,8 @@ int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 		}
 	}
 
-	unlock_fragments();
+	if(!reproducible)
+		unlock_fragments();
 	cache_block_put(fragment_buffer);
 	free(buffer_list);
 	file_count ++;
@@ -2740,7 +2826,8 @@ read_err:
 			BAD_ERROR("Failed to truncate dest file because %s\n",
 				strerror(errno));
 	}
-	unlock_fragments();
+	if(!reproducible)
+		unlock_fragments();
 	for(blocks = thresh; blocks < block; blocks ++)
 		cache_block_put(buffer_list[blocks]);
 	free(buffer_list);
@@ -2771,7 +2858,10 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 	if(block_list == NULL)
 		MEM_ERROR();
 
-	lock_fragments();
+	if(reproducible)
+		ensure_fragments_flushed();
+	else
+		lock_fragments();
 
 	file_bytes = 0;
 	start = bytes;
@@ -2802,7 +2892,8 @@ int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 		}
 	}
 
-	unlock_fragments();
+	if(!reproducible)
+		unlock_fragments();
 	fragment = get_and_fill_fragment(fragment_buffer, dir_ent);
 
 	if(duplicate_checking)
@@ -2850,7 +2941,8 @@ read_err:
 			BAD_ERROR("Failed to truncate dest file because %s\n",
 				strerror(errno));
 	}
-	unlock_fragments();
+	if(!reproducible)
+		unlock_fragments();
 	free(block_list);
 	cache_block_put(read_buffer);
 	return status;
@@ -4295,8 +4387,8 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	for(i = 0; i < processors; i++) {
 		if(pthread_create(&deflator_thread[i], NULL, deflator, NULL))
 			BAD_ERROR("Failed to create thread\n");
-		if(pthread_create(&frag_deflator_thread[i], NULL, frag_deflator,
-				NULL) != 0)
+		if(pthread_create(&frag_deflator_thread[i], NULL, reproducible ?
+				frag_order_deflator : frag_deflator, NULL) != 0)
 			BAD_ERROR("Failed to create thread\n");
 		if(pthread_create(&frag_thread[i], NULL, frag_thrd,
 				(void *) destination_file) != 0)
@@ -4304,6 +4396,11 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	}
 
 	main_thread = pthread_self();
+
+	if(reproducible) {
+		to_order = seq_queue_init();
+		pthread_create(&order_thread, NULL, frag_orderer, NULL);
+	}
 
 	if(!quiet)
 		printf("Parallel mksquashfs: Using %d processor%s\n", processors,
@@ -5139,8 +5236,8 @@ void open_log_file(char *filename)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.3-git (2019/04/27)\n");\
-	printf("copyright (C) 2017 Phillip Lougher "\
+	printf("mksquashfs version 4.3-git (2019/06/30)\n");\
+	printf("copyright (C) 2019 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
 		"\n");\
@@ -6099,7 +6196,8 @@ printOptions:
 
 	while((fragment = get_frag_action(fragment)))
 		write_fragment(*fragment);
-	unlock_fragments();
+	if(!reproducible)
+		unlock_fragments();
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
 	while(fragments_outstanding) {

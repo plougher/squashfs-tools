@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2014
+ * Copyright (c) 2013, 2014, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -46,12 +46,13 @@
 #define FALSE 0
 #define TRUE 1
 
-extern pthread_t reader_thread, writer_thread, main_thread;
+extern pthread_t reader_thread, writer_thread, main_thread, order_thread;
 extern pthread_t *deflator_thread, *frag_deflator_thread, *frag_thread;
 extern struct queue *to_deflate, *to_writer, *to_frag, *to_process_frag;
-extern struct seq_queue *to_main;
+extern struct seq_queue *to_main, *to_order;
 extern void restorefs();
 extern int processors;
+extern int reproducible;
 
 static int interrupted = 0;
 static pthread_t restore_thread;
@@ -130,6 +131,18 @@ void *restore_thrd(void *arg)
 			pthread_cancel(frag_deflator_thread[i]);
 		for(i = 0; i < processors; i++)
 			pthread_join(frag_deflator_thread[i], NULL);
+
+		if(reproducible) {
+			/* then flush the fragment deflator_threads(s)
+			 * to frag orderer thread.  The frag orderer
+			 * thread will idle
+			 */
+			seq_queue_flush(to_order);
+
+			/* now kill the frag orderer thread */
+			pthread_cancel(order_thread);
+			pthread_join(order_thread, NULL);
+		}
 
 		/*
 		 * then flush the main thread/fragment deflator thread(s)
