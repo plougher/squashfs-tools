@@ -4,7 +4,7 @@
  * Squashfs
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
- * 2012, 2013, 2014
+ * 2012, 2013, 2014, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -131,6 +131,16 @@ struct append_file {
 /* offset of data in compressed metadata blocks (allowing room for
  * compressed size */
 #define BLOCK_OFFSET 2
+
+#ifdef REPRODUCIBLE_DEFAULT
+#define NOREP_STR
+#define REP_STR " (default)"
+#define REP_DEF 1
+#else
+#define NOREP_STR " (default)"
+#define REP_STR
+#define REP_DEF 0
+#endif
 
 extern struct cache *reader_buffer, *fragment_buffer, *reserve_cache;
 struct cache *bwriter_buffer, *fwriter_buffer;

@@ -273,7 +273,7 @@ struct seq_queue *to_order;
 pthread_t order_thread;
 pthread_cond_t fragment_waiting = PTHREAD_COND_INITIALIZER;
 
-int reproducible = TRUE;
+int reproducible = REP_DEF;
 
 /* user options that control parallelisation */
 int processors = -1;
@@ -5333,7 +5333,11 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = source + 2; i < argc; i++) {
-		if(strcmp(argv[i], "-log") == 0) {
+		if(strcmp(argv[i], "-reproducible") == 0)
+			reproducible = TRUE;
+		else if(strcmp(argv[i], "-not-reproducible") == 0)
+			reproducible = FALSE;
+		else if(strcmp(argv[i], "-log") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing log file\n",
 					argv[0], argv[i - 1]);
@@ -5728,6 +5732,10 @@ printOptions:
 			ERROR("\t\t\tOptionally a suffix of K or M can be"
 				" given to specify\n\t\t\tKbytes or Mbytes"
 				" respectively\n");
+			ERROR("-reproducible\t\tbuild images that are reproducible"
+				REP_STR "\n");
+			ERROR("-no-reproducible\tbuild images that are not reproducible"
+				NOREP_STR "\n");
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
 			ERROR("-no-sparse\t\tdon't detect sparse files\n");

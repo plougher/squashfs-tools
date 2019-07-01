@@ -114,6 +114,15 @@ XATTR_SUPPORT = 1
 # default.  Users can enable xattrs by using the -xattrs option.
 XATTR_DEFAULT = 1
 
+###############################################
+#          Reproducible Image options         #
+###############################################
+#
+# Select whether you wish reproducible builds by default.  If selected users
+# can disable reproducible builds using the not-reproducible option.
+# If not selected, users can enable reproducible builds using the
+# -reproducible option
+REPRODUCIBLE_DEFAULT = 1
 
 ###############################################
 #        End of BUILD options section         #
@@ -205,6 +214,10 @@ CFLAGS += -DXATTR_SUPPORT
 endif
 MKSQUASHFS_OBJS += xattr.o read_xattrs.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
+endif
+
+ifeq ($(REPRODUCIBLE_DEFAULT),1)
+CFLAGS += -DREPRODUCIBLE_DEFAULT
 endif
 
 #
