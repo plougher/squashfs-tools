@@ -275,6 +275,10 @@ pthread_cond_t fragment_waiting = PTHREAD_COND_INITIALIZER;
 
 int reproducible = REP_DEF;
 
+/* Root mode option */
+int root_mode_opt = FALSE;
+mode_t root_mode;
+
 /* user options that control parallelisation */
 int processors = -1;
 int bwriter_size;
@@ -3228,7 +3232,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 		 * command line
 		 */
 		memset(&buf, 0, sizeof(buf));
-		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+		buf.st_mode = (root_mode_opt) ? root_mode | S_IFDIR : S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
 		buf.st_uid = getuid();
 		buf.st_gid = getgid();
 		buf.st_mtime = time(NULL);
@@ -3240,6 +3244,9 @@ void dir_scan(squashfs_inode *inode, char *pathname,
 			/* source directory has disappeared? */
 			BAD_ERROR("Cannot stat source directory %s because %s\n",
 				pathname, strerror(errno));
+		if(root_mode_opt)
+			buf.st_mode = root_mode | S_IFDIR;
+
 		dir_ent->inode = lookup_inode(&buf);
 	}
 
@@ -5001,14 +5008,14 @@ void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
 }
 
 
-int parse_numberll(char *start, long long *res, int size)
+int _parse_numberll(char *start, long long *res, int size, int base)
 {
 	char *end;
 	long long number;
 
 	errno = 0; /* To distinguish success/failure after call */
 
-	number = strtoll(start, &end, 10);
+	number = strtoll(start, &end, base);
 
 	/*
 	 * check for strtoll underflow or overflow in conversion, and other
@@ -5086,6 +5093,12 @@ int parse_numberll(char *start, long long *res, int size)
 }
 
 
+int parse_numberll(char *start, long long *res, int size)
+{
+	return _parse_numberll(start, res, size, 10);
+}
+
+
 int parse_number(char *start, int *res, int size)
 {
 	long long number;
@@ -5105,6 +5118,21 @@ int parse_number(char *start, int *res, int size)
 int parse_num(char *arg, int *res)
 {
 	return parse_number(arg, res, 0);
+}
+
+
+int parse_mode(char *arg, mode_t *res)
+{
+	long long number;
+
+	if(!_parse_numberll(arg, &number, 0, 8))
+		return 0;
+
+	if(number > 07777)
+		return 0;
+
+	*res = (mode_t) number;
+	return 1;
 }
 
 
@@ -5337,7 +5365,14 @@ int main(int argc, char *argv[])
 			reproducible = TRUE;
 		else if(strcmp(argv[i], "-not-reproducible") == 0)
 			reproducible = FALSE;
-		else if(strcmp(argv[i], "-log") == 0) {
+		else if(strcmp(argv[i], "-root-mode") == 0) {
+			if((++i == argc) || !parse_mode(argv[i], &root_mode)) {
+				ERROR("%s: -root-mode missing or invalid mode,"
+					" octal number <= 07777 expected\n", argv[0]);
+				exit(1);
+			}
+			root_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-log") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing log file\n",
 					argv[0], argv[i - 1]);
@@ -5756,6 +5791,7 @@ printOptions:
 			ERROR("-no-duplicates\t\tdo not perform duplicate "
 				"checking\n");
 			ERROR("-all-root\t\tmake all files owned by root\n");
+			ERROR("-root-mode <mode>\tset root directory permissions to octal <mode>\n");
 			ERROR("-force-uid uid\t\tset all file uids to uid\n");
 			ERROR("-force-gid gid\t\tset all file gids to gid\n");
 			ERROR("-nopad\t\t\tdo not pad filesystem to a multiple "
