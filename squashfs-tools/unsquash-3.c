@@ -341,8 +341,8 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 			"%d, %d directory entries\n", bytes, dir_count);
 		bytes += sizeof(dirh);
 
-		/* dir_count should never be larger than 256 */
-		if(dir_count > 256)
+		/* dir_count should never be larger than SQUASHFS_DIR_COUNT */
+		if(dir_count > SQUASHFS_DIR_COUNT)
 			goto corrupted;
 
 		while(dir_count--) {
