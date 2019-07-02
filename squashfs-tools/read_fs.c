@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2012, 2013, 2014
+ * 2012, 2013, 2014, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -667,6 +667,14 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 		SQUASHFS_SWAP_DIR_HEADER(directory_table + bytes, &dirh);
 
 		dir_count = dirh.count + 1;
+
+		/* dir_count should never be larger than SQUASHFS_DIR_COUNT */
+		if(dir_count > SQUASHFS_DIR_COUNT) {
+			ERROR("File system corrupted: too many entries in directory\n");
+			free(directory_table);
+			return NULL;
+		}
+
 		TRACE("squashfs_readdir: Read directory header @ byte position "
 			"0x%x, 0x%x directory entries\n", bytes, dir_count);
 		bytes += sizeof(dirh);
@@ -674,6 +682,13 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 		while(dir_count--) {
 			SQUASHFS_SWAP_DIR_ENTRY(directory_table + bytes, dire);
 			bytes += sizeof(*dire);
+
+			/* size should never be SQUASHFS_NAME_LEN or larger */
+			if(dire->size >= SQUASHFS_NAME_LEN) {
+				ERROR("File system corrupted: filename too long\n");
+				free(directory_table);
+				return NULL;
+			}
 
 			memcpy(dire->name, directory_table + bytes,
 				dire->size + 1);
