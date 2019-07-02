@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2011, 2012, 2013
+ * Copyright (c) 2009, 2010, 2011, 2012, 2013, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -314,8 +314,8 @@ struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset,
 
 			bytes += sizeof(*dire);
 
-			/* size should never be larger than SQUASHFS_NAME_LEN */
-			if(dire->size > SQUASHFS_NAME_LEN)
+			/* size should never be SQUASHFS_NAME_LEN or larger */
+			if(dire->size >= SQUASHFS_NAME_LEN)
 				goto corrupted;
 
 			memcpy(dire->name, directory_table + bytes,
