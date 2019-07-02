@@ -264,8 +264,10 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 		bytes += sizeof(dirh);
 
 		/* dir_count should never be larger than SQUASHFS_DIR_COUNT */
-		if(dir_count > SQUASHFS_DIR_COUNT)
+		if(dir_count > SQUASHFS_DIR_COUNT) {
+			ERROR("File system corrupted: too many entries in directory\n");
 			goto corrupted;
+		}
 
 		while(dir_count--) {
 			if(swap) {
@@ -279,8 +281,10 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 			bytes += sizeof(*dire);
 
 			/* size should never be SQUASHFS_NAME_LEN or larger */
-			if(dire->size >= SQUASHFS_NAME_LEN)
+			if(dire->size >= SQUASHFS_NAME_LEN) {
+				ERROR("File system corrupted: filename too long\n");
 				goto corrupted;
+			}
 
 			memcpy(dire->name, directory_table + bytes,
 				dire->size + 1);
