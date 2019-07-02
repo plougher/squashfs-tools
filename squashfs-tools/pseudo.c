@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2012, 2014, 2017
+ * Copyright (c) 2009, 2010, 2012, 2014, 2017, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -51,9 +51,6 @@ int pseudo_count = 0;
 static char *get_component(char *target, char **targname)
 {
 	char *start;
-
-	while(*target == '/')
-		target ++;
 
 	start = target;
 	while(*target != '/' && *target != '\0')
@@ -310,7 +307,10 @@ int read_pseudo_def(char *def)
 	}
 	*name = '\0';
 
-	if(*filename == '\0') {
+	/* Skip any leading slashes (/) */
+	for(name = filename; *name == '/'; name ++);
+
+	if(*name == '\0') {
 		ERROR("Not enough or invalid arguments in pseudo file "
 			"definition \"%s\"\n", orig_def);
 		goto error;
@@ -490,7 +490,7 @@ int read_pseudo_def(char *def)
 	if(type == 's')
 		dev->symlink = strdup(def);
 
-	pseudo = add_pseudo(pseudo, dev, filename, filename);
+	pseudo = add_pseudo(pseudo, dev, name, name);
 
 	free(filename);
 	return TRUE;
