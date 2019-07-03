@@ -5769,7 +5769,7 @@ printOptions:
 				" respectively\n");
 			ERROR("-reproducible\t\tbuild images that are reproducible"
 				REP_STR "\n");
-			ERROR("-no-reproducible\tbuild images that are not reproducible"
+			ERROR("-not-reproducible\tbuild images that are not reproducible"
 				NOREP_STR "\n");
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
