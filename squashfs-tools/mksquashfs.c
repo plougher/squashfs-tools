@@ -5793,8 +5793,8 @@ printOptions:
 				"checking\n");
 			ERROR("-all-root\t\tmake all files owned by root\n");
 			ERROR("-root-mode <mode>\tset root directory permissions to octal <mode>\n");
-			ERROR("-force-uid uid\t\tset all file uids to uid\n");
-			ERROR("-force-gid gid\t\tset all file gids to gid\n");
+			ERROR("-force-uid <uid>\tset all file uids to <uid>\n");
+			ERROR("-force-gid <gid>\tset all file gids to <gid>\n");
 			ERROR("-nopad\t\t\tdo not pad filesystem to a multiple "
 				"of 4K\n");
 			ERROR("-keep-as-directory\tif one source directory is "
