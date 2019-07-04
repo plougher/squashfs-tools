@@ -6247,6 +6247,7 @@ printOptions:
 	pthread_mutex_lock(&fragment_mutex);
 	while(fragments_outstanding) {
 		pthread_mutex_unlock(&fragment_mutex);
+		pthread_testcancel();
 		sched_yield();
 		pthread_mutex_lock(&fragment_mutex);
 	}
