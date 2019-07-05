@@ -61,8 +61,6 @@ struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
 int fd;
 unsigned int *uid_table, *guid_table;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
-char *fragment_data;
-char *file_data;
 char *data;
 unsigned int block_size;
 unsigned int block_log;
@@ -2777,14 +2775,6 @@ options:
 		data_buffer_size <<= 20 - block_log;
 
 	initialise_threads(fragment_buffer_size, data_buffer_size);
-
-	fragment_data = malloc(block_size);
-	if(fragment_data == NULL)
-		EXIT_UNSQUASH("failed to allocate fragment_data\n");
-
-	file_data = malloc(block_size);
-	if(file_data == NULL)
-		EXIT_UNSQUASH("failed to allocate file_data");
 
 	data = malloc(block_size);
 	if(data == NULL)
