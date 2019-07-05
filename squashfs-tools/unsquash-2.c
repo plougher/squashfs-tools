@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2013
+ * Copyright (c) 2009, 2010, 2013, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -267,4 +267,26 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 				header.base.inode_type);
 	}
 	return &i;
+}
+
+
+int read_filesystem_tables_2()
+{
+	long long directory_table_end;
+
+	if(read_uids_guids_1() == FALSE)
+		return FALSE;
+
+	if(read_fragment_table_2(&directory_table_end) == FALSE)
+		return FALSE;
+
+	if(read_inode_table(sBlk.s.inode_table_start,
+				sBlk.s.directory_table_start) == FALSE)
+		return FALSE;
+
+	if(read_directory_table(sBlk.s.directory_table_start,
+				directory_table_end) == FALSE)
+		return FALSE;
+
+	return TRUE;
 }

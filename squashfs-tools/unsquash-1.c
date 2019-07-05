@@ -46,14 +46,6 @@ void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
 }
 
 
-int read_fragment_table_1(long long *directory_table_end)
-{
-	TRACE("read_fragment_table\n");
-	*directory_table_end = sBlk.s.fragment_table_start;
-	return TRUE;
-}
-
-
 struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 {
 	static union squashfs_inode_header_1 header;
@@ -356,6 +348,23 @@ int read_uids_guids_1()
 			return FALSE;
 		}
 	}
+
+	return TRUE;
+}
+
+
+int read_filesystem_tables_1()
+{
+	if(read_uids_guids_1() == FALSE)
+		return FALSE;
+
+	if(read_inode_table(sBlk.s.inode_table_start,
+				sBlk.s.directory_table_start) == FALSE)
+		return FALSE;
+
+	if(read_directory_table(sBlk.s.directory_table_start,
+				sBlk.uid_start) == FALSE)
+		return FALSE;
 
 	return TRUE;
 }

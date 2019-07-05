@@ -4,7 +4,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2013, 2014
+ * Copyright (c) 2009, 2010, 2013, 2014, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -101,12 +101,11 @@ typedef struct squashfs_operations {
 		unsigned int offset, struct inode **i);
 	void (*read_fragment)(unsigned int fragment, long long *start_block,
 		int *size);
-	int (*read_fragment_table)(long long *);
 	void (*read_block_list)(unsigned int *block_list, char *block_ptr,
 		int blocks);
 	struct inode *(*read_inode)(unsigned int start_block,
 		unsigned int offset);
-	int (*read_uids_guids)();
+	int (*read_filesystem_tables)();
 } squashfs_operations;
 
 struct test {
@@ -234,10 +233,13 @@ extern int progress_enabled;
 extern int inode_number;
 extern int lookup_type[];
 extern int fd;
+extern int no_xattrs;
 extern struct queue *to_reader, *to_inflate, *to_writer;
 extern struct cache *fragment_cache, *data_cache;
 
 /* unsquashfs.c */
+extern int read_inode_table(long long, long long);
+extern int read_directory_table(long long, long long);
 extern int lookup_entry(struct hash_table_entry **, long long);
 extern int read_fs_bytes(int fd, long long, int, void *);
 extern int read_block(int, long long, long long *, int, void *);
@@ -248,7 +250,7 @@ extern void dump_cache(struct cache *);
 
 /* unsquash-1.c */
 extern void read_block_list_1(unsigned int *, char *, int);
-extern int read_fragment_table_1(long long *);
+extern int read_filesystem_tables_1();
 extern struct inode *read_inode_1(unsigned int, unsigned int);
 extern struct dir *squashfs_opendir_1(unsigned int, unsigned int,
 	struct inode **);
@@ -256,12 +258,13 @@ extern int read_uids_guids_1();
 
 /* unsquash-2.c */
 extern void read_block_list_2(unsigned int *, char *, int);
-extern int read_fragment_table_2(long long *);
+extern int read_filesystem_tables_2();
 extern void read_fragment_2(unsigned int, long long *, int *);
 extern struct inode *read_inode_2(unsigned int, unsigned int);
 
 /* unsquash-3.c */
 extern int read_fragment_table_3(long long *);
+extern int read_filesystem_tables_3();
 extern void read_fragment_3(unsigned int, long long *, int *);
 extern struct inode *read_inode_3(unsigned int, unsigned int);
 extern struct dir *squashfs_opendir_3(unsigned int, unsigned int,
@@ -269,9 +272,9 @@ extern struct dir *squashfs_opendir_3(unsigned int, unsigned int,
 
 /* unsquash-4.c */
 extern int read_fragment_table_4(long long *);
+extern int read_filesystem_tables_4();
 extern void read_fragment_4(unsigned int, long long *, int *);
 extern struct inode *read_inode_4(unsigned int, unsigned int);
 extern struct dir *squashfs_opendir_4(unsigned int, unsigned int,
 	struct inode **);
-extern int read_uids_guids_4();
 #endif

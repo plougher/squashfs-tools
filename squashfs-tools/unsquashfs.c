@@ -1776,12 +1776,11 @@ int read_super(char *source)
 
 	if(sBlk_4.s_magic == SQUASHFS_MAGIC && sBlk_4.s_major == 4 &&
 			sBlk_4.s_minor == 0) {
+		s_ops.read_filesystem_tables = read_filesystem_tables_4;
 		s_ops.squashfs_opendir = squashfs_opendir_4;
 		s_ops.read_fragment = read_fragment_4;
-		s_ops.read_fragment_table = read_fragment_table_4;
 		s_ops.read_block_list = read_block_list_2;
 		s_ops.read_inode = read_inode_4;
-		s_ops.read_uids_guids = read_uids_guids_4;
 		memcpy(&sBlk, &sBlk_4, sizeof(sBlk_4));
 
 		/*
@@ -1849,28 +1848,25 @@ int read_super(char *source)
 		if(sBlk.s.s_major == 1) {
 			sBlk.s.block_size = sBlk_3.block_size_1;
 			sBlk.s.fragment_table_start = sBlk.uid_start;
+			s_ops.read_filesystem_tables = read_filesystem_tables_1;
 			s_ops.squashfs_opendir = squashfs_opendir_1;
-			s_ops.read_fragment_table = read_fragment_table_1;
 			s_ops.read_block_list = read_block_list_1;
 			s_ops.read_inode = read_inode_1;
-			s_ops.read_uids_guids = read_uids_guids_1;
 		} else {
 			sBlk.s.fragment_table_start =
 				sBlk_3.fragment_table_start_2;
+			s_ops.read_filesystem_tables = read_filesystem_tables_2;
 			s_ops.squashfs_opendir = squashfs_opendir_1;
 			s_ops.read_fragment = read_fragment_2;
-			s_ops.read_fragment_table = read_fragment_table_2;
 			s_ops.read_block_list = read_block_list_2;
 			s_ops.read_inode = read_inode_2;
-			s_ops.read_uids_guids = read_uids_guids_1;
 		}
 	} else if(sBlk.s.s_major == 3) {
+		s_ops.read_filesystem_tables = read_filesystem_tables_3;
 		s_ops.squashfs_opendir = squashfs_opendir_3;
 		s_ops.read_fragment = read_fragment_3;
-		s_ops.read_fragment_table = read_fragment_table_3;
 		s_ops.read_block_list = read_block_list_2;
 		s_ops.read_inode = read_inode_3;
-		s_ops.read_uids_guids = read_uids_guids_1;
 	} else {
 		ERROR("Filesystem on %s is (%d:%d), ", source, sBlk.s.s_major,
 			sBlk.s.s_minor);
@@ -2465,7 +2461,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.3-git (2019/06/07)\n");\
+	printf("unsquashfs version 4.3-git (2019/07/05)\n");\
 	printf("copyright (C) 2019 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
@@ -2489,7 +2485,6 @@ int main(int argc, char *argv[])
 	int n;
 	struct pathnames *paths = NULL;
 	struct pathname *path = NULL;
-	long long directory_table_end;
 	int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
 	int data_buffer_size = DATA_BUFFER_DEFAULT;
 
@@ -2743,25 +2738,8 @@ options:
 
 	memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
 
-	if(s_ops.read_uids_guids() == FALSE)
-		EXIT_UNSQUASH("failed to uid/gid table\n");
-
-	if(s_ops.read_fragment_table(&directory_table_end) == FALSE)
-		EXIT_UNSQUASH("failed to read fragment table\n");
-
-	if(read_inode_table(sBlk.s.inode_table_start,
-				sBlk.s.directory_table_start) == FALSE)
-		EXIT_UNSQUASH("failed to read inode table\n");
-
-	if(read_directory_table(sBlk.s.directory_table_start,
-				directory_table_end) == FALSE)
-		EXIT_UNSQUASH("failed to read directory table\n");
-
-	if(no_xattrs)
-		sBlk.s.xattr_id_table_start = SQUASHFS_INVALID_BLK;
-
-	if(read_xattrs_from_disk(fd, &sBlk.s) == 0)
-		EXIT_UNSQUASH("failed to read the xattr table\n");
+	if(s_ops.read_filesystem_tables() == FALSE)
+		EXIT_UNSQUASH("failed to read file system tables\n");
 
 	if(path) {
 		paths = init_subdir();

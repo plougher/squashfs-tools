@@ -395,3 +395,25 @@ corrupted:
 	free(dir);
 	return NULL;
 }
+
+
+int read_filesystem_tables_3()
+{
+	long long directory_table_end;
+
+	if(read_uids_guids_1() == FALSE)
+		return FALSE;
+
+	if(read_fragment_table_3(&directory_table_end) == FALSE)
+		return FALSE;
+
+	if(read_inode_table(sBlk.s.inode_table_start,
+				sBlk.s.directory_table_start) == FALSE)
+		return FALSE;
+
+	if(read_directory_table(sBlk.s.directory_table_start,
+				directory_table_end) == FALSE)
+		return FALSE;
+
+	return TRUE;
+}

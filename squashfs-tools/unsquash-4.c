@@ -24,6 +24,7 @@
 
 #include "unsquashfs.h"
 #include "squashfs_swap.h"
+#include "xattr.h"
 
 static struct squashfs_fragment_entry *fragment_table;
 static unsigned int *id_table;
@@ -391,6 +392,34 @@ int read_uids_guids_4()
 	}
 
 	SQUASHFS_INSWAP_INTS(id_table, sBlk.s.no_ids);
+
+	return TRUE;
+}
+
+
+int read_filesystem_tables_4()
+{
+	long long directory_table_end;
+
+	if(read_uids_guids_4() == FALSE)
+		return FALSE;
+
+	if(read_fragment_table_4(&directory_table_end) == FALSE)
+		return FALSE;
+
+	if(read_inode_table(sBlk.s.inode_table_start,
+				sBlk.s.directory_table_start) == FALSE)
+		return FALSE;
+
+	if(read_directory_table(sBlk.s.directory_table_start,
+				directory_table_end) == FALSE)
+		return FALSE;
+
+	if(no_xattrs)
+		sBlk.s.xattr_id_table_start = SQUASHFS_INVALID_BLK;
+
+	if(read_xattrs_from_disk(fd, &sBlk.s) == 0)
+		return FALSE;
 
 	return TRUE;
 }
