@@ -40,7 +40,7 @@ void read_block_list_2(unsigned int *block_list, char *block_ptr, int blocks)
 }
 
 
-int read_fragment_table_2(long long *directory_table_end)
+static int read_fragment_table(long long *directory_table_end)
 {
 	int res, i;
 	int bytes = SQUASHFS_FRAGMENT_BYTES_2(sBlk.s.fragments);
@@ -277,7 +277,7 @@ int read_filesystem_tables_2()
 	if(read_uids_guids_1() == FALSE)
 		return FALSE;
 
-	if(read_fragment_table_2(&directory_table_end) == FALSE)
+	if(read_fragment_table(&directory_table_end) == FALSE)
 		return FALSE;
 
 	if(read_inode_table(sBlk.s.inode_table_start,

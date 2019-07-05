@@ -29,7 +29,7 @@
 static struct squashfs_fragment_entry *fragment_table;
 static unsigned int *id_table;
 
-int read_fragment_table_4(long long *directory_table_end)
+static int read_fragment_table(long long *directory_table_end)
 {
 	int res, i;
 	int bytes = SQUASHFS_FRAGMENT_BYTES(sBlk.s.fragments);
@@ -356,7 +356,7 @@ corrupted:
 }
 
 
-int read_uids_guids_4()
+static int read_uids_guids()
 {
 	int res, i;
 	int bytes = SQUASHFS_ID_BYTES(sBlk.s.no_ids);
@@ -401,10 +401,10 @@ int read_filesystem_tables_4()
 {
 	long long directory_table_end;
 
-	if(read_uids_guids_4() == FALSE)
+	if(read_uids_guids() == FALSE)
 		return FALSE;
 
-	if(read_fragment_table_4(&directory_table_end) == FALSE)
+	if(read_fragment_table(&directory_table_end) == FALSE)
 		return FALSE;
 
 	if(read_inode_table(sBlk.s.inode_table_start,

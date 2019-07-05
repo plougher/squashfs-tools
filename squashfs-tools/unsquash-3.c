@@ -27,7 +27,7 @@
 
 static squashfs_fragment_entry_3 *fragment_table;
 
-int read_fragment_table_3(long long *directory_table_end)
+static int read_fragment_table(long long *directory_table_end)
 {
 	int res, i;
 	int bytes = SQUASHFS_FRAGMENT_BYTES_3(sBlk.s.fragments);
@@ -404,7 +404,7 @@ int read_filesystem_tables_3()
 	if(read_uids_guids_1() == FALSE)
 		return FALSE;
 
-	if(read_fragment_table_3(&directory_table_end) == FALSE)
+	if(read_fragment_table(&directory_table_end) == FALSE)
 		return FALSE;
 
 	if(read_inode_table(sBlk.s.inode_table_start,
