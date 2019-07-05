@@ -61,7 +61,6 @@ struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
 int fd;
 unsigned int *uid_table, *guid_table;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
-char *data;
 unsigned int block_size;
 unsigned int block_log;
 int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE;
@@ -728,44 +727,6 @@ int read_block(int fd, long long start, long long *next, int expected,
 
 failed:
 	ERROR("read_block: failed to read block @0x%llx\n", start);
-	FAILED = TRUE;
-	return FALSE;
-}
-
-
-int read_data_block(long long start, unsigned int size, char *block)
-{
-	int error, res;
-	int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(size);
-
-	TRACE("read_data_block: block @0x%llx, %d %s bytes\n", start,
-		c_byte, SQUASHFS_COMPRESSED_BLOCK(size) ? "compressed" :
-		"uncompressed");
-
-	if(SQUASHFS_COMPRESSED_BLOCK(size)) {
-		if(read_fs_bytes(fd, start, c_byte, data) == FALSE)
-			goto failed;
-
-		res = compressor_uncompress(comp, block, data, c_byte,
-			block_size, &error);
-
-		if(res == -1) {
-			ERROR("%s uncompress failed with error code %d\n",
-				comp->name, error);
-			goto failed;
-		}
-
-		return res;
-	} else {
-		if(read_fs_bytes(fd, start, c_byte, block) == FALSE)
-			goto failed;
-
-		return c_byte;
-	}
-
-failed:
-	ERROR("read_data_block: failed to read block @0x%llx, size %d\n", start,
-		c_byte);
 	FAILED = TRUE;
 	return FALSE;
 }
@@ -2775,10 +2736,6 @@ options:
 		data_buffer_size <<= 20 - block_log;
 
 	initialise_threads(fragment_buffer_size, data_buffer_size);
-
-	data = malloc(block_size);
-	if(data == NULL)
-		EXIT_UNSQUASH("failed to allocate data\n");
 
 	created_inode = malloc(sBlk.s.inodes * sizeof(char *));
 	if(created_inode == NULL)
