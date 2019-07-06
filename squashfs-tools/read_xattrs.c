@@ -2,7 +2,7 @@
  * Read a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2013
+ * Copyright (c) 2010, 2012, 2013, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -148,7 +148,7 @@ static int read_xattr_entry(struct xattr_list *xattr,
  * Read and decompress the xattr id table and the xattr metadata.
  * This is cached in memory for later use by get_xattr()
  */
-int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
+int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, long long *table_start)
 {
 	int res, bytes, i, indexes, index_bytes, ids;
 	long long *index, start, end;
@@ -169,6 +169,16 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk)
 		return 0;
 
 	SQUASHFS_INSWAP_XATTR_TABLE(&id_table);
+
+	if(flag) {
+		/*
+		 * id_table.xattr_table_start stores the start of the compressed xattr
+		 * * metadata blocks.  This by definition is also the end of the previous
+		 * filesystem table - the id lookup table.
+		 */
+		*table_start = id_table.xattr_table_start;
+		return id_table.xattr_ids;
+	}
 
 	/*
 	 * Allocate and read the index to the xattr id table metadata

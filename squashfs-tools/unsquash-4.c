@@ -356,7 +356,7 @@ corrupted:
 }
 
 
-static int read_uids_guids()
+static int read_uids_guids(long long *table_start)
 {
 	int res, i;
 	int bytes = SQUASHFS_ID_BYTES(sBlk.s.no_ids);
@@ -379,6 +379,14 @@ static int read_uids_guids()
 	}
 	SQUASHFS_INSWAP_ID_BLOCKS(id_index_table, indexes);
 
+	/*
+	 * id_index_table[0] stores the start of the compressed id blocks.
+	 * This by definition is also the end of the previous filesystem
+	 * table - this may be the exports table if it is present, or the
+	 * fragments table if it isn't.
+	 */
+	*table_start = id_index_table[0];
+
 	for(i = 0; i < indexes; i++) {
 		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
 					bytes & (SQUASHFS_METADATA_SIZE - 1);
@@ -397,11 +405,42 @@ static int read_uids_guids()
 }
 
 
+static int parse_exports_table(long long *table_start)
+{
+	int res;
+	int indexes = SQUASHFS_LOOKUP_BLOCKS(sBlk.s.inodes);
+	long long export_index_table[indexes];
+
+	res = read_fs_bytes(fd, sBlk.s.lookup_table_start,
+		SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk.s.inodes), export_index_table);
+	if(res == FALSE) {
+		ERROR("parse_exports_table: failed to read export index table\n");
+		return FALSE;
+	}
+	SQUASHFS_INSWAP_LOOKUP_BLOCKS(export_index_table, indexes);
+
+	/*
+	 * export_index_table[0] stores the start of the compressed export blocks.
+	 * This by definition is also the end of the previous filesystem
+	 * table - the fragment table.
+	 */
+	*table_start = export_index_table[0];
+
+	return TRUE;
+}
+
+
 int read_filesystem_tables_4()
 {
-	long long directory_table_end;
+	long long directory_table_end, table_start;
 
-	if(read_uids_guids() == FALSE)
+	if(read_xattrs_from_disk(fd, &sBlk.s, no_xattrs, &table_start) == 0)
+		return FALSE;
+
+	if(read_uids_guids(&table_start) == FALSE)
+		return FALSE;
+
+	if(parse_exports_table(&table_start) == FALSE)
 		return FALSE;
 
 	if(read_fragment_table(&directory_table_end) == FALSE)
@@ -417,9 +456,6 @@ int read_filesystem_tables_4()
 
 	if(no_xattrs)
 		sBlk.s.xattr_id_table_start = SQUASHFS_INVALID_BLK;
-
-	if(read_xattrs_from_disk(fd, &sBlk.s) == 0)
-		return FALSE;
 
 	return TRUE;
 }
