@@ -73,7 +73,7 @@ struct super_block {
 
 struct hash_table_entry {
 	long long	start;
-	int		bytes;
+	long long	bytes;
 	struct hash_table_entry *next;
 };
 
@@ -240,7 +240,7 @@ extern struct cache *fragment_cache, *data_cache;
 /* unsquashfs.c */
 extern int read_inode_table(long long, long long);
 extern int read_directory_table(long long, long long);
-extern int lookup_entry(struct hash_table_entry **, long long);
+extern long long lookup_entry(struct hash_table_entry **, long long);
 extern int read_fs_bytes(int fd, long long, int, void *);
 extern int read_block(int, long long, long long *, int, void *);
 extern void enable_progress_bar();

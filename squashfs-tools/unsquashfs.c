@@ -593,7 +593,7 @@ int print_filename(char *pathname, struct inode *inode)
 	
 
 void add_entry(struct hash_table_entry *hash_table[], long long start,
-	int bytes)
+	long long bytes)
 {
 	int hash = CALCULATE_HASH(start);
 	struct hash_table_entry *hash_table_entry;
@@ -609,7 +609,7 @@ void add_entry(struct hash_table_entry *hash_table[], long long start,
 }
 
 
-int lookup_entry(struct hash_table_entry *hash_table[], long long start)
+long long lookup_entry(struct hash_table_entry *hash_table[], long long start)
 {
 	int hash = CALCULATE_HASH(start);
 	struct hash_table_entry *hash_table_entry;
@@ -734,7 +734,9 @@ failed:
 
 int read_inode_table(long long start, long long end)
 {
-	int size = 0, bytes = 0, res;
+	int res;
+	long long size = 0;
+	long long bytes = 0;
 
 	TRACE("read_inode_table: start %lld, end %lld\n", start, end);
 
@@ -1155,7 +1157,9 @@ int create_inode(char *pathname, struct inode *i)
 
 int read_directory_table(long long start, long long end)
 {
-	int bytes = 0, size = 0, res;
+	int res;
+	long long bytes = 0;
+	long long size = 0;
 
 	TRACE("read_directory_table: start %lld, end %lld\n", start, end);
 

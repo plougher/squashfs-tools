@@ -99,7 +99,7 @@ struct inode *read_inode_4(unsigned int start_block, unsigned int offset)
 {
 	static union squashfs_inode_header header;
 	long long start = sBlk.s.inode_table_start + start_block;
-	int bytes = lookup_entry(inode_table_hash, start);
+	long long bytes = lookup_entry(inode_table_hash, start);
 	char *block_ptr = inode_table + bytes + offset;
 	static struct inode i;
 
@@ -256,7 +256,7 @@ struct dir *squashfs_opendir_4(unsigned int block_start, unsigned int offset,
 		__attribute__((aligned));
 	struct squashfs_dir_entry *dire = (struct squashfs_dir_entry *) buffer;
 	long long start;
-	int bytes;
+	long long bytes;
 	int dir_count, size;
 	struct dir_ent *new_dir;
 	struct dir *dir;
