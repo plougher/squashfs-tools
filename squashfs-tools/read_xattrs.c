@@ -150,7 +150,16 @@ static int read_xattr_entry(struct xattr_list *xattr,
  */
 int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, long long *table_start)
 {
-	int res, bytes, i, indexes, index_bytes, ids;
+	/*
+	 * Note on overflow limits:
+	 * Size of ids (id_table.xattr_ids) is 2^32 (unsigned int)
+	 * Max size of bytes is 2^32*16 or 2^36
+	 * Max indexes is (2^32*16)/8K or 2^23
+	 * Max index_bytes is ((2^32*16)/8K)*8 or 2^26 or 64M
+	 */
+	int res, i, indexes, index_bytes;
+	unsigned int ids;
+	long long bytes;
 	long long *index, start, end;
 	struct squashfs_xattr_table id_table;
 
@@ -170,24 +179,44 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, l
 
 	SQUASHFS_INSWAP_XATTR_TABLE(&id_table);
 
-	if(flag) {
-		/*
-		 * id_table.xattr_table_start stores the start of the compressed xattr
-		 * * metadata blocks.  This by definition is also the end of the previous
-		 * filesystem table - the id lookup table.
-		 */
-		*table_start = id_table.xattr_table_start;
-		return id_table.xattr_ids;
+	/*
+	 * Compute index table values
+	 */
+	ids = id_table.xattr_ids;
+	xattr_table_start = id_table.xattr_table_start;
+	index_bytes = SQUASHFS_XATTR_BLOCK_BYTES((long long) ids);
+	indexes = SQUASHFS_XATTR_BLOCKS((long long) ids);
+
+	/*
+	 * The size of the index table (index_bytes) should match the
+	 * table start and end points
+	 */
+	if(index_bytes != (sBlk->bytes_used - (sBlk->xattr_id_table_start + sizeof(id_table)))) {
+		ERROR("read_xattrs_from_disk: Bad xattr_ids count in super block\n");
+		return 0;
 	}
+
+	/*
+	 * id_table.xattr_table_start stores the start of the compressed xattr
+	 * metadata blocks.  This by definition is also the end of the previous
+	 * filesystem table - the id lookup table.
+	 */
+	if(table_start != NULL)
+		*table_start = id_table.xattr_table_start;
+
+	/*
+	 * If flag is set then return once we've read the above
+	 * table_start.  That value is necessary for sanity checking,
+	 * but we don't actually want to extract the xattrs, and so
+	 * stop here.
+	 */
+	if(flag)
+		return id_table.xattr_ids;
 
 	/*
 	 * Allocate and read the index to the xattr id table metadata
 	 * blocks
 	 */
-	ids = id_table.xattr_ids;
-	xattr_table_start = id_table.xattr_table_start;
-	index_bytes = SQUASHFS_XATTR_BLOCK_BYTES(ids);
-	indexes = SQUASHFS_XATTR_BLOCKS(ids);
 	index = malloc(index_bytes);
 	if(index == NULL)
 		MEM_ERROR();
@@ -203,7 +232,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, l
 	 * Allocate enough space for the uncompressed xattr id table, and
 	 * read and decompress it
 	 */
-	bytes = SQUASHFS_XATTR_BYTES(ids);
+	bytes = SQUASHFS_XATTR_BYTES((long long) ids);
 	xattr_ids = malloc(bytes);
 	if(xattr_ids == NULL)
 		MEM_ERROR();
@@ -213,7 +242,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, l
 					bytes & (SQUASHFS_METADATA_SIZE - 1);
 		int length = read_block(fd, index[i], NULL, expected,
 			((unsigned char *) xattr_ids) +
-			(i * SQUASHFS_METADATA_SIZE));
+			((long long) i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read xattr id table block %d, from 0x%llx, length "
 			"%d\n", i, index[i], length);
 		if(length == 0) {
