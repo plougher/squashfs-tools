@@ -4381,8 +4381,11 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	to_writer = queue_init(bwriter_size + fwriter_size);
 	from_writer = queue_init(1);
 	to_frag = queue_init(fragment_size);
-	locked_fragment = queue_init(fragment_size);
 	to_main = seq_queue_init();
+	if(reproducible)
+		to_order = seq_queue_init();
+	else
+		locked_fragment = queue_init(fragment_size);
 	reader_buffer = cache_init(block_size, reader_size, 0, 0);
 	bwriter_buffer = cache_init(block_size, bwriter_size, 1, freelst);
 	fwriter_buffer = cache_init(block_size, fwriter_size, 1, freelst);
@@ -4406,10 +4409,8 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 
 	main_thread = pthread_self();
 
-	if(reproducible) {
-		to_order = seq_queue_init();
+	if(reproducible)
 		pthread_create(&order_thread, NULL, frag_orderer, NULL);
-	}
 
 	if(!quiet)
 		printf("Parallel mksquashfs: Using %d processor%s\n", processors,

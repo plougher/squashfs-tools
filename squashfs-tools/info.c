@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2014
+ * Copyright (c) 2013, 2014, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -100,14 +100,24 @@ void dump_state()
 						" deflate thread(s))\n");
 	dump_queue(to_frag);
 
+	if(!reproducible) {
+		printf("locked frag queue (compressed frags waiting while multi-block"
+							" file is written)\n");
+		dump_queue(locked_fragment);
 
-	printf("locked frag queue (compressed frags waiting while multi-block"
-						" file is written)\n");
-	dump_queue(locked_fragment);
-
-	printf("compressed block queue (main & fragment deflate threads(s) ->"
+		printf("compressed block queue (main & fragment deflate threads(s) ->"
 						" writer thread)\n");
-	dump_queue(to_writer);
+		dump_queue(to_writer);
+	} else {
+		printf("compressed fragment queue (fragment deflate threads(s) ->"
+						"fragment order thread)\n");
+
+		dump_seq_queue(to_order, 0);
+
+		printf("compressed block queue (main & fragment order threads ->"
+						" writer thread)\n");
+		dump_queue(to_writer);
+	}
 
 	printf("read cache (uncompressed blocks read by reader thread)\n");
 	dump_cache(reader_buffer);

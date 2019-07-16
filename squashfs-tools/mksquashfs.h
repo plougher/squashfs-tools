@@ -147,7 +147,7 @@ struct cache *bwriter_buffer, *fwriter_buffer;
 extern struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
 	*to_frag, *locked_fragment, *to_process_frag;
 extern struct append_file **file_mapping;
-extern struct seq_queue *to_main;
+extern struct seq_queue *to_main, *to_order;
 extern pthread_mutex_t fragment_mutex, dup_mutex;
 extern struct squashfs_fragment_entry *fragment_table;
 extern struct compressor *comp;
@@ -161,4 +161,5 @@ extern unsigned int get_uid(unsigned int);
 extern unsigned int get_guid(unsigned int);
 extern int read_bytes(int, void *, int);
 extern unsigned short get_checksum_mem(char *, int);
+extern int reproducible;
 #endif
