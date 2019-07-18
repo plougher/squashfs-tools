@@ -40,21 +40,38 @@ void read_block_list_2(unsigned int *block_list, char *block_ptr, int blocks)
 }
 
 
-static int read_fragment_table(long long *directory_table_end)
+static int read_fragment_table(long long *table_start)
 {
+	/*
+	 * Note on overflow limits:
+	 * Size of SBlk.s.fragments is 2^32 (unsigned int)
+	 * Max size of bytes is 2^32*8 or 2^35
+	 * Max indexes is (2^32*8)/8K or 2^22
+	 * Max length is ((2^32*8)/8K)*4 or 2^24 or 16M
+	 */
 	int res, i;
-	int bytes = SQUASHFS_FRAGMENT_BYTES_2(sBlk.s.fragments);
-	int indexes = SQUASHFS_FRAGMENT_INDEXES_2(sBlk.s.fragments);
-	unsigned int fragment_table_index[indexes];
+	long long bytes = SQUASHFS_FRAGMENT_BYTES_2((long long) sBlk.s.fragments);
+	int indexes = SQUASHFS_FRAGMENT_INDEXES_2((long long) sBlk.s.fragments);
+	int length = SQUASHFS_FRAGMENT_INDEX_BYTES_2((long long) sBlk.s.fragments);
+	unsigned int *fragment_table_index;
+
+	/*
+	 * The size of the index table (length bytes) should match the
+	 * table start and end points
+	 */
+	if(length != (*table_start- sBlk.s.fragment_table_start)) {
+		ERROR("read_ids: Bad inode count in super block\n");
+		return FALSE;
+	}
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
 		"from 0x%llx\n", sBlk.s.fragments, indexes,
 		sBlk.s.fragment_table_start);
 
-	if(sBlk.s.fragments == 0) {
-		*directory_table_end = sBlk.s.fragment_table_start;
-		return TRUE;
-	}
+	fragment_table_index = malloc(length);
+	if(fragment_table_index  == NULL)
+		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
+			"fragment table index\n");
 
 	fragment_table = malloc(bytes);
 	if(fragment_table == NULL)
@@ -62,26 +79,30 @@ static int read_fragment_table(long long *directory_table_end)
 			"fragment table\n");
 
 	if(swap) {
-		 unsigned int sfragment_table_index[indexes];
+		 unsigned int *sfragment_table_index = malloc(length);
+
+		if(sfragment_table_index == NULL)
+			EXIT_UNSQUASH("read_fragment_table: failed to allocate "
+				"fragment table index\n");
 
 		 res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
-			SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.s.fragments),
-			sfragment_table_index);
+			length, sfragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
 				"table index\n");
-			return FALSE;
+			free(sfragment_table_index);
+			goto failed;
 		}
 		SQUASHFS_SWAP_FRAGMENT_INDEXES_2(fragment_table_index,
 			sfragment_table_index, indexes);
+		free(sfragment_table_index);
 	} else {
 		res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
-			SQUASHFS_FRAGMENT_INDEX_BYTES_2(sBlk.s.fragments),
-			fragment_table_index);
+			length, fragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
 				"table index\n");
-			return FALSE;
+			goto failed;
 		}
 	}
 
@@ -89,14 +110,14 @@ static int read_fragment_table(long long *directory_table_end)
 		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
 					bytes & (SQUASHFS_METADATA_SIZE - 1);
 		int length = read_block(fd, fragment_table_index[i], NULL,
-			expected, ((char *) fragment_table) + (i *
+			expected, ((char *) fragment_table) + ((long long) i *
 			SQUASHFS_METADATA_SIZE));
 		TRACE("Read fragment table block %d, from 0x%x, length %d\n", i,
 			fragment_table_index[i], length);
 		if(length == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
 				"table block\n");
-			return FALSE;
+			goto failed;
 		}
 	}
 
@@ -110,8 +131,14 @@ static int read_fragment_table(long long *directory_table_end)
 		}
 	}
 
-	*directory_table_end = fragment_table_index[0];
+	*table_start = fragment_table_index[0];
+	free(fragment_table_index);
+
 	return TRUE;
+
+failed:
+	free(fragment_table_index);
+	return FALSE;
 }
 
 
@@ -272,21 +299,102 @@ struct inode *read_inode_2(unsigned int start_block, unsigned int offset)
 
 int read_filesystem_tables_2()
 {
-	long long directory_table_end;
+	long long table_start;
 
-	if(read_uids_guids_1() == FALSE)
-		return FALSE;
+	/* Read uid and gid lookup tables */
 
-	if(read_fragment_table(&directory_table_end) == FALSE)
-		return FALSE;
+	/* Sanity check super block contents */
+	if(sBlk.no_guids) {
+		if(sBlk.guid_start >= sBlk.s.bytes_used) {
+			ERROR("read_filesystem_tables: gid start too large in super block\n");
+			goto corrupted;
+		}
+
+		if(read_ids(sBlk.no_guids, sBlk.guid_start, sBlk.s.bytes_used, &guid_table) == FALSE)
+			goto corrupted;
+
+		table_start = sBlk.guid_start;
+	} else {
+		/* no guids, guid_start should be 0 */
+		if(sBlk.guid_start != 0) {
+			ERROR("read_filesystem_tables: gid start too large in super block\n");
+			goto corrupted;
+		}
+
+		table_start = sBlk.s.bytes_used;
+	}
+
+	if(sBlk.uid_start >= table_start) {
+		ERROR("read_filesystem_tables: uid start too large in super block\n");
+		goto corrupted;
+	}
+
+	/* There should be at least one uid */
+	if(sBlk.no_uids == 0) {
+		ERROR("read_filesystem_tables: uid count bad in super block\n");
+		goto corrupted;
+	}
+
+	if(read_ids(sBlk.no_uids, sBlk.uid_start, table_start, &uid_table) == FALSE)
+		goto corrupted;
+
+	table_start = sBlk.uid_start;
+
+	/* Read fragment table */
+	if(sBlk.s.fragments != 0) {
+
+		/* Sanity check super block contents */
+		if(sBlk.s.fragment_table_start >= table_start) {
+			ERROR("read_filesystem_tables: fragment table start too large in super block\n");
+			goto corrupted;
+		}
+
+		/* The number of fragments should not exceed the number of inodes */
+		if(sBlk.s.fragments > sBlk.s.inodes) {
+			ERROR("read_filesystem_tables: Bad fragment count in super block\n");
+			goto corrupted;
+		}
+
+		if(read_fragment_table(&table_start) == FALSE)
+			goto corrupted;
+	} else {
+		/*
+		 * Sanity check super block contents - with 0 fragments,
+		 * the fragment table should be empty
+		 */
+		if(sBlk.s.fragment_table_start != table_start) {
+			ERROR("read_filesystem_tables: fragment table start invalid in super block\n");
+			goto corrupted;
+		}
+	}
+
+	/* Read directory table */
+
+	/* Sanity check super block contents */
+	if(sBlk.s.directory_table_start >= table_start) {
+		ERROR("read_filesystem_tables: directory table start too large in super block\n");
+		goto corrupted;
+	}
+
+	if(read_directory_table(sBlk.s.directory_table_start,
+				table_start) == FALSE)
+		goto corrupted;
+
+	/* Read inode table */
+
+	/* Sanity check super block contents */
+	if(sBlk.s.inode_table_start >= sBlk.s.directory_table_start) {
+		ERROR("read_filesystem_tables: inode table start too large in super block\n");
+		goto corrupted;
+	}
 
 	if(read_inode_table(sBlk.s.inode_table_start,
 				sBlk.s.directory_table_start) == FALSE)
-		return FALSE;
-
-	if(read_directory_table(sBlk.s.directory_table_start,
-				directory_table_end) == FALSE)
-		return FALSE;
+		goto corrupted;
 
 	return TRUE;
+
+corrupted:
+	ERROR("File system corruption detected\n");
+	return FALSE;
 }
