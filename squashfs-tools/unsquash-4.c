@@ -35,10 +35,10 @@ long long *alloc_index_table(int indexes)
 	static int alloc_size = 0;
 	int length = indexes * sizeof(long long);
 
-	if(alloc_size < length) {
+	if(alloc_size < length || length == 0) {
 		long long *table = realloc(alloc_table, length);
 
-		if(table == NULL)
+		if(table == NULL && length !=0)
 			EXIT_UNSQUASH("alloc_index_table: failed to allocate "
 				"index table\n");
 
@@ -609,9 +609,13 @@ int read_filesystem_tables_4()
 	if(no_xattrs)
 		sBlk.s.xattr_id_table_start = SQUASHFS_INVALID_BLK;
 
+	alloc_index_table(0);
+
 	return TRUE;
 
 corrupted:
 	ERROR("File system corruption detected\n");
+	alloc_index_table(0);
+
 	return FALSE;
 }
