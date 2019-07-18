@@ -3,7 +3,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2014
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2014, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -436,6 +436,22 @@ typedef struct squashfs_fragment_entry_3 squashfs_fragment_entry_3;
 
 #define SQUASHFS_FRAGMENT_INDEX_BYTES_3(A)	(SQUASHFS_FRAGMENT_INDEXES_3(A) *\
 						sizeof(long long))
+
+/* inode lookup table defines */
+#define SQUASHFS_LOOKUP_BYTES_3(A)	((A) * sizeof(squashfs_inode))
+
+#define SQUASHFS_LOOKUP_BLOCK_3(A)		(SQUASHFS_LOOKUP_BYTES_3(A) / \
+						SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_LOOKUP_BLOCK_OFFSET_3(A)	(SQUASHFS_LOOKUP_BYTES_3(A) % \
+						SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_LOOKUP_BLOCKS_3(A)	((SQUASHFS_LOOKUP_BYTES_3(A) + \
+					SQUASHFS_METADATA_SIZE - 1) / \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_LOOKUP_BLOCK_BYTES_3(A)	(SQUASHFS_LOOKUP_BLOCKS(A) *\
+					sizeof(long long))
 
 /*
  * definitions for structures on disk - layout 1.x

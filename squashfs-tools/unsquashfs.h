@@ -277,4 +277,5 @@ extern void read_fragment_4(unsigned int, long long *, int *);
 extern struct inode *read_inode_4(unsigned int, unsigned int);
 extern struct dir *squashfs_opendir_4(unsigned int, unsigned int,
 	struct inode **);
+extern long long *alloc_index_table(int);
 #endif
