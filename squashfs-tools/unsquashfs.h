@@ -227,7 +227,6 @@ extern int swap;
 extern char *inode_table, *directory_table;
 extern struct hash_table_entry *inode_table_hash[65536],
 	*directory_table_hash[65536];
-extern unsigned int *uid_table, *guid_table;
 extern pthread_mutex_t screen_mutex;
 extern int progress_enabled;
 extern int inode_number;

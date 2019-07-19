@@ -26,6 +26,7 @@
 #include "squashfs_compat.h"
 
 static squashfs_fragment_entry_2 *fragment_table;
+static unsigned int *uid_table, *guid_table;
 
 void read_block_list_2(unsigned int *block_list, char *block_ptr, int blocks)
 {

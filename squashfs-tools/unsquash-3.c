@@ -26,6 +26,7 @@
 #include "squashfs_compat.h"
 
 static squashfs_fragment_entry_3 *fragment_table;
+static unsigned int *uid_table, *guid_table;
 
 static long long *salloc_index_table(int indexes)
 {

@@ -25,6 +25,8 @@
 #include "unsquashfs.h"
 #include "squashfs_compat.h"
 
+static unsigned int *uid_table, *guid_table;
+
 void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
 {
 	unsigned short block_size;

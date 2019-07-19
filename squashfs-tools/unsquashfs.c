@@ -59,7 +59,6 @@ int FAILED = 0;
 char *inode_table = NULL, *directory_table = NULL;
 struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
 int fd;
-unsigned int *uid_table, *guid_table;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
 unsigned int block_size;
 unsigned int block_log;
