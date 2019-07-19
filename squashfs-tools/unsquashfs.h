@@ -254,7 +254,6 @@ extern int read_filesystem_tables_1();
 extern struct inode *read_inode_1(unsigned int, unsigned int);
 extern struct dir *squashfs_opendir_1(unsigned int, unsigned int,
 	struct inode **);
-extern int read_uids_guids_1();
 
 /* unsquash-2.c */
 extern void read_block_list_2(unsigned int *, char *, int);
