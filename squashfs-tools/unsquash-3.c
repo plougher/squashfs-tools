@@ -27,6 +27,7 @@
 
 static squashfs_fragment_entry_3 *fragment_table;
 static unsigned int *uid_table, *guid_table;
+static char *inode_table, *directory_table;
 
 static long long *salloc_index_table(int indexes)
 {
@@ -635,8 +636,9 @@ int read_filesystem_tables_3()
 		goto corrupted;
 	}
 
-	if(read_directory_table(sBlk.s.directory_table_start,
-				table_start) == FALSE)
+	directory_table = read_directory_table(sBlk.s.directory_table_start,
+				table_start);
+	if(directory_table == NULL)
 		goto corrupted;
 
 	/* Read inode table */
@@ -647,10 +649,10 @@ int read_filesystem_tables_3()
 		goto corrupted;
 	}
 
-	if(read_inode_table(sBlk.s.inode_table_start,
-				sBlk.s.directory_table_start) == FALSE)
+	inode_table = read_inode_table(sBlk.s.inode_table_start,
+				sBlk.s.directory_table_start);
+	if(inode_table == NULL)
 		goto corrupted;
-
 
 	alloc_index_table(0);
 	salloc_index_table(0);

@@ -56,7 +56,6 @@ struct compressor *comp;
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
 	dev_count = 0, fifo_count = 0;
 int FAILED = 0;
-char *inode_table = NULL, *directory_table = NULL;
 struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
 int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
@@ -731,11 +730,12 @@ failed:
 }
 
 
-int read_inode_table(long long start, long long end)
+void *read_inode_table(long long start, long long end)
 {
 	int res;
 	long long size = 0;
 	long long bytes = 0;
+	void *inode_table = NULL;
 
 	TRACE("read_inode_table: start %lld, end %lld\n", start, end);
 
@@ -774,12 +774,12 @@ int read_inode_table(long long start, long long end)
 		}
 	}
 
-	return TRUE;
+	return inode_table;
 
 failed:
 	free(inode_table);
 	FAILED = TRUE;
-	return FALSE;
+	return NULL;
 }
 
 
@@ -1154,11 +1154,12 @@ int create_inode(char *pathname, struct inode *i)
 }
 
 
-int read_directory_table(long long start, long long end)
+void *read_directory_table(long long start, long long end)
 {
 	int res;
 	long long bytes = 0;
 	long long size = 0;
+	void *directory_table = NULL;
 
 	TRACE("read_directory_table: start %lld, end %lld\n", start, end);
 
@@ -1198,12 +1199,12 @@ int read_directory_table(long long start, long long end)
 		}
 	}
 
-	return TRUE;
+	return directory_table;
 
 failed:
 	free(directory_table);
 	FAILED = TRUE;
-	return FALSE;
+	return NULL;
 }
 
 

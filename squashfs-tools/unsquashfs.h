@@ -224,7 +224,6 @@ struct pathnames {
 extern struct super_block sBlk;
 extern squashfs_operations s_ops;
 extern int swap;
-extern char *inode_table, *directory_table;
 extern struct hash_table_entry *inode_table_hash[65536],
 	*directory_table_hash[65536];
 extern pthread_mutex_t screen_mutex;
@@ -237,8 +236,8 @@ extern struct queue *to_reader, *to_inflate, *to_writer;
 extern struct cache *fragment_cache, *data_cache;
 
 /* unsquashfs.c */
-extern int read_inode_table(long long, long long);
-extern int read_directory_table(long long, long long);
+extern void *read_inode_table(long long, long long);
+extern void *read_directory_table(long long, long long);
 extern long long lookup_entry(struct hash_table_entry **, long long);
 extern int read_fs_bytes(int fd, long long, int, void *);
 extern int read_block(int, long long, long long *, int, void *);

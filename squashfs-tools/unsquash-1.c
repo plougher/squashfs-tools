@@ -26,6 +26,7 @@
 #include "squashfs_compat.h"
 
 static unsigned int *uid_table, *guid_table;
+static char *inode_table, *directory_table;
 
 void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
 {
@@ -376,8 +377,9 @@ int read_filesystem_tables_1()
 		goto corrupted;
 	}
 
-	if(read_directory_table(sBlk.s.directory_table_start,
-				table_start) == FALSE)
+	directory_table = read_directory_table(sBlk.s.directory_table_start,
+				table_start);
+	if(directory_table == NULL)
 		goto corrupted;
 
 	/* Read inode table */
@@ -388,8 +390,9 @@ int read_filesystem_tables_1()
 		goto corrupted;
 	}
 
-	if(read_inode_table(sBlk.s.inode_table_start,
-				sBlk.s.directory_table_start) == FALSE)
+	inode_table = read_inode_table(sBlk.s.inode_table_start,
+				sBlk.s.directory_table_start);
+	if(inode_table == NULL)
 		goto corrupted;
 
 	return TRUE;
