@@ -258,6 +258,8 @@ extern void read_block_list_2(unsigned int *, char *, int);
 extern int read_filesystem_tables_2();
 extern void read_fragment_2(unsigned int, long long *, int *);
 extern struct inode *read_inode_2(unsigned int, unsigned int);
+extern struct dir *squashfs_opendir_2(unsigned int, unsigned int,
+	struct inode **);
 
 /* unsquash-3.c */
 extern int read_fragment_table_3(long long *);

@@ -1870,7 +1870,7 @@ int read_super(char *source)
 			sBlk.s.fragment_table_start =
 				sBlk_3.fragment_table_start_2;
 			s_ops.read_filesystem_tables = read_filesystem_tables_2;
-			s_ops.squashfs_opendir = squashfs_opendir_1;
+			s_ops.squashfs_opendir = squashfs_opendir_2;
 			s_ops.read_fragment = read_fragment_2;
 			s_ops.read_block_list = read_block_list_2;
 			s_ops.read_inode = read_inode_2;
