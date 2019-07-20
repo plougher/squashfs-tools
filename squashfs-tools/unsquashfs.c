@@ -1879,7 +1879,7 @@ int read_super(char *source)
 		s_ops.read_filesystem_tables = read_filesystem_tables_3;
 		s_ops.squashfs_opendir = squashfs_opendir_3;
 		s_ops.read_fragment = read_fragment_3;
-		s_ops.read_block_list = read_block_list_2;
+		s_ops.read_block_list = read_block_list_3;
 		s_ops.read_inode = read_inode_3;
 	} else {
 		ERROR("Filesystem on %s is (%d:%d), ", source, sBlk.s.s_major,

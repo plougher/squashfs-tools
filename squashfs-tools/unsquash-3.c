@@ -50,6 +50,17 @@ static long long *salloc_index_table(int indexes)
 }
 
 
+void read_block_list_3(unsigned int *block_list, char *block_ptr, int blocks)
+{
+	TRACE("read_block_list: blocks %d\n", blocks);
+
+	if(swap) {
+		SQUASHFS_SWAP_INTS_3(block_list, block_ptr, blocks);
+	} else
+		memcpy(block_list, block_ptr, blocks * sizeof(unsigned int));
+}
+
+
 static int read_fragment_table(long long *table_start)
 {
 	/*
