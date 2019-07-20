@@ -51,6 +51,15 @@ long long *alloc_index_table(int indexes)
 }
 
 
+void read_block_list_4(unsigned int *block_list, char *block_ptr, int blocks)
+{
+	TRACE("read_block_list: blocks %d\n", blocks);
+
+	memcpy(block_list, block_ptr, blocks * sizeof(unsigned int));
+	SQUASHFS_INSWAP_INTS(block_list, blocks);
+}
+
+
 static int read_fragment_table(long long *table_start)
 {
 	/*

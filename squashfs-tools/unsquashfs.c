@@ -1793,7 +1793,7 @@ int read_super(char *source)
 		s_ops.read_filesystem_tables = read_filesystem_tables_4;
 		s_ops.squashfs_opendir = squashfs_opendir_4;
 		s_ops.read_fragment = read_fragment_4;
-		s_ops.read_block_list = read_block_list_2;
+		s_ops.read_block_list = read_block_list_4;
 		s_ops.read_inode = read_inode_4;
 		memcpy(&sBlk, &sBlk_4, sizeof(sBlk_4));
 
