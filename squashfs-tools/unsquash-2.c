@@ -34,9 +34,7 @@ void read_block_list_2(unsigned int *block_list, char *block_ptr, int blocks)
 	TRACE("read_block_list: blocks %d\n", blocks);
 
 	if(swap) {
-		unsigned int sblock_list[blocks];
-		memcpy(sblock_list, block_ptr, blocks * sizeof(unsigned int));
-		SQUASHFS_SWAP_INTS_3(block_list, sblock_list, blocks);
+		SQUASHFS_SWAP_INTS_3(block_list, block_ptr, blocks);
 	} else
 		memcpy(block_list, block_ptr, blocks * sizeof(unsigned int));
 }

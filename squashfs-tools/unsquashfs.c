@@ -661,7 +661,11 @@ int read_block(int fd, long long start, long long *next, int expected,
 	unsigned short c_byte;
 	int offset = 2, res, compressed;
 	int outlen = expected ? expected : SQUASHFS_METADATA_SIZE;
-	
+	static char *buffer = NULL;
+
+	if(outlen > SQUASHFS_METADATA_SIZE)
+		return 0;
+
 	if(swap) {
 		if(read_fs_bytes(fd, start, 2, &c_byte) == FALSE)
 			goto failed;
@@ -689,8 +693,14 @@ int read_block(int fd, long long start, long long *next, int expected,
 		return 0;
 
 	if(compressed) {
-		char buffer[c_byte];
 		int error;
+
+		if(buffer == NULL) {
+			buffer = malloc(SQUASHFS_METADATA_SIZE);
+
+			if(buffer == NULL)
+				EXIT_UNSQUASH("read_block: Failed to allocate buffer\n");
+		}
 
 		res = read_fs_bytes(fd, start + offset, c_byte, buffer);
 		if(res == FALSE)
@@ -2084,7 +2094,10 @@ void *writer(void *arg)
  */
 void *inflator(void *arg)
 {
-	char tmp[block_size];
+	char *tmp = malloc(block_size);
+
+	if(tmp == NULL)
+		EXIT_UNSQUASH("inflator: Failed to allocate block buffer\n");
 
 	while(1) {
 		struct cache_entry *entry = queue_get(to_inflate);
