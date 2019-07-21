@@ -27,8 +27,9 @@
 
 static unsigned int *uid_table, *guid_table;
 static char *inode_table, *directory_table;
+static squashfs_operations ops;
 
-void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
+static void read_block_list(unsigned int *block_list, char *block_ptr, int blocks)
 {
 	unsigned short block_size;
 	int i;
@@ -49,7 +50,7 @@ void read_block_list_1(unsigned int *block_list, char *block_ptr, int blocks)
 }
 
 
-struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
+static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 {
 	static union squashfs_inode_header_1 header;
 	long long start = sBlk.s.inode_table_start + start_block;
@@ -196,7 +197,7 @@ struct inode *read_inode_1(unsigned int start_block, unsigned int offset)
 }
 
 
-struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
+static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offset,
 	struct inode **i)
 {
 	squashfs_dir_header_2 dirh;
@@ -212,7 +213,7 @@ struct dir *squashfs_opendir_1(unsigned int block_start, unsigned int offset,
 	TRACE("squashfs_opendir: inode start block %d, offset %d\n",
 		block_start, offset);
 
-	*i = s_ops.read_inode(block_start, offset);
+	*i = read_inode(block_start, offset);
 
 	dir = malloc(sizeof(struct dir));
 	if(dir == NULL)
@@ -314,7 +315,7 @@ corrupted:
 }
 
 
-int read_filesystem_tables_1()
+squashfs_operations *read_filesystem_tables_1()
 {
 	long long table_start;
 
@@ -395,9 +396,16 @@ int read_filesystem_tables_1()
 	if(inode_table == NULL)
 		goto corrupted;
 
-	return TRUE;
+	return &ops;
 
 corrupted:
 	ERROR("File system corruption detected\n");
-	return FALSE;
+	return NULL;
 }
+
+
+static squashfs_operations ops = {
+	.opendir = squashfs_opendir,
+	.read_block_list = read_block_list,
+	.read_inode = read_inode
+};

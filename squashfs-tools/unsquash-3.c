@@ -28,6 +28,7 @@
 static squashfs_fragment_entry_3 *fragment_table;
 static unsigned int *uid_table, *guid_table;
 static char *inode_table, *directory_table;
+static squashfs_operations ops;
 
 static long long *salloc_index_table(int indexes)
 {
@@ -50,7 +51,7 @@ static long long *salloc_index_table(int indexes)
 }
 
 
-void read_block_list_3(unsigned int *block_list, char *block_ptr, int blocks)
+static void read_block_list(unsigned int *block_list, char *block_ptr, int blocks)
 {
 	TRACE("read_block_list: blocks %d\n", blocks);
 
@@ -147,7 +148,7 @@ static int read_fragment_table(long long *table_start)
 }
 
 
-void read_fragment_3(unsigned int fragment, long long *start_block, int *size)
+static void read_fragment(unsigned int fragment, long long *start_block, int *size)
 {
 	TRACE("read_fragment: reading fragment %d\n", fragment);
 
@@ -157,7 +158,7 @@ void read_fragment_3(unsigned int fragment, long long *start_block, int *size)
 }
 
 
-struct inode *read_inode_3(unsigned int start_block, unsigned int offset)
+static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 {
 	static union squashfs_inode_header_3 header;
 	long long start = sBlk.s.inode_table_start + start_block;
@@ -323,7 +324,7 @@ struct inode *read_inode_3(unsigned int start_block, unsigned int offset)
 }
 
 
-struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
+static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offset,
 	struct inode **i)
 {
 	squashfs_dir_header_3 dirh;
@@ -339,7 +340,7 @@ struct dir *squashfs_opendir_3(unsigned int block_start, unsigned int offset,
 	TRACE("squashfs_opendir: inode start block %d, offset %d\n",
 		block_start, offset);
 
-	*i = s_ops.read_inode(block_start, offset);
+	*i = read_inode(block_start, offset);
 
 	dir = malloc(sizeof(struct dir));
 	if(dir == NULL)
@@ -555,7 +556,7 @@ static int parse_exports_table(long long *table_start)
 }
 
 
-int read_filesystem_tables_3()
+squashfs_operations *read_filesystem_tables_3()
 {
 	long long table_start;
 
@@ -668,12 +669,20 @@ int read_filesystem_tables_3()
 	alloc_index_table(0);
 	salloc_index_table(0);
 
-	return TRUE;
+	return &ops;
 
 corrupted:
 	ERROR("File system corruption detected\n");
 	alloc_index_table(0);
 	salloc_index_table(0);
 
-	return FALSE;
+	return NULL;
 }
+
+
+static squashfs_operations ops = {
+	.opendir = squashfs_opendir,
+	.read_fragment = read_fragment,
+	.read_block_list = read_block_list,
+	.read_inode = read_inode
+};

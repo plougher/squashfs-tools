@@ -50,7 +50,8 @@ static off_t squashfs_start_offset = 0;
 int processors = -1;
 
 struct super_block sBlk;
-squashfs_operations s_ops;
+squashfs_operations *s_ops;
+squashfs_operations *(*read_filesystem_tables)();
 struct compressor *comp;
 
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
@@ -990,7 +991,7 @@ int write_file(struct inode *inode, char *pathname)
 	if(block_list == NULL)
 		EXIT_UNSQUASH("write_file: unable to malloc block list\n");
 
-	s_ops.read_block_list(block_list, inode->block_ptr, inode->blocks);
+	s_ops->read_block_list(block_list, inode->block_ptr, inode->blocks);
 
 	/*
 	 * the writer thread is queued a squashfs_file structure describing the
@@ -1025,7 +1026,7 @@ int write_file(struct inode *inode, char *pathname)
 
 		if(block == NULL)
 			EXIT_UNSQUASH("write_file: unable to malloc file\n");
-		s_ops.read_fragment(inode->fragment, &start, &size);
+		s_ops->read_fragment(inode->fragment, &start, &size);
 		block->buffer = cache_get(fragment_cache, start, size);
 		block->offset = inode->offset;
 		block->size = inode->frag_bytes;
@@ -1472,7 +1473,7 @@ void pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	char *name;
 	struct pathnames *new;
 	struct inode *i;
-	struct dir *dir = s_ops.squashfs_opendir(start_block, offset, &i);
+	struct dir *dir = s_ops->opendir(start_block, offset, &i);
 
 	if(dir == NULL)
 		return;
@@ -1497,7 +1498,7 @@ void pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		else if(new == NULL) {
 			if(type == SQUASHFS_FILE_TYPE ||
 					type == SQUASHFS_LREG_TYPE) {
-				i = s_ops.read_inode(start_block, offset);
+				i = s_ops->read_inode(start_block, offset);
 				if(created_inode[i->inode_number - 1] == NULL) {
 					created_inode[i->inode_number - 1] =
 						(char *) i;
@@ -1524,7 +1525,7 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	char *name;
 	struct pathnames *new;
 	struct inode *i;
-	struct dir *dir = s_ops.squashfs_opendir(start_block, offset, &i);
+	struct dir *dir = s_ops->opendir(start_block, offset, &i);
 
 	if(dir == NULL) {
 		ERROR("dir_scan: failed to read directory %s, skipping\n",
@@ -1590,7 +1591,7 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		} else if(new == NULL) {
 			update_info(pathname);
 
-			i = s_ops.read_inode(start_block, offset);
+			i = s_ops->read_inode(start_block, offset);
 
 			if(lsonly || info)
 				print_filename(pathname, i);
@@ -1790,11 +1791,7 @@ int read_super(char *source)
 
 	if(sBlk_4.s_magic == SQUASHFS_MAGIC && sBlk_4.s_major == 4 &&
 			sBlk_4.s_minor == 0) {
-		s_ops.read_filesystem_tables = read_filesystem_tables_4;
-		s_ops.squashfs_opendir = squashfs_opendir_4;
-		s_ops.read_fragment = read_fragment_4;
-		s_ops.read_block_list = read_block_list_4;
-		s_ops.read_inode = read_inode_4;
+		read_filesystem_tables = read_filesystem_tables_4;
 		memcpy(&sBlk, &sBlk_4, sizeof(sBlk_4));
 
 		/*
@@ -1862,25 +1859,14 @@ int read_super(char *source)
 		if(sBlk.s.s_major == 1) {
 			sBlk.s.block_size = sBlk_3.block_size_1;
 			sBlk.s.fragment_table_start = sBlk.uid_start;
-			s_ops.read_filesystem_tables = read_filesystem_tables_1;
-			s_ops.squashfs_opendir = squashfs_opendir_1;
-			s_ops.read_block_list = read_block_list_1;
-			s_ops.read_inode = read_inode_1;
+			read_filesystem_tables = read_filesystem_tables_1;
 		} else {
 			sBlk.s.fragment_table_start =
 				sBlk_3.fragment_table_start_2;
-			s_ops.read_filesystem_tables = read_filesystem_tables_2;
-			s_ops.squashfs_opendir = squashfs_opendir_2;
-			s_ops.read_fragment = read_fragment_2;
-			s_ops.read_block_list = read_block_list_2;
-			s_ops.read_inode = read_inode_2;
+			read_filesystem_tables = read_filesystem_tables_2;
 		}
 	} else if(sBlk.s.s_major == 3) {
-		s_ops.read_filesystem_tables = read_filesystem_tables_3;
-		s_ops.squashfs_opendir = squashfs_opendir_3;
-		s_ops.read_fragment = read_fragment_3;
-		s_ops.read_block_list = read_block_list_3;
-		s_ops.read_inode = read_inode_3;
+		read_filesystem_tables = read_filesystem_tables_3;
 	} else {
 		ERROR("Filesystem on %s is (%d:%d), ", source, sBlk.s.s_major,
 			sBlk.s.s_minor);
@@ -2478,7 +2464,7 @@ int parse_number(char *arg, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.3-git (2019/07/19)\n");\
+	printf("unsquashfs version 4.3-git (2019/07/21)\n");\
 	printf("copyright (C) 2019 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
@@ -2755,7 +2741,8 @@ options:
 
 	memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
 
-	if(s_ops.read_filesystem_tables() == FALSE)
+	s_ops = read_filesystem_tables();
+	if(s_ops == NULL)
 		EXIT_UNSQUASH("failed to read file system tables\n");
 
 	if(path) {
