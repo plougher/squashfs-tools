@@ -1,23 +1,15 @@
-Git status:
+GitHub
 
-This is the squashfs.sourceforge.net CVS repository imported into this
-new git repository.  All new development will be under git.
+This is now the main development repository for Squashfs-Tools.
 
-Squashfs-tools: The new Squashfs 4.3 release (2014/05/05).
+There are older repositories on Sourceforge and kernel.org.  These
+are currently out of date, but should be updated in the near future.
 
-kernel: obsolete, the kernel code is now in mainline at www.kernel.org.
-
-All Squashfs kernel development trees are stored on kernel.org,
-under git.kernel.org:/linux/kernel/git/pkl/...
+The kernel directories are obsolete, all kernel code is now in
+mainline at www.kernel.org.
 
 kernel-2.4: If you still need Squashfs support in the 2.4 kernel
 then use the squashfs 3.2-r2 release.  This is the last release
 that has a Mksquashfs which generates filesystems mountable with
 Squashfs patched 2.4 kernels.  This release has patches for 2.4
 kernels (but they have not been updated since the 3.1 release).
-
-The kernel and kernel-2.4 directories (imported from CVS) are not really
-relevant anymore, but are here temporarily while I decide where to put
-them (I don't want to delete them and have all the pre-mainlining
-kernel commit history disappear from public repositories).
-
