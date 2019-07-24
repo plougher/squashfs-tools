@@ -121,7 +121,7 @@ struct file_buffer {
 	char locked;
 	char wait_on_unlock;
 	char noD;
-	char data[0];
+	char data[0] __attribute__((aligned));
 };
 
 
