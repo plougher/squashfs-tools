@@ -2380,20 +2380,12 @@ void *writer(void *arg)
 int all_zero(struct file_buffer *file_buffer)
 {
 	int i;
-	long entries = file_buffer->size / sizeof(long);
-	long *p = (long *) file_buffer->data;
 
-	for(i = 0; i < entries && p[i] == 0; i++);
+	for(i = 0; i < file_buffer->size; i++)
+		if(file_buffer->data[i] != 0)
+			return 0;
 
-	if(i == entries) {
-		for(i = file_buffer->size & ~(sizeof(long) - 1);
-			i < file_buffer->size && file_buffer->data[i] == 0;
-			i++);
-
-		return i == file_buffer->size;
-	}
-
-	return 0;
+	return 1;
 }
 
 
