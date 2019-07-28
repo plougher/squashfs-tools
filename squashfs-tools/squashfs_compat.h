@@ -814,10 +814,10 @@ typedef struct squashfs_fragment_entry_2 squashfs_fragment_entry_2;
  * bitfields and different bitfield placing conventions on differing architectures
  */
 #if __BYTE_ORDER == __BIG_ENDIAN
-	/* convert from big endian to little endian */
+	/* convert from little endian to big endian */
 #define SQUASHFS_SWAP(value, p, pos, tbits) _SQUASHFS_SWAP(value, p, pos, tbits, b_pos)
 #else
-	/* convert from little endian to big endian */ 
+	/* convert from big endian to little endian */
 #define SQUASHFS_SWAP(value, p, pos, tbits) _SQUASHFS_SWAP(value, p, pos, tbits, 64 - tbits - b_pos)
 #endif
 
@@ -828,7 +828,7 @@ typedef struct squashfs_fragment_entry_2 squashfs_fragment_entry_2;
 	d = ((unsigned char *) &val) + 7;\
 	for(bits = 0; bits < (tbits + b_pos); bits += 8) \
 		*d-- = *s++;\
-	value = (val >> (SHIFT))/* & ((1 << tbits) - 1)*/;\
+	value = (val >> (SHIFT));\
 }
 #define SQUASHFS_MEMSET(s, d, n)	memset(s, 0, n);
 #endif
