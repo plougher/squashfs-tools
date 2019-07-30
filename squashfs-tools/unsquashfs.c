@@ -62,7 +62,8 @@ int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
 unsigned int block_size;
 unsigned int block_log;
-int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE, concise = FALSE;
+int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE;
+int concise = FALSE, quiet = FALSE;
 int use_regex = FALSE;
 char **created_inode;
 int root_process;
@@ -2318,9 +2319,6 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 			EXIT_UNSQUASH("Failed to create thread\n");
 	}
 
-	printf("Parallel unsquashfs: Using %d processor%s\n", processors,
-			processors == 1 ? "" : "s");
-
 	if(pthread_sigmask(SIG_SETMASK, &old_mask, NULL) != 0)
 		EXIT_UNSQUASH("Failed to set signal mask in initialise_threads"
 			"\n");
@@ -2574,7 +2572,10 @@ int main(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-version") == 0 ||
+		if(strcmp(argv[i], "-quiet") == 0 ||
+				strcmp(argv[i], "-q") == 0)
+			quiet = TRUE;
+		else if(strcmp(argv[i], "-version") == 0 ||
 				strcmp(argv[i], "-v") == 0) {
 			VERSION();
 			version = TRUE;
@@ -2709,6 +2710,7 @@ options:
 				"copyright information\n");
 			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, "
 				"default \"squashfs-root\"\n");
+			ERROR("\t-q[uiet]\t\tno verbose output\n");
 			ERROR("\t-n[o-progress]\t\tdon't display the progress "
 				"bar\n");
 			ERROR("\t-no[-xattrs]\t\tdon't extract xattrs in file system"
@@ -2836,16 +2838,23 @@ options:
 		paths = add_subdir(paths, path);
 	}
 
-	pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths);
+	if(!quiet || progress) {
+		pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths);
 
-	memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
-	inode_number = 1;
+		memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
+		inode_number = 1;
 
-	printf("%d inodes (%d blocks) to write\n\n", total_inodes,
-		total_inodes - total_files + total_blocks);
+		if(!quiet)  {
+			printf("Parallel unsquashfs: Using %d processor%s\n", processors,
+					processors == 1 ? "" : "s");
 
-	enable_progress_bar();
+			printf("%d inodes (%d blocks) to write\n\n", total_inodes,
+					total_inodes - total_files + total_blocks);
+		}
+
+		enable_progress_bar();
+	}
 
 	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths);
@@ -2855,7 +2864,7 @@ options:
 
 	disable_progress_bar();
 
-	if(!lsonly) {
+	if(!quiet && !lsonly) {
 		printf("\n");
 		printf("created %d files\n", file_count);
 		printf("created %d directories\n", dir_count);
