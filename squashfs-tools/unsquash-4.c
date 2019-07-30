@@ -596,7 +596,7 @@ squashfs_operations *read_filesystem_tables_4()
 	/* Read directory table */
 
 	/* Sanity check super block contents */
-	if(sBlk.s.directory_table_start >= table_start) {
+	if(sBlk.s.directory_table_start > table_start) {
 		ERROR("read_filesystem_tables: directory table start too large in super block\n");
 		goto corrupted;
 	}

@@ -1171,7 +1171,7 @@ void *read_directory_table(long long start, long long end)
 	int res;
 	long long bytes = 0;
 	long long size = 0;
-	void *directory_table = NULL;
+	void *directory_table = malloc(1);
 
 	TRACE("read_directory_table: start %lld, end %lld\n", start, end);
 
@@ -2537,7 +2537,7 @@ int parse_number(char *start, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.3-git (2019/07/21)\n");\
+	printf("unsquashfs version 4.3-git (2019/07/31)\n");\
 	printf("copyright (C) 2019 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
