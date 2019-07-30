@@ -62,7 +62,7 @@ int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
 unsigned int block_size;
 unsigned int block_log;
-int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE;
+int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE, concise = FALSE;
 int use_regex = FALSE;
 char **created_inode;
 int root_process;
@@ -1533,7 +1533,7 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		return;
 	}
 
-	if(lsonly || info)
+	if((lsonly || info) && (!concise || dir->dir_count ==0))
 		print_filename(parent_name, i);
 
 	if(!lsonly) {
@@ -2584,7 +2584,10 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-ls") == 0 ||
 				strcmp(argv[i], "-l") == 0)
 			lsonly = TRUE;
-		else if(strcmp(argv[i], "-no-progress") == 0 ||
+		else if(strcmp(argv[i], "-lc") == 0) {
+			lsonly = TRUE;
+			concise = TRUE;
+		} else if(strcmp(argv[i], "-no-progress") == 0 ||
 				strcmp(argv[i], "-n") == 0)
 			progress = FALSE;
 		else if(strcmp(argv[i], "-no-xattrs") == 0 ||
@@ -2657,6 +2660,10 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-ll") == 0) {
 			lsonly = TRUE;
 			short_ls = FALSE;
+		} else if(strcmp(argv[i], "-llc") == 0) {
+			lsonly = TRUE;
+			short_ls = FALSE;
+			concise = TRUE;
 		} else if(strcmp(argv[i], "-linfo") == 0 ||
 				strcmp(argv[i], "-li") == 0) {
 			info = TRUE;
@@ -2724,6 +2731,10 @@ options:
 			ERROR("\t-ll[s]\t\t\tlist filesystem with file "
 				"attributes (like\n");
 			ERROR("\t\t\t\tls -l output), but don't unsquash\n");
+			ERROR("\t-lc\t\t\tlist filesystem concisely, displaying only"
+				" files\n\t\t\t\tand empty directories.  Don't unsquash\n");
+			ERROR("\t-llc\t\t\tlist filesystem concisely with file attributes,"
+				"\n\t\t\t\tdisplaying only files and empty directories.\n\t\t\t\tDon't unsquash\n");
 			ERROR("\t-o[ffset] <bytes>\tskip <bytes> at start of <dest>\n");
 			ERROR("\t\t\t\tOptionally a suffix of K, M or G can be"
 				" given to specify\n\t\t\t\tKbytes, Mbytes or"
