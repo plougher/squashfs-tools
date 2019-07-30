@@ -44,7 +44,7 @@ struct cache *fragment_cache, *data_cache;
 struct queue *to_reader, *to_inflate, *to_writer, *from_writer;
 pthread_t *thread, *inflator_thread;
 pthread_mutex_t	fragment_mutex;
-static off_t squashfs_start_offset = 0;
+static long long start_offset = 0;
 
 /* user options that control parallelisation */
 int processors = -1;
@@ -631,7 +631,7 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 	TRACE("read_bytes: reading from position 0x%llx, bytes %d\n", byte,
 		bytes);
 
-	if(lseek(fd, off + squashfs_start_offset, SEEK_SET) == -1) {
+	if(lseek(fd, start_offset + off, SEEK_SET) == -1) {
 		ERROR("Lseek failed because %s\n", strerror(errno));
 		return FALSE;
 	}
@@ -2431,34 +2431,109 @@ void progress_bar(long long current, long long max, int columns)
 }
 
 
-int parse_number(char *arg, int *res)
+int multiply_overflowll(long long a, int multiplier)
 {
-	char *b;
-	long number = strtol(arg, &b, 10);
+	return (LLONG_MAX / multiplier) < a;
+}
 
-	/* check for trailing junk after number */
-	if(*b != '\0')
-		return 0;
+
+int parse_numberll(char *start, long long *res, int size)
+{
+	char *end;
+	long long number;
+
+	errno = 0; /* To distinguish success/failure after call */
+
+	number = strtoll(start, &end, 10);
 
 	/*
-	 * check for strtol underflow or overflow in conversion.
-	 * Note: strtol can validly return LONG_MIN and LONG_MAX
-	 * if the user entered these values, but, additional code
-	 * to distinguish this scenario is unnecessary, because for
-	 * our purposes LONG_MIN and LONG_MAX are too large anyway
+	 * check for strtoll underflow or overflow in conversion, and other
+	 * errors.
 	 */
-	if(number == LONG_MIN || number == LONG_MAX)
+	if((errno == ERANGE && (number == LLONG_MIN || number == LLONG_MAX)) ||
+			(errno != 0 && number == 0))
 		return 0;
 
 	/* reject negative numbers as invalid */
 	if(number < 0)
 		return 0;
 
+	if(size) {
+		/*
+		 * Check for multiplier and trailing junk.
+		 * But first check that a number exists before the
+		 * multiplier
+		 */
+		if(end == start)
+			return 0;
+
+		switch(end[0]) {
+		case 'g':
+		case 'G':
+			if(multiply_overflowll(number, 1073741824))
+				return 0;
+			number *= 1073741824;
+
+			if(end[1] != '\0')
+				/* trailing junk after multiplier, but
+				 * allow it to be "bytes" */
+				if(strcmp(end + 1, "bytes"))
+					return 0;
+
+			break;
+		case 'm':
+		case 'M':
+			if(multiply_overflowll(number, 1048576))
+				return 0;
+			number *= 1048576;
+
+			if(end[1] != '\0')
+				/* trailing junk after multiplier, but
+				 * allow it to be "bytes" */
+				if(strcmp(end + 1, "bytes"))
+					return 0;
+
+			break;
+		case 'k':
+		case 'K':
+			if(multiply_overflowll(number, 1024))
+				return 0;
+			number *= 1024;
+
+			if(end[1] != '\0')
+				/* trailing junk after multiplier, but
+				 * allow it to be "bytes" */
+				if(strcmp(end + 1, "bytes"))
+					return 0;
+
+			break;
+		case '\0':
+			break;
+		default:
+			/* trailing junk after number */
+			return 0;
+		}
+	} else if(end[0] != '\0')
+		/* trailing junk after number */
+		return 0;
+
+	*res = number;
+	return 1;
+}
+
+
+int parse_number(char *start, int *res)
+{
+	long long number;
+
+	if(!parse_numberll(start, &number, 0))
+		return 0;
+
 	/* check if long result will overflow signed int */
 	if(number > INT_MAX)
 		return 0;
 
-	*res = number;
+	*res = (int) number;
 	return 1;
 }
 
@@ -2530,14 +2605,6 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			dest = argv[i];
-        		} else if (strcmp(argv[i], "-offset") == 0 ||
-				strcmp(argv[i], "-o") == 0) {
-			if(++i == argc) {
-				fprintf(stderr, "%s: -offset missing argument\n",
-					argv[0]);
-				exit(1);
-			}
-			squashfs_start_offset = (off_t)atol(argv[i]);
 		} else if(strcmp(argv[i], "-processors") == 0 ||
 				strcmp(argv[i], "-p") == 0) {
 			if((++i == argc) || 
@@ -2605,7 +2672,12 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-regex") == 0 ||
 				strcmp(argv[i], "-r") == 0)
 			use_regex = TRUE;
-		else
+		else if(strcmp(argv[i], "-offset") == 0 || strcmp(argv[i], "-o") == 0) {
+			if((++i == argc) || !parse_numberll(argv[i], &start_offset, 1)) {
+				ERROR("%s: %s missing or invalid offset size\n", argv[0], argv[i - 1]);
+				exit(1);
+			}
+		} else
 			goto options;
 	}
 
@@ -2630,8 +2702,6 @@ options:
 				"copyright information\n");
 			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, "
 				"default \"squashfs-root\"\n");
-			ERROR("\t-o[ffset] <bytes>\tskip <bytes> at start of input file, "
-				"default \"0\"\n");
 			ERROR("\t-n[o-progress]\t\tdon't display the progress "
 				"bar\n");
 			ERROR("\t-no[-xattrs]\t\tdon't extract xattrs in file system"
@@ -2654,6 +2724,11 @@ options:
 			ERROR("\t-ll[s]\t\t\tlist filesystem with file "
 				"attributes (like\n");
 			ERROR("\t\t\t\tls -l output), but don't unsquash\n");
+			ERROR("\t-o[ffset] <bytes>\tskip <bytes> at start of <dest>\n");
+			ERROR("\t\t\t\tOptionally a suffix of K, M or G can be"
+				" given to specify\n\t\t\t\tKbytes, Mbytes or"
+				" Gbytes respectively.\n");
+			ERROR("\t\t\t\tDefault 0 bytes.\n");
 			ERROR("\t-f[orce]\t\tif file already exists then "
 				"overwrite\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
