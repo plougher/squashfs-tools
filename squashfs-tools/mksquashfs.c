@@ -281,6 +281,10 @@ int reproducible = REP_DEF;
 int root_mode_opt = FALSE;
 mode_t root_mode;
 
+/* Time value over-ride options */
+unsigned int mkfs_time;
+int mkfs_time_opt = FALSE;
+
 /* user options that control parallelisation */
 int processors = -1;
 int bwriter_size;
@@ -5107,7 +5111,7 @@ int parse_number(char *start, int *res, int size)
 {
 	long long number;
 
-	if(!parse_numberll(start, &number, size))
+	if(!_parse_numberll(start, &number, size, 10))
 		return 0;
 	
 	/* check if long result will overflow signed int */
@@ -5119,9 +5123,31 @@ int parse_number(char *start, int *res, int size)
 }
 
 
+int parse_number_unsigned(char *start, unsigned int *res, int size)
+{
+	long long number;
+
+	if(!_parse_numberll(start, &number, size, 10))
+		return 0;
+	
+	/* check if long result will overflow unsigned int */
+	if(number > UINT_MAX)
+		return 0;
+
+	*res = (unsigned int) number;
+	return 1;
+}
+
+
 int parse_num(char *arg, int *res)
 {
 	return parse_number(arg, res, 0);
+}
+
+
+int parse_num_unsigned(char *arg, unsigned int *res)
+{
+	return parse_number_unsigned(arg, res, 0);
 }
 
 
@@ -5375,7 +5401,13 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = source + 2; i < argc; i++) {
-		if(strcmp(argv[i], "-reproducible") == 0)
+		if(strcmp(argv[i], "-mkfs-time") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &mkfs_time)) {
+				ERROR("%s: %s missing or invalid time value\n", argv[0], argv[i - 1]);
+				exit(1);
+			}
+			mkfs_time_opt = TRUE;
+		} else if(strcmp(argv[i], "-reproducible") == 0)
 			reproducible = TRUE;
 		else if(strcmp(argv[i], "-not-reproducible") == 0)
 			reproducible = FALSE;
@@ -5785,6 +5817,7 @@ printOptions:
 				REP_STR "\n");
 			ERROR("-not-reproducible\tbuild images that are not reproducible"
 				NOREP_STR "\n");
+			ERROR("-mkfs-time <time>\tset mkfs time to <time> which is an unsigned int\n");
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
 			ERROR("-no-sparse\t\tdon't detect sparse files\n");
@@ -6248,7 +6281,7 @@ printOptions:
 	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, noId, no_fragments,
 		always_use_fragments, duplicate_checking, exportable,
 		no_xattrs, comp_opts);
-	sBlk.mkfs_time = time(NULL);
+	sBlk.mkfs_time = mkfs_time_opt ? mkfs_time : time(NULL);
 
 	disable_info();
 
