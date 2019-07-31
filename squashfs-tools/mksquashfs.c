@@ -84,6 +84,8 @@ int quiet = FALSE;
 int fd;
 struct squashfs_super_block sBlk;
 
+time_t forced_time = (time_t)0;
+
 /* filesystem flags for building */
 int comp_opts = FALSE;
 int no_xattrs = XATTR_DEF;
@@ -5103,6 +5105,34 @@ int parse_numberll(char *start, long long *res, int size)
 }
 
 
+int parse_time(char *start, time_t *res)
+{
+	char *end;
+	long number = strtol(start, &end, 10);
+
+	/*
+	 * http://www.gnu.org/software/libc/manual/html_node/Simple-Calendar-Time.html
+	 * states that "In the GNU C Library, time_t is equivalent to long
+	 * int. In other systems, time_t might be either an integer or
+	 * floating-point type." As such, because strtol returns a long and
+	 * because a valid value of time_t is 0 or higher, we need only check
+	 * for a negative value. For this patch to be portable, we would need
+	 * to account for other implementations of time_t.
+	 */
+
+	/* Reject negative numbers as invalid */
+	if(number < 0)
+		return 0;
+
+	if(end[0] != '\0')
+		/* trailing junk after number */
+		return 0;
+
+	*res = (time_t) number;
+	return 1;
+}
+
+
 int parse_number(char *start, int *res, int size)
 {
 	long long number;
@@ -5765,6 +5795,12 @@ print_compressor_options:
 				exit(1);
 			}	
 			root_name = argv[i];
+		} else if(strcmp(argv[i], "-fstime") == 0) {
+			if((++i == argc) || !parse_time(argv[i], &forced_time)) {
+				ERROR("%s: -fstime missing or invalid "
+					"number\n", argv[0]);
+				exit(1);
+			}
 		} else if(strcmp(argv[i], "-version") == 0) {
 			VERSION();
 		} else {
@@ -5815,6 +5851,8 @@ printOptions:
 			ERROR("\t\t\tdirectory containing that directory, "
 				"rather than the\n");
 			ERROR("\t\t\tcontents of the directory\n");
+			ERROR("-fstime secs\t\tSet fs time to seconds "
+				"since epoch.  Default to current time\n");
 			ERROR("\nFilesystem filter options:\n");
 			ERROR("-p <pseudo-definition>\tAdd pseudo file "
 				"definition\n");
@@ -6070,10 +6108,14 @@ printOptions:
 		void *comp_data = compressor_dump_options(comp, block_size,
 			&size);
 
-		if(!quiet)
+		if(!quiet) {
 			printf("Creating %d.%d filesystem on %s, block size %d.\n",
 				SQUASHFS_MAJOR, SQUASHFS_MINOR,
 				argv[source + 1], block_size);
+			if (forced_time)
+				printf("Setting fs time: %s\n", asctime(gmtime(&forced_time)));
+		}
+
 
 		/*
 		 * store any compressor specific options after the superblock,
@@ -6248,7 +6290,10 @@ printOptions:
 	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, noId, no_fragments,
 		always_use_fragments, duplicate_checking, exportable,
 		no_xattrs, comp_opts);
-	sBlk.mkfs_time = time(NULL);
+	if (forced_time)
+		sBlk.mkfs_time = (time_t)forced_time;
+	else
+		sBlk.mkfs_time = time(NULL);
 
 	disable_info();
 

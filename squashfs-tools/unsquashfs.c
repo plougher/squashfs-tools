@@ -1617,6 +1617,13 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 }
 
 
+void squashfs_fstime(time_t *fstime)
+{
+	time_t mkfs_time = (time_t) sBlk.s.mkfs_time;
+	*fstime = (time_t) mkfs_time;
+}
+
+
 void squashfs_stat(char *source)
 {
 	time_t mkfs_time = (time_t) sBlk.s.mkfs_time;
@@ -2569,12 +2576,13 @@ int parse_number(char *start, int *res)
 int main(int argc, char *argv[])
 {
 	char *dest = "squashfs-root";
-	int i, stat_sys = FALSE, version = FALSE;
+	int i, stat_sys = FALSE, version = FALSE, stat_fstime = FALSE;
 	int n;
 	struct pathnames *paths = NULL;
 	struct pathname *path = NULL;
 	int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
 	int data_buffer_size = DATA_BUFFER_DEFAULT;
+	time_t fstime;
 
 	pthread_mutex_init(&screen_mutex, NULL);
 	root_process = geteuid() == 0;
@@ -2669,6 +2677,8 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-stat") == 0 ||
 				strcmp(argv[i], "-s") == 0)
 			stat_sys = TRUE;
+		else if(strcmp(argv[i], "-fstime") == 0)
+			stat_fstime = TRUE;
 		else if(strcmp(argv[i], "-lls") == 0 ||
 				strcmp(argv[i], "-ll") == 0) {
 			lsonly = TRUE;
@@ -2764,6 +2774,8 @@ options:
 				"overwrite\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
 				"information\n");
+			ERROR("\t-fstime\t\t\tdisplay filesystem superblock "
+				"time\n");
 			ERROR("\t-e[f] <extract file>\tlist of directories or "
 				"files to extract.\n\t\t\t\tOne per line\n");
 			ERROR("\t-da[ta-queue] <size>\tSet data queue to "
@@ -2796,6 +2808,20 @@ options:
 
 	if(stat_sys) {
 		squashfs_stat(argv[i]);
+		exit(0);
+	}
+
+	if(stat_fstime) {
+		squashfs_fstime(&fstime);
+		/*
+		 * http://www.gnu.org/software/libc/manual/html_node/Simple-Calendar-Time.html
+		 * states that "In the GNU C Library, time_t is equivalent to
+		 * long int. In other systems, time_t might be either an
+		 * integer or floating-point type." For this patch to be
+		 * portable, we would need to account for other implementations
+		 * of time_t.
+		 */
+		printf("%ld\n", (long)fstime);
 		exit(0);
 	}
 
