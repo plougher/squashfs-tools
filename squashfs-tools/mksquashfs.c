@@ -50,6 +50,7 @@
 #include <sys/wait.h>
 #include <limits.h>
 #include <ctype.h>
+#include <sys/sysinfo.h>
 
 #ifndef linux
 #define __BYTE_ORDER BYTE_ORDER
@@ -5146,14 +5147,24 @@ int get_physical_memory()
 	 * machine can have more than 4GB of physical memory
 	 *
 	 * sysconf(_SC_PHYS_PAGES) relies on /proc being mounted.
-	 * If it isn't fail.
+	 * If it fails use sysinfo, if that fails return 0
 	 */
 	long long num_pages = sysconf(_SC_PHYS_PAGES);
 	long long page_size = sysconf(_SC_PAGESIZE);
-	int phys_mem = num_pages * page_size >> 20;
+	int phys_mem;
 
-	if(num_pages == -1 || page_size == -1)
-		return 0;
+	if(num_pages == -1 || page_size == -1) {
+		struct sysinfo sys;
+		int res = sysinfo(&sys);
+
+		if(res == -1)
+			return 0;
+
+		num_pages = sys.totalram;
+		page_size = sys.mem_unit;
+	}
+
+	phys_mem = num_pages * page_size >> 20;
 
 	if(phys_mem < SQUASHFS_LOWMEM)
 		BAD_ERROR("Mksquashfs requires more physical memory than is "
@@ -5267,7 +5278,7 @@ void open_log_file(char *filename)
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.3-git (2019/07/15)\n");\
+	printf("mksquashfs version 4.3-git (2019/07/31)\n");\
 	printf("copyright (C) 2019 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
