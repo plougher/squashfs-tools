@@ -63,7 +63,7 @@ unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
 unsigned int block_size;
 unsigned int block_log;
 int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE;
-int concise = FALSE, quiet = FALSE;
+int concise = FALSE, quiet = FALSE, numeric = FALSE;
 int use_regex = FALSE;
 char **created_inode;
 int root_process;
@@ -527,7 +527,7 @@ int print_filename(char *pathname, struct inode *inode)
 		return 1;
 	}
 
-	user = getpwuid(inode->uid);
+	user = numeric ? NULL : getpwuid(inode->uid);
 	if(user == NULL) {
 		int res = snprintf(dummy, 12, "%d", inode->uid);
 		if(res < 0)
@@ -541,7 +541,7 @@ int print_filename(char *pathname, struct inode *inode)
 	} else
 		userstr = user->pw_name;
 		 
-	group = getgrgid(inode->gid);
+	group = numeric ? NULL : getgrgid(inode->gid);
 	if(group == NULL) {
 		int res = snprintf(dummy2, 12, "%d", inode->gid);
 		if(res < 0)
@@ -2661,6 +2661,11 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-ll") == 0) {
 			lsonly = TRUE;
 			short_ls = FALSE;
+		} else if(strcmp(argv[i], "-llnumeric") == 0 ||
+				strcmp(argv[i], "-lln") == 0) {
+			lsonly = TRUE;
+			short_ls = FALSE;
+			numeric = TRUE;
 		} else if(strcmp(argv[i], "-llc") == 0) {
 			lsonly = TRUE;
 			short_ls = FALSE;
@@ -2733,6 +2738,7 @@ options:
 			ERROR("\t-ll[s]\t\t\tlist filesystem with file "
 				"attributes (like\n");
 			ERROR("\t\t\t\tls -l output), but don't unsquash\n");
+			ERROR("\t-lln[umeric]\t\t-lls but with numeric uids and gids\n");
 			ERROR("\t-lc\t\t\tlist filesystem concisely, displaying only"
 				" files\n\t\t\t\tand empty directories.  Don't unsquash\n");
 			ERROR("\t-llc\t\t\tlist filesystem concisely with file attributes,"
