@@ -2178,7 +2178,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 			"\n");
 
 	if(processors == -1) {
-#ifndef linux
+#if !defined(linux) && !defined(__GLIBC__)
 		int mib[2];
 		size_t len = sizeof(processors);
 

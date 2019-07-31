@@ -31,7 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifndef linux
+#if !defined(linux) && !defined(__GLIBC__)
 #define __BYTE_ORDER BYTE_ORDER
 #define __BIG_ENDIAN BIG_ENDIAN
 #define __LITTLE_ENDIAN LITTLE_ENDIAN

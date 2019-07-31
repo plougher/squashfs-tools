@@ -52,7 +52,7 @@
 #include <ctype.h>
 #include <sys/sysinfo.h>
 
-#ifndef linux
+#if !defined(linux) && !defined(__GLIBC__)
 #define __BYTE_ORDER BYTE_ORDER
 #define __BIG_ENDIAN BIG_ENDIAN
 #define __LITTLE_ENDIAN LITTLE_ENDIAN
@@ -4343,7 +4343,7 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
 	if(processors == -1) {
-#ifndef linux
+#if !defined(linux) && !defined(__GLIBC__)
 		int mib[2];
 		size_t len = sizeof(processors);
 
