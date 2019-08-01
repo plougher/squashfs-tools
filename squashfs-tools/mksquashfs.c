@@ -285,6 +285,9 @@ mode_t root_mode;
 unsigned int mkfs_time;
 int mkfs_time_opt = FALSE;
 
+unsigned int all_time;
+int all_time_opt = FALSE;
+
 /* user options that control parallelisation */
 int processors = -1;
 int bwriter_size;
@@ -917,7 +920,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	base->inode_type = type;
 	base->guid = get_guid((unsigned int) global_gid == -1 ?
 		buf->st_gid : global_gid);
-	base->mtime = buf->st_mtime;
+	base->mtime = all_time_opt ? all_time : buf->st_mtime;
 	base->inode_number = get_inode_no(dir_ent->inode);
 
 	if(type == SQUASHFS_FILE_TYPE) {
@@ -5407,6 +5410,12 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			mkfs_time_opt = TRUE;
+		} else if(strcmp(argv[i], "-all-time") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &all_time)) {
+				ERROR("%s: %s missing or invalid time value\n", argv[0], argv[i - 1]);
+				exit(1);
+			}
+			all_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-reproducible") == 0)
 			reproducible = TRUE;
 		else if(strcmp(argv[i], "-not-reproducible") == 0)
@@ -5818,6 +5827,7 @@ printOptions:
 			ERROR("-not-reproducible\tbuild images that are not reproducible"
 				NOREP_STR "\n");
 			ERROR("-mkfs-time <time>\tset mkfs time to <time> which is an unsigned int\n");
+			ERROR("-all-time <time>\tset all inode times to <time> which is an unsigned int\n");
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
 			ERROR("-no-sparse\t\tdon't detect sparse files\n");
