@@ -5306,6 +5306,26 @@ void open_log_file(char *filename)
 }
 
 
+void check_env_var()
+{
+	char *time_string = getenv("SOURCE_DATE_EPOCH");
+
+	/*
+	 * If SOURCE_DATE_EPOCH is set then use that for the -mkfs-time value, unless
+	 * it has already been set via -mkfs-time
+	 */
+	if(time_string == NULL || mkfs_time_opt)
+		return;
+
+	if(!parse_num_unsigned(time_string, &mkfs_time)) {
+		ERROR("Env Var SOURCE_DATE_EPOCH has invalid time value\n");
+		EXIT_MKSQUASHFS();
+	}
+
+	mkfs_time_opt = TRUE;
+}
+
+
 #define VERSION() \
 	printf("mksquashfs version 4.3-git (2019/07/31)\n");\
 	printf("copyright (C) 2019 Phillip Lougher "\
@@ -5943,6 +5963,8 @@ printOptions:
 			exit(1);
 		}
 	}
+
+	check_env_var();
 
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset noId
