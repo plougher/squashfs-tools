@@ -287,6 +287,7 @@ int mkfs_time_opt = FALSE;
 
 unsigned int all_time;
 int all_time_opt = FALSE;
+int clamping = TRUE;
 
 /* user options that control parallelisation */
 int processors = -1;
@@ -867,6 +868,19 @@ static inline unsigned int get_parent_no(struct dir_info *dir)
 }
 
 	
+static inline time_t get_time(time_t time)
+{
+	if(all_time_opt) {
+		if(clamping)
+			return time > all_time ? all_time : time;
+		else
+			return all_time;
+	}
+
+	return time;
+}
+
+
 int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	struct dir_ent *dir_ent, int type, long long byte_size,
 	long long start_block, unsigned int offset, unsigned int *block_list,
@@ -920,7 +934,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	base->inode_type = type;
 	base->guid = get_guid((unsigned int) global_gid == -1 ?
 		buf->st_gid : global_gid);
-	base->mtime = all_time_opt ? all_time : buf->st_mtime;
+	base->mtime = get_time(buf->st_mtime);
 	base->inode_number = get_inode_no(dir_ent->inode);
 
 	if(type == SQUASHFS_FILE_TYPE) {
@@ -5309,20 +5323,17 @@ void open_log_file(char *filename)
 void check_env_var()
 {
 	char *time_string = getenv("SOURCE_DATE_EPOCH");
+	unsigned int time;
 
-	/*
-	 * If SOURCE_DATE_EPOCH is set then use that for the -mkfs-time value, unless
-	 * it has already been set via -mkfs-time
-	 */
-	if(time_string == NULL || mkfs_time_opt)
-		return;
+	if(time_string != NULL) {
+		if(!parse_num_unsigned(time_string, &time)) {
+			ERROR("Env Var SOURCE_DATE_EPOCH has invalid time value\n");
+			EXIT_MKSQUASHFS();
+		}
 
-	if(!parse_num_unsigned(time_string, &mkfs_time)) {
-		ERROR("Env Var SOURCE_DATE_EPOCH has invalid time value\n");
-		EXIT_MKSQUASHFS();
+		all_time = mkfs_time = time;
+		all_time_opt = mkfs_time_opt = TRUE;
 	}
-
-	mkfs_time_opt = TRUE;
 }
 
 
@@ -5364,6 +5375,8 @@ int main(int argc, char *argv[])
 		VERSION();
 		exit(0);
 	}
+
+	check_env_var();
 
 	block_log = slog(block_size);
 	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
@@ -5436,6 +5449,7 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			all_time_opt = TRUE;
+			clamping = FALSE;
 		} else if(strcmp(argv[i], "-reproducible") == 0)
 			reproducible = TRUE;
 		else if(strcmp(argv[i], "-not-reproducible") == 0)
@@ -5963,8 +5977,6 @@ printOptions:
 			exit(1);
 		}
 	}
-
-	check_env_var();
 
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset noId
