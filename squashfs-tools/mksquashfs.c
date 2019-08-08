@@ -5437,7 +5437,8 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = source + 2; i < argc; i++) {
-		if(strcmp(argv[i], "-mkfs-time") == 0) {
+		if(strcmp(argv[i], "-mkfs-time") == 0 ||
+				strcmp(argv[i], "-fstime") == 0) {
 			if((++i == argc) || !parse_num_unsigned(argv[i], &mkfs_time)) {
 				ERROR("%s: %s missing or invalid time value\n", argv[0], argv[i - 1]);
 				exit(1);
@@ -5861,6 +5862,7 @@ printOptions:
 			ERROR("-not-reproducible\tbuild images that are not reproducible"
 				NOREP_STR "\n");
 			ERROR("-mkfs-time <time>\tset mkfs time to <time> which is an unsigned int\n");
+			ERROR("-fstime <time>\t\tsynonym for mkfs-time\n");
 			ERROR("-all-time <time>\tset all inode times to <time> which is an unsigned int\n");
 			ERROR("-no-exports\t\tdon't make the filesystem "
 				"exportable via NFS\n");
