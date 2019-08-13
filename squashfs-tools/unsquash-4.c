@@ -31,27 +31,6 @@ static unsigned int *id_table;
 static char *inode_table, *directory_table;
 static squashfs_operations ops;
 
-long long *alloc_index_table(int indexes)
-{
-	static long long *alloc_table = NULL;
-	static int alloc_size = 0;
-	int length = indexes * sizeof(long long);
-
-	if(alloc_size < length || length == 0) {
-		long long *table = realloc(alloc_table, length);
-
-		if(table == NULL && length !=0)
-			EXIT_UNSQUASH("alloc_index_table: failed to allocate "
-				"index table\n");
-
-		alloc_table = table;
-		alloc_size = length;
-	}
-
-	return alloc_table;
-}
-
-
 static void read_block_list(unsigned int *block_list, char *block_ptr, int blocks)
 {
 	TRACE("read_block_list: blocks %d\n", blocks);
