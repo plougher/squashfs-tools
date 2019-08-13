@@ -816,19 +816,16 @@ struct squashfs_fragment_entry *read_fragment_table(int fd, struct squashfs_supe
 }
 
 
-int read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk,
-	squashfs_inode **inode_lookup_table)
+squashfs_inode *read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk)
 {
 	int lookup_bytes = SQUASHFS_LOOKUP_BYTES(sBlk->inodes);
 	int indexes = SQUASHFS_LOOKUP_BLOCKS(sBlk->inodes);
 	long long index[indexes];
 	int res, i;
+	squashfs_inode *inode_lookup_table;
 
-	if(sBlk->lookup_table_start == SQUASHFS_INVALID_BLK)
-		return 1;
-
-	*inode_lookup_table = malloc(lookup_bytes);
-	if(*inode_lookup_table == NULL)
+	inode_lookup_table = malloc(lookup_bytes);
+	if(inode_lookup_table == NULL)
 		MEM_ERROR();
 
 	res = read_fs_bytes(fd, sBlk->lookup_table_start,
@@ -836,8 +833,8 @@ int read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk,
 	if(res == 0) {
 		ERROR("Failed to read inode lookup table index\n");
 		ERROR("Filesystem corrupted?\n");
-		free(*inode_lookup_table);
-		return 0;
+		free(inode_lookup_table);
+		return NULL;
 	}
 
 	SQUASHFS_INSWAP_LONG_LONGS(index, indexes);
@@ -846,7 +843,7 @@ int read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk,
 		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
 				lookup_bytes & (SQUASHFS_METADATA_SIZE - 1);
 		int length = read_block(fd, index[i], NULL, expected,
-			((unsigned char *) *inode_lookup_table) +
+			((unsigned char *) inode_lookup_table) +
 			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read inode lookup table block %d, from 0x%llx, length "
 			"%d\n", i, index[i], length);
@@ -855,14 +852,14 @@ int read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk,
 				"from 0x%llx, length %d\n", i, index[i],
 				length);
 			ERROR("Filesystem corrupted?\n");
-			free(*inode_lookup_table);
-			return 0;
+			free(inode_lookup_table);
+			return NULL;
 		}
 	}
 
-	SQUASHFS_INSWAP_LONG_LONGS(*inode_lookup_table, sBlk->inodes);
+	SQUASHFS_INSWAP_LONG_LONGS(inode_lookup_table, sBlk->inodes);
 
-	return 1;
+	return inode_lookup_table;
 }
 
 
@@ -903,8 +900,11 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 			goto error;
 	}
 
-	if(read_inode_lookup_table(fd, sBlk, inode_lookup_table) == 0)
-		goto error;
+	if(sBlk->lookup_table_start != SQUASHFS_INVALID_BLK) {
+		*inode_lookup_table = read_inode_lookup_table(fd, sBlk);
+		if(*inode_lookup_table == NULL)
+			goto error;
+	}
 
 	id_table = read_id_table(fd, sBlk);
 	if(id_table == NULL)
