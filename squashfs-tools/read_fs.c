@@ -763,23 +763,20 @@ unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 }
 
 
-int read_fragment_table(int fd, struct squashfs_super_block *sBlk,
-	struct squashfs_fragment_entry **fragment_table)
+struct squashfs_fragment_entry *read_fragment_table(int fd, struct squashfs_super_block *sBlk)
 {
 	int res, i;
 	int bytes = SQUASHFS_FRAGMENT_BYTES(sBlk->fragments);
 	int indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk->fragments);
 	long long fragment_table_index[indexes];
+	struct squashfs_fragment_entry *fragment_table;
 
 	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
 		"from 0x%llx\n", sBlk->fragments, indexes,
 		sBlk->fragment_table_start);
 
-	if(sBlk->fragments == 0)
-		return 1;
-
-	*fragment_table = malloc(bytes);
-	if(*fragment_table == NULL)
+	fragment_table = malloc(bytes);
+	if(fragment_table == NULL)
 		MEM_ERROR();
 
 	res = read_fs_bytes(fd, sBlk->fragment_table_start,
@@ -788,8 +785,8 @@ int read_fragment_table(int fd, struct squashfs_super_block *sBlk,
 	if(res == 0) {
 		ERROR("Failed to read fragment table index\n");
 		ERROR("Filesystem corrupted?\n");
-		free(*fragment_table);
-		return 0;
+		free(fragment_table);
+		return NULL;
 	}
 
 	SQUASHFS_INSWAP_FRAGMENT_INDEXES(fragment_table_index, indexes);
@@ -798,7 +795,7 @@ int read_fragment_table(int fd, struct squashfs_super_block *sBlk,
 		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
 					bytes & (SQUASHFS_METADATA_SIZE - 1);
 		int length = read_block(fd, fragment_table_index[i], NULL,
-			expected, ((unsigned char *) *fragment_table) +
+			expected, ((unsigned char *) fragment_table) +
 			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read fragment table block %d, from 0x%llx, length %d\n",
 			i, fragment_table_index[i], length);
@@ -807,15 +804,15 @@ int read_fragment_table(int fd, struct squashfs_super_block *sBlk,
 				"0x%llx, length %d\n", i,
 				fragment_table_index[i], length);
 			ERROR("Filesystem corrupted?\n");
-			free(*fragment_table);
-			return 0;
+			free(fragment_table);
+			return NULL;
 		}
 	}
 
 	for(i = 0; i < sBlk->fragments; i++)
-		SQUASHFS_INSWAP_FRAGMENT_ENTRY(&(*fragment_table)[i]);
+		SQUASHFS_INSWAP_FRAGMENT_ENTRY(&fragment_table[i]);
 
-	return 1;
+	return fragment_table;
 }
 
 
@@ -900,8 +897,11 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 	if(get_xattrs(fd, sBlk) == 0)
 		goto error;
 
-	if(read_fragment_table(fd, sBlk, fragment_table) == 0)
-		goto error;
+	if(sBlk->fragments > 0) {
+		*fragment_table = read_fragment_table(fd, sBlk);
+		if(*fragment_table == NULL)
+			goto error;
+	}
 
 	if(read_inode_lookup_table(fd, sBlk, inode_lookup_table) == 0)
 		goto error;
