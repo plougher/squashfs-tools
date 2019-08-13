@@ -56,7 +56,6 @@ struct compressor *comp;
 
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
 	dev_count = 0, fifo_count = 0;
-int FAILED = 0;
 struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
 int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
@@ -737,7 +736,6 @@ int read_block(int fd, long long start, long long *next, int expected,
 
 failed:
 	ERROR("read_block: failed to read block @0x%llx\n", start);
-	FAILED = TRUE;
 	return FALSE;
 }
 
@@ -790,7 +788,6 @@ void *read_inode_table(long long start, long long end)
 
 failed:
 	free(inode_table);
-	FAILED = TRUE;
 	return NULL;
 }
 
@@ -889,7 +886,6 @@ int write_block(int file_fd, char *buffer, int size, long long hole, int sparse)
 	return TRUE;
 
 failure:
-	FAILED = TRUE;
 	return FALSE;
 }
 
@@ -1065,8 +1061,6 @@ int create_inode(char *pathname, struct inode *i)
 
 			if(write_file(i, pathname))
 				file_count ++;
-                        else
-				FAILED = TRUE;
 			break;
 		case SQUASHFS_SYMLINK_TYPE:
 		case SQUASHFS_LSYMLINK_TYPE:
@@ -1080,7 +1074,6 @@ int create_inode(char *pathname, struct inode *i)
 				ERROR("create_inode: failed to create symlink "
 					"%s, because %s\n", pathname,
 					strerror(errno));
-				FAILED = TRUE;
 				break;
 			}
 
@@ -1118,7 +1111,6 @@ int create_inode(char *pathname, struct inode *i)
 						"%s device %s, because %s\n",
 						chrdev ? "character" : "block",
 						pathname, strerror(errno));
-					FAILED = TRUE;
 					break;
 				}
 				set_attributes(pathname, i->mode, i->uid,
@@ -1142,7 +1134,6 @@ int create_inode(char *pathname, struct inode *i)
 				ERROR("create_inode: failed to create fifo %s, "
 					"because %s\n", pathname,
 					strerror(errno));
-				FAILED = TRUE;
 				break;
 			}
 			set_attributes(pathname, i->mode, i->uid, i->gid,
@@ -1215,7 +1206,6 @@ void *read_directory_table(long long start, long long end)
 
 failed:
 	free(directory_table);
-	FAILED = TRUE;
 	return NULL;
 }
 
@@ -1555,7 +1545,6 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 					"because %s\n", parent_name,
 					strerror(errno));
 				squashfs_closedir(dir);
-				FAILED = TRUE;
 				return;
 			} 
 
@@ -2016,7 +2005,7 @@ void *writer(void *arg)
 			cache_block_wait(block->buffer);
 
 			if(block->buffer->error)
-				FAILED = failed = TRUE;
+				failed = TRUE;
 
 			if(failed)
 				continue;
@@ -2027,7 +2016,7 @@ void *writer(void *arg)
 			if(error == FALSE) {
 				ERROR("writer: failed to write data block %d\n",
 					i);
-				FAILED = failed = TRUE;
+				failed = TRUE;
 			}
 
 			hole = 0;
@@ -2052,12 +2041,12 @@ void *writer(void *arg)
 						file->sparse) == FALSE) {
 					ERROR("writer: failed to write sparse "
 						"data block\n");
-					FAILED = failed = TRUE;
+					failed = TRUE;
 				}
 			} else if(ftruncate(file_fd, file->file_size) == -1) {
 				ERROR("writer: failed to write sparse data "
 					"block\n");
-				FAILED = failed = TRUE;
+				failed = TRUE;
 			}
 		}
 
@@ -2886,9 +2875,6 @@ options:
 		printf("created %d devices\n", dev_count);
 		printf("created %d fifos\n", fifo_count);
 	}
-
-	if (FAILED)
-		return 1;
 
 	return 0;
 }
