@@ -242,8 +242,8 @@ endif
 # At least one compressor must have been selected
 #
 ifndef COMPRESSORS
-$(error "No compressor selected! Select one or more of GZIP, LZMA, XZ, LZO or \
-	LZ4!")
+$(error "No compressor selected! Select one or more of GZIP, LZMA, XZ, LZO, \
+	LZ4 or ZSTD!")
 endif
 
 #
