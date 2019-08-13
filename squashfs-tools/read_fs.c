@@ -113,20 +113,21 @@ int read_block(int fd, long long start, long long *next, int expected,
 
 
 #define NO_BYTES(SIZE) \
-	(bytes - (cur_ptr - *inode_table) < (SIZE))
+	(bytes - (cur_ptr - inode_table) < (SIZE))
 
 #define NO_INODE_BYTES(INODE) NO_BYTES(sizeof(struct INODE))
 
-int scan_inode_table(int fd, long long start, long long end,
+unsigned char *scan_inode_table(int fd, long long start, long long end,
 	long long root_inode_start, int root_inode_offset,
 	struct squashfs_super_block *sBlk, union squashfs_inode_header
-	*dir_inode, unsigned char **inode_table, unsigned int *root_inode_block,
-	unsigned int *root_inode_size, long long *uncompressed_file,
-	unsigned int *uncompressed_directory, int *file_count, int *sym_count,
-	int *dev_count, int *dir_count, int *fifo_count, int *sock_count,
+	*dir_inode, unsigned int *root_inode_block, unsigned int
+	*root_inode_size, long long *uncompressed_file, unsigned int
+	*uncompressed_directory, int *file_count, int *sym_count, int
+	*dev_count, int *dir_count, int *fifo_count, int *sock_count,
 	unsigned int *id_table)
 {
 	unsigned char *cur_ptr;
+	unsigned char *inode_table = NULL;
 	int byte, files = 0;
 	unsigned int directory_start_block, bytes = 0, size = 0;
 	struct squashfs_base_inode_header base;
@@ -142,13 +143,13 @@ int scan_inode_table(int fd, long long start, long long end,
 			*root_inode_block = bytes;
 		}
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
-			*inode_table = realloc(*inode_table, size
+			inode_table = realloc(inode_table, size
 				+= SQUASHFS_METADATA_SIZE);
-			if(*inode_table == NULL)
+			if(inode_table == NULL)
 				MEM_ERROR();
 		}
 		TRACE("scan_inode_table: reading block 0x%llx\n", start);
-		byte = read_block(fd, start, &start, 0, *inode_table + bytes);
+		byte = read_block(fd, start, &start, 0, inode_table + bytes);
 		if(byte == 0)
 			goto corrupted;
 
@@ -199,7 +200,7 @@ int scan_inode_table(int fd, long long start, long long end,
 	 */
 	*root_inode_size = bytes - (*root_inode_block + root_inode_offset);
 	bytes = *root_inode_block + root_inode_offset;
-	SQUASHFS_SWAP_DIR_INODE_HEADER(*inode_table + bytes, &dir_inode->dir);
+	SQUASHFS_SWAP_DIR_INODE_HEADER(inode_table + bytes, &dir_inode->dir);
 	
 	if(dir_inode->base.inode_type == SQUASHFS_DIR_TYPE)
 		directory_start_block = dir_inode->dir.start_block;
@@ -207,7 +208,7 @@ int scan_inode_table(int fd, long long start, long long end,
 		if(*root_inode_size < sizeof(struct squashfs_ldir_inode_header))
 			/* corrupted filesystem */
 			goto corrupted;
-		SQUASHFS_SWAP_LDIR_INODE_HEADER(*inode_table + bytes,
+		SQUASHFS_SWAP_LDIR_INODE_HEADER(inode_table + bytes,
 			&dir_inode->ldir);
 		directory_start_block = dir_inode->ldir.start_block;
 	} else
@@ -222,7 +223,7 @@ int scan_inode_table(int fd, long long start, long long end,
 	if(file_mapping == NULL)
 		MEM_ERROR();
 
-	for(cur_ptr = *inode_table; cur_ptr < *inode_table + bytes; files ++) {
+	for(cur_ptr = inode_table; cur_ptr < inode_table + bytes; files ++) {
 		if(NO_INODE_BYTES(squashfs_base_inode_header))
 			/* corrupted filesystem */
 			goto corrupted;
@@ -231,7 +232,7 @@ int scan_inode_table(int fd, long long start, long long end,
 
 		TRACE("scan_inode_table: processing inode @ byte position "
 			"0x%x, type 0x%x\n",
-			(unsigned int) (cur_ptr - *inode_table),
+			(unsigned int) (cur_ptr - inode_table),
 			base.inode_type);
 
 		get_uid(id_table[base.uid]);
@@ -483,13 +484,13 @@ int scan_inode_table(int fd, long long start, long long end,
 	}
 	
 	printf("Read existing filesystem, %d inodes scanned\n", files);
-	return TRUE;
+	return inode_table;
 
 corrupted:
 	ERROR("scan_inode_table: filesystem corruption detected in "
 		"scanning metadata\n");
-	free(*inode_table);
-	return FALSE;
+	free(inode_table);
+	return NULL;
 }
 
 
@@ -909,12 +910,12 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 	if(id_table == NULL)
 		goto error;
 
-	res = scan_inode_table(fd, start, end, root_inode_start,
-		root_inode_offset, sBlk, &inode, &inode_table,
-		&root_inode_block, root_inode_size, uncompressed_file,
-		uncompressed_directory, file_count, sym_count, dev_count,
-		dir_count, fifo_count, sock_count, id_table);
-	if(res == 0)
+	inode_table = scan_inode_table(fd, start, end, root_inode_start,
+		root_inode_offset, sBlk, &inode, &root_inode_block,
+		root_inode_size, uncompressed_file, uncompressed_directory,
+		file_count, sym_count, dev_count, dir_count, fifo_count,
+		sock_count, id_table);
+	if(inode_table == NULL)
 		goto error;
 
 	*uncompressed_inode = root_inode_block;
