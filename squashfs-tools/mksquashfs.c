@@ -3712,14 +3712,13 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			struct dir_ent *dir_ent =
 				create_dir_entry(pseudo_ent->name, NULL,
 						pseudo_ent->pathname, dir);
-			char *subpath = strdup(subpathname(dir_ent));
+			char *subpath = subpathname(dir_ent);
 			struct dir_info *sub_dir = scan1_opendir("", subpath,
 						dir->depth + 1);
 			if(sub_dir == NULL) {
 				ERROR_START("Could not create pseudo directory "
 					"\"%s\"", pseudo_ent->pathname);
 				ERROR_EXIT(", skipping...\n");
-				free(subpath);
 				pseudo_ino --;
 				continue;
 			}
