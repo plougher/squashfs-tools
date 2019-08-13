@@ -318,6 +318,9 @@ static struct dupl_id *check_id_dupl(struct xattr_list *xattr_list, int xattrs)
 			if(strcmp(xattr->full_name, dup_xattr->full_name))
 				break;
 
+			if(xattr->vsize != dup_xattr->vsize)
+				break;
+
 			if(memcmp(xattr->value, dup_xattr->value, xattr->vsize))
 				break;
 		}
