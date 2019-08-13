@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2008, 2009, 2010, 2012, 2014
+ * Copyright (c) 2008, 2009, 2010, 2012, 2014, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -211,7 +211,10 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 			xattr_list[i].vsize);
 	}
 	free(xattr_names);
-	*xattrs = xattr_list;
+	if(i > 0)
+		*xattrs = xattr_list;
+	else
+		free(xattr_list);
 	return i;
 
 failed:
