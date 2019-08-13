@@ -666,7 +666,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 	static char *buffer = NULL;
 
 	if(outlen > SQUASHFS_METADATA_SIZE)
-		return 0;
+		return FALSE;
 
 	if(swap) {
 		if(read_fs_bytes(fd, start, 2, &c_byte) == FALSE)
@@ -692,7 +692,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 	 * expected is 0)
 	 */
 	if(c_byte > outlen)
-		return 0;
+		return FALSE;
 
 	if(compressed) {
 		int error;
@@ -731,7 +731,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 	 * is of the expected size
 	 */
 	if(expected && expected != res)
-		return 0;
+		return FALSE;
 	else
 		return res;
 
@@ -1751,7 +1751,7 @@ int check_compression(struct compressor *comp)
 			"unsupported by this version\n", comp->name);
 		ERROR("Decompressors available:\n");
 		display_compressors("", "");
-		return 0;
+		return FALSE;
 	}
 
 	/*
@@ -1767,7 +1767,7 @@ int check_compression(struct compressor *comp)
 		bytes = read_block(fd, sizeof(sBlk.s), NULL, 0, buffer);
 		if(bytes == 0) {
 			ERROR("Failed to read compressor options\n");
-			return 0;
+			return FALSE;
 		}
 	}
 
