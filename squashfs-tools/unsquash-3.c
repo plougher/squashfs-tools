@@ -443,62 +443,6 @@ corrupted:
 }
 
 
-int read_ids(int ids, long long start, long long end, unsigned int **id_table)
-{
-	/* Note on overflow limits:
-	 * Size of ids is 2^8
-	 * Max length is 2^8*4 or 1024
-	 */
-	int res;
-	int length = ids * sizeof(unsigned int);
-
-	/*
-	 * The size of the index table (length bytes) should match the
-	 * table start and end points
-	 */
-	if(length != (end - start)) {
-		ERROR("read_ids: Bad inode count in super block\n");
-		return FALSE;
-	}
-
-	TRACE("read_ids: no_ids %d\n", ids);
-
-	*id_table = malloc(length);
-	if(*id_table == NULL) {
-		ERROR("read_ids: failed to allocate uid/gid table\n");
-		return FALSE;
-	}
-
-	if(swap) {
-		unsigned int *sid_table = malloc(length);
-
-		if(sid_table == NULL) {
-			ERROR("read_ids: failed to allocate uid/gid table\n");
-			return FALSE;
-		}
-
-		res = read_fs_bytes(fd, start, length, sid_table);
-		if(res == FALSE) {
-			ERROR("read_ids: failed to read uid/gid table"
-				"\n");
-			free(sid_table);
-			return FALSE;
-		}
-		SQUASHFS_SWAP_INTS_3((*id_table), sid_table, ids);
-		free(sid_table);
-	} else {
-		res = read_fs_bytes(fd, start, length, *id_table);
-		if(res == FALSE) {
-			ERROR("read_ids: failed to read uid/gid table"
-				"\n");
-			return FALSE;
-		}
-	}
-
-	return TRUE;
-}
-
-
 static int parse_exports_table(long long *table_start)
 {
 	/*

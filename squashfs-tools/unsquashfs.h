@@ -252,9 +252,11 @@ extern squashfs_operations *read_filesystem_tables_2();
 
 /* unsquash-3.c */
 extern squashfs_operations *read_filesystem_tables_3();
-extern int read_ids(int, long long, long long, unsigned int **);
 
 /* unsquash-4.c */
 extern squashfs_operations *read_filesystem_tables_4();
 extern long long *alloc_index_table(int);
+
+/* unsquash-123.c */
+extern int read_ids(int, long long, long long, unsigned int **);
 #endif

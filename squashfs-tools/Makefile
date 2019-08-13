@@ -136,7 +136,7 @@ MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	caches-queues-lists.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
-	unsquash-4.o swap.o compressor.o unsquashfs_info.o
+	unsquash-4.o unsquash-123.o swap.o compressor.o unsquashfs_info.o
 
 CFLAGS ?= -O2
 CFLAGS += $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 \
@@ -322,6 +322,8 @@ unsquash-3.o: unsquashfs.h unsquash-3.c squashfs_fs.h squashfs_compat.h
 
 unsquash-4.o: unsquashfs.h unsquash-4.c squashfs_fs.h squashfs_swap.h \
 	read_fs.h
+
+unsquash-123.o: unsquashfs.h unsquash-123.c squashfs_fs.h squashfs_compat.h
 
 unsquashfs_xattr.o: unsquashfs_xattr.c unsquashfs.h squashfs_fs.h xattr.h
 
