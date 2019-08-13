@@ -247,6 +247,13 @@ $(error "No compressor selected! Select one or more of GZIP, LZMA, XZ, LZO, \
 endif
 
 #
+# COMP_DEFAULT should be defined
+#
+ifndef COMP_DEFAULT
+$(error "COMP_DEFAULT must be set to a compressor!")
+endif
+
+#
 # COMP_DEFAULT must be a selected compressor
 #
 ifeq (, $(findstring $(COMP_DEFAULT), $(COMPRESSORS)))
