@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2012, 2013, 2014
+ * Copyright (c) 2012, 2013, 2014, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -80,6 +80,14 @@ extern void progressbar_info(char *fmt, ...);
 		} while(0)
 
 #define EXIT_UNSQUASH(s, args...) BAD_ERROR(s, ##args)
+
+#define EXIT_UNSQUASH_LIKELY(s, args...) \
+	do {\
+		if(ignore_errors) \
+			ERROR(s, ##args); \
+		else \
+			BAD_ERROR(s, ##args); \
+	} while(0)
 
 #define MEM_ERROR() \
 	do {\

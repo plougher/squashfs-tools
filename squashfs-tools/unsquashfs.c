@@ -75,6 +75,7 @@ unsigned int cur_blocks = 0;
 int inode_number = 1;
 int no_xattrs = XATTR_DEF;
 int user_xattrs = FALSE;
+int ignore_errors = FALSE;
 
 int lookup_type[] = {
 	0,
@@ -1559,7 +1560,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct dir *dir = s_ops->opendir(start_block, offset, &i);
 
 	if(dir == NULL) {
-		ERROR("dir_scan: failed to read directory %s, skipping\n",
+		EXIT_UNSQUASH_LIKELY("dir_scan: failed to read directory %s\n",
 			parent_name);
 		return FALSE;
 	}
