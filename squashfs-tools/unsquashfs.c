@@ -1543,10 +1543,11 @@ void pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 }
 
 
-void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
+int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *paths)
 {
 	unsigned int type;
+	int scan_res = TRUE;
 	char *name;
 	struct pathnames *new;
 	struct inode *i;
@@ -1555,7 +1556,7 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	if(dir == NULL) {
 		ERROR("dir_scan: failed to read directory %s, skipping\n",
 			parent_name);
-		return;
+		return FALSE;
 	}
 
 	if((lsonly || info) && (!concise || dir->dir_count ==0))
@@ -1579,7 +1580,7 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 					"because %s\n", parent_name,
 					strerror(errno));
 				squashfs_closedir(dir);
-				return;
+				return FALSE;
 			} 
 
 			/*
@@ -1587,10 +1588,13 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			 * that we can write to it
 			 */
 			res = chmod(parent_name, S_IRUSR|S_IWUSR|S_IXUSR);
-			if (res == -1)
+			if (res == -1) {
 				ERROR("dir_scan: failed to change permissions "
 					"for directory %s, because %s\n",
 					parent_name, strerror(errno));
+				squashfs_closedir(dir);
+				return FALSE;
+			}
 		}
 	}
 
@@ -1610,7 +1614,9 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			EXIT_UNSQUASH("asprintf failed in dir_scan\n");
 
 		if(type == SQUASHFS_DIR_TYPE) {
-			dir_scan(pathname, start_block, offset, new);
+			res = dir_scan(pathname, start_block, offset, new);
+			if(res == FALSE)
+				scan_res = FALSE;
 			free(pathname);
 		} else if(new == NULL) {
 			update_info(pathname);
@@ -1620,8 +1626,11 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			if(lsonly || info)
 				print_filename(pathname, i);
 
-			if(!lsonly)
-				create_inode(pathname, i);
+			if(!lsonly) {
+				res = create_inode(pathname, i);
+				if(res == FALSE)
+					scan_res = FALSE;
+			}
 
 			if(i->type == SQUASHFS_SYMLINK_TYPE ||
 					i->type == SQUASHFS_LSYMLINK_TYPE)
@@ -1637,6 +1646,8 @@ void dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 
 	squashfs_closedir(dir);
 	dir_count ++;
+
+	return scan_res;
 }
 
 
