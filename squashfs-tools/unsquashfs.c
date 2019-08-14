@@ -2055,8 +2055,10 @@ void *writer(void *arg)
 
 			cache_block_wait(block->buffer);
 
-			if(block->buffer->error)
+			if(block->buffer->error) {
+				EXIT_UNSQUASH_LIKELY("writer: failed to read/uncompress file %s\n", file->pathname);
 				failed = TRUE;
+			}
 
 			if(failed)
 				continue;
@@ -2065,8 +2067,7 @@ void *writer(void *arg)
 				block->offset, block->size, hole, file->sparse);
 
 			if(error == FALSE) {
-				ERROR("writer: failed to write data block %d\n",
-					i);
+				EXIT_UNSQUASH_LIKELY("writer: failed to write file %s\n", file->pathname);
 				failed = TRUE;
 			}
 
@@ -2090,13 +2091,13 @@ void *writer(void *arg)
 				hole --;
 				if(write_block(file_fd, "\0", 1, hole,
 						file->sparse) == FALSE) {
-					ERROR("writer: failed to write sparse "
-						"data block\n");
+					EXIT_UNSQUASH_LIKELY("writer: failed to write sparse "
+						"data block for file %s\n", file->pathname);
 					failed = TRUE;
 				}
 			} else if(ftruncate(file_fd, file->file_size) == -1) {
-				ERROR("writer: failed to write sparse data "
-					"block\n");
+				EXIT_UNSQUASH_LIKELY("writer: failed to write sparse data "
+					"block for file %s\n", file->pathname);
 				failed = TRUE;
 			}
 		}
@@ -2105,10 +2106,8 @@ void *writer(void *arg)
 		if(failed == FALSE)
 			set_attributes(file->pathname, file->mode, file->uid,
 				file->gid, file->time, file->xattr, force);
-		else {
-			ERROR("Failed to write %s, skipping\n", file->pathname);
+		else
 			unlink(file->pathname);
-		}
 		free(file->pathname);
 		free(file);
 
