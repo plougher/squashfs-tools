@@ -2602,6 +2602,8 @@ int main(int argc, char *argv[])
 	struct pathname *path = NULL;
 	int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
 	int data_buffer_size = DATA_BUFFER_DEFAULT;
+	long res;
+	int exit_code = 0;
 
 	pthread_mutex_init(&screen_mutex, NULL);
 	root_process = geteuid() == 0;
@@ -2892,8 +2894,10 @@ options:
 	}
 
 	if(!quiet || progress) {
-		pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+		res = pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths);
+		if(res == FALSE)
+			exit_code = 1;
 
 		memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
 		inode_number = 1;
@@ -2909,11 +2913,15 @@ options:
 		enable_progress_bar();
 	}
 
-	dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+	res = dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths);
+	if(res == FALSE)
+		exit_code = 1;
 
 	queue_put(to_writer, NULL);
-	queue_get(from_writer);
+	res = (long) queue_get(from_writer);
+	if(res == TRUE)
+		exit_code = 1;
 
 	disable_progress_bar();
 
@@ -2926,5 +2934,5 @@ options:
 		printf("created %d fifos\n", fifo_count);
 	}
 
-	return 0;
+	return exit_code;
 }
