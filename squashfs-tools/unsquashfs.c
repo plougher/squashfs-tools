@@ -1037,6 +1037,8 @@ int write_file(struct inode *inode, char *pathname)
 
 int create_inode(char *pathname, struct inode *i)
 {
+	int res;
+
 	TRACE("create_inode: pathname %s\n", pathname);
 
 	if(created_inode[i->inode_number - 1]) {
@@ -1059,8 +1061,11 @@ int create_inode(char *pathname, struct inode *i)
 			TRACE("create_inode: regular file, file_size %lld, "
 				"blocks %d\n", i->data, i->blocks);
 
-			if(write_file(i, pathname))
-				file_count ++;
+			res = write_file(i, pathname);
+			if(res == FALSE)
+				goto failed;
+
+			file_count ++;
 			break;
 		case SQUASHFS_SYMLINK_TYPE:
 		case SQUASHFS_LSYMLINK_TYPE:
@@ -1070,21 +1075,25 @@ int create_inode(char *pathname, struct inode *i)
 			if(force)
 				unlink(pathname);
 
-			if(symlink(i->symlink, pathname) == -1) {
+			res = symlink(i->symlink, pathname);
+			if(res == -1) {
 				ERROR("create_inode: failed to create symlink "
 					"%s, because %s\n", pathname,
 					strerror(errno));
-				break;
+				goto failed;
 			}
 
 			write_xattr(pathname, i->xattr);
 	
 			if(root_process) {
-				if(lchown(pathname, i->uid, i->gid) == -1)
+				res = lchown(pathname, i->uid, i->gid);
+				if(res == -1) {
 					ERROR("create_inode: failed to change "
 						"uid and gids on %s, because "
 						"%s\n", pathname,
 						strerror(errno));
+				goto failed;
+				}
 			}
 
 			sym_count ++;
@@ -1104,23 +1113,29 @@ int create_inode(char *pathname, struct inode *i)
 				if(force)
 					unlink(pathname);
 
-				if(mknod(pathname, chrdev ? S_IFCHR : S_IFBLK,
+				res = mknod(pathname, chrdev ? S_IFCHR : S_IFBLK,
 						makedev((i->data >> 8) & 0xff,
-						i->data & 0xff)) == -1) {
+						i->data & 0xff));
+				if(res == -1) {
 					ERROR("create_inode: failed to create "
 						"%s device %s, because %s\n",
 						chrdev ? "character" : "block",
 						pathname, strerror(errno));
-					break;
+					goto failed;
 				}
-				set_attributes(pathname, i->mode, i->uid,
+				res = set_attributes(pathname, i->mode, i->uid,
 					i->gid, i->time, i->xattr, TRUE);
+				if(res == FALSE)
+					goto failed;
+
 				dev_count ++;
-			} else
+			} else {
 				ERROR("create_inode: could not create %s "
 					"device %s, because you're not "
 					"superuser!\n", chrdev ? "character" :
 					"block", pathname);
+				goto failed;
+			}
 			break;
 		}
 		case SQUASHFS_FIFO_TYPE:
@@ -1130,14 +1145,18 @@ int create_inode(char *pathname, struct inode *i)
 			if(force)
 				unlink(pathname);
 
-			if(mknod(pathname, S_IFIFO, 0) == -1) {
+			res = mknod(pathname, S_IFIFO, 0);
+			if(res == -1) {
 				ERROR("create_inode: failed to create fifo %s, "
 					"because %s\n", pathname,
 					strerror(errno));
-				break;
+				goto failed;
 			}
-			set_attributes(pathname, i->mode, i->uid, i->gid,
+			res = set_attributes(pathname, i->mode, i->uid, i->gid,
 				i->time, i->xattr, TRUE);
+			if(res == FALSE)
+				goto failed;
+
 			fifo_count ++;
 			break;
 		case SQUASHFS_SOCKET_TYPE:
@@ -1154,6 +1173,21 @@ int create_inode(char *pathname, struct inode *i)
 	created_inode[i->inode_number - 1] = strdup(pathname);
 
 	return TRUE;
+
+failed:
+	/*
+	 * Mark the file as created (even though it may not have been), so
+	 * any future hard links to it fail with a file not found, which
+	 * is correct as the file *is* missing.
+	 *
+	 * If we don't mark it here as created, then any future hard links will try
+	 * to create the file as a separate unlinked file.
+	 * If we've had some transitory errors, this may produce files
+	 * in various states, which should be hard-linked, but are not.
+	 */
+	created_inode[i->inode_number - 1] = strdup(pathname);
+
+	return FALSE;
 }
 
 
