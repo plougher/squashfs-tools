@@ -2024,11 +2024,11 @@ void *writer(void *arg)
 		struct squashfs_file *file = queue_get(to_writer);
 		int file_fd;
 		long long hole = 0;
-		int failed = FALSE;
+		long failed = FALSE;
 		int error;
 
 		if(file == NULL) {
-			queue_put(from_writer, NULL);
+			queue_put(from_writer, (void *) failed);
 			continue;
 		} else if(file->fd == -1) {
 			/* write attributes for directory file->pathname */
