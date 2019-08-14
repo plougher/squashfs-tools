@@ -2026,15 +2026,17 @@ void *writer(void *arg)
 		int file_fd;
 		long long hole = 0;
 		long failed = FALSE;
-		int error;
+		int res;
 
 		if(file == NULL) {
 			queue_put(from_writer, (void *) failed);
 			continue;
 		} else if(file->fd == -1) {
 			/* write attributes for directory file->pathname */
-			set_attributes(file->pathname, file->mode, file->uid,
+			res = set_attributes(file->pathname, file->mode, file->uid,
 				file->gid, file->time, file->xattr, TRUE);
+			if(res == FALSE)
+				failed = TRUE;
 			free(file->pathname);
 			free(file);
 			continue;
@@ -2063,10 +2065,10 @@ void *writer(void *arg)
 			if(failed)
 				continue;
 
-			error = write_block(file_fd, block->buffer->data +
+			res = write_block(file_fd, block->buffer->data +
 				block->offset, block->size, hole, file->sparse);
 
-			if(error == FALSE) {
+			if(res == FALSE) {
 				EXIT_UNSQUASH_LIKELY("writer: failed to write file %s\n", file->pathname);
 				failed = TRUE;
 			}
@@ -2103,10 +2105,12 @@ void *writer(void *arg)
 		}
 
 		close_wake(file_fd);
-		if(failed == FALSE)
-			set_attributes(file->pathname, file->mode, file->uid,
+		if(failed == FALSE) {
+			res = set_attributes(file->pathname, file->mode, file->uid,
 				file->gid, file->time, file->xattr, force);
-		else
+			if(res == FALSE)
+				failed = TRUE;
+		} else
 			unlink(file->pathname);
 		free(file->pathname);
 		free(file);
