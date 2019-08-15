@@ -2617,7 +2617,10 @@ int main(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-quiet") == 0 ||
+		if(strcmp(argv[i], "-ignore-errors") == 0 ||
+				strcmp(argv[i], "-ig") == 0)
+			ignore_errors = TRUE;
+		else if(strcmp(argv[i], "-quiet") == 0 ||
 				strcmp(argv[i], "-q") == 0)
 			quiet = TRUE;
 		else if(strcmp(argv[i], "-version") == 0 ||
@@ -2797,6 +2800,8 @@ options:
 			ERROR("\t\t\t\tDefault 0 bytes.\n");
 			ERROR("\t-f[orce]\t\tif file already exists then "
 				"overwrite\n");
+			ERROR("\t-ig[nore-errors]\tTreat errors writing files "
+				"to output as non-fatal\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
 				"information\n");
 			ERROR("\t-fstime\t\t\tdisplay filesystem superblock time\n");
