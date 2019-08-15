@@ -5337,7 +5337,7 @@ void check_env_var()
 
 
 #define VERSION() \
-	printf("mksquashfs version 4.3-git (2019/07/31)\n");\
+	printf("mksquashfs version 4.4pre-git (2019/08/15)\n");\
 	printf("copyright (C) 2019 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
