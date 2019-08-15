@@ -980,7 +980,7 @@ int write_file(struct inode *inode, char *pathname)
 	file_fd = open_wait(pathname, O_CREAT | O_WRONLY |
 		(force ? O_TRUNC : 0), (mode_t) inode->mode & 0777);
 	if(file_fd == -1) {
-		EXIT_UNSQUASH_LIKELY("write_file: failed to create file %s, because %s\n",
+		EXIT_UNSQUASH_IGNORE("write_file: failed to create file %s, because %s\n",
 			pathname, strerror(errno));
 		return FALSE;
 	}
@@ -1048,7 +1048,7 @@ int create_inode(char *pathname, struct inode *i)
 			unlink(pathname);
 
 		if(link(created_inode[i->inode_number - 1], pathname) == -1) {
-			EXIT_UNSQUASH_LIKELY("create_inode: failed to create hardlink, "
+			EXIT_UNSQUASH_IGNORE("create_inode: failed to create hardlink, "
 				"because %s\n", strerror(errno));
 			return FALSE;
 		}
@@ -1560,7 +1560,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct dir *dir = s_ops->opendir(start_block, offset, &i);
 
 	if(dir == NULL) {
-		EXIT_UNSQUASH_LIKELY("dir_scan: failed to read directory %s\n",
+		EXIT_UNSQUASH_IGNORE("dir_scan: failed to read directory %s\n",
 			parent_name);
 		return FALSE;
 	}
@@ -1582,7 +1582,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			 * forcing and the error is -EEXIST
 			 */
 			if(!force || errno != EEXIST) {
-				EXIT_UNSQUASH_LIKELY("dir_scan: failed to make directory %s, "
+				EXIT_UNSQUASH_IGNORE("dir_scan: failed to make directory %s, "
 					"because %s\n", parent_name,
 					strerror(errno));
 				squashfs_closedir(dir);
@@ -1595,7 +1595,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			 */
 			res = chmod(parent_name, S_IRUSR|S_IWUSR|S_IXUSR);
 			if (res == -1) {
-				EXIT_UNSQUASH_LIKELY("dir_scan: failed to change permissions "
+				EXIT_UNSQUASH_IGNORE("dir_scan: failed to change permissions "
 					"for directory %s, because %s\n",
 					parent_name, strerror(errno));
 				squashfs_closedir(dir);
@@ -2058,7 +2058,7 @@ void *writer(void *arg)
 			cache_block_wait(block->buffer);
 
 			if(block->buffer->error) {
-				EXIT_UNSQUASH_LIKELY("writer: failed to read/uncompress file %s\n", file->pathname);
+				EXIT_UNSQUASH_IGNORE("writer: failed to read/uncompress file %s\n", file->pathname);
 				failed = TRUE;
 			}
 
@@ -2069,7 +2069,7 @@ void *writer(void *arg)
 				block->offset, block->size, hole, file->sparse);
 
 			if(res == FALSE) {
-				EXIT_UNSQUASH_LIKELY("writer: failed to write file %s\n", file->pathname);
+				EXIT_UNSQUASH_IGNORE("writer: failed to write file %s\n", file->pathname);
 				failed = TRUE;
 			}
 
@@ -2093,12 +2093,12 @@ void *writer(void *arg)
 				hole --;
 				if(write_block(file_fd, "\0", 1, hole,
 						file->sparse) == FALSE) {
-					EXIT_UNSQUASH_LIKELY("writer: failed to write sparse "
+					EXIT_UNSQUASH_IGNORE("writer: failed to write sparse "
 						"data block for file %s\n", file->pathname);
 					failed = TRUE;
 				}
 			} else if(ftruncate(file_fd, file->file_size) == -1) {
-				EXIT_UNSQUASH_LIKELY("writer: failed to write sparse data "
+				EXIT_UNSQUASH_IGNORE("writer: failed to write sparse data "
 					"block for file %s\n", file->pathname);
 				failed = TRUE;
 			}

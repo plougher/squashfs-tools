@@ -81,7 +81,7 @@ extern void progressbar_info(char *fmt, ...);
 
 #define EXIT_UNSQUASH(s, args...) BAD_ERROR(s, ##args)
 
-#define EXIT_UNSQUASH_LIKELY(s, args...) \
+#define EXIT_UNSQUASH_IGNORE(s, args...) \
 	do {\
 		if(ignore_errors) \
 			ERROR(s, ##args); \
