@@ -76,6 +76,7 @@ int inode_number = 1;
 int no_xattrs = XATTR_DEF;
 int user_xattrs = FALSE;
 int ignore_errors = FALSE;
+int strict_errors = FALSE;
 
 int lookup_type[] = {
 	0,
@@ -799,14 +800,14 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 	struct utimbuf times = { time, time };
 
 	if(utime(pathname, &times) == -1) {
-		ERROR("set_attributes: failed to set time on %s, because %s\n",
+		EXIT_UNSQUASH_STRICT("set_attributes: failed to set time on %s, because %s\n",
 			pathname, strerror(errno));
 		return FALSE;
 	}
 
 	if(root_process) {
 		if(chown(pathname, uid, guid) == -1) {
-			ERROR("set_attributes: failed to change uid and gids "
+			EXIT_UNSQUASH_STRICT("set_attributes: failed to change uid and gids "
 				"on %s, because %s\n", pathname,
 				strerror(errno));
 			return FALSE;
@@ -815,7 +816,7 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 		mode &= ~07000;
 
 	if((set_mode || (mode & 07000)) && chmod(pathname, (mode_t) mode) == -1) {
-		ERROR("set_attributes: failed to change mode %s, because %s\n",
+		EXIT_UNSQUASH_STRICT("set_attributes: failed to change mode %s, because %s\n",
 			pathname, strerror(errno));
 		return FALSE;
 	}
@@ -1078,7 +1079,7 @@ int create_inode(char *pathname, struct inode *i)
 
 			res = symlink(i->symlink, pathname);
 			if(res == -1) {
-				ERROR("create_inode: failed to create symlink "
+				EXIT_UNSQUASH_STRICT("create_inode: failed to create symlink "
 					"%s, because %s\n", pathname,
 					strerror(errno));
 				goto failed;
@@ -1089,7 +1090,7 @@ int create_inode(char *pathname, struct inode *i)
 			if(root_process) {
 				res = lchown(pathname, i->uid, i->gid);
 				if(res == -1) {
-					ERROR("create_inode: failed to change "
+					EXIT_UNSQUASH_STRICT("create_inode: failed to change "
 						"uid and gids on %s, because "
 						"%s\n", pathname,
 						strerror(errno));
@@ -1118,7 +1119,7 @@ int create_inode(char *pathname, struct inode *i)
 						makedev((i->data >> 8) & 0xff,
 						i->data & 0xff));
 				if(res == -1) {
-					ERROR("create_inode: failed to create "
+					EXIT_UNSQUASH_STRICT("create_inode: failed to create "
 						"%s device %s, because %s\n",
 						chrdev ? "character" : "block",
 						pathname, strerror(errno));
@@ -1131,7 +1132,7 @@ int create_inode(char *pathname, struct inode *i)
 
 				dev_count ++;
 			} else {
-				ERROR("create_inode: could not create %s "
+				EXIT_UNSQUASH_STRICT("create_inode: could not create %s "
 					"device %s, because you're not "
 					"superuser!\n", chrdev ? "character" :
 					"block", pathname);
@@ -1166,7 +1167,7 @@ int create_inode(char *pathname, struct inode *i)
 			ERROR("create_inode: socket %s ignored\n", pathname);
 			break;
 		default:
-			ERROR("Unknown inode type %d in create_inode_table!\n",
+			EXIT_UNSQUASH_STRICT("Unknown inode type %d in create_inode_table!\n",
 				i->type);
 			return FALSE;
 	}
@@ -2617,6 +2618,9 @@ int main(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
+		if(strcmp(argv[i], "-strict-errors") == 0 ||
+				strcmp(argv[i], "-st") == 0)
+			strict_errors = TRUE;
 		if(strcmp(argv[i], "-ignore-errors") == 0 ||
 				strcmp(argv[i], "-ig") == 0)
 			ignore_errors = TRUE;
@@ -2802,6 +2806,7 @@ options:
 				"overwrite\n");
 			ERROR("\t-ig[nore-errors]\tTreat errors writing files "
 				"to output as non-fatal\n");
+			ERROR("\t-st[rict-errors]\tTreat all errors as fatal\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
 				"information\n");
 			ERROR("\t-fstime\t\t\tdisplay filesystem superblock time\n");
