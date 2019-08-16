@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012
+ * Copyright (c) 2010, 2012, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -32,7 +32,7 @@
 extern int root_process;
 extern int user_xattrs;
 
-void write_xattr(char *pathname, unsigned int xattr)
+int write_xattr(char *pathname, unsigned int xattr)
 {
 	unsigned int count;
 	struct xattr_list *xattr_list;
@@ -40,21 +40,20 @@ void write_xattr(char *pathname, unsigned int xattr)
 	static int nonsuper_error = FALSE;
 	static int ignore_xattrs = FALSE;
 	static int nospace_error = 0;
+	int failed;
 
 	if(ignore_xattrs || xattr == SQUASHFS_INVALID_XATTR ||
 			sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
-		return;
+		return TRUE;
 
-	xattr_list = get_xattr(xattr, &count, 1);
-	if(xattr_list == NULL) {
-		ERROR("Failed to read xattrs for file %s\n", pathname);
-		return;
-	}
+	xattr_list = get_xattr(xattr, &count, &failed);
+	if(failed)
+		ERROR("write_xattr: Failed to read one or more xattrs for %s\n", pathname);
 
 	for(i = 0; i < count; i++) {
 		int prefix = xattr_list[i].type & SQUASHFS_XATTR_PREFIX_MASK;
 
-		if(user_xattrs && prefix != SQUASHFS_XATTR_USER)
+		if(ignore_xattrs || (user_xattrs && prefix != SQUASHFS_XATTR_USER))
 			continue;
 
 		if(root_process || prefix == SQUASHFS_XATTR_USER) {
@@ -113,6 +112,7 @@ void write_xattr(char *pathname, unsigned int xattr)
 						"xattr %s for file %s because "
 						"%s\n", xattr_list[i].full_name,
 						pathname, strerror(errno));
+				failed = TRUE;
 			}
 		} else if(nonsuper_error == FALSE) {
 			/*
@@ -132,8 +132,11 @@ void write_xattr(char *pathname, unsigned int xattr)
 			ERROR("Further error messages of this type are "
 				"suppressed!\n");
 			nonsuper_error = TRUE;
+			failed = TRUE;
 		}
 	}
 
 	free_xattr(xattr_list, count);
+
+	return !failed;
 }

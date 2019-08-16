@@ -821,9 +821,7 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 		return FALSE;
 	}
 
-	write_xattr(pathname, xattr);
-
-	return TRUE;
+	return write_xattr(pathname, xattr);
 }
 
 
@@ -1040,6 +1038,7 @@ int write_file(struct inode *inode, char *pathname)
 int create_inode(char *pathname, struct inode *i)
 {
 	int res;
+	int failed = FALSE;
 
 	TRACE("create_inode: pathname %s\n", pathname);
 
@@ -1085,7 +1084,9 @@ int create_inode(char *pathname, struct inode *i)
 				goto failed;
 			}
 
-			write_xattr(pathname, i->xattr);
+			res = write_xattr(pathname, i->xattr);
+			if(res == FALSE)
+				failed = TRUE;
 	
 			if(root_process) {
 				res = lchown(pathname, i->uid, i->gid);
@@ -1094,9 +1095,12 @@ int create_inode(char *pathname, struct inode *i)
 						"uid and gids on %s, because "
 						"%s\n", pathname,
 						strerror(errno));
-				goto failed;
+					failed = TRUE;
 				}
 			}
+
+			if(failed)
+				goto failed;
 
 			sym_count ++;
 			break;

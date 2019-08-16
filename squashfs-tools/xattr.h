@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2013, 2014
+ * Copyright (c) 2010, 2012, 2013, 2014, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -72,9 +72,9 @@ extern long long write_xattrs();
 extern void save_xattrs();
 extern void restore_xattrs();
 extern unsigned int xattr_bytes, total_xattr_bytes;
-extern void write_xattr(char *, unsigned int);
+extern int write_xattr(char *, unsigned int);
 extern int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long long *);
-extern struct xattr_list *get_xattr(int, unsigned int *, int);
+extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern void free_xattr(struct xattr_list *, int);
 #else
 static inline int get_xattrs(int fd, struct squashfs_super_block *sBlk)

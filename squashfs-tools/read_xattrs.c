@@ -124,7 +124,7 @@ static int read_xattr_entry(struct xattr_list *xattr,
 			break;
 
 	if(prefix_table[i].type == -1) {
-		ERROR("Unrecognised type in read_xattr_entry\n");
+		ERROR("read_xattr_entry: Unrecognised xattr type %d\n", type);
 		return 0;
 	}
 
@@ -344,10 +344,9 @@ void free_xattr(struct xattr_list *xattr_list, int count)
  * to safely ignore unknown xattrs, and to write the ones it knows about,
  * this is better than completely refusing to retrieve all the xattrs.
  *
- * If ignore is TRUE then don't treat unknown xattr prefixes as
- * a failure to read the xattr.  
+ * So return an error flag if any unrecognised types were found.
  */
-struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
+struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 {
 	long long start;
 	struct xattr_list *xattr_list = NULL;
@@ -356,6 +355,14 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
 	int j, n, res = 1;
 
 	TRACE("get_xattr\n");
+
+	if(xattr_ids[i].count == 0) {
+		ERROR("get_xattr: xattr count unexpectedly 0 - corrupt fs?\n");
+		*failed = TRUE;
+		*count = 0;
+		return NULL;
+	} else
+		*failed = FALSE;
 
 	start = SQUASHFS_XATTR_BLK(xattr_ids[i].xattr) + xattr_table_start;
 	offset = SQUASHFS_XATTR_OFFSET(xattr_ids[i].xattr);
@@ -380,14 +387,12 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
 
 		res = read_xattr_entry(&xattr_list[j], &entry, xptr);
 		if(res == 0) {
-			if(ignore) {
-				/* unknown prefix, but ignore flag is set, so skipping entry */
-				xptr += entry.size;
-				SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
-				xptr += sizeof(val) + val.vsize;
-				continue;
-			} else
-				goto failed;
+			/* unknown type, skip, and set error flag */
+			xptr += entry.size;
+			SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
+			xptr += sizeof(val) + val.vsize;
+			*failed = TRUE;
+			continue;
 		}
 
 		xptr += entry.size;
@@ -418,15 +423,6 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
 		xattr_list[j++].vsize = val.vsize;
 	}
 
-	if(j == 0)
-		goto failed;
-
 	*count = j;
 	return xattr_list;
-
-failed:
-	*count = j;
-	free_xattr(xattr_list, j);
-
-	return NULL;
 }

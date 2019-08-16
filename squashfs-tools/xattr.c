@@ -86,7 +86,7 @@ extern char *pathname(struct dir_ent *);
 
 /* helper functions and definitions from read_xattrs.c */
 extern int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long long *);
-extern struct xattr_list *get_xattr(int, unsigned int *, int);
+extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern struct prefix prefix_table[];
 
 
@@ -651,10 +651,10 @@ int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 	 * name:value pairs, and add them to the in-memory xattr cache
 	 */
 	for(i = 0; i < ids; i++) {
-		struct xattr_list *xattr_list = get_xattr(i, &count, 0);
-		if(xattr_list == NULL) {
-			res = 0;
-			goto done;
+		struct xattr_list *xattr_list = get_xattr(i, &count, &res);
+		if(res) {
+			free_xattr(xattr_list, count);
+			return FALSE;
 		}
 		id = generate_xattrs(count, xattr_list);
 
