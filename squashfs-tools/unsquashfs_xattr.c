@@ -31,6 +31,7 @@
 
 extern int root_process;
 extern int user_xattrs;
+extern int ignore_errors;
 
 int write_xattr(char *pathname, unsigned int xattr)
 {
@@ -94,7 +95,7 @@ int write_xattr(char *pathname, unsigned int xattr)
 					 * file only.  If we get a lot of these
 					 * then suppress the error messsage
 					 */
-					ERROR("write_xattr: failed to write "
+					EXIT_UNSQUASH_IGNORE("write_xattr: failed to write "
 						"xattr %s for file %s because " 
 						"no extended attribute space "
 						"remaining (per file or "
@@ -108,7 +109,7 @@ int write_xattr(char *pathname, unsigned int xattr)
 							"are suppressed!\n",
 							NOSPACE_MAX);
 				} else
-					ERROR("write_xattr: failed to write "
+					EXIT_UNSQUASH_IGNORE("write_xattr: failed to write "
 						"xattr %s for file %s because "
 						"%s\n", xattr_list[i].full_name,
 						pathname, strerror(errno));
@@ -126,7 +127,7 @@ int write_xattr(char *pathname, unsigned int xattr)
 					"for file %s because you're not "
 					"superuser!\n",
 					xattr_list[i].full_name, pathname);
-			ERROR("write_xattr: to avoid this error message, either"
+			EXIT_UNSQUASH_IGNORE("write_xattr: to avoid this error message, either"
 				" specify -user-xattrs, -no-xattrs, or run as "
 				"superuser!\n");
 			ERROR("Further error messages of this type are "
