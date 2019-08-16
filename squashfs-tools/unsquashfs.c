@@ -1089,9 +1089,10 @@ int create_inode(char *pathname, struct inode *i)
 				goto failed;
 			}
 
-			if (utimensat(AT_FDCWD, pathname, times,
-					AT_SYMLINK_NOFOLLOW) == -1) {
-				ERROR("create_inode: failed to set time on "
+			res = utimensat(AT_FDCWD, pathname, times,
+					AT_SYMLINK_NOFOLLOW);
+			if(res == -1) {
+				EXIT_UNSQUASH_STRICT("create_inode: failed to set time on "
 					"%s, because %s\n", pathname,
 					strerror(errno));
 			}
