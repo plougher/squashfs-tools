@@ -32,6 +32,7 @@
 extern int root_process;
 extern int user_xattrs;
 extern int ignore_errors;
+extern int strict_errors;
 
 int write_xattr(char *pathname, unsigned int xattr)
 {
@@ -49,7 +50,7 @@ int write_xattr(char *pathname, unsigned int xattr)
 
 	xattr_list = get_xattr(xattr, &count, &failed);
 	if(failed)
-		ERROR("write_xattr: Failed to read one or more xattrs for %s\n", pathname);
+		EXIT_UNSQUASH_STRICT("write_xattr: Failed to read one or more xattrs for %s\n", pathname);
 
 	for(i = 0; i < count; i++) {
 		int prefix = xattr_list[i].type & SQUASHFS_XATTR_PREFIX_MASK;
@@ -80,7 +81,7 @@ int write_xattr(char *pathname, unsigned int xattr)
 						pathname);
 					ERROR("Ignoring xattrs in "
 								"filesystem\n");
-					ERROR("To avoid this error message, "
+					EXIT_UNSQUASH_STRICT("To avoid this error message, "
 						"specify -no-xattrs\n");
 					ignore_xattrs = TRUE;
 				} else if((errno == ENOSPC || errno == EDQUOT)
