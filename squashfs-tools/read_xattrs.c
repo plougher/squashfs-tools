@@ -353,19 +353,18 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
 	struct xattr_list *xattr_list = NULL;
 	unsigned int offset;
 	void *xptr;
-	int j = 0, res = 1;
+	int j, n, res = 1;
 
 	TRACE("get_xattr\n");
 
-	*count = xattr_ids[i].count;
 	start = SQUASHFS_XATTR_BLK(xattr_ids[i].xattr) + xattr_table_start;
 	offset = SQUASHFS_XATTR_OFFSET(xattr_ids[i].xattr);
 	xptr = xattrs + get_xattr_block(start) + offset;
 
 	TRACE("get_xattr: xattr_id %d, count %d, start %lld, offset %d\n", i,
-			*count, start, offset);
+			xattr_ids[i].count, start, offset);
 
-	while(j < *count) {
+	for(j = 0, n = 0; n < xattr_ids[i].count; n++) {
 		struct squashfs_xattr_entry entry;
 		struct squashfs_xattr_val val;
 
@@ -380,14 +379,16 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
 		xptr += sizeof(entry);
 
 		res = read_xattr_entry(&xattr_list[j], &entry, xptr);
-		if(ignore && res == 0) {
-			/* unknown prefix, but ignore flag is set */
-			(*count) --;
-			continue;
+		if(res == 0) {
+			if(ignore) {
+				/* unknown prefix, but ignore flag is set, so skipping entry */
+				xptr += entry.size;
+				SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
+				xptr += sizeof(val) + val.vsize;
+				continue;
+			} else
+				goto failed;
 		}
-
-		if(res != 1)
-			goto failed;
 
 		xptr += entry.size;
 			
@@ -414,15 +415,17 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int ignore)
 
 		TRACE("get_xattr: xattr %d, vsize %d\n", j, val.vsize);
 
-		xattr_list[j ++].vsize = val.vsize;
+		xattr_list[j++].vsize = val.vsize;
 	}
 
-	if(*count == 0)
+	if(j == 0)
 		goto failed;
 
+	*count = j;
 	return xattr_list;
 
 failed:
+	*count = j;
 	free_xattr(xattr_list, j);
 
 	return NULL;
