@@ -2778,6 +2778,9 @@ int main(int argc, char *argv[])
 	if(lsonly || info)
 		progress = FALSE;
 
+	if(strict_errors && ignore_errors)
+		EXIT_UNSQUASH("Both -strict-errors and -ignore-errors should not be set\n");
+
 #ifdef SQUASHFS_TRACE
 	/*
 	 * Disable progress bar if full debug tracing is enabled.
