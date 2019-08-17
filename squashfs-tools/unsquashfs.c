@@ -2648,7 +2648,7 @@ int main(int argc, char *argv[])
 		if(strcmp(argv[i], "-strict-errors") == 0 ||
 				strcmp(argv[i], "-st") == 0)
 			strict_errors = TRUE;
-		if(strcmp(argv[i], "-ignore-errors") == 0 ||
+		else if(strcmp(argv[i], "-ignore-errors") == 0 ||
 				strcmp(argv[i], "-ig") == 0)
 			ignore_errors = TRUE;
 		else if(strcmp(argv[i], "-quiet") == 0 ||

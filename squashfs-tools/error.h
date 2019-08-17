@@ -91,7 +91,7 @@ extern void progressbar_info(char *fmt, ...);
 
 #define EXIT_UNSQUASH_STRICT(s, args...) \
 	do {\
-		if(strict_errors) \
+		if(!strict_errors) \
 			ERROR(s, ##args); \
 		else \
 			BAD_ERROR(s, ##args); \
