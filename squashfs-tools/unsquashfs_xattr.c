@@ -128,7 +128,7 @@ int write_xattr(char *pathname, unsigned int xattr)
 					"for file %s because you're not "
 					"superuser!\n",
 					xattr_list[i].full_name, pathname);
-			EXIT_UNSQUASH_IGNORE("write_xattr: to avoid this error message, either"
+			EXIT_UNSQUASH_STRICT("write_xattr: to avoid this error message, either"
 				" specify -user-xattrs, -no-xattrs, or run as "
 				"superuser!\n");
 			ERROR("Further error messages of this type are "
