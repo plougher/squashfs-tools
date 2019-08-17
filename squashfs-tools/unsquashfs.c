@@ -2048,12 +2048,12 @@ void *reader(void *arg)
 void *writer(void *arg)
 {
 	int i;
+	long failed = FALSE;
 
 	while(1) {
 		struct squashfs_file *file = queue_get(to_writer);
 		int file_fd;
 		long long hole = 0;
-		long failed = FALSE;
 		int res;
 
 		if(file == NULL) {
