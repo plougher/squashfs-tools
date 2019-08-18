@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013
+ * Copyright (c) 2013, 2019
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -30,6 +30,30 @@
 #include "squashfs_fs.h"
 #include "lz4_wrapper.h"
 #include "compressor.h"
+
+/* LZ4 1.7.0 introduced new functions, and since r131,
+ * the older functions produce deprecated warnings.
+ *
+ * There are still too many distros using older versions
+ * to switch to the newer functions, but, the deprecated
+ * functions may completely disappear.  This is a mess.
+ *
+ * Support both by checking the library version and
+ * using shadow definitions
+ */
+
+/* Earlier (but > 1.7.0) versions don't define this */
+#ifndef LZ4HC_CLEVEL_MAX
+#define LZ4HC_CLEVEL_MAX 12
+#endif
+
+#if LZ4_VERSION_NUMBER >= 10700
+#define COMPRESS(src, dest, size, max)		 LZ4_compress_default(src, dest, size, max)
+#define COMPRESS_HC(src, dest, size, max)	 LZ4_compress_HC(src, dest, size, max, LZ4HC_CLEVEL_MAX)
+#else
+#define COMPRESS(src, dest, size, max)		 LZ4_compress_limitedOutput(src, dest, size, max)
+#define COMPRESS_HC(src, dest, size, max)	 LZ4_compressHC_limitedOutput(src, dest, size, max)
+#endif
 
 static int hc = 0;
 
@@ -226,9 +250,9 @@ static int lz4_compress(void *strm, void *dest, void *src,  int size,
 	int res;
 
 	if(hc)
-		res = LZ4_compressHC_limitedOutput(src, dest, size, block_size);
+		res = COMPRESS_HC(src, dest, size, block_size);
 	else
-		res = LZ4_compress_limitedOutput(src, dest, size, block_size);
+		res = COMPRESS(src, dest, size, block_size);
 
 	if(res == 0) {
 		/*
