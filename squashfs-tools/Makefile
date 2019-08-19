@@ -23,7 +23,11 @@ GZIP_SUPPORT = 1
 #
 # XZ Utils liblzma (http://tukaani.org/xz/) is supported
 #
-# To build using XZ Utils liblzma - install the library and uncomment
+# Development packages (libraries and header files) should be
+# supported by most modern distributions.  Please refer to
+# your distribution package manager.
+#
+# To build install the library and uncomment
 # the XZ_SUPPORT line below.
 #
 #XZ_SUPPORT = 1
@@ -33,12 +37,14 @@ GZIP_SUPPORT = 1
 #
 # The LZO library (http://www.oberhumer.com/opensource/lzo/) is supported.
 #
-# To build using the LZO library - install the library and uncomment the
-# LZO_SUPPORT line below. If needed, uncomment and set LZO_DIR to the
-# installation prefix.
+# Development packages (libraries and header files) should be
+# supported by most modern distributions.  Please refer to
+# your distribution package manager.
+#
+# To build install the library and uncomment
+# the XZ_SUPPORT line below.
 #
 #LZO_SUPPORT = 1
-#LZO_DIR = /usr/local
 
 
 ########### Building LZ4 support #############
@@ -47,8 +53,11 @@ GZIP_SUPPORT = 1
 # LZ4 homepage: http://fastcompression.blogspot.com/p/lz4.html
 # LZ4 source repository: http://code.google.com/p/lz4
 #
-# To build configure the tools using cmake to build shared libraries,
-# install and uncomment
+# Development packages (libraries and header files) should be
+# supported by most modern distributions.  Please refer to
+# your distribution package manager.
+#
+# To build install and uncomment
 # the LZ4_SUPPORT line below.
 #
 #LZ4_SUPPORT = 1
@@ -82,8 +91,12 @@ GZIP_SUPPORT = 1
 # ZSTD homepage: http://zstd.net
 # ZSTD source repository: https://github.com/facebook/zstd
 #
-# To build using the ZSTD library - install the library and uncomment the
-# ZSTD_SUPPORT line below.
+# Development packages (libraries and header files) should be
+# supported by most modern distributions.  Please refer to
+# your distribution package manager.
+#
+# To build install the library and uncomment
+# the XZ_SUPPORT line below.
 #
 #ZSTD_SUPPORT = 1
 
@@ -180,10 +193,6 @@ endif
 
 ifeq ($(LZO_SUPPORT),1)
 CFLAGS += -DLZO_SUPPORT
-ifdef LZO_DIR
-INCLUDEDIR += -I$(LZO_DIR)/include
-LZO_LIBDIR = -L$(LZO_DIR)/lib
-endif
 MKSQUASHFS_OBJS += lzo_wrapper.o
 UNSQUASHFS_OBJS += lzo_wrapper.o
 LIBS += $(LZO_LIBDIR) -llzo2
