@@ -63,28 +63,6 @@ GZIP_SUPPORT = 1
 #LZ4_SUPPORT = 1
 
 
-########### Building LZMA support #############
-#
-# LZMA1 compression.
-#
-# LZMA1 compression is deprecated, and the newer and better XZ (LZMA2)
-# compression should be used in preference.
-#
-# Both XZ Utils liblzma (http://tukaani.org/xz/) and LZMA SDK
-# (http://www.7-zip.org/sdk.html) are supported
-#
-# To build using XZ Utils liblzma - install the library and uncomment
-# the LZMA_XZ_SUPPORT line below.
-#
-# To build using the LZMA SDK (4.65 used in development, other versions may
-# work) - download and unpack it, uncomment and set LZMA_DIR to unpacked source,
-# and uncomment the LZMA_SUPPORT line below.
-#
-#LZMA_XZ_SUPPORT = 1
-#LZMA_SUPPORT = 1
-#LZMA_DIR = ../../../../LZMA/lzma465
-
-
 ########### Building ZSTD support ############
 #
 # The ZSTD library is supported
@@ -100,6 +78,7 @@ GZIP_SUPPORT = 1
 #
 #ZSTD_SUPPORT = 1
 
+
 ######## Specifying default compression ########
 #
 # The next line specifies which compression algorithm is used by default
@@ -107,6 +86,7 @@ GZIP_SUPPORT = 1
 # selected to be built
 #
 COMP_DEFAULT = gzip
+
 
 ###############################################
 #  Extended attribute (XATTRs) build options  #
@@ -127,6 +107,7 @@ XATTR_SUPPORT = 1
 # default.  Users can enable xattrs by using the -xattrs option.
 XATTR_DEFAULT = 1
 
+
 ###############################################
 #          Reproducible Image options         #
 ###############################################
@@ -136,6 +117,32 @@ XATTR_DEFAULT = 1
 # If not selected, users can enable reproducible builds using the
 # -reproducible option
 REPRODUCIBLE_DEFAULT = 1
+
+
+###############################################
+#              Obsolete options               #
+###############################################
+
+########### Building LZMA support #############
+#
+# LZMA1 compression.
+#
+# LZMA1 compression is obsolete, and the newer and better XZ (LZMA2)
+# compression should be used in preference.
+#
+# Both XZ Utils liblzma (http://tukaani.org/xz/) and LZMA SDK
+# (http://www.7-zip.org/sdk.html) are supported
+#
+# To build using XZ Utils liblzma - install the library and uncomment
+# the LZMA_XZ_SUPPORT line below.
+#
+# To build using the LZMA SDK (4.65 used in development, other versions may
+# work) - download and unpack it, uncomment and set LZMA_DIR to unpacked source,
+# and uncomment the LZMA_SUPPORT line below.
+#
+#LZMA_XZ_SUPPORT = 1
+#LZMA_SUPPORT = 1
+#LZMA_DIR = ../../../../LZMA/lzma465
 
 ###############################################
 #        End of BUILD options section         #
