@@ -5954,12 +5954,13 @@ printOptions:
 			ERROR("\nMiscellaneous options:\n");
 			ERROR("-root-owned\t\talternative name for -all-root"
 				"\n");
-			ERROR("-o <offset>\t\tSkip <offset> bytes at the "
+			ERROR("-offset <offset>\tSkip <offset> bytes at the "
 				"beginning of <dest>.\n");
 			ERROR("\t\t\tOptionally a suffix of K, M or G can be"
 				" given to specify\n\t\t\tKbytes, Mbytes or"
 				" Gbytes respectively.\n");
 			ERROR("\t\t\tDefault 0 bytes.\n");
+			ERROR("-o <offset>\t\tsynonym for -offset\n");
 			ERROR("-noInodeCompression\talternative name for -noI"
 				"\n");
 			ERROR("-noIdTableCompression\talternative name for -noId"
