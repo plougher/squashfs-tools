@@ -996,7 +996,8 @@ The -mkfs-time option displays the make filesystem time contained
 in the super-block.  This is displayed as the number of seconds since
 the epoch of 1970-01-01 00:00:00 UTC.
 
-4.1. Dealing with errors
+4.2. Dealing with errors
+------------------------
 
 Unsquashfs splits errors into two categories: fatal errors and non-fatal
 errors.
@@ -1020,12 +1021,12 @@ In the past Unsquashfs was much more tolerant of errors, in this
 release a significant number of errors that were ignored have been
 hardened to fatal.
 
-4.1.1. -ignore-errors
+4.2.1. -ignore-errors
 
 This makes Unsquashfs behave like previous versions, and treats more
 errors as non-fatal.
 
-4.1.2 -strict-errors
+4.2.2 -strict-errors
 
 This makes Unsquashfs treat every error as fatal, and it will abort
 instantly.
