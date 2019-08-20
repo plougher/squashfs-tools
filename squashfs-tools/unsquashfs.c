@@ -2628,7 +2628,7 @@ int parse_number(char *start, int *res)
 int main(int argc, char *argv[])
 {
 	char *dest = "squashfs-root";
-	int i, stat_sys = FALSE, version = FALSE, fstime = FALSE;
+	int i, stat_sys = FALSE, version = FALSE, mkfs_time_opt = FALSE;
 	int n;
 	struct pathnames *paths = NULL;
 	struct pathname *path = NULL;
@@ -2736,8 +2736,9 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-stat") == 0 ||
 				strcmp(argv[i], "-s") == 0)
 			stat_sys = TRUE;
-		else if(strcmp(argv[i], "-fstime") == 0)
-			fstime = TRUE;
+		else if(strcmp(argv[i], "-mkfs-time") == 0 ||
+				strcmp(argv[i], "-fstime") == 0)
+			mkfs_time_opt = TRUE;
 		else if(strcmp(argv[i], "-lls") == 0 ||
 				strcmp(argv[i], "-ll") == 0) {
 			lsonly = TRUE;
@@ -2839,7 +2840,8 @@ options:
 			ERROR("\t-st[rict-errors]\tTreat all errors as fatal\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
 				"information\n");
-			ERROR("\t-fstime\t\t\tdisplay filesystem superblock time\n");
+			ERROR("\t-mkfs-time\t\tdisplay filesystem superblock time\n");
+			ERROR("\t-fstime\t\t\tsynonym for -mkfs-time\n");
 			ERROR("\t-e[f] <extract file>\tlist of directories or "
 				"files to extract.\n\t\t\t\tOne per line\n");
 			ERROR("\t-da[ta-queue] <size>\tSet data queue to "
@@ -2870,7 +2872,7 @@ options:
 	if(read_super(argv[i]) == FALSE)
 		exit(1);
 
-	if(fstime) {
+	if(mkfs_time_opt) {
 		printf("%u\n", sBlk.s.mkfs_time);
 		exit(0);
 	}
