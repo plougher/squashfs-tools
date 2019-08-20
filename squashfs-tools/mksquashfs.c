@@ -5325,6 +5325,19 @@ void check_env_var()
 	unsigned int time;
 
 	if(time_string != NULL) {
+		/*
+		 * We cannot have both command-line options and environment
+		 * variable trying to set the timestamp(s) at the same
+		 * time.  Semantically both are FORCE options which cannot be
+		 * over-ridden elsewhere (otherwise they can't be relied on).
+		 *
+		 * So refuse to continue if both are set.
+		 */
+		if(mkfs_time_opt || all_time_opt)
+			BAD_ERROR("SOURCE_DATE_EPOCH and command line options "
+				"can't be used at the same time to set "
+				"timestamp(s)\n");
+
 		if(!parse_num_unsigned(time_string, &time)) {
 			ERROR("Env Var SOURCE_DATE_EPOCH has invalid time value\n");
 			EXIT_MKSQUASHFS();
@@ -5374,8 +5387,6 @@ int main(int argc, char *argv[])
 		VERSION();
 		exit(0);
 	}
-
-	check_env_var();
 
 	block_log = slog(block_size);
 	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
@@ -5979,6 +5990,8 @@ printOptions:
 			exit(1);
 		}
 	}
+
+	check_env_var();
 
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset noId
