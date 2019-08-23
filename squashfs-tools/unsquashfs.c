@@ -77,6 +77,7 @@ int no_xattrs = XATTR_DEF;
 int user_xattrs = FALSE;
 int ignore_errors = FALSE;
 int strict_errors = FALSE;
+int use_localtime = TRUE;
 
 int lookup_type[] = {
 	0,
@@ -581,7 +582,7 @@ int print_filename(char *pathname, struct inode *inode)
 			break;
 	}
 
-	t = localtime(&inode->time);
+	t = use_localtime ? localtime(&inode->time) : gmtime(&inode->time);
 
 	printf("%d-%02d-%02d %02d:%02d %s", t->tm_year + 1900, t->tm_mon + 1,
 		t->tm_mday, t->tm_hour, t->tm_min, pathname);
@@ -1688,7 +1689,8 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 void squashfs_stat(char *source)
 {
 	time_t mkfs_time = (time_t) sBlk.s.mkfs_time;
-	char *mkfs_str = ctime(&mkfs_time);
+	struct tm *t = use_localtime ? localtime(&mkfs_time) : gmtime(&mkfs_time);
+	char *mkfs_str = asctime(t);
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 	printf("Found a valid %sSQUASHFS %d:%d superblock on %s.\n",
@@ -2645,7 +2647,9 @@ int main(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-strict-errors") == 0 ||
+		if(strcmp(argv[i], "-UTC") == 0)
+			use_localtime = FALSE;
+		else if(strcmp(argv[i], "-strict-errors") == 0 ||
 				strcmp(argv[i], "-st") == 0)
 			strict_errors = TRUE;
 		else if(strcmp(argv[i], "-ignore-errors") == 0 ||
@@ -2840,6 +2844,7 @@ options:
 			ERROR("\t-st[rict-errors]\tTreat all errors as fatal\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
 				"information\n");
+			ERROR("\t-UTC\t\t\tUse UTC rather than local time zone when displaying time\n");
 			ERROR("\t-mkfs-time\t\tdisplay filesystem superblock time\n");
 			ERROR("\t-fstime\t\t\tsynonym for -mkfs-time\n");
 			ERROR("\t-e[f] <extract file>\tlist of directories or "
