@@ -7,15 +7,16 @@
 	1. Overall improvements
 
 		1.1 Mksquashfs now generates reproducible images by default.
-		    Mkfs time and file timestamps can also be specified.
-		1.2 Support for Zstandard (ZSTD) compression algorithm.
+		1.2 Mkfs time and file timestamps can also be specified.
+		1.3 Support for Zstandard (ZSTD) compression algorithm.
+		1.4 CVE-2015-4645 and CVE-2015-4646 have been fixed.
 
 	2. Mksquashfs improvements and major bug fixes.
 
 		2.1 Pseudo files now support symbolic links.
 		2.2 New -mkfs-time option
 		2.3 New -all-time option
-		2.4 New -root-mode <mode> option
+		2.4 New -root-mode option
 		2.5 New -quiet option
 		2.6 New -noId option
 		2.7 New -offset option
@@ -37,16 +38,18 @@
 		3.6 New -lln[umeric] option
 		3.7 New -lc option
 		3.8 New -llc option
-		3.9 New -offset option
-		3.10 New -quiet option
-		3.11 Update lz4 wrapper to use new functions introduced
+		3.9 New -mkfs-time option
+		3.10 New -UTC option
+		3.11 New -offset option
+		3.12 New -quiet option
+		3.13 Update lz4 wrapper to use new functions introduced
 		     in 1.7.0.
-		3.12 bug fix, fatal and non-fatal errors now set the exit
+		3.14 bug fix, fatal and non-fatal errors now set the exit
 		     code to 1.
-		3.13 bug fix, fix time setting for symlinks
-		3.14 bug fix, try to set sticky-bit when running as a
+		3.15 bug fix, fix time setting for symlinks
+		3.16 bug fix, try to set sticky-bit when running as a
 		     user process.
-		3.15 Fix compilation with glibc 2.25+
+		3.17 Fix compilation with glibc 2.25+
 
 4.3	12 MAY 2014	New compressor options, new Mksquashfs/Unsquashfs
 			functionality, duplicate checking optimisations,
