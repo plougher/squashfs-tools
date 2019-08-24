@@ -110,8 +110,9 @@ static inline void restore_xattrs()
 }
 
 
-static inline void write_xattr(char *pathname, unsigned int xattr)
+static inline int write_xattr(char *pathname, unsigned int xattr)
 {
+	return 0;
 }
 
 
