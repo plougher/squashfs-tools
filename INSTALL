@@ -1,8 +1,5 @@
 			INSTALLING SQUASHFS
 
-The squashfs4.4.tar.gz file contains the squashfs-tools directory containing
-mksquashfs and unsquashfs.
-
 1. Kernel support
 -----------------
 
@@ -23,8 +20,9 @@ ZSTD compression support requires 4.14 or newer kernels.
 2. Building squashfs tools
 --------------------------
 
-The squashfs-tools directory contains the Mksquashfs and Unsquashfs programs.
-These can be made by typing make (or sudo make install to install in /usr/local/bin).
+The squashfs-tools directory contains the source code for the Mksquashfs and
+Unsquashfs programs.  These can be compiled by typing make (or sudo make
+install to install in /usr/local/bin) within that directory.
 
 2.1 Compressors supported
 

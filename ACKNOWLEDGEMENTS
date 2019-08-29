@@ -108,9 +108,6 @@ Arkadiusz Patyk (Polish Linux Distribution - PLD) reported a problem where 32K
 block filesystems hung when used as a root filesystem mounted as a loopback
 device.
 
-Joe Blow emailed me that I'd forgotten to put anything in the README about
-mounting the squashfs filesystem.
-
 David Fox (Lindows) noticed that the exit codes returned by Mksquashfs were
 wrong.  He also noticed that a lot of time was spent in the duplicate scan
 routine.

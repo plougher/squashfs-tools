@@ -42,8 +42,9 @@ needed.
 7. Filesystems can be compressed with gzip, xz (lzma2), lzo, lz4
    or zstd compression algorithms.
 
-1.1 Reproducible builds
------------------------
+
+1.1 Introducing reproducible builds
+-----------------------------------
 
 Ever since Mksquashfs was parallelised back in 2006, there
 has been a certain randomness in how fragments and multi-block
@@ -275,10 +276,11 @@ Mksquashfs runtime options:
 
 Miscellaneous options:
 -root-owned		alternative name for -all-root
--o <offset>		Skip <offset> bytes at the beginning of <dest>.
+-offset <offset>	Skip <offset> bytes at the beginning of <dest>.
 			Optionally a suffix of K, M or G can be given to specify
 			Kbytes, Mbytes or Gbytes respectively.
 			Default 0 bytes.
+-o <offset>		synonym for -offset
 -noInodeCompression	alternative name for -noI
 -noIdTableCompression	alternative name for -noId
 -noDataCompression	alternative name for -noD
@@ -912,6 +914,7 @@ SYNTAX: unsquashfs [options] filesystem [directories or files to extract]
 	-ig[nore-errors]	Treat errors writing files to output as non-fatal
 	-st[rict-errors]	Treat all errors as fatal
 	-s[tat]			display filesystem superblock information
+	-UTC			Use UTC rather than local time zone when displaying time
 	-mkfs-time		display filesystem superblock time
 	-fstime			synonym for -mkfs-time
 	-e[f] <extract file>	list of directories or files to extract.
@@ -996,6 +999,9 @@ The -mkfs-time option displays the make filesystem time contained
 in the super-block.  This is displayed as the number of seconds since
 the epoch of 1970-01-01 00:00:00 UTC.
 
+The -UTC option makes Unsquashfs display all times in the UTC time zone
+rather than using the default local time zone.
+
 4.2. Dealing with errors
 ------------------------
 
@@ -1011,14 +1017,14 @@ Non-fatal errors are generally where support is lacking in the
 output filesystem, and it can be considered to be an expected failure.
 This includes the inability to write extended attributes (xattrs) to
 a filesystem that doesn't support them, the inability to create files on
-filesystem that don't support it (i.e. symbolic links on VFAT), and the
+filesystem that doesn't support them (i.e. symbolic links on VFAT), and the
 inability to execute privileged operations as a user-process.
 
 The user may well know the filesystem cannot support certain operations
 and would prefer Unsquashfs to ignore then without aborting.
 
 In the past Unsquashfs was much more tolerant of errors, in this
-release a significant number of errors that were ignored have been
+release a significant number of errors that were non-fatal have been
 hardened to fatal.
 
 4.2.1. -ignore-errors

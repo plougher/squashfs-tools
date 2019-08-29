@@ -8,13 +8,16 @@ Welcome to Squashfs 4.4.  This is the first release in over 5 years, and
 there are substantial improvements: reproducible builds, new compressors,
 CVE fixes, security hardening and new options for Mksquashfs/Unsquashfs.
 
+Please see the INSTALL file for instructions on installing the tools,
+and the USAGE file for documentation on how to use the tools.
+
 Summary of changes (and sections below)
 ---------------------------------------
 
 1. Mksquashfs now generates reproducible images by default.  Mkfs time and
    file timestamps can also be specified.
 
-2. Support for Zstandard (ZSTD) compression algorithm has been added.
+2. Support for the Zstandard (ZSTD) compression algorithm has been added.
 
 3. Pseudo files now support symbolic links.
 
@@ -31,8 +34,9 @@ Summary of changes (and sections below)
 9. Squashfs-tools 4.4 is compatible with all earlier 4.x filesystems
    and releases.
 
-1. Reproducible builds
------------------------
+
+1. Introducing reproducible builds
+----------------------------------
 
 Ever since Mksquashfs was parallelised back in 2006, there
 has been a certain randomness in how fragments and multi-block
@@ -158,7 +162,7 @@ creates a symlink "symlink" to file "example" with root uid/gid.
 
 
 4. CVE-2015-2015-4645 and CVE-2015-4646
-----------------------------------------
+---------------------------------------
 
 These CVEs were raised due to Unsquashfs having variable overflow and
 stack overflow in a number of vulnerable functions.
@@ -167,8 +171,8 @@ All instances of variable overflow and stack overflow have been
 removed.
 
 
-5. Unsquashfs hardening against corrupted filestems
-----------------------------------------------------
+5. Unsquashfs hardened against corrupted filestems
+--------------------------------------------------
 
 The filesystem super-block values and filesystem metadata tables
 are further sanity checked.  More importantly, these values are now
@@ -181,7 +185,7 @@ these values must match.
 
 Unsquashfs splits errors into two categories: fatal errors and non-fatal
 errors.  In this release a significant number of errors that were previously
-ignored have been hardened to fatal.
+non-fatal have been hardened to fatal.
 
 Fatal errors are those which cause Unsquashfs to abort instantly.
 These are generally due to failure to read the filesystem (corruption),
@@ -192,7 +196,7 @@ Non-fatal errors are generally where support is lacking in the
 output filesystem, and it can be considered to be an expected failure.
 This includes the inability to write extended attributes (xattrs) to
 a filesystem that doesn't support them, the inability to create files on
-filesystem that don't support it (i.e. symbolic links on VFAT), and the
+filesystem that doesn't support them (i.e. symbolic links on VFAT), and the
 inability to execute privileged operations as a user-process.
 
 The user may well know the filesystem cannot support certain operations
@@ -234,25 +238,24 @@ This new option is useful for scripts.
 
 7.3. -noId
 
-This is similar to the pre-existing -noI option, except, it
-specifies that only the Id table (uids and gids) should be
-uncompressed.  This option was added to enable a use-case
-where uids and gids need to be updated after filesystem
-generation.
+This is similar to the pre-existing -noI option, except, it specifies that
+only the Id table (uids and gids) should be uncompressed.  This option was
+added to enable a use-case where uids and gids need to be updated after
+filesystem generation.
 
 7.4. -offset <offset>
 
-Skip <offset> bytes at the beginning of the output filesystem.
+This option skips <offset> bytes at the beginning of the output filesystem.
 
-Optionally a suffix of K, M or G can be given to specify
-Kbytes, Mbytes or Gbytes respectively.
+Optionally a suffix of K, M or G can be given to specify Kbytes, Mbytes or
+Gbytes respectively.
 
-7.5. Update lz4 wrapper to use new functions introduced in 1.7.0.
+7.5. Update lz4 wrapper to use new functions introduced in 1.7.0
 
-7.5. bug fix, don't allow "/" pseudo filenames
+7.5. Bug fix, don't allow "/" pseudo filenames
 
-7.6. bug fix, allow quoting of pseudo files, to
-     better handle filenames with spaces.
+7.6. Bug fix, allow quoting of pseudo files, to better handle filenames with
+     spaces
 
 7.7. Fix compilation with glibc 2.25+
 
@@ -262,13 +265,12 @@ Kbytes, Mbytes or Gbytes respectively.
 
 8.1. -lln[umeric]
 
-This is similar to the "-lls" option same but displays uids and gids
-numerically.
+This is similar to the "-lls" option but displays uids and gids numerically.
 
 8.2. -lc option
 
-This is similar to the "-ls" option except it only displays files
-and empty directories.
+This is similar to the "-ls" option except it only displays files and empty
+directories.
 
 8.3. -llc option
 
@@ -276,10 +278,10 @@ As "-llc" option but displays file attributes.
 
 8.4. -offset <offset>
 
-Skip <offset> bytes at the beginning of the input filesystem.
+This option skips <offset> bytes at the beginning of the input filesystem.
 
-Optionally a suffix of K, M or G can be given to specify
-Kbytes, Mbytes or Gbytes respectively.
+Optionally a suffix of K, M or G can be given to specify Kbytes, Mbytes or
+Gbytes respectively.
 
 8.5. -quiet
 
@@ -290,15 +292,20 @@ silent output.
 
 This new option is useful for scripts.
 
-8.6. Update lz4 wrapper to use new functions introduced in 1.7.0.
+8.6. -UTC
 
-8.7. bug fix, fatal and non-fatal errors now set the exit code to 1.
+This option makes Unsquashfs display all times in the UTC time zone rather
+than using the default local time zone.
 
-8.8. bug fix, fix time setting for symlinks
+8.7. Update lz4 wrapper to use new functions introduced in 1.7.0
 
-8.9. bug fix, try to set sticky-bit when running as a user process.
+8.8. Bug fix, fatal and non-fatal errors now set the exit code to 1
 
-8.10. Fix compilation with glibc 2.25+
+8.9. Bug fix, fix time setting for symlinks
+
+8.10. Bug fix, try to set sticky-bit when running as a user process
+
+8.11. Fix compilation with glibc 2.25+
 
 
 9. Compatiblity
@@ -307,4 +314,3 @@ This new option is useful for scripts.
 Mksquashfs 4.4 generates 4.0 filesystems.  These filesystems are fully
 compatible/interchangable with filesystems generated by Mksquashfs 4.x and are
 mountable on 2.6.29 and later kernels.
-
