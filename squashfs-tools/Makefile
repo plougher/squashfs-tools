@@ -42,7 +42,7 @@ GZIP_SUPPORT = 1
 # your distribution package manager.
 #
 # To build install the library and uncomment
-# the XZ_SUPPORT line below.
+# the LZO_SUPPORT line below.
 #
 #LZO_SUPPORT = 1
 
@@ -50,8 +50,8 @@ GZIP_SUPPORT = 1
 ########### Building LZ4 support #############
 #
 # Yann Collet's LZ4 tools are supported
-# LZ4 homepage: http://fastcompression.blogspot.com/p/lz4.html
-# LZ4 source repository: http://code.google.com/p/lz4
+# LZ4 homepage: https://lz4.github.io/lz4/
+# LZ4 source repository: https://github.com/lz4/lz4/
 #
 # Development packages (libraries and header files) should be
 # supported by most modern distributions.  Please refer to
@@ -66,7 +66,7 @@ GZIP_SUPPORT = 1
 ########### Building ZSTD support ############
 #
 # The ZSTD library is supported
-# ZSTD homepage: http://zstd.net
+# ZSTD homepage: https://facebook.github.io/zstd/
 # ZSTD source repository: https://github.com/facebook/zstd
 #
 # Development packages (libraries and header files) should be
@@ -74,7 +74,7 @@ GZIP_SUPPORT = 1
 # your distribution package manager.
 #
 # To build install the library and uncomment
-# the XZ_SUPPORT line below.
+# the ZSTD_SUPPORT line below.
 #
 #ZSTD_SUPPORT = 1
 
@@ -273,7 +273,7 @@ endif
 # COMP_DEFAULT must be a selected compressor
 #
 ifeq (, $(findstring $(COMP_DEFAULT), $(COMPRESSORS)))
-$(error "COMP_DEFAULT is set to ${COMP_DEFAULT}, which  isn't selected to be \
+$(error "COMP_DEFAULT is set to ${COMP_DEFAULT}, which isn't selected to be \
 	built!")
 endif
 
