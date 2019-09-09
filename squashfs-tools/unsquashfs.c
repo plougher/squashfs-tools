@@ -1133,19 +1133,22 @@ int create_inode(char *pathname, struct inode *i)
  		case SQUASHFS_LBLKDEV_TYPE:
 	 	case SQUASHFS_LCHRDEV_TYPE: {
 			int chrdev = 0;
+			unsigned major, minor;
 			if ( i->type == SQUASHFS_CHRDEV_TYPE ||
 					i->type == SQUASHFS_LCHRDEV_TYPE)
 				chrdev = 1;
 
 			TRACE("create_inode: dev, rdev 0x%llx\n", i->data);
-
 			if(root_process) {
 				if(force)
 					unlink(pathname);
 
+				/* Ripped from new_decode_dev() in kernel sources. */
+				major = (i->data & 0xfff00) >> 8;
+				minor = (i->data & 0xff) | ((i->data >> 12) & 0xfff00);
+
 				res = mknod(pathname, chrdev ? S_IFCHR : S_IFBLK,
-						makedev((i->data >> 8) & 0xff,
-						i->data & 0xff));
+						makedev(major, minor));
 				if(res == -1) {
 					EXIT_UNSQUASH_STRICT("create_inode: failed to create "
 						"%s device %s, because %s\n",
