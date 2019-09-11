@@ -651,8 +651,9 @@ int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 	 * name:value pairs, and add them to the in-memory xattr cache
 	 */
 	for(i = 0; i < ids; i++) {
-		struct xattr_list *xattr_list = get_xattr(i, &count, &res);
-		if(res) {
+	    	int failed;
+		struct xattr_list *xattr_list = get_xattr(i, &count, &failed);
+		if(failed) {
 			free_xattr(xattr_list, count);
 			return FALSE;
 		}
