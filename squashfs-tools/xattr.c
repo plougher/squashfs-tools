@@ -643,7 +643,7 @@ int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 
 	res = read_xattrs_from_disk(fd, sBlk, FALSE, NULL);
 	if(res == SQUASHFS_INVALID_BLK || res == 0)
-		goto done;
+		return res;
 	ids = res;
 
 	/*
@@ -664,13 +664,11 @@ int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 		 */
 		if(id != i) {
 			ERROR("BUG, different xattr_id in get_xattrs\n");
-			res = 0;
-			goto done;
+			return FALSE;
 		}
 	}
 
-done:
-	return res;
+	return TRUE;
 }
 
 
