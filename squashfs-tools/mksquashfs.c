@@ -4949,7 +4949,9 @@ void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
 	write_destination(fd, SQUASHFS_START, sizeof(*sBlk), sBlk);
 
 	if(!nopad && (i = bytes & (4096 - 1))) {
-		char temp[4096] = {0};
+		char temp[4096];
+
+		memset(temp, 0xff, sizeof(temp));
 		write_destination(fd, bytes, 4096 - i, temp);
 	}
 
