@@ -806,7 +806,7 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 		return FALSE;
 	}
 
-	if(root_process) {
+	if(root_process || strict_errors) {
 		if(chown(pathname, uid, guid) == -1) {
 			EXIT_UNSQUASH_STRICT("set_attributes: failed to change uid and gids "
 				"on %s, because %s\n", pathname,
@@ -823,7 +823,7 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 		 * sticky bit was included in the mode, try again without the
 		 * sticky bit. Otherwise, fail with an error message.
 		 */
-		if (root_process || errno != EPERM || !(mode & 01000) ||
+		if (root_process || strict_errors || errno != EPERM || !(mode & 01000) ||
 				chmod(pathname, (mode_t) (mode & ~01000)) == -1) {
 			EXIT_UNSQUASH_STRICT("set_attributes: failed to change mode %s, because %s\n",
 				pathname, strerror(errno));
@@ -1111,7 +1111,7 @@ int create_inode(char *pathname, struct inode *i)
 			if(res == FALSE)
 				failed = TRUE;
 	
-			if(root_process) {
+			if(root_process || strict_errors) {
 				res = lchown(pathname, i->uid, i->gid);
 				if(res == -1) {
 					EXIT_UNSQUASH_STRICT("create_inode: failed to change "
