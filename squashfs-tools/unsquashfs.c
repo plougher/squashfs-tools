@@ -2102,15 +2102,14 @@ void *writer(void *arg)
 				failed = TRUE;
 			}
 
-			if(failed)
-				continue;
+			if(!failed) {
+				res = write_block(file_fd, block->buffer->data +
+					block->offset, block->size, hole, file->sparse);
 
-			res = write_block(file_fd, block->buffer->data +
-				block->offset, block->size, hole, file->sparse);
-
-			if(res == FALSE) {
-				EXIT_UNSQUASH_IGNORE("writer: failed to write file %s\n", file->pathname);
-				failed = TRUE;
+				if(res == FALSE) {
+					EXIT_UNSQUASH_IGNORE("writer: failed to write file %s\n", file->pathname);
+					failed = TRUE;
+				}
 			}
 
 			hole = 0;
