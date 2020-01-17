@@ -36,6 +36,7 @@ struct dir_info {
 	struct dir_ent		*dir_ent;
 	struct dir_ent		*list;
 	DIR			*linuxdir;
+	dev_t			devnum;
 };
 
 struct dir_ent {
