@@ -632,8 +632,11 @@ char *_expr_log(char *string, int cmnd)
 		break;
 	}
 
+	size = strlen(string);
+
 	/* if string is empty append '\0' */
-	size = strlen(string) ? : 1; 
+	if (size == 0)
+		size = 1;
 
 	if(alloc_size - cur_size < size) {
 		/* buffer too small, expand */

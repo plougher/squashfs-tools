@@ -773,7 +773,7 @@ char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size)
 	for(;;) {
 		int res = snprintf(pathname, *size, "%s/%s", 
 			dir_ent->our_dir->pathname,
-			dir_ent->source_name ? : dir_ent->name);
+			dir_ent->source_name ? dir_ent->source_name : dir_ent->name);
 
 		if(res < 0)
 			BAD_ERROR("snprintf failed in pathname\n");
@@ -3154,7 +3154,7 @@ static inline struct inode_info *lookup_inode(struct stat *buf)
 static inline void alloc_inode_no(struct inode_info *inode, unsigned int use_this)
 {
 	if (inode->inode_number == 0) {
-		inode->inode_number = use_this ? : inode_no ++;
+		inode->inode_number = use_this ? use_this : inode_no ++;
 		if((inode->buf.st_mode & S_IFMT) == S_IFREG)
 			progress_bar_size((inode->buf.st_size + block_size - 1)
 								 >> block_log);
