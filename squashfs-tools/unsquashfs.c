@@ -640,7 +640,7 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 	}
 
 	for(count = 0; count < bytes; count += res) {
-		res = read(fd, buff + count, bytes - count);
+		res = read(fd, (char *)buff + count, bytes - count);
 		if(res < 1) {
 			if(res == 0) {
 				ERROR("Read on filesystem failed because "
@@ -748,7 +748,7 @@ void *read_inode_table(long long start, long long end)
 	int res;
 	long long size = 0;
 	long long bytes = 0;
-	void *inode_table = NULL;
+	char *inode_table = NULL;
 
 	TRACE("read_inode_table: start %lld, end %lld\n", start, end);
 
@@ -1236,7 +1236,7 @@ void *read_directory_table(long long start, long long end)
 	int res;
 	long long bytes = 0;
 	long long size = 0;
-	void *directory_table = malloc(1);
+	char *directory_table = malloc(1);
 
 	TRACE("read_directory_table: start %lld, end %lld\n", start, end);
 

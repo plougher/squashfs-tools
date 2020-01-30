@@ -950,7 +950,7 @@ void *get_frag_action(void *fragment)
 	if (fragment == &def_fragment)
 		action = &fragment_spec[0] - 1;
 	else 
-		action = fragment - offsetof(struct action, data);
+		action = (struct action *)((char *)fragment - offsetof(struct action, data));
 
 	if (++action == spec_list_end)
 		return NULL;

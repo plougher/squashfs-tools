@@ -516,7 +516,7 @@ int read_bytes(int fd, void *buff, int bytes)
 	int res, count;
 
 	for(count = 0; count < bytes; count += res) {
-		res = read(fd, buff + count, bytes - count);
+		res = read(fd, (char *)buff + count, bytes - count);
 		if(res < 1) {
 			if(res == 0)
 				goto bytes_read;
@@ -563,7 +563,7 @@ int write_bytes(int fd, void *buff, int bytes)
 	int res, count;
 
 	for(count = 0; count < bytes; count += res) {
-		res = write(fd, buff + count, bytes - count);
+		res = write(fd, (char *)buff + count, bytes - count);
 		if(res == -1) {
 			if(errno != EINTR) {
 				ERROR("Write failed because %s\n",
@@ -889,7 +889,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	struct stat *buf = &dir_ent->inode->buf;
 	union squashfs_inode_header inode_header;
 	struct squashfs_base_inode_header *base = &inode_header.base;
-	void *inode;
+	char *inode;
 	char *filename = pathname(dir_ent);
 	int nlink = dir_ent->inode->nlink;
 	int xattr = read_xattrs(dir_ent);
@@ -982,7 +982,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	}
 	else if(type == SQUASHFS_LDIR_TYPE) {
 		int i;
-		unsigned char *p;
+		char *p;
 		struct squashfs_ldir_inode_header *dir = &inode_header.ldir;
 		struct cached_dir_index *index = dir_in->index;
 		unsigned int i_count = dir_in->i_count;
@@ -1680,7 +1680,7 @@ long long generic_write_table(int length, void *buffer, int length2,
 	for(i = 0; i < meta_blocks; i++) {
 		int avail_bytes = length > SQUASHFS_METADATA_SIZE ?
 			SQUASHFS_METADATA_SIZE : length;
-		c_byte = mangle(cbuffer + BLOCK_OFFSET, buffer + i *
+		c_byte = mangle(cbuffer + BLOCK_OFFSET, (char *)buffer + i *
 			SQUASHFS_METADATA_SIZE , avail_bytes,
 			SQUASHFS_METADATA_SIZE, uncompressed, 0);
 		SQUASHFS_SWAP_SHORTS(&c_byte, cbuffer, 1);
