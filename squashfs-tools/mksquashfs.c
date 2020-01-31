@@ -3737,6 +3737,19 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				lookup_inode3(&buf, PSEUDO_FILE_OTHER, 0,
 				pseudo_ent->dev->symlink,
 				strlen(pseudo_ent->dev->symlink) + 1), dir);
+		} else if(pseudo_ent->dev->type == 'r') {
+			struct stat src;
+			if(lstat(pseudo_ent->dev->source_path, &src) == -1) {
+				ERROR_START("Cannot stat file %s because %s",
+					pseudo_ent->dev->source_path,
+					strerror(errno));
+				ERROR_EXIT(", skipping...\n");
+				continue;
+			}
+			buf.st_size = src.st_size;
+			add_dir_entry2(pseudo_ent->name, NULL,
+				pseudo_ent->dev->source_path, NULL,
+				lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0), dir);
 		} else {
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,

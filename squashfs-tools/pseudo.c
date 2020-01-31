@@ -389,6 +389,7 @@ int read_pseudo_def(char *def)
 		}
 		break;
 	case 'f':
+	case 'r':
 		if(def[0] == '\0') {
 			ERROR("Not enough arguments in dynamic file pseudo "
 				"definition \"%s\"\n", orig_def);
@@ -465,6 +466,7 @@ int read_pseudo_def(char *def)
 		mode |= S_IFDIR;
 		break;
 	case 'f':
+	case 'r':
 		mode |= S_IFREG;
 		break;
 	case 's':
@@ -489,6 +491,8 @@ int read_pseudo_def(char *def)
 	}
 	if(type == 's')
 		dev->symlink = strdup(def);
+	if(type == 'r')
+		dev->source_path = strdup(def);
 
 	pseudo = add_pseudo(pseudo, dev, name, name);
 
@@ -502,6 +506,7 @@ error:
 	ERROR("\tfilename b mode uid gid major minor\n");
 	ERROR("\tfilename c mode uid gid major minor\n");
 	ERROR("\tfilename f mode uid gid command\n");
+	ERROR("\tfilename r mode uid gid command\n");
 	ERROR("\tfilename s mode uid gid symlink\n");
 	free(filename);
 	return FALSE;
