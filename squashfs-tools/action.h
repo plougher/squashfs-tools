@@ -38,22 +38,6 @@
 #define TOK_STRING		8
 #define TOK_EOF			9
 
-#define TOK_TO_STR(OP, S) ({ \
-	char *s; \
-	switch(OP) { \
-	case TOK_EOF: \
-		s = "EOF"; \
-		break; \
-	case TOK_STRING: \
-		s = S; \
-		break; \
-	default: \
-		s = token_table[OP].string; \
-		break; \
-	} \
-	s; \
-})
-
 
 struct token_entry {
 	char *string;

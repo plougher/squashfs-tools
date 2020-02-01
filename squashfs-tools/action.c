@@ -91,6 +91,21 @@ extern char *subpathname(struct dir_ent *);
 
 extern int read_file(char *filename, char *type, int (parse_line)(char *));
 
+static inline char *tok_to_str(int op, char *s)
+{
+	switch(op) {
+	case TOK_EOF:
+		s = "EOF";
+		break;
+	case TOK_STRING:
+		break;
+	default:
+		s = token_table[op].string;
+		break;
+	}
+	return s;
+}
+
 /*
  * Lexical analyser
  */
@@ -321,7 +336,7 @@ static struct expr *parse_test(char *name)
 	while(1) {
 		if (token != TOK_STRING) {
 			SYNTAX_ERROR("Unexpected token \"%s\", expected "
-				"argument\n", TOK_TO_STR(token, string));
+				"argument\n", tok_to_str(token, string));
 			goto failed;
 		}
 
@@ -338,7 +353,7 @@ static struct expr *parse_test(char *name)
 
 		if (token != TOK_COMMA) {
 			SYNTAX_ERROR("Unexpected token \"%s\", expected "
-				"\",\" or \")\"\n", TOK_TO_STR(token, string));
+				"\",\" or \")\"\n", tok_to_str(token, string));
 			goto failed;
 		}
 		token = get_token(&string);
@@ -388,7 +403,7 @@ static struct expr *get_atom()
 	default:
 		SYNTAX_ERROR("Unexpected token \"%s\", expected test "
 					"operation, \"!\", or \"(\"\n",
-					TOK_TO_STR(token, string));
+					tok_to_str(token, string));
 		return NULL;
 	}
 }
@@ -425,7 +440,7 @@ static struct expr *parse_expr(int subexp)
 		if (op != TOK_AND && op != TOK_OR) {
 			free_parse_tree(expr);
 			SYNTAX_ERROR("Unexpected token \"%s\", expected "
-				"\"&&\" or \"||\"\n", TOK_TO_STR(op, string));
+				"\"&&\" or \"||\"\n", tok_to_str(op, string));
 			return NULL;
 		}
 
@@ -454,7 +469,7 @@ int parse_action(char *s, int verbose)
 
 	if (token != TOK_STRING) {
 		SYNTAX_ERROR("Unexpected token \"%s\", expected name\n",
-						TOK_TO_STR(token, string));
+						tok_to_str(token, string));
 		return 0;
 	}
 
@@ -476,7 +491,7 @@ int parse_action(char *s, int verbose)
 
 	if (token != TOK_OPEN_BRACKET) {
 		SYNTAX_ERROR("Unexpected token \"%s\", expected \"(\"\n",
-						TOK_TO_STR(token, string));
+						tok_to_str(token, string));
 		goto failed;
 	}
 
@@ -492,7 +507,7 @@ int parse_action(char *s, int verbose)
 	while (1) {
 		if (token != TOK_STRING) {
 			SYNTAX_ERROR("Unexpected token \"%s\", expected "
-				"argument\n", TOK_TO_STR(token, string));
+				"argument\n", tok_to_str(token, string));
 			goto failed;
 		}
 
@@ -509,7 +524,7 @@ int parse_action(char *s, int verbose)
 
 		if (token != TOK_COMMA) {
 			SYNTAX_ERROR("Unexpected token \"%s\", expected "
-				"\",\" or \")\"\n", TOK_TO_STR(token, string));
+				"\",\" or \")\"\n", tok_to_str(token, string));
 			goto failed;
 		}
 		token = get_token(&string);
@@ -537,7 +552,7 @@ skip_args:
 
 	if (token != TOK_AT) {
 		SYNTAX_ERROR("Unexpected token \"%s\", expected \"@\"\n",
-						TOK_TO_STR(token, string));
+						tok_to_str(token, string));
 		goto failed;
 	}
 	
