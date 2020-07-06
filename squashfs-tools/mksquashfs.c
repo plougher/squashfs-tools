@@ -72,6 +72,7 @@
 #include "restore.h"
 #include "process_fragments.h"
 #include "fnmatch_compat.h"
+#include "fakerootdb.h"
 
 int delete = FALSE;
 int quiet = FALSE;
@@ -275,6 +276,9 @@ int no_hardlinks = FALSE;
 int one_file_system = FALSE;
 dev_t *source_dev;
 dev_t cur_dev;
+/* Override owner/group/permissions/file type from fakeroot(1) database */
+struct fakerootdb fakerootdb;
+char const *fakerootdb_filename = NULL;
 
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 static void add_old_root_entry(char *name, squashfs_inode inode,
@@ -308,6 +312,18 @@ static void check_usable_phys_mem(int total_mem);
 static void print_summary();
 void write_destination(int fd, long long byte, long long bytes, void *buff);
 
+static int lstat_with_fakeroot(const char *path, struct stat *stbuf)
+{
+	int err;
+	err = lstat(path, stbuf);
+	if (err < 0)
+		goto out;
+	if (!fakerootdb.db || fakerootdb.count == 0)
+		goto out;
+	fakeroot_override_stat(stbuf, &fakerootdb);
+out:
+	return err;
+}
 
 void prep_exit()
 {
@@ -3350,7 +3366,7 @@ static squashfs_inode scan_single(char *pathname, int progress)
 	 * it to the root directory dir_info structure */
 	dir_ent = create_dir_entry("", NULL, pathname, scan1_opendir("", "", 0));
 
-	if(lstat(pathname, &buf) == -1)
+	if(lstat_with_fakeroot(pathname, &buf) == -1)
 		/* source directory has disappeared? */
 		BAD_ERROR("Cannot stat source directory %s because %s\n",
 						pathname, strerror(errno));
@@ -3392,6 +3408,7 @@ static squashfs_inode scan_encomp(int progress)
 	buf.st_mtime = time(NULL);
 	buf.st_dev = 0;
 	buf.st_ino = 0;
+	fakeroot_override_stat(&buf, &fakerootdb);
 	dir_ent->inode = lookup_inode(&buf);
 	dir_ent->inode->dummy_root_dir = TRUE;
 	dir_ent->dir = root_dir;
@@ -3593,7 +3610,7 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 			continue;
 		}
 
-		if(lstat(filename, &buf) == -1) {
+		if(lstat_with_fakeroot(filename, &buf) == -1) {
 			ERROR_START("Cannot stat dir/file %s because %s",
 				filename, strerror(errno));
 			ERROR_EXIT(", ignoring\n");
@@ -4361,7 +4378,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		goto failed_early;
 	}
 
-	res = lstat(file, &buf);
+	res = lstat_with_fakeroot(file, &buf);
 	if (res == -1) {
 		ERROR("Error: Can't stat %s because %s\n", file, strerror(errno));
 		goto failed_early;
@@ -4708,13 +4725,14 @@ static squashfs_inode process_source(int progress)
 		buf.st_uid = getuid();
 		buf.st_gid = getgid();
 		buf.st_mtime = time(NULL);
+		fakeroot_override_stat(&buf, &fakerootdb);
 		entry = create_dir_entry("", NULL, "", new);
 		entry->inode = lookup_inode(&buf);
 		entry->inode->dummy_root_dir = TRUE;
 	} else {
 		char *pathname = absolute ? "/" : ".";
 
-		if(lstat(pathname, &buf) == -1)
+		if(lstat_with_fakeroot(pathname, &buf) == -1)
 			BAD_ERROR("Cannot stat %s because %s\n",
 				pathname, strerror(errno));
 
@@ -6576,6 +6594,12 @@ print_compressor_options:
 					exit(1);
 				}
 			}
+		} else if(strcmp(argv[i], "-fakerootdb") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -fakerootdb: missing filename\n", argv[0]);
+				exit(1);
+			}
+			fakerootdb_filename = argv[i];
 		} else if(strcmp(argv[i], "-noI") == 0 ||
 				strcmp(argv[i], "-noInodeCompression") == 0)
 			noI = TRUE;
@@ -6806,6 +6830,24 @@ print_compressor_options:
 				strcmp(argv[i], "-comp") == 0 ||
 				strcmp(argv[i], "-log") == 0)
 			i++;
+
+	if (fakerootdb_filename) {
+		int err;
+		FILE *fakedata = NULL;
+		fakedata = fopen(fakerootdb_filename, "r");
+		if (!fakedata) {
+			ERROR("%s: -fakerootdb: failed to open fakeroot database %s\n",
+				argv[0], fakerootdb_filename);
+			EXIT_MKSQUASHFS();
+		}
+		err = fakeroot_read_db(fakedata, &fakerootdb);
+		fclose(fakedata);
+		if (err) {
+			ERROR("%s: -fakerootdb: failed to read fakeroot database %s\n",
+				argv[0], fakerootdb_filename);
+			EXIT_MKSQUASHFS();
+		}
+	}
 
 	if(!delete) {
 	        comp = read_super(fd, &sBlk, destination_file);
