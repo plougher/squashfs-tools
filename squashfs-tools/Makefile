@@ -85,7 +85,7 @@ GZIP_SUPPORT = 1
 # in Mksquashfs.  Obviously the compression algorithm must have been
 # selected to be built
 #
-COMP_DEFAULT = gzip
+COMP_DEFAULT ?= gzip
 
 
 ###############################################
