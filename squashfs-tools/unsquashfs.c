@@ -995,7 +995,7 @@ int write_file(struct inode *inode, char *pathname)
 	}
 
 	block_list = malloc(inode->blocks * sizeof(unsigned int));
-	if(block_list == NULL)
+	if(block_list == NULL && inode->blocks)
 		EXIT_UNSQUASH("write_file: unable to malloc block list\n");
 
 	s_ops->read_block_list(block_list, inode->block_ptr, inode->blocks);
