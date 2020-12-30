@@ -62,6 +62,8 @@ unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
 unsigned int block_size;
 unsigned int block_log;
 int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE;
+int no_recurse = FALSE;
+long long fast_realloc = 0;
 int concise = FALSE, quiet = FALSE, numeric = FALSE;
 int use_regex = FALSE;
 char **created_inode;
@@ -754,8 +756,11 @@ void *read_inode_table(long long start, long long end)
 
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
-			inode_table = realloc(inode_table, size +=
-				SQUASHFS_METADATA_SIZE);
+            if (fast_realloc) {
+                inode_table = realloc(inode_table, size += fast_realloc);
+            } else {
+    			inode_table = realloc(inode_table, size += SQUASHFS_METADATA_SIZE);
+            }
 			if(inode_table == NULL) {
 				ERROR("Out of memory in read_inode_table");
 				goto failed;
@@ -1659,9 +1664,15 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			EXIT_UNSQUASH("asprintf failed in dir_scan\n");
 
 		if(type == SQUASHFS_DIR_TYPE) {
-			res = dir_scan(pathname, start_block, offset, new);
-			if(res == FALSE)
-				scan_res = FALSE;
+            if (no_recurse) {
+                if (lsonly || info) {
+                    printf("%s\n", pathname);
+                }
+            } else {
+    			res = dir_scan(pathname, start_block, offset, new);
+                if(res == FALSE)
+                    scan_res = FALSE;
+            }
 			free(pathname);
 		} else if(new == NULL) {
 			update_info(pathname);
@@ -2786,6 +2797,15 @@ int main(int argc, char *argv[])
 				ERROR("%s: %s missing or invalid offset size\n", argv[0], argv[i - 1]);
 				exit(1);
 			}
+		} else if(strcmp(argv[i], "-nr") == 0 ||
+				strcmp(argv[i], "-no-recurse") == 0) {
+			no_recurse = TRUE; 
+		} else if(strcmp(argv[i], "-fa") == 0 ||
+				strcmp(argv[i], "-fast-realloc") == 0) {
+			if((++i == argc) || !parse_numberll(argv[i], &fast_realloc, 1)) {
+				ERROR("%s: -fast-realloc missing or invalid size\n", argv[0]);
+				exit(1);
+            }
 		} else
 			goto options;
 	}
