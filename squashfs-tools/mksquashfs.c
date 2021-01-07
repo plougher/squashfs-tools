@@ -103,6 +103,7 @@ int use_regex = FALSE;
 int nopad = FALSE;
 int exit_on_error = FALSE;
 long long start_offset = 0;
+int one_file_system = FALSE;
 
 long long global_uid = -1, global_gid = -1;
 
@@ -3357,6 +3358,17 @@ struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 		MEM_ERROR();
 
 	if(pathname[0] != '\0') {
+		if (one_file_system) {
+			struct stat st;
+			if (lstat(pathname, &st)) {
+				ERROR_START("Failed to lstat(%s): %s",
+					pathname, strerror(errno));
+				ERROR_EXIT(", ignoring\n");
+				free(dir);
+				return NULL;
+			}
+			dir->devnum = st.st_dev;
+		}
 		dir->linuxdir = opendir(pathname);
 		if(dir->linuxdir == NULL) {
 			free(dir);
@@ -3563,6 +3575,13 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
 		case S_IFDIR:
 			if(subpath == NULL)
 				subpath = subpathname(dir_ent);
+
+			if (one_file_system &&
+				dir->pathname[0] != '\0' &&
+				buf.st_dev != dir->devnum) {
+					add_excluded(dir);
+					continue;
+			}
 
 			sub_dir = dir_scan1(filename, subpath, new,
 					scan1_readdir, depth + 1);
@@ -5851,7 +5870,13 @@ print_compressor_options:
 				exit(1);
 			}	
 			root_name = argv[i];
-		} else if(strcmp(argv[i], "-version") == 0) {
+		}
+
+		else if(strcmp(argv[i], "-one-file-system") == 0) {
+			one_file_system = TRUE;
+		}
+
+		else if(strcmp(argv[i], "-version") == 0) {
 			VERSION();
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
@@ -5929,6 +5954,7 @@ printOptions:
 				"dirs/files\n");
 			ERROR("-regex\t\t\tAllow POSIX regular expressions to "
 				"be used in exclude\n\t\t\tdirs/files\n");
+			ERROR("-one-file-system\tDo not cross filesystem boundaries\n");
 			ERROR("\nFilesystem append options:\n");
 			ERROR("-noappend\t\tdo not append to existing "
 				"filesystem\n");
