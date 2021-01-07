@@ -2060,23 +2060,24 @@ void *reader(void *arg)
 void *writer(void *arg)
 {
 	int i;
-	long failed = FALSE;
+	long exit_code = FALSE;
 
 	while(1) {
 		struct squashfs_file *file = queue_get(to_writer);
 		int file_fd;
 		long long hole = 0;
+		int local_fail = FALSE;
 		int res;
 
 		if(file == NULL) {
-			queue_put(from_writer, (void *) failed);
+			queue_put(from_writer, (void *) exit_code);
 			continue;
 		} else if(file->fd == -1) {
 			/* write attributes for directory file->pathname */
 			res = set_attributes(file->pathname, file->mode, file->uid,
 				file->gid, file->time, file->xattr, TRUE);
 			if(res == FALSE)
-				failed = TRUE;
+				exit_code = TRUE;
 			free(file->pathname);
 			free(file);
 			continue;
@@ -2099,18 +2100,17 @@ void *writer(void *arg)
 
 			if(block->buffer->error) {
 				EXIT_UNSQUASH_IGNORE("writer: failed to read/uncompress file %s\n", file->pathname);
-				failed = TRUE;
+				exit_code = local_fail = TRUE;
 			}
 
-			if(failed)
-				continue;
+			if(local_fail == FALSE) {
+				res = write_block(file_fd, block->buffer->data +
+					block->offset, block->size, hole, file->sparse);
 
-			res = write_block(file_fd, block->buffer->data +
-				block->offset, block->size, hole, file->sparse);
-
-			if(res == FALSE) {
-				EXIT_UNSQUASH_IGNORE("writer: failed to write file %s\n", file->pathname);
-				failed = TRUE;
+				if(res == FALSE) {
+					EXIT_UNSQUASH_IGNORE("writer: failed to write file %s\n", file->pathname);
+					exit_code = local_fail = TRUE;
+				}
 			}
 
 			hole = 0;
@@ -2118,7 +2118,7 @@ void *writer(void *arg)
 			free(block);
 		}
 
-		if(hole && failed == FALSE) {
+		if(hole && local_fail == FALSE) {
 			/*
 			 * corner case for hole extending to end of file
 			 */
@@ -2135,21 +2135,21 @@ void *writer(void *arg)
 						file->sparse) == FALSE) {
 					EXIT_UNSQUASH_IGNORE("writer: failed to write sparse "
 						"data block for file %s\n", file->pathname);
-					failed = TRUE;
+					exit_code = local_fail = TRUE;
 				}
 			} else if(ftruncate(file_fd, file->file_size) == -1) {
 				EXIT_UNSQUASH_IGNORE("writer: failed to write sparse data "
 					"block for file %s\n", file->pathname);
-				failed = TRUE;
+				exit_code = local_fail = TRUE;
 			}
 		}
 
 		close_wake(file_fd);
-		if(failed == FALSE) {
+		if(local_fail == FALSE) {
 			res = set_attributes(file->pathname, file->mode, file->uid,
 				file->gid, file->time, file->xattr, force);
 			if(res == FALSE)
-				failed = TRUE;
+				exit_code = TRUE;
 		} else
 			unlink(file->pathname);
 		free(file->pathname);
@@ -2620,8 +2620,8 @@ int parse_number(char *start, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.4-git.1 (2020/10/30)\n");\
-	printf("copyright (C) 2020 Phillip Lougher "\
+	printf("unsquashfs version 4.4-git (2021/01/07)\n");\
+	printf("copyright (C) 2021 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
 		"\n");\
