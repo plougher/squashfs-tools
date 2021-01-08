@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2017, 2019
+ * 2012, 2013, 2014, 2017, 2019, 2020, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -78,6 +78,7 @@ int user_xattrs = FALSE;
 int ignore_errors = FALSE;
 int strict_errors = FALSE;
 int use_localtime = TRUE;
+int max_depth = -1; /* unlimited */
 
 int lookup_type[] = {
 	0,
@@ -1532,15 +1533,19 @@ empty_set:
 
 
 int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
-	struct pathnames *paths)
+	struct pathnames *paths, int depth)
 {
 	unsigned int type;
 	int scan_res = TRUE;
 	char *name;
 	struct pathnames *new;
 	struct inode *i;
-	struct dir *dir = s_ops->opendir(start_block, offset, &i);
+	struct dir *dir;
 
+	if(max_depth != -1 && depth > max_depth)
+		return TRUE;
+
+	dir = s_ops->opendir(start_block, offset, &i);
 	if(dir == NULL)
 		return FALSE;
 
@@ -1560,7 +1565,7 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			EXIT_UNSQUASH("asprintf failed in dir_scan\n");
 
 		if(type == SQUASHFS_DIR_TYPE) {
-			res = pre_scan(parent_name, start_block, offset, new);
+			res = pre_scan(parent_name, start_block, offset, new, depth + 1);
 			if(res == FALSE)
 				scan_res = FALSE;
 		} else if(new == NULL) {
@@ -1589,7 +1594,7 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 
 
 int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
-	struct pathnames *paths)
+	struct pathnames *paths, int depth)
 {
 	unsigned int type;
 	int scan_res = TRUE;
@@ -1643,47 +1648,49 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		}
 	}
 
-	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
-		char *pathname;
-		int res;
+	if(max_depth == -1 || depth <= max_depth) {
+		while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
+			char *pathname;
+			int res;
 
-		TRACE("dir_scan: name %s, start_block %d, offset %d, type %d\n",
-			name, start_block, offset, type);
+			TRACE("dir_scan: name %s, start_block %d, offset %d, type %d\n",
+				name, start_block, offset, type);
 
 
-		if(!matches(paths, name, &new))
-			continue;
+			if(!matches(paths, name, &new))
+				continue;
 
-		res = asprintf(&pathname, "%s/%s", parent_name, name);
-		if(res == -1)
-			EXIT_UNSQUASH("asprintf failed in dir_scan\n");
+			res = asprintf(&pathname, "%s/%s", parent_name, name);
+			if(res == -1)
+				EXIT_UNSQUASH("asprintf failed in dir_scan\n");
 
-		if(type == SQUASHFS_DIR_TYPE) {
-			res = dir_scan(pathname, start_block, offset, new);
-			if(res == FALSE)
-				scan_res = FALSE;
-			free(pathname);
-		} else if(new == NULL) {
-			update_info(pathname);
-
-			i = s_ops->read_inode(start_block, offset);
-
-			if(lsonly || info)
-				print_filename(pathname, i);
-
-			if(!lsonly) {
-				res = create_inode(pathname, i);
+			if(type == SQUASHFS_DIR_TYPE) {
+				res = dir_scan(pathname, start_block, offset, new, depth + 1);
 				if(res == FALSE)
 					scan_res = FALSE;
-			}
+				free(pathname);
+			} else if(new == NULL) {
+				update_info(pathname);
 
-			if(i->type == SQUASHFS_SYMLINK_TYPE ||
-					i->type == SQUASHFS_LSYMLINK_TYPE)
-				free(i->symlink);
-		} else
-			free(pathname);
+				i = s_ops->read_inode(start_block, offset);
 
-		free_subdir(new);
+				if(lsonly || info)
+					print_filename(pathname, i);
+
+				if(!lsonly) {
+					res = create_inode(pathname, i);
+					if(res == FALSE)
+						scan_res = FALSE;
+				}
+
+				if(i->type == SQUASHFS_SYMLINK_TYPE ||
+						i->type == SQUASHFS_LSYMLINK_TYPE)
+					free(i->symlink);
+			} else
+				free(pathname);
+
+			free_subdir(new);
+		}
 	}
 
 	if(!lsonly)
@@ -2620,7 +2627,7 @@ int parse_number(char *start, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.4-git (2021/01/07)\n");\
+	printf("unsquashfs version 4.4-git (2021/01/08)\n");\
 	printf("copyright (C) 2021 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
@@ -2714,6 +2721,15 @@ int main(int argc, char *argv[])
 			if(processors < 1) {
 				ERROR("%s: -processors should be 1 or larger\n",
 					argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-max-depth") == 0 ||
+				strcmp(argv[i], "-max") == 0) {
+			if((++i == argc) ||
+					!parse_number(argv[i],
+						&max_depth)) {
+				ERROR("%s: -max-depth missing or invalid "
+					"levels\n", argv[0]);
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-data-queue") == 0 ||
@@ -2814,6 +2830,9 @@ options:
 				"copyright information\n");
 			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, "
 				"default \"squashfs-root\"\n");
+			ERROR("\t-max[-depth] <levels>\tdescend at most "
+				"<levels> of directories when"
+				"\n\t\t\t\tunsquashing or listing\n");
 			ERROR("\t-q[uiet]\t\tno verbose output\n");
 			ERROR("\t-n[o-progress]\t\tdon't display the progress "
 				"bar\n");
@@ -2956,7 +2975,7 @@ options:
 
 	if(!quiet || progress) {
 		res = pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths);
+			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths, 1);
 		if(res == FALSE)
 			exit_code = 1;
 
@@ -2975,7 +2994,7 @@ options:
 	}
 
 	res = dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths);
+		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths, 1);
 	if(res == FALSE)
 		exit_code = 1;
 
