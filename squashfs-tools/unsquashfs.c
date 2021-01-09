@@ -1254,13 +1254,26 @@ void *read_directory_table(long long start, long long end)
 	long long bytes = 0;
 	long long size = 0;
 	void *directory_table = malloc(1);
+	int alloc_size;
 
 	TRACE("read_directory_table: start %lld, end %lld\n", start, end);
 
+	/*
+	 * Use the size of the compressed directory table as an initial
+	 * memory allocation value, and the reallocation value, if
+	 * this is too small.
+	 *
+	 * With a 50% compression ratio, this should require 2 alloc calls
+	 * With a 25% compression ratio, this should require 4 alloc calls
+	 * With a 12.5% compression ratio, this should require 8 alloc calls
+	 *
+	 * Always round to a multiple of SQUASHFS_METADATA_SIZE
+	 */
+	alloc_size = ((end - start) + SQUASHFS_METADATA_SIZE) & ~(SQUASHFS_METADATA_SIZE - 1);
+
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
-			directory_table = realloc(directory_table, size +=
-				SQUASHFS_METADATA_SIZE);
+			directory_table = realloc(directory_table, size += alloc_size);
 			if(directory_table == NULL) {
 				ERROR("Out of memory in "
 						"read_directory_table\n");
@@ -1292,6 +1305,9 @@ void *read_directory_table(long long start, long long end)
 			goto failed;
 		}
 	}
+
+	/* trim any over allocation */
+	directory_table = realloc(directory_table, bytes);
 
 	return directory_table;
 
@@ -2643,7 +2659,7 @@ int parse_number(char *start, int *res)
 
 
 #define VERSION() \
-	printf("unsquashfs version 4.4-git (2021/01/08)\n");\
+	printf("unsquashfs version 4.4-git (2021/01/09)\n");\
 	printf("copyright (C) 2021 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
