@@ -750,13 +750,26 @@ void *read_inode_table(long long start, long long end)
 	long long size = 0;
 	long long bytes = 0;
 	void *inode_table = NULL;
+	int alloc_size;
 
 	TRACE("read_inode_table: start %lld, end %lld\n", start, end);
 
+	/*
+	 * Use the size of the compressed inode table as an initial
+	 * memory allocation value, and the reallocation value, if
+	 * this is too small.
+	 *
+	 * With a 50% compression ratio, this should require 2 alloc calls
+	 * With a 25% compression ratio, this should require 4 alloc calls
+	 * With a 12.5% compression ratio, this should require 8 alloc calls
+	 *
+	 * Always round to a multiple of SQUASHFS_METADATA_SIZE
+	 */
+	alloc_size = ((end - start) + SQUASHFS_METADATA_SIZE) & ~(SQUASHFS_METADATA_SIZE - 1);
+
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
-			inode_table = realloc(inode_table, size +=
-				SQUASHFS_METADATA_SIZE);
+			inode_table = realloc(inode_table, size += alloc_size);
 			if(inode_table == NULL) {
 				ERROR("Out of memory in read_inode_table");
 				goto failed;
@@ -787,6 +800,9 @@ void *read_inode_table(long long start, long long end)
 			goto failed;
 		}
 	}
+
+	/* trim any over allocation */
+	inode_table = realloc(inode_table, bytes);
 
 	return inode_table;
 
