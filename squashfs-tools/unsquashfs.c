@@ -1347,6 +1347,9 @@ char *get_component(char *target, char **targname)
 	while(*target == '/')
 		target ++;
 
+	if(*target == '\0')
+		return NULL;
+
 	start = target;
 	while(*target != '/' && *target != '\0')
 		target ++;
@@ -1386,6 +1389,9 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 	TRACE("add_path: adding \"%s\" extract file\n", target);
 
 	target = get_component(target, &targname);
+
+	if(target == NULL)
+		EXIT_UNSQUASH("Invalid extract file %s\n", alltarget);
 
 	if(paths == NULL) {
 		paths = malloc(sizeof(struct pathname));
