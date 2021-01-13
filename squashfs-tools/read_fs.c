@@ -274,6 +274,8 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			TRACE("scan_inode_table: regular file, file_size %d, "
 				"blocks %d\n", inode.file_size, blocks);
 
+			cur_ptr += sizeof(inode);
+
 			if(NO_BYTES(blocks * sizeof(unsigned int)))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -282,7 +284,6 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			if(block_list == NULL)
 				MEM_ERROR();
 
-			cur_ptr += sizeof(inode);
 			SQUASHFS_SWAP_INTS(cur_ptr, block_list, blocks);
 
 			*uncompressed_file += inode.file_size;
@@ -334,6 +335,8 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 				"file, file_size %lld, blocks %d\n",
 				inode.file_size, blocks);
 
+			cur_ptr += sizeof(inode);
+
 			if(NO_BYTES(blocks * sizeof(unsigned int)))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -342,7 +345,6 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			if(block_list == NULL)
 				MEM_ERROR();
 
-			cur_ptr += sizeof(inode);
 			SQUASHFS_SWAP_INTS(cur_ptr, block_list, blocks);
 
 			*uncompressed_file += inode.file_size;
@@ -382,18 +384,20 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 
 			(*sym_count) ++;
 
+			cur_ptr += sizeof(inode);
+
 			if (inode.inode_type == SQUASHFS_LSYMLINK_TYPE) {
 				if(NO_BYTES(inode.symlink_size +
 							sizeof(unsigned int)))
 					/* corrupted filesystem */
 					goto corrupted;
-				cur_ptr += sizeof(inode) + inode.symlink_size +
+				cur_ptr += inode.symlink_size +
 							sizeof(unsigned int);
 			} else {
 				if(NO_BYTES(inode.symlink_size))
 					/* corrupted filesystem */
 					goto corrupted;
-				cur_ptr += sizeof(inode) + inode.symlink_size;
+				cur_ptr += inode.symlink_size;
 			}
 			break;
 		}
@@ -449,11 +453,13 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			
 				SQUASHFS_SWAP_DIR_INDEX(cur_ptr, &index);
 
+				cur_ptr += sizeof(index);
+
 				if(NO_BYTES(index.size + 1))
 					/* corrupted filesystem */
 					goto corrupted;
 
-				cur_ptr += sizeof(index) + index.size + 1;
+				cur_ptr += index.size + 1;
 			}
 			break;
 		}
