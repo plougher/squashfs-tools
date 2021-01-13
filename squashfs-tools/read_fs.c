@@ -135,6 +135,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 	TRACE("scan_inode_table: start 0x%llx, end 0x%llx, root_inode_start "
 		"0x%llx\n", start, end, root_inode_start);
 
+	/* Rogue value used to check if it was found */
 	*root_inode_block = UINT_MAX;
 	while(start < end) {
 		if(start == root_inode_start) {
