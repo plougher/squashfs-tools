@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2012, 2013, 2014, 2019
+ * 2012, 2013, 2014, 2019, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -190,10 +190,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		goto corrupted;
 
 	/*
-	 * Read last inode entry which is the root directory inode, and obtain
-	 * the last directory start block index.  This is used when calculating
-	 * the total uncompressed directory size.  The directory bytes in the
-	 * last * block will be counted as normal.
+	 * Read the last inode in the inode table, which is the root directory
+	 * inode, and get the directory start block.  This is used when
+	 * calculating the uncompressed directory size.  The directory
+	 * bytes in the last block will be counted as normal.
 	 *
 	 * Note, the previous check ensures the following calculation won't
 	 * underflow, and we won't access beyond the buffer
@@ -202,9 +202,12 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 	bytes = *root_inode_block + root_inode_offset;
 	SQUASHFS_SWAP_DIR_INODE_HEADER(inode_table + bytes, &dir_inode->dir);
 	
-	if(dir_inode->base.inode_type == SQUASHFS_DIR_TYPE)
+	if(dir_inode->base.inode_type == SQUASHFS_DIR_TYPE) {
 		directory_start_block = dir_inode->dir.start_block;
-	else if(dir_inode->base.inode_type == SQUASHFS_LDIR_TYPE) {
+		if(*root_inode_size < sizeof(struct squashfs_dir_inode_header))
+			/* corrupted filesystem */
+			goto corrupted;
+	} else if(dir_inode->base.inode_type == SQUASHFS_LDIR_TYPE) {
 		if(*root_inode_size < sizeof(struct squashfs_ldir_inode_header))
 			/* corrupted filesystem */
 			goto corrupted;
@@ -224,6 +227,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		MEM_ERROR();
 
 	for(cur_ptr = inode_table; cur_ptr < inode_table + bytes; files ++) {
+		/*
+		 * There should always be enough bytes to read the base
+		 * inode header
+		 */
 		if(NO_INODE_BYTES(squashfs_base_inode_header))
 			/* corrupted filesystem */
 			goto corrupted;
@@ -245,6 +252,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			long long start, file_bytes = 0;
 			unsigned int *block_list;
 
+			/*
+			 * There should always be enough bytes to read an
+			 * inode of the expected type
+			 */
 			if(NO_INODE_BYTES(squashfs_reg_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -300,6 +311,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			long long start, file_bytes = 0;
 			unsigned int *block_list;
 
+			/*
+			 * There should always be enough bytes to read an
+			 * inode of the expected type
+			 */
 			if(NO_INODE_BYTES(squashfs_lreg_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -354,6 +369,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		case SQUASHFS_LSYMLINK_TYPE: {
 			struct squashfs_symlink_inode_header inode;
 
+			/*
+			 * There should always be enough bytes to read an
+			 * inode of the expected type
+			 */
 			if(NO_INODE_BYTES(squashfs_symlink_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -380,6 +399,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		case SQUASHFS_DIR_TYPE: {
 			struct squashfs_dir_inode_header dir_inode;
 
+			/*
+			 * There should always be enough bytes to read an
+			 * inode of the expected type
+			 */
 			if(NO_INODE_BYTES(squashfs_dir_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -397,6 +420,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			struct squashfs_ldir_inode_header dir_inode;
 			int i;
 
+			/*
+			 * There should always be enough bytes to read an
+			 * inode of the expected type
+			 */
 			if(NO_INODE_BYTES(squashfs_ldir_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -409,6 +436,9 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			(*dir_count) ++;
 			cur_ptr += sizeof(struct squashfs_ldir_inode_header);
 
+			/*
+			 * Read and check the directory index for correctness
+			 */
 			for(i = 0; i < dir_inode.i_count; i++) {
 				struct squashfs_dir_index index;
 
@@ -428,6 +458,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		}
 	 	case SQUASHFS_BLKDEV_TYPE:
 	 	case SQUASHFS_CHRDEV_TYPE:
+			/*
+			 * There should always be enough bytes to read an
+			 * inode of the expected type
+			 */
 			if(NO_INODE_BYTES(squashfs_dev_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -437,6 +471,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			break;
 	 	case SQUASHFS_LBLKDEV_TYPE:
 	 	case SQUASHFS_LCHRDEV_TYPE:
+			/*
+			 * There should always be enough bytes to read an
+			 * inode of the expected type
+			 */
 			if(NO_INODE_BYTES(squashfs_ldev_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -445,6 +483,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			cur_ptr += sizeof(struct squashfs_ldev_inode_header);
 			break;
 		case SQUASHFS_FIFO_TYPE:
+			/*
+			 * There should always be enough bytes to read an
+			 * inode of the expected type
+			 */
 			if(NO_INODE_BYTES(squashfs_ipc_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -453,6 +495,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			cur_ptr += sizeof(struct squashfs_ipc_inode_header);
 			break;
 		case SQUASHFS_LFIFO_TYPE:
+			/*
+			 * There should always be enough bytes to read an
+			 * inode of the expected type
+			 */
 			if(NO_INODE_BYTES(squashfs_lipc_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -461,6 +507,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			cur_ptr += sizeof(struct squashfs_lipc_inode_header);
 			break;
 		case SQUASHFS_SOCKET_TYPE:
+			/*
+			 * There should always be enough bytes to read an
+			 * inode of the expected type
+			 */
 			if(NO_INODE_BYTES(squashfs_ipc_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
@@ -469,6 +519,10 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			cur_ptr += sizeof(struct squashfs_ipc_inode_header);
 			break;
 		case SQUASHFS_LSOCKET_TYPE:
+			/*
+			 * There should always be enough bytes to read an
+			 * inode of the expected type
+			 */
 			if(NO_INODE_BYTES(squashfs_lipc_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
