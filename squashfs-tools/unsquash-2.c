@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2013, 2019
+ * Copyright (c) 2009, 2010, 2013, 2019, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -386,6 +386,13 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 			memcpy(dire->name, directory_table + bytes,
 				dire->size + 1);
 			dire->name[dire->size + 1] = '\0';
+
+			/* check name for invalid characters (i.e /, ., ..) */
+			if(check_name(dire->name, dire->size + 1) == FALSE) {
+				ERROR("File system corrupted: invalid characters in name\n");
+				goto corrupted;
+			}
+
 			TRACE("squashfs_opendir: directory entry %s, inode "
 				"%d:%d, type %d\n", dire->name,
 				dirh.start_block, dire->offset, dire->type);
