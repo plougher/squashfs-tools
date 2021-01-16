@@ -131,9 +131,23 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 	int byte, files = 0;
 	unsigned int directory_start_block, bytes = 0, size = 0;
 	struct squashfs_base_inode_header base;
+	int alloc_size;
 
 	TRACE("scan_inode_table: start 0x%llx, end 0x%llx, root_inode_start "
 		"0x%llx\n", start, end, root_inode_start);
+
+	/*
+	 * Use the size of the compressed inode table as an initial
+	 * memory allocation value, and the reallocation value, if
+	 * this is too small.
+	 *
+	 * With a 50% compression ratio, this should require 2 alloc calls
+	 * With a 25% compression ratio, this should require 4 alloc calls
+	 * With a 12.5% compression ratio, this should require 8 alloc calls
+	 *
+	 * Always round to a multiple of SQUASHFS_METADATA_SIZE
+	 */
+	alloc_size = ((end - start) + SQUASHFS_METADATA_SIZE) & ~(SQUASHFS_METADATA_SIZE - 1);
 
 	/* Rogue value used to check if it was found */
 	*root_inode_block = UINT_MAX;
@@ -145,7 +159,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		}
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
 			inode_table = realloc(inode_table, size
-				+= SQUASHFS_METADATA_SIZE);
+				+= alloc_size);
 			if(inode_table == NULL)
 				MEM_ERROR();
 		}
@@ -544,6 +558,9 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		}
 	}
 	
+	/* trim any over allocation */
+	inode_table = realloc(inode_table, bytes);
+
 	printf("Read existing filesystem, %d inodes scanned\n", files);
 	return inode_table;
 
