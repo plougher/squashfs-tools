@@ -5350,7 +5350,7 @@ void check_env_var()
 
 
 #define PRINT_VERSION() \
-	printf("mksquashfs version %s (%s)\n", VERSION, DATE);\
+	printf("mksquashfs version " VERSION " (" DATE ")\n");\
 	printf("copyright (C) 2021 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\

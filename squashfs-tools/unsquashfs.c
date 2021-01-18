@@ -2670,7 +2670,7 @@ int parse_number(char *start, int *res)
 
 
 #define PRINT_VERSION() \
-	printf("unsquashfs version %s (%s)\n", VERSION, DATE);\
+	printf("unsquashfs version " VERSION " (" DATE ")\n");\
 	printf("copyright (C) 2021 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
