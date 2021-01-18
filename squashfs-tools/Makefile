@@ -278,6 +278,35 @@ $(error "COMP_DEFAULT is set to ${COMP_DEFAULT}, which isn't selected to be \
 	built!")
 endif
 
+#
+# Get VERSION and DATE for Mksquashfs/Unsquashfs version strings.
+#
+# If RELEASE_VERSION/RELEASE_DATE set, use them.
+#
+# If not set, this is a development version, therefore
+#
+# If this source has been exported by "git archive" use automatically
+# expanded strings.
+#
+# Otherwise ask git for the details from current HEAD.
+#
+include version.mk
+
+ifdef RELEASE_VERSION
+VERSION := $(RELEASE_VERSION)
+DATE := $(RELEASE_DATE)
+else
+ifeq ($(HASH),$Format:%h$)
+VERSION := 4.4-$(shell git show -s --pretty=format:%h)
+DATE := $(firstword $(shell git show -s --pretty=format:%ci))
+else
+VERSION := 4.4-$(HASH)
+DATE := $(firstword $(FULLDATE))
+endif
+endif
+
+CFLAGS += -DVERSION=\"$(VERSION)\" -DDATE=\"$(DATE)\"
+
 .PHONY: all
 all: mksquashfs unsquashfs
 

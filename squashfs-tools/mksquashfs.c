@@ -5349,8 +5349,8 @@ void check_env_var()
 }
 
 
-#define VERSION() \
-	printf("mksquashfs version 4.4-git (2021/01/16)\n");\
+#define PRINT_VERSION() \
+	printf("mksquashfs version %s (%s)\n", VERSION, DATE);\
 	printf("copyright (C) 2021 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n"); \
 	printf("This program is free software; you can redistribute it and/or"\
@@ -5384,7 +5384,7 @@ int main(int argc, char *argv[])
 	struct file_buffer **fragment = NULL;
 
 	if(argc > 1 && strcmp(argv[1], "-version") == 0) {
-		VERSION();
+		PRINT_VERSION();
 		exit(0);
 	}
 
@@ -5852,7 +5852,7 @@ print_compressor_options:
 			}	
 			root_name = argv[i];
 		} else if(strcmp(argv[i], "-version") == 0) {
-			VERSION();
+			PRINT_VERSION();
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
 printOptions:

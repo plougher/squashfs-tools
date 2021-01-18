@@ -2669,8 +2669,8 @@ int parse_number(char *start, int *res)
 }
 
 
-#define VERSION() \
-	printf("unsquashfs version 4.4-git (2021/01/17)\n");\
+#define PRINT_VERSION() \
+	printf("unsquashfs version %s (%s)\n", VERSION, DATE);\
 	printf("copyright (C) 2021 Phillip Lougher "\
 		"<phillip@squashfs.org.uk>\n\n");\
     	printf("This program is free software; you can redistribute it and/or"\
@@ -2720,7 +2720,7 @@ int main(int argc, char *argv[])
 			quiet = TRUE;
 		else if(strcmp(argv[i], "-version") == 0 ||
 				strcmp(argv[i], "-v") == 0) {
-			VERSION();
+			PRINT_VERSION();
 			version = TRUE;
 		} else if(strcmp(argv[i], "-info") == 0 ||
 				strcmp(argv[i], "-i") == 0)
