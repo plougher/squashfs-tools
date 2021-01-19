@@ -79,6 +79,7 @@ int ignore_errors = FALSE;
 int strict_errors = FALSE;
 int use_localtime = TRUE;
 int max_depth = -1; /* unlimited */
+int follow_symlinks = FALSE;
 
 int lookup_type[] = {
 	0,
@@ -1575,6 +1576,263 @@ empty_set:
 }
 
 
+struct directory_stack *create_stack()
+{
+	struct directory_stack *stack = malloc(sizeof(struct directory_stack));
+
+	if(stack == NULL)
+		EXIT_UNSQUASH("alloc in create_stack failed\n");
+
+	stack->size = 0;
+	stack->stack = NULL;
+	stack->symlink = NULL;
+	stack->name = NULL;
+
+	return stack;
+}
+
+
+void add_stack(struct directory_stack *stack, unsigned int start_block,
+	unsigned int offset, char *name, int depth)
+{
+	if((depth - 1) == stack->size) {
+		/* Stack growing an extra level */
+		stack->stack = realloc(stack->stack, depth *
+					sizeof(struct directory_level));
+
+		if(stack->stack == NULL)
+			EXIT_UNSQUASH("alloc in add_stack failed\n");
+
+		stack->stack[depth - 1].start_block = start_block;
+		stack->stack[depth - 1].offset = offset;
+		stack->stack[depth - 1].name = strdup(name);
+	} else if((depth + 1) == stack->size)
+			/* Stack shrinking a level */
+			free(stack->stack[depth].name);
+	else if(depth == stack->size)
+		/* Stack staying same size - nothing to do */
+		return;
+	else
+		/* Any other change in size is invalid */
+		EXIT_UNSQUASH("Invalid state in add_stack\n");
+
+	stack->size = depth;
+}
+
+
+void free_stack(struct directory_stack *stack)
+{
+	int i;
+	struct symlink *symlink = stack->symlink;
+
+	for(i = 0; i < stack->size; i++)
+		free(stack->stack[i].name);
+
+	while(symlink) {
+		struct symlink *s = symlink;
+
+		symlink = symlink->next;
+		free(s->pathname);
+		free(s);
+	}
+
+	free(stack->stack);
+	free(stack->name);
+	free(stack);
+}
+
+
+char *stack_pathname(struct directory_stack *stack, char *name)
+{
+	int i, size = 0;
+	char *pathname;
+
+	/* work out how much space is needed for the pathname */
+	for(i = 1; i < stack->size; i++)
+		size += strlen(stack->stack[i].name);
+
+	/* add room for leaf name, slashes and '\0' terminator */
+	size += strlen(name) + stack->size;
+
+	pathname = malloc(size);
+	if (pathname == NULL)
+		EXIT_UNSQUASH("alloc in stack_pathname failed\n");
+
+	pathname[0] = '\0';
+
+	/* concatenate */
+	for(i = 1; i < stack->size; i++) {
+		strcat(pathname, stack->stack[i].name);
+		strcat(pathname, "/");
+	}
+
+	strcat(pathname, name);
+
+	return pathname;
+}
+
+
+void add_symlink(struct directory_stack *stack, char *name)
+{
+	struct symlink *symlink = malloc(sizeof(struct symlink));
+
+	if(symlink == NULL)
+		EXIT_UNSQUASH("alloc in add_symlink failed\n");
+
+	symlink->pathname = stack_pathname(stack, name);
+	symlink->next = stack->symlink;
+	stack->symlink = symlink;
+}
+
+
+/*
+ * Walk the supplied pathname.   If any symlinks are encountered whilst walking
+ * the pathname, then recursively walk those, to obtain the fully
+ * dereferenced canonicalised pathname.  Return that and the pathnames
+ * of all symlinks found during the walk.
+ *
+ * If follow_path fails to walk a pathname either because a component
+ * doesn't exist, it is a non directory component when a directory
+ * component is expected, a symlink with an absolute path is encountered,
+ * or a symlink is encountered which cannot be recursively walked due to
+ * the above failures, then return FALSE.
+ */
+int follow_path(char *path, char *name, unsigned int start_block,
+	unsigned int offset, int depth, int symlinks,
+	struct directory_stack *stack)
+{
+	struct inode *i;
+	struct dir *dir;
+	char *target, *symlink;
+	unsigned int type;
+	int traversed = FALSE;
+	unsigned int entry_start, entry_offset;
+
+	while((path = get_component(path, &target))) {
+		if(strcmp(target, ".") != 0)
+			break;
+
+		free(target);
+	}
+
+	if(path == NULL)
+		return FALSE;
+
+	add_stack(stack, start_block, offset, name, depth);
+
+	if(strcmp(target, "..") == 0) {
+		if(depth > 1) {
+			start_block = stack->stack[depth - 2].start_block;
+			offset = stack->stack[depth - 2].offset;
+
+			traversed = follow_path(path, "", start_block, offset,
+					depth - 1, symlinks, stack);
+		}
+
+		free(target);
+		return traversed;
+	}
+
+	dir = s_ops->opendir(start_block, offset, &i);
+	if(dir == NULL) {
+		free(target);
+		return FALSE;
+	}
+
+	while(squashfs_readdir(dir, &name, &entry_start, &entry_offset, &type)) {
+		if(strcmp(name, target) == 0) {
+			switch(type) {
+			case SQUASHFS_SYMLINK_TYPE:
+				i = s_ops->read_inode(entry_start, entry_offset);
+				symlink = i->symlink;
+
+				/* Symlink must be relative to current
+				 * directory and not be absolute, otherwise
+				 * we can't follow it, as it is probably
+				 * outside the Squashfs filesystem */
+				if(symlink[0] == '/') {
+					traversed = FALSE;
+					free(symlink);
+					break;
+				}
+
+				/* Detect circular symlinks */
+				if(symlinks >= MAX_FOLLOW_SYMLINKS) {
+					ERROR("Too many levels of symbolic links\n");
+					traversed = FALSE;
+					free(symlink);
+					break;
+				}
+
+				/* Add symlink to list of symlinks found traversing
+				 * the pathname */
+				add_symlink(stack, name);
+
+				traversed = follow_path(symlink, "", start_block,
+					offset, depth, symlinks + 1, stack);
+
+				free(symlink);
+
+				if(traversed == TRUE) {
+					/* If we still have some path to
+					 * walk, then walk it from where
+					 * the symlink traversal left us
+					 *
+					 * Obviously symlink traversal must
+					 * have left us at a directory to do
+					 * this */
+					if(path[0] != '\0') {
+						if(stack->type != SQUASHFS_DIR_TYPE) {
+							traversed = FALSE;
+							break;
+						}
+
+						/* "Jump" to the traversed point */
+						depth = stack->size;
+						start_block = stack->start_block;
+						offset = stack->offset;
+						name = stack->name;
+
+						/* continue following the path */
+						traversed = follow_path(path, name, start_block,
+							offset, depth + 1, symlinks, stack);
+					}
+				}
+
+				break;
+			case SQUASHFS_DIR_TYPE:
+				/* if at end of path, traversed OK */
+				if(path[0] == '\0') {
+					traversed = TRUE;
+					stack->name = strdup(name);
+					stack->type = type;
+					stack->start_block = entry_start;
+					stack->offset = entry_offset;
+				} else /* follow the path */
+					traversed = follow_path(path, name,
+						entry_start, entry_offset,
+						depth + 1, symlinks, stack);
+				break;
+			default:
+				/* leaf directory entry, can't go any further,
+				 * and so path must not continue */
+				if(path[0] == '\0') {
+					traversed = TRUE;
+					stack->name = strdup(name);
+					stack->type = type;
+				} else
+					traversed = FALSE;
+			}
+		}
+	}
+
+	free(target);
+	squashfs_closedir(dir);
+
+	return traversed;
+}
+
+
 int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *paths, int depth)
 {
@@ -2707,7 +2965,11 @@ int main(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-UTC") == 0)
+		if(strcmp(argv[i], "-follow-symlinks") == 0 ||
+				strcmp(argv[i], "-f") == 0 ||
+				strcmp(argv[i], "-L") == 0)
+			follow_symlinks = TRUE;
+		else if(strcmp(argv[i], "-UTC") == 0)
 			use_localtime = FALSE;
 		else if(strcmp(argv[i], "-strict-errors") == 0 ||
 				strcmp(argv[i], "-st") == 0)
@@ -2876,6 +3138,9 @@ options:
 			ERROR("\t-max[-depth] <levels>\tdescend at most "
 				"<levels> of directories when"
 				"\n\t\t\t\tunsquashing or listing\n");
+			ERROR("\t-f[ollow-symlinks]\tfollow symlinks in extract "
+				"files, and add all\n\t\t\t\tfiles/symlinks "
+				"needed to resolve extract file\n");
 			ERROR("\t-q[uiet]\t\tno verbose output\n");
 			ERROR("\t-n[o-progress]\t\tdon't display the progress "
 				"bar\n");
@@ -2931,14 +3196,12 @@ options:
 				"regular expressions\n");
 			ERROR("\t\t\t\trather than use the default shell "
 				"wildcard\n\t\t\t\texpansion (globbing)\n");
+			ERROR("\t-L\t\t\tsynonym for -follow-symlinks\n");
 			ERROR("\nDecompressors available:\n");
 			display_compressors("", "");
 		}
 		exit(1);
 	}
-
-	for(n = i + 1; n < argc; n++)
-		path = add_path(path, argv[n], argv[n]);
 
 	if((fd = open(argv[i], O_RDONLY)) == -1) {
 		ERROR("Could not open %s, because %s\n", argv[i],
@@ -3010,6 +3273,44 @@ options:
 	s_ops = read_filesystem_tables();
 	if(s_ops == NULL)
 		EXIT_UNSQUASH("failed to read file system tables\n");
+
+	if(follow_symlinks) {
+		for(n = i + 1; n < argc; n++) {
+			int exists;
+			struct directory_stack *stack = create_stack();
+			struct symlink *symlink;
+			char *pathname;
+
+			/*
+			 * Try to follow the extract file pathname, and
+			 * return the canonicalised pathname, and all
+			 * symlinks necessary to resolve it.
+			 */
+			exists = follow_path(argv[n], "",
+				SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+				SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
+				1, 0, stack);
+
+			if(!exists) {
+				ERROR("Extract filename %s can't be resolved\n", argv[n]);
+				path = add_path(path, argv[n], argv[n]);
+				free_stack(stack);
+				continue;
+			}
+
+			pathname = stack_pathname(stack, stack->name);
+			path = add_path(path, pathname, pathname);
+			free(pathname);
+
+			for(symlink = stack->symlink; symlink; symlink = symlink->next)
+				path = add_path(path, symlink->pathname, symlink->pathname);
+
+			free_stack(stack);
+		}
+	} else {
+		for(n = i + 1; n < argc; n++)
+			path = add_path(path, argv[n], argv[n]);
+	}
 
 	if(path) {
 		paths = init_subdir();

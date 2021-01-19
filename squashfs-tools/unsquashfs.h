@@ -219,6 +219,29 @@ struct pathnames {
 };
 #define PATHS_ALLOC_SIZE 10
 
+struct directory_level {
+	unsigned int start_block;
+	unsigned int offset;
+	char *name;
+};
+
+struct symlink {
+	char *pathname;
+	struct symlink *next;
+};
+
+struct directory_stack {
+	int size;
+	unsigned int type;
+	unsigned int start_block;
+	unsigned int offset;
+	char *name;
+	struct directory_level *stack;
+	struct symlink *symlink;
+};
+
+#define MAX_FOLLOW_SYMLINKS 256
+
 /* globals */
 extern struct super_block sBlk;
 extern int swap;
