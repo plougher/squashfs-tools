@@ -49,7 +49,7 @@
 #include "squashfs_swap.h"
 #include "compressor.h"
 #include "xattr.h"
-#include "error.h"
+#include "mksquashfs_error.h"
 #include "mksquashfs.h"
 
 int read_block(int fd, long long start, long long *next, int expected,

@@ -55,7 +55,7 @@
 #endif
 
 #include "squashfs_fs.h"
-#include "error.h"
+#include "unsquashfs_error.h"
 
 #define CALCULATE_HASH(start)	(start & 0xffff)
 

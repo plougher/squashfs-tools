@@ -70,7 +70,7 @@
 #include "compressor.h"
 #include "xattr.h"
 #include "action.h"
-#include "error.h"
+#include "mksquashfs_error.h"
 #include "progressbar.h"
 #include "info.h"
 #include "caches-queues-lists.h"

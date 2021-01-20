@@ -128,11 +128,6 @@ void progress_bar(long long current, long long max, int columns);
 
 #define MAX_LINE 16384
 
-void prep_exit()
-{
-}
-
-
 void sigwinch_handler()
 {
 	struct winsize winsize;

@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013
+ * Copyright (c) 2013, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -39,9 +39,8 @@
 
 #include "squashfs_fs.h"
 #include "unsquashfs.h"
-#include "error.h"
+#include "unsquashfs_error.h"
 
-static int silent = 0;
 char *pathname = NULL;
 
 pthread_t info_thread;

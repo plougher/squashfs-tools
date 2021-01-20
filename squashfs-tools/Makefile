@@ -314,40 +314,40 @@ mksquashfs: $(MKSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(MKSQUASHFS_OBJS) $(LIBS) -o $@
 
 mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h squashfs_swap.h mksquashfs.h \
-	sort.h pseudo.h compressor.h xattr.h action.h error.h progressbar.h \
+	sort.h pseudo.h compressor.h xattr.h action.h mksquashfs_error.h progressbar.h \
 	info.h caches-queues-lists.h read_fs.h restore.h process_fragments.h 
 
 read_fs.o: read_fs.c squashfs_fs.h squashfs_swap.h compressor.h xattr.h \
-	error.h mksquashfs.h
+	mksquashfs_error.h mksquashfs.h
 
-sort.o: sort.c squashfs_fs.h mksquashfs.h sort.h error.h progressbar.h
+sort.o: sort.c squashfs_fs.h mksquashfs.h sort.h mksquashfs_error.h progressbar.h
 
 swap.o: swap.c
 
-pseudo.o: pseudo.c pseudo.h error.h progressbar.h
+pseudo.o: pseudo.c pseudo.h mksquashfs_error.h progressbar.h
 
 compressor.o: Makefile compressor.c compressor.h squashfs_fs.h
 
-xattr.o: xattr.c squashfs_fs.h squashfs_swap.h mksquashfs.h xattr.h error.h \
+xattr.o: xattr.c squashfs_fs.h squashfs_swap.h mksquashfs.h xattr.h mksquashfs_error.h \
 	progressbar.h
 
 read_xattrs.o: read_xattrs.c squashfs_fs.h squashfs_swap.h xattr.h error.h
 
-action.o: action.c squashfs_fs.h mksquashfs.h action.h error.h
+action.o: action.c squashfs_fs.h mksquashfs.h action.h mksquashfs_error.h
 
-progressbar.o: progressbar.c error.h
+progressbar.o: progressbar.c mksquashfs_error.h
 
-read_file.o: read_file.c error.h
+read_file.o: read_file.c mksquashfs_error.h
 
-info.o: info.c squashfs_fs.h mksquashfs.h error.h progressbar.h \
+info.o: info.c squashfs_fs.h mksquashfs.h mksquashfs_error.h progressbar.h \
 	caches-queues-lists.h
 
-restore.o: restore.c caches-queues-lists.h squashfs_fs.h mksquashfs.h error.h \
+restore.o: restore.c caches-queues-lists.h squashfs_fs.h mksquashfs.h mksquashfs_error.h \
 	progressbar.h info.h
 
 process_fragments.o: process_fragments.c process_fragments.h
 
-caches-queues-lists.o: caches-queues-lists.c error.h caches-queues-lists.h
+caches-queues-lists.o: caches-queues-lists.c mksquashfs_error.h caches-queues-lists.h
 
 gzip_wrapper.o: gzip_wrapper.c squashfs_fs.h gzip_wrapper.h compressor.h
 
@@ -365,26 +365,26 @@ unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@
 
 unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h \
-	squashfs_compat.h xattr.h read_fs.h compressor.h
+	squashfs_compat.h xattr.h read_fs.h compressor.h unsquashfs_error.h
 
-unsquash-1.o: unsquashfs.h unsquash-1.c squashfs_fs.h squashfs_compat.h
+unsquash-1.o: unsquashfs.h unsquash-1.c squashfs_fs.h squashfs_compat.h unsquashfs_error.h
 
-unsquash-2.o: unsquashfs.h unsquash-2.c squashfs_fs.h squashfs_compat.h
+unsquash-2.o: unsquashfs.h unsquash-2.c squashfs_fs.h squashfs_compat.h unsquashfs_error.h
 
-unsquash-3.o: unsquashfs.h unsquash-3.c squashfs_fs.h squashfs_compat.h
+unsquash-3.o: unsquashfs.h unsquash-3.c squashfs_fs.h squashfs_compat.h unsquashfs_error.h
 
 unsquash-4.o: unsquashfs.h unsquash-4.c squashfs_fs.h squashfs_swap.h \
-	read_fs.h
+	read_fs.h unsquashfs_error.h
 
-unsquash-123.o: unsquashfs.h unsquash-123.c squashfs_fs.h squashfs_compat.h
+unsquash-123.o: unsquashfs.h unsquash-123.c squashfs_fs.h squashfs_compat.h unsquashfs_error.h
 
-unsquash-34.o: unsquashfs.h unsquash-34.c
+unsquash-34.o: unsquashfs.h unsquash-34.c unsquashfs_error.h
 
-unsquash-1234.o: unsquash-1234.c
+unsquash-1234.o: unsquash-1234.c unsquashfs_error.h
 
-unsquashfs_xattr.o: unsquashfs_xattr.c unsquashfs.h squashfs_fs.h xattr.h
+unsquashfs_xattr.o: unsquashfs_xattr.c unsquashfs.h squashfs_fs.h xattr.h unsquashfs_error.h
 
-unsquashfs_info.o: unsquashfs.h squashfs_fs.h
+unsquashfs_info.o: unsquashfs.h squashfs_fs.h unsquashfs_error.h
 
 .PHONY: clean
 clean:
