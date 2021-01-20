@@ -644,6 +644,9 @@ int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 	res = read_xattrs_from_disk(fd, sBlk, FALSE, NULL);
 	if(res == SQUASHFS_INVALID_BLK || res == 0)
 		return res;
+	else if(res == -1)
+		EXIT_MKSQUASHFS();
+
 	ids = res;
 
 	/*
@@ -652,6 +655,9 @@ int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 	 */
 	for(i = 0; i < ids; i++) {
 		struct xattr_list *xattr_list = get_xattr(i, &count, &res);
+		if(xattr_list == NULL && res == FALSE)
+			EXIT_MKSQUASHFS();
+
 		if(res) {
 			free_xattr(xattr_list, count);
 			return FALSE;

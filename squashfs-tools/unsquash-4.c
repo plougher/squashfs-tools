@@ -498,6 +498,7 @@ static int parse_exports_table(long long *table_start)
 squashfs_operations *read_filesystem_tables_4()
 {
 	long long table_start;
+	int res;
 
 	/* Read xattrs */
 	if(sBlk.s.xattr_id_table_start != SQUASHFS_INVALID_BLK) {
@@ -507,8 +508,11 @@ squashfs_operations *read_filesystem_tables_4()
 			goto corrupted;
 		}
 
-		if(read_xattrs_from_disk(fd, &sBlk.s, no_xattrs, &table_start) == 0)
+		res = read_xattrs_from_disk(fd, &sBlk.s, no_xattrs, &table_start);
+		if(res == 0)
 			goto corrupted;
+		else if(res == -1)
+			exit(1);
 	} else
 		table_start = sBlk.s.bytes_used;
 
@@ -614,6 +618,7 @@ squashfs_operations *read_filesystem_tables_4()
 
 corrupted:
 	ERROR("File system corruption detected\n");
+
 	alloc_index_table(0);
 
 	return NULL;

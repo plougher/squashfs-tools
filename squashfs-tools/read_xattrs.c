@@ -2,7 +2,7 @@
  * Read a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2013, 2019
+ * Copyright (c) 2010, 2012, 2013, 2019, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -73,7 +73,7 @@ struct prefix prefix_table[] = {
  * store mapping from location of compressed block in fs ->
  * location of uncompressed block in memory
  */
-static void save_xattr_block(long long start, int offset)
+static int save_xattr_block(long long start, int offset)
 {
 	struct hash_entry *hash_entry = malloc(sizeof(*hash_entry));
 	int hash = start & 0xffff;
@@ -81,12 +81,14 @@ static void save_xattr_block(long long start, int offset)
 	TRACE("save_xattr_block: start %lld, offset %d\n", start, offset);
 
 	if(hash_entry == NULL)
-		MEM_ERROR();
+		return FALSE;
 
 	hash_entry->start = start;
 	hash_entry->offset = offset;
 	hash_entry->next = hash_table[hash];
 	hash_table[hash] = hash_entry;
+
+	return TRUE;
 }
 
 
@@ -130,8 +132,10 @@ static int read_xattr_entry(struct xattr_list *xattr,
 
 	len = strlen(prefix_table[i].prefix);
 	xattr->full_name = malloc(len + entry->size + 1);
-	if(xattr->full_name == NULL)
-		MEM_ERROR();
+	if(xattr->full_name == NULL) {
+		ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
+		return -1;
+	}
 
 	memcpy(xattr->full_name, prefix_table[i].prefix, len);
 	memcpy(xattr->full_name + len, name, entry->size);
@@ -218,8 +222,10 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, l
 	 * blocks
 	 */
 	index = malloc(index_bytes);
-	if(index == NULL)
-		MEM_ERROR();
+	if(index == NULL) {
+		ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
+		return -1;
+	}
 
 	res = read_fs_bytes(fd, sBlk->xattr_id_table_start + sizeof(id_table),
 		index_bytes, index);
@@ -234,8 +240,10 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, l
 	 */
 	bytes = SQUASHFS_XATTR_BYTES((long long) ids);
 	xattr_ids = malloc(bytes);
-	if(xattr_ids == NULL)
-		MEM_ERROR();
+	if(xattr_ids == NULL) {
+		ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
+		return -1;
+	}
 
 	for(i = 0; i < indexes; i++) {
 		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :
@@ -263,14 +271,20 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, l
 	start = xattr_table_start;
 	end = index[0];
 	for(i = 0; start < end; i++) {
-		int length;
+		int length, res;
 		xattrs = realloc(xattrs, (i + 1) * SQUASHFS_METADATA_SIZE);
-		if(xattrs == NULL)
-			MEM_ERROR();
+		if(xattrs == NULL) {
+			ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
+			return -1;
+		}
 
 		/* store mapping from location of compressed block in fs ->
 		 * location of uncompressed block in memory */
-		save_xattr_block(start, i * SQUASHFS_METADATA_SIZE);
+		res = save_xattr_block(start, i * SQUASHFS_METADATA_SIZE);
+		if (res == FALSE) {
+			ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
+			return -1;
+		}
 
 		length = read_block(fd, start, &start, 0,
 			((unsigned char *) xattrs) +
@@ -378,8 +392,11 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 		if(res != 0) {
 			xattr_list = realloc(xattr_list, (j + 1) *
 						sizeof(struct xattr_list));
-			if(xattr_list == NULL)
-				MEM_ERROR();
+			if(xattr_list == NULL) {
+				ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
+				failed = FALSE;
+				return NULL;
+			}
 		}
 			
 		SQUASHFS_SWAP_XATTR_ENTRY(xptr, &entry);
@@ -393,6 +410,9 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 			xptr += sizeof(val) + val.vsize;
 			*failed = TRUE;
 			continue;
+		} else if(res == -1) {
+			ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
+			return NULL;
 		}
 
 		xptr += entry.size;

@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2019
+ * Copyright (c) 2010, 2012, 2019, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -49,6 +49,9 @@ int write_xattr(char *pathname, unsigned int xattr)
 		return TRUE;
 
 	xattr_list = get_xattr(xattr, &count, &failed);
+	if(xattr_list == NULL && failed == FALSE)
+		exit(1);
+
 	if(failed)
 		EXIT_UNSQUASH_STRICT("write_xattr: Failed to read one or more xattrs for %s\n", pathname);
 
