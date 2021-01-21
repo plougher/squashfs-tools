@@ -36,8 +36,7 @@ long long *alloc_index_table(int indexes)
 		long long *table = realloc(alloc_table, length);
 
 		if(table == NULL && length !=0)
-			EXIT_UNSQUASH("alloc_index_table: failed to allocate "
-				"index table\n");
+			MEM_ERROR();
 
 		alloc_table = table;
 		alloc_size = length;

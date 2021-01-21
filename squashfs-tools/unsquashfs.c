@@ -169,9 +169,8 @@ int multiply_overflow(int a, int multiplier)
 struct queue *queue_init(int size)
 {
 	struct queue *queue = malloc(sizeof(struct queue));
-
 	if(queue == NULL)
-		EXIT_UNSQUASH("Out of memory in queue_init\n");
+		MEM_ERROR();
 
 	if(add_overflow(size, 1) ||
 				multiply_overflow(size + 1, sizeof(void *)))
@@ -179,7 +178,7 @@ struct queue *queue_init(int size)
 
 	queue->data = malloc(sizeof(void *) * (size + 1));
 	if(queue->data == NULL)
-		EXIT_UNSQUASH("Out of memory in queue_init\n");
+		MEM_ERROR();
 
 	queue->size = size + 1;
 	queue->readp = queue->writep = 0;
@@ -306,9 +305,8 @@ void remove_free_list(struct cache *cache, struct cache_entry *entry)
 struct cache *cache_init(int buffer_size, int max_buffers)
 {
 	struct cache *cache = malloc(sizeof(struct cache));
-
 	if(cache == NULL)
-		EXIT_UNSQUASH("Out of memory in cache_init\n");
+		MEM_ERROR();
 
 	cache->max_buffers = max_buffers;
 	cache->buffer_size = buffer_size;
@@ -364,10 +362,12 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 		if(cache->count < cache->max_buffers) {
 			entry = malloc(sizeof(struct cache_entry));
 			if(entry == NULL)
-				EXIT_UNSQUASH("Out of memory in cache_get\n");
+				MEM_ERROR();
+
 			entry->data = malloc(cache->buffer_size);
 			if(entry->data == NULL)
-				EXIT_UNSQUASH("Out of memory in cache_get\n");
+				MEM_ERROR();
+
 			entry->cache = cache;
 			entry->free_prev = entry->free_next = NULL;
 			cache->count ++;
@@ -599,7 +599,7 @@ void add_entry(struct hash_table_entry *hash_table[], long long start,
 
 	hash_table_entry = malloc(sizeof(struct hash_table_entry));
 	if(hash_table_entry == NULL)
-		EXIT_UNSQUASH("Out of memory in add_entry\n");
+		MEM_ERROR();
 
 	hash_table_entry->start = start;
 	hash_table_entry->bytes = bytes;
@@ -698,9 +698,8 @@ int read_block(int fd, long long start, long long *next, int expected,
 
 		if(buffer == NULL) {
 			buffer = malloc(SQUASHFS_METADATA_SIZE);
-
 			if(buffer == NULL)
-				EXIT_UNSQUASH("read_block: Failed to allocate buffer\n");
+				MEM_ERROR();
 		}
 
 		res = read_fs_bytes(fd, start + offset, c_byte, buffer);
@@ -766,10 +765,8 @@ void *read_inode_table(long long start, long long end)
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
 			inode_table = realloc(inode_table, size += alloc_size);
-			if(inode_table == NULL) {
-				ERROR("Out of memory in read_inode_table");
-				goto failed;
-			}
+			if(inode_table == NULL)
+				MEM_ERROR();
 		}
 
 		add_entry(inode_table_hash, start, bytes);
@@ -884,9 +881,9 @@ int write_block(int file_fd, char *buffer, int size, long long hole, int sparse)
 		}
 
 		if((sparse == FALSE || lseek_broken) && zero_data == NULL) {
-			if((zero_data = malloc(block_size)) == NULL)
-				EXIT_UNSQUASH("write_block: failed to alloc "
-					"zero data block\n");
+			zero_data = malloc(block_size);
+			if(zero_data == NULL)
+				MEM_ERROR();
 			memset(zero_data, 0, block_size);
 		}
 
@@ -957,7 +954,7 @@ void queue_file(char *pathname, int file_fd, struct inode *inode)
 {
 	struct squashfs_file *file = malloc(sizeof(struct squashfs_file));
 	if(file == NULL)
-		EXIT_UNSQUASH("queue_file: unable to malloc file\n");
+		MEM_ERROR();
 
 	file->fd = file_fd;
 	file->file_size = inode->data;
@@ -977,7 +974,7 @@ void queue_dir(char *pathname, struct dir *dir)
 {
 	struct squashfs_file *file = malloc(sizeof(struct squashfs_file));
 	if(file == NULL)
-		EXIT_UNSQUASH("queue_dir: unable to malloc file\n");
+		MEM_ERROR();
 
 	file->fd = -1;
 	file->mode = dir->mode;
@@ -1009,7 +1006,7 @@ int write_file(struct inode *inode, char *pathname)
 
 	block_list = malloc(inode->blocks * sizeof(unsigned int));
 	if(block_list == NULL && inode->blocks)
-		EXIT_UNSQUASH("write_file: unable to malloc block list\n");
+		MEM_ERROR();
 
 	s_ops->read_block_list(block_list, inode->block_ptr, inode->blocks);
 
@@ -1025,7 +1022,8 @@ int write_file(struct inode *inode, char *pathname)
 		struct file_entry *block = malloc(sizeof(struct file_entry));
 
 		if(block == NULL)
-			EXIT_UNSQUASH("write_file: unable to malloc file\n");
+			MEM_ERROR();
+
 		block->offset = 0;
 		block->size = i == file_end ? inode->data & (block_size - 1) :
 			block_size;
@@ -1045,7 +1043,8 @@ int write_file(struct inode *inode, char *pathname)
 		struct file_entry *block = malloc(sizeof(struct file_entry));
 
 		if(block == NULL)
-			EXIT_UNSQUASH("write_file: unable to malloc file\n");
+			MEM_ERROR();
+
 		s_ops->read_fragment(inode->fragment, &start, &size);
 		block->buffer = cache_get(fragment_cache, start, size);
 		block->offset = inode->offset;
@@ -1270,11 +1269,8 @@ void *read_directory_table(long long start, long long end)
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
 			directory_table = realloc(directory_table, size += alloc_size);
-			if(directory_table == NULL) {
-				ERROR("Out of memory in "
-						"read_directory_table\n");
-				goto failed;
-			}
+			if(directory_table == NULL)
+				MEM_ERROR();
 		}
 
 		add_entry(directory_table_hash, start, bytes);
@@ -1392,7 +1388,7 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 	if(paths == NULL) {
 		paths = malloc(sizeof(struct pathname));
 		if(paths == NULL)
-			EXIT_UNSQUASH("failed to allocate paths\n");
+			MEM_ERROR();
 
 		paths->names = 0;
 		paths->name = NULL;
@@ -1410,13 +1406,14 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		paths->name = realloc(paths->name, (i + 1) *
 			sizeof(struct path_entry));
 		if(paths->name == NULL)
-			EXIT_UNSQUASH("Out of memory in add_path\n");	
+			MEM_ERROR();
+
 		paths->name[i].name = targname;
 		paths->name[i].paths = NULL;
 		if(use_regex) {
 			paths->name[i].preg = malloc(sizeof(regex_t));
 			if(paths->name[i].preg == NULL)
-				EXIT_UNSQUASH("Out of memory in add_path\n");
+				MEM_ERROR();
 			error = regcomp(paths->name[i].preg, targname,
 				REG_EXTENDED|REG_NOSUB);
 			if(error) {
@@ -1476,7 +1473,8 @@ struct pathnames *init_subdir()
 {
 	struct pathnames *new = malloc(sizeof(struct pathnames));
 	if(new == NULL)
-		EXIT_UNSQUASH("Out of memory in init_subdir\n");
+		MEM_ERROR();
+
 	new->count = 0;
 	return new;
 }
@@ -1489,7 +1487,7 @@ struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 			(paths->count + PATHS_ALLOC_SIZE) *
 			sizeof(struct pathname *));
 		if(paths == NULL)
-			EXIT_UNSQUASH("Out of memory in add_subdir\n");
+			MEM_ERROR();
 	}
 
 	paths->path[paths->count++] = path;
@@ -1574,9 +1572,8 @@ empty_set:
 struct directory_stack *create_stack()
 {
 	struct directory_stack *stack = malloc(sizeof(struct directory_stack));
-
 	if(stack == NULL)
-		EXIT_UNSQUASH("alloc in create_stack failed\n");
+		MEM_ERROR();
 
 	stack->size = 0;
 	stack->stack = NULL;
@@ -1596,7 +1593,7 @@ void add_stack(struct directory_stack *stack, unsigned int start_block,
 					sizeof(struct directory_level));
 
 		if(stack->stack == NULL)
-			EXIT_UNSQUASH("alloc in add_stack failed\n");
+			MEM_ERROR();
 
 		stack->stack[depth - 1].start_block = start_block;
 		stack->stack[depth - 1].offset = offset;
@@ -1651,7 +1648,7 @@ char *stack_pathname(struct directory_stack *stack, char *name)
 
 	pathname = malloc(size);
 	if (pathname == NULL)
-		EXIT_UNSQUASH("alloc in stack_pathname failed\n");
+		MEM_ERROR();
 
 	pathname[0] = '\0';
 
@@ -1670,9 +1667,8 @@ char *stack_pathname(struct directory_stack *stack, char *name)
 void add_symlink(struct directory_stack *stack, char *name)
 {
 	struct symlink *symlink = malloc(sizeof(struct symlink));
-
 	if(symlink == NULL)
-		EXIT_UNSQUASH("alloc in add_symlink failed\n");
+		MEM_ERROR();
 
 	symlink->pathname = stack_pathname(stack, name);
 	symlink->next = stack->symlink;
@@ -1858,7 +1854,7 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 
 		res = asprintf(&pathname, "%s/%s", parent_name, name);
 		if(res == -1)
-			EXIT_UNSQUASH("asprintf failed in dir_scan\n");
+			MEM_ERROR();
 
 		if(type == SQUASHFS_DIR_TYPE) {
 			res = pre_scan(parent_name, start_block, offset, new, depth + 1);
@@ -1958,7 +1954,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 
 			res = asprintf(&pathname, "%s/%s", parent_name, name);
 			if(res == -1)
-				EXIT_UNSQUASH("asprintf failed in dir_scan\n");
+				MEM_ERROR();
 
 			if(type == SQUASHFS_DIR_TYPE) {
 				res = dir_scan(pathname, start_block, offset, new, depth + 1);
@@ -2468,9 +2464,8 @@ void *writer(void *arg)
 void *inflator(void *arg)
 {
 	char *tmp = malloc(block_size);
-
 	if(tmp == NULL)
-		EXIT_UNSQUASH("inflator: Failed to allocate block buffer\n");
+		MEM_ERROR();
 
 	while(1) {
 		struct cache_entry *entry = queue_get(to_inflate);
@@ -2591,7 +2586,8 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 
 	thread = malloc((3 + processors) * sizeof(pthread_t));
 	if(thread == NULL)
-		EXIT_UNSQUASH("Out of memory allocating thread descriptors\n");
+		MEM_ERROR();
+
 	inflator_thread = &thread[3];
 
 	/*
@@ -3261,13 +3257,13 @@ options:
 
 	created_inode = malloc(sBlk.s.inodes * sizeof(char *));
 	if(created_inode == NULL)
-		EXIT_UNSQUASH("failed to allocate created_inode\n");
+		MEM_ERROR();
 
 	memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
 
 	s_ops = read_filesystem_tables();
 	if(s_ops == NULL)
-		EXIT_UNSQUASH("failed to read file system tables\n");
+		MEM_ERROR();
 
 	if(follow_symlinks) {
 		for(n = i + 1; n < argc; n++) {

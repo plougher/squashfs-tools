@@ -71,20 +71,17 @@ static int read_fragment_table(long long *table_start)
 
 	fragment_table_index = malloc(length);
 	if(fragment_table_index  == NULL)
-		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
-			"fragment table index\n");
+		MEM_ERROR();
 
 	fragment_table = malloc(bytes);
 	if(fragment_table == NULL)
-		EXIT_UNSQUASH("read_fragment_table: failed to allocate "
-			"fragment table\n");
+		MEM_ERROR();
 
 	if(swap) {
 		 unsigned int *sfragment_table_index = malloc(length);
 
 		if(sfragment_table_index == NULL)
-			EXIT_UNSQUASH("read_fragment_table: failed to allocate "
-				"fragment table index\n");
+			MEM_ERROR();
 
 		 res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
 			length, sfragment_table_index);
@@ -261,8 +258,8 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 			i.symlink = malloc(inodep->symlink_size + 1);
 			if(i.symlink == NULL)
-				EXIT_UNSQUASH("read_inode: failed to malloc "
-					"symlink data\n");
+				MEM_ERROR();
+
 			strncpy(i.symlink, block_ptr +
 				sizeof(squashfs_symlink_inode_header_2),
 				inodep->symlink_size);
@@ -318,7 +315,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 
 	dir = malloc(sizeof(struct dir));
 	if(dir == NULL)
-		EXIT_UNSQUASH("squashfs_opendir: malloc failed!\n");
+		MEM_ERROR();
 
 	dir->dir_count = 0;
 	dir->cur_entry = 0;
@@ -400,8 +397,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 				new_dir = realloc(dir->dirs, (dir->dir_count +
 					DIR_ENT_SIZE) * sizeof(struct dir_ent));
 				if(new_dir == NULL)
-					EXIT_UNSQUASH("squashfs_opendir: "
-						"realloc failed!\n");
+					MEM_ERROR();
 				dir->dirs = new_dir;
 			}
 			strcpy(dir->dirs[dir->dir_count].name, dire->name);

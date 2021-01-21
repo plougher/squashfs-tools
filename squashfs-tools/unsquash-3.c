@@ -40,8 +40,7 @@ static long long *salloc_index_table(int indexes)
 		long long *table = realloc(alloc_table, length);
 
 		if(table == NULL && length !=0 )
-			EXIT_UNSQUASH("alloc_index_table: failed to allocate "
-				"index table\n");
+			MEM_ERROR();
 
 		alloc_table = table;
 		alloc_size = length;
@@ -288,8 +287,8 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 			i.symlink = malloc(inodep->symlink_size + 1);
 			if(i.symlink == NULL)
-				EXIT_UNSQUASH("read_inode: failed to malloc "
-					"symlink data\n");
+				MEM_ERROR();
+
 			strncpy(i.symlink, block_ptr +
 				sizeof(squashfs_symlink_inode_header_3),
 				inodep->symlink_size);
@@ -344,7 +343,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 
 	dir = malloc(sizeof(struct dir));
 	if(dir == NULL)
-		EXIT_UNSQUASH("squashfs_opendir: malloc failed!\n");
+		MEM_ERROR();
 
 	dir->dir_count = 0;
 	dir->cur_entry = 0;
@@ -427,8 +426,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 				new_dir = realloc(dir->dirs, (dir->dir_count +
 					DIR_ENT_SIZE) * sizeof(struct dir_ent));
 				if(new_dir == NULL)
-					EXIT_UNSQUASH("squashfs_opendir: "
-						"realloc failed!\n");
+					MEM_ERROR();
 				dir->dirs = new_dir;
 			}
 			strcpy(dir->dirs[dir->dir_count].name, dire->name);

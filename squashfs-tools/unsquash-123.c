@@ -48,18 +48,14 @@ int read_ids(int ids, long long start, long long end, unsigned int **id_table)
 	TRACE("read_ids: no_ids %d\n", ids);
 
 	*id_table = malloc(length);
-	if(*id_table == NULL) {
-		ERROR("read_ids: failed to allocate uid/gid table\n");
-		return FALSE;
-	}
+	if(*id_table == NULL)
+		MEM_ERROR();
 
 	if(swap) {
 		unsigned int *sid_table = malloc(length);
 
-		if(sid_table == NULL) {
-			ERROR("read_ids: failed to allocate uid/gid table\n");
-			return FALSE;
-		}
+		if(sid_table == NULL)
+			MEM_ERROR();
 
 		res = read_fs_bytes(fd, start, length, sid_table);
 		if(res == FALSE) {
