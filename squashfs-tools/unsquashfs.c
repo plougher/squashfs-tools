@@ -2957,7 +2957,7 @@ int main(int argc, char *argv[])
 		if(*argv[i] != '-')
 			break;
 		if(strcmp(argv[i], "-follow-symlinks") == 0 ||
-				strcmp(argv[i], "-f") == 0 ||
+				strcmp(argv[i], "-follow") == 0 ||
 				strcmp(argv[i], "-L") == 0)
 			follow_symlinks = TRUE;
 		else if(strcmp(argv[i], "-UTC") == 0)
@@ -3129,7 +3129,7 @@ options:
 			ERROR("\t-max[-depth] <levels>\tdescend at most "
 				"<levels> of directories when"
 				"\n\t\t\t\tunsquashing or listing\n");
-			ERROR("\t-f[ollow-symlinks]\tfollow symlinks in extract "
+			ERROR("\t-follow[-symlinks]\tfollow symlinks in extract "
 				"files, and add all\n\t\t\t\tfiles/symlinks "
 				"needed to resolve extract file\n");
 			ERROR("\t-q[uiet]\t\tno verbose output\n");
