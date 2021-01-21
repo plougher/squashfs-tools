@@ -394,7 +394,7 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 						sizeof(struct xattr_list));
 			if(xattr_list == NULL) {
 				ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
-				failed = FALSE;
+				*failed = FALSE;
 				return NULL;
 			}
 		}
@@ -412,6 +412,7 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 			continue;
 		} else if(res == -1) {
 			ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
+			*failed = FALSE;
 			return NULL;
 		}
 
