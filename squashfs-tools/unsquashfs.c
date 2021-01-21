@@ -80,6 +80,7 @@ int strict_errors = FALSE;
 int use_localtime = TRUE;
 int max_depth = -1; /* unlimited */
 int follow_symlinks = FALSE;
+int no_wildcards = FALSE;
 
 int lookup_type[] = {
 	0,
@@ -1517,7 +1518,9 @@ int matches(struct pathnames *paths, char *name, struct pathnames **new)
 		for(i = 0; i < path->names; i++) {
 			int match;
 
-			if(use_regex)
+			if(no_wildcards)
+				match = strcmp(path->name[i].name, name) == 0;
+			else if(use_regex)
 				match = regexec(path->name[i].preg, name,
 					(size_t) 0, NULL, 0) == 0;
 			else
@@ -2960,6 +2963,9 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-follow") == 0 ||
 				strcmp(argv[i], "-L") == 0)
 			follow_symlinks = TRUE;
+		else if(strcmp(argv[i], "-no-wildcards") == 0 ||
+				strcmp(argv[i], "-no-wild") == 0)
+			no_wildcards = TRUE;
 		else if(strcmp(argv[i], "-UTC") == 0)
 			use_localtime = FALSE;
 		else if(strcmp(argv[i], "-strict-errors") == 0 ||
@@ -3108,6 +3114,9 @@ int main(int argc, char *argv[])
 	if(strict_errors && ignore_errors)
 		EXIT_UNSQUASH("Both -strict-errors and -ignore-errors should not be set\n");
 
+	if(no_wildcards && use_regex)
+		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be set\n");
+
 #ifdef SQUASHFS_TRACE
 	/*
 	 * Disable progress bar if full debug tracing is enabled.
@@ -3183,6 +3192,8 @@ options:
 			ERROR("\t-fr[ag-queue] <size>\tSet fragment queue to "
 				"<size> Mbytes.  Default\n\t\t\t\t%d Mbytes\n",
 				FRAGMENT_BUFFER_DEFAULT);
+			ERROR("\t-no-wild[cards]\t\tdo not use wildcard matching"
+				" in extract names\n");
 			ERROR("\t-r[egex]\t\ttreat extract names as POSIX "
 				"regular expressions\n");
 			ERROR("\t\t\t\trather than use the default shell "
