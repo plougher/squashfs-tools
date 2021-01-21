@@ -1685,6 +1685,10 @@ void add_symlink(struct directory_stack *stack, char *name)
  * dereferenced canonicalised pathname.  Return that and the pathnames
  * of all symlinks found during the walk.
  *
+ * follow_path (-follow-symlinks option) implies no wildcard matching,
+ * due to the fact that with wildcards there is no single canonical pathame
+ * to be found.  Many pathnames may match or none at all.
+ *
  * If follow_path fails to walk a pathname either because a component
  * doesn't exist, it is a non directory component when a directory
  * component is expected, a symlink with an absolute path is encountered,
@@ -2961,9 +2965,10 @@ int main(int argc, char *argv[])
 			break;
 		if(strcmp(argv[i], "-follow-symlinks") == 0 ||
 				strcmp(argv[i], "-follow") == 0 ||
-				strcmp(argv[i], "-L") == 0)
+				strcmp(argv[i], "-L") == 0) {
 			follow_symlinks = TRUE;
-		else if(strcmp(argv[i], "-no-wildcards") == 0 ||
+			no_wildcards = TRUE;
+		} else if(strcmp(argv[i], "-no-wildcards") == 0 ||
 				strcmp(argv[i], "-no-wild") == 0)
 			no_wildcards = TRUE;
 		else if(strcmp(argv[i], "-UTC") == 0)
@@ -3140,7 +3145,8 @@ options:
 				"\n\t\t\t\tunsquashing or listing\n");
 			ERROR("\t-follow[-symlinks]\tfollow symlinks in extract "
 				"files, and add all\n\t\t\t\tfiles/symlinks "
-				"needed to resolve extract file\n");
+				"needed to resolve extract file.\n\t\t\t\t"
+				"Implies -no-wildcards\n");
 			ERROR("\t-q[uiet]\t\tno verbose output\n");
 			ERROR("\t-n[o-progress]\t\tdon't display the progress "
 				"bar\n");
