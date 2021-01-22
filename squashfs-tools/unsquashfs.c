@@ -80,6 +80,7 @@ int strict_errors = FALSE;
 int use_localtime = TRUE;
 int max_depth = -1; /* unlimited */
 int follow_symlinks = FALSE;
+int missing_symlinks = FALSE;
 int no_wildcards = FALSE;
 
 int lookup_type[] = {
@@ -2968,7 +2969,10 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-L") == 0) {
 			follow_symlinks = TRUE;
 			no_wildcards = TRUE;
-		} else if(strcmp(argv[i], "-no-wildcards") == 0 ||
+		} else if(strcmp(argv[i], "missing-symlinks") == 0 ||
+				strcmp(argv[i], "-missing") == 0)
+			missing_symlinks = TRUE;
+		else if(strcmp(argv[i], "-no-wildcards") == 0 ||
 				strcmp(argv[i], "-no-wild") == 0)
 			no_wildcards = TRUE;
 		else if(strcmp(argv[i], "-UTC") == 0)
@@ -3122,6 +3126,11 @@ int main(int argc, char *argv[])
 	if(no_wildcards && use_regex)
 		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be set\n");
 
+	if(missing_symlinks && !follow_symlinks) {
+		follow_symlinks = TRUE;
+		no_wildcards = TRUE;
+	}
+
 #ifdef SQUASHFS_TRACE
 	/*
 	 * Disable progress bar if full debug tracing is enabled.
@@ -3147,6 +3156,9 @@ options:
 				"files, and add all\n\t\t\t\tfiles/symlinks "
 				"needed to resolve extract file.\n\t\t\t\t"
 				"Implies -no-wildcards\n");
+			ERROR("\t-missing[-symlinks]\tUnsquashfs will abort ");
+			ERROR("if any symlink can't be\n\t\t\t\tresolved in");
+			ERROR("-follow-symlinks\n");
 			ERROR("\t-q[uiet]\t\tno verbose output\n");
 			ERROR("\t-n[o-progress]\t\tdon't display the progress "
 				"bar\n");
@@ -3300,7 +3312,13 @@ options:
 				1, 0, stack);
 
 			if(!exists) {
-				ERROR("Extract filename %s can't be resolved\n", argv[n]);
+				if(missing_symlinks)
+					EXIT_UNSQUASH("Extract filename %s "
+						"can't be resolved\n", argv[n]);
+				else
+					ERROR("Extract filename %s can't be "
+						"resolved\n", argv[n]);
+
 				path = add_path(path, argv[n], argv[n]);
 				free_stack(stack);
 				continue;
