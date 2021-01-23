@@ -3152,18 +3152,18 @@ options:
 			ERROR("\t-max[-depth] <levels>\tdescend at most "
 				"<levels> of directories when"
 				"\n\t\t\t\tunsquashing or listing\n");
-			ERROR("\t-follow[-symlinks]\tfollow symlinks in extract "
-				"files, and add all\n\t\t\t\tfiles/symlinks "
+			ERROR("\t-follow[-symlinks]\tfollow symlinks in extract"
+				" files, and add all\n\t\t\t\tfiles/symlinks "
 				"needed to resolve extract file.\n\t\t\t\t"
 				"Implies -no-wildcards\n");
-			ERROR("\t-missing[-symlinks]\tUnsquashfs will abort ");
-			ERROR("if any symlink can't be\n\t\t\t\tresolved in");
-			ERROR("-follow-symlinks\n");
+			ERROR("\t-missing[-symlinks]\tUnsquashfs will abort "
+				"if any symlink can't be\n\t\t\t\tresolved in"
+				"-follow-symlinks\n");
 			ERROR("\t-q[uiet]\t\tno verbose output\n");
 			ERROR("\t-n[o-progress]\t\tdon't display the progress "
 				"bar\n");
-			ERROR("\t-no[-xattrs]\t\tdon't extract xattrs in file system"
-				NOXOPT_STR"\n");
+			ERROR("\t-no[-xattrs]\t\tdon't extract xattrs in file "
+				"system" NOXOPT_STR"\n");
 			ERROR("\t-x[attrs]\t\textract xattrs in file system"
 				XOPT_STR "\n");
 			ERROR("\t-u[ser-xattrs]\t\tonly extract user xattrs in "
@@ -3182,36 +3182,42 @@ options:
 			ERROR("\t-ll[s]\t\t\tlist filesystem with file "
 				"attributes (like\n");
 			ERROR("\t\t\t\tls -l output), but don't unsquash\n");
-			ERROR("\t-lln[umeric]\t\t-lls but with numeric uids and gids\n");
-			ERROR("\t-lc\t\t\tlist filesystem concisely, displaying only"
-				" files\n\t\t\t\tand empty directories.  Don't unsquash\n");
-			ERROR("\t-llc\t\t\tlist filesystem concisely with file attributes,"
-				"\n\t\t\t\tdisplaying only files and empty directories.\n\t\t\t\tDon't unsquash\n");
-			ERROR("\t-o[ffset] <bytes>\tskip <bytes> at start of <dest>\n");
-			ERROR("\t\t\t\tOptionally a suffix of K, M or G can be"
-				" given to specify\n\t\t\t\tKbytes, Mbytes or"
-				" Gbytes respectively.\n");
-			ERROR("\t\t\t\tDefault 0 bytes.\n");
+			ERROR("\t-lln[umeric]\t\t-lls but with numeric uids "
+				"and gids\n");
+			ERROR("\t-lc\t\t\tlist filesystem concisely, displaying"
+				" only files\n\t\t\t\tand empty directories.  "
+				"Don't unsquash\n");
+			ERROR("\t-llc\t\t\tlist filesystem concisely with file"
+				" attributes,\n\t\t\t\tdisplaying only files "
+				"and empty directories.\n\t\t\t\tDon't"
+				" unsquash\n");
+			ERROR("\t-o[ffset] <bytes>\tskip <bytes> at start of "
+				"<dest>.  Optionally a\n\t\t\t\tsuffix of "
+				"K, M or G can be given to specify "
+				"\n\t\t\t\tKbytes, Mbytes or Gbytes "
+				"respectively (default\n\t\t\t\t0 bytes).\n");
 			ERROR("\t-f[orce]\t\tif file already exists then "
 				"overwrite\n");
-			ERROR("\t-ig[nore-errors]\tTreat errors writing files "
-				"to output as non-fatal\n");
-			ERROR("\t-st[rict-errors]\tTreat all errors as fatal\n");
+			ERROR("\t-ig[nore-errors]\ttreat errors writing files "
+				"to output as\n\t\t\t\tnon-fatal\n");
+			ERROR("\t-st[rict-errors]\ttreat all errors as fatal\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
 				"information\n");
-			ERROR("\t-UTC\t\t\tUse UTC rather than local time zone when displaying time\n");
-			ERROR("\t-mkfs-time\t\tdisplay filesystem superblock time\n");
+			ERROR("\t-UTC\t\t\tuse UTC rather than local time "
+				"zone when\n\t\t\t\tdisplaying time\n");
+			ERROR("\t-mkfs-time\t\tdisplay filesystem superblock "
+				"time\n");
 			ERROR("\t-fstime\t\t\tsynonym for -mkfs-time\n");
 			ERROR("\t-e[f] <extract file>\tlist of directories or "
 				"files to extract.\n\t\t\t\tOne per line\n");
-			ERROR("\t-da[ta-queue] <size>\tSet data queue to "
+			ERROR("\t-da[ta-queue] <size>\tset data queue to "
 				"<size> Mbytes.  Default %d\n\t\t\t\tMbytes\n",
 				DATA_BUFFER_DEFAULT);
-			ERROR("\t-fr[ag-queue] <size>\tSet fragment queue to "
+			ERROR("\t-fr[ag-queue] <size>\tset fragment queue to "
 				"<size> Mbytes.  Default\n\t\t\t\t%d Mbytes\n",
 				FRAGMENT_BUFFER_DEFAULT);
-			ERROR("\t-no-wild[cards]\t\tdo not use wildcard matching"
-				" in extract names\n");
+			ERROR("\t-no-wild[cards]\t\tdo not use wildcard "
+				"matching in extract names\n");
 			ERROR("\t-r[egex]\t\ttreat extract names as POSIX "
 				"regular expressions\n");
 			ERROR("\t\t\t\trather than use the default shell "
