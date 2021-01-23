@@ -82,6 +82,7 @@ int max_depth = -1; /* unlimited */
 int follow_symlinks = FALSE;
 int missing_symlinks = FALSE;
 int no_wildcards = FALSE;
+int set_exit_code = TRUE;
 
 int lookup_type[] = {
 	0,
@@ -2997,7 +2998,10 @@ int main(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-follow-symlinks") == 0 ||
+		if(strcmp(argv[i], "-no-exit-code") == 0 ||
+				strcmp(argv[i], "-no-exit") == 0)
+			set_exit_code = FALSE;
+		else if(strcmp(argv[i], "-follow-symlinks") == 0 ||
 				strcmp(argv[i], "-follow") == 0 ||
 				strcmp(argv[i], "-L") == 0) {
 			follow_symlinks = TRUE;
@@ -3240,6 +3244,8 @@ options:
 			ERROR("\t-ig[nore-errors]\ttreat errors writing files "
 				"to output as\n\t\t\t\tnon-fatal\n");
 			ERROR("\t-st[rict-errors]\ttreat all errors as fatal\n");
+			ERROR("\t-no-exit[-code]\t\tdon't set exit code "
+				"(to nonzero) on non-fatal\n\t\t\t\terrors\n");
 			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
 				"information\n");
 			ERROR("\t-UTC\t\t\tuse UTC rather than local time "
@@ -3393,7 +3399,7 @@ options:
 	if(!quiet || progress) {
 		res = pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths, 1);
-		if(res == FALSE)
+		if(res == FALSE && set_exit_code)
 			exit_code = 1;
 
 		memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
@@ -3413,12 +3419,12 @@ options:
 
 	res = dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths, 1);
-	if(res == FALSE)
+	if(res == FALSE && set_exit_code)
 		exit_code = 1;
 
 	queue_put(to_writer, NULL);
 	res = (long) queue_get(from_writer);
-	if(res == TRUE)
+	if(res == TRUE && set_exit_code)
 		exit_code = 1;
 
 	disable_progress_bar();
