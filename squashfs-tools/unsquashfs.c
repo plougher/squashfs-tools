@@ -346,8 +346,9 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 
 	if(entry) {
 		/*
- 		 * found the block in the cache.  If the block is currently unused
-		 * remove it from the free list and increment cache used count.
+		 * found the block in the cache.  If the block is currently
+		 * unused remove it from the free list and increment cache
+		 * used count.
  		 */
 		if(entry->used == 0) {
 			cache->used ++;
@@ -762,7 +763,8 @@ void *read_inode_table(long long start, long long end)
 	 *
 	 * Always round to a multiple of SQUASHFS_METADATA_SIZE
 	 */
-	alloc_size = ((end - start) + SQUASHFS_METADATA_SIZE) & ~(SQUASHFS_METADATA_SIZE - 1);
+	alloc_size = ((end - start) + SQUASHFS_METADATA_SIZE) &
+						~(SQUASHFS_METADATA_SIZE - 1);
 
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
@@ -813,22 +815,23 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 	struct utimbuf times = { time, time };
 
 	if(utime(pathname, &times) == -1) {
-		EXIT_UNSQUASH_STRICT("set_attributes: failed to set time on %s, because %s\n",
-			pathname, strerror(errno));
+		EXIT_UNSQUASH_STRICT("set_attributes: failed to set time on "
+			"%s, because %s\n", pathname, strerror(errno));
 		return FALSE;
 	}
 
 	if(root_process) {
 		if(chown(pathname, uid, guid) == -1) {
-			EXIT_UNSQUASH_STRICT("set_attributes: failed to change uid and gids "
-				"on %s, because %s\n", pathname,
+			EXIT_UNSQUASH_STRICT("set_attributes: failed to change"
+				" uid and gids on %s, because %s\n", pathname,
 				strerror(errno));
 			return FALSE;
 		}
 	} else
 		mode &= ~06000;
 
-	if((set_mode || (mode & 07000)) && chmod(pathname, (mode_t) mode) == -1) {
+	if((set_mode || (mode & 07000)) &&
+					chmod(pathname, (mode_t) mode) == -1) {
 		/*
 		 * Some filesystems require root privileges to use the sticky
 		 * bit. If we're not root and chmod() failed with EPERM when the
@@ -837,8 +840,9 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 		 */
 		if (root_process || errno != EPERM || !(mode & 01000) ||
 				chmod(pathname, (mode_t) (mode & ~01000)) == -1) {
-			EXIT_UNSQUASH_STRICT("set_attributes: failed to change mode %s, because %s\n",
-				pathname, strerror(errno));
+			EXIT_UNSQUASH_STRICT("set_attributes: failed to change"
+				" mode %s, because %s\n", pathname,
+				strerror(errno));
 			return FALSE;
 		}
 	}
@@ -1001,8 +1005,8 @@ int write_file(struct inode *inode, char *pathname)
 	file_fd = open_wait(pathname, O_CREAT | O_WRONLY |
 		(force ? O_TRUNC : 0), (mode_t) inode->mode & 0777);
 	if(file_fd == -1) {
-		EXIT_UNSQUASH_IGNORE("write_file: failed to create file %s, because %s\n",
-			pathname, strerror(errno));
+		EXIT_UNSQUASH_IGNORE("write_file: failed to create file %s,"
+			" because %s\n", pathname, strerror(errno));
 		return FALSE;
 	}
 
@@ -1072,8 +1076,8 @@ int create_inode(char *pathname, struct inode *i)
 			unlink(pathname);
 
 		if(link(created_inode[i->inode_number - 1], pathname) == -1) {
-			EXIT_UNSQUASH_IGNORE("create_inode: failed to create hardlink, "
-				"because %s\n", strerror(errno));
+			EXIT_UNSQUASH_IGNORE("create_inode: failed to create"
+				" hardlink, because %s\n", strerror(errno));
 			return FALSE;
 		}
 
@@ -1107,18 +1111,18 @@ int create_inode(char *pathname, struct inode *i)
 
 			res = symlink(i->symlink, pathname);
 			if(res == -1) {
-				EXIT_UNSQUASH_STRICT("create_inode: failed to create symlink "
-					"%s, because %s\n", pathname,
-					strerror(errno));
+				EXIT_UNSQUASH_STRICT("create_inode: failed to"
+					" create symlink %s, because %s\n",
+					pathname, strerror(errno));
 				goto failed;
 			}
 
 			res = utimensat(AT_FDCWD, pathname, times,
 					AT_SYMLINK_NOFOLLOW);
 			if(res == -1) {
-				EXIT_UNSQUASH_STRICT("create_inode: failed to set time on "
-					"%s, because %s\n", pathname,
-					strerror(errno));
+				EXIT_UNSQUASH_STRICT("create_inode: failed to"
+					" set time on %s, because %s\n",
+					pathname, strerror(errno));
 			}
 
 			res = write_xattr(pathname, i->xattr);
@@ -1128,10 +1132,10 @@ int create_inode(char *pathname, struct inode *i)
 			if(root_process) {
 				res = lchown(pathname, i->uid, i->gid);
 				if(res == -1) {
-					EXIT_UNSQUASH_STRICT("create_inode: failed to change "
-						"uid and gids on %s, because "
-						"%s\n", pathname,
-						strerror(errno));
+					EXIT_UNSQUASH_STRICT("create_inode: "
+						"failed to change uid and "
+						"gids on %s, because %s\n",
+						pathname, strerror(errno));
 					failed = TRUE;
 				}
 			}
@@ -1157,17 +1161,19 @@ int create_inode(char *pathname, struct inode *i)
 				if(force)
 					unlink(pathname);
 
-				/* Ripped from new_decode_dev() in kernel sources. */
+				/* Based on new_decode_dev() in kernel source */
 				major = (i->data & 0xfff00) >> 8;
-				minor = (i->data & 0xff) | ((i->data >> 12) & 0xfff00);
+				minor = (i->data & 0xff) | ((i->data >> 12)
+								& 0xfff00);
 
-				res = mknod(pathname, chrdev ? S_IFCHR : S_IFBLK,
-						makedev(major, minor));
+				res = mknod(pathname, chrdev ? S_IFCHR :
+						S_IFBLK, makedev(major, minor));
 				if(res == -1) {
-					EXIT_UNSQUASH_STRICT("create_inode: failed to create "
-						"%s device %s, because %s\n",
-						chrdev ? "character" : "block",
-						pathname, strerror(errno));
+					EXIT_UNSQUASH_STRICT("create_inode: "
+						"failed to create %s device "
+						"%s, because %s\n", chrdev ?
+						"character" : "block", pathname,
+						strerror(errno));
 					goto failed;
 				}
 				res = set_attributes(pathname, i->mode, i->uid,
@@ -1177,10 +1183,10 @@ int create_inode(char *pathname, struct inode *i)
 
 				dev_count ++;
 			} else {
-				EXIT_UNSQUASH_STRICT("create_inode: could not create %s "
-					"device %s, because you're not "
-					"superuser!\n", chrdev ? "character" :
-					"block", pathname);
+				EXIT_UNSQUASH_STRICT("create_inode: could not"
+					" create %s device %s, because you're"
+					" not superuser!\n", chrdev ?
+					"character" : "block", pathname);
 				goto failed;
 			}
 			break;
@@ -1211,16 +1217,16 @@ int create_inode(char *pathname, struct inode *i)
 			TRACE("create_inode: socket\n");
 
 			if (mknod(pathname, S_IFSOCK | i->mode, 0) == -1) {
-				ERROR("create_inode: failed to create socket %s, "
-					"because %s\n",
-					pathname, strerror(errno));
+				ERROR("create_inode: failed to create socket "
+					"%s, because %s\n", pathname,
+					strerror(errno));
 				goto failed;
 			}
 			socket_count++;
 			break;
 		default:
-			EXIT_UNSQUASH_STRICT("Unknown inode type %d in create_inode_table!\n",
-				i->type);
+			EXIT_UNSQUASH_STRICT("Unknown inode type %d in "
+				"create_inode_table!\n", i->type);
 			return FALSE;
 	}
 
@@ -1234,8 +1240,8 @@ failed:
 	 * any future hard links to it fail with a file not found, which
 	 * is correct as the file *is* missing.
 	 *
-	 * If we don't mark it here as created, then any future hard links will try
-	 * to create the file as a separate unlinked file.
+	 * If we don't mark it here as created, then any future hard links
+	 * will try to create the file as a separate unlinked file.
 	 * If we've had some transitory errors, this may produce files
 	 * in various states, which should be hard-linked, but are not.
 	 */
@@ -1266,11 +1272,13 @@ void *read_directory_table(long long start, long long end)
 	 *
 	 * Always round to a multiple of SQUASHFS_METADATA_SIZE
 	 */
-	alloc_size = ((end - start) + SQUASHFS_METADATA_SIZE) & ~(SQUASHFS_METADATA_SIZE - 1);
+	alloc_size = ((end - start) + SQUASHFS_METADATA_SIZE)
+					& ~(SQUASHFS_METADATA_SIZE - 1);
 
 	while(start < end) {
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
-			directory_table = realloc(directory_table, size += alloc_size);
+			directory_table = realloc(directory_table,
+							size += alloc_size);
 			if(directory_table == NULL)
 				MEM_ERROR();
 		}
@@ -1757,18 +1765,20 @@ int follow_path(char *path, char *name, unsigned int start_block,
 
 				/* Detect circular symlinks */
 				if(symlinks >= MAX_FOLLOW_SYMLINKS) {
-					ERROR("Too many levels of symbolic links\n");
+					ERROR("Too many levels of symbolic "
+								"links\n");
 					traversed = FALSE;
 					free(symlink);
 					break;
 				}
 
-				/* Add symlink to list of symlinks found traversing
-				 * the pathname */
+				/* Add symlink to list of symlinks found
+				 * traversing the pathname */
 				add_symlink(stack, name);
 
-				traversed = follow_path(symlink, "", start_block,
-					offset, depth, symlinks + 1, stack);
+				traversed = follow_path(symlink, "",
+					start_block, offset, depth,
+					symlinks + 1, stack);
 
 				free(symlink);
 
@@ -1781,20 +1791,24 @@ int follow_path(char *path, char *name, unsigned int start_block,
 					 * have left us at a directory to do
 					 * this */
 					if(path[0] != '\0') {
-						if(stack->type != SQUASHFS_DIR_TYPE) {
+						if(stack->type !=
+							SQUASHFS_DIR_TYPE) {
 							traversed = FALSE;
 							break;
 						}
 
-						/* "Jump" to the traversed point */
+						/* "Jump" to the traversed
+						 * point */
 						depth = stack->size;
 						start_block = stack->start_block;
 						offset = stack->offset;
 						name = stack->name;
 
-						/* continue following the path */
-						traversed = follow_path(path, name, start_block,
-							offset, depth + 1, symlinks, stack);
+						/* continue following path */
+						traversed = follow_path(path,
+							name, start_block,
+							offset, depth + 1,
+							symlinks, stack);
 					}
 				}
 
@@ -1865,7 +1879,8 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			MEM_ERROR();
 
 		if(type == SQUASHFS_DIR_TYPE) {
-			res = pre_scan(parent_name, start_block, offset, new, depth + 1);
+			res = pre_scan(parent_name, start_block, offset, new,
+								depth + 1);
 			if(res == FALSE)
 				scan_res = FALSE;
 		} else if(new == NULL) {
@@ -1926,9 +1941,9 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			 * forcing and the error is -EEXIST
 			 */
 			if(!force || errno != EEXIST) {
-				EXIT_UNSQUASH_IGNORE("dir_scan: failed to make directory %s, "
-					"because %s\n", parent_name,
-					strerror(errno));
+				EXIT_UNSQUASH_IGNORE("dir_scan: failed to make"
+					" directory %s, because %s\n",
+					parent_name, strerror(errno));
 				squashfs_closedir(dir);
 				return FALSE;
 			} 
@@ -1939,9 +1954,10 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			 */
 			res = chmod(parent_name, S_IRUSR|S_IWUSR|S_IXUSR);
 			if (res == -1) {
-				EXIT_UNSQUASH_IGNORE("dir_scan: failed to change permissions "
-					"for directory %s, because %s\n",
-					parent_name, strerror(errno));
+				EXIT_UNSQUASH_IGNORE("dir_scan: failed to "
+					"change permissions for directory %s,"
+					" because %s\n", parent_name,
+					strerror(errno));
 				squashfs_closedir(dir);
 				return FALSE;
 			}
@@ -1949,12 +1965,13 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	}
 
 	if(max_depth == -1 || depth <= max_depth) {
-		while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
+		while(squashfs_readdir(dir, &name, &start_block, &offset,
+								&type)) {
 			char *pathname;
 			int res;
 
-			TRACE("dir_scan: name %s, start_block %d, offset %d, type %d\n",
-				name, start_block, offset, type);
+			TRACE("dir_scan: name %s, start_block %d, offset %d,"
+				" type %d\n", name, start_block, offset, type);
 
 
 			if(!matches(paths, name, &new))
@@ -1965,7 +1982,8 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 				MEM_ERROR();
 
 			if(type == SQUASHFS_DIR_TYPE) {
-				res = dir_scan(pathname, start_block, offset, new, depth + 1);
+				res = dir_scan(pathname, start_block, offset,
+								new, depth + 1);
 				if(res == FALSE)
 					scan_res = FALSE;
 				free(pathname);
@@ -1984,7 +2002,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 				}
 
 				if(i->type == SQUASHFS_SYMLINK_TYPE ||
-						i->type == SQUASHFS_LSYMLINK_TYPE)
+					i->type == SQUASHFS_LSYMLINK_TYPE)
 					free(i->symlink);
 			} else
 				free(pathname);
@@ -2006,7 +2024,8 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 void squashfs_stat(char *source)
 {
 	time_t mkfs_time = (time_t) sBlk.s.mkfs_time;
-	struct tm *t = use_localtime ? localtime(&mkfs_time) : gmtime(&mkfs_time);
+	struct tm *t = use_localtime ? localtime(&mkfs_time) :
+					gmtime(&mkfs_time);
 	char *mkfs_str = asctime(t);
 
 #if __BYTE_ORDER == __BIG_ENDIAN
@@ -2029,16 +2048,19 @@ void squashfs_stat(char *source)
 		printf("Compression %s\n", comp->name);
 
 		if(SQUASHFS_COMP_OPTS(sBlk.s.flags)) {
-			char buffer[SQUASHFS_METADATA_SIZE] __attribute__ ((aligned));
+			char buffer[SQUASHFS_METADATA_SIZE]
+						__attribute__ ((aligned));
 			int bytes;
 
 			if(!comp->supported)
-				printf("\tCould not display compressor options, because %s compression is not supported\n",
-						comp->name);
+				printf("\tCould not display compressor "
+					"options, because %s compression is "
+					"not supported\n", comp->name);
 			else {
 				bytes = read_block(fd, sizeof(sBlk.s), NULL, 0, buffer);
 				if(bytes == 0) {
-					ERROR("Failed to read compressor options\n");
+					ERROR("Failed to read compressor "
+								"options\n");
 					return;
 				}
 
@@ -2381,8 +2403,9 @@ void *writer(void *arg)
 			continue;
 		} else if(file->fd == -1) {
 			/* write attributes for directory file->pathname */
-			res = set_attributes(file->pathname, file->mode, file->uid,
-				file->gid, file->time, file->xattr, TRUE);
+			res = set_attributes(file->pathname, file->mode,
+				file->uid, file->gid, file->time, file->xattr,
+				TRUE);
 			if(res == FALSE)
 				exit_code = TRUE;
 			free(file->pathname);
@@ -2406,16 +2429,21 @@ void *writer(void *arg)
 			cache_block_wait(block->buffer);
 
 			if(block->buffer->error) {
-				EXIT_UNSQUASH_IGNORE("writer: failed to read/uncompress file %s\n", file->pathname);
+				EXIT_UNSQUASH_IGNORE("writer: failed to "
+					"read/uncompress file %s\n",
+					file->pathname);
 				exit_code = local_fail = TRUE;
 			}
 
 			if(local_fail == FALSE) {
-				res = write_block(file_fd, block->buffer->data +
-					block->offset, block->size, hole, file->sparse);
+				res = write_block(file_fd,
+					block->buffer->data + block->offset,
+					block->size, hole, file->sparse);
 
 				if(res == FALSE) {
-					EXIT_UNSQUASH_IGNORE("writer: failed to write file %s\n", file->pathname);
+					EXIT_UNSQUASH_IGNORE("writer: failed "
+						"to write file %s\n",
+						file->pathname);
 					exit_code = local_fail = TRUE;
 				}
 			}
@@ -2440,21 +2468,25 @@ void *writer(void *arg)
 				hole --;
 				if(write_block(file_fd, "\0", 1, hole,
 						file->sparse) == FALSE) {
-					EXIT_UNSQUASH_IGNORE("writer: failed to write sparse "
-						"data block for file %s\n", file->pathname);
+					EXIT_UNSQUASH_IGNORE("writer: failed "
+						"to write sparse data block "
+						"for file %s\n",
+						file->pathname);
 					exit_code = local_fail = TRUE;
 				}
 			} else if(ftruncate(file_fd, file->file_size) == -1) {
-				EXIT_UNSQUASH_IGNORE("writer: failed to write sparse data "
-					"block for file %s\n", file->pathname);
+				EXIT_UNSQUASH_IGNORE("writer: failed to write "
+					"sparse data block for file %s\n",
+					file->pathname);
 				exit_code = local_fail = TRUE;
 			}
 		}
 
 		close_wake(file_fd);
 		if(local_fail == FALSE) {
-			res = set_attributes(file->pathname, file->mode, file->uid,
-				file->gid, file->time, file->xattr, force);
+			res = set_attributes(file->pathname, file->mode,
+				file->uid, file->gid, file->time, file->xattr,
+				force);
 			if(res == FALSE)
 				exit_code = TRUE;
 		} else
@@ -2532,8 +2564,8 @@ void *progress_thread(void *arg)
 
 		if(progress_enabled) {
 			pthread_mutex_lock(&screen_mutex);
-			progress_bar(sym_count + dev_count +
-				fifo_count + socket_count + cur_blocks, total_inodes -
+			progress_bar(sym_count + dev_count + fifo_count +
+				socket_count + cur_blocks, total_inodes -
 				total_files + total_blocks, columns);
 			pthread_mutex_unlock(&screen_mutex);
 		}
@@ -2727,8 +2759,9 @@ void disable_progress_bar()
 {
 	pthread_mutex_lock(&screen_mutex);
 	if(progress_enabled) {
-		progress_bar(sym_count + dev_count + fifo_count + socket_count + cur_blocks,
-			total_inodes - total_files + total_blocks, columns);
+		progress_bar(sym_count + dev_count + fifo_count + socket_count +
+			cur_blocks, total_inodes - total_files + total_blocks,
+			columns);
 		printf("\n");
 	}
 	progress_enabled = FALSE;
@@ -3108,9 +3141,13 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-regex") == 0 ||
 				strcmp(argv[i], "-r") == 0)
 			use_regex = TRUE;
-		else if(strcmp(argv[i], "-offset") == 0 || strcmp(argv[i], "-o") == 0) {
-			if((++i == argc) || !parse_numberll(argv[i], &start_offset, 1)) {
-				ERROR("%s: %s missing or invalid offset size\n", argv[0], argv[i - 1]);
+		else if(strcmp(argv[i], "-offset") == 0 ||
+				strcmp(argv[i], "-o") == 0) {
+			if((++i == argc) ||
+					!parse_numberll(argv[i], &start_offset,
+									1)) {
+				ERROR("%s: %s missing or invalid offset size\n",
+							argv[0], argv[i - 1]);
 				exit(1);
 			}
 		} else
@@ -3121,10 +3158,12 @@ int main(int argc, char *argv[])
 		progress = FALSE;
 
 	if(strict_errors && ignore_errors)
-		EXIT_UNSQUASH("Both -strict-errors and -ignore-errors should not be set\n");
+		EXIT_UNSQUASH("Both -strict-errors and -ignore-errors should "
+								"not be set\n");
 
 	if(no_wildcards && use_regex)
-		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be set\n");
+		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be "
+								"set\n");
 
 	if(missing_symlinks && !follow_symlinks) {
 		follow_symlinks = TRUE;
@@ -3334,8 +3373,10 @@ options:
 			path = add_path(path, pathname, pathname);
 			free(pathname);
 
-			for(symlink = stack->symlink; symlink; symlink = symlink->next)
-				path = add_path(path, symlink->pathname, symlink->pathname);
+			for(symlink = stack->symlink; symlink;
+						symlink = symlink->next)
+				path = add_path(path, symlink->pathname,
+						symlink->pathname);
 
 			free_stack(stack);
 		}
@@ -3359,11 +3400,12 @@ options:
 		inode_number = 1;
 
 		if(!quiet)  {
-			printf("Parallel unsquashfs: Using %d processor%s\n", processors,
-					processors == 1 ? "" : "s");
+			printf("Parallel unsquashfs: Using %d processor%s\n",
+				processors, processors == 1 ? "" : "s");
 
-			printf("%d inodes (%d blocks) to write\n\n", total_inodes,
-					total_inodes - total_files + total_blocks);
+			printf("%d inodes (%d blocks) to write\n\n",
+				total_inodes,
+				total_inodes - total_files + total_blocks);
 		}
 
 		enable_progress_bar();
