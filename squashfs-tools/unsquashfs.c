@@ -1438,23 +1438,26 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		} else
 			paths->name[i].preg = NULL;
 
-		if(target[0] == '\0')
+		if(target[0] == '\0') {
 			/*
 			 * at leaf pathname component
-			*/
+			 */
 			paths->name[i].paths = NULL;
-		else
+			paths->name[i].type = PATH_TYPE_EXTRACT;
+		} else {
 			/*
 			 * recurse adding child components
 			 */
+			paths->name[i].type = PATH_TYPE_LINK;
 			paths->name[i].paths = add_path(NULL, target, alltarget);
+		}
 	} else {
 		/*
 		 * existing matching entry
 		 */
 		free(targname);
 
-		if(paths->name[i].paths == NULL) {
+		if(paths->name[i].type == PATH_TYPE_EXTRACT) {
 			/*
 			 * No sub-directory which means this is the leaf
 			 * component of a pre-existing extract which subsumes
@@ -1469,6 +1472,7 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 			 */
 			free_path(paths->name[i].paths);
 			paths->name[i].paths = NULL;
+			paths->name[i].type = PATH_TYPE_EXTRACT;
 		} else
 			/*
 			 * recurse adding child components
@@ -1538,7 +1542,7 @@ int matches(struct pathnames *paths, char *name, struct pathnames **new)
 					name, FNM_PATHNAME|FNM_PERIOD|
 					FNM_EXTMATCH) == 0;
 
-			if(match && path->name[i].paths == NULL)
+			if(match && path->name[i].type == PATH_TYPE_EXTRACT)
 				/*
 				 * match on a leaf component, any subdirectories
 				 * will implicitly match, therefore return an
