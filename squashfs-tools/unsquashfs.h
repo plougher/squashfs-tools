@@ -218,9 +218,11 @@ struct pathnames {
 	int count;
 	struct pathname *path[0];
 };
+
 #define PATHS_ALLOC_SIZE 10
 #define PATH_TYPE_LINK 1
 #define PATH_TYPE_EXTRACT 2
+#define PATH_TYPE_EXCLUDE 4
 
 struct directory_level {
 	unsigned int start_block;

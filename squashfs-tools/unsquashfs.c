@@ -1384,17 +1384,25 @@ void free_path(struct pathname *paths)
 }
 
 
-struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
+struct pathname *add_path(struct pathname *paths, int type, char *target,
+							char *alltarget)
 {
 	char *targname;
 	int i, error;
 
-	TRACE("add_path: adding \"%s\" extract file\n", target);
+	if(type == PATH_TYPE_EXTRACT)
+		TRACE("add_path: adding \"%s\" extract file\n", target);
+	else
+		TRACE("add_path: adding \"%s\" exclude file\n", target);
 
 	target = get_component(target, &targname);
 
-	if(target == NULL)
-		EXIT_UNSQUASH("Invalid extract file %s\n", alltarget);
+	if(target == NULL) {
+		if(type == PATH_TYPE_EXTRACT)
+			EXIT_UNSQUASH("Invalid extract file %s\n", alltarget);
+		else
+			EXIT_UNSQUASH("Invalid exclude file %s\n", alltarget);
+	}
 
 	if(paths == NULL) {
 		paths = malloc(sizeof(struct pathname));
@@ -1431,9 +1439,14 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 				char str[1024]; /* overflow safe */
 
 				regerror(error, paths->name[i].preg, str, 1024);
-				EXIT_UNSQUASH("invalid regex %s in export %s, "
-					"because %s\n", targname, alltarget,
-					str);
+				if(type == PATH_TYPE_EXTRACT)
+					EXIT_UNSQUASH("invalid regex %s in extract %s, "
+						"because %s\n", targname, alltarget,
+						str);
+				else
+					EXIT_UNSQUASH("invalid regex %s in exclude %s, "
+						"because %s\n", targname, alltarget,
+						str);
 			}
 		} else
 			paths->name[i].preg = NULL;
@@ -1443,13 +1456,14 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 			 * at leaf pathname component
 			 */
 			paths->name[i].paths = NULL;
-			paths->name[i].type = PATH_TYPE_EXTRACT;
+			paths->name[i].type = type;
 		} else {
 			/*
 			 * recurse adding child components
 			 */
 			paths->name[i].type = PATH_TYPE_LINK;
-			paths->name[i].paths = add_path(NULL, target, alltarget);
+			paths->name[i].paths = add_path(NULL, type, target,
+								alltarget);
 		}
 	} else {
 		/*
@@ -1457,30 +1471,46 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 		 */
 		free(targname);
 
-		if(paths->name[i].type == PATH_TYPE_EXTRACT) {
+		if(paths->name[i].type != PATH_TYPE_LINK) {
 			/*
-			 * No sub-directory which means this is the leaf
-			 * component of a pre-existing extract which subsumes
-			 * the extract currently being added, in which case stop
-			 * adding components
+			 * This is the leaf component of a pre-existing
+			 * extract/exclude which is either the same as the one
+			 * we're adding, or encompasses it (if the one we're
+			 * adding still has some path to walk).  In either case
+			 * we don't need to add this extract/exclude file
 			 */
 		} else if(target[0] == '\0') {
 			/*
-			 * at leaf pathname component and child components exist
-			 * from more specific extracts, delete as they're
-			 * subsumed by this extract
+			 * at leaf pathname component of the extract/exclude
+			 * being added, but, child components exist from more
+			 * specific extracts/excludes.  Delete as they're
+			 * encompassed by this
 			 */
 			free_path(paths->name[i].paths);
 			paths->name[i].paths = NULL;
-			paths->name[i].type = PATH_TYPE_EXTRACT;
+			paths->name[i].type = type;
 		} else
 			/*
 			 * recurse adding child components
 			 */
-			add_path(paths->name[i].paths, target, alltarget);
+			add_path(paths->name[i].paths, type, target, alltarget);
 	}
 
 	return paths;
+}
+
+
+struct pathname *add_extract(struct pathname *paths, char *target,
+							char *alltarget)
+{
+	return add_path(paths, PATH_TYPE_EXTRACT, target, alltarget);
+}
+
+
+struct pathname *add_exclude(struct pathname *paths, char *target,
+							char *alltarget)
+{
+	return add_path(paths, PATH_TYPE_EXCLUDE, target, alltarget);
 }
 
 
@@ -1516,10 +1546,11 @@ void free_subdir(struct pathnames *paths)
 }
 
 
-int matches(struct pathnames *paths, char *name, struct pathnames **new)
+int extract_matches(struct pathnames *paths, char *name, struct pathnames **new)
 {
 	int i, n;
 
+	/* nothing to match, extract */
 	if(paths == NULL) {
 		*new = NULL;
 		return TRUE;
@@ -1578,7 +1609,78 @@ int matches(struct pathnames *paths, char *name, struct pathnames **new)
 
 empty_set:
 	/*
-	 * found matching leaf exclude, return empty search set and return TRUE
+	 * found matching leaf extract, return empty search set and return TRUE
+	 */
+	free_subdir(*new);
+	*new = NULL;
+	return TRUE;
+}
+
+
+int exclude_matches(struct pathnames *paths, char *name, struct pathnames **new)
+{
+	int i, n;
+
+	/* nothing to match, don't exclude */
+	if(paths == NULL) {
+		*new = NULL;
+		return FALSE;
+	}
+
+	*new = init_subdir();
+
+	for(n = 0; n < paths->count; n++) {
+		struct pathname *path = paths->path[n];
+		for(i = 0; i < path->names; i++) {
+			int match;
+
+			if(no_wildcards)
+				match = strcmp(path->name[i].name, name) == 0;
+			else if(use_regex)
+				match = regexec(path->name[i].preg, name,
+					(size_t) 0, NULL, 0) == 0;
+			else
+				match = fnmatch(path->name[i].name,
+					name, FNM_PATHNAME|FNM_PERIOD|
+					FNM_EXTMATCH) == 0;
+
+			if(match && path->name[i].type == PATH_TYPE_EXCLUDE)
+				/*
+				 * match on a leaf component, any subdirectories
+				 * will implicitly match, therefore return an
+				 * empty new search set
+				 */
+				goto empty_set;
+
+			if(match)
+				/*
+				 * match on a non-leaf component, add any
+				 * subdirectories to the new set of
+				 * subdirectories to scan for this name
+				 */
+				*new = add_subdir(*new, path->name[i].paths);
+		}
+	}
+
+	if((*new)->count == 0) {
+		/*
+		 * no matching names found, don't exclude.  Delete empty search
+		 * set, and return FALSE
+		 */
+		free_subdir(*new);
+		*new = NULL;
+		return FALSE;
+	}
+
+	/*
+	 * one or more matches with sub-directories found (no leaf matches),
+	 * return new search set and return FALSE
+	 */
+	return FALSE;
+
+empty_set:
+	/*
+	 * found matching leaf exclude, delete search set and return TRUE
 	 */
 	free_subdir(*new);
 	*new = NULL;
@@ -1852,12 +1954,12 @@ int follow_path(char *path, char *name, unsigned int start_block,
 
 
 int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
-	struct pathnames *paths, int depth)
+	struct pathnames *extracts, struct pathnames *excludes, int depth)
 {
 	unsigned int type;
 	int scan_res = TRUE;
 	char *name;
-	struct pathnames *new;
+	struct pathnames *newt, *newc = NULL;
 	struct inode *i;
 	struct dir *dir;
 
@@ -1876,19 +1978,24 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		TRACE("pre_scan: name %s, start_block %d, offset %d, type %d\n",
 			name, start_block, offset, type);
 
-		if(!matches(paths, name, &new))
+		if(!extract_matches(extracts, name, &newt))
 			continue;
+
+		if(exclude_matches(excludes, name, &newc)) {
+			free_subdir(newt);
+			continue;
+		}
 
 		res = asprintf(&pathname, "%s/%s", parent_name, name);
 		if(res == -1)
 			MEM_ERROR();
 
 		if(type == SQUASHFS_DIR_TYPE) {
-			res = pre_scan(parent_name, start_block, offset, new,
-								depth + 1);
+			res = pre_scan(parent_name, start_block, offset, newt,
+							newc, depth + 1);
 			if(res == FALSE)
 				scan_res = FALSE;
-		} else if(new == NULL) {
+		} else if(newt == NULL) {
 			if(type == SQUASHFS_FILE_TYPE ||
 					type == SQUASHFS_LREG_TYPE) {
 				i = s_ops->read_inode(start_block, offset);
@@ -1903,7 +2010,8 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			total_inodes ++;
 		}
 
-		free_subdir(new);
+		free_subdir(newt);
+		free_subdir(newc);
 		free(pathname);
 	}
 
@@ -1914,12 +2022,12 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 
 
 int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
-	struct pathnames *paths, int depth)
+	struct pathnames *extracts, struct pathnames *excludes, int depth)
 {
 	unsigned int type;
 	int scan_res = TRUE;
 	char *name;
-	struct pathnames *new;
+	struct pathnames *newt, *newc = NULL;
 	struct inode *i;
 	struct dir *dir = s_ops->opendir(start_block, offset, &i);
 
@@ -1979,8 +2087,13 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 				" type %d\n", name, start_block, offset, type);
 
 
-			if(!matches(paths, name, &new))
+			if(!extract_matches(extracts, name, &newt))
 				continue;
+
+			if(exclude_matches(excludes, name, &newc)) {
+				free_subdir(newt);
+				continue;
+			}
 
 			res = asprintf(&pathname, "%s/%s", parent_name, name);
 			if(res == -1)
@@ -1988,11 +2101,11 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 
 			if(type == SQUASHFS_DIR_TYPE) {
 				res = dir_scan(pathname, start_block, offset,
-								new, depth + 1);
+							newt, newc, depth + 1);
 				if(res == FALSE)
 					scan_res = FALSE;
 				free(pathname);
-			} else if(new == NULL) {
+			} else if(newt == NULL) {
 				update_info(pathname);
 
 				i = s_ops->read_inode(start_block, offset);
@@ -2012,7 +2125,8 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			} else
 				free(pathname);
 
-			free_subdir(new);
+			free_subdir(newt);
+			free_subdir(newc);
 		}
 	}
 
@@ -2345,7 +2459,7 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 		if(*name == '\0')
 			continue;
 
-		path = add_path(path, name, name);
+		path = add_extract(path, name, name);
 	}
 
 	if(ferror(fd))
@@ -2355,7 +2469,7 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 	fclose(fd);
 	return path;
 }
-		
+
 
 /*
  * reader thread.  This thread processes read requests queued by the
@@ -2987,8 +3101,8 @@ int main(int argc, char *argv[])
 	char *dest = "squashfs-root";
 	int i, stat_sys = FALSE, version = FALSE, mkfs_time_opt = FALSE;
 	int n;
-	struct pathnames *paths = NULL;
-	struct pathname *path = NULL;
+	struct pathnames *extracts = NULL, *excludes = NULL;
+	struct pathname *extract = NULL, *exclude = NULL;
 	int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
 	int data_buffer_size = DATA_BUFFER_DEFAULT;
 	long res;
@@ -3145,7 +3259,7 @@ int main(int argc, char *argv[])
 					argv[0]);
 				exit(1);
 			}
-			path = process_extract_files(path, argv[i]);
+			extract = process_extract_files(extract, argv[i]);
 		} else if(strcmp(argv[i], "-regex") == 0 ||
 				strcmp(argv[i], "-r") == 0)
 			use_regex = TRUE;
@@ -3377,35 +3491,41 @@ options:
 					ERROR("Extract filename %s can't be "
 						"resolved\n", argv[n]);
 
-				path = add_path(path, argv[n], argv[n]);
+				extract = add_extract(extract, argv[n], argv[n]);
 				free_stack(stack);
 				continue;
 			}
 
 			pathname = stack_pathname(stack, stack->name);
-			path = add_path(path, pathname, pathname);
+			extract = add_extract(extract, pathname, pathname);
 			free(pathname);
 
 			for(symlink = stack->symlink; symlink;
 						symlink = symlink->next)
-				path = add_path(path, symlink->pathname,
+				extract = add_extract(extract, symlink->pathname,
 						symlink->pathname);
 
 			free_stack(stack);
 		}
 	} else {
 		for(n = i + 1; n < argc; n++)
-			path = add_path(path, argv[n], argv[n]);
+			extract = add_extract(extract, argv[n], argv[n]);
 	}
 
-	if(path) {
-		paths = init_subdir();
-		paths = add_subdir(paths, path);
+	if(extract) {
+		extracts = init_subdir();
+		extracts = add_subdir(extracts, extract);
+	}
+
+	if(exclude) {
+		excludes = init_subdir();
+		excludes = add_subdir(excludes, exclude);
 	}
 
 	if(!quiet || progress) {
 		res = pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths, 1);
+			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extracts,
+			excludes, 1);
 		if(res == FALSE && set_exit_code)
 			exit_code = 1;
 
@@ -3425,7 +3545,7 @@ options:
 	}
 
 	res = dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), paths, 1);
+		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extracts, excludes, 1);
 	if(res == FALSE && set_exit_code)
 		exit_code = 1;
 
