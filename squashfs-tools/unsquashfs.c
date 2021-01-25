@@ -3168,6 +3168,9 @@ int main(int argc, char *argv[])
 	if(strict_errors && ignore_errors)
 		EXIT_UNSQUASH("Both -strict-errors and -ignore-errors should "
 								"not be set\n");
+	if(strict_errors && set_exit_code == FALSE)
+		EXIT_UNSQUASH("Both -strict-errors and -no-exit-code should "
+			"not be set.  All errors are fatal\n");
 
 	if(no_wildcards && use_regex)
 		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be "
