@@ -38,7 +38,7 @@
 
 #define BAD_ERROR(s, args...) \
 		do {\
-			progressbar_error("FATAL ERROR:" s, ##args); \
+			progressbar_error("FATAL ERROR: " s, ##args); \
 			exit(1); \
 		} while(0)
 

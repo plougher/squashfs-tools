@@ -61,7 +61,7 @@ extern void prep_exit();
 
 #define BAD_ERROR(s, args...) \
 		do {\
-			progressbar_error("FATAL ERROR:" s, ##args); \
+			progressbar_error("FATAL ERROR: " s, ##args); \
 			EXIT_MKSQUASHFS();\
 		} while(0)
 
