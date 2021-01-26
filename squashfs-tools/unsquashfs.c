@@ -83,6 +83,7 @@ int follow_symlinks = FALSE;
 int missing_symlinks = FALSE;
 int no_wildcards = FALSE;
 int set_exit_code = TRUE;
+int treat_as_excludes = FALSE;
 
 int lookup_type[] = {
 	0,
@@ -3163,7 +3164,9 @@ int main(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-no-exit-code") == 0 ||
+		if(strcmp(argv[i], "-excludes") == 0)
+			treat_as_excludes = TRUE;
+		else if(strcmp(argv[i], "-no-exit-code") == 0 ||
 				strcmp(argv[i], "-no-exit") == 0)
 			set_exit_code = FALSE;
 		else if(strcmp(argv[i], "-follow-symlinks") == 0 ||
@@ -3355,7 +3358,7 @@ int main(int argc, char *argv[])
 		if(!version) {
 options:
 			ERROR("SYNTAX: %s [options] filesystem [directories or "
-				"files to extract]\n", argv[0]);
+				"files to extract or exclude (with -excludes)]\n", argv[0]);
 			ERROR("\t-v[ersion]\t\tprint version, licence and "
 				"copyright information\n");
 			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, "
@@ -3363,6 +3366,7 @@ options:
 			ERROR("\t-max[-depth] <levels>\tdescend at most "
 				"<levels> of directories when"
 				"\n\t\t\t\tunsquashing or listing\n");
+			ERROR("\t-excludes\t\ttreat files on command line as exclude files\n");
 			ERROR("\t-follow[-symlinks]\tfollow symlinks in extract"
 				" files, and add all\n\t\t\t\tfiles/symlinks "
 				"needed to resolve extract file.\n\t\t\t\t"
@@ -3513,7 +3517,10 @@ options:
 	if(s_ops == NULL)
 		MEM_ERROR();
 
-	if(follow_symlinks)
+	if(treat_as_excludes)
+		for(n = i + 1; n < argc; n++)
+			exclude = add_exclude(exclude, argv[n], argv[n]);
+	else if(follow_symlinks)
 		extract = resolve_symlinks(argc - i - 1, argv + i + 1);
 	else
 		for(n = i + 1; n < argc; n++)
