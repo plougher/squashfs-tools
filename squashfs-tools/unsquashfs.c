@@ -3078,6 +3078,53 @@ int parse_number(char *start, int *res)
 }
 
 
+struct pathname *resolve_symlinks(int argc, char *argv[])
+{
+	int n, found;
+	struct directory_stack *stack = create_stack();
+	struct symlink *symlink;
+	char *pathname;
+	struct pathname *path = NULL;
+
+	for(n = 0; n < argc; n++) {
+		/*
+		 * Try to follow the extract file pathname, and
+		 * return the canonicalised pathname, and all
+		 * symlinks necessary to resolve it.
+		 */
+		found = follow_path(argv[n], "",
+			SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
+			1, 0, stack);
+
+		if(!found) {
+			if(missing_symlinks)
+				EXIT_UNSQUASH("Extract filename %s can't be "
+							"resolved\n", argv[n]);
+			else
+				ERROR("Extract filename %s can't be resolved\n",
+								argv[n]);
+
+			path = add_extract(path, argv[n], argv[n]);
+			free_stack(stack);
+			continue;
+		}
+
+		pathname = stack_pathname(stack, stack->name);
+		path = add_extract(path, pathname, pathname);
+		free(pathname);
+
+		for(symlink = stack->symlink; symlink; symlink = symlink->next)
+			path = add_extract(path, symlink->pathname,
+							symlink->pathname);
+
+		free_stack(stack);
+	}
+
+	return path;
+}
+
+
 #define PRINT_VERSION() \
 	printf("unsquashfs version " VERSION " (" DATE ")\n");\
 	printf("copyright (C) 2021 Phillip Lougher "\
@@ -3466,51 +3513,11 @@ options:
 	if(s_ops == NULL)
 		MEM_ERROR();
 
-	if(follow_symlinks) {
-		for(n = i + 1; n < argc; n++) {
-			int exists;
-			struct directory_stack *stack = create_stack();
-			struct symlink *symlink;
-			char *pathname;
-
-			/*
-			 * Try to follow the extract file pathname, and
-			 * return the canonicalised pathname, and all
-			 * symlinks necessary to resolve it.
-			 */
-			exists = follow_path(argv[n], "",
-				SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-				SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
-				1, 0, stack);
-
-			if(!exists) {
-				if(missing_symlinks)
-					EXIT_UNSQUASH("Extract filename %s "
-						"can't be resolved\n", argv[n]);
-				else
-					ERROR("Extract filename %s can't be "
-						"resolved\n", argv[n]);
-
-				extract = add_extract(extract, argv[n], argv[n]);
-				free_stack(stack);
-				continue;
-			}
-
-			pathname = stack_pathname(stack, stack->name);
-			extract = add_extract(extract, pathname, pathname);
-			free(pathname);
-
-			for(symlink = stack->symlink; symlink;
-						symlink = symlink->next)
-				extract = add_extract(extract, symlink->pathname,
-						symlink->pathname);
-
-			free_stack(stack);
-		}
-	} else {
+	if(follow_symlinks)
+		extract = resolve_symlinks(argc - i - 1, argv + i + 1);
+	else
 		for(n = i + 1; n < argc; n++)
 			extract = add_extract(extract, argv[n], argv[n]);
-	}
 
 	if(extract) {
 		extracts = init_subdir();
