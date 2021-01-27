@@ -4,7 +4,7 @@
  * Squashfs
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
- * 2012, 2013, 2014, 2019
+ * 2012, 2013, 2014, 2019, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -141,6 +141,59 @@ struct append_file {
 #define REP_STR
 #define REP_DEF 0
 #endif
+
+/* in memory directory data */
+#define I_COUNT_SIZE		128
+#define DIR_ENTRIES		32
+#define INODE_HASH_SIZE		65536
+#define INODE_HASH_MASK		(INODE_HASH_SIZE - 1)
+#define INODE_HASH(dev, ino)	(ino & INODE_HASH_MASK)
+
+struct cached_dir_index {
+	struct squashfs_dir_index	index;
+	char				*name;
+};
+
+struct directory {
+	unsigned int		start_block;
+	unsigned int		size;
+	unsigned char		*buff;
+	unsigned char		*p;
+	unsigned int		entry_count;
+	unsigned char		*entry_count_p;
+	unsigned int		i_count;
+	unsigned int		i_size;
+	struct cached_dir_index	*index;
+	unsigned char		*index_count_p;
+	unsigned int		inode_number;
+};
+
+/* exclude file handling */
+/* list of exclude dirs/files */
+struct exclude_info {
+	dev_t			st_dev;
+	ino_t			st_ino;
+};
+
+#define EXCLUDE_SIZE 8192
+
+struct pathname {
+	int names;
+	struct path_entry *name;
+};
+
+struct pathnames {
+	int count;
+	struct pathname *path[0];
+};
+#define PATHS_ALLOC_SIZE 10
+
+#define FRAG_SIZE 32768
+
+struct old_root_entry_info {
+	char			*name;
+	struct inode_info	inode;
+};
 
 extern struct cache *reader_buffer, *fragment_buffer, *reserve_cache;
 extern struct cache *bwriter_buffer, *fwriter_buffer;

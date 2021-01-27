@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2017, 2019
+ * 2012, 2013, 2014, 2017, 2019, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -134,46 +134,12 @@ unsigned int cache_bytes = 0, cache_size = 0, inode_count = 0;
 /* inode lookup table */
 squashfs_inode *inode_lookup_table = NULL;
 
-/* in memory directory data */
-#define I_COUNT_SIZE		128
-#define DIR_ENTRIES		32
-#define INODE_HASH_SIZE		65536
-#define INODE_HASH_MASK		(INODE_HASH_SIZE - 1)
-#define INODE_HASH(dev, ino)	(ino & INODE_HASH_MASK)
-
-struct cached_dir_index {
-	struct squashfs_dir_index	index;
-	char				*name;
-};
-
-struct directory {
-	unsigned int		start_block;
-	unsigned int		size;
-	unsigned char		*buff;
-	unsigned char		*p;
-	unsigned int		entry_count;
-	unsigned char		*entry_count_p;
-	unsigned int		i_count;
-	unsigned int		i_size;
-	struct cached_dir_index	*index;
-	unsigned char		*index_count_p;
-	unsigned int		inode_number;
-};
-
 struct inode_info *inode_info[INODE_HASH_SIZE];
 
 /* hash tables used to do fast duplicate searches in duplicate check */
 struct file_info *dupl[65536];
 int dup_files = 0;
 
-/* exclude file handling */
-/* list of exclude dirs/files */
-struct exclude_info {
-	dev_t			st_dev;
-	ino_t			st_ino;
-};
-
-#define EXCLUDE_SIZE 8192
 int exclude = 0;
 struct exclude_info *exclude_paths = NULL;
 int old_excluded(char *filename, struct stat *buf);
@@ -184,25 +150,12 @@ struct path_entry {
 	struct pathname *paths;
 };
 
-struct pathname {
-	int names;
-	struct path_entry *name;
-};
-
-struct pathnames {
-	int count;
-	struct pathname *path[0];
-};
-#define PATHS_ALLOC_SIZE 10
-
 struct pathnames *paths = NULL;
 struct pathname *path = NULL;
 struct pathname *stickypath = NULL;
 int excluded(char *name, struct pathnames *paths, struct pathnames **new);
 
 int fragments = 0;
-
-#define FRAG_SIZE 32768
 
 struct squashfs_fragment_entry *fragment_table = NULL;
 int fragments_outstanding = 0;
@@ -219,10 +172,6 @@ char **source_path;
 
 /* list of root directory entries read from original filesystem */
 int old_root_entries = 0;
-struct old_root_entry_info {
-	char			*name;
-	struct inode_info	inode;
-};
 struct old_root_entry_info *old_root_entry;
 
 /* restore orignal filesystem state if appending to existing filesystem is
