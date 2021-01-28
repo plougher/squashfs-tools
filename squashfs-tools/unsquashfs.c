@@ -2472,6 +2472,63 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 }
 
 
+struct pathname *process_exclude_files(struct pathname *path, char *filename)
+{
+	FILE *fd;
+	char buffer[MAX_LINE + 1]; /* overflow safe */
+	char *name;
+
+	fd = fopen(filename, "r");
+	if(fd == NULL)
+		EXIT_UNSQUASH("Failed to open exclude file \"%s\" because %s\n",
+			filename, strerror(errno));
+
+	while(fgets(name = buffer, MAX_LINE + 1, fd) != NULL) {
+		int len = strlen(name);
+
+		if(len == MAX_LINE && name[len - 1] != '\n')
+			/* line too large */
+			EXIT_UNSQUASH("Line too long when reading "
+				"exclude file \"%s\", larger than %d "
+				"bytes\n", filename, MAX_LINE);
+
+		/*
+		 * Remove '\n' terminator if it exists (the last line
+		 * in the file may not be '\n' terminated)
+		 */
+		if(len && name[len - 1] == '\n')
+			name[len - 1] = '\0';
+
+		/* Skip any leading whitespace */
+		while(isspace(*name))
+			name ++;
+
+		/* if comment line, skip */
+		if(*name == '#')
+			continue;
+
+		/* check for initial backslash, to accommodate
+		 * filenames with leading space or leading # character
+		 */
+		if(*name == '\\')
+			name ++;
+
+		/* if line is now empty after skipping characters, skip it */
+		if(*name == '\0')
+			continue;
+
+		path = add_exclude(path, name, name);
+	}
+
+	if(ferror(fd))
+		EXIT_UNSQUASH("Reading exclude file \"%s\" failed because %s\n",
+			filename, strerror(errno));
+
+	fclose(fd);
+	return path;
+}
+
+
 /*
  * reader thread.  This thread processes read requests queued by the
  * cache_get() routine.
@@ -3310,6 +3367,15 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			extract = process_extract_files(extract, argv[i]);
+		} else if(strcmp(argv[i], "-exclude-file") == 0 ||
+				strcmp(argv[i], "-excf") == 0 ||
+				strcmp(argv[i], "-exc") == 0) {
+			if(++i == argc) {
+				fprintf(stderr, "%s: -exclude-file missing filename\n",
+					argv[0]);
+				exit(1);
+			}
+			exclude = process_exclude_files(exclude, argv[i]);
 		} else if(strcmp(argv[i], "-regex") == 0 ||
 				strcmp(argv[i], "-r") == 0)
 			use_regex = TRUE;
@@ -3427,6 +3493,9 @@ options:
 			ERROR("\t-fstime\t\t\tsynonym for -mkfs-time\n");
 			ERROR("\t-e[f] <extract file>\tlist of directories or "
 				"files to extract.\n\t\t\t\tOne per line\n");
+			ERROR("\t-exclude-file <file>\tlist of directories or "
+				"files to exclude.\n\t\t\t\tOne per line\n");
+			ERROR("\t-exc[f] <exclude file>\tsynonym for -exclude-file\n");
 			ERROR("\t-da[ta-queue] <size>\tset data queue to "
 				"<size> Mbytes.  Default %d\n\t\t\t\tMbytes\n",
 				DATA_BUFFER_DEFAULT);
