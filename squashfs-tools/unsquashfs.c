@@ -3359,10 +3359,11 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-li") == 0) {
 			info = TRUE;
 			short_ls = FALSE;
-		} else if(strcmp(argv[i], "-ef") == 0 ||
+		} else if(strcmp(argv[i], "-extract-file") == 0 ||
+				strcmp(argv[i], "-ef") == 0 ||
 				strcmp(argv[i], "-e") == 0) {
 			if(++i == argc) {
-				fprintf(stderr, "%s: -ef missing filename\n",
+				fprintf(stderr, "%s: -extract-file missing filename\n",
 					argv[0]);
 				exit(1);
 			}
@@ -3491,10 +3492,11 @@ options:
 			ERROR("\t-mkfs-time\t\tdisplay filesystem superblock "
 				"time\n");
 			ERROR("\t-fstime\t\t\tsynonym for -mkfs-time\n");
-			ERROR("\t-e[f] <extract file>\tlist of directories or "
+			ERROR("\t-extract-file <file>\tlist of directories or "
 				"files to extract.\n\t\t\t\tOne per line\n");
 			ERROR("\t-exclude-file <file>\tlist of directories or "
 				"files to exclude.\n\t\t\t\tOne per line\n");
+			ERROR("\t-e[f] <extract file>\tsynonym for -extract-file\n");
 			ERROR("\t-exc[f] <exclude file>\tsynonym for -exclude-file\n");
 			ERROR("\t-da[ta-queue] <size>\tset data queue to "
 				"<size> Mbytes.  Default %d\n\t\t\t\tMbytes\n",
