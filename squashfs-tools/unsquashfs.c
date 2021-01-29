@@ -3183,6 +3183,20 @@ struct pathname *resolve_symlinks(int argc, char *argv[])
 }
 
 
+int parse_excludes(int argc, char *argv[], struct pathname **exclude)
+{
+	int i;
+
+	for(i = 0; i < argc; i ++) {
+		if(strcmp(argv[i], ";") == 0)
+			break;
+		*exclude = add_exclude(*exclude, argv[i], argv[i]);
+	}
+
+	return (i == argc) ? 0 : i;
+}
+
+
 #define PRINT_VERSION() \
 	printf("unsquashfs version " VERSION " (" DATE ")\n");\
 	printf("copyright (C) 2021 Phillip Lougher "\
@@ -3223,7 +3237,16 @@ int main(int argc, char *argv[])
 			break;
 		if(strcmp(argv[i], "-excludes") == 0)
 			treat_as_excludes = TRUE;
-		else if(strcmp(argv[i], "-no-exit-code") == 0 ||
+		else if(strcmp(argv[i], "-exclude-list") == 0 ||
+				strcmp(argv[i], "-ex") == 0) {
+			res = parse_excludes(argc - i - 1, argv + i + 1, &exclude);
+			if(res == 0) {
+				fprintf(stderr, "%s: -exclude-list missing "
+					"filenames or no ';' terminator\n", argv[0]);
+				exit(1);
+			}
+			i += res + 1;
+		} else if(strcmp(argv[i], "-no-exit-code") == 0 ||
 				strcmp(argv[i], "-no-exit") == 0)
 			set_exit_code = FALSE;
 		else if(strcmp(argv[i], "-follow-symlinks") == 0 ||
@@ -3434,6 +3457,8 @@ options:
 				"<levels> of directories when"
 				"\n\t\t\t\tunsquashing or listing\n");
 			ERROR("\t-excludes\t\ttreat files on command line as exclude files\n");
+			ERROR("\t-ex[clude-list]\t\tlist of files/dirs to be "
+				"excluded, terminated with ';'\n");
 			ERROR("\t-follow[-symlinks]\tfollow symlinks in extract"
 				" files, and add all\n\t\t\t\tfiles/symlinks "
 				"needed to resolve extract file.\n\t\t\t\t"
