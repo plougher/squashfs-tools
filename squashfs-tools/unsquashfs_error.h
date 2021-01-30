@@ -31,11 +31,6 @@
 			progressbar_info(s, ## args);\
 		} while(0)
 
-#define ERROR(s, args...) \
-		do {\
-			progressbar_error(s, ## args); \
-		} while(0)
-
 #define BAD_ERROR(s, args...) \
 		do {\
 			progressbar_error("FATAL ERROR: " s, ##args); \
