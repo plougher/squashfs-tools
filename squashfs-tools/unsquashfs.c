@@ -3611,7 +3611,7 @@ options:
 
 	s_ops = read_filesystem_tables();
 	if(s_ops == NULL)
-		MEM_ERROR();
+		EXIT_UNSQUASH("File system corruption detected\n");
 
 	if(treat_as_excludes)
 		for(n = i + 1; n < argc; n++)

@@ -519,7 +519,6 @@ squashfs_operations *read_filesystem_tables_2()
 	return &ops;
 
 corrupted:
-	ERROR("File system corruption detected\n");
 	return NULL;
 }
 

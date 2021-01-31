@@ -614,8 +614,6 @@ squashfs_operations *read_filesystem_tables_4()
 	return &ops;
 
 corrupted:
-	ERROR("File system corruption detected\n");
-
 	alloc_index_table(0);
 
 	return NULL;
