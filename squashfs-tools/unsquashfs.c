@@ -3197,24 +3197,23 @@ int parse_excludes(int argc, char *argv[], struct pathname **exclude)
 }
 
 
-#define PRINT_VERSION() \
-	printf("unsquashfs version " VERSION " (" DATE ")\n");\
-	printf("copyright (C) 2021 Phillip Lougher "\
-		"<phillip@squashfs.org.uk>\n\n");\
-    	printf("This program is free software; you can redistribute it and/or"\
-		"\n");\
-	printf("modify it under the terms of the GNU General Public License"\
-		"\n");\
-	printf("as published by the Free Software Foundation; either version "\
-		"2,\n");\
-	printf("or (at your option) any later version.\n\n");\
-	printf("This program is distributed in the hope that it will be "\
-		"useful,\n");\
-	printf("but WITHOUT ANY WARRANTY; without even the implied warranty of"\
-		"\n");\
-	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the"\
-		"\n");\
+void print_version() {
+	printf("unsquashfs version " VERSION " (" DATE ")\n");
+	printf("copyright (C) 2021 Phillip Lougher ");
+	printf("<phillip@squashfs.org.uk>\n\n");
+	printf("This program is free software; you can redistribute it and/or\n");
+	printf("modify it under the terms of the GNU General Public License\n");
+	printf("as published by the Free Software Foundation; either version ");
+	printf("2,\n");
+	printf("or (at your option) any later version.\n\n");
+	printf("This program is distributed in the hope that it will be ");
+	printf("useful,\n");
+	printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");
+	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");
 	printf("GNU General Public License for more details.\n");
+}
+
+
 int main(int argc, char *argv[])
 {
 	char *dest = "squashfs-root";
@@ -3273,7 +3272,7 @@ int main(int argc, char *argv[])
 			quiet = TRUE;
 		else if(strcmp(argv[i], "-version") == 0 ||
 				strcmp(argv[i], "-v") == 0) {
-			PRINT_VERSION();
+			print_version();
 			version = TRUE;
 		} else if(strcmp(argv[i], "-info") == 0 ||
 				strcmp(argv[i], "-i") == 0)
