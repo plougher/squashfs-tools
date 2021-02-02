@@ -24,13 +24,7 @@
  *
  */
 
-#ifndef linux
-#define __BYTE_ORDER BYTE_ORDER
-#define __BIG_ENDIAN BIG_ENDIAN
-#define __LITTLE_ENDIAN LITTLE_ENDIAN
-#else
-#include <endian.h>
-#endif
+#include "endian_compat.h"
 
 #if __BYTE_ORDER == __BIG_ENDIAN
 extern unsigned int inswap_le16(unsigned short);

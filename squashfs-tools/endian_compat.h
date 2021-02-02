@@ -1,9 +1,10 @@
-#ifndef ZSTD_WRAPPER_H
-#define ZSTD_WRAPPER_H
+#ifndef ENDIAN_COMPAT_H
+#define ENDIAN_COMPAT_H
+
 /*
  * Squashfs
  *
- * Copyright (c) 2017
+ * Copyright (c) 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -16,27 +17,18 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
- * zstd_wrapper.h
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
+ * endian_compat.h
  */
-
-#include "endian_compat.h"
-
-#if __BYTE_ORDER == __BIG_ENDIAN
-extern unsigned int inswap_le16(unsigned short);
-extern unsigned int inswap_le32(unsigned int);
-
-#define SQUASHFS_INSWAP_COMP_OPTS(s) { \
-	(s)->compression_level = inswap_le32((s)->compression_level); \
-}
+#ifndef linux
+#define __BYTE_ORDER BYTE_ORDER
+#define __BIG_ENDIAN BIG_ENDIAN
+#define __LITTLE_ENDIAN LITTLE_ENDIAN
 #else
-#define SQUASHFS_INSWAP_COMP_OPTS(s)
+#include <endian.h>
 #endif
 
-/* Default compression */
-#define ZSTD_DEFAULT_COMPRESSION_LEVEL 15
-
-struct zstd_comp_opts {
-	int compression_level;
-};
 #endif
