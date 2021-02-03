@@ -98,6 +98,7 @@ typedef struct squashfs_operations {
 		int blocks);
 	struct inode *(*read_inode)(unsigned int start_block,
 		unsigned int offset);
+	int (*read_filesystem_tables)();
 } squashfs_operations;
 
 struct test {
@@ -253,6 +254,7 @@ extern int fd;
 extern int no_xattrs;
 extern struct queue *to_reader, *to_inflate, *to_writer;
 extern struct cache *fragment_cache, *data_cache;
+struct compressor *comp;
 
 /* unsquashfs.c */
 extern void *read_inode_table(long long, long long);
@@ -266,16 +268,16 @@ extern void dump_queue(struct queue *);
 extern void dump_cache(struct cache *);
 
 /* unsquash-1.c */
-extern squashfs_operations *read_filesystem_tables_1();
+int read_super_1(squashfs_operations **, void *);
 
 /* unsquash-2.c */
-extern squashfs_operations *read_filesystem_tables_2();
+int read_super_2(squashfs_operations **, void *);
 
 /* unsquash-3.c */
-extern squashfs_operations *read_filesystem_tables_3();
+int read_super_3(char *, squashfs_operations **, void *);
 
 /* unsquash-4.c */
-extern squashfs_operations *read_filesystem_tables_4();
+int read_super_4(squashfs_operations **);
 
 /* unsquash-123.c */
 extern int read_ids(int, long long, long long, unsigned int **);

@@ -25,6 +25,7 @@
 #include "unsquashfs.h"
 #include "squashfs_swap.h"
 #include "xattr.h"
+#include "compressor.h"
 
 static struct squashfs_fragment_entry *fragment_table;
 static unsigned int *id_table;
@@ -492,7 +493,7 @@ static int parse_exports_table(long long *table_start)
 }
 
 
-squashfs_operations *read_filesystem_tables_4()
+static int read_filesystem_tables()
 {
 	long long table_start;
 	int res;
@@ -611,12 +612,44 @@ squashfs_operations *read_filesystem_tables_4()
 
 	alloc_index_table(0);
 
-	return &ops;
+	return TRUE;
 
 corrupted:
 	alloc_index_table(0);
 
-	return NULL;
+	return FALSE;
+}
+
+
+int read_super_4(squashfs_operations **s_ops)
+{
+	struct squashfs_super_block sBlk_4;
+
+	/*
+	 * Try to read a Squashfs 4 superblock
+	 */
+	int res = read_fs_bytes(fd, SQUASHFS_START,
+			sizeof(struct squashfs_super_block), &sBlk_4);
+
+	if(res == FALSE)
+		return res;
+
+	swap = sBlk_4.s_magic != SQUASHFS_MAGIC;
+	SQUASHFS_INSWAP_SUPER_BLOCK(&sBlk_4);
+
+	if(sBlk_4.s_magic == SQUASHFS_MAGIC && sBlk_4.s_major == 4 &&
+			sBlk_4.s_minor == 0) {
+		*s_ops = &ops;
+		memcpy(&sBlk, &sBlk_4, sizeof(sBlk_4));
+
+		/*
+		 * Check the compression type
+		 */
+		comp = lookup_compressor_id(sBlk.s.compression);
+		return TRUE;
+	}
+
+	return -1;
 }
 
 
@@ -624,5 +657,6 @@ static squashfs_operations ops = {
 	.opendir = squashfs_opendir,
 	.read_fragment = read_fragment,
 	.read_block_list = read_block_list,
-	.read_inode = read_inode
+	.read_inode = read_inode,
+	.read_filesystem_tables = read_filesystem_tables
 };
