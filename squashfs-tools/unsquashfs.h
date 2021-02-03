@@ -99,6 +99,7 @@ typedef struct squashfs_operations {
 	struct inode *(*read_inode)(unsigned int start_block,
 		unsigned int offset);
 	int (*read_filesystem_tables)();
+	void (*stat)(char *);
 } squashfs_operations;
 
 struct test {
@@ -255,6 +256,7 @@ extern int no_xattrs;
 extern struct queue *to_reader, *to_inflate, *to_writer;
 extern struct cache *fragment_cache, *data_cache;
 struct compressor *comp;
+extern int use_localtime;
 
 /* unsquashfs.c */
 extern void *read_inode_table(long long, long long);
