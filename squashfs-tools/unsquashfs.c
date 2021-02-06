@@ -2207,7 +2207,6 @@ int read_super(char *source)
 		}
 	}
 
-	ERROR("Can't find a valid SQUASHFS superblock on %s\n", source);
 	return FALSE;
 }
 
@@ -3345,7 +3344,7 @@ options:
 	}
 
 	if(read_super(argv[i]) == FALSE)
-		exit(1);
+		EXIT_UNSQUASH("Can't find a valid SQUASHFS superblock on %s\n", argv[i]);
 
 	if(mkfs_time_opt) {
 		printf("%u\n", sBlk.s.mkfs_time);
