@@ -653,12 +653,39 @@ int read_super_4(squashfs_operations **s_ops)
 }
 
 
+static long long read_xattr_ids()
+{
+	int res;
+	struct squashfs_xattr_table id_table;
+
+	if(sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
+		return 0;
+
+	/*
+	 * Read xattr id table, containing start of xattr metadata and the
+	 * number of xattrs in the file system
+	 */
+	res = read_fs_bytes(fd, sBlk.s.xattr_id_table_start, sizeof(id_table),
+		&id_table);
+	if(res == FALSE)
+		return -1;
+
+	SQUASHFS_INSWAP_XATTR_TABLE(&id_table);
+
+	return id_table.xattr_ids;
+}
+
+
 static void squashfs_stat(char *source)
 {
 	time_t mkfs_time = (time_t) sBlk.s.mkfs_time;
 	struct tm *t = use_localtime ? localtime(&mkfs_time) :
 					gmtime(&mkfs_time);
 	char *mkfs_str = asctime(t);
+	long long xattr_ids = read_xattr_ids();
+
+	if(xattr_ids == -1)
+		EXIT_UNSQUASH("File system corruption detected\n");
 
 	printf("Found a valid SQUASHFS 4:0 superblock on %s.\n", source);
 	printf("Creation or last append time %s", mkfs_str ? mkfs_str :
@@ -719,6 +746,7 @@ static void squashfs_stat(char *source)
 	printf("Number of fragments %d\n", sBlk.s.fragments);
 	printf("Number of inodes %d\n", sBlk.s.inodes);
 	printf("Number of ids %d\n", sBlk.s.no_ids);
+	printf("Number of xattr ids %lld\n", xattr_ids);
 
 	TRACE("sBlk.s.inode_table_start 0x%llx\n", sBlk.s.inode_table_start);
 	TRACE("sBlk.s.directory_table_start 0x%llx\n", sBlk.s.directory_table_start);
