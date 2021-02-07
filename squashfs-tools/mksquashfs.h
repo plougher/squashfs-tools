@@ -195,6 +195,8 @@ struct old_root_entry_info {
 	struct inode_info	inode;
 };
 
+#define ALLOC_SIZE 128
+
 extern struct cache *reader_buffer, *fragment_buffer, *reserve_cache;
 extern struct cache *bwriter_buffer, *fwriter_buffer;
 extern struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
@@ -205,6 +207,9 @@ extern pthread_mutex_t fragment_mutex, dup_mutex;
 extern struct squashfs_fragment_entry *fragment_table;
 extern struct compressor *comp;
 extern int block_size;
+extern int block_log;
+extern int sorted;
+extern int noF;
 extern struct file_info *dupl[];
 extern int read_fs_bytes(int, long long, int, void *);
 extern void add_file(long long, long long, long long, unsigned int *, int,
@@ -215,4 +220,6 @@ extern unsigned int get_guid(unsigned int);
 extern int read_bytes(int, void *, int);
 extern unsigned short get_checksum_mem(char *, int);
 extern int reproducible;
+extern void *reader(void *arg);
+char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size);
 #endif
