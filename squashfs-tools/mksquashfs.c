@@ -1767,15 +1767,6 @@ unsigned short get_checksum_mem(char *buff, int bytes)
 }
 
 
-static unsigned short get_checksum_mem_buffer(struct file_buffer *file_buffer)
-{
-	if(file_buffer == NULL)
-		return 0;
-	else
-		return get_checksum(file_buffer->data, file_buffer->size, 0);
-}
-
-
 #define DUP_HASH(a) (a & 0xffff)
 void add_file(long long start, long long file_size, long long file_bytes,
 	unsigned int *block_listp, int blocks, unsigned int fragment,
@@ -4559,42 +4550,6 @@ static void add_exclude(char *target)
 		stickypath = add_path(stickypath, target + 4, target + 4);
 	else	
 		path = add_path(path, target, target);
-}
-
-
-static void display_path(int depth, struct pathname *paths)
-{
-	int i, n;
-
-	if(paths == NULL)
-		return;
-
-	for(i = 0; i < paths->names; i++) {
-		for(n = 0; n < depth; n++)
-			printf("\t");
-		printf("%d: %s\n", depth, paths->name[i].name);
-		display_path(depth + 1, paths->name[i].paths);
-	}
-}
-
-
-static void display_path2(struct pathname *paths, char *string)
-{
-	int i;
-	char *path;
-
-	if(paths == NULL) {
-		printf("%s\n", string);
-		return;
-	}
-
-	for(i = 0; i < paths->names; i++) {
-		int res = asprintf(&path, "%s/%s", string, paths->name[i].name);
-		if(res == -1)
-			BAD_ERROR("asprintf failed in display_path2\n");
-		display_path2(paths->name[i].paths, path);
-		free(path);
-	}
 }
 
 
