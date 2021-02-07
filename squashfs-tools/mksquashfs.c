@@ -142,7 +142,7 @@ int dup_files = 0;
 
 int exclude = 0;
 struct exclude_info *exclude_paths = NULL;
-int old_excluded(char *filename, struct stat *buf);
+static int old_excluded(char *filename, struct stat *buf);
 
 struct path_entry {
 	char *name;
@@ -153,7 +153,7 @@ struct path_entry {
 struct pathnames *paths = NULL;
 struct pathname *path = NULL;
 struct pathname *stickypath = NULL;
-int excluded(char *name, struct pathnames *paths, struct pathnames **new);
+static int excluded(char *name, struct pathnames *paths, struct pathnames **new);
 
 int fragments = 0;
 
@@ -262,30 +262,30 @@ FILE *log_fd;
 int logging=FALSE;
 
 static char *read_from_disk(long long start, unsigned int avail_bytes);
-void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
+static void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type);
-struct file_info *duplicate(long long file_size, long long bytes,
+static struct file_info *duplicate(long long file_size, long long bytes,
 	unsigned int **block_list, long long *start, struct fragment **fragment,
 	struct file_buffer *file_buffer, int blocks, unsigned short checksum,
 	int checksum_flag);
-struct dir_info *dir_scan1(char *, char *, struct pathnames *,
+static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), int);
-void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
-void dir_scan3(struct dir_info *dir);
-void dir_scan4(struct dir_info *dir);
-void dir_scan5(struct dir_info *dir);
-void dir_scan6(struct dir_info *dir);
-void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info);
-struct file_info *add_non_dup(long long file_size, long long bytes,
+static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
+static void dir_scan3(struct dir_info *dir);
+static void dir_scan4(struct dir_info *dir);
+static void dir_scan5(struct dir_info *dir);
+static void dir_scan6(struct dir_info *dir);
+static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info);
+static struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct fragment *fragment,
 	unsigned short checksum, unsigned short fragment_checksum,
 	int checksum_flag, int checksum_frag_flag);
 long long generic_write_table(int, void *, int, void *, int);
 void restorefs();
-struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
-void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
+static struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
+static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
 unsigned short get_checksum_mem(char *buff, int bytes);
-void check_usable_phys_mem(int total_mem);
+static void check_usable_phys_mem(int total_mem);
 
 
 void prep_exit()
@@ -380,7 +380,7 @@ void sighandler()
 }
 
 
-int mangle2(void *strm, char *d, char *s, int size,
+static int mangle2(void *strm, char *d, char *s, int size,
 	int block_size, int uncompressed, int data_block)
 {
 	int error, c_byte = 0;
@@ -411,7 +411,7 @@ int mangle(char *d, char *s, int size, int block_size,
 }
 
 
-void *get_inode(int req_size)
+static void *get_inode(int req_size)
 {
 	int data_space;
 	unsigned short c_byte;
@@ -550,7 +550,7 @@ void write_destination(int fd, long long byte, int bytes, void *buff)
 }
 
 
-long long write_inodes()
+static long long write_inodes()
 {
 	unsigned short c_byte;
 	int avail_bytes;
@@ -586,7 +586,7 @@ long long write_inodes()
 }
 
 
-long long write_directories()
+static long long write_directories()
 {
 	unsigned short c_byte;
 	int avail_bytes;
@@ -626,7 +626,7 @@ long long write_directories()
 }
 
 
-long long write_id_table()
+static long long write_id_table()
 {
 	unsigned int id_bytes = SQUASHFS_ID_BYTES(id_count);
 	unsigned int p[id_count];
@@ -642,7 +642,7 @@ long long write_id_table()
 }
 
 
-struct id *get_id(unsigned int id)
+static struct id *get_id(unsigned int id)
 {
 	int hash = ID_HASH(id);
 	struct id *entry = id_hash_table[hash];
@@ -830,7 +830,7 @@ static inline time_t get_time(time_t time)
 }
 
 
-int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
+static int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 	struct dir_ent *dir_ent, int type, long long byte_size,
 	long long start_block, unsigned int offset, unsigned int *block_list,
 	struct fragment *fragment, struct directory *dir_in, long long sparse)
@@ -1084,7 +1084,7 @@ int create_inode(squashfs_inode *i_no, struct dir_info *dir_info,
 }
 
 
-void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
+static void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 	int type, struct directory *dir)
 {
 	unsigned char *buff;
@@ -1171,7 +1171,7 @@ void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 }
 
 
-void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
+static void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 	struct directory *dir)
 {
 	unsigned int dir_size = dir->p - dir->buff;
@@ -1407,7 +1407,7 @@ finished:
 }
 
 
-unsigned short get_fragment_checksum(struct file_info *file)
+static unsigned short get_fragment_checksum(struct file_info *file)
 {
 	struct file_buffer *frag_buffer;
 	struct append_file *append;
@@ -1452,7 +1452,7 @@ unsigned short get_fragment_checksum(struct file_info *file)
 }
 
 
-void ensure_fragments_flushed()
+static void ensure_fragments_flushed()
 {
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
@@ -1464,7 +1464,7 @@ void ensure_fragments_flushed()
 }
 
 
-void lock_fragments()
+static void lock_fragments()
 {
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
@@ -1473,14 +1473,14 @@ void lock_fragments()
 }
 
 
-void log_fragment(unsigned int fragment, long long start)
+static void log_fragment(unsigned int fragment, long long start)
 {
 	if(logging)
 		fprintf(log_fd, "Fragment %u, %lld\n", fragment, start);
 }
 
 
-void unlock_fragments()
+static void unlock_fragments()
 {
 	int frg, size;
 	struct file_buffer *write_buffer;
@@ -1512,7 +1512,7 @@ void unlock_fragments()
 }
 
 /* Called with the fragment_mutex locked */
-void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
+static void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 	int fragment)
 {
 	fragment_table[fragment].size = c_byte;
@@ -1522,7 +1522,7 @@ void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 }
 
 
-void write_fragment(struct file_buffer *fragment)
+static void write_fragment(struct file_buffer *fragment)
 {
 	static long long sequence = 0;
 
@@ -1539,7 +1539,7 @@ void write_fragment(struct file_buffer *fragment)
 }
 
 
-struct file_buffer *allocate_fragment()
+static struct file_buffer *allocate_fragment()
 {
 	struct file_buffer *fragment = cache_get(fragment_buffer, fragments);
 
@@ -1566,14 +1566,14 @@ struct file_buffer *allocate_fragment()
 static struct fragment empty_fragment = {SQUASHFS_INVALID_FRAG, 0, 0};
 
 
-void free_fragment(struct fragment *fragment)
+static void free_fragment(struct fragment *fragment)
 {
 	if(fragment != &empty_fragment)
 		free(fragment);
 }
 
 
-struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer,
+static struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer,
 	struct dir_ent *dir_ent)
 {
 	struct fragment *ffrg;
@@ -1665,7 +1665,7 @@ long long generic_write_table(int length, void *buffer, int length2,
 }
 
 
-long long write_fragment_table()
+static long long write_fragment_table()
 {
 	unsigned int frag_bytes = SQUASHFS_FRAGMENT_BYTES(fragments);
 	int i;
@@ -1697,7 +1697,7 @@ static char *read_from_disk(long long start, unsigned int avail_bytes)
 
 
 char read_from_file_buffer2[SQUASHFS_FILE_MAX_SIZE];
-char *read_from_disk2(long long start, unsigned int avail_bytes)
+static char *read_from_disk2(long long start, unsigned int avail_bytes)
 {
 	int res;
 
@@ -1725,7 +1725,7 @@ unsigned short get_checksum(char *buff, int bytes, unsigned short chksum)
 }
 
 
-unsigned short get_checksum_disk(long long start, long long l,
+static unsigned short get_checksum_disk(long long start, long long l,
 	unsigned int *blocks)
 {
 	unsigned short chksum = 0;
@@ -1767,7 +1767,7 @@ unsigned short get_checksum_mem(char *buff, int bytes)
 }
 
 
-unsigned short get_checksum_mem_buffer(struct file_buffer *file_buffer)
+static unsigned short get_checksum_mem_buffer(struct file_buffer *file_buffer)
 {
 	if(file_buffer == NULL)
 		return 0;
@@ -1828,7 +1828,7 @@ void add_file(long long start, long long file_size, long long file_bytes,
 }
 
 
-int pre_duplicate(long long file_size)
+static int pre_duplicate(long long file_size)
 {
 	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
 
@@ -1840,7 +1840,7 @@ int pre_duplicate(long long file_size)
 }
 
 
-struct file_info *add_non_dup(long long file_size, long long bytes,
+static struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct fragment *fragment,
 	unsigned short checksum, unsigned short fragment_checksum,
 	int checksum_flag, int checksum_frag_flag)
@@ -1871,7 +1871,7 @@ struct file_info *add_non_dup(long long file_size, long long bytes,
 }
 
 
-struct fragment *frag_duplicate(struct file_buffer *file_buffer, char *dont_put)
+static struct fragment *frag_duplicate(struct file_buffer *file_buffer, char *dont_put)
 {
 	struct file_info *dupl_ptr;
 	struct file_buffer *buffer;
@@ -1916,7 +1916,7 @@ struct fragment *frag_duplicate(struct file_buffer *file_buffer, char *dont_put)
 }
 
 
-struct file_info *duplicate(long long file_size, long long bytes,
+static struct file_info *duplicate(long long file_size, long long bytes,
 	unsigned int **block_list, long long *start, struct fragment **fragment,
 	struct file_buffer *file_buffer, int blocks, unsigned short checksum,
 	int checksum_flag)
@@ -2056,7 +2056,7 @@ static inline int is_fragment(struct inode_info *inode)
 }
 
 
-void put_file_buffer(struct file_buffer *file_buffer)
+static void put_file_buffer(struct file_buffer *file_buffer)
 {
 	/*
 	 * Decide where to send the file buffer:
@@ -2077,7 +2077,7 @@ void put_file_buffer(struct file_buffer *file_buffer)
 
 
 static int seq = 0;
-void reader_read_process(struct dir_ent *dir_ent)
+static void reader_read_process(struct dir_ent *dir_ent)
 {
 	long long bytes = 0;
 	struct inode_info *inode = dir_ent->inode;
@@ -2160,7 +2160,7 @@ read_err:
 }
 
 
-void reader_read_file(struct dir_ent *dir_ent)
+static void reader_read_file(struct dir_ent *dir_ent)
 {
 	struct stat *buf = &dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
@@ -2268,7 +2268,7 @@ read_err2:
 }
 
 
-void reader_scan(struct dir_info *dir) {
+static void reader_scan(struct dir_info *dir) {
 	struct dir_ent *dir_ent = dir->list;
 
 	for(; dir_ent; dir_ent = dir_ent->next) {
@@ -2293,7 +2293,7 @@ void reader_scan(struct dir_info *dir) {
 }
 
 
-void *reader(void *arg)
+static void *reader(void *arg)
 {
 	if(!sorted)
 		reader_scan(queue_get(to_reader));
@@ -2312,7 +2312,7 @@ void *reader(void *arg)
 }
 
 
-void *writer(void *arg)
+static void *writer(void *arg)
 {
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(to_writer);
@@ -2348,7 +2348,7 @@ void *writer(void *arg)
 }
 
 
-int all_zero(struct file_buffer *file_buffer)
+static int all_zero(struct file_buffer *file_buffer)
 {
 	int i;
 	long entries = file_buffer->size / sizeof(long);
@@ -2368,7 +2368,7 @@ int all_zero(struct file_buffer *file_buffer)
 }
 
 
-void *deflator(void *arg)
+static void *deflator(void *arg)
 {
 	struct file_buffer *write_buffer = cache_get_nohash(bwriter_buffer);
 	void *stream = NULL;
@@ -2404,7 +2404,7 @@ void *deflator(void *arg)
 }
 
 
-void *frag_deflator(void *arg)
+static void *frag_deflator(void *arg)
 {
 	void *stream = NULL;
 	int res;
@@ -2450,7 +2450,7 @@ void *frag_deflator(void *arg)
 }
 
 
-void *frag_order_deflator(void *arg)
+static void *frag_order_deflator(void *arg)
 {
 	void *stream = NULL;
 	int res;
@@ -2480,7 +2480,7 @@ void *frag_order_deflator(void *arg)
 }
 
 
-void *frag_orderer(void *arg)
+static void *frag_orderer(void *arg)
 {
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 
@@ -2505,7 +2505,7 @@ void *frag_orderer(void *arg)
 }
 
 
-struct file_buffer *get_file_buffer()
+static struct file_buffer *get_file_buffer()
 {
 	struct file_buffer *file_buffer = seq_queue_get(to_main);
 
@@ -2513,7 +2513,7 @@ struct file_buffer *get_file_buffer()
 }
 
 
-void write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent,
+static void write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent,
 	struct file_buffer *file_buffer, int *duplicate_file)
 {
 	file_count ++;
@@ -2524,7 +2524,7 @@ void write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent,
 }
 
 
-void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent,
+static void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent,
 	struct file_buffer *file_buffer, int *duplicate_file)
 {
 	int size = file_buffer->file_size;
@@ -2559,14 +2559,14 @@ void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent,
 }
 
 
-void log_file(struct dir_ent *dir_ent, long long start)
+static void log_file(struct dir_ent *dir_ent, long long start)
 {
 	if(logging && start)
 		fprintf(log_fd, "%s, %lld\n", pathname(dir_ent), start);
 }
 
 
-int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
+static int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 	struct file_buffer *read_buffer, int *duplicate_file)
 {
 	long long read_size, file_bytes, start;
@@ -2665,7 +2665,7 @@ read_err:
 }
 
 
-int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
+static int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 	struct file_buffer *read_buffer, int *duplicate_file)
 {
 	int block, thresh;
@@ -2814,7 +2814,7 @@ read_err:
 }
 
 
-int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
+static int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 	struct file_buffer *read_buffer, int *dup)
 {
 	long long read_size = read_buffer->file_size;
@@ -2960,9 +2960,9 @@ again:
 
 #define BUFF_SIZE 512
 char *name;
-char *basename_r();
+static char *basename_r();
 
-char *getbase(char *pathname)
+static char *getbase(char *pathname)
 {
 	static char *b_buffer = NULL;
 	static int b_size = BUFF_SIZE;
@@ -3005,7 +3005,7 @@ char *getbase(char *pathname)
 }
 
 
-char *basename_r()
+static char *basename_r()
 {
 	char *s;
 	char *p;
@@ -3034,7 +3034,7 @@ char *basename_r()
 }
 
 
-struct inode_info *lookup_inode3(struct stat *buf, int pseudo, int id,
+static struct inode_info *lookup_inode3(struct stat *buf, int pseudo, int id,
 	char *symlink, int bytes)
 {
 	int ino_hash = INODE_HASH(buf->st_dev, buf->st_ino);
@@ -3088,7 +3088,7 @@ struct inode_info *lookup_inode3(struct stat *buf, int pseudo, int id,
 }
 
 
-struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
+static struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
 {
 	return lookup_inode3(buf, pseudo, id, NULL, 0);
 }
@@ -3184,7 +3184,7 @@ static inline void add_excluded(struct dir_info *dir)
 }
 
 
-void dir_scan(squashfs_inode *inode, char *pathname,
+static void dir_scan(squashfs_inode *inode, char *pathname,
 	struct dir_ent *(_readdir)(struct dir_info *), int progress)
 {
 	struct stat buf;
@@ -3297,7 +3297,7 @@ void dir_scan(squashfs_inode *inode, char *pathname,
  * Exclude actions are processed here (in contrast to the other actions)
  * because they affect what is scanned.
  */
-struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
+static struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 {
 	struct dir_info *dir;
 
@@ -3326,7 +3326,7 @@ struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 }
 
 
-struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
+static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 {
 	static int index = 0;
 
@@ -3380,7 +3380,7 @@ struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 }
 
 
-struct dir_ent *scan1_single_readdir(struct dir_info *dir)
+static struct dir_ent *scan1_single_readdir(struct dir_info *dir)
 {
 	struct dirent *d_name;
 	int i;
@@ -3425,7 +3425,7 @@ struct dir_ent *scan1_single_readdir(struct dir_info *dir)
 }
 
 
-struct dir_ent *scan1_readdir(struct dir_info *dir)
+static struct dir_ent *scan1_readdir(struct dir_info *dir)
 {
 	struct dirent *d_name = readdir(dir->linuxdir);
 
@@ -3435,14 +3435,14 @@ struct dir_ent *scan1_readdir(struct dir_info *dir)
 }
 
 
-void scan1_freedir(struct dir_info *dir)
+static void scan1_freedir(struct dir_info *dir)
 {
 	if(dir->pathname[0] != '\0')
 		closedir(dir->linuxdir);
 }
 
 
-struct dir_info *dir_scan1(char *filename, char *subpath,
+static struct dir_info *dir_scan1(char *filename, char *subpath,
 	struct pathnames *paths,
 	struct dir_ent *(_readdir)(struct dir_info *), int depth)
 {
@@ -3561,7 +3561,7 @@ struct dir_info *dir_scan1(char *filename, char *subpath,
  * dir_scan2 routines...
  * This processes most actions and any pseudo files
  */
-struct dir_ent *scan2_readdir(struct dir_info *dir, struct dir_ent *dir_ent)
+static struct dir_ent *scan2_readdir(struct dir_info *dir, struct dir_ent *dir_ent)
 {
 	if (dir_ent == NULL)
 		dir_ent = dir->list;
@@ -3574,7 +3574,7 @@ struct dir_ent *scan2_readdir(struct dir_info *dir, struct dir_ent *dir_ent)
 }
 
 
-struct dir_ent *scan2_lookup(struct dir_info *dir, char *name)
+static struct dir_ent *scan2_lookup(struct dir_info *dir, char *name)
 {
 	struct dir_ent *dir_ent = dir->list;
 
@@ -3585,7 +3585,7 @@ struct dir_ent *scan2_lookup(struct dir_info *dir, char *name)
 }
 
 
-void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
+static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 {
 	struct dir_ent *dir_ent = NULL;
 	struct pseudo_entry *pseudo_ent;
@@ -3699,7 +3699,7 @@ void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
  * dir_scan3 routines...
  * This processes the move action
  */
-void dir_scan3(struct dir_info *dir)
+static void dir_scan3(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = NULL;
 
@@ -3721,7 +3721,7 @@ void dir_scan3(struct dir_info *dir)
  * tests to be performed which are impossible at exclude time (i.e.
  * tests which rely on the in-core directory structure)
  */
-void free_dir(struct dir_info *dir)
+static void free_dir(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = dir->list;
 
@@ -3741,7 +3741,7 @@ void free_dir(struct dir_info *dir)
 }
 	
 
-void dir_scan4(struct dir_info *dir)
+static void dir_scan4(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = dir->list, *prev = NULL;
 
@@ -3791,7 +3791,7 @@ void dir_scan4(struct dir_info *dir)
  * all other actions because the previous exclude and move actions and the
  * pseudo actions affect whether a directory is empty
  */
-void dir_scan5(struct dir_info *dir)
+static void dir_scan5(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = dir->list, *prev = NULL;
 
@@ -3934,7 +3934,7 @@ void sort_directory(struct dir_info *dir)
 }
 
 
-void dir_scan6(struct dir_info *dir)
+static void dir_scan6(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent;
 	unsigned int byte_count = 0;
@@ -3963,7 +3963,7 @@ void dir_scan6(struct dir_info *dir)
  * dir_scan6 routines...
  * This generates the filesystem metadata and writes it out to the destination
  */
-void scan7_init_dir(struct directory *dir)
+static void scan7_init_dir(struct directory *dir)
 {
 	dir->buff = malloc(SQUASHFS_METADATA_SIZE);
 	if(dir->buff == NULL)
@@ -3978,7 +3978,7 @@ void scan7_init_dir(struct directory *dir)
 }
 
 
-struct dir_ent *scan7_readdir(struct directory *dir, struct dir_info *dir_info,
+static struct dir_ent *scan7_readdir(struct directory *dir, struct dir_info *dir_info,
 	struct dir_ent *dir_ent)
 {
 	if (dir_ent == NULL)
@@ -3994,7 +3994,7 @@ struct dir_ent *scan7_readdir(struct directory *dir, struct dir_info *dir_info,
 }
 
 
-void scan7_freedir(struct directory *dir)
+static void scan7_freedir(struct directory *dir)
 {
 	if(dir->index)
 		free(dir->index);
@@ -4002,7 +4002,7 @@ void scan7_freedir(struct directory *dir)
 }
 
 
-void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
+static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 {
 	int squashfs_type;
 	int duplicate_file;
@@ -4147,7 +4147,7 @@ void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 }
 
 
-unsigned int slog(unsigned int block)
+static unsigned int slog(unsigned int block)
 {
 	int i;
 
@@ -4158,7 +4158,7 @@ unsigned int slog(unsigned int block)
 }
 
 
-int old_excluded(char *filename, struct stat *buf)
+static int old_excluded(char *filename, struct stat *buf)
 {
 	int i;
 
@@ -4179,7 +4179,7 @@ int old_excluded(char *filename, struct stat *buf)
 	} \
 	exclude_paths[exclude].st_dev = buf.st_dev; \
 	exclude_paths[exclude++].st_ino = buf.st_ino;
-int old_add_exclude(char *path)
+static int old_add_exclude(char *path)
 {
 	int i;
 	char *filename;
@@ -4217,7 +4217,7 @@ int old_add_exclude(char *path)
 }
 
 
-void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
+static void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type)
 {
 	old_root_entry = realloc(old_root_entry,
@@ -4233,7 +4233,7 @@ void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 }
 
 
-void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
+static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	int freelst, char *destination_file)
 {
 	int i;
@@ -4392,7 +4392,7 @@ void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 }
 
 
-long long write_inode_lookup_table()
+static long long write_inode_lookup_table()
 {
 	int i, inode_number, lookup_bytes = SQUASHFS_LOOKUP_BYTES(inode_count);
 	void *it;
@@ -4433,7 +4433,7 @@ skip_inode_hash_table:
 }
 
 
-char *get_component(char *target, char **targname)
+static char *get_component(char *target, char **targname)
 {
 	char *start;
 
@@ -4453,7 +4453,7 @@ char *get_component(char *target, char **targname)
 }
 
 
-void free_path(struct pathname *paths)
+static void free_path(struct pathname *paths)
 {
 	int i;
 
@@ -4471,7 +4471,7 @@ void free_path(struct pathname *paths)
 }
 
 
-struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
+static struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 {
 	char *targname;
 	int i, error;
@@ -4548,7 +4548,7 @@ struct pathname *add_path(struct pathname *paths, char *target, char *alltarget)
 }
 
 
-void add_exclude(char *target)
+static void add_exclude(char *target)
 {
 
 	if(target[0] == '/' || strncmp(target, "./", 2) == 0 ||
@@ -4562,7 +4562,7 @@ void add_exclude(char *target)
 }
 
 
-void display_path(int depth, struct pathname *paths)
+static void display_path(int depth, struct pathname *paths)
 {
 	int i, n;
 
@@ -4578,7 +4578,7 @@ void display_path(int depth, struct pathname *paths)
 }
 
 
-void display_path2(struct pathname *paths, char *string)
+static void display_path2(struct pathname *paths, char *string)
 {
 	int i;
 	char *path;
@@ -4598,7 +4598,7 @@ void display_path2(struct pathname *paths, char *string)
 }
 
 
-struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
+static struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 {
 	int count = paths == NULL ? 0 : paths->count;
 
@@ -4615,7 +4615,7 @@ struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 }
 
 
-int excluded_match(char *name, struct pathname *path, struct pathnames **new)
+static int excluded_match(char *name, struct pathname *path, struct pathnames **new)
 {
 	int i;
 
@@ -4643,7 +4643,7 @@ int excluded_match(char *name, struct pathname *path, struct pathnames **new)
 }
 
 
-int excluded(char *name, struct pathnames *paths, struct pathnames **new)
+static int excluded(char *name, struct pathnames *paths, struct pathnames **new)
 {
 	int n;
 		
@@ -4671,7 +4671,7 @@ int excluded(char *name, struct pathnames *paths, struct pathnames **new)
 }
 
 
-void process_exclude_file(char *argv)
+static void process_exclude_file(char *argv)
 {
 	FILE *fd;
 	char buffer[MAX_LINE + 1]; /* overflow safe */
@@ -4734,7 +4734,7 @@ void process_exclude_file(char *argv)
 #define RECOVER_ID "Squashfs recovery file v1.0\n"
 #define RECOVER_ID_SIZE 28
 
-void write_recovery_data(struct squashfs_super_block *sBlk)
+static void write_recovery_data(struct squashfs_super_block *sBlk)
 {
 	int res, recoverfd, bytes = sBlk->bytes_used - sBlk->inode_table_start;
 	pid_t pid = getpid();
@@ -4790,7 +4790,7 @@ void write_recovery_data(struct squashfs_super_block *sBlk)
 }
 
 
-void read_recovery_data(char *recovery_file, char *destination_file)
+static void read_recovery_data(char *recovery_file, char *destination_file)
 {
 	int fd, recoverfd, bytes;
 	struct squashfs_super_block orig_sBlk, sBlk;
@@ -4868,7 +4868,7 @@ void read_recovery_data(char *recovery_file, char *destination_file)
 }
 
 
-void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
+static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
 {
 	int i;
 
@@ -4981,7 +4981,7 @@ void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
 }
 
 
-int _parse_numberll(char *start, long long *res, int size, int base)
+static int _parse_numberll(char *start, long long *res, int size, int base)
 {
 	char *end;
 	long long number;
@@ -5066,13 +5066,13 @@ int _parse_numberll(char *start, long long *res, int size, int base)
 }
 
 
-int parse_numberll(char *start, long long *res, int size)
+static int parse_numberll(char *start, long long *res, int size)
 {
 	return _parse_numberll(start, res, size, 10);
 }
 
 
-int parse_number(char *start, int *res, int size)
+static int parse_number(char *start, int *res, int size)
 {
 	long long number;
 
@@ -5088,7 +5088,7 @@ int parse_number(char *start, int *res, int size)
 }
 
 
-int parse_number_unsigned(char *start, unsigned int *res, int size)
+static int parse_number_unsigned(char *start, unsigned int *res, int size)
 {
 	long long number;
 
@@ -5104,19 +5104,19 @@ int parse_number_unsigned(char *start, unsigned int *res, int size)
 }
 
 
-int parse_num(char *arg, int *res)
+static int parse_num(char *arg, int *res)
 {
 	return parse_number(arg, res, 0);
 }
 
 
-int parse_num_unsigned(char *arg, unsigned int *res)
+static int parse_num_unsigned(char *arg, unsigned int *res)
 {
 	return parse_number_unsigned(arg, res, 0);
 }
 
 
-int parse_mode(char *arg, mode_t *res)
+static int parse_mode(char *arg, mode_t *res)
 {
 	long long number;
 
@@ -5131,7 +5131,7 @@ int parse_mode(char *arg, mode_t *res)
 }
 
 
-int get_physical_memory()
+static int get_physical_memory()
 {
 	/*
 	 * Long longs are used here because with PAE, a 32-bit
@@ -5165,7 +5165,7 @@ int get_physical_memory()
 }
 
 
-void check_usable_phys_mem(int total_mem)
+static void check_usable_phys_mem(int total_mem)
 {
 	/*
 	 * We want to allow users to use as much of their physical
@@ -5210,7 +5210,7 @@ void check_usable_phys_mem(int total_mem)
 }
 
 
-int get_default_phys_mem()
+static int get_default_phys_mem()
 {
 	/*
 	 * get_physical_memory() relies on /proc being mounted.
@@ -5248,7 +5248,7 @@ int get_default_phys_mem()
 }
 
 
-void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
+static void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 							int *fwriteq)
 {
 	*readq = mem / SQUASHFS_READQ_MEM;
@@ -5258,7 +5258,7 @@ void calculate_queue_sizes(int mem, int *readq, int *fragq, int *bwriteq,
 }
 
 
-void open_log_file(char *filename)
+static void open_log_file(char *filename)
 {
 	log_fd=fopen(filename, "w");
 	if(log_fd == NULL)
@@ -5268,7 +5268,7 @@ void open_log_file(char *filename)
 }
 
 
-void check_env_var()
+static void check_env_var()
 {
 	char *time_string = getenv("SOURCE_DATE_EPOCH");
 	unsigned int time;
@@ -5298,7 +5298,7 @@ void check_env_var()
 }
 
 
-void print_version() {
+static void print_version() {
 	printf("mksquashfs version " VERSION " (" DATE ")\n");
 	printf("copyright (C) 2021 Phillip Lougher ");
 	printf("<phillip@squashfs.org.uk>\n\n");
