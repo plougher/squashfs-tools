@@ -66,12 +66,6 @@ static void sigwinch_handler()
 }
 
 
-static void sigalrm_handler()
-{
-	rotate = (rotate + 1) % 4;
-}
-
-
 void inc_progress_bar()
 {
 	cur_uncompressed ++;
@@ -179,7 +173,6 @@ void set_progressbar_state(int state)
 void *progress_thrd(void *arg)
 {
 	struct timespec requested_time, remaining;
-	struct itimerval itimerval;
 	struct winsize winsize;
 
 	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
@@ -190,13 +183,6 @@ void *progress_thrd(void *arg)
 	} else
 		columns = winsize.ws_col;
 	signal(SIGWINCH, sigwinch_handler);
-	signal(SIGALRM, sigalrm_handler);
-
-	itimerval.it_value.tv_sec = 0;
-	itimerval.it_value.tv_usec = 250000;
-	itimerval.it_interval.tv_sec = 0;
-	itimerval.it_interval.tv_usec = 250000;
-	setitimer(ITIMER_REAL, &itimerval, NULL);
 
 	requested_time.tv_sec = 0;
 	requested_time.tv_nsec = 250000000;
@@ -206,6 +192,8 @@ void *progress_thrd(void *arg)
 
 		if(res == -1 && errno != EINTR)
 			BAD_ERROR("nanosleep failed in progress thread\n");
+
+		rotate = (rotate + 1) % 4;
 
 		pthread_mutex_lock(&progress_mutex);
 		if(display_progress_bar && !temp_disabled)
