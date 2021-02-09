@@ -103,6 +103,7 @@ int use_regex = FALSE;
 int nopad = FALSE;
 int exit_on_error = FALSE;
 long long start_offset = 0;
+int sleep_time = 0;
 
 long long global_uid = -1, global_gid = -1;
 
@@ -5064,7 +5065,32 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = source + 2; i < argc; i++) {
-		if(strcmp(argv[i], "-mkfs-time") == 0 ||
+		if(strcmp(argv[i], "-throttle") == 0) {
+			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
+				ERROR("%s: %s missing or invalid value\n",
+							argv[0], argv[i - 1]);
+				exit(1);
+			}
+			if(sleep_time < 0 || sleep_time > 99) {
+				ERROR("%s: %s value should be between 0 and "
+						"99\n", argv[0], argv[i - 1]);
+				exit(1);
+			}
+			readq = 4;
+		} else if(strcmp(argv[i], "-limit")) {
+			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
+				ERROR("%s: %s missing or invalid value\n",
+							argv[0], argv[i - 1]);
+				exit(1);
+			}
+			if(sleep_time < 1 || sleep_time > 100) {
+				ERROR("%s: %s value should be between 1 and "
+						"100\n", argv[0], argv[i - 1]);
+				exit(1);
+			}
+			sleep_time = 100 - sleep_time;
+			readq = 4;
+		} else if(strcmp(argv[i], "-mkfs-time") == 0 ||
 				strcmp(argv[i], "-fstime") == 0) {
 			if((++i == argc) || !parse_num_unsigned(argv[i], &mkfs_time)) {
 				ERROR("%s: %s missing or invalid time value\n", argv[0], argv[i - 1]);
@@ -5571,6 +5597,15 @@ printOptions:
 				"bar\n");
 			ERROR("-progress\t\tdisplay progress bar when using "
 				"the -info option\n");
+			ERROR("-throttle <percentage>\tthrottle the I/O input "
+				"rate by the given percentage.\n\t\t\tThis "
+				"can be used to reduce the I/O and CPU "
+				"consumption\n\t\t\tof Mksquashfs\n");
+			ERROR("-limit <percentage>\tlimit the I/O input "
+				"rate to the given percentage.\n\t\t\tThis "
+				"can be used to reduce the I/O and CPU "
+				"consumption\n\t\t\tof Mksquashfs "
+				"(alternative to -throttle)\n");
 			ERROR("-processors <number>\tUse <number> processors."
 				"  By default will use number of\n");
 			ERROR("\t\t\tprocessors available\n");

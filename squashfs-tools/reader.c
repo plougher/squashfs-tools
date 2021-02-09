@@ -26,6 +26,7 @@
 #define TRUE 1
 #define FALSE 0
 
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <dirent.h>
@@ -42,6 +43,17 @@
 #include "mksquashfs_error.h"
 #include "pseudo.h"
 #include "sort.h"
+
+static void sigalrm_handler()
+{
+	struct timespec requested_time, remaining;
+
+	requested_time.tv_sec = sleep_time / 10;
+	requested_time.tv_nsec = (sleep_time % 10) * 100000000;
+
+	nanosleep(&requested_time, &remaining);
+}
+
 
 static char *pathname_reader(struct dir_ent *dir_ent)
 {
@@ -311,13 +323,25 @@ void reader_scan(struct dir_info *dir)
 
 void *reader(void *arg)
 {
+	struct itimerval itimerval;
+	struct dir_info *dir = queue_get(to_reader);
+
+	if(sleep_time) {
+		signal(SIGALRM, sigalrm_handler);
+
+		itimerval.it_value.tv_sec = 0;
+		itimerval.it_value.tv_usec = 100000;
+		itimerval.it_interval.tv_sec = 10;
+		itimerval.it_interval.tv_usec = 0;
+		setitimer(ITIMER_REAL, &itimerval, NULL);
+	}
+
 	if(!sorted)
-		reader_scan(queue_get(to_reader));
+		reader_scan(dir);
 	else {
 		int i;
 		struct priority_entry *entry;
 
-		queue_get(to_reader);
 		for(i = 65535; i >= 0; i--)
 			for(entry = priority_list[i]; entry;
 							entry = entry->next)
