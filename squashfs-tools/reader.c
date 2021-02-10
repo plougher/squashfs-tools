@@ -36,6 +36,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
+#include <stdlib.h>
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "caches-queues-lists.h"
@@ -156,7 +157,14 @@ static void reader_read_process(struct dir_ent *dir_ent)
 	 */
 	inode->buf.st_size = bytes;
 
-	res = waitpid(child, &status, 0);
+	while(1) {
+		res = waitpid(child, &status, 0);
+		if(res != -1)
+			break;
+		else if(errno != EINTR)
+			BAD_ERROR("read process: waitpid returned %d\n", errno);
+	}
+
 	close(file);
 
 	if(res == -1 || !WIFEXITED(status) || WEXITSTATUS(status) != 0)
@@ -204,7 +212,12 @@ again:
 	read_size = buf->st_size;
 	blocks = (read_size + block_size - 1) >> block_log;
 
-	file = open(pathname_reader(dir_ent), O_RDONLY);
+	while(1) {
+		file = open(pathname_reader(dir_ent), O_RDONLY);
+		if(file != -1 || errno != EINTR)
+			break;
+	}
+
 	if(file == -1) {
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->sequence = seq ++;
