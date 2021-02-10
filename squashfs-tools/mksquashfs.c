@@ -5071,13 +5071,13 @@ int main(int argc, char *argv[])
 							argv[0], argv[i - 1]);
 				exit(1);
 			}
-			if(sleep_time < 0 || sleep_time > 99) {
+			if(sleep_time > 99) {
 				ERROR("%s: %s value should be between 0 and "
 						"99\n", argv[0], argv[i - 1]);
 				exit(1);
 			}
 			readq = 4;
-		} else if(strcmp(argv[i], "-limit")) {
+		} else if(strcmp(argv[i], "-limit") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
 				ERROR("%s: %s missing or invalid value\n",
 							argv[0], argv[i - 1]);
