@@ -2993,7 +2993,85 @@ int parse_excludes(int argc, char *argv[], struct pathname **exclude)
 }
 
 
-void print_version() {
+static void print_options(char *name)
+{
+	ERROR("SYNTAX: %s [options] filesystem [directories or files ", name);
+	ERROR("to extract or exclude (with -excludes)]\n");
+	ERROR("\t-v[ersion]\t\tprint version, licence and copyright ");
+	ERROR("information\n");
+	ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, default ");
+	ERROR("\"squashfs-root\"\n");
+	ERROR("\t-max[-depth] <levels>\tdescend at most <levels> of ");
+	ERROR("directories when\n\t\t\t\tunsquashing or listing\n");
+	ERROR("\t-excludes\t\ttreat files on command line as exclude files\n");
+	ERROR("\t-ex[clude-list]\t\tlist of files/dirs to be excluded, ");
+	ERROR("terminated with ';'\n");
+	ERROR("\t-follow[-symlinks]\tfollow symlinks in extract files, and ");
+	ERROR("add all\n\t\t\t\tfiles/symlinks needed to resolve extract ");
+	ERROR("file.\n\t\t\t\tImplies -no-wildcards\n");
+	ERROR("\t-missing[-symlinks]\tUnsquashfs will abort if any symlink ");
+	ERROR("can't be\n\t\t\t\tresolved in -follow-symlinks\n");
+	ERROR("\t-q[uiet]\t\tno verbose output\n");
+	ERROR("\t-n[o-progress]\t\tdon't display the progress bar\n");
+	ERROR("\t-no[-xattrs]\t\tdon't extract xattrs in file system");
+	ERROR(NOXOPT_STR"\n");
+	ERROR("\t-x[attrs]\t\textract xattrs in file system" XOPT_STR "\n");
+	ERROR("\t-u[ser-xattrs]\t\tonly extract user xattrs in file ");
+	ERROR("system.\n\t\t\t\tEnables extracting xattrs\n");
+	ERROR("\t-p[rocessors] <number>\tuse <number> processors.  ");
+	ERROR("By default will use\n");
+	ERROR("\t\t\t\tnumber of processors available\n");
+	ERROR("\t-i[nfo]\t\t\tprint files as they are unsquashed\n");
+	ERROR("\t-li[nfo]\t\tprint files as they are unsquashed with file\n");
+	ERROR("\t\t\t\tattributes (like ls -l output)\n");
+	ERROR("\t-l[s]\t\t\tlist filesystem, but don't unsquash\n");
+	ERROR("\t-ll[s]\t\t\tlist filesystem with file attributes (like\n");
+	ERROR("\t\t\t\tls -l output), but don't unsquash\n");
+	ERROR("\t-lln[umeric]\t\t-lls but with numeric uids and gids\n");
+	ERROR("\t-lc\t\t\tlist filesystem concisely, displaying only ");
+	ERROR("files\n\t\t\t\tand empty directories.  Don't unsquash\n");
+	ERROR("\t-llc\t\t\tlist filesystem concisely with file ");
+	ERROR("attributes,\n\t\t\t\tdisplaying only files and empty ");
+	ERROR("directories.\n\t\t\t\tDon't unsquash\n");
+	ERROR("\t-o[ffset] <bytes>\tskip <bytes> at start of <dest>.  ");
+	ERROR("Optionally a\n\t\t\t\tsuffix of K, M or G can be given to ");
+	ERROR("specify\n\t\t\t\tKbytes, Mbytes or Gbytes respectively ");
+	ERROR("(default\n\t\t\t\t0 bytes).\n");
+	ERROR("\t-f[orce]\t\tif file already exists then overwrite\n");
+	ERROR("\t-ig[nore-errors]\ttreat errors writing files to output ");
+	ERROR("as\n\t\t\t\tnon-fatal\n");
+	ERROR("\t-st[rict-errors]\ttreat all errors as fatal\n");
+	ERROR("\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on ");
+	ERROR("non-fatal\n\t\t\t\terrors\n");
+	ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
+	ERROR("\t-UTC\t\t\tuse UTC rather than local time zone ");
+	ERROR("when\n\t\t\t\tdisplaying time\n");
+	ERROR("\t-mkfs-time\t\tdisplay filesystem superblock time\n");
+	ERROR("\t-fstime\t\t\tsynonym for -mkfs-time\n");
+	ERROR("\t-extract-file <file>\tlist of directories or files to ");
+	ERROR("extract.\n\t\t\t\tOne per line\n");
+	ERROR("\t-exclude-file <file>\tlist of directories or files to ");
+	ERROR("exclude.\n\t\t\t\tOne per line\n");
+	ERROR("\t-e[f] <extract file>\tsynonym for -extract-file\n");
+	ERROR("\t-exc[f] <exclude file>\tsynonym for -exclude-file\n");
+	ERROR("\t-da[ta-queue] <size>\tset data queue to <size> Mbytes.  ");
+	ERROR("Default %d\n\t\t\t\tMbytes\n", DATA_BUFFER_DEFAULT);
+	ERROR("\t-fr[ag-queue] <size>\tset fragment queue to <size> Mbytes.  ");
+	ERROR("Default\n\t\t\t\t%d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
+	ERROR("\t-no-wild[cards]\t\tdo not use wildcard matching in extract ");
+	ERROR("names\n");
+	ERROR("\t-r[egex]\t\ttreat extract names as POSIX regular ");
+	ERROR("expressions\n");
+	ERROR("\t\t\t\trather than use the default shell ");
+	ERROR("wildcard\n\t\t\t\texpansion (globbing)\n");
+	ERROR("\t-L\t\t\tsynonym for -follow-symlinks\n");
+	ERROR("\nDecompressors available:\n");
+	display_compressors("", "");
+}
+
+
+void print_version()
+{
 	printf("unsquashfs version " VERSION " (" DATE ")\n");
 	printf("copyright (C) 2021 Phillip Lougher ");
 	printf("<phillip@squashfs.org.uk>\n\n");
@@ -3207,8 +3285,10 @@ int main(int argc, char *argv[])
 							argv[0], argv[i - 1]);
 				exit(1);
 			}
-		} else
-			goto options;
+		} else {
+			print_options(argv[0]);
+			exit(1);
+		}
 	}
 
 	if(lsonly || info)
@@ -3240,100 +3320,8 @@ int main(int argc, char *argv[])
 #endif
 
 	if(i == argc) {
-		if(!version) {
-options:
-			ERROR("SYNTAX: %s [options] filesystem [directories or "
-				"files to extract or exclude (with -excludes)]\n", argv[0]);
-			ERROR("\t-v[ersion]\t\tprint version, licence and "
-				"copyright information\n");
-			ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, "
-				"default \"squashfs-root\"\n");
-			ERROR("\t-max[-depth] <levels>\tdescend at most "
-				"<levels> of directories when"
-				"\n\t\t\t\tunsquashing or listing\n");
-			ERROR("\t-excludes\t\ttreat files on command line as exclude files\n");
-			ERROR("\t-ex[clude-list]\t\tlist of files/dirs to be "
-				"excluded, terminated with ';'\n");
-			ERROR("\t-follow[-symlinks]\tfollow symlinks in extract"
-				" files, and add all\n\t\t\t\tfiles/symlinks "
-				"needed to resolve extract file.\n\t\t\t\t"
-				"Implies -no-wildcards\n");
-			ERROR("\t-missing[-symlinks]\tUnsquashfs will abort "
-				"if any symlink can't be\n\t\t\t\tresolved in"
-				"-follow-symlinks\n");
-			ERROR("\t-q[uiet]\t\tno verbose output\n");
-			ERROR("\t-n[o-progress]\t\tdon't display the progress "
-				"bar\n");
-			ERROR("\t-no[-xattrs]\t\tdon't extract xattrs in file "
-				"system" NOXOPT_STR"\n");
-			ERROR("\t-x[attrs]\t\textract xattrs in file system"
-				XOPT_STR "\n");
-			ERROR("\t-u[ser-xattrs]\t\tonly extract user xattrs in "
-				"file system.\n\t\t\t\tEnables extracting "
-				"xattrs\n");
-			ERROR("\t-p[rocessors] <number>\tuse <number> "
-				"processors.  By default will use\n");
-			ERROR("\t\t\t\tnumber of processors available\n");
-			ERROR("\t-i[nfo]\t\t\tprint files as they are "
-				"unsquashed\n");
-			ERROR("\t-li[nfo]\t\tprint files as they are "
-				"unsquashed with file\n");
-			ERROR("\t\t\t\tattributes (like ls -l output)\n");
-			ERROR("\t-l[s]\t\t\tlist filesystem, but don't unsquash"
-				"\n");
-			ERROR("\t-ll[s]\t\t\tlist filesystem with file "
-				"attributes (like\n");
-			ERROR("\t\t\t\tls -l output), but don't unsquash\n");
-			ERROR("\t-lln[umeric]\t\t-lls but with numeric uids "
-				"and gids\n");
-			ERROR("\t-lc\t\t\tlist filesystem concisely, displaying"
-				" only files\n\t\t\t\tand empty directories.  "
-				"Don't unsquash\n");
-			ERROR("\t-llc\t\t\tlist filesystem concisely with file"
-				" attributes,\n\t\t\t\tdisplaying only files "
-				"and empty directories.\n\t\t\t\tDon't"
-				" unsquash\n");
-			ERROR("\t-o[ffset] <bytes>\tskip <bytes> at start of "
-				"<dest>.  Optionally a\n\t\t\t\tsuffix of "
-				"K, M or G can be given to specify "
-				"\n\t\t\t\tKbytes, Mbytes or Gbytes "
-				"respectively (default\n\t\t\t\t0 bytes).\n");
-			ERROR("\t-f[orce]\t\tif file already exists then "
-				"overwrite\n");
-			ERROR("\t-ig[nore-errors]\ttreat errors writing files "
-				"to output as\n\t\t\t\tnon-fatal\n");
-			ERROR("\t-st[rict-errors]\ttreat all errors as fatal\n");
-			ERROR("\t-no-exit[-code]\t\tdon't set exit code "
-				"(to nonzero) on non-fatal\n\t\t\t\terrors\n");
-			ERROR("\t-s[tat]\t\t\tdisplay filesystem superblock "
-				"information\n");
-			ERROR("\t-UTC\t\t\tuse UTC rather than local time "
-				"zone when\n\t\t\t\tdisplaying time\n");
-			ERROR("\t-mkfs-time\t\tdisplay filesystem superblock "
-				"time\n");
-			ERROR("\t-fstime\t\t\tsynonym for -mkfs-time\n");
-			ERROR("\t-extract-file <file>\tlist of directories or "
-				"files to extract.\n\t\t\t\tOne per line\n");
-			ERROR("\t-exclude-file <file>\tlist of directories or "
-				"files to exclude.\n\t\t\t\tOne per line\n");
-			ERROR("\t-e[f] <extract file>\tsynonym for -extract-file\n");
-			ERROR("\t-exc[f] <exclude file>\tsynonym for -exclude-file\n");
-			ERROR("\t-da[ta-queue] <size>\tset data queue to "
-				"<size> Mbytes.  Default %d\n\t\t\t\tMbytes\n",
-				DATA_BUFFER_DEFAULT);
-			ERROR("\t-fr[ag-queue] <size>\tset fragment queue to "
-				"<size> Mbytes.  Default\n\t\t\t\t%d Mbytes\n",
-				FRAGMENT_BUFFER_DEFAULT);
-			ERROR("\t-no-wild[cards]\t\tdo not use wildcard "
-				"matching in extract names\n");
-			ERROR("\t-r[egex]\t\ttreat extract names as POSIX "
-				"regular expressions\n");
-			ERROR("\t\t\t\trather than use the default shell "
-				"wildcard\n\t\t\t\texpansion (globbing)\n");
-			ERROR("\t-L\t\t\tsynonym for -follow-symlinks\n");
-			ERROR("\nDecompressors available:\n");
-			display_compressors("", "");
-		}
+		if(!version)
+			print_options(argv[0]);
 		exit(1);
 	}
 
