@@ -4968,7 +4968,121 @@ static void check_env_var()
 }
 
 
-static void print_version() {
+static void print_options(char *name, int total_mem)
+{
+	ERROR("SYNTAX:%s source1 source2 ...  dest [options] ", name);
+	ERROR("[-e list of exclude\ndirs/files]\n");
+	ERROR("\nFilesystem build options:\n");
+	ERROR("-comp <comp>\t\tselect <comp> compression\n");
+	ERROR("\t\t\tCompressors available:\n");
+	display_compressors("\t\t\t", COMP_DEFAULT);
+	ERROR("-b <block_size>\t\tset data block to <block_size>.  Default ");
+	ERROR("128 Kbytes\n");
+	ERROR("\t\t\tOptionally a suffix of K or M can be given to ");
+	ERROR("specify\n\t\t\tKbytes or Mbytes respectively\n");
+	ERROR("-reproducible\t\tbuild images that are reproducible");
+	ERROR(REP_STR "\n");
+	ERROR("-not-reproducible\tbuild images that are not reproducible");
+	ERROR(NOREP_STR "\n");
+	ERROR("-mkfs-time <time>\tset mkfs time to <time> which is an ");
+	ERROR("unsigned int\n");
+	ERROR("-fstime <time>\t\tsynonym for mkfs-time\n");
+	ERROR("-all-time <time>\tset all inode times to <time> which is an ");
+	ERROR("unsigned int\n");
+	ERROR("-no-exports\t\tdon't make the filesystem exportable via NFS\n");
+	ERROR("-no-sparse\t\tdon't detect sparse files\n");
+	ERROR("-no-xattrs\t\tdon't store extended attributes" NOXOPT_STR "\n");
+	ERROR("-xattrs\t\t\tstore extended attributes" XOPT_STR "\n");
+	ERROR("-noI\t\t\tdo not compress inode table\n");
+	ERROR("-noId\t\t\tdo not compress the uid/gid table (implied by ");
+	ERROR("-noI)\n");
+	ERROR("-noD\t\t\tdo not compress data blocks\n");
+	ERROR("-noF\t\t\tdo not compress fragment blocks\n");
+	ERROR("-noX\t\t\tdo not compress extended attributes\n");
+	ERROR("-no-fragments\t\tdo not use fragments\n");
+	ERROR("-always-use-fragments\tuse fragment blocks for files larger ");
+	ERROR("than block size\n");
+	ERROR("-no-duplicates\t\tdo not perform duplicate checking\n");
+	ERROR("-all-root\t\tmake all files owned by root\n");
+	ERROR("-root-mode <mode>\tset root directory permissions to octal ");
+	ERROR("<mode>\n");
+	ERROR("-force-uid <uid>\tset all file uids to <uid>\n");
+	ERROR("-force-gid <gid>\tset all file gids to <gid>\n");
+	ERROR("-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
+	ERROR("-keep-as-directory\tif one source directory is specified, ");
+	ERROR("create a root\n");
+	ERROR("\t\t\tdirectory containing that directory, rather than the\n");
+	ERROR("\t\t\tcontents of the directory\n");
+	ERROR("\nFilesystem filter options:\n");
+	ERROR("-p <pseudo-definition>\tAdd pseudo file definition\n");
+	ERROR("-pf <pseudo-file>\tAdd list of pseudo file definitions\n");
+	ERROR("\t\t\tPseudo definitions should be of the " "format\n");
+	ERROR("\t\t\t\tfilename d mode uid gid\n");
+	ERROR("\t\t\t\tfilename m mode uid gid\n");
+	ERROR("\t\t\t\tfilename b mode uid gid major minor\n");
+	ERROR("\t\t\t\tfilename c mode uid gid major minor\n");
+	ERROR("\t\t\t\tfilename f mode uid gid command\n");
+	ERROR("\t\t\t\tfilename s mode uid gid symlink\n");
+	ERROR("-sort <sort_file>\tsort files according to priorities in ");
+	ERROR("<sort_file>.  One\n\t\t\tfile or dir with priority per ");
+	ERROR("line.  Priority -32768 to\n\t\t\t32767, default priority 0\n");
+	ERROR("-ef <exclude_file>\tlist of exclude dirs/files.  ");
+	ERROR("One per line\n");
+	ERROR("-wildcards\t\tAllow extended shell wildcards (globbing) to be ");
+	ERROR("used in\n\t\t\texclude dirs/files\n");
+	ERROR("-regex\t\t\tAllow POSIX regular expressions to be used in ");
+	ERROR("exclude\n\t\t\tdirs/files\n");
+	ERROR("\nFilesystem append options:\n");
+	ERROR("-noappend\t\tdo not append to existing filesystem\n");
+	ERROR("-root-becomes <name>\twhen appending source ");
+	ERROR("files/directories, make the\n");
+	ERROR("\t\t\toriginal root become a subdirectory in the new root\n");
+	ERROR("\t\t\tcalled <name>, rather than adding the new source items\n");
+	ERROR("\t\t\tto the original root\n");
+	ERROR("\nMksquashfs runtime options:\n");
+	ERROR("-version\t\tprint version, licence and copyright message\n");
+	ERROR("-exit-on-error\t\ttreat normally ignored errors as fatal\n");
+	ERROR("-recover <name>\t\trecover filesystem data using recovery ");
+	ERROR("file <name>\n");
+	ERROR("-no-recovery\t\tdon't generate a recovery file\n");
+	ERROR("-quiet\t\t\tno verbose output\n");
+	ERROR("-info\t\t\tprint files written to filesystem\n");
+	ERROR("-no-progress\t\tdon't display the progress bar\n");
+	ERROR("-progress\t\tdisplay progress bar when using the -info ");
+	ERROR("option\n");
+	ERROR("-throttle <percentage>\tthrottle the I/O input rate by the ");
+	ERROR("given percentage.\n\t\t\tThis can be used to reduce the I/O ");
+	ERROR("and CPU consumption\n\t\t\tof Mksquashfs\n");
+	ERROR("-limit <percentage>\tlimit the I/O input rate to the given ");
+	ERROR("percentage.\n\t\t\tThis can be used to reduce the I/O and CPU ");
+	ERROR("consumption\n\t\t\tof Mksquashfs (alternative to -throttle)\n");
+	ERROR("-processors <number>\tUse <number> processors.  By default ");
+	ERROR("will use number of\n\t\t\tprocessors available\n");
+	ERROR("-mem <size>\t\tUse <size> physical memory.  Currently set ");
+	ERROR("to %dM\n", total_mem);
+	ERROR("\t\t\tOptionally a suffix of K, M or G can be given to ");
+	ERROR("specify\n\t\t\tKbytes, Mbytes or Gbytes respectively\n");
+	ERROR("\nMiscellaneous options:\n");
+	ERROR("-root-owned\t\talternative name for -all-root\n");
+	ERROR("-offset <offset>\tSkip <offset> bytes at the beginning of ");
+	ERROR("<dest>.\n\t\t\tOptionally a suffix of K, M or G can be given ");
+	ERROR("to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n");
+	ERROR("\t\t\tDefault 0 bytes.\n");
+	ERROR("-o <offset>\t\tsynonym for -offset\n");
+	ERROR("-noInodeCompression\talternative name for -noI\n");
+	ERROR("-noIdTableCompression\talternative name for -noId\n");
+	ERROR("-noDataCompression\talternative name for -noD\n");
+	ERROR("-noFragmentCompression\talternative name for -noF\n");
+	ERROR("-noXattrCompression\talternative name for -noX\n");
+	ERROR("\n-Xhelp\t\t\tprint compressor options for selected ");
+	ERROR("compressor\n");
+	ERROR("\nCompressors available and compressor specific options:\n");
+	display_compressor_usage(COMP_DEFAULT);
+}
+
+
+static void print_version()
+{
 	printf("mksquashfs version " VERSION " (" DATE ")\n");
 	printf("copyright (C) 2021 Phillip Lougher ");
 	printf("<phillip@squashfs.org.uk>\n\n");
@@ -5010,8 +5124,11 @@ int main(int argc, char *argv[])
 	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
 
         for(i = 1; i < argc && argv[i][0] != '-'; i++);
-	if(i < 3)
-		goto printOptions;
+	if(i < 3) {
+		print_options(argv[0], total_mem);
+		exit(1);
+	}
+
 	source_path = argv + 1;
 	source = i - 2;
 
@@ -5498,147 +5615,7 @@ print_compressor_options:
 			print_version();
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
-printOptions:
-			ERROR("SYNTAX:%s source1 source2 ...  dest [options] "
-				"[-e list of exclude\ndirs/files]\n", argv[0]);
-			ERROR("\nFilesystem build options:\n");
-			ERROR("-comp <comp>\t\tselect <comp> compression\n");
-			ERROR("\t\t\tCompressors available:\n");
-			display_compressors("\t\t\t", COMP_DEFAULT);
-			ERROR("-b <block_size>\t\tset data block to "
-				"<block_size>.  Default 128 Kbytes\n");
-			ERROR("\t\t\tOptionally a suffix of K or M can be"
-				" given to specify\n\t\t\tKbytes or Mbytes"
-				" respectively\n");
-			ERROR("-reproducible\t\tbuild images that are reproducible"
-				REP_STR "\n");
-			ERROR("-not-reproducible\tbuild images that are not reproducible"
-				NOREP_STR "\n");
-			ERROR("-mkfs-time <time>\tset mkfs time to <time> which is an unsigned int\n");
-			ERROR("-fstime <time>\t\tsynonym for mkfs-time\n");
-			ERROR("-all-time <time>\tset all inode times to <time> which is an unsigned int\n");
-			ERROR("-no-exports\t\tdon't make the filesystem "
-				"exportable via NFS\n");
-			ERROR("-no-sparse\t\tdon't detect sparse files\n");
-			ERROR("-no-xattrs\t\tdon't store extended attributes"
-				NOXOPT_STR "\n");
-			ERROR("-xattrs\t\t\tstore extended attributes" XOPT_STR
-				"\n");
-			ERROR("-noI\t\t\tdo not compress inode table\n");
-			ERROR("-noId\t\t\tdo not compress the uid/gid table"
-				" (implied by -noI)\n");
-			ERROR("-noD\t\t\tdo not compress data blocks\n");
-			ERROR("-noF\t\t\tdo not compress fragment blocks\n");
-			ERROR("-noX\t\t\tdo not compress extended "
-				"attributes\n");
-			ERROR("-no-fragments\t\tdo not use fragments\n");
-			ERROR("-always-use-fragments\tuse fragment blocks for "
-				"files larger than block size\n");
-			ERROR("-no-duplicates\t\tdo not perform duplicate "
-				"checking\n");
-			ERROR("-all-root\t\tmake all files owned by root\n");
-			ERROR("-root-mode <mode>\tset root directory permissions to octal <mode>\n");
-			ERROR("-force-uid <uid>\tset all file uids to <uid>\n");
-			ERROR("-force-gid <gid>\tset all file gids to <gid>\n");
-			ERROR("-nopad\t\t\tdo not pad filesystem to a multiple "
-				"of 4K\n");
-			ERROR("-keep-as-directory\tif one source directory is "
-				"specified, create a root\n");
-			ERROR("\t\t\tdirectory containing that directory, "
-				"rather than the\n");
-			ERROR("\t\t\tcontents of the directory\n");
-			ERROR("\nFilesystem filter options:\n");
-			ERROR("-p <pseudo-definition>\tAdd pseudo file "
-				"definition\n");
-			ERROR("-pf <pseudo-file>\tAdd list of pseudo file "
-				"definitions\n");
-			ERROR("\t\t\tPseudo definitions should be of the "
-				"format\n");
-			ERROR("\t\t\t\tfilename d mode uid gid\n");
-			ERROR("\t\t\t\tfilename m mode uid gid\n");
-			ERROR("\t\t\t\tfilename b mode uid gid major minor\n");
-			ERROR("\t\t\t\tfilename c mode uid gid major minor\n");
-			ERROR("\t\t\t\tfilename f mode uid gid command\n");
-			ERROR("\t\t\t\tfilename s mode uid gid symlink\n");
-			ERROR("-sort <sort_file>\tsort files according to "
-				"priorities in <sort_file>.  One\n");
-			ERROR("\t\t\tfile or dir with priority per line.  "
-				"Priority -32768 to\n");
-			ERROR("\t\t\t32767, default priority 0\n");
-			ERROR("-ef <exclude_file>\tlist of exclude dirs/files."
-				"  One per line\n");
-			ERROR("-wildcards\t\tAllow extended shell wildcards "
-				"(globbing) to be used in\n\t\t\texclude "
-				"dirs/files\n");
-			ERROR("-regex\t\t\tAllow POSIX regular expressions to "
-				"be used in exclude\n\t\t\tdirs/files\n");
-			ERROR("\nFilesystem append options:\n");
-			ERROR("-noappend\t\tdo not append to existing "
-				"filesystem\n");
-			ERROR("-root-becomes <name>\twhen appending source "
-				"files/directories, make the\n");
-			ERROR("\t\t\toriginal root become a subdirectory in "
-				"the new root\n");
-			ERROR("\t\t\tcalled <name>, rather than adding the new "
-				"source items\n");
-			ERROR("\t\t\tto the original root\n");
-			ERROR("\nMksquashfs runtime options:\n");
-			ERROR("-version\t\tprint version, licence and "
-				"copyright message\n");
-			ERROR("-exit-on-error\t\ttreat normally ignored errors "
-				"as fatal\n");
-			ERROR("-recover <name>\t\trecover filesystem data "
-				"using recovery file <name>\n");
-			ERROR("-no-recovery\t\tdon't generate a recovery "
-				"file\n");
-			ERROR("-quiet\t\t\tno verbose output\n");
-			ERROR("-info\t\t\tprint files written to filesystem\n");
-			ERROR("-no-progress\t\tdon't display the progress "
-				"bar\n");
-			ERROR("-progress\t\tdisplay progress bar when using "
-				"the -info option\n");
-			ERROR("-throttle <percentage>\tthrottle the I/O input "
-				"rate by the given percentage.\n\t\t\tThis "
-				"can be used to reduce the I/O and CPU "
-				"consumption\n\t\t\tof Mksquashfs\n");
-			ERROR("-limit <percentage>\tlimit the I/O input "
-				"rate to the given percentage.\n\t\t\tThis "
-				"can be used to reduce the I/O and CPU "
-				"consumption\n\t\t\tof Mksquashfs "
-				"(alternative to -throttle)\n");
-			ERROR("-processors <number>\tUse <number> processors."
-				"  By default will use number of\n");
-			ERROR("\t\t\tprocessors available\n");
-			ERROR("-mem <size>\t\tUse <size> physical memory.  "
-				"Currently set to %dM\n", total_mem);
-			ERROR("\t\t\tOptionally a suffix of K, M or G can be"
-				" given to specify\n\t\t\tKbytes, Mbytes or"
-				" Gbytes respectively\n");
-			ERROR("\nMiscellaneous options:\n");
-			ERROR("-root-owned\t\talternative name for -all-root"
-				"\n");
-			ERROR("-offset <offset>\tSkip <offset> bytes at the "
-				"beginning of <dest>.\n");
-			ERROR("\t\t\tOptionally a suffix of K, M or G can be"
-				" given to specify\n\t\t\tKbytes, Mbytes or"
-				" Gbytes respectively.\n");
-			ERROR("\t\t\tDefault 0 bytes.\n");
-			ERROR("-o <offset>\t\tsynonym for -offset\n");
-			ERROR("-noInodeCompression\talternative name for -noI"
-				"\n");
-			ERROR("-noIdTableCompression\talternative name for -noId"
-				"\n");
-			ERROR("-noDataCompression\talternative name for -noD"
-				"\n");
-			ERROR("-noFragmentCompression\talternative name for "
-				"-noF\n");
-			ERROR("-noXattrCompression\talternative name for "
-				"-noX\n");
-			ERROR("\n-Xhelp\t\t\tprint compressor options for"
-				" selected compressor\n");
-			ERROR("\nCompressors available and compressor specific "
-				"options:\n");
-			display_compressor_usage(COMP_DEFAULT);
+			print_options(argv[0], total_mem);
 			exit(1);
 		}
 	}
