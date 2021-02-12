@@ -5209,14 +5209,20 @@ int main(int argc, char *argv[])
 			readq = 4;
 		} else if(strcmp(argv[i], "-mkfs-time") == 0 ||
 				strcmp(argv[i], "-fstime") == 0) {
-			if((++i == argc) || !parse_num_unsigned(argv[i], &mkfs_time)) {
-				ERROR("%s: %s missing or invalid time value\n", argv[0], argv[i - 1]);
+			if((++i == argc) ||
+				!parse_num_unsigned(argv[i], &mkfs_time)) {
+					ERROR("%s: %s missing or invalid time "
+						"value\n", argv[0],
+						argv[i - 1]);
 				exit(1);
 			}
 			mkfs_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-all-time") == 0) {
-			if((++i == argc) || !parse_num_unsigned(argv[i], &all_time)) {
-				ERROR("%s: %s missing or invalid time value\n", argv[0], argv[i - 1]);
+			if((++i == argc) ||
+				!parse_num_unsigned(argv[i], &all_time)) {
+					ERROR("%s: %s missing or invalid time "
+						"value\n", argv[0],
+						argv[i - 1]);
 				exit(1);
 			}
 			all_time_opt = TRUE;
@@ -5394,9 +5400,12 @@ print_compressor_options:
 			force_progress = TRUE;
 		else if(strcmp(argv[i], "-no-exports") == 0)
 			exportable = FALSE;
-		else if(strcmp(argv[i], "-offset") == 0 || strcmp(argv[i], "-o") == 0) {
-			if((++i == argc) || !parse_numberll(argv[i], &start_offset, 1)) {
-				ERROR("%s: %s missing or invalid offset size\n", argv[0], argv[i - 1]);
+		else if(strcmp(argv[i], "-offset") == 0 ||
+						strcmp(argv[i], "-o") == 0) {
+			if((++i == argc) ||
+				!parse_numberll(argv[i], &start_offset, 1)) {
+					ERROR("%s: %s missing or invalid offset "
+						"size\n", argv[0], argv[i - 1]);
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-processors") == 0) {
