@@ -1802,7 +1802,7 @@ void add_symlink(struct directory_stack *stack, char *name)
  * of all symlinks found during the walk.
  *
  * follow_path (-follow-symlinks option) implies no wildcard matching,
- * due to the fact that with wildcards there is no single canonical pathame
+ * due to the fact that with wildcards there is no single canonical pathname
  * to be found.  Many pathnames may match or none at all.
  *
  * If follow_path fails to walk a pathname either because a component
