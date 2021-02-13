@@ -255,7 +255,7 @@ extern int fd;
 extern int no_xattrs;
 extern struct queue *to_reader, *to_inflate, *to_writer;
 extern struct cache *fragment_cache, *data_cache;
-struct compressor *comp;
+extern struct compressor *comp;
 extern int use_localtime;
 
 /* unsquashfs.c */
