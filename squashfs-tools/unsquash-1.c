@@ -415,7 +415,8 @@ int read_super_1(squashfs_operations **s_ops, void *s)
 {
 	squashfs_super_block_3 *sBlk_3 = s;
 
-	if(sBlk_3->s_magic != SQUASHFS_MAGIC || sBlk_3->s_major != 1)
+	if(sBlk_3->s_magic != SQUASHFS_MAGIC || sBlk_3->s_major != 1 ||
+							sBlk_3->s_minor != 0)
 		return -1;
 
 	sBlk.s.s_magic = sBlk_3->s_magic;
