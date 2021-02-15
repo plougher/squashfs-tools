@@ -222,5 +222,4 @@ extern int read_bytes(int, void *, int);
 extern unsigned short get_checksum_mem(char *, int);
 extern int reproducible;
 extern void *reader(void *arg);
-char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size);
 #endif

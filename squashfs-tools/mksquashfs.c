@@ -710,7 +710,7 @@ unsigned int get_guid(unsigned int guid)
 }
 
 
-char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size)
+static char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size)
 {
 	if(pathname == NULL) {
 		pathname = malloc(ALLOC_SIZE);
