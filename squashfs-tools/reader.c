@@ -37,6 +37,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "caches-queues-lists.h"
@@ -56,7 +57,7 @@ static void sigalrm_handler()
 }
 
 
-static char *pathname_reader(struct dir_ent *dir_ent)
+static char *pathname(struct dir_ent *dir_ent)
 {
 	static char *pathname = NULL;
 	static int size = ALLOC_SIZE;
@@ -64,7 +65,33 @@ static char *pathname_reader(struct dir_ent *dir_ent)
 	if (dir_ent->nonstandard_pathname)
 		return dir_ent->nonstandard_pathname;
 
-	return pathname = _pathname(dir_ent, pathname, &size);
+	if(pathname == NULL) {
+		pathname = malloc(ALLOC_SIZE);
+		if(pathname == NULL)
+			MEM_ERROR();
+	}
+
+	for(;;) {
+		int res = snprintf(pathname, size, "%s/%s",
+			dir_ent->our_dir->pathname,
+			dir_ent->source_name ? : dir_ent->name);
+
+		if(res < 0)
+			BAD_ERROR("snprintf failed in pathname\n");
+		else if(res >= size) {
+			/*
+			 * pathname is too small to contain the result, so
+			 * increase it and try again
+			 */
+			size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
+			pathname = realloc(pathname, size);
+			if(pathname == NULL)
+				MEM_ERROR();
+		} else
+			break;
+	}
+
+	return pathname;
 }
 
 
@@ -213,7 +240,7 @@ again:
 	blocks = (read_size + block_size - 1) >> block_log;
 
 	while(1) {
-		file = open(pathname_reader(dir_ent), O_RDONLY);
+		file = open(pathname(dir_ent), O_RDONLY);
 		if(file != -1 || errno != EINTR)
 			break;
 	}
@@ -289,7 +316,7 @@ restat:
 	res = fstat(file, &buf2);
 	if(res == -1) {
 		ERROR("Cannot stat dir/file %s because %s\n",
-			pathname_reader(dir_ent), strerror(errno));
+			pathname(dir_ent), strerror(errno));
 		goto read_err;
 	}
 
