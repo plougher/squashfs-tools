@@ -710,8 +710,14 @@ unsigned int get_guid(unsigned int guid)
 }
 
 
-static char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size)
+char *pathname(struct dir_ent *dir_ent)
 {
+	static char *pathname = NULL;
+	static int size = ALLOC_SIZE;
+
+	if (dir_ent->nonstandard_pathname)
+		return dir_ent->nonstandard_pathname;
+
 	if(pathname == NULL) {
 		pathname = malloc(ALLOC_SIZE);
 		if(pathname == NULL)
@@ -719,19 +725,19 @@ static char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size)
 	}
 
 	for(;;) {
-		int res = snprintf(pathname, *size, "%s/%s", 
+		int res = snprintf(pathname, size, "%s/%s",
 			dir_ent->our_dir->pathname,
 			dir_ent->source_name ? : dir_ent->name);
 
 		if(res < 0)
 			BAD_ERROR("snprintf failed in pathname\n");
-		else if(res >= *size) {
+		else if(res >= size) {
 			/*
 			 * pathname is too small to contain the result, so
 			 * increase it and try again
 			 */
-			*size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
-			pathname = realloc(pathname, *size);
+			size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
+			pathname = realloc(pathname, size);
 			if(pathname == NULL)
 				MEM_ERROR();
 		} else
@@ -741,17 +747,6 @@ static char *_pathname(struct dir_ent *dir_ent, char *pathname, int *size)
 	return pathname;
 }
 
-
-char *pathname(struct dir_ent *dir_ent)
-{
-	static char *pathname = NULL;
-	static int size = ALLOC_SIZE;
-
-	if (dir_ent->nonstandard_pathname)
-		return dir_ent->nonstandard_pathname;
-
-	return pathname = _pathname(dir_ent, pathname, &size);
-}
 
 
 char *subpathname(struct dir_ent *dir_ent)
