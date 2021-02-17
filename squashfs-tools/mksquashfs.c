@@ -262,6 +262,9 @@ struct dir_info *root_dir;
 FILE *log_fd;
 int logging=FALSE;
 
+/* how should Mksquashfs treat the source files? */
+int tarstyle = FALSE;
+
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 static void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type);
@@ -2812,6 +2815,38 @@ static inline void alloc_inode_no(struct inode_info *inode, unsigned int use_thi
 }
 
 
+static struct dir_info *create_dir(char *pathname, char *subpath, int depth)
+{
+	struct dir_info *dir;
+
+	dir = malloc(sizeof(struct dir_info));
+	if(dir == NULL)
+		MEM_ERROR();
+
+	dir->pathname = strdup(pathname);
+	dir->subpath = strdup(subpath);
+	dir->count = 0;
+	dir->directory_count = 0;
+	dir->dir_is_ldir = TRUE;
+	dir->list = NULL;
+	dir->depth = depth;
+	dir->excluded = 0;
+
+	return dir;
+}
+
+
+static struct dir_ent *lookup_name(struct dir_info *dir, char *name)
+{
+	struct dir_ent *dir_ent = dir->list;
+
+	for(; dir_ent && strcmp(dir_ent->name, name) != 0;
+					dir_ent = dir_ent->next);
+
+	return dir_ent;
+}
+
+
 static inline struct dir_ent *create_dir_entry(char *name, char *source_name,
 	char *nonstandard_pathname, struct dir_info *dir)
 {
@@ -3275,17 +3310,6 @@ static struct dir_ent *scan2_readdir(struct dir_info *dir, struct dir_ent *dir_e
 }
 
 
-static struct dir_ent *scan2_lookup(struct dir_info *dir, char *name)
-{
-	struct dir_ent *dir_ent = dir->list;
-
-	for(; dir_ent && strcmp(dir_ent->name, name) != 0;
-					dir_ent = dir_ent->next);
-
-	return dir_ent;
-}
-
-
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 {
 	struct dir_ent *dir_ent = NULL;
@@ -3305,7 +3329,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 	}
 
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
-		dir_ent = scan2_lookup(dir, pseudo_ent->name);
+		dir_ent = lookup_name(dir, pseudo_ent->name);
 		if(pseudo_ent->dev->type == 'm') {
 			struct stat *buf;
 			if(dir_ent == NULL) {
@@ -3424,7 +3448,12 @@ static void dir_scan3(struct dir_info *dir)
  */
 static void free_dir(struct dir_info *dir)
 {
-	struct dir_ent *dir_ent = dir->list;
+	struct dir_ent *dir_ent;
+
+	if(dir == NULL)
+		return;
+
+	dir_ent = dir->list;
 
 	while(dir_ent) {
 		struct dir_ent *tmp = dir_ent;
@@ -3845,6 +3874,336 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 		*inode);
 
 	scan7_freedir(&dir);
+}
+
+
+static char *walk_source(char *source, char **pathname, char **name)
+{
+	char *path = source, *start;
+
+	while(*source == '/')
+		source ++;
+
+	start = source;
+	while(*source != '/' && *source != '\0')
+		source ++;
+
+	*name = strndup(start, source - start);
+
+	if(*pathname == NULL)
+		*pathname = strndup(path, source - path);
+	else {
+		char *orig = *pathname;
+		int size = strlen(orig) + (source - path) + 2;
+
+		*pathname = malloc(size);
+		strcpy(*pathname, orig);
+		strcat(*pathname, "/");
+		strncat(*pathname, path, source - path);
+	}
+
+	while(*source == '/')
+		source ++;
+
+	return source;
+}
+
+
+static struct dir_info *add_source(struct dir_info *dir, char *source,
+			char *subpath, char *file, int depth)
+{
+	struct dir_info *sub;
+	struct dir_ent *entry = NULL;
+	struct stat buf;
+	char *name;
+	int res;
+
+	if(dir == NULL)
+		dir = create_dir("", subpath, depth);
+
+	source = walk_source(source, &file, &name);
+
+	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0) {
+		ERROR("Source path can't have '.' or '..' in it\n");
+		goto failed;
+	}
+
+	res = lstat(file, &buf);
+	if (res == -1) {
+		ERROR("Can't stat source %s because %s", file, strerror(errno));
+		goto failed;
+	}
+
+	entry = lookup_name(dir, name);
+
+	if(entry) {
+		/*
+		 * name already there.  This must be the same file, otherwise
+		 * we have a clash, as we can't have two different files with
+		 * the same pathname
+		 */
+		res = memcmp(&buf, &(entry->inode->buf), sizeof(buf));
+		if(res) {
+			ERROR("Can't have two different sources with same "
+								"pathname\n");
+			goto failed;
+		}
+
+		/*
+		 * Matching file.
+		 *
+		 * - If we're at the leaf of the source, then we either match
+		 *   or encompass this pre-existing entry
+		 *
+		 * - If we're not at the leaf of the source, we will recurse
+		 *   walking the source
+		 */
+		if(source[0] == '\0') {
+			if(entry->dir) {
+				free_dir(entry->dir);
+				entry->dir = NULL;
+			}
+			free(name);
+			free(file);
+		} else if(S_ISDIR(buf.st_mode)) {
+			subpath = subpathname(entry);
+			sub = add_source(entry->dir, source, subpath, file, depth + 1);
+			if(sub == NULL) {
+				entry->dir = NULL;
+				goto failed;
+			}
+			if(entry->dir == NULL) {
+				entry->dir = sub;
+				sub->dir_ent = entry;
+			}
+		} else {
+			ERROR("Component of source is not a directory\n");
+			goto failed;
+		}
+	} else {
+		/*
+		 * No matching name found.
+		 *
+		 * - If we're at the leaf of the source, then add it.
+		 *
+		 * - If we're not at the leaf of the source, we will add it,
+		 *   and recurse walking the source
+		 */
+		if(source[0] == '\0' && S_ISLNK(buf.st_mode)) {
+			int byte;
+			static char buff[65536]; /* overflow safe */
+			struct inode_info *i;
+
+			byte = readlink(file, buff, 65536);
+			if(byte == -1) {
+				ERROR("Failed to read symlink %s", file);
+				goto failed;
+			} else if(byte == 65536) {
+				ERROR("Symlink %s is greater than 65536 "
+						"bytes!", file);
+				goto failed;
+			}
+
+			/* readlink doesn't 0 terminate the returned path */
+			buff[byte] = '\0';
+			entry = create_dir_entry(name, NULL, file, dir);
+			i = lookup_inode3(&buf, 0, 0, buff, byte + 1);
+			add_dir_entry(entry, NULL, i);
+		} else if(source[0] == '\0') {
+			entry = create_dir_entry(name, NULL, file, dir);
+			add_dir_entry(entry, NULL, lookup_inode(&buf));
+			if(S_ISDIR(buf.st_mode))
+				dir->directory_count ++;
+		} else if(S_ISDIR(buf.st_mode)) {
+			entry = create_dir_entry(name, NULL, file, dir);
+			subpath = subpathname(entry);
+			sub = add_source(NULL, source, subpath, file, depth + 1);
+			if(sub == NULL)
+				goto failed;
+			add_dir_entry(entry, sub, lookup_inode(&buf));
+			dir->directory_count ++;
+		} else {
+			ERROR("Component of source is not a directory\n");
+			goto failed;
+		}
+	}
+
+	return dir;
+
+failed:
+	free(name);
+	free(file);
+	free_dir(dir);
+	return NULL;
+}
+
+
+static struct dir_info *populate_tree(struct dir_info *dir)
+{
+	struct dir_ent *entry;
+	struct dir_info *new;
+
+	for(entry = dir->list; entry; entry = entry->next)
+		if(S_ISDIR(entry->inode->buf.st_mode)) {
+			if(entry->dir == NULL) {
+				new = dir_scan1(pathname(entry),
+					subpathname(entry), NULL, scan1_readdir,
+					dir->depth + 1);
+				if(new == NULL)
+					return NULL;
+
+				entry->dir = new;
+				new->dir_ent = entry;
+			} else {
+				new = populate_tree(entry->dir);
+				if(new == NULL)
+					return NULL;
+			}
+		}
+
+	return dir;
+}
+
+
+static void process_source(squashfs_inode *inode, int argc, char *argv[],
+								int progress)
+{
+	int size = 0, absolute = FALSE, relative = FALSE, i, inroot;
+	char *buff = NULL, *result;
+	struct stat buf;
+	struct dir_ent *entry;
+
+	/*
+	 * Get current working directory to see if we're at the
+	 * root directory
+	 */
+	while(1) {
+		buff = realloc(buff, size += 512);
+		if(buff == NULL)
+			MEM_ERROR();
+
+		result = getcwd(buff, size);
+		if(result)
+			break;
+		if(errno != ERANGE)
+			BAD_ERROR("Getcwd failed\n");
+	}
+
+	if(buff[0] == '/')
+		inroot = TRUE;
+
+	free(buff);
+
+	for(i = 0; i < argc; i++) {
+		root_dir = add_source(root_dir, argv[i], "", NULL, 1);
+		if(root_dir == NULL)
+			BAD_ERROR("Failed to add source %s\n", argv[i]);
+
+		/* does argv[i] start from the root directory? */
+		if(argv[i][0] == '/' || inroot)
+			absolute = TRUE;
+		else
+			relative = TRUE;
+	}
+
+	entry = create_dir_entry("", NULL, "", scan1_opendir("", "", 0));
+
+	if(absolute && relative) {
+		/*
+		 * Top level directory conflict.  Create dummy
+		 * top level directory
+		 */
+		memset(&buf, 0, sizeof(buf));
+		buf.st_mode = (root_mode_opt) ? root_mode | S_IFDIR :
+				S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+		buf.st_uid = getuid();
+		buf.st_gid = getgid();
+		buf.st_mtime = time(NULL);
+		entry->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
+	} else {
+		char *pathname = inroot ? "/" : ".";
+
+		if(lstat(pathname, &buf) == -1)
+			BAD_ERROR("Cannot stat %s because %s\n",
+				pathname, strerror(errno));
+
+		if(root_mode_opt)
+			buf.st_mode = root_mode | S_IFDIR;
+
+		entry->inode = lookup_inode(&buf);
+	}
+
+
+	entry->dir = root_dir;
+	root_dir->dir_ent = entry;
+
+	root_dir = populate_tree(root_dir);
+	if(root_dir == NULL)
+		BAD_ERROR("Failed to read directory hierarchy\n");
+
+
+	/*
+	 * Process most actions and any pseudo files
+	 */
+	if(actions() || get_pseudo())
+		dir_scan2(root_dir, get_pseudo());
+
+	/*
+	 * Process move actions
+	 */
+	if(move_actions()) {
+		dir_scan3(root_dir);
+		do_move_actions();
+	}
+
+	/*
+	 * Process prune actions
+	 */
+	if(prune_actions())
+		dir_scan4(root_dir);
+
+	/*
+	 * Process empty actions
+	 */
+	if(empty_actions())
+		dir_scan5(root_dir);
+
+	/*
+	 * Sort directories and compute the inode numbers
+	 */
+	dir_scan6(root_dir);
+
+	alloc_inode_no(entry->inode, root_inode_number);
+
+	eval_actions(root_dir, entry);
+
+	if(sorted)
+		generate_file_priorities(root_dir, 0,
+			&root_dir->dir_ent->inode->buf);
+
+	if(appending) {
+		sigset_t sigmask;
+
+		restore_thread = init_restore_thread();
+		sigemptyset(&sigmask);
+		sigaddset(&sigmask, SIGINT);
+		sigaddset(&sigmask, SIGTERM);
+		sigaddset(&sigmask, SIGUSR1);
+		if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) != 0)
+			BAD_ERROR("Failed to set signal mask\n");
+		write_destination(fd, SQUASHFS_START, 4, "\0\0\0\0");
+	}
+
+	queue_put(to_reader, root_dir);
+
+	set_progressbar_state(progress);
+
+	if(sorted)
+		sort_files_and_write(root_dir);
+
+	dir_scan7(inode, root_dir);
+	entry->inode->inode = *inode;
+	entry->inode->type = SQUASHFS_DIR_TYPE;
 }
 
 
@@ -5177,7 +5536,10 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = source + 2; i < argc; i++) {
-		if(strcmp(argv[i], "-throttle") == 0) {
+		if(strcmp(argv[i], "-no-strip") == 0 ||
+					strcmp(argv[i], "-tarstyle") == 0)
+			tarstyle = TRUE;
+		else if(strcmp(argv[i], "-throttle") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
 				ERROR("%s: %s missing or invalid value\n",
 							argv[0], argv[i - 1]);
@@ -5624,6 +5986,10 @@ print_compressor_options:
 		}
 	}
 
+	// FIXME
+	if(tarstyle && !old_exclude)
+		BAD_ERROR("Wildcards currently not supported with -tarstyle\n");
+
 	check_env_var();
 
 	/*
@@ -5829,6 +6195,10 @@ print_compressor_options:
 			root_inode_offset =
 			SQUASHFS_INODE_OFFSET(sBlk.root_inode);
 
+		// FIXME
+		if(tarstyle)
+			BAD_ERROR("Appending is currently not supported with -tarstyle\n");
+
 		if((bytes = read_filesystem(root_name, fd, &sBlk, &inode_table,
 				&data_cache, &directory_table,
 				&directory_data_cache, &last_directory_block,
@@ -5955,14 +6325,19 @@ print_compressor_options:
 	dump_actions(); 
 	dump_pseudos();
 
-	if(delete && !keep_as_directory && source == 1 &&
-			S_ISDIR(source_buf.st_mode))
-		dir_scan(&inode, source_path[0], scan1_readdir, progress);
-	else if(!keep_as_directory && source == 1 &&
-			S_ISDIR(source_buf.st_mode))
-		dir_scan(&inode, source_path[0], scan1_single_readdir, progress);
-	else
-		dir_scan(&inode, "", scan1_encomp_readdir, progress);
+	if(tarstyle)
+		process_source(&inode, source, source_path, progress);
+	else {
+		if(delete && !keep_as_directory && source == 1 &&
+					S_ISDIR(source_buf.st_mode))
+			dir_scan(&inode, source_path[0], scan1_readdir, progress);
+		else if(!keep_as_directory && source == 1 &&
+					S_ISDIR(source_buf.st_mode))
+			dir_scan(&inode, source_path[0], scan1_single_readdir, progress);
+		else
+			dir_scan(&inode, "", scan1_encomp_readdir, progress);
+	}
+
 	sBlk.root_inode = inode;
 	sBlk.inodes = inode_count;
 	sBlk.s_magic = SQUASHFS_MAGIC;
