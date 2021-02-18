@@ -3448,18 +3448,14 @@ static void dir_scan3(struct dir_info *dir)
  */
 static void free_dir(struct dir_info *dir)
 {
-	struct dir_ent *dir_ent;
-
-	if(dir == NULL)
-		return;
-
-	dir_ent = dir->list;
+	struct dir_ent *dir_ent = dir->list;
 
 	while(dir_ent) {
 		struct dir_ent *tmp = dir_ent;
 
 		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
-			free_dir(dir_ent->dir);
+			if(dir_ent->dir)
+				free_dir(dir_ent->dir);
 
 		dir_ent = dir_ent->next;
 		free_dir_entry(tmp);
@@ -3909,14 +3905,20 @@ static char *walk_source(char *source, char **pathname, char **name)
 }
 
 
-static struct dir_info *add_source(struct dir_info *dir, char *source,
-			char *subpath, char *file, int depth)
+static struct dir_info *add_source(struct dir_info *sdir, char *source,
+		char *subpath, char *file, struct pathnames *paths, int depth)
 {
 	struct dir_info *sub;
 	struct dir_ent *entry = NULL;
+	struct pathnames *new = NULL;
+	struct dir_info *dir = sdir;
 	struct stat buf;
 	char *name;
+	static char *full_source;
 	int res;
+
+	if(file == NULL)
+		full_source = source;
 
 	if(dir == NULL)
 		dir = create_dir("", subpath, depth);
@@ -3924,15 +3926,16 @@ static struct dir_info *add_source(struct dir_info *dir, char *source,
 	source = walk_source(source, &file, &name);
 
 	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0) {
-		ERROR("Source path can't have '.' or '..' in it\n");
+		ERROR("Error: Source path can't have '.' or '..' in it with -tarstyle\n");
 		goto failed;
 	}
 
 	res = lstat(file, &buf);
 	if (res == -1) {
-		ERROR("Can't stat source %s because %s", file, strerror(errno));
+		ERROR("Error: Can't stat %s because %s", file, strerror(errno));
 		goto failed;
 	}
+
 
 	entry = lookup_name(dir, name);
 
@@ -3944,7 +3947,7 @@ static struct dir_info *add_source(struct dir_info *dir, char *source,
 		 */
 		res = memcmp(&buf, &(entry->inode->buf), sizeof(buf));
 		if(res) {
-			ERROR("Can't have two different sources with same "
+			ERROR("Error: Can't have two different sources with same "
 								"pathname\n");
 			goto failed;
 		}
@@ -3966,8 +3969,10 @@ static struct dir_info *add_source(struct dir_info *dir, char *source,
 			free(name);
 			free(file);
 		} else if(S_ISDIR(buf.st_mode)) {
+			excluded(entry->name, paths, &new);
 			subpath = subpathname(entry);
-			sub = add_source(entry->dir, source, subpath, file, depth + 1);
+			sub = add_source(entry->dir, source, subpath, file, new,
+								depth + 1);
 			if(sub == NULL) {
 				entry->dir = NULL;
 				goto failed;
@@ -3977,7 +3982,7 @@ static struct dir_info *add_source(struct dir_info *dir, char *source,
 				sub->dir_ent = entry;
 			}
 		} else {
-			ERROR("Component of source is not a directory\n");
+			ERROR("ERROR: Source component %s is not a directory\n", name);
 			goto failed;
 		}
 	} else {
@@ -3989,6 +3994,26 @@ static struct dir_info *add_source(struct dir_info *dir, char *source,
 		 * - If we're not at the leaf of the source, we will add it,
 		 *   and recurse walking the source
 		 */
+		if(old_exclude && old_excluded(file, &buf)) {
+			ERROR("Error: Source %s is excluded\n", file);
+			goto failed;
+		}
+
+		if(old_exclude == FALSE && excluded(name, paths, &new)) {
+			ERROR("Error: Source %s is excluded\n", file);
+			goto failed;
+		}
+
+		entry = create_dir_entry(name, NULL, file, dir);
+
+		if(exclude_actions()) {
+			if(eval_exclude_actions(name, file, subpath, &buf,
+							depth, entry)) {
+				ERROR("Error: Source %s is excluded\n", file);
+				goto failed;
+			}
+		}
+
 		if(source[0] == '\0' && S_ISLNK(buf.st_mode)) {
 			int byte;
 			static char buff[65536]; /* overflow safe */
@@ -3996,58 +4021,68 @@ static struct dir_info *add_source(struct dir_info *dir, char *source,
 
 			byte = readlink(file, buff, 65536);
 			if(byte == -1) {
-				ERROR("Failed to read symlink %s", file);
+				ERROR("Error: Failed to read source symlink %s", file);
 				goto failed;
 			} else if(byte == 65536) {
-				ERROR("Symlink %s is greater than 65536 "
+				ERROR("Error: Symlink %s is greater than 65536 "
 						"bytes!", file);
 				goto failed;
 			}
 
 			/* readlink doesn't 0 terminate the returned path */
 			buff[byte] = '\0';
-			entry = create_dir_entry(name, NULL, file, dir);
 			i = lookup_inode3(&buf, 0, 0, buff, byte + 1);
 			add_dir_entry(entry, NULL, i);
 		} else if(source[0] == '\0') {
-			entry = create_dir_entry(name, NULL, file, dir);
 			add_dir_entry(entry, NULL, lookup_inode(&buf));
 			if(S_ISDIR(buf.st_mode))
 				dir->directory_count ++;
 		} else if(S_ISDIR(buf.st_mode)) {
-			entry = create_dir_entry(name, NULL, file, dir);
 			subpath = subpathname(entry);
-			sub = add_source(NULL, source, subpath, file, depth + 1);
+			sub = add_source(NULL, source, subpath, file, new, depth + 1);
 			if(sub == NULL)
-				goto failed;
+				goto failed2;
 			add_dir_entry(entry, sub, lookup_inode(&buf));
 			dir->directory_count ++;
 		} else {
-			ERROR("Component of source is not a directory\n");
+			ERROR("Error: Source component %s is not a directory\n", name);
 			goto failed;
 		}
 	}
 
+	free(new);
 	return dir;
 
 failed:
-	free(name);
-	free(file);
-	free_dir(dir);
-	return NULL;
+	ERROR("Error: Failed to add source %s, ignoring\n", full_source);
+failed2:
+	free(new);
+	if(entry)
+		free_dir_entry(entry);
+	else {
+		free(name);
+		free(file);
+	}
+	if(sdir == NULL)
+		free_dir(dir);
+	return sdir;
 }
 
 
-static struct dir_info *populate_tree(struct dir_info *dir)
+static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *paths)
 {
 	struct dir_ent *entry;
 	struct dir_info *new;
 
 	for(entry = dir->list; entry; entry = entry->next)
 		if(S_ISDIR(entry->inode->buf.st_mode)) {
+			struct pathnames *newp = NULL;
+
+			excluded(entry->name, paths, &newp);
+
 			if(entry->dir == NULL) {
 				new = dir_scan1(pathname(entry),
-					subpathname(entry), NULL, scan1_readdir,
+					subpathname(entry), newp, scan1_readdir,
 					dir->depth + 1);
 				if(new == NULL)
 					return NULL;
@@ -4055,10 +4090,12 @@ static struct dir_info *populate_tree(struct dir_info *dir)
 				entry->dir = new;
 				new->dir_ent = entry;
 			} else {
-				new = populate_tree(entry->dir);
+				new = populate_tree(entry->dir, newp);
 				if(new == NULL)
 					return NULL;
 			}
+
+			free(newp);
 		}
 
 	return dir;
@@ -4095,16 +4132,19 @@ static void process_source(squashfs_inode *inode, int argc, char *argv[],
 	free(buff);
 
 	for(i = 0; i < argc; i++) {
-		root_dir = add_source(root_dir, argv[i], "", NULL, 1);
-		if(root_dir == NULL)
-			BAD_ERROR("Failed to add source %s\n", argv[i]);
+		root_dir = add_source(root_dir, argv[i], "", NULL, paths, 1);
 
-		/* does argv[i] start from the root directory? */
-		if(argv[i][0] == '/' || inroot)
-			absolute = TRUE;
-		else
-			relative = TRUE;
+		if(root_dir) {
+			/* does argv[i] start from the root directory? */
+			if(argv[i][0] == '/' || inroot)
+				absolute = TRUE;
+			else
+				relative = TRUE;
+		}
 	}
+
+	if(root_dir == NULL)
+		BAD_ERROR("Failed to add any source file\n");
 
 	entry = create_dir_entry("", NULL, "", scan1_opendir("", "", 0));
 
@@ -4137,7 +4177,7 @@ static void process_source(squashfs_inode *inode, int argc, char *argv[],
 	entry->dir = root_dir;
 	root_dir->dir_ent = entry;
 
-	root_dir = populate_tree(root_dir);
+	root_dir = populate_tree(root_dir, paths);
 	if(root_dir == NULL)
 		BAD_ERROR("Failed to read directory hierarchy\n");
 
@@ -5985,10 +6025,6 @@ print_compressor_options:
 			exit(1);
 		}
 	}
-
-	// FIXME
-	if(tarstyle && !old_exclude)
-		BAD_ERROR("Wildcards currently not supported with -tarstyle\n");
 
 	check_env_var();
 
