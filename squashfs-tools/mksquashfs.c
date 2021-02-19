@@ -3226,8 +3226,13 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 			continue;
 		}
 
-		if((old_exclude && old_excluded(filename, &buf)) ||
-			(!old_exclude && excluded(dir_name, paths, &new))) {
+		if(old_exclude && old_excluded(filename, &buf)) {
+			add_excluded(dir);
+			free_dir_entry(dir_ent);
+			continue;
+		}
+
+		if(!old_exclude && excluded(dir_name, paths, &new)) {
 			add_excluded(dir);
 			free_dir_entry(dir_ent);
 			continue;
