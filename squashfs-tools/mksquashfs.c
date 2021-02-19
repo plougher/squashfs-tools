@@ -264,6 +264,7 @@ int logging=FALSE;
 
 /* how should Mksquashfs treat the source files? */
 int tarstyle = FALSE;
+int keep_as_directory = FALSE;
 
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 static void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
@@ -280,6 +281,9 @@ static void dir_scan4(struct dir_info *dir);
 static void dir_scan5(struct dir_info *dir);
 static void dir_scan6(struct dir_info *dir);
 static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info);
+static struct dir_ent *scan1_readdir(struct dir_info *dir);
+static struct dir_ent *scan1_single_readdir(struct dir_info *dir);
+static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir);
 static struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct fragment *fragment,
 	unsigned short checksum, unsigned short fragment_checksum,
@@ -2920,48 +2924,10 @@ static inline void add_excluded(struct dir_info *dir)
 }
 
 
-static void dir_scan(squashfs_inode *inode, char *pathname,
-	struct dir_ent *(_readdir)(struct dir_info *), int progress)
+squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 {
-	struct stat buf;
-	struct dir_ent *dir_ent;
+	squashfs_inode inode;
 	
-	root_dir = dir_scan1(pathname, "", paths, _readdir, 1);
-	if(root_dir == NULL)
-		return;
-
-	/* Create root directory dir_ent and associated inode, and connect
-	 * it to the root directory dir_info structure */
-	dir_ent = create_dir_entry("", NULL, pathname,
-						scan1_opendir("", "", 0));
-
-	if(pathname[0] == '\0') {
-		/*
- 		 * dummy top level directory, if multiple sources specified on
-		 * command line
-		 */
-		memset(&buf, 0, sizeof(buf));
-		buf.st_mode = (root_mode_opt) ? root_mode | S_IFDIR : S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-		buf.st_uid = getuid();
-		buf.st_gid = getgid();
-		buf.st_mtime = time(NULL);
-		buf.st_dev = 0;
-		buf.st_ino = 0;
-		dir_ent->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
-	} else {
-		if(lstat(pathname, &buf) == -1)
-			/* source directory has disappeared? */
-			BAD_ERROR("Cannot stat source directory %s because %s\n",
-				pathname, strerror(errno));
-		if(root_mode_opt)
-			buf.st_mode = root_mode | S_IFDIR;
-
-		dir_ent->inode = lookup_inode(&buf);
-	}
-
-	dir_ent->dir = root_dir;
-	root_dir->dir_ent = dir_ent;
-
 	/*
 	 * Process most actions and any pseudo files
 	 */
@@ -3021,9 +2987,89 @@ static void dir_scan(squashfs_inode *inode, char *pathname,
 	if(sorted)
 		sort_files_and_write(root_dir);
 
-	dir_scan7(inode, root_dir);
-	dir_ent->inode->inode = *inode;
+	dir_scan7(&inode, root_dir);
+	dir_ent->inode->inode = inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
+
+	return inode;
+}
+
+
+static squashfs_inode scan_single(char *pathname, int progress)
+{
+	struct stat buf;
+	struct dir_ent *dir_ent;
+
+	if(appending)
+		root_dir = dir_scan1(pathname, "", paths, scan1_single_readdir, 1);
+	else
+		root_dir = dir_scan1(pathname, "", paths, scan1_readdir, 1);
+
+	if(root_dir == NULL)
+		BAD_ERROR("Failed to scan source directory\n");
+
+	/* Create root directory dir_ent and associated inode, and connect
+	 * it to the root directory dir_info structure */
+	dir_ent = create_dir_entry("", NULL, pathname, scan1_opendir("", "", 0));
+
+	if(lstat(pathname, &buf) == -1)
+		/* source directory has disappeared? */
+		BAD_ERROR("Cannot stat source directory %s because %s\n",
+						pathname, strerror(errno));
+	if(root_mode_opt)
+		buf.st_mode = root_mode | S_IFDIR;
+
+	dir_ent->inode = lookup_inode(&buf);
+	dir_ent->dir = root_dir;
+	root_dir->dir_ent = dir_ent;
+
+	return do_directory_scans(dir_ent, progress);
+}
+
+
+static squashfs_inode scan_encomp(int progress)
+{
+	struct stat buf;
+	struct dir_ent *dir_ent;
+
+	root_dir = dir_scan1("", "", paths, scan1_encomp_readdir, 1);
+	if(root_dir == NULL)
+		BAD_ERROR("Failed to scan source\n");
+
+	/* Create root directory dir_ent and associated inode, and connect
+	 * it to the root directory dir_info structure */
+	dir_ent = create_dir_entry("", NULL, "", scan1_opendir("", "", 0));
+
+	/*
+	 * dummy top level directory, multiple sources specified on
+	 * command line
+	 */
+	memset(&buf, 0, sizeof(buf));
+	if(root_mode_opt)
+		buf.st_mode = root_mode | S_IFDIR;
+	else
+		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+	buf.st_uid = getuid();
+	buf.st_gid = getgid();
+	buf.st_mtime = time(NULL);
+	buf.st_dev = 0;
+	buf.st_ino = 0;
+	dir_ent->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
+	dir_ent->dir = root_dir;
+	root_dir->dir_ent = dir_ent;
+
+	return do_directory_scans(dir_ent, progress);
+}
+
+
+squashfs_inode dir_scan(int directory, int progress)
+{
+	int single = !keep_as_directory && source == 1;
+
+	if(single)
+		return scan_single(source_path[0], progress);
+	else
+		return scan_encomp(progress);
 }
 
 
@@ -4107,8 +4153,7 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 }
 
 
-static void process_source(squashfs_inode *inode, int argc, char *argv[],
-								int progress)
+static squashfs_inode process_source(int progress)
 {
 	int size = 0, absolute = FALSE, relative = FALSE, i, inroot;
 	char *buff = NULL, *result;
@@ -4136,12 +4181,12 @@ static void process_source(squashfs_inode *inode, int argc, char *argv[],
 
 	free(buff);
 
-	for(i = 0; i < argc; i++) {
-		root_dir = add_source(root_dir, argv[i], "", NULL, paths, 1);
+	for(i = 0; i < source; i++) {
+		root_dir = add_source(root_dir, source_path[i], "", NULL, paths, 1);
 
 		if(root_dir) {
 			/* does argv[i] start from the root directory? */
-			if(argv[i][0] == '/' || inroot)
+			if(source_path[i][0] == '/' || inroot)
 				absolute = TRUE;
 			else
 				relative = TRUE;
@@ -4187,68 +4232,7 @@ static void process_source(squashfs_inode *inode, int argc, char *argv[],
 		BAD_ERROR("Failed to read directory hierarchy\n");
 
 
-	/*
-	 * Process most actions and any pseudo files
-	 */
-	if(actions() || get_pseudo())
-		dir_scan2(root_dir, get_pseudo());
-
-	/*
-	 * Process move actions
-	 */
-	if(move_actions()) {
-		dir_scan3(root_dir);
-		do_move_actions();
-	}
-
-	/*
-	 * Process prune actions
-	 */
-	if(prune_actions())
-		dir_scan4(root_dir);
-
-	/*
-	 * Process empty actions
-	 */
-	if(empty_actions())
-		dir_scan5(root_dir);
-
-	/*
-	 * Sort directories and compute the inode numbers
-	 */
-	dir_scan6(root_dir);
-
-	alloc_inode_no(entry->inode, root_inode_number);
-
-	eval_actions(root_dir, entry);
-
-	if(sorted)
-		generate_file_priorities(root_dir, 0,
-			&root_dir->dir_ent->inode->buf);
-
-	if(appending) {
-		sigset_t sigmask;
-
-		restore_thread = init_restore_thread();
-		sigemptyset(&sigmask);
-		sigaddset(&sigmask, SIGINT);
-		sigaddset(&sigmask, SIGTERM);
-		sigaddset(&sigmask, SIGUSR1);
-		if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) != 0)
-			BAD_ERROR("Failed to set signal mask\n");
-		write_destination(fd, SQUASHFS_START, 4, "\0\0\0\0");
-	}
-
-	queue_put(to_reader, root_dir);
-
-	set_progressbar_state(progress);
-
-	if(sorted)
-		sort_files_and_write(root_dir);
-
-	dir_scan7(inode, root_dir);
-	entry->inode->inode = *inode;
-	entry->inode->type = SQUASHFS_DIR_TYPE;
+	return do_directory_scans(entry, progress);
 }
 
 
@@ -5503,7 +5487,6 @@ int main(int argc, char *argv[])
 	struct stat buf, source_buf;
 	int res, i;
 	char *b, *root_name = NULL;
-	int keep_as_directory = FALSE;
 	squashfs_inode inode;
 	int readq;
 	int fragq;
@@ -6367,17 +6350,9 @@ print_compressor_options:
 	dump_pseudos();
 
 	if(tarstyle)
-		process_source(&inode, source, source_path, progress);
-	else {
-		if(delete && !keep_as_directory && source == 1 &&
-					S_ISDIR(source_buf.st_mode))
-			dir_scan(&inode, source_path[0], scan1_readdir, progress);
-		else if(!keep_as_directory && source == 1 &&
-					S_ISDIR(source_buf.st_mode))
-			dir_scan(&inode, source_path[0], scan1_single_readdir, progress);
-		else
-			dir_scan(&inode, "", scan1_encomp_readdir, progress);
-	}
+		inode = process_source(progress);
+	else
+		inode = dir_scan(S_ISDIR(source_buf.st_mode), progress);
 
 	sBlk.root_inode = inode;
 	sBlk.inodes = inode_count;
