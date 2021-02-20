@@ -4007,10 +4007,17 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		 * Matching file.
 		 *
 		 * - If we're at the leaf of the source, then we either match
-		 *   or encompass this pre-existing entry
+		 *   or encompass this pre-existing include.  So delete any
+		 *   sub-directories of this pre-existing include.
 		 *
-		 * - If we're not at the leaf of the source, we will recurse
-		 *   walking the source
+		 * - If we're not at the leaf of the source, but we're at
+		 *   the leaf of the pre-existing include, then the
+		 *   pre-existing include encompasses this source.  So nothing
+		 *   more to do.
+		 *
+		 * - Otherwise this is not the leaf of the source, or the leaf of
+		 *   the pre-existing include, so recurse continuing walking the
+		 *   source.
 		 */
 		if(source[0] == '\0') {
 			if(entry->dir) {
@@ -4020,17 +4027,13 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 			free(name);
 			free(file);
 		} else if(S_ISDIR(buf.st_mode)) {
-			excluded(entry->name, paths, &new);
-			subpath = subpathname(entry);
-			sub = add_source(entry->dir, source, subpath, file, new,
-								depth + 1);
-			if(sub == NULL) {
-				entry->dir = NULL;
-				goto failed;
-			}
-			if(entry->dir == NULL) {
-				entry->dir = sub;
-				sub->dir_ent = entry;
+			if(entry->dir) {
+				excluded(entry->name, paths, &new);
+				subpath = subpathname(entry);
+				sub = add_source(entry->dir, source, subpath,
+							file, new, depth + 1);
+				if(sub == NULL)
+					goto failed2;
 			}
 		} else {
 			ERROR("ERROR: Source component %s is not a directory\n", name);
