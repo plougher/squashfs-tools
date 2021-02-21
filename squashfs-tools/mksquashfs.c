@@ -3965,11 +3965,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 	struct dir_info *dir = sdir;
 	struct stat buf;
 	char *name;
-	static char *full_source;
 	int res;
-
-	if(file == NULL)
-		full_source = source;
 
 	if(dir == NULL)
 		dir = create_dir("", subpath, depth);
@@ -4024,8 +4020,6 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 				free_dir(entry->dir);
 				entry->dir = NULL;
 			}
-			free(name);
-			free(file);
 		} else if(S_ISDIR(buf.st_mode)) {
 			if(entry->dir) {
 				excluded(entry->name, paths, &new);
@@ -4033,12 +4027,15 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 				sub = add_source(entry->dir, source, subpath,
 							file, new, depth + 1);
 				if(sub == NULL)
-					goto failed2;
+					goto failed;
 			}
 		} else {
 			ERROR("ERROR: Source component %s is not a directory\n", name);
 			goto failed;
 		}
+
+		free(name);
+		free(file);
 	} else {
 		/*
 		 * No matching name found.
@@ -4095,7 +4092,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 			subpath = subpathname(entry);
 			sub = add_source(NULL, source, subpath, file, new, depth + 1);
 			if(sub == NULL)
-				goto failed2;
+				goto failed;
 			add_dir_entry(entry, sub, lookup_inode(&buf));
 			dir->directory_count ++;
 		} else {
@@ -4108,8 +4105,6 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 	return dir;
 
 failed:
-	ERROR("Error: Failed to add source %s, ignoring\n", full_source);
-failed2:
 	free(new);
 	if(entry)
 		free_dir_entry(entry);
@@ -4119,7 +4114,7 @@ failed2:
 	}
 	if(sdir == NULL)
 		free_dir(dir);
-	return sdir;
+	return NULL;
 }
 
 
@@ -4162,6 +4157,7 @@ static squashfs_inode process_source(int progress)
 	char *buff = NULL, *result;
 	struct stat buf;
 	struct dir_ent *entry;
+	struct dir_info *new;
 
 	/*
 	 * Get current working directory to see if we're at the
@@ -4185,15 +4181,18 @@ static squashfs_inode process_source(int progress)
 	free(buff);
 
 	for(i = 0; i < source; i++) {
-		root_dir = add_source(root_dir, source_path[i], "", NULL, paths, 1);
+		new = add_source(root_dir, source_path[i], "", NULL, paths, 1);
 
-		if(root_dir) {
+		if(new) {
 			/* does argv[i] start from the root directory? */
 			if(source_path[i][0] == '/' || inroot)
 				absolute = TRUE;
 			else
 				relative = TRUE;
-		}
+			root_dir = new;
+		} else
+			ERROR("Error: Failed to add source %s, ignoring\n",
+							source_path[i]);
 	}
 
 	if(root_dir == NULL)
