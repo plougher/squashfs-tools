@@ -4158,7 +4158,7 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 
 static squashfs_inode process_source(int progress)
 {
-	int size = 0, absolute = FALSE, relative = FALSE, i, inroot;
+	int size = 0, absolute = FALSE, relative = FALSE, i, inroot = FALSE;
 	char *buff = NULL, *result;
 	struct stat buf;
 	struct dir_ent *entry;
@@ -4179,7 +4179,7 @@ static squashfs_inode process_source(int progress)
 			BAD_ERROR("Getcwd failed\n");
 	}
 
-	if(buff[0] == '/')
+	if(strcmp(buff, "/") == 0)
 		inroot = TRUE;
 
 	free(buff);
@@ -4214,7 +4214,7 @@ static squashfs_inode process_source(int progress)
 		buf.st_mtime = time(NULL);
 		entry->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
 	} else {
-		char *pathname = inroot ? "/" : ".";
+		char *pathname = absolute ? "/" : ".";
 
 		if(lstat(pathname, &buf) == -1)
 			BAD_ERROR("Cannot stat %s because %s\n",
