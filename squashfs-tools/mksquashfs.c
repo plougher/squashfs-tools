@@ -3960,7 +3960,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		char *subpath, char *file, struct pathnames *paths, int depth)
 {
 	struct dir_info *sub;
-	struct dir_ent *entry = NULL;
+	struct dir_ent *entry;
 	struct pathnames *new = NULL;
 	struct dir_info *dir = sdir;
 	struct stat buf;
@@ -3974,15 +3974,14 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 
 	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0) {
 		ERROR("Error: Source path can't have '.' or '..' in it with -tarstyle\n");
-		goto failed;
+		goto failed_early;
 	}
 
 	res = lstat(file, &buf);
 	if (res == -1) {
 		ERROR("Error: Can't stat %s because %s", file, strerror(errno));
-		goto failed;
+		goto failed_early;
 	}
-
 
 	entry = lookup_name(dir, name);
 
@@ -3996,7 +3995,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		if(res) {
 			ERROR("Error: Can't have two different sources with same "
 								"pathname\n");
-			goto failed;
+			goto failed_match;
 		}
 
 		/*
@@ -4027,11 +4026,11 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 				sub = add_source(entry->dir, source, subpath,
 							file, new, depth + 1);
 				if(sub == NULL)
-					goto failed;
+					goto failed_match;
 			}
 		} else {
 			ERROR("ERROR: Source component %s is not a directory\n", name);
-			goto failed;
+			goto failed_match;
 		}
 
 		free(name);
@@ -4047,12 +4046,12 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		 */
 		if(old_exclude && old_excluded(file, &buf)) {
 			ERROR("Error: Source %s is excluded\n", file);
-			goto failed;
+			goto failed_early;
 		}
 
 		if(old_exclude == FALSE && excluded(name, paths, &new)) {
 			ERROR("Error: Source %s is excluded\n", file);
-			goto failed;
+			goto failed_early;
 		}
 
 		entry = create_dir_entry(name, NULL, file, dir);
@@ -4061,7 +4060,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 			if(eval_exclude_actions(name, file, subpath, &buf,
 							depth, entry)) {
 				ERROR("Error: Source %s is excluded\n", file);
-				goto failed;
+				goto failed_entry;
 			}
 		}
 
@@ -4073,11 +4072,11 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 			byte = readlink(file, buff, 65536);
 			if(byte == -1) {
 				ERROR("Error: Failed to read source symlink %s", file);
-				goto failed;
+				goto failed_entry;
 			} else if(byte == 65536) {
 				ERROR("Error: Symlink %s is greater than 65536 "
 						"bytes!", file);
-				goto failed;
+				goto failed_entry;
 			}
 
 			/* readlink doesn't 0 terminate the returned path */
@@ -4092,28 +4091,37 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 			subpath = subpathname(entry);
 			sub = add_source(NULL, source, subpath, file, new, depth + 1);
 			if(sub == NULL)
-				goto failed;
+				goto failed_entry;
 			add_dir_entry(entry, sub, lookup_inode(&buf));
 			dir->directory_count ++;
 		} else {
 			ERROR("Error: Source component %s is not a directory\n", name);
-			goto failed;
+			goto failed_entry;
 		}
 	}
 
 	free(new);
 	return dir;
 
-failed:
+failed_early:
 	free(new);
-	if(entry)
-		free_dir_entry(entry);
-	else {
-		free(name);
-		free(file);
-	}
+	free(name);
+	free(file);
 	if(sdir == NULL)
 		free_dir(dir);
+	return NULL;
+
+failed_entry:
+	free(new);
+	free_dir_entry(entry);
+	if(sdir == NULL)
+		free_dir(dir);
+	return NULL;
+
+failed_match:
+	free(new);
+	free(name);
+	free(file);
 	return NULL;
 }
 
