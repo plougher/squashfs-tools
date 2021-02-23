@@ -558,9 +558,6 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		}
 	}
 	
-	/* trim any over allocation */
-	inode_table = realloc(inode_table, bytes);
-
 	printf("Read existing filesystem, %d inodes scanned\n", files);
 	return inode_table;
 
