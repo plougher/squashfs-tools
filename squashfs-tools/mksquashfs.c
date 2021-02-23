@@ -2245,8 +2245,10 @@ static void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent,
 	char dont_put;
 
 	fragment = frag_duplicate(file_buffer, &dont_put);
-	*duplicate_file = !fragment;
-	if(!fragment) {
+	if(fragment)
+		*duplicate_file = TRUE;
+	else {
+		*duplicate_file = FALSE;
 		fragment = get_and_fill_fragment(file_buffer, dir_ent);
 		if(duplicate_checking)
 			add_non_dup(size, 0, NULL, 0, fragment, 0, checksum,
