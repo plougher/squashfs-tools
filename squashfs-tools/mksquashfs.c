@@ -4233,7 +4233,7 @@ static squashfs_inode process_source(int progress)
 	if(root_dir == NULL)
 		BAD_ERROR("Failed to add any source file\n");
 
-	entry = create_dir_entry("", NULL, "", scan1_opendir("", "", 0));
+	new = scan1_opendir("", "", 0);
 
 	if(absolute && relative) {
 		/*
@@ -4246,6 +4246,7 @@ static squashfs_inode process_source(int progress)
 		buf.st_uid = getuid();
 		buf.st_gid = getgid();
 		buf.st_mtime = time(NULL);
+		entry = create_dir_entry("", NULL, "", new);
 		entry->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
 	} else {
 		char *pathname = absolute ? "/" : ".";
@@ -4257,6 +4258,7 @@ static squashfs_inode process_source(int progress)
 		if(root_mode_opt)
 			buf.st_mode = root_mode | S_IFDIR;
 
+		entry = create_dir_entry("", NULL, pathname, new);
 		entry->inode = lookup_inode(&buf);
 	}
 
