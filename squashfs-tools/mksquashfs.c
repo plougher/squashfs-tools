@@ -3068,7 +3068,7 @@ squashfs_inode dir_scan(int directory, int progress)
 {
 	int single = !keep_as_directory && source == 1;
 
-	if(single)
+	if(single && directory)
 		return scan_single(source_path[0], progress);
 	else
 		return scan_encomp(progress);
