@@ -174,7 +174,7 @@ error:
         ERROR_START("Cannot stat sortlist entry \"%s\"\n", path);
         ERROR("This is probably because you're using the wrong file\n");
         ERROR("path relative to the source directories.");
-	ERROR_EXIT("  Ignoring");
+	ERROR_EXIT("  Ignoring\n");
 	/*
 	 * Historical note
 	 * Failure to stat a sortlist entry is deliberately ignored, even

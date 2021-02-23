@@ -125,7 +125,7 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 				ERROR_START("llistxattr for %s failed in "
 					"read_attrs, because %s", filename,
 					strerror(errno));
-				ERROR_EXIT(".  Ignoring");
+				ERROR_EXIT(".  Ignoring\n");
 			}
 			return 0;
 		}
@@ -144,7 +144,7 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 				ERROR_START("llistxattr for %s failed in "
 					"read_attrs, because %s", filename,
 					strerror(errno));
-				ERROR_EXIT(".  Ignoring");
+				ERROR_EXIT(".  Ignoring\n");
 				return 0;
 			}
 		}
@@ -176,7 +176,7 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 				ERROR_START("lgetxattr failed for %s in "
 					"read_attrs, because %s", filename,
 					strerror(errno));
-				ERROR_EXIT(".  Ignoring");
+				ERROR_EXIT(".  Ignoring\n");
 				free(xattr_list[i].full_name);
 				goto failed;
 			}
@@ -196,7 +196,7 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 					ERROR_START("lgetxattr failed for %s "
 						"in read_attrs, because %s",
 						filename, strerror(errno));
-					ERROR_EXIT(".  Ignoring");
+					ERROR_EXIT(".  Ignoring\n");
 					free(xattr_list[i].full_name);
 					goto failed;
 				}
