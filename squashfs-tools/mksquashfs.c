@@ -3924,6 +3924,21 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 }
 
 
+static void handle_root_entries(struct dir_info *dir)
+{
+	int i;
+
+	if(dir->count == 0) {
+		for(i = 0; i < old_root_entries; i++) {
+			if(old_root_entry[i].inode.type == SQUASHFS_DIR_TYPE)
+				dir->directory_count ++;
+			add_dir_entry2(strdup(old_root_entry[i].name), NULL,
+				NULL, NULL, &old_root_entry[i].inode, dir);
+		}
+	}
+}
+
+
 static char *walk_source(char *source, char **pathname, char **name)
 {
 	char *path = source, *start;
@@ -3970,6 +3985,9 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 	if(dir == NULL)
 		dir = create_dir("", subpath, depth);
 
+	if(appending && file == NULL)
+		handle_root_entries(dir);
+
 	source = walk_source(source, &file, &name);
 
 	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0) {
@@ -3989,8 +4007,17 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		/*
 		 * name already there.  This must be the same file, otherwise
 		 * we have a clash, as we can't have two different files with
-		 * the same pathname
+		 * the same pathname.
+		 *
+		 * An original root entry from the file being appended to
+		 * is never the same file.
 		 */
+		if(entry->inode->root_entry) {
+			ERROR("Source %s conflicts with name in filesystem "
+						"being appended to\n", name);
+			goto failed_early;
+		}
+
 		res = memcmp(&buf, &(entry->inode->buf), sizeof(buf));
 		if(res) {
 			ERROR("Error: Can't have two different sources with same "
@@ -4132,7 +4159,7 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 	struct dir_info *new;
 
 	for(entry = dir->list; entry; entry = entry->next)
-		if(S_ISDIR(entry->inode->buf.st_mode)) {
+		if(S_ISDIR(entry->inode->buf.st_mode) && !entry->inode->root_entry) {
 			struct pathnames *newp = NULL;
 
 			excluded(entry->name, paths, &newp);
@@ -6228,10 +6255,6 @@ print_compressor_options:
 			SQUASHFS_INODE_BLK(sBlk.root_inode),
 			root_inode_offset =
 			SQUASHFS_INODE_OFFSET(sBlk.root_inode);
-
-		// FIXME
-		if(tarstyle)
-			BAD_ERROR("Appending is currently not supported with -tarstyle\n");
 
 		if((bytes = read_filesystem(root_name, fd, &sBlk, &inode_table,
 				&data_cache, &directory_table,
