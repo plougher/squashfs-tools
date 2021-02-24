@@ -5397,6 +5397,9 @@ static void print_options(char *name, int total_mem)
 	ERROR("SYNTAX:%s source1 source2 ...  dest [options] ", name);
 	ERROR("[-e list of exclude\ndirs/files]\n");
 	ERROR("\nFilesystem build options:\n");
+	ERROR("-no-strip\t\tact like tar, and do not strip leading ");
+	ERROR("directories\n\t\t\tfrom source files\n");
+	ERROR("-tarstyle\t\talternative name for -no-strip\n");
 	ERROR("-comp <comp>\t\tselect <comp> compression\n");
 	ERROR("\t\t\tCompressors available:\n");
 	display_compressors("\t\t\t", COMP_DEFAULT);
