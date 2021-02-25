@@ -2007,7 +2007,7 @@ static int duplicate(long long file_size, long long bytes,
 					*start = dupl_ptr->start;
 					*fragment = dupl_ptr->fragment;
 					cache_block_put(frag_buffer);
-					return FALSE;
+					return TRUE;
 				}
 				cache_block_put(frag_buffer);
 			}
@@ -2019,7 +2019,7 @@ static int duplicate(long long file_size, long long bytes,
 	add_non_dup(file_size, bytes, *block_list, *start, *fragment, checksum,
 					fragment_checksum, checksum_flag, TRUE);
 
-	return TRUE;
+	return FALSE;
 }
 
 
