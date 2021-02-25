@@ -266,6 +266,9 @@ int logging=FALSE;
 int tarstyle = FALSE;
 int keep_as_directory = FALSE;
 
+/* Should Mksquashfs detect hardlinked files? */
+int no_hardlinks = FALSE;
+
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 static void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type);
@@ -2751,11 +2754,11 @@ static struct inode_info *lookup_inode3(struct stat *buf, int pseudo, int id,
 
 	/*
 	 * Look-up inode in hash table, if it already exists we have a
-	 * hard-link, so increment the nlink count and return it.
-	 * Don't do the look-up for directories because we don't hard-link
-	 * directories.
+	 * hardlink, so increment the nlink count and return it.
+	 * Don't do the look-up for directories because Unix/Linux doesn't
+	 * allow hard-links to directories.
 	 */
-	if ((buf->st_mode & S_IFMT) != S_IFDIR) {
+	if ((buf->st_mode & S_IFMT) != S_IFDIR && !no_hardlinks) {
 		for(inode = inode_info[ino_hash]; inode; inode = inode->next) {
 			if(memcmp(buf, &inode->buf, sizeof(struct stat)) == 0) {
 				inode->nlink ++;
@@ -5429,6 +5432,7 @@ static void print_options(char *name, int total_mem)
 	ERROR("-always-use-fragments\tuse fragment blocks for files larger ");
 	ERROR("than block size\n");
 	ERROR("-no-duplicates\t\tdo not perform duplicate checking\n");
+	ERROR("-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n");
 	ERROR("-all-root\t\tmake all files owned by root\n");
 	ERROR("-root-mode <mode>\tset root directory permissions to octal ");
 	ERROR("<mode>\n");
@@ -5607,7 +5611,9 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = source + 2; i < argc; i++) {
-		if(strcmp(argv[i], "-no-strip") == 0 ||
+		if(strcmp(argv[i], "-no-hardlinks") == 0)
+			no_hardlinks = TRUE;
+		else if(strcmp(argv[i], "-no-strip") == 0 ||
 					strcmp(argv[i], "-tarstyle") == 0)
 			tarstyle = TRUE;
 		else if(strcmp(argv[i], "-throttle") == 0) {
