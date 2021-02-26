@@ -1162,7 +1162,7 @@ static void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 }
 
 
-static void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
+static squashfs_inode write_dir(struct dir_info *dir_info,
 	struct directory *dir)
 {
 	unsigned int dir_size = dir->p - dir->buff;
@@ -1237,16 +1237,23 @@ static void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 		directory_cache_bytes -= SQUASHFS_METADATA_SIZE;
 	}
 
-	*inode = create_inode(dir_info, dir_info->dir_ent, SQUASHFS_DIR_TYPE,
+	dir_count ++;
+
+#ifndef SQUASHFS_TRACE
+	return create_inode(dir_info, dir_info->dir_ent, SQUASHFS_DIR_TYPE,
 		dir_size + 3, directory_block, directory_offset, NULL, NULL,
 		dir, 0);
-
-#ifdef SQUASHFS_TRACE
+#else
 	{
 		unsigned char *dirp;
 		int count;
+		squashfs_inode inode;
 
-		TRACE("Directory contents of inode 0x%llx\n", *inode);
+		inode = create_inode(dir_info, dir_info->dir_ent, SQUASHFS_DIR_TYPE,
+			dir_size + 3, directory_block, directory_offset, NULL, NULL,
+			dir, 0);
+
+		TRACE("Directory contents of inode 0x%llx\n", inode);
 		dirp = dir->buff;
 		while(dirp < dir->p) {
 			char buffer[SQUASHFS_NAME_LEN + 1];
@@ -1271,9 +1278,10 @@ static void write_dir(squashfs_inode *inode, struct dir_info *dir_info,
 					1;
 			}
 		}
+
+		return inode;
 	}
 #endif
-	dir_count ++;
 }
 
 
@@ -3920,7 +3928,7 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 			squashfs_type, &dir);
 	}
 
-	write_dir(inode, dir_info, &dir);
+	*inode = write_dir(dir_info, &dir);
 	INFO("directory %s inode 0x%llx\n", subpathname(dir_info->dir_ent),
 		*inode);
 
