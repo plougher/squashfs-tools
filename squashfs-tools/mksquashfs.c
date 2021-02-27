@@ -2235,13 +2235,13 @@ static struct file_buffer *get_file_buffer()
 }
 
 
-static void write_file_empty(squashfs_inode *inode, struct dir_ent *dir_ent,
+static squashfs_inode write_file_empty(struct dir_ent *dir_ent,
 	struct file_buffer *file_buffer, int *duplicate_file)
 {
 	file_count ++;
 	*duplicate_file = FALSE;
 	cache_block_put(file_buffer);
-	*inode = create_inode(NULL, dir_ent, SQUASHFS_FILE_TYPE, 0, 0, 0,
+	return create_inode(NULL, dir_ent, SQUASHFS_FILE_TYPE, 0, 0, 0,
 		 NULL, &empty_fragment, NULL, 0);
 }
 
@@ -2660,7 +2660,7 @@ again:
 	else if(read_buffer->file_size == -1)
 		status = write_file_process(inode, dir, read_buffer, dup);
 	else if(read_buffer->file_size == 0)
-		write_file_empty(inode, dir, read_buffer, dup);
+		*inode = write_file_empty(dir, read_buffer, dup);
 	else if(read_buffer->fragment && read_buffer->c_byte)
 		write_file_frag(inode, dir, read_buffer, dup);
 	else
@@ -2673,7 +2673,7 @@ again:
 	} else if(status == 1) {
 		ERROR_START("Failed to read file %s", pathname(dir));
 		ERROR_EXIT(", creating empty file\n");
-		write_file_empty(inode, dir, NULL, dup);
+		*inode = write_file_empty(dir, NULL, dup);
 	}
 }
 
