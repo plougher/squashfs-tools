@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2014
+ * Copyright (c) 2009, 2010, 2014, 2017, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -23,6 +23,11 @@
  *
  * pseudo.h
  */
+struct pseudo_dev_link {
+	struct stat	buf;
+	char		*filename;
+};
+
 struct pseudo_dev {
 	char		type;
 	unsigned int	mode;
@@ -32,8 +37,9 @@ struct pseudo_dev {
 	unsigned int	minor;
 	int		pseudo_id;
 	union {
-		char		*command;
-		char		*symlink;
+		char			*command;
+		char			*symlink;
+		struct pseudo_dev_link	*link;
 	};
 };
 
@@ -50,8 +56,8 @@ struct pseudo {
 	struct pseudo_entry	*name;
 };
 
-extern int read_pseudo_def(char *);
-extern int read_pseudo_file(char *);
+extern int read_pseudo_definition(char *, char *);
+extern int read_pseudo_file(char *, char *);
 extern struct pseudo *pseudo_subdir(char *, struct pseudo *);
 extern struct pseudo_entry *pseudo_readdir(struct pseudo *);
 extern struct pseudo_dev *get_pseudo_file(int);

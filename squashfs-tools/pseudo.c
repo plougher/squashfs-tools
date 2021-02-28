@@ -47,6 +47,7 @@ extern int read_file(char *filename, char *type, int (parse_line)(char *));
 struct pseudo_dev **pseudo_file = NULL;
 struct pseudo *pseudo = NULL;
 int pseudo_count = 0;
+static char *destination_file;
 
 static char *get_component(char *target, char **targname)
 {
@@ -268,7 +269,125 @@ struct pseudo_dev *get_pseudo_file(int pseudo_id)
 }
 
 
-int read_pseudo_def(char *def)
+static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char *def)
+{
+	char *linkname, *link;
+	int quoted = FALSE;
+	struct pseudo_dev *dev = NULL;
+	static struct stat *dest_buf = NULL;
+
+	/*
+	 * Stat destination file.  We need to do this to prevent people
+	 * from creating a circular loop, connecting the output to the
+	 * input (only needed for appending, otherwise the destination
+	 * file will not exist).
+	 */
+	if(dest_buf == NULL) {
+		dest_buf = malloc(sizeof(struct stat));
+		if(dest_buf == NULL)
+			MEM_ERROR();
+
+		memset(dest_buf, 0, sizeof(struct stat));
+		lstat(destination_file, dest_buf);
+	}
+
+
+	/*
+	 * Scan for filename, don't use sscanf() and "%s" because
+	 * that can't handle filenames with spaces.
+	 *
+	 * Filenames with spaces should either escape (backslash) the
+	 * space or use double quotes.
+	 */
+	linkname = malloc(strlen(def) + 1);
+	if(linkname == NULL)
+		MEM_ERROR();
+
+	for(link = linkname; (quoted || !isspace(*def)) && *def != '\0';) {
+		if(*def == '"') {
+			quoted = !quoted;
+			def ++;
+			continue;
+		}
+
+		if(*def == '\\') {
+			def ++;
+			if (*def == '\0')
+				break;
+		}
+		*link ++ = *def ++;
+	}
+	*link = '\0';
+
+	if(*linkname == '\0') {
+		ERROR("Not enough or invalid arguments in pseudo link file "
+			"definition \"%s\"\n", orig_def);
+		goto error;
+	}
+
+	dev = malloc(sizeof(struct pseudo_dev));
+	if(dev == NULL)
+		MEM_ERROR();
+
+	memset(dev, 0, sizeof(struct pseudo_dev));
+
+	dev->link = malloc(sizeof(struct pseudo_dev_link));
+	if(dev->link == NULL)
+		MEM_ERROR();
+
+	if(lstat(linkname, &dev->link->buf) == -1) {
+		ERROR("Cannot stat pseudo link file %s because %s\n",
+			linkname, strerror(errno));
+		goto error;
+	}
+
+	if(S_ISDIR(dev->link->buf.st_mode)) {
+		ERROR("Pseudo link file %s is a directory, ", linkname);
+		ERROR("which cannot be hardlinked to\n");
+		goto error;
+	}
+
+	if(S_ISREG(dev->link->buf.st_mode)) {
+		/*
+		 * Check we're not trying to create a circular loop,
+		 * connecting the output destination file to the
+		 * input
+		 */
+		if(memcmp(&dev->link->buf, dest_buf, sizeof(struct stat)) == 0) {
+			ERROR("Pseudo link file %s is the ", linkname);
+			ERROR("destination output file, which cannot be linked to\n");
+			goto error;
+		}
+	}
+
+	dev->type = 'l';
+	dev->link->filename = strdup(linkname);
+
+	pseudo = add_pseudo(pseudo, dev, name, name);
+
+	free(filename);
+	free(linkname);
+	return TRUE;
+
+error:
+	ERROR("Pseudo definitions should be of the format\n");
+	ERROR("\tfilename d mode uid gid\n");
+	ERROR("\tfilename m mode uid gid\n");
+	ERROR("\tfilename b mode uid gid major minor\n");
+	ERROR("\tfilename c mode uid gid major minor\n");
+	ERROR("\tfilename f mode uid gid command\n");
+	ERROR("\tfilename s mode uid gid symlink\n");
+	ERROR("\tfilename l filename\n");
+	if(dev)
+		free(dev->link);
+	free(dev);
+	free(filename);
+	free(linkname);
+	return FALSE;
+}
+
+
+static int read_pseudo_def(char *def)
 {
 	int n, bytes;
 	int quoted = 0;
@@ -316,11 +435,23 @@ int read_pseudo_def(char *def)
 		goto error;
 	}
 
-	n = sscanf(def, " %c %o %99s %99s %n", &type, &mode, suid, sgid,
-		&bytes);
+	n = sscanf(def, " %c %n", &type, &bytes);
 	def += bytes;
 
-	if(n < 4) {
+	if(n < 1) {
+		ERROR("Not enough or invalid arguments in pseudo file "
+			"definition \"%s\"\n", orig_def);
+		goto error;
+	}
+
+	if(type == 'l')
+		return read_pseudo_def_link(orig_def, filename, name, def);
+
+
+	n = sscanf(def, "%o %99s %99s %n", &mode, suid, sgid, &bytes);
+	def += bytes;
+
+	if(n < 3) {
 		ERROR("Not enough or invalid arguments in pseudo file "
 			"definition \"%s\"\n", orig_def);
 		switch(n) {
@@ -503,13 +634,24 @@ error:
 	ERROR("\tfilename c mode uid gid major minor\n");
 	ERROR("\tfilename f mode uid gid command\n");
 	ERROR("\tfilename s mode uid gid symlink\n");
+	ERROR("\tfilename l filename\n");
 	free(filename);
 	return FALSE;
 }
 
 
-int read_pseudo_file(char *filename)
+int read_pseudo_definition(char *filename, char *destination)
 {
+	destination_file = destination;
+
+	return read_pseudo_def(filename);
+}
+
+
+int read_pseudo_file(char *filename, char *destination)
+{
+	destination_file = destination;
+
 	return read_file(filename, "pseudo", read_pseudo_def);
 }
 

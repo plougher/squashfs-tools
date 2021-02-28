@@ -3436,14 +3436,16 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			continue;
 		}
 
-		memset(&buf, 0, sizeof(buf));
-		buf.st_mode = pseudo_ent->dev->mode;
-		buf.st_uid = pseudo_ent->dev->uid;
-		buf.st_gid = pseudo_ent->dev->gid;
-		buf.st_rdev = makedev(pseudo_ent->dev->major,
-			pseudo_ent->dev->minor);
-		buf.st_mtime = time(NULL);
-		buf.st_ino = pseudo_ino ++;
+		if(pseudo_ent->dev->type != 'l') {
+			memset(&buf, 0, sizeof(buf));
+			buf.st_mode = pseudo_ent->dev->mode;
+			buf.st_uid = pseudo_ent->dev->uid;
+			buf.st_gid = pseudo_ent->dev->gid;
+			buf.st_rdev = makedev(pseudo_ent->dev->major,
+				pseudo_ent->dev->minor);
+			buf.st_mtime = time(NULL);
+			buf.st_ino = pseudo_ino ++;
+		}
 
 		if(pseudo_ent->dev->type == 'd') {
 			struct dir_ent *dir_ent =
@@ -3474,6 +3476,10 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				lookup_inode3(&buf, PSEUDO_FILE_OTHER, 0,
 				pseudo_ent->dev->symlink,
 				strlen(pseudo_ent->dev->symlink) + 1), dir);
+		} else if(pseudo_ent->dev->type == 'l') {
+			add_dir_entry2(pseudo_ent->name, NULL,
+				pseudo_ent->dev->link->filename, NULL,
+				lookup_inode(&pseudo_ent->dev->link->buf), dir);
 		} else {
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,
@@ -5461,6 +5467,7 @@ static void print_options(char *name, int total_mem)
 	ERROR("\t\t\t\tfilename c mode uid gid major minor\n");
 	ERROR("\t\t\t\tfilename f mode uid gid command\n");
 	ERROR("\t\t\t\tfilename s mode uid gid symlink\n");
+	ERROR("\t\t\t\tfilename l filename\n");
 	ERROR("-sort <sort_file>\tsort files according to priorities in ");
 	ERROR("<sort_file>.  One\n\t\t\tfile or dir with priority per ");
 	ERROR("line.  Priority -32768 to\n\t\t\t32767, default priority 0\n");
@@ -5568,6 +5575,7 @@ int main(int argc, char *argv[])
 
 	source_path = argv + 1;
 	source = i - 2;
+	destination_file = argv[source + 1];
 
 	/*
 	 * Scan the command line for -comp xxx option, this is to ensure
@@ -5809,7 +5817,7 @@ print_compressor_options:
 				ERROR("%s: -pf missing filename\n", argv[0]);
 				exit(1);
 			}
-			if(read_pseudo_file(argv[i]) == FALSE)
+			if(read_pseudo_file(argv[i], destination_file) == FALSE)
 				exit(1);
 		} else if(strcmp(argv[i], "-p") == 0) {
 			if(++i == argc) {
@@ -5817,7 +5825,7 @@ print_compressor_options:
 					argv[0]);
 				exit(1);
 			}
-			if(read_pseudo_def(argv[i]) == FALSE)
+			if(read_pseudo_definition(argv[i], destination_file) == FALSE)
 				exit(1);
 		} else if(strcmp(argv[i], "-recover") == 0) {
 			if(++i == argc) {
@@ -6113,7 +6121,6 @@ print_compressor_options:
 			EXIT_MKSQUASHFS();
 		}
 
-	destination_file = argv[source + 1];
 	if(stat(argv[source + 1], &buf) == -1) {
 		if(errno == ENOENT) { /* Does not exist */
 			fd = open(argv[source + 1], O_CREAT | O_TRUNC | O_RDWR,
