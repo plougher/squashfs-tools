@@ -2246,13 +2246,14 @@ static squashfs_inode write_file_empty(struct dir_ent *dir_ent,
 }
 
 
-static void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent,
+static squashfs_inode write_file_frag(struct dir_ent *dir_ent,
 	struct file_buffer *file_buffer, int *duplicate_file)
 {
 	int size = file_buffer->file_size;
 	struct fragment *fragment;
 	unsigned short checksum = file_buffer->checksum;
 	char dont_put;
+	squashfs_inode inode;
 
 	fragment = frag_duplicate(file_buffer, &dont_put);
 	if(fragment)
@@ -2275,11 +2276,13 @@ static void write_file_frag(squashfs_inode *inode, struct dir_ent *dir_ent,
 
 	inc_progress_bar();
 
-	*inode = create_inode(NULL, dir_ent, SQUASHFS_FILE_TYPE, size, 0,
+	inode = create_inode(NULL, dir_ent, SQUASHFS_FILE_TYPE, size, 0,
 			0, NULL, fragment, NULL, 0);
 
 	if(!duplicate_checking)
 		free_fragment(fragment);
+
+	return inode;
 }
 
 
@@ -2662,7 +2665,7 @@ again:
 	else if(read_buffer->file_size == 0)
 		*inode = write_file_empty(dir, read_buffer, dup);
 	else if(read_buffer->fragment && read_buffer->c_byte)
-		write_file_frag(inode, dir, read_buffer, dup);
+		*inode = write_file_frag(dir, read_buffer, dup);
 	else
 		status = write_file_blocks(inode, dir, read_buffer, dup);
 
