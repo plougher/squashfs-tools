@@ -2293,15 +2293,16 @@ static void log_file(struct dir_ent *dir_ent, long long start)
 }
 
 
-static int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
+static squashfs_inode write_file_process(int *status, struct dir_ent *dir_ent,
 	struct file_buffer *read_buffer, int *duplicate_file)
 {
 	long long read_size, file_bytes, start;
 	struct fragment *fragment;
 	unsigned int *block_list = NULL;
-	int block = 0, status;
+	int block = 0;
 	long long sparse = 0;
 	struct file_buffer *fragment_buffer = NULL;
+	squashfs_inode inode;
 
 	*duplicate_file = FALSE;
 
@@ -2358,7 +2359,7 @@ static int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 	file_count ++;
 	total_bytes += read_size;
 
-	*inode = create_inode(NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size, start,
+	inode = create_inode(NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size, start,
 		 block, block_list, fragment, NULL, sparse);
 	log_file(dir_ent, start);
 
@@ -2367,11 +2368,12 @@ static int write_file_process(squashfs_inode *inode, struct dir_ent *dir_ent,
 		free_fragment(fragment);
 	}
 
-	return 0;
+	*status = 0;
+	return inode;
 
 read_err:
 	dec_progress_bar(block);
-	status = read_buffer->error;
+	*status = read_buffer->error;
 	bytes = start;
 	if(!block_device) {
 		int res;
@@ -2388,7 +2390,7 @@ read_err:
 		unlock_fragments();
 	free(block_list);
 	cache_block_put(read_buffer);
-	return status;
+	return 0;
 }
 
 
@@ -2661,7 +2663,7 @@ again:
 	if(status)
 		cache_block_put(read_buffer);
 	else if(read_buffer->file_size == -1)
-		status = write_file_process(inode, dir, read_buffer, dup);
+		*inode = write_file_process(&status, dir, read_buffer, dup);
 	else if(read_buffer->file_size == 0)
 		*inode = write_file_empty(dir, read_buffer, dup);
 	else if(read_buffer->fragment && read_buffer->c_byte)
