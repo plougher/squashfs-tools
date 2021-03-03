@@ -3459,13 +3459,6 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			char *subpath = subpathname(dir_ent);
 			struct dir_info *sub_dir = scan1_opendir("", subpath,
 						dir->depth + 1);
-			if(sub_dir == NULL) {
-				ERROR_START("Could not create pseudo directory "
-					"\"%s\"", pseudo_ent->pathname);
-				ERROR_EXIT(", skipping...\n");
-				pseudo_ino --;
-				continue;
-			}
 			dir_scan2(sub_dir, pseudo_ent->pseudo);
 			dir->directory_count ++;
 			add_dir_entry(dir_ent, sub_dir,
