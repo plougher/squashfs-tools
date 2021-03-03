@@ -23,11 +23,6 @@
  *
  * pseudo.h
  */
-struct pseudo_dev_link {
-	struct stat	buf;
-	char		*filename;
-};
-
 struct pseudo_stat {
 	unsigned int	mode;
 	unsigned int	uid;
@@ -38,12 +33,15 @@ struct pseudo_stat {
 };
 
 struct pseudo_dev {
-	char			type;
-	struct pseudo_stat	*buf;
+	char				type;
+	union {
+		struct pseudo_stat	*buf;
+		struct stat		*linkbuf;
+	};
 	union {
 		char			*command;
 		char			*symlink;
-		struct pseudo_dev_link	*link;
+		char			*linkname;
 	};
 };
 

@@ -3483,8 +3483,8 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				strlen(pseudo_ent->dev->symlink) + 1), dir);
 		} else if(pseudo_ent->dev->type == 'l') {
 			add_dir_entry2(pseudo_ent->name, NULL,
-				pseudo_ent->dev->link->filename, NULL,
-				lookup_inode(&pseudo_ent->dev->link->buf), dir);
+				pseudo_ent->dev->linkname, NULL,
+				lookup_inode(pseudo_ent->dev->linkbuf), dir);
 		} else {
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,

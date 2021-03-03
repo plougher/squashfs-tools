@@ -331,29 +331,29 @@ static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char
 
 	memset(dev, 0, sizeof(struct pseudo_dev));
 
-	dev->link = malloc(sizeof(struct pseudo_dev_link));
-	if(dev->link == NULL)
+	dev->linkbuf = malloc(sizeof(struct stat));
+	if(dev->linkbuf == NULL)
 		MEM_ERROR();
 
-	if(lstat(linkname, &dev->link->buf) == -1) {
+	if(lstat(linkname, dev->linkbuf) == -1) {
 		ERROR("Cannot stat pseudo link file %s because %s\n",
 			linkname, strerror(errno));
 		goto error;
 	}
 
-	if(S_ISDIR(dev->link->buf.st_mode)) {
+	if(S_ISDIR(dev->linkbuf->st_mode)) {
 		ERROR("Pseudo link file %s is a directory, ", linkname);
 		ERROR("which cannot be hardlinked to\n");
 		goto error;
 	}
 
-	if(S_ISREG(dev->link->buf.st_mode)) {
+	if(S_ISREG(dev->linkbuf->st_mode)) {
 		/*
 		 * Check we're not trying to create a circular loop,
 		 * connecting the output destination file to the
 		 * input
 		 */
-		if(memcmp(&dev->link->buf, dest_buf, sizeof(struct stat)) == 0) {
+		if(memcmp(dev->linkbuf, dest_buf, sizeof(struct stat)) == 0) {
 			ERROR("Pseudo link file %s is the ", linkname);
 			ERROR("destination output file, which cannot be linked to\n");
 			goto error;
@@ -361,7 +361,7 @@ static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char
 	}
 
 	dev->type = 'l';
-	dev->link->filename = strdup(linkname);
+	dev->linkname = strdup(linkname);
 
 	pseudo = add_pseudo(pseudo, dev, name, name);
 
@@ -379,7 +379,7 @@ error:
 	ERROR("\tfilename s mode uid gid symlink\n");
 	ERROR("\tfilename l filename\n");
 	if(dev)
-		free(dev->link);
+		free(dev->linkbuf);
 	free(dev);
 	free(filename);
 	free(linkname);
