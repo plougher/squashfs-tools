@@ -30,6 +30,8 @@ struct pseudo_stat {
 	unsigned int	major;
 	unsigned int	minor;
 	int		pseudo_id;
+	time_t		mtime;
+	int		ino;
 };
 
 struct pseudo_dev {

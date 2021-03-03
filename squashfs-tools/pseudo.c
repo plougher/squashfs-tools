@@ -34,6 +34,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <time.h>
 
 #include "pseudo.h"
 #include "mksquashfs_error.h"
@@ -398,6 +399,7 @@ static int read_pseudo_def(char *def)
 	char *orig_def = def;
 	long long uid, gid;
 	struct pseudo_dev *dev;
+	static int pseudo_ino = 1;
 
 	/*
 	 * Scan for filename, don't use sscanf() and "%s" because
@@ -618,6 +620,8 @@ static int read_pseudo_def(char *def)
 	dev->buf->gid = gid;
 	dev->buf->major = major;
 	dev->buf->minor = minor;
+	dev->buf->mtime = time(NULL);
+	dev->buf->ino = pseudo_ino ++;
 
 	if(type == 'f') {
 		dev->command = strdup(def);

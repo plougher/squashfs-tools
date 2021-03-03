@@ -3383,7 +3383,6 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 	struct dir_ent *dir_ent = NULL;
 	struct pseudo_entry *pseudo_ent;
 	struct stat buf;
-	static int pseudo_ino = 1;
 	
 	while((dir_ent = scan2_readdir(dir, dir_ent)) != NULL) {
 		struct inode_info *inode_info = dir_ent->inode;
@@ -3448,8 +3447,8 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			buf.st_gid = pseudo_ent->dev->buf->gid;
 			buf.st_rdev = makedev(pseudo_ent->dev->buf->major,
 				pseudo_ent->dev->buf->minor);
-			buf.st_mtime = time(NULL);
-			buf.st_ino = pseudo_ino ++;
+			buf.st_mtime = pseudo_ent->dev->buf->mtime;
+			buf.st_ino = pseudo_ent->dev->buf->ino;
 		}
 
 		if(pseudo_ent->dev->type == 'd') {
