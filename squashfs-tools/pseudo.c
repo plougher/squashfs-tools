@@ -258,7 +258,7 @@ void add_pseudo_file(struct pseudo_dev *dev)
 	if(pseudo_file == NULL)
 		MEM_ERROR();
 
-	dev->pseudo_id = pseudo_count;
+	dev->buf->pseudo_id = pseudo_count;
 	pseudo_file[pseudo_count ++] = dev;
 }
 
@@ -608,12 +608,17 @@ static int read_pseudo_def(char *def)
 	if(dev == NULL)
 		MEM_ERROR();
 
+	dev->buf = malloc(sizeof(struct pseudo_stat));
+	if(dev->buf == NULL)
+		MEM_ERROR();
+
 	dev->type = type;
-	dev->mode = mode;
-	dev->uid = uid;
-	dev->gid = gid;
-	dev->major = major;
-	dev->minor = minor;
+	dev->buf->mode = mode;
+	dev->buf->uid = uid;
+	dev->buf->gid = gid;
+	dev->buf->major = major;
+	dev->buf->minor = minor;
+
 	if(type == 'f') {
 		dev->command = strdup(def);
 		add_pseudo_file(dev);

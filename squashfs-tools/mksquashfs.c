@@ -3417,9 +3417,9 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			}
 			buf = &dir_ent->inode->buf;
 			buf->st_mode = (buf->st_mode & S_IFMT) |
-				pseudo_ent->dev->mode;
-			buf->st_uid = pseudo_ent->dev->uid;
-			buf->st_gid = pseudo_ent->dev->gid;
+				pseudo_ent->dev->buf->mode;
+			buf->st_uid = pseudo_ent->dev->buf->uid;
+			buf->st_gid = pseudo_ent->dev->buf->gid;
 			continue;
 		}
 
@@ -3443,11 +3443,11 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 		if(pseudo_ent->dev->type != 'l') {
 			memset(&buf, 0, sizeof(buf));
-			buf.st_mode = pseudo_ent->dev->mode;
-			buf.st_uid = pseudo_ent->dev->uid;
-			buf.st_gid = pseudo_ent->dev->gid;
-			buf.st_rdev = makedev(pseudo_ent->dev->major,
-				pseudo_ent->dev->minor);
+			buf.st_mode = pseudo_ent->dev->buf->mode;
+			buf.st_uid = pseudo_ent->dev->buf->uid;
+			buf.st_gid = pseudo_ent->dev->buf->gid;
+			buf.st_rdev = makedev(pseudo_ent->dev->buf->major,
+				pseudo_ent->dev->buf->minor);
 			buf.st_mtime = time(NULL);
 			buf.st_ino = pseudo_ino ++;
 		}
@@ -3474,7 +3474,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,
 				lookup_inode2(&buf, PSEUDO_FILE_PROCESS,
-				pseudo_ent->dev->pseudo_id), dir);
+				pseudo_ent->dev->buf->pseudo_id), dir);
 		} else if(pseudo_ent->dev->type == 's') {
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,

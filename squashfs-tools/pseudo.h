@@ -28,14 +28,18 @@ struct pseudo_dev_link {
 	char		*filename;
 };
 
-struct pseudo_dev {
-	char		type;
+struct pseudo_stat {
 	unsigned int	mode;
 	unsigned int	uid;
 	unsigned int	gid;
 	unsigned int	major;
 	unsigned int	minor;
 	int		pseudo_id;
+};
+
+struct pseudo_dev {
+	char			type;
+	struct pseudo_stat	*buf;
 	union {
 		char			*command;
 		char			*symlink;
