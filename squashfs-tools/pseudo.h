@@ -23,13 +23,17 @@
  *
  * pseudo.h
  */
+struct pseudo_dev_com {
+	char	*command;
+	int	pseudo_id;
+};
+
 struct pseudo_stat {
 	unsigned int	mode;
 	unsigned int	uid;
 	unsigned int	gid;
 	unsigned int	major;
 	unsigned int	minor;
-	int		pseudo_id;
 	time_t		mtime;
 	int		ino;
 };
@@ -41,7 +45,7 @@ struct pseudo_dev {
 		struct stat		*linkbuf;
 	};
 	union {
-		char			*command;
+		struct pseudo_dev_com	*file;
 		char			*symlink;
 		char			*linkname;
 	};

@@ -238,7 +238,7 @@ int pseudo_exec_file(struct pseudo_dev *dev, int *child)
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-		execl("/bin/sh", "sh", "-c", dev->command, (char *) NULL);
+		execl("/bin/sh", "sh", "-c", dev->file->command, (char *) NULL);
 		exit(EXIT_FAILURE);
 	}
 
@@ -252,14 +252,19 @@ failed:
 }
 
 
-void add_pseudo_file(struct pseudo_dev *dev)
+void add_pseudo_file(struct pseudo_dev *dev, char *command)
 {
 	pseudo_file = realloc(pseudo_file, (pseudo_count + 1) *
 		sizeof(struct pseudo_dev *));
 	if(pseudo_file == NULL)
 		MEM_ERROR();
 
-	dev->buf->pseudo_id = pseudo_count;
+	dev->file = malloc(sizeof(struct pseudo_dev_com));
+	if(dev->file == NULL)
+		MEM_ERROR();
+
+	dev->file->command = strdup(command);
+	dev->file->pseudo_id = pseudo_count;
 	pseudo_file[pseudo_count ++] = dev;
 }
 
@@ -623,10 +628,9 @@ static int read_pseudo_def(char *def)
 	dev->buf->mtime = time(NULL);
 	dev->buf->ino = pseudo_ino ++;
 
-	if(type == 'f') {
-		dev->command = strdup(def);
-		add_pseudo_file(dev);
-	}
+	if(type == 'f')
+		add_pseudo_file(dev, def);
+
 	if(type == 's')
 		dev->symlink = strdup(def);
 
