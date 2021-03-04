@@ -500,69 +500,15 @@ error:
 }
 
 
-static int read_pseudo_def(char *def)
+static int read_pseudo_def_original(char type, char *orig_def, char *filename, char *name, char *def)
 {
 	int n, bytes;
-	int quoted = 0;
 	unsigned int major = 0, minor = 0, mode;
-	char type, *ptr;
+	char *ptr;
 	char suid[100], sgid[100]; /* overflow safe */
-	char *filename, *name;
-	char *orig_def = def;
 	long long uid, gid;
 	struct pseudo_dev *dev;
 	static int pseudo_ino = 1;
-
-	/*
-	 * Scan for filename, don't use sscanf() and "%s" because
-	 * that can't handle filenames with spaces.
-	 *
-	 * Filenames with spaces should either escape (backslash) the
-	 * space or use double quotes.
-	 */
-	filename = malloc(strlen(def) + 1);
-	if(filename == NULL)
-		MEM_ERROR();
-
-	for(name = filename; (quoted || !isspace(*def)) && *def != '\0';) {
-		if(*def == '"') {
-			quoted = !quoted;
-			def ++;
-			continue;
-		}
-
-		if(*def == '\\') {
-			def ++;
-			if (*def == '\0')
-				break;
-		}
-		*name ++ = *def ++;
-	}
-	*name = '\0';
-
-	/* Skip any leading slashes (/) */
-	for(name = filename; *name == '/'; name ++);
-
-	if(*name == '\0') {
-		ERROR("Not enough or invalid arguments in pseudo file "
-			"definition \"%s\"\n", orig_def);
-		goto error;
-	}
-
-	n = sscanf(def, " %c %n", &type, &bytes);
-	def += bytes;
-
-	if(n < 1) {
-		ERROR("Not enough or invalid arguments in pseudo file "
-			"definition \"%s\"\n", orig_def);
-		goto error;
-	}
-
-	if(type == 'l')
-		return read_pseudo_def_link(orig_def, filename, name, def);
-	else if(type == 'L')
-		return read_pseudo_def_pseudo_link(orig_def, filename, name, def);
-
 
 	n = sscanf(def, "%o %99s %99s %n", &mode, suid, sgid, &bytes);
 	def += bytes;
@@ -747,6 +693,81 @@ static int read_pseudo_def(char *def)
 
 	free(filename);
 	return TRUE;
+
+error:
+	ERROR("Pseudo definitions should be of the format\n");
+	ERROR("\tfilename d mode uid gid\n");
+	ERROR("\tfilename m mode uid gid\n");
+	ERROR("\tfilename b mode uid gid major minor\n");
+	ERROR("\tfilename c mode uid gid major minor\n");
+	ERROR("\tfilename f mode uid gid command\n");
+	ERROR("\tfilename s mode uid gid symlink\n");
+	ERROR("\tfilename l filename\n");
+	ERROR("\tfilename L pseudo_filename\n");
+	free(filename);
+	return FALSE;
+}
+
+
+static int read_pseudo_def(char *def)
+{
+	int n, bytes;
+	int quoted = 0;
+	char type;
+	char *filename, *name;
+	char *orig_def = def;
+
+	/*
+	 * Scan for filename, don't use sscanf() and "%s" because
+	 * that can't handle filenames with spaces.
+	 *
+	 * Filenames with spaces should either escape (backslash) the
+	 * space or use double quotes.
+	 */
+	filename = malloc(strlen(def) + 1);
+	if(filename == NULL)
+		MEM_ERROR();
+
+	for(name = filename; (quoted || !isspace(*def)) && *def != '\0';) {
+		if(*def == '"') {
+			quoted = !quoted;
+			def ++;
+			continue;
+		}
+
+		if(*def == '\\') {
+			def ++;
+			if (*def == '\0')
+				break;
+		}
+		*name ++ = *def ++;
+	}
+	*name = '\0';
+
+	/* Skip any leading slashes (/) */
+	for(name = filename; *name == '/'; name ++);
+
+	if(*name == '\0') {
+		ERROR("Not enough or invalid arguments in pseudo file "
+			"definition \"%s\"\n", orig_def);
+		goto error;
+	}
+
+	n = sscanf(def, " %c %n", &type, &bytes);
+	def += bytes;
+
+	if(n < 1) {
+		ERROR("Not enough or invalid arguments in pseudo file "
+			"definition \"%s\"\n", orig_def);
+		goto error;
+	}
+
+	if(type == 'l')
+		return read_pseudo_def_link(orig_def, filename, name, def);
+	else if(type == 'L')
+		return read_pseudo_def_pseudo_link(orig_def, filename, name, def);
+	else
+		return read_pseudo_def_original(type, orig_def, filename, name, def);
 
 error:
 	ERROR("Pseudo definitions should be of the format\n");
