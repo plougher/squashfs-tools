@@ -275,6 +275,112 @@ struct pseudo_dev *get_pseudo_file(int pseudo_id)
 }
 
 
+struct pseudo_entry *pseudo_lookup(struct pseudo *pseudo, char *target)
+{
+	char *targname;
+	int i;
+
+	if(pseudo == NULL)
+		return NULL;
+
+	target = get_component(target, &targname);
+
+	for(i = 0; i < pseudo->names; i++)
+		if(strcmp(pseudo->name[i].name, targname) == 0)
+			break;
+
+	free(targname);
+
+	if(i == pseudo->names)
+		return NULL;
+
+	if(target[0] == '\0')
+		return &pseudo->name[i];
+
+	if(pseudo->name[i].pseudo == NULL)
+		return NULL;
+
+	return pseudo_lookup(pseudo->name[i].pseudo, target);
+}
+
+
+static int read_pseudo_def_pseudo_link(char *orig_def, char *filename, char *name, char *def)
+{
+	char *linkname, *link;
+	int quoted = FALSE;
+	struct pseudo_entry *pseudo_ent;
+
+	/*
+	 * Scan for filename, don't use sscanf() and "%s" because
+	 * that can't handle filenames with spaces.
+	 *
+	 * Filenames with spaces should either escape (backslash) the
+	 * space or use double quotes.
+	 */
+	linkname = malloc(strlen(def) + 1);
+	if(linkname == NULL)
+		MEM_ERROR();
+
+	for(link = linkname; (quoted || !isspace(*def)) && *def != '\0';) {
+		if(*def == '"') {
+			quoted = !quoted;
+			def ++;
+			continue;
+		}
+
+		if(*def == '\\') {
+			def ++;
+			if (*def == '\0')
+				break;
+		}
+		*link ++ = *def ++;
+	}
+	*link = '\0';
+
+	/* Skip any leading slashes (/) */
+	for(link = linkname; *link == '/'; link ++);
+
+	if(*link == '\0') {
+		ERROR("Not enough or invalid arguments in pseudo LINK file "
+			"definition \"%s\"\n", orig_def);
+		goto error;
+	}
+
+	/* Lookup linkname in pseudo definition tree */
+	pseudo_ent = pseudo_lookup(pseudo, link);
+
+	if(pseudo_ent == NULL) {
+		ERROR("Pseudo LINK file %s doesn't exist\n", linkname);
+		goto error;
+	}
+
+	if(pseudo_ent->dev->type == 'd' || pseudo_ent->dev->type == 'm') {
+		ERROR("Cannot hardlink to a Pseudo directory or modify definition\n");
+		goto error;
+	}
+
+	pseudo = add_pseudo(pseudo, pseudo_ent->dev, name, name);
+
+	free(filename);
+	free(linkname);
+	return TRUE;
+
+error:
+	ERROR("Pseudo definitions should be of the format\n");
+	ERROR("\tfilename d mode uid gid\n");
+	ERROR("\tfilename m mode uid gid\n");
+	ERROR("\tfilename b mode uid gid major minor\n");
+	ERROR("\tfilename c mode uid gid major minor\n");
+	ERROR("\tfilename f mode uid gid command\n");
+	ERROR("\tfilename s mode uid gid symlink\n");
+	ERROR("\tfilename l filename\n");
+	ERROR("\tfilename L pseudo_filename\n");
+	free(filename);
+	free(linkname);
+	return FALSE;
+}
+
+
 static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char *def)
 {
 	char *linkname, *link;
@@ -384,6 +490,7 @@ error:
 	ERROR("\tfilename f mode uid gid command\n");
 	ERROR("\tfilename s mode uid gid symlink\n");
 	ERROR("\tfilename l filename\n");
+	ERROR("\tfilename L pseudo_filename\n");
 	if(dev)
 		free(dev->linkbuf);
 	free(dev);
@@ -453,6 +560,8 @@ static int read_pseudo_def(char *def)
 
 	if(type == 'l')
 		return read_pseudo_def_link(orig_def, filename, name, def);
+	else if(type == 'L')
+		return read_pseudo_def_pseudo_link(orig_def, filename, name, def);
 
 
 	n = sscanf(def, "%o %99s %99s %n", &mode, suid, sgid, &bytes);
@@ -648,6 +757,7 @@ error:
 	ERROR("\tfilename f mode uid gid command\n");
 	ERROR("\tfilename s mode uid gid symlink\n");
 	ERROR("\tfilename l filename\n");
+	ERROR("\tfilename L pseudo_filename\n");
 	free(filename);
 	return FALSE;
 }

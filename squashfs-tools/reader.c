@@ -138,8 +138,14 @@ static void reader_read_process(struct dir_ent *dir_ent)
 	struct inode_info *inode = dir_ent->inode;
 	struct file_buffer *prev_buffer = NULL, *file_buffer;
 	int status, byte, res, child;
-	int file = pseudo_exec_file(get_pseudo_file(inode->pseudo_id), &child);
+	int file;
 
+	if(inode->read)
+		return;
+
+	inode->read = TRUE;
+
+	file = pseudo_exec_file(get_pseudo_file(inode->pseudo_id), &child);
 	if(!file) {
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->sequence = seq ++;

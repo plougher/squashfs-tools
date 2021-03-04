@@ -5465,6 +5465,7 @@ static void print_options(char *name, int total_mem)
 	ERROR("\t\t\t\tfilename f mode uid gid command\n");
 	ERROR("\t\t\t\tfilename s mode uid gid symlink\n");
 	ERROR("\t\t\t\tfilename l filename\n");
+	ERROR("\t\t\t\tfilename L pseudo_filename\n");
 	ERROR("-sort <sort_file>\tsort files according to priorities in ");
 	ERROR("<sort_file>.  One\n\t\t\tfile or dir with priority per ");
 	ERROR("line.  Priority -32768 to\n\t\t\t32767, default priority 0\n");
