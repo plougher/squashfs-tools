@@ -3420,7 +3420,7 @@ int main(int argc, char *argv[])
 			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extracts,
 			excludes, 1);
 		if(res == FALSE && set_exit_code)
-			exit_code = 1;
+			exit_code = 2;
 
 		memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
 		inode_number = 1;
@@ -3440,12 +3440,12 @@ int main(int argc, char *argv[])
 	res = dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extracts, excludes, 1);
 	if(res == FALSE && set_exit_code)
-		exit_code = 1;
+		exit_code = 2;
 
 	queue_put(to_writer, NULL);
 	res = (long) queue_get(from_writer);
 	if(res == TRUE && set_exit_code)
-		exit_code = 1;
+		exit_code = 2;
 
 	disable_progress_bar();
 
