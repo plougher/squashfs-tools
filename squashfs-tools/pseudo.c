@@ -304,6 +304,20 @@ struct pseudo_entry *pseudo_lookup(struct pseudo *pseudo, char *target)
 }
 
 
+static void print_definitions()
+{
+	ERROR("Pseudo definitions should be of the format\n");
+	ERROR("\tfilename d mode uid gid\n");
+	ERROR("\tfilename m mode uid gid\n");
+	ERROR("\tfilename b mode uid gid major minor\n");
+	ERROR("\tfilename c mode uid gid major minor\n");
+	ERROR("\tfilename f mode uid gid command\n");
+	ERROR("\tfilename s mode uid gid symlink\n");
+	ERROR("\tfilename l filename\n");
+	ERROR("\tfilename L pseudo_filename\n");
+}
+
+
 static int read_pseudo_def_pseudo_link(char *orig_def, char *filename, char *name, char *def)
 {
 	char *linkname, *link;
@@ -366,15 +380,7 @@ static int read_pseudo_def_pseudo_link(char *orig_def, char *filename, char *nam
 	return TRUE;
 
 error:
-	ERROR("Pseudo definitions should be of the format\n");
-	ERROR("\tfilename d mode uid gid\n");
-	ERROR("\tfilename m mode uid gid\n");
-	ERROR("\tfilename b mode uid gid major minor\n");
-	ERROR("\tfilename c mode uid gid major minor\n");
-	ERROR("\tfilename f mode uid gid command\n");
-	ERROR("\tfilename s mode uid gid symlink\n");
-	ERROR("\tfilename l filename\n");
-	ERROR("\tfilename L pseudo_filename\n");
+	print_definitions();
 	free(filename);
 	free(linkname);
 	return FALSE;
@@ -482,15 +488,7 @@ static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char
 	return TRUE;
 
 error:
-	ERROR("Pseudo definitions should be of the format\n");
-	ERROR("\tfilename d mode uid gid\n");
-	ERROR("\tfilename m mode uid gid\n");
-	ERROR("\tfilename b mode uid gid major minor\n");
-	ERROR("\tfilename c mode uid gid major minor\n");
-	ERROR("\tfilename f mode uid gid command\n");
-	ERROR("\tfilename s mode uid gid symlink\n");
-	ERROR("\tfilename l filename\n");
-	ERROR("\tfilename L pseudo_filename\n");
+	print_definitions();
 	if(dev)
 		free(dev->linkbuf);
 	free(dev);
@@ -695,15 +693,7 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 	return TRUE;
 
 error:
-	ERROR("Pseudo definitions should be of the format\n");
-	ERROR("\tfilename d mode uid gid\n");
-	ERROR("\tfilename m mode uid gid\n");
-	ERROR("\tfilename b mode uid gid major minor\n");
-	ERROR("\tfilename c mode uid gid major minor\n");
-	ERROR("\tfilename f mode uid gid command\n");
-	ERROR("\tfilename s mode uid gid symlink\n");
-	ERROR("\tfilename l filename\n");
-	ERROR("\tfilename L pseudo_filename\n");
+	print_definitions();
 	free(filename);
 	return FALSE;
 }
@@ -770,15 +760,7 @@ static int read_pseudo_def(char *def)
 		return read_pseudo_def_original(type, orig_def, filename, name, def);
 
 error:
-	ERROR("Pseudo definitions should be of the format\n");
-	ERROR("\tfilename d mode uid gid\n");
-	ERROR("\tfilename m mode uid gid\n");
-	ERROR("\tfilename b mode uid gid major minor\n");
-	ERROR("\tfilename c mode uid gid major minor\n");
-	ERROR("\tfilename f mode uid gid command\n");
-	ERROR("\tfilename s mode uid gid symlink\n");
-	ERROR("\tfilename l filename\n");
-	ERROR("\tfilename L pseudo_filename\n");
+	print_definitions();
 	free(filename);
 	return FALSE;
 }
