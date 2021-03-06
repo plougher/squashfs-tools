@@ -35,6 +35,7 @@
 #include <sys/stat.h>
 #include <ctype.h>
 #include <time.h>
+#include <ctype.h>
 
 #include "pseudo.h"
 #include "mksquashfs_error.h"
@@ -315,6 +316,12 @@ static void print_definitions()
 	ERROR("\tfilename s mode uid gid symlink\n");
 	ERROR("\tfilename l filename\n");
 	ERROR("\tfilename L pseudo_filename\n");
+	ERROR("\tfilename D time mode uid gid\n");
+	ERROR("\tfilename M time mode uid gid\n");
+	ERROR("\tfilename B time mode uid gid major minor\n");
+	ERROR("\tfilename C time mode uid gid major minor\n");
+	ERROR("\tfilename F time mode uid gid command\n");
+	ERROR("\tfilename S time mode uid gid symlink\n");
 }
 
 
@@ -494,6 +501,207 @@ error:
 	free(dev);
 	free(filename);
 	free(linkname);
+	return FALSE;
+}
+
+
+static int read_pseudo_def_extended(char type, char *orig_def, char *filename, char *name, char *def)
+{
+	int n, bytes;
+	unsigned int major = 0, minor = 0, mode, mtime;
+	char *ptr;
+	char suid[100], sgid[100]; /* overflow safe */
+	long long uid, gid;
+	struct pseudo_dev *dev;
+	static int pseudo_ino = 1;
+
+	n = sscanf(def, "%u %o %99s %99s %n", &mtime, &mode, suid, sgid, &bytes);
+	def += bytes;
+
+	if(n < 4) {
+		ERROR("Not enough or invalid arguments in pseudo file "
+			"definition \"%s\"\n", orig_def);
+		switch(n) {
+		case -1:
+			/* FALLTHROUGH */
+		case 0:
+			ERROR("Couldn't parse time, unsigned decimal integer "
+				"expected\n");
+			break;
+		case 1:
+			ERROR("Couldn't parse mode, octal integer expected\n");
+			break;
+		case 2:
+			ERROR("Read filename, type, time and mode, but failed to "
+				"read or match uid\n");
+			break;
+		default:
+			ERROR("Read filename, type, time, mode and uid, but failed "
+				"to read or match gid\n");
+			break;
+		}
+		goto error;
+	}
+
+	switch(type) {
+	case 'B':
+		/* FALLTHROUGH */
+	case 'C':
+		n = sscanf(def, "%u %u %n", &major, &minor, &bytes);
+		def += bytes;
+
+		if(n < 2) {
+			ERROR("Not enough or invalid arguments in %s device "
+				"pseudo file definition \"%s\"\n", type == 'B' ?
+				"block" : "character", orig_def);
+			if(n < 1)
+				ERROR("Read filename, type, time, mode, uid and "
+					"gid, but failed to read or match major\n");
+			else
+				ERROR("Read filename, type, time, mode, uid, gid "
+					"and major, but failed to read  or "
+					"match minor\n");
+			goto error;
+		}
+
+		if(major > 0xfff) {
+			ERROR("Major %d out of range\n", major);
+			goto error;
+		}
+
+		if(minor > 0xfffff) {
+			ERROR("Minor %d out of range\n", minor);
+			goto error;
+		}
+		/* FALLTHROUGH */
+	case 'D':
+		/* FALLTHROUGH */
+	case 'M':
+		/*
+		 * Check for trailing junk after expected arguments
+		 */
+		if(def[0] != '\0') {
+			ERROR("Unexpected tailing characters in pseudo file "
+				"definition \"%s\"\n", orig_def);
+			goto error;
+		}
+		break;
+	case 'F':
+		if(def[0] == '\0') {
+			ERROR("Not enough arguments in dynamic file pseudo "
+				"definition \"%s\"\n", orig_def);
+			ERROR("Expected command, which can be an executable "
+				"or a piece of shell script\n");
+			goto error;
+		}
+		break;
+	case 'S':
+		if(def[0] == '\0') {
+			ERROR("Not enough arguments in symlink pseudo "
+				"definition \"%s\"\n", orig_def);
+			ERROR("Expected symlink\n");
+			goto error;
+		}
+
+		if(strlen(def) > 65535) {
+			ERROR("Symlink pseudo definition %s is greater than 65535"
+								" bytes!\n", def);
+			goto error;
+		}
+		break;
+	default:
+		ERROR("Unsupported type %c\n", type);
+		goto error;
+	}
+
+
+	if(mode > 07777) {
+		ERROR("Mode %o out of range\n", mode);
+		goto error;
+	}
+
+	uid = strtoll(suid, &ptr, 10);
+	if(*ptr == '\0') {
+		if(uid < 0 || uid > ((1LL << 32) - 1)) {
+			ERROR("Uid %s out of range\n", suid);
+			goto error;
+		}
+	} else {
+		struct passwd *pwuid = getpwnam(suid);
+		if(pwuid)
+			uid = pwuid->pw_uid;
+		else {
+			ERROR("Uid %s invalid uid or unknown user\n", suid);
+			goto error;
+		}
+	}
+
+	gid = strtoll(sgid, &ptr, 10);
+	if(*ptr == '\0') {
+		if(gid < 0 || gid > ((1LL << 32) - 1)) {
+			ERROR("Gid %s out of range\n", sgid);
+			goto error;
+		}
+	} else {
+		struct group *grgid = getgrnam(sgid);
+		if(grgid)
+			gid = grgid->gr_gid;
+		else {
+			ERROR("Gid %s invalid uid or unknown user\n", sgid);
+			goto error;
+		}
+	}
+
+	switch(type) {
+	case 'B':
+		mode |= S_IFBLK;
+		break;
+	case 'C':
+		mode |= S_IFCHR;
+		break;
+	case 'D':
+		mode |= S_IFDIR;
+		break;
+	case 'F':
+		mode |= S_IFREG;
+		break;
+	case 'S':
+		/* permissions on symlinks are always rwxrwxrwx */
+		mode = 0777 | S_IFLNK;
+		break;
+	}
+
+	dev = malloc(sizeof(struct pseudo_dev));
+	if(dev == NULL)
+		MEM_ERROR();
+
+	dev->buf = malloc(sizeof(struct pseudo_stat));
+	if(dev->buf == NULL)
+		MEM_ERROR();
+
+	dev->type = type == 'M' ? 'M' : tolower(type);
+	dev->buf->mode = mode;
+	dev->buf->uid = uid;
+	dev->buf->gid = gid;
+	dev->buf->major = major;
+	dev->buf->minor = minor;
+	dev->buf->mtime = mtime;
+	dev->buf->ino = pseudo_ino ++;
+
+	if(type == 'F')
+		add_pseudo_file(dev, def);
+
+	if(type == 'S')
+		dev->symlink = strdup(def);
+
+	pseudo = add_pseudo(pseudo, dev, name, name);
+
+	free(filename);
+	return TRUE;
+
+error:
+	print_definitions();
+	ERROR("Pseudo definitions should be of the format\n");
 	return FALSE;
 }
 
@@ -756,6 +964,8 @@ static int read_pseudo_def(char *def)
 		return read_pseudo_def_link(orig_def, filename, name, def);
 	else if(type == 'L')
 		return read_pseudo_def_pseudo_link(orig_def, filename, name, def);
+	else if(isupper(type))
+		return read_pseudo_def_extended(type, orig_def, filename, name, def);
 	else
 		return read_pseudo_def_original(type, orig_def, filename, name, def);
 

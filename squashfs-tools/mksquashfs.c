@@ -3397,7 +3397,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
 		dir_ent = lookup_name(dir, pseudo_ent->name);
-		if(pseudo_ent->dev->type == 'm') {
+		if(pseudo_ent->dev->type == 'm' || pseudo_ent->dev->type == 'M') {
 			struct stat *buf;
 			if(dir_ent == NULL) {
 				ERROR_START("Pseudo modify file \"%s\" does "
@@ -3419,6 +3419,8 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				pseudo_ent->dev->buf->mode;
 			buf->st_uid = pseudo_ent->dev->buf->uid;
 			buf->st_gid = pseudo_ent->dev->buf->gid;
+			if(pseudo_ent->dev->type == 'M')
+				buf->st_mtime = pseudo_ent->dev->buf->mtime;
 			continue;
 		}
 
