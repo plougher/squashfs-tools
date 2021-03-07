@@ -253,6 +253,89 @@ failed:
 }
 
 
+int pseudo_exec_date(char *string, unsigned int *mtime)
+{
+	int res, pipefd[2], child, status;
+	int bytes = 0;
+	char buffer[11];
+
+	res = pipe(pipefd);
+	if(res == -1) {
+		ERROR("Error executing date, pipe failed\n");
+		return FALSE;
+	}
+
+	child = fork();
+	if(child == -1) {
+		ERROR("Error executing date, fork failed\n");
+		goto failed;
+	}
+
+	if(child == 0) {
+		close(pipefd[0]);
+		close(STDOUT_FILENO);
+		res = dup(pipefd[1]);
+		if(res == -1)
+			exit(EXIT_FAILURE);
+
+
+		execl("/usr/bin/date", "date", "-d", string, "+%s", (char *) NULL);
+		exit(EXIT_FAILURE);
+	}
+
+	close(pipefd[1]);
+
+	while(1) {
+		res = read_bytes(pipefd[0], buffer, 11);
+		if(res == -1) {
+			ERROR("Error executing date\n");
+			goto failed;
+		} else if(res == 0)
+			break;
+
+		bytes += res;
+	}
+
+	while(1) {
+		res = waitpid(child, &status, 0);
+		if(res != -1)
+			break;
+		else if(errno != EINTR) {
+			ERROR("Error executing data, waitpid failed\n");
+			goto failed;
+		}
+	}
+
+	close(pipefd[0]);
+
+	if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+		ERROR("Error executing date, failed to parse date string\n");
+		goto failed;
+	}
+
+	if(bytes == 0 || bytes > 11) {
+		ERROR("Error executing date, unexpected result\n");
+		goto failed;
+	}
+
+	/* replace trailing newline with string terminator */
+	buffer[bytes - 1] = '\0';
+
+	res = sscanf(buffer, "%u", mtime);
+
+	if(res < 1) {
+		ERROR("Error, unexpected result from date\n");
+		goto failed;
+	}
+
+	return TRUE;;
+failed:
+	close(pipefd[0]);
+	close(pipefd[1]);
+	return FALSE;
+}
+
+
 void add_pseudo_file(struct pseudo_dev *dev, char *command)
 {
 	pseudo_file = realloc(pseudo_file, (pseudo_count + 1) *
@@ -508,30 +591,75 @@ error:
 static int read_pseudo_def_extended(char type, char *orig_def, char *filename, char *name, char *def)
 {
 	int n, bytes;
+	int quoted = FALSE;
 	unsigned int major = 0, minor = 0, mode, mtime;
-	char *ptr;
+	char *ptr, *str, *string;
 	char suid[100], sgid[100]; /* overflow safe */
 	long long uid, gid;
 	struct pseudo_dev *dev;
 	static int pseudo_ino = 1;
 
-	n = sscanf(def, "%u %o %99s %99s %n", &mtime, &mode, suid, sgid, &bytes);
+	n = sscanf(def, "%u %n", &mtime, &bytes);
 	def += bytes;
 
-	if(n < 4) {
+	if(n < 1) {
+		/*
+		 * Scan for date string, don't use sscanf() and "%s" because
+		 * that can't handle strings with spaces.
+		 *
+		 * Strings with spaces should either escape (backslash) the
+		 * space or use double quotes.
+		 */
+		string = malloc(strlen(def) + 1);
+		if(string == NULL)
+			MEM_ERROR();
+
+		for(str = string; (quoted || !isspace(*def)) && *def != '\0';) {
+			if(*def == '"') {
+				quoted = !quoted;
+				def ++;
+				continue;
+			}
+
+			if(*def == '\\') {
+				def ++;
+				if (*def == '\0')
+					break;
+			}
+			*str++ = *def ++;
+		}
+		*str = '\0';
+
+		if(string[0] == '\0') {
+			ERROR("Not enough or invalid arguments in pseudo file "
+				"definition \"%s\"\n", orig_def);
+			free(string);
+			goto error;
+		}
+
+		n = pseudo_exec_date(string, &mtime);
+		if(n == FALSE) {
+				ERROR("Couldn't parse time, date string or "
+					"unsigned decimal integer "
+					"expected\n");
+			free(string);
+			goto error;
+		}
+	}
+
+	n = sscanf(def, "%o %99s %99s %n", &mode, suid, sgid, &bytes);
+	def += bytes;
+
+	if(n < 3) {
 		ERROR("Not enough or invalid arguments in pseudo file "
 			"definition \"%s\"\n", orig_def);
 		switch(n) {
 		case -1:
 			/* FALLTHROUGH */
 		case 0:
-			ERROR("Couldn't parse time, unsigned decimal integer "
-				"expected\n");
-			break;
-		case 1:
 			ERROR("Couldn't parse mode, octal integer expected\n");
 			break;
-		case 2:
+		case 1:
 			ERROR("Read filename, type, time and mode, but failed to "
 				"read or match uid\n");
 			break;

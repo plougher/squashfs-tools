@@ -64,6 +64,7 @@ struct pseudo {
 	struct pseudo_entry	*name;
 };
 
+extern int read_bytes(int, void *, int);
 extern int read_pseudo_definition(char *, char *);
 extern int read_pseudo_file(char *, char *);
 extern struct pseudo *pseudo_subdir(char *, struct pseudo *);
