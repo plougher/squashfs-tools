@@ -599,11 +599,15 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename, c
 	struct pseudo_dev *dev;
 	static int pseudo_ino = 1;
 
-	n = sscanf(def, "%u %n", &mtime, &bytes);
-	def += bytes;
+	n = sscanf(def, "%u %o %n", &mtime, &mode, &bytes);
 
-	if(n < 1) {
+	if(n < 2) {
 		/*
+		 * Couldn't match date and mode.  Date may not be quoted
+		 * and is instead using backslashed spaces (i.e. 1\ jan\ 1980)
+		 * where the "1" matched for the integer, but, jan didn't for
+		 * the octal number.
+		 *
 		 * Scan for date string, don't use sscanf() and "%s" because
 		 * that can't handle strings with spaces.
 		 *
@@ -645,30 +649,51 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename, c
 			free(string);
 			goto error;
 		}
-	}
 
-	n = sscanf(def, "%o %99s %99s %n", &mode, suid, sgid, &bytes);
-	def += bytes;
-
-	if(n < 3) {
-		ERROR("Not enough or invalid arguments in pseudo file "
-			"definition \"%s\"\n", orig_def);
-		switch(n) {
-		case -1:
+		n = sscanf(def, "%o %99s %99s %n", &mode, suid, sgid, &bytes);
+		def += bytes;
+		if(n < 3) {
+			ERROR("Not enough or invalid arguments in pseudo file "
+				"definition \"%s\"\n", orig_def);
+			switch(n) {
+			case -1:
 			/* FALLTHROUGH */
-		case 0:
-			ERROR("Couldn't parse mode, octal integer expected\n");
-			break;
-		case 1:
-			ERROR("Read filename, type, time and mode, but failed to "
-				"read or match uid\n");
-			break;
-		default:
-			ERROR("Read filename, type, time, mode and uid, but failed "
-				"to read or match gid\n");
-			break;
+			case 0:
+				ERROR("Couldn't parse mode, octal integer expected\n");
+				break;
+			case 1:
+				ERROR("Read filename, type, time and mode, but failed to "
+					"read or match uid\n");
+				break;
+			default:
+				ERROR("Read filename, type, time, mode and uid, but failed "
+					"to read or match gid\n");
+				break;
+			}
+			goto error;
 		}
-		goto error;
+	} else {
+		def += bytes;
+		n = sscanf(def, "%99s %99s %n", suid, sgid, &bytes);
+		def += bytes;
+
+		if(n < 2) {
+			ERROR("Not enough or invalid arguments in pseudo file "
+				"definition \"%s\"\n", orig_def);
+			switch(n) {
+			case -1:
+				/* FALLTHROUGH */
+			case 0:
+				ERROR("Read filename, type, time and mode, but failed to "
+					"read or match uid\n");
+				break;
+			default:
+				ERROR("Read filename, type, time, mode and uid, but failed "
+					"to read or match gid\n");
+				break;
+			}
+			goto error;
+		}
 	}
 
 	switch(type) {
