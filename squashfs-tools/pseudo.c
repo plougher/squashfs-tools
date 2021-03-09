@@ -854,7 +854,6 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename, c
 
 error:
 	print_definitions();
-	ERROR("Pseudo definitions should be of the format\n");
 	return FALSE;
 }
 
