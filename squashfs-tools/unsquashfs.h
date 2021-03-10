@@ -220,24 +220,24 @@ struct pathnames {
 #define PATH_TYPE_EXCLUDE 4
 
 struct directory_level {
-	unsigned int start_block;
-	unsigned int offset;
-	char *name;
+	unsigned int	start_block;
+	unsigned int	offset;
+	char		*name;
 };
 
 struct symlink {
-	char *pathname;
-	struct symlink *next;
+	char		*pathname;
+	struct symlink	*next;
 };
 
 struct directory_stack {
-	int size;
-	unsigned int type;
-	unsigned int start_block;
-	unsigned int offset;
-	char *name;
-	struct directory_level *stack;
-	struct symlink *symlink;
+	int			size;
+	unsigned int		type;
+	unsigned int		start_block;
+	unsigned int		offset;
+	char			*name;
+	struct directory_level 	*stack;
+	struct symlink		*symlink;
 };
 
 #define MAX_FOLLOW_SYMLINKS 256
