@@ -56,6 +56,7 @@ struct compressor *comp;
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
 	dev_count = 0, fifo_count = 0, socket_count = 0;
 struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
+struct hash_table_entry2 *metadata_table_hash[65536];
 int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
 unsigned int block_size;
@@ -68,6 +69,7 @@ int root_process;
 int columns;
 int rotate = 0;
 pthread_mutex_t	screen_mutex;
+pthread_mutex_t pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 int progress = TRUE, progress_enabled = FALSE;
 unsigned int total_blocks = 0, total_files = 0, total_inodes = 0;
 unsigned int cur_blocks = 0;
@@ -635,6 +637,8 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 	TRACE("read_bytes: reading from position 0x%llx, bytes %d\n", byte,
 		bytes);
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
+	pthread_mutex_lock(&pos_mutex);
 	if(lseek(fd, start_offset + off, SEEK_SET) == -1) {
 		ERROR("Lseek failed because %s\n", strerror(errno));
 		return FALSE;
@@ -656,6 +660,7 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 		}
 	}
 
+	pthread_cleanup_pop(1);
 	return TRUE;
 }
 
@@ -740,6 +745,84 @@ int read_block(int fd, long long start, long long *next, int expected,
 failed:
 	ERROR("read_block: failed to read block @0x%llx\n", start);
 	return FALSE;
+}
+
+
+static struct hash_table_entry2 *get_metadata(long long start)
+{
+	int res, hash = CALCULATE_HASH(start);
+	struct hash_table_entry2 *entry;
+	void *buffer;
+	long long next;
+
+	for(entry = metadata_table_hash[hash]; entry; entry = entry->next)
+		if(entry->start == start)
+			return entry;
+
+	buffer = malloc(SQUASHFS_METADATA_SIZE);
+	if(buffer == NULL)
+		MEM_ERROR();
+
+	res = read_block(fd, start, &next, 0, buffer);
+	if(res == 0) {
+		ERROR("get_metadata: failed to read block\n");
+		free(buffer);
+		return NULL;
+	}
+
+	entry = malloc(sizeof(struct hash_table_entry2));
+	if(entry == NULL)
+		MEM_ERROR();
+
+	entry->start = start;
+	entry->length = res;
+	entry->buffer = buffer;
+	entry->next_index = next;
+	entry->next = metadata_table_hash[hash];
+	metadata_table_hash[hash] = entry;
+
+	return entry;
+}
+
+/*
+ * Read length bytes from metadata position <block, offset> (block is the
+ * start of the compressed block on disk, and offset is the offset into
+ * the block once decompressed).  Data is packed into consecutive blocks,
+ * and length bytes may require reading more than one block.
+ */
+int read_metadata(void *buffer, long long *blk, unsigned int *off, int length)
+{
+	int res = length;
+	struct hash_table_entry2 *entry;
+	long long block = *blk;
+	unsigned int offset = *off;
+
+	while (1) {
+		entry = get_metadata(block);
+		if (entry == NULL || offset >= entry->length)
+			return FALSE;
+
+		if((entry->length - offset) < length) {
+			int copy = entry->length - offset;
+			memcpy(buffer, entry->buffer + offset, copy);
+			buffer += copy;
+			length -= copy;
+			block = entry->next_index;
+			offset = 0;
+		} else if((entry->length - offset) == length) {
+			memcpy(buffer, entry->buffer + offset, length);
+			*blk = entry->next_index;
+			*off = 0;
+			break;
+		} else {
+			memcpy(buffer, entry->buffer + offset, length);
+			*blk = block;
+			*off = offset + length;
+			break;
+		}
+	}
+
+	return res;
 }
 
 

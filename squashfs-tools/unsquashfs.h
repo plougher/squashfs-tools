@@ -70,6 +70,14 @@ struct hash_table_entry {
 	struct hash_table_entry *next;
 };
 
+struct hash_table_entry2 {
+	long long	start;
+	int		length;
+	void 		*buffer;
+	long long 	next_index;
+	struct hash_table_entry2 *next;
+};
+
 struct inode {
 	int blocks;
 	char *block_ptr;
@@ -262,6 +270,7 @@ extern int use_localtime;
 extern void *read_inode_table(long long, long long);
 extern void *read_directory_table(long long, long long);
 extern long long lookup_entry(struct hash_table_entry **, long long);
+extern int read_metadata(void *, long long *, unsigned int *, int);
 extern int read_fs_bytes(int fd, long long, int, void *);
 extern int read_block(int, long long, long long *, int, void *);
 extern void enable_progress_bar();
