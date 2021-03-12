@@ -30,24 +30,43 @@ static unsigned int *uid_table, *guid_table;
 static char *directory_table;
 static squashfs_operations ops;
 
-static void read_block_list(unsigned int *block_list, char *block_ptr, int blocks)
+static void read_block_list(unsigned int *block_list, long long start,
+	unsigned int offset, int blocks)
 {
-	unsigned short block_size;
-	int i;
+	unsigned short *source;
+	int i, res;
 
 	TRACE("read_block_list: blocks %d\n", blocks);
 
-	for(i = 0; i < blocks; i++, block_ptr += 2) {
-		if(swap) {
-			unsigned short sblock_size;
-			memcpy(&sblock_size, block_ptr, sizeof(unsigned short));
-			SQUASHFS_SWAP_SHORTS_3((&block_size), &sblock_size, 1);
-		} else
-			memcpy(&block_size, block_ptr, sizeof(unsigned short));
-		block_list[i] = SQUASHFS_COMPRESSED_SIZE(block_size) |
-			(SQUASHFS_COMPRESSED(block_size) ? 0 :
-			SQUASHFS_COMPRESSED_BIT_BLOCK);
+	source = malloc(blocks * sizeof(unsigned short));
+	if(source == NULL)
+		MEM_ERROR();
+
+	if(swap) {
+		char *swap_buff;
+
+		swap_buff = malloc(blocks * sizeof(unsigned short));
+		if(swap_buff == NULL)
+			MEM_ERROR();
+
+		res = read_metadata(swap_buff, &start, &offset, blocks * sizeof(unsigned short));
+		if(res == FALSE)
+			EXIT_UNSQUASH("read_block_list: failed to read "
+					"inode index %lld:%d\n", start, offset);
+		SQUASHFS_SWAP_SHORTS_3(source, swap_buff, blocks);
+		free(swap_buff);
+	} else {
+		res = read_metadata(source, &start, &offset, blocks * sizeof(unsigned short));
+		if(res == FALSE)
+			EXIT_UNSQUASH("read_block_list: failed to read "
+					"inode index %lld:%d\n", start, offset);
 	}
+
+	for(i = 0; i < blocks; i++)
+		block_list[i] = SQUASHFS_COMPRESSED_SIZE(source[i]) |
+			(SQUASHFS_COMPRESSED(source[i]) ? 0 :
+			SQUASHFS_COMPRESSED_BIT_BLOCK);
+	free(source);
 }
 
 
@@ -154,20 +173,9 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			i.time = inode->mtime;
 			i.blocks = (i.data + sBlk.s.block_size - 1) >>
 				sBlk.s.block_log;
-
-			if(i.blocks) {
-				i.block_ptr = malloc(i.blocks * sizeof(unsigned short));
-				if(i.block_ptr == NULL)
-					MEM_ERROR();
-
-				res = read_metadata(i.block_ptr, &start, &offset, i.blocks * sizeof(unsigned short));
-				if(res == FALSE)
-					EXIT_UNSQUASH("read_inode: failed to read "
-						"inode index %lld:%d\n", start, offset);
-			} else
-				i.block_ptr = NULL;
-
 			i.start = inode->start_block;
+			i.block_start = start;
+			i.block_offset = offset;
 			i.fragment = 0;
 			i.frag_bytes = 0;
 			i.offset = 0;

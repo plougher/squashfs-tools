@@ -31,14 +31,30 @@ static unsigned int *uid_table, *guid_table;
 static char *directory_table;
 static squashfs_operations ops;
 
-static void read_block_list(unsigned int *block_list, char *block_ptr, int blocks)
+
+static void read_block_list(unsigned int *block_list, long long start,
+					unsigned int offset, int blocks)
 {
+	int res;
+
 	TRACE("read_block_list: blocks %d\n", blocks);
 
 	if(swap) {
+		char *block_ptr = malloc(blocks * sizeof(unsigned int));
+		if(block_ptr == NULL)
+			MEM_ERROR();
+		res = read_metadata(block_ptr, &start, &offset, blocks * sizeof(unsigned int));
+		if(res == FALSE)
+			EXIT_UNSQUASH("read_block_list: failed to read "
+				"inode index %lld:%d\n", start, offset);
 		SQUASHFS_SWAP_INTS_3(block_list, block_ptr, blocks);
-	} else
-		memcpy(block_list, block_ptr, blocks * sizeof(unsigned int));
+		free(block_ptr);
+	} else {
+		res = read_metadata(block_list, &start, &offset, blocks * sizeof(unsigned int));
+		if(res == FALSE)
+			EXIT_UNSQUASH("read_block_list: failed to read "
+				"inode index %lld:%d\n", start, offset);
+	}
 }
 
 
@@ -254,20 +270,9 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 				(i.data + sBlk.s.block_size - 1) >>
 				sBlk.s.block_log : i.data >>
 				sBlk.s.block_log;
-
-			if(i.blocks) {
-				i.block_ptr = malloc(i.blocks * sizeof(unsigned int));
-				if(i.block_ptr == NULL)
-					MEM_ERROR();
-
-				res = read_metadata(i.block_ptr, &start, &offset, i.blocks * sizeof(unsigned int));
-				if(res == FALSE)
-					EXIT_UNSQUASH("read_inode: failed to read "
-						"inode index %lld:%d\n", start, offset);
-			} else
-				i.block_ptr = NULL;
-
 			i.start = inode->start_block;
+			i.block_start = start;
+			i.block_offset = offset;
 			i.sparse = 0;
 			break;
 		}	

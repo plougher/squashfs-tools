@@ -80,7 +80,8 @@ struct hash_table_entry2 {
 
 struct inode {
 	int blocks;
-	char *block_ptr;
+	long long block_start;
+	unsigned int block_offset;
 	long long data;
 	int fragment;
 	int frag_bytes;
@@ -102,8 +103,8 @@ typedef struct squashfs_operations {
 		unsigned int offset, struct inode **i);
 	void (*read_fragment)(unsigned int fragment, long long *start_block,
 		int *size);
-	void (*read_block_list)(unsigned int *block_list, char *block_ptr,
-		int blocks);
+	void (*read_block_list)(unsigned int *block_list, long long start,
+		unsigned int offset, int blocks);
 	struct inode *(*read_inode)(unsigned int start_block,
 		unsigned int offset);
 	int (*read_filesystem_tables)();

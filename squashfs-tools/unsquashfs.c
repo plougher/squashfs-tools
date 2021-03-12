@@ -1080,7 +1080,7 @@ void queue_dir(char *pathname, struct dir *dir)
 int write_file(struct inode *inode, char *pathname)
 {
 	unsigned int file_fd, i;
-	unsigned int *block_list;
+	unsigned int *block_list = NULL;
 	int file_end = inode->data / block_size;
 	long long start = inode->start;
 
@@ -1094,11 +1094,14 @@ int write_file(struct inode *inode, char *pathname)
 		return FALSE;
 	}
 
-	block_list = malloc(inode->blocks * sizeof(unsigned int));
-	if(block_list == NULL && inode->blocks)
-		MEM_ERROR();
+	if(inode->blocks) {
+		block_list = malloc(inode->blocks * sizeof(unsigned int));
+		if(block_list == NULL)
+			MEM_ERROR();
 
-	s_ops->read_block_list(block_list, inode->block_ptr, inode->blocks);
+		s_ops->read_block_list(block_list, inode->block_start,
+					inode->block_offset, inode->blocks);
+	}
 
 	/*
 	 * the writer thread is queued a squashfs_file structure describing the
