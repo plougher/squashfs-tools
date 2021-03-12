@@ -28,7 +28,7 @@
 
 static squashfs_fragment_entry_2 *fragment_table;
 static unsigned int *uid_table, *guid_table;
-static char *inode_table, *directory_table;
+static char *directory_table;
 static squashfs_operations ops;
 
 static void read_block_list(unsigned int *block_list, char *block_ptr, int blocks)
@@ -155,23 +155,24 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 {
 	static union squashfs_inode_header_2 header;
 	long long start = sBlk.s.inode_table_start + start_block;
-	int bytes = lookup_entry(inode_table_hash, start);
-	char *block_ptr = inode_table + bytes + offset;
+	long long st = start;
+	unsigned int off = offset;
 	static struct inode i;
+	int res;
 
 	TRACE("read_inode: reading inode [%d:%d]\n", start_block,  offset);
 
-	if(bytes == -1)
-		EXIT_UNSQUASH("read_inode: inode table block %lld not found\n",
-			start); 
-
 	if(swap) {
 		squashfs_base_inode_header_2 sinode;
-		memcpy(&sinode, block_ptr, sizeof(header.base));
-		SQUASHFS_SWAP_BASE_INODE_HEADER_2(&header.base, &sinode,
-			sizeof(squashfs_base_inode_header_2));
+		res = read_metadata(&sinode, &st, &off, sizeof(sinode));
+		if(res)
+			SQUASHFS_SWAP_BASE_INODE_HEADER_2(&header.base, &sinode,
+				sizeof(squashfs_base_inode_header_2));
 	} else
-		memcpy(&header.base, block_ptr, sizeof(header.base));
+		res = read_metadata(&header.base, &st, &off, sizeof(header.base));
+
+	if(res == FALSE)
+		EXIT_UNSQUASH("read_inode: failed to read inode %lld:%d\n", st, off);
 
 	i.xattr = SQUASHFS_INVALID_XATTR;
 	i.uid = (uid_t) uid_table[header.base.uid];
@@ -188,12 +189,16 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 			if(swap) {
 				squashfs_dir_inode_header_2 sinode;
-				memcpy(&sinode, block_ptr, sizeof(header.dir));
-				SQUASHFS_SWAP_DIR_INODE_HEADER_2(&header.dir,
-					&sinode);
+				res = read_metadata(&sinode, &start, &offset, sizeof(sinode));
+				if(res)
+					SQUASHFS_SWAP_DIR_INODE_HEADER_2(&header.dir,
+						&sinode);
 			} else
-				memcpy(&header.dir, block_ptr,
-					sizeof(header.dir));
+				res = read_metadata(inode, &start, &offset, sizeof(*inode));
+
+			if(res == FALSE)
+				EXIT_UNSQUASH("read_inode: failed to read "
+					"inode %lld:%d\n", start, offset);
 
 			i.data = inode->file_size;
 			i.offset = inode->offset;
@@ -206,12 +211,16 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 			if(swap) {
 				squashfs_ldir_inode_header_2 sinode;
-				memcpy(&sinode, block_ptr, sizeof(header.ldir));
-				SQUASHFS_SWAP_LDIR_INODE_HEADER_2(&header.ldir,
-					&sinode);
+				res = read_metadata(&sinode, &start, &offset, sizeof(sinode));
+				if(res)
+					SQUASHFS_SWAP_LDIR_INODE_HEADER_2(&header.ldir,
+						&sinode);
 			} else
-				memcpy(&header.ldir, block_ptr,
-					sizeof(header.ldir));
+				res = read_metadata(inode, &start, &offset, sizeof(*inode));
+
+			if(res == FALSE)
+				EXIT_UNSQUASH("read_inode: failed to read "
+					"inode %lld:%d\n", start, offset);
 
 			i.data = inode->file_size;
 			i.offset = inode->offset;
@@ -224,11 +233,16 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 			if(swap) {
 				squashfs_reg_inode_header_2 sinode;
-				memcpy(&sinode, block_ptr, sizeof(sinode));
-				SQUASHFS_SWAP_REG_INODE_HEADER_2(inode,
-					&sinode);
+				res = read_metadata(&sinode, &start, &offset, sizeof(sinode));
+				if(res)
+					SQUASHFS_SWAP_REG_INODE_HEADER_2(inode,
+						&sinode);
 			} else
-				memcpy(inode, block_ptr, sizeof(*inode));
+				res = read_metadata(inode, &start, &offset, sizeof(*inode));
+
+			if(res == FALSE)
+				EXIT_UNSQUASH("read_inode: failed to read "
+					"inode %lld:%d\n", start, offset);
 
 			i.data = inode->file_size;
 			i.time = inode->mtime;
@@ -240,9 +254,21 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 				(i.data + sBlk.s.block_size - 1) >>
 				sBlk.s.block_log : i.data >>
 				sBlk.s.block_log;
+
+			if(i.blocks) {
+				i.block_ptr = malloc(i.blocks * sizeof(unsigned int));
+				if(i.block_ptr == NULL)
+					MEM_ERROR();
+
+				res = read_metadata(i.block_ptr, &start, &offset, i.blocks * sizeof(unsigned int));
+				if(res == FALSE)
+					EXIT_UNSQUASH("read_inode: failed to read "
+						"inode index %lld:%d\n", start, offset);
+			} else
+				i.block_ptr = NULL;
+
 			i.start = inode->start_block;
 			i.sparse = 0;
-			i.block_ptr = block_ptr + sizeof(*inode);
 			break;
 		}	
 		case SQUASHFS_SYMLINK_TYPE: {
@@ -251,19 +277,25 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 			if(swap) {
 				squashfs_symlink_inode_header_2 sinodep;
-				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_SYMLINK_INODE_HEADER_2(inodep,
-					&sinodep);
+				res = read_metadata(&sinodep, &start, &offset, sizeof(sinodep));
+				if(res)
+					SQUASHFS_SWAP_SYMLINK_INODE_HEADER_2(inodep,
+						&sinodep);
 			} else
-				memcpy(inodep, block_ptr, sizeof(*inodep));
+				res = read_metadata(inodep, &start, &offset, sizeof(*inodep));
+
+			if(res == FALSE)
+				EXIT_UNSQUASH("read_inode: failed to read "
+					"inode %lld:%d\n", start, offset);
 
 			i.symlink = malloc(inodep->symlink_size + 1);
 			if(i.symlink == NULL)
 				MEM_ERROR();
 
-			strncpy(i.symlink, block_ptr +
-				sizeof(squashfs_symlink_inode_header_2),
-				inodep->symlink_size);
+			res = read_metadata(i.symlink, &start, &offset, inodep->symlink_size);
+			if(res == FALSE)
+				EXIT_UNSQUASH("read_inode: failed to read "
+					"inode symbolic link %lld:%d\n", start, offset);
 			i.symlink[inodep->symlink_size] = '\0';
 			i.data = inodep->symlink_size;
 			break;
@@ -274,11 +306,16 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 			if(swap) {
 				squashfs_dev_inode_header_2 sinodep;
-				memcpy(&sinodep, block_ptr, sizeof(sinodep));
-				SQUASHFS_SWAP_DEV_INODE_HEADER_2(inodep,
-					&sinodep);
+				res = read_metadata(&sinodep, &start, &offset, sizeof(sinodep));
+				if(res)
+					SQUASHFS_SWAP_DEV_INODE_HEADER_2(inodep,
+						&sinodep);
 			} else
-				memcpy(inodep, block_ptr, sizeof(*inodep));
+				res = read_metadata(inodep, &start, &offset, sizeof(*inodep));
+
+			if(res == FALSE)
+				EXIT_UNSQUASH("read_inode: failed to read "
+					"inode %lld:%d\n", start, offset);
 
 			i.data = inodep->rdev;
 			break;
@@ -504,18 +541,11 @@ static int read_filesystem_tables()
 	if(directory_table == NULL)
 		goto corrupted;
 
-	/* Read inode table */
-
-	/* Sanity check super block contents */
+	/* Sanity check super block inode table values */
 	if(sBlk.s.inode_table_start >= sBlk.s.directory_table_start) {
 		ERROR("read_filesystem_tables: inode table start too large in super block\n");
 		goto corrupted;
 	}
-
-	inode_table = read_inode_table(sBlk.s.inode_table_start,
-				sBlk.s.directory_table_start);
-	if(inode_table == NULL)
-		goto corrupted;
 
 	return TRUE;
 
