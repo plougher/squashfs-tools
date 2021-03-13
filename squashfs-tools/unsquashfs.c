@@ -56,7 +56,7 @@ struct compressor *comp;
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
 	dev_count = 0, fifo_count = 0, socket_count = 0;
 struct hash_table_entry *directory_table_hash[65536];
-struct hash_table_entry2 *metadata_table_hash[65536];
+struct hash_table_entry2 *inode_table_hash[65536], *metadata_table_hash[65536];
 int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
 unsigned int block_size;
@@ -748,14 +748,15 @@ failed:
 }
 
 
-static struct hash_table_entry2 *get_metadata(long long start)
+static struct hash_table_entry2 *get_metadata(struct hash_table_entry2 *hash_table[],
+							long long start)
 {
 	int res, hash = CALCULATE_HASH(start);
 	struct hash_table_entry2 *entry;
 	void *buffer;
 	long long next;
 
-	for(entry = metadata_table_hash[hash]; entry; entry = entry->next)
+	for(entry = hash_table[hash]; entry; entry = entry->next)
 		if(entry->start == start)
 			return entry;
 
@@ -778,8 +779,8 @@ static struct hash_table_entry2 *get_metadata(long long start)
 	entry->length = res;
 	entry->buffer = buffer;
 	entry->next_index = next;
-	entry->next = metadata_table_hash[hash];
-	metadata_table_hash[hash] = entry;
+	entry->next = hash_table[hash];
+	hash_table[hash] = entry;
 
 	return entry;
 }
@@ -790,7 +791,8 @@ static struct hash_table_entry2 *get_metadata(long long start)
  * the block once decompressed).  Data is packed into consecutive blocks,
  * and length bytes may require reading more than one block.
  */
-int read_metadata(void *buffer, long long *blk, unsigned int *off, int length)
+static int read_metadata(struct hash_table_entry2 *hash_table[], void *buffer,
+			long long *blk, unsigned int *off, int length)
 {
 	int res = length;
 	struct hash_table_entry2 *entry;
@@ -798,7 +800,7 @@ int read_metadata(void *buffer, long long *blk, unsigned int *off, int length)
 	unsigned int offset = *off;
 
 	while (1) {
-		entry = get_metadata(block);
+		entry = get_metadata(hash_table, block);
 		if (entry == NULL || offset >= entry->length)
 			return FALSE;
 
@@ -823,6 +825,18 @@ int read_metadata(void *buffer, long long *blk, unsigned int *off, int length)
 	}
 
 	return res;
+}
+
+
+int read_inode_data(void *buffer, long long *blk, unsigned int *off, int length)
+{
+	return read_metadata(inode_table_hash, buffer, blk, off, length);
+}
+
+
+int read_directory_data(void *buffer, long long *blk, unsigned int *off, int length)
+{
+	return read_metadata(metadata_table_hash, buffer, blk, off, length);
 }
 
 

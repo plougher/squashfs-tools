@@ -39,7 +39,7 @@ static void read_block_list(unsigned int *block_list, long long start,
 
 	TRACE("read_block_list: blocks %d\n", blocks);
 
-	res = read_metadata(block_list, &start, &offset, blocks * sizeof(unsigned int));
+	res = read_inode_data(block_list, &start, &offset, blocks * sizeof(unsigned int));
 	if(res == FALSE)
 		EXIT_UNSQUASH("read_block_list: failed to read "
 			"inode index %lld:%d\n", start, offset);
@@ -136,7 +136,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 	TRACE("read_inode: reading inode [%d:%d]\n", start_block,  offset);
 
-	res = read_metadata(&header.base, &st, &off, sizeof(header.base));
+	res = read_inode_data(&header.base, &st, &off, sizeof(header.base));
 	if(res == FALSE)
 		EXIT_UNSQUASH("read_inode: failed to read inode %lld:%d\n", st, off);
 
@@ -153,7 +153,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		case SQUASHFS_DIR_TYPE: {
 			struct squashfs_dir_inode_header *inode = &header.dir;
 
-			res = read_metadata(inode, &start, &offset, sizeof(*inode));
+			res = read_inode_data(inode, &start, &offset, sizeof(*inode));
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode %lld:%d\n", start, offset);
@@ -169,7 +169,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		case SQUASHFS_LDIR_TYPE: {
 			struct squashfs_ldir_inode_header *inode = &header.ldir;
 
-			res = read_metadata(inode, &start, &offset, sizeof(*inode));
+			res = read_inode_data(inode, &start, &offset, sizeof(*inode));
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode %lld:%d\n", start, offset);
@@ -185,7 +185,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		case SQUASHFS_FILE_TYPE: {
 			struct squashfs_reg_inode_header *inode = &header.reg;
 
-			res = read_metadata(inode, &start, &offset, sizeof(*inode));
+			res = read_inode_data(inode, &start, &offset, sizeof(*inode));
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode %lld:%d\n", start, offset);
@@ -211,7 +211,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		case SQUASHFS_LREG_TYPE: {
 			struct squashfs_lreg_inode_header *inode = &header.lreg;
 
-			res = read_metadata(inode, &start, &offset, sizeof(*inode));
+			res = read_inode_data(inode, &start, &offset, sizeof(*inode));
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode %lld:%d\n", start, offset);
@@ -238,7 +238,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		case SQUASHFS_LSYMLINK_TYPE: {
 			struct squashfs_symlink_inode_header *inode = &header.symlink;
 
-			res = read_metadata(inode, &start, &offset, sizeof(*inode));
+			res = read_inode_data(inode, &start, &offset, sizeof(*inode));
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode %lld:%d\n", start, offset);
@@ -249,7 +249,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			if(i.symlink == NULL)
 				MEM_ERROR();
 
-			res = read_metadata(i.symlink, &start, &offset, inode->symlink_size);
+			res = read_inode_data(i.symlink, &start, &offset, inode->symlink_size);
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode symbolic link %lld:%d\n", start, offset);
@@ -258,7 +258,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			i.data = inode->symlink_size;
 
 			if(header.base.inode_type == SQUASHFS_LSYMLINK_TYPE) {
-				res = read_metadata(&i.xattr, &start, &offset, sizeof(unsigned int));
+				res = read_inode_data(&i.xattr, &start, &offset, sizeof(unsigned int));
 				SQUASHFS_INSWAP_INTS(&i.xattr, 1);
 			} else
 				i.xattr = SQUASHFS_INVALID_XATTR;
@@ -268,7 +268,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 	 	case SQUASHFS_CHRDEV_TYPE: {
 			struct squashfs_dev_inode_header *inode = &header.dev;
 
-			res = read_metadata(inode, &start, &offset, sizeof(*inode));
+			res = read_inode_data(inode, &start, &offset, sizeof(*inode));
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode %lld:%d\n", start, offset);
@@ -283,7 +283,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 	 	case SQUASHFS_LCHRDEV_TYPE: {
 			struct squashfs_ldev_inode_header *inode = &header.ldev;
 
-			res = read_metadata(inode, &start, &offset, sizeof(*inode));
+			res = read_inode_data(inode, &start, &offset, sizeof(*inode));
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode %lld:%d\n", start, offset);
@@ -303,7 +303,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		case SQUASHFS_LSOCKET_TYPE: {
 			struct squashfs_lipc_inode_header *inode = &header.lipc;
 
-			res = read_metadata(inode, &start, &offset, sizeof(*inode));
+			res = read_inode_data(inode, &start, &offset, sizeof(*inode));
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode %lld:%d\n", start, offset);
