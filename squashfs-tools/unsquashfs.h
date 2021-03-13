@@ -254,8 +254,7 @@ struct directory_stack {
 /* globals */
 extern struct super_block sBlk;
 extern int swap;
-extern struct hash_table_entry *inode_table_hash[65536],
-	*directory_table_hash[65536];
+extern struct hash_table_entry *directory_table_hash[65536];
 extern pthread_mutex_t screen_mutex;
 extern int progress_enabled;
 extern int inode_number;
@@ -268,7 +267,6 @@ extern struct compressor *comp;
 extern int use_localtime;
 
 /* unsquashfs.c */
-extern void *read_inode_table(long long, long long);
 extern void *read_directory_table(long long, long long);
 extern long long lookup_entry(struct hash_table_entry **, long long);
 extern int read_metadata(void *, long long *, unsigned int *, int);

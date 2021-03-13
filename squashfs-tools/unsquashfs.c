@@ -55,7 +55,7 @@ struct compressor *comp;
 
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
 	dev_count = 0, fifo_count = 0, socket_count = 0;
-struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
+struct hash_table_entry *directory_table_hash[65536];
 struct hash_table_entry2 *metadata_table_hash[65536];
 int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
@@ -823,73 +823,6 @@ int read_metadata(void *buffer, long long *blk, unsigned int *off, int length)
 	}
 
 	return res;
-}
-
-
-void *read_inode_table(long long start, long long end)
-{
-	int res;
-	long long size = 0;
-	long long bytes = 0;
-	void *inode_table = NULL;
-	int alloc_size;
-
-	TRACE("read_inode_table: start %lld, end %lld\n", start, end);
-
-	/*
-	 * Use the size of the compressed inode table as an initial
-	 * memory allocation value, and the reallocation value, if
-	 * this is too small.
-	 *
-	 * With a 50% compression ratio, this should require 2 alloc calls
-	 * With a 25% compression ratio, this should require 4 alloc calls
-	 * With a 12.5% compression ratio, this should require 8 alloc calls
-	 *
-	 * Always round to a multiple of SQUASHFS_METADATA_SIZE
-	 */
-	alloc_size = ((end - start) + SQUASHFS_METADATA_SIZE) &
-						~(SQUASHFS_METADATA_SIZE - 1);
-
-	while(start < end) {
-		if(size - bytes < SQUASHFS_METADATA_SIZE) {
-			inode_table = realloc(inode_table, size += alloc_size);
-			if(inode_table == NULL)
-				MEM_ERROR();
-		}
-
-		add_entry(inode_table_hash, start, bytes);
-
-		res = read_block(fd, start, &start, 0, inode_table + bytes);
-		if(res == 0) {
-			ERROR("read_inode_table: failed to read block\n");
-			goto failed;
-		}
-		bytes += res;
-
-		/*
-		 * If this is not the last metadata block in the inode table
-		 * then it should be SQUASHFS_METADATA_SIZE in size.
-		 * Note, we can't use expected in read_block() above for this
-		 * because we don't know if this is the last block until
-		 * after reading.
-		 */
-		if(start != end && res != SQUASHFS_METADATA_SIZE) {
-			ERROR("read_inode_table: metadata block should be %d "
-				"bytes in length, it is %d bytes\n",
-				SQUASHFS_METADATA_SIZE, res);
-			
-			goto failed;
-		}
-	}
-
-	/* trim any over allocation */
-	inode_table = realloc(inode_table, bytes);
-
-	return inode_table;
-
-failed:
-	free(inode_table);
-	return NULL;
 }
 
 
