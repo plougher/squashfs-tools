@@ -28,7 +28,6 @@
 
 static squashfs_fragment_entry_2 *fragment_table;
 static unsigned int *uid_table, *guid_table;
-static char *directory_table;
 static squashfs_operations ops;
 
 
@@ -346,8 +345,8 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 		__attribute__((aligned));
 	squashfs_dir_entry_2 *dire = (squashfs_dir_entry_2 *) buffer;
 	long long start;
-	int bytes;
-	int dir_count, size;
+	int bytes = 0;
+	int dir_count, size, res;
 	struct dir_ent *new_dir;
 	struct dir *dir;
 
@@ -379,21 +378,20 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 		return dir;
 
 	start = sBlk.s.directory_table_start + (*i)->start;
-	bytes = lookup_entry(directory_table_hash, start);
-	if(bytes == -1)
-		EXIT_UNSQUASH("squashfs_opendir: directory block %d not "
-			"found!\n", block_start);
-
-	bytes += (*i)->offset;
+	offset = (*i)->offset;
 	size = (*i)->data + bytes;
 
 	while(bytes < size) {
 		if(swap) {
 			squashfs_dir_header_2 sdirh;
-			memcpy(&sdirh, directory_table + bytes, sizeof(sdirh));
-			SQUASHFS_SWAP_DIR_HEADER_2(&dirh, &sdirh);
+			res = read_directory_data(&sdirh, &start, &offset, sizeof(sdirh));
+			if(res)
+				SQUASHFS_SWAP_DIR_HEADER_2(&dirh, &sdirh);
 		} else
-			memcpy(&dirh, directory_table + bytes, sizeof(dirh));
+			res = read_directory_data(&dirh, &start, &offset, sizeof(dirh));
+
+		if(res == FALSE)
+			goto corrupted;
 
 		dir_count = dirh.count + 1;
 		TRACE("squashfs_opendir: Read directory header @ byte position "
@@ -409,12 +407,17 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 		while(dir_count--) {
 			if(swap) {
 				squashfs_dir_entry_2 sdire;
-				memcpy(&sdire, directory_table + bytes,
-					sizeof(sdire));
-				SQUASHFS_SWAP_DIR_ENTRY_2(dire, &sdire);
+				res = read_directory_data(&sdire, &start,
+					&offset, sizeof(sdire));
+				if(res)
+					SQUASHFS_SWAP_DIR_ENTRY_2(dire, &sdire);
 			} else
-				memcpy(dire, directory_table + bytes,
-					sizeof(*dire));
+				res = read_directory_data(dire, &start,
+					&offset, sizeof(*dire));
+
+			if(res == FALSE)
+				goto corrupted;
+
 			bytes += sizeof(*dire);
 
 			/* size should never be SQUASHFS_NAME_LEN or larger */
@@ -423,8 +426,12 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 				goto corrupted;
 			}
 
-			memcpy(dire->name, directory_table + bytes,
-				dire->size + 1);
+			res = read_directory_data(dire->name, &start, &offset,
+								dire->size + 1);
+
+			if(res == FALSE)
+				goto corrupted;
+
 			dire->name[dire->size + 1] = '\0';
 
 			/* check name for invalid characters (i.e /, ., ..) */
@@ -436,6 +443,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 			TRACE("squashfs_opendir: directory entry %s, inode "
 				"%d:%d, type %d\n", dire->name,
 				dirh.start_block, dire->offset, dire->type);
+
 			if((dir->dir_count % DIR_ENT_SIZE) == 0) {
 				new_dir = realloc(dir->dirs, (dir->dir_count +
 					DIR_ENT_SIZE) * sizeof(struct dir_ent));
@@ -443,6 +451,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 					MEM_ERROR();
 				dir->dirs = new_dir;
 			}
+
 			strcpy(dir->dirs[dir->dir_count].name, dire->name);
 			dir->dirs[dir->dir_count].start_block =
 				dirh.start_block;
@@ -533,18 +542,11 @@ static int read_filesystem_tables()
 		}
 	}
 
-	/* Read directory table */
-
-	/* Sanity check super block contents */
+	/* Sanity check super block directory table values */
 	if(sBlk.s.directory_table_start > table_start) {
 		ERROR("read_filesystem_tables: directory table start too large in super block\n");
 		goto corrupted;
 	}
-
-	directory_table = read_directory_table(sBlk.s.directory_table_start,
-				table_start);
-	if(directory_table == NULL)
-		goto corrupted;
 
 	/* Sanity check super block inode table values */
 	if(sBlk.s.inode_table_start >= sBlk.s.directory_table_start) {
