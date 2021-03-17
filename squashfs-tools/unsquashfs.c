@@ -3226,6 +3226,9 @@ int main(int argc, char *argv[])
 	if(lsonly || info)
 		progress = FALSE;
 
+	if(lsonly)
+		quiet = TRUE;
+
 	if(strict_errors && ignore_errors)
 		EXIT_UNSQUASH("Both -strict-errors and -ignore-errors should "
 								"not be set\n");
@@ -3381,7 +3384,7 @@ int main(int argc, char *argv[])
 
 	disable_progress_bar();
 
-	if(!quiet && !lsonly) {
+	if(!quiet) {
 		printf("\n");
 		printf("created %d files\n", file_count);
 		printf("created %d directories\n", dir_count);
