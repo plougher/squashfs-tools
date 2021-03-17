@@ -64,11 +64,6 @@ struct super_block {
 	long long		guid_start;
 };
 
-struct hash_table_entry {
-	long long	start;
-	long long	bytes;
-	struct hash_table_entry *next;
-};
 
 struct hash_table_entry2 {
 	long long	start;
