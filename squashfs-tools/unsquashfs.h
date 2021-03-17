@@ -267,7 +267,6 @@ extern struct compressor *comp;
 extern int use_localtime;
 
 /* unsquashfs.c */
-extern long long lookup_entry(struct hash_table_entry **, long long);
 extern int read_inode_data(void *, long long *, unsigned int *, int);
 extern int read_directory_data(void *, long long *, unsigned int *, int);
 extern int read_fs_bytes(int fd, long long, int, void *);

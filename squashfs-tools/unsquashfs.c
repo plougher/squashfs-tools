@@ -596,38 +596,6 @@ int print_filename(char *pathname, struct inode *inode)
 }
 	
 
-void add_entry(struct hash_table_entry *hash_table[], long long start,
-	long long bytes)
-{
-	int hash = CALCULATE_HASH(start);
-	struct hash_table_entry *hash_table_entry;
-
-	hash_table_entry = malloc(sizeof(struct hash_table_entry));
-	if(hash_table_entry == NULL)
-		MEM_ERROR();
-
-	hash_table_entry->start = start;
-	hash_table_entry->bytes = bytes;
-	hash_table_entry->next = hash_table[hash];
-	hash_table[hash] = hash_table_entry;
-}
-
-
-long long lookup_entry(struct hash_table_entry *hash_table[], long long start)
-{
-	int hash = CALCULATE_HASH(start);
-	struct hash_table_entry *hash_table_entry;
-
-	for(hash_table_entry = hash_table[hash]; hash_table_entry;
-				hash_table_entry = hash_table_entry->next)
-
-		if(hash_table_entry->start == start)
-			return hash_table_entry->bytes;
-
-	return -1;
-}
-
-
 int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 {
 	off_t off = byte;
