@@ -55,7 +55,6 @@ struct compressor *comp;
 
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
 	dev_count = 0, fifo_count = 0, socket_count = 0;
-struct hash_table_entry *directory_table_hash[65536];
 struct hash_table_entry2 *inode_table_hash[65536], *metadata_table_hash[65536];
 int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
@@ -1282,74 +1281,6 @@ failed:
 	created_inode[i->inode_number - 1] = strdup(pathname);
 
 	return FALSE;
-}
-
-
-void *read_directory_table(long long start, long long end)
-{
-	int res;
-	long long bytes = 0;
-	long long size = 0;
-	void *directory_table = malloc(1);
-	int alloc_size;
-
-	TRACE("read_directory_table: start %lld, end %lld\n", start, end);
-
-	/*
-	 * Use the size of the compressed directory table as an initial
-	 * memory allocation value, and the reallocation value, if
-	 * this is too small.
-	 *
-	 * With a 50% compression ratio, this should require 2 alloc calls
-	 * With a 25% compression ratio, this should require 4 alloc calls
-	 * With a 12.5% compression ratio, this should require 8 alloc calls
-	 *
-	 * Always round to a multiple of SQUASHFS_METADATA_SIZE
-	 */
-	alloc_size = ((end - start) + SQUASHFS_METADATA_SIZE)
-					& ~(SQUASHFS_METADATA_SIZE - 1);
-
-	while(start < end) {
-		if(size - bytes < SQUASHFS_METADATA_SIZE) {
-			directory_table = realloc(directory_table,
-							size += alloc_size);
-			if(directory_table == NULL)
-				MEM_ERROR();
-		}
-
-		add_entry(directory_table_hash, start, bytes);
-
-		res = read_block(fd, start, &start, 0, directory_table + bytes);
-		if(res == 0) {
-			ERROR("read_directory_table: failed to read block\n");
-			goto failed;
-		}
-
-		bytes += res;
-
-		/*
-		 * If this is not the last metadata block in the directory table
-		 * then it should be SQUASHFS_METADATA_SIZE in size.
-		 * Note, we can't use expected in read_block() above for this
-		 * because we don't know if this is the last block until
-		 * after reading.
-		 */
-		if(start != end && res != SQUASHFS_METADATA_SIZE) {
-			ERROR("read_directory_table: metadata block "
-				"should be %d bytes in length, it is %d "
-				"bytes\n", SQUASHFS_METADATA_SIZE, res);
-			goto failed;
-		}
-	}
-
-	/* trim any over allocation */
-	directory_table = realloc(directory_table, bytes);
-
-	return directory_table;
-
-failed:
-	free(directory_table);
-	return NULL;
 }
 
 
