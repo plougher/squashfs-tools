@@ -55,7 +55,7 @@ struct compressor *comp;
 
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
 	dev_count = 0, fifo_count = 0, socket_count = 0;
-struct hash_table_entry *inode_table_hash[65536], *metadata_table_hash[65536];
+struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
 int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
 unsigned int block_size;
@@ -803,7 +803,7 @@ int read_inode_data(void *buffer, long long *blk, unsigned int *off, int length)
 
 int read_directory_data(void *buffer, long long *blk, unsigned int *off, int length)
 {
-	return read_metadata(metadata_table_hash, buffer, blk, off, length);
+	return read_metadata(directory_table_hash, buffer, blk, off, length);
 }
 
 
