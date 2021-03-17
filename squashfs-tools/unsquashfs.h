@@ -65,12 +65,12 @@ struct super_block {
 };
 
 
-struct hash_table_entry2 {
+struct hash_table_entry {
 	long long	start;
 	int		length;
 	void 		*buffer;
 	long long 	next_index;
-	struct hash_table_entry2 *next;
+	struct hash_table_entry *next;
 };
 
 struct inode {

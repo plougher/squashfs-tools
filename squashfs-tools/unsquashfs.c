@@ -55,7 +55,7 @@ struct compressor *comp;
 
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
 	dev_count = 0, fifo_count = 0, socket_count = 0;
-struct hash_table_entry2 *inode_table_hash[65536], *metadata_table_hash[65536];
+struct hash_table_entry *inode_table_hash[65536], *metadata_table_hash[65536];
 int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
 unsigned int block_size;
@@ -715,11 +715,11 @@ failed:
 }
 
 
-static struct hash_table_entry2 *get_metadata(struct hash_table_entry2 *hash_table[],
+static struct hash_table_entry *get_metadata(struct hash_table_entry *hash_table[],
 							long long start)
 {
 	int res, hash = CALCULATE_HASH(start);
-	struct hash_table_entry2 *entry;
+	struct hash_table_entry *entry;
 	void *buffer;
 	long long next;
 
@@ -738,7 +738,7 @@ static struct hash_table_entry2 *get_metadata(struct hash_table_entry2 *hash_tab
 		return NULL;
 	}
 
-	entry = malloc(sizeof(struct hash_table_entry2));
+	entry = malloc(sizeof(struct hash_table_entry));
 	if(entry == NULL)
 		MEM_ERROR();
 
@@ -758,11 +758,11 @@ static struct hash_table_entry2 *get_metadata(struct hash_table_entry2 *hash_tab
  * the block once decompressed).  Data is packed into consecutive blocks,
  * and length bytes may require reading more than one block.
  */
-static int read_metadata(struct hash_table_entry2 *hash_table[], void *buffer,
+static int read_metadata(struct hash_table_entry *hash_table[], void *buffer,
 			long long *blk, unsigned int *off, int length)
 {
 	int res = length;
-	struct hash_table_entry2 *entry;
+	struct hash_table_entry *entry;
 	long long block = *blk;
 	unsigned int offset = *off;
 
