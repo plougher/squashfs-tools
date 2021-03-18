@@ -3319,7 +3319,8 @@ int main(int argc, char *argv[])
 	else
 		data_buffer_size <<= 20 - block_log;
 
-	initialise_threads(fragment_buffer_size, data_buffer_size);
+	if(!lsonly)
+		initialise_threads(fragment_buffer_size, data_buffer_size);
 
 	created_inode = malloc(sBlk.s.inodes * sizeof(char *));
 	if(created_inode == NULL)
@@ -3377,10 +3378,12 @@ int main(int argc, char *argv[])
 	if(res == FALSE && set_exit_code)
 		exit_code = 2;
 
-	queue_put(to_writer, NULL);
-	res = (long) queue_get(from_writer);
-	if(res == TRUE && set_exit_code)
-		exit_code = 2;
+	if(!lsonly) {
+		queue_put(to_writer, NULL);
+		res = (long) queue_get(from_writer);
+		if(res == TRUE && set_exit_code)
+			exit_code = 2;
+	}
 
 	disable_progress_bar();
 
