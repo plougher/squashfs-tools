@@ -74,23 +74,23 @@ struct hash_table_entry {
 };
 
 struct inode {
-	int blocks;
-	long long block_start;
-	unsigned int block_offset;
-	long long data;
-	int fragment;
-	int frag_bytes;
-	gid_t gid;
-	int inode_number;
-	int mode;
-	int offset;
-	long long start;
-	char *symlink;
-	time_t time;
-	int type;
-	uid_t uid;
-	char sparse;
-	unsigned int xattr;
+	int		blocks;
+	long long	block_start;
+	unsigned int	block_offset;
+	long long	data;
+	int		fragment;
+	int		frag_bytes;
+	gid_t		gid;
+	int		inode_number;
+	int		mode;
+	int		offset;
+	long long	start;
+	char		*symlink;
+	time_t		time;
+	int		type;
+	uid_t		uid;
+	char		sparse;
+	unsigned int	xattr;
 };
 
 typedef struct squashfs_operations {
