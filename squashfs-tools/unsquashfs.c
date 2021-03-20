@@ -2052,10 +2052,15 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 				}
 
 				if(i->type == SQUASHFS_SYMLINK_TYPE ||
-					i->type == SQUASHFS_LSYMLINK_TYPE)
+						i->type == SQUASHFS_LSYMLINK_TYPE)
 					free(i->symlink);
-			} else
+			} else {
 				free(pathname);
+
+				if(i->type == SQUASHFS_SYMLINK_TYPE ||
+						i->type == SQUASHFS_LSYMLINK_TYPE)
+					free(i->symlink);
+			}
 
 			free_subdir(newt);
 			free_subdir(newc);
