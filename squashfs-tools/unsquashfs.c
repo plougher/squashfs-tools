@@ -2872,7 +2872,7 @@ int parse_number(char *start, int *res)
 struct pathname *resolve_symlinks(int argc, char *argv[])
 {
 	int n, found;
-	struct directory_stack *stack = create_stack();
+	struct directory_stack *stack;
 	struct symlink *symlink;
 	char *pathname;
 	struct pathname *path = NULL;
@@ -2883,6 +2883,8 @@ struct pathname *resolve_symlinks(int argc, char *argv[])
 		 * return the canonicalised pathname, and all
 		 * symlinks necessary to resolve it.
 		 */
+		stack = create_stack();
+
 		found = follow_path(argv[n], "",
 			SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
