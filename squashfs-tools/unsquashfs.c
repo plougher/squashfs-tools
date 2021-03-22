@@ -1064,6 +1064,71 @@ int write_file(struct inode *inode, char *pathname)
 }
 
 
+int cat_file(struct inode *inode, char *pathname)
+{
+	unsigned int i;
+	unsigned int *block_list = NULL;
+	int file_end = inode->data / block_size;
+	long long start = inode->start;
+
+	TRACE("cat_file: regular file, blocks %d\n", inode->blocks);
+
+	if(inode->blocks) {
+		block_list = malloc(inode->blocks * sizeof(unsigned int));
+		if(block_list == NULL)
+			MEM_ERROR();
+
+		s_ops->read_block_list(block_list, inode->block_start,
+					inode->block_offset, inode->blocks);
+	}
+
+	/*
+	 * the writer thread is queued a squashfs_file structure describing the
+	 * file.  If the file has one or more blocks or a fragment they are
+	 * queued separately (references to blocks in the cache).
+	 */
+	queue_file(pathname, 0, inode);
+
+	for(i = 0; i < inode->blocks; i++) {
+		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
+		struct file_entry *block = malloc(sizeof(struct file_entry));
+
+		if(block == NULL)
+			MEM_ERROR();
+
+		block->offset = 0;
+		block->size = i == file_end ? inode->data & (block_size - 1) :
+			block_size;
+		if(block_list[i] == 0) /* sparse block */
+			block->buffer = NULL;
+		else {
+			block->buffer = cache_get(data_cache, start,
+				block_list[i]);
+			start += c_byte;
+		}
+		queue_put(to_writer, block);
+	}
+
+	if(inode->frag_bytes) {
+		int size;
+		long long start;
+		struct file_entry *block = malloc(sizeof(struct file_entry));
+
+		if(block == NULL)
+			MEM_ERROR();
+
+		s_ops->read_fragment(inode->fragment, &start, &size);
+		block->buffer = cache_get(fragment_cache, start, size);
+		block->offset = inode->offset;
+		block->size = inode->frag_bytes;
+		queue_put(to_writer, block);
+	}
+
+	free(block_list);
+	return TRUE;
+}
+
+
 int create_inode(char *pathname, struct inode *i)
 {
 	int res;
@@ -2408,6 +2473,81 @@ void *writer(void *arg)
 }
 
 
+void *cat_writer(void *arg)
+{
+	int i;
+	long exit_code = FALSE;
+
+	while(1) {
+		struct squashfs_file *file = queue_get(to_writer);
+		long long hole = 0;
+		int local_fail = FALSE;
+		int res;
+
+		if(file == NULL) {
+			queue_put(from_writer, (void *) exit_code);
+			continue;
+		}
+
+		TRACE("cat_writer: regular file, blocks %d\n", file->blocks);
+
+		for(i = 0; i < file->blocks; i++, cur_blocks ++) {
+			struct file_entry *block = queue_get(to_writer);
+
+			if(block->buffer == 0) { /* sparse file */
+				hole += block->size;
+				free(block);
+				continue;
+			}
+
+			cache_block_wait(block->buffer);
+
+			if(block->buffer->error) {
+				EXIT_UNSQUASH_IGNORE("cat: failed to "
+					"read/uncompress file %s\n",
+					file->pathname);
+				exit_code = local_fail = TRUE;
+			}
+
+			if(local_fail == FALSE) {
+				res = write_block(1,
+					block->buffer->data + block->offset,
+					block->size, hole, FALSE);
+
+				if(res == FALSE) {
+					EXIT_UNSQUASH_IGNORE("cat: failed "
+						"to write file %s\n",
+						file->pathname);
+					exit_code = local_fail = TRUE;
+				}
+			}
+
+			hole = 0;
+			cache_block_put(block->buffer);
+			free(block);
+		}
+
+		if(hole && local_fail == FALSE) {
+			/*
+			 * corner case for hole extending to end of file
+			 */
+			hole --;
+			if(write_block(1, "\0", 1, hole,
+					file->sparse) == FALSE) {
+				EXIT_UNSQUASH_IGNORE("cat: failed "
+					"to write sparse data block "
+					"for file %s\n",
+					file->pathname);
+				exit_code = local_fail = TRUE;
+			}
+		}
+
+		free(file->pathname);
+		free(file);
+	}
+}
+
+
 /*
  * decompress thread.  This decompresses buffers queued by the read thread
  */
@@ -2483,30 +2623,42 @@ void *progress_thread(void *arg)
 }
 
 
-void initialise_threads(int fragment_buffer_size, int data_buffer_size)
+void initialise_threads(int fragment_buffer_size, int data_buffer_size, int cat_file)
 {
 	struct rlimit rlim;
 	int i, max_files, res;
 	sigset_t sigmask, old_mask;
 
-	/* block SIGQUIT and SIGHUP, these are handled by the info thread */
-	sigemptyset(&sigmask);
-	sigaddset(&sigmask, SIGQUIT);
-	sigaddset(&sigmask, SIGHUP);
-	if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) != 0)
-		EXIT_UNSQUASH("Failed to set signal mask in initialise_threads"
-			"\n");
+	if(cat_file == FALSE) {
+		/* block SIGQUIT and SIGHUP, these are handled by the info thread */
+		sigemptyset(&sigmask);
+		sigaddset(&sigmask, SIGQUIT);
+		sigaddset(&sigmask, SIGHUP);
+		if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) != 0)
+			EXIT_UNSQUASH("Failed to set signal mask in initialise_threads\n");
 
-	/*
-	 * temporarily block these signals so the created sub-threads will
-	 * ignore them, ensuring the main thread handles them
-	 */
-	sigemptyset(&sigmask);
-	sigaddset(&sigmask, SIGINT);
-	sigaddset(&sigmask, SIGTERM);
-	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) != 0)
-		EXIT_UNSQUASH("Failed to set signal mask in initialise_threads"
-			"\n");
+		/*
+		 * temporarily block these signals so the created sub-threads will
+		 * ignore them, ensuring the main thread handles them
+		 */
+		sigemptyset(&sigmask);
+		sigaddset(&sigmask, SIGINT);
+		sigaddset(&sigmask, SIGTERM);
+		if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) != 0)
+			EXIT_UNSQUASH("Failed to set signal mask in initialise_threads\n");
+	} else {
+		/*
+		 * temporarily block these signals so the created sub-threads will
+		 * ignore them, ensuring the main thread handles them
+		 */
+		sigemptyset(&sigmask);
+		sigaddset(&sigmask, SIGQUIT);
+		sigaddset(&sigmask, SIGHUP);
+		sigaddset(&sigmask, SIGINT);
+		sigaddset(&sigmask, SIGTERM);
+		if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) != 0)
+			EXIT_UNSQUASH("Failed to set signal mask in initialise_threads\n");
+	}
 
 	if(processors == -1) {
 #ifndef linux
@@ -2639,10 +2791,16 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size)
 
 	fragment_cache = cache_init(block_size, fragment_buffer_size);
 	data_cache = cache_init(block_size, data_buffer_size);
+
 	pthread_create(&thread[0], NULL, reader, NULL);
-	pthread_create(&thread[1], NULL, writer, NULL);
 	pthread_create(&thread[2], NULL, progress_thread, NULL);
-	init_info();
+
+	if(cat_file == FALSE) {
+		pthread_create(&thread[1], NULL, writer, NULL);
+		init_info();
+	} else
+		pthread_create(&thread[1], NULL, cat_writer, NULL);
+
 	pthread_mutex_init(&fragment_mutex, NULL);
 
 	for(i = 0; i < processors; i++) {
@@ -2918,6 +3076,149 @@ struct pathname *resolve_symlinks(int argc, char *argv[])
 }
 
 
+struct inode *cat_scan(char *path, char *name, unsigned int start_block,
+	unsigned int offset, int depth, int symlinks,
+	struct directory_stack *stack)
+{
+	struct inode *i;
+	struct dir *dir;
+	char *target, *pathname;
+	unsigned int type;
+	int matched = FALSE;
+	unsigned int entry_start, entry_offset;
+
+	while((path = get_component(path, &target))) {
+		if(strcmp(target, ".") != 0)
+			break;
+
+		free(target);
+	}
+
+	if(path == NULL)
+		return NULL;
+
+	add_stack(stack, start_block, offset, name, depth);
+
+	if(strcmp(target, "..") == 0) {
+		if(depth > 1) {
+			start_block = stack->stack[depth - 2].start_block;
+			offset = stack->stack[depth - 2].offset;
+
+			i = cat_scan(path, "", start_block, offset,
+					depth - 1, symlinks, stack);
+
+			free(target);
+			return i;
+		} else {
+			pathname = stack_pathname(stack, name);
+			ERROR("cat: %s, cannot ascend beyond root directory\n", pathname);
+			free(pathname);
+			free(target);
+			return NULL;
+		}
+	}
+
+	dir = s_ops->opendir(start_block, offset, &i);
+	if(dir == NULL) {
+		free(target);
+		return NULL;
+	}
+
+	while(squashfs_readdir(dir, &name, &entry_start, &entry_offset, &type)) {
+		if(strcmp(name, target) == 0) {
+			matched = TRUE;
+
+			switch(type) {
+			case SQUASHFS_DIR_TYPE:
+				/* if we're at leaf component then fail */
+				if(path[0] == '\0')  {
+					pathname = stack_pathname(stack, name);
+					ERROR("cat: %s is a directory\n", pathname);
+					goto failed;
+				}
+
+				/* follow the path */
+				i = cat_scan(path, name, entry_start, entry_offset,
+								depth + 1, symlinks, stack);
+				break;
+			case SQUASHFS_FILE_TYPE:
+			case SQUASHFS_LREG_TYPE:
+				/* if there's path still to walk, fail */
+				if(path[0] != '\0')  {
+					pathname = stack_pathname(stack, name);
+					ERROR("cat: %s is not a directory\n", pathname);
+					goto failed;
+				}
+
+				i = s_ops->read_inode(entry_start, entry_offset);
+				break;
+			default:
+				/* not a directory, or a regular file, fail */
+				pathname = stack_pathname(stack, name);
+				if(path[0] == '\0')
+					ERROR("cat: %s is not a regular file\n", pathname);
+				else
+					ERROR("cat: %s is not a directory\n", pathname);
+				goto failed;
+			}
+		}
+	}
+
+	if(matched == FALSE) {
+		pathname = stack_pathname(stack, target);
+		ERROR("cat: no matches for %s\n", pathname);
+		goto failed;
+	}
+
+	free(target);
+	squashfs_closedir(dir);
+
+	return i;
+
+failed:
+	free(pathname);
+	free(target);
+	squashfs_closedir(dir);
+
+	return NULL;
+}
+
+
+int cat_path(int argc, char *argv[])
+{
+	int n, res, failed = FALSE;
+	struct inode *i;
+	struct directory_stack *stack;
+
+	for(n = 0; n < argc; n++) {
+		stack = create_stack();
+
+		i = cat_scan(argv[n], "",
+			SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
+			1, 0, stack);
+
+		if(i != NULL) {
+			res = cat_file(i, argv[n]);
+			if(res == FALSE) {
+				EXIT_UNSQUASH_STRICT("cat: failed to cat file %s\n", argv[n]);
+				failed = TRUE;
+			}
+		} else {
+			EXIT_UNSQUASH_STRICT("cat: failed to resolve cat file %s\n", argv[n]);
+			failed = TRUE;
+		}
+
+		free_stack(stack);
+	}
+
+	queue_put(to_writer, NULL);
+	res = (long) queue_get(from_writer);
+
+	return (failed == TRUE || res == TRUE) && set_exit_code ? 2 : 0;
+}
+
+
 int parse_excludes(int argc, char *argv[], struct pathname **exclude)
 {
 	int i;
@@ -3038,6 +3339,7 @@ int main(int argc, char *argv[])
 	int data_buffer_size = DATA_BUFFER_DEFAULT;
 	long res;
 	int exit_code = 0;
+	int cat_files = FALSE;
 
 	pthread_mutex_init(&screen_mutex, NULL);
 	root_process = geteuid() == 0;
@@ -3047,7 +3349,9 @@ int main(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-excludes") == 0)
+		if(strcmp(argv[i], "-cat") == 0)
+			cat_files = TRUE;
+		else if(strcmp(argv[i], "-excludes") == 0)
 			treat_as_excludes = TRUE;
 		else if(strcmp(argv[i], "-exclude-list") == 0 ||
 				strcmp(argv[i], "-ex") == 0) {
@@ -3327,7 +3631,7 @@ int main(int argc, char *argv[])
 		data_buffer_size <<= 20 - block_log;
 
 	if(!lsonly)
-		initialise_threads(fragment_buffer_size, data_buffer_size);
+		initialise_threads(fragment_buffer_size, data_buffer_size, cat_files);
 
 	created_inode = malloc(sBlk.s.inodes * sizeof(char *));
 	if(created_inode == NULL)
@@ -3339,7 +3643,9 @@ int main(int argc, char *argv[])
 	if(res == FALSE)
 		EXIT_UNSQUASH("File system corruption detected\n");
 
-	if(treat_as_excludes)
+	if(cat_files)
+		return cat_path(argc - i - 1, argv + i + 1);
+	else if(treat_as_excludes)
 		for(n = i + 1; n < argc; n++)
 			exclude = add_exclude(exclude, argv[n], argv[n]);
 	else if(follow_symlinks)
