@@ -3107,28 +3107,71 @@ struct pathname *resolve_symlinks(int argc, char *argv[])
 }
 
 
-int cat_scan(char *path, char *name, unsigned int start_block,
+char *new_pathname(char *path, char *name)
+{
+	int len = strlen(path);
+	int size = len ? len + strlen(name) + 2 : strlen(name) + 2;
+	char *newpath = malloc(size);
+
+	if(newpath == NULL)
+		MEM_ERROR();
+
+	if(len) {
+		strcpy(newpath, path);
+		strcat(newpath, "/");
+		strcat(newpath, name);
+	} else {
+		strcpy(newpath, "/");
+		strcat(newpath, name);
+	}
+
+	return newpath;
+}
+
+
+char *add_pathname(char *path, char *name)
+{
+	int size = strlen(path) + strlen(name) + 2;
+	path = realloc(path, size);
+
+	if(path == NULL)
+		MEM_ERROR();
+
+	strcat(path, "/");
+	strcat(path, name);
+
+	return path;
+}
+
+
+int cat_scan(char *path, char *curpath, char *name, unsigned int start_block,
 	unsigned int offset, int depth, int symlinks,
 	struct directory_stack *stack)
 {
 	struct inode *i;
 	struct dir *dir;
-	char *target, *pathname;
+	char *target, *newpath, *addpath;
 	unsigned int type;
 	int matched = FALSE, traversed = TRUE;
 	int match, res;
 	unsigned int entry_start, entry_offset;
 	regex_t preg;
 
+	newpath = new_pathname(curpath, name);
+
 	while((path = get_component(path, &target))) {
 		if(strcmp(target, ".") != 0)
 			break;
 
+		newpath = add_pathname(newpath, ".");
 		free(target);
 	}
 
-	if(path == NULL)
+	if(path == NULL) {
+		ERROR("cat: %s is a directory\n", newpath);
+		free(newpath);
 		return FALSE;
+	}
 
 	add_stack(stack, start_block, offset, name, depth);
 
@@ -3139,15 +3182,15 @@ int cat_scan(char *path, char *name, unsigned int start_block,
 			start_block = stack->stack[depth - 2].start_block;
 			offset = stack->stack[depth - 2].offset;
 
-			res = cat_scan(path, "", start_block, offset,
+			res = cat_scan(path, curpath, "..", start_block, offset,
 					depth - 1, symlinks, new);
 
 			free_stack(new);
 			return res;
 		} else {
-			pathname = stack_pathname(stack, name);
-			ERROR("cat: %s, cannot ascend beyond root directory\n", pathname);
-			free(pathname);
+			newpath = add_pathname(newpath, "..");
+			ERROR("cat: %s, cannot ascend beyond root directory\n", newpath);
+			free(newpath);
 			free(target);
 			return FALSE;
 		}
@@ -3155,6 +3198,7 @@ int cat_scan(char *path, char *name, unsigned int start_block,
 
 	dir = s_ops->opendir(start_block, offset, &i);
 	if(dir == NULL) {
+		free(newpath);
 		free(target);
 		return FALSE;
 	}
@@ -3166,6 +3210,7 @@ int cat_scan(char *path, char *name, unsigned int start_block,
 
 			regerror(res, &preg, str, 1024);
 			ERROR("cat: invalid regex %s because %s\n", target, str);
+			free(newpath);
 			free(target);
 			squashfs_closedir(dir);
 			return FALSE;
@@ -3187,15 +3232,15 @@ int cat_scan(char *path, char *name, unsigned int start_block,
 			case SQUASHFS_DIR_TYPE:
 				/* if we're at leaf component then fail */
 				if(path[0] == '\0')  {
-					pathname = stack_pathname(stack, name);
-					ERROR("cat: %s is a directory\n", pathname);
-					free(pathname);
+					addpath = new_pathname(newpath, name);
+					ERROR("cat: %s is a directory\n", addpath);
+					free(addpath);
 					traversed = FALSE;
 					continue;
 				}
 
 				/* follow the path */
-				res = cat_scan(path, name, entry_start, entry_offset,
+				res = cat_scan(path, newpath, name, entry_start, entry_offset,
 								depth + 1, symlinks, stack);
 				if(res == FALSE)
 					traversed = FALSE;
@@ -3204,27 +3249,28 @@ int cat_scan(char *path, char *name, unsigned int start_block,
 			case SQUASHFS_FILE_TYPE:
 			case SQUASHFS_LREG_TYPE:
 				/* if there's path still to walk, fail */
-				pathname = stack_pathname(stack, name);
+				addpath = new_pathname(newpath, name);
 				if(path[0] != '\0')  {
-					ERROR("cat: %s is not a directory\n", pathname);
-					free(pathname);
+					ERROR("cat: %s is not a directory\n", addpath);
+					free(addpath);
 					traversed = FALSE;
 					continue;
 				}
 
 				i = s_ops->read_inode(entry_start, entry_offset);
-				res = cat_file(i, pathname);
+				res = cat_file(i, addpath);
 				if(res == FALSE)
 					traversed = FALSE;
+				free(addpath);
 				break;
 			default:
 				/* not a directory, or a regular file, fail */
-				pathname = stack_pathname(stack, name);
+				addpath = new_pathname(newpath, name);
 				if(path[0] == '\0')
-					ERROR("cat: %s is not a regular file\n", pathname);
+					ERROR("cat: %s is not a regular file\n", addpath);
 				else
-					ERROR("cat: %s is not a directory\n", pathname);
-				free(pathname);
+					ERROR("cat: %s is not a directory\n", addpath);
+				free(addpath);
 				traversed = FALSE;
 				continue;
 			}
@@ -3232,12 +3278,12 @@ int cat_scan(char *path, char *name, unsigned int start_block,
 	}
 
 	if(matched == FALSE) {
-		pathname = stack_pathname(stack, target);
-		ERROR("cat: no matches for %s\n", pathname);
-		free(pathname);
+		newpath = add_pathname(newpath, target);
+		ERROR("cat: no matches for %s\n", newpath);
 		traversed = FALSE;
 	}
 
+	free(newpath);
 	free(target);
 	squashfs_closedir(dir);
 
@@ -3253,7 +3299,7 @@ int cat_path(int argc, char *argv[])
 	for(n = 0; n < argc; n++) {
 		stack = create_stack();
 
-		res = cat_scan(argv[n], "",
+		res = cat_scan(argv[n], "", "",
 			SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
 			1, 0, stack);
