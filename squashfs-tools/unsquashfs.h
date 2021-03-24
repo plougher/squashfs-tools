@@ -50,7 +50,7 @@
 #include "squashfs_fs.h"
 #include "unsquashfs_error.h"
 
-#define CALCULATE_HASH(start)	(start & 0xffff)
+#define TABLE_HASH(start)	(start & 0xffff)
 
 /*
  * Unified superblock containing fields for all superblocks

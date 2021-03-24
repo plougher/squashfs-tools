@@ -245,7 +245,7 @@ void dump_queue(struct queue *queue)
 /* Called with the cache mutex held */
 void insert_hash_table(struct cache *cache, struct cache_entry *entry)
 {
-	int hash = CALCULATE_HASH(entry->block);
+	int hash = TABLE_HASH(entry->block);
 
 	entry->hash_next = cache->hash_table[hash];
 	cache->hash_table[hash] = entry;
@@ -261,7 +261,7 @@ void remove_hash_table(struct cache *cache, struct cache_entry *entry)
 	if(entry->hash_prev)
 		entry->hash_prev->hash_next = entry->hash_next;
 	else
-		cache->hash_table[CALCULATE_HASH(entry->block)] =
+		cache->hash_table[TABLE_HASH(entry->block)] =
 			entry->hash_next;
 	if(entry->hash_next)
 		entry->hash_next->hash_prev = entry->hash_prev;
@@ -337,7 +337,7 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
  	 * is reached, once this occurs existing discarded blocks on the free
  	 * list are reused
  	 */
-	int hash = CALCULATE_HASH(block);
+	int hash = TABLE_HASH(block);
 	struct cache_entry *entry;
 
 	pthread_mutex_lock(&cache->mutex);
@@ -718,7 +718,7 @@ failed:
 static struct hash_table_entry *get_metadata(struct hash_table_entry *hash_table[],
 							long long start)
 {
-	int res, hash = CALCULATE_HASH(start);
+	int res, hash = TABLE_HASH(start);
 	struct hash_table_entry *entry;
 	void *buffer;
 	long long next;
