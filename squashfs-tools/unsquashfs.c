@@ -1968,6 +1968,8 @@ int follow_path(char *path, char *name, unsigned int start_block,
 					traversed = TRUE;
 					stack->name = strdup(name);
 					stack->type = type;
+					stack->start_block = entry_start;
+					stack->offset = entry_offset;
 				} else
 					traversed = FALSE;
 			}
@@ -3109,19 +3111,22 @@ struct pathname *resolve_symlinks(int argc, char *argv[])
 
 char *new_pathname(char *path, char *name)
 {
-	int len = strlen(path);
-	int size = len ? len + strlen(name) + 2 : strlen(name) + 2;
-	char *newpath = malloc(size);
+	char *newpath;
 
-	if(newpath == NULL)
-		MEM_ERROR();
+	if(strcmp(path, "/") == 0) {
+		newpath = malloc(strlen(name) + 2);
+		if(newpath == NULL)
+			MEM_ERROR();
 
-	if(len) {
-		strcpy(newpath, path);
-		strcat(newpath, "/");
+		strcpy(newpath, "/");
 		strcat(newpath, name);
 	} else {
-		strcpy(newpath, "/");
+		newpath = malloc(strlen(path) + strlen(name) + 2);
+		if(newpath == NULL)
+			MEM_ERROR();
+
+		strcpy(newpath, path);
+		strcat(newpath, "/");
 		strcat(newpath, name);
 	}
 
@@ -3131,31 +3136,37 @@ char *new_pathname(char *path, char *name)
 
 char *add_pathname(char *path, char *name)
 {
-	int size = strlen(path) + strlen(name) + 2;
-	path = realloc(path, size);
+	if(strcmp(path, "/") == 0) {
+		path = realloc(path, strlen(name) + 2);
+		if(path == NULL)
+			MEM_ERROR();
 
-	if(path == NULL)
-		MEM_ERROR();
+		strcat(path, name);
+	} else {
+		path = realloc(path, strlen(path) + strlen(name) + 2);
+		if(path == NULL)
+			MEM_ERROR();
 
-	strcat(path, "/");
-	strcat(path, name);
+		strcat(path, "/");
+		strcat(path, name);
+	}
 
 	return path;
 }
 
 
 int cat_scan(char *path, char *curpath, char *name, unsigned int start_block,
-	unsigned int offset, int depth, int symlinks,
-	struct directory_stack *stack)
+	unsigned int offset, int depth, struct directory_stack *stack)
 {
 	struct inode *i;
 	struct dir *dir;
-	char *target, *newpath, *addpath;
+	char *target, *newpath, *addpath, *symlink;
 	unsigned int type;
 	int matched = FALSE, traversed = TRUE;
 	int match, res;
 	unsigned int entry_start, entry_offset;
 	regex_t preg;
+	struct directory_stack *new;
 
 	newpath = new_pathname(curpath, name);
 
@@ -3177,13 +3188,13 @@ int cat_scan(char *path, char *curpath, char *name, unsigned int start_block,
 
 	if(strcmp(target, "..") == 0) {
 		if(depth > 1) {
-			struct directory_stack *new = clone_stack(stack);
 			free(target);
 			start_block = stack->stack[depth - 2].start_block;
 			offset = stack->stack[depth - 2].offset;
 
-			res = cat_scan(path, curpath, "..", start_block, offset,
-					depth - 1, symlinks, new);
+			new = clone_stack(stack);
+			res = cat_scan(path, newpath, "..", start_block, offset,
+					depth - 1, new);
 
 			free_stack(new);
 			return res;
@@ -3241,13 +3252,12 @@ int cat_scan(char *path, char *curpath, char *name, unsigned int start_block,
 
 				/* follow the path */
 				res = cat_scan(path, newpath, name, entry_start, entry_offset,
-								depth + 1, symlinks, stack);
+								depth + 1, stack);
 				if(res == FALSE)
 					traversed = FALSE;
 				pop_stack(stack);
 				break;
 			case SQUASHFS_FILE_TYPE:
-			case SQUASHFS_LREG_TYPE:
 				/* if there's path still to walk, fail */
 				addpath = new_pathname(newpath, name);
 				if(path[0] != '\0')  {
@@ -3261,6 +3271,86 @@ int cat_scan(char *path, char *curpath, char *name, unsigned int start_block,
 				res = cat_file(i, addpath);
 				if(res == FALSE)
 					traversed = FALSE;
+				free(addpath);
+				break;
+			case SQUASHFS_SYMLINK_TYPE:
+				i = s_ops->read_inode(entry_start, entry_offset);
+				symlink = i->symlink;
+
+				/* Symlink must be relative to current
+				 * directory and not be absolute, otherwise
+				 * we can't follow it, as it is probably
+				 * outside the Squashfs filesystem */
+				if(symlink[0] == '/') {
+					addpath = new_pathname(newpath, name);
+					ERROR("cat: %s failed to resolve symbolic link\n", addpath);
+					free(addpath);
+					traversed = FALSE;
+					free(symlink);
+					continue;
+				}
+
+				new = clone_stack(stack);
+
+				/* follow the symlink */
+				res= follow_path(symlink, name,
+					start_block, offset, depth, 1, new);
+
+				free(symlink);
+
+				if(res == FALSE) {
+					addpath = new_pathname(newpath, name);
+					ERROR("cat: %s failed to resolve symbolic link\n", addpath);
+					free(addpath);
+					free_stack(new);
+					traversed = FALSE;
+					continue;
+				}
+
+				/* If we still have some path to
+				 * walk, then walk it from where
+				 * the symlink traversal left us
+				 *
+				 * Obviously symlink traversal must
+				 * have left us at a directory to do
+				 * this */
+				if(path[0] != '\0') {
+					if(new->type != SQUASHFS_DIR_TYPE) {
+						addpath = new_pathname(newpath, name);
+						ERROR("cat: %s symbolic link does not resolve to a directory\n", addpath);
+						free(addpath);
+						traversed = FALSE;
+						free_stack(new);
+						continue;
+					}
+
+					/* continue following path */
+					res = cat_scan(path, newpath, name,
+						new->start_block, new->offset,
+						new->size + 1, new);
+					if(res == FALSE)
+						traversed = FALSE;
+					free_stack(new);
+					continue;
+				}
+
+				/* At leaf component, symlink must have
+				 * resolved to a regular file */
+				if(new->type != SQUASHFS_FILE_TYPE) {
+					addpath = new_pathname(newpath, name);
+					ERROR("cat: %s symbolic link does not resolve to a regular file\n", addpath);
+					free(addpath);
+					free_stack(new);
+					traversed = FALSE;
+					continue;
+				}
+
+				i = s_ops->read_inode(new->start_block, new->offset);
+				addpath = new_pathname(newpath, name);
+				res = cat_file(i, addpath);
+				if(res == FALSE)
+					traversed = FALSE;
+				free_stack(new);
 				free(addpath);
 				break;
 			default:
@@ -3299,10 +3389,10 @@ int cat_path(int argc, char *argv[])
 	for(n = 0; n < argc; n++) {
 		stack = create_stack();
 
-		res = cat_scan(argv[n], "", "",
+		res = cat_scan(argv[n], "/", "",
 			SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
-			1, 0, stack);
+			1, stack);
 
 		if(res == FALSE)
 			failed = TRUE;
