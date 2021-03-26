@@ -3423,10 +3423,11 @@ int parse_excludes(int argc, char *argv[], struct pathname **exclude)
 
 static void print_options(char *name)
 {
-	ERROR("SYNTAX: %s [options] filesystem [directories or files ", name);
-	ERROR("to extract or exclude (with -excludes)]\n");
+	ERROR("SYNTAX: %s [options] filesystem [files ", name);
+	ERROR("to extract or exclude (with -excludes) or cat (with -cat )]\n");
 	ERROR("\t-v[ersion]\t\tprint version, licence and copyright ");
 	ERROR("information\n");
+	ERROR("\t-cat\t\t\tcat the listed files to stdout\n");
 	ERROR("\t-d[est] <pathname>\tunsquash to <pathname>, default ");
 	ERROR("\"squashfs-root\"\n");
 	ERROR("\t-max[-depth] <levels>\tdescend at most <levels> of ");
