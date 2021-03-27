@@ -84,6 +84,15 @@ int missing_symlinks = FALSE;
 int no_wildcards = FALSE;
 int set_exit_code = TRUE;
 int treat_as_excludes = FALSE;
+int stat_sys = FALSE;
+int version = FALSE;
+int mkfs_time_opt = FALSE;
+int cat_files = FALSE;
+int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
+int data_buffer_size = DATA_BUFFER_DEFAULT;
+char *dest = "squashfs-root";
+struct pathnames *extracts = NULL, *excludes = NULL;
+struct pathname *extract = NULL, *exclude = NULL;
 
 int lookup_type[] = {
 	0,
@@ -3517,24 +3526,10 @@ void print_version()
 }
 
 
-int main(int argc, char *argv[])
+int parse_options(int argc, char *argv[])
 {
-	char *dest = "squashfs-root";
-	int i, stat_sys = FALSE, version = FALSE, mkfs_time_opt = FALSE;
-	int n;
-	struct pathnames *extracts = NULL, *excludes = NULL;
-	struct pathname *extract = NULL, *exclude = NULL;
-	int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
-	int data_buffer_size = DATA_BUFFER_DEFAULT;
-	long res;
-	int exit_code = 0;
-	int cat_files = FALSE;
+	int i, res;
 
-	pthread_mutex_init(&screen_mutex, NULL);
-	root_process = geteuid() == 0;
-	if(root_process)
-		umask(0);
-	
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
@@ -3759,6 +3754,23 @@ int main(int argc, char *argv[])
 			print_options(argv[0]);
 		exit(1);
 	}
+
+	return i;
+}
+
+
+int main(int argc, char *argv[])
+{
+	int i, n;
+	long res;
+	int exit_code = 0;
+
+	pthread_mutex_init(&screen_mutex, NULL);
+	root_process = geteuid() == 0;
+	if(root_process)
+		umask(0);
+
+	i = parse_options(argc, argv);
 
 	if((fd = open(argv[i], O_RDONLY)) == -1) {
 		ERROR("Could not open %s, because %s\n", argv[i],
