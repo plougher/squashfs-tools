@@ -112,7 +112,7 @@ static inline void restore_xattrs()
 
 static inline int write_xattr(char *pathname, unsigned int xattr)
 {
-	return 0;
+	return 1;
 }
 
 
