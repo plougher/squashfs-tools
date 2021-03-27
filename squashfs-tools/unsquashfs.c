@@ -3430,6 +3430,38 @@ int parse_excludes(int argc, char *argv[], struct pathname **exclude)
 }
 
 
+static void print_cat_options(char *name)
+{
+	ERROR("SYNTAX: %s [options] filesystem [files to cat]\n", name);
+	ERROR("\t-v[ersion]\t\tprint version, licence and copyright ");
+	ERROR("information\n");
+	ERROR("\t-p[rocessors] <number>\tuse <number> processors.  ");
+	ERROR("By default will use\n");
+	ERROR("\t\t\t\tnumber of processors available\n");
+	ERROR("\t-o[ffset] <bytes>\tskip <bytes> at start of <dest>.  ");
+	ERROR("Optionally a\n\t\t\t\tsuffix of K, M or G can be given to ");
+	ERROR("specify\n\t\t\t\tKbytes, Mbytes or Gbytes respectively ");
+	ERROR("(default\n\t\t\t\t0 bytes).\n");
+	ERROR("\t-ig[nore-errors]\ttreat errors writing files to output ");
+	ERROR("as\n\t\t\t\tnon-fatal\n");
+	ERROR("\t-st[rict-errors]\ttreat all errors as fatal\n");
+	ERROR("\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on ");
+	ERROR("non-fatal\n\t\t\t\terrors\n");
+	ERROR("\t-da[ta-queue] <size>\tset data queue to <size> Mbytes.  ");
+	ERROR("Default %d\n\t\t\t\tMbytes\n", DATA_BUFFER_DEFAULT);
+	ERROR("\t-fr[ag-queue] <size>\tset fragment queue to <size> Mbytes.  ");
+	ERROR("Default\n\t\t\t\t%d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
+	ERROR("\t-no-wild[cards]\t\tdo not use wildcard matching in extract ");
+	ERROR("names\n");
+	ERROR("\t-r[egex]\t\ttreat extract names as POSIX regular ");
+	ERROR("expressions\n");
+	ERROR("\t\t\t\trather than use the default shell ");
+	ERROR("wildcard\n\t\t\t\texpansion (globbing)\n");
+	ERROR("\nDecompressors available:\n");
+	display_compressors("", "");
+}
+
+
 static void print_options(char *name)
 {
 	ERROR("SYNTAX: %s [options] filesystem [files ", name);
@@ -3508,6 +3540,24 @@ static void print_options(char *name)
 }
 
 
+void print_cat_version()
+{
+	printf("sqsfcat version " VERSION " (" DATE ")\n");
+	printf("copyright (C) 2021 Phillip Lougher ");
+	printf("<phillip@squashfs.org.uk>\n\n");
+	printf("This program is free software; you can redistribute it and/or\n");
+	printf("modify it under the terms of the GNU General Public License\n");
+	printf("as published by the Free Software Foundation; either version ");
+	printf("2,\n");
+	printf("or (at your option) any later version.\n\n");
+	printf("This program is distributed in the hope that it will be ");
+	printf("useful,\n");
+	printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");
+	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");
+	printf("GNU General Public License for more details.\n");
+}
+
+
 void print_version()
 {
 	printf("unsquashfs version " VERSION " (" DATE ")\n");
@@ -3523,6 +3573,111 @@ void print_version()
 	printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");
 	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");
 	printf("GNU General Public License for more details.\n");
+}
+
+
+int parse_cat_options(int argc, char *argv[])
+{
+	int i;
+
+	cat_files = TRUE;
+
+	for(i = 1; i < argc; i++) {
+		if(*argv[i] != '-')
+			break;
+		if(strcmp(argv[i], "-no-exit-code") == 0 ||
+				strcmp(argv[i], "-no-exit") == 0)
+			set_exit_code = FALSE;
+		else if(strcmp(argv[i], "-no-wildcards") == 0 ||
+				strcmp(argv[i], "-no-wild") == 0)
+			no_wildcards = TRUE;
+		else if(strcmp(argv[i], "-strict-errors") == 0 ||
+				strcmp(argv[i], "-st") == 0)
+			strict_errors = TRUE;
+		else if(strcmp(argv[i], "-ignore-errors") == 0 ||
+				strcmp(argv[i], "-ig") == 0)
+			ignore_errors = TRUE;
+		else if(strcmp(argv[i], "-version") == 0 ||
+				strcmp(argv[i], "-v") == 0) {
+			print_cat_version();
+			version = TRUE;
+		} else if(strcmp(argv[i], "-processors") == 0 ||
+				strcmp(argv[i], "-p") == 0) {
+			if((++i == argc) ||
+					!parse_number(argv[i],
+						&processors)) {
+				ERROR("%s: -processors missing or invalid "
+					"processor number\n", argv[0]);
+				exit(1);
+			}
+			if(processors < 1) {
+				ERROR("%s: -processors should be 1 or larger\n",
+					argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-data-queue") == 0 ||
+					 strcmp(argv[i], "-da") == 0) {
+			if((++i == argc) ||
+					!parse_number(argv[i],
+						&data_buffer_size)) {
+				ERROR("%s: -data-queue missing or invalid "
+					"queue size\n", argv[0]);
+				exit(1);
+			}
+			if(data_buffer_size < 1) {
+				ERROR("%s: -data-queue should be 1 Mbyte or "
+					"larger\n", argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-frag-queue") == 0 ||
+					strcmp(argv[i], "-fr") == 0) {
+			if((++i == argc) ||
+					!parse_number(argv[i],
+						&fragment_buffer_size)) {
+				ERROR("%s: -frag-queue missing or invalid "
+					"queue size\n", argv[0]);
+				exit(1);
+			}
+			if(fragment_buffer_size < 1) {
+				ERROR("%s: -frag-queue should be 1 Mbyte or "
+					"larger\n", argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-regex") == 0 ||
+				strcmp(argv[i], "-r") == 0)
+			use_regex = TRUE;
+		else if(strcmp(argv[i], "-offset") == 0 ||
+				strcmp(argv[i], "-o") == 0) {
+			if((++i == argc) ||
+					!parse_numberll(argv[i], &start_offset,
+									1)) {
+				ERROR("%s: %s missing or invalid offset size\n",
+							argv[0], argv[i - 1]);
+				exit(1);
+			}
+		} else {
+			print_cat_options(argv[0]);
+			exit(1);
+		}
+	}
+
+	if(strict_errors && ignore_errors)
+		EXIT_UNSQUASH("Both -strict-errors and -ignore-errors should "
+								"not be set\n");
+	if(strict_errors && set_exit_code == FALSE)
+		EXIT_UNSQUASH("Both -strict-errors and -no-exit-code should "
+			"not be set.  All errors are fatal\n");
+
+	if(no_wildcards && use_regex)
+		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be "
+								"set\n");
+	if(i == argc) {
+		if(!version)
+			print_cat_options(argv[0]);
+		exit(1);
+	}
+
+	return i;
 }
 
 
@@ -3764,13 +3919,25 @@ int main(int argc, char *argv[])
 	int i, n;
 	long res;
 	int exit_code = 0;
+	char *command;
 
 	pthread_mutex_init(&screen_mutex, NULL);
 	root_process = geteuid() == 0;
 	if(root_process)
 		umask(0);
 
-	i = parse_options(argc, argv);
+	/* skip leading path components in invocation command */
+	for(command = argv[0] + strlen(argv[0]) - 1; command >= argv[0] && command[0] != '/'; command--);
+
+	if(command < argv[0])
+		command = argv[0];
+	else
+		command++;
+
+	if(strcmp(command, "sqfscat") == 0)
+		i = parse_cat_options(argc, argv);
+	else
+		i = parse_options(argc, argv);
 
 	if((fd = open(argv[i], O_RDONLY)) == -1) {
 		ERROR("Could not open %s, because %s\n", argv[i],

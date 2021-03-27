@@ -398,3 +398,4 @@ install: mksquashfs unsquashfs
 	mkdir -p $(INSTALL_DIR)
 	cp mksquashfs $(INSTALL_DIR)
 	cp unsquashfs $(INSTALL_DIR)
+	ln -s $(INSTALL_DIR)/unsquashfs $(INSTALL_DIR)/sqfscat
