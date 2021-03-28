@@ -3542,7 +3542,7 @@ static void print_options(char *name)
 
 void print_cat_version()
 {
-	printf("sqsfcat version " VERSION " (" DATE ")\n");
+	printf("sqfscat version " VERSION " (" DATE ")\n");
 	printf("copyright (C) 2021 Phillip Lougher ");
 	printf("<phillip@squashfs.org.uk>\n\n");
 	printf("This program is free software; you can redistribute it and/or\n");
