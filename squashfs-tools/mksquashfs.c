@@ -1068,7 +1068,7 @@ static squashfs_inode create_inode(struct dir_info *dir_info,
 
 	inode_count ++;
 
-	TRACE("Created inode 0x%llx, type %d, uid %d, guid %d\n", *i_no, type,
+	TRACE("Created inode 0x%llx, type %d, uid %d, guid %d\n", MKINODE(inode), type,
 		base->uid, base->guid);
 
 	return MKINODE(inode);

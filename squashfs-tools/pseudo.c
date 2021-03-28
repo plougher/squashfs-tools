@@ -1166,9 +1166,9 @@ static void dump_pseudo(struct pseudo *pseudo, char *string)
 			path = entry->name;
 		if(entry->dev)
 			ERROR("%s %c 0%o %d %d %d %d\n", path, entry->dev->type,
-				entry->dev->mode & ~S_IFMT, entry->dev->uid,
-				entry->dev->gid, entry->dev->major,
-				entry->dev->minor);
+				entry->dev->buf->mode & ~S_IFMT, entry->dev->buf->uid,
+				entry->dev->buf->gid, entry->dev->buf->major,
+				entry->dev->buf->minor);
 		if(entry->pseudo)
 			dump_pseudo(entry->pseudo, path);
 		if(string)
