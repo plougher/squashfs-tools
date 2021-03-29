@@ -107,53 +107,53 @@ typedef struct squashfs_operations {
 } squashfs_operations;
 
 struct test {
-	int mask;
-	int value;
-	int position;
-	char mode;
+	int	mask;
+	int	value;
+	int	position;
+	char	mode;
 };
 
 
 /* Cache status struct.  Caches are used to keep
   track of memory buffers passed between different threads */
 struct cache {
-	int	max_buffers;
-	int	count;
-	int	used;
-	int	buffer_size;
-	int	wait_free;
-	int	wait_pending;
-	pthread_mutex_t	mutex;
-	pthread_cond_t wait_for_free;
-	pthread_cond_t wait_for_pending;
-	struct cache_entry *free_list;
-	struct cache_entry *hash_table[65536];
+	int			max_buffers;
+	int			count;
+	int			used;
+	int			buffer_size;
+	int			wait_free;
+	int			wait_pending;
+	pthread_mutex_t		mutex;
+	pthread_cond_t		wait_for_free;
+	pthread_cond_t		wait_for_pending;
+	struct cache_entry	*free_list;
+	struct cache_entry	*hash_table[65536];
 };
 
 /* struct describing a cache entry passed between threads */
 struct cache_entry {
-	struct cache *cache;
-	long long block;
-	int	size;
-	int	used;
-	int error;
-	int	pending;
-	struct cache_entry *hash_next;
-	struct cache_entry *hash_prev;
-	struct cache_entry *free_next;
-	struct cache_entry *free_prev;
-	char *data;
+	struct cache		*cache;
+	long long		block;
+	int			size;
+	int			used;
+	int			error;
+	int			pending;
+	struct cache_entry	*hash_next;
+	struct cache_entry	*hash_prev;
+	struct cache_entry	*free_next;
+	struct cache_entry	*free_prev;
+	char			*data;
 };
 
 /* struct describing queues used to pass data between threads */
 struct queue {
-	int	size;
-	int	readp;
-	int	writep;
+	int		size;
+	int		readp;
+	int		writep;
 	pthread_mutex_t	mutex;
-	pthread_cond_t empty;
-	pthread_cond_t full;
-	void **data;
+	pthread_cond_t	empty;
+	pthread_cond_t	full;
+	void		**data;
 };
 
 /* default size of fragment buffer in Mbytes */
