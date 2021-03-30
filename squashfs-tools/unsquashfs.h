@@ -177,45 +177,45 @@ struct dir {
 	uid_t		uid;
 	gid_t		guid;
 	unsigned int	mtime;
-	unsigned int xattr;
+	unsigned int	xattr;
 	struct dir_ent	*dirs;
 };
 
 struct file_entry {
-	int offset;
-	int size;
+	int		offset;
+	int		size;
 	struct cache_entry *buffer;
 };
 
 
 struct squashfs_file {
-	int fd;
-	int blocks;
-	long long file_size;
-	int mode;
-	uid_t uid;
-	gid_t gid;
-	time_t time;
-	char *pathname;
-	char sparse;
-	unsigned int xattr;
+	int		fd;
+	int		blocks;
+	long long	file_size;
+	int		mode;
+	uid_t		uid;
+	gid_t		gid;
+	time_t		time;
+	char		*pathname;
+	char		sparse;
+	unsigned int	xattr;
 };
 
 struct path_entry {
-	char *name;
-	int type;
-	regex_t *preg;
-	struct pathname *paths;
+	char		*name;
+	int		type;
+	regex_t		*preg;
+	struct pathname	*paths;
 };
 
 struct pathname {
-	int names;
-	struct path_entry *name;
+	int			names;
+	struct path_entry	*name;
 };
 
 struct pathnames {
-	int count;
-	struct pathname *path[0];
+	int		count;
+	struct pathname	*path[0];
 };
 
 #define PATHS_ALLOC_SIZE 10
