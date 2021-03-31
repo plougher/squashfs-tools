@@ -397,6 +397,7 @@ static void print_definitions()
 	ERROR("\tfilename c mode uid gid major minor\n");
 	ERROR("\tfilename f mode uid gid command\n");
 	ERROR("\tfilename s mode uid gid symlink\n");
+	ERROR("\tfilename i mode uid gid [s|f]\n");
 	ERROR("\tfilename l filename\n");
 	ERROR("\tfilename L pseudo_filename\n");
 	ERROR("\tfilename D time mode uid gid\n");
@@ -867,6 +868,7 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 	unsigned int major = 0, minor = 0, mode;
 	char *ptr, *command = NULL, *symlink = NULL;
 	char suid[100], sgid[100]; /* overflow safe */
+	char ipc_type;
 	long long uid, gid;
 	struct pseudo_dev *dev;
 	static int pseudo_ino = 1;
@@ -927,6 +929,23 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 
 		if(minor > 0xfffff) {
 			ERROR("Minor %d out of range\n", minor);
+			goto error;
+		}
+		break;
+	case 'i':
+		n = sscanf(def, "%c %n", &ipc_type, &bytes);
+		def += bytes;
+
+		if(n < 1) {
+			ERROR("Not enough or invalid arguments in ipc "
+				"pseudo file definition \"%s\"\n", orig_def);
+			ERROR("Read filename, type, mode, uid and gid, "
+				"but failed to read or match ipc_type\n");
+			goto error;
+		}
+
+		if(ipc_type != 's' && ipc_type != 'f') {
+			ERROR("Ipc_type should be s or f\n");
 			goto error;
 		}
 		break;
@@ -1017,6 +1036,12 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 		break;
 	case 'c':
 		mode |= S_IFCHR;
+		break;
+	case 'i':
+		if(ipc_type == 's')
+			mode |= S_IFSOCK;
+		else
+			mode |= S_IFIFO;
 		break;
 	case 'd':
 		mode |= S_IFDIR;

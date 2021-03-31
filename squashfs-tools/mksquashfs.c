@@ -5466,6 +5466,7 @@ static void print_options(char *name, int total_mem)
 	ERROR("\t\t\t\tfilename c mode uid gid major minor\n");
 	ERROR("\t\t\t\tfilename f mode uid gid command\n");
 	ERROR("\t\t\t\tfilename s mode uid gid symlink\n");
+	ERROR("\t\t\t\tfilename i mode uid gid [s|f]\n");
 	ERROR("\t\t\t\tfilename l filename\n");
 	ERROR("\t\t\t\tfilename L pseudo_filename\n");
 	ERROR("\t\t\t\tfilename D time mode uid gid\n");
