@@ -4076,12 +4076,12 @@ int main(int argc, char *argv[])
 
 	if(!quiet) {
 		printf("\n");
-		printf("created %d files\n", file_count);
-		printf("created %d directories\n", dir_count);
-		printf("created %d symlinks\n", sym_count);
-		printf("created %d devices\n", dev_count);
-		printf("created %d fifos\n", fifo_count);
-		printf("created %d sockets\n", socket_count);
+		printf("created %d %s\n", file_count, file_count == 1 ? "file" : "files");
+		printf("created %d %s\n", dir_count, dir_count == 1 ? "directory" : "directories");
+		printf("created %d %s\n", sym_count, sym_count == 1 ? "symlink" : "symlinks");
+		printf("created %d %s\n", dev_count, dev_count == 1 ? "device" : "devices");
+		printf("created %d %s\n", fifo_count, fifo_count == 1 ? "fifo" : "fifos");
+		printf("created %d %s\n", socket_count, socket_count == 1 ? "socket" : "sockets");
 	}
 
 	return exit_code;
