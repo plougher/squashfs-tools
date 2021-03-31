@@ -593,7 +593,7 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename, c
 	int n, bytes;
 	int quoted = FALSE;
 	unsigned int major = 0, minor = 0, mode, mtime;
-	char *ptr, *str, *string;
+	char *ptr, *str, *string, *command = NULL, *symlink = NULL;
 	char suid[100], sgid[100]; /* overflow safe */
 	long long uid, gid;
 	struct pseudo_dev *dev;
@@ -726,18 +726,9 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename, c
 			ERROR("Minor %d out of range\n", minor);
 			goto error;
 		}
-		/* FALLTHROUGH */
+		break;
 	case 'D':
-		/* FALLTHROUGH */
 	case 'M':
-		/*
-		 * Check for trailing junk after expected arguments
-		 */
-		if(def[0] != '\0') {
-			ERROR("Unexpected tailing characters in pseudo file "
-				"definition \"%s\"\n", orig_def);
-			goto error;
-		}
 		break;
 	case 'F':
 		if(def[0] == '\0') {
@@ -747,6 +738,8 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename, c
 				"or a piece of shell script\n");
 			goto error;
 		}
+		command = def;
+		def += strlen(def);
 		break;
 	case 'S':
 		if(def[0] == '\0') {
@@ -761,12 +754,22 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename, c
 								" bytes!\n", def);
 			goto error;
 		}
+		symlink = def;
+		def += strlen(def);
 		break;
 	default:
 		ERROR("Unsupported type %c\n", type);
 		goto error;
 	}
 
+	/*
+	 * Check for trailing junk after expected arguments
+	 */
+	if(def[0] != '\0') {
+		ERROR("Unexpected tailing characters in pseudo file "
+			"definition \"%s\"\n", orig_def);
+		goto error;
+	}
 
 	if(mode > 07777) {
 		ERROR("Mode %o out of range\n", mode);
@@ -842,10 +845,10 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename, c
 	dev->buf->ino = pseudo_ino ++;
 
 	if(type == 'F')
-		add_pseudo_file(dev, def);
+		add_pseudo_file(dev, command);
 
 	if(type == 'S')
-		dev->symlink = strdup(def);
+		dev->symlink = strdup(symlink);
 
 	pseudo = add_pseudo(pseudo, dev, name, name);
 
@@ -862,7 +865,7 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 {
 	int n, bytes;
 	unsigned int major = 0, minor = 0, mode;
-	char *ptr;
+	char *ptr, *command = NULL, *symlink = NULL;
 	char suid[100], sgid[100]; /* overflow safe */
 	long long uid, gid;
 	struct pseudo_dev *dev;
@@ -926,18 +929,9 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 			ERROR("Minor %d out of range\n", minor);
 			goto error;
 		}
-		/* FALLTHROUGH */
+		break;
 	case 'd':
-		/* FALLTHROUGH */
 	case 'm':
-		/*
-		 * Check for trailing junk after expected arguments
-		 */
-		if(def[0] != '\0') {
-			ERROR("Unexpected tailing characters in pseudo file "
-				"definition \"%s\"\n", orig_def);
-			goto error;
-		}
 		break;
 	case 'f':
 		if(def[0] == '\0') {
@@ -947,6 +941,8 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 				"or a piece of shell script\n");
 			goto error;
 		}	
+		command = def;
+		def += strlen(def);
 		break;
 	case 's':
 		if(def[0] == '\0') {
@@ -961,12 +957,22 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 								" bytes!\n", def);
 			goto error;
 		}
+		symlink = def;
+		def += strlen(def);
 		break;
 	default:
 		ERROR("Unsupported type %c\n", type);
 		goto error;
 	}
 
+	/*
+	 * Check for trailing junk after expected arguments
+	 */
+	if(def[0] != '\0') {
+		ERROR("Unexpected tailing characters in pseudo file "
+			"definition \"%s\"\n", orig_def);
+		goto error;
+	}
 
 	if(mode > 07777) {
 		ERROR("Mode %o out of range\n", mode);
@@ -1042,10 +1048,10 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 	dev->buf->ino = pseudo_ino ++;
 
 	if(type == 'f')
-		add_pseudo_file(dev, def);
+		add_pseudo_file(dev, command);
 
 	if(type == 's')
-		dev->symlink = strdup(def);
+		dev->symlink = strdup(symlink);
 
 	pseudo = add_pseudo(pseudo, dev, name, name);
 
