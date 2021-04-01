@@ -526,7 +526,7 @@ char *modestr(char *str, int mode)
 
 
 #define TOTALCHARS  25
-int print_filename(char *pathname, struct inode *inode)
+void print_filename(char *pathname, struct inode *inode)
 {
 	char str[11], dummy[12], dummy2[12]; /* overflow safe */
 	char *userstr, *groupstr;
@@ -537,7 +537,7 @@ int print_filename(char *pathname, struct inode *inode)
 
 	if(short_ls) {
 		printf("%s\n", pathname);
-		return 1;
+		return;
 	}
 
 	user = numeric ? NULL : getpwuid(inode->uid);
@@ -600,8 +600,6 @@ int print_filename(char *pathname, struct inode *inode)
 	if((inode->mode & S_IFMT) == S_IFLNK)
 		printf(" -> %s", inode->symlink);
 	printf("\n");
-		
-	return 1;
 }
 	
 
