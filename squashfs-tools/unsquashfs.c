@@ -2039,8 +2039,7 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			if(res == FALSE)
 				scan_res = FALSE;
 		} else if(newt == NULL) {
-			if(type == SQUASHFS_FILE_TYPE ||
-					type == SQUASHFS_LREG_TYPE) {
+			if(type == SQUASHFS_FILE_TYPE) {
 				i = s_ops->read_inode(start_block, offset);
 				if(created_inode[i->inode_number - 1] == NULL) {
 					created_inode[i->inode_number - 1] =
