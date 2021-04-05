@@ -93,6 +93,11 @@ int data_buffer_size = DATA_BUFFER_DEFAULT;
 char *dest = "squashfs-root";
 struct pathnames *extracts = NULL, *excludes = NULL;
 struct pathname *extract = NULL, *exclude = NULL;
+int writer_fd = 1;
+int pseudo_file = FALSE;
+int no_threshold = TRUE;
+long long inline_threshold = 0;
+char *pseudo_name;
 
 int lookup_type[] = {
 	0,
@@ -2555,7 +2560,7 @@ void *cat_writer(void *arg)
 			}
 
 			if(local_fail == FALSE) {
-				res = write_block(1,
+				res = write_block(writer_fd,
 					block->buffer->data + block->offset,
 					block->size, hole, FALSE);
 
@@ -2577,7 +2582,7 @@ void *cat_writer(void *arg)
 			 * corner case for hole extending to end of file
 			 */
 			hole --;
-			if(write_block(1, "\0", 1, hole,
+			if(write_block(writer_fd, "\0", 1, hole,
 					file->sparse) == FALSE) {
 				EXIT_UNSQUASH_IGNORE("cat: failed "
 					"to write sparse data block "
@@ -2840,11 +2845,15 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size, int cat_
 	pthread_create(&thread[0], NULL, reader, NULL);
 	pthread_create(&thread[2], NULL, progress_thread, NULL);
 
-	if(cat_file == FALSE) {
+	if(pseudo_file) {
+		pthread_create(&thread[1], NULL, cat_writer, NULL);
+		init_info();
+	} else if(cat_files)
+		pthread_create(&thread[1], NULL, cat_writer, NULL);
+	else {
 		pthread_create(&thread[1], NULL, writer, NULL);
 		init_info();
-	} else
-		pthread_create(&thread[1], NULL, cat_writer, NULL);
+	}
 
 	pthread_mutex_init(&fragment_mutex, NULL);
 
@@ -3419,6 +3428,313 @@ int cat_path(int argc, char *argv[])
 }
 
 
+char *process_filename(char *filename)
+{
+	static char *saved = NULL;
+	char *ptr;
+	int count = 0;
+
+	for(ptr = filename; *ptr == '/'; ptr ++);
+
+	if(*ptr == '\0')
+		return "/";
+
+	filename = ptr;
+
+	while(*ptr != '\0') {
+		if(*ptr == '\'' || *ptr == '\"' || *ptr == '\\' || *ptr == ' ')
+			count ++;
+		ptr ++;
+	}
+
+	if(count == 0)
+		return filename;
+
+	saved = realloc(saved, strlen(filename) + count + 1);
+	if(saved == NULL)
+		MEM_ERROR();
+
+	for(ptr = saved; *filename != '\0'; ptr ++, filename ++) {
+		if(*filename == '\'' || *filename == '\"' || *filename == '\\' || *filename == ' ')
+			*ptr ++ = '\\';
+
+		*ptr = *filename;
+	}
+
+	*ptr = '\0';
+
+	return saved;
+}
+
+
+void pseudo_print(char *source, char *pathname, struct inode *inode, char *link,
+	int inline_data, long long offset)
+{
+	char userstr[12], groupstr[12]; /* overflow safe */
+	char *type_string = "DFSBCIIDFSBCII";
+	char *filename = process_filename(pathname);
+	char type = inline_data ? 'R' : type_string[inode->type - 1];
+	int res;
+
+	if(link) {
+		char *name = strdup(filename);
+		char *linkname = process_filename(link);
+		dprintf(writer_fd, "%s L %s\n", name, linkname);
+		free(name);
+		return;
+	}
+
+	res = snprintf(userstr, 12, "%d", inode->uid);
+	if(res < 0)
+		EXIT_UNSQUASH("snprintf failed in pseudo_print()\n");
+	else if(res >= 12)
+		EXIT_UNSQUASH("snprintf returned more than 11 digits in pseudo_print()\n");
+
+	res = snprintf(groupstr, 12, "%d", inode->gid);
+	if(res < 0)
+		EXIT_UNSQUASH("snprintf failed in pseudo_print()\n");
+	else if(res >= 12)
+		EXIT_UNSQUASH("snprintf returned more than 11 digits in pseudo_print()\n");
+
+	dprintf(writer_fd, "%s %c %ld %o %s %s", filename, type, inode->time, inode->mode & ~S_IFMT, userstr, groupstr);
+
+	switch(inode->mode & S_IFMT) {
+		case S_IFDIR:
+			dprintf(writer_fd, "\n");
+			break;
+		case S_IFLNK:
+			dprintf(writer_fd, " %s\n", inode->symlink);
+			break;
+		case S_IFSOCK:
+		case S_IFIFO:
+			if(inode->type == SQUASHFS_SOCKET_TYPE || inode->type == SQUASHFS_LSOCKET_TYPE)
+				dprintf(writer_fd, " s\n");
+			else
+				dprintf(writer_fd, " f\n");
+			break;
+		case S_IFCHR:
+		case S_IFBLK:
+			dprintf(writer_fd, "%d %d\n", (int) inode->data >> 8, (int) inode->data & 0xff);
+			break;
+		case S_IFREG:
+			if(inline_data)
+				dprintf(writer_fd, " %lld %lld\n", inode->data, offset);
+			else
+				dprintf(writer_fd, " sqfscat %s %s\n", source, filename);
+	}
+}
+
+
+int pseudo_scan1(char *source, char *parent_name, unsigned int start_block, unsigned int offset,
+	struct pathnames *extracts, struct pathnames *excludes, int depth)
+{
+	unsigned int type;
+	char *name;
+	struct pathnames *newt, *newc = NULL;
+	struct inode *i;
+	struct dir *dir;
+	static long long byte_offset = 0;
+
+	if(max_depth != -1 && depth > max_depth)
+		return TRUE;
+
+	dir = s_ops->opendir(start_block, offset, &i);
+	if(dir == NULL) {
+		ERROR("pseudo_scan1: failed to read directory %s\n", parent_name);
+		return FALSE;
+	}
+
+	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
+		struct inode *i;
+		char *pathname;
+		int res;
+
+		TRACE("pseudo_scan1: name %s, start_block %d, offset %d, type %d\n",
+			name, start_block, offset, type);
+
+		if(!extract_matches(extracts, name, &newt))
+			continue;
+
+		if(exclude_matches(excludes, name, &newc)) {
+			free_subdir(newt);
+			continue;
+		}
+
+		res = asprintf(&pathname, "%s/%s", parent_name, name);
+		if(res == -1)
+			MEM_ERROR();
+
+		i = s_ops->read_inode(start_block, offset);
+
+		if(type == SQUASHFS_DIR_TYPE) {
+			pseudo_print(source, pathname, i, NULL, FALSE, 0);
+			res = pseudo_scan1(source, parent_name, start_block, offset, newt,
+							newc, depth + 1);
+			if(res == FALSE) {
+				free_subdir(newt);
+				free_subdir(newc);
+				free(pathname);
+				return FALSE;
+			}
+		} else if(newt == NULL) {
+			char *link = created_inode[i->inode_number - 1];
+
+			if(link == NULL) {
+				if((type == SQUASHFS_FILE_TYPE || type == SQUASHFS_LREG_TYPE)
+						&& (no_threshold || i->data <= inline_threshold)) {
+					pseudo_print(source, pathname, i, NULL, TRUE, byte_offset);
+					byte_offset += i->data;
+					total_blocks += (i->data + (block_size - 1)) >> block_log;
+				} else
+					pseudo_print(source, pathname, i, NULL, FALSE, 0);
+				created_inode[i->inode_number - 1] = strdup(pathname);
+			} else
+				pseudo_print(source, pathname, i, link, FALSE, 0);
+
+			if(i->type == SQUASHFS_SYMLINK_TYPE || i->type == SQUASHFS_LSYMLINK_TYPE)
+				free(i->symlink);
+		} else if(i->type == SQUASHFS_SYMLINK_TYPE || i->type == SQUASHFS_LSYMLINK_TYPE)
+			free(i->symlink);
+
+		free_subdir(newt);
+		free_subdir(newc);
+		free(pathname);
+	}
+
+	squashfs_closedir(dir);
+
+	return TRUE;
+}
+
+
+int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offset,
+	struct pathnames *extracts, struct pathnames *excludes, int depth)
+{
+	unsigned int type;
+	char *name;
+	struct pathnames *newt, *newc = NULL;
+	struct inode *i;
+	struct dir *dir = s_ops->opendir(start_block, offset, &i);
+
+	if(dir == NULL) {
+		ERROR("pseudo_scan2: failed to read directory %s\n", parent_name);
+		return FALSE;
+	}
+
+	if(max_depth == -1 || depth <= max_depth) {
+		while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
+			char *pathname;
+			int res;
+
+			TRACE("pseudo_scan2: name %s, start_block %d, offset %d,"
+				" type %d\n", name, start_block, offset, type);
+
+
+			if(!extract_matches(extracts, name, &newt))
+				continue;
+
+			if(exclude_matches(excludes, name, &newc)) {
+				free_subdir(newt);
+				continue;
+			}
+
+			res = asprintf(&pathname, "%s/%s", parent_name, name);
+			if(res == -1)
+				MEM_ERROR();
+
+			if(type == SQUASHFS_DIR_TYPE) {
+				res = pseudo_scan2(pathname, start_block, offset,
+							newt, newc, depth + 1);
+				free(pathname);
+				if(res == FALSE) {
+					free_subdir(newt);
+					free_subdir(newc);
+					return FALSE;
+				}
+			} else if(newt == NULL && type == SQUASHFS_FILE_TYPE) {
+				i = s_ops->read_inode(start_block, offset);
+
+				if(created_inode[i->inode_number - 1] == NULL) {
+					if(no_threshold || i->data <= inline_threshold) {
+						update_info(pathname);
+
+						i = s_ops->read_inode(start_block, offset);
+						res = cat_file(i, pathname);
+						if(res == FALSE) {
+							free_subdir(newt);
+							free_subdir(newc);
+							return FALSE;
+						}
+					} else
+						free(pathname);
+
+					created_inode[i->inode_number - 1] = strdup(pathname);
+				} else
+					free(pathname);
+			} else
+				free(pathname);
+
+			free_subdir(newt);
+			free_subdir(newc);
+		}
+	}
+
+	squashfs_closedir(dir);
+
+	return TRUE;
+}
+
+
+int generate_pseudo(char *source, char *pseudo_file)
+{
+	int i, res;
+
+	writer_fd = open_wait(pseudo_file, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	if(writer_fd == -1)
+		EXIT_UNSQUASH("generate_pseudo: failed to create pseudo file %s,"
+			" because %s\n", pseudo_file, strerror(errno));
+
+	res = pseudo_scan1(source, "/", SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extracts, excludes, 1);
+	if(res == FALSE)
+		goto failed;
+
+	for(i = 0; i < sBlk.s.inodes; i++) {
+		if(created_inode[i]) {
+			free(created_inode[i]);
+			created_inode[i] = NULL;
+		}
+	}
+
+	dprintf(writer_fd, "#\n# START OF DATA - DO NOT MODIFY\n#\n");
+
+	enable_progress_bar();
+
+	res = pseudo_scan2("/", SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extracts, excludes, 1);
+	if(res == FALSE)
+		goto failed;
+
+	queue_put(to_writer, NULL);
+	res = (long) queue_get(from_writer);
+	if(res == TRUE)
+		goto failed;
+
+	disable_progress_bar();
+
+	close(writer_fd);
+
+	return 0;
+
+failed:
+	disable_progress_bar();
+	queue_put(to_writer, NULL);
+	queue_get(from_writer);
+	unlink(pseudo_file);
+	return 1;
+}
+
+
 int parse_excludes(int argc, char *argv[], struct pathname **exclude)
 {
 	int i;
@@ -3691,7 +4007,15 @@ int parse_options(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-cat") == 0)
+		if(strcmp(argv[i], "-pseudo-file") == 0) {
+			if(++i == argc) {
+				fprintf(stderr, "%s: -pseudo-file missing filename\n",
+					argv[0]);
+				exit(1);
+			}
+			pseudo_name = argv[i];
+			pseudo_file = TRUE;
+		} else if(strcmp(argv[i], "-cat") == 0)
 			cat_files = TRUE;
 		else if(strcmp(argv[i], "-excludes") == 0)
 			treat_as_excludes = TRUE;
@@ -4034,6 +4358,9 @@ int main(int argc, char *argv[])
 		excludes = init_subdir();
 		excludes = add_subdir(excludes, exclude);
 	}
+
+	if(pseudo_file)
+		return generate_pseudo(argv[i], pseudo_name);
 
 	if(!quiet || progress) {
 		res = pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
