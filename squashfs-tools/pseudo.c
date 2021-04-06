@@ -57,8 +57,7 @@ int pseudo_count = 0;
  * 
  * Blank lines and comment lines indicated by # are supported.
  */
-static int read_file(char *filename, char *type, char *destination,
-				int (parse_line)(char *, char *))
+static int read_file(char *filename, char *destination, int (parse_line)(char *, char *))
 {
 	FILE *fd;
 	char *def, *err, *line = NULL;
@@ -66,8 +65,8 @@ static int read_file(char *filename, char *type, char *destination,
 
 	fd = fopen(filename, "r");
 	if(fd == NULL) {
-		ERROR("Could not open %s device file \"%s\" because %s\n",
-			type, filename, strerror(errno));
+		ERROR("Could not open pseudo device file \"%s\" because %s\n",
+			filename, strerror(errno));
 		return FALSE;
 	}
 
@@ -93,8 +92,8 @@ static int read_file(char *filename, char *type, char *destination,
 			if(len == MAX_LINE && line[total - 1] != '\n') {
 				/* line too large */
 				ERROR("Line too long when reading "
-					"%s file \"%s\", larger than "
-					"%d bytes\n", type, filename, MAX_LINE);
+					"pseudo file \"%s\", larger than "
+					"%d bytes\n", filename, MAX_LINE);
 				goto failed;
 			}
 
@@ -122,8 +121,8 @@ static int read_file(char *filename, char *type, char *destination,
 
 		if(err == NULL) {
 			if(ferror(fd)) {
-                		ERROR("Reading %s file \"%s\" failed "
-					"because %s\n", type, filename,
+				ERROR("Reading pseudo file \"%s\" failed "
+					"because %s\n", filename,
 					strerror(errno));
 				goto failed;
 			}
@@ -1305,7 +1304,7 @@ int read_pseudo_definition(char *filename, char *destination)
 
 int read_pseudo_file(char *filename, char *destination)
 {
-	return read_file(filename, "pseudo", destination, read_pseudo_def);
+	return read_file(filename, destination, read_pseudo_def);
 }
 
 
