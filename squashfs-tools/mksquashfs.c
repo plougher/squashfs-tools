@@ -2759,7 +2759,7 @@ static char *basename_r()
 }
 
 
-static struct inode_info *lookup_inode3(struct stat *buf, int pseudo, int id,
+static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pseudo,
 	char *symlink, int bytes)
 {
 	int ino_hash = INODE_HASH(buf->st_dev, buf->st_ino);
@@ -2789,8 +2789,7 @@ static struct inode_info *lookup_inode3(struct stat *buf, int pseudo, int id,
 	memcpy(&inode->buf, buf, sizeof(struct stat));
 	inode->read = FALSE;
 	inode->root_entry = FALSE;
-	inode->pseudo_file = pseudo;
-	inode->pseudo_id = id;
+	inode->pseudo = pseudo;
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
 	inode->inode_number = 0;
@@ -2814,15 +2813,15 @@ static struct inode_info *lookup_inode3(struct stat *buf, int pseudo, int id,
 }
 
 
-static struct inode_info *lookup_inode2(struct stat *buf, int pseudo, int id)
+static struct inode_info *lookup_inode2(struct stat *buf, struct pseudo_dev *pseudo)
 {
-	return lookup_inode3(buf, pseudo, id, NULL, 0);
+	return lookup_inode3(buf, pseudo, NULL, 0);
 }
 
 
 static inline struct inode_info *lookup_inode(struct stat *buf)
 {
-	return lookup_inode2(buf, 0, 0);
+	return lookup_inode2(buf, NULL);
 }
 
 
@@ -3346,7 +3345,7 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 				 * path */
 				buff[byte] = '\0';
 				add_dir_entry(dir_ent, NULL, lookup_inode3(&buf,
-							 0, 0, buff, byte + 1));
+							 NULL, buff, byte + 1));
 			}
 			break;
 		}
@@ -3465,16 +3464,11 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			dir_scan2(sub_dir, pseudo_ent->pseudo);
 			dir->directory_count ++;
 			add_dir_entry(dir_ent, sub_dir,
-				lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0));
-		} else if(pseudo_ent->dev->type == 'f') {
-			add_dir_entry2(pseudo_ent->name, NULL,
-				pseudo_ent->pathname, NULL,
-				lookup_inode2(&buf, PSEUDO_FILE_PROCESS,
-				pseudo_ent->dev->file->pseudo_id), dir);
+				lookup_inode2(&buf, pseudo_ent->dev));
 		} else if(pseudo_ent->dev->type == 's') {
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,
-				lookup_inode3(&buf, PSEUDO_FILE_OTHER, 0,
+				lookup_inode3(&buf, pseudo_ent->dev,
 				pseudo_ent->dev->symlink,
 				strlen(pseudo_ent->dev->symlink) + 1), dir);
 		} else if(pseudo_ent->dev->type == 'l') {
@@ -3484,7 +3478,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		} else {
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,
-				lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0), dir);
+				lookup_inode2(&buf, pseudo_ent->dev), dir);
 		}
 	}
 }
@@ -4127,7 +4121,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 
 			/* readlink doesn't 0 terminate the returned path */
 			buff[byte] = '\0';
-			i = lookup_inode3(&buf, 0, 0, buff, byte + 1);
+			i = lookup_inode3(&buf, NULL, buff, byte + 1);
 			add_dir_entry(entry, NULL, i);
 		} else if(source[0] == '\0') {
 			add_dir_entry(entry, NULL, lookup_inode(&buf));

@@ -569,6 +569,7 @@ static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char
 	}
 
 	dev->type = 'l';
+	dev->pseudo_type = PSEUDO_FILE_OTHER;
 	dev->linkname = strdup(linkname);
 
 	pseudo = add_pseudo(pseudo, dev, name, name);
@@ -869,8 +870,11 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 	dev->buf->mtime = mtime;
 	dev->buf->ino = pseudo_ino ++;
 
-	if(type == 'F')
+	if(type == 'F') {
+		dev->pseudo_type = PSEUDO_FILE_PROCESS;
 		add_pseudo_file(dev, command);
+	} else
+		dev->pseudo_type = PSEUDO_FILE_OTHER;
 
 	if(type == 'S')
 		dev->symlink = strdup(symlink);
@@ -1096,8 +1100,11 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 	dev->buf->mtime = time(NULL);
 	dev->buf->ino = pseudo_ino ++;
 
-	if(type == 'f')
+	if(type == 'f') {
+		dev->pseudo_type = PSEUDO_FILE_PROCESS;
 		add_pseudo_file(dev, command);
+	} else
+		dev->pseudo_type = PSEUDO_FILE_OTHER;
 
 	if(type == 's')
 		dev->symlink = strdup(symlink);

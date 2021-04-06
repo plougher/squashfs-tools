@@ -23,6 +23,14 @@
  *
  * pseudo.h
  */
+
+#define PSEUDO_FILE_OTHER	1
+#define PSEUDO_FILE_PROCESS	2
+
+#define IS_PSEUDO(a)		((a)->pseudo)
+#define IS_PSEUDO_PROCESS(a)	((a)->pseudo && ((a)->pseudo->pseudo_type & PSEUDO_FILE_PROCESS))
+#define IS_PSEUDO_OTHER(a)	((a)->pseudo && ((a)->pseudo->pseudo_type & PSEUDO_FILE_OTHER))
+
 struct pseudo_dev_com {
 	char	*command;
 	int	pseudo_id;
@@ -40,6 +48,7 @@ struct pseudo_stat {
 
 struct pseudo_dev {
 	char				type;
+	int				pseudo_type;
 	union {
 		struct pseudo_stat	*buf;
 		struct stat		*linkbuf;

@@ -42,6 +42,7 @@
 #include "xattr.h"
 #include "mksquashfs_error.h"
 #include "progressbar.h"
+#include "pseudo.h"
 
 /* compressed xattr table */
 static char *xattr_table = NULL;

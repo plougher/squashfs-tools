@@ -51,15 +51,14 @@ struct dir_ent {
 struct inode_info {
 	struct stat		buf;
 	struct inode_info	*next;
+	struct pseudo_dev	*pseudo;
 	squashfs_inode		inode;
 	unsigned int		inode_number;
 	unsigned int		nlink;
-	int			pseudo_id;
 	char			dummy_root_dir;
 	char			type;
 	char			read;
 	char			root_entry;
-	char			pseudo_file;
 	char			no_fragments;
 	char			always_use_fragments;
 	char			noD;
@@ -106,13 +105,6 @@ struct append_file {
 	struct file_info *file;
 	struct append_file *next;
 };
-
-#define PSEUDO_FILE_OTHER	1
-#define PSEUDO_FILE_PROCESS	2
-
-#define IS_PSEUDO(a)		((a)->pseudo_file)
-#define IS_PSEUDO_PROCESS(a)	((a)->pseudo_file & PSEUDO_FILE_PROCESS)
-#define IS_PSEUDO_OTHER(a)	((a)->pseudo_file & PSEUDO_FILE_OTHER)
 
 /*
  * Amount of physical memory to use by default, and the default queue
