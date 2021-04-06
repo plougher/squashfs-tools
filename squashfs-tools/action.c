@@ -37,12 +37,17 @@
 #include <regex.h>
 #include <limits.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "action.h"
 #include "mksquashfs_error.h"
 #include "fnmatch_compat.h"
+
+#define TRUE 1
+#define FALSE 0
+#define MAX_LINE 16384
 
 /*
  * code to parse actions
@@ -89,8 +94,120 @@ extern char *pathname(struct dir_ent *);
 
 extern char *subpathname(struct dir_ent *);
 
-extern int read_file(char *filename, char *type, int (parse_line)(char *));
+/*
+ * Read a file, passing each line to parse_line() for
+ * parsing.
+ *
+ * Lines can be split across multiple lines using "\".
+ * 
+ * Blank lines and comment lines indicated by # are supported.
+ */
+static int read_file(char *filename, char *type, int (parse_line)(char *))
+{
+	FILE *fd;
+	char *def, *err, *line = NULL;
+	int res, size = 0;
 
+	fd = fopen(filename, "r");
+	if(fd == NULL) {
+		ERROR("Could not open %s device file \"%s\" because %s\n",
+			type, filename, strerror(errno));
+		return FALSE;
+	}
+
+	while(1) {
+		int total = 0;
+
+		while(1) {
+			int len;
+
+			if(total + (MAX_LINE + 1) > size) {
+				line = realloc(line, size += (MAX_LINE + 1));
+				if(line == NULL)
+					MEM_ERROR();
+			}
+
+			err = fgets(line + total, MAX_LINE + 1, fd);
+			if(err == NULL)
+				break;
+
+			len = strlen(line + total);
+			total += len;
+
+			if(len == MAX_LINE && line[total - 1] != '\n') {
+				/* line too large */
+				ERROR("Line too long when reading "
+					"%s file \"%s\", larger than "
+					"%d bytes\n", type, filename, MAX_LINE);
+				goto failed;
+			}
+
+			/*
+			 * Remove '\n' terminator if it exists (the last line
+			 * in the file may not be '\n' terminated)
+			 */
+			if(len && line[total - 1] == '\n') {
+				line[-- total] = '\0';
+				len --;
+			}
+
+			/*
+			 * If no line continuation then jump out to
+			 * process line.  Note, we have to be careful to
+			 * check for "\\" (backslashed backslash) and to
+			 * ensure we don't look at the previous line
+			 */
+			if(len == 0 || line[total - 1] != '\\' || (len >= 2 &&
+					strcmp(line + total - 2, "\\\\") == 0))
+				break;
+			else
+				total --;
+		}	
+
+		if(err == NULL) {
+			if(ferror(fd)) {
+                		ERROR("Reading %s file \"%s\" failed "
+					"because %s\n", type, filename,
+					strerror(errno));
+				goto failed;
+			}
+
+			/*
+			 * At EOF, normally we'll be finished, but, have to
+			 * check for special case where we had "\" line
+			 * continuation and then hit EOF immediately afterwards
+			 */
+			if(total == 0)
+				break;
+			else
+				line[total] = '\0';
+		}
+
+		/* Skip any leading whitespace */
+		for(def = line; isspace(*def); def ++);
+
+		/* if line is now empty after skipping characters, skip it */
+		if(*def == '\0')
+			continue;
+
+		/* if comment line, skip */
+		if(*def == '#')
+			continue;
+
+		res = parse_line(def);
+		if(res == FALSE)
+			goto failed;
+	}
+
+	fclose(fd);
+	free(line);
+	return TRUE;
+
+failed:
+	fclose(fd);
+	free(line);
+	return FALSE;
+}
 /*
  * Lexical analyser
  */
