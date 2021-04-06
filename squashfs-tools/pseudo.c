@@ -588,7 +588,8 @@ error:
 }
 
 
-static int read_pseudo_def_extended(char type, char *orig_def, char *filename, char *name, char *def)
+static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
+	char *name, char *def, int pseudo_file)
 {
 	int n, bytes;
 	int quoted = FALSE;
@@ -1113,7 +1114,7 @@ error:
 }
 
 
-static int read_pseudo_def(char *def, char *destination)
+static int read_pseudo_def(char *def, char *destination, int pseudo_file)
 {
 	int n, bytes;
 	int quoted = 0;
@@ -1171,7 +1172,7 @@ static int read_pseudo_def(char *def, char *destination)
 	else if(type == 'L')
 		return read_pseudo_def_pseudo_link(orig_def, filename, name, def);
 	else if(isupper(type))
-		return read_pseudo_def_extended(type, orig_def, filename, name, def);
+		return read_pseudo_def_extended(type, orig_def, filename, name, def, pseudo_file);
 	else
 		return read_pseudo_def_original(type, orig_def, filename, name, def);
 
@@ -1184,7 +1185,7 @@ error:
 
 int read_pseudo_definition(char *filename, char *destination)
 {
-	return read_pseudo_def(filename, destination);
+	return read_pseudo_def(filename, destination, FALSE);
 }
 
 
@@ -1280,7 +1281,7 @@ int read_pseudo_file(char *filename, char *destination)
 		if(*def == '#')
 			continue;
 
-		res = read_pseudo_def(def, destination);
+		res = read_pseudo_def(def, destination, TRUE);
 		if(res == FALSE)
 			goto failed;
 	}
