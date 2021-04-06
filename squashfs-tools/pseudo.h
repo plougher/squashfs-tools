@@ -31,11 +31,6 @@
 #define IS_PSEUDO_PROCESS(a)	((a)->pseudo && ((a)->pseudo->pseudo_type & PSEUDO_FILE_PROCESS))
 #define IS_PSEUDO_OTHER(a)	((a)->pseudo && ((a)->pseudo->pseudo_type & PSEUDO_FILE_OTHER))
 
-struct pseudo_dev_com {
-	char	*command;
-	int	pseudo_id;
-};
-
 struct pseudo_stat {
 	unsigned int	mode;
 	unsigned int	uid;
@@ -54,7 +49,7 @@ struct pseudo_dev {
 		struct stat		*linkbuf;
 	};
 	union {
-		struct pseudo_dev_com	*file;
+		char			*command;
 		char			*symlink;
 		char			*linkname;
 	};

@@ -45,9 +45,7 @@
 #define FALSE 0
 #define MAX_LINE 16384
 
-struct pseudo_dev **pseudo_file = NULL;
 struct pseudo *pseudo = NULL;
-int pseudo_count = 0;
 
 static char *get_component(char *target, char **targname)
 {
@@ -237,7 +235,7 @@ int pseudo_exec_file(struct pseudo_dev *dev, int *child)
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-		execl("/bin/sh", "sh", "-c", dev->file->command, (char *) NULL);
+		execl("/bin/sh", "sh", "-c", dev->command, (char *) NULL);
 		exit(EXIT_FAILURE);
 	}
 
@@ -331,29 +329,6 @@ failed:
 	close(pipefd[0]);
 	close(pipefd[1]);
 	return FALSE;
-}
-
-
-void add_pseudo_file(struct pseudo_dev *dev, char *command)
-{
-	pseudo_file = realloc(pseudo_file, (pseudo_count + 1) *
-		sizeof(struct pseudo_dev *));
-	if(pseudo_file == NULL)
-		MEM_ERROR();
-
-	dev->file = malloc(sizeof(struct pseudo_dev_com));
-	if(dev->file == NULL)
-		MEM_ERROR();
-
-	dev->file->command = strdup(command);
-	dev->file->pseudo_id = pseudo_count;
-	pseudo_file[pseudo_count ++] = dev;
-}
-
-
-struct pseudo_dev *get_pseudo_file(int pseudo_id)
-{
-	return pseudo_file[pseudo_id];
 }
 
 
@@ -872,7 +847,7 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 
 	if(type == 'F') {
 		dev->pseudo_type = PSEUDO_FILE_PROCESS;
-		add_pseudo_file(dev, command);
+		dev->command = strdup(command);
 	} else
 		dev->pseudo_type = PSEUDO_FILE_OTHER;
 
@@ -1102,7 +1077,7 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 
 	if(type == 'f') {
 		dev->pseudo_type = PSEUDO_FILE_PROCESS;
-		add_pseudo_file(dev, command);
+		dev->command = strdup(command);
 	} else
 		dev->pseudo_type = PSEUDO_FILE_OTHER;
 
