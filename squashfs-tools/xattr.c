@@ -617,7 +617,7 @@ int read_xattrs(void *d)
 	struct xattr_list *xattr_list;
 	int xattrs;
 
-	if(no_xattrs || IS_PSEUDO(inode) || inode->root_entry)
+	if(no_xattrs || IS_PSEUDO(inode) || inode->root_entry || inode->dummy_root_dir)
 		return SQUASHFS_INVALID_XATTR;
 
 	xattrs = read_xattrs_from_system(filename, &xattr_list);

@@ -2794,6 +2794,7 @@ static struct inode_info *lookup_inode3(struct stat *buf, int pseudo, int id,
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
 	inode->inode_number = 0;
+	inode->dummy_root_dir = FALSE;
 
 	/*
 	 * Copy filesystem wide defaults into inode, these filesystem
@@ -3071,7 +3072,8 @@ static squashfs_inode scan_encomp(int progress)
 	buf.st_mtime = time(NULL);
 	buf.st_dev = 0;
 	buf.st_ino = 0;
-	dir_ent->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
+	dir_ent->inode = lookup_inode(&buf);
+	dir_ent->inode->dummy_root_dir = TRUE;
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
 
@@ -4264,7 +4266,8 @@ static squashfs_inode process_source(int progress)
 		buf.st_gid = getgid();
 		buf.st_mtime = time(NULL);
 		entry = create_dir_entry("", NULL, "", new);
-		entry->inode = lookup_inode2(&buf, PSEUDO_FILE_OTHER, 0);
+		entry->inode = lookup_inode(&buf);
+		entry->inode->dummy_root_dir = TRUE;
 	} else {
 		char *pathname = absolute ? "/" : ".";
 

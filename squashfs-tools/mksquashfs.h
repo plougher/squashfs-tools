@@ -55,6 +55,7 @@ struct inode_info {
 	unsigned int		inode_number;
 	unsigned int		nlink;
 	int			pseudo_id;
+	char			dummy_root_dir;
 	char			type;
 	char			read;
 	char			root_entry;
