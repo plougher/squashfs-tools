@@ -48,8 +48,6 @@
 struct pseudo_dev **pseudo_file = NULL;
 struct pseudo *pseudo = NULL;
 int pseudo_count = 0;
-static char *destination_file;
-
 
 /*
  * Read file, passing each line to parse_line() for
@@ -59,7 +57,8 @@ static char *destination_file;
  * 
  * Blank lines and comment lines indicated by # are supported.
  */
-static int read_file(char *filename, char *type, int (parse_line)(char *))
+static int read_file(char *filename, char *type, char *destination,
+				int (parse_line)(char *, char *))
 {
 	FILE *fd;
 	char *def, *err, *line = NULL;
@@ -151,7 +150,7 @@ static int read_file(char *filename, char *type, int (parse_line)(char *))
 		if(*def == '#')
 			continue;
 
-		res = parse_line(def);
+		res = parse_line(def, destination);
 		if(res == FALSE)
 			goto failed;
 	}
@@ -593,7 +592,7 @@ error:
 }
 
 
-static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char *def)
+static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char *def, char *destination)
 {
 	char *linkname, *link;
 	int quoted = FALSE;
@@ -612,7 +611,7 @@ static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char
 			MEM_ERROR();
 
 		memset(dest_buf, 0, sizeof(struct stat));
-		lstat(destination_file, dest_buf);
+		lstat(destination, dest_buf);
 	}
 
 
@@ -1229,7 +1228,7 @@ error:
 }
 
 
-static int read_pseudo_def(char *def)
+static int read_pseudo_def(char *def, char *destination)
 {
 	int n, bytes;
 	int quoted = 0;
@@ -1283,7 +1282,7 @@ static int read_pseudo_def(char *def)
 	}
 
 	if(type == 'l')
-		return read_pseudo_def_link(orig_def, filename, name, def);
+		return read_pseudo_def_link(orig_def, filename, name, def, destination);
 	else if(type == 'L')
 		return read_pseudo_def_pseudo_link(orig_def, filename, name, def);
 	else if(isupper(type))
@@ -1300,17 +1299,13 @@ error:
 
 int read_pseudo_definition(char *filename, char *destination)
 {
-	destination_file = destination;
-
-	return read_pseudo_def(filename);
+	return read_pseudo_def(filename, destination);
 }
 
 
 int read_pseudo_file(char *filename, char *destination)
 {
-	destination_file = destination;
-
-	return read_file(filename, "pseudo", read_pseudo_def);
+	return read_file(filename, "pseudo", destination, read_pseudo_def);
 }
 
 
