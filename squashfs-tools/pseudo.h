@@ -26,10 +26,12 @@
 
 #define PSEUDO_FILE_OTHER	1
 #define PSEUDO_FILE_PROCESS	2
+#define PSEUDO_FILE_DATA	4
 
 #define IS_PSEUDO(a)		((a)->pseudo)
 #define IS_PSEUDO_PROCESS(a)	((a)->pseudo && ((a)->pseudo->pseudo_type & PSEUDO_FILE_PROCESS))
 #define IS_PSEUDO_OTHER(a)	((a)->pseudo && ((a)->pseudo->pseudo_type & PSEUDO_FILE_OTHER))
+#define IS_PSEUDO_DATA(a)	((a)->pseudo && ((a)->pseudo->pseudo_type & PSEUDO_FILE_DATA))
 
 struct pseudo_stat {
 	unsigned int	mode;
@@ -41,6 +43,18 @@ struct pseudo_stat {
 	int		ino;
 };
 
+struct pseudo_file {
+	char		*filename;
+	long long	start;
+	int		fd;
+};
+
+struct pseudo_data {
+	struct pseudo_file	*file;
+	long long		offset;
+	long long		length;
+};
+
 struct pseudo_dev {
 	char				type;
 	int				pseudo_type;
@@ -49,6 +63,7 @@ struct pseudo_dev {
 		struct stat		*linkbuf;
 	};
 	union {
+		struct pseudo_data	*data;
 		char			*command;
 		char			*symlink;
 		char			*linkname;

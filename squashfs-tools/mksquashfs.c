@@ -3452,6 +3452,9 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				pseudo_ent->dev->buf->minor);
 			buf.st_mtime = pseudo_ent->dev->buf->mtime;
 			buf.st_ino = pseudo_ent->dev->buf->ino;
+
+			if(pseudo_ent->dev->type == 'r')
+				buf.st_size = pseudo_ent->dev->data->length;
 		}
 
 		if(pseudo_ent->dev->type == 'd') {

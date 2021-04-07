@@ -565,7 +565,7 @@ error:
 
 
 static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
-	char *name, char *def, int pseudo_file)
+	char *name, char *def, char *pseudo_file, struct pseudo_file **file)
 {
 	int n, bytes;
 	int quoted = FALSE;
@@ -576,6 +576,7 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 	long long uid, gid;
 	struct pseudo_dev *dev;
 	static int pseudo_ino = 1;
+	long long file_length, pseudo_offset;
 
 	n = sscanf(def, "%u %o %n", &mtime, &mode, &bytes);
 
@@ -722,6 +723,23 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 			goto error;
 		}
 		break;
+	case 'R':
+		if(pseudo_file == NULL) {
+			ERROR("'R' definition can only be used in a Pseudo file\n");
+			goto error;
+		}
+
+		n = sscanf(def, "%lld %lld %n", &file_length, &pseudo_offset, &bytes);
+		def += bytes;
+
+		if(n < 2) {
+			ERROR("Not enough or invalid arguments in inline read "
+				"pseudo file definition \"%s\"\n", orig_def);
+			ERROR("Read filename, type, time, mode, uid and gid, "
+				"but failed to read or match file length or offset\n");
+			goto error;
+		}
+		break;
 	case 'D':
 	case 'M':
 		break;
@@ -820,6 +838,7 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 		mode |= S_IFDIR;
 		break;
 	case 'F':
+	case 'R':
 		mode |= S_IFREG;
 		break;
 	case 'S':
@@ -845,7 +864,25 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 	dev->buf->mtime = mtime;
 	dev->buf->ino = pseudo_ino ++;
 
-	if(type == 'F') {
+	if(type == 'R') {
+		if(*file == NULL) {
+			*file = malloc(sizeof(struct pseudo_file));
+			if(*file == NULL)
+				MEM_ERROR();
+
+			(*file)->filename = strdup(pseudo_file);
+			(*file)->fd = -1;
+		}
+
+		dev->data = malloc(sizeof(struct pseudo_data));
+		if(dev->data == NULL)
+			MEM_ERROR();
+
+		dev->pseudo_type = PSEUDO_FILE_DATA;
+		dev->data->file = *file;
+		dev->data->length = file_length;
+		dev->data->offset = pseudo_offset;
+	} else if(type == 'F') {
 		dev->pseudo_type = PSEUDO_FILE_PROCESS;
 		dev->command = strdup(command);
 	} else
@@ -1096,7 +1133,7 @@ error:
 }
 
 
-static int read_pseudo_def(char *def, char *destination, int pseudo_file)
+static int read_pseudo_def(char *def, char *destination, char *pseudo_file, struct pseudo_file **file)
 {
 	int n, bytes;
 	int quoted = 0;
@@ -1154,7 +1191,7 @@ static int read_pseudo_def(char *def, char *destination, int pseudo_file)
 	else if(type == 'L')
 		return read_pseudo_def_pseudo_link(orig_def, filename, name, def);
 	else if(isupper(type))
-		return read_pseudo_def_extended(type, orig_def, filename, name, def, pseudo_file);
+		return read_pseudo_def_extended(type, orig_def, filename, name, def, pseudo_file, file);
 	else
 		return read_pseudo_def_original(type, orig_def, filename, name, def);
 
@@ -1167,7 +1204,7 @@ error:
 
 int read_pseudo_definition(char *filename, char *destination)
 {
-	return read_pseudo_def(filename, destination, FALSE);
+	return read_pseudo_def(filename, destination, NULL, NULL);
 }
 
 
@@ -1176,6 +1213,8 @@ int read_pseudo_file(char *filename, char *destination)
 	FILE *fd;
 	char *def, *err, *line = NULL;
 	int res, size = 0;
+	struct pseudo_file *file = NULL;
+	long long bytes = 0;
 
 	fd = fopen(filename, "r");
 	if(fd == NULL) {
@@ -1202,6 +1241,7 @@ int read_pseudo_file(char *filename, char *destination)
 
 			len = strlen(line + total);
 			total += len;
+			bytes += len;
 
 			if(len == MAX_LINE && line[total - 1] != '\n') {
 				/* line too large */
@@ -1259,13 +1299,28 @@ int read_pseudo_file(char *filename, char *destination)
 		if(*def == '\0')
 			continue;
 
-		/* if comment line, skip */
-		if(*def == '#')
-			continue;
+		/* if comment line, skip it.  But, we also have to check if
+		 * it is the data demarker */
+		if(*def == '#') {
+			if(strcmp(def, "# START OF DATA - DO NOT MODIFY") == 0) {
+				if(file)
+					file->start = bytes + 2;
+				fclose(fd);
+				free(line);
+				return TRUE;
+			} else
+				continue;
+		}
 
-		res = read_pseudo_def(def, destination, TRUE);
+		res = read_pseudo_def(def, destination, filename, &file);
 		if(res == FALSE)
 			goto failed;
+	}
+
+	if(file) {
+		/* No Data demarker found */
+		ERROR("No START OF DATA demarker found in pseudo file %s\n", filename);
+		goto failed;
 	}
 
 	fclose(fd);

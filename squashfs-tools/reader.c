@@ -341,6 +341,78 @@ read_err2:
 }
 
 
+static void reader_read_data(struct dir_ent *dir_ent)
+{
+	struct file_buffer *file_buffer;
+	int blocks, res;
+	long long bytes, read_size;
+	struct inode_info *inode = dir_ent->inode;
+	static struct pseudo_file *file = NULL;
+
+	if(inode->read)
+		return;
+
+	inode->read = TRUE;
+	bytes = 0;
+	read_size = inode->pseudo->data->length;
+	blocks = (read_size + block_size - 1) >> block_log;
+
+	if(inode->pseudo->data->file != file) {
+		/* Reading the first or a different pseudo file, if
+		 * a different one, first close the previous pseudo
+		 * file */
+		if(file && file->fd != -1) {
+			close(file->fd);
+			file->fd = -1;
+		}
+
+		file = inode->pseudo->data->file;
+
+		while(1) {
+			file->fd = open(file->filename, O_RDONLY);
+			if(file->fd != -1 || errno != EINTR)
+				break;
+		}
+
+		if(file->fd == -1)
+			BAD_ERROR("Could not open pseudo file %s because %s\n", file->filename, strerror(errno));
+	}
+
+	res = lseek(file->fd, file->start + inode->pseudo->data->offset, SEEK_SET);
+	if(res == -1)
+		BAD_ERROR("Lseek on pseudo file %s failed because %s\n", file->filename, strerror(errno));
+
+	do {
+		file_buffer = cache_get_nohash(reader_buffer);
+		file_buffer->file_size = read_size;
+		file_buffer->sequence = seq ++;
+		file_buffer->noD = inode->noD;
+		file_buffer->error = FALSE;
+
+		if(blocks > 1) {
+			/* non-tail block should be exactly block_size */
+			file_buffer->size = read_bytes(file->fd, file_buffer->data, block_size);
+			if(file_buffer->size != block_size)
+				BAD_ERROR("Failed to read pseudo file %s, it appears to be truncated or corrupted\n", file->filename);
+
+			bytes += file_buffer->size;
+
+			file_buffer->fragment = FALSE;
+			put_file_buffer(file_buffer);
+		} else {
+			int expected = read_size - bytes;
+
+			file_buffer->size = read_bytes(file->fd, file_buffer->data, expected);
+			if(file_buffer->size != expected)
+				BAD_ERROR("Failed to read pseudo file %s, it appears to be truncated or corrupted\n", file->filename);
+		}
+	} while(-- blocks > 0);
+
+	file_buffer->fragment = is_fragment(inode);
+	put_file_buffer(file_buffer);
+}
+
+
 void reader_scan(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = dir->list;
@@ -352,6 +424,11 @@ void reader_scan(struct dir_info *dir)
 
 		if(IS_PSEUDO_PROCESS(dir_ent->inode)) {
 			reader_read_process(dir_ent);
+			continue;
+		}
+
+		if(IS_PSEUDO_DATA(dir_ent->inode)) {
+			reader_read_data(dir_ent);
 			continue;
 		}
 
