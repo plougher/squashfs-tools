@@ -3568,7 +3568,7 @@ int pseudo_scan1(char *source, char *parent_name, unsigned int start_block, unsi
 
 		if(type == SQUASHFS_DIR_TYPE) {
 			pseudo_print(source, pathname, i, NULL, FALSE, 0);
-			res = pseudo_scan1(source, parent_name, start_block, offset, newt,
+			res = pseudo_scan1(source, pathname, start_block, offset, newt,
 							newc, depth + 1);
 			if(res == FALSE) {
 				free_subdir(newt);
