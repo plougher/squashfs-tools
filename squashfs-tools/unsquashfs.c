@@ -3514,7 +3514,7 @@ void pseudo_print(char *source, char *pathname, struct inode *inode, char *link,
 			break;
 		case S_IFCHR:
 		case S_IFBLK:
-			dprintf(writer_fd, "%d %d\n", (int) inode->data >> 8, (int) inode->data & 0xff);
+			dprintf(writer_fd, " %d %d\n", (int) inode->data >> 8, (int) inode->data & 0xff);
 			break;
 		case S_IFREG:
 			if(inline_data)
