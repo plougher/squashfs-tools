@@ -95,8 +95,6 @@ struct pathnames *extracts = NULL, *excludes = NULL;
 struct pathname *extract = NULL, *exclude = NULL;
 int writer_fd = 1;
 int pseudo_file = FALSE;
-int no_threshold = TRUE;
-long long inline_threshold = 0;
 char *pseudo_name;
 
 int lookup_type[] = {
@@ -3467,13 +3465,12 @@ char *process_filename(char *filename)
 }
 
 
-void pseudo_print(char *source, char *pathname, struct inode *inode, char *link,
-	int inline_data, long long offset)
+void pseudo_print(char *pathname, struct inode *inode, char *link, long long offset)
 {
 	char userstr[12], groupstr[12]; /* overflow safe */
-	char *type_string = "DFSBCIIDFSBCII";
+	char *type_string = "DRSBCIIDRSBCII";
 	char *filename = process_filename(pathname);
-	char type = inline_data ? 'R' : type_string[inode->type - 1];
+	char type = type_string[inode->type - 1];
 	int res;
 
 	if(link) {
@@ -3517,15 +3514,12 @@ void pseudo_print(char *source, char *pathname, struct inode *inode, char *link,
 			dprintf(writer_fd, " %d %d\n", (int) inode->data >> 8, (int) inode->data & 0xff);
 			break;
 		case S_IFREG:
-			if(inline_data)
-				dprintf(writer_fd, " %lld %lld\n", inode->data, offset);
-			else
-				dprintf(writer_fd, " sqfscat %s %s\n", source, filename);
+			dprintf(writer_fd, " %lld %lld\n", inode->data, offset);
 	}
 }
 
 
-int pseudo_scan1(char *source, char *parent_name, unsigned int start_block, unsigned int offset,
+int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *extracts, struct pathnames *excludes, int depth)
 {
 	unsigned int type;
@@ -3567,8 +3561,8 @@ int pseudo_scan1(char *source, char *parent_name, unsigned int start_block, unsi
 		i = s_ops->read_inode(start_block, offset);
 
 		if(type == SQUASHFS_DIR_TYPE) {
-			pseudo_print(source, pathname, i, NULL, FALSE, 0);
-			res = pseudo_scan1(source, pathname, start_block, offset, newt,
+			pseudo_print(pathname, i, NULL, 0);
+			res = pseudo_scan1(pathname, start_block, offset, newt,
 							newc, depth + 1);
 			if(res == FALSE) {
 				free_subdir(newt);
@@ -3580,16 +3574,14 @@ int pseudo_scan1(char *source, char *parent_name, unsigned int start_block, unsi
 			char *link = created_inode[i->inode_number - 1];
 
 			if(link == NULL) {
-				if((type == SQUASHFS_FILE_TYPE || type == SQUASHFS_LREG_TYPE)
-						&& (no_threshold || i->data <= inline_threshold)) {
-					pseudo_print(source, pathname, i, NULL, TRUE, byte_offset);
+				pseudo_print(pathname, i, NULL, byte_offset);
+				if(type == SQUASHFS_FILE_TYPE) {
 					byte_offset += i->data;
 					total_blocks += (i->data + (block_size - 1)) >> block_log;
-				} else
-					pseudo_print(source, pathname, i, NULL, FALSE, 0);
+				}
 				created_inode[i->inode_number - 1] = strdup(pathname);
 			} else
-				pseudo_print(source, pathname, i, link, FALSE, 0);
+				pseudo_print(pathname, i, link, 0);
 
 			if(i->type == SQUASHFS_SYMLINK_TYPE || i->type == SQUASHFS_LSYMLINK_TYPE)
 				free(i->symlink);
@@ -3655,18 +3647,15 @@ int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offse
 				i = s_ops->read_inode(start_block, offset);
 
 				if(created_inode[i->inode_number - 1] == NULL) {
-					if(no_threshold || i->data <= inline_threshold) {
-						update_info(pathname);
+					update_info(pathname);
 
-						i = s_ops->read_inode(start_block, offset);
-						res = cat_file(i, pathname);
-						if(res == FALSE) {
-							free_subdir(newt);
-							free_subdir(newc);
-							return FALSE;
-						}
-					} else
-						free(pathname);
+					i = s_ops->read_inode(start_block, offset);
+					res = cat_file(i, pathname);
+					if(res == FALSE) {
+						free_subdir(newt);
+						free_subdir(newc);
+						return FALSE;
+					}
 
 					created_inode[i->inode_number - 1] = strdup(pathname);
 				} else
@@ -3685,7 +3674,7 @@ int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offse
 }
 
 
-int generate_pseudo(char *source, char *pseudo_file)
+int generate_pseudo(char *pseudo_file)
 {
 	int i, res;
 
@@ -3694,7 +3683,7 @@ int generate_pseudo(char *source, char *pseudo_file)
 		EXIT_UNSQUASH("generate_pseudo: failed to create pseudo file %s,"
 			" because %s\n", pseudo_file, strerror(errno));
 
-	res = pseudo_scan1(source, "/", SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+	res = pseudo_scan1("/", SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extracts, excludes, 1);
 	if(res == FALSE)
 		goto failed;
@@ -4360,7 +4349,7 @@ int main(int argc, char *argv[])
 	}
 
 	if(pseudo_file)
-		return generate_pseudo(argv[i], pseudo_name);
+		return generate_pseudo(pseudo_name);
 
 	if(!quiet || progress) {
 		res = pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
