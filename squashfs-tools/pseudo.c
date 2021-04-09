@@ -379,7 +379,8 @@ static void print_definitions()
 	ERROR("\tfilename C time mode uid gid major minor\n");
 	ERROR("\tfilename F time mode uid gid command\n");
 	ERROR("\tfilename S time mode uid gid symlink\n");
-	ERROR("\tfilename I mode uid gid [s|f]\n");
+	ERROR("\tfilename I time mode uid gid [s|f]\n");
+	ERROR("\tfilename R time mode uid gid length offset\n");
 }
 
 
