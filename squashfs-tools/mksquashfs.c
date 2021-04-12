@@ -2942,10 +2942,26 @@ static inline void add_excluded(struct dir_info *dir)
 }
 
 
-squashfs_inode do_directory_scans2(struct dir_ent *dir_ent, int progress)
+squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 {
 	squashfs_inode inode;
-	
+	struct pseudo *pseudo = get_pseudo();
+
+	/*
+	 * Process most actions and any pseudo files
+	 */
+
+	/* if there's a root pseudo definition skip it, it will have already
+	 * been handled if no sources specified on command line.
+	 * If sources have been specified, then just ignore it, as sources
+	 * on the command line take precedence.
+	 */
+	if(pseudo != NULL && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0)
+		pseudo = pseudo->name[0].pseudo;
+
+	if(actions() || get_pseudo())
+		dir_scan2(root_dir, pseudo);
+
 	/*
 	 * Process move actions
 	 */
@@ -3004,28 +3020,6 @@ squashfs_inode do_directory_scans2(struct dir_ent *dir_ent, int progress)
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 
 	return inode;
-}
-
-
-squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
-{
-	struct pseudo *pseudo = get_pseudo();
-
-	/*
-	 * Process most actions and any pseudo files
-	 */
-
-	/* The pseudo definitions should not have an entry for "/",
-	 * because this will conflict with the existing mechanisms
-	 * for obtaining the root information
-	 */
-	if(pseudo != NULL && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0)
-		BAD_ERROR("Cannot have a pseudo definition for \"/\" with sources on the command line\n");
-
-	if(actions() || get_pseudo())
-		dir_scan2(root_dir, pseudo);
-
-	return do_directory_scans2(dir_ent, progress);
 }
 
 
@@ -4347,10 +4341,7 @@ static squashfs_inode no_sources(int progress)
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
 
-	/* recursively add pseudo definitions to root directory */
-	dir_scan2(root_dir, pseudo_ent->pseudo);
-
-	return do_directory_scans2(dir_ent, progress);
+	return do_directory_scans(dir_ent, progress);
 }
 
 
