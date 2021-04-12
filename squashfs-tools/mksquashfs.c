@@ -170,6 +170,7 @@ unsigned int root_inode_number = 0;
 /* list of source dirs/files */
 int source = 0;
 char **source_path;
+int option_offset;
 
 /* list of root directory entries read from original filesystem */
 int old_root_entries = 0;
@@ -2941,16 +2942,10 @@ static inline void add_excluded(struct dir_info *dir)
 }
 
 
-squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
+squashfs_inode do_directory_scans2(struct dir_ent *dir_ent, int progress)
 {
 	squashfs_inode inode;
 	
-	/*
-	 * Process most actions and any pseudo files
-	 */
-	if(actions() || get_pseudo())
-		dir_scan2(root_dir, get_pseudo());
-
 	/*
 	 * Process move actions
 	 */
@@ -3009,6 +3004,28 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 
 	return inode;
+}
+
+
+squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
+{
+	struct pseudo *pseudo = get_pseudo();
+
+	/*
+	 * Process most actions and any pseudo files
+	 */
+
+	/* The pseudo definitions should not have an entry for "/",
+	 * because this will conflict with the existing mechanisms
+	 * for obtaining the root information
+	 */
+	if(pseudo != NULL && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0)
+		BAD_ERROR("Cannot have a pseudo definition for \"/\" with sources on the command line\n");
+
+	if(actions() || get_pseudo())
+		dir_scan2(root_dir, pseudo);
+
+	return do_directory_scans2(dir_ent, progress);
 }
 
 
@@ -4289,6 +4306,51 @@ static squashfs_inode process_source(int progress)
 
 
 	return do_directory_scans(entry, progress);
+}
+
+
+/*
+ * Source directory specified as - which means no source directories
+ *
+ * Here the pseudo definitions will be providing the source directory
+ */
+static squashfs_inode no_sources(int progress)
+{
+	struct stat buf;
+	struct dir_ent *dir_ent;
+	struct pseudo_entry *pseudo_ent;
+	struct pseudo *pseudo = get_pseudo();
+
+	if(appending)
+		BAD_ERROR("Pseudo files defining \"/\" cannot be used with appending\n");
+
+	if(pseudo == NULL || pseudo->names != 1 || strcmp(pseudo->name[0].name, "/") != 0)
+		BAD_ERROR("Source is \"-\", but no pseudo definition for \"/\"\n");
+
+	pseudo_ent = &pseudo->name[0];
+
+	/* create root directory */
+	root_dir = scan1_opendir("", "", 1);
+
+	/* Create root directory dir_ent and associated inode, and connect
+	 * it to the root directory dir_info structure */
+	dir_ent = create_dir_entry("", NULL, "", scan1_opendir("", "", 0));
+
+	memset(&buf, 0, sizeof(buf));
+	buf.st_mode = pseudo_ent->dev->buf->mode;
+	buf.st_uid = pseudo_ent->dev->buf->uid;
+	buf.st_gid = pseudo_ent->dev->buf->gid;
+	buf.st_mtime = pseudo_ent->dev->buf->mtime;
+	buf.st_ino = pseudo_ent->dev->buf->ino;
+
+	dir_ent->inode = lookup_inode2(&buf, pseudo_ent->dev);
+	dir_ent->dir = root_dir;
+	root_dir->dir_ent = dir_ent;
+
+	/* recursively add pseudo definitions to root directory */
+	dir_scan2(root_dir, pseudo_ent->pseudo);
+
+	return do_directory_scans2(dir_ent, progress);
 }
 
 
@@ -5576,15 +5638,22 @@ int main(int argc, char *argv[])
 	block_log = slog(block_size);
 	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
 
-        for(i = 1; i < argc && argv[i][0] != '-'; i++);
+        for(i = 1; i < argc && (argv[i][0] != '-' || strcmp(argv[i], "-") == 0); i++);
 	if(i < 3) {
 		print_options(argv[0], total_mem);
 		exit(1);
 	}
 
-	source_path = argv + 1;
-	source = i - 2;
-	destination_file = argv[source + 1];
+	option_offset = i;
+	destination_file = argv[i - 1];
+
+	if(argv[1][0] != '-') {
+		source_path = argv + 1;
+		source = i - 2;
+	} else {
+		source_path = NULL;
+		source = 0;
+	}
 
 	/*
 	 * Scan the command line for -comp xxx option, this is to ensure
@@ -5635,7 +5704,7 @@ int main(int argc, char *argv[])
 	if(comp == NULL)
 		comp = lookup_compressor(COMP_DEFAULT);
 
-	for(i = source + 2; i < argc; i++) {
+	for(i = option_offset; i < argc; i++) {
 		if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-no-strip") == 0 ||
@@ -5842,7 +5911,7 @@ print_compressor_options:
 					argv[0]);
 				exit(1);
 			}
-			read_recovery_data(argv[i], argv[source + 1]);
+			read_recovery_data(argv[i], destination_file);
 		} else if(strcmp(argv[i], "-no-recovery") == 0)
 			recover = FALSE;
 		else if(strcmp(argv[i], "-wildcards") == 0) {
@@ -6130,9 +6199,9 @@ print_compressor_options:
 			EXIT_MKSQUASHFS();
 		}
 
-	if(stat(argv[source + 1], &buf) == -1) {
+	if(stat(destination_file, &buf) == -1) {
 		if(errno == ENOENT) { /* Does not exist */
-			fd = open(argv[source + 1], O_CREAT | O_TRUNC | O_RDWR,
+			fd = open(destination_file, O_CREAT | O_TRUNC | O_RDWR,
 				S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 			if(fd == -1) {
 				perror("Could not create destination file");
@@ -6146,7 +6215,7 @@ print_compressor_options:
 
 	} else {
 		if(S_ISBLK(buf.st_mode)) {
-			if((fd = open(argv[source + 1], O_RDWR)) == -1) {
+			if((fd = open(destination_file, O_RDWR)) == -1) {
 				perror("Could not open block device as "
 					"destination");
 				exit(1);
@@ -6154,7 +6223,7 @@ print_compressor_options:
 			block_device = 1;
 
 		} else if(S_ISREG(buf.st_mode))	 {
-			fd = open(argv[source + 1], (delete ? O_TRUNC : 0) |
+			fd = open(destination_file, (delete ? O_TRUNC : 0) |
 				O_RDWR);
 			if(fd == -1) {
 				perror("Could not open regular file for "
@@ -6173,7 +6242,7 @@ print_compressor_options:
 	 * process the exclude files - must be done afer destination file has
 	 * been possibly created
 	 */
-	for(i = source + 2; i < argc; i++)
+	for(i = option_offset; i < argc; i++)
 		if(strcmp(argv[i], "-ef") == 0)
 			/*
 			 * Note presence of filename arg has already
@@ -6204,7 +6273,7 @@ print_compressor_options:
 	}
 
 	/* process the sort files - must be done afer the exclude files  */
-	for(i = source + 2; i < argc; i++)
+	for(i = option_offset; i < argc; i++)
 		if(strcmp(argv[i], "-sort") == 0) {
 			int res = read_sort_file(argv[++i], source,
 								source_path);
@@ -6223,7 +6292,7 @@ print_compressor_options:
 			i++;
 
 	if(!delete) {
-	        comp = read_super(fd, &sBlk, argv[source + 1]);
+	        comp = read_super(fd, &sBlk, destination_file);
 	        if(comp == NULL) {
 			ERROR("Failed to read existing filesystem - will not "
 				"overwrite - ABORTING!\n");
@@ -6261,7 +6330,7 @@ print_compressor_options:
 		if(!quiet)
 			printf("Creating %d.%d filesystem on %s, block size %d.\n",
 				SQUASHFS_MAJOR, SQUASHFS_MINOR,
-				argv[source + 1], block_size);
+				destination_file, block_size);
 
 		/*
 		 * store any compressor specific options after the superblock,
@@ -6318,7 +6387,7 @@ print_compressor_options:
 		}
 
 		printf("Appending to existing %d.%d filesystem on %s, block "
-			"size %d\n", SQUASHFS_MAJOR, SQUASHFS_MINOR, argv[source + 1],
+			"size %d\n", SQUASHFS_MAJOR, SQUASHFS_MINOR, destination_file,
 			block_size);
 		printf("All -b, -noI, -noD, -noF, -noX, -noId, -no-duplicates, "
 			"-no-fragments,\n-always-use-fragments, -exportable and "
@@ -6418,7 +6487,9 @@ print_compressor_options:
 	dump_actions(); 
 	dump_pseudos();
 
-	if(tarstyle)
+	if(!source)
+		inode = no_sources(progress);
+	else if(tarstyle)
 		inode = process_source(progress);
 	else
 		inode = dir_scan(S_ISDIR(source_buf.st_mode), progress);

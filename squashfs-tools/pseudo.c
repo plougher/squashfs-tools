@@ -176,6 +176,49 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 }
 
 
+struct pseudo *add_pseudo_definition(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
+	char *target, char *alltarget)
+{
+	/* special case if a root pseudo definition is being added */
+	if(strcmp(target, "/") == 0) {
+		/* type must be 'd' */
+		if(pseudo_dev->type != 'd') {
+			ERROR("Pseudo definition / is not a directory.  Ignoring!\n");
+			return pseudo;
+		}
+
+		/* if already have a root pseudo just replace */
+		if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
+			pseudo->name[0].dev = pseudo_dev;
+			return pseudo;
+		} else {
+			struct pseudo *new = malloc(sizeof(struct pseudo));
+			if(new == NULL)
+				MEM_ERROR();
+
+			new->names = 1;
+			new->count = 0;
+			new->name = malloc(sizeof(struct pseudo_entry));
+			if(new->name == NULL)
+				MEM_ERROR();
+
+			new->name[0].name = "/";
+			new->name[0].pseudo = pseudo;
+			new->name[0].pathname = "/";
+			new->name[0].dev = pseudo_dev;
+			return new;
+		}
+	}
+
+	/* if there's a root pseudo definition, skip it before walking target */
+	if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
+		pseudo->name[0].pseudo = add_pseudo(pseudo->name[0].pseudo, pseudo_dev, target, alltarget);
+		return pseudo;
+	} else
+		return add_pseudo(pseudo, pseudo_dev, target, alltarget);
+}
+
+
 /*
  * Find subdirectory in pseudo directory referenced by pseudo, matching
  * filename.  If filename doesn't exist or if filename is a leaf file
@@ -439,7 +482,7 @@ static int read_pseudo_def_pseudo_link(char *orig_def, char *filename, char *nam
 		goto error;
 	}
 
-	pseudo = add_pseudo(pseudo, pseudo_ent->dev, name, name);
+	pseudo = add_pseudo_definition(pseudo, pseudo_ent->dev, name, name);
 
 	free(filename);
 	free(linkname);
@@ -548,7 +591,7 @@ static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char
 	dev->pseudo_type = PSEUDO_FILE_OTHER;
 	dev->linkname = strdup(linkname);
 
-	pseudo = add_pseudo(pseudo, dev, name, name);
+	pseudo = add_pseudo_definition(pseudo, dev, name, name);
 
 	free(filename);
 	free(linkname);
@@ -892,7 +935,7 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 	if(type == 'S')
 		dev->symlink = strdup(symlink);
 
-	pseudo = add_pseudo(pseudo, dev, name, name);
+	pseudo = add_pseudo_definition(pseudo, dev, name, name);
 
 	free(filename);
 	return TRUE;
@@ -1122,7 +1165,7 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 	if(type == 's')
 		dev->symlink = strdup(symlink);
 
-	pseudo = add_pseudo(pseudo, dev, name, name);
+	pseudo = add_pseudo_definition(pseudo, dev, name, name);
 
 	free(filename);
 	return TRUE;
@@ -1173,9 +1216,8 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	for(name = filename; *name == '/'; name ++);
 
 	if(*name == '\0') {
-		ERROR("Not enough or invalid arguments in pseudo file "
-			"definition \"%s\"\n", orig_def);
-		goto error;
+		strcpy(filename, "/");
+		name = filename;
 	}
 
 	n = sscanf(def, " %c %n", &type, &bytes);
