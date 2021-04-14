@@ -3538,6 +3538,8 @@ int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offse
 		return FALSE;
 	}
 
+	pseudo_print(parent_name, i, NULL, 0);
+
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
 		struct inode *i;
 		char *pathname;
@@ -3558,10 +3560,7 @@ int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offse
 		if(res == -1)
 			MEM_ERROR();
 
-		i = s_ops->read_inode(start_block, offset);
-
 		if(type == SQUASHFS_DIR_TYPE) {
-			pseudo_print(pathname, i, NULL, 0);
 			res = pseudo_scan1(pathname, start_block, offset, newt,
 							newc, depth + 1);
 			if(res == FALSE) {
@@ -3571,7 +3570,10 @@ int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offse
 				return FALSE;
 			}
 		} else if(newt == NULL) {
-			char *link = created_inode[i->inode_number - 1];
+			char *link;
+
+			i = s_ops->read_inode(start_block, offset);
+			link = created_inode[i->inode_number - 1];
 
 			if(link == NULL) {
 				pseudo_print(pathname, i, NULL, byte_offset);
@@ -3585,8 +3587,8 @@ int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offse
 
 			if(i->type == SQUASHFS_SYMLINK_TYPE || i->type == SQUASHFS_LSYMLINK_TYPE)
 				free(i->symlink);
-		} else if(i->type == SQUASHFS_SYMLINK_TYPE || i->type == SQUASHFS_LSYMLINK_TYPE)
-			free(i->symlink);
+
+		}
 
 		free_subdir(newt);
 		free_subdir(newc);
