@@ -470,7 +470,11 @@ static int read_pseudo_def_pseudo_link(char *orig_def, char *filename, char *nam
 	}
 
 	/* Lookup linkname in pseudo definition tree */
-	pseudo_ent = pseudo_lookup(pseudo, link);
+	/* if there's a root pseudo definition, skip it before walking target */
+	if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0)
+		pseudo_ent = pseudo_lookup(pseudo->name[0].pseudo, link);
+	else
+		pseudo_ent = pseudo_lookup(pseudo, link);
 
 	if(pseudo_ent == NULL) {
 		ERROR("Pseudo LINK file %s doesn't exist\n", linkname);
