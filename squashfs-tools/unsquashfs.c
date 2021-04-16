@@ -2199,7 +2199,7 @@ int check_compression(struct compressor *comp)
 		ERROR("Filesystem uses %s compression, this is "
 			"unsupported by this version\n", comp->name);
 		ERROR("Decompressors available:\n");
-		display_compressors("", "");
+		display_compressors(stderr, "", "");
 		return FALSE;
 	}
 
@@ -3768,7 +3768,7 @@ static void print_cat_options(char *name)
 	ERROR("\t\t\t\trather than use the default shell ");
 	ERROR("wildcard\n\t\t\t\texpansion (globbing)\n");
 	ERROR("\nDecompressors available:\n");
-	display_compressors("", "");
+	display_compressors(stderr, "", "");
 }
 
 
@@ -3846,7 +3846,7 @@ static void print_options(char *name)
 	ERROR("wildcard\n\t\t\t\texpansion (globbing)\n");
 	ERROR("\t-L\t\t\tsynonym for -follow-symlinks\n");
 	ERROR("\nDecompressors available:\n");
-	display_compressors("", "");
+	display_compressors(stderr, "", "");
 }
 
 

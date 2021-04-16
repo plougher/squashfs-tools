@@ -40,7 +40,7 @@ struct compressor {
 
 extern struct compressor *lookup_compressor(char *);
 extern struct compressor *lookup_compressor_id(int);
-extern void display_compressors(char *, char *);
+extern void display_compressors(FILE *stream, char *, char *);
 extern void display_compressor_usage(char *);
 
 static inline int compressor_init(struct compressor *comp, void **stream,

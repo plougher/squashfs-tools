@@ -5470,7 +5470,7 @@ static void print_options(char *name, int total_mem)
 	ERROR("-tarstyle\t\talternative name for -no-strip\n");
 	ERROR("-comp <comp>\t\tselect <comp> compression\n");
 	ERROR("\t\t\tCompressors available:\n");
-	display_compressors("\t\t\t", COMP_DEFAULT);
+	display_compressors(stderr, "\t\t\t", COMP_DEFAULT);
 	ERROR("-b <block_size>\t\tset data block to <block_size>.  Default ");
 	ERROR("128 Kbytes\n");
 	ERROR("\t\t\tOptionally a suffix of K or M can be given to ");
@@ -5665,7 +5665,7 @@ int main(int argc, char *argv[])
 				ERROR("%s: Compressor \"%s\" is not supported!"
 					"\n", argv[0], argv[i]);
 				ERROR("%s: Compressors available:\n", argv[0]);
-				display_compressors("", COMP_DEFAULT);
+				display_compressors(stderr, "", COMP_DEFAULT);
 				exit(1);
 			}
 			if(prev_comp != NULL && prev_comp != comp) {
