@@ -5584,7 +5584,7 @@ static void print_options(char *name, int total_mem)
 	ERROR("\n-Xhelp\t\t\tprint compressor options for selected ");
 	ERROR("compressor\n");
 	ERROR("\nCompressors available and compressor specific options:\n");
-	display_compressor_usage(COMP_DEFAULT);
+	display_compressor_usage(stderr, COMP_DEFAULT);
 }
 
 

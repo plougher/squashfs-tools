@@ -126,7 +126,7 @@ void display_compressors(FILE *stream, char *indent, char *def_comp)
 }
 
 
-void display_compressor_usage(char *def_comp)
+void display_compressor_usage(FILE *stream, char *def_comp)
 {
 	int i;
 
@@ -135,11 +135,11 @@ void display_compressor_usage(char *def_comp)
 			char *str = strcmp(compressor[i]->name, def_comp) == 0 ?
 				" (default)" : "";
 			if(compressor[i]->usage) {
-				fprintf(stderr, "\t%s%s\n",
+				fprintf(stream, "\t%s%s\n",
 					compressor[i]->name, str);
 				compressor[i]->usage();
 			} else
-				fprintf(stderr, "\t%s (no options)%s\n",
+				fprintf(stream, "\t%s (no options)%s\n",
 					compressor[i]->name, str);
 		}
 }
