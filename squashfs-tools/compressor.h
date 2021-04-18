@@ -35,7 +35,7 @@ struct compressor {
 	int (*extract_options)(int, void *, int);
 	int (*check_options)(int, void *, int);
 	void (*display_options)(void *, int);
-	void (*usage)();
+	void (*usage)(FILE *);
 };
 
 extern struct compressor *lookup_compressor(char *);

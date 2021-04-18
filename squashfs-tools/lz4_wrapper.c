@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2019
+ * Copyright (c) 2013, 2019, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -285,10 +285,10 @@ static int lz4_uncompress(void *dest, void *src, int size, int outsize,
 }
 
 
-static void lz4_usage()
+static void lz4_usage(FILE *stream)
 {
-	fprintf(stderr, "\t  -Xhc\n");
-	fprintf(stderr, "\t\tCompress using LZ4 High Compression\n");
+	fprintf(stream, "\t  -Xhc\n");
+	fprintf(stream, "\t\tCompress using LZ4 High Compression\n");
 }
 
 

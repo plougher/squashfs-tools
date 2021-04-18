@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017
+ * Copyright (c) 2017, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -232,10 +232,10 @@ static int zstd_uncompress(void *dest, void *src, int size, int outsize,
 	return (int)res;
 }
 
-static void zstd_usage(void)
+static void zstd_usage(FILE *stream)
 {
-	fprintf(stderr, "\t  -Xcompression-level <compression-level>\n");
-	fprintf(stderr, "\t\t<compression-level> should be 1 .. %d (default "
+	fprintf(stream, "\t  -Xcompression-level <compression-level>\n");
+	fprintf(stream, "\t\t<compression-level> should be 1 .. %d (default "
 		"%d)\n", ZSTD_maxCLevel(), ZSTD_DEFAULT_COMPRESSION_LEVEL);
 }
 

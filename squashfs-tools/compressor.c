@@ -137,7 +137,7 @@ void display_compressor_usage(FILE *stream, char *def_comp)
 			if(compressor[i]->usage) {
 				fprintf(stream, "\t%s%s\n",
 					compressor[i]->name, str);
-				compressor[i]->usage();
+				compressor[i]->usage(stream);
 			} else
 				fprintf(stream, "\t%s (no options)%s\n",
 					compressor[i]->name, str);

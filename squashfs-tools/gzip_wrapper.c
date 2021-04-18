@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2010, 2013, 2014
+ * Copyright (c) 2009, 2010, 2013, 2014, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -467,19 +467,19 @@ static int gzip_uncompress(void *d, void *s, int size, int outsize, int *error)
 }
 
 
-static void gzip_usage()
+static void gzip_usage(FILE *stream)
 {
-	fprintf(stderr, "\t  -Xcompression-level <compression-level>\n");
-	fprintf(stderr, "\t\t<compression-level> should be 1 .. 9 (default "
+	fprintf(stream, "\t  -Xcompression-level <compression-level>\n");
+	fprintf(stream, "\t\t<compression-level> should be 1 .. 9 (default "
 		"%d)\n", GZIP_DEFAULT_COMPRESSION_LEVEL);
-	fprintf(stderr, "\t  -Xwindow-size <window-size>\n");
-	fprintf(stderr, "\t\t<window-size> should be 8 .. 15 (default "
+	fprintf(stream, "\t  -Xwindow-size <window-size>\n");
+	fprintf(stream, "\t\t<window-size> should be 8 .. 15 (default "
 		"%d)\n", GZIP_DEFAULT_WINDOW_SIZE);
-	fprintf(stderr, "\t  -Xstrategy strategy1,strategy2,...,strategyN\n");
-	fprintf(stderr, "\t\tCompress using strategy1,strategy2,...,strategyN"
+	fprintf(stream, "\t  -Xstrategy strategy1,strategy2,...,strategyN\n");
+	fprintf(stream, "\t\tCompress using strategy1,strategy2,...,strategyN"
 		" in turn\n");
-	fprintf(stderr, "\t\tand choose the best compression.\n");
-	fprintf(stderr, "\t\tAvailable strategies: default, filtered, "
+	fprintf(stream, "\t\tand choose the best compression.\n");
+	fprintf(stream, "\t\tAvailable strategies: default, filtered, "
 		"huffman_only,\n\t\trun_length_encoded and fixed\n");
 }
 

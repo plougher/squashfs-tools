@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2014
+ * Copyright (c) 2013, 2014, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -391,21 +391,21 @@ static int lzo_uncompress(void *dest, void *src, int size, int outsize,
 }
 
 
-static void lzo_usage()
+static void lzo_usage(FILE *stream)
 {
 	int i;
 
-	fprintf(stderr, "\t  -Xalgorithm <algorithm>\n");
-	fprintf(stderr, "\t\tWhere <algorithm> is one of:\n");
+	fprintf(stream, "\t  -Xalgorithm <algorithm>\n");
+	fprintf(stream, "\t\tWhere <algorithm> is one of:\n");
 
 	for(i = 0; lzo[i].name; i++)
-		fprintf(stderr, "\t\t\t%s%s\n", lzo[i].name,
+		fprintf(stream, "\t\t\t%s%s\n", lzo[i].name,
 				i == SQUASHFS_LZO1X_999 ? " (default)" : "");
 
-	fprintf(stderr, "\t  -Xcompression-level <compression-level>\n");
-	fprintf(stderr, "\t\t<compression-level> should be 1 .. 9 (default "
+	fprintf(stream, "\t  -Xcompression-level <compression-level>\n");
+	fprintf(stream, "\t\t<compression-level> should be 1 .. 9 (default "
 		"%d)\n", SQUASHFS_LZO1X_999_COMP_DEFAULT);
-	fprintf(stderr, "\t\tOnly applies to lzo1x_999 algorithm\n");
+	fprintf(stream, "\t\tOnly applies to lzo1x_999 algorithm\n");
 }
 
 

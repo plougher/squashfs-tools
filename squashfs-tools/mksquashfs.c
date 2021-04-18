@@ -5875,7 +5875,7 @@ print_compressor_options:
 						argv[0], comp->name,
 						comp->usage ? "" : "none");
 					if(comp->usage)
-						comp->usage();
+						comp->usage(stderr);
 				}
 				exit(1);
 			}

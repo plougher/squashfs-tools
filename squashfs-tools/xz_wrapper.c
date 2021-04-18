@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012, 2013
+ * Copyright (c) 2010, 2011, 2012, 2013, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -503,24 +503,24 @@ static int xz_uncompress(void *dest, void *src, int size, int outsize,
 }
 
 
-static void xz_usage()
+static void xz_usage(FILE *stream)
 {
-	fprintf(stderr, "\t  -Xbcj filter1,filter2,...,filterN\n");
-	fprintf(stderr, "\t\tCompress using filter1,filter2,...,filterN in");
-	fprintf(stderr, " turn\n\t\t(in addition to no filter), and choose");
-	fprintf(stderr, " the best compression.\n");
-	fprintf(stderr, "\t\tAvailable filters: x86, arm, armthumb,");
-	fprintf(stderr, " powerpc, sparc, ia64\n");
-	fprintf(stderr, "\t  -Xdict-size <dict-size>\n");
-	fprintf(stderr, "\t\tUse <dict-size> as the XZ dictionary size.  The");
-	fprintf(stderr, " dictionary size\n\t\tcan be specified as a");
-	fprintf(stderr, " percentage of the block size, or as an\n\t\t");
-	fprintf(stderr, "absolute value.  The dictionary size must be less");
-	fprintf(stderr, " than or equal\n\t\tto the block size and 8192 bytes");
-	fprintf(stderr, " or larger.  It must also be\n\t\tstorable in the xz");
-	fprintf(stderr, " header as either 2^n or as 2^n+2^(n+1).\n\t\t");
-	fprintf(stderr, "Example dict-sizes are 75%%, 50%%, 37.5%%, 25%%, or");
-	fprintf(stderr, " 32K, 16K, 8K\n\t\tetc.\n");
+	fprintf(stream, "\t  -Xbcj filter1,filter2,...,filterN\n");
+	fprintf(stream, "\t\tCompress using filter1,filter2,...,filterN in");
+	fprintf(stream, " turn\n\t\t(in addition to no filter), and choose");
+	fprintf(stream, " the best compression.\n");
+	fprintf(stream, "\t\tAvailable filters: x86, arm, armthumb,");
+	fprintf(stream, " powerpc, sparc, ia64\n");
+	fprintf(stream, "\t  -Xdict-size <dict-size>\n");
+	fprintf(stream, "\t\tUse <dict-size> as the XZ dictionary size.  The");
+	fprintf(stream, " dictionary size\n\t\tcan be specified as a");
+	fprintf(stream, " percentage of the block size, or as an\n\t\t");
+	fprintf(stream, "absolute value.  The dictionary size must be less");
+	fprintf(stream, " than or equal\n\t\tto the block size and 8192 bytes");
+	fprintf(stream, " or larger.  It must also be\n\t\tstorable in the xz");
+	fprintf(stream, " header as either 2^n or as 2^n+2^(n+1).\n\t\t");
+	fprintf(stream, "Example dict-sizes are 75%%, 50%%, 37.5%%, 25%%, or");
+	fprintf(stream, " 32K, 16K, 8K\n\t\tetc.\n");
 }
 
 
