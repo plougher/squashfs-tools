@@ -5581,6 +5581,8 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-noDataCompression\talternative name for -noD\n");
 	fprintf(stream, "-noFragmentCompression\talternative name for -noF\n");
 	fprintf(stream, "-noXattrCompression\talternative name for -noX\n");
+	fprintf(stream, "\n-help\t\t\toutput this options text to stdout\n");
+	fprintf(stream, "-h\t\t\toutput this options text to stdout\n");
 	fprintf(stream, "\n-Xhelp\t\t\tprint compressor options for selected ");
 	fprintf(stream, "compressor\n");
 	fprintf(stream, "\nCompressors available and compressor specific options:\n");
@@ -5630,6 +5632,12 @@ int main(int argc, char *argv[])
 	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
 
         for(i = 1; i < argc && (argv[i][0] != '-' || strcmp(argv[i], "-") == 0); i++);
+
+	if(i < argc && (strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)) {
+		print_options(stdout, argv[0], total_mem);
+		exit(0);
+	}
+
 	if(i < 3) {
 		print_options(stderr, argv[0], total_mem);
 		exit(1);
@@ -5696,7 +5704,10 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = option_offset; i < argc; i++) {
-		if(strcmp(argv[i], "-no-hardlinks") == 0)
+		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
+			print_options(stdout, argv[0], total_mem);
+			exit(0);
+		} else if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-no-strip") == 0 ||
 					strcmp(argv[i], "-tarstyle") == 0)
