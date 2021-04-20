@@ -273,7 +273,7 @@ int no_hardlinks = FALSE;
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 static void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
 	int type);
-static int duplicate(long long file_size, long long bytes,
+static void duplicate(int *dup, long long file_size, long long bytes,
 	unsigned int **block_list, long long *start, struct dir_ent *dir_ent,
 	struct fragment **fragment, struct file_buffer *file_buffer, int blocks,
 	unsigned short checksum, int checksum_flag);
@@ -1907,7 +1907,7 @@ static struct fragment *frag_duplicate(struct file_buffer *file_buffer, char *do
 }
 
 
-static int duplicate(long long file_size, long long bytes,
+static void duplicate(int *dup, long long file_size, long long bytes,
 	unsigned int **block_list, long long *start, struct dir_ent *dir_ent,
 	struct fragment **fragment, struct file_buffer *file_buffer, int blocks,
 	unsigned short checksum, int checksum_flag)
@@ -2019,7 +2019,8 @@ static int duplicate(long long file_size, long long bytes,
 					*start = dupl_ptr->start;
 					*fragment = dupl_ptr->fragment;
 					cache_block_put(frag_buffer);
-					return TRUE;
+					*dup = TRUE;
+					return;
 				}
 				cache_block_put(frag_buffer);
 			}
@@ -2031,7 +2032,7 @@ static int duplicate(long long file_size, long long bytes,
 	add_non_dup(file_size, bytes, *block_list, *start, *fragment, checksum,
 					fragment_checksum, checksum_flag, TRUE);
 
-	return FALSE;
+	*dup = FALSE;
 }
 
 
@@ -2461,7 +2462,7 @@ static int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 		}
 	}
 
-	*duplicate_file = duplicate(read_size, file_bytes, &block_listp,
+	duplicate(duplicate_file, read_size, file_bytes, &block_listp,
 		&dup_start, dir_ent, &fragment, fragment_buffer, blocks, 0,
 		FALSE);
 
