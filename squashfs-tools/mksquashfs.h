@@ -71,9 +71,11 @@ struct file_info {
 	long long		file_size;
 	long long		bytes;
 	long long		start;
+	long long		sparse;
 	unsigned int		*block_list;
 	struct file_info	*next;
 	struct fragment		*fragment;
+	unsigned int		blocks;
 	unsigned short		checksum;
 	unsigned short		fragment_checksum;
 	char			have_frag_checksum;

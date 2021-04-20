@@ -275,8 +275,8 @@ static void add_old_root_entry(char *name, squashfs_inode inode, int inode_numbe
 	int type);
 static struct file_info *duplicate(int *dup, long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct dir_ent *dir_ent,
-	struct file_buffer *file_buffer, int blocks, unsigned short checksum,
-	int checksum_flag);
+	struct file_buffer *file_buffer, int blocks, long long sparse,
+	unsigned short checksum, int checksum_flag);
 static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), int);
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
@@ -289,9 +289,9 @@ static struct dir_ent *scan1_readdir(struct dir_info *dir);
 static struct dir_ent *scan1_single_readdir(struct dir_info *dir);
 static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir);
 static struct file_info *add_non_dup(long long file_size, long long bytes,
-	unsigned int *block_list, long long start, struct fragment *fragment,
-	unsigned short checksum, unsigned short fragment_checksum,
-	int checksum_flag, int checksum_frag_flag);
+	unsigned int blocks, long long sparse, unsigned int *block_list, long long start,
+	struct fragment *fragment, unsigned short checksum,
+	unsigned short fragment_checksum, int checksum_flag, int checksum_frag_flag);
 long long generic_write_table(int, void *, int, void *, int);
 void restorefs();
 static struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
@@ -1803,7 +1803,7 @@ void add_file(long long start, long long file_size, long long file_bytes,
 	frg->offset = offset;
 	frg->size = bytes;
 
-	file = add_non_dup(file_size, file_bytes, block_list, start, frg, 0, 0,
+	file = add_non_dup(file_size, file_bytes, blocks, 0, block_list, start, frg, 0, 0,
 		FALSE, FALSE);
 
 	if(fragment == SQUASHFS_INVALID_FRAG)
@@ -1832,9 +1832,10 @@ static int pre_duplicate(long long file_size)
 
 
 static struct file_info *add_non_dup(long long file_size, long long bytes,
-	unsigned int *block_list, long long start, struct fragment *fragment,
-	unsigned short checksum, unsigned short fragment_checksum,
-	int checksum_flag, int checksum_frag_flag)
+	unsigned int blocks, long long sparse, unsigned int *block_list,
+	long long start,struct fragment *fragment,unsigned short checksum,
+	unsigned short fragment_checksum, int checksum_flag,
+	int checksum_frag_flag)
 {
 	struct file_info *dupl_ptr = malloc(sizeof(struct file_info));
 
@@ -1843,6 +1844,8 @@ static struct file_info *add_non_dup(long long file_size, long long bytes,
 
 	dupl_ptr->file_size = file_size;
 	dupl_ptr->bytes = bytes;
+	dupl_ptr->blocks = blocks;
+	dupl_ptr->sparse = sparse;
 	dupl_ptr->block_list = block_list;
 	dupl_ptr->start = start;
 	dupl_ptr->fragment = fragment;
@@ -1909,7 +1912,7 @@ static struct fragment *frag_duplicate(struct file_buffer *file_buffer, char *do
 
 static struct file_info *duplicate(int *dup, long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct dir_ent *dir_ent,
-	struct file_buffer *file_buffer, int blocks, unsigned short checksum,
+	struct file_buffer *file_buffer, int blocks, long long sparse, unsigned short checksum,
 	int checksum_flag)
 {
 	struct file_info *dupl_ptr = dupl[DUP_HASH(file_size)];
@@ -2027,9 +2030,8 @@ static struct file_info *duplicate(int *dup, long long file_size, long long byte
 
 	fragment = get_and_fill_fragment(file_buffer, dir_ent);
 
-
 	*dup = FALSE;
-	return add_non_dup(file_size, bytes, block_list, start, fragment, checksum,
+	return add_non_dup(file_size, bytes, blocks, sparse, block_list, start, fragment, checksum,
 					fragment_checksum, checksum_flag, TRUE);
 }
 
@@ -2262,7 +2264,7 @@ static squashfs_inode write_file_frag(struct dir_ent *dir_ent,
 		*duplicate_file = FALSE;
 		fragment = get_and_fill_fragment(file_buffer, dir_ent);
 		if(duplicate_checking)
-			add_non_dup(size, 0, NULL, 0, fragment, 0, checksum,
+			add_non_dup(size, 0, 0, 0, NULL, 0, fragment, 0, checksum,
 				TRUE, TRUE);
 	}
 
@@ -2352,7 +2354,7 @@ static squashfs_inode write_file_process(int *status, struct dir_ent *dir_ent,
 	fragment = get_and_fill_fragment(fragment_buffer, dir_ent);
 
 	if(duplicate_checking)
-		add_non_dup(read_size, file_bytes, block_list, start, fragment,
+		add_non_dup(read_size, file_bytes, block, sparse, block_list, start, fragment,
 			0, fragment_buffer ? fragment_buffer->checksum : 0,
 			FALSE, TRUE);
 	cache_block_put(fragment_buffer);
@@ -2459,8 +2461,19 @@ static int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 		}
 	}
 
+	/*
+	 * sparse count is needed to ensure squashfs correctly reports a
+ 	 * a smaller block count on stat calls to sparse files.  This is
+ 	 * to ensure intelligent applications like cp correctly handle the
+ 	 * file as a sparse file.  If the file in the original filesystem isn't
+ 	 * stored as a sparse file then still store it sparsely in squashfs, but
+ 	 * report it as non-sparse on stat calls to preserve semantics
+ 	 */
+	if(sparse && (dir_ent->inode->buf.st_blocks << 9) >= read_size)
+		sparse = 0;
+
 	file = duplicate(duplicate_file, read_size, file_bytes, block_list,
-		start, dir_ent, fragment_buffer, blocks, 0, FALSE);
+		start, dir_ent, fragment_buffer, blocks, sparse, 0, FALSE);
 
 	if(*duplicate_file == FALSE) {
 		for(block = thresh; block < blocks; block ++)
@@ -2489,17 +2502,6 @@ static int write_file_blocks_dup(squashfs_inode *inode, struct dir_ent *dir_ent,
 	free(buffer_list);
 	file_count ++;
 	total_bytes += read_size;
-
-	/*
-	 * sparse count is needed to ensure squashfs correctly reports a
- 	 * a smaller block count on stat calls to sparse files.  This is
- 	 * to ensure intelligent applications like cp correctly handle the
- 	 * file as a sparse file.  If the file in the original filesystem isn't
- 	 * stored as a sparse file then still store it sparsely in squashfs, but
- 	 * report it as non-sparse on stat calls to preserve semantics
- 	 */
-	if(sparse && (dir_ent->inode->buf.st_blocks << 9) >= read_size)
-		sparse = 0;
 
 	*inode = create_inode(NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size,
 		file->start, blocks, file->block_list, file->fragment, NULL, sparse);
@@ -2592,18 +2594,6 @@ static int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
 		}
 	}
 
-	if(!reproducible)
-		unlock_fragments();
-	fragment = get_and_fill_fragment(fragment_buffer, dir_ent);
-
-	if(duplicate_checking)
-		add_non_dup(read_size, file_bytes, block_list, start, fragment,
-			0, fragment_buffer ? fragment_buffer->checksum : 0,
-			FALSE, TRUE);
-	cache_block_put(fragment_buffer);
-	file_count ++;
-	total_bytes += read_size;
-
 	/*
 	 * sparse count is needed to ensure squashfs correctly reports a
  	 * a smaller block count on stat calls to sparse files.  This is
@@ -2614,6 +2604,18 @@ static int write_file_blocks(squashfs_inode *inode, struct dir_ent *dir_ent,
  	 */
 	if(sparse && (dir_ent->inode->buf.st_blocks << 9) >= read_size)
 		sparse = 0;
+
+	if(!reproducible)
+		unlock_fragments();
+	fragment = get_and_fill_fragment(fragment_buffer, dir_ent);
+
+	if(duplicate_checking)
+		add_non_dup(read_size, file_bytes, blocks, sparse, block_list, start, fragment,
+			0, fragment_buffer ? fragment_buffer->checksum : 0,
+			FALSE, TRUE);
+	cache_block_put(fragment_buffer);
+	file_count ++;
+	total_bytes += read_size;
 
 	*inode = create_inode(NULL, dir_ent, SQUASHFS_FILE_TYPE, read_size, start,
 		 blocks, block_list, fragment, NULL, sparse);
