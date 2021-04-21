@@ -207,6 +207,7 @@ extern int block_log;
 extern int sorted;
 extern int noF;
 extern struct file_info *dupl[];
+extern int duplicate_checking;
 extern int read_fs_bytes(int, long long, int, void *);
 extern void add_file(long long, long long, long long, unsigned int *, int,
 	unsigned int, int, int);
@@ -217,4 +218,10 @@ extern int read_bytes(int, void *, int);
 extern unsigned short get_checksum_mem(char *, int);
 extern int reproducible;
 extern void *reader(void *arg);
+extern squashfs_inode create_inode(struct dir_info *dir_info,
+	struct dir_ent *dir_ent, int type, long long byte_size,
+	long long start_block, unsigned int offset, unsigned int *block_list,
+	struct fragment *fragment, struct directory *dir_in, long long sparse);
+extern void free_fragment(struct fragment *fragment);
+extern struct file_info *write_file(struct dir_ent *dir_ent, int *dup);
 #endif

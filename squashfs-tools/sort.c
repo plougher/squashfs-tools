@@ -58,8 +58,6 @@ struct sort_info *sort_info_list[65536];
 struct priority_entry *priority_list[65536];
 
 extern int silent;
-extern void write_file(squashfs_inode *inode, struct dir_ent *dir_ent,
-	int *c_size);
 extern char *pathname(struct dir_ent *dir_ent);
 
 
@@ -341,12 +339,23 @@ void sort_files_and_write(struct dir_info *dir)
 	struct priority_entry *entry;
 	squashfs_inode inode;
 	int duplicate_file;
+	struct file_info *file;
 
 	for(i = 65535; i >= 0; i--)
 		for(entry = priority_list[i]; entry; entry = entry->next) {
 			TRACE("%d: %s\n", i - 32768, pathname(entry->dir));
 			if(entry->dir->inode->inode == SQUASHFS_INVALID_BLK) {
-				write_file(&inode, entry->dir, &duplicate_file);
+				file = write_file(entry->dir, &duplicate_file);
+				inode = create_inode(NULL, entry->dir,
+					SQUASHFS_FILE_TYPE, file->file_size,
+					file->start, file->blocks,
+					file->block_list,
+					file->fragment, NULL,
+					file->sparse);
+				if(duplicate_checking == FALSE) {
+					free_fragment(file->fragment);
+					free(file->block_list);
+				}
 				INFO("file %s, uncompressed size %lld bytes %s"
 					"\n", pathname(entry->dir),
 					(long long)
