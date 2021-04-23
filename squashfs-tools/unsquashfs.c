@@ -3740,35 +3740,35 @@ int parse_excludes(int argc, char *argv[], struct pathname **exclude)
 }
 
 
-static void print_cat_options(char *name)
+static void print_cat_options(FILE *stream, char *name)
 {
-	ERROR("SYNTAX: %s [options] filesystem [files to cat]\n", name);
-	ERROR("\t-v[ersion]\t\tprint version, licence and copyright ");
-	ERROR("information\n");
-	ERROR("\t-p[rocessors] <number>\tuse <number> processors.  ");
-	ERROR("By default will use\n");
-	ERROR("\t\t\t\tnumber of processors available\n");
-	ERROR("\t-o[ffset] <bytes>\tskip <bytes> at start of <dest>.  ");
-	ERROR("Optionally a\n\t\t\t\tsuffix of K, M or G can be given to ");
-	ERROR("specify\n\t\t\t\tKbytes, Mbytes or Gbytes respectively ");
-	ERROR("(default\n\t\t\t\t0 bytes).\n");
-	ERROR("\t-ig[nore-errors]\ttreat errors writing files to output ");
-	ERROR("as\n\t\t\t\tnon-fatal\n");
-	ERROR("\t-st[rict-errors]\ttreat all errors as fatal\n");
-	ERROR("\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on ");
-	ERROR("non-fatal\n\t\t\t\terrors\n");
-	ERROR("\t-da[ta-queue] <size>\tset data queue to <size> Mbytes.  ");
-	ERROR("Default %d\n\t\t\t\tMbytes\n", DATA_BUFFER_DEFAULT);
-	ERROR("\t-fr[ag-queue] <size>\tset fragment queue to <size> Mbytes.  ");
-	ERROR("Default\n\t\t\t\t%d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
-	ERROR("\t-no-wild[cards]\t\tdo not use wildcard matching in extract ");
-	ERROR("names\n");
-	ERROR("\t-r[egex]\t\ttreat extract names as POSIX regular ");
-	ERROR("expressions\n");
-	ERROR("\t\t\t\trather than use the default shell ");
-	ERROR("wildcard\n\t\t\t\texpansion (globbing)\n");
-	ERROR("\nDecompressors available:\n");
-	display_compressors(stderr, "", "");
+	fprintf(stream, "SYNTAX: %s [options] filesystem [files to cat]\n", name);
+	fprintf(stream, "\t-v[ersion]\t\tprint version, licence and copyright ");
+	fprintf(stream, "information\n");
+	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
+	fprintf(stream, "By default will use\n");
+	fprintf(stream, "\t\t\t\tnumber of processors available\n");
+	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of <dest>.  ");
+	fprintf(stream, "Optionally a\n\t\t\t\tsuffix of K, M or G can be given to ");
+	fprintf(stream, "specify\n\t\t\t\tKbytes, Mbytes or Gbytes respectively ");
+	fprintf(stream, "(default\n\t\t\t\t0 bytes).\n");
+	fprintf(stream, "\t-ig[nore-errors]\ttreat errors writing files to output ");
+	fprintf(stream, "as\n\t\t\t\tnon-fatal\n");
+	fprintf(stream, "\t-st[rict-errors]\ttreat all errors as fatal\n");
+	fprintf(stream, "\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on ");
+	fprintf(stream, "non-fatal\n\t\t\t\terrors\n");
+	fprintf(stream, "\t-da[ta-queue] <size>\tset data queue to <size> Mbytes.  ");
+	fprintf(stream, "Default %d\n\t\t\t\tMbytes\n", DATA_BUFFER_DEFAULT);
+	fprintf(stream, "\t-fr[ag-queue] <size>\tset fragment queue to <size> Mbytes.  ");
+	fprintf(stream, "Default\n\t\t\t\t%d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
+	fprintf(stream, "\t-no-wild[cards]\t\tdo not use wildcard matching in extract ");
+	fprintf(stream, "names\n");
+	fprintf(stream, "\t-r[egex]\t\ttreat extract names as POSIX regular ");
+	fprintf(stream, "expressions\n");
+	fprintf(stream, "\t\t\t\trather than use the default shell ");
+	fprintf(stream, "wildcard\n\t\t\t\texpansion (globbing)\n");
+	fprintf(stream, "\nDecompressors available:\n");
+	display_compressors(stream, "", "");
 }
 
 
@@ -3966,7 +3966,7 @@ int parse_cat_options(int argc, char *argv[])
 				exit(1);
 			}
 		} else {
-			print_cat_options(argv[0]);
+			print_cat_options(stderr, argv[0]);
 			exit(1);
 		}
 	}
@@ -3983,7 +3983,7 @@ int parse_cat_options(int argc, char *argv[])
 								"set\n");
 	if(i == argc) {
 		if(!version)
-			print_cat_options(argv[0]);
+			print_cat_options(stderr, argv[0]);
 		exit(1);
 	}
 
