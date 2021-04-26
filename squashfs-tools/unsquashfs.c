@@ -3767,6 +3767,7 @@ static void print_cat_options(FILE *stream, char *name)
 	fprintf(stream, "expressions\n");
 	fprintf(stream, "\t\t\t\trather than use the default shell ");
 	fprintf(stream, "wildcard\n\t\t\t\texpansion (globbing)\n");
+	fprintf(stream, "\t-h[elp]\t\t\toutput this options text to stdout\n");
 	fprintf(stream, "\nDecompressors available:\n");
 	display_compressors(stream, "", "");
 }
@@ -3896,7 +3897,10 @@ int parse_cat_options(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-no-exit-code") == 0 ||
+		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
+			print_cat_options(stdout, argv[0]);
+			exit(0);
+		} else if(strcmp(argv[i], "-no-exit-code") == 0 ||
 				strcmp(argv[i], "-no-exit") == 0)
 			set_exit_code = FALSE;
 		else if(strcmp(argv[i], "-no-wildcards") == 0 ||
