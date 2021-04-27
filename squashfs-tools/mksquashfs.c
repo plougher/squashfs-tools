@@ -1890,7 +1890,7 @@ static struct file_info *add_non_dup(long long file_size, long long bytes,
 }
 
 
-static struct file_info *frag_duplicate(struct file_buffer *file_buffer, char *dont_put)
+static struct file_info *frag_duplicate(struct file_buffer *file_buffer)
 {
 	struct file_info *dupl_ptr;
 	struct file_buffer *buffer;
@@ -1903,14 +1903,10 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, char *d
 		TRACE("Found duplicate file, fragment %d, size %d, offset %d, "
 			"checksum 0x%x\n", dupl_start->fragment->index,
 			file_size, dupl_start->fragment->offset, checksum);
-		*dont_put = TRUE;
 		return dupl_start;
-	} else {
-		*dont_put = FALSE;
-		dupl_ptr = dupl[DUP_HASH(file_size)];
 	}
 
-	for(; dupl_ptr && dupl_ptr != dupl_start; dupl_ptr = dupl_ptr->next) {
+	for(dupl_ptr = dupl[DUP_HASH(file_size)]; dupl_ptr && dupl_ptr != dupl_start; dupl_ptr = dupl_ptr->next) {
 		if(file_size == dupl_ptr->file_size && file_size ==
 				dupl_ptr->fragment->size) {
 			if(get_fragment_checksum(dupl_ptr) == checksum) {
@@ -2278,10 +2274,9 @@ static struct file_info *write_file_frag(struct dir_ent *dir_ent,
 	int size = file_buffer->file_size;
 	struct fragment *fragment;
 	unsigned short checksum = file_buffer->checksum;
-	char dont_put;
 	struct file_info *file;
 
-	file = frag_duplicate(file_buffer, &dont_put);
+	file = frag_duplicate(file_buffer);
 	if(file)
 		*duplicate_file = TRUE;
 	else {
@@ -2295,10 +2290,7 @@ static struct file_info *write_file_frag(struct dir_ent *dir_ent,
 				TRUE, TRUE);
 	}
 
-	if(dont_put)
-		free(file_buffer);
-	else
-		cache_block_put(file_buffer);
+	cache_block_put(file_buffer);
 
 	total_bytes += size;
 	file_count ++;

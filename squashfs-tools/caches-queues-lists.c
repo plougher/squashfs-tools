@@ -479,6 +479,11 @@ void cache_block_put(struct file_buffer *entry)
 	if(entry == NULL)
 		return;
 
+	if(entry->cache == NULL) {
+		free(entry);
+		return;
+	}
+
 	cache = entry->cache;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);

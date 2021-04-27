@@ -359,6 +359,7 @@ void *frag_thrd(void *destination_file)
 				cache_block_put(file_buffer);
 				dup->dupl_start = dupl_ptr;
 				dup->duplicate = TRUE;
+				dup->cache = NULL;
 				file_buffer = dup;
 				break;
 			}
