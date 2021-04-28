@@ -45,6 +45,7 @@
 #include "mksquashfs_error.h"
 #include "pseudo.h"
 #include "sort.h"
+#include "tar.h"
 
 static void sigalrm_handler()
 {
@@ -459,9 +460,11 @@ void *reader(void *arg)
 		setitimer(ITIMER_REAL, &itimerval, NULL);
 	}
 
-	if(!sorted)
+	if(tarfile)
+		read_tar_file();
+	else if(!sorted)
 		reader_scan(dir);
-	else {
+	else{
 		int i;
 		struct priority_entry *entry;
 

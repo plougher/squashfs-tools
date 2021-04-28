@@ -92,8 +92,6 @@ static struct expr *parse_expr(int subexp);
 
 extern char *pathname(struct dir_ent *);
 
-extern char *subpathname(struct dir_ent *);
-
 /*
  * Read a file, passing each line to parse_line() for
  * parsing.
