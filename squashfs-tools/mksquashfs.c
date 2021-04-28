@@ -2771,6 +2771,38 @@ static char *basename_r()
 }
 
 
+static inline void dec_nlink_inode(struct dir_ent *dir_ent)
+{
+	if(dir_ent->inode == NULL || dir_ent->inode->root_entry)
+		return;
+
+	if(dir_ent->inode->nlink == 1) {
+		/* Delete this inode, as the last or only reference
+		 * to it is going away */
+		struct stat *buf = &dir_ent->inode->buf;
+		int ino_hash = INODE_HASH(buf->st_dev, buf->st_ino);
+		struct inode_info *inode = inode_info[ino_hash];
+		struct inode_info *prev = NULL;
+
+		while(inode && inode != dir_ent->inode) {
+			prev = inode;
+			inode = inode->next;
+		}
+
+		if(inode) {
+			if(prev)
+				prev->next = inode->next;
+			else
+				inode_info[ino_hash] = inode->next;
+		}
+
+		free(dir_ent->inode);
+		dir_ent->inode = NULL;
+	} else
+		dir_ent->inode->nlink --;
+}
+
+
 static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pseudo,
 	char *symlink, int bytes)
 {
@@ -2938,10 +2970,8 @@ static inline void free_dir_entry(struct dir_ent *dir_ent)
 		free(dir_ent->nonstandard_pathname);
 
 	/* if this entry has been associated with an inode, then we need
-	 * to update the inode nlink count.  Orphaned inodes are harmless, and
-	 * is easier to leave them than go to the bother of deleting them */
-	if(dir_ent->inode && !dir_ent->inode->root_entry)
-		dir_ent->inode->nlink --;
+	 * to update the inode nlink count */
+	dec_nlink_inode(dir_ent);
 
 	free(dir_ent);
 }
