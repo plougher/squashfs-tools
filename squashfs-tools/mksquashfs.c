@@ -2796,6 +2796,11 @@ static inline void dec_nlink_inode(struct dir_ent *dir_ent)
 				inode_info[ino_hash] = inode->next;
 		}
 
+		/* Decrement the progress bar */
+		if((buf->st_mode & S_IFMT) == S_IFREG)
+			progress_bar_size(-((buf->st_size + block_size - 1)
+								 >> block_log));
+
 		free(dir_ent->inode);
 		dir_ent->inode = NULL;
 	} else
@@ -2823,6 +2828,10 @@ static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pse
 			}
 		}
 	}
+
+	if((buf->st_mode & S_IFMT) == S_IFREG)
+		progress_bar_size((buf->st_size + block_size - 1)
+							 >> block_log);
 
 	inode = malloc(sizeof(struct inode_info) + bytes);
 	if(inode == NULL)
@@ -2873,9 +2882,6 @@ static inline void alloc_inode_no(struct inode_info *inode, unsigned int use_thi
 {
 	if (inode->inode_number == 0) {
 		inode->inode_number = use_this ? : inode_no ++;
-		if((inode->buf.st_mode & S_IFMT) == S_IFREG)
-			progress_bar_size((inode->buf.st_size + block_size - 1)
-								 >> block_log);
 	}
 }
 
