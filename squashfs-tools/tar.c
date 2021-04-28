@@ -71,6 +71,18 @@ char *print_octal(int number)
 }
 
 
+int all_zero(struct tar_header *header)
+{
+	int i;
+
+	for(i = 0; i < 512; i++)
+		if(header->udata[i])
+			return FALSE;
+
+	return TRUE;
+}
+
+
 int checksum_matches(struct tar_header *header)
 {
 	int checksum = read_octal(header->checksum, 8);
@@ -398,14 +410,18 @@ static struct tar_file *read_tar_header() {
 	int res, size, type;
 	char *filename, *user, *group;
 
+	res = read_bytes(STDIN_FILENO, &header, 512);
+	if(res == FALSE) {
+		ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+		return FALSE;
+	}
+
+	if(all_zero(&header))
+		return FALSE;
+
 	file = malloc(sizeof(struct tar_file));
 	if(file == NULL)
 		MEM_ERROR();
-
-	res = read_bytes(STDIN_FILENO, &header, 512);
-
-	if(res == FALSE)
-		goto failed1;
 
 	if(checksum_matches(&header) == FALSE) {
 		ERROR("Tar header checksum does not match!\n");
