@@ -57,6 +57,7 @@ struct tar_file {
 	int			duplicate;
 };
 
+#define IS_TARFILE(a)	(a->tarfile)
 #define TAR_NORMAL1	'0'
 #define TAR_NORMAL2	'\0'
 #define TAR_HARD	'1'

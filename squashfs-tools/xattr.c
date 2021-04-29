@@ -43,6 +43,7 @@
 #include "mksquashfs_error.h"
 #include "progressbar.h"
 #include "pseudo.h"
+#include "tar.h"
 
 /* compressed xattr table */
 static char *xattr_table = NULL;
@@ -618,7 +619,7 @@ int read_xattrs(void *d)
 	struct xattr_list *xattr_list;
 	int xattrs;
 
-	if(no_xattrs || IS_PSEUDO(inode) || inode->root_entry || inode->dummy_root_dir)
+	if(no_xattrs || IS_PSEUDO(inode) || IS_TARFILE(inode) || inode->root_entry || inode->dummy_root_dir)
 		return SQUASHFS_INVALID_XATTR;
 
 	xattrs = read_xattrs_from_system(filename, &xattr_list);

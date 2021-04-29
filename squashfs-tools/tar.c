@@ -184,6 +184,7 @@ static void fixup_tree(struct dir_info *dir)
 			buf.st_dev = 0;
 			buf.st_ino = 0;
 			entry->inode = lookup_inode(&buf);
+			entry->inode->tarfile = TRUE;
 		}
 		
 		if(entry->dir == NULL && S_ISDIR(entry->inode->buf.st_mode)) {
