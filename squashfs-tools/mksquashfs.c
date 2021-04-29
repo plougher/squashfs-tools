@@ -3057,8 +3057,6 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 
 	queue_put(to_reader, root_dir);
 
-	set_progressbar_state(progress);
-
 	if(sorted)
 		sort_files_and_write(root_dir);
 
@@ -6545,6 +6543,8 @@ print_compressor_options:
 
 	dump_actions(); 
 	dump_pseudos();
+
+	set_progressbar_state(progress);
 
 	if(!source)
 		inode = no_sources(progress);
