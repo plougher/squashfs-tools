@@ -298,7 +298,7 @@ DATE := $(RELEASE_DATE)
 else
 ifeq ($(HASH),$Format:%h$)
 VERSION := 4.4-$(shell git show -s --pretty=format:%h)
-DATE := $(firstword $(shell git show -s --pretty=format:%ci))
+DATE := $(firstword $(subst -,/,$(shell git show -s --pretty=format:%ci)))
 else
 VERSION := 4.4-$(HASH)
 DATE := $(firstword $(FULLDATE))
