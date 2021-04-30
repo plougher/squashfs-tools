@@ -515,6 +515,9 @@ static struct tar_file *read_tar_header() {
 		case TAR_SYM:
 			type = S_IFLNK;
 			break;
+		case TAR_HARD:
+			type = S_IFHRD;
+			break;
 		case TAR_CHAR:
 			type = S_IFCHR;
 			break;
@@ -615,6 +618,10 @@ static struct tar_file *read_tar_header() {
 
 		file->symlink = strndup(header.link, 100);
 	}
+
+	/* Handle hard links */
+	if(type == S_IFHRD)
+		file->hardlink = strndup(header.link, 100);
 
 	return file;
 

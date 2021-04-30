@@ -53,7 +53,10 @@ struct tar_file {
 	struct stat		buf;
 	struct file_info	*file;
 	char			*pathname;
-	char			*symlink;
+	union {
+		char		*symlink;
+		char		*hardlink;
+	};
 	int			duplicate;
 };
 
