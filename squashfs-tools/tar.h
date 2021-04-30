@@ -73,8 +73,6 @@ struct tar_file {
 #define TAR_GXHDR	'g'
 #define TAR_XHDR	'x'
 
-#define TAR_NORMAL(TYPE) (TYPE == TAR_NORMAL1 || TYPE == TAR_NORMAL2 || TYPE == TAR_NORMAL3)
-
 #define V7_MAGIC	"\0\0\0\0\0\0\0"
 #define GNU_MAGIC	"ustar  "
 #define USTAR_MAGIC	"ustar\00000"
