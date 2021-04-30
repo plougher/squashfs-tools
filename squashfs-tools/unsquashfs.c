@@ -3833,6 +3833,8 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "extract.\n\t\t\t\tOne per line\n");
 	fprintf(stream, "\t-exclude-file <file>\tlist of directories or files to ");
 	fprintf(stream, "exclude.\n\t\t\t\tOne per line\n");
+	fprintf(stream, "\t-pseudo-file <file>\toutput a pseudo file equivalent ");
+	fprintf(stream, "of the input\n\t\t\t\tSquashfs filesystem\n");
 	fprintf(stream, "\t-e[f] <extract file>\tsynonym for -extract-file\n");
 	fprintf(stream, "\t-exc[f] <exclude file>\tsynonym for -exclude-file\n");
 	fprintf(stream, "\t-da[ta-queue] <size>\tset data queue to <size> Mbytes.  ");
