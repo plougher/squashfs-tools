@@ -76,6 +76,10 @@ struct tar_file {
 #define GNU_MAGIC	"ustar  "
 #define USTAR_MAGIC	"ustar\00000"
 
+#define S_IFHRD S_IFMT
+
+#define S_ISHRD(a)	((a & S_IFMT) == S_IFHRD)
+
 extern void read_tar_file();
 extern squashfs_inode process_tar_file(int progress);
 #endif
