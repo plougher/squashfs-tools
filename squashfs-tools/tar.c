@@ -210,7 +210,7 @@ static void fixup_tree(struct dir_info *dir)
  */
 static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 		char *subpath, struct tar_file *tarfile, struct pathnames *paths,
-		int depth, struct dir_ent **dir_ent)
+		int depth, struct dir_ent **dir_ent, struct inode_info *link)
 {
 	struct dir_info *sub;
 	struct dir_ent *entry;
@@ -238,7 +238,7 @@ static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 				subpath = subpathname(entry);
 				if(S_ISDIR(entry->inode->buf.st_mode)) {
 					/* recurse adding child components */
-					entry->dir = add_tarfile(NULL, source, subpath, tarfile, new, depth + 1, dir_ent);
+					entry->dir = add_tarfile(NULL, source, subpath, tarfile, new, depth + 1, dir_ent, link);
 					if(entry->dir == NULL)
 						goto failed_early;
 					entry->dir->dir_ent = entry;
@@ -271,7 +271,7 @@ static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 			} else {
 				/* recurse adding child components */
 				subpath = subpathname(entry);
-				sub = add_tarfile(entry->dir, source, subpath, tarfile, new, depth + 1, dir_ent);
+				sub = add_tarfile(entry->dir, source, subpath, tarfile, new, depth + 1, dir_ent, link);
 				if(sub == NULL)
 					goto failed_early;
 			}
@@ -301,14 +301,18 @@ static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 #endif
 
 		if(source[0] == '\0') {
-			add_dir_entry(entry, NULL, new_inode(tarfile));
-			if(S_ISDIR(tarfile->buf.st_mode))
+			if(S_ISDIR(tarfile->buf.st_mode)) {
+				add_dir_entry(entry, NULL, new_inode(tarfile));
 				dir->directory_count ++;
-			else if(S_ISREG(tarfile->buf.st_mode))
-				*dir_ent = entry;
+			} else {
+				struct inode_info *new = link ? link : new_inode(tarfile);
+				add_dir_entry(entry, NULL, new);
+				if(S_ISREG(tarfile->buf.st_mode))
+					*dir_ent = entry;
+			}
 		} else {
 			subpath = subpathname(entry);
-			sub = add_tarfile(NULL, source, subpath, tarfile, new, depth + 1, dir_ent);
+			sub = add_tarfile(NULL, source, subpath, tarfile, new, depth + 1, dir_ent, link);
 			if(sub == NULL)
 				goto failed_entry;
 			add_dir_entry(entry, sub, NULL);
@@ -332,6 +336,34 @@ failed_entry:
 	if(sdir == NULL)
 		free_dir(dir);
 	return NULL;
+}
+
+
+struct dir_ent *lookup_pathname(struct dir_info *dir, char *pathname)
+{
+	char *name;
+	struct dir_ent *entry;
+
+	pathname = get_component(pathname, &name);
+
+	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0) {
+		ERROR("Error: Tar hardlink pathname can't have '.' or '..' in it\n");
+		return NULL;
+	}
+
+	entry = lookup_name(dir, name);
+	free(name);
+
+	if(entry == NULL)
+		return NULL;
+
+	if(pathname[0] == '\0')
+		return entry;
+
+	if(entry->dir == NULL)
+		return NULL;
+
+	return lookup_pathname(entry->dir, pathname);
 }
 
 
@@ -675,14 +707,34 @@ squashfs_inode process_tar_file(int progress)
 	set_progressbar_state(progress);
 
 	while(1) {
+		struct inode_info *link = NULL;
 		struct file_buffer *file_buffer = seq_queue_get(to_main);
 		if(file_buffer->tar_file == NULL)
 			break;
 
 		tar_file = file_buffer->tar_file;
 
+		if(S_ISHRD(tar_file->buf.st_mode)) {
+			/* Hard link, need to resolve where it points to, and
+			 * replace with a reference to that inode */
+			struct dir_ent *entry = lookup_pathname(root_dir, tar_file->hardlink);
+			if(entry== NULL) {
+				ERROR("Could not resolve hardlink %s, file %s doesn't exist\n", tar_file->pathname, tar_file->hardlink);
+				free(file_buffer);
+				continue;
+			}
+
+			if(entry->inode == NULL || S_ISDIR(entry->inode->buf.st_mode)) {
+				ERROR("Could not resolve hardlink %s, because %s is a directory\n", tar_file->pathname, tar_file->hardlink);
+				free(file_buffer);
+				continue;
+			}
+
+			link = entry->inode;
+		}
+
 		new = add_tarfile(root_dir, tar_file->pathname, "",
-			tar_file, paths, 1, &dir_ent);
+			tar_file, paths, 1, &dir_ent, link);
 
 		if(new) {
 			root_dir = new;
@@ -691,6 +743,9 @@ squashfs_inode process_tar_file(int progress)
 				tar_file->file = write_file(dir_ent, &tar_file->duplicate);
 				dir_ent->inode->read = TRUE;
 			}
+
+			if(link)
+				link->nlink ++;
 		}
 
 		free(file_buffer);
