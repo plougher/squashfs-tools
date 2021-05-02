@@ -936,7 +936,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 	unsigned int *root_inode_size, unsigned int *inode_dir_start_block,
 	int *file_count, int *sym_count, int *dev_count, int *dir_count,
 	int *fifo_count, int *sock_count, long long *uncompressed_file,
-	unsigned int *uncompressed_inode, unsigned int *uncompressed_directory,
+	long long *uncompressed_inode, unsigned int *uncompressed_directory,
 	unsigned int *inode_dir_inode_number,
 	unsigned int *inode_dir_parent_inode,
 	void (push_directory_entry)(char *, squashfs_inode, int, int),
