@@ -111,7 +111,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 unsigned char *scan_inode_table(int fd, long long start, long long end,
 	long long root_inode_start, int root_inode_offset,
 	struct squashfs_super_block *sBlk, union squashfs_inode_header
-	*dir_inode, unsigned int *root_inode_block, unsigned int
+	*dir_inode, long long *root_inode_block, unsigned int
 	*root_inode_size, long long *uncompressed_file, unsigned int
 	*uncompressed_directory, int *file_count, int *sym_count, int
 	*dev_count, int *dir_count, int *fifo_count, int *sock_count,
@@ -141,7 +141,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 	alloc_size = ((end - start) + SQUASHFS_METADATA_SIZE) & ~(SQUASHFS_METADATA_SIZE - 1);
 
 	/* Rogue value used to check if it was found */
-	*root_inode_block = UINT_MAX;
+	*root_inode_block = -1LL;
 	while(start < end) {
 		if(start == root_inode_start) {
 			TRACE("scan_inode_table: read compressed block 0x%llx "
@@ -176,7 +176,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 	 * root inode in the above inode_table metadata block scan.  If it
 	 * hasn't been found then the filesystem is corrupted
 	 */
-	if(*root_inode_block == UINT_MAX)
+	if(*root_inode_block == -1LL)
 		goto corrupted;
 
 	/*
@@ -950,7 +950,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 		SQUASHFS_INODE_BLK(sBlk->root_inode);
 	unsigned int root_inode_offset =
 		SQUASHFS_INODE_OFFSET(sBlk->root_inode);
-	unsigned int root_inode_block;
+	long long root_inode_block;
 	union squashfs_inode_header inode;
 	unsigned int *id_table = NULL;
 	int res;
