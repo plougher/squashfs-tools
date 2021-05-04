@@ -515,12 +515,14 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 }
 
 
-int write_bytes(int fd, void *buff, int bytes)
+int write_bytes(int fd, void *buff, long long bytes)
 {
-	int res, count;
+	long long res, count;
 
 	for(count = 0; count < bytes; count += res) {
-		res = write(fd, buff + count, bytes - count);
+		int len = (bytes - count) > SSIZE_MAX ? SSIZE_MAX : bytes - count;
+
+		res = write(fd, buff + count, len);
 		if(res == -1) {
 			if(errno != EINTR) {
 				ERROR("Write failed because %s\n",
