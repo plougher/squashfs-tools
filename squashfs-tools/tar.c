@@ -521,6 +521,14 @@ static struct tar_file *read_tar_header(int *status) {
 		goto failed2;
 	}
 
+	/* Read filesize */
+	res = read_octal(header.size, 12);
+	if(res == -1) {
+		ERROR("Failed to read tar header\n");
+		goto failed2;
+	}
+	file->buf.st_size = res;
+
 	/* Read mtime */
 	res = read_octal(header.mtime, 12);
 	if(res == -1) {
@@ -562,8 +570,8 @@ static struct tar_file *read_tar_header(int *status) {
 			type = S_IFIFO;
 			break;
 		default:
-			ERROR("Unhandled tar type in header %d\n", header.type);
-			goto failed2;
+			ERROR("Unhandled tar type in header 0x%x - ignoring\n", header.type);
+			goto ignored;
 	}
 
 	/* V7 and others used to append a trailing '/' to indicate a
@@ -574,16 +582,6 @@ static struct tar_file *read_tar_header(int *status) {
 	}
 	
 	file->buf.st_mode |= type;
-
-	/* Read filesize if regular file */
-	if(type == S_IFREG) {
-		res = read_octal(header.size, 12);
-		if(res == -1) {
-			ERROR("Failed to read tar header\n");
-			goto failed2;
-		}
-		file->buf.st_size = res;
-	}
 
 	/* Get user information - if header.user filled, and it is
 	 * recognised by the system use that, otherwise fallback to
@@ -667,6 +665,26 @@ failed1:
 failed:
 	*status = TAR_ERROR;
 	return NULL;
+
+ignored:
+	if(file->buf.st_size) {
+		/* Skip any data blocks */
+		long long size = file->buf.st_size;
+
+		while(size > 0) {
+			res = read_bytes(STDIN_FILENO, &header, 512);
+			if(res == FALSE) {
+				ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+				goto failed;
+			}
+			size -= 512;
+		}
+	}
+
+	free(file->pathname);
+	free(file);
+	*status = TAR_IGNORED;
+	return NULL;
 }
 
 
@@ -682,7 +700,11 @@ void read_tar_file()
 		if(file_buffer == NULL)
 			MEM_ERROR();
 
-		tar_file = read_tar_header(&status);
+		while(1) {
+			tar_file = read_tar_header(&status);
+			if(status != TAR_IGNORED)
+				break;
+		}
 
 		if(status == TAR_ERROR)
 			BAD_ERROR("Error occurred reading tar file.  Aborting\n");

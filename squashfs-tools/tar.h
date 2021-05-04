@@ -84,6 +84,7 @@ struct tar_file {
 #define TAR_OK		0
 #define TAR_EOF		1
 #define TAR_ERROR	2
+#define TAR_IGNORED	3
 
 extern void read_tar_file();
 extern squashfs_inode process_tar_file(int progress);
