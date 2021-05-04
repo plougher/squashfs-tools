@@ -28,7 +28,7 @@ extern struct compressor *read_super(int, struct squashfs_super_block *,
 extern long long read_filesystem(char *, int, struct squashfs_super_block *,
 char **, char **, char **, char **, unsigned int *, unsigned int *,
 unsigned int *, unsigned int *, unsigned int *, int *, int *, int *, int *,
-int *, int *, long long *, long long *, unsigned int *, unsigned int *,
+int *, int *, long long *, long long *, long long *, unsigned int *,
 unsigned int *, void (push_directory_entry)(char *, squashfs_inode, int, int),
 struct squashfs_fragment_entry **, squashfs_inode **);
 #endif

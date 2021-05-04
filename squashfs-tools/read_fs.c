@@ -112,7 +112,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 	long long root_inode_start, int root_inode_offset,
 	struct squashfs_super_block *sBlk, union squashfs_inode_header
 	*dir_inode, long long *root_inode_block, unsigned int
-	*root_inode_size, long long *uncompressed_file, unsigned int
+	*root_inode_size, long long *uncompressed_file, long long
 	*uncompressed_directory, int *file_count, int *sym_count, int
 	*dev_count, int *dir_count, int *fifo_count, int *sock_count,
 	unsigned int *id_table)
@@ -936,7 +936,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 	unsigned int *root_inode_size, unsigned int *inode_dir_start_block,
 	int *file_count, int *sym_count, int *dev_count, int *dir_count,
 	int *fifo_count, int *sock_count, long long *uncompressed_file,
-	long long *uncompressed_inode, unsigned int *uncompressed_directory,
+	long long *uncompressed_inode, long long *uncompressed_directory,
 	unsigned int *inode_dir_inode_number,
 	unsigned int *inode_dir_parent_inode,
 	void (push_directory_entry)(char *, squashfs_inode, int, int),

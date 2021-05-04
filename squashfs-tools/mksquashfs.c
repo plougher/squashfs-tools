@@ -112,7 +112,7 @@ long long bytes = 0, total_bytes = 0;
 
 /* in memory directory table - possibly compressed */
 char *directory_table = NULL;
-unsigned int directory_bytes = 0, directory_size = 0, total_directory_bytes = 0;
+long long directory_bytes = 0, directory_size = 0, total_directory_bytes = 0;
 
 /* cached directory table */
 char *directory_data_cache = NULL;
@@ -178,11 +178,12 @@ char *sdata_cache, *sdirectory_data_cache, *sdirectory_compressed;
 long long sbytes, stotal_bytes;
 
 long long sinode_bytes, stotal_inode_bytes;
+long long sdirectory_bytes, stotal_directory_bytes;
 
-unsigned int scache_bytes, sdirectory_bytes, sdirectory_cache_bytes,
-	sdirectory_compressed_bytes, stotal_directory_bytes,
-	sinode_count = 0, sfile_count, ssym_count, sdev_count,
-	sdir_count, sfifo_count, ssock_count, sdup_files;
+unsigned int scache_bytes, sdirectory_cache_bytes,
+	sdirectory_compressed_bytes, sinode_count = 0,
+	sfile_count, ssym_count, sdev_count, sdir_count,
+	sfifo_count, ssock_count, sdup_files;
 int sfragments;
 int threads;
 
@@ -5144,9 +5145,9 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad
 	printf("\t%.2f%% of uncompressed inode table size (%lld bytes)\n",
 		((float) inode_bytes / total_inode_bytes) * 100.0,
 		total_inode_bytes);
-	printf("Directory table size %d bytes (%.2f Kbytes)\n",
+	printf("Directory table size %lld bytes (%.2f Kbytes)\n",
 		directory_bytes, directory_bytes / 1024.0);
-	printf("\t%.2f%% of uncompressed directory table size (%d bytes)\n",
+	printf("\t%.2f%% of uncompressed directory table size (%lld bytes)\n",
 		((float) directory_bytes / total_directory_bytes) * 100.0,
 		total_directory_bytes);
 	if(total_xattr_bytes) {
