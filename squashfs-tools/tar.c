@@ -42,16 +42,16 @@
 #define TRUE 1
 #define FALSE 0
 
-int read_octal(char *s, int size)
+long long read_octal(char *s, int size)
 {
-	int res = 0;
+	long long res = 0;
 
-	for(; size-- && *s == ' '; s++);
+	for(; size && *s == ' '; s++, size--);
 
 	if(size == 0)
 		return -1;
 
-	for(; size-- && *s >= '0' && *s < '8'; s++)
+	for(; size && *s >= '0' && *s < '8'; s++, size--)
 		res = (res << 3) + *s - '0';
 
 	if(size && (*s != ' ' && *s != '\0'))
@@ -440,7 +440,8 @@ static void read_tar_data(struct tar_file *tar_file)
 static struct tar_file *read_tar_header(int *status) {
 	struct tar_header header;
 	struct tar_file *file;
-	int res, size, type;
+	long long res;
+	int size, type;
 	char *filename, *user, *group;
 
 	res = read_bytes(STDIN_FILENO, &header, 512);
