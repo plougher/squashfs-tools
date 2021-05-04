@@ -535,7 +535,7 @@ int write_bytes(int fd, void *buff, int bytes)
 }
 
 
-void write_destination(int fd, long long byte, int bytes, void *buff)
+void write_destination(int fd, long long byte, long long bytes, void *buff)
 {
 	off_t off = byte;
 
