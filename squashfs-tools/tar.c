@@ -437,7 +437,7 @@ static void read_tar_data(struct tar_file *tar_file)
 }
 
 
-static struct tar_file *read_tar_header() {
+static struct tar_file *read_tar_header(int *status) {
 	struct tar_header header;
 	struct tar_file *file;
 	int res, size, type;
@@ -446,11 +446,13 @@ static struct tar_file *read_tar_header() {
 	res = read_bytes(STDIN_FILENO, &header, 512);
 	if(res == FALSE) {
 		ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
-		return FALSE;
+		goto failed;
 	}
 
-	if(all_zero(&header))
-		return FALSE;
+	if(all_zero(&header)) {
+		*status = TAR_EOF;
+		return NULL;
+	}
 
 	file = malloc(sizeof(struct tar_file));
 	if(file == NULL)
@@ -655,12 +657,15 @@ static struct tar_file *read_tar_header() {
 	if(type == S_IFHRD)
 		file->hardlink = strndup(header.link, 100);
 
+	*status = TAR_OK;
 	return file;
 
 failed2:
 	free(file->pathname);
 failed1:
 	free(file);
+failed:
+	*status = TAR_ERROR;
 	return NULL;
 }
 
@@ -668,6 +673,7 @@ failed1:
 void read_tar_file()
 {
 	struct tar_file *tar_file;
+	int status;
        
 	while(1) {
 		struct file_buffer *file_buffer;
@@ -676,7 +682,10 @@ void read_tar_file()
 		if(file_buffer == NULL)
 			MEM_ERROR();
 
-		tar_file = read_tar_header();
+		tar_file = read_tar_header(&status);
+
+		if(status == TAR_ERROR)
+			BAD_ERROR("Error occurred reading tar file.  Aborting\n");
 
 		if(tar_file && (tar_file->buf.st_mode & S_IFMT) == S_IFREG)
 			progress_bar_size((tar_file->buf.st_size + block_size - 1)
@@ -687,7 +696,7 @@ void read_tar_file()
 		file_buffer->sequence = seq ++;
 		seq_queue_put(to_main, file_buffer);
 
-		if(tar_file == NULL)
+		if(status == TAR_EOF)
 			break;
 
 		if(S_ISREG(tar_file->buf.st_mode))

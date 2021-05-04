@@ -81,6 +81,10 @@ struct tar_file {
 
 #define S_ISHRD(a)	((a & S_IFMT) == S_IFHRD)
 
+#define TAR_OK		0
+#define TAR_EOF		1
+#define TAR_ERROR	2
+
 extern void read_tar_file();
 extern squashfs_inode process_tar_file(int progress);
 #endif
