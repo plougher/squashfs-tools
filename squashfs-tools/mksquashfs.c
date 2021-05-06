@@ -5010,10 +5010,10 @@ static void write_recovery_data(struct squashfs_super_block *sBlk)
 
 static void read_recovery_data(char *recovery_file, char *destination_file)
 {
-	int fd, recoverfd, bytes;
+	int fd, recoverfd;
 	struct squashfs_super_block orig_sBlk, sBlk;
 	char *metadata;
-	int res;
+	long long res, bytes;
 	struct stat buf;
 	char header[] = RECOVER_ID;
 	char header2[RECOVER_ID_SIZE];
