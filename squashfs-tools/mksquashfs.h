@@ -214,7 +214,7 @@ extern void add_file(long long, long long, long long, unsigned int *, int,
 extern struct id *create_id(unsigned int);
 extern unsigned int get_uid(unsigned int);
 extern unsigned int get_guid(unsigned int);
-extern int read_bytes(int, void *, int);
+extern long long read_bytes(int, void *, long long);
 extern unsigned short get_checksum_mem(char *, int);
 extern int reproducible;
 extern void *reader(void *arg);

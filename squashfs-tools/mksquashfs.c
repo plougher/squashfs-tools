@@ -468,12 +468,14 @@ static void *get_inode(int req_size)
 }
 
 
-int read_bytes(int fd, void *buff, int bytes)
+long long read_bytes(int fd, void *buff, long long bytes)
 {
-	int res, count;
+	long long res, count;
 
 	for(count = 0; count < bytes; count += res) {
-		res = read(fd, buff + count, bytes - count);
+		int len = (bytes - count) > SSIZE_MAX ? SSIZE_MAX : bytes - count;
+
+		res = read(fd, buff + count, len);
 		if(res < 1) {
 			if(res == 0)
 				goto bytes_read;
