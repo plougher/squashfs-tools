@@ -4953,7 +4953,8 @@ static void process_exclude_file(char *argv)
 
 static void write_recovery_data(struct squashfs_super_block *sBlk)
 {
-	int res, recoverfd, bytes = sBlk->bytes_used - sBlk->inode_table_start;
+	int recoverfd;
+	long long res, bytes = sBlk->bytes_used - sBlk->inode_table_start;
 	pid_t pid = getpid();
 	char *metadata;
 	char header[] = RECOVER_ID;
