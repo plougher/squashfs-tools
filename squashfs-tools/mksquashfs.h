@@ -208,7 +208,7 @@ extern int sorted;
 extern int noF;
 extern struct file_info *dupl[];
 extern int duplicate_checking;
-extern int read_fs_bytes(int, long long, int, void *);
+extern int read_fs_bytes(int, long long, long long, void *);
 extern void add_file(long long, long long, long long, unsigned int *, int,
 	unsigned int, int, int);
 extern struct id *create_id(unsigned int);

@@ -493,12 +493,12 @@ bytes_read:
 }
 
 
-int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
+int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 {
 	off_t off = byte;
 	int res = 1;
 
-	TRACE("read_fs_bytes: reading from position 0x%llx, bytes %d\n",
+	TRACE("read_fs_bytes: reading from position 0x%llx, bytes %lld\n",
 		byte, bytes);
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
