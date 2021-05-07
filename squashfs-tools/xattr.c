@@ -81,7 +81,7 @@ extern unsigned int xattr_bytes, total_xattr_bytes;
 /* helper functions from mksquashfs.c */
 extern unsigned short get_checksum(char *, int, unsigned short);
 extern void write_destination(int, long long, long long, void *);
-extern long long generic_write_table(int, void *, int, void *, int);
+extern long long generic_write_table(long long, void *, int, void *, int);
 extern int mangle(char *, char *, int, int, int, int);
 extern char *pathname(struct dir_ent *);
 

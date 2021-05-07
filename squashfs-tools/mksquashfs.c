@@ -288,7 +288,7 @@ static struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int blocks, long long sparse, unsigned int *block_list, long long start,
 	struct fragment *fragment, unsigned short checksum,
 	unsigned short fragment_checksum, int checksum_flag, int checksum_frag_flag);
-long long generic_write_table(int, void *, int, void *, int);
+long long generic_write_table(long long, void *, int, void *, int);
 void restorefs();
 static struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
 static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
@@ -1607,7 +1607,7 @@ static struct fragment *get_and_fill_fragment(struct file_buffer *file_buffer,
 }
 
 
-long long generic_write_table(int length, void *buffer, int length2,
+long long generic_write_table(long long length, void *buffer, int length2,
 	void *buffer2, int uncompressed)
 {
 	int meta_blocks = (length + SQUASHFS_METADATA_SIZE - 1) /
@@ -1619,7 +1619,7 @@ long long generic_write_table(int length, void *buffer, int length2,
 	
 #ifdef SQUASHFS_TRACE
 	long long obytes = bytes;
-	int olength = length;
+	long long olength = length;
 #endif
 
 	list = malloc(list_size);
@@ -1656,7 +1656,7 @@ long long generic_write_table(int length, void *buffer, int length2,
 	bytes += list_size;
 	total_bytes += list_size;
 
-	TRACE("generic_write_table: total uncompressed %d compressed %lld\n",
+	TRACE("generic_write_table: total uncompressed %lld compressed %lld\n",
 		olength, bytes - obytes);
 
 	free(list);
