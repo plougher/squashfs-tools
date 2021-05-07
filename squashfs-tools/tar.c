@@ -61,6 +61,27 @@ long long read_octal(char *s, int size)
 }
 
 
+long long read_binary(char *src, int size)
+{
+	unsigned char *s = (unsigned char *) src;
+	long long res = 0;
+
+	for(; size; s++, size --)
+		res = (res << 8) + *s;
+
+	return res;
+}
+
+
+long long read_number(char *s, int size)
+{
+	if(*s == -128)
+		return read_binary(s + 1, size - 1);
+	else
+		return read_octal(s, size);
+}
+
+
 char *print_octal(int number)
 {
 	static char buff[128];
@@ -85,7 +106,7 @@ int all_zero(struct tar_header *header)
 
 int checksum_matches(struct tar_header *header)
 {
-	int checksum = read_octal(header->checksum, 8);
+	int checksum = read_number(header->checksum, 8);
 	int computed = 0;
 	int i;
 
@@ -523,7 +544,7 @@ static struct tar_file *read_tar_header(int *status) {
 	}
 
 	/* Read filesize */
-	res = read_octal(header.size, 12);
+	res = read_number(header.size, 12);
 	if(res == -1) {
 		ERROR("Failed to read tar header\n");
 		goto failed2;
@@ -531,7 +552,7 @@ static struct tar_file *read_tar_header(int *status) {
 	file->buf.st_size = res;
 
 	/* Read mtime */
-	res = read_octal(header.mtime, 12);
+	res = read_number(header.mtime, 12);
 	if(res == -1) {
 		ERROR("Failed to read tar header\n");
 		goto failed2;
@@ -539,7 +560,7 @@ static struct tar_file *read_tar_header(int *status) {
 	file->buf.st_mtime = res;
 
 	/* Read mode and file type */
-	res = read_octal(header.mode, 8);
+	res = read_number(header.mode, 8);
 	if(res == -1) {
 		ERROR("Failed to read tar header\n");
 		goto failed2;
@@ -596,7 +617,7 @@ static struct tar_file *read_tar_header(int *status) {
 	}
 		
 	if(res == -1) {
-		res = read_octal(header.uid, 8);
+		res = read_number(header.uid, 8);
 		if(res == -1) {
 			ERROR("Failed to read tar header\n");
 			goto failed2;
@@ -617,7 +638,7 @@ static struct tar_file *read_tar_header(int *status) {
 	}
 		
 	if(res == -1) {
-		res = read_octal(header.gid, 8);
+		res = read_number(header.gid, 8);
 		if(res == -1) {
 			ERROR("Failed to read tar header\n");
 			goto failed2;
@@ -630,13 +651,13 @@ static struct tar_file *read_tar_header(int *status) {
 	if(type == S_IFCHR || type == S_IFBLK) {
 		int major, minor;
 
-		major = read_octal(header.major, 8);
+		major = read_number(header.major, 8);
 		if(major == -1) {
 			ERROR("Failed to read tar header\n");
 			goto failed2;
 		}
 
-		minor = read_octal(header.minor, 8);
+		minor = read_number(header.minor, 8);
 		if(minor == -1) {
 			ERROR("Failed to read tar header\n");
 			goto failed2;
