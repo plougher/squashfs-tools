@@ -56,7 +56,8 @@ static int read_fragment_table(long long *table_start)
 	 * Max indexes is (2^32*16)/8K or 2^23
 	 * Max length is ((2^32*16)/8K)*8 or 2^26 or 64M
 	 */
-	int res, i;
+	int res;
+	unsigned int i;
 	long long bytes = SQUASHFS_FRAGMENT_BYTES((long long) sBlk.s.fragments);
 	int indexes = SQUASHFS_FRAGMENT_INDEXES((long long) sBlk.s.fragments);
 	int length = SQUASHFS_FRAGMENT_INDEX_BYTES((long long) sBlk.s.fragments);
@@ -71,7 +72,7 @@ static int read_fragment_table(long long *table_start)
 		return FALSE;
 	}
 
-	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
+	TRACE("read_fragment_table: %u fragments, reading %d fragment indexes "
 		"from 0x%llx\n", sBlk.s.fragments, indexes,
 		sBlk.s.fragment_table_start);
 
@@ -786,7 +787,7 @@ static void squashfs_stat(char *source)
 
 	printf("Duplicates are %sremoved\n", SQUASHFS_DUPLICATES(sBlk.s.flags)
 			? "" : "not ");
-	printf("Number of fragments %d\n", sBlk.s.fragments);
+	printf("Number of fragments %u\n", sBlk.s.fragments);
 	printf("Number of inodes %d\n", sBlk.s.inodes);
 	printf("Number of ids %d\n", sBlk.s.no_ids);
 	printf("Number of xattr ids %lld\n", xattr_ids);

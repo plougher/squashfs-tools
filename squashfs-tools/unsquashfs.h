@@ -78,7 +78,7 @@ struct inode {
 	long long	block_start;
 	unsigned int	block_offset;
 	long long	data;
-	int		fragment;
+	unsigned int	fragment;
 	int		frag_bytes;
 	gid_t		gid;
 	int		inode_number;
