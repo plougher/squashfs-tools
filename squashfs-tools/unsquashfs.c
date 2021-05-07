@@ -2944,16 +2944,10 @@ void progress_bar(long long current, long long max, int columns)
 	if(!tty) {
 		static long long previous = -1;
 
-		/*
-		 * Updating much more frequently than this results in huge
-		 * log files.
-		 */
-		if((current % 100) != 0 && current != max)
+		/* Updating too frequently results in huge log files */
+		if(current * 100 / max == previous && current != max)
 			return;
-		/* Don't update just to rotate the spinner. */
-		if(current == previous)
-			return;
-		previous = current;
+		previous = current * 100 / max;
 	}
 
 	printf("\r[");
