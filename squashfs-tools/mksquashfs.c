@@ -150,7 +150,7 @@ struct pathname *path = NULL;
 struct pathname *stickypath = NULL;
 static int excluded(char *name, struct pathnames *paths, struct pathnames **new);
 
-int fragments = 0;
+unsigned int fragments = 0;
 
 struct squashfs_fragment_entry *fragment_table = NULL;
 int fragments_outstanding = 0;
@@ -184,7 +184,7 @@ unsigned int scache_bytes, sdirectory_cache_bytes,
 	sdirectory_compressed_bytes, sinode_count = 0,
 	sfile_count, ssym_count, sdev_count, sdir_count,
 	sfifo_count, ssock_count, sdup_files;
-int sfragments;
+unsigned int sfragments;
 int threads;
 
 /* flag whether destination file is a block device */
@@ -1667,13 +1667,13 @@ long long generic_write_table(long long length, void *buffer, int length2,
 
 static long long write_fragment_table()
 {
-	unsigned int frag_bytes = SQUASHFS_FRAGMENT_BYTES(fragments);
-	int i;
+	long long frag_bytes = SQUASHFS_FRAGMENT_BYTES(fragments);
+	unsigned int i;
 
-	TRACE("write_fragment_table: fragments %d, frag_bytes %d\n", fragments,
+	TRACE("write_fragment_table: fragments %u, frag_bytes %d\n", fragments,
 		frag_bytes);
 	for(i = 0; i < fragments; i++) {
-		TRACE("write_fragment_table: fragment %d, start_block 0x%llx, "
+		TRACE("write_fragment_table: fragment %u, start_block 0x%llx, "
 			"size %d\n", i, fragment_table[i].start_block,
 			fragment_table[i].size);
 		SQUASHFS_INSWAP_FRAGMENT_ENTRY(&fragment_table[i]);
@@ -1900,7 +1900,7 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer)
 	int res;
 
 	if(file_buffer->duplicate) {
-		TRACE("Found duplicate file, fragment %d, size %d, offset %d, "
+		TRACE("Found duplicate file, fragment %u, size %d, offset %d, "
 			"checksum 0x%x\n", dupl_start->fragment->index,
 			file_size, dupl_start->fragment->offset, checksum);
 		return dupl_start;
@@ -1923,7 +1923,7 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer)
 	if(!dupl_ptr || dupl_ptr == dupl_start)
 		return NULL;
 
-	TRACE("Found duplicate file, fragment %d, size %d, offset %d, "
+	TRACE("Found duplicate file, fragment %u, size %d, offset %d, "
 		"checksum 0x%x\n", dupl_ptr->fragment->index, file_size,
 		dupl_ptr->fragment->offset, checksum);
 
@@ -2031,7 +2031,7 @@ static struct file_info *duplicate(int *dup, long long file_size, long long byte
 						frag_bytes) == 0) {
 					TRACE("Found duplicate file, start "
 						"0x%llx, size %lld, checksum "
-						"0x%x, fragment %d, size %d, "
+						"0x%x, fragment %u, size %d, "
 						"offset %d, checksum 0x%x\n",
 						dupl_ptr->start,
 						dupl_ptr->bytes,
@@ -5170,7 +5170,7 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad
 	printf("Number of inodes %d\n", inode_count);
 	printf("Number of files %d\n", file_count);
 	if(!no_fragments)
-		printf("Number of fragments %d\n", fragments);
+		printf("Number of fragments %u\n", fragments);
 	printf("Number of symbolic links  %d\n", sym_count);
 	printf("Number of device nodes %d\n", dev_count);
 	printf("Number of fifo nodes %d\n", fifo_count);

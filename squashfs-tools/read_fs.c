@@ -669,7 +669,7 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 		sBlk->bytes_used / 1024.0, sBlk->bytes_used
 		/ (1024.0 * 1024.0));
 	printf("\tBlock size %d\n", sBlk->block_size);
-	printf("\tNumber of fragments %d\n", sBlk->fragments);
+	printf("\tNumber of fragments %u\n", sBlk->fragments);
 	printf("\tNumber of inodes %d\n", sBlk->inodes);
 	printf("\tNumber of ids %d\n", sBlk->no_ids);
 	TRACE("sBlk->inode_table_start %llx\n", sBlk->inode_table_start);
@@ -831,13 +831,14 @@ unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 
 struct squashfs_fragment_entry *read_fragment_table(int fd, struct squashfs_super_block *sBlk)
 {
-	int res, i;
-	int bytes = SQUASHFS_FRAGMENT_BYTES(sBlk->fragments);
+	int res;
+	unsigned int i;
+	long long bytes = SQUASHFS_FRAGMENT_BYTES(sBlk->fragments);
 	int indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk->fragments);
 	long long fragment_table_index[indexes];
 	struct squashfs_fragment_entry *fragment_table;
 
-	TRACE("read_fragment_table: %d fragments, reading %d fragment indexes "
+	TRACE("read_fragment_table: %u fragments, reading %d fragment indexes "
 		"from 0x%llx\n", sBlk->fragments, indexes,
 		sBlk->fragment_table_start);
 
