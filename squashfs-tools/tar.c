@@ -111,7 +111,7 @@ int checksum_matches(struct tar_header *header)
 	int i;
 
 	if(checksum == -1) {
-		ERROR("Bad checksum in tar header\n");
+		ERROR("Failed to read checksum in tar header\n");
 		return FALSE;
 	}
 
@@ -546,7 +546,7 @@ static struct tar_file *read_tar_header(int *status) {
 	/* Read filesize */
 	res = read_number(header.size, 12);
 	if(res == -1) {
-		ERROR("Failed to read tar header\n");
+		ERROR("Failed to read file size from tar header\n");
 		goto failed2;
 	}
 	file->buf.st_size = res;
@@ -554,7 +554,7 @@ static struct tar_file *read_tar_header(int *status) {
 	/* Read mtime */
 	res = read_number(header.mtime, 12);
 	if(res == -1) {
-		ERROR("Failed to read tar header\n");
+		ERROR("Failed to read file mtime from tar header\n");
 		goto failed2;
 	}
 	file->buf.st_mtime = res;
@@ -562,7 +562,7 @@ static struct tar_file *read_tar_header(int *status) {
 	/* Read mode and file type */
 	res = read_number(header.mode, 8);
 	if(res == -1) {
-		ERROR("Failed to read tar header\n");
+		ERROR("Failed to read file mode from tar header\n");
 		goto failed2;
 	}
 	file->buf.st_mode = res;
@@ -619,7 +619,7 @@ static struct tar_file *read_tar_header(int *status) {
 	if(res == -1) {
 		res = read_number(header.uid, 8);
 		if(res == -1) {
-			ERROR("Failed to read tar header\n");
+			ERROR("Failed to read file uid from tar header\n");
 			goto failed2;
 		}
 	}
@@ -640,7 +640,7 @@ static struct tar_file *read_tar_header(int *status) {
 	if(res == -1) {
 		res = read_number(header.gid, 8);
 		if(res == -1) {
-			ERROR("Failed to read tar header\n");
+			ERROR("Failed to read file gid from tar header\n");
 			goto failed2;
 		}
 	}
@@ -653,13 +653,13 @@ static struct tar_file *read_tar_header(int *status) {
 
 		major = read_number(header.major, 8);
 		if(major == -1) {
-			ERROR("Failed to read tar header\n");
+			ERROR("Failed to read device major tar header\n");
 			goto failed2;
 		}
 
 		minor = read_number(header.minor, 8);
 		if(minor == -1) {
-			ERROR("Failed to read tar header\n");
+			ERROR("Failed to read device minor from tar header\n");
 			goto failed2;
 		}
 		file->buf.st_rdev = (major << 8) | (minor & 0xff) | ((minor & ~0xff) << 12);
