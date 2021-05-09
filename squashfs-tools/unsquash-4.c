@@ -590,7 +590,7 @@ static int read_filesystem_tables()
 	 * the number of ids can never be more than double the number of inodes
 	 * (the maximum is a unique uid and gid for each inode).
 	 */
-	if(sBlk.s.no_ids > (sBlk.s.inodes * 2L)) {
+	if(sBlk.s.no_ids > (sBlk.s.inodes * 2LL)) {
 		ERROR("read_filesystem_tables: Bad id count in super block\n");
 		goto corrupted;
 	}
@@ -788,7 +788,7 @@ static void squashfs_stat(char *source)
 	printf("Duplicates are %sremoved\n", SQUASHFS_DUPLICATES(sBlk.s.flags)
 			? "" : "not ");
 	printf("Number of fragments %u\n", sBlk.s.fragments);
-	printf("Number of inodes %d\n", sBlk.s.inodes);
+	printf("Number of inodes %u\n", sBlk.s.inodes);
 	printf("Number of ids %d\n", sBlk.s.no_ids);
 	printf("Number of xattr ids %lld\n", xattr_ids);
 
