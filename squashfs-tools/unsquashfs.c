@@ -4378,7 +4378,7 @@ int main(int argc, char *argv[])
 			printf("Parallel unsquashfs: Using %d processor%s\n",
 				processors, processors == 1 ? "" : "s");
 
-			printf("%d inodes (%lld blocks) to write\n\n",
+			printf("%u inodes (%lld blocks) to write\n\n",
 				total_inodes,
 				total_inodes - total_files + total_blocks);
 		}
