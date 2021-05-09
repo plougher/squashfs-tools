@@ -72,7 +72,7 @@ pthread_mutex_t pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 int progress = TRUE, progress_enabled = FALSE;
 unsigned int total_files = 0, total_inodes = 0;
 long long total_blocks = 0;
-unsigned int cur_blocks = 0;
+long long cur_blocks = 0;
 int inode_number = 1;
 int no_xattrs = XATTR_DEF;
 int user_xattrs = FALSE;
