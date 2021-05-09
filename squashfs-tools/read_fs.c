@@ -691,7 +691,7 @@ failed_mount:
 unsigned char *squashfs_readdir(int fd, int root_entries,
 	unsigned int directory_start_block, int offset, int size,
 	unsigned int *last_directory_block, struct squashfs_super_block *sBlk,
-	void (push_directory_entry)(char *, squashfs_inode, int, int))
+	void (push_directory_entry)(char *, squashfs_inode, unsigned int, int))
 {
 	struct squashfs_dir_header dirh;
 	char buffer[sizeof(struct squashfs_dir_entry) + SQUASHFS_NAME_LEN + 1]
@@ -940,7 +940,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 	long long *uncompressed_file, long long *uncompressed_inode,
 	long long *uncompressed_directory, unsigned int *inode_dir_inode_number,
 	unsigned int *inode_dir_parent_inode,
-	void (push_directory_entry)(char *, squashfs_inode, int, int),
+	void (push_directory_entry)(char *, squashfs_inode, unsigned int, int),
 	struct squashfs_fragment_entry **fragment_table,
 	squashfs_inode **inode_lookup_table)
 {

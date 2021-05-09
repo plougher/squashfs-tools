@@ -30,6 +30,6 @@ char **, char **, char **, char **, unsigned int *, unsigned int *,
 unsigned int *, unsigned int *, unsigned int *, unsigned int *, unsigned int *,
 unsigned int *, unsigned int *, unsigned int *, unsigned int *, long long *,
 long long *, long long *, unsigned int *, unsigned int *,
-void (push_directory_entry)(char *, squashfs_inode, int, int),
+void (push_directory_entry)(char *, squashfs_inode, unsigned int, int),
 struct squashfs_fragment_entry **, squashfs_inode **);
 #endif

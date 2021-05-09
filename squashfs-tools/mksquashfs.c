@@ -266,8 +266,8 @@ int keep_as_directory = FALSE;
 int no_hardlinks = FALSE;
 
 static char *read_from_disk(long long start, unsigned int avail_bytes);
-static void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
-	int type);
+static void add_old_root_entry(char *name, squashfs_inode inode,
+	unsigned int inode_number, int type);
 static struct file_info *duplicate(int *dup, long long file_size, long long bytes,
 	unsigned int *block_list, long long start, struct dir_ent *dir_ent,
 	struct file_buffer *file_buffer, int blocks, long long sparse,
@@ -4469,8 +4469,8 @@ static int old_add_exclude(char *path)
 }
 
 
-static void add_old_root_entry(char *name, squashfs_inode inode, int inode_number,
-	int type)
+static void add_old_root_entry(char *name, squashfs_inode inode,
+	unsigned int inode_number, int type)
 {
 	old_root_entry = realloc(old_root_entry,
 		sizeof(struct old_root_entry_info) * (old_root_entries + 1));
@@ -4646,7 +4646,8 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 
 static long long write_inode_lookup_table()
 {
-	int i, inode_number, lookup_bytes = SQUASHFS_LOOKUP_BYTES(inode_count);
+	int i, lookup_bytes = SQUASHFS_LOOKUP_BYTES(inode_count);
+	unsigned int inode_number;
 	void *it;
 
 	if(inode_count == sinode_count)
@@ -5166,7 +5167,7 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad
 			dup_files);
 	else
 		printf("No duplicate files removed\n");
-	printf("Number of inodes %d\n", inode_count);
+	printf("Number of inodes %u\n", inode_count);
 	printf("Number of files %u\n", file_count);
 	if(!no_fragments)
 		printf("Number of fragments %u\n", fragments);
