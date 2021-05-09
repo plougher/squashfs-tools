@@ -70,7 +70,8 @@ int rotate = 0;
 pthread_mutex_t	screen_mutex;
 pthread_mutex_t pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 int progress = TRUE, progress_enabled = FALSE;
-unsigned int total_blocks = 0, total_files = 0, total_inodes = 0;
+unsigned int total_files = 0, total_inodes = 0;
+long long total_blocks = 0;
 unsigned int cur_blocks = 0;
 int inode_number = 1;
 int no_xattrs = XATTR_DEF;
@@ -4377,7 +4378,7 @@ int main(int argc, char *argv[])
 			printf("Parallel unsquashfs: Using %d processor%s\n",
 				processors, processors == 1 ? "" : "s");
 
-			printf("%d inodes (%d blocks) to write\n\n",
+			printf("%d inodes (%lld blocks) to write\n\n",
 				total_inodes,
 				total_inodes - total_files + total_blocks);
 		}
