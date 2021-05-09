@@ -113,9 +113,9 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 	struct squashfs_super_block *sBlk, union squashfs_inode_header
 	*dir_inode, long long *root_inode_block, unsigned int
 	*root_inode_size, long long *uncompressed_file, long long
-	*uncompressed_directory, int *file_count, int *sym_count, int
-	*dev_count, int *dir_count, int *fifo_count, int *sock_count,
-	unsigned int *id_table)
+	*uncompressed_directory, unsigned int *file_count, unsigned int *sym_count,
+	unsigned int *dev_count, unsigned int *dir_count, unsigned int *fifo_count,
+	unsigned int *sock_count, unsigned int *id_table)
 {
 	unsigned char *cur_ptr;
 	unsigned char *inode_table = NULL;
@@ -935,10 +935,10 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 	char **directory_data_cache, unsigned int *last_directory_block,
 	unsigned int *inode_dir_offset, unsigned int *inode_dir_file_size,
 	unsigned int *root_inode_size, unsigned int *inode_dir_start_block,
-	int *file_count, int *sym_count, int *dev_count, int *dir_count,
-	int *fifo_count, int *sock_count, long long *uncompressed_file,
-	long long *uncompressed_inode, long long *uncompressed_directory,
-	unsigned int *inode_dir_inode_number,
+	unsigned int *file_count, unsigned int *sym_count, unsigned int *dev_count,
+	unsigned int *dir_count, unsigned int *fifo_count, unsigned int *sock_count,
+	long long *uncompressed_file, long long *uncompressed_inode,
+	long long *uncompressed_directory, unsigned int *inode_dir_inode_number,
 	unsigned int *inode_dir_parent_inode,
 	void (push_directory_entry)(char *, squashfs_inode, int, int),
 	struct squashfs_fragment_entry **fragment_table,

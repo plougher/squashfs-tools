@@ -104,7 +104,7 @@ long long global_uid = -1, global_gid = -1;
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
 unsigned int id_count = 0;
-int file_count = 0, sym_count = 0, dev_count = 0, dir_count = 0, fifo_count = 0,
+unsigned int file_count = 0, sym_count = 0, dev_count = 0, dir_count = 0, fifo_count = 0,
 	sock_count = 0;
 
 /* write position within data section */
@@ -133,7 +133,7 @@ struct inode_info *inode_info[INODE_HASH_SIZE];
 
 /* hash tables used to do fast duplicate searches in duplicate check */
 struct file_info *dupl[65536];
-int dup_files = 0;
+unsigned int dup_files = 0;
 
 int exclude = 0;
 struct exclude_info *exclude_paths = NULL;
@@ -5163,19 +5163,19 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad
 			total_xattr_bytes);
 	}
 	if(duplicate_checking)
-		printf("Number of duplicate files found %d\n", file_count -
+		printf("Number of duplicate files found %u\n", file_count -
 			dup_files);
 	else
 		printf("No duplicate files removed\n");
 	printf("Number of inodes %d\n", inode_count);
-	printf("Number of files %d\n", file_count);
+	printf("Number of files %u\n", file_count);
 	if(!no_fragments)
 		printf("Number of fragments %u\n", fragments);
-	printf("Number of symbolic links  %d\n", sym_count);
-	printf("Number of device nodes %d\n", dev_count);
-	printf("Number of fifo nodes %d\n", fifo_count);
-	printf("Number of socket nodes %d\n", sock_count);
-	printf("Number of directories %d\n", dir_count);
+	printf("Number of symbolic links %u\n", sym_count);
+	printf("Number of device nodes %u\n", dev_count);
+	printf("Number of fifo nodes %u\n", fifo_count);
+	printf("Number of socket nodes %u\n", sock_count);
+	printf("Number of directories %u\n", dir_count);
 	printf("Number of ids (unique uids + gids) %d\n", id_count);
 	printf("Number of uids %d\n", uid_count);
 
