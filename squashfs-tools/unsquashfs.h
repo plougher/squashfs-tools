@@ -81,7 +81,7 @@ struct inode {
 	unsigned int	fragment;
 	int		frag_bytes;
 	gid_t		gid;
-	int		inode_number;
+	unsigned int	inode_number;
 	int		mode;
 	int		offset;
 	long long	start;
