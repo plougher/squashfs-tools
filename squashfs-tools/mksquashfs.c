@@ -249,7 +249,6 @@ void *stream = NULL;
 unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
 
 /* fragment to file mapping used when appending */
-int append_fragments = 0;
 struct append_file **file_mapping;
 
 /* root of the in-core directory structure */
@@ -6436,7 +6435,7 @@ print_compressor_options:
 				"device or file use -noappend\n");
 			EXIT_MKSQUASHFS();
 		}
-		if((append_fragments = fragments = sBlk.fragments)) {
+		if((fragments = sBlk.fragments)) {
 			fragment_table = realloc((char *) fragment_table,
 				((fragments + FRAG_SIZE - 1) & ~(FRAG_SIZE - 1))
 				 * sizeof(struct squashfs_fragment_entry)); 
