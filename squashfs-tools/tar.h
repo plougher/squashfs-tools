@@ -53,10 +53,7 @@ struct tar_file {
 	struct stat		buf;
 	struct file_info	*file;
 	char			*pathname;
-	union {
-		char		*symlink;
-		char		*hardlink;
-	};
+	char			*link;
 	int			duplicate;
 };
 
@@ -85,6 +82,9 @@ struct tar_file {
 #define TAR_EOF		1
 #define TAR_ERROR	2
 #define TAR_IGNORED	3
+
+#define GNUTAR_LONG_NAME	'L'
+#define GNUTAR_LONG_LINK	'K'
 
 extern void read_tar_file();
 extern squashfs_inode process_tar_file(int progress);

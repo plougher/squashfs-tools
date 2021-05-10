@@ -82,6 +82,65 @@ long long read_number(char *s, int size)
 }
 
 
+char *read_long_string(int size, int skip)
+{
+	char buffer[512];
+	char *name = malloc(size + 1);
+	int i, res, length = size;
+
+	if(name == NULL)
+		MEM_ERROR();
+
+	for(i = 0; size > 0; i++) {
+		int expected = size > 512 ? 512 : size;
+
+		res = read_bytes(STDIN_FILENO, buffer, 512);
+		if(res == FALSE) {
+			ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+			free(name);
+			return NULL;
+		}
+		memcpy(name + i * 512, buffer, expected);
+		size -= 512;
+	}
+
+	name[length] = '\0';
+
+	if(skip) {
+		char *filename = name;
+
+		while(1) {
+			if(length >= 3 && strncmp(filename, "../", 3) == 0) {
+				filename += 3;
+				length -= 3;
+			} else if(length >= 2 && strncmp(filename, "./", 2) == 0) {
+				filename += 2;
+				length -= 2;
+			} else if(length > 1 && *filename == '/') {
+				filename++;
+				length--;
+			} else
+				break;
+		}
+
+		if(filename != name) {
+			if(length == 0) {
+				ERROR("Empty tar filename after skipping leading /, ./, or ../\n");
+				free(name);
+				return NULL;
+			}
+
+			memmove(name, filename, length + 1);
+			name = realloc(name, length + 1);
+			if(name == NULL)
+				MEM_ERROR();
+		}
+	}
+
+	return name;
+}
+
+
 char *print_octal(int number)
 {
 	static char buff[128];
@@ -154,14 +213,14 @@ static char *get_component(char *target, char **targname)
 static struct inode_info *new_inode(struct tar_file *tar_file)
 {
 	struct inode_info *inode;
-	int bytes = tar_file->symlink ? strlen(tar_file->symlink) + 1 : 0;
+	int bytes = tar_file->link ? strlen(tar_file->link) + 1 : 0;
 
 	inode = malloc(sizeof(struct inode_info) + bytes);
 	if(inode == NULL)
 		MEM_ERROR();
 
 	if(bytes)
-		memcpy(&inode->symlink, tar_file->symlink, bytes);
+		memcpy(&inode->symlink, tar_file->link, bytes);
 	memcpy(&inode->buf, &tar_file->buf, sizeof(struct stat));
 	inode->read = FALSE;
 	inode->root_entry = FALSE;
@@ -464,7 +523,15 @@ static struct tar_file *read_tar_header(int *status) {
 	long long res;
 	int size, type;
 	char *filename, *user, *group;
+	int got_size = FALSE;
 
+	file = malloc(sizeof(struct tar_file));
+	if(file == NULL)
+		MEM_ERROR();
+
+	memset(file, 0, sizeof(struct tar_file));
+
+again:
 	res = read_bytes(STDIN_FILENO, &header, 512);
 	if(res == FALSE) {
 		ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
@@ -476,19 +543,66 @@ static struct tar_file *read_tar_header(int *status) {
 		return NULL;
 	}
 
-	file = malloc(sizeof(struct tar_file));
-	if(file == NULL)
-		MEM_ERROR();
-
 	if(checksum_matches(&header) == FALSE) {
 		ERROR("Tar header checksum does not match!\n");
-		goto failed1;
+		goto failed;
 	}
 
-	memset(file, 0, sizeof(struct tar_file));
+	/* Read filesize */
+	if(got_size == FALSE) {
+		res = read_number(header.size, 12);
+		if(res == -1) {
+			ERROR("Failed to read file size from tar header\n");
+			goto failed;
+		}
+		file->buf.st_size = res;
+	}
+
+	switch(header.type) {
+		case TAR_NORMAL1:
+		case TAR_NORMAL2:
+		case TAR_NORMAL3:
+			type = S_IFREG;
+			break;
+		case TAR_DIR:
+			type = S_IFDIR;
+			break;
+		case TAR_SYM:
+			type = S_IFLNK;
+			break;
+		case TAR_HARD:
+			type = S_IFHRD;
+			break;
+		case TAR_CHAR:
+			type = S_IFCHR;
+			break;
+		case TAR_BLOCK:
+			type = S_IFBLK;
+			break;
+		case TAR_FIFO:
+			type = S_IFIFO;
+			break;
+		case GNUTAR_LONG_NAME:
+			file->pathname = read_long_string(file->buf.st_size, TRUE);
+			if(file->pathname == NULL) {
+				ERROR("Failed to read GNU Long Name\n");
+				goto failed;
+			}
+			goto again;
+		case GNUTAR_LONG_LINK:
+			file->link = read_long_string(file->buf.st_size, FALSE);
+			if(file->link == NULL) {
+				ERROR("Failed to read GNU Long Name\n");
+				goto failed;
+			}
+			goto again;
+		default:
+			ERROR("Unhandled tar type in header 0x%x - ignoring\n", header.type);
+			goto ignored;
+	}
 
 	/* Process filename - skip any leading slashes or ./ or ../ */
-	if(header.prefix[0] != '\0') {
+	if(file->pathname == NULL && header.prefix[0] != '\0') {
 		int length1, length2;
 
 		size = 155;
@@ -517,7 +631,7 @@ static struct tar_file *read_tar_header(int *status) {
 		file->pathname[length1] = '/';
 		memcpy(file->pathname + length1 + 1, header.name, length2);
 		file->pathname[length1 + length2 + 1] = '\0';
-	} else {
+	} else if (file->pathname == NULL) {
 		size = 100;
 		filename = header.name;
 		while(1) {
@@ -540,22 +654,14 @@ static struct tar_file *read_tar_header(int *status) {
 	/* Reject empty filenames */
 	if(strlen(file->pathname) == 0) {
 		ERROR("Empty tar filename after skipping leading /, ./, or ../\n");
-		goto failed2;
+		goto failed;
 	}
-
-	/* Read filesize */
-	res = read_number(header.size, 12);
-	if(res == -1) {
-		ERROR("Failed to read file size from tar header\n");
-		goto failed2;
-	}
-	file->buf.st_size = res;
 
 	/* Read mtime */
 	res = read_number(header.mtime, 12);
 	if(res == -1) {
 		ERROR("Failed to read file mtime from tar header\n");
-		goto failed2;
+		goto failed;
 	}
 	file->buf.st_mtime = res;
 
@@ -563,38 +669,9 @@ static struct tar_file *read_tar_header(int *status) {
 	res = read_number(header.mode, 8);
 	if(res == -1) {
 		ERROR("Failed to read file mode from tar header\n");
-		goto failed2;
+		goto failed;
 	}
 	file->buf.st_mode = res;
-
-	switch(header.type) {
-		case TAR_NORMAL1:
-		case TAR_NORMAL2:
-		case TAR_NORMAL3:
-			type = S_IFREG;
-			break;
-		case TAR_DIR:
-			type = S_IFDIR;
-			break;
-		case TAR_SYM:
-			type = S_IFLNK;
-			break;
-		case TAR_HARD:
-			type = S_IFHRD;
-			break;
-		case TAR_CHAR:
-			type = S_IFCHR;
-			break;
-		case TAR_BLOCK:
-			type = S_IFBLK;
-			break;
-		case TAR_FIFO:
-			type = S_IFIFO;
-			break;
-		default:
-			ERROR("Unhandled tar type in header 0x%x - ignoring\n", header.type);
-			goto ignored;
-	}
 
 	/* V7 and others used to append a trailing '/' to indicate a
 	 * directory */
@@ -620,7 +697,7 @@ static struct tar_file *read_tar_header(int *status) {
 		res = read_number(header.uid, 8);
 		if(res == -1) {
 			ERROR("Failed to read file uid from tar header\n");
-			goto failed2;
+			goto failed;
 		}
 	}
 	file->buf.st_uid = res;
@@ -641,7 +718,7 @@ static struct tar_file *read_tar_header(int *status) {
 		res = read_number(header.gid, 8);
 		if(res == -1) {
 			ERROR("Failed to read file gid from tar header\n");
-			goto failed2;
+			goto failed;
 		}
 	}
 	file->buf.st_gid = res;
@@ -654,13 +731,13 @@ static struct tar_file *read_tar_header(int *status) {
 		major = read_number(header.major, 8);
 		if(major == -1) {
 			ERROR("Failed to read device major tar header\n");
-			goto failed2;
+			goto failed;
 		}
 
 		minor = read_number(header.minor, 8);
 		if(minor == -1) {
 			ERROR("Failed to read device minor from tar header\n");
-			goto failed2;
+			goto failed;
 		}
 		file->buf.st_rdev = (major << 8) | (minor & 0xff) | ((minor & ~0xff) << 12);
 	}
@@ -670,21 +747,21 @@ static struct tar_file *read_tar_header(int *status) {
 		/* Permissions on symbolic links are always rwxrwxrwx */
 		file->buf.st_mode = 0777 | S_IFLNK;
 
-		file->symlink = strndup(header.link, 100);
+		if(file->link == FALSE)
+			file->link = strndup(header.link, 100);
 	}
 
 	/* Handle hard links */
-	if(type == S_IFHRD)
-		file->hardlink = strndup(header.link, 100);
+	if(type == S_IFHRD && file->link == FALSE)
+		file->link = strndup(header.link, 100);
 
 	*status = TAR_OK;
 	return file;
 
-failed2:
-	free(file->pathname);
-failed1:
-	free(file);
 failed:
+	free(file->pathname);
+	free(file->link);
+	free(file);
 	*status = TAR_ERROR;
 	return NULL;
 
@@ -704,6 +781,7 @@ ignored:
 	}
 
 	free(file->pathname);
+	free(file->link);
 	free(file);
 	*status = TAR_IGNORED;
 	return NULL;
@@ -770,20 +848,28 @@ squashfs_inode process_tar_file(int progress)
 		if(S_ISHRD(tar_file->buf.st_mode)) {
 			/* Hard link, need to resolve where it points to, and
 			 * replace with a reference to that inode */
-			struct dir_ent *entry = lookup_pathname(root_dir, tar_file->hardlink);
+			struct dir_ent *entry = lookup_pathname(root_dir, tar_file->link);
 			if(entry== NULL) {
-				ERROR("Could not resolve hardlink %s, file %s doesn't exist\n", tar_file->pathname, tar_file->hardlink);
+				ERROR("Could not resolve hardlink %s, file %s doesn't exist\n", tar_file->pathname, tar_file->link);
 				free(file_buffer);
+				free(tar_file->pathname);
+				free(tar_file->link);
+				free(tar_file);
 				continue;
 			}
 
 			if(entry->inode == NULL || S_ISDIR(entry->inode->buf.st_mode)) {
-				ERROR("Could not resolve hardlink %s, because %s is a directory\n", tar_file->pathname, tar_file->hardlink);
+				ERROR("Could not resolve hardlink %s, because %s is a directory\n", tar_file->pathname, tar_file->link);
 				free(file_buffer);
+				free(tar_file->pathname);
+				free(tar_file->link);
+				free(tar_file);
 				continue;
 			}
 
 			link = entry->inode;
+			free(tar_file->link);
+			tar_file->link = NULL;
 		}
 
 		new = add_tarfile(root_dir, tar_file->pathname, "",
