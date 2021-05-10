@@ -5,13 +5,78 @@
 	Released under the GPL licence (version 2 or later).
 
 Welcome to Squashfs 4.5.  The last release was just over 1 and half years
-ago, and there are substantial improvements to the tools in this release:
+ago, and there are substantial improvements to the tools in this release.
 
 Please see the INSTALL file for instructions on installing the tools,
 and the USAGE file for documentation on how to use the tools.
 
 Summary of changes (and sections below)
 ---------------------------------------
+
+1. Major improvements in Mksquashfs
+------------------------------------
+
+1.1 Mksquashfs now supports "Actions". These are modelled on "find"
+    and allow compression, fragment packing, file exclusion and
+    file attributes to be changed on a per-file basis.
+
+1.2 Tar style handling of source pathnames in Mksquashfs.  If option is
+    specified, Mksquashfs will not strip leading directories.
+
+1.3 Symbolic links are now followed in exclude files.
+
+1.4 New option to throttle the amount of CPU and I/O Mksquashfs uses.
+
+1.5 New Pseudo file definitions which support timestamps.
+
+1.6 New Pseduo file definitions to create Hard Links and Sockets/Fifos.
+
+1.7 New Pseudo file "R" definition which allows a Regular file to
+    be created with data stored within the Pseudo file (see 2.3 below).
+
+
+2. Major improvements in Unsquashfs
+-----------------------------------
+
+2.1 New Sqfscat command which will output the contents of one or more
+    files to standard out.
+
+2.2 Unsquashfs now supports "exclude" files in addition to "extract"
+    files.
+
+2.3 Max depth traversal option added (-max-depth).
+
+2.4 Unsquashfs can now output a "Pseudo file" representing the
+    input Squashfs filesystem.  This can be altered and given
+    as input to Mksquashfs to re-generate the filesystem without
+    unpacking it.
+
+
+3. Minor improvements and bug fixes
+-----------------------------------
+
+3.1 New -no-hardlinks option in Mksquashfs, which makes
+    Mksquashfs treat hardlinked files as duplicates instead.
+
+3.2 Mksquashfs now allows no source directory ( specified as - )
+    to be specified, with all input from pseudo file definitions.
+
+3.3 New -help options in Mksquashfs and Unsquashfs which output
+    to standard out, rather than standard error.
+
+3.4 -no-exit-code option added to Unsquashfs which makes it
+    not output an error exit code.
+
+3.5 Exit code in Unsquashfs changed to distinguish between
+    non-fatal errors (exit of 2), and fatal errors
+    (exit code of 1).
+
+3.6 Xattr id count added in Unsquashfs "-stat" output.
+
+3.7 Unsquashfs "write outside directory" exploit fixed.
+
+3.8 Error handling in Unsquashfs writer thread fixed.
+
 
 ?. Compatiblity
 ---------------
