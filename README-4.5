@@ -38,8 +38,9 @@ Summary of changes (and sections below)
 2. Major improvements in Unsquashfs
 -----------------------------------
 
-2.1 New Sqfscat command which will output the contents of one or more
-    files to standard out.
+2.1 New Sqfscat command which will output the contents of one or
+    more files to standard out (Unsquashfs called as sqfscat, also
+    Unsquashfs -cat option).
 
 2.2 Unsquashfs now supports "exclude" files in addition to "extract"
     files.
@@ -77,6 +78,52 @@ Summary of changes (and sections below)
 
 3.8 Error handling in Unsquashfs writer thread fixed.
 
+
+4. Mksquashfs Actions Introduction
+----------------------------------
+
+The new Mksquashfs Actions code allows an "action" to be executed
+on a file if one or more "tests" succeed.  If you're familiar
+with the "find" command, then an action is similar to "-print",
+and a test is similar to say "-name" or "-type".
+
+At this point it is useful to give two concrete examples.
+
+example 1: the fragment action
+
+% mksquashfs /home/phillip/github github.sqsh -action "fragment(cfiles) @ name(*.[ch])" -action "fragment(ofiles) @ name(*.o)"
+
+This example defines two "fragment actions" which control the packing
+of files within fragments.  Specifically, it creates a specialised fragment
+called "cfiles" which packs files matching the wildcard name "*.[ch]".
+
+It also creates another specialised fragment called "ofiles" which packs
+files matching the wilcard name "*.o".
+
+Producing specialised fragments which only pack files which match a range
+of tests, can produce better compression and/or I/O performance as
+it can optimise similarity or access patterns.  But it can also
+produce worse compression, and so you should always test
+the effect.
+
+Additionally, you should be able to see that an action definition is split
+into an action function before the "@", and one or more test functions
+after the @.  Quoting is necessary here to protect it from interpretation
+by the shell.  Also the spacing before and after the "@" isn't necessary
+and is used here for added readability.
+
+example 2: the uncompressed action
+
+% mksquashfs /home/phillip backup.sqsh -action "uncompressed @ ( name(*.jpg) || name(*.mpg) ) || ( name(*.img) && filesize(+1G) )"
+
+This is a more complex example.  It tells Mksquashfs to not try and
+compress any file which matches the wildcard names "*.jpg" and "*.mpg".
+But it also tells Mksquashfs not to try and compress files which match
+the wildcard name "*.img" and are also 1 Gigabyte in size or larger.
+
+This example introduces the fact that tests can be combined using
+the logical operators && (and), || (or) and ! (not), and can be
+bracketed.
 
 ?. Compatiblity
 ---------------
