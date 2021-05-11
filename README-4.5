@@ -1,10 +1,10 @@
-	SQUASHFS 4.5 - A squashed read-only filesystem for Linux
+	SQUASHFS-TOOLS 4.5 - A squashed read-only filesystem for Linux
 
 	Copyright 2002-2021 Phillip Lougher <phillip@squashfs.org.uk>
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs 4.5.  The last release was just over 1 and half years
+Welcome to Squashfs-Tools 4.5.  The last release was just over 1 and half years
 ago, and there are substantial improvements to the tools in this release.
 
 Please see the INSTALL file for instructions on installing the tools,
@@ -18,20 +18,21 @@ Summary of changes (and sections below)
 
 1.1 Mksquashfs now supports "Actions". These are modelled on "find"
     and allow compression, fragment packing, file exclusion and
-    file attributes to be changed on a per-file basis.
+    file attributes to be changed on a per-file basis (see section 4).
 
 1.2 Tar style handling of source pathnames in Mksquashfs.  If option is
-    specified, Mksquashfs will not strip leading directories.
+    specified, Mksquashfs will not strip leading directories (see
+    section 5).
 
-1.3 Symbolic links are now followed in exclude files.
+1.3 New option to throttle the amount of CPU and I/O Mksquashfs uses
+    (see section 6).
 
-1.4 New option to throttle the amount of CPU and I/O Mksquashfs uses.
+1.4 New Pseudo file definitions which support timestamps (see section 7).
 
-1.5 New Pseudo file definitions which support timestamps.
+1.5 New Pseudo file definitions to create Hard Links and Sockets/Fifos
+    (see section 8).
 
-1.6 New Pseduo file definitions to create Hard Links and Sockets/Fifos.
-
-1.7 New Pseudo file "R" definition which allows a Regular file to
+1.6 New Pseudo file "R" definition which allows a Regular file to
     be created with data stored within the Pseudo file (see 2.3 below).
 
 
@@ -42,12 +43,15 @@ Summary of changes (and sections below)
     more files to standard out (Unsquashfs called as sqfscat, also
     Unsquashfs -cat option).
 
-2.2 Unsquashfs now supports "exclude" files in addition to "extract"
+2.2 Symbolic links are now followed in extract files, if -follow-symlinks
+    or -missing-symlinks option specified.
+
+2.3 Unsquashfs now supports "exclude" files in addition to "extract"
     files.
 
-2.3 Max depth traversal option added (-max-depth).
+2.4 Max depth traversal option added (-max-depth).
 
-2.4 Unsquashfs can now output a "Pseudo file" representing the
+2.5 Unsquashfs can now output a "Pseudo file" representing the
     input Squashfs filesystem.  This can be altered and given
     as input to Mksquashfs to re-generate the filesystem without
     unpacking it.
@@ -87,7 +91,7 @@ on a file if one or more "tests" succeed.  If you're familiar
 with the "find" command, then an action is similar to "-print",
 and a test is similar to say "-name" or "-type".
 
-At this point it is useful to give two concrete examples.
+To illustrate this it is useful to give two concrete examples.
 
 example 1: the fragment action
 
@@ -124,6 +128,100 @@ the wildcard name "*.img" and are also 1 Gigabyte in size or larger.
 This example introduces the fact that tests can be combined using
 the logical operators && (and), || (or) and ! (not), and can be
 bracketed.
+
+Please see the ACTIONS-USAGE file for syntax and extra information.
+
+
+5. Tar style handling of source directories in Mksquashfs
+---------------------------------------------------------
+
+Mksquashfs has always stripped the leading directories of any source
+pathnames given on the command line.
+
+For example given the command line
+
+% mksquashfs dir-a/dir-b/dir-c/file1 dir-A/dir-B/file2 sqfs
+
+Mksquashfs will strip the leading directories, and put file1 and file2
+into the same root directory.  If file1 and file2 were directories it
+would place their contents into the same root directory.
+
+At lot of people don't like this, and wouild prefer Mksquashfs acted
+like "tar", which does not strip leading directories. In the above example,
+the tar archive would contain the pathnames "dir-a/dir-b/dir-c/file1" and
+"dir-A/dir-B/file2".
+
+Mksquashfs will now act like tar if given the option -no-strip, or -tarstyle.
+
+
+6. New option to throttle CPU and I/O Mksquashfs uses
+-----------------------------------------------------
+
+People have sometimes complained that Mksquashfs uses too much CPU and too
+much I/O, and can make a computer become very slow, or over-heat, and
+setting the processors option to 1 often doesn't have much effect.
+
+The reason for this is because Mksquashfs tries to run as fast as possible,
+as this is usually what people want.  Due to this it is highly parallelised,
+and spawns multiple compression threads (for both blocks and fragments),
+and by default one each of those compression threads are spawned per core.
+In addition it also has separate reader and writer threads and large caches
+to ensure I/O through-put is maximised and performed in parallel with the
+compression threads (called read-ahead and write-behind).
+
+This means even when the "-processors 1" option is set, there is still a
+lot of parallel processing being performed, because the minmimum set of
+threads is a single block compression thread, a single fragment compression
+thread, and both a reader and writer thread.  Unfortunately, these threads
+can easily still max out a single core, so that it is never idle.  On a
+multi-core machine the "-processors 1" option usually produces a CPU load
+of around 130-180%.
+
+The solution adopted is to add an I/O "throttle", which will regulate the
+amount of I/O performed, and ultimately, how much CPU is consumed.  This
+throttle can be set from 0 - 100, with the following two options added.
+
+-throttle <percentage> has the semantics of throttle the reader by X%.  The
+higher the percentage, the greater the throughput of the reader thread is
+reduced.
+
+-limit <percentage> has the opposite sense of limit the output to X%.  The
+higher the percentage, the greater the throughput of the reader thread.
+
+
+7. New Pseudo file definitions with timestamps
+----------------------------------------------
+
+The Pseudo file definitions previously supported did not allow the time
+of the file to be set.  New extended pseudo file definitions have been added
+which take a <time> timestamp.  These are distinquished from the previous
+definitions by using an upper-case type character.  For example the "D"
+definition is identical to the previous "d" definition (it creates
+a directory), but it takes a <time> timestamp.
+
+The list of extended definitions are:
+
+	filename D time mode uid gid
+	filename M time mode uid gid
+	filename B time mode uid gid major minor
+	filename C time mode uid gid major minor
+	filename F time mode uid gid command
+	filename S time mode uid gid symlink
+
+<time> can be either an unsigned decimal integer (which represents the
+seconds since the epoch of 1970-01-01 01:00 UTC), or a "date string"
+which is parsed and converted into an integer since the epoch, by calling
+"date".
+
+Because most date strings have spaces, they will need to be quoted, and if
+entered on the command line, these quotes will need to be protected from the
+shell by backslashes, i.e.
+
+% mksquashfs x x.sqsh -p "file D \"1 jan 1980\" 0777 phillip phillip"
+
+Obviously anything "date" accepts as a valid string can be used, such as
+"yesterday", "last week" etc.
+
 
 ?. Compatiblity
 ---------------
