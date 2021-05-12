@@ -4958,12 +4958,22 @@ static void write_recovery_data(struct squashfs_super_block *sBlk)
 	pid_t pid = getpid();
 	char *metadata;
 	char header[] = RECOVER_ID;
+	char *home;
 
 	if(recover == FALSE) {
 		printf("No recovery data option specified.\n");
 		printf("Skipping saving recovery file.\n\n");
 		return;
 	}
+
+	home = getenv("HOME");
+	if(home == NULL)
+		BAD_ERROR("Could not read $HOME, use -recovery-path or -no-recovery options\n");
+
+	res = asprintf(&recovery_file, "%s/squashfs_recovery_%s_%d", home,
+		getbase(destination_file), pid);
+	if(res == -1)
+		MEM_ERROR();
 
 	metadata = malloc(bytes);
 	if(metadata == NULL)
@@ -4974,11 +4984,6 @@ static void write_recovery_data(struct squashfs_super_block *sBlk)
 		ERROR("Failed to read append filesystem metadata\n");
 		BAD_ERROR("Filesystem corrupted?\n");
 	}
-
-	res = asprintf(&recovery_file, "squashfs_recovery_%s_%d",
-		getbase(destination_file), pid);
-	if(res == -1)
-		MEM_ERROR();
 
 	recoverfd = open(recovery_file, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
 	if(recoverfd == -1)
