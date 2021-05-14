@@ -5007,7 +5007,7 @@ static void write_recovery_data(struct squashfs_super_block *sBlk)
 	
 	printf("Recovery file \"%s\" written\n", recovery_file);
 	printf("If Mksquashfs aborts abnormally (i.e. power failure), run\n");
-	printf("mksquashfs dummy %s -recover %s\n", destination_file,
+	printf("mksquashfs - %s -recover %s\n", destination_file,
 		recovery_file);
 	printf("to restore filesystem\n\n");
 }
