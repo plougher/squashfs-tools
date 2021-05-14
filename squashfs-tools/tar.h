@@ -54,6 +54,11 @@ struct tar_file {
 	struct file_info	*file;
 	char			*pathname;
 	char			*link;
+	char			*uname;
+	char			*gname;
+	char			have_size;
+	char			have_uid;
+	char			have_gid;
 	int			duplicate;
 };
 

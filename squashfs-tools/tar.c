@@ -517,13 +517,111 @@ static void read_tar_data(struct tar_file *tar_file)
 }
 
 
-static struct tar_file *read_tar_header(int *status) {
+int read_pax_header(struct tar_file *file)
+{
+	long long size = (file->buf.st_size + 511) & ~511;
+	char *data, *ptr, *end, *keyword, *value;
+	int res, length, bytes;
+	long long number;
+
+	data = malloc(size);
+	if(data == NULL)
+		MEM_ERROR();
+
+	res = read_bytes(STDIN_FILENO, data, size);
+	if(res == FALSE) {
+		ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+		free(data);
+		return FALSE;
+	}
+
+	for(ptr = data, end = data + file->buf.st_size; ptr < end;) {
+		/*
+		 * What follows should be <length> <keyword>=<value>,
+		 * where <length> is the full length, including the
+		 * <length> field and newline
+		 */
+		res = sscanf(ptr, "%d%n", &length, &bytes);
+		if(res < 1 || length <= bytes || length > file->buf.st_size)
+			goto failed;
+
+		length -= bytes;
+		ptr += bytes;
+
+		/* Skip whitespace */
+		for(; length && *ptr == ' '; length--, ptr++);
+
+		/* Store and parse keyword */
+		for(keyword = ptr; length && *ptr != '='; length--, ptr++);
+
+		/* length should be greater than 2, given it includes the = and newline */
+		if(length < 3)
+			goto failed;
+
+		/* Terminate the keyword string */
+		*ptr++ = '\0';
+
+		/* Store and parse value */
+		for(value = ptr, length--; length && *ptr != '\n'; length--, ptr++);
+
+		/* length should now be one, and we should have arrived at the newline */
+		if(length != 1 || *ptr != '\n')
+			goto failed;
+
+		/* Replace the newline with a NULL terminator */
+		*ptr = '\0';
+
+		/* Evaluate keyword */
+		if(strcmp(keyword, "size") == 0) {
+			res = sscanf(value, "%lld %n", &number, &bytes);
+			if(res < 1 || value[bytes] != '\0')
+				goto failed;
+			file->buf.st_size = number;
+			file->have_size = TRUE;
+		} else if(strcmp(keyword, "uid") == 0) {
+			res = sscanf(value, "%lld %n", &number, &bytes);
+			if(res < 1 || value[bytes] != '\0')
+				goto failed;
+			file->buf.st_uid = number;
+			file->have_uid = TRUE;
+		} else if(strcmp(keyword, "gid") == 0) {
+			res = sscanf(value, "%lld %n", &number, &bytes);
+			if(res < 1 || value[bytes] != '\0')
+				goto failed;
+			file->buf.st_gid = number;
+			file->have_gid = TRUE;
+		} else if(strcmp(keyword, "uname") == 0)
+			file->uname = strdup(value);
+		else if(strcmp(keyword, "gname") == 0)
+			file->gname = strdup(value);
+		else if(strcmp(keyword, "path") == 0)
+			file->pathname = strdup(value);
+		else if(strcmp(keyword, "linkpath") == 0)
+			file->link = strdup(value);
+		else if(strcmp(keyword, "mtime") != 0 && strcmp(keyword, "atime") != 0 && strcmp(keyword, "ctime") != 0)
+			ERROR("Unrecognised keyword \"%s\" in pax header, ignoring\n", keyword);
+
+		printf("%s = %s\n", keyword, value);
+		ptr ++;
+	}
+
+	free(data);
+	return TRUE;
+
+failed:
+	ERROR("Failed to parse pax header\n");
+	free(data);
+	return FALSE;
+}
+
+
+static struct tar_file *read_tar_header(int *status)
+{
 	struct tar_header header;
 	struct tar_file *file;
 	long long res;
 	int size, type;
 	char *filename, *user, *group;
-	int got_size = FALSE;
 
 	file = malloc(sizeof(struct tar_file));
 	if(file == NULL)
@@ -549,7 +647,7 @@ again:
 	}
 
 	/* Read filesize */
-	if(got_size == FALSE) {
+	if(file->have_size == FALSE) {
 		res = read_number(header.size, 12);
 		if(res == -1) {
 			ERROR("Failed to read file size from tar header\n");
@@ -582,6 +680,13 @@ again:
 		case TAR_FIFO:
 			type = S_IFIFO;
 			break;
+		case TAR_XHDR:
+			res = read_pax_header(file);
+			if(res == FALSE) {
+				ERROR("Failed to read pax header\n");
+				goto failed;
+			}
+			goto again;
 		case GNUTAR_LONG_NAME:
 			file->pathname = read_long_string(file->buf.st_size, TRUE);
 			if(file->pathname == NULL) {
@@ -682,11 +787,17 @@ again:
 	
 	file->buf.st_mode |= type;
 
-	/* Get user information - if header.user filled, and it is
-	 * recognised by the system use that, otherwise fallback to
-	 * using header.uid */
+	/* Get user information - if file->uname non NULL (from PAX header),
+	 * use that if recognised by the system, otherwise if header.user
+	 * filled, and it is recognised by the system use that, otherwise
+	 * fallback to using uid, either from PAX header (if have_uid TRUE),
+	 * or header.uid */
 	res = -1;
-	user = strndup(header.user, 32);
+	if(file->uname)
+		user = file->uname;
+	else
+		user = strndup(header.user, 32);
+
 	if(strlen(user)) {
 		struct passwd *pwuid = getpwnam(user);
 		if(pwuid)
@@ -694,20 +805,30 @@ again:
 	}
 		
 	if(res == -1) {
-		res = read_number(header.uid, 8);
-		if(res == -1) {
-			ERROR("Failed to read file uid from tar header\n");
-			goto failed;
+		if(file->have_uid == FALSE) {
+			res = read_number(header.uid, 8);
+			if(res == -1) {
+				ERROR("Failed to read file uid from tar header\n");
+				goto failed;
+			}
+			file->buf.st_uid = res;
 		}
-	}
-	file->buf.st_uid = res;
+	} else
+		file->buf.st_uid = res;
+
 	free(user);
 
-	/* Get group information - if header.group filled, and it is
-	 * recognised by the system use that, otherwise fallback to
-	 * using header.gid */
+	/* Get group information - if file->gname non NULL (from PAX header),
+	 * use that if recognised by the system, otherwise if header.group
+	 * filled, and it is recognised by the system use that, otherwise
+	 * fallback to using gid, either from PAX header (if have_gid TRUE),
+	 * or header.gid */
 	res = -1;
-	group = strndup(header.group, 32);
+	if(file->gname)
+		group = file->gname;
+	else
+		group = strndup(header.group, 32);
+
 	if(strlen(group)) {
 		struct group *grgid = getgrnam(group);
 		if(grgid)
@@ -715,13 +836,17 @@ again:
 	}
 		
 	if(res == -1) {
-		res = read_number(header.gid, 8);
-		if(res == -1) {
-			ERROR("Failed to read file gid from tar header\n");
-			goto failed;
+		if(file->have_gid == FALSE) {
+			res = read_number(header.gid, 8);
+			if(res == -1) {
+				ERROR("Failed to read file gid from tar header\n");
+				goto failed;
+			}
+			file->buf.st_gid = res;
 		}
-	}
-	file->buf.st_gid = res;
+	} else
+		file->buf.st_gid = res;
+
 	free(group);
 
 	/* Read major and minor for device files */
