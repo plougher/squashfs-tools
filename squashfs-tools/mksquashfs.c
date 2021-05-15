@@ -198,6 +198,7 @@ char *destination_file = NULL;
 
 /* recovery file for abnormal exit on appending */
 char *recovery_file = NULL;
+char *recovery_pathname = NULL;
 int recover = TRUE;
 
 struct id *id_hash_table[ID_ENTRIES];
@@ -4958,7 +4959,6 @@ static void write_recovery_data(struct squashfs_super_block *sBlk)
 	pid_t pid = getpid();
 	char *metadata;
 	char header[] = RECOVER_ID;
-	char *home;
 
 	if(recover == FALSE) {
 		printf("No recovery data option specified.\n");
@@ -4966,11 +4966,13 @@ static void write_recovery_data(struct squashfs_super_block *sBlk)
 		return;
 	}
 
-	home = getenv("HOME");
-	if(home == NULL)
-		BAD_ERROR("Could not read $HOME, use -recovery-path or -no-recovery options\n");
+	if(recovery_pathname == NULL) {
+		recovery_pathname = getenv("HOME");
+		if(recovery_pathname == NULL)
+			BAD_ERROR("Could not read $HOME, use -recovery-path or -no-recovery options\n");
+	}
 
-	res = asprintf(&recovery_file, "%s/squashfs_recovery_%s_%d", home,
+	res = asprintf(&recovery_file, "%s/squashfs_recovery_%s_%d", recovery_pathname,
 		getbase(destination_file), pid);
 	if(res == -1)
 		MEM_ERROR();
@@ -5613,6 +5615,8 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-recover <name>\t\trecover filesystem data using recovery ");
 	fprintf(stream, "file <name>\n");
 	fprintf(stream, "-no-recovery\t\tdon't generate a recovery file\n");
+	fprintf(stream, "-recovery-path <name>\tuse <name> as the directory ");
+	fprintf(stream, "to store the recovery file\n");
 	fprintf(stream, "-quiet\t\t\tno verbose output\n");
 	fprintf(stream, "-info\t\t\tprint files written to filesystem\n");
 	fprintf(stream, "-no-progress\t\tdon't display the progress bar\n");
@@ -5765,7 +5769,14 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = option_offset; i < argc; i++) {
-		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
+		if(strcmp(argv[i], "-recovery-path") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -recovery-path missing pathname\n",
+							argv[0]);
+				exit(1);
+			}
+			recovery_pathname = argv[i];
+		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
 			print_options(stdout, argv[0], total_mem);
 			exit(0);
 		} else if(strcmp(argv[i], "-no-hardlinks") == 0)
