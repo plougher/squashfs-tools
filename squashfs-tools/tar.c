@@ -615,6 +615,20 @@ failed:
 }
 
 
+static void copy_tar_header(struct tar_file *dest, struct tar_file *source)
+{
+	memcpy(dest, source, sizeof(struct tar_file));
+	if(source->pathname)
+		dest->pathname = strdup(source->pathname);
+	if(source->link)
+		dest->link = strdup(source->link);
+	if(source->uname)
+		dest->uname = strdup(source->uname);
+	if(source->gname)
+		dest->gname = strdup(source->gname);
+}
+
+
 static struct tar_file *read_tar_header(int *status)
 {
 	struct tar_header header;
@@ -622,12 +636,16 @@ static struct tar_file *read_tar_header(int *status)
 	long long res;
 	int size, type;
 	char *filename, *user, *group;
+	static struct tar_file *global = NULL;
 
 	file = malloc(sizeof(struct tar_file));
 	if(file == NULL)
 		MEM_ERROR();
 
-	memset(file, 0, sizeof(struct tar_file));
+	if(global)
+		copy_tar_header(file, global);
+	else
+		memset(file, 0, sizeof(struct tar_file));
 
 again:
 	res = read_bytes(STDIN_FILENO, &header, 512);
@@ -686,6 +704,26 @@ again:
 				ERROR("Failed to read pax header\n");
 				goto failed;
 			}
+			goto again;
+		case TAR_GXHDR:
+			if(global == NULL) {
+				global = malloc(sizeof(struct tar_file));
+				if(global == NULL)
+					MEM_ERROR();
+				memset(global, 0, sizeof(struct tar_file));
+			}
+			res = read_pax_header(global);
+			if(res == FALSE) {
+				ERROR("Failed to read pax header\n");
+				goto failed;
+			}
+			/* file is now out of date, and needs to be
+			 * (re-)synced with the global header */
+			free(file->pathname);
+			free(file->link);
+			free(file->uname);
+			free(file->gname);
+			copy_tar_header(file, global);
 			goto again;
 		case GNUTAR_LONG_NAME:
 			file->pathname = read_long_string(file->buf.st_size, TRUE);
