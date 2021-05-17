@@ -266,6 +266,11 @@ int keep_as_directory = FALSE;
 /* Should Mksquashfs detect hardlinked files? */
 int no_hardlinks = FALSE;
 
+/* Should Mksquashfs cross filesystem boundaries? */
+int one_file_system = FALSE;
+dev_t *source_dev;
+dev_t cur_dev;
+
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 static void add_old_root_entry(char *name, squashfs_inode inode,
 	unsigned int inode_number, int type);
@@ -3229,6 +3234,7 @@ static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 					"scan1_encomp_readdir\n");
 			ERROR("%s\n", dir_name);
 		}
+		cur_dev = source_dev[index];
 		return create_dir_entry(dir_name, basename,
 			strdup(source_path[index ++]), dir);
 	}
@@ -3330,6 +3336,14 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 			ERROR_EXIT(", ignoring\n");
 			free_dir_entry(dir_ent);
 			continue;
+		}
+
+		if(one_file_system) {
+			if(buf.st_dev != cur_dev) {
+				ERROR("%s is on a different filesystem, ignored\n", filename);
+				free_dir_entry(dir_ent);
+				continue;
+			}
 		}
 
 		if((buf.st_mode & S_IFMT) != S_IFREG &&
@@ -4247,6 +4261,7 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 			excluded(entry->name, paths, &newp);
 
 			if(entry->dir == NULL) {
+				cur_dev = entry->inode->buf.st_dev;
 				new = dir_scan1(pathname(entry),
 					subpathname(entry), newp, scan1_readdir,
 					dir->depth + 1);
@@ -5769,7 +5784,9 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = option_offset; i < argc; i++) {
-		if(strcmp(argv[i], "-recovery-path") == 0) {
+		if(strcmp(argv[i], "-one-file-system") == 0)
+			one_file_system = TRUE;
+		else if(strcmp(argv[i], "-recovery-path") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -recovery-path missing pathname\n",
 							argv[0]);
@@ -6265,13 +6282,27 @@ print_compressor_options:
 	progress = FALSE;
 #endif
 
-	for(i = 0; i < source; i++)
+	if(one_file_system && source > 1) {
+		source_dev = malloc(source * sizeof(dev_t));
+		if(source_dev == NULL)
+			MEM_ERROR();
+	}
+
+	for(i = 0; i < source; i++) {
 		if(lstat(source_path[i], &source_buf) == -1) {
 			fprintf(stderr, "Cannot stat source directory \"%s\" "
 				"because %s\n", source_path[i],
 				strerror(errno));
 			EXIT_MKSQUASHFS();
 		}
+
+		if(one_file_system) {
+			if(source > 1)
+				source_dev[i] = source_buf.st_dev;
+			else
+				cur_dev = source_buf.st_dev;
+		}
+	}
 
 	if(stat(destination_file, &buf) == -1) {
 		if(errno == ENOENT) { /* Does not exist */
