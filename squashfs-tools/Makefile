@@ -229,7 +229,7 @@ CFLAGS += -DXATTR_SUPPORT -DXATTR_DEFAULT
 else
 CFLAGS += -DXATTR_SUPPORT
 endif
-MKSQUASHFS_OBJS += xattr.o read_xattrs.o
+MKSQUASHFS_OBJS += xattr.o read_xattrs.o tar_xattr.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
 endif
 
@@ -351,6 +351,8 @@ process_fragments.o: process_fragments.c process_fragments.h
 caches-queues-lists.o: caches-queues-lists.c mksquashfs_error.h caches-queues-lists.h
 
 tar.o: tar.h
+
+tar_xattr.o: tar.h xattr.h
 
 gzip_wrapper.o: gzip_wrapper.c squashfs_fs.h gzip_wrapper.h compressor.h
 

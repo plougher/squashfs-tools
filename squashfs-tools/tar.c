@@ -36,6 +36,7 @@
 #include "mksquashfs.h"
 #include "caches-queues-lists.h"
 #include "mksquashfs_error.h"
+#include "xattr.h"
 #include "tar.h"
 #include "progressbar.h"
 
@@ -138,16 +139,6 @@ char *read_long_string(int size, int skip)
 	}
 
 	return name;
-}
-
-
-char *print_octal(int number)
-{
-	static char buff[128];
-
-	sprintf(buff, "%s%o", number < 0 ? "-" : "", abs(number));
-
-	return buff;
 }
 
 
@@ -598,6 +589,8 @@ int read_pax_header(struct tar_file *file)
 			file->pathname = strdup(value);
 		else if(strcmp(keyword, "linkpath") == 0)
 			file->link = strdup(value);
+		else if(strncmp(keyword, "LIBARCHIVE.xattr.", strlen("LIBARCHIVE.xattr.")) == 0)
+			read_tar_xattr(keyword + strlen("LIBARCHIVE.xattr."), value, strlen(value), file);
 		else if(strcmp(keyword, "mtime") != 0 && strcmp(keyword, "atime") != 0 && strcmp(keyword, "ctime") != 0)
 			ERROR("Unrecognised keyword \"%s\" in pax header, ignoring\n", keyword);
 
@@ -922,6 +915,7 @@ again:
 	return file;
 
 failed:
+	free_tar_xattrs(file);
 	free(file->pathname);
 	free(file->link);
 	free(file);

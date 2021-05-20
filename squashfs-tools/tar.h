@@ -52,10 +52,12 @@ struct tar_header {
 struct tar_file {
 	struct stat		buf;
 	struct file_info	*file;
+	struct xattr_list	*xattr_list;
 	char			*pathname;
 	char			*link;
 	char			*uname;
 	char			*gname;
+	int			xattrs;
 	char			have_size;
 	char			have_uid;
 	char			have_gid;
@@ -93,4 +95,15 @@ struct tar_file {
 
 extern void read_tar_file();
 extern squashfs_inode process_tar_file(int progress);
+
+#ifdef XATTR_SUPPORT
+extern int xattr_get_prefix(struct xattr_list *, char *);
+extern void read_tar_xattr(char *, char *, int, struct tar_file *);
+extern void free_tar_xattrs(struct tar_file *);
+extern int read_xattrs_from_tarfile(struct inode_info *, struct xattr_list **);
+#else
+#define read_tar_xattr(a, b,c, d)
+#define free_tar_xattrs(a)
+#define read_xattrs_from_tarfile(a, b) 0
+#endif
 #endif

@@ -51,10 +51,8 @@ struct dir_ent {
 struct inode_info {
 	struct stat		buf;
 	struct inode_info	*next;
-	union {
-				struct pseudo_dev	*pseudo;
-				struct tar_file		*tar_file;
-	};
+	struct pseudo_dev	*pseudo;
+	struct tar_file		*tar_file;
 	squashfs_inode		inode;
 	unsigned int		inode_number;
 	unsigned int		nlink;
