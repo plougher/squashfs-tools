@@ -596,7 +596,9 @@ int read_pax_header(struct tar_file *file)
 		else if(strcmp(keyword, "linkpath") == 0)
 			file->link = strdup(value);
 		else if(strncmp(keyword, "LIBARCHIVE.xattr.", strlen("LIBARCHIVE.xattr.")) == 0)
-			read_tar_xattr(keyword + strlen("LIBARCHIVE.xattr."), value, strlen(value), file);
+			read_tar_xattr(keyword + strlen("LIBARCHIVE.xattr."), value, strlen(value), ENCODING_BASE64, file);
+		else if(strncmp(keyword, "SCHILY.xattr.", strlen("SCHILY.xattr.")) == 0)
+			read_tar_xattr(keyword + strlen("SCHILY.xattr."), value, vsize, ENCODING_BINARY, file);
 		else if(strcmp(keyword, "mtime") != 0 && strcmp(keyword, "atime") != 0 && strcmp(keyword, "ctime") != 0)
 			ERROR("Unrecognised keyword \"%s\" in pax header, ignoring\n", keyword);
 

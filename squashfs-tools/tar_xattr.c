@@ -109,14 +109,21 @@ static char *base64_decode(char *source, int size, int *bytes)
 }
 
 
-void read_tar_xattr(char *name, char *value, int size, struct tar_file *file)
+void read_tar_xattr(char *name, char *value, int size, int encoding, struct tar_file *file)
 {
-	int bytes;
-	char *data = base64_decode(value, size, &bytes);
+	char *data;
 	struct xattr_list *xattr;
 
-	if(data == NULL)
-		return;
+	if(encoding == ENCODING_BASE64) {
+		data = base64_decode(value, size, &size);
+		if(data == NULL)
+			return;
+	} else {
+		data = malloc(size);
+		if(data == NULL)
+			MEM_ERROR();
+		memcpy(data, value, size);
+	}
 
 	file->xattr_list = realloc(file->xattr_list, (file->xattrs + 1) *
 						sizeof(struct xattr_list));
@@ -129,11 +136,12 @@ void read_tar_xattr(char *name, char *value, int size, struct tar_file *file)
 	if(xattr->type == -1) {
 		ERROR("Unrecognised tar xattr prefix %s, ignoring\n", name);
 		free(xattr->full_name);
+		free(data);
 		return;
 	}
 
 	xattr->value = data;
-	xattr->vsize = bytes;
+	xattr->vsize = size;
 	file->xattrs ++;
 }
 

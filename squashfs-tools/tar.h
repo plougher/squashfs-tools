@@ -93,12 +93,15 @@ struct tar_file {
 #define GNUTAR_LONG_NAME	'L'
 #define GNUTAR_LONG_LINK	'K'
 
+#define ENCODING_BASE64		0
+#define ENCODING_BINARY		1
+
 extern void read_tar_file();
 extern squashfs_inode process_tar_file(int progress);
 
 #ifdef XATTR_SUPPORT
 extern int xattr_get_prefix(struct xattr_list *, char *);
-extern void read_tar_xattr(char *, char *, int, struct tar_file *);
+extern void read_tar_xattr(char *, char *, int, int, struct tar_file *);
 extern void free_tar_xattrs(struct tar_file *);
 extern int read_xattrs_from_tarfile(struct inode_info *, struct xattr_list **);
 #else
