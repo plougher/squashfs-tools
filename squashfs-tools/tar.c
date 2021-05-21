@@ -512,7 +512,7 @@ int read_pax_header(struct tar_file *file)
 {
 	long long size = (file->buf.st_size + 511) & ~511;
 	char *data, *ptr, *end, *keyword, *value;
-	int res, length, bytes;
+	int res, length, bytes, vsize;
 	long long number;
 
 	data = malloc(size);
@@ -551,16 +551,22 @@ int read_pax_header(struct tar_file *file)
 
 		/* Terminate the keyword string */
 		*ptr++ = '\0';
+		length --;
 
-		/* Store and parse value */
-		for(value = ptr, length--; length && *ptr != '\n'; length--, ptr++);
+		/* Store value */
+		value = ptr;
 
-		/* length should now be one, and we should have arrived at the newline */
-		if(length != 1 || *ptr != '\n')
+		/* Check the string is terminated by '\n' */
+		if(value[length - 1] != '\n')
 			goto failed;
 
-		/* Replace the newline with a NULL terminator */
-		*ptr = '\0';
+		/* Replace the '\n' with a nul terminator.
+		 * In some tars the value may be binary, and include nul
+		 * characters, and so we have to not treat it as a
+		 * null terminated string then, and so also store
+		 * the length of the string */
+		value[length - 1] = '\0';
+		vsize = length - 1;
 
 		/* Evaluate keyword */
 		if(strcmp(keyword, "size") == 0) {
@@ -595,7 +601,7 @@ int read_pax_header(struct tar_file *file)
 			ERROR("Unrecognised keyword \"%s\" in pax header, ignoring\n", keyword);
 
 		printf("%s = %s\n", keyword, value);
-		ptr ++;
+		ptr += length;
 	}
 
 	free(data);
