@@ -6213,10 +6213,16 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-no-xattrs") == 0)
 			no_xattrs = TRUE;
 
-		else if(strcmp(argv[i], "-xattrs") == 0)
-			no_xattrs = FALSE;
+		else if(strcmp(argv[i], "-xattrs") == 0) {
+			if(xattrs_supported())
+				no_xattrs = FALSE;
+			else {
+				ERROR("%s: xattrs are unsupported in "
+					"this build\n", argv[0]);
+				exit(1);
+			}
 
-		else if(strcmp(argv[i], "-nopad") == 0)
+		} else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;
 
 		else if(strcmp(argv[i], "-info") == 0)
