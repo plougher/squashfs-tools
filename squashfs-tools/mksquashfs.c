@@ -3234,7 +3234,10 @@ static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 					"scan1_encomp_readdir\n");
 			ERROR("%s\n", dir_name);
 		}
-		cur_dev = source_dev[index];
+
+		if(source > 1)
+			cur_dev = source_dev[index];
+
 		return create_dir_entry(dir_name, basename,
 			strdup(source_path[index ++]), dir);
 	}
