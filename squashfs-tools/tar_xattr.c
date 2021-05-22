@@ -113,6 +113,14 @@ void read_tar_xattr(char *name, char *value, int size, int encoding, struct tar_
 {
 	char *data;
 	struct xattr_list *xattr;
+	int i;
+
+	/* Some tars output both LIBARCHIVE and SCHILY xattrs, which
+	 * will lead to multiple definitions of the same xattr.
+	 * So check that this xattr hasn't already been defined */
+	for(i = 0; i < file->xattrs; i++)
+		if(strcmp(name, file->xattr_list[i].full_name) == 0)
+			return;
 
 	if(encoding == ENCODING_BASE64) {
 		data = base64_decode(value, size, &size);
