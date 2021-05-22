@@ -4085,8 +4085,14 @@ int parse_options(int argc, char *argv[])
 			}
 		} else if(strcmp(argv[i], "-user-xattrs") == 0 ||
 				strcmp(argv[i], "-u") == 0) {
-			user_xattrs = TRUE;
-			no_xattrs = FALSE;
+			if(xattrs_supported()) {
+				user_xattrs = TRUE;
+				no_xattrs = FALSE;
+			} else {
+				ERROR("%s: xattrs are unsupported in "
+					"this build\n", argv[0]);
+				exit(1);
+			}
 		} else if(strcmp(argv[i], "-dest") == 0 ||
 				strcmp(argv[i], "-d") == 0) {
 			if(++i == argc) {
