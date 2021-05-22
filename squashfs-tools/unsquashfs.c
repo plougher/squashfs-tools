@@ -4075,9 +4075,15 @@ int parse_options(int argc, char *argv[])
 				strcmp(argv[i], "-no") == 0)
 			no_xattrs = TRUE;
 		else if(strcmp(argv[i], "-xattrs") == 0 ||
-				strcmp(argv[i], "-x") == 0)
-			no_xattrs = FALSE;
-		else if(strcmp(argv[i], "-user-xattrs") == 0 ||
+				strcmp(argv[i], "-x") == 0) {
+			if(xattrs_supported())
+				no_xattrs = FALSE;
+			else {
+				ERROR("%s: xattrs are unsupported in "
+					"this build\n", argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-user-xattrs") == 0 ||
 				strcmp(argv[i], "-u") == 0) {
 			user_xattrs = TRUE;
 			no_xattrs = FALSE;
