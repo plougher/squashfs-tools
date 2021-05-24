@@ -6324,6 +6324,16 @@ print_compressor_options:
 				exit(1);
 			}
 			delete = TRUE;
+
+			/* ensure Mksquashfs doesn't try to read
+			 * the destination file as input, which
+			 * will result in an I/O loop */
+			if(stat(destination_file, &buf) == -1) {
+				/* disappered after creating? */
+				perror("Could not stat destination file");
+				exit(1);
+			}
+			ADD_ENTRY(buf);
 		} else {
 			perror("Could not stat destination file");
 			exit(1);
@@ -6346,6 +6356,10 @@ print_compressor_options:
 					"writing as destination");
 				exit(1);
 			}
+			/* ensure Mksquashfs doesn't try to read
+			 * the destination file as input, which
+			 * will result in an I/O loop */
+			ADD_ENTRY(buf);
 		}
 		else {
 			ERROR("Destination not block device or regular file\n");
