@@ -388,6 +388,9 @@ void restorefs()
 	restore_xattrs();
 	write_filesystem_tables(&sBlk);
 
+	if(!block_device)
+		ftruncate(fd, bytes);
+
 	if(!nopad && (i = bytes & (4096 - 1))) {
 		char temp[4096] = {0};
 		write_destination(fd, bytes, 4096 - i, temp);
