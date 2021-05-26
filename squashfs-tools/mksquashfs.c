@@ -299,6 +299,7 @@ static struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
 static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
 unsigned short get_checksum_mem(char *buff, int bytes);
 static void check_usable_phys_mem(int total_mem);
+static void print_summary();
 
 
 void prep_exit()
@@ -383,6 +384,8 @@ void restorefs()
 	id_count = sid_count;
 	restore_xattrs();
 	write_filesystem_tables(&sBlk, nopad);
+	if(!quiet)
+		print_summary();
 	exit(1);
 }
 
@@ -5152,75 +5155,6 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad
 
 	total_bytes += total_inode_bytes + total_directory_bytes +
 		sizeof(struct squashfs_super_block) + total_xattr_bytes;
-
-	if(quiet)
-		return;
-
-	printf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
-		" %d\n", exportable ? "Exportable " : "", SQUASHFS_MAJOR,
-		SQUASHFS_MINOR, comp->name, block_size);
-	printf("\t%s data, %s metadata, %s fragments,\n\t%s xattrs, %s ids\n",
-		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" :
-		"compressed", no_fragments ? "no" : noF ? "uncompressed" :
-		"compressed", no_xattrs ? "no" : noX ? "uncompressed" :
-		"compressed", noI || noId ? "uncompressed" : "compressed");
-	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
-		"not ");
-	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0,
-		bytes / (1024.0 * 1024.0));
-	printf("\t%.2f%% of uncompressed filesystem size (%.2f Kbytes)\n",
-		((float) bytes / total_bytes) * 100.0, total_bytes / 1024.0);
-	printf("Inode table size %lld bytes (%.2f Kbytes)\n",
-		inode_bytes, inode_bytes / 1024.0);
-	printf("\t%.2f%% of uncompressed inode table size (%lld bytes)\n",
-		((float) inode_bytes / total_inode_bytes) * 100.0,
-		total_inode_bytes);
-	printf("Directory table size %lld bytes (%.2f Kbytes)\n",
-		directory_bytes, directory_bytes / 1024.0);
-	printf("\t%.2f%% of uncompressed directory table size (%lld bytes)\n",
-		((float) directory_bytes / total_directory_bytes) * 100.0,
-		total_directory_bytes);
-	if(total_xattr_bytes) {
-		printf("Xattr table size %d bytes (%.2f Kbytes)\n",
-			xattr_bytes, xattr_bytes / 1024.0);
-		printf("\t%.2f%% of uncompressed xattr table size (%d bytes)\n",
-			((float) xattr_bytes / total_xattr_bytes) * 100.0,
-			total_xattr_bytes);
-	}
-	if(duplicate_checking)
-		printf("Number of duplicate files found %u\n", file_count -
-			dup_files);
-	else
-		printf("No duplicate files removed\n");
-	printf("Number of inodes %u\n", inode_count);
-	printf("Number of files %u\n", file_count);
-	if(!no_fragments)
-		printf("Number of fragments %u\n", fragments);
-	printf("Number of symbolic links %u\n", sym_count);
-	printf("Number of device nodes %u\n", dev_count);
-	printf("Number of fifo nodes %u\n", fifo_count);
-	printf("Number of socket nodes %u\n", sock_count);
-	printf("Number of directories %u\n", dir_count);
-	printf("Number of ids (unique uids + gids) %d\n", id_count);
-	printf("Number of uids %d\n", uid_count);
-
-	for(i = 0; i < id_count; i++) {
-		if(id_table[i]->flags & ISA_UID) {
-			struct passwd *user = getpwuid(id_table[i]->id);
-			printf("\t%s (%d)\n", user == NULL ? "unknown" :
-				user->pw_name, id_table[i]->id);
-		}
-	}
-
-	printf("Number of gids %d\n", guid_count);
-
-	for(i = 0; i < id_count; i++) {
-		if(id_table[i]->flags & ISA_GID) {
-			struct group *group = getgrgid(id_table[i]->id);
-			printf("\t%s (%d)\n", group == NULL ? "unknown" :
-				group->gr_name, id_table[i]->id);
-		}
-	}
 }
 
 
@@ -5690,6 +5624,78 @@ static void print_version()
 	printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");
 	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");
 	printf("GNU General Public License for more details.\n");
+}
+
+
+static void print_summary()
+{
+	int i;
+
+	printf("\n%sSquashfs %d.%d filesystem, %s compressed, data block size"
+		" %d\n", exportable ? "Exportable " : "", SQUASHFS_MAJOR,
+		SQUASHFS_MINOR, comp->name, block_size);
+	printf("\t%s data, %s metadata, %s fragments,\n\t%s xattrs, %s ids\n",
+		noD ? "uncompressed" : "compressed", noI ?  "uncompressed" :
+		"compressed", no_fragments ? "no" : noF ? "uncompressed" :
+		"compressed", no_xattrs ? "no" : noX ? "uncompressed" :
+		"compressed", noI || noId ? "uncompressed" : "compressed");
+	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
+		"not ");
+	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0,
+		bytes / (1024.0 * 1024.0));
+	printf("\t%.2f%% of uncompressed filesystem size (%.2f Kbytes)\n",
+		((float) bytes / total_bytes) * 100.0, total_bytes / 1024.0);
+	printf("Inode table size %lld bytes (%.2f Kbytes)\n",
+		inode_bytes, inode_bytes / 1024.0);
+	printf("\t%.2f%% of uncompressed inode table size (%lld bytes)\n",
+		((float) inode_bytes / total_inode_bytes) * 100.0,
+		total_inode_bytes);
+	printf("Directory table size %lld bytes (%.2f Kbytes)\n",
+		directory_bytes, directory_bytes / 1024.0);
+	printf("\t%.2f%% of uncompressed directory table size (%lld bytes)\n",
+		((float) directory_bytes / total_directory_bytes) * 100.0,
+		total_directory_bytes);
+	if(total_xattr_bytes) {
+		printf("Xattr table size %d bytes (%.2f Kbytes)\n",
+			xattr_bytes, xattr_bytes / 1024.0);
+		printf("\t%.2f%% of uncompressed xattr table size (%d bytes)\n",
+			((float) xattr_bytes / total_xattr_bytes) * 100.0,
+			total_xattr_bytes);
+	}
+	if(duplicate_checking)
+		printf("Number of duplicate files found %u\n", file_count -
+			dup_files);
+	else
+		printf("No duplicate files removed\n");
+	printf("Number of inodes %u\n", inode_count);
+	printf("Number of files %u\n", file_count);
+	if(!no_fragments)
+		printf("Number of fragments %u\n", fragments);
+	printf("Number of symbolic links %u\n", sym_count);
+	printf("Number of device nodes %u\n", dev_count);
+	printf("Number of fifo nodes %u\n", fifo_count);
+	printf("Number of socket nodes %u\n", sock_count);
+	printf("Number of directories %u\n", dir_count);
+	printf("Number of ids (unique uids + gids) %d\n", id_count);
+	printf("Number of uids %d\n", uid_count);
+
+	for(i = 0; i < id_count; i++) {
+		if(id_table[i]->flags & ISA_UID) {
+			struct passwd *user = getpwuid(id_table[i]->id);
+			printf("\t%s (%d)\n", user == NULL ? "unknown" :
+				user->pw_name, id_table[i]->id);
+		}
+	}
+
+	printf("Number of gids %d\n", guid_count);
+
+	for(i = 0; i < id_count; i++) {
+		if(id_table[i]->flags & ISA_GID) {
+			struct group *group = getgrgid(id_table[i]->id);
+			printf("\t%s (%d)\n", group == NULL ? "unknown" :
+				group->gr_name, id_table[i]->id);
+		}
+	}
 }
 
 
@@ -6660,6 +6666,8 @@ print_compressor_options:
 
 	set_progressbar_state(FALSE);
 	write_filesystem_tables(&sBlk, nopad);
+	if(!quiet)
+		print_summary();
 
 	if(logging)
 		fclose(log_fd);
