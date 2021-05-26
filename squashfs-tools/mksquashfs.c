@@ -296,10 +296,11 @@ static struct file_info *add_non_dup(long long file_size, long long bytes,
 long long generic_write_table(long long, void *, int, void *, int);
 void restorefs();
 static struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
-static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad);
+static void write_filesystem_tables(struct squashfs_super_block *sBlk);
 unsigned short get_checksum_mem(char *buff, int bytes);
 static void check_usable_phys_mem(int total_mem);
 static void print_summary();
+void write_destination(int fd, long long byte, long long bytes, void *buff);
 
 
 void prep_exit()
@@ -357,6 +358,8 @@ int multiply_overflowll(long long a, int multiplier)
 
 void restorefs()
 {
+	int i;
+
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
 	bytes = sbytes;
@@ -383,9 +386,21 @@ void restorefs()
 	fragments = sfragments;
 	id_count = sid_count;
 	restore_xattrs();
-	write_filesystem_tables(&sBlk, nopad);
+	write_filesystem_tables(&sBlk);
+
+	if(!nopad && (i = bytes & (4096 - 1))) {
+		char temp[4096] = {0};
+		write_destination(fd, bytes, 4096 - i, temp);
+	}
+
+	close(fd);
+
+	if(recovery_file)
+		unlink(recovery_file);
+
 	if(!quiet)
 		print_summary();
+
 	exit(1);
 }
 
@@ -5114,10 +5129,8 @@ static void read_recovery_data(char *recovery_file, char *destination_file)
 }
 
 
-static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad)
+static void write_filesystem_tables(struct squashfs_super_block *sBlk)
 {
-	int i;
-
 	sBlk->fragments = fragments;
 	sBlk->no_ids = id_count;
 	sBlk->inode_table_start = write_inodes();
@@ -5142,16 +5155,6 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk, int nopad
 
 	SQUASHFS_INSWAP_SUPER_BLOCK(sBlk); 
 	write_destination(fd, SQUASHFS_START, sizeof(*sBlk), sBlk);
-
-	if(!nopad && (i = bytes & (4096 - 1))) {
-		char temp[4096] = {0};
-		write_destination(fd, bytes, 4096 - i, temp);
-	}
-
-	close(fd);
-
-	if(recovery_file)
-		unlink(recovery_file);
 
 	total_bytes += total_inode_bytes + total_directory_bytes +
 		sizeof(struct squashfs_super_block) + total_xattr_bytes;
@@ -6665,7 +6668,18 @@ print_compressor_options:
 		EXIT_MKSQUASHFS();
 
 	set_progressbar_state(FALSE);
-	write_filesystem_tables(&sBlk, nopad);
+	write_filesystem_tables(&sBlk);
+
+	if(!nopad && (i = bytes & (4096 - 1))) {
+		char temp[4096] = {0};
+		write_destination(fd, bytes, 4096 - i, temp);
+	}
+
+	close(fd);
+
+	if(recovery_file)
+		unlink(recovery_file);
+
 	if(!quiet)
 		print_summary();
 
