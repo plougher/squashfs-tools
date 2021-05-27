@@ -49,15 +49,44 @@ struct tar_header {
 };
 
 
+struct sparse_entry {
+	char	offset[12];
+	char	number[12];
+};
+
+
+struct short_sparse_header {
+	char			pad[386];
+	struct sparse_entry	sparse[4];
+	char			isextended;
+	char			realsize[12];
+};
+
+
+struct long_sparse_header {
+	struct sparse_entry	sparse[21];
+	char			isextended;
+};
+
+
+struct file_map {
+	long long	offset;
+	long long	number;
+};
+
+
 struct tar_file {
+	long long		realsize;
 	struct stat		buf;
 	struct file_info	*file;
 	struct xattr_list	*xattr_list;
+	struct file_map		*map;
 	char			*pathname;
 	char			*link;
 	char			*uname;
 	char			*gname;
 	int			xattrs;
+	int			map_entries;
 	char			have_size;
 	char			have_uid;
 	char			have_gid;
@@ -92,6 +121,7 @@ struct tar_file {
 
 #define GNUTAR_LONG_NAME	'L'
 #define GNUTAR_LONG_LINK	'K'
+#define GNUTAR_SPARSE		'S'
 
 #define ENCODING_BASE64		0
 #define ENCODING_BINARY		1

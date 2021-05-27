@@ -459,12 +459,94 @@ static void put_file_buffer(struct file_buffer *file_buffer)
 }
 
 
+int sparse_reader(struct tar_file *file, long long cur_offset, char *dest, int bytes, long long *off)
+{
+	static int cur;
+	static long long offset;
+	static long long number;
+	int avail, res;
+
+	if(bytes == 0) {
+		cur = 0;
+		offset = file->map[0].offset;
+		number = file->map[0].number;
+		*off = offset;
+		return 0;
+	}
+
+	if(cur_offset != offset)
+		return -1;
+
+	avail = bytes > number ? number : bytes;
+	res = read_bytes(STDIN_FILENO, dest, avail);
+	if(res != avail)
+		BAD_ERROR("Failed to read tar file %s, the tarfile appears to be truncated or corrupted\n", file->pathname);
+
+	offset += avail;
+	number -= avail;
+
+	if(number == 0) {
+		cur ++;
+		offset = file->map[cur].offset;
+		number = file->map[cur].number;
+	}
+
+	*off = offset;
+	return avail;
+}
+
+
+int read_sparse_block(struct tar_file *file, int fd, char *dest, int bytes, int block)
+{
+	static long long offset;
+	long long cur_offset = (long long) block * block_size;
+	int avail, copied = bytes;
+
+	if(block == 0)
+		sparse_reader(file, cur_offset, dest, 0, &offset);
+
+	if(offset - cur_offset >= block_size && bytes == block_size) {
+		memset(dest, 0, block_size);
+		return block_size;
+	}
+
+	while(bytes) {
+		if(offset - cur_offset > 0) {
+			avail = offset - cur_offset < bytes ? offset - cur_offset : bytes;
+
+			memset(dest, 0, avail);
+			dest += avail;
+			cur_offset += avail;
+			bytes -= avail;
+		} else if(cur_offset == offset) {
+			avail = sparse_reader(file, cur_offset, dest, bytes, &offset);
+
+			dest += avail;
+			cur_offset += avail;
+			bytes -= avail;
+		} else
+			return -1;
+	}
+
+	return copied;
+}
+
+
+static int read_block(struct tar_file *file, int fd, char *data, int bytes, int block)
+{
+	if(file->map)
+		return read_sparse_block(file, fd, data, bytes, block);
+	else
+		return read_bytes(fd, data, bytes);
+}
+
+
 static int seq = 0;
 static void read_tar_data(struct tar_file *tar_file)
 {
 	struct stat *buf = &tar_file->buf;
 	struct file_buffer *file_buffer;
-	int blocks;
+	int blocks, block = 0;
 	long long bytes, read_size;
 
 	bytes = 0;
@@ -479,9 +561,9 @@ static void read_tar_data(struct tar_file *tar_file)
 		file_buffer->noD = noD;
 		file_buffer->error = FALSE;
 
-		if(blocks > 1) {
+		if((block + 1) < blocks) {
 			/* non-tail block should be exactly block_size */
-			file_buffer->size = read_bytes(STDIN_FILENO, file_buffer->data, block_size);
+			file_buffer->size = read_block(tar_file, STDIN_FILENO, file_buffer->data, block_size, block);
 			if(file_buffer->size != block_size)
 				BAD_ERROR("Failed to read tar file %s, the tarfile appears to be truncated or corrupted\n", tar_file->pathname);
 
@@ -492,14 +574,14 @@ static void read_tar_data(struct tar_file *tar_file)
 		} else {
 			/* The remaining bytes will be rounded up to 512 bytes */
 			int expected = (read_size + 511 - bytes) & ~511;
-			int size = read_bytes(STDIN_FILENO, file_buffer->data, expected);
+			int size = read_block(tar_file, STDIN_FILENO, file_buffer->data, expected, block);
 
 			if(size != expected)
 				BAD_ERROR("Failed to read tar file %s, the tarfile appears to be truncated or corrupted\n", tar_file->pathname);
 
 			file_buffer->size = read_size - bytes;
 		}
-	} while(-- blocks > 0);
+	} while(++ block < blocks);
 
 	file_buffer->fragment = is_fragment(read_size);
 	put_file_buffer(file_buffer);
@@ -616,6 +698,126 @@ failed:
 }
 
 
+struct file_map *read_sparse_headers(struct tar_file *file, struct short_sparse_header *short_header, int *entries)
+{
+	struct long_sparse_header long_header;
+	int res, i, map_entries, isextended;
+	struct file_map *map = NULL;
+
+	file->buf.st_size = read_number(short_header->realsize, 12);
+	if(file->buf.st_size == -1) {
+		ERROR("Failed to read offset from sparse header\n");
+		goto failed;
+	}
+
+	map = malloc(4 * sizeof(struct file_map));
+	if(map == NULL)
+		MEM_ERROR();
+
+	/* There should always be at least one sparse entry */
+	map[0].offset = read_number(short_header->sparse[0].offset, 12);
+	if(map[0].offset == -1) {
+		ERROR("Failed to read offset from sparse header\n");
+		goto failed;
+	}
+
+	map[0].number = read_number(short_header->sparse[0].number, 12);
+	if(map[0].number == -1) {
+		ERROR("Failed to read number from sparse header\n");
+		goto failed;
+	}
+
+	/* There may be three more sparse entries in this short header.
+	 * An offset of 0 means unused */
+	for(i = 1; i < 4; i++) {
+		map[i].offset = read_number(short_header->sparse[i].offset, 12);
+		if(map[i].offset == -1) {
+			ERROR("Failed to read offset from sparse header\n");
+			goto failed;
+		}
+
+		if(map[i].offset == 0)
+			break;
+
+		map[i].number = read_number(short_header->sparse[i].number, 12);
+		if(map[i].number == -1) {
+			ERROR("Failed to read number from sparse header\n");
+			goto failed;
+		}
+	}
+
+	/* If we've read two or less entries, then we expect the isextended
+	 * entry to be FALSE */
+	isextended = read_number(&short_header->isextended, 1);
+	if(i < 3 && isextended) {
+		ERROR("Invalid sparse header\n");
+		goto failed;
+	}
+
+	map_entries = i;
+
+	while(isextended) {
+		res = read_bytes(STDIN_FILENO, &long_header, 512);
+		if(res == FALSE) {
+			ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+			goto failed;
+		}
+
+		map = realloc(map, (map_entries + 21) * sizeof(struct file_map));
+		if(map == NULL)
+			MEM_ERROR();
+
+		/* There may be up to 21 sparse entries in this long header.
+		 * An offset of 0 means unused */
+		for(i = map_entries; i < (map_entries + 21); i++) {
+			map[i].offset = read_number(long_header.sparse[i - map_entries].offset, 12);
+			if(map[i].offset == -1) {
+				ERROR("Failed to read offset from sparse header\n");
+				goto failed;
+			}
+
+			if(map[i].offset == 0)
+				break;
+
+			map[i].number = read_number(long_header.sparse[i - map_entries].number, 12);
+			if(map[i].number == -1) {
+				ERROR("Failed to read number from sparse header\n");
+				goto failed;
+			}
+		}
+
+		/* If we've read less than 21 entries, then we expect the isextended
+		 * entry to be FALSE */
+		isextended = read_number(&long_header.isextended, 1);
+		if(i < (map_entries + 21) && isextended) {
+			ERROR("Invalid sparse header\n");
+			goto failed;
+		}
+
+		map_entries = i;
+	}
+
+	long long total_data = 0;
+	long long total_sparse = 0;
+	for(i = 0; i < map_entries; i++) {
+		if(i > 0)
+			total_sparse += (map[i].offset - (map[i - 1].offset + map[i - 1].number));
+		total_data += map[i].number;
+		printf("%d: %lld %lld\n", i, map[i].offset, map[i].number);
+	}
+
+	printf("Total data %lld\n", total_data);
+	printf("Total sparse %lld\n", total_sparse);
+
+	*entries = map_entries;
+	return map;
+
+failed:
+	free(map);
+	return NULL;
+}
+
+
 static void copy_tar_header(struct tar_file *dest, struct tar_file *source)
 {
 	memcpy(dest, source, sizeof(struct tar_file));
@@ -676,6 +878,11 @@ again:
 	}
 
 	switch(header.type) {
+		case GNUTAR_SPARSE:
+			file->map = read_sparse_headers(file, (struct short_sparse_header *) &header, &file->map_entries);
+			if(file->map == NULL)
+				goto failed;
+			/* fall through */
 		case TAR_NORMAL1:
 		case TAR_NORMAL2:
 		case TAR_NORMAL3:
