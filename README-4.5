@@ -29,10 +29,16 @@ Summary of changes (and sections below)
 
 1.4 New Pseudo file definitions which support timestamps (see section 7).
 
-1.5 New Pseudo file definitions to create Hard Links and Sockets/Fifos
+1.5 New Pseudo file definitions to create File references (Hard Links)
     (see section 8).
 
-1.6 New Pseudo file "R" definition which allows a Regular file to
+1.6 New Pseudo file definitions to create Sockets/Fifos (see section 9).
+
+1.7 Mksquashfs now allows no source directory ( specified as - )
+    to be specified, with all input from pseudo file definitions
+    (see section 10).
+
+1.8 New Pseudo file "R" definition which allows a Regular file to
     be created with data stored within the Pseudo file (see 2.3 below).
 
 
@@ -67,29 +73,26 @@ Summary of changes (and sections below)
 3.2 New -no-hardlinks option in Mksquashfs, which makes
     Mksquashfs treat hardlinked files as duplicates instead.
 
-3.3 Mksquashfs now allows no source directory ( specified as - )
-    to be specified, with all input from pseudo file definitions.
-
-3.4 New -help options in Mksquashfs and Unsquashfs which output
+3.3 New -help options in Mksquashfs and Unsquashfs which output
     to standard out, rather than standard error.
 
-3.5 -no-exit-code option added to Unsquashfs which makes it
+3.4 -no-exit-code option added to Unsquashfs which makes it
     not output an error exit code.
 
-3.6 Exit code in Unsquashfs changed to distinguish between
+3.5 Exit code in Unsquashfs changed to distinguish between
     non-fatal errors (exit of 2), and fatal errors
     (exit code of 1).
 
-3.7 Xattr id count added in Unsquashfs "-stat" output.
+3.6 Xattr id count added in Unsquashfs "-stat" output.
 
-3.8 Unsquashfs "write outside directory" exploit fixed.
+3.7 Unsquashfs "write outside directory" exploit fixed.
 
-3.9 Error handling in Unsquashfs writer thread fixed.
+3.8 Error handling in Unsquashfs writer thread fixed.
 
-3.10 Fix failure to truncate destination file when appending
-     aborted in Mksquashfs.
+3.9 Fix failure to truncate destination file when appending
+    aborted in Mksquashfs.
 
-3.11 Prevent Mksquashfs reading the destination file
+3.10 Prevent Mksquashfs reading the destination file
      as input.
 
 
@@ -153,13 +156,18 @@ For example given the command line
 % mksquashfs dir-a/dir-b/dir-c/file1 dir-A/dir-B/file2 sqfs
 
 Mksquashfs will strip the leading directories, and put file1 and file2
-into the same root directory.  If file1 and file2 were directories it
-would place their contents into the same root directory.
+into the same root directory.  If file1 and file2 are directories it
+will place the directories into the same root directory, but, if
+only one directory is specified, it will put the contents of that
+directory into the root directory.  Obviously, for a lot of the time
+this is what you want.  But, if it isn't what you want it can be
+quite difficult to get Mksquashfs to do something different.
 
-At lot of people don't like this, and wouild prefer Mksquashfs acted
-like "tar", which does not strip leading directories. In the above example,
-the tar archive would contain the pathnames "dir-a/dir-b/dir-c/file1" and
-"dir-A/dir-B/file2".
+A lot of people don't like this, and would prefer Mksquashfs acted
+like "tar", which does not strip leading directories.  This allows
+you to create a directory hierarchy from the pathnames of the supplied
+files.  In the above example, the tar archive would contain the pathnames
+"dir-a/dir-b/dir-c/file1" and "dir-A/dir-B/file2".
 
 Mksquashfs will now act like tar if given the option -no-strip, or -tarstyle.
 
@@ -232,6 +240,69 @@ shell by backslashes, i.e.
 Obviously anything "date" accepts as a valid string can be used, such as
 "yesterday", "last week" etc.
 
+
+8. New Pseudo file definition to create File references (Hard Links)
+---------------------------------------------------------------------
+
+The existing "f" Pseudo definition allows a regular file to be
+created from the output of a command (or shell).
+
+Often this is used to reference a file outside the source directories,
+by executing "cat", e.g.
+
+README f 0555 0 0 cat /home/phillip/latest-version/README
+
+Because this is quite a frequent use of the definition, a new faster
+"File reference" or Hard Link (in filesystem terms a File reference is a
+Hard Link) Pseudo definition has been added named 'l'.
+
+README l /home/phillip/latest-version/README
+
+Will create a reference to "/home/phillip/latest-version/README",
+and obviously the timestamp/mode and owership will be used.
+
+The definition also be used to create additional references to
+files within the source directories.  For instance if "phillip/latest/README"
+was a file being added to the filesystem, then
+
+README l phillip/latest/README
+
+Will create a Hard Link (and increment the nlink count on the inode).
+
+In both cases, the Path to the file being referenced is the system
+filesystem path, and can be absolute (prefixed with /), or relative
+to the current working directory.
+
+There is an additional 'L' Pseudo definition, which closes a loophole in
+the above 'l' definition.  The 'l' Pseudo definition cannot create references
+or Hard Links to files created by Pseudo definitions, because by
+definition they do not exist in the system filesystem.
+
+with 'L' the referenced file is expected to be a Pseudo file, and in this case
+the Path is taken to be from the root of the Squashfs filesystem being created,
+e.g.
+
+char-dev c 0555 0 0 1 2
+
+link L char-dev
+
+Will create a Hard Link named "link" to the character device called "char-dev"
+created by the previous Pseudo definition.
+
+
+10. Mksquashfs now allows no source directories ( specified as - )
+------------------------------------------------------------------
+
+Mksquashfs has removed the requirement to specify any physical source
+directories, and a Squashfs filesystem can now be built entirely with
+Pseudo definitions.
+
+For example the following command line
+
+% mksquashfs - img.sqfs -p "/ d 777 phillip users" -p "/hello l /tmp/typescript" -p "/link L hello"
+
+Will create a root directory, a file created by a reference to a file
+within the filesystem, and create a hard link to it.
 
 ?. Compatiblity
 ---------------
