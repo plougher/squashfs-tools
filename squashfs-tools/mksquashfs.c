@@ -263,6 +263,10 @@ int logging=FALSE;
 int tarstyle = FALSE;
 int keep_as_directory = FALSE;
 
+/* should Mksquashfs read files from stdin, like cpio? */
+int cpiostyle = FALSE;
+char filename_terminator = '\n';
+
 /* Should Mksquashfs detect hardlinked files? */
 int no_hardlinks = FALSE;
 
@@ -4148,6 +4152,9 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		/*
 		 * Matching file.
 		 *
+		 * For tarstyle source handling (leaf directores are
+		 * recursively descended)
+		 *
 		 * - If we're at the leaf of the source, then we either match
 		 *   or encompass this pre-existing include.  So delete any
 		 *   sub-directories of this pre-existing include.
@@ -4160,20 +4167,36 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		 * - Otherwise this is not the leaf of the source, or the leaf of
 		 *   the pre-existing include, so recurse continuing walking the
 		 *   source.
+		 *
+		 * For cpiostyle source handling (leaf directories are not
+		 * recursively descended)
+		 *
+		 * - If we're at the leaf of the source, then we have a pre-existing include.
+		 *   So nothing to do.
+		 *
+		 * - If we're not at the leaf of the source, but we're at
+		 *   the leaf of the pre-existing include, then recurse
+		 *   walking the source.
+		 *
+		 * - Otherwise this is not the leaf of the source, or the leaf of
+		 *   the pre-existing include, so recurse continuing walking the
+		 *   source.
 		 */
 		if(source[0] == '\0') {
-			if(entry->dir) {
+			if(tarstyle && entry->dir) {
 				free_dir(entry->dir);
 				entry->dir = NULL;
 			}
 		} else if(S_ISDIR(buf.st_mode)) {
-			if(entry->dir) {
+			if(cpiostyle || entry->dir) {
 				excluded(entry->name, paths, &new);
 				subpath = subpathname(entry);
 				sub = add_source(entry->dir, source, subpath,
 							file, new, depth + 1);
 				if(sub == NULL)
 					goto failed_match;
+				entry->dir = sub;
+				sub->dir_ent = entry;
 			}
 		} else {
 			ERROR("ERROR: Source component %s is not a directory\n", name);
@@ -4284,7 +4307,11 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 
 			excluded(entry->name, paths, &newp);
 
-			if(entry->dir == NULL) {
+			if(entry->dir == NULL && cpiostyle) {
+				entry->dir = create_dir(pathname(entry),
+					subpathname(entry), dir->depth + 1);
+				entry->dir->dir_ent = entry;
+			} else if(entry->dir == NULL) {
 				cur_dev = entry->inode->buf.st_dev;
 				new = dir_scan1(pathname(entry),
 					subpathname(entry), newp, scan1_readdir,
@@ -4307,10 +4334,82 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 }
 
 
+static char *get_filename_from_stdin(char terminator)
+{
+	static int bytes = 0;
+	static int size = 0;
+	static char *buffer = NULL;
+	static char *filename = NULL;
+	static char *src = NULL;
+	char *dest = filename;
+	int used = 0;
+
+	if(buffer == NULL) {
+		buffer = malloc(4096);
+		if(buffer == NULL)
+			MEM_ERROR();
+	}
+
+	while(1) {
+		if(bytes == 0) {
+			bytes = read_bytes(STDIN_FILENO, buffer, 4096);
+			if(bytes == 0) {
+				if(used)
+					ERROR("Got EOF when reading filename from STDIN, ignoring\n");
+				free(filename);
+				free(buffer);
+				return NULL;
+			}
+			src = buffer;
+		}
+
+		if(size - used == 0) {
+			char *buff = realloc(filename, size += 100);
+			if(buff == NULL)
+				MEM_ERROR();
+			dest = buff + (dest - filename);
+			filename = buff;
+		}
+
+		*dest = *src++;
+		bytes --;
+		used ++;
+
+		if(*dest == terminator)
+			break;
+
+		dest++;
+	}
+
+	*dest = '\0';
+	return filename;
+}
+
+
+static char *get_next_filename()
+{
+	static int cur = 0;
+	char *filename;
+
+	if(cpiostyle) {
+		while(1) {
+			filename = get_filename_from_stdin(filename_terminator);
+			if(filename == NULL || strlen(filename) != 0)
+				break;
+		}
+		return filename;
+	} else if(cur < source)
+		return source_path[cur ++];
+	else
+		return NULL;
+}
+
+
 static squashfs_inode process_source(int progress)
 {
 	int size = 0, absolute = FALSE, relative = FALSE, i, inroot = FALSE;
 	char *buff = NULL, *result;
+	char *filename;
 	struct stat buf;
 	struct dir_ent *entry;
 	struct dir_info *new;
@@ -4336,19 +4435,19 @@ static squashfs_inode process_source(int progress)
 
 	free(buff);
 
-	for(i = 0; i < source; i++) {
-		new = add_source(root_dir, source_path[i], "", NULL, paths, 1);
+	for(i = 0; (filename = get_next_filename()); i++) {
+		new = add_source(root_dir, filename, "", NULL, paths, 1);
 
 		if(new) {
 			/* does argv[i] start from the root directory? */
-			if(source_path[i][0] == '/' || inroot)
+			if(filename[0] == '/' || inroot)
 				absolute = TRUE;
 			else
 				relative = TRUE;
 			root_dir = new;
 		} else
 			ERROR("Error: Failed to add source %s, ignoring\n",
-							source_path[i]);
+							filename);
 	}
 
 	if(root_dir == NULL)
@@ -5818,6 +5917,9 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-no-strip") == 0 ||
 					strcmp(argv[i], "-tarstyle") == 0)
 			tarstyle = TRUE;
+		else if(strcmp(argv[i], "-stdin") == 0 ||
+					strcmp(argv[i], "-cpiostyle") == 0)
+			cpiostyle = TRUE;
 		else if(strcmp(argv[i], "-throttle") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
 				ERROR("%s: %s missing or invalid value\n",
@@ -6631,10 +6733,10 @@ print_compressor_options:
 
 	set_progressbar_state(progress);
 
-	if(!source)
-		inode = no_sources(progress);
-	else if(tarstyle)
+	if(tarstyle || cpiostyle)
 		inode = process_source(progress);
+	else if(!source)
+		inode = no_sources(progress);
 	else
 		inode = dir_scan(S_ISDIR(source_buf.st_mode), progress);
 
