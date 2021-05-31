@@ -4121,7 +4121,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 
 	res = lstat(file, &buf);
 	if (res == -1) {
-		ERROR("Error: Can't stat %s because %s", file, strerror(errno));
+		ERROR("Error: Can't stat %s because %s\n", file, strerror(errno));
 		goto failed_early;
 	}
 
