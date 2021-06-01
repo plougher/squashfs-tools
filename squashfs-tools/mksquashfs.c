@@ -5917,8 +5917,7 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-no-strip") == 0 ||
 					strcmp(argv[i], "-tarstyle") == 0)
 			tarstyle = TRUE;
-		else if(strcmp(argv[i], "-stdin") == 0 ||
-					strcmp(argv[i], "-cpiostyle") == 0)
+		else if(strcmp(argv[i], "-cpiostyle") == 0)
 			cpiostyle = TRUE;
 		else if(strcmp(argv[i], "-throttle") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
