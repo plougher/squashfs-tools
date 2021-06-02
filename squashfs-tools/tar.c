@@ -83,6 +83,28 @@ long long read_number(char *s, int size)
 }
 
 
+long long read_decimal(char *s, int maxsize, int *bytes)
+{
+	long long res = 0;
+	int size = maxsize;
+
+	for(; size && *s >= '0' && *s <= '9'; s++, size--)
+		res = (res * 10) + *s - '0';
+
+	/* size should be > 0, and we should be at the terminator */
+	if(size > 0 && *s == '\n') {
+		*bytes = maxsize - size + 1;
+		return res;
+	}
+
+	/* Bad value or out of bytes? */
+	if(size)
+		return -1;
+	else
+		return -2;
+}
+
+
 char *read_long_string(int size, int skip)
 {
 	char buffer[512];
@@ -596,6 +618,8 @@ int read_pax_header(struct tar_file *file)
 	char *data, *ptr, *end, *keyword, *value;
 	int res, length, bytes, vsize;
 	long long number;
+	long long major = -1, minor = -1, realsize = -1;
+	char *name = NULL;
 
 	data = malloc(size);
 	if(data == NULL)
@@ -677,6 +701,23 @@ int read_pax_header(struct tar_file *file)
 			file->pathname = strdup(value);
 		else if(strcmp(keyword, "linkpath") == 0)
 			file->link = strdup(value);
+		else if(strcmp(keyword, "GNU.sparse.major") == 0) {
+			res = sscanf(value, "%lld %n", &number, &bytes);
+			if(res < 1 || value[bytes] != '\0')
+				goto failed;
+			major = number;
+		} else if(strcmp(keyword, "GNU.sparse.minor") == 0) {
+			res = sscanf(value, "%lld %n", &number, &bytes);
+			if(res < 1 || value[bytes] != '\0')
+				goto failed;
+			minor = number;
+		} else if(strcmp(keyword, "GNU.sparse.realsize") == 0) {
+			res = sscanf(value, "%lld %n", &number, &bytes);
+			if(res < 1 || value[bytes] != '\0')
+				goto failed;
+			realsize = number;
+		} else if(strcmp(keyword, "GNU.sparse.name") == 0)
+			name = strdup(value);
 		else if(strncmp(keyword, "LIBARCHIVE.xattr.", strlen("LIBARCHIVE.xattr.")) == 0)
 			read_tar_xattr(keyword + strlen("LIBARCHIVE.xattr."), value, strlen(value), ENCODING_BASE64, file);
 		else if(strncmp(keyword, "SCHILY.xattr.", strlen("SCHILY.xattr.")) == 0)
@@ -686,6 +727,18 @@ int read_pax_header(struct tar_file *file)
 
 		printf("%s = %s\n", keyword, value);
 		ptr += length;
+	}
+
+	/* Is this a sparse file, and version (1.0) we support? */
+	if(major != -1 && minor != -1 && realsize != -1 && name) {
+		if(major == 1 && minor == 0) {
+			file->realsize = realsize;
+			file->sparse = TRUE;
+			file->pathname = name;
+		} else {
+			ERROR("Pax sparse file not Major 1, Minor 0!\n");
+			free(name);
+		}
 	}
 
 	free(data);
@@ -797,6 +850,7 @@ struct file_map *read_sparse_headers(struct tar_file *file, struct short_sparse_
 		map_entries = i;
 	}
 
+#if 0
 	long long total_data = 0;
 	long long total_sparse = 0;
 	for(i = 0; i < map_entries; i++) {
@@ -808,6 +862,90 @@ struct file_map *read_sparse_headers(struct tar_file *file, struct short_sparse_
 
 	printf("Total data %lld\n", total_data);
 	printf("Total sparse %lld\n", total_sparse);
+#endif
+
+	*entries = map_entries;
+	file->sparse = TRUE;
+
+	return map;
+
+failed:
+	free(map);
+	return NULL;
+}
+
+
+struct file_map *read_sparse_map(struct tar_file *file, int *entries)
+{
+	int map_entries, bytes, size;
+	struct file_map *map = NULL;
+	char buffer[529], *src = buffer;
+	long long offset, number, res;
+	int atoffset = TRUE, i = 0;
+
+	res = read_bytes(STDIN_FILENO, buffer, 512);
+	if(res == FALSE) {
+		ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+		goto failed;
+	}
+
+	/* First number is the number of map entries */
+	map_entries = read_decimal(src, 512, &bytes);
+	if(map_entries < 0) {
+		ERROR("Could not parse Pax sparse map data\n");
+		goto failed;
+	}
+
+	src += bytes;
+	size = 512 - bytes;
+
+	while(i < map_entries) {
+		res = read_decimal(src, size, &bytes);
+		if(res == -1) {
+			ERROR("Could not parse Pax sparse map data\n");
+			goto failed;
+		}
+
+		if(res == -2) {
+			/* Out of data */
+			if(size >= 18) {
+				/* Too large block of '0' .. '9' without a '\n' */
+				ERROR("Could not parse Pax sparse map data\n");
+				goto failed;
+			}
+
+			memmove(buffer, src, size);
+			res = read_bytes(STDIN_FILENO, buffer + size, 512);
+			if(res == FALSE) {
+				ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+				goto failed;
+			}
+
+			src = buffer;
+			size += 512;
+			continue;
+		}
+
+		src += bytes;
+		size -= bytes;
+
+		if(atoffset)
+			offset = res;
+		else {
+			number = res;
+
+			if(i % 50 == 0) {
+				map = realloc(map, (i + 50) * sizeof(struct file_map));
+				if(map == NULL)
+					MEM_ERROR();
+			}
+
+			map[i].offset = offset;
+			map[i++].number = number;
+		}
+
+		atoffset = !atoffset;
+	}
 
 	*entries = map_entries;
 	return map;
@@ -1180,6 +1318,14 @@ void read_tar_file()
 
 		if(status == TAR_ERROR)
 			BAD_ERROR("Error occurred reading tar file.  Aborting\n");
+
+		/* If Pax sparse file, read the map data now */
+		if(tar_file && tar_file->sparse && tar_file->map == NULL) {
+			tar_file->map = read_sparse_map(tar_file, &tar_file->map_entries);
+			if(tar_file->map == NULL)
+				BAD_ERROR("Error occurred reading tar file.  Aborting\n");
+			tar_file->buf.st_size = tar_file->realsize;
+		}
 
 		if(tar_file && (tar_file->buf.st_mode & S_IFMT) == S_IFREG)
 			progress_bar_size((tar_file->buf.st_size + block_size - 1)
