@@ -5919,7 +5919,10 @@ int main(int argc, char *argv[])
 			tarstyle = TRUE;
 		else if(strcmp(argv[i], "-cpiostyle") == 0)
 			cpiostyle = TRUE;
-		else if(strcmp(argv[i], "-throttle") == 0) {
+		else if(strcmp(argv[i], "-cpiostyle0") == 0) {
+			cpiostyle = TRUE;
+			filename_terminator = '\0';
+		} else if(strcmp(argv[i], "-throttle") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
 				ERROR("%s: %s missing or invalid value\n",
 							argv[0], argv[i - 1]);
