@@ -488,7 +488,7 @@ int sparse_reader(struct tar_file *file, long long cur_offset, char *dest, int b
 	if(number == 0) {
 		cur ++;
 		offset = file->map[cur].offset;
-		number = file->map[cur].number;
+		number = (file->map[cur].number + 511) & ~511;
 	}
 
 	*off = offset;
