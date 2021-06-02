@@ -725,7 +725,7 @@ int read_pax_header(struct tar_file *file)
 		else if(strcmp(keyword, "mtime") != 0 && strcmp(keyword, "atime") != 0 && strcmp(keyword, "ctime") != 0)
 			ERROR("Unrecognised keyword \"%s\" in pax header, ignoring\n", keyword);
 
-		printf("%s = %s\n", keyword, value);
+		//printf("%s = %s\n", keyword, value);
 		ptr += length;
 	}
 
@@ -751,14 +751,31 @@ failed:
 }
 
 
+int check_sparse_map(struct file_map *map, int map_entries, long long size, long long realsize)
+{
+	long long total_data = 0;
+	long long total_sparse = map[0].offset;
+	int i;
+
+	for(i = 0; i < map_entries; i++) {
+		if(i > 0)
+			total_sparse += (map[i].offset - (map[i - 1].offset + map[i - 1].number));
+		total_data += map[i].number;
+	}
+
+	return total_data == size && total_data + total_sparse == realsize;
+}
+
+
 struct file_map *read_sparse_headers(struct tar_file *file, struct short_sparse_header *short_header, int *entries)
 {
 	struct long_sparse_header long_header;
 	int res, i, map_entries, isextended;
 	struct file_map *map = NULL;
+	long long realsize;
 
-	file->buf.st_size = read_number(short_header->realsize, 12);
-	if(file->buf.st_size == -1) {
+	realsize = read_number(short_header->realsize, 12);
+	if(realsize == -1) {
 		ERROR("Failed to read offset from sparse header\n");
 		goto failed;
 	}
@@ -850,21 +867,14 @@ struct file_map *read_sparse_headers(struct tar_file *file, struct short_sparse_
 		map_entries = i;
 	}
 
-#if 0
-	long long total_data = 0;
-	long long total_sparse = 0;
-	for(i = 0; i < map_entries; i++) {
-		if(i > 0)
-			total_sparse += (map[i].offset - (map[i - 1].offset + map[i - 1].number));
-		total_data += map[i].number;
-		printf("%d: %lld %lld\n", i, map[i].offset, map[i].number);
+	res = check_sparse_map(map, map_entries, file->buf.st_size, realsize);
+	if(res == FALSE) {
+		ERROR("Sparse file map inconsistent\n");
+		goto failed;
 	}
 
-	printf("Total data %lld\n", total_data);
-	printf("Total sparse %lld\n", total_sparse);
-#endif
-
 	*entries = map_entries;
+	file->buf.st_size = realsize;
 	file->sparse = TRUE;
 
 	return map;
@@ -898,6 +908,7 @@ struct file_map *read_sparse_map(struct tar_file *file, int *entries)
 
 	src += bytes;
 	size = 512 - bytes;
+	file->buf.st_size -= 512;
 
 	while(i < map_entries) {
 		res = read_decimal(src, size, &bytes);
@@ -923,6 +934,7 @@ struct file_map *read_sparse_map(struct tar_file *file, int *entries)
 
 			src = buffer;
 			size += 512;
+			file->buf.st_size -= 512;
 			continue;
 		}
 
@@ -945,6 +957,12 @@ struct file_map *read_sparse_map(struct tar_file *file, int *entries)
 		}
 
 		atoffset = !atoffset;
+	}
+
+	res = check_sparse_map(map, map_entries, file->buf.st_size, file->realsize);
+	if(res == FALSE) {
+		ERROR("Sparse file map inconsistent\n");
+		goto failed;
 	}
 
 	*entries = map_entries;
