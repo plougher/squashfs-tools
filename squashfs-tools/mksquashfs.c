@@ -2670,11 +2670,6 @@ struct file_info *write_file(struct dir_ent *dir, int *dup)
 	struct file_buffer *read_buffer;
 	struct file_info *file;
 
-	if(dir->inode->tarfile && dir->inode->tar_file->file) {
-		*dup = dir->inode->tar_file->duplicate;
-		return dir->inode->tar_file->file;
-	}
-
 again:
 	read_buffer = get_file_buffer();
 	status = read_buffer->error;
@@ -3882,8 +3877,18 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
 			switch(buf->st_mode & S_IFMT) {
 				case S_IFREG:
+					if(dir_ent->inode->tarfile && dir_ent->inode->tar_file->file)
+						file = dir_ent->inode->tar_file->file;
+					else {
+						file = write_file(dir_ent, &duplicate_file);
+						INFO("file %s, uncompressed size %lld "
+							"bytes %s\n",
+							subpathname(dir_ent),
+							(long long) buf->st_size,
+							duplicate_file ?  "DUPLICATE" :
+							 "");
+					}
 					squashfs_type = SQUASHFS_FILE_TYPE;
-					file = write_file(dir_ent, &duplicate_file);
 					*inode = create_inode(NULL, dir_ent,
 						squashfs_type, file->file_size,
 						file->start, file->blocks,
@@ -3895,12 +3900,6 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 						free(file->block_list);
 						free(file);
 					}
-					INFO("file %s, uncompressed size %lld "
-						"bytes %s\n",
-						subpathname(dir_ent),
-						(long long) buf->st_size,
-						duplicate_file ?  "DUPLICATE" :
-						 "");
 					break;
 
 				case S_IFDIR:

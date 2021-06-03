@@ -91,7 +91,6 @@ struct tar_file {
 	char			have_uid;
 	char			have_gid;
 	char			sparse;
-	int			duplicate;
 };
 
 #define IS_TARFILE(a)	(a->tarfile)

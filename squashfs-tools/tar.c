@@ -44,6 +44,8 @@
 #define TRUE 1
 #define FALSE 0
 
+extern int silent;
+
 long long read_octal(char *s, int size)
 {
 	long long res = 0;
@@ -1413,12 +1415,15 @@ squashfs_inode process_tar_file(int progress)
 			tar_file, paths, 1, &dir_ent, link);
 
 		if(new) {
+			int duplicate_file;
 			root_dir = new;
 
 			if(S_ISREG(tar_file->buf.st_mode) && dir_ent->inode->read == FALSE) {
 				update_info(dir_ent);
-				tar_file->file = write_file(dir_ent, &tar_file->duplicate);
+				tar_file->file = write_file(dir_ent, &duplicate_file);
 				dir_ent->inode->read = TRUE;
+				INFO("file %s, uncompressed size %lld " "bytes %s\n", tar_file->pathname,
+					(long long) tar_file->buf.st_size, duplicate_file ?  "DUPLICATE" : "");
 			}
 
 			if(link)
