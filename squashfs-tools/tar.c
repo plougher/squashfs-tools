@@ -39,6 +39,7 @@
 #include "xattr.h"
 #include "tar.h"
 #include "progressbar.h"
+#include "info.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -1415,6 +1416,7 @@ squashfs_inode process_tar_file(int progress)
 			root_dir = new;
 
 			if(S_ISREG(tar_file->buf.st_mode) && dir_ent->inode->read == FALSE) {
+				update_info(dir_ent);
 				tar_file->file = write_file(dir_ent, &tar_file->duplicate);
 				dir_ent->inode->read = TRUE;
 			}
