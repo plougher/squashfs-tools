@@ -343,10 +343,10 @@ static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 						" a non-directory, cannot add"
 						" tar pathname %s!\n",
 						subpath, tarfile->pathname);
-			} else
-					BAD_ERROR("%s exists in the tar file as"
-						" two different files!\n",
-						tarfile->pathname);
+			} else {
+				ERROR("%s already exists in the tar file, ignoring\n", tarfile->pathname);
+				goto failed_early;
+			}
 		} else {
 			if(source[0] == '\0') {
 				/* sub-directory exists, we must be adding a
@@ -1161,10 +1161,10 @@ again:
 		file->pathname = strndup(filename, size);
 	}
 
-	/* Reject empty filenames */
+	/* Ignore empty filenames */
 	if(strlen(file->pathname) == 0) {
-		ERROR("Empty tar filename after skipping leading /, ./, or ../\n");
-		goto failed;
+		ERROR("Empty tar filename after skipping leading /, ./, or ../, ignoring\n");
+		goto ignored;
 	}
 
 	/* Read mtime */
