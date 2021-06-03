@@ -615,9 +615,9 @@ static void read_tar_data(struct tar_file *tar_file)
 }
 
 
-int read_pax_header(struct tar_file *file)
+int read_pax_header(struct tar_file *file, long long st_size)
 {
-	long long size = (file->buf.st_size + 511) & ~511;
+	long long size = (st_size + 511) & ~511;
 	char *data, *ptr, *end, *keyword, *value;
 	int res, length, bytes, vsize;
 	long long number;
@@ -635,14 +635,14 @@ int read_pax_header(struct tar_file *file)
 		return FALSE;
 	}
 
-	for(ptr = data, end = data + file->buf.st_size; ptr < end;) {
+	for(ptr = data, end = data + st_size; ptr < end;) {
 		/*
 		 * What follows should be <length> <keyword>=<value>,
 		 * where <length> is the full length, including the
 		 * <length> field and newline
 		 */
 		res = sscanf(ptr, "%d%n", &length, &bytes);
-		if(res < 1 || length <= bytes || length > file->buf.st_size)
+		if(res < 1 || length <= bytes || length > st_size)
 			goto failed;
 
 		length -= bytes;
@@ -1066,7 +1066,7 @@ again:
 			type = S_IFIFO;
 			break;
 		case TAR_XHDR:
-			res = read_pax_header(file);
+			res = read_pax_header(file, file->buf.st_size);
 			if(res == FALSE) {
 				ERROR("Failed to read pax header\n");
 				goto failed;
@@ -1079,7 +1079,7 @@ again:
 					MEM_ERROR();
 				memset(global, 0, sizeof(struct tar_file));
 			}
-			res = read_pax_header(global);
+			res = read_pax_header(global, file->buf.st_size);
 			if(res == FALSE) {
 				ERROR("Failed to read pax header\n");
 				goto failed;
