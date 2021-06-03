@@ -142,7 +142,7 @@ char *read_long_string(int size, int skip)
 			} else if(length >= 2 && strncmp(filename, "./", 2) == 0) {
 				filename += 2;
 				length -= 2;
-			} else if(length > 1 && *filename == '/') {
+			} else if(length >= 1 && *filename == '/') {
 				filename++;
 				length--;
 			} else
@@ -1124,7 +1124,7 @@ again:
 			} else if(size >= 2 && strncmp(filename, "./", 2) == 0) {
 				filename += 2;
 				size -= 2;
-			} else if(size > 1 && *filename == '/') {
+			} else if(size >= 1 && *filename == '/') {
 				filename++;
 				size--;
 			} else
@@ -1151,7 +1151,7 @@ again:
 			} else if(size >= 2 && strncmp(filename, "./", 2) == 0) {
 				filename += 2;
 				size -= 2;
-			} else if(size > 1 && *filename == '/') {
+			} else if(size >= 1 && *filename == '/') {
 				filename++;
 				size--;
 			} else
