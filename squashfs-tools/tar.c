@@ -615,6 +615,27 @@ static void read_tar_data(struct tar_file *tar_file)
 }
 
 
+char *skip_components(char *filename, int size, int *sizep)
+{
+	while(1) {
+		if(size >= 3 && strncmp(filename, "../", 3) == 0) {
+			filename += 3;
+			size -= 3;
+		} else if(size >= 2 && strncmp(filename, "./", 2) == 0) {
+			filename += 2;
+			size -= 2;
+		} else if(size >= 1 && *filename == '/') {
+			filename++;
+			size--;
+		} else
+			break;
+	}
+
+	*sizep = size;
+	return filename;
+}
+
+
 int read_pax_header(struct tar_file *file, long long st_size)
 {
 	long long size = (st_size + 511) & ~511;
@@ -1115,22 +1136,7 @@ again:
 	if(file->pathname == NULL && header.prefix[0] != '\0') {
 		int length1, length2;
 
-		size = 155;
-		filename = header.prefix;
-		while(1) {
-			if(size >= 3 && strncmp(filename, "../", 3) == 0) {
-				filename += 3;
-				size -= 3;
-			} else if(size >= 2 && strncmp(filename, "./", 2) == 0) {
-				filename += 2;
-				size -= 2;
-			} else if(size >= 1 && *filename == '/') {
-				filename++;
-				size--;
-			} else
-				break;
-		}
-
+		filename = skip_components(header.prefix, 155, &size);
 		length1 = strnlen(filename, size);
 		length2 = strnlen(header.name, 100);
 		file->pathname = malloc(length1 + length2 + 2);
@@ -1142,22 +1148,7 @@ again:
 		memcpy(file->pathname + length1 + 1, header.name, length2);
 		file->pathname[length1 + length2 + 1] = '\0';
 	} else if (file->pathname == NULL) {
-		size = 100;
-		filename = header.name;
-		while(1) {
-			if(size >= 3 && strncmp(filename, "../", 3) == 0) {
-				filename += 3;
-				size -= 3;
-			} else if(size >= 2 && strncmp(filename, "./", 2) == 0) {
-				filename += 2;
-				size -= 2;
-			} else if(size >= 1 && *filename == '/') {
-				filename++;
-				size--;
-			} else
-				break;
-		}
-
+		filename = skip_components(header.name, 100, &size);
 		file->pathname = strndup(filename, size);
 	}
 
