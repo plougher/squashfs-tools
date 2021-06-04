@@ -631,7 +631,9 @@ char *skip_components(char *filename, int size, int *sizep)
 			break;
 	}
 
-	*sizep = size;
+	if(sizep)
+		*sizep = size;
+
 	return filename;
 }
 
@@ -722,7 +724,7 @@ int read_pax_header(struct tar_file *file, long long st_size)
 		else if(strcmp(keyword, "gname") == 0)
 			file->gname = strdup(value);
 		else if(strcmp(keyword, "path") == 0)
-			file->pathname = strdup(value);
+			file->pathname = strdup(skip_components(value, vsize, NULL));
 		else if(strcmp(keyword, "linkpath") == 0)
 			file->link = strdup(value);
 		else if(strcmp(keyword, "GNU.sparse.major") == 0) {
