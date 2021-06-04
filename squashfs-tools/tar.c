@@ -355,10 +355,10 @@ static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 				if(S_ISDIR(tarfile->buf.st_mode)) {
 					if(entry->inode == NULL)
 						entry->inode = new_inode(tarfile);
-					else
-						BAD_ERROR("%s exists in the tar file as"
-							" two different directories!\n",
-							tarfile->pathname);
+					else {
+						ERROR("%s already exists in the tar file, ignoring!\n", tarfile->pathname);
+						goto failed_early;
+					}
 				} else
 					BAD_ERROR("%s exists in the tar file as"
 						" both a directory and"
