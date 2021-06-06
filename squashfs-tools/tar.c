@@ -677,8 +677,8 @@ int read_pax_header(struct tar_file *file, long long st_size)
 		/* Store and parse keyword */
 		for(keyword = ptr; length && *ptr != '='; length--, ptr++);
 
-		/* length should be greater than 2, given it includes the = and newline */
-		if(length < 3)
+		/* length should be 2 or more, given it includes the = and newline */
+		if(length < 2)
 			goto failed;
 
 		/* Terminate the keyword string */
