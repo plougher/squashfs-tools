@@ -719,6 +719,12 @@ int read_pax_header(struct tar_file *file, long long st_size)
 				goto failed;
 			file->buf.st_gid = number;
 			file->have_gid = TRUE;
+		} else if(strcmp(keyword, "mtime") == 0) {
+			res = sscanf(value, "%lld %n", &number, &bytes);
+			if(res < 1 || value[bytes] != '.')
+				goto failed;
+			file->buf.st_mtime = number;
+			file->have_mtime = TRUE;
 		} else if(strcmp(keyword, "uname") == 0)
 			file->uname = strdup(value);
 		else if(strcmp(keyword, "gname") == 0)
@@ -748,7 +754,7 @@ int read_pax_header(struct tar_file *file, long long st_size)
 			read_tar_xattr(keyword + strlen("LIBARCHIVE.xattr."), value, strlen(value), ENCODING_BASE64, file);
 		else if(strncmp(keyword, "SCHILY.xattr.", strlen("SCHILY.xattr.")) == 0)
 			read_tar_xattr(keyword + strlen("SCHILY.xattr."), value, vsize, ENCODING_BINARY, file);
-		else if(strcmp(keyword, "mtime") != 0 && strcmp(keyword, "atime") != 0 && strcmp(keyword, "ctime") != 0 && strcmp(keyword, "comment") != 0)
+		else if(strcmp(keyword, "atime") != 0 && strcmp(keyword, "ctime") != 0 && strcmp(keyword, "comment") != 0)
 			ERROR("Unrecognised keyword \"%s\" in pax header, ignoring\n", keyword);
 
 		//printf("%s = %s\n", keyword, value);
@@ -1161,12 +1167,14 @@ again:
 	}
 
 	/* Read mtime */
-	res = read_number(header.mtime, 12);
-	if(res == -1) {
-		ERROR("Failed to read file mtime from tar header\n");
-		goto failed;
+	if(file->have_mtime == FALSE) {
+		res = read_number(header.mtime, 12);
+		if(res == -1) {
+			ERROR("Failed to read file mtime from tar header\n");
+			goto failed;
+		}
+		file->buf.st_mtime = res;
 	}
-	file->buf.st_mtime = res;
 
 	/* Read mode and file type */
 	res = read_number(header.mode, 8);

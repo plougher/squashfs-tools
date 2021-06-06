@@ -90,6 +90,7 @@ struct tar_file {
 	char			have_size;
 	char			have_uid;
 	char			have_gid;
+	char			have_mtime;
 	char			sparse;
 };
 
