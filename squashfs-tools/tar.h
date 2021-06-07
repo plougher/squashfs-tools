@@ -138,7 +138,7 @@ extern void read_tar_xattr(char *, char *, int, int, struct tar_file *);
 extern void free_tar_xattrs(struct tar_file *);
 extern int read_xattrs_from_tarfile(struct inode_info *, struct xattr_list **);
 #else
-#define read_tar_xattr(a, b,c, d)
+#define read_tar_xattr(a, b, c, d, e)
 #define free_tar_xattrs(a)
 #define read_xattrs_from_tarfile(a, b) 0
 #endif
