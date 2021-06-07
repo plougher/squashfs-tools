@@ -44,6 +44,11 @@ int display_progress_bar = FALSE;
 /* flag whether the progress bar is temporarily disbled */
 int temp_disabled = FALSE;
 
+/* flag whether we need to output a newline before printing
+ * a line - this is because progressbar printing does *not*
+ * output a newline */
+int need_nl = FALSE;
+
 int rotate = 0;
 int cur_uncompressed = 0, estimated_uncompressed = 0;
 int columns;
@@ -147,8 +152,10 @@ void disable_progress_bar()
 {
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &progress_mutex);
 	pthread_mutex_lock(&progress_mutex);
-	if(display_progress_bar)
+	if(need_nl) {
 		printf("\n");
+		need_nl = FALSE;
+	}
 	temp_disabled = TRUE;
 	pthread_cleanup_pop(1);
 }
@@ -163,6 +170,7 @@ void set_progressbar_state(int state)
 			progress_bar(cur_uncompressed, estimated_uncompressed,
 				columns);
 			printf("\n");
+			need_nl = FALSE;
 		}
 		display_progress_bar = state;
 	}
@@ -196,9 +204,10 @@ void *progress_thrd(void *arg)
 		rotate = (rotate + 1) % 4;
 
 		pthread_mutex_lock(&progress_mutex);
-		if(display_progress_bar && !temp_disabled)
-			progress_bar(cur_uncompressed, estimated_uncompressed,
-				columns);
+		if(display_progress_bar && !temp_disabled) {
+			progress_bar(cur_uncompressed, estimated_uncompressed, columns);
+			need_nl = TRUE;
+		}
 		pthread_mutex_unlock(&progress_mutex);
 	}
 }
@@ -217,8 +226,10 @@ void progressbar_error(char *fmt, ...)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &progress_mutex);
 	pthread_mutex_lock(&progress_mutex);
 
-	if(display_progress_bar && !temp_disabled)
-		fprintf(stderr, "\n");
+	if(need_nl) {
+		printf("\n");
+		need_nl = FALSE;
+	}
 
 	va_start(ap, fmt);
 	vfprintf(stderr, fmt, ap);
@@ -235,8 +246,10 @@ void progressbar_info(char *fmt, ...)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &progress_mutex);
 	pthread_mutex_lock(&progress_mutex);
 
-	if(display_progress_bar && !temp_disabled)
+	if(need_nl) {
 		printf("\n");
+		need_nl = FALSE;
+	}
 
 	va_start(ap, fmt);
 	vprintf(fmt, ap);
