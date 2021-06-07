@@ -638,6 +638,39 @@ char *skip_components(char *filename, int size, int *sizep)
 }
 
 
+int read_sparse_value(struct tar_file *file, char *value, int map_entries)
+{
+	int bytes, res, i = 0;
+	long long number;
+
+	while(1) {
+		res = sscanf(value, "%lld %n", &number, &bytes);
+		if(res < 1 || value[bytes] != ',')
+			goto failed;
+
+		file->map[i].offset = number;
+
+		value += bytes + 1;
+
+		res = sscanf(value, "%lld %n", &number, &bytes);
+		if(res < 1 || (value[bytes] != ',' && value[bytes] != '\0'))
+			goto failed;
+
+		file->map[i++].number = number;
+
+		if(value[bytes] == '\0' || i >= map_entries)
+			break;
+
+		value += bytes + 1;
+	}
+
+	return TRUE;
+
+failed:
+	return FALSE;
+}
+
+
 int read_pax_header(struct tar_file *file, long long st_size)
 {
 	long long size = (st_size + 511) & ~511;
@@ -782,11 +815,16 @@ int read_pax_header(struct tar_file *file, long long st_size)
 			if(cur_entry < map_entries)
 				file->map[cur_entry++].number = number;
 			old_gnu_ver = 0;
+		} else if(strcmp(keyword, "GNU.sparse.map") == 0 && old_gnu_pax == 2 && old_gnu_ver != 0) {
+			res = read_sparse_value(file, value, map_entries);
+			if(res == FALSE)
+				goto failed;
+			old_gnu_ver = 1;
 		} else if(strncmp(keyword, "LIBARCHIVE.xattr.", strlen("LIBARCHIVE.xattr.")) == 0)
 			read_tar_xattr(keyword + strlen("LIBARCHIVE.xattr."), value, strlen(value), ENCODING_BASE64, file);
 		else if(strncmp(keyword, "SCHILY.xattr.", strlen("SCHILY.xattr.")) == 0)
 			read_tar_xattr(keyword + strlen("SCHILY.xattr."), value, vsize, ENCODING_BINARY, file);
-		else if(strcmp(keyword, "GNU.sparse.numblocks") != 0 && strcmp(keyword, "GNU.sparse.offset") != 0 && strcmp(keyword, "GNU.sparse.numbytes") != 0 && strcmp(keyword, "atime") != 0 && strcmp(keyword, "ctime") != 0 && strcmp(keyword, "comment") != 0)
+		else if(strcmp(keyword, "GNU.sparse.numblocks") != 0 && strcmp(keyword, "GNU.sparse.offset") != 0 && strcmp(keyword, "GNU.sparse.numbytes") != 0 && strcmp(keyword, "GNU.sparse.map") != 0 && strcmp(keyword, "atime") != 0 && strcmp(keyword, "ctime") != 0 && strcmp(keyword, "comment") != 0)
 			ERROR("Unrecognised keyword \"%s\" in pax header, ignoring\n", keyword);
 
 		//printf("%s = %s\n", keyword, value);
@@ -808,10 +846,12 @@ int read_pax_header(struct tar_file *file, long long st_size)
 	}
 
 	/* Is this an older sparse format? */
-	if(old_gnu_pax == 2) {
+	if(old_gnu_pax == 2 && (old_gnu_ver == 0 || (old_gnu_ver == 1 && name))) {
 		file->realsize = realsize;
 		file->map_entries = map_entries;
 		file->sparse_pax = 1;
+		if(old_gnu_ver == 1)
+			file->pathname = name;
 	}
 
 	free(data);
