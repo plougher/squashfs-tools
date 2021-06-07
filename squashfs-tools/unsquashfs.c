@@ -546,7 +546,7 @@ void print_filename(char *pathname, struct inode *inode)
 
 	user = numeric ? NULL : getpwuid(inode->uid);
 	if(user == NULL) {
-		int res = snprintf(dummy, 12, "%d", inode->uid);
+		int res = snprintf(dummy, 12, "%u", inode->uid);
 		if(res < 0)
 			EXIT_UNSQUASH("snprintf failed in print_filename()\n");
 		else if(res >= 12)
@@ -560,7 +560,7 @@ void print_filename(char *pathname, struct inode *inode)
 		 
 	group = numeric ? NULL : getgrgid(inode->gid);
 	if(group == NULL) {
-		int res = snprintf(dummy2, 12, "%d", inode->gid);
+		int res = snprintf(dummy2, 12, "%u", inode->gid);
 		if(res < 0)
 			EXIT_UNSQUASH("snprintf failed in print_filename()\n");
 		else if(res >= 12)
