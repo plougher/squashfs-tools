@@ -107,6 +107,12 @@ struct tar_file {
 #define TAR_GXHDR	'g'
 #define TAR_XHDR	'x'
 
+#define GNUTAR_LONG_NAME	'L'
+#define GNUTAR_LONG_LINK	'K'
+#define GNUTAR_SPARSE		'S'
+
+#define SOLARIS_XHDR		'X'
+
 #define V7_MAGIC	"\0\0\0\0\0\0\0"
 #define GNU_MAGIC	"ustar  "
 #define USTAR_MAGIC	"ustar\00000"
@@ -119,10 +125,6 @@ struct tar_file {
 #define TAR_EOF		1
 #define TAR_ERROR	2
 #define TAR_IGNORED	3
-
-#define GNUTAR_LONG_NAME	'L'
-#define GNUTAR_LONG_LINK	'K'
-#define GNUTAR_SPARSE		'S'
 
 #define ENCODING_BASE64		0
 #define ENCODING_BINARY		1

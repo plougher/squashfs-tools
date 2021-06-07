@@ -1095,6 +1095,7 @@ again:
 			type = S_IFIFO;
 			break;
 		case TAR_XHDR:
+		case SOLARIS_XHDR:
 			res = read_pax_header(file, file->buf.st_size);
 			if(res == FALSE) {
 				ERROR("Failed to read pax header\n");
