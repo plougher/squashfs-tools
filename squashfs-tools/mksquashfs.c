@@ -5789,7 +5789,7 @@ static void print_summary()
 	for(i = 0; i < id_count; i++) {
 		if(id_table[i]->flags & ISA_UID) {
 			struct passwd *user = getpwuid(id_table[i]->id);
-			printf("\t%s (%d)\n", user == NULL ? "unknown" :
+			printf("\t%s (%u)\n", user == NULL ? "unknown" :
 				user->pw_name, id_table[i]->id);
 		}
 	}
