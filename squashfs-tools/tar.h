@@ -91,7 +91,7 @@ struct tar_file {
 	char			have_uid;
 	char			have_gid;
 	char			have_mtime;
-	char			sparse;
+	char			sparse_pax;
 };
 
 #define IS_TARFILE(a)	(a->tarfile)

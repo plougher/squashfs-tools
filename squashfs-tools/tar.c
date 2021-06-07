@@ -645,6 +645,8 @@ int read_pax_header(struct tar_file *file, long long st_size)
 	int res, length, bytes, vsize;
 	long long number;
 	long long major = -1, minor = -1, realsize = -1;
+	int old_gnu_pax = FALSE, old_gnu_ver = -1;
+	int map_entries = 0, cur_entry = 0;
 	char *name = NULL;
 
 	data = malloc(size);
@@ -750,27 +752,66 @@ int read_pax_header(struct tar_file *file, long long st_size)
 			realsize = number;
 		} else if(strcmp(keyword, "GNU.sparse.name") == 0)
 			name = strdup(value);
-		else if(strncmp(keyword, "LIBARCHIVE.xattr.", strlen("LIBARCHIVE.xattr.")) == 0)
+		else if(strcmp(keyword, "GNU.sparse.size") == 0) {
+			res = sscanf(value, "%lld %n", &number, &bytes);
+			if(res < 1 || value[bytes] != '\0')
+				goto failed;
+			realsize = number;
+			old_gnu_pax = 1;
+		} else if(strcmp(keyword, "GNU.sparse.numblocks") == 0 && old_gnu_pax == 1) {
+			res = sscanf(value, "%lld %n", &number, &bytes);
+			if(res < 1 || value[bytes] != '\0')
+				goto failed;
+			file->map = malloc(number * sizeof(struct file_map));
+			if(file->map == NULL)
+				MEM_ERROR();
+			map_entries = number;
+			cur_entry = 0;
+			old_gnu_pax = 2;
+		} else if(strcmp(keyword, "GNU.sparse.offset") == 0 && old_gnu_pax == 2 && old_gnu_ver != 1) {
+			res = sscanf(value, "%lld %n", &number, &bytes);
+			if(res < 1 || value[bytes] != '\0')
+				goto failed;
+			if(cur_entry < map_entries)
+				file->map[cur_entry].offset = number;
+			old_gnu_ver = 0;
+		} else if(strcmp(keyword, "GNU.sparse.numbytes") == 0 && old_gnu_pax == 2 && old_gnu_ver != 1) {
+			res = sscanf(value, "%lld %n", &number, &bytes);
+			if(res < 1 || value[bytes] != '\0')
+				goto failed;
+			if(cur_entry < map_entries)
+				file->map[cur_entry++].number = number;
+			old_gnu_ver = 0;
+		} else if(strncmp(keyword, "LIBARCHIVE.xattr.", strlen("LIBARCHIVE.xattr.")) == 0)
 			read_tar_xattr(keyword + strlen("LIBARCHIVE.xattr."), value, strlen(value), ENCODING_BASE64, file);
 		else if(strncmp(keyword, "SCHILY.xattr.", strlen("SCHILY.xattr.")) == 0)
 			read_tar_xattr(keyword + strlen("SCHILY.xattr."), value, vsize, ENCODING_BINARY, file);
-		else if(strcmp(keyword, "atime") != 0 && strcmp(keyword, "ctime") != 0 && strcmp(keyword, "comment") != 0)
+		else if(strcmp(keyword, "GNU.sparse.numblocks") != 0 && strcmp(keyword, "GNU.sparse.offset") != 0 && strcmp(keyword, "GNU.sparse.numbytes") != 0 && strcmp(keyword, "atime") != 0 && strcmp(keyword, "ctime") != 0 && strcmp(keyword, "comment") != 0)
 			ERROR("Unrecognised keyword \"%s\" in pax header, ignoring\n", keyword);
 
 		//printf("%s = %s\n", keyword, value);
 		ptr += length;
 	}
 
-	/* Is this a sparse file, and version (1.0) we support? */
-	if(major != -1 && minor != -1 && realsize != -1 && name) {
+	/* Is this a sparse file, and version (1.0)?
+	 * If it is flag it, and the sparse map will be read
+	 * later */
+	if(!old_gnu_pax && major != -1 && minor != -1 && realsize != -1 && name) {
 		if(major == 1 && minor == 0) {
 			file->realsize = realsize;
-			file->sparse = TRUE;
+			file->sparse_pax = 2;
 			file->pathname = name;
 		} else {
 			ERROR("Pax sparse file not Major 1, Minor 0!\n");
 			free(name);
 		}
+	}
+
+	/* Is this an older sparse format? */
+	if(old_gnu_pax == 2) {
+		file->realsize = realsize;
+		file->map_entries = map_entries;
+		file->sparse_pax = 1;
 	}
 
 	free(data);
@@ -907,7 +948,6 @@ struct file_map *read_sparse_headers(struct tar_file *file, struct short_sparse_
 
 	*entries = map_entries;
 	file->buf.st_size = realsize;
-	file->sparse = TRUE;
 
 	return map;
 
@@ -989,12 +1029,6 @@ struct file_map *read_sparse_map(struct tar_file *file, int *entries)
 		}
 
 		atoffset = !atoffset;
-	}
-
-	res = check_sparse_map(map, map_entries, file->buf.st_size, file->realsize);
-	if(res == FALSE) {
-		ERROR("Sparse file map inconsistent\n");
-		goto failed;
 	}
 
 	*entries = map_entries;
@@ -1326,7 +1360,7 @@ ignored:
 void read_tar_file()
 {
 	struct tar_file *tar_file;
-	int status;
+	int status, res;
        
 	while(1) {
 		struct file_buffer *file_buffer;
@@ -1344,11 +1378,18 @@ void read_tar_file()
 		if(status == TAR_ERROR)
 			BAD_ERROR("Error occurred reading tar file.  Aborting\n");
 
-		/* If Pax sparse file, read the map data now */
-		if(tar_file && tar_file->sparse && tar_file->map == NULL) {
+		/* If Pax 1.0 sparse file, read the map data now */
+		if(tar_file && tar_file->sparse_pax == 2) {
 			tar_file->map = read_sparse_map(tar_file, &tar_file->map_entries);
 			if(tar_file->map == NULL)
 				BAD_ERROR("Error occurred reading tar file.  Aborting\n");
+		}
+
+		/* Check Pax sparse map for consistency */
+		if(tar_file && tar_file->sparse_pax) {
+			res = check_sparse_map(tar_file->map, tar_file->map_entries, tar_file->buf.st_size, tar_file->realsize);
+			if(res == FALSE)
+				BAD_ERROR("Sparse file map inconsistent.  Aborting\n");
 			tar_file->buf.st_size = tar_file->realsize;
 		}
 
