@@ -790,7 +790,9 @@ static void squashfs_stat(char *source)
 	printf("Number of fragments %u\n", sBlk.s.fragments);
 	printf("Number of inodes %u\n", sBlk.s.inodes);
 	printf("Number of ids %d\n", sBlk.s.no_ids);
-	printf("Number of xattr ids %lld\n", xattr_ids);
+
+	if(!SQUASHFS_NO_XATTRS(sBlk.s.flags))
+		printf("Number of xattr ids %lld\n", xattr_ids);
 
 	TRACE("sBlk.s.inode_table_start 0x%llx\n", sBlk.s.inode_table_start);
 	TRACE("sBlk.s.directory_table_start 0x%llx\n", sBlk.s.directory_table_start);
