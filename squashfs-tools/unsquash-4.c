@@ -796,8 +796,8 @@ static void squashfs_stat(char *source)
 
 	TRACE("sBlk.s.inode_table_start 0x%llx\n", sBlk.s.inode_table_start);
 	TRACE("sBlk.s.directory_table_start 0x%llx\n", sBlk.s.directory_table_start);
-	TRACE("sBlk.s.fragment_table_start 0x%llx\n\n", sBlk.s.fragment_table_start);
-	TRACE("sBlk.s.lookup_table_start 0x%llx\n\n", sBlk.s.lookup_table_start);
+	TRACE("sBlk.s.fragment_table_start 0x%llx\n", sBlk.s.fragment_table_start);
+	TRACE("sBlk.s.lookup_table_start 0x%llx\n", sBlk.s.lookup_table_start);
 	TRACE("sBlk.s.id_table_start 0x%llx\n", sBlk.s.id_table_start);
 	TRACE("sBlk.s.xattr_id_table_start 0x%llx\n", sBlk.s.xattr_id_table_start);
 }
