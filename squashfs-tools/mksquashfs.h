@@ -220,6 +220,7 @@ extern struct pathnames *paths;
 extern int tarfile;
 extern int root_mode_opt;
 extern mode_t root_mode;
+extern struct inode_info *inode_info[INODE_HASH_SIZE];
 
 extern int read_fs_bytes(int, long long, int, void *);
 extern void add_file(long long, long long, long long, unsigned int *, int,

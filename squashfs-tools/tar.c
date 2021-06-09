@@ -258,6 +258,9 @@ static struct inode_info *new_inode(struct tar_file *tar_file)
 	inode->noD = noD;
 	inode->noF = noF;
 
+	inode->next = inode_info[0];
+	inode_info[0] = inode;
+
 	return inode;
 }
 
