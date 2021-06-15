@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2014
+ * Copyright (c) 2014, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -23,8 +23,6 @@
  *
  * process_fragments.h
  */
-
-#define DUP_HASH(a) (a & 0xffff)
 
 extern void *frag_thrd(void *);
 #endif

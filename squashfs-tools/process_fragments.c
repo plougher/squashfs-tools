@@ -310,15 +310,14 @@ void *frag_thrd(void *destination_file)
 		file_size = file_buffer->file_size;
 
 		pthread_mutex_lock(&dup_mutex);
-		dupl_ptr = dupl[DUP_HASH(file_size)];
+		dupl_ptr = dupl_frag[file_size];
 		pthread_mutex_unlock(&dup_mutex);
 
 		file_buffer->dupl_start = dupl_ptr;
 		file_buffer->duplicate = FALSE;
 
-		for(; dupl_ptr; dupl_ptr = dupl_ptr->next) {
-			if(file_size != dupl_ptr->file_size ||
-					file_size != dupl_ptr->fragment->size)
+		for(; dupl_ptr; dupl_ptr = dupl_ptr->frag_next) {
+			if(file_size != dupl_ptr->fragment->size)
 				continue;
 
 			pthread_mutex_lock(&dup_mutex);

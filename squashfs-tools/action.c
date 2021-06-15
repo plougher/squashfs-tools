@@ -69,6 +69,7 @@ static int other_count = 0;
 static struct action_entry *parsing_action;
 
 static struct file_buffer *def_fragment = NULL;
+static struct file_buffer *tail_fragment = NULL;
 
 static struct token_entry token_table[] = {
 	{ "(", TOK_OPEN_BRACKET, 1, },
@@ -1025,7 +1026,7 @@ void eval_actions(struct dir_info *root, struct dir_ent *dir_ent)
 /*
  * Fragment specific action code
  */
-void *eval_frag_actions(struct dir_info *root, struct dir_ent *dir_ent)
+void *eval_frag_actions(struct dir_info *root, struct dir_ent *dir_ent, int tail)
 {
 	int i, match;
 	struct action_data action_data;
@@ -1049,7 +1050,11 @@ void *eval_frag_actions(struct dir_info *root, struct dir_ent *dir_ent)
 
 	free(action_data.pathname);
 	free(action_data.subpath);
-	return &def_fragment;
+
+	if(tail)
+		return &tail_fragment;
+	else
+		return &def_fragment;
 }
 
 
@@ -1061,10 +1066,13 @@ void *get_frag_action(void *fragment)
 	if (fragment == NULL)
 		return &def_fragment;
 
+	if(fragment == &def_fragment)
+		return &tail_fragment;
+
 	if (fragment_count == 0)
 		return NULL;
 
-	if (fragment == &def_fragment)
+	if (fragment == &tail_fragment)
 		action = &fragment_spec[0] - 1;
 	else 
 		action = fragment - offsetof(struct action, data);

@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2011, 2012, 2013, 2014
+ * Copyright (c) 2011, 2012, 2013, 2014, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -309,7 +309,7 @@ struct perm_data {
  */
 extern int parse_action(char *, int verbose);
 extern void dump_actions();
-extern void *eval_frag_actions(struct dir_info *, struct dir_ent *);
+extern void *eval_frag_actions(struct dir_info *, struct dir_ent *, int);
 extern void *get_frag_action(void *);
 extern int eval_exclude_actions(char *, char *, char *, struct stat *, int,
 							struct dir_ent *);

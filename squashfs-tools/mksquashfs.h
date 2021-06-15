@@ -66,6 +66,7 @@ struct inode_info {
 	char			symlink[0];
 };
 
+
 /* in memory file info */
 struct file_info {
 	long long		file_size;
@@ -73,14 +74,24 @@ struct file_info {
 	long long		start;
 	long long		sparse;
 	unsigned int		*block_list;
-	struct file_info	*next;
+	struct file_info	*frag_next;
+	struct file_info	*block_next;
 	struct fragment		*fragment;
+	struct dup_info		*dup;
 	unsigned int		blocks;
 	unsigned short		checksum;
 	unsigned short		fragment_checksum;
 	char			have_frag_checksum;
 	char			have_checksum;
 };
+
+
+struct dup_info {
+	struct file_info	*file;
+	struct file_info	*frag;
+	struct dup_info		*next;
+};
+
 
 /* fragment block data structures */
 struct fragment {
@@ -206,7 +217,7 @@ extern int block_size;
 extern int block_log;
 extern int sorted;
 extern int noF;
-extern struct file_info *dupl[];
+extern struct file_info **dupl_frag;
 extern int duplicate_checking;
 extern int read_fs_bytes(int, long long, long long, void *);
 extern void add_file(long long, long long, long long, unsigned int *, int,
