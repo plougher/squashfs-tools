@@ -320,6 +320,27 @@ Will create a Hard Link named "link" to the character device called "char-dev"
 created by the previous Pseudo definition.
 
 
+10. New Pseudo file definitions to create Sockets/Fifos
+-------------------------------------------------------
+
+Two new definitions have been added which allows Sockets and Fifos
+to be created, which are:
+
+filename i mode uid gid [s|f]
+filename I time mode uid gid [s|f]
+
+The 'i' definition doesn't take a time value, whereas the 'I'
+definition does.
+
+To create a Unix domain socket, 's' should be used, i.e.
+
+filename i 0777 root root s
+
+and to create a FIFO, 'f' should be used, i.e.
+
+filename i 0777 root root f
+
+
 11. Mksquashfs now allows no source directories ( specified as - )
 ------------------------------------------------------------------
 
