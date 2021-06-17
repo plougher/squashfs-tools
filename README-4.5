@@ -53,17 +53,17 @@ Summary of changes (and sections below)
     standard out (see section 12).
 
 2.2 Symbolic links are now followed in extract files, if -follow-symlinks
-    or -missing-symlinks option specified.
+    or -missing-symlinks option specified (see section 13).
 
 2.3 Unsquashfs now supports "exclude" files in addition to "extract"
-    files.
+    files (see section 14).
 
-2.4 Max depth traversal option added (-max-depth).
+2.4 Max depth traversal option added (see section 15).
 
 2.5 Unsquashfs can now output a "Pseudo file" representing the
     input Squashfs filesystem.  This can be altered and given
     as input to Mksquashfs to re-generate the filesystem without
-    unpacking it.
+    unpacking it (see section 16).
 
 
 3. Minor improvements and bug fixes
@@ -392,6 +392,66 @@ the following will behave the same:
 % sqfscat img file
 
 % unsquashfs -cat img file
+
+
+13. Symbolic links are now "followed" in extract files
+------------------------------------------------------
+
+Unsquashfs walks the extract file paths as it recursively extracts
+the Squashfs filesystem  from top to bottom.  During that recursive
+extraction symbolic links are obviously not followed (see below).
+
+The consequence of this is if an extract file ends in a symbolic link
+(leaf component) it is extracted and left as a dangling symlink,
+unless the real file it links to has also specified as an extract file.
+
+Additionally, if the extract file pathname traverses symbolic links
+while walking the pathname (i.e. the extract file pathname has
+embedded symbolic links), the extraction will stop at that point.
+
+One way of solving this problem is by following (or dereferencing) the
+symbolic link(s), and replacing them with what they actually link to,
+in a similar way to "cp -L".  But this is dangerous, and can cause
+Unsquashfs to produce output which does not match the input Squashfs
+filesystem, which is something Unsquashfs should never do.
+
+The reason for this is whereas "cp -L" is derefencing the *input*,
+Unsquashfs is dereferencing the *output*.  If a filesystem has a real
+filename, say
+
+	a/b/c/hello_world
+
+and two symlinks
+
+	a/symlink1 ---> b/c/hello_world
+	a/symlink2 ---> b/c
+
+There are multiple different ways (or paths) to the *single* hello_world file.
+
+	a/b/c/hello_world
+	a/symlink1
+	a/symlink2/hello_world
+
+If Unsquashfs was given all three paths as extract files, and Unsquashfs
+dereferenced them on output, you will get *three* copies of the hello_world
+file, and two copies of directory "c".
+
+Superficially the output may look the same, but, it may not work the same,
+and obviously edits to the one hello_world file will not get reflected in
+the other copies.  Any option that can be accidently or maliciously used
+to produce such an output is too dangerous to be added.
+
+Unsquashfs solves the problem in an equivalent way, but which does not alter
+the output, and so it is a completely safe option.
+
+If the -follow-symlinks option is specified, Unsquashfs will canonicalise
+the extract files to produce the canonical pathname (that is the
+"real" pathname without any symbolic links).  It will then add all
+the symbolic links necessary to ensure that the extract file can be
+resolved.
+
+The -missing-symlinks option is similar to -follow-symlinks except it
+will cause Unsquashfs to abort if any symbolic link cannot be resolved.
 
 
 ?. Compatiblity
