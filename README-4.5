@@ -453,6 +453,9 @@ resolved.
 The -missing-symlinks option is similar to -follow-symlinks except it
 will cause Unsquashfs to abort if any symbolic link cannot be resolved.
 
+Note: as a side effect of the canonicalisation, with the above options
+enabled extract filenames can also now have ".", ".." elements within
+the pathnames.
 
 ?. Compatiblity
 ---------------
