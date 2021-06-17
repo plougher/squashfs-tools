@@ -49,9 +49,8 @@ Summary of changes (and sections below)
 2. Major improvements in Unsquashfs
 -----------------------------------
 
-2.1 New Sqfscat command which will output the contents of one or
-    more files to standard out (Unsquashfs called as sqfscat, also
-    Unsquashfs -cat option).
+2.1 New Sqfscat command which outputs the contents of files to
+    standard out (see section 12).
 
 2.2 Symbolic links are now followed in extract files, if -follow-symlinks
     or -missing-symlinks option specified.
@@ -354,6 +353,46 @@ For example the following command line
 
 Will create a root directory, a file created by a reference to a file
 within the filesystem, and create a hard link to it.
+
+
+12. New Sqfscat command which outputs the contents of files to standard out
+---------------------------------------------------------------------------
+
+Unsquashfs when run as "sqfscat" (either named as such, or via a hard or
+symbolic link) will output the contents of one or more files to standard
+out.  The syntax and options supported are:
+
+SYNTAX: sqfscat [options] filesystem [files to cat]
+	-v[ersion]		print version, licence and copyright information
+	-p[rocessors] <number>	use <number> processors.  By default will use
+				number of processors available
+	-o[ffset] <bytes>	skip <bytes> at start of <dest>.  Optionally a
+				suffix of K, M or G can be given to specify
+				Kbytes, Mbytes or Gbytes respectively (default
+				0 bytes).
+	-ig[nore-errors]	treat errors writing files to output as
+				non-fatal
+	-st[rict-errors]	treat all errors as fatal
+	-no-exit[-code]		don't set exit code (to nonzero) on non-fatal
+				errors
+	-da[ta-queue] <size>	set data queue to <size> Mbytes.  Default 256
+				Mbytes
+	-fr[ag-queue] <size>	set fragment queue to <size> Mbytes.  Default
+				256 Mbytes
+	-no-wild[cards]		do not use wildcard matching in extract names
+	-r[egex]		treat extract names as POSIX regular expressions
+				rather than use the default shell wildcard
+				expansion (globbing)
+	-h[elp]			output this options text to stdout
+
+
+Sqfscat is a short-cut to using the equivalent Unsquashfs -cat option, i.e.
+the following will behave the same:
+
+% sqfscat img file
+
+% unsquashfs -cat img file
+
 
 ?. Compatiblity
 ---------------
