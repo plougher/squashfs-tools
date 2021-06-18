@@ -460,6 +460,81 @@ Note: as a side effect of the canonicalisation, with the above options
 enabled extract filenames can also now have ".", ".." elements within
 the pathnames.
 
+
+14. Unsquashfs now supports "exclude" files in addition to "extract" files
+--------------------------------------------------------------------------
+
+Unsquashfs now allows exclude files to be specified, either on their
+own, or in addition to extract files.
+
+An exclude file is, obviously, the opposite of an extract file.  Whereas
+an extract file limits the output of Unsquashfs to the files/directories
+matched by the extract file(s), exclude file(s) output the entire filesystem,
+with the sub-set of files matched by the exclude file(s) excluded.
+
+Often you want to output the filesystem where you're only interested in
+some files, which is where extract files are useful.  But equally, you
+often want to to output the entire filesystem, but, with some unwanted
+files removed.  An example of this, perhaps, is where you've inadvertantly,
+archived binaries (.o files etc.) and you're only interested in extracting
+the source code.
+
+In the above example, trying to remove the binaries (.o etc) when you've
+only got "extract" files capability becomes extremely messy.  It is a
+lot easier to do that with "exclude" files.
+
+Unsquashfs now supports two ways of specifying exclude files.
+
+The most straightforward way is to tell Unsquashfs to treat extract files as
+exclude files.  That is extract files are specified on the command line as
+a list of files after the options and filesystem image.  Giving the
+-excludes option tells Unsquashfs to treat them as exclude files.
+
+To make this clearer,
+
+% unsquashfs img file1 file2 file3
+
+Tells Unsquashfs to extract file1, file2 and file3.  But,
+
+% unsquashfs -excludes img file1 file2 file3
+
+Tells Unsquashfs to exclude file1, file2, and file3.
+
+The perhaps obvious problem with this, is it allows you to
+choose between "extract" files or "exclude" files.  But, it doesn't
+allow you to have both "extract" files and "exclude" files on the
+command line.
+
+To get around this problem Unsquashfs supports another way of specifying
+exclude files.  That is to use the option -exclude-list.  This
+option allows a list of exclude files to specified, terminated by a
+";".  The necessity of using ";" to terminate the list is because this
+is a normal option, without it, any further entries on the command line
+would be interpreted as being part of the list.
+
+For example, the following are equivalent:
+
+% unsquashfs -excludes img file1 file2 file3
+
+% unsquashfs -exclude-list file1 file2 file3 \; img
+
+Note the black-slashing of ";" to prevent it from being
+interpreted by the shell as a special character.
+
+Obviously, where the -exclude-list option comes into its own is
+when it is mixed with extract files, for example:
+
+% unsquashfs -exclude-list dir1/file1 dir2/file2 \; img dir1 dir2
+
+This tells Unsquashfs to extract directories "dir1" and "dir2", and
+then to exclude the files "dir1/file1" and "dir2/file2".
+
+From this it should be clear that the precedence is extract files and
+then exclude files, because it doesn't make any sense otherwise.
+Extract files define the set of directories/files to be extracted,
+and exclude files remove directories/files from that sub-set.
+
+
 ?. Compatiblity
 ---------------
 
