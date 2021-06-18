@@ -386,6 +386,9 @@ SYNTAX: sqfscat [options] filesystem [files to cat]
 	-h[elp]			output this options text to stdout
 
 
+The pathnames of the files to be output, like cat, can contain symbolic links, and
+"." and ".." elements.
+
 Sqfscat is a short-cut to using the equivalent Unsquashfs -cat option, i.e.
 the following will behave the same:
 
