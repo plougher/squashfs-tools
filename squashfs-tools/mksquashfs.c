@@ -962,8 +962,8 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 		unsigned int i_count = dir_in->i_count;
 		unsigned int i_size = dir_in->i_size;
 
-		if(byte_size >= 1 << 27)
-			BAD_ERROR("directory greater than 2^27-1 bytes!\n");
+		if(byte_size >= 1LL << 32)
+			BAD_ERROR("directory greater than 2^32-1 bytes!\n");
 
 		inode = get_inode(sizeof(*dir) + i_size);
 		dir->inode_type = SQUASHFS_LDIR_TYPE;
@@ -1198,7 +1198,7 @@ static void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 static squashfs_inode write_dir(struct dir_info *dir_info,
 	struct directory *dir)
 {
-	unsigned int dir_size = dir->p - dir->buff;
+	long long dir_size = dir->p - dir->buff;
 	int data_space = directory_cache_size - directory_cache_bytes;
 	unsigned int directory_block, directory_offset, i_count, index;
 	unsigned short c_byte;
