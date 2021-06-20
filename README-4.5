@@ -535,6 +535,18 @@ Extract files define the set of directories/files to be extracted,
 and exclude files remove directories/files from that sub-set.
 
 
+15. Max depth traversal option added
+------------------------------------
+
+Unsquashfs has added a -max-depth <n> option, which will limit output and/or
+file listing to <n> depth directories, where the top level directory is depth 1,
+e.g.
+
+% unsquashfs -max-depth 3 -ll img
+
+Will limit the filesystem output listing to be 3 directories in depth.
+
+
 ?. Compatiblity
 ---------------
 
