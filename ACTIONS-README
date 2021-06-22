@@ -1,0 +1,137 @@
+                           MKSQUASHFS ACTIONS
+                           ------------------
+
+The new Mksquashfs Actions code allows an "action" to be executed
+on a file if one or more "tests" succeed.  If you're familiar
+with the "find" command, then an action is similar to "-print",
+and a test is similar to say "-name" or "-type".
+
+Actions add greater flexibility when building images from sources.
+They can be used to optimise compression, I/O performance, and they
+also allow more control on the exclusion of files from the source, and
+allow uid/gid and mode to be changed on a file basis.
+
+1. Specification
+----------------
+
+Actions can be given on the command line with the -action option.
+They can also be put in a file, and executed with the
+-action-file or -af option.
+
+2. Syntax
+---------
+
+An action consists of two parts, separated by an "@".  The action to
+be executed is placed before the @, and one or more tests are
+placed afer the @.  If the action or tests has an argument, it is
+given in brackets.  Brackets are optional if no argument is needed.
+e.g.
+
+compressed()@name("filename")
+
+compressed@name("filename")
+
+Arguments are either numeric or string, depending on the
+action and test.
+
+String arguments can be enclosed in double-quotes ("), to prevent the
+parser from treating characters within it specially.  Within double-quotes
+only '\' is treatedly specially, and only at the end of a line.  Special
+characters can also be backslashed (\) to prevent interpretation by the
+parser, e.g. the following is equivalent:
+
+compressed@name(file\ name\ with\ \&&\ and\ spaces)
+
+compressed@name("file name with && and spaces")
+
+Numeric arguments are of the form [range]number[size], where
+[range] is either
+
+	'<' or '-', match on less than number
+	'>' or '+', match on greater than number
+	"" (nothing), match on exactly number.
+
+[size] is either:
+	"" (nothing), number
+	'k' or 'K',  number * 2^10
+	'm' or 'M', number * 2^20
+	'g' or 'G', number * 2^30
+
+e.g. the following is equivalent:
+
+ompressed@filesize(-81920)
+compressed@filesize(<80K)
+
+Both will match on files less than 80K in size.
+
+Characters which are treated specially by the parser are * ( ) && ||
+! , @.  Plus whitespace (spaces and tabs).
+
+Note: if the action is typed on the command line, then many special
+characters will be evaluated by the shell, and you should always
+check what is actually being passed to Mksquashfs.  If in doubt use
+-action-file where the additional complexities of shell evaluation is
+avoided.
+
+For example this action line will work in an action file
+
+compressed()@name("file name")
+
+But, if typed on the command line, it will need to be:
+
+% mksquashfs source image -action "compressed()@name(\"file name\")"
+
+
+3. Logical operators
+--------------------
+
+Tests can be combined with the logical operators && (and), || (or) and
+can be negated with the unary ! (not).  Expressions can also be bracketed
+with "(" and ")".
+
+Operators do not have precedence and are evaluated strictly left to
+right.  To enforce precedence use brackets, e.g.
+
+test1 && test2 || test3
+
+will be evaluated as
+
+(test1 && test2) || test3
+
+&& and || are short-circuit operators, where the rhs (right hand side)
+is only evaluated if the lhs (left hand side) has been insufficient
+to determine the value.  For example in the above, test3 will only be
+evaluated if (test1 && test2) evaluates to TRUE.
+
+3. Test operators
+-----------------
+
+The following test operators are supported:
+
+3.1 name(pattern)
+3.2 pathname(pattern)
+3.3 subpathname(pattern)
+3.4 filesize(value)
+3.5 dirsize(value)
+3.6 size(value)
+3.7 inode(value)
+3.8 nlink(value)
+3.9 fileblocks(value)
+3.10 dirblocks(value)
+3.11 blocks(value)
+3.12 uid(value OR string)
+3.13 gid(value OR string)
+3.14 depth(value)
+3.15 dircount(value)
+3.16 filesize_range(minimum, maximum)
+3.17 dirsize_range(minimum, maximum)
+3.18 size_range(minimum, maximum)
+3.19 inode_range(minimum, maximum)
+3.20 fileblocks_range(minimum, maximum)
+3.21 dirblocks_range(minimum, maximum)
+3.22 blocks_range(minimum, maximum)
+3.23 uid_range(minimum, maximum)
+3.24 gid_range(minimum, maximum)
+3.25 depth_range(minimum, maximum)
+3.26 dircount_range(minimum, maximum)
+3.27 type(c)
