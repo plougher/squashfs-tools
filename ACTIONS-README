@@ -59,7 +59,7 @@ Numeric arguments are of the form [range]number[size], where
 
 e.g. the following is equivalent:
 
-ompressed@filesize(-81920)
+compressed@filesize(-81920)
 compressed@filesize(<80K)
 
 Both will match on files less than 80K in size.
