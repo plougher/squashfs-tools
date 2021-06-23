@@ -109,31 +109,198 @@ evaluated if (test1 && test2) evaluates to TRUE.
 The following test operators are supported:
 
 3.1 name(pattern)
+
+Returns TRUE if name of file matches pattern.  Pattern can have
+wildcards.
+
 3.2 pathname(pattern)
+
+Returns TRUE if the full pathname of the file matches pattern.
+Pattern can have wildcards.
+
 3.3 subpathname(pattern)
+
+Returns TRUE if the first part of the file pathname matches pattern, e.g.
+
+subpathname(dir1) will match "dir1/somefile", "dir1/dir2/somefile" etc.
+
+Pattern can have wildcards.
+
 3.4 filesize(value)
+
+Return TRUE if the size of the file is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.  Returns FALSE
+on anything not a file.
+
 3.5 dirsize(value)
+
+Return TRUE if the size of the directory is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.  Returns FALSE
+on anything not a directory.
+
 3.6 size(value)
+
+Return TRUE if the size of the file is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.  Works on any
+file type.
+
 3.7 inode(value)
+
+Return TRUE if the inode number is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.
+
 3.8 nlink(value)
+
+Return TRUE if the nlink count is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.
+
 3.9 fileblocks(value)
+
+Return TRUE if the size of the file in blocks (512K) is less than, equal to,
+or larger than <value>, where <value> can be [<-]number, number, [>+]number.
+Returns FALSE on anything not a file.
+
 3.10 dirblocks(value)
+
+Return TRUE if the size of the directory in blocks (512K) is less than, equal to,
+or larger than <value>, where <value> can be [<-]number, number, [>+]number.
+Returns FALSE on anything not a directory.
+
 3.11 blocks(value)
+
+Return TRUE if the size of the file in blocks (512K) is less than, equal to,
+or larger than <value>, where <value> can be [<-]number, number, [>+]number.
+Works on any file type.
+
 3.12 uid(value)
+
+Return TRUE if the uid value is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.
+
 3.13 gid(value)
+
+Return TRUE if the gid value is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.
+
 3.14 user(string)
+
+Return TRUE if the file owner matches <string>.
+
 3.15 group(string)
+
+Return TRUE if the file group matches <string>.
+
 3.16 depth(value)
+
+Return TRUE if file is at depth less than, equal to, or larger than <value>,
+where <value> can be [<-]number, number, [>+]number.  Top level directory is
+depth 1.
+
 3.17 dircount(value)
+
+Return TRUE if the number of files in the directory is less than, equal to, or
+larger than <value>, where <value> can be [<-]number, number, [>+]number.
+Returns FALSE on anything not a directory.
+
 3.18 filesize_range(minimum, maximum)
+
+Return TRUE if the size of the file is within the range [<minimum>, <maximum>]
+inclusive.  Returns FALSE on anything not a file.
+
 3.19 dirsize_range(minimum, maximum)
+
+Return TRUE if the size of the directory is within the range [<minimum>, <maximum>]
+inclusive.  Returns FALSE on anything not a directory.
+
 3.20 size_range(minimum, maximum)
+
+Return TRUE if the size of the file is within the range [<minimum>, <maximum>]
+inclusive.  Works on any file type.
+
 3.21 inode_range(minimum, maximum)
+
+Return TRUE if the inode number is within the range [<minimum>, <maximum>]
+inclusive.
+
 3.22 fileblocks_range(minimum, maximum)
+
+Return TRUE if the size of the file in blocks (512K) is within the range
+[<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a file.
+
 3.23 dirblocks_range(minimum, maximum)
+
+Return TRUE if the size of the directory in blocks (512K) is within the range
+[<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a directory.
+
 3.24 blocks_range(minimum, maximum)
+
+Return TRUE if the size of the file in blocks (512K) is within the range
+[<minimum>, <maximum>] inclusive.  Works on any file type.
+
 3.25 uid_range(minimum, maximum)
+
+Return TRUE if the file uid is within the range [<minimum>, <maximum>]
+inclusive.
+
 3.26 gid_range(minimum, maximum)
+
+Return TRUE if the file gid is within the range [<minimum>, <maximum>]
+inclusive.
+
 3.27 depth_range(minimum, maximum)
+
+Return TRUE if file is at depth within the range [<minimum>, <maximum>].
+Top level directory is depth 1.
+
 3.28 dircount_range(minimum, maximum)
+
+Returns TRUE is the number of files in the directory is within the range
+[<minimum>, <maximum>].  Returns FALSE on anything not a directory.
+
 3.29 type(c)
+
+Returns TRUE if the file matches type <c>.  <c> can be
+	f - regular file
+	d - directory
+	l - symbolic link
+	c - character device
+	b - block device
+	p - FIFO
+	s - socket
+
+3.30 perm(mode)
+
+Return TRUE if file permissions match <mode>.  <Mode> is the same as
+find's -perm option:
+
+	perm(mode) - TRUE if file's permission bits are exactly <mode>.
+		   <mode> can be octal or symbolic.
+
+	perm(-mode) - TRUE if all <mode> permission bits are set for this file.
+		    <mode> can be octal or symbolic.
+
+	perm(/mode) - TRUE if any <mode> permission bits are set for this file.
+		    <mode> can be octal or symbolic.
+
+	The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+
+		PERMS = [rwxXst]+ or [ugo]
+		and can be repeated separated with commas.
+
+	Examples:
+
+	perm(0644) match on a file with permissions exactly rw-r--r--.
+	perm(u=rw,g=r,o=w) as above, but expressed symbolically.
+
+	perm(/222) match on a file which is writable for any of user, group, other,
+	perm(/u=w,g=w,o=w) as above but expressed symbolically,
+	perm(/ugo=w) as above but specified more concisely.
+
+3.31 file(string)
+
+Execute "file command" on file, and return TRUE if the output
+matches the substring <string>, for example
+
+file(ASCII text) will return TRUE if the file is ASCII text.
+
+Note, this is an expensive test, and should only be run if the file
+has matched a number of other short-circuit tests.
