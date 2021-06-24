@@ -86,8 +86,8 @@ But, if typed on the command line, it will need to be:
 --------------------
 
 Tests can be combined with the logical operators && (and), || (or) and
-can be negated with the unary ! (not).  Expressions can also be bracketed
-with "(" and ")".
+can be negated with the unary ! (not).  Expressions thus formed can also
+be bracketed with "(" and ")", to create nested expressions.
 
 Operators do not have precedence and are evaluated strictly left to
 right.  To enforce precedence use brackets, e.g.
@@ -304,3 +304,46 @@ file(ASCII text) will return TRUE if the file is ASCII text.
 
 Note, this is an expensive test, and should only be run if the file
 has matched a number of other short-circuit tests.
+
+3.32 exists()
+
+Test if the file pointed to by the symbolic link exists within the
+output filesystem, that is, whether the symbolic link has a relative
+path and the relative path can be resolved to an entry within the
+output filesystem.
+
+If the file isn't a symbolic link then the test always returns TRUE.
+
+3.33 absolute()
+
+Test if the symbolic link is absolute, which by definition means
+it points outside of the output filesystem (unless it is to be mounted
+as root).  If the file isn't a symbolic link then the test always returns
+FALSE.
+
+3.34 readlink(expression)
+
+Follow or dereference the symbolic link, and evaluate <expression> in
+the context of the file pointed to by the symbolic link.  All inode
+attributes, pathname, name and depth all refer to the dereferenced
+file.
+
+If the symbolic link cannot be dereferenced because it points to something
+not in the output filesytem (see exists() function above), then FALSE is
+returned.  If the file is not a symbolic link, the result is the same as
+<expression>, i.e. readlink(<expression>) == <expression).
+
+Examples:
+
+readlink("name(*.[ch])") returns TRUE if the file referenced by the symbolic
+link matches *.[ch].
+
+Obviously, expressions created with && || etc.  can be specified.
+
+readlink("type(f) && size(<20K)") returns TRUE if the file referenced
+by the symbolic link is a regular file less than 20K in size.
+
+Note: in the above tests the embedded expression to be evaluated is enclosed
+in double-quotes ("), this is to prevent the special characters being
+evaluated by the parser when parsed at the top-level.  Readlink causes
+re-evaluation of the embedded string.
