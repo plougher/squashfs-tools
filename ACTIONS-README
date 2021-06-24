@@ -286,14 +286,14 @@ find's -perm option:
 		PERMS = [rwxXst]+ or [ugo]
 		and can be repeated separated with commas.
 
-	Examples:
+Examples:
 
-	perm(0644) match on a file with permissions exactly rw-r--r--.
-	perm(u=rw,g=r,o=w) as above, but expressed symbolically.
+perm(0644) match on a file with permissions exactly rw-r--r--.
+perm(u=rw,go=r) as above, but expressed symbolically.
 
-	perm(/222) match on a file which is writable for any of user, group, other,
-	perm(/u=w,g=w,o=w) as above but expressed symbolically,
-	perm(/ugo=w) as above but specified more concisely.
+perm(/222) match on a file which is writable for any of user, group, other,
+perm(/u=w,g=w,o=w) as above but expressed symbolically,
+perm(/ugo=w) as above but specified more concisely.
 
 3.31 file(string)
 
@@ -331,7 +331,7 @@ file.
 If the symbolic link cannot be dereferenced because it points to something
 not in the output filesytem (see exists() function above), then FALSE is
 returned.  If the file is not a symbolic link, the result is the same as
-<expression>, i.e. readlink(<expression>) == <expression).
+<expression>, i.e. readlink(<expression>) == <expression>.
 
 Examples:
 
@@ -340,8 +340,9 @@ link matches *.[ch].
 
 Obviously, expressions created with && || etc.  can be specified.
 
-readlink("type(f) && size(<20K)") returns TRUE if the file referenced
-by the symbolic link is a regular file less than 20K in size.
+readlink("depth(1) && filesize(<20K)") returns TRUE if the file referenced
+by the symbolic link is a regular file less than 20K in size and in the
+top level directory.
 
 Note: in the above tests the embedded expression to be evaluated is enclosed
 in double-quotes ("), this is to prevent the special characters being
