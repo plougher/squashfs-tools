@@ -287,7 +287,7 @@ static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), int);
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
 static void dir_scan3(struct dir_info *dir);
-static void dir_scan4(struct dir_info *dir);
+static void dir_scan4(struct dir_info *dir, int symlink);
 static void dir_scan5(struct dir_info *dir);
 static void dir_scan6(struct dir_info *dir);
 static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info);
@@ -3283,8 +3283,10 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	/*
 	 * Process prune actions
 	 */
-	if(prune_actions())
-		dir_scan4(root_dir);
+	if(prune_actions()) {
+		dir_scan4(root_dir, TRUE);
+		dir_scan4(root_dir, FALSE);
+	}
 
 	/*
 	 * Process empty actions
@@ -3865,7 +3867,7 @@ static void free_dir(struct dir_info *dir)
 }
 	
 
-static void dir_scan4(struct dir_info *dir)
+static void dir_scan4(struct dir_info *dir, int symlink)
 {
 	struct dir_ent *dir_ent = dir->list, *prev = NULL;
 
@@ -3877,7 +3879,13 @@ static void dir_scan4(struct dir_info *dir)
 		}
 
 		if((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFDIR)
-			dir_scan4(dir_ent->dir);
+			dir_scan4(dir_ent->dir, symlink);
+
+		if(symlink != ((dir_ent->inode->buf.st_mode & S_IFMT) == S_IFLNK)) {
+			prev = dir_ent;
+			dir_ent = dir_ent->next;
+			continue;
+		}
 
 		if(eval_prune_actions(root_dir, dir_ent)) {
 			struct dir_ent *tmp = dir_ent;
