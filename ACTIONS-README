@@ -357,3 +357,43 @@ Note: in the above tests the embedded expression to be evaluated is enclosed
 in double-quotes ("), this is to prevent the special characters being
 evaluated by the parser when parsed at the top-level.  Readlink causes
 re-evaluation of the embedded string.
+
+3.36 eval(path, expression)
+
+Follow <path> (arg1), and evaluate the <expression> (arg2) in the
+context of the file discovered by following <path>.  All inode attributes,
+pathname, name and depth all refer to the file discovered by following
+<path>.
+
+This test operation allows you to add additional context to the evaluation
+of the file being scanned, such as "if the current file is XXX, test if the
+parent is YYY, and then do ...".  Often times you need or want to test
+a combination of file status.
+
+The <path> can be absolute (in which case it is from the root directory of the
+output filesystem), or it can be relative to the current file.  Obviously
+relative paths are more useful.
+
+If the file referenced by <path> does not exist in the output filesystem,
+then FALSE is returned.
+
+Examples of usage:
+
+1. If a directory matches pattern, check that it contains a ".git" directory.
+   This allows you to exclude git repositories, with a double check that it is
+   a git repository by checking for the .git subdirectory.
+
+   prune@name(*linux*) && type(d) && eval(.git, "type(d)")
+
+   This action will match on any directory named *linux*, and exclude it if
+   it contains a .git subdirectory.
+
+
+2. If a file matches a pattern, check that the parent directory matches another
+   pattern.  This allows you to delete files if and only if they are in particular
+   directory.
+
+   prune@name(*.[ch]) && eval(.., "name(*linux*)")
+
+   This action will delete *.[ch] files, but, only if they are in a directory
+   matching *linux*.
