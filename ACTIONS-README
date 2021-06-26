@@ -446,8 +446,8 @@ processed (for the entire filesystem), you'll want to know that is how
 they will be applied.
 
 
-4.1 Actions applied at source filesystem scanning (stage 1)
------------------------------------------------------------
+4.1 Actions applied at source filesystem reading (stage 1)
+----------------------------------------------------------
 
 4.1.1 exclude()
 
@@ -463,11 +463,11 @@ Examples:
 
 exclude@user(phillip)
 
-2. Execlude any regular files larger than 1M.
+2. Exclude any regular files larger than 1M
 
-exclude@filesysize(>1M)
+exclude@filesize(>1M)
 
-3. Only archive files/directories to a depth of 3.
+3. Only archive files/directories to a depth of 3
 
 exclude@depth(>3)
 
@@ -479,3 +479,41 @@ exclude@depth(>3) || (depth(3) && type(d))
 Which obviously reduces to
 
 exclude@depth(3) && type(d)
+
+
+4.2 Actions applied at directory scanning (stage 2)
+---------------------------------------------------
+
+4.2.1 fragment
+
+4.2.2 fragments
+
+4.2.3 no-fragments
+
+4.2.4 tailend
+
+4.2.5. no-tailend
+
+4.2.6 compressed
+
+4.2.7 uncompressed
+
+4.2.8 uid
+
+4.2.9 gid
+
+4.2.10 guid
+
+4.2.11 chmod
+
+
+4.3 Actions applied at second directory scan (stage 3)
+------------------------------------------------------
+
+4.3.1 prune
+
+
+4.4. Actions applied at third directory scan (stage 4)
+------------------------------------------------------
+
+4.4.1 empty
