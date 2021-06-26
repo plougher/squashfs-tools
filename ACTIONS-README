@@ -463,11 +463,15 @@ Examples:
 
 exclude@user(phillip)
 
-2. Only archive files/directories to a depth of 3.
+2. Execlude any regular files larger than 1M.
+
+exclude@filesysize(>1M)
+
+3. Only archive files/directories to a depth of 3.
 
 exclude@depth(>3)
 
-3. As above but also exclude directories at the depth of 3
+4. As above but also exclude directories at the depth of 3
    (which will be empty due to the above exclusion)
 
 exclude@depth(>3) || (depth(3) && type(d))
