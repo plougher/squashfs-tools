@@ -1,5 +1,5 @@
                            MKSQUASHFS ACTIONS
-                           ------------------
+                           ==================
 
 The new Mksquashfs Actions code allows an "action" to be executed
 on a file if one or more "tests" succeed.  If you're familiar
@@ -12,7 +12,7 @@ also allow more control on the exclusion of files from the source, and
 allow uid/gid and mode to be changed on a file basis.
 
 1. Specification
-----------------
+================
 
 Actions can be specified on the command line with the -action option.
 They can also be put into a file, and added  with the -action-file
@@ -28,7 +28,7 @@ Similarly there are -true-action (-true-action-file) and -false-action
 to TRUE, and vice-versa:
 
 2. Syntax
----------
+=========
 
 An action consists of two parts, separated by an "@".  The action to
 be executed is placed before the @, and one or more tests are
@@ -92,7 +92,7 @@ But, if typed on the command line, it will need to be:
 
 
 3. Logical operators
---------------------
+====================
 
 Tests can be combined with the logical operators && (and), || (or) and
 can be negated with the unary ! (not).  Expressions thus formed can also
@@ -113,7 +113,7 @@ to determine the value.  For example in the above, test3 will only be
 evaluated if (test1 && test2) evaluates to TRUE.
 
 3. Test operators
------------------
+=================
 
 The following test operators are supported:
 
@@ -123,11 +123,13 @@ Returns TRUE if name of file matches pattern.  Pattern can have
 wildcards.
 
 3.2 pathname(pattern)
+---------------------
 
 Returns TRUE if the full pathname of the file matches pattern.
 Pattern can have wildcards.
 
 3.3 subpathname(pattern)
+------------------------
 
 Returns TRUE if the first part of the file pathname matches pattern, e.g.
 
@@ -136,137 +138,162 @@ subpathname(dir1) will match "dir1/somefile", "dir1/dir2/somefile" etc.
 Pattern can have wildcards.
 
 3.4 filesize(value)
+-------------------
 
 Return TRUE if the size of the file is less than, equal to, or larger than
 <value>, where <value> can be [<-]number, number, [>+]number.  Returns FALSE
 on anything not a file.
 
 3.5 dirsize(value)
+------------------
 
 Return TRUE if the size of the directory is less than, equal to, or larger than
 <value>, where <value> can be [<-]number, number, [>+]number.  Returns FALSE
 on anything not a directory.
 
 3.6 size(value)
+---------------
 
 Return TRUE if the size of the file is less than, equal to, or larger than
 <value>, where <value> can be [<-]number, number, [>+]number.  Works on any
 file type.
 
 3.7 inode(value)
+----------------
 
 Return TRUE if the inode number is less than, equal to, or larger than
 <value>, where <value> can be [<-]number, number, [>+]number.
 
 3.8 nlink(value)
+----------------
 
 Return TRUE if the nlink count is less than, equal to, or larger than
 <value>, where <value> can be [<-]number, number, [>+]number.
 
 3.9 fileblocks(value)
+---------------------
 
 Return TRUE if the size of the file in blocks (512K) is less than, equal to,
 or larger than <value>, where <value> can be [<-]number, number, [>+]number.
 Returns FALSE on anything not a file.
 
 3.10 dirblocks(value)
+---------------------
 
 Return TRUE if the size of the directory in blocks (512K) is less than, equal to,
 or larger than <value>, where <value> can be [<-]number, number, [>+]number.
 Returns FALSE on anything not a directory.
 
 3.11 blocks(value)
+------------------
 
 Return TRUE if the size of the file in blocks (512K) is less than, equal to,
 or larger than <value>, where <value> can be [<-]number, number, [>+]number.
 Works on any file type.
 
 3.12 uid(value)
-
+---------------
 Return TRUE if the uid value is less than, equal to, or larger than
 <value>, where <value> can be [<-]number, number, [>+]number.
 
 3.13 gid(value)
+---------------
 
 Return TRUE if the gid value is less than, equal to, or larger than
 <value>, where <value> can be [<-]number, number, [>+]number.
 
 3.14 user(string)
+-----------------
 
 Return TRUE if the file owner matches <string>.
 
 3.15 group(string)
+------------------
 
 Return TRUE if the file group matches <string>.
 
 3.16 depth(value)
+-----------------
 
 Return TRUE if file is at depth less than, equal to, or larger than <value>,
 where <value> can be [<-]number, number, [>+]number.  Top level directory is
 depth 1.
 
 3.17 dircount(value)
+--------------------
 
 Return TRUE if the number of files in the directory is less than, equal to, or
 larger than <value>, where <value> can be [<-]number, number, [>+]number.
 Returns FALSE on anything not a directory.
 
 3.18 filesize_range(minimum, maximum)
+-------------------------------------
 
 Return TRUE if the size of the file is within the range [<minimum>, <maximum>]
 inclusive.  Returns FALSE on anything not a file.
 
 3.19 dirsize_range(minimum, maximum)
+------------------------------------
 
 Return TRUE if the size of the directory is within the range [<minimum>, <maximum>]
 inclusive.  Returns FALSE on anything not a directory.
 
 3.20 size_range(minimum, maximum)
+---------------------------------
 
 Return TRUE if the size of the file is within the range [<minimum>, <maximum>]
 inclusive.  Works on any file type.
 
 3.21 inode_range(minimum, maximum)
+----------------------------------
 
 Return TRUE if the inode number is within the range [<minimum>, <maximum>]
 inclusive.
 
 3.22 fileblocks_range(minimum, maximum)
+---------------------------------------
 
 Return TRUE if the size of the file in blocks (512K) is within the range
 [<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a file.
 
 3.23 dirblocks_range(minimum, maximum)
+--------------------------------------
 
 Return TRUE if the size of the directory in blocks (512K) is within the range
 [<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a directory.
 
 3.24 blocks_range(minimum, maximum)
+-----------------------------------
 
 Return TRUE if the size of the file in blocks (512K) is within the range
 [<minimum>, <maximum>] inclusive.  Works on any file type.
 
 3.25 uid_range(minimum, maximum)
+--------------------------------
 
 Return TRUE if the file uid is within the range [<minimum>, <maximum>]
 inclusive.
 
 3.26 gid_range(minimum, maximum)
+--------------------------------
 
 Return TRUE if the file gid is within the range [<minimum>, <maximum>]
 inclusive.
 
 3.27 depth_range(minimum, maximum)
+----------------------------------
 
 Return TRUE if file is at depth within the range [<minimum>, <maximum>].
 Top level directory is depth 1.
 
 3.28 dircount_range(minimum, maximum)
+-------------------------------------
 
 Returns TRUE is the number of files in the directory is within the range
 [<minimum>, <maximum>].  Returns FALSE on anything not a directory.
 
 3.29 type(c)
+------------
 
 Returns TRUE if the file matches type <c>.  <c> can be
 	f - regular file
@@ -278,6 +305,7 @@ Returns TRUE if the file matches type <c>.  <c> can be
 	s - socket
 
 3.30 perm(mode)
+---------------
 
 Return TRUE if file permissions match <mode>.  <Mode> is the same as
 find's -perm option:
@@ -305,6 +333,7 @@ perm(/u=w,g=w,o=w) as above but expressed symbolically,
 perm(/ugo=w) as above but specified more concisely.
 
 3.31 file(string)
+-----------------
 
 Execute "file command" on file, and return TRUE if the output
 matches the substring <string>, for example
@@ -315,6 +344,7 @@ Note, this is an expensive test, and should only be run if the file
 has matched a number of other short-circuit tests.
 
 3.32 exists()
+-------------
 
 Test if the file pointed to by the symbolic link exists within the
 output filesystem, that is, whether the symbolic link has a relative
@@ -324,6 +354,7 @@ output filesystem.
 If the file isn't a symbolic link then the test always returns TRUE.
 
 3.33 absolute()
+---------------
 
 Test if the symbolic link is absolute, which by definition means
 it points outside of the output filesystem (unless it is to be mounted
@@ -331,6 +362,7 @@ as root).  If the file isn't a symbolic link then the test always returns
 FALSE.
 
 3.34 readlink(expression)
+-------------------------
 
 Follow or dereference the symbolic link, and evaluate <expression> in
 the context of the file pointed to by the symbolic link.  All inode
@@ -359,6 +391,7 @@ evaluated by the parser when parsed at the top-level.  Readlink causes
 re-evaluation of the embedded string.
 
 3.36 eval(path, expression)
+---------------------------
 
 Follow <path> (arg1), and evaluate the <expression> (arg2) in the
 context of the file discovered by following <path>.  All inode attributes,
@@ -397,3 +430,48 @@ Examples of usage:
 
    This action will delete *.[ch] files, but, only if they are in a directory
    matching *linux*.
+
+
+4. Actions
+==========
+
+An action is something which is done (or applied) to a file if the expression
+(made up of the above test operators) returns TRUE.
+
+Different actions are applied in separate phases or gated, rather than being
+applied all at once.  This is to ensure that you know what the overall
+state of the filesystem is when an action is applied.  Or to put it another
+way, if you have an action that depends on another action having already been
+processed (for the entire filesystem), you'll want to know that is how
+they will be applied.
+
+
+4.1 Actions applied at source filesystem scanning (stage 1)
+-----------------------------------------------------------
+
+4.1.1 exclude()
+
+This action excludes all files and directories where the expression
+returns TRUE.
+
+Obviously this action allows much greater control over which files are
+excluded than the current name/pathname matching.
+
+Examples:
+
+1. Exclude any files/directories belonging to user phillip
+
+exclude@user(phillip)
+
+2. Only archive files/directories to a depth of 3.
+
+exclude@depth(>3)
+
+3. As above but also exclude directories at the depth of 3
+   (which will be empty due to the above exclusion)
+
+exclude@depth(>3) || (depth(3) && type(d))
+
+Which obviously reduces to
+
+exclude@depth(3) && type(d)
