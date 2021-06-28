@@ -484,19 +484,72 @@ exclude@depth(3) && type(d)
 4.2 Actions applied at directory scanning (stage 2)
 ---------------------------------------------------
 
-4.2.1 fragment
+4.2.1 fragment(name)
 
-4.2.2 fragments
+  Place all files matching the expression into a specialised fragment
+  named <name>.  This can increase compression and/or improve
+  I/O by placing similar fragments together.
 
-4.2.3 no-fragments
+  Examples:
 
-4.2.4 tailend
+  1. fragment(cfiles)@name(*.[ch])
 
-4.2.5. no-tailend
+     Place all C files into special fragments reserved for them
 
-4.2.6 compressed
+  2. fragment(phillip)@user(phillip)
 
-4.2.7 uncompressed
+     Place all files owned by user Phillip into special fragments.
+
+4.2.2 fragments()
+
+  Tell Mksquashfs to use fragment packing for the files matching the
+  expression.
+
+  For obvious reasons this should be used in conjunction with the global
+  Mksquashfs option -no-fragments.  By default all files are packed into
+  fragments if they're less than the block size.
+
+4.2.3 no-fragments()
+
+  Tell Mksquashfs to not pack the files matching the expression into
+  fragments.
+
+  This can be used where you want to optimise I/O latency by not packing
+  certain files into fragments.
+
+4.2.4 tailend()
+
+  Tell Mksquashfs to use tail-end packing for the files matching the
+  expression.  Normally Mksquashfs does not pack tail-ends into fragments,
+  as it may affect I/O performance because it may produce more disk head
+  seeking.
+
+  But tail-end packing can increase compression.  Additionally with modern
+  solid state media, seeking is not such a major issue anymore.
+
+
+4.2.5. no-tailend()
+
+  Tell Mksquashfs not to use tail-end packing for the files matching the
+  exppression.
+
+  For obvious reasons this should be used in conjuction with the global
+  Mksquashfs option -always-use-fragments.  By default tail-ends are not
+  packed into fragments.
+
+4.2.6 compressed()
+
+  Tell Mksquashfs to compress the fies matching the expression.
+
+  For obvious reasons this should be used in conjunction with the global
+  Mksquashfs options -noD and -noF.  File are by default compressed.
+
+4.2.7 uncompressed()
+
+  Tell Mksquashfs to not compress the files matching the expression.
+
+  This action obviously can be used to avoid compressing already compressed
+  files (XZ, GZIP etc.).
 
 4.2.8 uid
 
