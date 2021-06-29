@@ -5873,6 +5873,22 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "create a root\n");
 	fprintf(stream, "\t\t\tdirectory containing that directory, rather than the\n");
 	fprintf(stream, "\t\t\tcontents of the directory\n");
+	fprintf(stream, "-action <action@expr>\tevaluate <expr> on every file, ");
+	fprintf(stream, "and execute <action>\t\t\t\tif it returns TRUE\n");
+	fprintf(stream, "-log-action <act@expr>\tas above, but log expression ");
+	fprintf(stream, "evaluation results and\n\t\t\tactions performed\n");
+	fprintf(stream, "-true-action <act@expr>\tas above, but only log expressions ");
+	fprintf(stream, "which return TRUE\n");
+	fprintf(stream, "-false-action <act@exp>\tas above, but only log expressions ");
+	fprintf(stream, "which return FALSE\n");
+	fprintf(stream, "-action-file <file>\tas action, but read actions ");
+	fprintf(stream, "from <file>\n");
+	fprintf(stream, "-log-action-file <file>\tas -log-action, but read ");
+	fprintf(stream, "actions from <file>\n");
+	fprintf(stream, "-true-action-file <f>\tas -true-action, but read ");
+	fprintf(stream, "actions from <f>\n");
+	fprintf(stream, "-false-action-file <f>\tas -false-action, but read ");
+	fprintf(stream, "actions from <f>\n");
 	fprintf(stream, "\nFilesystem filter options:\n");
 	fprintf(stream, "-p <pseudo-definition>\tAdd pseudo file definition\n");
 	fprintf(stream, "-pf <pseudo-file>\tAdd list of pseudo file definitions\n");
@@ -6241,7 +6257,7 @@ int main(int argc, char *argv[])
 			if(res == 0)
 				exit(1);
 
-		} else if(strcmp(argv[i], "-verbose-action") == 0 ||
+		} else if(strcmp(argv[i], "-log-action") == 0 ||
 				strcmp(argv[i], "-va") ==0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing action\n",
@@ -6284,7 +6300,7 @@ int main(int argc, char *argv[])
 			if(read_action_file(argv[i], ACTION_LOG_NONE) == FALSE)
 				exit(1);
 
-		} else if(strcmp(argv[i], "-verbose-action-file") == 0 ||
+		} else if(strcmp(argv[i], "-log-action-file") == 0 ||
 				strcmp(argv[i], "-vaf") ==0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing filename\n", argv[0],
