@@ -1,11 +1,16 @@
-	SQUASHFS 4.4 - A squashed read-only filesystem for Linux
+	SQUASHFS 4.5 - A squashed read-only filesystem for Linux
 
-	Copyright 2002-2019 Phillip Lougher <phillip@squashfs.org.uk>
+	Copyright 2002-2021 Phillip Lougher <phillip@squashfs.org.uk>
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs version 4.4.  Please read the README-4.3 and CHANGES files
-for details of changes.
+Welcome to the pre-release Squashfs-tools 4.5.  This is almost ready to be
+released, but there is still some remaining documentation of the new
+features to be added.
+
+Please read README-4.5 for documentation of the added features and
+improvements.  This guide has not been updated to include these new
+features, and so that should be read instead for these.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
 It uses either gzip/xz/lzo/lz4/zstd compression to compress both files, inodes
