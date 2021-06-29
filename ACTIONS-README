@@ -551,11 +551,19 @@ exclude@depth(3) && type(d)
   This action obviously can be used to avoid compressing already compressed
   files (XZ, GZIP etc.).
 
-4.2.8 uid
+4.2.8 uid(uid or user)
 
-4.2.9 gid
+  Set the ownership of the files matching the expression to uid (if arg1
+  is a number) or user (if arg1 is a string).
 
-4.2.10 guid
+4.2.9 gid(gid or group)
+
+  Set the group of the files matching the expression to gid (if arg1
+  is a number) or group (if arg1 is a string).
+
+4.2.10 guid(uid/user, gid/group)
+
+  Set the uid/user and gid/group of the files matching the expression.
 
 4.2.11 chmod
 
