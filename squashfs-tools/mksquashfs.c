@@ -5971,7 +5971,17 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "compressor\n");
 	fprintf(stream, "\nCompressors available and compressor specific options:\n");
 	display_compressor_usage(stream, COMP_DEFAULT);
+
+	fprintf(stream, "\nThe README for the Squash-tools 4.5 release, ");
+	fprintf(stream, "describing the new features can be\n");
+	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.5\n");
+
+	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
+	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE\n");
+	fprintf(stream, "\nThe ACTIONS-README file describing how to use the new actions feature can be read\n");
+       fprintf(stream, "here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n");
 }
+
 
 
 static void print_version()
