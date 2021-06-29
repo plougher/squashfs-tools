@@ -20,12 +20,12 @@ option.  If put into a file, there is one action per line.  But, lines
 can be extended over many lines with continuation (\).
 
 If you want to get a log of what actions were performed, and the values
-returned by the tests for each file, you can use the -verbose-actions option
-for the command line and -verbose-actions-file for action files.
+returned by the tests for each file, you can use the -log-action option
+for the command line and -log-action-file for action files.
 
 Similarly there are -true-action (-true-action-file) and -false-action
-(-false-action-file) options which log action if the tests evaluated
-to TRUE, and vice-versa:
+(-false-action-file) options which log if the tests evaluated to TRUE,
+and vice-versa:
 
 2. Syntax
 =========
