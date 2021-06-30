@@ -565,8 +565,49 @@ exclude@depth(3) && type(d)
 
   Set the uid/user and gid/group of the files matching the expression.
 
-4.2.11 chmod
+4.2.11 chmod(mode)
 
+  Mode can be octal, or symbolic.
+
+  If Mode is Octal, the permission bits are set to the octal value.
+
+  If Mode is Symbolic, permissions can be Set, Added or Removed.
+
+  The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+
+	PERMS = [rwxXst]+ or [ugo]
+	and the above sequence can be repeated separated with commas.
+
+  A combination of the letters ugoa, specify which permission bits will
+  be affected, u means user, g means group, o means other, and a
+  means all or ugo.
+
+  The next letter is +, - or =.  The letter + means add to the existing
+  permission bits, - means remove the bits from the existing permission
+  bits, and = means set the permission bits.
+
+  The permission bits are a combination of [rwxXst] which sets/adds/removes
+  those bits for the specified ugoa combination, or they are u, g or o, which
+  takes the permission bis from the user, group or other respectively.
+
+  Examples:
+
+  1. chmod(u+r)
+
+     Adds the read permission to user.
+
+  2. chmod(ug+rw)
+
+     Adds the read and write permissions to both user and group.
+
+  3. chmod(u=rw,go=r)
+
+     Sets the permissions to rw-r--r--, which is eqivalent to
+
+  4. chmod(644)
+
+  5. cgmod(ug=o)
+
+     Sets the user and group permissions to the permissions for other.
 
 4.3 Actions applied at second directory scan (stage 3)
 ------------------------------------------------------
