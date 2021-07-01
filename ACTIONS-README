@@ -606,9 +606,10 @@ The next letter is +, - or =.  The letter + means add to the existing
 permission bits, - means remove the bits from the existing permission
 bits, and = means set the permission bits.
 
-The permission bits are a combination of [rwxXst] which sets/adds/removes
-those bits for the specified ugoa combination, or they are u, g or o, which
-takes the permission bis from the user, group or other respectively.
+The permission bits (PERMS) are a combination of [rwxXst] which
+sets/adds/removes those bits for the specified ugoa combination. They
+can alternatively be u, g or o, which takes the permission bis from the
+user, group or other of the file respectively.
 
 Examples:
 
