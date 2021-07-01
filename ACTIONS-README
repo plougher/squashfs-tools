@@ -481,6 +481,16 @@ Which obviously reduces to
 
 exclude@depth(3) && type(d)
 
+Note: the following tests do not work in stage 1, and so they can't be
+used in the exclude() action (see prune() action for explanation and
+alternative).
+
+	dircount()
+	dircount_range()
+	exists()
+	absolute()
+	readlink()
+	eval()
 
 5.2 Actions applied at directory scanning (stage 2)
 ---------------------------------------------------
