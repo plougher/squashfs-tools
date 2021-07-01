@@ -450,6 +450,7 @@ they will be applied.
 ----------------------------------------------------------
 
 4.1.1 exclude()
+---------------
 
 This action excludes all files and directories where the expression
 returns TRUE.
@@ -485,129 +486,140 @@ exclude@depth(3) && type(d)
 ---------------------------------------------------
 
 4.2.1 fragment(name)
+--------------------
 
-  Place all files matching the expression into a specialised fragment
-  named <name>.  This can increase compression and/or improve
-  I/O by placing similar fragments together.
+Place all files matching the expression into a specialised fragment
+named <name>.  This can increase compression and/or improve
+I/O by placing similar fragments together.
 
-  Examples:
+Examples:
 
-  1. fragment(cfiles)@name(*.[ch])
+1. fragment(cfiles)@name(*.[ch])
 
-     Place all C files into special fragments reserved for them
+Place all C files into special fragments reserved for them
 
-  2. fragment(phillip)@user(phillip)
+2. fragment(phillip)@user(phillip)
 
-     Place all files owned by user Phillip into special fragments.
+Place all files owned by user Phillip into special fragments.
 
 4.2.2 fragments()
+-----------------
 
-  Tell Mksquashfs to use fragment packing for the files matching the
-  expression.
+Tell Mksquashfs to use fragment packing for the files matching the
+expression.
 
-  For obvious reasons this should be used in conjunction with the global
-  Mksquashfs option -no-fragments.  By default all files are packed into
-  fragments if they're less than the block size.
+For obvious reasons this should be used in conjunction with the global
+Mksquashfs option -no-fragments.  By default all files are packed into
+fragments if they're less than the block size.
 
 4.2.3 no-fragments()
+--------------------
 
-  Tell Mksquashfs to not pack the files matching the expression into
-  fragments.
+Tell Mksquashfs to not pack the files matching the expression into
+fragments.
 
-  This can be used where you want to optimise I/O latency by not packing
-  certain files into fragments.
+This can be used where you want to optimise I/O latency by not packing
+certain files into fragments.
 
 4.2.4 tailend()
+---------------
 
-  Tell Mksquashfs to use tail-end packing for the files matching the
-  expression.  Normally Mksquashfs does not pack tail-ends into fragments,
-  as it may affect I/O performance because it may produce more disk head
-  seeking.
+Tell Mksquashfs to use tail-end packing for the files matching the
+expression.  Normally Mksquashfs does not pack tail-ends into fragments,
+as it may affect I/O performance because it may produce more disk head
+seeking.
 
-  But tail-end packing can increase compression.  Additionally with modern
-  solid state media, seeking is not such a major issue anymore.
+But tail-end packing can increase compression.  Additionally with modern
+solid state media, seeking is not such a major issue anymore.
 
 
 4.2.5. no-tailend()
+-------------------
 
-  Tell Mksquashfs not to use tail-end packing for the files matching the
-  exppression.
+Tell Mksquashfs not to use tail-end packing for the files matching the
+exppression.
 
-  For obvious reasons this should be used in conjuction with the global
-  Mksquashfs option -always-use-fragments.  By default tail-ends are not
-  packed into fragments.
+For obvious reasons this should be used in conjuction with the global
+Mksquashfs option -always-use-fragments.  By default tail-ends are not
+packed into fragments.
 
 4.2.6 compressed()
+------------------
 
-  Tell Mksquashfs to compress the fies matching the expression.
+Tell Mksquashfs to compress the fies matching the expression.
 
-  For obvious reasons this should be used in conjunction with the global
-  Mksquashfs options -noD and -noF.  File are by default compressed.
+For obvious reasons this should be used in conjunction with the global
+Mksquashfs options -noD and -noF.  File are by default compressed.
 
 4.2.7 uncompressed()
+--------------------
 
-  Tell Mksquashfs to not compress the files matching the expression.
+Tell Mksquashfs to not compress the files matching the expression.
 
-  This action obviously can be used to avoid compressing already compressed
-  files (XZ, GZIP etc.).
+This action obviously can be used to avoid compressing already compressed
+files (XZ, GZIP etc.).
 
 4.2.8 uid(uid or user)
+----------------------
 
-  Set the ownership of the files matching the expression to uid (if arg1
-  is a number) or user (if arg1 is a string).
+Set the ownership of the files matching the expression to uid (if arg1
+is a number) or user (if arg1 is a string).
 
 4.2.9 gid(gid or group)
+-----------------------
 
-  Set the group of the files matching the expression to gid (if arg1
-  is a number) or group (if arg1 is a string).
+Set the group of the files matching the expression to gid (if arg1
+is a number) or group (if arg1 is a string).
 
 4.2.10 guid(uid/user, gid/group)
+--------------------------------
 
-  Set the uid/user and gid/group of the files matching the expression.
+Set the uid/user and gid/group of the files matching the expression.
 
 4.2.11 chmod(mode)
+------------------
 
-  Mode can be octal, or symbolic.
+Mode can be octal, or symbolic.
 
-  If Mode is Octal, the permission bits are set to the octal value.
+If Mode is Octal, the permission bits are set to the octal value.
 
-  If Mode is Symbolic, permissions can be Set, Added or Removed.
+If Mode is Symbolic, permissions can be Set, Added or Removed.
 
-  The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+
+The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+
 	PERMS = [rwxXst]+ or [ugo]
 	and the above sequence can be repeated separated with commas.
 
-  A combination of the letters ugoa, specify which permission bits will
-  be affected, u means user, g means group, o means other, and a
-  means all or ugo.
+A combination of the letters ugoa, specify which permission bits will
+be affected, u means user, g means group, o means other, and a
+means all or ugo.
 
-  The next letter is +, - or =.  The letter + means add to the existing
-  permission bits, - means remove the bits from the existing permission
-  bits, and = means set the permission bits.
+The next letter is +, - or =.  The letter + means add to the existing
+permission bits, - means remove the bits from the existing permission
+bits, and = means set the permission bits.
 
-  The permission bits are a combination of [rwxXst] which sets/adds/removes
-  those bits for the specified ugoa combination, or they are u, g or o, which
-  takes the permission bis from the user, group or other respectively.
+The permission bits are a combination of [rwxXst] which sets/adds/removes
+those bits for the specified ugoa combination, or they are u, g or o, which
+takes the permission bis from the user, group or other respectively.
 
-  Examples:
+Examples:
 
-  1. chmod(u+r)
+1. chmod(u+r)
 
-     Adds the read permission to user.
+Adds the read permission to user.
 
-  2. chmod(ug+rw)
+2. chmod(ug+rw)
 
-     Adds the read and write permissions to both user and group.
+Adds the read and write permissions to both user and group.
 
-  3. chmod(u=rw,go=r)
+3. chmod(u=rw,go=r)
 
-     Sets the permissions to rw-r--r--, which is eqivalent to
+Sets the permissions to rw-r--r--, which is eqivalent to
 
-  4. chmod(644)
+4. chmod(644)
 
-  5. cgmod(ug=o)
+5. cgmod(ug=o)
 
-     Sets the user and group permissions to the permissions for other.
+Sets the user and group permissions to the permissions for other.
 
 4.3 Actions applied at second directory scan (stage 3)
 ------------------------------------------------------
