@@ -532,7 +532,6 @@ seeking.
 But tail-end packing can increase compression.  Additionally with modern
 solid state media, seeking is not such a major issue anymore.
 
-
 4.2.5. no-tailend()
 -------------------
 
@@ -621,10 +620,42 @@ Sets the permissions to rw-r--r--, which is eqivalent to
 
 Sets the user and group permissions to the permissions for other.
 
+
 4.3 Actions applied at second directory scan (stage 3)
 ------------------------------------------------------
 
-4.3.1 prune
+4.3.1 prune()
+
+The prune() action deletes the file or directory (and everything
+underneath it) that matches the expression.  In that respect it is
+identical to the exclude() action, except that it takes place in the
+third stage, rather than the first stage.  There are a number of
+reasons to have a prune() action in addition to an exclude()
+action.
+
+1. In the first stage Mksquashfs is building an in-memory representation
+   of the filesystem to be compressed.  At that point some of the tests
+   don't work because they rely on an in-memory representation having been
+   built.
+
+   So the following tests don't work in stage 1, and so they can't be
+   used in the exclude() action.
+
+	dircount()
+	dircount_range()
+	exists()
+	absolute()
+	readlink()
+	eval()
+
+   If you want to use these tests, you have to use the prune() action.
+
+2. Many exclusion/pruning operations may only be easily applied after
+   transformation actions have been applied in stages 1 & 2.
+
+   For example, you may change the ownership and permissions of
+   matching files in stage 2, and then want to delete files based on
+   some criteria which relies on this having taken place.
 
 
 4.4. Actions applied at third directory scan (stage 4)
