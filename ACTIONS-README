@@ -431,6 +431,15 @@ Examples of usage:
    This action will delete *.[ch] files, but, only if they are in a directory
    matching *linux*.
 
+4.37 false
+----------
+
+Always returns FALSE.
+
+4.38 true
+---------
+
+Always returns TRUE.
 
 5. Actions
 ==========
