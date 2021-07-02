@@ -454,7 +454,6 @@ way, if you have an action that depends on another action having already been
 processed (for the entire filesystem), you'll want to know that is how
 they will be applied.
 
-
 5.1 Actions applied at source filesystem reading (stage 1)
 ----------------------------------------------------------
 
@@ -640,7 +639,6 @@ Sets the permissions to rw-r--r--, which is eqivalent to
 
 Sets the user and group permissions to the permissions for other.
 
-
 5.3 Actions applied at second directory scan (stage 3)
 ------------------------------------------------------
 
@@ -677,8 +675,39 @@ action.
    matching files in stage 2, and then want to delete files based on
    some criteria which relies on this having taken place.
 
-
 5.4. Actions applied at third directory scan (stage 4)
 ------------------------------------------------------
 
-5.4.1 empty
+5.4.1 empty(reason)
+
+The empty() action deletes any directory which matches the expression,
+and which is also empty for <reason>.  <reason> is one of "excluded",
+"source" and "all".  If no argument is given, empty() defaults to "all".
+
+The reason "excluded" means the directory has become empty due to
+the exclude() or prune() actions or for exclusion on the command line
+The reason "source" means the directory was empty in the source filesystem.
+The reason "all" means it is empty for either one of the reasons.
+
+This action is often useful when exclusion has produced an empty
+directory, or a hierarchy of directories which are empty but for a
+sub-directory which is empty but for a sub-directory until an
+empty directory is reached.
+
+Example
+
+1. Exclude any file which isn't a directory, and then clean-up
+   any directories which are empty as a result.
+
+	exclude@!type(d)
+	empty(excluded)@true
+
+This will produce an empty filesystem, unless there were some
+directories that were originally empty.
+
+Changing the empty action to
+
+	exclude@!type(d)
+	empty@true
+
+Will produce an empty filesystem.
