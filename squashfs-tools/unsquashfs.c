@@ -3828,8 +3828,9 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "extract.\n\t\t\t\tOne per line\n");
 	fprintf(stream, "\t-exclude-file <file>\tlist of directories or files to ");
 	fprintf(stream, "exclude.\n\t\t\t\tOne per line\n");
-	fprintf(stream, "\t-pseudo-file <file>\toutput a pseudo file equivalent ");
+	fprintf(stream, "\t-pf <file>\t\toutput a pseudo file equivalent ");
 	fprintf(stream, "of the input\n\t\t\t\tSquashfs filesystem\n");
+	fprintf(stream, "\t-pseudo-file <file>\talternative name for -pf\n");
 	fprintf(stream, "\t-e[f] <extract file>\tsynonym for -extract-file\n");
 	fprintf(stream, "\t-exc[f] <exclude file>\tsynonym for -exclude-file\n");
 	fprintf(stream, "\t-da[ta-queue] <size>\tset data queue to <size> Mbytes.  ");
@@ -4010,9 +4011,10 @@ int parse_options(int argc, char *argv[])
 		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
 			print_options(stdout, argv[0]);
 			exit(0);
-		} else if(strcmp(argv[i], "-pseudo-file") == 0) {
+		} else if(strcmp(argv[i], "-pseudo-file") == 0 ||
+				strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc) {
-				fprintf(stderr, "%s: -pseudo-file missing filename\n",
+				fprintf(stderr, "%s: -pf missing filename\n",
 					argv[0]);
 				exit(1);
 			}
