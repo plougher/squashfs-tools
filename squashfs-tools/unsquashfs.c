@@ -3675,7 +3675,7 @@ int generate_pseudo(char *pseudo_file)
 {
 	int i, res;
 
-	writer_fd = open_wait(pseudo_file, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	writer_fd = open_wait(pseudo_file, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if(writer_fd == -1)
 		EXIT_UNSQUASH("generate_pseudo: failed to create pseudo file %s,"
 			" because %s\n", pseudo_file, strerror(errno));
