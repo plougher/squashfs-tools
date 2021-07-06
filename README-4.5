@@ -4,7 +4,7 @@
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs-Tools 4.5.  The last release was just over 1 and half years
+Welcome to Squashfs-Tools 4.5.  The last release was just under 2 years
 ago, and there are substantial improvements to the tools in this release.
 
 Please see the INSTALL file for instructions on installing the tools,
@@ -43,7 +43,7 @@ Summary of changes (and sections below)
     (see section 11).
 
 1.9 New Pseudo file "R" definition which allows a Regular file to
-    be created with data stored within the Pseudo file (see 2.3 below).
+    be created with data stored within the Pseudo file (see 2.5 below).
 
 
 2. Major improvements in Unsquashfs
@@ -538,16 +538,78 @@ and exclude files remove directories/files from that sub-set.
 15. Max depth traversal option added
 ------------------------------------
 
-Unsquashfs has added a -max-depth <n> option, which will limit output and/or
-file listing to <n> depth directories, where the top level directory is depth 1,
-e.g.
+Unsquashfs has added a -max-depth <n> option, which will limit output
+and/or file listing to <n> depth directories, where the top level
+directory is depth 1, e.g.
 
 % unsquashfs -max-depth 3 -ll img
 
 Will limit the filesystem output listing to be 3 directories in depth.
 
 
-?. Compatiblity
+16. Unsquashfs Pseudo file output
+---------------------------------
+
+If the Pseudo file (-pf) option is given, Unsquashfs will output a
+Pseudo file representation of the input filesystem.  This pseudo file
+can be used as input to Mksquashfs to reproduce the Squashfs filesystem
+without having to unpack the input filesystem image.
+
+The Pseudo file output is designed to be editable, and the pseudo file
+entries can be altered (name, date, ownership etc.) or added/deleted
+before any new filesystem is rebuilt.
+
+The format of the pseudo file, is obviously, the same as the pseudo file
+definitions supported by Msquashfs.  In this release (see sections 8, 9
+and 10) this has been extended to fully support any file type and
+timestamp information.
+
+Regular files (with data) are supported with the new "R" pseudo
+definition, which is
+
+filename R time mode uid gid length offset
+
+<length> specifies the size of the file, and <offset> is a byte
+offset into the pseudo file where the data is stored.  This offset
+is taken from the start of the data section (see below), rather
+than from the start of the file (this is allow the pseudo file
+entries to be edited without altering the data offsets).
+
+Data is deliberately stored out of line (i.e. unlike tar), to make
+the file more easily editable manually.
+
+An example pseudo file output for a filesystem consisting of a directory,
+two regular files, and a symbolic link might be
+
+	/ D 1625536033 1777 0 0
+	test D 1625536969 755 1000 100
+	test/hello_world R 1625535696 644 1000 100 12 0
+	test/regfile R 1625536928 644 1000 100 37 12
+	test/symlink S 1625535712 777 1000 100 hello_world
+	#
+	# START OF DATA - DO NOT MODIFY
+	#
+	Hello World
+	This is the data contents of regfile
+
+Here you should be able see the most important aspects of the layout,
+the pseudo file entries appear at the start of the file, and the data
+is stored at the end.  The two sections are separated by 3 special
+marker lines, containing the words "START OF DATA - DO NOT MODIFY".
+
+The following is a small example of how someone might edit and
+rebuild a Squashfs image.
+
+$ unsquashfs -pf pseudo test.sqsh
+$ sed -i "0,/# START OF DATA/s/\([^ ]* . [0-9]* [0-7]* \)[0-9]*/\11234/g" pseudo
+$ sed -i "0,/# START OF DATA/s/hello_world/hello/g" pseudo
+$ mksquashfs - test2.sqsh -pf pseudo
+
+This will change the ownership to uid 1234, and change the name of
+"hello_word" to "hello".
+
+
+17. Compatibility
 ---------------
 
 Mksquashfs 4.4 generates 4.0 filesystems.  These filesystems are fully
