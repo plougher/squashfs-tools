@@ -276,6 +276,16 @@ int one_file_system = FALSE;
 dev_t *source_dev;
 dev_t cur_dev;
 
+/* list of options that have an argument */
+char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-mode",
+	"force-uid", "force-gid", "action", "log-action", "true-action",
+	"false-action", "action-file", "log-action-file", "true-action-file",
+	"false-action-file", "p", "pf", "sort", "root-becomes", "recover",
+	"recovery-path", "throttle", "limit", "processors", "mem", "offset",
+	"o", "log", "a", "va", "ta", "fa", "af", "vaf", "taf", "faf",
+	"read-queue", "write-queue", "fragment-queue", NULL
+};
+
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 static void add_old_root_entry(char *name, squashfs_inode inode,
 	unsigned int inode_number, int type);
@@ -6074,6 +6084,22 @@ static void print_summary()
 }
 
 
+
+int option_with_arg(char *string, char *table[])
+{
+	int i;
+
+	if(*string != '-')
+		return FALSE;
+
+	for(i = 0; table[i] != NULL; i++)
+		if(strcmp(string + 1, table[i]) == 0)
+			break;
+
+	return table[i] != NULL;
+}
+
+
 int main(int argc, char *argv[])
 {
 	struct stat buf, source_buf;
@@ -6153,11 +6179,7 @@ int main(int argc, char *argv[])
 
 		} else if(strcmp(argv[i], "-e") == 0)
 			break;
-		else if(strcmp(argv[i], "-root-becomes") == 0 ||
-				strcmp(argv[i], "-ef") == 0 ||
-				strcmp(argv[i], "-pf") == 0 ||
-				strcmp(argv[i], "-vaf") == 0 ||
-				strcmp(argv[i], "-log") == 0)
+		else if(option_with_arg(argv[i], option_table))
 			i++;
 	}
 
@@ -6767,13 +6789,7 @@ print_compressor_options:
 			process_exclude_file(argv[++i]);
 		else if(strcmp(argv[i], "-e") == 0)
 			break;
-		else if(strcmp(argv[i], "-root-becomes") == 0 ||
-				strcmp(argv[i], "-sort") == 0 ||
-				strcmp(argv[i], "-pf") == 0 ||
-				strcmp(argv[i], "-af") == 0 ||
-				strcmp(argv[i], "-vaf") == 0 ||
-				strcmp(argv[i], "-comp") == 0 ||
-				strcmp(argv[i], "-log") == 0)
+		else if(option_with_arg(argv[i], option_table))
 			i++;
 
 	if(i != argc) {
@@ -6798,13 +6814,7 @@ print_compressor_options:
 			sorted ++;
 		} else if(strcmp(argv[i], "-e") == 0)
 			break;
-		else if(strcmp(argv[i], "-root-becomes") == 0 ||
-				strcmp(argv[i], "-ef") == 0 ||
-				strcmp(argv[i], "-pf") == 0 ||
-				strcmp(argv[i], "-af") == 0 ||
-				strcmp(argv[i], "-vaf") == 0 ||
-				strcmp(argv[i], "-comp") == 0 ||
-				strcmp(argv[i], "-log") == 0)
+		else if(option_with_arg(argv[i], option_table))
 			i++;
 
 	if(!delete) {
