@@ -4762,8 +4762,11 @@ static squashfs_inode no_sources(int progress)
 	if(appending)
 		BAD_ERROR("Pseudo files defining \"/\" cannot be used with appending\n");
 
-	if(pseudo == NULL || pseudo->names != 1 || strcmp(pseudo->name[0].name, "/") != 0)
-		BAD_ERROR("Source is \"-\", but no pseudo definition for \"/\"\n");
+	if(pseudo == NULL || pseudo->names != 1 || strcmp(pseudo->name[0].name, "/") != 0) {
+		ERROR_START("Source is \"-\", but no pseudo definition for \"/\"\n");
+		ERROR_EXIT("Did you forget to specify -cpiostyle or -tar?\n");
+		EXIT_MKSQUASHFS();
+	}
 
 	pseudo_ent = &pseudo->name[0];
 
