@@ -5874,7 +5874,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\tdirectory containing that directory, rather than the\n");
 	fprintf(stream, "\t\t\tcontents of the directory\n");
 	fprintf(stream, "-action <action@expr>\tevaluate <expr> on every file, ");
-	fprintf(stream, "and execute <action>\t\t\t\tif it returns TRUE\n");
+	fprintf(stream, "and execute <action>\n\t\t\tif it returns TRUE\n");
 	fprintf(stream, "-log-action <act@expr>\tas above, but log expression ");
 	fprintf(stream, "evaluation results and\n\t\t\tactions performed\n");
 	fprintf(stream, "-true-action <act@expr>\tas above, but only log expressions ");
