@@ -5839,6 +5839,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "SYNTAX:%s source1 source2 ...  dest [options] ", name);
 	fprintf(stream, "[-e list of exclude\ndirs/files]\n");
 	fprintf(stream, "\nFilesystem build options:\n");
+	fprintf(stream, "-tar\t\t\tread uncompressed tar file from standard in (stdin)\n");
 	fprintf(stream, "-no-strip\t\tact like tar, and do not strip leading ");
 	fprintf(stream, "directories\n\t\t\tfrom source files\n");
 	fprintf(stream, "-tarstyle\t\talternative name for -no-strip\n");
