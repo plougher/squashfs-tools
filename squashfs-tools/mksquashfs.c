@@ -5992,14 +5992,130 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
 	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE\n");
 	fprintf(stream, "\nThe ACTIONS-README file describing how to use the new actions feature can be read\n");
-       fprintf(stream, "here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n");
+	fprintf(stream, "here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n");
 }
 
 
-
-static void print_version()
+static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 {
-	printf("mksquashfs version " VERSION " (" DATE ")\n");
+	fprintf(stream, "SYNTAX:%s [options] dest ", name);
+	fprintf(stream, "[list of exclude dirs/files]\n");
+	fprintf(stream, "\nFilesystem build options:\n");
+	fprintf(stream, "-comp <comp>\t\tselect <comp> compression\n");
+	fprintf(stream, "\t\t\tCompressors available:\n");
+	display_compressors(stream, "\t\t\t", COMP_DEFAULT);
+	fprintf(stream, "-b <block_size>\t\tset data block to <block_size>.  Default ");
+	fprintf(stream, "128 Kbytes\n");
+	fprintf(stream, "\t\t\tOptionally a suffix of K or M can be given to ");
+	fprintf(stream, "specify\n\t\t\tKbytes or Mbytes respectively\n");
+	fprintf(stream, "-reproducible\t\tbuild images that are reproducible");
+	fprintf(stream, REP_STR "\n");
+	fprintf(stream, "-not-reproducible\tbuild images that are not reproducible");
+	fprintf(stream, NOREP_STR "\n");
+	fprintf(stream, "-mkfs-time <time>\tset mkfs time to <time> which is an ");
+	fprintf(stream, "unsigned int\n");
+	fprintf(stream, "-fstime <time>\t\tsynonym for mkfs-time\n");
+	fprintf(stream, "-all-time <time>\tset all inode times to <time> which is an ");
+	fprintf(stream, "unsigned int\n");
+	fprintf(stream, "-no-exports\t\tdon't make the filesystem exportable via NFS\n");
+	fprintf(stream, "-no-sparse\t\tdon't detect sparse files\n");
+	fprintf(stream, "-no-xattrs\t\tdon't store extended attributes" NOXOPT_STR "\n");
+	fprintf(stream, "-xattrs\t\t\tstore extended attributes" XOPT_STR "\n");
+	fprintf(stream, "-noI\t\t\tdo not compress inode table\n");
+	fprintf(stream, "-noId\t\t\tdo not compress the uid/gid table (implied by ");
+	fprintf(stream, "-noI)\n");
+	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
+	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
+	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
+	fprintf(stream, "-no-fragments\t\tdo not use fragments\n");
+	fprintf(stream, "-always-use-fragments\tuse fragment blocks for files larger ");
+	fprintf(stream, "than block size\n");
+	fprintf(stream, "-no-duplicates\t\tdo not perform duplicate checking\n");
+	fprintf(stream, "-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n");
+	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
+	fprintf(stream, "-root-mode <mode>\tset root directory permissions to octal ");
+	fprintf(stream, "<mode>\n");
+	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
+	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
+	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
+	fprintf(stream, "\nFilesystem filter options:\n");
+	fprintf(stream, "-p <pseudo-definition>\tAdd pseudo file definition\n");
+	fprintf(stream, "-pf <pseudo-file>\tAdd list of pseudo file definitions\n");
+	fprintf(stream, "\t\t\tPseudo definitions should be of the format\n");
+	fprintf(stream, "\t\t\t\tfilename d mode uid gid\n");
+	fprintf(stream, "\t\t\t\tfilename m mode uid gid\n");
+	fprintf(stream, "\t\t\t\tfilename b mode uid gid major minor\n");
+	fprintf(stream, "\t\t\t\tfilename c mode uid gid major minor\n");
+	fprintf(stream, "\t\t\t\tfilename f mode uid gid command\n");
+	fprintf(stream, "\t\t\t\tfilename s mode uid gid symlink\n");
+	fprintf(stream, "\t\t\t\tfilename i mode uid gid [s|f]\n");
+	fprintf(stream, "\t\t\t\tfilename l filename\n");
+	fprintf(stream, "\t\t\t\tfilename L pseudo_filename\n");
+	fprintf(stream, "\t\t\t\tfilename D time mode uid gid\n");
+	fprintf(stream, "\t\t\t\tfilename M time mode uid gid\n");
+	fprintf(stream, "\t\t\t\tfilename B time mode uid gid major minor\n");
+	fprintf(stream, "\t\t\t\tfilename C time mode uid gid major minor\n");
+	fprintf(stream, "\t\t\t\tfilename F time mode uid gid command\n");
+	fprintf(stream, "\t\t\t\tfilename S time mode uid gid symlink\n");
+	fprintf(stream, "\t\t\t\tfilename I time mode uid gid [s|f]\n");
+	fprintf(stream, "\t\t\t\tfilename R time mode uid gid length offset\n");
+	fprintf(stream, "-ef <exclude_file>\tlist of exclude dirs/files.  ");
+	fprintf(stream, "One per line\n");
+	fprintf(stream, "-regex\t\t\tAllow POSIX regular expressions to be used in ");
+	fprintf(stream, "exclude\n\t\t\tdirs/files\n");
+	fprintf(stream, "\nMksquashfs runtime options:\n");
+	fprintf(stream, "-version\t\tprint version, licence and copyright message\n");
+	fprintf(stream, "-exit-on-error\t\ttreat normally ignored errors as fatal\n");
+	fprintf(stream, "-quiet\t\t\tno verbose output\n");
+	fprintf(stream, "-info\t\t\tprint files written to filesystem\n");
+	fprintf(stream, "-no-progress\t\tdon't display the progress bar\n");
+	fprintf(stream, "-progress\t\tdisplay progress bar when using the -info ");
+	fprintf(stream, "option\n");
+	fprintf(stream, "-throttle <percentage>\tthrottle the I/O input rate by the ");
+	fprintf(stream, "given percentage.\n\t\t\tThis can be used to reduce the I/O ");
+	fprintf(stream, "and CPU consumption\n\t\t\tof Mksquashfs\n");
+	fprintf(stream, "-limit <percentage>\tlimit the I/O input rate to the given ");
+	fprintf(stream, "percentage.\n\t\t\tThis can be used to reduce the I/O and CPU ");
+	fprintf(stream, "consumption\n\t\t\tof Mksquashfs (alternative to -throttle)\n");
+	fprintf(stream, "-processors <number>\tUse <number> processors.  By default ");
+	fprintf(stream, "will use number of\n\t\t\tprocessors available\n");
+	fprintf(stream, "-mem <size>\t\tUse <size> physical memory.  Currently set ");
+	fprintf(stream, "to %dM\n", total_mem);
+	fprintf(stream, "\t\t\tOptionally a suffix of K, M or G can be given to ");
+	fprintf(stream, "specify\n\t\t\tKbytes, Mbytes or Gbytes respectively\n");
+	fprintf(stream, "\nMiscellaneous options:\n");
+	fprintf(stream, "-root-owned\t\talternative name for -all-root\n");
+	fprintf(stream, "-offset <offset>\tSkip <offset> bytes at the beginning of ");
+	fprintf(stream, "<dest>.\n\t\t\tOptionally a suffix of K, M or G can be given ");
+	fprintf(stream, "to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n");
+	fprintf(stream, "\t\t\tDefault 0 bytes.\n");
+	fprintf(stream, "-o <offset>\t\tsynonym for -offset\n");
+	fprintf(stream, "-noInodeCompression\talternative name for -noI\n");
+	fprintf(stream, "-noIdTableCompression\talternative name for -noId\n");
+	fprintf(stream, "-noDataCompression\talternative name for -noD\n");
+	fprintf(stream, "-noFragmentCompression\talternative name for -noF\n");
+	fprintf(stream, "-noXattrCompression\talternative name for -noX\n");
+	fprintf(stream, "\n-help\t\t\toutput this options text to stdout\n");
+	fprintf(stream, "-h\t\t\toutput this options text to stdout\n");
+	fprintf(stream, "\n-Xhelp\t\t\tprint compressor options for selected ");
+	fprintf(stream, "compressor\n");
+	fprintf(stream, "\nCompressors available and compressor specific options:\n");
+	display_compressor_usage(stream, COMP_DEFAULT);
+
+	fprintf(stream, "\nThe README for the Squash-tools 4.5 release, ");
+	fprintf(stream, "describing the new features can be\n");
+	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.5\n");
+
+	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
+	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE\n");
+	fprintf(stream, "\nThe ACTIONS-README file describing how to use the new actions feature can be read\n");
+	fprintf(stream, "here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n");
+}
+
+
+static void print_version(char *string)
+{
+	printf("%s version " VERSION " (" DATE ")\n", string);
 	printf("copyright (C) 2021 Phillip Lougher ");
 	printf("<phillip@squashfs.org.uk>\n\n");
 	printf("This program is free software; you can redistribute it and/or\n");
@@ -6087,6 +6203,591 @@ static void print_summary()
 }
 
 
+int sqfstar(int argc, char *argv[])
+{
+	struct stat buf;
+	int res, i;
+	char *b;
+	squashfs_inode inode;
+	int readq;
+	int fragq;
+	int bwriteq;
+	int fwriteq;
+	int total_mem = get_default_phys_mem();
+	int progress = TRUE;
+	int force_progress = FALSE;
+	int dest_index;
+	struct file_buffer **fragment = NULL;
+	int size;
+	void *comp_data;
+
+	if(argc == 2 && strcmp(argv[1], "-version") == 0) {
+		print_version("sqfstar");
+		exit(0);
+	}
+
+	block_log = slog(block_size);
+	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
+
+	if(argc == 2 && (strcmp(argv[1], "-help") == 0 || strcmp(argv[1], "-h") == 0)) {
+		print_sqfstar_options(stdout, argv[0], total_mem);
+		exit(0);
+	}
+
+	/*
+	 * Scan the command line for -comp xxx option, this is to ensure
+	 * any -X compressor specific options are passed to the
+	 * correct compressor
+	 */
+	for(i = 1; i < argc; i++) {
+		struct compressor *prev_comp = comp;
+
+		if(strcmp(argv[i], "-comp") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -comp missing compression type\n",
+					argv[0]);
+				exit(1);
+			}
+			comp = lookup_compressor(argv[i]);
+			if(!comp->supported) {
+				ERROR("%s: Compressor \"%s\" is not supported!"
+					"\n", argv[0], argv[i]);
+				ERROR("%s: Compressors available:\n", argv[0]);
+				display_compressors(stderr, "", COMP_DEFAULT);
+				exit(1);
+			}
+			if(prev_comp != NULL && prev_comp != comp) {
+				ERROR("%s: -comp multiple conflicting -comp"
+					" options specified on command line"
+					", previously %s, now %s\n", argv[0],
+					prev_comp->name, comp->name);
+				exit(1);
+			}
+			compressor_opt_parsed = 1;
+
+		} else if(argv[i][0] != '-')
+			break;
+		else if(strcmp(argv[i], "-ef") == 0 ||
+				strcmp(argv[i], "-pf") == 0)
+			i++;
+	}
+
+	if(i == argc) {
+		print_sqfstar_options(stderr, argv[0], total_mem);
+		exit(1);
+	}
+
+	dest_index = i;
+	source_path = NULL;
+	source = 0;
+	old_exclude = FALSE;
+	tarfile = TRUE;
+
+	/*
+	 * if no -comp option specified lookup default compressor.  Note the
+	 * Makefile ensures the default compressor has been built, and so we
+	 * don't need to to check for failure here
+	 */
+	if(comp == NULL)
+		comp = lookup_compressor(COMP_DEFAULT);
+
+	for(i = 1; i < dest_index; i++) {
+		if(strcmp(argv[i], "-no-hardlinks") == 0)
+			no_hardlinks = TRUE;
+		else if(strcmp(argv[i], "-throttle") == 0) {
+			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
+				ERROR("%s: %s missing or invalid value\n",
+							argv[0], argv[i - 1]);
+				exit(1);
+			}
+			if(sleep_time > 99) {
+				ERROR("%s: %s value should be between 0 and "
+						"99\n", argv[0], argv[i - 1]);
+				exit(1);
+			}
+			readq = 4;
+		} else if(strcmp(argv[i], "-limit") == 0) {
+			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
+				ERROR("%s: %s missing or invalid value\n",
+							argv[0], argv[i - 1]);
+				exit(1);
+			}
+			if(sleep_time < 1 || sleep_time > 100) {
+				ERROR("%s: %s value should be between 1 and "
+						"100\n", argv[0], argv[i - 1]);
+				exit(1);
+			}
+			sleep_time = 100 - sleep_time;
+			readq = 4;
+		} else if(strcmp(argv[i], "-mkfs-time") == 0 ||
+				strcmp(argv[i], "-fstime") == 0) {
+			if((++i == argc) ||
+				!parse_num_unsigned(argv[i], &mkfs_time)) {
+					ERROR("%s: %s missing or invalid time "
+						"value\n", argv[0],
+						argv[i - 1]);
+				exit(1);
+			}
+			mkfs_time_opt = TRUE;
+		} else if(strcmp(argv[i], "-all-time") == 0) {
+			if((++i == argc) ||
+				!parse_num_unsigned(argv[i], &all_time)) {
+					ERROR("%s: %s missing or invalid time "
+						"value\n", argv[0],
+						argv[i - 1]);
+				exit(1);
+			}
+			all_time_opt = TRUE;
+			clamping = FALSE;
+		} else if(strcmp(argv[i], "-reproducible") == 0)
+			reproducible = TRUE;
+		else if(strcmp(argv[i], "-not-reproducible") == 0)
+			reproducible = FALSE;
+		else if(strcmp(argv[i], "-root-mode") == 0) {
+			if((++i == argc) || !parse_mode(argv[i], &root_mode)) {
+				ERROR("%s: -root-mode missing or invalid mode,"
+					" octal number <= 07777 expected\n", argv[0]);
+				exit(1);
+			}
+			root_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-comp") == 0)
+			/* parsed previously */
+			i++;
+		else if(strncmp(argv[i], "-X", 2) == 0) {
+			int args;
+
+			if(strcmp(argv[i] + 2, "help") == 0)
+				goto print_sqfstar_compressor_options;
+
+			args = compressor_options(comp, argv + i, argc - i);
+			if(args < 0) {
+				if(args == -1) {
+					ERROR("%s: Unrecognised compressor"
+						" option %s\n", argv[0],
+						argv[i]);
+					if(!compressor_opt_parsed)
+						ERROR("%s: Did you forget to"
+							" specify -comp?\n",
+							argv[0]);
+print_sqfstar_compressor_options:
+					ERROR("%s: selected compressor \"%s\""
+						".  Options supported: %s\n",
+						argv[0], comp->name,
+						comp->usage ? "" : "none");
+					if(comp->usage)
+						comp->usage(stderr);
+				}
+				exit(1);
+			}
+			i += args;
+
+		} else if(strcmp(argv[i], "-pf") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -pf missing filename\n", argv[0]);
+				exit(1);
+			}
+			if(read_pseudo_file(argv[i], destination_file) == FALSE)
+				exit(1);
+		} else if(strcmp(argv[i], "-p") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -p missing pseudo file definition\n",
+					argv[0]);
+				exit(1);
+			}
+			if(read_pseudo_definition(argv[i], destination_file) == FALSE)
+				exit(1);
+		} else if(strcmp(argv[i], "-regex") == 0)
+			use_regex = TRUE;
+		else if(strcmp(argv[i], "-no-sparse") == 0)
+			sparse_files = FALSE;
+		else if(strcmp(argv[i], "-no-progress") == 0)
+			progress = FALSE;
+		else if(strcmp(argv[i], "-progress") == 0)
+			force_progress = TRUE;
+		else if(strcmp(argv[i], "-no-exports") == 0)
+			exportable = FALSE;
+		else if(strcmp(argv[i], "-offset") == 0 ||
+						strcmp(argv[i], "-o") == 0) {
+			if((++i == argc) ||
+				!parse_numberll(argv[i], &start_offset, 1)) {
+					ERROR("%s: %s missing or invalid offset "
+						"size\n", argv[0], argv[i - 1]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-processors") == 0) {
+			if((++i == argc) || !parse_num(argv[i], &processors)) {
+				ERROR("%s: -processors missing or invalid "
+					"processor number\n", argv[0]);
+				exit(1);
+			}
+			if(processors < 1) {
+				ERROR("%s: -processors should be 1 or larger\n",
+					argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-mem") == 0) {
+			long long number;
+
+			if((++i == argc) ||
+					!parse_numberll(argv[i], &number, 1)) {
+				ERROR("%s: -mem missing or invalid mem size\n",
+					 argv[0]);
+				exit(1);
+			}
+
+			/*
+			 * convert from bytes to Mbytes, ensuring the value
+			 * does not overflow a signed int
+			 */
+			if(number >= (1LL << 51)) {
+				ERROR("%s: -mem invalid mem size\n", argv[0]);
+				exit(1);
+			}
+
+			total_mem = number / 1048576;
+			if(total_mem < (SQUASHFS_LOWMEM / SQUASHFS_TAKE)) {
+				ERROR("%s: -mem should be %d Mbytes or "
+					"larger\n", argv[0],
+					SQUASHFS_LOWMEM / SQUASHFS_TAKE);
+				exit(1);
+			}
+			calculate_queue_sizes(total_mem, &readq, &fragq,
+				&bwriteq, &fwriteq);
+		} else if(strcmp(argv[i], "-b") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -b missing block size\n", argv[0]);
+				exit(1);
+			}
+			if(!parse_number(argv[i], &block_size, 1)) {
+				ERROR("%s: -b invalid block size\n", argv[0]);
+				exit(1);
+			}
+			if((block_log = slog(block_size)) == 0) {
+				ERROR("%s: -b block size not power of two or "
+					"not between 4096 and 1Mbyte\n",
+					argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-ef") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -ef missing filename\n", argv[0]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-no-duplicates") == 0)
+			duplicate_checking = FALSE;
+
+		else if(strcmp(argv[i], "-no-fragments") == 0)
+			no_fragments = TRUE;
+
+		 else if(strcmp(argv[i], "-always-use-fragments") == 0)
+			always_use_fragments = TRUE;
+
+		else if(strcmp(argv[i], "-all-root") == 0 ||
+				strcmp(argv[i], "-root-owned") == 0)
+			global_uid = global_gid = 0;
+
+		else if(strcmp(argv[i], "-force-uid") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -force-uid missing uid or user\n",
+					argv[0]);
+				exit(1);
+			}
+			if((global_uid = strtoll(argv[i], &b, 10)), *b =='\0') {
+				if(global_uid < 0 || global_uid >
+						(((long long) 1 << 32) - 1)) {
+					ERROR("%s: -force-uid uid out of range"
+						"\n", argv[0]);
+					exit(1);
+				}
+			} else {
+				struct passwd *uid = getpwnam(argv[i]);
+				if(uid)
+					global_uid = uid->pw_uid;
+				else {
+					ERROR("%s: -force-uid invalid uid or "
+						"unknown user\n", argv[0]);
+					exit(1);
+				}
+			}
+		} else if(strcmp(argv[i], "-force-gid") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -force-gid missing gid or group\n",
+					argv[0]);
+				exit(1);
+			}
+			if((global_gid = strtoll(argv[i], &b, 10)), *b =='\0') {
+				if(global_gid < 0 || global_gid >
+						(((long long) 1 << 32) - 1)) {
+					ERROR("%s: -force-gid gid out of range"
+						"\n", argv[0]);
+					exit(1);
+				}
+			} else {
+				struct group *gid = getgrnam(argv[i]);
+				if(gid)
+					global_gid = gid->gr_gid;
+				else {
+					ERROR("%s: -force-gid invalid gid or "
+						"unknown group\n", argv[0]);
+					exit(1);
+				}
+			}
+		} else if(strcmp(argv[i], "-noI") == 0 ||
+				strcmp(argv[i], "-noInodeCompression") == 0)
+			noI = TRUE;
+
+		else if(strcmp(argv[i], "-noId") == 0 ||
+				strcmp(argv[i], "-noIdTableCompression") == 0)
+			noId = TRUE;
+
+		else if(strcmp(argv[i], "-noD") == 0 ||
+				strcmp(argv[i], "-noDataCompression") == 0)
+			noD = TRUE;
+
+		else if(strcmp(argv[i], "-noF") == 0 ||
+				strcmp(argv[i], "-noFragmentCompression") == 0)
+			noF = TRUE;
+
+		else if(strcmp(argv[i], "-noX") == 0 ||
+				strcmp(argv[i], "-noXattrCompression") == 0)
+			noX = TRUE;
+
+		else if(strcmp(argv[i], "-no-xattrs") == 0)
+			no_xattrs = TRUE;
+
+		else if(strcmp(argv[i], "-xattrs") == 0) {
+			if(xattrs_supported())
+				no_xattrs = FALSE;
+			else {
+				ERROR("%s: xattrs are unsupported in "
+					"this build\n", argv[0]);
+				exit(1);
+			}
+
+		} else if(strcmp(argv[i], "-nopad") == 0)
+			nopad = TRUE;
+
+		else if(strcmp(argv[i], "-info") == 0)
+			silent = FALSE;
+
+		else if(strcmp(argv[i], "-noappend") == 0)
+			delete = TRUE;
+
+		else if(strcmp(argv[i], "-quiet") == 0)
+			quiet = TRUE;
+
+		else if(strcmp(argv[i], "-exit-on-error") == 0)
+			exit_on_error = TRUE;
+
+		else if(strcmp(argv[i], "-version") == 0) {
+			print_version("sqfstar");
+		} else {
+			ERROR("%s: invalid option\n\n", argv[0]);
+			print_sqfstar_options(stderr, argv[0], total_mem);
+			exit(1);
+		}
+	}
+
+	check_env_var();
+
+	/*
+	 * The -noI option implies -noId for backwards compatibility, so reset noId
+	 * if both have been specified
+	 */
+	if(noI && noId)
+		noId = FALSE;
+
+	/*
+	 * Some compressors may need the options to be checked for validity
+	 * once all the options have been processed
+	 */
+	res = compressor_options_post(comp, block_size);
+	if(res)
+		EXIT_MKSQUASHFS();
+
+	/*
+	 * If the -info option has been selected then disable the
+	 * progress bar unless it has been explicitly enabled with
+	 * the -progress option
+	 */
+	if(!silent)
+		progress = force_progress;
+
+#ifdef SQUASHFS_TRACE
+	/*
+	 * Disable progress bar if full debug tracing is enabled.
+	 * The progress bar in this case just gets in the way of the
+	 * debug trace output
+	 */
+	progress = FALSE;
+#endif
+
+	destination_file =  argv[dest_index];
+	if(stat(destination_file, &buf) == -1) {
+		if(errno == ENOENT) { /* Does not exist */
+			fd = open(destination_file, O_CREAT | O_TRUNC | O_RDWR,
+				S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+			if(fd == -1) {
+				perror("Could not create destination file");
+				exit(1);
+			}
+			delete = TRUE;
+
+			/* ensure Mksquashfs doesn't try to read
+			 * the destination file as input, which
+			 * will result in an I/O loop */
+			if(stat(destination_file, &buf) == -1) {
+				/* disappered after creating? */
+				perror("Could not stat destination file");
+				exit(1);
+			}
+			ADD_ENTRY(buf);
+		} else {
+			perror("Could not stat destination file");
+			exit(1);
+		}
+
+	} else {
+		if(S_ISBLK(buf.st_mode)) {
+			if((fd = open(destination_file, O_RDWR)) == -1) {
+				perror("Could not open block device as "
+					"destination");
+				exit(1);
+			}
+			block_device = 1;
+
+		} else
+			BAD_ERROR("Destination file already exists!\n");
+	}
+
+	/*
+	 * process the exclude files - must be done afer destination file has
+	 * been possibly created
+	 */
+	for(i = 1; i < dest_index; i++) {
+		if(strcmp(argv[i], "-ef") == 0)
+			/*
+			 * Note presence of filename arg has already
+			 * been checked
+			 */
+			process_exclude_file(argv[++i]);
+		else if( strcmp(argv[i], "-pf") == 0 ||
+				strcmp(argv[i], "-comp") == 0)
+			i++;
+	}
+
+	for(i = dest_index + 1; i < argc; i++)
+		add_exclude(argv[i]);
+
+	initialise_threads(readq, fragq, bwriteq, fwriteq, delete,
+		destination_file);
+
+	res = compressor_init(comp, &stream, SQUASHFS_METADATA_SIZE, 0);
+	if(res)
+		BAD_ERROR("compressor_init failed\n");
+
+	dupl_block = malloc(1048576 * sizeof(struct file_info *));
+	if(dupl_block == NULL)
+		MEM_ERROR();
+
+	dupl_frag = malloc(block_size * sizeof(struct file_info *));
+	if(dupl_frag == NULL)
+		MEM_ERROR();
+
+	memset(dupl_block, 0, 1048576 * sizeof(struct file_info *));
+	memset(dupl_frag, 0, block_size * sizeof(struct file_info *));
+
+	comp_data = compressor_dump_options(comp, block_size, &size);
+
+	if(!quiet)
+		printf("Creating %d.%d filesystem on %s, block size %d.\n",
+			SQUASHFS_MAJOR, SQUASHFS_MINOR,
+			destination_file, block_size);
+
+	/*
+	 * store any compressor specific options after the superblock,
+	 * and set the COMP_OPT flag to show that the filesystem has
+	 * compressor specfic options
+	 */
+	if(comp_data) {
+		unsigned short c_byte = size | SQUASHFS_COMPRESSED_BIT;
+
+		SQUASHFS_INSWAP_SHORTS(&c_byte, 1);
+		write_destination(fd, sizeof(struct squashfs_super_block),
+			sizeof(c_byte), &c_byte);
+		write_destination(fd, sizeof(struct squashfs_super_block) +
+			sizeof(c_byte), size, comp_data);
+		bytes = sizeof(struct squashfs_super_block) + sizeof(c_byte)
+			+ size;
+		comp_opts = TRUE;
+	} else
+		bytes = sizeof(struct squashfs_super_block);
+
+	if(path)
+		paths = add_subdir(paths, path);
+
+	dump_actions();
+	dump_pseudos();
+
+	set_progressbar_state(progress);
+
+	inode = process_tar_file(progress);
+
+	sBlk.root_inode = inode;
+	sBlk.inodes = inode_count;
+	sBlk.s_magic = SQUASHFS_MAGIC;
+	sBlk.s_major = SQUASHFS_MAJOR;
+	sBlk.s_minor = SQUASHFS_MINOR;
+	sBlk.block_size = block_size;
+	sBlk.block_log = block_log;
+	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, noId, no_fragments,
+		always_use_fragments, duplicate_checking, exportable,
+		no_xattrs, comp_opts);
+	sBlk.mkfs_time = mkfs_time_opt ? mkfs_time : time(NULL);
+
+	disable_info();
+
+	while((fragment = get_frag_action(fragment)))
+		write_fragment(*fragment);
+	if(!reproducible)
+		unlock_fragments();
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
+	pthread_mutex_lock(&fragment_mutex);
+	while(fragments_outstanding) {
+		pthread_mutex_unlock(&fragment_mutex);
+		pthread_testcancel();
+		sched_yield();
+		pthread_mutex_lock(&fragment_mutex);
+	}
+	pthread_cleanup_pop(1);
+
+	queue_put(to_writer, NULL);
+	if(queue_get(from_writer) != 0)
+		EXIT_MKSQUASHFS();
+
+	set_progressbar_state(FALSE);
+	write_filesystem_tables(&sBlk);
+
+	if(!nopad && (i = bytes & (4096 - 1))) {
+		char temp[4096] = {0};
+		write_destination(fd, bytes, 4096 - i, temp);
+	}
+
+	close(fd);
+
+	if(recovery_file)
+		unlink(recovery_file);
+
+	if(!quiet)
+		print_summary();
+
+	if(logging)
+		fclose(log_fd);
+
+	return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
 	struct stat buf, source_buf;
@@ -6101,9 +6802,21 @@ int main(int argc, char *argv[])
 	int progress = TRUE;
 	int force_progress = FALSE;
 	struct file_buffer **fragment = NULL;
+	char *command;
+
+	/* skip leading path components in invocation command */
+	for(command = argv[0] + strlen(argv[0]) - 1; command >= argv[0] && command[0] != '/'; command--);
+
+	if(command < argv[0])
+		command = argv[0];
+	else
+		command++;
+
+	if(strcmp(command, "sqfstar") == 0)
+		return sqfstar(argc, argv);
 
 	if(argc > 1 && strcmp(argv[1], "-version") == 0) {
-		print_version();
+		print_version("mksquashfs");
 		exit(0);
 	}
 
@@ -6652,7 +7365,7 @@ print_compressor_options:
 			}	
 			root_name = argv[i];
 		} else if(strcmp(argv[i], "-version") == 0) {
-			print_version();
+			print_version("mksquashfs");
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
 			print_options(stderr, argv[0], total_mem);
