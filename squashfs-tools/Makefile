@@ -153,7 +153,7 @@ INSTALL_DIR = /usr/local/bin
 
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
-	caches-queues-lists.o reader.o
+	caches-queues-lists.o reader.o tar.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o unsquash-123.o unsquash-34.o unsquash-1234.o swap.o \
@@ -229,7 +229,7 @@ CFLAGS += -DXATTR_SUPPORT -DXATTR_DEFAULT
 else
 CFLAGS += -DXATTR_SUPPORT
 endif
-MKSQUASHFS_OBJS += xattr.o read_xattrs.o
+MKSQUASHFS_OBJS += xattr.o read_xattrs.o tar_xattr.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
 endif
 
@@ -349,6 +349,10 @@ restore.o: restore.c caches-queues-lists.h squashfs_fs.h mksquashfs.h mksquashfs
 process_fragments.o: process_fragments.c process_fragments.h
 
 caches-queues-lists.o: caches-queues-lists.c mksquashfs_error.h caches-queues-lists.h
+
+tar.o: tar.h
+
+tar_xattr.o: tar.h xattr.h
 
 gzip_wrapper.o: gzip_wrapper.c squashfs_fs.h gzip_wrapper.h compressor.h
 

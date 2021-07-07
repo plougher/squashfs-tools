@@ -72,6 +72,7 @@
 #include "restore.h"
 #include "process_fragments.h"
 #include "fnmatch_compat.h"
+#include "tar.h"
 
 int delete = FALSE;
 int quiet = FALSE;
@@ -149,7 +150,6 @@ struct path_entry {
 struct pathnames *paths = NULL;
 struct pathname *path = NULL;
 struct pathname *stickypath = NULL;
-static int excluded(char *name, struct pathnames *paths, struct pathnames **new);
 
 unsigned int fragments = 0;
 
@@ -276,6 +276,9 @@ int one_file_system = FALSE;
 dev_t *source_dev;
 dev_t cur_dev;
 
+/* Is Mksquashfs processing a tarfile? */
+int tarfile = FALSE;
+
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 static void add_old_root_entry(char *name, squashfs_inode inode,
 	unsigned int inode_number, int type);
@@ -301,7 +304,7 @@ static struct file_info *add_non_dup(long long file_size, long long bytes,
 	int blocks_dup, int frag_dup, int bl_hash);
 long long generic_write_table(long long, void *, int, void *, int);
 void restorefs();
-static struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
+struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
 static void write_filesystem_tables(struct squashfs_super_block *sBlk);
 unsigned short get_checksum_mem(char *buff, int bytes);
 static void check_usable_phys_mem(int total_mem);
@@ -3110,6 +3113,7 @@ static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pse
 	inode->nlink = 1;
 	inode->inode_number = 0;
 	inode->dummy_root_dir = FALSE;
+	inode->tarfile = FALSE;
 
 	/*
 	 * Copy filesystem wide defaults into inode, these filesystem
@@ -3135,7 +3139,7 @@ static struct inode_info *lookup_inode2(struct stat *buf, struct pseudo_dev *pse
 }
 
 
-static inline struct inode_info *lookup_inode(struct stat *buf)
+struct inode_info *lookup_inode(struct stat *buf)
 {
 	return lookup_inode2(buf, NULL);
 }
@@ -3149,7 +3153,7 @@ static inline void alloc_inode_no(struct inode_info *inode, unsigned int use_thi
 }
 
 
-static struct dir_info *create_dir(char *pathname, char *subpath, int depth)
+struct dir_info *create_dir(char *pathname, char *subpath, int depth)
 {
 	struct dir_info *dir;
 
@@ -3170,7 +3174,7 @@ static struct dir_info *create_dir(char *pathname, char *subpath, int depth)
 }
 
 
-static struct dir_ent *lookup_name(struct dir_info *dir, char *name)
+struct dir_ent *lookup_name(struct dir_info *dir, char *name)
 {
 	struct dir_ent *dir_ent = dir->list;
 
@@ -3181,7 +3185,7 @@ static struct dir_ent *lookup_name(struct dir_info *dir, char *name)
 }
 
 
-static inline struct dir_ent *create_dir_entry(char *name, char *source_name,
+struct dir_ent *create_dir_entry(char *name, char *source_name,
 	char *nonstandard_pathname, struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = malloc(sizeof(struct dir_ent));
@@ -3199,7 +3203,7 @@ static inline struct dir_ent *create_dir_entry(char *name, char *source_name,
 }
 
 
-static inline void add_dir_entry(struct dir_ent *dir_ent, struct dir_info *sub_dir,
+void add_dir_entry(struct dir_ent *dir_ent, struct dir_info *sub_dir,
 	struct inode_info *inode_info)
 {
 	struct dir_info *dir = dir_ent->our_dir;
@@ -3227,7 +3231,7 @@ static inline void add_dir_entry2(char *name, char *source_name,
 }
 
 
-static inline void free_dir_entry(struct dir_ent *dir_ent)
+void free_dir_entry(struct dir_ent *dir_ent)
 {
 	if(dir_ent->name)
 		free(dir_ent->name);
@@ -3320,7 +3324,8 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 		write_destination(fd, SQUASHFS_START, 4, "\0\0\0\0");
 	}
 
-	queue_put(to_reader, root_dir);
+	if(!tarfile)
+		queue_put(to_reader, root_dir);
 
 	if(sorted)
 		sort_files_and_write(root_dir);
@@ -3418,7 +3423,7 @@ squashfs_inode dir_scan(int directory, int progress)
  * Exclude actions are processed here (in contrast to the other actions)
  * because they affect what is scanned.
  */
-static struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
+struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
 {
 	struct dir_info *dir;
 
@@ -3846,7 +3851,7 @@ static void dir_scan3(struct dir_info *dir)
  * tests to be performed which are impossible at exclude time (i.e.
  * tests which rely on the in-core directory structure)
  */
-static void free_dir(struct dir_info *dir)
+void free_dir(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = dir->list;
 
@@ -4152,8 +4157,18 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
 			switch(buf->st_mode & S_IFMT) {
 				case S_IFREG:
+					if(dir_ent->inode->tarfile && dir_ent->inode->tar_file->file)
+						file = dir_ent->inode->tar_file->file;
+					else {
+						file = write_file(dir_ent, &duplicate_file);
+						INFO("file %s, uncompressed size %lld "
+							"bytes %s\n",
+							subpathname(dir_ent),
+							(long long) buf->st_size,
+							duplicate_file ?  "DUPLICATE" :
+							 "");
+					}
 					squashfs_type = SQUASHFS_FILE_TYPE;
-					file = write_file(dir_ent, &duplicate_file);
 					*inode = create_inode(NULL, dir_ent,
 						squashfs_type, file->file_size,
 						file->start, file->blocks,
@@ -4165,12 +4180,6 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 						free(file->block_list);
 						free(file);
 					}
-					INFO("file %s, uncompressed size %lld "
-						"bytes %s\n",
-						subpathname(dir_ent),
-						(long long) buf->st_size,
-						duplicate_file ?  "DUPLICATE" :
-						 "");
 					break;
 
 				case S_IFDIR:
@@ -5241,7 +5250,7 @@ static int excluded_match(char *name, struct pathname *path, struct pathnames **
 }
 
 
-static int excluded(char *name, struct pathnames *paths, struct pathnames **new)
+int excluded(char *name, struct pathnames *paths, struct pathnames **new)
 {
 	int n;
 		
@@ -6170,7 +6179,9 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = option_offset; i < argc; i++) {
-		if(strcmp(argv[i], "-one-file-system") == 0)
+		if(strcmp(argv[i], "-tar") == 0)
+			tarfile = TRUE;
+		else if(strcmp(argv[i], "-one-file-system") == 0)
 			one_file_system = TRUE;
 		else if(strcmp(argv[i], "-recovery-path") == 0) {
 			if(++i == argc) {
@@ -7016,7 +7027,9 @@ print_compressor_options:
 
 	set_progressbar_state(progress);
 
-	if(tarstyle || cpiostyle)
+	if(tarfile)
+		inode = process_tar_file(progress);
+	else if(tarstyle || cpiostyle)
 		inode = process_source(progress);
 	else if(!source)
 		inode = no_sources(progress);

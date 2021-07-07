@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2014, 2019
+ * Copyright (c) 2013, 2014, 2019, 2021
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -100,7 +100,7 @@ struct file_buffer {
 		struct file_buffer *hash_next;
 	};
 	union {
-		int duplicate;
+		struct tar_file *tar_file;
 		struct file_buffer *hash_prev;
 	};
 	union {
@@ -121,6 +121,7 @@ struct file_buffer {
 	char locked;
 	char wait_on_unlock;
 	char noD;
+	char duplicate;
 	char data[0] __attribute__((aligned));
 };
 
