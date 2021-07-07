@@ -279,6 +279,16 @@ dev_t cur_dev;
 /* Is Mksquashfs processing a tarfile? */
 int tarfile = FALSE;
 
+/* list of options that have an argument */
+char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-mode",
+	"force-uid", "force-gid", "action", "log-action", "true-action",
+	"false-action", "action-file", "log-action-file", "true-action-file",
+	"false-action-file", "p", "pf", "sort", "root-becomes", "recover",
+	"recovery-path", "throttle", "limit", "processors", "mem", "offset",
+	"o", "log", "a", "va", "ta", "fa", "af", "vaf", "taf", "faf",
+	"read-queue", "write-queue", "fragment-queue", NULL
+};
+
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 static void add_old_root_entry(char *name, squashfs_inode inode,
 	unsigned int inode_number, int type);
@@ -5887,7 +5897,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\tdirectory containing that directory, rather than the\n");
 	fprintf(stream, "\t\t\tcontents of the directory\n");
 	fprintf(stream, "-action <action@expr>\tevaluate <expr> on every file, ");
-	fprintf(stream, "and execute <action>\t\t\t\tif it returns TRUE\n");
+	fprintf(stream, "and execute <action>\n\t\t\tif it returns TRUE\n");
 	fprintf(stream, "-log-action <act@expr>\tas above, but log expression ");
 	fprintf(stream, "evaluation results and\n\t\t\tactions performed\n");
 	fprintf(stream, "-true-action <act@expr>\tas above, but only log expressions ");
@@ -5933,7 +5943,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-regex\t\t\tAllow POSIX regular expressions to be used in ");
 	fprintf(stream, "exclude\n\t\t\tdirs/files\n");
 	fprintf(stream, "-one-file-system\tDo not cross filesystem ");
-	fprintf(stream, "boudaries when scanning sources\n");
+	fprintf(stream, "boundaries when scanning sources\n");
 	fprintf(stream, "\nFilesystem append options:\n");
 	fprintf(stream, "-noappend\t\tdo not append to existing filesystem\n");
 	fprintf(stream, "-root-becomes <name>\twhen appending source ");
@@ -6200,6 +6210,21 @@ static void print_summary()
 				group->gr_name, id_table[i]->id);
 		}
 	}
+}
+
+
+int option_with_arg(char *string, char *table[])
+{
+	int i;
+
+	if(*string != '-')
+		return FALSE;
+
+	for(i = 0; table[i] != NULL; i++)
+		if(strcmp(string + 1, table[i]) == 0)
+			break;
+
+	return table[i] != NULL;
 }
 
 
@@ -6879,11 +6904,7 @@ int main(int argc, char *argv[])
 
 		} else if(strcmp(argv[i], "-e") == 0)
 			break;
-		else if(strcmp(argv[i], "-root-becomes") == 0 ||
-				strcmp(argv[i], "-ef") == 0 ||
-				strcmp(argv[i], "-pf") == 0 ||
-				strcmp(argv[i], "-vaf") == 0 ||
-				strcmp(argv[i], "-log") == 0)
+		else if(option_with_arg(argv[i], option_table))
 			i++;
 	}
 
@@ -7495,13 +7516,7 @@ print_compressor_options:
 			process_exclude_file(argv[++i]);
 		else if(strcmp(argv[i], "-e") == 0)
 			break;
-		else if(strcmp(argv[i], "-root-becomes") == 0 ||
-				strcmp(argv[i], "-sort") == 0 ||
-				strcmp(argv[i], "-pf") == 0 ||
-				strcmp(argv[i], "-af") == 0 ||
-				strcmp(argv[i], "-vaf") == 0 ||
-				strcmp(argv[i], "-comp") == 0 ||
-				strcmp(argv[i], "-log") == 0)
+		else if(option_with_arg(argv[i], option_table))
 			i++;
 
 	if(i != argc) {
@@ -7526,13 +7541,7 @@ print_compressor_options:
 			sorted ++;
 		} else if(strcmp(argv[i], "-e") == 0)
 			break;
-		else if(strcmp(argv[i], "-root-becomes") == 0 ||
-				strcmp(argv[i], "-ef") == 0 ||
-				strcmp(argv[i], "-pf") == 0 ||
-				strcmp(argv[i], "-af") == 0 ||
-				strcmp(argv[i], "-vaf") == 0 ||
-				strcmp(argv[i], "-comp") == 0 ||
-				strcmp(argv[i], "-log") == 0)
+		else if(option_with_arg(argv[i], option_table))
 			i++;
 
 	if(!delete) {
