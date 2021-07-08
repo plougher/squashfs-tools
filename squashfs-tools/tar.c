@@ -337,6 +337,7 @@ static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 				subpath = subpathname(entry);
 				if(S_ISDIR(entry->inode->buf.st_mode)) {
 					/* recurse adding child components */
+					excluded(name, paths, &new);
 					entry->dir = add_tarfile(NULL, source, subpath, tarfile, new, depth + 1, dir_ent, link);
 					if(entry->dir == NULL)
 						goto failed_early;
@@ -369,6 +370,7 @@ static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 						tarfile->pathname);
 			} else {
 				/* recurse adding child components */
+				excluded(name, paths, &new);
 				subpath = subpathname(entry);
 				sub = add_tarfile(entry->dir, source, subpath, tarfile, new, depth + 1, dir_ent, link);
 				if(sub == NULL)
