@@ -289,6 +289,11 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-m
 	"read-queue", "write-queue", "fragment-queue", NULL
 };
 
+char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
+	"root-mode", "force-uid", "force-gid", "p", "pf", "throttle", "limit",
+	"processors", "mem", "offset", "o", NULL
+};
+
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 static void add_old_root_entry(char *name, squashfs_inode inode,
 	unsigned int inode_number, int type);
@@ -6292,12 +6297,11 @@ int sqfstar(int argc, char *argv[])
 
 		} else if(argv[i][0] != '-')
 			break;
-		else if(strcmp(argv[i], "-ef") == 0 ||
-				strcmp(argv[i], "-pf") == 0)
+		else if(option_with_arg(argv[i], sqfstar_option_table))
 			i++;
 	}
 
-	if(i == argc) {
+	if(i >= argc) {
 		print_sqfstar_options(stderr, argv[0], total_mem);
 		exit(1);
 	}
@@ -6320,7 +6324,7 @@ int sqfstar(int argc, char *argv[])
 		if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-throttle") == 0) {
-			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
+			if((++i == dest_index) || !parse_num(argv[i], &sleep_time)) {
 				ERROR("%s: %s missing or invalid value\n",
 							argv[0], argv[i - 1]);
 				exit(1);
@@ -6332,7 +6336,7 @@ int sqfstar(int argc, char *argv[])
 			}
 			readq = 4;
 		} else if(strcmp(argv[i], "-limit") == 0) {
-			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
+			if((++i == dest_index) || !parse_num(argv[i], &sleep_time)) {
 				ERROR("%s: %s missing or invalid value\n",
 							argv[0], argv[i - 1]);
 				exit(1);
@@ -6346,7 +6350,7 @@ int sqfstar(int argc, char *argv[])
 			readq = 4;
 		} else if(strcmp(argv[i], "-mkfs-time") == 0 ||
 				strcmp(argv[i], "-fstime") == 0) {
-			if((++i == argc) ||
+			if((++i == dest_index) ||
 				!parse_num_unsigned(argv[i], &mkfs_time)) {
 					ERROR("%s: %s missing or invalid time "
 						"value\n", argv[0],
@@ -6355,7 +6359,7 @@ int sqfstar(int argc, char *argv[])
 			}
 			mkfs_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-all-time") == 0) {
-			if((++i == argc) ||
+			if((++i == dest_index) ||
 				!parse_num_unsigned(argv[i], &all_time)) {
 					ERROR("%s: %s missing or invalid time "
 						"value\n", argv[0],
@@ -6369,7 +6373,7 @@ int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-not-reproducible") == 0)
 			reproducible = FALSE;
 		else if(strcmp(argv[i], "-root-mode") == 0) {
-			if((++i == argc) || !parse_mode(argv[i], &root_mode)) {
+			if((++i == dest_index) || !parse_mode(argv[i], &root_mode)) {
 				ERROR("%s: -root-mode missing or invalid mode,"
 					" octal number <= 07777 expected\n", argv[0]);
 				exit(1);
@@ -6384,7 +6388,7 @@ int sqfstar(int argc, char *argv[])
 			if(strcmp(argv[i] + 2, "help") == 0)
 				goto print_sqfstar_compressor_options;
 
-			args = compressor_options(comp, argv + i, argc - i);
+			args = compressor_options(comp, argv + i, dest_index - i);
 			if(args < 0) {
 				if(args == -1) {
 					ERROR("%s: Unrecognised compressor"
@@ -6407,14 +6411,14 @@ print_sqfstar_compressor_options:
 			i += args;
 
 		} else if(strcmp(argv[i], "-pf") == 0) {
-			if(++i == argc) {
+			if(++i == dest_index) {
 				ERROR("%s: -pf missing filename\n", argv[0]);
 				exit(1);
 			}
 			if(read_pseudo_file(argv[i], destination_file) == FALSE)
 				exit(1);
 		} else if(strcmp(argv[i], "-p") == 0) {
-			if(++i == argc) {
+			if(++i == dest_index) {
 				ERROR("%s: -p missing pseudo file definition\n",
 					argv[0]);
 				exit(1);
@@ -6433,14 +6437,14 @@ print_sqfstar_compressor_options:
 			exportable = FALSE;
 		else if(strcmp(argv[i], "-offset") == 0 ||
 						strcmp(argv[i], "-o") == 0) {
-			if((++i == argc) ||
+			if((++i == dest_index) ||
 				!parse_numberll(argv[i], &start_offset, 1)) {
 					ERROR("%s: %s missing or invalid offset "
 						"size\n", argv[0], argv[i - 1]);
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-processors") == 0) {
-			if((++i == argc) || !parse_num(argv[i], &processors)) {
+			if((++i == dest_index) || !parse_num(argv[i], &processors)) {
 				ERROR("%s: -processors missing or invalid "
 					"processor number\n", argv[0]);
 				exit(1);
@@ -6453,7 +6457,7 @@ print_sqfstar_compressor_options:
 		} else if(strcmp(argv[i], "-mem") == 0) {
 			long long number;
 
-			if((++i == argc) ||
+			if((++i == dest_index) ||
 					!parse_numberll(argv[i], &number, 1)) {
 				ERROR("%s: -mem missing or invalid mem size\n",
 					 argv[0]);
@@ -6479,7 +6483,7 @@ print_sqfstar_compressor_options:
 			calculate_queue_sizes(total_mem, &readq, &fragq,
 				&bwriteq, &fwriteq);
 		} else if(strcmp(argv[i], "-b") == 0) {
-			if(++i == argc) {
+			if(++i == dest_index) {
 				ERROR("%s: -b missing block size\n", argv[0]);
 				exit(1);
 			}
@@ -6494,7 +6498,7 @@ print_sqfstar_compressor_options:
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-ef") == 0) {
-			if(++i == argc) {
+			if(++i == dest_index) {
 				ERROR("%s: -ef missing filename\n", argv[0]);
 				exit(1);
 			}
@@ -6512,7 +6516,7 @@ print_sqfstar_compressor_options:
 			global_uid = global_gid = 0;
 
 		else if(strcmp(argv[i], "-force-uid") == 0) {
-			if(++i == argc) {
+			if(++i == dest_index) {
 				ERROR("%s: -force-uid missing uid or user\n",
 					argv[0]);
 				exit(1);
@@ -6535,7 +6539,7 @@ print_sqfstar_compressor_options:
 				}
 			}
 		} else if(strcmp(argv[i], "-force-gid") == 0) {
-			if(++i == argc) {
+			if(++i == dest_index) {
 				ERROR("%s: -force-gid missing gid or group\n",
 					argv[0]);
 				exit(1);
@@ -6696,8 +6700,7 @@ print_sqfstar_compressor_options:
 			 * been checked
 			 */
 			process_exclude_file(argv[++i]);
-		else if( strcmp(argv[i], "-pf") == 0 ||
-				strcmp(argv[i], "-comp") == 0)
+		else if(option_with_arg(argv[i], sqfstar_option_table))
 			i++;
 	}
 
