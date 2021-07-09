@@ -6032,7 +6032,7 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-fstime <time>\t\tsynonym for mkfs-time\n");
 	fprintf(stream, "-all-time <time>\tset all inode times to <time> which is an ");
 	fprintf(stream, "unsigned int\n");
-	fprintf(stream, "-no-exports\t\tdon't make the filesystem exportable via NFS\n");
+	fprintf(stream, "-exports\t\tmake the filesystem exportable via NFS\n");
 	fprintf(stream, "-no-sparse\t\tdon't detect sparse files\n");
 	fprintf(stream, "-no-xattrs\t\tdon't store extended attributes" NOXOPT_STR "\n");
 	fprintf(stream, "-xattrs\t\t\tstore extended attributes" XOPT_STR "\n");
@@ -6292,6 +6292,12 @@ int sqfstar(int argc, char *argv[])
 	old_exclude = FALSE;
 	tarfile = TRUE;
 
+	/* By default images generated from tar files are not exportable.
+	 * Exportable by default is a "legacy" setting in Mksquashfs, which
+	 * will cause too many problems to change now.  But tarfile reading
+	 * has no such issues */
+	exportable = FALSE;
+
 	/*
 	 * if no -comp option specified lookup default compressor.  Note the
 	 * Makefile ensures the default compressor has been built, and so we
@@ -6398,8 +6404,8 @@ print_sqfstar_compressor_options:
 			progress = FALSE;
 		else if(strcmp(argv[i], "-progress") == 0)
 			force_progress = TRUE;
-		else if(strcmp(argv[i], "-no-exports") == 0)
-			exportable = FALSE;
+		else if(strcmp(argv[i], "-exports") == 0)
+			exportable = TRUE;
 		else if(strcmp(argv[i], "-offset") == 0 ||
 						strcmp(argv[i], "-o") == 0) {
 			if((++i == dest_index) ||
