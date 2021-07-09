@@ -290,7 +290,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-m
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
-	"root-mode", "force-uid", "force-gid", "p", "pf", "throttle", "limit",
+	"root-mode", "force-uid", "force-gid", "throttle", "limit",
 	"processors", "mem", "offset", "o", NULL
 };
 
@@ -6054,26 +6054,6 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
 	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
 	fprintf(stream, "\nFilesystem filter options:\n");
-	fprintf(stream, "-p <pseudo-definition>\tAdd pseudo file definition\n");
-	fprintf(stream, "-pf <pseudo-file>\tAdd list of pseudo file definitions\n");
-	fprintf(stream, "\t\t\tPseudo definitions should be of the format\n");
-	fprintf(stream, "\t\t\t\tfilename d mode uid gid\n");
-	fprintf(stream, "\t\t\t\tfilename m mode uid gid\n");
-	fprintf(stream, "\t\t\t\tfilename b mode uid gid major minor\n");
-	fprintf(stream, "\t\t\t\tfilename c mode uid gid major minor\n");
-	fprintf(stream, "\t\t\t\tfilename f mode uid gid command\n");
-	fprintf(stream, "\t\t\t\tfilename s mode uid gid symlink\n");
-	fprintf(stream, "\t\t\t\tfilename i mode uid gid [s|f]\n");
-	fprintf(stream, "\t\t\t\tfilename l filename\n");
-	fprintf(stream, "\t\t\t\tfilename L pseudo_filename\n");
-	fprintf(stream, "\t\t\t\tfilename D time mode uid gid\n");
-	fprintf(stream, "\t\t\t\tfilename M time mode uid gid\n");
-	fprintf(stream, "\t\t\t\tfilename B time mode uid gid major minor\n");
-	fprintf(stream, "\t\t\t\tfilename C time mode uid gid major minor\n");
-	fprintf(stream, "\t\t\t\tfilename F time mode uid gid command\n");
-	fprintf(stream, "\t\t\t\tfilename S time mode uid gid symlink\n");
-	fprintf(stream, "\t\t\t\tfilename I time mode uid gid [s|f]\n");
-	fprintf(stream, "\t\t\t\tfilename R time mode uid gid length offset\n");
 	fprintf(stream, "-ef <exclude_file>\tlist of exclude dirs/files.  ");
 	fprintf(stream, "One per line\n");
 	fprintf(stream, "-regex\t\t\tAllow POSIX regular expressions to be used in ");
@@ -6410,21 +6390,6 @@ print_sqfstar_compressor_options:
 			}
 			i += args;
 
-		} else if(strcmp(argv[i], "-pf") == 0) {
-			if(++i == dest_index) {
-				ERROR("%s: -pf missing filename\n", argv[0]);
-				exit(1);
-			}
-			if(read_pseudo_file(argv[i], destination_file) == FALSE)
-				exit(1);
-		} else if(strcmp(argv[i], "-p") == 0) {
-			if(++i == dest_index) {
-				ERROR("%s: -p missing pseudo file definition\n",
-					argv[0]);
-				exit(1);
-			}
-			if(read_pseudo_definition(argv[i], destination_file) == FALSE)
-				exit(1);
 		} else if(strcmp(argv[i], "-regex") == 0)
 			use_regex = TRUE;
 		else if(strcmp(argv[i], "-no-sparse") == 0)
