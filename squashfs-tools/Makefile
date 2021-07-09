@@ -153,6 +153,7 @@ INSTALL_DIR = /usr/local/bin
 
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
+	fakerootdb.o \
 	caches-queues-lists.o reader.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
