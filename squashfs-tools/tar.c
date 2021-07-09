@@ -571,6 +571,16 @@ static int read_block(struct tar_file *file, int fd, char *data, int bytes, int 
 }
 
 
+static void skip_file(struct tar_file *tar_file)
+{
+	int blocks = (tar_file->buf.st_size + block_size - 1) >> block_log, i;
+
+	for(i = 0; i < blocks; i++)
+		cache_block_put(seq_queue_get(to_main));
+
+	progress_bar_size(-blocks);
+}
+
 static int seq = 0;
 static void read_tar_data(struct tar_file *tar_file)
 {
@@ -1518,7 +1528,8 @@ squashfs_inode process_tar_file(int progress)
 
 			if(link)
 				link->nlink ++;
-		}
+		} else if(S_ISREG(tar_file->buf.st_mode))
+			skip_file(file_buffer->tar_file);
 
 		free(file_buffer);
 	}
