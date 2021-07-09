@@ -55,6 +55,7 @@ int columns;
 
 pthread_t progress_thread;
 pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t size_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 static void sigwinch_handler()
@@ -85,8 +86,8 @@ void dec_progress_bar(int count)
 
 void progress_bar_size(int count)
 {
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &progress_mutex);
-	pthread_mutex_lock(&progress_mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &size_mutex);
+	pthread_mutex_lock(&size_mutex);
 	estimated_uncompressed += count;
 	pthread_cleanup_pop(1);
 }
