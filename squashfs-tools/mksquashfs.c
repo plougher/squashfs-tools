@@ -4693,9 +4693,7 @@ static squashfs_inode process_source(int progress)
 			else
 				relative = TRUE;
 			root_dir = new;
-		} else
-			ERROR("Error: Failed to add source %s, ignoring\n",
-							filename);
+		}
 	}
 
 	if(root_dir == NULL)
