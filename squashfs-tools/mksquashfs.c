@@ -6298,6 +6298,12 @@ int sqfstar(int argc, char *argv[])
 	 * has no such issues */
 	exportable = FALSE;
 
+	/* By default images generated from tar files use tail-end packing.
+	 * No tailend packing is a *legacy* setting in Mksquashfs, which
+	 * will cause too many problems to change now.  Nut tarfile reading
+	 * has no such issues*/
+	always_use_fragments = TRUE;
+
 	/*
 	 * if no -comp option specified lookup default compressor.  Note the
 	 * Makefile ensures the default compressor has been built, and so we
