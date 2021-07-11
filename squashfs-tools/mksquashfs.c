@@ -4466,15 +4466,11 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		 * - If we're not at the leaf of the source, we will add it,
 		 *   and recurse walking the source
 		 */
-		if(old_exclude && old_excluded(file, &buf)) {
-			ERROR("Error: Source %s is excluded\n", file);
+		if(old_exclude && old_excluded(file, &buf))
 			goto failed_early;
-		}
 
-		if(old_exclude == FALSE && excluded(name, paths, &new)) {
-			ERROR("Error: Source %s is excluded\n", file);
+		if(old_exclude == FALSE && excluded(name, paths, &new))
 			goto failed_early;
-		}
 
 		entry = create_dir_entry(name, NULL, file, dir);
 
