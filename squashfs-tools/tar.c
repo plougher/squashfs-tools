@@ -391,16 +391,6 @@ static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 
 		entry = create_dir_entry(name, NULL, NULL, dir);
 
-#if 0
-		if(exclude_actions()) {
-			if(eval_exclude_actions(name, file, subpath, &buf,
-							depth, entry)) {
-				ERROR("Error: Source %s is excluded\n", file);
-				goto failed_entry;
-			}
-		}
-#endif
-
 		if(source[0] == '\0') {
 			if(S_ISDIR(tarfile->buf.st_mode)) {
 				add_dir_entry(entry, NULL, new_inode(tarfile));
