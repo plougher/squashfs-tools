@@ -4697,7 +4697,7 @@ static squashfs_inode process_source(int progress)
 	}
 
 	if(root_dir == NULL)
-		BAD_ERROR("Failed to add any source file\n");
+		root_dir = scan1_opendir("", "", 0);
 
 	new = scan1_opendir("", "", 0);
 
