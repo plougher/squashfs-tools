@@ -7384,6 +7384,15 @@ print_compressor_options:
 
 	check_env_var();
 
+	/* If -tar option is set, then check that actions and pseudo files
+	 * have not been specified, which are unsupported with tar file reading
+	 */
+	if(tarfile && any_actions())
+		BAD_ERROR("Actions are unsupported when reading tar files\n");
+
+	if(tarfile && get_pseudo())
+		BAD_ERROR("Pseudo files are unsupported when reading tar files\n");
+
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset noId
 	 * if both have been specified
