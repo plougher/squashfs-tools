@@ -5887,6 +5887,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
 	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
 	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
+	fprintf(stream, "-no-tailends\t\tdon't pack tail ends into fragments (default)\n");
 	fprintf(stream, "-no-fragments\t\tdo not use fragments\n");
 	fprintf(stream, "-always-use-fragments\tuse fragment blocks for files larger ");
 	fprintf(stream, "than block size\n");
@@ -7249,10 +7250,13 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-no-fragments") == 0)
 			no_fragments = TRUE;
 
-		 else if(strcmp(argv[i], "-always-use-fragments") == 0)
+		else if(strcmp(argv[i], "-always-use-fragments") == 0)
 			always_use_fragments = TRUE;
 
-		 else if(strcmp(argv[i], "-sort") == 0) {
+		else if(strcmp(argv[i], "-no-tailends") == 0)
+			always_use_fragments = FALSE;
+
+		else if(strcmp(argv[i], "-sort") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -sort missing filename\n", argv[0]);
 				exit(1);
