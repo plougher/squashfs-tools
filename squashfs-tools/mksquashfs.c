@@ -5876,7 +5876,8 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-fstime <time>\t\tsynonym for mkfs-time\n");
 	fprintf(stream, "-all-time <time>\tset all inode times to <time> which is an ");
 	fprintf(stream, "unsigned int\n");
-	fprintf(stream, "-no-exports\t\tdon't make the filesystem exportable via NFS\n");
+	fprintf(stream, "-no-exports\t\tdon't make filesystem exportable via NFS (-tar default)\n");
+	fprintf(stream, "-exports\t\tmake filesystem exportable via NFS (default)\n");
 	fprintf(stream, "-no-sparse\t\tdon't detect sparse files\n");
 	fprintf(stream, "-no-xattrs\t\tdon't store extended attributes" NOXOPT_STR "\n");
 	fprintf(stream, "-xattrs\t\t\tstore extended attributes" XOPT_STR "\n");
@@ -7136,6 +7137,8 @@ print_compressor_options:
 			progress = FALSE;
 		else if(strcmp(argv[i], "-progress") == 0)
 			force_progress = TRUE;
+		else if(strcmp(argv[i], "-exports") == 0)
+			exportable = TRUE;
 		else if(strcmp(argv[i], "-no-exports") == 0)
 			exportable = FALSE;
 		else if(strcmp(argv[i], "-offset") == 0 ||
