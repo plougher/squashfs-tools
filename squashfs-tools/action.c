@@ -983,6 +983,13 @@ static int file_type_match(int st_mode, int type)
 /*
  * General action evaluation code
  */
+int any_actions()
+{
+	return fragment_count + exclude_count + empty_count +
+		move_count + prune_count + other_count;
+}
+
+
 int actions()
 {
 	return other_count;

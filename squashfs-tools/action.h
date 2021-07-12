@@ -319,6 +319,7 @@ extern void eval_move_actions(struct dir_info *, struct dir_ent *);
 extern int eval_prune_actions(struct dir_info *, struct dir_ent *);
 extern void do_move_actions();
 extern long long read_bytes(int, void *, long long);
+extern int any_actions();
 extern int actions();
 extern int move_actions();
 extern int empty_actions();
