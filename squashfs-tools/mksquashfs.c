@@ -6898,9 +6898,11 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = option_offset; i < argc; i++) {
-		if(strcmp(argv[i], "-tar") == 0)
+		if(strcmp(argv[i], "-tar") == 0) {
 			tarfile = TRUE;
-		else if(strcmp(argv[i], "-one-file-system") == 0)
+			always_use_fragments = TRUE;
+			exportable = FALSE;
+		} else if(strcmp(argv[i], "-one-file-system") == 0)
 			one_file_system = TRUE;
 		else if(strcmp(argv[i], "-recovery-path") == 0) {
 			if(++i == argc) {
