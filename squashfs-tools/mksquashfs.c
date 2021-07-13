@@ -6824,8 +6824,9 @@ print_compressor_options:
 	        if(comp == NULL) {
 			ERROR("Failed to read existing filesystem - will not "
 				"overwrite - ABORTING!\n");
-			ERROR("To force Mksquashfs to write to this block "
-				"device or file use -noappend\n");
+			ERROR("To force Mksquashfs to write to this %s "
+				"use -noappend\n", block_device ?
+				"block device" : "file");
 			EXIT_MKSQUASHFS();
 		}
 
