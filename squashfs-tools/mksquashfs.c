@@ -6059,7 +6059,7 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "One per line\n");
 	fprintf(stream, "-regex\t\t\tAllow POSIX regular expressions to be used in ");
 	fprintf(stream, "exclude\n\t\t\tdirs/files\n");
-	fprintf(stream, "\nMksquashfs runtime options:\n");
+	fprintf(stream, "\nSqfstar runtime options:\n");
 	fprintf(stream, "-version\t\tprint version, licence and copyright message\n");
 	fprintf(stream, "-force\t\t\tforce Sqfstar to write to block device ");
 	fprintf(stream, "or file\n");
