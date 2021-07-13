@@ -4366,16 +4366,12 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 
 	source = walk_source(source, &file, &name);
 
-	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0) {
-		ERROR("Error: Source path can't have '.' or '..' in it with -tarstyle\n");
-		goto failed_early;
-	}
+	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0)
+		BAD_ERROR("Source path can't have '.' or '..' in it with -tarstyle\n");
 
 	res = lstat(file, &buf);
-	if (res == -1) {
-		ERROR("Error: Can't stat %s because %s\n", file, strerror(errno));
-		goto failed_early;
-	}
+	if (res == -1)
+		BAD_ERROR("Can't stat %s because %s\n", file, strerror(errno));
 
 	entry = lookup_name(dir, name);
 
@@ -4388,18 +4384,14 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		 * An original root entry from the file being appended to
 		 * is never the same file.
 		 */
-		if(entry->inode->root_entry) {
-			ERROR("Source %s conflicts with name in filesystem "
+		if(entry->inode->root_entry)
+			BAD_ERROR("Source %s conflicts with name in filesystem "
 						"being appended to\n", name);
-			goto failed_early;
-		}
 
 		res = memcmp(&buf, &(entry->inode->buf), sizeof(buf));
-		if(res) {
-			ERROR("Error: Can't have two different sources with same "
+		if(res)
+			BAD_ERROR("Can't have two different sources with same "
 								"pathname\n");
-			goto failed_match;
-		}
 
 		/*
 		 * Matching file.
@@ -4450,10 +4442,8 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 				entry->dir = sub;
 				sub->dir_ent = entry;
 			}
-		} else {
-			ERROR("ERROR: Source component %s is not a directory\n", name);
-			goto failed_match;
-		}
+		} else
+			BAD_ERROR("Source component %s is not a directory\n", name);
 
 		free(name);
 		free(file);
@@ -4477,7 +4467,6 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		if(exclude_actions()) {
 			if(eval_exclude_actions(name, file, subpath, &buf,
 							depth, entry)) {
-				ERROR("Error: Source %s is excluded\n", file);
 				goto failed_entry;
 			}
 		}
@@ -4488,14 +4477,11 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 			struct inode_info *i;
 
 			byte = readlink(file, buff, 65536);
-			if(byte == -1) {
-				ERROR("Error: Failed to read source symlink %s", file);
-				goto failed_entry;
-			} else if(byte == 65536) {
-				ERROR("Error: Symlink %s is greater than 65536 "
+			if(byte == -1)
+				BAD_ERROR("Failed to read source symlink %s", file);
+			else if(byte == 65536)
+				BAD_ERROR("Symlink %s is greater than 65536 "
 						"bytes!", file);
-				goto failed_entry;
-			}
 
 			/* readlink doesn't 0 terminate the returned path */
 			buff[byte] = '\0';
@@ -4512,10 +4498,8 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 				goto failed_entry;
 			add_dir_entry(entry, sub, lookup_inode(&buf));
 			dir->directory_count ++;
-		} else {
-			ERROR("Error: Source component %s is not a directory\n", name);
-			goto failed_entry;
-		}
+		} else
+			BAD_ERROR("Source component %s is not a directory\n", name);
 	}
 
 	free(new);
