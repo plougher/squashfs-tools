@@ -7472,6 +7472,19 @@ print_compressor_options:
 		}
 
 	} else {
+		if(!S_ISBLK(buf.st_mode) && !S_ISREG(buf.st_mode)) {
+			ERROR("Destination not block device or regular file\n");
+			exit(1);
+		}
+
+		if(tarfile && !delete) {
+			ERROR("Appending is not supported reading tar files\n");
+			ERROR("To force Mksquashfs to write to this %s "
+				"use -noappend\n", S_ISBLK(buf.st_mode) ?
+				"block device" : "file");
+			EXIT_MKSQUASHFS();
+		}
+
 		if(S_ISBLK(buf.st_mode)) {
 			if((fd = open(destination_file, O_RDWR)) == -1) {
 				perror("Could not open block device as "
@@ -7480,7 +7493,7 @@ print_compressor_options:
 			}
 			block_device = 1;
 
-		} else if(S_ISREG(buf.st_mode))	 {
+		} else {
 			fd = open(destination_file, (delete ? O_TRUNC : 0) |
 				O_RDWR);
 			if(fd == -1) {
@@ -7493,11 +7506,6 @@ print_compressor_options:
 			 * will result in an I/O loop */
 			ADD_ENTRY(buf);
 		}
-		else {
-			ERROR("Destination not block device or regular file\n");
-			exit(1);
-		}
-
 	}
 
 	/*
