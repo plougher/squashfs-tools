@@ -6300,9 +6300,9 @@ int sqfstar(int argc, char *argv[])
 	exportable = FALSE;
 
 	/* By default images generated from tar files use tail-end packing.
-	 * No tailend packing is a *legacy* setting in Mksquashfs, which
-	 * will cause too many problems to change now.  Nut tarfile reading
-	 * has no such issues*/
+	 * No tailend packing is a "legacy" setting in Mksquashfs, which
+	 * will cause too many problems to change now.  But tarfile reading
+	 * has no such issues */
 	always_use_fragments = TRUE;
 
 	/*
