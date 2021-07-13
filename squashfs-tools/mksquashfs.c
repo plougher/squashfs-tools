@@ -6106,8 +6106,6 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 
 	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
 	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE\n");
-	fprintf(stream, "\nThe ACTIONS-README file describing how to use the new actions feature can be read\n");
-	fprintf(stream, "here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n");
 }
 
 
