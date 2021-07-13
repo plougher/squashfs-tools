@@ -7407,6 +7407,13 @@ print_compressor_options:
 
 	check_env_var();
 
+	/* If -tar option is set, then files will be read-in
+	 * from standard in.  We do not expect to have any sources
+	 * specified on the command line */
+	if(tarfile && source)
+		BAD_ERROR("Sources on the command line should be -, "
+			"when using -tar option\n");
+
 	/* If -tar option is set, then check that actions and pseudo files
 	 * have not been specified, which are unsupported with tar file reading
 	 */
