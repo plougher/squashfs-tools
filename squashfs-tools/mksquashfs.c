@@ -4366,8 +4366,33 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 
 	source = walk_source(source, &file, &name);
 
+	while(depth == 1 && (name[0] == '\0' || strcmp(name, "..") == 0 || strcmp(name, ".") == 0)){
+		char *old = file;
+
+		if(name[0] == '\0' || source[0] == '\0') {
+			/* Ran out of pathname skipping leading ".." and "."
+			 * If cpiostyle, just ignore it, find always produces
+			 * these if run as "find ." or "find .." etc.
+			 *
+			 * If tarstyle after skipping what we *must* skip
+			 * in the pathname (we can't store directories named
+			 * ".." or "." or simply "/") there's nothing left after
+			 * stripping (i.e. someone just typed "..", "." on
+			 * the command line).  This isn't what -tarstyle is
+			 * intended for, and Mksquashfs without -tarstyle
+			 * can handle this scenario */
+			if(cpiostyle)
+				goto failed_early;
+			else
+				BAD_ERROR("Empty source after stripping '/', '..' and '.'.  Run Mksquashfs without -tarstyle to handle this!\n");
+		}
+
+		source = walk_source(source, &file, &name);
+		free(old);
+	}
+
 	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0)
-		BAD_ERROR("Source path can't have '.' or '..' in it with -tarstyle\n");
+		BAD_ERROR("Source path can't have '.' or '..' embedded in it with -tarstyle/-cpiostyle[0]\n");
 
 	res = lstat(file, &buf);
 	if (res == -1)
