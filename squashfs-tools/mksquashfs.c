@@ -6061,6 +6061,8 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "exclude\n\t\t\tdirs/files\n");
 	fprintf(stream, "\nMksquashfs runtime options:\n");
 	fprintf(stream, "-version\t\tprint version, licence and copyright message\n");
+	fprintf(stream, "-force\t\t\tforce Sqfstar to write to block device ");
+	fprintf(stream, "or file\n");
 	fprintf(stream, "-exit-on-error\t\ttreat normally ignored errors as fatal\n");
 	fprintf(stream, "-quiet\t\t\tno verbose output\n");
 	fprintf(stream, "-info\t\t\tprint files written to filesystem\n");
@@ -6577,7 +6579,7 @@ print_sqfstar_compressor_options:
 		else if(strcmp(argv[i], "-info") == 0)
 			silent = FALSE;
 
-		else if(strcmp(argv[i], "-noappend") == 0)
+		else if(strcmp(argv[i], "-force") == 0)
 			delete = TRUE;
 
 		else if(strcmp(argv[i], "-quiet") == 0)
@@ -6655,6 +6657,19 @@ print_sqfstar_compressor_options:
 		}
 
 	} else {
+		if(!S_ISBLK(buf.st_mode) && !S_ISREG(buf.st_mode)) {
+			ERROR("Destination not block device or regular file\n");
+			exit(1);
+		}
+
+		if(tarfile && !delete) {
+			ERROR("Appending is not supported reading tar files\n");
+			ERROR("To force Sqfstar to write to this %s "
+				"use -force\n", S_ISBLK(buf.st_mode) ?
+				"block device" : "file");
+			EXIT_MKSQUASHFS();
+		}
+
 		if(S_ISBLK(buf.st_mode)) {
 			if((fd = open(destination_file, O_RDWR)) == -1) {
 				perror("Could not open block device as "
@@ -6663,8 +6678,18 @@ print_sqfstar_compressor_options:
 			}
 			block_device = 1;
 
-		} else
-			BAD_ERROR("Destination file already exists!\n");
+		} else {
+			fd = open(destination_file, O_TRUNC | O_RDWR);
+			if(fd == -1) {
+				perror("Could not open regular file for "
+					"writing as destination");
+				exit(1);
+			}
+			/* ensure Mksquashfs doesn't try to read
+			 * the destination file as input, which
+			 * will result in an I/O loop */
+			ADD_ENTRY(buf);
+		}
 	}
 
 	/*
