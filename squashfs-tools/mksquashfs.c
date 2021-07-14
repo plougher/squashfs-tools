@@ -4348,7 +4348,8 @@ static char *walk_source(char *source, char **pathname, char **name)
 
 
 static struct dir_info *add_source(struct dir_info *sdir, char *source,
-		char *subpath, char *file, struct pathnames *paths, int depth)
+		char *subpath, char *file, char **prefix,
+		struct pathnames *paths, int depth)
 {
 	struct dir_info *sub;
 	struct dir_ent *entry;
@@ -4361,12 +4362,16 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 	if(dir == NULL)
 		dir = create_dir("", subpath, depth);
 
+	if(depth == 1)
+		*prefix = source[0] == '/' ? strdup("/") : strdup(".");
+
 	if(appending && file == NULL)
 		handle_root_entries(dir);
 
 	source = walk_source(source, &file, &name);
 
-	while(depth == 1 && (name[0] == '\0' || strcmp(name, "..") == 0 || strcmp(name, ".") == 0)){
+	while(depth == 1 && (name[0] == '\0' || strcmp(name, "..") == 0
+						|| strcmp(name, ".") == 0)){
 		char *old = file;
 
 		if(name[0] == '\0' || source[0] == '\0') {
@@ -4384,11 +4389,16 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 			if(cpiostyle)
 				goto failed_early;
 			else
-				BAD_ERROR("Empty source after stripping '/', '..' and '.'.  Run Mksquashfs without -tarstyle to handle this!\n");
+				BAD_ERROR("Empty source after stripping '/', "
+					"'..' and '.'.  Run Mksquashfs without "
+					"-tarstyle to handle this!\n");
 		}
 
 		source = walk_source(source, &file, &name);
-		free(old);
+		if(name[0] == '\0' || strcmp(name, "..") == 0 || strcmp(name, ".") == 0)
+			free(old);
+		else
+			*prefix = old;
 	}
 
 	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0)
@@ -4461,7 +4471,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 				excluded(entry->name, paths, &new);
 				subpath = subpathname(entry);
 				sub = add_source(entry->dir, source, subpath,
-							file, new, depth + 1);
+						file, prefix, new, depth + 1);
 				if(sub == NULL)
 					goto failed_match;
 				entry->dir = sub;
@@ -4518,7 +4528,8 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 				dir->directory_count ++;
 		} else if(S_ISDIR(buf.st_mode)) {
 			subpath = subpathname(entry);
-			sub = add_source(NULL, source, subpath, file, new, depth + 1);
+			sub = add_source(NULL, source, subpath, file, prefix,
+								new, depth + 1);
 			if(sub == NULL)
 				goto failed_entry;
 			add_dir_entry(entry, sub, lookup_inode(&buf));
@@ -4664,43 +4675,36 @@ static char *get_next_filename()
 
 static squashfs_inode process_source(int progress)
 {
-	int size = 0, absolute = FALSE, relative = FALSE, i, inroot = FALSE;
-	char *buff = NULL, *result;
-	char *filename;
-	struct stat buf;
+	int i, res, first = TRUE, same = FALSE;
+	char *filename, *prefix, *pathname;
+	struct stat buf, buf2;
 	struct dir_ent *entry;
 	struct dir_info *new;
 
-	/*
-	 * Get current working directory to see if we're at the
-	 * root directory
-	 */
-	while(1) {
-		buff = realloc(buff, size += 512);
-		if(buff == NULL)
-			MEM_ERROR();
-
-		result = getcwd(buff, size);
-		if(result)
-			break;
-		if(errno != ERANGE)
-			BAD_ERROR("Getcwd failed\n");
-	}
-
-	if(strcmp(buff, "/") == 0)
-		inroot = TRUE;
-
-	free(buff);
-
 	for(i = 0; (filename = get_next_filename()); i++) {
-		new = add_source(root_dir, filename, "", NULL, paths, 1);
+		new = add_source(root_dir, filename, "", NULL, &prefix, paths, 1);
 
 		if(new) {
-			/* does argv[i] start from the root directory? */
-			if(filename[0] == '/' || inroot)
-				absolute = TRUE;
-			else
-				relative = TRUE;
+			/* does argv[i] start from the same directory? */
+			if(first) {
+				res = lstat(prefix, &buf);
+				if (res == -1)
+					BAD_ERROR("Can't stat %s because %s\n",
+						prefix, strerror(errno));
+				first = FALSE;
+				same = TRUE;
+				pathname = strdup(prefix);
+			} else if(same) {
+				res = lstat(prefix, &buf2);
+				if (res == -1)
+					BAD_ERROR("Can't stat %s because %s\n",
+						prefix, strerror(errno));
+
+				if(buf.st_dev != buf2.st_dev ||
+						buf.st_ino != buf2.st_ino)
+					same = FALSE;
+			}
+			free(prefix);
 			root_dir = new;
 		}
 	}
@@ -4710,7 +4714,7 @@ static squashfs_inode process_source(int progress)
 
 	new = scan1_opendir("", "", 0);
 
-	if(absolute && relative) {
+	if(!same) {
 		/*
 		 * Top level directory conflict.  Create dummy
 		 * top level directory
@@ -4725,12 +4729,6 @@ static squashfs_inode process_source(int progress)
 		entry->inode = lookup_inode(&buf);
 		entry->inode->dummy_root_dir = TRUE;
 	} else {
-		char *pathname = absolute ? "/" : ".";
-
-		if(lstat(pathname, &buf) == -1)
-			BAD_ERROR("Cannot stat %s because %s\n",
-				pathname, strerror(errno));
-
 		if(root_mode_opt)
 			buf.st_mode = root_mode | S_IFDIR;
 
@@ -4745,7 +4743,6 @@ static squashfs_inode process_source(int progress)
 	root_dir = populate_tree(root_dir, paths);
 	if(root_dir == NULL)
 		BAD_ERROR("Failed to read directory hierarchy\n");
-
 
 	return do_directory_scans(entry, progress);
 }
