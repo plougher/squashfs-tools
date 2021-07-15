@@ -4356,7 +4356,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 	struct pathnames *new = NULL;
 	struct dir_info *dir = sdir;
 	struct stat buf;
-	char *name;
+	char *name, *newsubpath = NULL;
 	int res;
 
 	if(dir == NULL)
@@ -4500,7 +4500,8 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		entry = create_dir_entry(name, NULL, file, dir);
 
 		if(exclude_actions()) {
-			if(eval_exclude_actions(name, file, subpath, &buf,
+			newsubpath = subpathname(entry);
+			if(eval_exclude_actions(name, file, newsubpath, &buf,
 							depth, entry)) {
 				goto failed_entry;
 			}
@@ -4527,8 +4528,9 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 			if(S_ISDIR(buf.st_mode))
 				dir->directory_count ++;
 		} else if(S_ISDIR(buf.st_mode)) {
-			subpath = subpathname(entry);
-			sub = add_source(NULL, source, subpath, file, prefix,
+			if(newsubpath == NULL)
+				newsubpath = subpathname(entry);
+			sub = add_source(NULL, source, newsubpath, file, prefix,
 								new, depth + 1);
 			if(sub == NULL)
 				goto failed_entry;
