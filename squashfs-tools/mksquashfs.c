@@ -4709,8 +4709,17 @@ static squashfs_inode process_source(int progress)
 		}
 	}
 
-	if(root_dir == NULL)
+	if(root_dir == NULL) {
+		/* Empty directory tree after processing the sources, and
+		 * so everything was excluded.
+		 * We need to create an empty directory to reflect this, and
+		 * if appending, fill it with the original root directory
+		 * contents */
 		root_dir = scan1_opendir("", "", 0);
+
+		if(appending)
+			handle_root_entries(root_dir);
+	}
 
 	new = scan1_opendir("", "", 0);
 
