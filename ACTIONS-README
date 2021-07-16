@@ -33,14 +33,16 @@ and vice-versa:
 An action consists of two parts, separated by an "@".  The action to
 be executed is placed before the @, and one or more tests are
 placed afer the @.  If the action or tests has an argument, it is
-given in brackets.  Brackets are optional if no argument is needed.
+given in brackets.  Brackets are optional if no argument is needed,
 e.g.
 
 compressed()@name("filename")
 
 compressed@name("filename")
 
-Arguments are either numeric or string, depending on the
+do exactly the same thing.
+
+Arguments can be either numeric or string, depending on the
 action and test.
 
 String arguments can be enclosed in double-quotes ("), to prevent the
@@ -58,7 +60,7 @@ Numeric arguments are of the form [range]number[size], where
 
 	'<' or '-', match on less than number
 	'>' or '+', match on greater than number
-	"" (nothing), match on exactly number.
+	"" (nothing), match on exactly number
 
 [size] is either:
 	"" (nothing), number
@@ -110,7 +112,7 @@ will be evaluated as
 && and || are short-circuit operators, where the rhs (right hand side)
 is only evaluated if the lhs (left hand side) has been insufficient
 to determine the value.  For example in the above, test3 will only be
-evaluated if (test1 && test2) evaluates to TRUE.
+evaluated if (test1 && test2) evaluates to FALSE.
 
 4. Test operators
 =================
@@ -119,8 +121,8 @@ The following test operators are supported:
 
 4.1 name(pattern)
 
-Returns TRUE if name of file matches pattern.  Pattern can have
-wildcards.
+Returns TRUE if the filename (basename without leading directory components)
+matches pattern.  Pattern can have wildcards.
 
 4.2 pathname(pattern)
 ---------------------
@@ -131,9 +133,16 @@ Pattern can have wildcards.
 4.3 subpathname(pattern)
 ------------------------
 
-Returns TRUE if the first part of the file pathname matches pattern, e.g.
+Returns TRUE if the <n> directory components of pattern match the first <n>
+directory components of the pathname.
+
+For example, if pattern has one component:
 
 subpathname(dir1) will match "dir1/somefile", "dir1/dir2/somefile" etc.
+
+If pattern had two components:
+
+subpathname(dir1/dir2) will match ""dir1/dir2/somefile" etc.
 
 Pattern can have wildcards.
 
@@ -173,22 +182,22 @@ Return TRUE if the nlink count is less than, equal to, or larger than
 4.9 fileblocks(value)
 ---------------------
 
-Return TRUE if the size of the file in blocks (512K) is less than, equal to,
-or larger than <value>, where <value> can be [<-]number, number, [>+]number.
+Return TRUE if the size of the file in blocks (512 bytes) is less than, equal
+to, or larger than <value>, where <value> can be [<-]number, number, [>+]number.
 Returns FALSE on anything not a file.
 
 4.10 dirblocks(value)
 ---------------------
 
-Return TRUE if the size of the directory in blocks (512K) is less than, equal to,
-or larger than <value>, where <value> can be [<-]number, number, [>+]number.
-Returns FALSE on anything not a directory.
+Return TRUE if the size of the directory in blocks (512 bytes) is less than,
+equal to, or larger than <value>, where <value> can be [<-]number, number,
+[>+]number.  Returns FALSE on anything not a directory.
 
 4.11 blocks(value)
 ------------------
 
-Return TRUE if the size of the file in blocks (512K) is less than, equal to,
-or larger than <value>, where <value> can be [<-]number, number, [>+]number.
+Return TRUE if the size of the file in blocks (512 bytes) is less than, equal
+to, or larger than <value>, where <value> can be [<-]number, number, [>+]number.
 Works on any file type.
 
 4.12 uid(value)
@@ -253,19 +262,20 @@ inclusive.
 4.22 fileblocks_range(minimum, maximum)
 ---------------------------------------
 
-Return TRUE if the size of the file in blocks (512K) is within the range
+Return TRUE if the size of the file in blocks (512 bytes) is within the range
 [<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a file.
 
 4.23 dirblocks_range(minimum, maximum)
 --------------------------------------
 
-Return TRUE if the size of the directory in blocks (512K) is within the range
-[<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a directory.
+Return TRUE if the size of the directory in blocks (512 bytes) is within the
+range [<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a
+directory.
 
 4.24 blocks_range(minimum, maximum)
 -----------------------------------
 
-Return TRUE if the size of the file in blocks (512K) is within the range
+Return TRUE if the size of the file in blocks (512 bytes) is within the range
 [<minimum>, <maximum>] inclusive.  Works on any file type.
 
 4.25 uid_range(minimum, maximum)
@@ -301,8 +311,9 @@ Returns TRUE if the file matches type <c>.  <c> can be
 	l - symbolic link
 	c - character device
 	b - block device
-	p - FIFO
+	p - Named Pipe / FIFO
 	s - socket
+
 
 4.30 perm(mode)
 ---------------
@@ -379,7 +390,7 @@ Examples:
 readlink("name(*.[ch])") returns TRUE if the file referenced by the symbolic
 link matches *.[ch].
 
-Obviously, expressions created with && || etc.  can be specified.
+Obviously, expressions created with && || etc. can be specified.
 
 readlink("depth(1) && filesize(<20K)") returns TRUE if the file referenced
 by the symbolic link is a regular file less than 20K in size and in the
@@ -423,8 +434,8 @@ Examples of usage:
 
 
 2. If a file matches a pattern, check that the parent directory matches another
-   pattern.  This allows you to delete files if and only if they are in particular
-   directory.
+   pattern.  This allows you to delete files if and only if they are in
+   particular directory.
 
    prune@name(*.[ch]) && eval(.., "name(*linux*)")
 
