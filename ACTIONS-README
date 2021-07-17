@@ -244,8 +244,8 @@ inclusive.  Returns FALSE on anything not a file.
 4.19 dirsize_range(minimum, maximum)
 ------------------------------------
 
-Return TRUE if the size of the directory is within the range [<minimum>, <maximum>]
-inclusive.  Returns FALSE on anything not a directory.
+Return TRUE if the size of the directory is within the rang
+[<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a directory.
 
 4.20 size_range(minimum, maximum)
 ---------------------------------
@@ -381,7 +381,7 @@ attributes, pathname, name and depth all refer to the dereferenced
 file.
 
 If the symbolic link cannot be dereferenced because it points to something
-not in the output filesytem (see exists() function above), then FALSE is
+not in the output filesystem (see exists() function above), then FALSE is
 returned.  If the file is not a symbolic link, the result is the same as
 <expression>, i.e. readlink(<expression>) == <expression>.
 
@@ -433,9 +433,9 @@ Examples of usage:
    it contains a .git subdirectory.
 
 
-2. If a file matches a pattern, check that the parent directory matches another
-   pattern.  This allows you to delete files if and only if they are in
-   particular directory.
+2. If a file matches a pattern, check that the parent directory matches
+   another pattern.  This allows you to delete files if and only if they
+   are in a particular directory.
 
    prune@name(*.[ch]) && eval(.., "name(*linux*)")
 
@@ -525,7 +525,7 @@ Examples:
 
 1. fragment(cfiles)@name(*.[ch])
 
-Place all C files into special fragments reserved for them
+Place all C files into special fragments reserved for them.
 
 2. fragment(phillip)@user(phillip)
 
@@ -627,7 +627,7 @@ bits, and = means set the permission bits.
 
 The permission bits (PERMS) are a combination of [rwxXst] which
 sets/adds/removes those bits for the specified ugoa combination. They
-can alternatively be u, g or o, which takes the permission bis from the
+can alternatively be u, g or o, which takes the permission bits from the
 user, group or other of the file respectively.
 
 Examples:
@@ -696,9 +696,9 @@ and which is also empty for <reason>.  <reason> is one of "excluded",
 "source" and "all".  If no argument is given, empty() defaults to "all".
 
 The reason "excluded" means the directory has become empty due to
-the exclude() or prune() actions or for exclusion on the command line
+the exclude() or prune() actions or by exclusion on the command line.
 The reason "source" means the directory was empty in the source filesystem.
-The reason "all" means it is empty for either one of the reasons.
+The reason "all" means it is empty for either one of the above two reasons.
 
 This action is often useful when exclusion has produced an empty
 directory, or a hierarchy of directories which are empty but for a
