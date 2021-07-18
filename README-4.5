@@ -69,33 +69,43 @@ Summary of changes (and sections below)
 3. Minor improvements and bug fixes
 -----------------------------------
 
-3.1 New -one-file-system option in Mksquashfs, which tells
+3.1 The progress bar is now displayed and updated whilst the input
+    is being scanned (blocks to be compressed will increase).  This
+    means on large (or slow to read) input sources, Mksquashfs will
+    not appear to hang doing nothing.
+
+3.2 New -one-file-system option in Mksquashfs, which tells
     Mksquashfs to not cross filesystem boundaries when
     scanning the sources.
 
-3.2 New -no-hardlinks option in Mksquashfs, which makes
+3.3 New -no-hardlinks option in Mksquashfs, which makes
     Mksquashfs treat hardlinked files as duplicates instead.
 
-3.3 New -help options in Mksquashfs and Unsquashfs which output
+3.4 New -help options in Mksquashfs and Unsquashfs which output
     to standard out, rather than standard error.
 
-3.4 -no-exit-code option added to Unsquashfs which makes it
+3.5 -no-exit-code option added to Unsquashfs which makes it
     not output an error exit code.
 
-3.5 Exit code in Unsquashfs changed to distinguish between
+3.6 Exit code in Unsquashfs changed to distinguish between
     non-fatal errors (exit of 2), and fatal errors
     (exit code of 1).
 
-3.6 Xattr id count added in Unsquashfs "-stat" output.
+3.7 Mksquashfs when appending, now writes the recovery file to
+    the home directory ($HOME), rather than the current directory.
+    A new option -recovery-path <name> has been added, which specifies
+    that <name> is to be used as the recovery file directory.
 
-3.7 Unsquashfs "write outside directory" exploit fixed.
+3.8 Xattr id count added in Unsquashfs "-stat" output.
 
-3.8 Error handling in Unsquashfs writer thread fixed.
+3.9 Unsquashfs "write outside directory" exploit fixed.
 
-3.9 Fix failure to truncate destination file when appending
+3.10 Error handling in Unsquashfs writer thread fixed.
+
+3.11 Fix failure to truncate destination file when appending
     aborted in Mksquashfs.
 
-3.10 Prevent Mksquashfs reading the destination file
+3.12 Prevent Mksquashfs reading the destination file
      as input.
 
 
