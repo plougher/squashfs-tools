@@ -7569,8 +7569,11 @@ print_compressor_options:
 	/* process the sort files - must be done afer the exclude files  */
 	for(i = option_offset; i < argc; i++)
 		if(strcmp(argv[i], "-sort") == 0) {
-			int res = read_sort_file(argv[++i], source,
-								source_path);
+			if(tarfile)
+				BAD_ERROR("Sorting files is unsupported when "
+					"reading tar files\n");
+
+			res = read_sort_file(argv[++i], source, source_path);
 			if(res == FALSE)
 				BAD_ERROR("Failed to read sort file\n");
 			sorted ++;
