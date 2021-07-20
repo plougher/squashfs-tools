@@ -226,9 +226,11 @@ pthread_cond_t fragment_waiting = PTHREAD_COND_INITIALIZER;
 
 int reproducible = REP_DEF;
 
-/* Root mode option */
+/* Options which over-ride root directory settings */
 int root_mode_opt = FALSE;
 mode_t root_mode;
+int root_uid_opt = FALSE;
+unsigned int root_uid;
 
 /* Time value over-ride options */
 unsigned int mkfs_time;
@@ -3367,6 +3369,9 @@ static squashfs_inode scan_single(char *pathname, int progress)
 	if(root_mode_opt)
 		buf.st_mode = root_mode | S_IFDIR;
 
+	if(root_uid_opt)
+		buf.st_uid = root_uid;
+
 	dir_ent->inode = lookup_inode(&buf);
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
@@ -3397,7 +3402,10 @@ static squashfs_inode scan_encomp(int progress)
 		buf.st_mode = root_mode | S_IFDIR;
 	else
 		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-	buf.st_uid = getuid();
+	if(root_uid_opt)
+		buf.st_uid = root_uid;
+	else
+		buf.st_uid = getuid();
 	buf.st_gid = getgid();
 	buf.st_mtime = time(NULL);
 	buf.st_dev = 0;
@@ -4733,7 +4741,10 @@ static squashfs_inode process_source(int progress)
 		memset(&buf, 0, sizeof(buf));
 		buf.st_mode = (root_mode_opt) ? root_mode | S_IFDIR :
 				S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-		buf.st_uid = getuid();
+		if(root_uid_opt)
+			buf.st_uid = root_uid;
+		else
+			buf.st_uid = getuid();
 		buf.st_gid = getgid();
 		buf.st_mtime = time(NULL);
 		entry = create_dir_entry("", NULL, "", new);
@@ -4742,6 +4753,8 @@ static squashfs_inode process_source(int progress)
 	} else {
 		if(root_mode_opt)
 			buf.st_mode = root_mode | S_IFDIR;
+		if(root_uid_opt)
+			buf.st_uid = root_uid;
 
 		entry = create_dir_entry("", NULL, pathname, new);
 		entry->inode = lookup_inode(&buf);
@@ -5888,6 +5901,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
 	fprintf(stream, "-root-mode <mode>\tset root directory permissions to octal ");
 	fprintf(stream, "<mode>\n");
+	fprintf(stream, "-root-uid <uid>\t\tset root directory owner to <uid>\n");
 	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
 	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
@@ -6282,6 +6296,13 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			root_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-root-uid") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &root_uid)) {
+				ERROR("%s: -root-uid missing or invalid uid\n",
+					argv[0]);
+				exit(1);
+			}
+			root_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-log") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing log file\n",
