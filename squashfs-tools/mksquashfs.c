@@ -231,6 +231,8 @@ int root_mode_opt = FALSE;
 mode_t root_mode;
 int root_uid_opt = FALSE;
 unsigned int root_uid;
+int root_gid_opt = FALSE;
+unsigned int root_gid;
 
 /* Time value over-ride options */
 unsigned int mkfs_time;
@@ -3372,6 +3374,9 @@ static squashfs_inode scan_single(char *pathname, int progress)
 	if(root_uid_opt)
 		buf.st_uid = root_uid;
 
+	if(root_gid_opt)
+		buf.st_gid = root_gid;
+
 	dir_ent->inode = lookup_inode(&buf);
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
@@ -3406,7 +3411,10 @@ static squashfs_inode scan_encomp(int progress)
 		buf.st_uid = root_uid;
 	else
 		buf.st_uid = getuid();
-	buf.st_gid = getgid();
+	if(root_gid_opt)
+		buf.st_gid = root_gid;
+	else
+		buf.st_gid = getgid();
 	buf.st_mtime = time(NULL);
 	buf.st_dev = 0;
 	buf.st_ino = 0;
@@ -4745,7 +4753,10 @@ static squashfs_inode process_source(int progress)
 			buf.st_uid = root_uid;
 		else
 			buf.st_uid = getuid();
-		buf.st_gid = getgid();
+		if(root_gid_opt)
+			buf.st_gid = root_gid;
+		else
+			buf.st_gid = getgid();
 		buf.st_mtime = time(NULL);
 		entry = create_dir_entry("", NULL, "", new);
 		entry->inode = lookup_inode(&buf);
@@ -4755,6 +4766,8 @@ static squashfs_inode process_source(int progress)
 			buf.st_mode = root_mode | S_IFDIR;
 		if(root_uid_opt)
 			buf.st_uid = root_uid;
+		if(root_gid_opt)
+			buf.st_gid = root_gid;
 
 		entry = create_dir_entry("", NULL, pathname, new);
 		entry->inode = lookup_inode(&buf);
@@ -5902,6 +5915,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-root-mode <mode>\tset root directory permissions to octal ");
 	fprintf(stream, "<mode>\n");
 	fprintf(stream, "-root-uid <uid>\t\tset root directory owner to <uid>\n");
+	fprintf(stream, "-root-gid <gid>\t\tset root directory group to <gid>\n");
 	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
 	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
@@ -6303,6 +6317,13 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			root_uid_opt = TRUE;
+		} else if(strcmp(argv[i], "-root-gid") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &root_gid)) {
+				ERROR("%s: -root-gid missing or invalid gid\n",
+					argv[0]);
+				exit(1);
+			}
+			root_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-log") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing log file\n",
