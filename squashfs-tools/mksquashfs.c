@@ -289,7 +289,8 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-m
 	"false-action-file", "p", "pf", "sort", "root-becomes", "recover",
 	"recovery-path", "throttle", "limit", "processors", "mem", "offset",
 	"o", "log", "a", "va", "ta", "fa", "af", "vaf", "taf", "faf",
-	"read-queue", "write-queue", "fragment-queue", NULL
+	"read-queue", "write-queue", "fragment-queue", "root-time", "root-uid",
+	"root-gid", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes);
