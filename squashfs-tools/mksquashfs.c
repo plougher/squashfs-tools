@@ -233,6 +233,8 @@ int root_uid_opt = FALSE;
 unsigned int root_uid;
 int root_gid_opt = FALSE;
 unsigned int root_gid;
+unsigned int root_time;
+int root_time_opt = FALSE;
 
 /* Time value over-ride options */
 unsigned int mkfs_time;
@@ -3377,6 +3379,9 @@ static squashfs_inode scan_single(char *pathname, int progress)
 	if(root_gid_opt)
 		buf.st_gid = root_gid;
 
+	if(root_time_opt)
+		buf.st_mtime = root_time;
+
 	dir_ent->inode = lookup_inode(&buf);
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
@@ -3415,7 +3420,10 @@ static squashfs_inode scan_encomp(int progress)
 		buf.st_gid = root_gid;
 	else
 		buf.st_gid = getgid();
-	buf.st_mtime = time(NULL);
+	if(root_time_opt)
+		buf.st_mtime = root_time;
+	else
+		buf.st_mtime = time(NULL);
 	buf.st_dev = 0;
 	buf.st_ino = 0;
 	dir_ent->inode = lookup_inode(&buf);
@@ -4757,7 +4765,10 @@ static squashfs_inode process_source(int progress)
 			buf.st_gid = root_gid;
 		else
 			buf.st_gid = getgid();
-		buf.st_mtime = time(NULL);
+		if(root_time_opt)
+			buf.st_mtime = root_time;
+		else
+			buf.st_mtime = time(NULL);
 		entry = create_dir_entry("", NULL, "", new);
 		entry->inode = lookup_inode(&buf);
 		entry->inode->dummy_root_dir = TRUE;
@@ -4768,6 +4779,8 @@ static squashfs_inode process_source(int progress)
 			buf.st_uid = root_uid;
 		if(root_gid_opt)
 			buf.st_gid = root_gid;
+		if(root_time_opt)
+			buf.st_mtime = root_time;
 
 		entry = create_dir_entry("", NULL, pathname, new);
 		entry->inode = lookup_inode(&buf);
@@ -5912,6 +5925,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-no-duplicates\t\tdo not perform duplicate checking\n");
 	fprintf(stream, "-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n");
 	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
+	fprintf(stream, "-root-time <time>\tset root directory time to <time>\n");
 	fprintf(stream, "-root-mode <mode>\tset root directory permissions to octal ");
 	fprintf(stream, "<mode>\n");
 	fprintf(stream, "-root-uid <uid>\t\tset root directory owner to <uid>\n");
@@ -6324,6 +6338,13 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			root_gid_opt = TRUE;
+		} else if(strcmp(argv[i], "-root-time") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &root_time)) {
+				ERROR("%s: -root-time missing or invalid time\n",
+					argv[0]);
+				exit(1);
+			}
+			root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-log") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing log file\n",
