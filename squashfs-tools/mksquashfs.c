@@ -6070,7 +6070,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 
 static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 {
-	fprintf(stream, "SYNTAX:%s [options] dest ", name);
+	fprintf(stream, "SYNTAX:%s [options] image ", name);
 	fprintf(stream, "[list of exclude dirs/files]\n");
 	fprintf(stream, "\nFilesystem build options:\n");
 	fprintf(stream, "-comp <comp>\t\tselect <comp> compression\n");
