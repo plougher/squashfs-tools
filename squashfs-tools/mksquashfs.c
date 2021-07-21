@@ -298,7 +298,8 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-m
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-mode", "force-uid", "force-gid", "throttle", "limit",
-	"processors", "mem", "offset", "o", NULL
+	"processors", "mem", "offset", "o", "root-time", "root-uid",
+	"root-gid", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes);
