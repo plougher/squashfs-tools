@@ -6104,8 +6104,11 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-no-duplicates\t\tdo not perform duplicate checking\n");
 	fprintf(stream, "-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n");
 	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
+	fprintf(stream, "-root-time <time>\tset root directory time to <time>\n");
 	fprintf(stream, "-root-mode <mode>\tset root directory permissions to octal ");
 	fprintf(stream, "<mode>\n");
+	fprintf(stream, "-root-uid <uid>\t\tset root directory owner to <uid>\n");
+	fprintf(stream, "-root-gid <gid>\t\tset root directory group to <gid>\n");
 	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
 	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
@@ -6427,6 +6430,27 @@ int sqfstar(int argc, char *argv[])
 				exit(1);
 			}
 			root_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-root-uid") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &root_uid)) {
+				ERROR("%s: -root-uid missing or invalid uid\n",
+					argv[0]);
+				exit(1);
+			}
+			root_uid_opt = TRUE;
+		} else if(strcmp(argv[i], "-root-gid") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &root_gid)) {
+				ERROR("%s: -root-gid missing or invalid gid\n",
+					argv[0]);
+				exit(1);
+			}
+			root_gid_opt = TRUE;
+		} else if(strcmp(argv[i], "-root-time") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &root_time)) {
+				ERROR("%s: -root-time missing or invalid time\n",
+					argv[0]);
+				exit(1);
+			}
+			root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-comp") == 0)
 			/* parsed previously */
 			i++;
