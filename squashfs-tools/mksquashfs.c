@@ -226,9 +226,15 @@ pthread_cond_t fragment_waiting = PTHREAD_COND_INITIALIZER;
 
 int reproducible = REP_DEF;
 
-/* Root mode option */
+/* Options which over-ride root directory settings */
 int root_mode_opt = FALSE;
 mode_t root_mode;
+int root_uid_opt = FALSE;
+unsigned int root_uid;
+int root_gid_opt = FALSE;
+unsigned int root_gid;
+unsigned int root_time;
+int root_time_opt = FALSE;
 
 /* Time value over-ride options */
 unsigned int mkfs_time;
@@ -286,7 +292,8 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-m
 	"false-action-file", "p", "pf", "sort", "root-becomes", "recover",
 	"recovery-path", "throttle", "limit", "processors", "mem", "offset",
 	"o", "log", "a", "va", "ta", "fa", "af", "vaf", "taf", "faf",
-	"read-queue", "write-queue", "fragment-queue", NULL
+	"read-queue", "write-queue", "fragment-queue", "root-time", "root-uid",
+	"root-gid", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -3377,6 +3384,15 @@ static squashfs_inode scan_single(char *pathname, int progress)
 	if(root_mode_opt)
 		buf.st_mode = root_mode | S_IFDIR;
 
+	if(root_uid_opt)
+		buf.st_uid = root_uid;
+
+	if(root_gid_opt)
+		buf.st_gid = root_gid;
+
+	if(root_time_opt)
+		buf.st_mtime = root_time;
+
 	dir_ent->inode = lookup_inode(&buf);
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
@@ -3407,9 +3423,18 @@ static squashfs_inode scan_encomp(int progress)
 		buf.st_mode = root_mode | S_IFDIR;
 	else
 		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-	buf.st_uid = getuid();
-	buf.st_gid = getgid();
-	buf.st_mtime = time(NULL);
+	if(root_uid_opt)
+		buf.st_uid = root_uid;
+	else
+		buf.st_uid = getuid();
+	if(root_gid_opt)
+		buf.st_gid = root_gid;
+	else
+		buf.st_gid = getgid();
+	if(root_time_opt)
+		buf.st_mtime = root_time;
+	else
+		buf.st_mtime = time(NULL);
 	buf.st_dev = 0;
 	buf.st_ino = 0;
 	dir_ent->inode = lookup_inode(&buf);
@@ -4362,34 +4387,65 @@ static char *walk_source(char *source, char **pathname, char **name)
 
 
 static struct dir_info *add_source(struct dir_info *sdir, char *source,
-		char *subpath, char *file, struct pathnames *paths, int depth)
+		char *subpath, char *file, char **prefix,
+		struct pathnames *paths, int depth)
 {
 	struct dir_info *sub;
 	struct dir_ent *entry;
 	struct pathnames *new = NULL;
 	struct dir_info *dir = sdir;
 	struct stat buf;
-	char *name;
+	char *name, *newsubpath = NULL;
 	int res;
 
 	if(dir == NULL)
 		dir = create_dir("", subpath, depth);
+
+	if(depth == 1)
+		*prefix = source[0] == '/' ? strdup("/") : strdup(".");
 
 	if(appending && file == NULL)
 		handle_root_entries(dir);
 
 	source = walk_source(source, &file, &name);
 
-	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0) {
-		ERROR("Error: Source path can't have '.' or '..' in it with -tarstyle\n");
-		goto failed_early;
+	while(depth == 1 && (name[0] == '\0' || strcmp(name, "..") == 0
+						|| strcmp(name, ".") == 0)){
+		char *old = file;
+
+		if(name[0] == '\0' || source[0] == '\0') {
+			/* Ran out of pathname skipping leading ".." and "."
+			 * If cpiostyle, just ignore it, find always produces
+			 * these if run as "find ." or "find .." etc.
+			 *
+			 * If tarstyle after skipping what we *must* skip
+			 * in the pathname (we can't store directories named
+			 * ".." or "." or simply "/") there's nothing left after
+			 * stripping (i.e. someone just typed "..", "." on
+			 * the command line).  This isn't what -tarstyle is
+			 * intended for, and Mksquashfs without -tarstyle
+			 * can handle this scenario */
+			if(cpiostyle)
+				goto failed_early;
+			else
+				BAD_ERROR("Empty source after stripping '/', "
+					"'..' and '.'.  Run Mksquashfs without "
+					"-tarstyle to handle this!\n");
+		}
+
+		source = walk_source(source, &file, &name);
+		if(name[0] == '\0' || strcmp(name, "..") == 0 || strcmp(name, ".") == 0)
+			free(old);
+		else
+			*prefix = old;
 	}
 
+	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0)
+		BAD_ERROR("Source path can't have '.' or '..' embedded in it with -tarstyle/-cpiostyle[0]\n");
+
 	res = lstat(file, &buf);
-	if (res == -1) {
-		ERROR("Error: Can't stat %s because %s\n", file, strerror(errno));
-		goto failed_early;
-	}
+	if (res == -1)
+		BAD_ERROR("Can't stat %s because %s\n", file, strerror(errno));
 
 	entry = lookup_name(dir, name);
 
@@ -4402,18 +4458,14 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		 * An original root entry from the file being appended to
 		 * is never the same file.
 		 */
-		if(entry->inode->root_entry) {
-			ERROR("Source %s conflicts with name in filesystem "
+		if(entry->inode->root_entry)
+			BAD_ERROR("Source %s conflicts with name in filesystem "
 						"being appended to\n", name);
-			goto failed_early;
-		}
 
 		res = memcmp(&buf, &(entry->inode->buf), sizeof(buf));
-		if(res) {
-			ERROR("Error: Can't have two different sources with same "
+		if(res)
+			BAD_ERROR("Can't have two different sources with same "
 								"pathname\n");
-			goto failed_match;
-		}
 
 		/*
 		 * Matching file.
@@ -4458,16 +4510,14 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 				excluded(entry->name, paths, &new);
 				subpath = subpathname(entry);
 				sub = add_source(entry->dir, source, subpath,
-							file, new, depth + 1);
+						file, prefix, new, depth + 1);
 				if(sub == NULL)
 					goto failed_match;
 				entry->dir = sub;
 				sub->dir_ent = entry;
 			}
-		} else {
-			ERROR("ERROR: Source component %s is not a directory\n", name);
-			goto failed_match;
-		}
+		} else
+			BAD_ERROR("Source component %s is not a directory\n", name);
 
 		free(name);
 		free(file);
@@ -4480,22 +4530,18 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		 * - If we're not at the leaf of the source, we will add it,
 		 *   and recurse walking the source
 		 */
-		if(old_exclude && old_excluded(file, &buf)) {
-			ERROR("Error: Source %s is excluded\n", file);
+		if(old_exclude && old_excluded(file, &buf))
 			goto failed_early;
-		}
 
-		if(old_exclude == FALSE && excluded(name, paths, &new)) {
-			ERROR("Error: Source %s is excluded\n", file);
+		if(old_exclude == FALSE && excluded(name, paths, &new))
 			goto failed_early;
-		}
 
 		entry = create_dir_entry(name, NULL, file, dir);
 
 		if(exclude_actions()) {
-			if(eval_exclude_actions(name, file, subpath, &buf,
+			newsubpath = subpathname(entry);
+			if(eval_exclude_actions(name, file, newsubpath, &buf,
 							depth, entry)) {
-				ERROR("Error: Source %s is excluded\n", file);
 				goto failed_entry;
 			}
 		}
@@ -4506,14 +4552,11 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 			struct inode_info *i;
 
 			byte = readlink(file, buff, 65536);
-			if(byte == -1) {
-				ERROR("Error: Failed to read source symlink %s", file);
-				goto failed_entry;
-			} else if(byte == 65536) {
-				ERROR("Error: Symlink %s is greater than 65536 "
+			if(byte == -1)
+				BAD_ERROR("Failed to read source symlink %s", file);
+			else if(byte == 65536)
+				BAD_ERROR("Symlink %s is greater than 65536 "
 						"bytes!", file);
-				goto failed_entry;
-			}
 
 			/* readlink doesn't 0 terminate the returned path */
 			buff[byte] = '\0';
@@ -4524,16 +4567,16 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 			if(S_ISDIR(buf.st_mode))
 				dir->directory_count ++;
 		} else if(S_ISDIR(buf.st_mode)) {
-			subpath = subpathname(entry);
-			sub = add_source(NULL, source, subpath, file, new, depth + 1);
+			if(newsubpath == NULL)
+				newsubpath = subpathname(entry);
+			sub = add_source(NULL, source, newsubpath, file, prefix,
+								new, depth + 1);
 			if(sub == NULL)
 				goto failed_entry;
 			add_dir_entry(entry, sub, lookup_inode(&buf));
 			dir->directory_count ++;
-		} else {
-			ERROR("Error: Source component %s is not a directory\n", name);
-			goto failed_entry;
-		}
+		} else
+			BAD_ERROR("Source component %s is not a directory\n", name);
 	}
 
 	free(new);
@@ -4673,55 +4716,55 @@ static char *get_next_filename()
 
 static squashfs_inode process_source(int progress)
 {
-	int size = 0, absolute = FALSE, relative = FALSE, i, inroot = FALSE;
-	char *buff = NULL, *result;
-	char *filename;
-	struct stat buf;
+	int i, res, first = TRUE, same = FALSE;
+	char *filename, *prefix, *pathname;
+	struct stat buf, buf2;
 	struct dir_ent *entry;
 	struct dir_info *new;
 
-	/*
-	 * Get current working directory to see if we're at the
-	 * root directory
-	 */
-	while(1) {
-		buff = realloc(buff, size += 512);
-		if(buff == NULL)
-			MEM_ERROR();
-
-		result = getcwd(buff, size);
-		if(result)
-			break;
-		if(errno != ERANGE)
-			BAD_ERROR("Getcwd failed\n");
-	}
-
-	if(strcmp(buff, "/") == 0)
-		inroot = TRUE;
-
-	free(buff);
-
 	for(i = 0; (filename = get_next_filename()); i++) {
-		new = add_source(root_dir, filename, "", NULL, paths, 1);
+		new = add_source(root_dir, filename, "", NULL, &prefix, paths, 1);
 
 		if(new) {
-			/* does argv[i] start from the root directory? */
-			if(filename[0] == '/' || inroot)
-				absolute = TRUE;
-			else
-				relative = TRUE;
+			/* does argv[i] start from the same directory? */
+			if(first) {
+				res = lstat(prefix, &buf);
+				if (res == -1)
+					BAD_ERROR("Can't stat %s because %s\n",
+						prefix, strerror(errno));
+				first = FALSE;
+				same = TRUE;
+				pathname = strdup(prefix);
+			} else if(same) {
+				res = lstat(prefix, &buf2);
+				if (res == -1)
+					BAD_ERROR("Can't stat %s because %s\n",
+						prefix, strerror(errno));
+
+				if(buf.st_dev != buf2.st_dev ||
+						buf.st_ino != buf2.st_ino)
+					same = FALSE;
+			}
+			free(prefix);
 			root_dir = new;
-		} else
-			ERROR("Error: Failed to add source %s, ignoring\n",
-							filename);
+		}
 	}
 
-	if(root_dir == NULL)
-		BAD_ERROR("Failed to add any source file\n");
+	if(root_dir == NULL) {
+		/* Empty directory tree after processing the sources, and
+		 * so everything was excluded.
+		 * We need to create an empty directory to reflect this, and
+		 * if appending, fill it with the original root directory
+		 * contents */
+		root_dir = scan1_opendir("", "", 0);
+
+		if(appending)
+			handle_root_entries(root_dir);
+	}
 
 	new = scan1_opendir("", "", 0);
 
-	if(absolute && relative) {
+	if(!same) {
 		/*
 		 * Top level directory conflict.  Create dummy
 		 * top level directory
@@ -4729,21 +4772,30 @@ static squashfs_inode process_source(int progress)
 		memset(&buf, 0, sizeof(buf));
 		buf.st_mode = (root_mode_opt) ? root_mode | S_IFDIR :
 				S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-		buf.st_uid = getuid();
-		buf.st_gid = getgid();
-		buf.st_mtime = time(NULL);
+		if(root_uid_opt)
+			buf.st_uid = root_uid;
+		else
+			buf.st_uid = getuid();
+		if(root_gid_opt)
+			buf.st_gid = root_gid;
+		else
+			buf.st_gid = getgid();
+		if(root_time_opt)
+			buf.st_mtime = root_time;
+		else
+			buf.st_mtime = time(NULL);
 		entry = create_dir_entry("", NULL, "", new);
 		entry->inode = lookup_inode(&buf);
 		entry->inode->dummy_root_dir = TRUE;
 	} else {
-		char *pathname = absolute ? "/" : ".";
-
-		if(lstat(pathname, &buf) == -1)
-			BAD_ERROR("Cannot stat %s because %s\n",
-				pathname, strerror(errno));
-
 		if(root_mode_opt)
 			buf.st_mode = root_mode | S_IFDIR;
+		if(root_uid_opt)
+			buf.st_uid = root_uid;
+		if(root_gid_opt)
+			buf.st_gid = root_gid;
+		if(root_time_opt)
+			buf.st_mtime = root_time;
 
 		entry = create_dir_entry("", NULL, pathname, new);
 		entry->inode = lookup_inode(&buf);
@@ -4756,7 +4808,6 @@ static squashfs_inode process_source(int progress)
 	root_dir = populate_tree(root_dir, paths);
 	if(root_dir == NULL)
 		BAD_ERROR("Failed to read directory hierarchy\n");
-
 
 	return do_directory_scans(entry, progress);
 }
@@ -5888,14 +5939,18 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
 	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
 	fprintf(stream, "-no-tailends\t\tdon't pack tail ends into fragments (default)\n");
+	fprintf(stream, "-use-tailends\t\tpack tail ends into fragments\n");
 	fprintf(stream, "-no-fragments\t\tdo not use fragments\n");
 	fprintf(stream, "-always-use-fragments\tuse fragment blocks for files larger ");
 	fprintf(stream, "than block size\n");
 	fprintf(stream, "-no-duplicates\t\tdo not perform duplicate checking\n");
 	fprintf(stream, "-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n");
 	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
+	fprintf(stream, "-root-time <time>\tset root directory time to <time>\n");
 	fprintf(stream, "-root-mode <mode>\tset root directory permissions to octal ");
 	fprintf(stream, "<mode>\n");
+	fprintf(stream, "-root-uid <uid>\t\tset root directory owner to <uid>\n");
+	fprintf(stream, "-root-gid <gid>\t\tset root directory group to <gid>\n");
 	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
 	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
@@ -6008,8 +6063,8 @@ static void print_options(FILE *stream, char *name, int total_mem)
 
 	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
 	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE\n");
-	fprintf(stream, "\nThe ACTIONS-README file describing how to use the new actions feature can be read\n");
-	fprintf(stream, "here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n");
+	fprintf(stream, "\nThe ACTIONS-README file describing how to use the new actions feature can be\n");
+       fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n");
 }
 
 
@@ -7003,6 +7058,27 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			root_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-root-uid") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &root_uid)) {
+				ERROR("%s: -root-uid missing or invalid uid\n",
+					argv[0]);
+				exit(1);
+			}
+			root_uid_opt = TRUE;
+		} else if(strcmp(argv[i], "-root-gid") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &root_gid)) {
+				ERROR("%s: -root-gid missing or invalid gid\n",
+					argv[0]);
+				exit(1);
+			}
+			root_gid_opt = TRUE;
+		} else if(strcmp(argv[i], "-root-time") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &root_time)) {
+				ERROR("%s: -root-time missing or invalid time\n",
+					argv[0]);
+				exit(1);
+			}
+			root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-log") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing log file\n",
@@ -7275,7 +7351,7 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-no-fragments") == 0)
 			no_fragments = TRUE;
 
-		else if(strcmp(argv[i], "-always-use-fragments") == 0)
+		 else if(strcmp(argv[i], "-use-tailends") == 0 || strcmp(argv[i], "-always-use-fragments") == 0)
 			always_use_fragments = TRUE;
 
 		else if(strcmp(argv[i], "-no-tailends") == 0)
@@ -7404,6 +7480,13 @@ print_compressor_options:
 			exit(1);
 		}
 	}
+
+	/* If cpiostyle is set, then file names  will be read-in
+	 * from standard in.  We do not expect to have any sources
+	 * specified on the command line */
+	if(cpiostyle && source)
+		BAD_ERROR("Sources on the command line should be -, "
+			"when using -cpiostyle[0] options\n");
 
 	check_env_var();
 
@@ -7587,8 +7670,9 @@ print_compressor_options:
 	        if(comp == NULL) {
 			ERROR("Failed to read existing filesystem - will not "
 				"overwrite - ABORTING!\n");
-			ERROR("To force Mksquashfs to write to this block "
-				"device or file use -noappend\n");
+			ERROR("To force Mksquashfs to write to this %s "
+				"use -noappend\n", block_device ?
+				"block device" : "file");
 			EXIT_MKSQUASHFS();
 		}
 

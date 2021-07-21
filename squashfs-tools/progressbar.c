@@ -55,6 +55,7 @@ int columns;
 
 pthread_t progress_thread;
 pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t size_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 static void sigwinch_handler()
@@ -85,23 +86,32 @@ void dec_progress_bar(int count)
 
 void progress_bar_size(int count)
 {
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &size_mutex);
+	pthread_mutex_lock(&size_mutex);
 	estimated_uncompressed += count;
+	pthread_cleanup_pop(1);
 }
 
 
 static void progress_bar(long long current, long long max, int columns)
 {
 	char rotate_list[] = { '|', '/', '-', '\\' };
-	int max_digits, used, hashes, spaces;
+	int max_digits, used, hashes, spaces, percentage;
 	static int tty = -1;
 
-	if(max == 0)
-		return;
-
-	max_digits = floor(log10(max)) + 1;
-	used = max_digits * 2 + 11;
-	hashes = (current * (columns - used)) / max;
-	spaces = columns - used - hashes;
+	if(max == 0) {
+		max_digits = 1;
+		used = 13;
+		hashes = 0;
+		spaces = columns - 13;
+		percentage = 100;
+	} else {
+		max_digits = floor(log10(max)) + 1;
+		used = max_digits * 2 + 11;
+		hashes = (current * (columns - used)) / max;
+		spaces = columns - used - hashes;
+		percentage = current * 100 / max;
+	}
 
 	if((current > max) || (columns - used < 0))
 		return;
@@ -132,7 +142,7 @@ static void progress_bar(long long current, long long max, int columns)
 		putchar(' ');
 
 	printf("] %*lld/%*lld", max_digits, current, max_digits, max);
-	printf(" %3lld%%", current * 100 / max);
+	printf(" %3d%%", percentage);
 	fflush(stdout);
 }
 

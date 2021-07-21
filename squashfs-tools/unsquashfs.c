@@ -3780,8 +3780,8 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-max[-depth] <levels>\tdescend at most <levels> of ");
 	fprintf(stream, "directories when\n\t\t\t\tunsquashing or listing\n");
 	fprintf(stream, "\t-excludes\t\ttreat files on command line as exclude files\n");
-	fprintf(stream, "\t-ex[clude-list]\t\tlist of files/dirs to be excluded, ");
-	fprintf(stream, "terminated with ';'\n");
+	fprintf(stream, "\t-ex[clude-list]\t\tlist of files to be excluded, ");
+	fprintf(stream, "terminated with ;\n");
 	fprintf(stream, "\t-follow[-symlinks]\tfollow symlinks in extract files, and ");
 	fprintf(stream, "add all\n\t\t\t\tfiles/symlinks needed to resolve extract ");
 	fprintf(stream, "file.\n\t\t\t\tImplies -no-wildcards\n");
