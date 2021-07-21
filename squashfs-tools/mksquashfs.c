@@ -5939,7 +5939,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
 	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
 	fprintf(stream, "-no-tailends\t\tdon't pack tail ends into fragments (default)\n");
-	fprintf(stream, "-use-tailends\t\tpack tail ends into fragments\n");
+	fprintf(stream, "-tailends\t\tpack tail ends into fragments\n");
 	fprintf(stream, "-no-fragments\t\tdo not use fragments\n");
 	fprintf(stream, "-always-use-fragments\tuse fragment blocks for files larger ");
 	fprintf(stream, "than block size\n");
@@ -7375,7 +7375,7 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-no-fragments") == 0)
 			no_fragments = TRUE;
 
-		 else if(strcmp(argv[i], "-use-tailends") == 0 || strcmp(argv[i], "-always-use-fragments") == 0)
+		 else if(strcmp(argv[i], "-tailends") == 0 || strcmp(argv[i], "-always-use-fragments") == 0)
 			always_use_fragments = TRUE;
 
 		else if(strcmp(argv[i], "-no-tailends") == 0)
