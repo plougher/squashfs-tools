@@ -1,1 +1,2 @@
 version.mk export-subst
+kernel export-ignore
