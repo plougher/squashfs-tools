@@ -1,3 +1,7 @@
+# Squashfs-tools 4.5 release
+RELEASE_VERSION = 4.5
+RELEASE_DATE = 2021/07/22
+
 ###############################################
 #          Compression build options          #
 ###############################################
