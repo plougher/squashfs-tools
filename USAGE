@@ -4,13 +4,9 @@
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to the pre-release Squashfs-tools 4.5.  This is almost ready to be
-released, but there is still some remaining documentation of the new
-features to be added.
-
-Please read README-4.5 for documentation of the added features and
-improvements.  This guide has not been updated to include these new
-features, and so that should be read instead for these.
+Welcome to Squashfs-tools 4.5.  Please read README-4.5 for documentation
+of the added features and improvements.  This guide has not been updated
+to include these new features, and so that should be read instead for these.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
 It uses either gzip/xz/lzo/lz4/zstd compression to compress both files, inodes
@@ -202,6 +198,12 @@ SYNTAX:mksquashfs source1 source2 ...  dest [options] [-e list of exclude
 dirs/files]
 
 Filesystem build options:
+-tar			read uncompressed tar file from standard in (stdin)
+-no-strip		act like tar, and do not strip leading directories
+			from source files
+-tarstyle		alternative name for -no-strip
+-cpiostyle		act like cpio, and read files from standard in (stdin)
+-cpiostyle0		like -cpiostyle, but filenames are null terminated
 -comp <comp>		select <comp> compression
 			Compressors available:
 				gzip (default)
@@ -217,7 +219,8 @@ Filesystem build options:
 -mkfs-time <time>	set mkfs time to <time> which is an unsigned int
 -fstime <time>		synonym for mkfs-time
 -all-time <time>	set all inode times to <time> which is an unsigned int
--no-exports		don't make the filesystem exportable via NFS
+-no-exports		don't make filesystem exportable via NFS (-tar default)
+-exports		make filesystem exportable via NFS (default)
 -no-sparse		don't detect sparse files
 -no-xattrs		don't store extended attributes
 -xattrs			store extended attributes (default)
@@ -226,17 +229,33 @@ Filesystem build options:
 -noD			do not compress data blocks
 -noF			do not compress fragment blocks
 -noX			do not compress extended attributes
+-no-tailends		don't pack tail ends into fragments (default)
+-tailends		pack tail ends into fragments
 -no-fragments		do not use fragments
 -always-use-fragments	use fragment blocks for files larger than block size
 -no-duplicates		do not perform duplicate checking
+-no-hardlinks		do not hardlink files, instead store duplicates
 -all-root		make all files owned by root
+-root-time <time>	set root directory time to <time>
 -root-mode <mode>	set root directory permissions to octal <mode>
+-root-uid <uid>		set root directory owner to <uid>
+-root-gid <gid>		set root directory group to <gid>
 -force-uid <uid>	set all file uids to <uid>
 -force-gid <gid>	set all file gids to <gid>
 -nopad			do not pad filesystem to a multiple of 4K
 -keep-as-directory	if one source directory is specified, create a root
 			directory containing that directory, rather than the
 			contents of the directory
+-action <action@expr>	evaluate <expr> on every file, and execute <action>
+			if it returns TRUE
+-log-action <act@expr>	as above, but log expression evaluation results and
+			actions performed
+-true-action <act@expr>	as above, but only log expressions which return TRUE
+-false-action <act@exp>	as above, but only log expressions which return FALSE
+-action-file <file>	as action, but read actions from <file>
+-log-action-file <file>	as -log-action, but read actions from <file>
+-true-action-file <f>	as -true-action, but read actions from <f>
+-false-action-file <f>	as -false-action, but read actions from <f>
 
 Filesystem filter options:
 -p <pseudo-definition>	Add pseudo file definition
@@ -248,6 +267,17 @@ Filesystem filter options:
 				filename c mode uid gid major minor
 				filename f mode uid gid command
 				filename s mode uid gid symlink
+				filename i mode uid gid [s|f]
+				filename l filename
+				filename L pseudo_filename
+				filename D time mode uid gid
+				filename M time mode uid gid
+				filename B time mode uid gid major minor
+				filename C time mode uid gid major minor
+				filename F time mode uid gid command
+				filename S time mode uid gid symlink
+				filename I time mode uid gid [s|f]
+				filename R time mode uid gid length offset
 -sort <sort_file>	sort files according to priorities in <sort_file>.  One
 			file or dir with priority per line.  Priority -32768 to
 			32767, default priority 0
@@ -256,6 +286,7 @@ Filesystem filter options:
 			exclude dirs/files
 -regex			Allow POSIX regular expressions to be used in exclude
 			dirs/files
+-one-file-system	Do not cross filesystem boundaries when scanning sources
 
 Filesystem append options:
 -noappend		do not append to existing filesystem
@@ -269,10 +300,17 @@ Mksquashfs runtime options:
 -exit-on-error		treat normally ignored errors as fatal
 -recover <name>		recover filesystem data using recovery file <name>
 -no-recovery		don't generate a recovery file
+-recovery-path <name>	use <name> as the directory to store the recovery file
 -quiet			no verbose output
 -info			print files written to filesystem
 -no-progress		don't display the progress bar
 -progress		display progress bar when using the -info option
+-throttle <percentage>	throttle the I/O input rate by the given percentage.
+			This can be used to reduce the I/O and CPU consumption
+			of Mksquashfs
+-limit <percentage>	limit the I/O input rate to the given percentage.
+			This can be used to reduce the I/O and CPU consumption
+			of Mksquashfs (alternative to -throttle)
 -processors <number>	Use <number> processors.  By default will use number of
 			processors available
 -mem <size>		Use <size> physical memory.  Currently set to 4096M
@@ -291,6 +329,9 @@ Miscellaneous options:
 -noDataCompression	alternative name for -noD
 -noFragmentCompression	alternative name for -noF
 -noXattrCompression	alternative name for -noX
+
+-help			output this options text to stdout
+-h			output this options text to stdout
 
 -Xhelp			print compressor options for selected compressor
 
@@ -888,9 +929,19 @@ Unsquashfs can decompress all official Squashfs filesystem versions.
 
 The Unsquashfs usage info is:
 
-SYNTAX: unsquashfs [options] filesystem [directories or files to extract]
+SYNTAX: unsquashfs [options] filesystem [files to extract or exclude (with -excludes) or cat (with -cat )]
 	-v[ersion]		print version, licence and copyright information
+	-cat			cat the listed files to stdout
 	-d[est] <pathname>	unsquash to <pathname>, default "squashfs-root"
+	-max[-depth] <levels>	descend at most <levels> of directories when
+				unsquashing or listing
+	-excludes		treat files on command line as exclude files
+	-ex[clude-list]		list of files to be excluded, terminated with ;
+	-follow[-symlinks]	follow symlinks in extract files, and add all
+				files/symlinks needed to resolve extract file.
+				Implies -no-wildcards
+	-missing[-symlinks]	Unsquashfs will abort if any symlink can't be
+				resolved in -follow-symlinks
 	-q[uiet]		no verbose output
 	-n[o-progress]		don't display the progress bar
 	-no[-xattrs]		don't extract xattrs in file system
@@ -911,26 +962,40 @@ SYNTAX: unsquashfs [options] filesystem [directories or files to extract]
 	-llc			list filesystem concisely with file attributes,
 				displaying only files and empty directories.
 				Don't unsquash
-	-o[ffset] <bytes>	skip <bytes> at start of <dest>
-				Optionally a suffix of K, M or G can be given to specify
-				Kbytes, Mbytes or Gbytes respectively.
-				Default 0 bytes.
+	-o[ffset] <bytes>	skip <bytes> at start of <dest>.  Optionally a
+				suffix of K, M or G can be given to specify
+				Kbytes, Mbytes or Gbytes respectively (default
+				0 bytes).
 	-f[orce]		if file already exists then overwrite
-	-ig[nore-errors]	Treat errors writing files to output as non-fatal
-	-st[rict-errors]	Treat all errors as fatal
+	-ig[nore-errors]	treat errors writing files to output as
+				non-fatal
+	-st[rict-errors]	treat all errors as fatal
+	-no-exit[-code]		don't set exit code (to nonzero) on non-fatal
+				errors
 	-s[tat]			display filesystem superblock information
-	-UTC			Use UTC rather than local time zone when displaying time
+	-UTC			use UTC rather than local time zone when
+				displaying time
 	-mkfs-time		display filesystem superblock time
 	-fstime			synonym for -mkfs-time
-	-e[f] <extract file>	list of directories or files to extract.
+	-extract-file <file>	list of directories or files to extract.
 				One per line
-	-da[ta-queue] <size>	Set data queue to <size> Mbytes.  Default 256
+	-exclude-file <file>	list of directories or files to exclude.
+				One per line
+	-pf <file>		output a pseudo file equivalent of the input
+				Squashfs filesystem
+	-pseudo-file <file>	alternative name for -pf
+	-e[f] <extract file>	synonym for -extract-file
+	-exc[f] <exclude file>	synonym for -exclude-file
+	-da[ta-queue] <size>	set data queue to <size> Mbytes.  Default 256
 				Mbytes
-	-fr[ag-queue] <size>	Set fragment queue to <size> Mbytes.  Default
+	-fr[ag-queue] <size>	set fragment queue to <size> Mbytes.  Default
 				256 Mbytes
+	-no-wild[cards]		do not use wildcard matching in extract names
 	-r[egex]		treat extract names as POSIX regular expressions
 				rather than use the default shell wildcard
 				expansion (globbing)
+	-L			synonym for -follow-symlinks
+	-h[elp]			output this options text to stdout
 
 Decompressors available:
 	gzip
