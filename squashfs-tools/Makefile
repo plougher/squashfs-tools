@@ -312,6 +312,7 @@ all: mksquashfs unsquashfs
 
 mksquashfs: $(MKSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(MKSQUASHFS_OBJS) $(LIBS) -o $@
+	ln -sf mksquashfs sqfstar
 
 mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h squashfs_swap.h mksquashfs.h \
 	sort.h pseudo.h compressor.h xattr.h action.h mksquashfs_error.h progressbar.h \
@@ -368,6 +369,7 @@ xz_wrapper.o: xz_wrapper.c squashfs_fs.h xz_wrapper.h compressor.h
 
 unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@
+	ln -sf unsquashfs sqfscat
 
 unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h \
 	squashfs_compat.h xattr.h read_fs.h compressor.h unsquashfs_error.h
@@ -393,7 +395,7 @@ unsquashfs_info.o: unsquashfs.h squashfs_fs.h unsquashfs_error.h
 
 .PHONY: clean
 clean:
-	-rm -f *.o mksquashfs unsquashfs
+	-rm -f *.o mksquashfs unsquashfs sqfstar sqfscat
 
 .PHONY: install
 install: mksquashfs unsquashfs
