@@ -1,5 +1,59 @@
 			SQUASHFS CHANGE LOG
 
+4.5	22 JUL 2021	Major improvements including: Actions, Sqfstar,
+			tar and cpio style reading of input sources, Sqfscat
+
+	1. Mksquashfs improvements
+
+		1.1 Mksquashfs now supports "Actions". These are modelled on
+		    "find" and allow compression, fragment packing, file
+		    exclusion and file attributes to be changed.
+		1.2 New sqfstar command which will create a Squashfs image from
+		    a tar archive.
+		1.3 Tar style handling of source pathnames in Mksquashfs.
+		1.4 Cpio style handling of source pathnames in Mksquashfs.
+		1.5 New option to throttle the amount of CPU and I/O.
+		1.6 New Pseudo file definitions which support timestamps.
+		1.7 New Pseudo file definitions to create File references.
+		1.8 New Pseudo file definitions to create Sockets/Fifos.
+		1.9 Mksquashfs now allows no source directory to be specified.
+		1.10 New Pseudo file "R" definition which allows a Regular file
+		     to be created with data stored within the Pseudo file.
+
+	2. Major improvements in Unsquashfs
+
+		2.1 Sqfscat command which outputs files to stdout.
+		2.2 Symbolic links are now followed in extract files (using
+		    -follow-symlinks or -missing-symlinks).
+		2.3 Unsquashfs now supports "exclude" files.
+		2.4 Max depth traversal option added.
+		2.5 Unsquashfs can now output a "Pseudo file" representing the
+    		    input Squashfs filesystem.
+
+	3. Minor improvements and bug fixes
+
+		3.1 The progress bar is now displayed and updated whilst the
+		    input is being scanned.
+		3.2 New -one-file-system option in Mksquashfs.
+		3.3 New -no-hardlinks option in Mksquashfs.
+		3.4 New -help options in Mksquashfs and Unsquashfs which output
+		    to standard out.
+		3.5 New -root-uid option in Mksquashfs.
+		3.6 New -root-gid option in Mksquashfs.
+		3.7 New -root-time option in Mksquashfs.
+		3.8 -no-exit-code option added to Unsquashfs which makes it
+		    not output an error exit code.
+		3.9 Exit code in Unsquashfs changed to distinguish between
+		    non-fatal errors (exit 2), and fatal errors (exit 1).
+		3.10 Mksquashfs when appending, now writes the recovery file to
+		     the home directory, rather than the current directory.
+		3.11 New -recovery-path <name> option.
+		3.12 Xattr id count added in Unsquashfs "-stat" output.
+		3.13 Unsquashfs "write outside directory" exploit fixed.
+		3.14 Error handling in Unsquashfs writer thread fixed.
+		3.15 Fix failure to truncate destination if appending aborted.
+		3.16 Prevent Mksquashfs reading the destination file.
+
 4.4	29 AUG 2019	Reproducible builds, new compressors,
 			CVE fixes, security hardening and new options
 			for Mksquashfs/Unsquashfs.
