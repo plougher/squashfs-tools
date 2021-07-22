@@ -20,9 +20,12 @@ ZSTD compression support requires 4.14 or newer kernels.
 2. Building squashfs tools
 --------------------------
 
-The squashfs-tools directory contains the source code for the Mksquashfs and
-Unsquashfs programs.  These can be compiled by typing make (or sudo make
-install to install in /usr/local/bin) within that directory.
+The squashfs-tools directory contains the source code for the Mksquashfs,
+and Unsquashfs programs.  These can be compiled by typing "make".  This
+will also create symbolic links sqfstar and sqfscat.
+
+They can be installed, along with the symbolic links sqfstar and sqfscat,
+to /usr/local/bin by typing "sudo make install".
 
 2.1 Compressors supported
 
