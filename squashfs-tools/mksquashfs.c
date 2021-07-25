@@ -2190,10 +2190,23 @@ static struct file_info *duplicate(int *dupf, int *block_dup, long long file_siz
 			/* Yes, the block list matches.  We can use this, rather
 			 * than writing an identical block list.
 			 * If both it and us doesn't have a tail-end fragment, then we're
-			 * finished.  Return the duplicate */
+			 * finished.  Return the duplicate.
+			 *
+			 * We have to deal with the special case where the
+			 * last block is a sparse block.  This means the
+			 * file will have matched, but, it may be a different
+			 * file length (because a tail-end sparse block may be
+			 * anything from 1 byte to block_size - 1 in size, but
+			 * stored as zero).  We can still use the block list in
+			 * this case, but, we must return a new entry with the
+			 * correct file size */
 			if(!frag_bytes && !dupl_ptr->fragment->size) {
 				*dupf = *block_dup = TRUE;
-				return dupl_ptr;
+				if(file_size == dupl_ptr->file_size)
+					return dupl_ptr;
+				else
+					return create_non_dup(file_size, bytes, blocks, sparse, dupl_ptr->block_list,
+						dupl_ptr->start, dupl_ptr->fragment, checksum, 0, checksum_flag, FALSE);
 			}
 
 			/* We've got a tail-end fragment, and this file most likely
