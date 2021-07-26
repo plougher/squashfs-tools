@@ -1,6 +1,6 @@
 # Squashfs-tools 4.5 release
-RELEASE_VERSION = 4.5
-RELEASE_DATE = 2021/07/22
+#RELEASE_VERSION = 4.5
+#RELEASE_DATE = 2021/07/22
 
 ###############################################
 #          Compression build options          #
@@ -301,7 +301,7 @@ VERSION := $(RELEASE_VERSION)
 DATE := $(RELEASE_DATE)
 else
 ifeq ($(HASH),$Format:%h$)
-VERSION := 4.4-$(shell git show -s --pretty=format:%h)
+VERSION := 4.5-$(shell git show -s --pretty=format:%h)
 DATE := $(firstword $(subst -,/,$(shell git show -s --pretty=format:%ci)))
 else
 VERSION := 4.4-$(HASH)
