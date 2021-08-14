@@ -628,15 +628,6 @@ static int read_filesystem_tables()
 
 		if(read_fragment_table(&table_start) == FALSE)
 			goto corrupted;
-	} else {
-		/*
-		 * Sanity check super block contents - with 0 fragments,
-		 * the fragment table should be empty
-		 */
-		if(sBlk.s.fragment_table_start != table_start) {
-			ERROR("read_filesystem_tables: fragment table start invalid in super block\n");
-			goto corrupted;
-		}
 	}
 
 	/* Sanity check super block directory table values */
