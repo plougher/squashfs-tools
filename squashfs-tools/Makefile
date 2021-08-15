@@ -406,5 +406,5 @@ install: mksquashfs unsquashfs
 	mkdir -p $(INSTALL_DIR)
 	cp mksquashfs $(INSTALL_DIR)
 	cp unsquashfs $(INSTALL_DIR)
-	ln -fs $(INSTALL_DIR)/unsquashfs $(INSTALL_DIR)/sqfscat
-	ln -fs $(INSTALL_DIR)/mksquashfs $(INSTALL_DIR)/sqfstar
+	ln -fs unsquashfs $(INSTALL_DIR)/sqfscat
+	ln -fs mksquashfs $(INSTALL_DIR)/sqfstar
