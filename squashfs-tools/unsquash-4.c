@@ -436,8 +436,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 	return dir;
 
 corrupted:
-	free(dir->dirs);
-	free(dir);
+	squashfs_closedir(dir);
 	return NULL;
 }
 

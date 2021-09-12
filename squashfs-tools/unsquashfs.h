@@ -291,4 +291,5 @@ extern long long *alloc_index_table(int);
 
 /* unsquash-1234.c */
 extern int check_name(char *, int);
+extern void squashfs_closedir(struct dir *);
 #endif

@@ -1350,13 +1350,6 @@ unsigned int *offset, unsigned int *type)
 }
 
 
-void squashfs_closedir(struct dir *dir)
-{
-	free(dir->dirs);
-	free(dir);
-}
-
-
 char *get_component(char *target, char **targname)
 {
 	char *start;

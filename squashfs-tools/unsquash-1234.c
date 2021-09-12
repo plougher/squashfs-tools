@@ -25,8 +25,8 @@
  * unsquash-4.
  */
 
-#define TRUE 1
-#define FALSE 0
+#include "unsquashfs.h"
+
 /*
  * Check name for validity, name should not
  *  - be ".", "./", or
@@ -55,4 +55,11 @@ int check_name(char *name, int size)
 		return FALSE;
 
 	return TRUE;
+}
+
+
+void squashfs_closedir(struct dir *dir)
+{
+	free(dir->dirs);
+	free(dir);
 }
