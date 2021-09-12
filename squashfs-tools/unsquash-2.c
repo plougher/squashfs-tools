@@ -29,6 +29,7 @@
 static squashfs_fragment_entry_2 *fragment_table;
 static unsigned int *uid_table, *guid_table;
 static squashfs_operations ops;
+static int needs_sorting = FALSE;
 
 
 static void read_block_list(unsigned int *block_list, long long start,
@@ -463,6 +464,17 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 		}
 	}
 
+	if(needs_sorting)
+		sort_directory(dir);
+
+	/* check directory for duplicate names and sorting */
+	if(check_directory(dir) == FALSE) {
+		if(needs_sorting)
+			ERROR("File system corrupted: directory has duplicate names\n");
+		else
+			ERROR("File system corrupted: directory has duplicate names or is unsorted\n");
+		goto corrupted;
+	}
 	return dir;
 
 corrupted:
@@ -596,6 +608,10 @@ int read_super_2(squashfs_operations **s_ops, void *s)
 	 * 2.x filesystems use gzip compression.
 	 */
 	comp = lookup_compressor("gzip");
+
+	if(sBlk_3->s_minor == 0)
+		needs_sorting = TRUE;
+
 	return TRUE;
 }
 

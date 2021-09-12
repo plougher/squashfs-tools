@@ -72,3 +72,24 @@ void squashfs_closedir(struct dir *dir)
 
 	free(dir);
 }
+
+
+/*
+ * Check directory for duplicate names.  As the directory should be sorted,
+ * duplicates will be consecutive.  Obviously we also need to check if the
+ * directory has been deliberately unsorted, to evade this check.
+ */
+int check_directory(struct dir *dir)
+{
+	int i;
+	struct dir_ent *ent;
+
+	if(dir->dir_count < 2)
+		return TRUE;
+
+	for(ent = dir->dirs, i = 0; i < dir->dir_count - 1; ent = ent->next, i++)
+		if(strcmp(ent->name, ent->next->name) >= 0)
+			return FALSE;
+
+	return TRUE;
+}
