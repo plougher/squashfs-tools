@@ -60,11 +60,15 @@ int check_name(char *name, int size)
 
 void squashfs_closedir(struct dir *dir)
 {
-	int i;
+	struct dir_ent *ent = dir->dirs;
 
-	for(i = 0; i < dir->dir_count; i++)
-		free(dir->dirs[i].name);
+	while(ent) {
+		struct dir_ent *tmp = ent;
 
-	free(dir->dirs);
+		ent = ent->next;
+		free(tmp->name);
+		free(tmp);
+	}
+
 	free(dir);
 }

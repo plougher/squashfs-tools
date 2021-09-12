@@ -168,17 +168,18 @@ struct dir_ent	{
 	unsigned int	start_block;
 	unsigned int	offset;
 	unsigned int	type;
+	struct dir_ent	*next;
 };
 
 struct dir {
 	int		dir_count;
-	int 		cur_entry;
 	unsigned int	mode;
 	uid_t		uid;
 	gid_t		guid;
 	unsigned int	mtime;
 	unsigned int	xattr;
 	struct dir_ent	*dirs;
+	struct dir_ent	*cur_entry;
 };
 
 struct file_entry {

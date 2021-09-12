@@ -254,7 +254,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 	long long start;
 	int bytes = 0;
 	int dir_count, size, res;
-	struct dir_ent *new_dir;
+	struct dir_ent *ent, *cur_ent = NULL;
 	struct dir *dir;
 
 	TRACE("squashfs_opendir: inode start block %d, offset %d\n",
@@ -267,7 +267,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 		MEM_ERROR();
 
 	dir->dir_count = 0;
-	dir->cur_entry = 0;
+	dir->cur_entry = NULL;
 	dir->mode = (*i)->mode;
 	dir->uid = (*i)->uid;
 	dir->guid = (*i)->gid;
@@ -351,20 +351,20 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 				"%d:%d, type %d\n", dire->name,
 				dirh.start_block, dire->offset, dire->type);
 
-			if((dir->dir_count % DIR_ENT_SIZE) == 0) {
-				new_dir = realloc(dir->dirs, (dir->dir_count +
-					DIR_ENT_SIZE) * sizeof(struct dir_ent));
-				if(new_dir == NULL)
-					MEM_ERROR();
+			ent = malloc(sizeof(struct dir_ent));
+			if(ent == NULL)
+				MEM_ERROR();
 
-				dir->dirs = new_dir;
-			}
-
-			dir->dirs[dir->dir_count].name = strdup(dire->name);
-			dir->dirs[dir->dir_count].start_block =
-				dirh.start_block;
-			dir->dirs[dir->dir_count].offset = dire->offset;
-			dir->dirs[dir->dir_count].type = dire->type;
+			ent->name = strdup(dire->name);
+			ent->start_block = dirh.start_block;
+			ent->offset = dire->offset;
+			ent->type = dire->type;
+			ent->next = NULL;
+			if(cur_ent == NULL)
+				dir->dirs = ent;
+			else
+				cur_ent->next = ent;
+			cur_ent = ent;
 			dir->dir_count ++;
 			bytes += dire->size + 1;
 		}
