@@ -452,7 +452,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 				dir->dirs = new_dir;
 			}
 
-			strcpy(dir->dirs[dir->dir_count].name, dire->name);
+			dir->dirs[dir->dir_count].name = strdup(dire->name);
 			dir->dirs[dir->dir_count].start_block =
 				dirh.start_block;
 			dir->dirs[dir->dir_count].offset = dire->offset;

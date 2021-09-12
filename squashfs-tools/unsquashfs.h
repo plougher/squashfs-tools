@@ -164,7 +164,7 @@ struct queue {
 #define DIR_ENT_SIZE	16
 
 struct dir_ent	{
-	char		name[SQUASHFS_NAME_LEN + 1];
+	char		*name;
 	unsigned int	start_block;
 	unsigned int	offset;
 	unsigned int	type;

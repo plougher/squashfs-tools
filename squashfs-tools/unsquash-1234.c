@@ -60,6 +60,11 @@ int check_name(char *name, int size)
 
 void squashfs_closedir(struct dir *dir)
 {
+	int i;
+
+	for(i = 0; i < dir->dir_count; i++)
+		free(dir->dirs[i].name);
+
 	free(dir->dirs);
 	free(dir);
 }
