@@ -393,7 +393,7 @@ unsquash-34.o: unsquashfs.h unsquash-34.c unsquashfs_error.h
 
 unsquash-1234.o: unsquash-1234.c unsquashfs_error.h
 
-unsquash-1234.o: unsquash-12.c
+unsquash-12.o: unsquash-12.c unsquashfs.h
 
 unsquashfs_xattr.o: unsquashfs_xattr.c unsquashfs.h squashfs_fs.h xattr.h unsquashfs_error.h
 
