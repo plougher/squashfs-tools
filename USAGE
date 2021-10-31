@@ -242,7 +242,8 @@ Filesystem build options:
 -root-gid <gid>		set root directory group to <gid>
 -force-uid <uid>	set all file uids to <uid>
 -force-gid <gid>	set all file gids to <gid>
--nopad			do not pad filesystem to a multiple of 4K
+-nopad			do not pad filesystem to a multiple of 4K; padding is required for
+			using it on block devices. You will not be able to mount this image!
 -keep-as-directory	if one source directory is specified, create a root
 			directory containing that directory, rather than the
 			contents of the directory
