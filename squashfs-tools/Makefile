@@ -304,7 +304,7 @@ ifeq ($(HASH),$Format:%h$)
 VERSION := 4.5-$(shell git show -s --pretty=format:%h)
 DATE := $(firstword $(subst -,/,$(shell git show -s --pretty=format:%ci)))
 else
-VERSION := 4.4-$(HASH)
+VERSION := 4.5-$(HASH)
 DATE := $(firstword $(FULLDATE))
 endif
 endif
