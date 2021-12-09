@@ -236,7 +236,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 					SQUASHFS_SWAP_LDIR_INODE_HEADER_3(&header.ldir,
 						&sinode);
 			} else
-				res = read_inode_data(&inode, &start, &offset, sizeof(*inode));
+				res = read_inode_data(inode, &start, &offset, sizeof(*inode));
 
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
@@ -257,7 +257,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 					SQUASHFS_SWAP_REG_INODE_HEADER_3(inode,
 						&sinode);
 			} else
-				res = read_inode_data(&inode, &start, &offset, sizeof(*inode));
+				res = read_inode_data(inode, &start, &offset, sizeof(*inode));
 
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
