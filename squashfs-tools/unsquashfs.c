@@ -2806,13 +2806,13 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size, int cat_
 
 	/*
 	 * allocate to_reader, to_inflate and to_writer queues.  Set based on
-	 * open file limit and cache size, unless open file limit is unlimited,
-	 * in which case set purely based on cache limits
+	 * cache limits, unless there is an open file limit which would produce
+	 * smaller queues
 	 *
 	 * In doing so, check that the user supplied values do not overflow
 	 * a signed int
 	 */
-	if (max_files != -1) {
+	if (max_files != -1 && max_files < fragment_buffer_size) {
 		if(add_overflow(data_buffer_size, max_files) ||
 				add_overflow(data_buffer_size, max_files * 2))
 			EXIT_UNSQUASH("Data queue size is too large\n");
