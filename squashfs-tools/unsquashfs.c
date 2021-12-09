@@ -619,8 +619,8 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 	pthread_mutex_lock(&pos_mutex);
 	if(lseek(fd, start_offset + off, SEEK_SET) == -1) {
 		ERROR("Lseek failed because %s\n", strerror(errno));
-		pthread_cleanup_pop(1);
-		return FALSE;
+		res = FALSE;
+		goto done;
 	}
 
 	for(count = 0; count < bytes; count += res) {
@@ -629,20 +629,22 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 			if(res == 0) {
 				ERROR("Read on filesystem failed because "
 					"EOF\n");
-				pthread_cleanup_pop(1);
-				return FALSE;
+				res = FALSE;
+				goto done;
 			} else if(errno != EINTR) {
 				ERROR("Read on filesystem failed because %s\n",
 						strerror(errno));
-				pthread_cleanup_pop(1);
-				return FALSE;
+				res = FALSE;
+				goto done;
 			} else
 				res = 0;
 		}
 	}
 
+	res = TRUE;
+done:
 	pthread_cleanup_pop(1);
-	return TRUE;
+	return res;
 }
 
 
