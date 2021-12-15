@@ -6126,7 +6126,6 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-root-gid <gid>\t\tset root directory group to <gid>\n");
 	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
-	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
 	fprintf(stream, "\nFilesystem filter options:\n");
 	fprintf(stream, "-ef <exclude_file>\tlist of exclude dirs/files.  ");
 	fprintf(stream, "One per line\n");
@@ -6154,13 +6153,15 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "to %dM\n", total_mem);
 	fprintf(stream, "\t\t\tOptionally a suffix of K, M or G can be given to ");
 	fprintf(stream, "specify\n\t\t\tKbytes, Mbytes or Gbytes respectively\n");
-	fprintf(stream, "\nMiscellaneous options:\n");
-	fprintf(stream, "-root-owned\t\talternative name for -all-root\n");
+	fprintf(stream, "\nExpert options (these may make the filesystem unmountable):\n");
+	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
 	fprintf(stream, "-offset <offset>\tSkip <offset> bytes at the beginning of ");
 	fprintf(stream, "<dest>.\n\t\t\tOptionally a suffix of K, M or G can be given ");
 	fprintf(stream, "to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n");
 	fprintf(stream, "\t\t\tDefault 0 bytes.\n");
 	fprintf(stream, "-o <offset>\t\tsynonym for -offset\n");
+	fprintf(stream, "\nMiscellaneous options:\n");
+	fprintf(stream, "-root-owned\t\talternative name for -all-root\n");
 	fprintf(stream, "-noInodeCompression\talternative name for -noI\n");
 	fprintf(stream, "-noIdTableCompression\talternative name for -noId\n");
 	fprintf(stream, "-noDataCompression\talternative name for -noD\n");
