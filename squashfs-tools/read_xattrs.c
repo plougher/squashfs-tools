@@ -144,7 +144,7 @@ static int read_xattr_entry(struct xattr_list *xattr,
  * Read and decompress the xattr id table and the xattr metadata.
  * This is cached in memory for later use by get_xattr()
  */
-int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, long long *table_start)
+int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_only, long long *table_start)
 {
 	/*
 	 * Note on overflow limits:
@@ -198,12 +198,12 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, l
 		*table_start = id_table.xattr_table_start;
 
 	/*
-	 * If flag is set then return once we've read the above
+	 * If sanity_only is set then return once we've read the above
 	 * table_start.  That value is necessary for sanity checking,
 	 * but we don't actually want to extract the xattrs, and so
 	 * stop here.
 	 */
-	if(flag)
+	if(sanity_only)
 		return id_table.xattr_ids;
 
 	/*
