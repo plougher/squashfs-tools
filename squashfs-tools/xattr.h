@@ -77,6 +77,8 @@ extern int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long l
 extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern void free_xattr(struct xattr_list *, int);
 #else
+#include "squashfs_swap.h"
+
 static inline int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 {
 	if(sBlk->xattr_id_table_start != SQUASHFS_INVALID_BLK) {
@@ -118,9 +120,29 @@ static inline int write_xattr(char *pathname, unsigned int xattr)
 
 static inline int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_only, long long *table_start)
 {
-	fprintf(stderr, "Xattrs in filesystem! These are not "
-		"supported on this version of Squashfs\n");
-	return 0;
+	int res;
+	struct squashfs_xattr_table id_table;
+
+	/*
+	 * Read sufficient xattr metadata to obtain the start of the xattr
+	 * metadata on disk (table_start).  This value is needed to do
+	 * sanity checking of the filesystem.
+	 */
+	res = read_fs_bytes(fd, sBlk->xattr_id_table_start, sizeof(id_table), &id_table);
+	if(res == 0)
+		return 0;
+
+	SQUASHFS_INSWAP_XATTR_TABLE(&id_table);
+
+	/*
+	 * id_table.xattr_table_start stores the start of the compressed xattr
+	 * metadata blocks.  This by definition is also the end of the previous
+	 * filesystem table - the id lookup table.
+	 */
+	if(table_start != NULL)
+		*table_start = id_table.xattr_table_start;
+
+	return id_table.xattr_ids;
 }
 
 
