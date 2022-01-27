@@ -2,7 +2,7 @@
  * Read a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2013, 2019, 2021
+ * Copyright (c) 2010, 2012, 2013, 2019, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -160,9 +160,6 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, l
 	struct squashfs_xattr_table id_table;
 
 	TRACE("read_xattrs_from_disk\n");
-
-	if(sBlk->xattr_id_table_start == SQUASHFS_INVALID_BLK)
-		return SQUASHFS_INVALID_BLK;
 
 	/*
 	 * Read xattr id table, containing start of xattr metadata and the

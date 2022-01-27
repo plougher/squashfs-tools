@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2013, 2014, 2019, 2021
+ * Copyright (c) 2010, 2012, 2013, 2014, 2019, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -118,12 +118,9 @@ static inline int write_xattr(char *pathname, unsigned int xattr)
 
 static inline int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int flag, long long *table_start)
 {
-	if(sBlk->xattr_id_table_start != SQUASHFS_INVALID_BLK) {
-		fprintf(stderr, "Xattrs in filesystem! These are not "
-			"supported on this version of Squashfs\n");
-		return 0;
-	} else
-		return SQUASHFS_INVALID_BLK;
+	fprintf(stderr, "Xattrs in filesystem! These are not "
+		"supported on this version of Squashfs\n");
+	return 0;
 }
 
 
