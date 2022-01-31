@@ -6056,7 +6056,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-offset <offset>\tSkip <offset> bytes at the beginning of ");
 	fprintf(stream, "<dest>.\n\t\t\tOptionally a suffix of K, M or G can be given ");
 	fprintf(stream, "to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n");
-	fprintf(stream, "\t\t\tDefault 0 bytes.\n");
+	fprintf(stream, "\t\t\tDefault 0 bytes\n");
 	fprintf(stream, "-o <offset>\t\tsynonym for -offset\n");
 	fprintf(stream, "\nMiscellaneous options:\n");
 	fprintf(stream, "-root-owned\t\talternative name for -all-root\n");
