@@ -5936,8 +5936,10 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, REP_STR "\n");
 	fprintf(stream, "-not-reproducible\tbuild images that are not reproducible");
 	fprintf(stream, NOREP_STR "\n");
-	fprintf(stream, "-mkfs-time <time>\tset mkfs time to <time> which is an ");
-	fprintf(stream, "unsigned int\n");
+	fprintf(stream, "-mkfs-time <time>\tset filesystem creation ");
+	fprintf(stream, "timestamp to <time>, which is\n\t\t\tan unsigned ");
+	fprintf(stream, "32-bit int indicating seconds since the\n\t\t\t");
+	fprintf(stream, "epoch (1970-01-01)\n");
 	fprintf(stream, "-fstime <time>\t\tsynonym for mkfs-time\n");
 	fprintf(stream, "-all-time <time>\tset all file timestamps to ");
 	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int ");
