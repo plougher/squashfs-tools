@@ -6071,6 +6071,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\nCompressors available and compressor specific options:\n");
 	display_compressor_usage(stream, COMP_DEFAULT);
 
+	fprintf(stream, "\nSee also:");
 	fprintf(stream, "\nThe README for the Squash-tools 4.5 release, ");
 	fprintf(stream, "describing the new features can be\n");
 	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.5\n");
