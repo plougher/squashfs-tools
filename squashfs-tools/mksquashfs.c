@@ -6074,6 +6074,14 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\nCompressors available and compressor specific options:\n");
 	display_compressor_usage(stream, COMP_DEFAULT);
 
+	fprintf(stream, "\nEnvironment:\n");
+	fprintf(stream, "SOURCE_DATE_EPOCH\tIf set, this is used as the ");
+	fprintf(stream,	"filesystem creation\n");
+	fprintf(stream, "\t\t\ttimestamp.  Also any file timestamps which are\n");
+	fprintf(stream, "\t\t\tafter SOURCE_DATE_EPOCH will be clamped to\n");
+	fprintf(stream, "\t\t\tSOURCE_DATE_EPOCH.  See\n");
+	fprintf(stream, "\t\t\thttps://reproducible-builds.org/docs/source-date-epoch/\n");
+	fprintf(stream, "\t\t\tfor more information\n");
 	fprintf(stream, "\nSee also:");
 	fprintf(stream, "\nThe README for the Squash-tools 4.5 release, ");
 	fprintf(stream, "describing the new features can be\n");
