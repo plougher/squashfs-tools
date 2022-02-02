@@ -5939,8 +5939,9 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-mkfs-time <time>\tset mkfs time to <time> which is an ");
 	fprintf(stream, "unsigned int\n");
 	fprintf(stream, "-fstime <time>\t\tsynonym for mkfs-time\n");
-	fprintf(stream, "-all-time <time>\tset all inode times to <time> which is an ");
-	fprintf(stream, "unsigned int\n");
+	fprintf(stream, "-all-time <time>\tset all file timestamps to ");
+	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int ");
+	fprintf(stream, "indicating seconds since the epoch\n\t\t\t(1970-01-01)\n");
 	fprintf(stream, "-no-exports\t\tdon't make filesystem exportable via NFS (-tar default)\n");
 	fprintf(stream, "-exports\t\tmake filesystem exportable via NFS (default)\n");
 	fprintf(stream, "-no-sparse\t\tdon't detect sparse files\n");
