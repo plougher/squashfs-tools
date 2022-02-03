@@ -207,7 +207,7 @@ ifeq ($(LZO_SUPPORT),1)
 CFLAGS += -DLZO_SUPPORT
 MKSQUASHFS_OBJS += lzo_wrapper.o
 UNSQUASHFS_OBJS += lzo_wrapper.o
-LIBS += $(LZO_LIBDIR) -llzo2
+LIBS += -llzo2
 COMPRESSORS += lzo
 endif
 
