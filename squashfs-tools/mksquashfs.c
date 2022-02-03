@@ -6197,7 +6197,7 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 static void print_version(char *string)
 {
 	printf("%s version " VERSION " (" DATE ")\n", string);
-	printf("copyright (C) 2021 Phillip Lougher ");
+	printf("copyright (C) 2022 Phillip Lougher ");
 	printf("<phillip@squashfs.org.uk>\n\n");
 	printf("This program is free software; you can redistribute it and/or\n");
 	printf("modify it under the terms of the GNU General Public License\n");
