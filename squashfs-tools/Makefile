@@ -149,11 +149,17 @@ REPRODUCIBLE_DEFAULT = 1
 #LZMA_DIR = ../../../../LZMA/lzma465
 
 ###############################################
+#              INSTALL PATHS                  #
+###############################################
+#
+# Alter INSTALL_DIR to install binaries elsewhere
+INSTALL_DIR = /usr/local/bin
+
+###############################################
 #        End of BUILD options section         #
 ###############################################
-
+#
 INCLUDEDIR = -I.
-INSTALL_DIR = /usr/local/bin
 
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
