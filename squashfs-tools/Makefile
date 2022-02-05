@@ -122,6 +122,19 @@ XATTR_DEFAULT = 1
 # -reproducible option
 REPRODUCIBLE_DEFAULT = 1
 
+###############################################
+#              INSTALL PATHS                  #
+###############################################
+#
+# Alter INSTALL_* to install binaries and manpages
+# elsewhere.
+#
+# To skip building and installing manpages,
+# unset INSTALL_MANPAGES_DIR or set to ""
+#
+INSTALL_PREFIX = /usr/local
+INSTALL_DIR = $(INSTALL_PREFIX)/bin
+INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
 
 ###############################################
 #              Obsolete options               #
@@ -147,13 +160,6 @@ REPRODUCIBLE_DEFAULT = 1
 #LZMA_XZ_SUPPORT = 1
 #LZMA_SUPPORT = 1
 #LZMA_DIR = ../../../../LZMA/lzma465
-
-###############################################
-#              INSTALL PATHS                  #
-###############################################
-#
-# Alter INSTALL_DIR to install binaries elsewhere
-INSTALL_DIR = /usr/local/bin
 
 ###############################################
 #        End of BUILD options section         #
@@ -407,7 +413,7 @@ unsquashfs_info.o: unsquashfs.h squashfs_fs.h unsquashfs_error.h
 
 .PHONY: clean
 clean:
-	-rm -f *.o mksquashfs unsquashfs sqfstar sqfscat
+	-rm -f *.o mksquashfs unsquashfs sqfstar sqfscat *.1
 
 .PHONY: install
 install: mksquashfs unsquashfs
@@ -416,3 +422,4 @@ install: mksquashfs unsquashfs
 	cp unsquashfs $(INSTALL_DIR)
 	ln -fs unsquashfs $(INSTALL_DIR)/sqfscat
 	ln -fs mksquashfs $(INSTALL_DIR)/sqfstar
+	../generate-manpages/install-manpages.sh "$(INSTALL_MANPAGES_DIR)"

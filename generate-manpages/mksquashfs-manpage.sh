@@ -5,21 +5,25 @@
 # output from -help and -version, before passing it to help2man, to allow
 # it be successfully processed into a manpage by help2man.
 
-DIR=../squashfs-tools
+if [ $# -lt 2 ]; then
+	echo "$0: Insufficient arguments" >&2
+	echo "$0: <path to mksquashfs> <output file>" >&2
+	exit 1
+fi
 
-# Sanity check, ensure $DIR points to a directory with a runnable Mksquashfs
-if [ ! -x $DIR/mksquashfs ]; then
-	echo \$DIR doesn\'t point to a directory with Mksquashfs in it!
-	echo \$DIR should point to the directory with the Mksquashfs
-	echo you want to generate a manpage for.
+# Sanity check, ensure $1 points to a directory with a runnable Mksquashfs
+if [ ! -x $1/mksquashfs ]; then
+	echo "\$arg1 doesn\'t point to a directory with Mksquashfs in it!" 2>&1
+	echo "\$arg1 should point to the directory with the Mksquashfs" 2>&1
+	echo "you want to generate a manpage for." 2>&1
 	exit 1
 fi
 
 # Sanity check, check that the utilities this script depends on, are in PATH
 for i in expand sed gzip help2man; do
 	if ! which $i > /dev/null 2>&1; then
-		echo This script needs $i, which is not in your PATH.
-		echo Fix PATH or install before running this script!
+		echo "This script needs $i, which is not in your PATH." 2>&1
+		echo "Fix PATH or install before running this script!" 2>&1
 		exit 1
 	fi
 done
@@ -30,13 +34,13 @@ tmp=$(mktemp -d)
 # $tmp/mksquashfs.help.  This is to allow it to be modified before
 # passing to help2man.
 
-$DIR/mksquashfs -help | expand > $tmp/mksquashfs.help
+$1/mksquashfs -help | expand > $tmp/mksquashfs.help
 
 # Run mksquashfs -version, and output the version text to
 # $tmp/mksquashfs.version.  This is to allow it to be modified before
 # passing to help2man.
 
-$DIR/mksquashfs -version > $tmp/mksquashfs.version
+$1/mksquashfs -version > $tmp/mksquashfs.version
 
 # Create a dummy executable in $tmp, which outputs $tmp/mksquashfs.help
 # and $tmp/mksquashfs.version.  This gets around the fact help2man wants
@@ -218,5 +222,9 @@ sed -i "s/\(See also\):/*\1*/" $tmp/mksquashfs.help
 
 sed -i "s/\(Environment\):/*\1*/" $tmp/mksquashfs.help
 
-help2man -Ni mksquashfs.h2m -o ../manpages/mksquashfs.1 $tmp/mksquashfs.sh
+if ! help2man -Ni mksquashfs.h2m -o $2 $tmp/mksquashfs.sh; then
+	echo "$0: help2man returned error.  Aborting" >&2
+	exit 1
+fi
+
 rm -rf $tmp
