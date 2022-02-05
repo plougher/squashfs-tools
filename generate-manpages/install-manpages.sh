@@ -1,24 +1,17 @@
 #!/bin/sh
 
-gitroot=$(git rev-parse --show-toplevel 2> /dev/null)
-
-if [ $? -ne 0 ] || [ -z "$gitroot" ]; then
-	echo "$0: Could not get root of Git repository.  Aborting" >&2
-	exit 1
-fi
-
-if [ $# -lt 1 ]; then
-	echo "$0: No arguments." >&2
-	echo "$0: <path to install manpages>" >&2
+if [ $# -lt 2 ]; then
+	echo "$0: Insufficient arguments." >&2
+	echo "$0: <path to git-root/source-root> <path to install manpages>" >&2
 	exit 1;
 fi
 
-if [ -z "$1" ]; then
+if [ -z "$2" ]; then
 	echo "$0: Install path for manpages empty.  Skipping manpage install" >&2
 	exit 0
 fi
 
-cd $gitroot/generate-manpages
+cd $1/generate-manpages
 
 # We must have help2man to generate "custom" manpages for the
 # built squashfs-tools, incorporating build choices (the
@@ -44,18 +37,18 @@ else
 	source=../squashfs-tools
 fi
 
-if ! mkdir -p $1; then
+if ! mkdir -p $2; then
 	echo "$0: Creating manpage install directory failed.  Aborting" >&2
 	exit 1
 fi
 
 for i in mksquashfs; do
-	if ! cp $source/$i.1 $1/$i.1; then
+	if ! cp $source/$i.1 $2/$i.1; then
 		echo "$0: Copying manpage to install directory failed.  Aborting" >&2
 		exit 1
 	fi
 
-	if ! gzip -f9 $1/$i.1; then
+	if ! gzip -f9 $2/$i.1; then
 		echo "$0: Compressing installed manpage failed.  Aborting" >&2
 		exit 1
 	fi
