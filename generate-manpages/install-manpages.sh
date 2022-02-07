@@ -53,8 +53,3 @@ for i in mksquashfs; do
 		exit 1
 	fi
 done
-
-if ! mandb > /dev/null; then
-	echo "$0: Mandb failed.  Aborting" >&2
-	exit 1
-fi
