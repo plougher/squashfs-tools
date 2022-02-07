@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2010, 2013
+ * Copyright (c) 2009, 2010, 2013, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -108,12 +108,18 @@ static int lzma_uncompress(void *dest, void *src, int size, int outsize,
 }
 
 
+static void lzma_usage(FILE *stream)
+{
+	fprintf(stream, "\t  (no options) (no kernel support)\n");
+}
+
+
 struct compressor lzma_comp_ops = {
 	.init = NULL,
 	.compress = lzma_compress,
 	.uncompress = lzma_uncompress,
 	.options = NULL,
-	.usage = NULL,
+	.usage = lzma_usage,
 	.id = LZMA_COMPRESSION,
 	.name = "lzma",
 	.supported = 1
