@@ -157,7 +157,7 @@ INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
 # work) - download and unpack it, uncomment and set LZMA_DIR to unpacked source,
 # and uncomment the LZMA_SUPPORT line below.
 #
-LZMA_XZ_SUPPORT = 1
+#LZMA_XZ_SUPPORT = 1
 #LZMA_SUPPORT = 1
 #LZMA_DIR = ../../../../LZMA/lzma465
 
