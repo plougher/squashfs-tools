@@ -3776,14 +3776,14 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "to extract or exclude (with -excludes) or cat (with -cat )]\n");
 	fprintf(stream, "\t-v[ersion]\t\tprint version, licence and copyright ");
 	fprintf(stream, "information\n");
-	fprintf(stream, "\t-cat\t\t\tcat the listed files to stdout\n");
+	fprintf(stream, "\t-cat\t\t\tcat the files on the command line to stdout\n");
 	fprintf(stream, "\t-d[est] <pathname>\tunsquash to <pathname>, default ");
 	fprintf(stream, "\"squashfs-root\"\n");
 	fprintf(stream, "\t-max[-depth] <levels>\tdescend at most <levels> of ");
 	fprintf(stream, "directories when\n\t\t\t\tunsquashing or listing\n");
 	fprintf(stream, "\t-excludes\t\ttreat files on command line as exclude files\n");
-	fprintf(stream, "\t-ex[clude-list]\t\tlist of files to be excluded, ");
-	fprintf(stream, "terminated with ;\n");
+	fprintf(stream, "\t-ex[clude-list]\t\tlist of files to be excluded, terminated\n");
+	fprintf(stream, "\t\t\t\twith ; e.g. file1 file2 ;\n");
 	fprintf(stream, "\t-follow[-symlinks]\tfollow symlinks in extract files, and ");
 	fprintf(stream, "add all\n\t\t\t\tfiles/symlinks needed to resolve extract ");
 	fprintf(stream, "file.\n\t\t\t\tImplies -no-wildcards\n");
@@ -3798,14 +3798,14 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "system.\n\t\t\t\tEnables extracting xattrs\n");
 	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
 	fprintf(stream, "By default will use\n");
-	fprintf(stream, "\t\t\t\tnumber of processors available\n");
+	fprintf(stream, "\t\t\t\tthe number of processors available\n");
 	fprintf(stream, "\t-i[nfo]\t\t\tprint files as they are unsquashed\n");
 	fprintf(stream, "\t-li[nfo]\t\tprint files as they are unsquashed with file\n");
 	fprintf(stream, "\t\t\t\tattributes (like ls -l output)\n");
 	fprintf(stream, "\t-l[s]\t\t\tlist filesystem, but don't unsquash\n");
 	fprintf(stream, "\t-ll[s]\t\t\tlist filesystem with file attributes (like\n");
 	fprintf(stream, "\t\t\t\tls -l output), but don't unsquash\n");
-	fprintf(stream, "\t-lln[umeric]\t\t-lls but with numeric uids and gids\n");
+	fprintf(stream, "\t-lln[umeric]\t\tsame as -lls but with numeric uids and gids\n");
 	fprintf(stream, "\t-lc\t\t\tlist filesystem concisely, displaying only ");
 	fprintf(stream, "files\n\t\t\t\tand empty directories.  Don't unsquash\n");
 	fprintf(stream, "\t-llc\t\t\tlist filesystem concisely with file ");
@@ -3824,7 +3824,9 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
 	fprintf(stream, "\t-UTC\t\t\tuse UTC rather than local time zone ");
 	fprintf(stream, "when\n\t\t\t\tdisplaying time\n");
-	fprintf(stream, "\t-mkfs-time\t\tdisplay filesystem superblock time\n");
+	fprintf(stream, "\t-mkfs-time\t\tdisplay filesystem superblock time, which is an\n");
+	fprintf(stream, "\t\t\t\tunsigned 32-bit int representing the time in\n");
+	fprintf(stream, "\t\t\t\tseconds since the epoch (1970-01-01)\n");
 	fprintf(stream, "\t-fstime\t\t\tsynonym for -mkfs-time\n");
 	fprintf(stream, "\t-extract-file <file>\tlist of directories or files to ");
 	fprintf(stream, "extract.\n\t\t\t\tOne per line\n");
@@ -3850,7 +3852,8 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\nDecompressors available:\n");
 	display_compressors(stream, "", "");
 
-	fprintf(stream, "\nThe README for the Squash-tools 4.5 release, ");
+	fprintf(stream, "\nSee also:\n");
+	fprintf(stream, "The README for the Squash-tools 4.5 release, ");
 	fprintf(stream, "describing the new features can be\n");
 	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.5\n");
 
