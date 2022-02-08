@@ -161,8 +161,21 @@ b again
 sed -i "s/^filename/  -p filename/" $tmp/mksquashfs.help
 
 # Make each compressor entry in the compressors available section, a subsection
+# First, have to deal with the deprecated lzma compressor separately, because
+# it doesn't have any options (i.e. text prefixed with -).
 
-sed -i -e "s/^ *\(gzip.*$\)/\1:/" -e "s/^ *\(lzo$\)/\1:/" -e "s/^ *\(lzo (default)$\)/\1:/" -e "s/^ *\(lz4.*$\)/\1:/" -e "s/^ *\(xz.*$\)/\1:/" -e "s/^ *\(zstd.*$\)/\1:/" $tmp/mksquashfs.help
+sed -i "/^ *lzma/ {
+s/^ *\(lzma.*$\)/\1:/
+n
+s/^ */  /
+} " $tmp/mksquashfs.help
+
+# Now deal with the others
+
+sed -i -e "s/^ *\(gzip.*$\)/\1:/" -e "s/^ *\(lzo$\)/\1:/" \
+	-e "s/^ *\(lzo (default)$\)/\1:/" -e "s/^ *\(lz4.*$\)/\1:/" \
+	-e "s/^ *\(xz.*$\)/\1:/" -e "s/^ *\(zstd.*$\)/\1:/" \
+	$tmp/mksquashfs.help
 
 # Concatenate the options text (normal options, pseudo file definitions and
 # compressor options) on to one line.  Add a full stop to the end of the
