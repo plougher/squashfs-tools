@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2017, 2019, 2020, 2021
+ * 2012, 2013, 2014, 2017, 2019, 2020, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -3772,15 +3772,15 @@ static void print_cat_options(FILE *stream, char *name)
 
 static void print_options(FILE *stream, char *name)
 {
-	fprintf(stream, "SYNTAX: %s [options] filesystem [files ", name);
+	fprintf(stream, "SYNTAX: %s [OPTIONS] FILESYSTEM [files ", name);
 	fprintf(stream, "to extract or exclude (with -excludes) or cat (with -cat )]\n");
 	fprintf(stream, "\t-v[ersion]\t\tprint version, licence and copyright ");
 	fprintf(stream, "information\n");
 	fprintf(stream, "\t-cat\t\t\tcat the files on the command line to stdout\n");
-	fprintf(stream, "\t-d[est] <pathname>\tunsquash to <pathname>, default ");
+	fprintf(stream, "\t-d[est] <pathname>\textract to <pathname>, default ");
 	fprintf(stream, "\"squashfs-root\"\n");
 	fprintf(stream, "\t-max[-depth] <levels>\tdescend at most <levels> of ");
-	fprintf(stream, "directories when\n\t\t\t\tunsquashing or listing\n");
+	fprintf(stream, "directories when\n\t\t\t\textracting or listing\n");
 	fprintf(stream, "\t-excludes\t\ttreat files on command line as exclude files\n");
 	fprintf(stream, "\t-ex[clude-list]\t\tlist of files to be excluded, terminated\n");
 	fprintf(stream, "\t\t\t\twith ; e.g. file1 file2 ;\n");
@@ -3799,19 +3799,19 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
 	fprintf(stream, "By default will use\n");
 	fprintf(stream, "\t\t\t\tthe number of processors available\n");
-	fprintf(stream, "\t-i[nfo]\t\t\tprint files as they are unsquashed\n");
-	fprintf(stream, "\t-li[nfo]\t\tprint files as they are unsquashed with file\n");
+	fprintf(stream, "\t-i[nfo]\t\t\tprint files as they are extracted\n");
+	fprintf(stream, "\t-li[nfo]\t\tprint files as they are extracted with file\n");
 	fprintf(stream, "\t\t\t\tattributes (like ls -l output)\n");
-	fprintf(stream, "\t-l[s]\t\t\tlist filesystem, but don't unsquash\n");
+	fprintf(stream, "\t-l[s]\t\t\tlist filesystem, but don't extract files\n");
 	fprintf(stream, "\t-ll[s]\t\t\tlist filesystem with file attributes (like\n");
-	fprintf(stream, "\t\t\t\tls -l output), but don't unsquash\n");
+	fprintf(stream, "\t\t\t\tls -l output), but don't extract files\n");
 	fprintf(stream, "\t-lln[umeric]\t\tsame as -lls but with numeric uids and gids\n");
 	fprintf(stream, "\t-lc\t\t\tlist filesystem concisely, displaying only ");
-	fprintf(stream, "files\n\t\t\t\tand empty directories.  Don't unsquash\n");
+	fprintf(stream, "files\n\t\t\t\tand empty directories.  Don't extract files\n");
 	fprintf(stream, "\t-llc\t\t\tlist filesystem concisely with file ");
 	fprintf(stream, "attributes,\n\t\t\t\tdisplaying only files and empty ");
-	fprintf(stream, "directories.\n\t\t\t\tDon't unsquash\n");
-	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of <dest>.  ");
+	fprintf(stream, "directories.\n\t\t\t\tDon't extract files\n");
+	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  ");
 	fprintf(stream, "Optionally a\n\t\t\t\tsuffix of K, M or G can be given to ");
 	fprintf(stream, "specify\n\t\t\t\tKbytes, Mbytes or Gbytes respectively ");
 	fprintf(stream, "(default\n\t\t\t\t0 bytes).\n");
@@ -3883,7 +3883,7 @@ void print_cat_version()
 void print_version()
 {
 	printf("unsquashfs version " VERSION " (" DATE ")\n");
-	printf("copyright (C) 2021 Phillip Lougher ");
+	printf("copyright (C) 2022 Phillip Lougher ");
 	printf("<phillip@squashfs.org.uk>\n\n");
 	printf("This program is free software; you can redistribute it and/or\n");
 	printf("modify it under the terms of the GNU General Public License\n");
