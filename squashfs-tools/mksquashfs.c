@@ -6116,7 +6116,7 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "epoch (1970-01-01)\n");
 	fprintf(stream, "-fstime <time>\t\tsynonym for mkfs-time\n");
 	fprintf(stream, "-all-time <time>\tset all file timestamps to ");
-	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int");
+	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int ");
 	fprintf(stream, "indicating seconds since the epoch\n\t\t\t(1970-01-01)\n");
 	fprintf(stream, "unsigned int\n");
 	fprintf(stream, "-exports\t\tmake the filesystem exportable via NFS\n");
