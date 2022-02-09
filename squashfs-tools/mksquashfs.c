@@ -5916,8 +5916,8 @@ static void check_env_var()
 
 static void print_options(FILE *stream, char *name, int total_mem)
 {
-	fprintf(stream, "SYNTAX:%s source1 source2 ...  dest [options] ", name);
-	fprintf(stream, "[-e list of exclude\ndirs/files]\n");
+	fprintf(stream, "SYNTAX:%s source1 source2 ...  FILESYSTEM [OPTIONS] ", name);
+	fprintf(stream, "[-e list of\nexclude dirs/files]\n");
 	fprintf(stream, "\nFilesystem build options:\n");
 	fprintf(stream, "-tar\t\t\tread uncompressed tar file from standard in (stdin)\n");
 	fprintf(stream, "-no-strip\t\tact like tar, and do not strip leading ");
@@ -5932,9 +5932,9 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "128 Kbytes.\n");
 	fprintf(stream, "\t\t\tOptionally a suffix of K or M can be given to ");
 	fprintf(stream, "specify\n\t\t\tKbytes or Mbytes respectively\n");
-	fprintf(stream, "-reproducible\t\tbuild images that are reproducible");
+	fprintf(stream, "-reproducible\t\tbuild filesystems that are reproducible");
 	fprintf(stream, REP_STR "\n");
-	fprintf(stream, "-not-reproducible\tbuild images that are not reproducible");
+	fprintf(stream, "-not-reproducible\tbuild filesystems that are not reproducible");
 	fprintf(stream, NOREP_STR "\n");
 	fprintf(stream, "-mkfs-time <time>\tset filesystem creation ");
 	fprintf(stream, "timestamp to <time>, which is\n\t\t\tan unsigned ");
@@ -6039,7 +6039,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\nExpert options (these may make the filesystem unmountable):\n");
 	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
 	fprintf(stream, "-offset <offset>\tSkip <offset> bytes at the beginning of ");
-	fprintf(stream, "<dest>.\n\t\t\tOptionally a suffix of K, M or G can be given ");
+	fprintf(stream, "FILESYSTEM.\n\t\t\tOptionally a suffix of K, M or G can be given ");
 	fprintf(stream, "to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n");
 	fprintf(stream, "\t\t\tDefault 0 bytes\n");
 	fprintf(stream, "-o <offset>\t\tsynonym for -offset\n");
