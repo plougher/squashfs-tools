@@ -27,7 +27,7 @@ if ! which help2man > /dev/null 2>&1; then
 	echo "WARNING: match your build configuation." >&2
 	source=../manpages
 else
-	for i in mksquashfs unsquashfs sqfstar; do
+	for i in mksquashfs unsquashfs sqfstar sqfscat; do
 		if ! ./$i-manpage.sh ../squashfs-tools ../squashfs-tools/$i.1; then
 			echo "$0: Failed to generate manpage.  Aborting" >&2
 			exit 1
@@ -42,7 +42,7 @@ if ! mkdir -p $2; then
 	exit 1
 fi
 
-for i in mksquashfs unsquashfs sqfstar; do
+for i in mksquashfs unsquashfs sqfstar sqfscat; do
 	if ! cp $source/$i.1 $2/$i.1; then
 		echo "$0: Copying manpage to install directory failed.  Aborting" >&2
 		exit 1
