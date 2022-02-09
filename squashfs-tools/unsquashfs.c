@@ -3739,17 +3739,17 @@ int parse_excludes(int argc, char *argv[], struct pathname **exclude)
 
 static void print_cat_options(FILE *stream, char *name)
 {
-	fprintf(stream, "SYNTAX: %s [options] filesystem [files to cat]\n", name);
+	fprintf(stream, "SYNTAX: %s [OPTIONS] FILESYSTEM [files to cat]\n", name);
 	fprintf(stream, "\t-v[ersion]\t\tprint version, licence and copyright ");
 	fprintf(stream, "information\n");
 	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
 	fprintf(stream, "By default will use\n");
-	fprintf(stream, "\t\t\t\tnumber of processors available\n");
-	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of <dest>.  ");
-	fprintf(stream, "Optionally a\n\t\t\t\tsuffix of K, M or G can be given to ");
-	fprintf(stream, "specify\n\t\t\t\tKbytes, Mbytes or Gbytes respectively ");
-	fprintf(stream, "(default\n\t\t\t\t0 bytes).\n");
-	fprintf(stream, "\t-ig[nore-errors]\ttreat errors writing files to output ");
+	fprintf(stream, "\t\t\t\tthe number of processors available\n");
+	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.\n");
+	fprintf(stream, "\t\t\t\tOptionally a suffix of K, M or G can be given to\n");
+	fprintf(stream, "\t\t\t\tspecify Kbytes, Mbytes or Gbytes respectively\n");
+	fprintf(stream, "\t\t\t\t(default 0 bytes).\n");
+	fprintf(stream, "\t-ig[nore-errors]\ttreat errors writing files to stdout ");
 	fprintf(stream, "as\n\t\t\t\tnon-fatal\n");
 	fprintf(stream, "\t-st[rict-errors]\ttreat all errors as fatal\n");
 	fprintf(stream, "\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on ");
@@ -3758,15 +3758,22 @@ static void print_cat_options(FILE *stream, char *name)
 	fprintf(stream, "Default %d\n\t\t\t\tMbytes\n", DATA_BUFFER_DEFAULT);
 	fprintf(stream, "\t-fr[ag-queue] <size>\tset fragment queue to <size> Mbytes.  ");
 	fprintf(stream, "Default\n\t\t\t\t%d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
-	fprintf(stream, "\t-no-wild[cards]\t\tdo not use wildcard matching in extract ");
-	fprintf(stream, "names\n");
-	fprintf(stream, "\t-r[egex]\t\ttreat extract names as POSIX regular ");
+	fprintf(stream, "\t-no-wild[cards]\t\tdo not use wildcard matching in filenames\n");
+	fprintf(stream, "\t-r[egex]\t\ttreat filenames as POSIX regular ");
 	fprintf(stream, "expressions\n");
 	fprintf(stream, "\t\t\t\trather than use the default shell ");
 	fprintf(stream, "wildcard\n\t\t\t\texpansion (globbing)\n");
-	fprintf(stream, "\t-h[elp]\t\t\toutput this options text to stdout\n");
+	fprintf(stream, "\t-h[elp]\t\t\toutput options text to stdout\n");
 	fprintf(stream, "\nDecompressors available:\n");
 	display_compressors(stream, "", "");
+
+	fprintf(stream, "\nSee also:\n");
+	fprintf(stream, "The README for the Squash-tools 4.5 release, ");
+	fprintf(stream, "describing the new features can be\n");
+	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.5\n");
+
+	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
+	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE\n");
 }
 
 
@@ -3865,7 +3872,7 @@ static void print_options(FILE *stream, char *name)
 void print_cat_version()
 {
 	printf("sqfscat version " VERSION " (" DATE ")\n");
-	printf("copyright (C) 2021 Phillip Lougher ");
+	printf("copyright (C) 2022 Phillip Lougher ");
 	printf("<phillip@squashfs.org.uk>\n\n");
 	printf("This program is free software; you can redistribute it and/or\n");
 	printf("modify it under the terms of the GNU General Public License\n");
