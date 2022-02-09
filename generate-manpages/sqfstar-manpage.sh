@@ -71,9 +71,14 @@ sed -i "s/^copyright/Copyright/" $tmp/sqfstar.version
 echo -e "\nWritten by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/sqfstar.version
 
 # Man pages expect the options to be in the "Options" section.  So insert
-# Options section after Usage
+# Options section after first line
 
-sed -i "/^Usage/a *OPTIONS*" $tmp/sqfstar.help
+sed -i "1a *OPTIONS*" $tmp/sqfstar.help
+
+# Delete the first line, as this is being replaced by a section included
+# from sqfstar.h2m
+
+sed -i "1d" $tmp/sqfstar.help
 
 # help2man expects options to start in the 2nd column
 
