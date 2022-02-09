@@ -1,0 +1,20 @@
+[Name]
+sqfstar - tool to create a squashfs filesystem from a tar archive
+
+[Synopsis]
+  cat xxx.tar | sqfstar [OPTIONS] FILESYSTEM [exclude files]
+  zcat xxx.tgz | sqfstar [OPTIONS] FILESYSTEM [exclude files]
+  xzcat xxx.tar.xz | sqfstar [OPTIONS] FILESYSTEM [exclude files]
+  zstdcat xxx.tar.zst | sqfstar [OPTIONS] FILESYSTEM [exclude files]
+
+[Description]
+Squashfs is a highly compressed read-only filesystem for Linux.
+It uses either gzip/xz/lzo/lz4/zstd compression to compress both files, inodes
+and directories.  Inodes in the system are very small and all blocks are
+packed to minimise data overhead. Block sizes greater than 4K are supported
+up to a maximum of 1Mbytes (default block size 128K).
+
+Squashfs is intended for general read-only filesystem use, for archival
+use (i.e. in cases where a .tar.gz file may be used), and in constrained
+block device/memory systems (e.g. embedded systems) where low overhead is
+needed.
