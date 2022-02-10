@@ -2548,6 +2548,7 @@ static void *frag_orderer(void *arg)
 	}
 
 	pthread_cleanup_pop(0);
+	return NULL;
 }
 
 
