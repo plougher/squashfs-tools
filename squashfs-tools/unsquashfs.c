@@ -607,12 +607,12 @@ void print_filename(char *pathname, struct inode *inode)
 }
 	
 
-int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
+int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 {
 	off_t off = byte;
-	int res, count;
+	long long res, count;
 
-	TRACE("read_bytes: reading from position 0x%llx, bytes %d\n", byte,
+	TRACE("read_bytes: reading from position 0x%llx, bytes %lld\n", byte,
 		bytes);
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
@@ -624,7 +624,8 @@ int read_fs_bytes(int fd, long long byte, int bytes, void *buff)
 	}
 
 	for(count = 0; count < bytes; count += res) {
-		res = read(fd, buff + count, bytes - count);
+		int len = (bytes - count) > SSIZE_MAX ? SSIZE_MAX : bytes - count;
+		res = read(fd, buff + count, len);
 		if(res < 1) {
 			if(res == 0) {
 				ERROR("Read on filesystem failed because "
