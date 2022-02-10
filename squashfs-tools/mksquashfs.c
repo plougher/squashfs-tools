@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2017, 2019, 2021
+ * 2012, 2013, 2014, 2017, 2019, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -420,8 +420,12 @@ void restorefs()
 	restore_xattrs();
 	write_filesystem_tables(&sBlk);
 
-	if(!block_device)
-		ftruncate(fd, bytes);
+	if(!block_device) {
+		int res = ftruncate(fd, bytes);
+		if(res != 0)
+			BAD_ERROR("Failed to truncate dest file because %s\n",
+				strerror(errno));
+	}
 
 	if(!nopad && (i = bytes & (4096 - 1))) {
 		char temp[4096] = {0};
