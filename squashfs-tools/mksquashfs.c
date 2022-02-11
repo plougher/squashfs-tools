@@ -4692,10 +4692,11 @@ static char *get_filename_from_stdin(char terminator)
 		}
 
 		if(size - used == 0) {
+			int offset = dest - filename;
 			char *buff = realloc(filename, size += 100);
 			if(buff == NULL)
 				MEM_ERROR();
-			dest = buff + (dest - filename);
+			dest = buff + offset;
 			filename = buff;
 		}
 
