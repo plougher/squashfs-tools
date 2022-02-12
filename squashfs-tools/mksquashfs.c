@@ -4664,6 +4664,7 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 
 static char *get_filename_from_stdin(char terminator)
 {
+	static int path_max = -1;
 	static int bytes = 0;
 	static int size = 0;
 	static char *buffer = NULL;
@@ -4671,6 +4672,20 @@ static char *get_filename_from_stdin(char terminator)
 	static char *src = NULL;
 	char *dest = filename;
 	int used = 0;
+
+	/* Get the maximum pathname size supported on this system */
+	if(path_max == -1) {
+#ifdef PATH_MAX
+		path_max = PATH_MAX;
+#else
+		path_max = pathconf(".", _PC_PATH_MAX);
+		if(path_max <= 0)
+			path_max = 4096;
+#endif
+		/* limit to no more than 64K */
+		if(path_max > 65536)
+			path_max = 65536;
+	}
 
 	if(buffer == NULL) {
 		buffer = malloc(4096);
@@ -4691,7 +4706,14 @@ static char *get_filename_from_stdin(char terminator)
 			src = buffer;
 		}
 
-		if(size - used == 0) {
+		if(*src == terminator)
+			break;
+
+		if(used >= (path_max - 1))
+			BAD_ERROR("Cpiostyle input filename exceeds maximum "
+				"path limit of %d bytes!\n", path_max);
+
+		if(size - used <= 1) {
 			int offset = dest - filename;
 			char *buff = realloc(filename, size += 100);
 			if(buff == NULL)
@@ -4700,14 +4722,9 @@ static char *get_filename_from_stdin(char terminator)
 			filename = buff;
 		}
 
-		*dest = *src++;
+		*dest++ = *src++;
 		bytes --;
 		used ++;
-
-		if(*dest == terminator)
-			break;
-
-		dest++;
 	}
 
 	*dest = '\0';
