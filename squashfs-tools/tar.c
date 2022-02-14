@@ -1463,13 +1463,15 @@ squashfs_inode process_tar_file(int progress)
 	struct dir_info *new;
 	struct dir_ent *dir_ent;
 	struct tar_file *tar_file;
+	struct file_buffer *file_buffer;
 
 	queue_put(to_reader, NULL);
 	set_progressbar_state(progress);
 
 	while(1) {
 		struct inode_info *link = NULL;
-		struct file_buffer *file_buffer = seq_queue_get(to_main);
+
+		file_buffer = seq_queue_get(to_main);
 		if(file_buffer->tar_file == NULL)
 			break;
 
@@ -1524,6 +1526,8 @@ squashfs_inode process_tar_file(int progress)
 
 		free(file_buffer);
 	}
+
+	free(file_buffer);
 
 	if(root_dir)
 		fixup_tree(root_dir);
