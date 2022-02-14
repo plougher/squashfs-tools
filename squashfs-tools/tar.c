@@ -1127,6 +1127,7 @@ again:
 
 	if(all_zero(&header)) {
 		*status = TAR_EOF;
+		free(file);
 		return NULL;
 	}
 
