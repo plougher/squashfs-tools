@@ -1122,7 +1122,7 @@ static struct tar_file *read_tar_header(int *status)
 
 again:
 	res = read_bytes(STDIN_FILENO, &header, 512);
-	if(res == FALSE) {
+	if(res < 512) {
 		ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
 		goto failed;
 	}
