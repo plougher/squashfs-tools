@@ -378,6 +378,8 @@ static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 					goto failed_early;
 			}
 		}
+
+		free(name);
 	} else {
 		/*
 		 * No matching name found.
