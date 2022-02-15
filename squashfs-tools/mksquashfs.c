@@ -4696,6 +4696,10 @@ static char *get_filename_from_stdin(char terminator)
 	while(1) {
 		if(bytes == 0) {
 			bytes = read_bytes(STDIN_FILENO, buffer, 4096);
+
+			if(bytes == -1)
+				BAD_ERROR("Failed to read Tar file from STDIN\n");
+
 			if(bytes == 0) {
 				if(used)
 					ERROR("Got EOF when reading filename from STDIN, ignoring\n");
