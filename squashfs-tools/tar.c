@@ -1447,6 +1447,7 @@ void read_tar_file()
 								 >> block_log);
 
 		file_buffer->cache = NULL;
+		file_buffer->fragment = FALSE;
 		file_buffer->tar_file = tar_file;
 		file_buffer->sequence = seq ++;
 		seq_queue_put(to_main, file_buffer);
