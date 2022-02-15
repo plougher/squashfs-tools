@@ -1522,8 +1522,11 @@ squashfs_inode process_tar_file(int progress)
 					(long long) tar_file->buf.st_size, duplicate_file ?  "DUPLICATE" : "");
 			}
 
-			if(link)
+			if(link) {
 				link->nlink ++;
+				free(tar_file->pathname);
+				free(tar_file);
+			}
 		} else if(S_ISREG(tar_file->buf.st_mode))
 			skip_file(file_buffer->tar_file);
 
