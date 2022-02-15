@@ -66,6 +66,7 @@ struct short_sparse_header {
 struct long_sparse_header {
 	struct sparse_entry	sparse[21];
 	char			isextended;
+	char			pad[7];
 };
 
 
