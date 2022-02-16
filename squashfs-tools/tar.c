@@ -266,6 +266,21 @@ static struct inode_info *new_inode(struct tar_file *tar_file)
 }
 
 
+static struct inode_info *copy_inode(struct inode_info *source)
+{
+	struct inode_info *inode;
+	int bytes = S_ISLNK(source->buf.st_mode) ? strlen(source->symlink) + 1 : 0;
+
+	inode = malloc(sizeof(struct inode_info) + bytes);
+	if(inode == NULL)
+		MEM_ERROR();
+
+	memcpy(inode, source, sizeof(struct inode_info) + bytes);
+
+	return inode;
+}
+
+
 static void fixup_tree(struct dir_info *dir)
 {
 	struct dir_ent *entry;
@@ -399,12 +414,14 @@ static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 			if(S_ISDIR(tarfile->buf.st_mode)) {
 				add_dir_entry(entry, NULL, new_inode(tarfile));
 				dir->directory_count ++;
-			} else {
-				struct inode_info *new = link ? link : new_inode(tarfile);
-				add_dir_entry(entry, NULL, new);
+			} else if (link == FALSE) {
+				add_dir_entry(entry, NULL, new_inode(tarfile));
 				if(S_ISREG(tarfile->buf.st_mode))
 					*dir_ent = entry;
-			}
+			} else if(no_hardlinks)
+				add_dir_entry(entry, NULL, copy_inode(link));
+			else
+				add_dir_entry(entry, NULL, link);
 		} else {
 			subpath = subpathname(entry);
 			sub = add_tarfile(NULL, source, subpath, tarfile, new, depth + 1, dir_ent, link);
@@ -1526,12 +1543,16 @@ squashfs_inode process_tar_file(int progress)
 				update_info(dir_ent);
 				tar_file->file = write_file(dir_ent, &duplicate_file);
 				dir_ent->inode->read = TRUE;
-				INFO("file %s, uncompressed size %lld " "bytes %s\n", tar_file->pathname,
+				INFO("file %s, uncompressed size %lld bytes %s\n", tar_file->pathname,
 					(long long) tar_file->buf.st_size, duplicate_file ?  "DUPLICATE" : "");
 			}
 
 			if(link) {
-				link->nlink ++;
+				if(no_hardlinks)
+					INFO("file %s, uncompressed size %lld bytes DUPLICATE\n", tar_file->pathname,
+						(long long) link->buf.st_size);
+				else
+					link->nlink ++;
 				free(tar_file->pathname);
 				free(tar_file);
 			}
