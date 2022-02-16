@@ -121,8 +121,9 @@ char *read_long_string(int size, int skip)
 		int expected = size > 512 ? 512 : size;
 
 		res = read_bytes(STDIN_FILENO, buffer, 512);
-		if(res == FALSE) {
-			ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+		if(res < 512) {
+			if(res != -1)
+				ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
 			free(name);
 			return NULL;
 		}
@@ -695,8 +696,9 @@ int read_pax_header(struct tar_file *file, long long st_size)
 		MEM_ERROR();
 
 	res = read_bytes(STDIN_FILENO, data, size);
-	if(res == FALSE) {
-		ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+	if(res < size) {
+		if(res != -1)
+			ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
 		free(data);
 		return FALSE;
 	}
@@ -949,8 +951,9 @@ struct file_map *read_sparse_headers(struct tar_file *file, struct short_sparse_
 
 	while(isextended) {
 		res = read_bytes(STDIN_FILENO, &long_header, 512);
-		if(res == FALSE) {
-			ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+		if(res < 512) {
+			if(res != -1)
+				ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
 			goto failed;
 		}
 
@@ -1014,8 +1017,9 @@ struct file_map *read_sparse_map(struct tar_file *file, int *entries)
 	int atoffset = TRUE, i = 0;
 
 	res = read_bytes(STDIN_FILENO, buffer, 512);
-	if(res == FALSE) {
-		ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+	if(res < 512) {
+		if(res != -1)
+			ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
 		goto failed;
 	}
 
@@ -1047,8 +1051,9 @@ struct file_map *read_sparse_map(struct tar_file *file, int *entries)
 
 			memmove(buffer, src, size);
 			res = read_bytes(STDIN_FILENO, buffer + size, 512);
-			if(res == FALSE) {
-				ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+			if(res < 512) {
+				if(res != -1)
+					ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
 				goto failed;
 			}
 
@@ -1123,7 +1128,8 @@ static struct tar_file *read_tar_header(int *status)
 again:
 	res = read_bytes(STDIN_FILENO, &header, 512);
 	if(res < 512) {
-		ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+		if(res != -1)
+			ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
 		goto failed;
 	}
 
@@ -1390,8 +1396,9 @@ ignored:
 
 		while(size > 0) {
 			res = read_bytes(STDIN_FILENO, &header, 512);
-			if(res == FALSE) {
-				ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+			if(res < 512) {
+				if(res != -1)
+					ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
 				goto failed;
 			}
 			size -= 512;
