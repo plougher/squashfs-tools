@@ -245,6 +245,7 @@ static struct inode_info *new_inode(struct tar_file *tar_file)
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
 	inode->inode_number = 0;
+	inode->pseudo = NULL;
 	inode->dummy_root_dir = FALSE;
 	inode->tarfile = TRUE;
 
