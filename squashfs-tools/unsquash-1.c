@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2011, 2012, 2019, 2021
+ * Copyright (c) 2009, 2010, 2011, 2012, 2019, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -74,7 +74,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 	static union squashfs_inode_header_1 header;
 	long long start = sBlk.s.inode_table_start + start_block;
 	long long st = start;
-	unsigned int off = offset;
+	unsigned int off = offset, uid;
 	static struct inode i;
 	int res;
 
@@ -92,8 +92,13 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 	if(res == FALSE)
 		EXIT_UNSQUASH("read_inode: failed to read inode %lld:%d\n", st, off);
 
-	i.uid = (uid_t) uid_table[(header.base.inode_type - 1) /
-		SQUASHFS_TYPES * 16 + header.base.uid];
+	uid = (header.base.inode_type - 1) / SQUASHFS_TYPES * 16 + header.base.uid;
+
+	if(uid > sBlk.no_uids)
+		EXIT_UNSQUASH("File system corrupted - uid index in inode too large (uid: %u)\n", uid);
+
+	i.uid = (uid_t) uid_table[uid];
+
 	if(header.base.inode_type == SQUASHFS_IPC_TYPE) {
 		squashfs_ipc_inode_header_1 *inodep = &header.ipc;
 
@@ -116,7 +121,12 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			i.mode = S_IFIFO | header.base.mode;
 			i.type = SQUASHFS_FIFO_TYPE;
 		}
-		i.uid = (uid_t) uid_table[inodep->offset * 16 + inodep->uid];
+
+		uid = inodep->offset * 16 + inodep->uid;
+		if(uid > sBlk.no_uids)
+			EXIT_UNSQUASH("File system corrupted - uid index in inode too large (uid: %u)\n", uid);
+
+		i.uid = (uid_t) uid_table[uid];
 	} else {
 		i.mode = lookup_type[(header.base.inode_type - 1) %
 			SQUASHFS_TYPES + 1] | header.base.mode;
@@ -124,8 +134,14 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 	}
 
 	i.xattr = SQUASHFS_INVALID_XATTR;
-	i.gid = header.base.guid == 15 ? i.uid :
-		(uid_t) guid_table[header.base.guid];
+
+	if(header.base.guid == 15)
+		i.gid = i.uid;
+	else if(header.base.guid > sBlk.no_guids)
+		EXIT_UNSQUASH("File system corrupted - gid index in inode too large (gid: %u)\n", header.base.guid);
+	else
+		i.gid = (uid_t) guid_table[header.base.guid];
+
 	i.time = sBlk.s.mkfs_time;
 	i.inode_number = inode_number ++;
 
