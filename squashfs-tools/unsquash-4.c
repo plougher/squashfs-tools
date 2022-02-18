@@ -251,6 +251,9 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 			SQUASHFS_INSWAP_SYMLINK_INODE_HEADER(inode);
 
+			if(inode->symlink_size > SQUASHFS_SYMLINK_MAX)
+				EXIT_UNSQUASH("File system corrupted - symlink_size in inode too large (symlink_size: %u)\n", inode->symlink_size);
+
 			i.symlink = malloc(inode->symlink_size + 1);
 			if(i.symlink == NULL)
 				MEM_ERROR();
