@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2013, 2019, 2021
+ * Copyright (c) 2009, 2010, 2013, 2019, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -191,9 +191,19 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		EXIT_UNSQUASH("read_inode: failed to read inode %lld:%d\n", st, off);
 
 	i.xattr = SQUASHFS_INVALID_XATTR;
+
+	if(header.base.uid > sBlk.no_uids)
+		EXIT_UNSQUASH("File system corrupted - uid index in inode too large (uid: %u)\n", header.base.uid);
+
 	i.uid = (uid_t) uid_table[header.base.uid];
-	i.gid = header.base.guid == SQUASHFS_GUIDS ? i.uid :
-		(uid_t) guid_table[header.base.guid];
+
+	if(header.base.guid == SQUASHFS_GUIDS)
+		i.gid = i.uid;
+	else if(header.base.guid > sBlk.no_guids)
+		EXIT_UNSQUASH("File system corrupted - gid index in inode too large (gid: %d)\n", header.base.guid);
+	else
+		i.gid = (uid_t) guid_table[header.base.guid];
+
 	i.mode = lookup_type[header.base.inode_type] | header.base.mode;
 	i.type = header.base.inode_type;
 	i.time = sBlk.s.mkfs_time;
