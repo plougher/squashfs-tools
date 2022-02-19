@@ -224,6 +224,16 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		/* bad type, corrupted filesystem */
 		goto corrupted;
 
+	if(dir_inode->base.uid >= sBlk->no_ids) {
+		ERROR("File system corrupted - uid index in inode too large (uid: %d)\n", dir_inode->base.uid);
+		goto corrupted2;
+	}
+
+	if(dir_inode->base.guid >= sBlk->no_ids) {
+		ERROR("File system corrupted - gid index in inode too large (gid: %d)\n", dir_inode->base.guid);
+		goto corrupted2;
+	}
+
 	get_uid(id_table[dir_inode->base.uid]);
 	get_guid(id_table[dir_inode->base.guid]);
 
@@ -247,6 +257,16 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			"0x%x, type 0x%x\n",
 			(unsigned int) (cur_ptr - inode_table),
 			base.inode_type);
+
+		if(base.uid >= sBlk->no_ids) {
+			ERROR("File system corrupted - uid index in inode too large (uid: %d)\n", base.uid);
+			goto corrupted2;
+		}
+
+		if(base.guid >= sBlk->no_ids) {
+			ERROR("File system corrupted - gid index in inode too large (gid: %d)\n", base.guid);
+			goto corrupted2;
+		}
 
 		get_uid(id_table[base.uid]);
 		get_guid(id_table[base.guid]);
@@ -555,6 +575,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 corrupted:
 	ERROR("scan_inode_table: filesystem corruption detected in "
 		"scanning metadata\n");
+corrupted2:
 	free(inode_table);
 	return NULL;
 }
