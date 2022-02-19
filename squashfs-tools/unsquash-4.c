@@ -148,6 +148,9 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 	if(header.base.guid >= sBlk.s.no_ids)
 		EXIT_UNSQUASH("File system corrupted - gid index in inode too large (gid: %u)\n", header.base.guid);
 
+	if(header.base.inode_type < 1 || header.base.inode_type > 14)
+		EXIT_UNSQUASH("File system corrupted - invald type in inode (type: %u)\n", header.base.inode_type);
+
 	i.uid = (uid_t) id_table[header.base.uid];
 	i.gid = (uid_t) id_table[header.base.guid];
 	i.mode = lookup_type[header.base.inode_type] | header.base.mode;
