@@ -197,14 +197,14 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 	i.xattr = SQUASHFS_INVALID_XATTR;
 
-	if(header.base.uid > sBlk.no_uids)
+	if(header.base.uid >= sBlk.no_uids)
 		EXIT_UNSQUASH("File system corrupted - uid index in inode too large (uid: %u)\n", header.base.uid);
 
 	i.uid = (uid_t) uid_table[header.base.uid];
 
 	if(header.base.guid == SQUASHFS_GUIDS)
 		i.gid = i.uid;
-	else if(header.base.guid > sBlk.no_guids)
+	else if(header.base.guid >= sBlk.no_guids)
 		EXIT_UNSQUASH("File system corrupted - gid index in inode too large (gid: %u)\n", header.base.guid);
 	else
 		i.gid = (uid_t) guid_table[header.base.guid];

@@ -142,10 +142,10 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 	SQUASHFS_INSWAP_BASE_INODE_HEADER(&header.base);
 
-	if(header.base.uid > sBlk.s.no_ids)
+	if(header.base.uid >= sBlk.s.no_ids)
 		EXIT_UNSQUASH("File system corrupted - uid index in inode too large (uid: %u)\n", header.base.uid);
 
-	if(header.base.guid > sBlk.s.no_ids)
+	if(header.base.guid >= sBlk.s.no_ids)
 		EXIT_UNSQUASH("File system corrupted - gid index in inode too large (gid: %u)\n", header.base.guid);
 
 	i.uid = (uid_t) id_table[header.base.uid];
@@ -484,6 +484,7 @@ static int read_id_table(long long *table_start)
 	TRACE("read_id_table: no_ids %d\n", sBlk.s.no_ids);
 
 	id_index_table = alloc_index_table(indexes);
+
 	id_table = malloc(bytes);
 	if(id_table == NULL) {
 		ERROR("read_id_table: failed to allocate id table\n");
