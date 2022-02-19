@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2011, 2012, 2013, 2019, 2021
+ * Copyright (c) 2009, 2010, 2011, 2012, 2013, 2019, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -118,6 +118,9 @@ static void read_fragment(unsigned int fragment, long long *start_block, int *si
 	TRACE("read_fragment: reading fragment %d\n", fragment);
 
 	struct squashfs_fragment_entry *fragment_entry;
+
+	if(fragment >= sBlk.s.fragments)
+		EXIT_UNSQUASH("File system corrupted - fragment index in inode too large (fragment: %u)\n", fragment);
 
 	fragment_entry = &fragment_table[fragment];
 	*start_block = fragment_entry->start_block;
