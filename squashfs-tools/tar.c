@@ -79,7 +79,7 @@ long long read_binary(char *src, int size)
 
 long long read_number(char *s, int size)
 {
-	if(*s == -128)
+	if(*((signed char *) s) == -128)
 		return read_binary(s + 1, size - 1);
 	else
 		return read_octal(s, size);
