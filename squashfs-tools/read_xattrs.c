@@ -176,6 +176,11 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_
 	 * Compute index table values
 	 */
 	ids = id_table.xattr_ids;
+	if(ids == 0) {
+		ERROR("File system corrupted: xattr_ids is 0 in xattr table\n");
+		return 0;
+	}
+
 	xattr_table_start = id_table.xattr_table_start;
 	index_bytes = SQUASHFS_XATTR_BLOCK_BYTES((long long) ids);
 	indexes = SQUASHFS_XATTR_BLOCKS((long long) ids);
