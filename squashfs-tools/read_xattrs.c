@@ -177,7 +177,7 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	 */
 	ids = id_table.xattr_ids;
 	if(ids == 0) {
-		ERROR("File system corrupted: xattr_ids is 0 in xattr table\n");
+		ERROR("FATAL ERROR: File system corrupted - xattr_ids is 0 in xattr table\n");
 		goto failed;
 	}
 
@@ -190,7 +190,7 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	 * table start and end points
 	 */
 	if(index_bytes != (sBlk->bytes_used - (sBlk->xattr_id_table_start + sizeof(id_table)))) {
-		ERROR("read_xattrs_from_disk: Bad xattr_ids count in super block\n");
+		ERROR("FATAL ERROR: File system corrupted  - Bad xattr_ids count in super block\n");
 		goto failed;
 	}
 
@@ -248,8 +248,8 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 		TRACE("Read xattr id table block %d, from 0x%llx, length "
 			"%d\n", i, index[i], length);
 		if(length == 0) {
-			ERROR("Failed to read xattr id table block %d, "
-				"from 0x%llx, length %d\n", i, index[i],
+			ERROR("FATAL ERROR - Failed to read xattr id table block %d, "
+				"from 0x%llx, length %d.  File system corrupted?\n", i, index[i],
 				length);
 			goto failed2;
 		}
@@ -285,7 +285,7 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 			(i * SQUASHFS_METADATA_SIZE));
 		TRACE("Read xattr block %d, length %d\n", i, length);
 		if(length == 0) {
-			ERROR("Failed to read xattr block %d\n", i);
+			ERROR("FATAL ERROR - Failed to read xattr block %d.  File system corrupted?\n", i);
 			goto failed3;
 		}
 
@@ -297,8 +297,8 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 		 * after reading.
 		 */
 		if(start != end && length != SQUASHFS_METADATA_SIZE) {
-			ERROR("Xattr block %d should be %d bytes in length, "
-				"it is %d bytes\n", i, SQUASHFS_METADATA_SIZE,
+			ERROR("FATAL ERROR: Xattr block %d should be %d bytes in length, "
+				"it is %d bytes.  File system corrupted?\n", i, SQUASHFS_METADATA_SIZE,
 				length);
 			goto failed3;
 		}
