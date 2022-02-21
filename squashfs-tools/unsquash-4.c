@@ -576,7 +576,6 @@ static int parse_exports_table(long long *table_start)
 static int read_filesystem_tables()
 {
 	long long table_start;
-	unsigned int xattr_ids;
 
 	/* Read xattrs */
 	if(sBlk.s.xattr_id_table_start != SQUASHFS_INVALID_BLK) {
@@ -586,8 +585,8 @@ static int read_filesystem_tables()
 			goto corrupted;
 		}
 
-		xattr_ids = read_xattrs_from_disk(fd, &sBlk.s, no_xattrs, &table_start);
-		if(xattr_ids == 0)
+		sBlk.xattr_ids = read_xattrs_from_disk(fd, &sBlk.s, no_xattrs, &table_start);
+		if(sBlk.xattr_ids == 0)
 			exit(1);
 	} else
 		table_start = sBlk.s.bytes_used;

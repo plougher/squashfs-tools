@@ -62,6 +62,8 @@ struct super_block {
 	unsigned int		no_guids;
 	long long		uid_start;
 	long long		guid_start;
+	/* fields only used by squashfs 4 */
+	unsigned int		xattr_ids;
 };
 
 

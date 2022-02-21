@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2019, 2021
+ * Copyright (c) 2010, 2012, 2019, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -47,6 +47,9 @@ int write_xattr(char *pathname, unsigned int xattr)
 	if(ignore_xattrs || xattr == SQUASHFS_INVALID_XATTR ||
 			sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
 		return TRUE;
+
+	if(xattr >= sBlk.xattr_ids)
+		EXIT_UNSQUASH("File system corrupted - xattr index in inode too large (xattr: %u)\n", xattr);
 
 	xattr_list = get_xattr(xattr, &count, &failed);
 	if(xattr_list == NULL && failed == FALSE)
