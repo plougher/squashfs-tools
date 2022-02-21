@@ -87,7 +87,7 @@ extern int mangle(char *, char *, int, int, int, int);
 extern char *pathname(struct dir_ent *);
 
 /* helper functions and definitions from read_xattrs.c */
-extern int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long long *);
+extern unsigned int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long long *);
 extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern struct prefix prefix_table[];
 
@@ -641,21 +641,17 @@ int read_xattrs(void *d)
  */
 int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 {
-	int ids, res, i, id;
-	unsigned int count;
+	int res, i, id;
+	unsigned int count, ids;
 
 	TRACE("get_xattrs\n");
 
 	if(sBlk->xattr_id_table_start == SQUASHFS_INVALID_BLK)
 		return SQUASHFS_INVALID_BLK;
 
-	res = read_xattrs_from_disk(fd, sBlk, FALSE, NULL);
-	if(res == 0)
-		return res;
-	else if(res == -1)
+	ids = read_xattrs_from_disk(fd, sBlk, FALSE, NULL);
+	if(ids == 0)
 		EXIT_MKSQUASHFS();
-
-	ids = res;
 
 	/*
 	 * for each xattr id read and construct its list of xattr

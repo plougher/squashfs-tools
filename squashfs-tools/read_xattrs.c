@@ -144,7 +144,7 @@ static int read_xattr_entry(struct xattr_list *xattr,
  * Read and decompress the xattr id table and the xattr metadata.
  * This is cached in memory for later use by get_xattr()
  */
-int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_only, long long *table_start)
+unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_only, long long *table_start)
 {
 	/*
 	 * Note on overflow limits:
@@ -168,7 +168,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_
 	res = read_fs_bytes(fd, sBlk->xattr_id_table_start, sizeof(id_table),
 		&id_table);
 	if(res == 0)
-		return 0;
+		goto failed;
 
 	SQUASHFS_INSWAP_XATTR_TABLE(&id_table);
 
@@ -178,7 +178,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_
 	ids = id_table.xattr_ids;
 	if(ids == 0) {
 		ERROR("File system corrupted: xattr_ids is 0 in xattr table\n");
-		return 0;
+		goto failed;
 	}
 
 	xattr_table_start = id_table.xattr_table_start;
@@ -191,7 +191,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_
 	 */
 	if(index_bytes != (sBlk->bytes_used - (sBlk->xattr_id_table_start + sizeof(id_table)))) {
 		ERROR("read_xattrs_from_disk: Bad xattr_ids count in super block\n");
-		return 0;
+		goto failed;
 	}
 
 	/*
@@ -218,7 +218,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_
 	index = malloc(index_bytes);
 	if(index == NULL) {
 		ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
-		return -1;
+		goto failed;
 	}
 
 	res = read_fs_bytes(fd, sBlk->xattr_id_table_start + sizeof(id_table),
@@ -236,7 +236,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_
 	xattr_ids = malloc(bytes);
 	if(xattr_ids == NULL) {
 		ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
-		return -1;
+		goto failed1;
 	}
 
 	for(i = 0; i < indexes; i++) {
@@ -269,7 +269,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_
 		xattrs = realloc(xattrs, (i + 1) * SQUASHFS_METADATA_SIZE);
 		if(xattrs == NULL) {
 			ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
-			return -1;
+			goto failed3;
 		}
 
 		/* store mapping from location of compressed block in fs ->
@@ -277,7 +277,7 @@ int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_
 		res = save_xattr_block(start, i * SQUASHFS_METADATA_SIZE);
 		if (res == FALSE) {
 			ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
-			return -1;
+			goto failed3;
 		}
 
 		length = read_block(fd, start, &start, 0,
@@ -319,7 +319,8 @@ failed2:
 failed1:
 	free(index);
 
-	return 0;
+failed:
+	return FALSE;
 }
 
 

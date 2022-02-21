@@ -73,7 +73,7 @@ extern void save_xattrs();
 extern void restore_xattrs();
 extern unsigned int xattr_bytes, total_xattr_bytes;
 extern int write_xattr(char *, unsigned int);
-extern int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long long *);
+extern unsigned int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long long *);
 extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern void free_xattr(struct xattr_list *, int);
 #else
@@ -118,7 +118,7 @@ static inline int write_xattr(char *pathname, unsigned int xattr)
 }
 
 
-static inline int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_only, long long *table_start)
+static inline unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, int sanity_only, long long *table_start)
 {
 	int res;
 	struct squashfs_xattr_table id_table;
