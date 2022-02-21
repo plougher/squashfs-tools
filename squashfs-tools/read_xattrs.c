@@ -43,7 +43,7 @@ extern int read_block(int, long long, long long *, int, void *);
 
 static struct hash_entry {
 	long long		start;
-	unsigned int		offset;
+	long long		offset;
 	struct hash_entry	*next;
 } *hash_table[65536];
 
@@ -65,7 +65,7 @@ struct prefix prefix_table[] = {
  * store mapping from location of compressed block in fs ->
  * location of uncompressed block in memory
  */
-static int save_xattr_block(long long start, int offset)
+static int save_xattr_block(long long start, long long offset)
 {
 	struct hash_entry *hash_entry = malloc(sizeof(*hash_entry));
 	int hash = start & 0xffff;
@@ -88,7 +88,7 @@ static int save_xattr_block(long long start, int offset)
  * map from location of compressed block in fs ->
  * location of uncompressed block in memory
  */
-static int get_xattr_block(long long start)
+static long long get_xattr_block(long long start)
 {
 	int hash = start & 0xffff;
 	struct hash_entry *hash_entry = hash_table[hash];
@@ -357,7 +357,7 @@ void free_xattr(struct xattr_list *xattr_list, int count)
  */
 struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 {
-	long long start;
+	long long start, xptr_offset;
 	struct xattr_list *xattr_list = NULL;
 	unsigned int offset;
 	void *xptr;
@@ -375,7 +375,16 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 
 	start = SQUASHFS_XATTR_BLK(xattr_ids[i].xattr) + xattr_table_start;
 	offset = SQUASHFS_XATTR_OFFSET(xattr_ids[i].xattr);
-	xptr = xattrs + get_xattr_block(start) + offset;
+	xptr_offset = get_xattr_block(start);
+
+	if(xptr_offset == -1) {
+		ERROR("FATAL ERROR: file system is corrupt - incorrect xattr value in metadata\n");
+		*failed = FALSE;
+		return NULL;
+	}
+
+
+	xptr = xattrs + xptr_offset + offset;
 
 	TRACE("get_xattr: xattr_id %d, count %d, start %lld, offset %d\n", i,
 			xattr_ids[i].count, start, offset);
