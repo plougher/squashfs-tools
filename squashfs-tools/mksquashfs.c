@@ -3795,6 +3795,18 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
 		dir_ent = lookup_name(dir, pseudo_ent->name);
+
+		if(pseudo_ent->dev == NULL) {
+			if(dir_ent && dir_ent->inode->root_entry) {
+				ERROR_START("WARNING: Pseudo directory \"%s\" "
+					"already exists in root directory of "
+					"the\nfilesystem being appended to. "
+					"Pseudo definitions can\'t be added to "					"it.", pseudo_ent->name);
+				ERROR_EXIT("  Ignoring.\n\n");
+			}
+			continue;
+		}
+
 		if(pseudo_ent->dev->type == 'm' || pseudo_ent->dev->type == 'M') {
 			struct stat *buf;
 			if(dir_ent == NULL) {
@@ -4866,9 +4878,6 @@ static squashfs_inode no_sources(int progress)
 	struct pseudo_entry *pseudo_ent;
 	struct pseudo *pseudo = get_pseudo();
 
-	if(appending)
-		BAD_ERROR("Pseudo files defining \"/\" cannot be used with appending\n");
-
 	if(pseudo == NULL || pseudo->names != 1 || strcmp(pseudo->name[0].name, "/") != 0) {
 		ERROR_START("Source is \"-\", but no pseudo definition for \"/\"\n");
 		ERROR_EXIT("Did you forget to specify -cpiostyle or -tar?\n");
@@ -4879,6 +4888,9 @@ static squashfs_inode no_sources(int progress)
 
 	/* create root directory */
 	root_dir = scan1_opendir("", "", 1);
+
+	if(appending)
+		handle_root_entries(root_dir);
 
 	/* Create root directory dir_ent and associated inode, and connect
 	 * it to the root directory dir_info structure */

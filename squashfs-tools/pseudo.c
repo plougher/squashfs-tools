@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2012, 2014, 2017, 2019, 2021
+ * Copyright (c) 2009, 2010, 2012, 2014, 2017, 2019, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -244,12 +244,8 @@ struct pseudo_entry *pseudo_readdir(struct pseudo *pseudo)
 	if(pseudo == NULL)
 		return NULL;
 
-	while(pseudo->count < pseudo->names) {
-		if(pseudo->name[pseudo->count].dev != NULL)
-			return &pseudo->name[pseudo->count++];
-		else
-			pseudo->count++;
-	}
+	while(pseudo->count < pseudo->names)
+		return &pseudo->name[pseudo->count++];
 
 	return NULL;
 }
