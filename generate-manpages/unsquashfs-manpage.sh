@@ -121,8 +121,8 @@ s/\n */, /
 b again
 }" $tmp/unsquashfs.help
 
-# Concatenate the options text on to one line.  Add a full stop to the end of the
-# options text
+# Concatenate the options text on to one line.  Add a full stop to the end of
+# the options text
 
 sed -i "/^  -/ {
 :again
@@ -139,9 +139,29 @@ s/^.*\n//
 /^  -/b again
 }" $tmp/unsquashfs.help
 
+# Concatenate the exit status text on to one line.
+
+sed -i "/^  [012]/ {
+:again
+N
+/\n$/b print
+/\n  [012]/b print
+s/\n */ /
+b again
+
+:print
+P
+s/^.*\n//
+/^  [012]/b again
+}" $tmp/unsquashfs.help
+
 # Make Decompressors available header into a manpage section
 
 sed -i "s/\(Decompressors available\):/*\1*/" $tmp/unsquashfs.help
+
+# Make Exit status header into a manpage section
+
+sed -i "s/\(Exit status\):/*\1*/" $tmp/unsquashfs.help
 
 # Make See also header into a manpage section
 

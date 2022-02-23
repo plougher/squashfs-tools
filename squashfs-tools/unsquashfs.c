@@ -3860,6 +3860,16 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\nDecompressors available:\n");
 	display_compressors(stream, "", "");
 
+	fprintf(stream, "\nExit status:\n");
+	fprintf(stream, "  0\tThe filesystem listed or extracted OK.\n");
+	fprintf(stream, "  1\tFATAL errors occurred, e.g. filesystem corruption, ");
+	fprintf(stream, "I/O errors.\n\tUnsquashfs aborted.\n");
+	fprintf(stream, "  2\tNon-fatal errors occurred, e.g. no support for ");
+	fprintf(stream, "XATTRs, Symbolic links\n\tin output filesystem or ");
+	fprintf(stream, "couldn't write permissions to output filesystem.\n"); 
+	fprintf(stream, "\nSee -ignore-errors, -strict-errors and ");
+	fprintf(stream, "-no-exit-code options for how they affect\nthe exit ");
+	fprintf(stream, "status.\n");
 	fprintf(stream, "\nSee also:\n");
 	fprintf(stream, "The README for the Squash-tools 4.5 release, ");
 	fprintf(stream, "describing the new features can be\n");
