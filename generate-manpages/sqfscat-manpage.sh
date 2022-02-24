@@ -139,9 +139,29 @@ s/^.*\n//
 /^  -/b again
 }" $tmp/sqfscat.help
 
+# Concatenate the exit status text on to one line.
+
+sed -i "/^  [012]/ {
+:again
+N
+/\n$/b print
+/\n  [012]/b print
+s/\n */ /
+b again
+
+:print
+P
+s/^.*\n//
+/^  [012]/b again
+}" $tmp/sqfscat.help
+
 # Make Decompressors available header into a manpage section
 
 sed -i "s/\(Decompressors available\):/*\1*/" $tmp/sqfscat.help
+
+# Make Exit status header into a manpage section
+
+sed -i "s/\(Exit status\):/*\1*/" $tmp/sqfscat.help
 
 # Make See also header into a manpage section
 

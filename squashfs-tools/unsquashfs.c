@@ -3740,7 +3740,7 @@ int parse_excludes(int argc, char *argv[], struct pathname **exclude)
 
 static void print_cat_options(FILE *stream, char *name)
 {
-	fprintf(stream, "SYNTAX: %s [OPTIONS] FILESYSTEM [files to cat]\n", name);
+	fprintf(stream, "SYNTAX: %s [OPTIONS] FILESYSTEM [list of files to cat to stdout]\n", name);
 	fprintf(stream, "\t-v[ersion]\t\tprint version, licence and copyright ");
 	fprintf(stream, "information\n");
 	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
@@ -3768,6 +3768,17 @@ static void print_cat_options(FILE *stream, char *name)
 	fprintf(stream, "\nDecompressors available:\n");
 	display_compressors(stream, "", "");
 
+	fprintf(stream, "\nExit status:\n");
+	fprintf(stream, "  0\tThe file or files were output to stdout OK.\n");
+	fprintf(stream, "  1\tFATAL errors occurred, e.g. filesystem ");
+	fprintf(stream, "corruption, I/O errors.\n");
+	fprintf(stream, "\tSqfscat did not continue and aborted.\n");
+	fprintf(stream, "  2\tNon-fatal errors occurred, e.g. not a regular ");
+	fprintf(stream, "file, or failed to resolve\n\tpathname.  Sqfscat ");
+	fprintf(stream, "continued and did not abort.\n");
+	fprintf(stream, "\nSee -ignore-errors, -strict-errors and ");
+	fprintf(stream, "-no-exit-code options for how they affect\nthe exit ");
+	fprintf(stream, "status.\n");
 	fprintf(stream, "\nSee also:\n");
 	fprintf(stream, "The README for the Squash-tools 4.5 release, ");
 	fprintf(stream, "describing the new features can be\n");
