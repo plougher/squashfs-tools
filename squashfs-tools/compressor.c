@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (c) 2009, 2010, 2011
+ * Copyright (c) 2009, 2010, 2011, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -80,11 +80,11 @@ static struct compressor unknown_comp_ops = {
 
 struct compressor *compressor[] = {
 	&gzip_comp_ops,
-	&lzma_comp_ops,
 	&lzo_comp_ops,
 	&lz4_comp_ops,
 	&xz_comp_ops,
 	&zstd_comp_ops,
+	&lzma_comp_ops,
 	&unknown_comp_ops
 };
 

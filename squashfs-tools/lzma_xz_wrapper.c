@@ -152,7 +152,7 @@ failed:
 
 static void lzma_usage(FILE *stream)
 {
-	fprintf(stream, "\t  (no options) (no kernel support)\n");
+	fprintf(stream, "\t  (no options) (deprecated - no kernel support)\n");
 }
 
 
