@@ -2102,7 +2102,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			 * Skip directory if mkdir fails, unless we're
 			 * forcing and the error is -EEXIST
 			 */
-			if(!force || errno != EEXIST) {
+			if((depth != 1 && !force) || errno != EEXIST) {
 				EXIT_UNSQUASH_IGNORE("dir_scan: failed to make"
 					" directory %s, because %s\n",
 					parent_name, strerror(errno));
