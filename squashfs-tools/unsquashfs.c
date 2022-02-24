@@ -4253,6 +4253,10 @@ int parse_options(int argc, char *argv[])
 		}
 	}
 
+	if(dest[0] == '\0')
+		EXIT_UNSQUASH("-dest: <pathname> is empty!  Use '.' to "
+			"extract to current directory\n");
+
 	if(lsonly || info)
 		progress = FALSE;
 
