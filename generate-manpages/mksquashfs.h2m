@@ -12,3 +12,50 @@ Squashfs is intended for general read-only filesystem use, for archival
 use (i.e. in cases where a .tar.gz file may be used), and in constrained
 block device/memory systems (e.g. embedded systems) where low overhead is
 needed.
+
+[Examples]
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS
+Create a Squashfs filesystem from the contents of DIRECTORY, writing the output to IMAGE.SQSH.  Mksquashfs will use the default compressor (normally gzip), and block size of 128 Kbytes.
+.TP
+mksquashfs DIRECTORY FILE1 FILE2 IMAGE.SQFS
+Create a Squashfs filesystem containing DIRECTORY and FILE1 and FILE2.  If multiple sources are specified on the command line they will be combined into a single directory.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -b 1M -comp zstd
+Use a block size of 1 Mbyte and Zstandard compression to create the filesystem. 
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -e file1 file2
+Exclude file1 and file2 from DIRECTORY when creating filesystem.  No wildcard matching of files.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -wildcards -e "*.gz"
+Exclude anything in DIRECTORY which matches the wildcard pattern "*.gz".
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -wildcards -e "... *.gz"
+Exclude files which match the wildcard pattern "*.gz" anywhere within DIRECTORY and its sub-directories.  The initial "..." indicates the wildcard pattern is "non-anchored" and will match anywhere.
+
+.SS Using pseudo file definitions
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -p "build_dir d 0644 0 0"
+Create a directory called "build_dir" in the output filesystem.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -p "version.txt l /tmp/build/version"
+Create a reference called "version.txt" to a file outside DIRECTORY, which acts as if the file "/tmp/build/version" was copied or hard-linked into DIRECTORY before calling Mksquashfs.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -p "date.txt f 0644 0 0 date"
+Create a file called "date.txt" which holds the output (stdout) from running the "date" command.
+.TP
+mksquashfs - IMAGE.SQFS -p "input f 0644 root root dd if=/dev/sda1 bs=1024" -p "/ d 0644 0 0"
+Create a file containing the contents of partition /dev/sda1".  Ordinarily Mksquashfs given a device, fifo, or named socket will place that special file within the Squashfs filesystem, the above allows input from these special files to be captured and placed in the Squashfs filesystem.   Note there are no other sources than the pseudo file, and so the command line source is "-".  If there are no other sources than pseudo files, the root (/) directory must be defined too, as seen in this example.
+.SS Using Actions to not compress, change attributes etc.
+.TP
+mksquashfs DIRECTORY IMAGE.SQSH -action "uncompressed @ (name(*.jpg) || name(*.mpg) ) || (name(*.img) && filesize(+1G))"
+Specify that any files matching the wildcards "*.jpg" and "*.mpg" should not be compressed.  Additionally, it also specifies any files matching the wildcard "*.img" and are larger than 1 Gigabyte should be uncompressed too.  This shows test operators can be combined with logical expressions.
+.TP
+mksquashfs DIRECTORY IMAGE.SQSH -action "chmod(o+r)@! perm(o+r)"
+If any files within DIRECTORY are not readable by "others", then make them readable by others in the Squashfs filesystem.
+.TP
+mksquashfs DIRECTORY IMAGE.SQSH -action "uid(phillip)@! perm(o+r)"
+As previous, match on any files which are not readable by "others", but, in this case change the owner of the file to "phillip" in the Squashfs filesystem.
+.TP
+mksquashfs DIRECTORY IMAGE.SQSH -action "prune @ type(l) && ! exists"
+Delete any symbolic link within DIRECTORY which points outside of DIRECTORY, i.e. will be unresolvable in the Squashfs filesystem.
