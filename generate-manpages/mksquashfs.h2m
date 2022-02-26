@@ -59,3 +59,6 @@ As previous, match on any files which are not readable by "others", but, in this
 .TP
 mksquashfs DIRECTORY IMAGE.SQSH -action "prune @ type(l) && ! exists"
 Delete any symbolic link within DIRECTORY which points outside of DIRECTORY, i.e. will be unresolvable in the Squashfs filesystem.
+.TP
+mksquashfs DIRECTORY IMAGE.SQSH -action "exclude @ depth(3)"
+Create a Squashfs filesystem containing the two top most levels (contents of DIRECTORY and immediate sub-directories), and exclude anything at level 3 or below.
