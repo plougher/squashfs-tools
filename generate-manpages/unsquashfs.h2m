@@ -12,3 +12,49 @@ Squashfs is intended for general read-only filesystem use, for archival
 use (i.e. in cases where a .tar.gz file may be used), and in constrained
 block device/memory systems (e.g. embedded systems) where low overhead is
 needed.
+
+[Examples]
+.TP
+unsquashfs IMAGE.SQFS
+Extract IMAGE.SQFS to "squashfs-root" in the current working directory.
+.TP
+unsquashfs -d output IMAGE.SQFS
+Extract IMAGE.SQFS to "output" in the current working directory.
+.TP
+unsquashfs -d . IMAGE.SQFS
+Extract IMAGE.SQFS to current working directory.
+.TP
+unsquashfs -linfo IMAGE.SQFS
+Output a listing of IMAGE.SQFS with file attributes to stdout, while extracting
+the filesystem to "squashfs-root".
+.TP
+unsquashfs -lls IMAGE.SQFS
+Output a listing of IMAGE.SQFS with file attributes to stdout, but do not
+extract the filesystem.
+.TP
+unsquashfs IMAGE.SQFS fs/squashfs
+Extract only the "fs/squashfs" directory.
+.TP
+unsquashfs IMAGE.SQFS "[Tt]est/example*"
+Extract all files beginning with "example" inside top level directories
+called "Test" or "test".
+.TP
+unsquashfs -excludes IMAGE.SQFS "test/*data*.gz"
+This will extract everything except for files that match *data*.gz in the
+test directory.  The -excludes option tells Unsquashfs to exclude the files
+on the command line rather than extract them.
+.TP
+unsquashfs -ex "test/*data*.gz" \; IMAGE.SQFS test
+This uses both extract and exclude options, to tell Unsquashfs to only
+extract the "test" directory, and to exclude any files within it that
+match *data*.gz.
+.TP
+unsquashfs -dest output -max-depth 2 IMAGE.SQFS
+Extract only the top two levels of IMAGE.SQFS to "output" directory.
+.TP
+unsquashfs -max-depth 2 IMAGE.SQFS test/*.gz
+Only extract the gzipped files in the test directory.
+.TP
+unsquasfs -llc -max-depth 2 IMAGE.SQFS test/*.gz
+Output a listing of the gzipped files in the test directory to stdout,
+but do not extract them.
