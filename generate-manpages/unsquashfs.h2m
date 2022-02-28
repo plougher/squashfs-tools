@@ -55,6 +55,6 @@ Extract only the top two levels of IMAGE.SQFS to "output" directory.
 unsquashfs -max-depth 2 IMAGE.SQFS "test/*.gz"
 Only extract the gzipped files in the test directory.
 .TP
-unsquasfs -llc -max-depth 2 IMAGE.SQFS "test/*.gz"
+unsquashfs -llc -max-depth 2 IMAGE.SQFS "test/*.gz"
 Output a listing of the gzipped files in the test directory to stdout,
 but do not extract them.
