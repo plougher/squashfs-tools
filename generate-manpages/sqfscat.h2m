@@ -12,3 +12,15 @@ Squashfs is intended for general read-only filesystem use, for archival
 use (i.e. in cases where a .tar.gz file may be used), and in constrained
 block device/memory systems (e.g. embedded systems) where low overhead is
 needed.
+
+[Examples]
+.TP
+sqfscat IMAGE.SQFS hello
+Output the contents of "hello" to stdout.
+.TP
+sqfscat IMAGE.SQFS hello world
+Output the contents of "hello" and then "world" to stdout.
+.TP
+sqfscat IMAGE.SQFS "*.[ch]"
+Output the contents of all the files in the root directory that match the
+wildcard *.[ch], to stdout, e.g.  hello.c, hello.h, world.c, world.h.
