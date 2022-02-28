@@ -32,6 +32,9 @@ Exclude anything in DIRECTORY which matches the wildcard pattern "*.gz".
 .TP
 mksquashfs DIRECTORY IMAGE.SQFS -wildcards -e "... *.gz"
 Exclude files which match the wildcard pattern "*.gz" anywhere within DIRECTORY and its sub-directories.  The initial "..." indicates the wildcard pattern is "non-anchored" and will match anywhere.
+.PP
+Note: when passing wildcarded names to Mksquashfs, they should be quoted (as in
+the above examples), to ensure that they are not processed by the shell.
 
 .SS Using pseudo file definitions
 .TP
