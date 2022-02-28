@@ -58,3 +58,6 @@ Only extract the gzipped files in the test directory.
 unsquashfs -llc -max-depth 2 IMAGE.SQFS "test/*.gz"
 Output a listing of the gzipped files in the test directory to stdout,
 but do not extract them.
+.PP
+Note: when passing wildcarded names to Unsquashfs, they should be quoted (as in
+the above examples), to ensure that they are not processed by the shell.
