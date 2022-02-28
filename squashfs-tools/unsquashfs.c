@@ -3831,7 +3831,7 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "attributes,\n\t\t\t\tdisplaying only files and empty ");
 	fprintf(stream, "directories.\n\t\t\t\tDon't extract files\n");
 	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  ");
-	fprintf(stream, "Optionally a\n\t\t\t\tsuffix of K, M or G can be given to ");
+	fprintf(stream, "Optionally\n\t\t\t\ta suffix of K, M or G can be given to ");
 	fprintf(stream, "specify\n\t\t\t\tKbytes, Mbytes or Gbytes respectively ");
 	fprintf(stream, "(default\n\t\t\t\t0 bytes).\n");
 	fprintf(stream, "\t-f[orce]\t\tif file already exists then overwrite\n");
