@@ -24,3 +24,6 @@ Output the contents of "hello" and then "world" to stdout.
 sqfscat IMAGE.SQFS "*.[ch]"
 Output the contents of all the files in the root directory that match the
 wildcard *.[ch], to stdout, e.g.  hello.c, hello.h, world.c, world.h.
+.PP
+Note: when passing wildcarded names to Sqfscat, they should be quoted (as in
+the above examples), to ensure that they are not processed by the shell.
