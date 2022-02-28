@@ -18,3 +18,38 @@ Squashfs is intended for general read-only filesystem use, for archival
 use (i.e. in cases where a .tar.gz file may be used), and in constrained
 block device/memory systems (e.g. embedded systems) where low overhead is
 needed.
+
+[Examples]
+.TP
+sqfstar IMAGE.SQFS < archive.tar
+Create a Squashfs filesystem from the uncompressed tar file "archive.tar".
+Sqfstar will use the default compressor (normally gzip), and block size of 128
+Kbytes.
+.TP
+zcat archive.tgz | sqfstar IMAGE.SQFS
+Create a Squashfs filesystem from the compressed tar file "archive.tgz". Sqfstar
+will use the default compressor (normally gzip), and block size of 128 Kbytes.
+.TP
+sqfstar -b 1M -comp zstd IMAGE.SQFS < archive.tar
+Use a block size of 1 Mbyte and Zstandard compression to create the filesystem. 
+.TP
+sqfstar -root-uid 0 -root-gid 0 IMAGE.SQFS < archive.tar
+Tar files do not supply a definition for the root directory, and the default is
+to make the directory owned/group owned by the user running Sqfstar.  The above
+command sets the ownership/group ownership to root.
+.TP
+sqfstar -root-mode 0755 IMAGE.SQFS < archive.tar
+The default permissions for the root directory is 0777 (rwxrwxrwx).  The above
+command sets the permissions to 0755 (rwxr-xr-x).
+.TP
+sqfstar IMAGE.SQFS file1 file2 < archive.tar
+Exclude file1 and file2 from the tar file when creating filesystem.
+.TP
+sqfstar IMAGE.SQFS "*.gz" < archive.tar
+Exclude any files in the top level directory which matches the wildcard pattern
+"*.gz".
+.TP
+sqfstar IMAGE.SQFS "... *.gz" < archive.tar
+Exclude any file which matches the wildcard pattern "*.gz" anywhere within the
+tar file.  The initial "..." indicates the wildcard pattern is "non-anchored"
+and will match anywhere.
