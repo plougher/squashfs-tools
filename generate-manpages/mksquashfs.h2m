@@ -49,6 +49,10 @@ Create a file called "date.txt" which holds the output (stdout) from running the
 .TP
 mksquashfs - IMAGE.SQFS -p "input f 0644 root root dd if=/dev/sda1 bs=1024" -p "/ d 0644 0 0"
 Create a file containing the contents of partition /dev/sda1".  Ordinarily Mksquashfs given a device, fifo, or named socket will place that special file within the Squashfs filesystem, the above allows input from these special files to be captured and placed in the Squashfs filesystem.   Note there are no other sources than the pseudo file, and so the command line source is "-".  If there are no other sources than pseudo files, the root (/) directory must be defined too, as seen in this example.
+.PP
+Note: pseudo file definitions should be quoted (as in the above examples), to
+ensure that they are passed to Mksquashfs as a single argument, and to ensure
+that they are not processed by the shell.
 .SS Using Actions to not compress, change attributes etc.
 .TP
 mksquashfs DIRECTORY IMAGE.SQSH -action "uncompressed @ (name(*.jpg) || name(*.mpg) ) || (name(*.img) && filesize(+1G))"
@@ -65,3 +69,7 @@ Delete any symbolic link within DIRECTORY which points outside of DIRECTORY, i.e
 .TP
 mksquashfs DIRECTORY IMAGE.SQSH -action "exclude @ depth(3)"
 Create a Squashfs filesystem containing the two top most levels (contents of DIRECTORY and immediate sub-directories), and exclude anything at level 3 or below.
+.PP
+Note: actions should be quoted (as in the above examples), to ensure that they
+are passed to Mksquashfs as a single argument, and to ensure that they are not
+processed by the shell.
