@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2012,
- * 2013, 2014, 2021
+ * 2013, 2014, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -59,7 +59,7 @@ struct priority_entry *priority_list[65536];
 
 extern int silent;
 extern char *pathname(struct dir_ent *dir_ent);
-
+extern long long hardlnk_count;
 
 void add_priority_list(struct dir_ent *dir, int priority)
 {
@@ -363,6 +363,7 @@ void sort_files_and_write(struct dir_info *dir)
 					duplicate_file ? "DUPLICATE" : "");
 				entry->dir->inode->inode = inode;
 				entry->dir->inode->type = SQUASHFS_FILE_TYPE;
+				hardlnk_count --;
 			} else
 				INFO("file %s, uncompressed size %lld bytes "
 					"LINK\n", pathname(entry->dir),

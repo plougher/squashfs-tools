@@ -105,8 +105,9 @@ long long global_uid = -1, global_gid = -1;
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
 unsigned int id_count = 0;
-unsigned int file_count = 0, sym_count = 0, dev_count = 0, dir_count = 0, fifo_count = 0,
-	sock_count = 0;
+unsigned int file_count = 0, sym_count = 0, dev_count = 0, dir_count = 0,
+fifo_count = 0, sock_count = 0;
+long long hardlnk_count = 0;
 
 /* write position within data section */
 long long bytes = 0, total_bytes = 0;
@@ -4356,6 +4357,7 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 						subpathname(dir_ent), *inode);
 					break;
 			}
+			hardlnk_count ++;
 		}
 		
 		add_dir(*inode, get_inode_no(dir_ent->inode), dir_ent->name,
@@ -6312,6 +6314,7 @@ static void print_summary()
 	printf("Number of fifo nodes %u\n", fifo_count);
 	printf("Number of socket nodes %u\n", sock_count);
 	printf("Number of directories %u\n", dir_count);
+	printf("Number of hard-links %lld\n", hardlnk_count);
 	printf("Number of ids (unique uids + gids) %d\n", id_count);
 	printf("Number of uids %d\n", uid_count);
 
