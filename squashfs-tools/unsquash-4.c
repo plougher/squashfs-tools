@@ -152,7 +152,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		EXIT_UNSQUASH("File system corrupted - gid index in inode too large (gid: %u)\n", header.base.guid);
 
 	if(header.base.inode_type < 1 || header.base.inode_type > 14)
-		EXIT_UNSQUASH("File system corrupted - invald type in inode (type: %u)\n", header.base.inode_type);
+		EXIT_UNSQUASH("File system corrupted - invalid type in inode (type: %u)\n", header.base.inode_type);
 
 	if(header.base.inode_number > sBlk.s.inodes)
 		EXIT_UNSQUASH("File system corrupted - inode number in inode too large (inode_number: %u)\n", header.base.inode_number);
