@@ -249,6 +249,19 @@ struct directory_stack {
 
 #define MAX_FOLLOW_SYMLINKS 256
 
+/* Bit-table to track whether directories have been already visited.
+ * This is to trap corrupted filesystems which have directory loops
+ *
+ * Each index entry is 8 Kbytes, and tracks 65536 inode numbers.
+ * The index is allocated on demand because Unsquashfs may not walk
+ * the complete filesystem.
+ */
+#define INUMBER_INDEXES(INODES)		((((INODES) - 1) >> 16) + 1)
+#define INUMBER_INDEX(NUMBER)		((NUMBER) >> 16)
+#define INUMBER_OFFSET(NUMBER)		(((NUMBER) & 0xffff) >> 5)
+#define INUMBER_BIT(NUMBER)		(1 << ((NUMBER) & 0x1f))
+#define INUMBER_BYTES			8192
+
 /* globals */
 extern struct super_block sBlk;
 extern int swap;
@@ -291,6 +304,8 @@ extern int read_ids(int, long long, long long, unsigned int **);
 
 /* unsquash-34.c */
 extern long long *alloc_index_table(int);
+extern int inumber_lookup(unsigned int);
+extern void free_inumber_table();
 
 /* unsquash-1234.c */
 extern int check_name(char *, int);

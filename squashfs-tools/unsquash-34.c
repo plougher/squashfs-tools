@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2019
+ * Copyright (c) 2019, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -26,6 +26,8 @@
 
 #include "unsquashfs.h"
 
+static unsigned int **inumber_table = NULL;
+
 long long *alloc_index_table(int indexes)
 {
 	static long long *alloc_table = NULL;
@@ -43,4 +45,61 @@ long long *alloc_index_table(int indexes)
 	}
 
 	return alloc_table;
+}
+
+
+/* These functions implement a bit-table to track whether directories have been
+ * already visited.  This is to trap corrupted filesystems which have directory
+ * loops.
+ *
+ * Each index entry is 8 Kbytes, and tracks 65536 inode numbers.  The index is
+ * allocated on demand because Unsquashfs may not walk the complete filesystem.
+ */
+static void create_inumber_table()
+{
+	int indexes = INUMBER_INDEXES(sBlk.s.inodes);
+
+	inumber_table = malloc(indexes * sizeof(unsigned int *));
+	if(inumber_table == NULL)
+		MEM_ERROR();
+	memset(inumber_table, 0, indexes * sizeof(unsigned int *));
+}
+
+
+int inumber_lookup(unsigned int number)
+{
+	int index = INUMBER_INDEX(number - 1);
+	int offset = INUMBER_OFFSET(number - 1);
+	int bit = INUMBER_BIT(number - 1);
+
+	if(inumber_table == NULL)
+		create_inumber_table();
+
+	/* Lookup number in the bit table */
+	if(inumber_table[index] && (inumber_table[index][offset] & bit))
+		return TRUE;
+
+	if(inumber_table[index] == NULL) {
+		inumber_table[index] = malloc(INUMBER_BYTES);
+		if(inumber_table[index] == NULL)
+			MEM_ERROR();
+		memset(inumber_table[index], 0, INUMBER_BYTES);
+	}
+
+	inumber_table[index][offset] |= bit;
+	return FALSE;
+}
+
+
+void free_inumber_table()
+{
+	int i, indexes = INUMBER_INDEXES(sBlk.s.inodes);
+
+	if(inumber_table) {
+		for(i = 0; i < indexes; i++)
+			if(inumber_table[i])
+				free(inumber_table[i]);
+		free(inumber_table);
+		inumber_table = NULL;
+	}
 }

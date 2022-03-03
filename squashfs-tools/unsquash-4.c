@@ -357,6 +357,11 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 
 	*i = read_inode(block_start, offset);
 
+	if(inumber_lookup((*i)->inode_number)) {
+		ERROR("File System corrupted: directory loop detected\n");
+		return NULL;
+	}
+
 	dir = malloc(sizeof(struct dir));
 	if(dir == NULL)
 		MEM_ERROR();

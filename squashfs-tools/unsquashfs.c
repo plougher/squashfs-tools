@@ -3097,6 +3097,7 @@ struct pathname *resolve_symlinks(int argc, char *argv[])
 			SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
 			1, 0, stack);
+		free_inumber_table();
 
 		if(!found) {
 			if(missing_symlinks)
@@ -3415,6 +3416,7 @@ int cat_path(int argc, char *argv[])
 			failed = TRUE;
 
 		free_stack(stack);
+		free_inumber_table();
 	}
 
 	queue_put(to_writer, NULL);
@@ -3688,6 +3690,7 @@ int generate_pseudo(char *pseudo_file)
 	if(res == FALSE)
 		goto failed;
 
+	free_inumber_table();
 	for(i = 0; i < sBlk.s.inodes; i++) {
 		if(created_inode[i]) {
 			free(created_inode[i]);
@@ -4426,6 +4429,7 @@ int main(int argc, char *argv[])
 		if(res == FALSE && set_exit_code)
 			exit_code = 2;
 
+		free_inumber_table();
 		memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
 		inode_number = 1;
 
