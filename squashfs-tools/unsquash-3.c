@@ -209,7 +209,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 	else
 		i.gid = (uid_t) guid_table[header.base.guid];
 
-	if(header.base.inode_type < 1 || header.base.inode_type > 14)
+	if(header.base.inode_type < 1 || header.base.inode_type > 9)
 		EXIT_UNSQUASH("File system corrupted - invalid type in inode (type: %u)\n", header.base.inode_type);
 
 	if(header.base.inode_number > sBlk.s.inodes)
