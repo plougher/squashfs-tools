@@ -49,8 +49,10 @@ long long *alloc_index_table(int indexes)
 
 
 /* These functions implement a bit-table to track whether directories have been
- * already visited.  This is to trap corrupted filesystems which have directory
- * loops.
+ * already visited.  This is to trap corrupted filesystems which have multiple
+ * links to the same directory, which is invalid, and which may also create
+ * a directory loop, where Unsquashfs will endlessly recurse until either
+ * the pathname is too large (extracting), or the stack overflows.
  *
  * Each index entry is 8 Kbytes, and tracks 65536 inode numbers.  The index is
  * allocated on demand because Unsquashfs may not walk the complete filesystem.

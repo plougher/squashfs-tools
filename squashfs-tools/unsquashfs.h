@@ -249,12 +249,14 @@ struct directory_stack {
 
 #define MAX_FOLLOW_SYMLINKS 256
 
-/* Bit-table to track whether directories have been already visited.
- * This is to trap corrupted filesystems which have directory loops
+/* These macros implement a bit-table to track whether directories have been
+ * already visited.  This is to trap corrupted filesystems which have multiple
+ * links to the same directory, which is invalid, and which may also create
+ * a directory loop, where Unsquashfs will endlessly recurse until either
+ * the pathname is too large (extracting), or the stack overflows.
  *
- * Each index entry is 8 Kbytes, and tracks 65536 inode numbers.
- * The index is allocated on demand because Unsquashfs may not walk
- * the complete filesystem.
+ * Each index entry is 8 Kbytes, and tracks 65536 inode numbers.  The index is
+ * allocated on demand because Unsquashfs may not walk the complete filesystem.
  */
 #define INUMBER_INDEXES(INODES)		((((INODES) - 1) >> 16) + 1)
 #define INUMBER_INDEX(NUMBER)		((NUMBER) >> 16)
