@@ -243,5 +243,4 @@ if ! help2man -Ni mksquashfs.h2m -o $2 $tmp/mksquashfs.sh; then
 	exit 1
 fi
 
-cp $tmp/mksquashfs.help /tmp/v
 rm -rf $tmp

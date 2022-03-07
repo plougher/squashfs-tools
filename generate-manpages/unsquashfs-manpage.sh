@@ -163,6 +163,9 @@ sed -i "s/\(Decompressors available\):/*\1*/" $tmp/unsquashfs.help
 
 sed -i "s/\(Exit status\):/*\1*/" $tmp/unsquashfs.help
 
+# Add reference to manpages for other squashfs-tools programs
+sed -i "s/See also:/See also:\nmksquashfs(1), sqfstar(1), sqfscat(1)\n/" $tmp/unsquashfs.help
+
 # Make See also header into a manpage section
 
 sed -i "s/\(See also\):/*\1*/" $tmp/unsquashfs.help
