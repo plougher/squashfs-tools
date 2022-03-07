@@ -200,6 +200,9 @@ s/\([^.]\)\n/\1.\n/
 
 sed -i "s/\(Compressors available and compressor specific options\):/*\1*/" $tmp/sqfstar.help
 
+# Add reference to manpages for other squashfs-tools programs
+sed -i "s/See also:/See also:\nmksquashfs(1), unsquashfs(1), sqfscat(1)\n/" $tmp/sqfstar.help
+
 # Make See also header into a manpage section
 
 sed -i "s/\(See also\):/*\1*/" $tmp/sqfstar.help
