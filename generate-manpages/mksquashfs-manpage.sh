@@ -227,6 +227,9 @@ sed -i "s/\(Compressors available and compressor specific options\):/*\1*/" $tmp
 
 sed -i "s/\(Pseudo file definition format\):/*\1*/" $tmp/mksquashfs.help
 
+# Add reference to manpages for other squashfs-tools programs
+sed -i "s/See also:/See also:\nunsquashfs(1), sqfstar(1), sqfscat(1)\n/" $tmp/mksquashfs.help
+
 # Make See also header into a manpage section
 
 sed -i "s/\(See also\):/*\1*/" $tmp/mksquashfs.help
@@ -240,4 +243,5 @@ if ! help2man -Ni mksquashfs.h2m -o $2 $tmp/mksquashfs.sh; then
 	exit 1
 fi
 
+cp $tmp/mksquashfs.help /tmp/v
 rm -rf $tmp
