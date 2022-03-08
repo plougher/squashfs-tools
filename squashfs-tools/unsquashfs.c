@@ -4355,6 +4355,10 @@ int main(int argc, char *argv[])
 		EXIT_UNSQUASH("Block size or block_log too large."
 			"  File system is corrupt.\n");
 
+	if(block_size < 4096)
+		EXIT_UNSQUASH("Block size too small."
+			"  File system is corrupt.\n");
+
 	/*
 	 * Check block_size and block_log match
 	 */
