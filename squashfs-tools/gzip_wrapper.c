@@ -421,6 +421,7 @@ static int gzip_compress(void *strm, void *d, void *s, int size, int block_size,
 				goto failed;
 		}
 
+		stream->stream.total_out = 0;
 		res = deflate(&stream->stream, Z_FINISH);
 		strategy->length = stream->stream.total_out;
 		if(res == Z_STREAM_END) {
