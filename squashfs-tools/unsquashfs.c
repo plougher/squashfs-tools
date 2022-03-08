@@ -63,7 +63,6 @@ unsigned int block_log;
 int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE;
 int concise = FALSE, quiet = FALSE, numeric = FALSE;
 int use_regex = FALSE;
-char **created_inode;
 int root_process;
 int columns;
 int rotate = 0;
@@ -1150,15 +1149,16 @@ int create_inode(char *pathname, struct inode *i)
 {
 	int res;
 	int failed = FALSE;
+	char *link_path = lookup(i->inode_number - 1);
 
 	TRACE("create_inode: pathname %s\n", pathname);
 
-	if(created_inode[i->inode_number - 1]) {
+	if(link_path) {
 		TRACE("create_inode: hard link\n");
 		if(force)
 			unlink(pathname);
 
-		if(link(created_inode[i->inode_number - 1], pathname) == -1) {
+		if(link(link_path, pathname) == -1) {
 			EXIT_UNSQUASH_IGNORE("create_inode: failed to create"
 				" hardlink, because %s\n", strerror(errno));
 			return FALSE;
@@ -1319,7 +1319,7 @@ int create_inode(char *pathname, struct inode *i)
 			return FALSE;
 	}
 
-	created_inode[i->inode_number - 1] = strdup(pathname);
+	insert_lookup(i->inode_number - 1, strdup(pathname));
 
 	return TRUE;
 
@@ -1334,7 +1334,7 @@ failed:
 	 * If we've had some transitory errors, this may produce files
 	 * in various states, which should be hard-linked, but are not.
 	 */
-	created_inode[i->inode_number - 1] = strdup(pathname);
+	insert_lookup(i->inode_number - 1, strdup(pathname));
 
 	return FALSE;
 }
@@ -2048,9 +2048,8 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		} else if(newt == NULL) {
 			if(type == SQUASHFS_FILE_TYPE) {
 				i = s_ops->read_inode(start_block, offset);
-				if(created_inode[i->inode_number - 1] == NULL) {
-					created_inode[i->inode_number - 1] =
-						(char *) i;
+				if(lookup(i->inode_number - 1) == NULL) {
+					insert_lookup(i->inode_number - 1, (char *) i);
 					total_blocks += (i->data +
 						(block_size - 1)) >> block_log;
 				}
@@ -3573,7 +3572,7 @@ int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offse
 			char *link;
 
 			i = s_ops->read_inode(start_block, offset);
-			link = created_inode[i->inode_number - 1];
+			link = lookup(i->inode_number - 1);
 
 			if(link == NULL) {
 				pseudo_print(pathname, i, NULL, byte_offset);
@@ -3581,7 +3580,7 @@ int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offse
 					byte_offset += i->data;
 					total_blocks += (i->data + (block_size - 1)) >> block_log;
 				}
-				created_inode[i->inode_number - 1] = strdup(pathname);
+				insert_lookup(i->inode_number - 1, strdup(pathname));
 			} else
 				pseudo_print(pathname, i, link, 0);
 
@@ -3648,7 +3647,7 @@ int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offse
 			} else if(newt == NULL && type == SQUASHFS_FILE_TYPE) {
 				i = s_ops->read_inode(start_block, offset);
 
-				if(created_inode[i->inode_number - 1] == NULL) {
+				if(lookup(i->inode_number - 1) == NULL) {
 					update_info(pathname);
 
 					i = s_ops->read_inode(start_block, offset);
@@ -3659,7 +3658,7 @@ int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offse
 						return FALSE;
 					}
 
-					created_inode[i->inode_number - 1] = strdup(pathname);
+					insert_lookup(i->inode_number - 1, strdup(pathname));
 				} else
 					free(pathname);
 			} else
@@ -3678,7 +3677,7 @@ int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offse
 
 int generate_pseudo(char *pseudo_file)
 {
-	int i, res;
+	int res;
 
 	writer_fd = open_wait(pseudo_file, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if(writer_fd == -1)
@@ -3691,12 +3690,7 @@ int generate_pseudo(char *pseudo_file)
 		goto failed;
 
 	free_inumber_table();
-	for(i = 0; i < sBlk.s.inodes; i++) {
-		if(created_inode[i]) {
-			free(created_inode[i]);
-			created_inode[i] = NULL;
-		}
-	}
+	free_lookup_table();
 
 	dprintf(writer_fd, "#\n# START OF DATA - DO NOT MODIFY\n#\n");
 
@@ -4388,12 +4382,6 @@ int main(int argc, char *argv[])
 	if(!lsonly)
 		initialise_threads(fragment_buffer_size, data_buffer_size, cat_files);
 
-	created_inode = malloc(sBlk.s.inodes * sizeof(char *));
-	if(created_inode == NULL)
-		MEM_ERROR();
-
-	memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
-
 	res = s_ops->read_filesystem_tables();
 	if(res == FALSE)
 		EXIT_UNSQUASH("File system corruption detected\n");
@@ -4430,8 +4418,8 @@ int main(int argc, char *argv[])
 			exit_code = 2;
 
 		free_inumber_table();
-		memset(created_inode, 0, sBlk.s.inodes * sizeof(char *));
 		inode_number = 1;
+		free_lookup_table();
 
 		if(!quiet)  {
 			printf("Parallel unsquashfs: Using %d processor%s\n",

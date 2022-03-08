@@ -264,6 +264,18 @@ struct directory_stack {
 #define INUMBER_BIT(NUMBER)		(1 << ((NUMBER) & 0x1f))
 #define INUMBER_BYTES			8192
 
+/* These macros implement a lookup table to track creation of (non-directory)
+ * inodes, and to discover if a hard-link to a previously created file should
+ * be made.
+ *
+ * Each index entry is 32 Kbytes, and tracks 4096 inode numbers.  The index is
+ * allocated on demand because Unsquashfs may not walk the complete filesystem.
+ */
+#define LOOKUP_INDEXES(INODES)		((((INODES) - 1) >> 12) + 1)
+#define LOOKUP_INDEX(NUMBER)		((NUMBER) >> 12)
+#define LOOKUP_OFFSET(NUMBER)		((NUMBER) & 0xfff)
+#define LOOKUP_BYTES			32768
+
 /* globals */
 extern struct super_block sBlk;
 extern int swap;
@@ -308,6 +320,9 @@ extern int read_ids(int, long long, long long, unsigned int **);
 extern long long *alloc_index_table(int);
 extern int inumber_lookup(unsigned int);
 extern void free_inumber_table();
+extern char *lookup(unsigned int);
+extern void insert_lookup(unsigned int, char *);
+extern void free_lookup_table();
 
 /* unsquash-1234.c */
 extern int check_name(char *, int);

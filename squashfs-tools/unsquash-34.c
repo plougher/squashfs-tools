@@ -27,6 +27,7 @@
 #include "unsquashfs.h"
 
 static unsigned int **inumber_table = NULL;
+static char ***lookup_table = NULL;
 
 long long *alloc_index_table(int indexes)
 {
@@ -103,5 +104,72 @@ void free_inumber_table()
 				free(inumber_table[i]);
 		free(inumber_table);
 		inumber_table = NULL;
+	}
+}
+
+
+/* These functions implement a lookup table to track creation of (non-directory)
+ * inodes, and to discover if a hard-link to a previously created file should
+ * be made.
+ *
+ * Each index entry is 32 Kbytes, and tracks 4096 inode numbers.  The index is
+ * allocated on demand because Unsquashfs may not walk the complete filesystem.
+ */
+static void create_lookup_table()
+{
+	int indexes = LOOKUP_INDEXES(sBlk.s.inodes);
+
+	lookup_table = malloc(indexes * sizeof(char *));
+	if(lookup_table == NULL)
+		MEM_ERROR();
+	memset(lookup_table, 0, indexes * sizeof(char *));
+}
+
+
+char *lookup(unsigned int number)
+{
+	int index = LOOKUP_INDEX(number - 1);
+	int offset = LOOKUP_OFFSET(number - 1);
+
+	if(lookup_table == NULL)
+		create_lookup_table();
+
+	/* Lookup number in table */
+	if(lookup_table[index] == NULL)
+		return NULL;
+
+	return lookup_table[index][offset];
+}
+
+
+void insert_lookup(unsigned int number, char *pathname)
+{
+	int index = LOOKUP_INDEX(number - 1);
+	int offset = LOOKUP_OFFSET(number - 1);
+
+	if(lookup_table == NULL)
+		create_lookup_table();
+
+	if(lookup_table[index] == NULL) {
+		lookup_table[index] = malloc(LOOKUP_BYTES);
+		if(lookup_table[index] == NULL)
+			MEM_ERROR();
+		memset(lookup_table[index], 0, LOOKUP_BYTES);
+	}
+
+	lookup_table[index][offset] = pathname;
+}
+
+
+void free_lookup_table()
+{
+	int i, indexes = LOOKUP_INDEXES(sBlk.s.inodes);
+
+	if(lookup_table) {
+		for(i = 0; i < indexes; i++)
+			if(lookup_table[i])
+				free(lookup_table[i]);
+		free(lookup_table);
+		lookup_table = NULL;
 	}
 }
