@@ -1149,7 +1149,7 @@ int create_inode(char *pathname, struct inode *i)
 {
 	int res;
 	int failed = FALSE;
-	char *link_path = lookup(i->inode_number - 1);
+	char *link_path = lookup(i->inode_number);
 
 	TRACE("create_inode: pathname %s\n", pathname);
 
@@ -1319,7 +1319,7 @@ int create_inode(char *pathname, struct inode *i)
 			return FALSE;
 	}
 
-	insert_lookup(i->inode_number - 1, strdup(pathname));
+	insert_lookup(i->inode_number, strdup(pathname));
 
 	return TRUE;
 
@@ -1334,7 +1334,7 @@ failed:
 	 * If we've had some transitory errors, this may produce files
 	 * in various states, which should be hard-linked, but are not.
 	 */
-	insert_lookup(i->inode_number - 1, strdup(pathname));
+	insert_lookup(i->inode_number, strdup(pathname));
 
 	return FALSE;
 }
@@ -2048,8 +2048,8 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		} else if(newt == NULL) {
 			if(type == SQUASHFS_FILE_TYPE) {
 				i = s_ops->read_inode(start_block, offset);
-				if(lookup(i->inode_number - 1) == NULL) {
-					insert_lookup(i->inode_number - 1, (char *) i);
+				if(lookup(i->inode_number) == NULL) {
+					insert_lookup(i->inode_number, (char *) i);
 					total_blocks += (i->data +
 						(block_size - 1)) >> block_log;
 				}
@@ -3572,7 +3572,7 @@ int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offse
 			char *link;
 
 			i = s_ops->read_inode(start_block, offset);
-			link = lookup(i->inode_number - 1);
+			link = lookup(i->inode_number);
 
 			if(link == NULL) {
 				pseudo_print(pathname, i, NULL, byte_offset);
@@ -3580,7 +3580,7 @@ int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offse
 					byte_offset += i->data;
 					total_blocks += (i->data + (block_size - 1)) >> block_log;
 				}
-				insert_lookup(i->inode_number - 1, strdup(pathname));
+				insert_lookup(i->inode_number, strdup(pathname));
 			} else
 				pseudo_print(pathname, i, link, 0);
 
@@ -3647,7 +3647,7 @@ int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offse
 			} else if(newt == NULL && type == SQUASHFS_FILE_TYPE) {
 				i = s_ops->read_inode(start_block, offset);
 
-				if(lookup(i->inode_number - 1) == NULL) {
+				if(lookup(i->inode_number) == NULL) {
 					update_info(pathname);
 
 					i = s_ops->read_inode(start_block, offset);
@@ -3658,7 +3658,7 @@ int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offse
 						return FALSE;
 					}
 
-					insert_lookup(i->inode_number - 1, strdup(pathname));
+					insert_lookup(i->inode_number, strdup(pathname));
 				} else
 					free(pathname);
 			} else
