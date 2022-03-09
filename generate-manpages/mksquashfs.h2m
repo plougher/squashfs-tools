@@ -57,6 +57,10 @@ mksquashfs DIRECTORY IMAGE.SQFS -p "date.txt f 0644 0 0 date"
 Create a file called "date.txt" which holds the output (stdout) from running
 the "date" command.
 .TP
+mksquashfs DIRECTORY IMAGE.SQFS -p "\\"hello world\\" f 0644 0 0 date"
+As above, but, showing that filenames can have spaces, if they are quoted.
+The quotes need to be blackslashed to protect them from the shell.
+.TP
 mksquashfs - IMAGE.SQFS -p "input f 0644 root root dd if=/dev/sda1 bs=1024" -p "/ d 0644 0 0"
 Create a file containing the contents of partition /dev/sda1".  Ordinarily
 Mksquashfs given a device, fifo, or named socket will place that special file
