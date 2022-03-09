@@ -54,7 +54,7 @@ squashfs_operations *s_ops;
 struct compressor *comp;
 
 int bytes = 0, swap, file_count = 0, dir_count = 0, sym_count = 0,
-	dev_count = 0, fifo_count = 0, socket_count = 0;
+	dev_count = 0, fifo_count = 0, socket_count = 0, hardlnk_count = 0;
 struct hash_table_entry *inode_table_hash[65536], *directory_table_hash[65536];
 int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
@@ -1164,6 +1164,7 @@ int create_inode(char *pathname, struct inode *i)
 			return FALSE;
 		}
 
+		hardlnk_count++;
 		return TRUE;
 	}
 
@@ -4459,6 +4460,7 @@ int main(int argc, char *argv[])
 		printf("created %d %s\n", dev_count, dev_count == 1 ? "device" : "devices");
 		printf("created %d %s\n", fifo_count, fifo_count == 1 ? "fifo" : "fifos");
 		printf("created %d %s\n", socket_count, socket_count == 1 ? "socket" : "sockets");
+		printf("created %d %s\n", hardlnk_count, hardlnk_count == 1 ? "hardlink" : "hardlinks");
 	}
 
 	return exit_code;
