@@ -158,7 +158,7 @@ b again
 # Make the pseudo file definitions into "options" so they're handled
 # properly by help2man
 
-sed -i "s/^filename/  -p filename/" $tmp/mksquashfs.help
+sed -i "s/^\"filename/  -p \"filename/" $tmp/mksquashfs.help
 
 # Make each compressor entry in the compressors available section, a subsection
 # First, have to deal with the deprecated lzma compressor separately, because
