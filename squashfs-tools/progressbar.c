@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2012, 2013, 2014, 2021
+ * Copyright (c) 2012, 2013, 2014, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -211,9 +211,8 @@ void *progress_thrd(void *arg)
 		if(res == -1 && errno != EINTR)
 			BAD_ERROR("nanosleep failed in progress thread\n");
 
-		rotate = (rotate + 1) % 4;
-
 		pthread_mutex_lock(&progress_mutex);
+		rotate = (rotate + 1) % 4;
 		if(display_progress_bar && !temp_disabled) {
 			progress_bar(cur_uncompressed, estimated_uncompressed, columns);
 			need_nl = TRUE;
