@@ -1,0 +1,790 @@
+
+	SQUASHFS-TOOLS 4.5.1 - A squashed read-only filesystem for Linux
+
+	Copyright 2002-2022 Phillip Lougher <phillip@squashfs.org.uk>
+
+	Released under the GPL licence (version 2 or later).
+
+Welcome to Squashfs-Tools 4.5.1.  This release adds Manpages, a fix for
+CVE-2021-41072 and the usual minor improvements and bug fixes.  Please
+see the CHANGES file for a full list.
+
+The 4.5.1 release follows on from the 4.5 release last year, which had the
+following improvements.
+
+Summary of changes (and sections below)
+---------------------------------------
+
+1. Major improvements in Mksquashfs
+===================================
+
+1.1 Mksquashfs now supports "Actions". These are modelled on "find"
+    and allow compression, fragment packing, file exclusion and
+    file attributes to be changed on a per-file basis (see section 4).
+
+1.2 New sqfstar command which will create a Squashfs image from a tar
+    archive (see section 5).
+
+1.3 Tar style handling of source pathnames in Mksquashfs.  If option is
+    specified, Mksquashfs will not strip leading directories (see
+    section 6).
+
+1.4 Cpio style handling of source pathnames in Mksquashfs.  If this option
+    is specified, files will be read in from stdin.  No leading
+    directories will be stripped (see section 7).
+
+1.5 New option to throttle the amount of CPU and I/O Mksquashfs uses
+    (see section 8).
+
+1.6 New Pseudo file definitions which support timestamps (see section 9).
+
+1.7 New Pseudo file definitions to create File references (Hard Links)
+    (see section 10).
+
+1.8 New Pseudo file definitions to create Sockets/Fifos (see section 11).
+
+1.9 Mksquashfs now allows no source directory ( specified as - )
+    to be specified, with all input from pseudo file definitions
+    (see section 12).
+
+1.10 New Pseudo file "R" definition which allows a Regular file to
+    be created with data stored within the Pseudo file (see 2.5 below).
+
+
+2. Major improvements in Unsquashfs
+===================================
+
+2.1 New Sqfscat command which outputs the contents of files to
+    standard out (see section 13).
+
+2.2 Symbolic links are now followed in extract files, if -follow-symlinks
+    or -missing-symlinks option specified (see section 14).
+
+2.3 Unsquashfs now supports "exclude" files in addition to "extract"
+    files (see section 15).
+
+2.4 Max depth traversal option added (see section 16).
+
+2.5 Unsquashfs can now output a "Pseudo file" representing the
+    input Squashfs filesystem.  This can be altered and given
+    as input to Mksquashfs to re-generate the filesystem without
+    unpacking it (see section 17).
+
+
+3. Minor improvements and bug fixes
+===================================
+
+3.1 The progress bar is now displayed and updated whilst the input
+    is being scanned (blocks to be compressed will increase).  This
+    means on large (or slow to read) input sources, Mksquashfs will
+    not appear to hang doing nothing.
+
+3.2 New -one-file-system option in Mksquashfs, which tells
+    Mksquashfs to not cross filesystem boundaries when
+    scanning the sources.
+
+3.3 New -no-hardlinks option in Mksquashfs, which makes
+    Mksquashfs treat hardlinked files as duplicates instead.
+
+3.4 New -help options in Mksquashfs and Unsquashfs which output
+    to standard out, rather than standard error.
+
+3.5 New -root-uid option in Mksquashfs, which allows the uid of the
+    root directory to be set.
+
+3.6 New -root-gid option in Mksquashfs, which allows the gid of the
+    root directory to be set.
+
+3.7 New -root-time option in Mksquashfs, which allows the time of the
+    root directory to be set.
+
+3.8 -no-exit-code option added to Unsquashfs which makes it
+    not output an error exit code.
+
+3.9 Exit code in Unsquashfs changed to distinguish between
+    non-fatal errors (exit of 2), and fatal errors
+    (exit code of 1).
+
+3.10 Mksquashfs when appending, now writes the recovery file to
+    the home directory ($HOME), rather than the current directory.
+    A new option -recovery-path <name> has been added, which specifies
+    that <name> is to be used as the recovery file directory.
+
+3.11 Xattr id count added in Unsquashfs "-stat" output.
+
+3.12 Unsquashfs "write outside directory" exploit fixed.
+
+3.13 Error handling in Unsquashfs writer thread fixed.
+
+3.14 Fix failure to truncate destination file when appending
+    aborted in Mksquashfs.
+
+3.15 Prevent Mksquashfs reading the destination file
+     as input.
+
+
+4. Mksquashfs Actions Introduction
+==================================
+
+The new Mksquashfs Actions code allows an "action" to be executed
+on a file if one or more "tests" succeed.  If you're familiar
+with the "find" command, then an action is similar to "-print",
+and a test is similar to say "-name" or "-type".
+
+To illustrate this it is useful to give two concrete examples.
+
+example 1: the fragment action
+
+% mksquashfs /home/phillip/github github.sqsh -action "fragment(cfiles) @ name(*.[ch])" -action "fragment(ofiles) @ name(*.o)"
+
+This example defines two "fragment actions" which control the packing
+of files within fragments.  Specifically, it creates a specialised fragment
+called "cfiles" which packs files matching the wildcard name "*.[ch]".
+
+It also creates another specialised fragment called "ofiles" which packs
+files matching the wilcard name "*.o".
+
+Producing specialised fragments which only pack files which match a range
+of tests, can produce better compression and/or I/O performance as
+it can optimise similarity or access patterns.  But it can also
+produce worse compression, and so you should always test
+the effect.
+
+Additionally, you should be able to see that an action definition is split
+into an action function before the "@", and one or more test functions
+after the @.  Quoting is necessary here to protect it from interpretation
+by the shell.  Also the spacing before and after the "@" isn't necessary
+and is used here for added readability.
+
+example 2: the uncompressed action
+
+% mksquashfs /home/phillip backup.sqsh -action "uncompressed @ ( name(*.jpg) || name(*.mpg) ) || ( name(*.img) && filesize(+1G) )"
+
+This is a more complex example.  It tells Mksquashfs to not try and
+compress any file which matches the wildcard names "*.jpg" and "*.mpg".
+But it also tells Mksquashfs not to try and compress files which match
+the wildcard name "*.img" and are also 1 Gigabyte in size or larger.
+
+This example introduces the fact that tests can be combined using
+the logical operators && (and), || (or) and ! (not), and can be
+bracketed.
+
+Please see the ACTIONS-README file for syntax and extra information.
+
+
+5. New Sqfstar command to create image from a tar archive
+=========================================================
+
+Mksquashfs when run as "sqfstar" (either named as such, or via
+a hard or symbolic link) will read a tar archive from standard
+in (stdin), and create a Squashfs image from it.
+
+Syntax: sqfstar [options] image [list of exclude dirs/files]
+
+Where <image> is the output Squashfs filesystem.
+
+The tar archive should be uncompressed (pipe it though a decompressor
+if compressed).
+
+Sqfstar supports V7, ustar, bsdtar (libarchive), GNU tar and PAX extensions.
+Sparse file extensions are supported, including the "old GNU format, type S",
+and PAX formats, Versions 0.0, 0.1 and the current 1.0.
+
+Sqfstar supports extended attributes, and recognises the SCHILY xattr
+PAX extension (used by GNU tar), and the LIBARCHIVE xattr PAX extension
+(used by bsdtar).
+
+Files and directories may be excluded, and both anchored and non-anchored
+exclude files are supported (see section 3.5.2 in USAGE file and examples
+later).  Wildcards (globbing) is supported by default.
+
+Sqfstar can also by invoked by running "mksquashfs source dest -tar", if
+the Sqfstar link isn't available.
+
+5.1 Usage examples
+------------------
+
+% sqfstar image.sqfs < archive.tar
+
+    Create a Squashfs image from archive.tar, using defaults (gzip compression,
+    128K blocks).
+
+% sqfstar -comp xz -b 1M image.sqfs < archive.tar
+
+    As previous, but use XZ compression and 1Mbyte block sizes.
+
+% zcat archive.tgz | sqfstar image.sqfs
+
+    Create a Squashfs image from a gzip compressed tar archive.
+
+% sqfstar -root-uid 0 -root-gid 0 image.sqfs < archive.tar
+
+    Tar files do not supply a definition for the root directory, and the
+    default is to make the directory owned/group owned by the user running
+    Sqfstar.  The above command sets the ownership/group ownership to root.
+
+% sqfstar -root-mode 0755 image.sqfs < archive.tar
+
+   The default permissions for the root directory is 0777 (rwxrwxrwx).  The
+   above command sets the permissions to 0755 (rwxr-xr-x).
+
+% sqfstar image.sqsh dir1/file1 dir2/file2 < archive.tar
+
+   Create a Squashfs image but exclude the files "file1" and "file2".
+
+% sqfstar image.sqsh "... *.[ch]" < archive.tar
+
+   Create a Squashfs image but exclude any file matching "*.[ch]" anywhere
+   in the archive.
+
+ 
+5.2 Sqfstar options list
+------------------------
+
+The following is the full list of options supported by Sqfstar.
+
+Filesystem build options:
+-comp <comp>		select <comp> compression
+			Compressors available:
+				gzip (default)
+-b <block_size>		set data block to <block_size>.  Default 128 Kbytes
+			Optionally a suffix of K or M can be given to specify
+			Kbytes or Mbytes respectively
+-reproducible		build images that are reproducible (default)
+-not-reproducible	build images that are not reproducible
+-mkfs-time <time>	set mkfs time to <time> which is an unsigned int
+-fstime <time>		synonym for mkfs-time
+-all-time <time>	set all inode times to <time> which is an unsigned int
+-exports		make the filesystem exportable via NFS
+-no-sparse		don't detect sparse files
+-no-xattrs		don't store extended attributes
+-xattrs			store extended attributes (default)
+-noI			do not compress inode table
+-noId			do not compress the uid/gid table (implied by -noI)
+-noD			do not compress data blocks
+-noF			do not compress fragment blocks
+-noX			do not compress extended attributes
+-no-fragments		do not use fragments
+-no-tailends		don't pack tail ends into fragments
+-no-duplicates		do not perform duplicate checking
+-no-hardlinks		do not hardlink files, instead store duplicates
+-all-root		make all files owned by root
+-root-time <time>	set root directory time to <time>
+-root-mode <mode>	set root directory permissions to octal <mode>
+-root-uid <uid>		set root directory owner to <uid>
+-root-gid <gid>		set root directory group to <gid>
+-force-uid <uid>	set all file uids to <uid>
+-force-gid <gid>	set all file gids to <gid>
+-nopad			do not pad filesystem to a multiple of 4K
+
+Filesystem filter options:
+-ef <exclude_file>	list of exclude dirs/files.  One per line
+-regex			Allow POSIX regular expressions to be used in exclude
+			dirs/files
+
+Sqfstar runtime options:
+-version		print version, licence and copyright message
+-force			force Sqfstar to write to block device or file
+-exit-on-error		treat normally ignored errors as fatal
+-quiet			no verbose output
+-info			print files written to filesystem
+-no-progress		don't display the progress bar
+-progress		display progress bar when using the -info option
+-throttle <percentage>	throttle the I/O input rate by the given percentage.
+			This can be used to reduce the I/O and CPU consumption
+			of Mksquashfs
+-limit <percentage>	limit the I/O input rate to the given percentage.
+			This can be used to reduce the I/O and CPU consumption
+			of Mksquashfs (alternative to -throttle)
+-processors <number>	Use <number> processors.  By default will use number of
+			processors available
+-mem <size>		Use <size> physical memory.  Currently set to 4096M
+			Optionally a suffix of K, M or G can be given to specify
+			Kbytes, Mbytes or Gbytes respectively
+
+Miscellaneous options:
+-root-owned		alternative name for -all-root
+-offset <offset>	Skip <offset> bytes at the beginning of <dest>.
+			Optionally a suffix of K, M or G can be given to specify
+			Kbytes, Mbytes or Gbytes respectively.
+			Default 0 bytes.
+-o <offset>		synonym for -offset
+-noInodeCompression	alternative name for -noI
+-noIdTableCompression	alternative name for -noId
+-noDataCompression	alternative name for -noD
+-noFragmentCompression	alternative name for -noF
+-noXattrCompression	alternative name for -noX
+
+-help			output this options text to stdout
+-h			output this options text to stdout
+
+-Xhelp			print compressor options for selected compressor
+
+
+6. Tar style handling of source pathnames in Mksquashfs
+=========================================================
+
+Mksquashfs has always stripped the leading directories of any source
+pathnames given on the command line.
+
+For example given the command line
+
+% mksquashfs dir-a/dir-b/dir-c/file1 dir-A/dir-B/file2 sqfs
+
+Mksquashfs will strip the leading directories, and put file1 and file2
+into the same root directory.  If file1 and file2 are directories it
+will place the directories into the same root directory, but, if
+only one directory is specified, it will put the contents of that
+directory into the root directory.  Obviously, for a lot of the time
+this is what you want.  But, if it isn't what you want it can be
+quite difficult to get Mksquashfs to do something different.
+
+A lot of people don't like this, and would prefer Mksquashfs acted
+like "tar", which does not strip leading directories.  This allows
+you to create a directory hierarchy from the pathnames of the supplied
+files.  In the above example, the tar archive would contain the pathnames
+"dir-a/dir-b/dir-c/file1" and "dir-A/dir-B/file2".
+
+Mksquashfs will now act like tar if given the option -no-strip, or -tarstyle.
+
+
+7. Cpio style handling of source pathnames in Mksquashfs
+========================================================
+
+Mksquashfs now allows you to pipe the set of files to be added to the
+filesystem to standard in (stdin), if the -cpiostyle option is given.
+
+As with cpio, directories are not recursively scanned, and their contents
+added.  Evey file to be added to the filesystem must be explicitly
+specified.
+
+Typically the list of files to be added will be produced via find, or a
+similar utility.
+
+For example
+
+% find /home/phillip/squashfs-tools | mksquashfs - img.sqfs -cpiostyle
+
+Will create an image containing everything in squashfs-tools and its
+sub-directories.  Note, "-" is given as the source pathname in Mksquashfs,
+and indicates no commmand line sources.
+
+and the following will add just the files ending in .c, .h and .o.
+
+% find /home/phillip/squashfs-tools -name "*.[cho]" | mksquashfs - img.sqfs -cpiostyle
+
+
+8. New option to throttle CPU and I/O Mksquashfs uses
+=====================================================
+
+People have sometimes complained that Mksquashfs uses too much CPU and too
+much I/O, and can make a computer become very slow, or over-heat, and
+setting the processors option to 1 often doesn't have much effect.
+
+The reason for this is because Mksquashfs tries to run as fast as possible,
+as this is usually what people want.  Due to this it is highly parallelised,
+and spawns multiple compression threads (for both blocks and fragments),
+and by default one each of those compression threads are spawned per core.
+In addition it also has separate reader and writer threads and large caches
+to ensure I/O through-put is maximised and performed in parallel with the
+compression threads (called read-ahead and write-behind).
+
+This means even when the "-processors 1" option is set, there is still a
+lot of parallel processing being performed, because the minmimum set of
+threads is a single block compression thread, a single fragment compression
+thread, and both a reader and writer thread.  Unfortunately, these threads
+can easily still max out a single core, so that it is never idle.  On a
+multi-core machine the "-processors 1" option usually produces a CPU load
+of around 130-180%.
+
+The solution adopted is to add an I/O "throttle", which will regulate the
+amount of I/O performed, and ultimately, how much CPU is consumed.  This
+throttle can be set from 0 - 100, with the following two options added.
+
+-throttle <percentage> has the semantics of throttle the reader by X%.  The
+higher the percentage, the greater the throughput of the reader thread is
+reduced.
+
+-limit <percentage> has the opposite sense of limit the output to X%.  The
+higher the percentage, the greater the throughput of the reader thread.
+
+
+9. New Pseudo file definitions with timestamps
+==============================================
+
+The Pseudo file definitions previously supported did not allow the time
+of the file to be set.  New extended pseudo file definitions have been added
+which take a <time> timestamp.  These are distinquished from the previous
+definitions by using an upper-case type character.  For example the "D"
+definition is identical to the previous "d" definition (it creates
+a directory), but it takes a <time> timestamp.
+
+The list of extended definitions are:
+
+	filename D time mode uid gid
+	filename M time mode uid gid
+	filename B time mode uid gid major minor
+	filename C time mode uid gid major minor
+	filename F time mode uid gid command
+	filename S time mode uid gid symlink
+
+<time> can be either an unsigned decimal integer (which represents the
+seconds since the epoch of 1970-01-01 01:00 UTC), or a "date string"
+which is parsed and converted into an integer since the epoch, by calling
+"date".
+
+Because most date strings have spaces, they will need to be quoted, and if
+entered on the command line, these quotes will need to be protected from the
+shell by backslashes, i.e.
+
+% mksquashfs x x.sqsh -p "file D \"1 jan 1980\" 0777 phillip phillip"
+
+Obviously anything "date" accepts as a valid string can be used, such as
+"yesterday", "last week" etc.
+
+
+10. New Pseudo file definition to create File references (Hard Links)
+=====================================================================
+
+The existing "f" Pseudo definition allows a regular file to be
+created from the output of a command (or shell).
+
+Often this is used to reference a file outside the source directories,
+by executing "cat", e.g.
+
+README f 0555 0 0 cat /home/phillip/latest-version/README
+
+Because this is quite a frequent use of the definition, a new faster
+"File reference" or Hard Link (in filesystem terms a File reference is a
+Hard Link) Pseudo definition has been added named 'l'.
+
+README l /home/phillip/latest-version/README
+
+Will create a reference to "/home/phillip/latest-version/README",
+and obviously the timestamp/mode and owership will be used.
+
+The definition also be used to create additional references to
+files within the source directories.  For instance if "phillip/latest/README"
+was a file being added to the filesystem, then
+
+README l phillip/latest/README
+
+Will create a Hard Link (and increment the nlink count on the inode).
+
+In both cases, the Path to the file being referenced is the system
+filesystem path, and can be absolute (prefixed with /), or relative
+to the current working directory.
+
+There is an additional 'L' Pseudo definition, which closes a loophole in
+the above 'l' definition.  The 'l' Pseudo definition cannot create references
+or Hard Links to files created by Pseudo definitions, because by
+definition they do not exist in the system filesystem.
+
+with 'L' the referenced file is expected to be a Pseudo file, and in this case
+the Path is taken to be from the root of the Squashfs filesystem being created,
+e.g.
+
+char-dev c 0555 0 0 1 2
+
+link L char-dev
+
+Will create a Hard Link named "link" to the character device called "char-dev"
+created by the previous Pseudo definition.
+
+
+11. New Pseudo file definitions to create Sockets/Fifos
+=======================================================
+
+Two new definitions have been added which allows Sockets and Fifos
+to be created, which are:
+
+filename i mode uid gid [s|f]
+filename I time mode uid gid [s|f]
+
+The 'i' definition doesn't take a time value, whereas the 'I'
+definition does.
+
+To create a Unix domain socket, 's' should be used, i.e.
+
+filename i 0777 root root s
+
+and to create a FIFO, 'f' should be used, i.e.
+
+filename i 0777 root root f
+
+
+12. Mksquashfs now allows no source directories ( specified as - )
+==================================================================
+
+Mksquashfs has removed the requirement to specify any physical source
+directories, and a Squashfs filesystem can now be built entirely with
+Pseudo definitions.
+
+For example the following command line
+
+% mksquashfs - img.sqfs -p "/ d 777 phillip users" -p "/hello l /tmp/typescript" -p "/link L hello"
+
+Will create a root directory, a file created by a reference to a file
+within the filesystem, and create a hard link to it.
+
+
+13. New Sqfscat command which outputs the contents of files to standard out
+===========================================================================
+
+Unsquashfs when run as "sqfscat" (either named as such, or via a hard or
+symbolic link) will output the contents of one or more files to standard
+out.  The syntax and options supported are:
+
+SYNTAX: sqfscat [options] filesystem [files to cat]
+	-v[ersion]		print version, licence and copyright information
+	-p[rocessors] <number>	use <number> processors.  By default will use
+				number of processors available
+	-o[ffset] <bytes>	skip <bytes> at start of <dest>.  Optionally a
+				suffix of K, M or G can be given to specify
+				Kbytes, Mbytes or Gbytes respectively (default
+				0 bytes).
+	-ig[nore-errors]	treat errors writing files to output as
+				non-fatal
+	-st[rict-errors]	treat all errors as fatal
+	-no-exit[-code]		don't set exit code (to nonzero) on non-fatal
+				errors
+	-da[ta-queue] <size>	set data queue to <size> Mbytes.  Default 256
+				Mbytes
+	-fr[ag-queue] <size>	set fragment queue to <size> Mbytes.  Default
+				256 Mbytes
+	-no-wild[cards]		do not use wildcard matching in extract names
+	-r[egex]		treat extract names as POSIX regular expressions
+				rather than use the default shell wildcard
+				expansion (globbing)
+	-h[elp]			output this options text to stdout
+
+
+The pathnames of the files to be output, like cat, can contain symbolic links,
+and "." and ".." elements.
+
+Sqfscat is a short-cut to using the equivalent Unsquashfs -cat option, i.e.
+the following will behave the same:
+
+% sqfscat img file
+
+% unsquashfs -cat img file
+
+
+14. Symbolic links are now "followed" in extract files
+======================================================
+
+Unsquashfs walks the extract file paths as it recursively extracts
+the Squashfs filesystem  from top to bottom.  During that recursive
+extraction symbolic links are obviously not followed (see below).
+
+The consequence of this is if an extract file ends in a symbolic link
+(leaf component) it is extracted and left as a dangling symlink,
+unless the real file it links to has also specified as an extract file.
+
+Additionally, if the extract file pathname traverses symbolic links
+while walking the pathname (i.e. the extract file pathname has
+embedded symbolic links), the extraction will stop at that point.
+
+One way of solving this problem is by following (or dereferencing) the
+symbolic link(s), and replacing them with what they actually link to,
+in a similar way to "cp -L".  But this is dangerous, and can cause
+Unsquashfs to produce output which does not match the input Squashfs
+filesystem, which is something Unsquashfs should never do.
+
+The reason for this is whereas "cp -L" is derefencing the *input*,
+Unsquashfs is dereferencing the *output*.  If a filesystem has a real
+filename, say
+
+	a/b/c/hello_world
+
+and two symlinks
+
+	a/symlink1 ---> b/c/hello_world
+	a/symlink2 ---> b/c
+
+There are multiple different ways (or paths) to the *single* hello_world file.
+
+	a/b/c/hello_world
+	a/symlink1
+	a/symlink2/hello_world
+
+If Unsquashfs was given all three paths as extract files, and Unsquashfs
+dereferenced them on output, you will get *three* copies of the hello_world
+file, and two copies of directory "c".
+
+Superficially the output may look the same, but, it may not work the same,
+and obviously edits to the one hello_world file will not get reflected in
+the other copies.  Any option that can be accidently or maliciously used
+to produce such an output is too dangerous to be added.
+
+Unsquashfs solves the problem in an equivalent way, but which does not alter
+the output, and so it is a completely safe option.
+
+If the -follow-symlinks option is specified, Unsquashfs will canonicalise
+the extract files to produce the canonical pathname (that is the
+"real" pathname without any symbolic links).  It will then add all
+the symbolic links necessary to ensure that the extract file can be
+resolved.
+
+The -missing-symlinks option is similar to -follow-symlinks except it
+will cause Unsquashfs to abort if any symbolic link cannot be resolved.
+
+Note: as a side effect of the canonicalisation, with the above options
+enabled extract filenames can also now have ".", ".." elements within
+the pathnames.
+
+
+15. Unsquashfs now supports "exclude" files in addition to "extract" files
+==========================================================================
+
+Unsquashfs now allows exclude files to be specified, either on their
+own, or in addition to extract files.
+
+An exclude file is, obviously, the opposite of an extract file.  Whereas
+an extract file limits the output of Unsquashfs to the files/directories
+matched by the extract file(s), exclude file(s) output the entire filesystem,
+with the sub-set of files matched by the exclude file(s) excluded.
+
+Often you want to output the filesystem where you're only interested in
+some files, which is where extract files are useful.  But equally, you
+often want to to output the entire filesystem, but, with some unwanted
+files removed.  An example of this, perhaps, is where you've inadvertantly,
+archived binaries (.o files etc.) and you're only interested in extracting
+the source code.
+
+In the above example, trying to remove the binaries (.o etc) when you've
+only got "extract" files capability becomes extremely messy.  It is a
+lot easier to do that with "exclude" files.
+
+Unsquashfs now supports two ways of specifying exclude files.
+
+The most straightforward way is to tell Unsquashfs to treat extract files as
+exclude files.  That is extract files are specified on the command line as
+a list of files after the options and filesystem image.  Giving the
+-excludes option tells Unsquashfs to treat them as exclude files.
+
+To make this clearer,
+
+% unsquashfs img file1 file2 file3
+
+Tells Unsquashfs to extract file1, file2 and file3.  But,
+
+% unsquashfs -excludes img file1 file2 file3
+
+Tells Unsquashfs to exclude file1, file2, and file3.
+
+The perhaps obvious problem with this, is it allows you to
+choose between "extract" files or "exclude" files.  But, it doesn't
+allow you to have both "extract" files and "exclude" files on the
+command line.
+
+To get around this problem Unsquashfs supports another way of specifying
+exclude files.  That is to use the option -exclude-list.  This
+option allows a list of exclude files to specified, terminated by a
+";".  The necessity of using ";" to terminate the list is because this
+is a normal option, without it, any further entries on the command line
+would be interpreted as being part of the list.
+
+For example, the following are equivalent:
+
+% unsquashfs -excludes img file1 file2 file3
+
+% unsquashfs -exclude-list file1 file2 file3 \; img
+
+Note the black-slashing of ";" to prevent it from being
+interpreted by the shell as a special character.
+
+Obviously, where the -exclude-list option comes into its own is
+when it is mixed with extract files, for example:
+
+% unsquashfs -exclude-list dir1/file1 dir2/file2 \; img dir1 dir2
+
+This tells Unsquashfs to extract directories "dir1" and "dir2", and
+then to exclude the files "dir1/file1" and "dir2/file2".
+
+From this it should be clear that the precedence is extract files and
+then exclude files, because it doesn't make any sense otherwise.
+Extract files define the set of directories/files to be extracted,
+and exclude files remove directories/files from that sub-set.
+
+
+16. Max depth traversal option added
+====================================
+
+Unsquashfs has added a -max-depth <n> option, which will limit output
+and/or file listing to <n> depth directories, where the top level
+directory is depth 1, e.g.
+
+% unsquashfs -max-depth 3 -ll img
+
+Will limit the filesystem output listing to be 3 directories in depth.
+
+
+17. Unsquashfs Pseudo file output
+=================================
+
+If the Pseudo file (-pf) option is given, Unsquashfs will output a
+Pseudo file representation of the input filesystem.  This pseudo file
+can be used as input to Mksquashfs to reproduce the Squashfs filesystem
+without having to unpack the input filesystem image.
+
+The Pseudo file output is designed to be editable, and the pseudo file
+entries can be altered (name, date, ownership etc.) or added/deleted
+before any new filesystem is rebuilt.
+
+The format of the pseudo file, is obviously, the same as the pseudo file
+definitions supported by Msquashfs.  In this release (see sections 8, 9
+and 10) this has been extended to fully support any file type and
+timestamp information (extended attributes are not yet supported).
+
+Regular files (with data) are supported with the new "R" pseudo
+definition, which is
+
+filename R time mode uid gid length offset
+
+<length> specifies the size of the file, and <offset> is a byte
+offset into the pseudo file where the data is stored.  This offset
+is taken from the start of the data section (see below), rather
+than from the start of the file (this is allow the pseudo file
+entries to be edited without altering the data offsets).
+
+Data is deliberately stored out of line (i.e. unlike tar), to make
+the file more easily editable manually.
+
+An example pseudo file output for a filesystem consisting of a directory,
+two regular files, and a symbolic link might be
+
+	/ D 1625536033 1777 0 0
+	test D 1625536969 755 1000 100
+	test/hello_world R 1625535696 644 1000 100 12 0
+	test/regfile R 1625536928 644 1000 100 37 12
+	test/symlink S 1625535712 777 1000 100 hello_world
+	#
+	# START OF DATA - DO NOT MODIFY
+	#
+	Hello World
+	This is the data contents of regfile
+
+Here you should be able see the most important aspects of the layout,
+the pseudo file entries appear at the start of the file, and the data
+is stored at the end.  The two sections are separated by 3 special
+marker lines, containing the words "START OF DATA - DO NOT MODIFY".
+
+The following is a small example of how someone might edit and
+rebuild a Squashfs image.
+
+$ unsquashfs -pf pseudo test.sqsh
+$ sed -i "0,/# START OF DATA/s/\([^ ]* . [0-9]* [0-7]* \)[0-9]*/\11234/g" pseudo
+$ sed -i "0,/# START OF DATA/s/hello_world/hello/g" pseudo
+$ mksquashfs - test2.sqsh -pf pseudo
+
+This will change the ownership to uid 1234, and change the name of
+"hello_word" to "hello".
+
+
+18. Compatibility
+=================
+
+Mksquashfs 4.5 generates 4.0 filesystems.  These filesystems are fully
+compatible/interchangable with filesystems generated by Mksquashfs 4.x and are
+mountable on 2.6.29 and later kernels.
