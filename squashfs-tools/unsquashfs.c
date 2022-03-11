@@ -623,7 +623,7 @@ int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 	}
 
 	for(count = 0; count < bytes; count += res) {
-		int len = (bytes - count) > SSIZE_MAX ? SSIZE_MAX : bytes - count;
+		size_t len = (bytes - count) > SSIZE_MAX ? SSIZE_MAX : bytes - count;
 		res = read(fd, buff + count, len);
 		if(res < 1) {
 			if(res == 0) {
