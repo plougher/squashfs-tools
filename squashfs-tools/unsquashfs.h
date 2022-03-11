@@ -276,6 +276,10 @@ struct directory_stack {
 #define LOOKUP_OFFSET(NUMBER)		((NUMBER) & 0xfff)
 #define LOOKUP_BYTES			32768
 
+/* Maximum transfer size for Linux read() call on both 32-bit and 64-bit systems.
+ *  * See READ(2) */
+#define MAXIMUM_READ_SIZE 0x7ffff000
+
 /* globals */
 extern struct super_block sBlk;
 extern int swap;

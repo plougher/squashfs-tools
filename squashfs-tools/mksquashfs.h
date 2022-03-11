@@ -205,6 +205,10 @@ struct old_root_entry_info {
 
 #define ALLOC_SIZE 128
 
+/* Maximum transfer size for Linux read() call on both 32-bit and 64-bit systems.
+ *  * See READ(2) */
+#define MAXIMUM_READ_SIZE 0x7ffff000
+
 extern int sleep_time;
 extern struct cache *reader_buffer, *fragment_buffer, *reserve_cache;
 extern struct cache *bwriter_buffer, *fwriter_buffer;
