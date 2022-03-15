@@ -2667,8 +2667,9 @@ void *progress_thread(void *arg)
 		if(progress_enabled) {
 			pthread_mutex_lock(&screen_mutex);
 			progress_bar(sym_count + dev_count + fifo_count +
-				socket_count + cur_blocks, total_inodes -
-				total_files + total_blocks, columns);
+				socket_count + file_count + hardlnk_count +
+				cur_blocks, total_inodes + total_blocks,
+				columns);
 			pthread_mutex_unlock(&screen_mutex);
 		}
 	}
@@ -2883,9 +2884,9 @@ void disable_progress_bar()
 {
 	pthread_mutex_lock(&screen_mutex);
 	if(progress_enabled) {
-		progress_bar(sym_count + dev_count + fifo_count + socket_count +
-			cur_blocks, total_inodes - total_files + total_blocks,
-			columns);
+		progress_bar(sym_count + dev_count + fifo_count + socket_count
+			+ file_count + hardlnk_count + cur_blocks, total_inodes
+			+ total_blocks, columns);
 		printf("\n");
 	}
 	progress_enabled = FALSE;
@@ -4431,8 +4432,7 @@ int main(int argc, char *argv[])
 				processors, processors == 1 ? "" : "s");
 
 			printf("%u inodes (%lld blocks) to write\n\n",
-				total_inodes,
-				total_inodes - total_files + total_blocks);
+				total_inodes, total_blocks);
 		}
 
 		enable_progress_bar();
