@@ -20,7 +20,7 @@ if [ ! -x $1/mksquashfs ]; then
 fi
 
 # Sanity check, check that the utilities this script depends on, are in PATH
-for i in expand sed gzip help2man; do
+for i in expand sed help2man; do
 	if ! which $i > /dev/null 2>&1; then
 		echo "This script needs $i, which is not in your PATH." 2>&1
 		echo "Fix PATH or install before running this script!" 2>&1
