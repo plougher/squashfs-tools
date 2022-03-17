@@ -313,10 +313,10 @@ VERSION := $(RELEASE_VERSION)
 DATE := $(RELEASE_DATE)
 else
 ifeq ($(HASH),$Format:%h$)
-VERSION := 4.5-$(shell git show -s --pretty=format:%h)
+VERSION := 4.5.1-$(shell git show -s --pretty=format:%h)
 DATE := $(firstword $(subst -,/,$(shell git show -s --pretty=format:%ci)))
 else
-VERSION := 4.5-$(HASH)
+VERSION := 4.5.1-$(HASH)
 DATE := $(firstword $(FULLDATE))
 endif
 endif
