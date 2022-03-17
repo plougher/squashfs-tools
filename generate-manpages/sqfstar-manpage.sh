@@ -68,7 +68,8 @@ sed -i "s/^copyright/Copyright/" $tmp/sqfstar.version
 # help2man doesn't pick up the author from the version.  Easiest to add
 # it here.
 
-echo -e "\nWritten by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/sqfstar.version
+echo >> $tmp/sqfstar.version
+echo "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/sqfstar.version
 
 # Man pages expect the options to be in the "Options" section.  So insert
 # Options section after first line

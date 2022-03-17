@@ -68,7 +68,8 @@ sed -i "s/^copyright/Copyright/" $tmp/sqfscat.version
 # help2man doesn't pick up the author from the version.  Easiest to add
 # it here.
 
-echo -e "\nWritten by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/sqfscat.version
+echo >> $tmp/sqfscat.version
+echo "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/sqfscat.version
 
 # help2man expects "Usage: ", and so rename "SYNTAX:" to "Usage: "
 
