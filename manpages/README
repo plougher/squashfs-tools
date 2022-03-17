@@ -1,0 +1,13 @@
+These pre-generated manpages are built using the Squashfs-tools Makefile
+defaults with the gzip, lzo, lz4, xz, and zstd compression algorithms
+selected.
+
+The manpages are intended to be used by the installer if help2man isn't
+available on the system.
+
+But, they can obviously also be viewed by anyone who doesn't want to build
+or install Squashfs-tools, by running man -l, i.e.
+
+% man -l mksquashfs.1
+
+Will display the manpage for Mksquashfs.
