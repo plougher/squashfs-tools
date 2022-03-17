@@ -3802,7 +3802,8 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				ERROR_START("WARNING: Pseudo directory \"%s\" "
 					"already exists in root directory of "
 					"the\nfilesystem being appended to. "
-					"Pseudo definitions can\'t be added to "					"it.", pseudo_ent->name);
+					"Pseudo definitions can\'t be added to "
+					"it.", pseudo_ent->name);
 				ERROR_EXIT("  Ignoring.\n\n");
 			}
 			continue;
