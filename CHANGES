@@ -23,10 +23,12 @@
 		    directory, rather than aborting.
 		2.4 Unsquashfs now allows "." to used as the destination, to
 		    extract to the current directory.
-		2.5 -no-hardlinks option has been implemented for Sqfstar.
-		2.6 More sanity checking for "corrupted" filesystems, including
+		2.5 The Unsquashfs progress bar now tracks empty files and
+		    hardlinks, in addition to data blocks.
+		2.6 -no-hardlinks option has been implemented for Sqfstar.
+		2.7 More sanity checking for "corrupted" filesystems, including
 		    checks for multiply linked directories and directory loops.
-		2.7 Options that may cause filesystems to be unmountable have
+		2.8 Options that may cause filesystems to be unmountable have
 		    been moved into a new "experts" category in the Mksquashfs
 		    help text (and Manpage).
 
