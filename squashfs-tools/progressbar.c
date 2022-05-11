@@ -50,7 +50,7 @@ int temp_disabled = FALSE;
 int need_nl = FALSE;
 
 int rotate = 0;
-int cur_uncompressed = 0, estimated_uncompressed = 0;
+long long cur_uncompressed = 0, estimated_uncompressed = 0;
 int columns;
 
 pthread_t progress_thread;
