@@ -56,7 +56,7 @@ for i in mksquashfs unsquashfs sqfstar sqfscat; do
 		exit 1
 	fi
 
-	if ! gzip -f9 $2/$i.1; then
+	if ! gzip -n -f9 $2/$i.1; then
 		echo "$0: Compressing installed manpage failed.  Aborting" >&2
 		exit 1
 	fi
