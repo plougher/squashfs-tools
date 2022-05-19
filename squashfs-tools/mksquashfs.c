@@ -4725,8 +4725,11 @@ static char *get_filename_from_stdin(char terminator)
 			src = buffer;
 		}
 
-		if(*src == terminator)
+		if(*src == terminator) {
+			src++;
+			bytes--;
 			break;
+		}
 
 		if(used >= (path_max - 1))
 			BAD_ERROR("Cpiostyle input filename exceeds maximum "
