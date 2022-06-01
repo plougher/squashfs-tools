@@ -75,6 +75,7 @@ long long cur_blocks = 0;
 int inode_number = 1;
 int no_xattrs = XATTR_DEF;
 int user_xattrs = FALSE;
+int ignore_user = FALSE;
 int ignore_errors = FALSE;
 int strict_errors = FALSE;
 int use_localtime = TRUE;
@@ -3814,6 +3815,7 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-x[attrs]\t\textract xattrs in file system" XOPT_STR "\n");
 	fprintf(stream, "\t-u[ser-xattrs]\t\tonly extract user xattrs in file ");
 	fprintf(stream, "system.\n\t\t\t\tEnables extracting xattrs\n");
+        fprintf(stream, "\t-ignore-user[-xattrs]\tskip over user xattrs\n");
 	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
 	fprintf(stream, "By default will use\n");
 	fprintf(stream, "\t\t\t\tthe number of processors available\n");
@@ -4131,6 +4133,15 @@ int parse_options(int argc, char *argv[])
 					"this build\n", argv[0]);
 				exit(1);
 			}
+                } else if(strcmp(argv[i], "-ignore-user-xattrs") == 0 ||
+                                strcmp(argv[i], "-ignore-user") == 0) {
+                        if(xattrs_supported()) {
+				ignore_user = TRUE;
+                        } else {
+                                ERROR("%s: xattrs are unsupported in "
+                                        "this build\n", argv[0]);
+                                exit(1);
+                        }
 		} else if(strcmp(argv[i], "-dest") == 0 ||
 				strcmp(argv[i], "-d") == 0) {
 			if(++i == argc) {

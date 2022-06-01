@@ -31,6 +31,7 @@
 
 extern int root_process;
 extern int user_xattrs;
+extern int ignore_user;
 extern int ignore_errors;
 extern int strict_errors;
 
@@ -61,7 +62,8 @@ int write_xattr(char *pathname, unsigned int xattr)
 	for(i = 0; i < count; i++) {
 		int prefix = xattr_list[i].type & SQUASHFS_XATTR_PREFIX_MASK;
 
-		if(ignore_xattrs || (user_xattrs && prefix != SQUASHFS_XATTR_USER))
+		if(ignore_xattrs || (user_xattrs && prefix != SQUASHFS_XATTR_USER) ||
+                                    (ignore_user && prefix == SQUASHFS_XATTR_USER))
 			continue;
 
 		if(root_process || prefix == SQUASHFS_XATTR_USER) {
