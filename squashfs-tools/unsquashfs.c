@@ -77,6 +77,7 @@ int no_xattrs = XATTR_DEF;
 int user_xattrs = FALSE;
 int ignore_errors = FALSE;
 int strict_errors = FALSE;
+int no_times = FALSE;
 int use_localtime = TRUE;
 int max_depth = -1; /* unlimited */
 int follow_symlinks = FALSE;
@@ -828,7 +829,7 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 {
 	struct utimbuf times = { time, time };
 
-	if(utime(pathname, &times) == -1) {
+	if(!no_times && utime(pathname, &times) == -1) {
 		EXIT_UNSQUASH_STRICT("set_attributes: failed to set time on "
 			"%s, because %s\n", pathname, strerror(errno));
 		return FALSE;
@@ -1201,12 +1202,15 @@ int create_inode(char *pathname, struct inode *i)
 				goto failed;
 			}
 
-			res = utimensat(AT_FDCWD, pathname, times,
-					AT_SYMLINK_NOFOLLOW);
-			if(res == -1) {
-				EXIT_UNSQUASH_STRICT("create_inode: failed to"
-					" set time on %s, because %s\n",
-					pathname, strerror(errno));
+			if (!no_times) {
+				res = utimensat(AT_FDCWD, pathname, times,
+						AT_SYMLINK_NOFOLLOW);
+				if(res == -1) {
+					EXIT_UNSQUASH_STRICT("create_inode: "
+						"failed to set time on %s, "
+						"because %s\n", pathname,
+						strerror(errno));
+				}
 			}
 
 			res = write_xattr(pathname, i->xattr);
@@ -3809,6 +3813,7 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "can't be\n\t\t\t\tresolved in -follow-symlinks\n");
 	fprintf(stream, "\t-q[uiet]\t\tno verbose output\n");
 	fprintf(stream, "\t-n[o-progress]\t\tdon't display the progress bar\n");
+	fprintf(stream, "\t-no-times\t\tdon't extract timestamps in file system\n");
 	fprintf(stream, "\t-no[-xattrs]\t\tdon't extract xattrs in file system");
 	fprintf(stream, NOXOPT_STR"\n");
 	fprintf(stream, "\t-x[attrs]\t\textract xattrs in file system" XOPT_STR "\n");
@@ -4131,6 +4136,8 @@ int parse_options(int argc, char *argv[])
 					"this build\n", argv[0]);
 				exit(1);
 			}
+		} else if(strcmp(argv[i], "-no-times") == 0) {
+			no_times = TRUE;
 		} else if(strcmp(argv[i], "-dest") == 0 ||
 				strcmp(argv[i], "-d") == 0) {
 			if(++i == argc) {
