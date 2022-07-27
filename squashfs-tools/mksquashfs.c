@@ -252,6 +252,7 @@ int bwriter_size;
 /* compression operations */
 struct compressor *comp = NULL;
 int compressor_opt_parsed = FALSE;
+int X_opt_parsed = FALSE;
 void *stream = NULL;
 
 /* xattr stats */
@@ -6388,15 +6389,20 @@ int sqfstar(int argc, char *argv[])
 		exit(0);
 	}
 
+	comp = lookup_compressor(COMP_DEFAULT);
+
 	/*
-	 * Scan the command line for -comp xxx option, this is to ensure
-	 * any -X compressor specific options are passed to the
-	 * correct compressor
+	 * Scan the command line for -comp xxx option, this should occur before
+	 * any -X compression specific options to ensure these options are passed
+	 * to the correct compressor
 	 */
 	for(i = 1; i < argc; i++) {
-		struct compressor *prev_comp = comp;
+		if(strncmp(argv[i], "-X", 2) == 0)
+			X_opt_parsed = 1;
 
 		if(strcmp(argv[i], "-comp") == 0) {
+			struct compressor *prev_comp = comp;
+
 			if(++i == argc) {
 				ERROR("%s: -comp missing compression type\n",
 					argv[0]);
@@ -6410,7 +6416,7 @@ int sqfstar(int argc, char *argv[])
 				display_compressors(stderr, "", COMP_DEFAULT);
 				exit(1);
 			}
-			if(prev_comp != NULL && prev_comp != comp) {
+			if(compressor_opt_parsed) {
 				ERROR("%s: -comp multiple conflicting -comp"
 					" options specified on command line"
 					", previously %s, now %s\n", argv[0],
@@ -6418,7 +6424,11 @@ int sqfstar(int argc, char *argv[])
 				exit(1);
 			}
 			compressor_opt_parsed = 1;
-
+			if(X_opt_parsed) {
+				ERROR("%s: -comp option should be before any "
+					"-X option\n", argv[0]);
+				exit(1);
+			}
 		} else if(argv[i][0] != '-')
 			break;
 		else if(option_with_arg(argv[i], sqfstar_option_table))
@@ -6447,14 +6457,6 @@ int sqfstar(int argc, char *argv[])
 	 * will cause too many problems to change now.  But tarfile reading
 	 * has no such issues */
 	always_use_fragments = TRUE;
-
-	/*
-	 * if no -comp option specified lookup default compressor.  Note the
-	 * Makefile ensures the default compressor has been built, and so we
-	 * don't need to to check for failure here
-	 */
-	if(comp == NULL)
-		comp = lookup_compressor(COMP_DEFAULT);
 
 	for(i = 1; i < dest_index; i++) {
 		if(strcmp(argv[i], "-no-hardlinks") == 0)
@@ -6553,7 +6555,9 @@ int sqfstar(int argc, char *argv[])
 						argv[i]);
 					if(!compressor_opt_parsed)
 						ERROR("%s: Did you forget to"
-							" specify -comp?\n",
+							" specify -comp, or "
+							"specify it after the"
+							" -X options?\n",
 							argv[0]);
 print_sqfstar_compressor_options:
 					ERROR("%s: selected compressor \"%s\""
