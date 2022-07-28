@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012, 2013, 2021
+ * Copyright (c) 2010, 2011, 2012, 2013, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -524,6 +524,16 @@ static void xz_usage(FILE *stream)
 }
 
 
+static int option_args(char *option)
+{
+	if(strcmp(option, "-Xbcj") == 0 ||
+				strcmp(option, "-Xdict-size") == 0)
+		return 1;
+
+	return 0;
+}
+
+
 struct compressor xz_comp_ops = {
 	.init = xz_init,
 	.compress = xz_compress,
@@ -534,6 +544,7 @@ struct compressor xz_comp_ops = {
 	.extract_options = xz_extract_options,
 	.display_options = xz_display_options,
 	.usage = xz_usage,
+	.option_args = option_args,
 	.id = XZ_COMPRESSION,
 	.name = "xz",
 	.supported = 1

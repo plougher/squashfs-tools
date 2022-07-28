@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021
+ * Copyright (c) 2017, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -239,6 +239,16 @@ static void zstd_usage(FILE *stream)
 		"%d)\n", ZSTD_maxCLevel(), ZSTD_DEFAULT_COMPRESSION_LEVEL);
 }
 
+
+static int option_args(char *option)
+{
+	if(strcmp(option, "-Xcompression-level") == 0)
+		return 1;
+
+	return 0;
+}
+
+
 struct compressor zstd_comp_ops = {
 	.init = zstd_init,
 	.compress = zstd_compress,
@@ -248,6 +258,7 @@ struct compressor zstd_comp_ops = {
 	.extract_options = zstd_extract_options,
 	.display_options = zstd_display_options,
 	.usage = zstd_usage,
+	.option_args = option_args,
 	.id = ZSTD_COMPRESSION,
 	.name = "zstd",
 	.supported = 1

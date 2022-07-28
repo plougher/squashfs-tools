@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2014, 2021
+ * Copyright (c) 2013, 2014, 2021. 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -423,6 +423,16 @@ int lzo1x_999_wrapper(const lzo_bytep src, lzo_uint src_len, lzo_bytep dst,
 }
 
 
+static int option_args(char *option)
+{
+	if(strcmp(option, "-Xalgorithm") == 0 ||
+				strcmp(option, "-Xcompression-level") == 0)
+		return 1;
+
+	return 0;
+}
+
+
 struct compressor lzo_comp_ops = {
 	.init = squashfs_lzo_init,
 	.compress = lzo_compress,
@@ -433,6 +443,7 @@ struct compressor lzo_comp_ops = {
 	.extract_options = lzo_extract_options,
 	.display_options = lzo_display_options,
 	.usage = lzo_usage,
+	.option_args = option_args,
 	.id = LZO_COMPRESSION,
 	.name = "lzo",
 	.supported = 1

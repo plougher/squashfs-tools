@@ -6354,7 +6354,10 @@ int option_with_arg(char *string, char *table[])
 		if(strcmp(string + 1, table[i]) == 0)
 			break;
 
-	return table[i] != NULL;
+	if(table[i] != NULL)
+		return TRUE;
+
+	return compressor_option_args(comp, string);
 }
 
 

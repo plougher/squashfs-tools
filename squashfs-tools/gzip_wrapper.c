@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2010, 2013, 2014, 2021
+ * Copyright (c) 2009, 2010, 2013, 2014, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -485,6 +485,17 @@ static void gzip_usage(FILE *stream)
 }
 
 
+static int option_args(char *option)
+{
+	if(strcmp(option, "-Xcompression-level") == 0 ||
+				strcmp(option, "-Xwindow-size") == 0 ||
+				strcmp(option, "-Xstrategy") == 0)
+		return 1;
+
+	return 0;
+}
+
+
 struct compressor gzip_comp_ops = {
 	.init = gzip_init,
 	.compress = gzip_compress,
@@ -495,6 +506,7 @@ struct compressor gzip_comp_ops = {
 	.extract_options = gzip_extract_options,
 	.display_options = gzip_display_options,
 	.usage = gzip_usage,
+	.option_args = option_args,
 	.id = ZLIB_COMPRESSION,
 	.name = "gzip",
 	.supported = 1
