@@ -1581,7 +1581,10 @@ squashfs_inode process_tar_file(int progress)
 		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
 	buf.st_uid = getuid();
 	buf.st_gid = getgid();
-	buf.st_mtime = time(NULL);
+	if(root_time_opt)
+		buf.st_mtime = root_time;
+	else
+		buf.st_mtime = time(NULL);
 	buf.st_dev = 0;
 	buf.st_ino = 0;
 	dir_ent->inode = lookup_inode(&buf);
