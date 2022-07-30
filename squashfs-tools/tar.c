@@ -1579,8 +1579,14 @@ squashfs_inode process_tar_file(int progress)
 		buf.st_mode = root_mode | S_IFDIR;
 	else
 		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-	buf.st_uid = getuid();
-	buf.st_gid = getgid();
+	if(root_uid_opt)
+		buf.st_uid = root_uid;
+	else
+		buf.st_uid = getuid();
+	if(root_gid_opt)
+		buf.st_gid = root_gid;
+	else
+		buf.st_gid = getgid();
 	if(root_time_opt)
 		buf.st_mtime = root_time;
 	else
