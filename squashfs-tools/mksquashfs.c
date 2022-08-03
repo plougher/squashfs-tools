@@ -2521,8 +2521,9 @@ static void *frag_order_deflator(void *arg)
 			file_buffer->size, block_size, noF, 1);
 		write_buffer->block = file_buffer->block;
 		write_buffer->sequence = file_buffer->sequence;
-		write_buffer->size = c_byte;
+		write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
 		write_buffer->fragment = FALSE;
+		fragment_table[file_buffer->block].size = c_byte;
 		seq_queue_put(to_order, write_buffer);
 		TRACE("Writing fragment %lld, uncompressed size %d, "
 			"compressed size %d\n", file_buffer->block,
@@ -2541,11 +2542,9 @@ static void *frag_orderer(void *arg)
 		int block = write_buffer->block;
 
 		pthread_mutex_lock(&fragment_mutex);
-		fragment_table[block].size = write_buffer->size;
 		fragment_table[block].start_block = bytes;
 		write_buffer->block = bytes;
 		bytes += SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size);
-		write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size);
 		fragments_outstanding --;
 		log_fragment(block, write_buffer->block);
 		queue_put(to_writer, write_buffer);
