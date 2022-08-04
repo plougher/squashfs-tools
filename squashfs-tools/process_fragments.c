@@ -369,4 +369,5 @@ void *frag_thrd(void *destination_file)
 	}
 
 	pthread_cleanup_pop(0);
+	return NULL;
 }

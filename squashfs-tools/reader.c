@@ -47,7 +47,7 @@
 #include "sort.h"
 #include "tar.h"
 
-static void sigalrm_handler()
+static void sigalrm_handler(int arg)
 {
 	struct timespec requested_time, remaining;
 

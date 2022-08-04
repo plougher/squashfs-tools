@@ -58,7 +58,7 @@ pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t size_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
-static void sigwinch_handler()
+static void sigwinch_handler(int arg)
 {
 	struct winsize winsize;
 

@@ -445,7 +445,7 @@ void restorefs()
 }
 
 
-void sighandler()
+void sighandler(int arg)
 {
 	EXIT_MKSQUASHFS();
 }
@@ -2499,6 +2499,8 @@ static void *frag_deflator(void *arg)
 	}
 
 	pthread_cleanup_pop(0);
+	return NULL;
+
 }
 
 
@@ -2997,7 +2999,8 @@ again:
 		ERROR_START("Failed to read file %s", pathname(dir));
 		ERROR_EXIT(", creating empty file\n");
 		file = write_file_empty(dir, NULL, dup);
-	}
+	} else if(status)
+		BAD_ERROR("Unexpected status value in write_file()");
 
 	return file;
 }
