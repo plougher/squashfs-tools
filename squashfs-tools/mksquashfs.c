@@ -1354,7 +1354,7 @@ static struct file_buffer *get_fragment(struct fragment *fragment)
 	struct squashfs_fragment_entry *disk_fragment;
 	struct file_buffer *buffer, *compressed_buffer;
 	long long start_block;
-	int res, size, index = fragment->index;
+	int res, size, index = fragment->index, compressed;
 	char locked;
 
 	/*
@@ -1426,10 +1426,11 @@ again:
 	pthread_mutex_lock(&fragment_mutex);
 	disk_fragment = &fragment_table[index];
 	size = SQUASHFS_COMPRESSED_SIZE_BLOCK(disk_fragment->size);
+	compressed = SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size);
 	start_block = disk_fragment->start_block;
 	pthread_cleanup_pop(1);
 
-	if(SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size)) {
+	if(compressed) {
 		int error;
 		char *data;
 
