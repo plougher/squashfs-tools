@@ -42,7 +42,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
-#include <setjmp.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <pthread.h>
