@@ -4728,6 +4728,15 @@ static char *get_filename_from_stdin(char terminator)
 			src = buffer;
 		}
 
+		if(size - used <= 1) {
+			int offset = dest - filename;
+			char *buff = realloc(filename, size += 100);
+			if(buff == NULL)
+				MEM_ERROR();
+			dest = buff + offset;
+			filename = buff;
+		}
+
 		if(*src == terminator) {
 			src++;
 			bytes--;
@@ -4737,15 +4746,6 @@ static char *get_filename_from_stdin(char terminator)
 		if(used >= (path_max - 1))
 			BAD_ERROR("Cpiostyle input filename exceeds maximum "
 				"path limit of %d bytes!\n", path_max);
-
-		if(size - used <= 1) {
-			int offset = dest - filename;
-			char *buff = realloc(filename, size += 100);
-			if(buff == NULL)
-				MEM_ERROR();
-			dest = buff + offset;
-			filename = buff;
-		}
 
 		*dest++ = *src++;
 		bytes --;
