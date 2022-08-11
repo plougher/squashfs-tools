@@ -6060,7 +6060,10 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-regex\t\t\tAllow POSIX regular expressions to be used in ");
 	fprintf(stream, "exclude\n\t\t\tdirs/files\n");
 	fprintf(stream, "-one-file-system\tDo not cross filesystem ");
-	fprintf(stream, "boundaries when scanning sources\n");
+	fprintf(stream, "boundaries.  If a directory\n\t\t\tcrosses the ");
+	fprintf(stream, "boundary, create an empty directory for\n\t\t\teach ");
+	fprintf(stream, "mount point.  If a file crosses the boundary\n\t\t\t");
+	fprintf(stream, "ignore it");
 	fprintf(stream, "\nFilesystem append options:\n");
 	fprintf(stream, "-noappend\t\tdo not append to existing filesystem\n");
 	fprintf(stream, "-root-becomes <name>\twhen appending source ");
