@@ -3655,6 +3655,7 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 		char *filename = pathname(dir_ent);
 		char *subpath = NULL;
 		char *dir_name = dir_ent->name;
+		int create_empty_directory = FALSE;
 
 		if(strcmp(dir_name, ".") == 0 || strcmp(dir_name, "..") == 0) {
 			free_dir_entry(dir_ent);
@@ -3671,9 +3672,13 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 
 		if(one_file_system) {
 			if(buf.st_dev != cur_dev) {
-				ERROR("%s is on a different filesystem, ignored\n", filename);
-				free_dir_entry(dir_ent);
-				continue;
+				if(!S_ISDIR(buf.st_mode)) {
+					ERROR("%s is on a different filesystem, ignored\n", filename);
+					free_dir_entry(dir_ent);
+					continue;
+				}
+
+				create_empty_directory = TRUE;
 			}
 		}
 
@@ -3719,8 +3724,12 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 			if(subpath == NULL)
 				subpath = subpathname(dir_ent);
 
-			sub_dir = dir_scan1(filename, subpath, new,
-					scan1_readdir, depth + 1);
+			if(create_empty_directory) {
+				ERROR("%s is on a different filesystem, creating empty directory\n", filename);
+				sub_dir = create_dir(filename, subpath, depth + 1);
+			} else
+				sub_dir = dir_scan1(filename, subpath, new,
+						scan1_readdir, depth + 1);
 			if(sub_dir) {
 				dir->directory_count ++;
 				add_dir_entry(dir_ent, sub_dir,
