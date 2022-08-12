@@ -13,9 +13,9 @@ fi
 
 # Sanity check, ensure $1 points to a directory with a runnable Unsquashfs
 if [ ! -x $1/unsquashfs ]; then
-	echo "\$arg1 doesn\'t point to a directory with Unsquashfs in it!" 2>&1
-	echo "\$arg1 should point to the directory with the Unsquashfs" 2>&1
-	echo "you want to generate a manpage for." 2>&1
+	echo "<arg1> doesn't point to a directory with Unsquashfs in it!" 2>&1
+	echo "<arg1> should point to the directory with the Unsquashfs" \
+		"you want to generate a manpage for." 2>&1
 	exit 1
 fi
 
