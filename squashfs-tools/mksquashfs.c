@@ -6212,7 +6212,7 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\nFilesystem filter options:\n");
 	fprintf(stream, "-ef <exclude_file>\tlist of exclude dirs/files.  ");
 	fprintf(stream, "One per line\n");
-	fprintf(stream, "-regex\t\t\tAllow POSIX regular expressions to be used in ");
+	fprintf(stream, "-regex\t\t\tallow POSIX regular expressions to be used in ");
 	fprintf(stream, "exclude\n\t\t\tdirs/files\n");
 	fprintf(stream, "\nSqfstar runtime options:\n");
 	fprintf(stream, "-version\t\tprint version, licence and copyright message\n");
@@ -6230,15 +6230,15 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-limit <percentage>\tlimit the I/O input rate to the given ");
 	fprintf(stream, "percentage.\n\t\t\tThis can be used to reduce the I/O and CPU ");
 	fprintf(stream, "consumption\n\t\t\tof Mksquashfs (alternative to -throttle)\n");
-	fprintf(stream, "-processors <number>\tUse <number> processors.  By default ");
+	fprintf(stream, "-processors <number>\tuse <number> processors.  By default ");
 	fprintf(stream, "will use number of\n\t\t\tprocessors available\n");
-	fprintf(stream, "-mem <size>\t\tUse <size> physical memory.  Currently set ");
+	fprintf(stream, "-mem <size>\t\tuse <size> physical memory.  Currently set ");
 	fprintf(stream, "to %dM\n", total_mem);
 	fprintf(stream, "\t\t\tOptionally a suffix of K, M or G can be given to ");
 	fprintf(stream, "specify\n\t\t\tKbytes, Mbytes or Gbytes respectively\n");
 	fprintf(stream, "\nExpert options (these may make the filesystem unmountable):\n");
 	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
-	fprintf(stream, "-offset <offset>\tSkip <offset> bytes at the beginning of ");
+	fprintf(stream, "-offset <offset>\tskip <offset> bytes at the beginning of ");
 	fprintf(stream, "FILESYSTEM.\n\t\t\tOptionally a suffix of K, M or G can be given ");
 	fprintf(stream, "to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n");
 	fprintf(stream, "\t\t\tDefault 0 bytes\n");
