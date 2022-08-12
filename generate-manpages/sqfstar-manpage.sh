@@ -13,9 +13,9 @@ fi
 
 # Sanity check, ensure $1 points to a directory with a runnable Sqfstar
 if [ ! -x $1/sqfstar ]; then
-	echo "\$arg1 doesn\'t point to a directory with Sqfstar in it!" 2>&1
-	echo "\$arg1 should point to the directory with the Sqfstar" 2>&1
-	echo "you want to generate a manpage for." 2>&1
+	echo "<arg1> doesn't point to a directory with Sqfstar in it!" 2>&1
+	echo "<arg1> should point to the directory with the Sqfstar" \
+		"you want to generate a manpage for." 2>&1
 	exit 1
 fi
 
