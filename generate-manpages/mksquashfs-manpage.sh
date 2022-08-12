@@ -13,9 +13,9 @@ fi
 
 # Sanity check, ensure $1 points to a directory with a runnable Mksquashfs
 if [ ! -x $1/mksquashfs ]; then
-	echo "\$arg1 doesn\'t point to a directory with Mksquashfs in it!" 2>&1
-	echo "\$arg1 should point to the directory with the Mksquashfs" 2>&1
-	echo "you want to generate a manpage for." 2>&1
+	echo "<arg1> doesn't point to a directory with Mksquashfs in it!" 2>&1
+	echo "<arg1> should point to the directory with the Mksquashfs" \
+		"you want to generate a manpage for." 2>&1
 	exit 1
 fi
 
