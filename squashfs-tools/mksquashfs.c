@@ -6002,10 +6002,10 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-all-time <time>\tset all file timestamps to ");
 	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int ");
 	fprintf(stream, "indicating seconds since the epoch\n\t\t\t(1970-01-01)\n");
-	fprintf(stream, "-no-exports\t\tdon't make filesystem exportable via NFS (-tar default)\n");
+	fprintf(stream, "-no-exports\t\tdo not make filesystem exportable via NFS (-tar default)\n");
 	fprintf(stream, "-exports\t\tmake filesystem exportable via NFS (default)\n");
-	fprintf(stream, "-no-sparse\t\tdon't detect sparse files\n");
-	fprintf(stream, "-no-xattrs\t\tdon't store extended attributes" NOXOPT_STR "\n");
+	fprintf(stream, "-no-sparse\t\tdo not detect sparse files\n");
+	fprintf(stream, "-no-xattrs\t\tdo not store extended attributes" NOXOPT_STR "\n");
 	fprintf(stream, "-xattrs\t\t\tstore extended attributes" XOPT_STR "\n");
 	fprintf(stream, "-noI\t\t\tdo not compress inode table\n");
 	fprintf(stream, "-noId\t\t\tdo not compress the uid/gid table (implied by ");
@@ -6013,7 +6013,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
 	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
 	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
-	fprintf(stream, "-no-tailends\t\tdon't pack tail ends into fragments (default)\n");
+	fprintf(stream, "-no-tailends\t\tdo not pack tail ends into fragments (default)\n");
 	fprintf(stream, "-tailends\t\tpack tail ends into fragments\n");
 	fprintf(stream, "-no-fragments\t\tdo not use fragments\n");
 	fprintf(stream, "-always-use-fragments\tuse fragment blocks for files larger ");
@@ -6085,12 +6085,12 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-exit-on-error\t\ttreat normally ignored errors as fatal\n");
 	fprintf(stream, "-recover <name>\t\trecover filesystem data using recovery ");
 	fprintf(stream, "file <name>\n");
-	fprintf(stream, "-no-recovery\t\tdon't generate a recovery file\n");
+	fprintf(stream, "-no-recovery\t\tdo not generate a recovery file\n");
 	fprintf(stream, "-recovery-path <name>\tuse <name> as the directory ");
 	fprintf(stream, "to store the recovery file\n");
 	fprintf(stream, "-quiet\t\t\tno verbose output\n");
 	fprintf(stream, "-info\t\t\tprint files written to filesystem\n");
-	fprintf(stream, "-no-progress\t\tdon't display the progress bar\n");
+	fprintf(stream, "-no-progress\t\tdo not display the progress bar\n");
 	fprintf(stream, "-progress\t\tdisplay progress bar when using the -info ");
 	fprintf(stream, "option\n");
 	fprintf(stream, "-throttle <percentage>\tthrottle the I/O input rate by the ");
