@@ -280,6 +280,7 @@ int no_hardlinks = FALSE;
 
 /* Should Mksquashfs cross filesystem boundaries? */
 int one_file_system = FALSE;
+int one_file_system_x = FALSE;
 dev_t *source_dev;
 dev_t cur_dev;
 
@@ -3672,7 +3673,7 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 
 		if(one_file_system) {
 			if(buf.st_dev != cur_dev) {
-				if(!S_ISDIR(buf.st_mode)) {
+				if(!S_ISDIR(buf.st_mode) || one_file_system_x) {
 					ERROR("%s is on a different filesystem, ignored\n", filename);
 					free_dir_entry(dir_ent);
 					continue;
@@ -6063,7 +6064,11 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "boundaries.  If a directory\n\t\t\tcrosses the ");
 	fprintf(stream, "boundary, create an empty directory for\n\t\t\teach ");
 	fprintf(stream, "mount point.  If a file crosses the boundary\n\t\t\t");
-	fprintf(stream, "ignore it");
+	fprintf(stream, "ignore it\n");
+	fprintf(stream, "-one-file-system-x\tDo not cross filesystem ");
+	fprintf(stream, "boundaries. Like\n\t\t\t-one-file-system option ");
+	fprintf(stream, "except directories are also\n\t\t\tignored if they ");
+	fprintf(stream, "cross the boundary\n");
 	fprintf(stream, "\nFilesystem append options:\n");
 	fprintf(stream, "-noappend\t\tdo not append to existing filesystem\n");
 	fprintf(stream, "-root-becomes <name>\twhen appending source ");
@@ -7112,6 +7117,8 @@ int main(int argc, char *argv[])
 			exportable = FALSE;
 		} else if(strcmp(argv[i], "-one-file-system") == 0)
 			one_file_system = TRUE;
+		else if(strcmp(argv[i], "-one-file-system-x") == 0)
+			one_file_system = one_file_system_x = TRUE;
 		else if(strcmp(argv[i], "-recovery-path") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -recovery-path missing pathname\n",
