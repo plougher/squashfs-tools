@@ -6226,10 +6226,10 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "option\n");
 	fprintf(stream, "-throttle <percentage>\tthrottle the I/O input rate by the ");
 	fprintf(stream, "given percentage.\n\t\t\tThis can be used to reduce the I/O ");
-	fprintf(stream, "and CPU consumption\n\t\t\tof Mksquashfs\n");
+	fprintf(stream, "and CPU consumption\n\t\t\tof Sqfstar\n");
 	fprintf(stream, "-limit <percentage>\tlimit the I/O input rate to the given ");
 	fprintf(stream, "percentage.\n\t\t\tThis can be used to reduce the I/O and CPU ");
-	fprintf(stream, "consumption\n\t\t\tof Mksquashfs (alternative to -throttle)\n");
+	fprintf(stream, "consumption\n\t\t\tof Sqfstar (alternative to -throttle)\n");
 	fprintf(stream, "-processors <number>\tuse <number> processors.  By default ");
 	fprintf(stream, "will use number of\n\t\t\tprocessors available\n");
 	fprintf(stream, "-mem <size>\t\tuse <size> physical memory.  Currently set ");
