@@ -192,7 +192,7 @@ s/^ *-/  -/
 N
 /\n$/b print
 /\n[^ ]/b print
-/\n *-/b print
+/\n  -/b print
 s/\n */ /
 b again
 
