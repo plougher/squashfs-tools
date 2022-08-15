@@ -5818,6 +5818,7 @@ static int get_physical_memory()
 	long long page_size = sysconf(_SC_PAGESIZE);
 	int phys_mem;
 
+#ifdef __linux__
 	if(num_pages == -1 || page_size == -1) {
 		struct sysinfo sys;
 		int res = sysinfo(&sys);
@@ -5828,6 +5829,7 @@ static int get_physical_memory()
 		num_pages = sys.totalram;
 		page_size = sys.mem_unit;
 	}
+#endif
 
 	phys_mem = num_pages * page_size >> 20;
 
