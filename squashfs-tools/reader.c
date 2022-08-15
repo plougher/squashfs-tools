@@ -38,6 +38,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <signal.h>
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "caches-queues-lists.h"
