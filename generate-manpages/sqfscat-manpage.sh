@@ -34,7 +34,10 @@ tmp=$(mktemp -d)
 # $tmp/sqfscat.help.  This is to allow it to be modified before
 # passing to help2man.
 
-$1/sqfscat -help > $tmp/sqfscat.help
+if ! $1/sqfscat -help > $tmp/sqfscat.help; then
+	echo "$0: Running Sqfscat failed.  Cross-compiled or incompatible binary?" 2>&1
+	exit 1
+fi
 
 # Run sqfscat -version, and output the version text to
 # $tmp/sqfscat.version.  This is to allow it to be modified before

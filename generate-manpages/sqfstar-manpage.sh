@@ -34,7 +34,13 @@ tmp=$(mktemp -d)
 # $tmp/sqfstar.help.  This is to allow it to be modified before
 # passing to help2man.
 
-$1/sqfstar -help | expand > $tmp/sqfstar.help
+if ! $1/sqfstar -help > $tmp/sqfstar.help2; then
+	echo "$0: Running Sqfstar failed.  Cross-compiled or incompatible binary?" 2>&1
+	exit 1
+fi
+
+expand $tmp/sqfstar.help2 > $tmp/sqfstar.help
+
 
 # Run sqfstar -version, and output the version text to
 # $tmp/sqfstar.version.  This is to allow it to be modified before
