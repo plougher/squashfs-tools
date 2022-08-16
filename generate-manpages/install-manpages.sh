@@ -1,8 +1,8 @@
 #!/bin/sh
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 3 ]; then
 	echo "$0: Insufficient arguments." >&2
-	echo "$0: <path to git-root/source-root> <path to install manpages>" >&2
+	echo "$0: <path to git-root/source-root> <path to install manpages> <use prebuilt manpages=y/n>" >&2
 	exit 1;
 fi
 
@@ -28,7 +28,9 @@ cd $1/generate-manpages
 # If help2man doesn't exist, or the manpage generation fails, use
 # the pre-built manpages.
 
-if which help2man > /dev/null 2>&1; then
+if [ $3 == "y" ]; then
+	echo "$0: Using pre-built manpages"
+elif which help2man > /dev/null 2>&1; then
 	for i in mksquashfs unsquashfs sqfstar sqfscat; do
 		if ! ./$i-manpage.sh ../squashfs-tools ../squashfs-tools/$i.1; then
 			echo "$0: Failed to generate manpage.  Falling back to using pre-built manpages" >&2
@@ -40,13 +42,17 @@ if which help2man > /dev/null 2>&1; then
 	[ -z "$failed" ] && source=../squashfs-tools
 else
 	echo "$0: ERROR - No help2man in PATH.  Cannot generate manpages." >&2
+	failed="y"
 fi
 
 if [ -z "$source" ]; then
-	echo "WARNING: Installing pre-built manpages." >&2
-	echo "WARNING: These pages are built with the Makefile defaults, and all" >&2
-	echo "WARNING: the compressors configured (except the deprecated lzma).  This may not" >&2
-	echo "WARNING: match your build configuration." >&2
+	if [ "$failed" == "y" ]; then
+		echo "$0: WARNING: Installing pre-built manpages." >&2
+		echo "$0: WARNING: These pages are built with the Makefile defaults, and all" >&2
+		echo "$0: WARNING: the compressors configured (except the deprecated lzma).  This may not" >&2
+		echo "$0: WARNING: match your build configuration." >&2
+		echo -e "\n$0: Set USE_PREBUILT_MANPAGES to "y" in Makefile, to avoid these errors/warnings" >&2 
+	fi
 	source=../manpages
 fi
 

@@ -30,7 +30,7 @@ GZIP_SUPPORT = 1
 # To build install the library and uncomment
 # the XZ_SUPPORT line below.
 #
-#XZ_SUPPORT = 1
+XZ_SUPPORT = 1
 
 
 ############ Building LZO support ##############
@@ -44,7 +44,7 @@ GZIP_SUPPORT = 1
 # To build install the library and uncomment
 # the LZO_SUPPORT line below.
 #
-#LZO_SUPPORT = 1
+LZO_SUPPORT = 1
 
 
 ########### Building LZ4 support #############
@@ -60,7 +60,7 @@ GZIP_SUPPORT = 1
 # To build install and uncomment
 # the LZ4_SUPPORT line below.
 #
-#LZ4_SUPPORT = 1
+LZ4_SUPPORT = 1
 
 
 ########### Building ZSTD support ############
@@ -76,7 +76,7 @@ GZIP_SUPPORT = 1
 # To build install the library and uncomment
 # the ZSTD_SUPPORT line below.
 #
-#ZSTD_SUPPORT = 1
+ZSTD_SUPPORT = 1
 
 
 ######## Specifying default compression ########
@@ -119,6 +119,23 @@ XATTR_DEFAULT = 1
 REPRODUCIBLE_DEFAULT = 1
 
 ###############################################
+#               Manpage generation            #
+###############################################
+#
+# If help2man is available on the system, on installation, the Makefile
+# will try to generate "custom" manpages from the built squashfs-tools.
+#
+# If the squashfs-tools have been cross-compiled, or for any other
+# reason they're not executable, this will generate errors at
+# installation and the install script will fall back to using
+# pre-built manpages.
+#
+# Change next variable to "y" to use the pre-built manpages by default,
+# and not attempt to generate "custom" manpages.  This will eliminate
+# errors and warnings at install time.
+USE_PREBUILT_MANPAGES=n
+
+###############################################
 #              INSTALL PATHS                  #
 ###############################################
 #
@@ -128,7 +145,7 @@ REPRODUCIBLE_DEFAULT = 1
 # To skip building and installing manpages,
 # unset INSTALL_MANPAGES_DIR or set to ""
 #
-INSTALL_PREFIX = /usr/local
+INSTALL_PREFIX = /tmp/crap
 INSTALL_DIR = $(INSTALL_PREFIX)/bin
 INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
 
@@ -418,4 +435,4 @@ install: mksquashfs unsquashfs
 	cp unsquashfs $(INSTALL_DIR)
 	ln -fs unsquashfs $(INSTALL_DIR)/sqfscat
 	ln -fs mksquashfs $(INSTALL_DIR)/sqfstar
-	../generate-manpages/install-manpages.sh $(shell pwd)/.. "$(INSTALL_MANPAGES_DIR)"
+	../generate-manpages/install-manpages.sh $(shell pwd)/.. "$(INSTALL_MANPAGES_DIR)" "$(USE_PREBUILT_MANPAGES)"
