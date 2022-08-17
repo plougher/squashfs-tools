@@ -13,8 +13,8 @@ fi
 
 # Sanity check, ensure $1 points to a directory with a runnable Unsquashfs
 if [ ! -x $1/unsquashfs ]; then
-	echo "<arg1> doesn't point to a directory with Unsquashfs in it!" 2>&1
-	echo "<arg1> should point to the directory with the Unsquashfs" \
+	echo "$0: <arg1> doesn't point to a directory with Unsquashfs in it!" 2>&1
+	echo "$0: <arg1> should point to the directory with the Unsquashfs" \
 		"you want to generate a manpage for." 2>&1
 	exit 1
 fi
@@ -22,8 +22,8 @@ fi
 # Sanity check, check that the utilities this script depends on, are in PATH
 for i in sed help2man; do
 	if ! which $i > /dev/null 2>&1; then
-		echo "This script needs $i, which is not in your PATH." 2>&1
-		echo "Fix PATH or install before running this script!" 2>&1
+		echo "$0: This script needs $i, which is not in your PATH." 2>&1
+		echo "$0: Fix PATH or install before running this script!" 2>&1
 		exit 1
 	fi
 done
