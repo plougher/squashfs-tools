@@ -3865,7 +3865,7 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-fr[ag-queue] <size>\tset fragment queue to <size> Mbytes.  ");
 	fprintf(stream, "Default\n\t\t\t\t%d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
 	fprintf(stream, "\t-no-wild[cards]\t\tdo not use wildcard matching in extract ");
-	fprintf(stream, "names\n");
+	fprintf(stream, "and\n\t\t\t\texclude names\n");
 	fprintf(stream, "\t-r[egex]\t\ttreat extract names as POSIX regular ");
 	fprintf(stream, "expressions\n");
 	fprintf(stream, "\t\t\t\trather than use the default shell ");
