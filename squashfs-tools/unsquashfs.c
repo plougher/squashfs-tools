@@ -4274,14 +4274,14 @@ int parse_options(int argc, char *argv[])
 		EXIT_UNSQUASH("Both -strict-errors and -no-exit-code should "
 			"not be set.  All errors are fatal\n");
 
-	if(no_wildcards && use_regex)
-		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be "
-								"set\n");
-
 	if(missing_symlinks && !follow_symlinks) {
 		follow_symlinks = TRUE;
 		no_wildcards = TRUE;
 	}
+
+	if(no_wildcards && use_regex)
+		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be "
+								"set\n");
 
 #ifdef SQUASHFS_TRACE
 	/*
