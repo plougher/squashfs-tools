@@ -3807,6 +3807,10 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-excludes\t\ttreat files on command line as exclude files\n");
 	fprintf(stream, "\t-ex[clude-list]\t\tlist of files to be excluded, terminated\n");
 	fprintf(stream, "\t\t\t\twith ; e.g. file1 file2 ;\n");
+	fprintf(stream, "\t-match\t\t\tabort if any extract file does not ");
+	fprintf(stream, "match on\n\t\t\t\tanything, and can not be ");
+	fprintf(stream, "resolved.  Implies\n\t\t\t\t-missing-symlinks and ");
+	fprintf(stream, "-no-wildcards\n");
 	fprintf(stream, "\t-follow[-symlinks]\tfollow symlinks in extract files, and ");
 	fprintf(stream, "add all\n\t\t\t\tfiles/symlinks needed to resolve extract ");
 	fprintf(stream, "file.\n\t\t\t\tImplies -no-wildcards\n");
@@ -4082,7 +4086,8 @@ int parse_options(int argc, char *argv[])
 			follow_symlinks = TRUE;
 			no_wildcards = TRUE;
 		} else if(strcmp(argv[i], "missing-symlinks") == 0 ||
-				strcmp(argv[i], "-missing") == 0)
+				strcmp(argv[i], "-missing") == 0 ||
+				strcmp(argv[i], "-match") == 0)
 			missing_symlinks = TRUE;
 		else if(strcmp(argv[i], "-no-wildcards") == 0 ||
 				strcmp(argv[i], "-no-wild") == 0)
