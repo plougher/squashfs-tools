@@ -5983,7 +5983,8 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-no-strip\t\tact like tar, and do not strip leading ");
 	fprintf(stream, "directories\n\t\t\tfrom source files\n");
 	fprintf(stream, "-tarstyle\t\talternative name for -no-strip\n");
-	fprintf(stream, "-cpiostyle\t\tact like cpio, and read files from standard in (stdin)\n");
+	fprintf(stream, "-cpiostyle\t\tact like cpio, and read file ");
+	fprintf(stream, "pathnames from standard in\n\t\t\t(stdin)\n");
 	fprintf(stream, "-cpiostyle0\t\tlike -cpiostyle, but filenames are null terminated\n");
 	fprintf(stream, "-comp <comp>\t\tselect <comp> compression\n");
 	fprintf(stream, "\t\t\tCompressors available:\n");
