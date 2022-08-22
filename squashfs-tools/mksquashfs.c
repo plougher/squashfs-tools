@@ -5985,7 +5985,9 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-tarstyle\t\talternative name for -no-strip\n");
 	fprintf(stream, "-cpiostyle\t\tact like cpio, and read file ");
 	fprintf(stream, "pathnames from standard in\n\t\t\t(stdin)\n");
-	fprintf(stream, "-cpiostyle0\t\tlike -cpiostyle, but filenames are null terminated\n");
+	fprintf(stream, "-cpiostyle0\t\tlike -cpiostyle, but filenames are ");
+	fprintf(stream, "null terminated.  Can\n\t\t\tbe used with find ");
+	fprintf(stream, "-print0 action\n");
 	fprintf(stream, "-comp <comp>\t\tselect <comp> compression\n");
 	fprintf(stream, "\t\t\tCompressors available:\n");
 	display_compressors(stream, "\t\t\t", COMP_DEFAULT);
