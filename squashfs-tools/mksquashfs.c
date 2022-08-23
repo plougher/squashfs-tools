@@ -80,8 +80,6 @@ struct squashfs_super_block sBlk;
 
 /* filesystem flags for building */
 int comp_opts = FALSE;
-int no_xattrs = XATTR_DEF;
-int noX = FALSE;
 int duplicate_checking = TRUE;
 int noF = FALSE;
 int no_fragments = FALSE;
@@ -254,9 +252,6 @@ int compressor_opt_parsed = FALSE;
 int X_opt_parsed = FALSE;
 void *stream = NULL;
 
-/* xattr stats */
-unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
-
 /* fragment to file mapping used when appending */
 struct append_file **file_mapping;
 
@@ -286,6 +281,11 @@ dev_t cur_dev;
 
 /* Is Mksquashfs processing a tarfile? */
 int tarfile = FALSE;
+
+/* Xattr options and stats */
+int no_xattrs = XATTR_DEF;
+int noX = FALSE;
+unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
 
 /* list of options that have an argument */
 char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-mode",
