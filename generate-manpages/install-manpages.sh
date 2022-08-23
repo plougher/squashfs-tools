@@ -3,21 +3,21 @@
 source $1/generate-manpages/functions.sh
 
 if [ $# -lt 3 ]; then
-	print "$0: Insufficient arguments." >&2
-	print "$0: <path to git-root/source-root> <path to install manpages> <use prebuilt manpages=y/n>" >&2
+	error "$0: Insufficient arguments."
+	error "$0: <path to git-root/source-root> <path to install manpages> <use prebuilt manpages=y/n>"
 	exit 1;
 fi
 
 if [ -z "$2" ]; then
-	print "$0: Install path for manpages empty.  Skipping manpage install" >&2
+	error "$0: Install path for manpages empty.  Skipping manpage install"
 	exit 0
 fi
 
 # Sanity check, check that the utilities this script depends on, are in PATH
 for i in gzip; do
 	if ! which $i > /dev/null 2>&1; then
-		print "$0: This script needs $i, which is not in your PATH." 2>&1
-		print "$0: Fix PATH or install before running this script!" 2>&1
+		error "$0: This script needs $i, which is not in your PATH."
+		error "$0: Fix PATH or install before running this script!"
 		exit 1
 	fi
 done
@@ -35,7 +35,7 @@ if [ $3 == "y" ]; then
 elif which help2man > /dev/null 2>&1; then
 	for i in mksquashfs unsquashfs sqfstar sqfscat; do
 		if ! ./$i-manpage.sh ../squashfs-tools ../squashfs-tools/$i.1; then
-			print "$0: Failed to generate manpage.  Falling back to using pre-built manpages" >&2
+			error "$0: Failed to generate manpage.  Falling back to using pre-built manpages"
 			failed="y"
 			break
 		fi
@@ -43,34 +43,34 @@ elif which help2man > /dev/null 2>&1; then
 
 	[ -z "$failed" ] && source=../squashfs-tools
 else
-	print "$0: ERROR - No help2man in PATH.  Cannot generate manpages." >&2
+	error "$0: ERROR - No help2man in PATH.  Cannot generate manpages."
 	failed="y"
 fi
 
 if [ -z "$source" ]; then
 	if [ "$failed" == "y" ]; then
-		print "$0: WARNING: Installing pre-built manpages." >&2
-		print "$0: WARNING: These pages are built with the Makefile defaults, and all" >&2
-		print "$0: WARNING: the compressors configured (except the deprecated lzma).  This may not" >&2
-		print "$0: WARNING: match your build configuration." >&2
-		print -e "\n$0: Set USE_PREBUILT_MANPAGES to "y" in Makefile, to avoid these errors/warnings" >&2 
+		error "$0: WARNING: Installing pre-built manpages."
+		error "$0: WARNING: These pages are built with the Makefile defaults, and all"
+		error "$0: WARNING: the compressors configured (except the deprecated lzma).  This may not"
+		error "$0: WARNING: match your build configuration."
+		error -e "\n$0: Set USE_PREBUILT_MANPAGES to "y" in Makefile, to avoid these errors/warnings" 
 	fi
 	source=../manpages
 fi
 
 if ! mkdir -p $2; then
-	print "$0: Creating manpage install directory failed.  Aborting" >&2
+	error "$0: Creating manpage install directory failed.  Aborting"
 	exit 1
 fi
 
 for i in mksquashfs unsquashfs sqfstar sqfscat; do
 	if ! cp $source/$i.1 $2/$i.1; then
-		print "$0: Copying manpage to install directory failed.  Aborting" >&2
+		error "$0: Copying manpage to install directory failed.  Aborting"
 		exit 1
 	fi
 
 	if ! gzip -n -f9 $2/$i.1; then
-		print "$0: Compressing installed manpage failed.  Aborting" >&2
+		error "$0: Compressing installed manpage failed.  Aborting"
 		exit 1
 	fi
 done

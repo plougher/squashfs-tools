@@ -12,3 +12,7 @@ ECHO=$(which echo)
 print() {
 	${ECHO} "$@"
 }
+
+error() {
+	${ECHO} "$@" >&2
+}

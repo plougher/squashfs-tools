@@ -8,24 +8,24 @@ source ./functions.sh
 # it be successfully processed into a manpage by help2man.
 
 if [ $# -lt 2 ]; then
-	print "$0: Insufficient arguments" >&2
-	print "$0: <path to unsquashfs> <output file>" >&2
+	error "$0: Insufficient arguments"
+	error "$0: <path to unsquashfs> <output file>"
 	exit 1
 fi
 
 # Sanity check, ensure $1 points to a directory with a runnable Unsquashfs
 if [ ! -x $1/unsquashfs ]; then
-	print "$0: <arg1> doesn't point to a directory with Unsquashfs in it!" 2>&1
-	print "$0: <arg1> should point to the directory with the Unsquashfs" \
-		"you want to generate a manpage for." 2>&1
+	error "$0: <arg1> doesn't point to a directory with Unsquashfs in it!"
+	error "$0: <arg1> should point to the directory with the Unsquashfs" \
+		"you want to generate a manpage for."
 	exit 1
 fi
 
 # Sanity check, check that the utilities this script depends on, are in PATH
 for i in sed help2man; do
 	if ! which $i > /dev/null 2>&1; then
-		print "$0: This script needs $i, which is not in your PATH." 2>&1
-		print "$0: Fix PATH or install before running this script!" 2>&1
+		error "$0: This script needs $i, which is not in your PATH."
+		error "$0: Fix PATH or install before running this script!"
 		exit 1
 	fi
 done
@@ -37,7 +37,7 @@ tmp=$(mktemp -d)
 # passing to help2man.
 
 if ! $1/unsquashfs -help > $tmp/unsquashfs.help; then
-	print "$0: Running Unsquashfs failed.  Cross-compiled or incompatible binary?" 2>&1
+	error "$0: Running Unsquashfs failed.  Cross-compiled or incompatible binary?"
 	exit 1
 fi
 
@@ -177,7 +177,7 @@ sed -i "s/See also:/See also:\nmksquashfs(1), sqfstar(1), sqfscat(1)\n/" $tmp/un
 sed -i "s/\(See also\):/*\1*/" $tmp/unsquashfs.help
 
 if ! help2man -Ni unsquashfs.h2m -o $2 $tmp/unsquashfs.sh; then
-	print "$0: help2man returned error.  Aborting" >&2
+	error "$0: help2man returned error.  Aborting"
 	exit 1
 fi
 
