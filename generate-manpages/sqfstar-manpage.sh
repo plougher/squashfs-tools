@@ -1,20 +1,22 @@
 #!/bin/sh
 
+source ./functions.sh
+
 # This script generates a manpage from the sqfstar -help and -version
 # output, using help2man.  The script does various modfications to the
 # output from -help and -version, before passing it to help2man, to allow
 # it be successfully processed into a manpage by help2man.
 
 if [ $# -lt 2 ]; then
-	echo "$0: Insufficient arguments" >&2
-	echo "$0: <path to sqfstar> <output file>" >&2
+	print "$0: Insufficient arguments" >&2
+	print "$0: <path to sqfstar> <output file>" >&2
 	exit 1
 fi
 
 # Sanity check, ensure $1 points to a directory with a runnable Sqfstar
 if [ ! -x $1/sqfstar ]; then
-	echo "$0: <arg1> doesn't point to a directory with Sqfstar in it!" 2>&1
-	echo "$0: <arg1> should point to the directory with the Sqfstar" \
+	print "$0: <arg1> doesn't point to a directory with Sqfstar in it!" 2>&1
+	print "$0: <arg1> should point to the directory with the Sqfstar" \
 		"you want to generate a manpage for." 2>&1
 	exit 1
 fi
@@ -22,8 +24,8 @@ fi
 # Sanity check, check that the utilities this script depends on, are in PATH
 for i in expand sed help2man; do
 	if ! which $i > /dev/null 2>&1; then
-		echo "$0: This script needs $i, which is not in your PATH." 2>&1
-		echo "$0: Fix PATH or install before running this script!" 2>&1
+		print "$0: This script needs $i, which is not in your PATH." 2>&1
+		print "$0: Fix PATH or install before running this script!" 2>&1
 		exit 1
 	fi
 done
@@ -35,7 +37,7 @@ tmp=$(mktemp -d)
 # passing to help2man.
 
 if ! $1/sqfstar -help > $tmp/sqfstar.help2; then
-	echo "$0: Running Sqfstar failed.  Cross-compiled or incompatible binary?" 2>&1
+	print "$0: Running Sqfstar failed.  Cross-compiled or incompatible binary?" 2>&1
 	exit 1
 fi
 
@@ -53,7 +55,7 @@ $1/sqfstar -version > $tmp/sqfstar.version
 # to pass --help and --version directly to sqfstar, rather than take the
 # (modified) output from $tmp/sqfstar.help and $tmp/sqfstar.version
 
-echo "#!/bin/sh
+print "#!/bin/sh
 if [ \$1 = \"--help\" ]; then
 	cat $tmp/sqfstar.help
 else
@@ -74,8 +76,8 @@ sed -i "s/^copyright/Copyright/" $tmp/sqfstar.version
 # help2man doesn't pick up the author from the version.  Easiest to add
 # it here.
 
-echo >> $tmp/sqfstar.version
-echo "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/sqfstar.version
+print >> $tmp/sqfstar.version
+print "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/sqfstar.version
 
 # Man pages expect the options to be in the "Options" section.  So insert
 # Options section after first line
@@ -219,7 +221,7 @@ sed -i "s/\(See also\):/*\1*/" $tmp/sqfstar.help
 sed -i "s/\(Environment\):/*\1*/" $tmp/sqfstar.help
 
 if ! help2man -Ni sqfstar.h2m -o $2 $tmp/sqfstar.sh; then
-	echo "$0: help2man returned error.  Aborting" >&2
+	print "$0: help2man returned error.  Aborting" >&2
 	exit 1
 fi
 

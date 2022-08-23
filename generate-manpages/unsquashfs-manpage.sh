@@ -1,20 +1,22 @@
 #!/bin/sh
 
+source ./functions.sh
+
 # This script generates a manpage from the unsquashfs -help and -version
 # output, using help2man.  The script does various modfications to the
 # output from -help and -version, before passing it to help2man, to allow
 # it be successfully processed into a manpage by help2man.
 
 if [ $# -lt 2 ]; then
-	echo "$0: Insufficient arguments" >&2
-	echo "$0: <path to unsquashfs> <output file>" >&2
+	print "$0: Insufficient arguments" >&2
+	print "$0: <path to unsquashfs> <output file>" >&2
 	exit 1
 fi
 
 # Sanity check, ensure $1 points to a directory with a runnable Unsquashfs
 if [ ! -x $1/unsquashfs ]; then
-	echo "$0: <arg1> doesn't point to a directory with Unsquashfs in it!" 2>&1
-	echo "$0: <arg1> should point to the directory with the Unsquashfs" \
+	print "$0: <arg1> doesn't point to a directory with Unsquashfs in it!" 2>&1
+	print "$0: <arg1> should point to the directory with the Unsquashfs" \
 		"you want to generate a manpage for." 2>&1
 	exit 1
 fi
@@ -22,8 +24,8 @@ fi
 # Sanity check, check that the utilities this script depends on, are in PATH
 for i in sed help2man; do
 	if ! which $i > /dev/null 2>&1; then
-		echo "$0: This script needs $i, which is not in your PATH." 2>&1
-		echo "$0: Fix PATH or install before running this script!" 2>&1
+		print "$0: This script needs $i, which is not in your PATH." 2>&1
+		print "$0: Fix PATH or install before running this script!" 2>&1
 		exit 1
 	fi
 done
@@ -35,7 +37,7 @@ tmp=$(mktemp -d)
 # passing to help2man.
 
 if ! $1/unsquashfs -help > $tmp/unsquashfs.help; then
-	echo "$0: Running Unsquashfs failed.  Cross-compiled or incompatible binary?" 2>&1
+	print "$0: Running Unsquashfs failed.  Cross-compiled or incompatible binary?" 2>&1
 	exit 1
 fi
 
@@ -50,7 +52,7 @@ $1/unsquashfs -version > $tmp/unsquashfs.version
 # to pass --help and --version directly to unsquashfs, rather than take the
 # (modified) output from $tmp/unsquashfs.help and $tmp/unsquashfs.version
 
-echo "#!/bin/sh
+print "#!/bin/sh
 if [ \$1 = \"--help\" ]; then
 	cat $tmp/unsquashfs.help
 else
@@ -71,8 +73,8 @@ sed -i "s/^copyright/Copyright/" $tmp/unsquashfs.version
 # help2man doesn't pick up the author from the version.  Easiest to add
 # it here.
 
-echo >> $tmp/unsquashfs.version
-echo "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/unsquashfs.version
+print >> $tmp/unsquashfs.version
+print "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/unsquashfs.version
 
 # help2man expects "Usage: ", and so rename "SYNTAX:" to "Usage: "
 
@@ -175,7 +177,7 @@ sed -i "s/See also:/See also:\nmksquashfs(1), sqfstar(1), sqfscat(1)\n/" $tmp/un
 sed -i "s/\(See also\):/*\1*/" $tmp/unsquashfs.help
 
 if ! help2man -Ni unsquashfs.h2m -o $2 $tmp/unsquashfs.sh; then
-	echo "$0: help2man returned error.  Aborting" >&2
+	print "$0: help2man returned error.  Aborting" >&2
 	exit 1
 fi
 
