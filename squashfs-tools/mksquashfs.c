@@ -392,7 +392,7 @@ int multiply_overflowll(long long a, int multiplier)
 
 void restorefs()
 {
-	int i;
+	int i, res;
 
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
@@ -434,7 +434,11 @@ void restorefs()
 		write_destination(fd, bytes, 4096 - i, temp);
 	}
 
-	close(fd);
+	res = close(fd);
+
+	if(res == -1)
+		BAD_ERROR("Failed to close output filesystem, close returned %s\n",
+				strerror(errno));
 
 	if(recovery_file)
 		unlink(recovery_file);
@@ -5534,7 +5538,12 @@ static void write_recovery_data(struct squashfs_super_block *sBlk)
 		BAD_ERROR("Failed to write recovery file, because %s\n",
 			strerror(errno));
 
-	close(recoverfd);
+	res = close(recoverfd);
+
+	if(res == -1)
+		BAD_ERROR("Failed to close recovery file, close returned %s\n",
+				strerror(errno));
+
 	free(metadata);
 	
 	printf("Recovery file \"%s\" written\n", recovery_file);
@@ -5613,8 +5622,17 @@ static void read_recovery_data(char *recovery_file, char *destination_file)
 
 	write_destination(fd, sBlk.inode_table_start, bytes, metadata);
 
-	close(recoverfd);
-	close(fd);
+	res = close(recoverfd);
+
+	if(res == -1)
+		BAD_ERROR("Failed to close recovery file, close returned %s\n",
+				strerror(errno));
+
+	res = close(fd);
+
+	if(res == -1)
+		BAD_ERROR("Failed to close output filesystem, close returned %s\n",
+				strerror(errno));
 
 	printf("Successfully wrote recovery file \"%s\".  Exiting\n",
 		recovery_file);
@@ -7001,7 +7019,11 @@ print_sqfstar_compressor_options:
 		write_destination(fd, bytes, 4096 - i, temp);
 	}
 
-	close(fd);
+	res = close(fd);
+
+	if(res == -1)
+		BAD_ERROR("Failed to close output filesystem, close returned %s\n",
+				strerror(errno));
 
 	if(recovery_file)
 		unlink(recovery_file);
@@ -8070,7 +8092,11 @@ print_compressor_options:
 		write_destination(fd, bytes, 4096 - i, temp);
 	}
 
-	close(fd);
+	res = close(fd);
+
+	if(res == -1)
+		BAD_ERROR("Failed to close output filesystem, close returned %s\n",
+				strerror(errno));
 
 	if(recovery_file)
 		unlink(recovery_file);
