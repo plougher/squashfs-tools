@@ -287,6 +287,7 @@ int no_xattrs = XATTR_DEF;
 int noX = FALSE;
 unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
 regex_t *xattr_exclude_preg = NULL;
+regex_t *xattr_include_preg = NULL;
 
 /* list of options that have an argument */
 char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-mode",
@@ -6036,6 +6037,11 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "regular expression, e.g. -xattrs-exclude ");
 	fprintf(stream, "'^user.'\n\t\t\texcludes xattrs from the user ");
 	fprintf(stream, "namespace.\n");
+	fprintf(stream, "-xattrs-include <regex>\tinclude any xattr names ");
+	fprintf(stream, "matching <regex>.  <regex> is a\n\t\t\tPOSIX ");
+	fprintf(stream, "regular expression, e.g. -xattrs-include ");
+	fprintf(stream, "'^user.'\n\t\t\tincludes xattrs from the user ");
+	fprintf(stream, "namespace.\n");
 	fprintf(stream, "-noI\t\t\tdo not compress inode table\n");
 	fprintf(stream, "-noId\t\t\tdo not compress the uid/gid table (implied by ");
 	fprintf(stream, "-noI)\n");
@@ -7629,6 +7635,18 @@ print_compressor_options:
 				exit(1);
 			} else
 				xattr_exclude_preg = xattr_regex(argv[i], "exclude");
+
+		} else if(strcmp(argv[i], "-xattrs-include") == 0) {
+			if(!xattrs_supported()) {
+				ERROR("%s: xattrs are unsupported in "
+					"this build\n", argv[0]);
+				exit(1);
+			} else if(++i == argc) {
+				ERROR("%s: -xattrs-include missing regex pattern\n",
+					argv[0]);
+				exit(1);
+			} else
+				xattr_include_preg = xattr_regex(argv[i], "include");
 
 		} else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;

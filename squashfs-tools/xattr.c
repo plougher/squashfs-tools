@@ -80,6 +80,7 @@ extern long long bytes;
 extern int fd;
 extern unsigned int xattr_bytes, total_xattr_bytes;
 extern regex_t *xattr_exclude_preg;
+extern regex_t *xattr_include_preg;
 
 /* helper functions from mksquashfs.c */
 extern unsigned short get_checksum(char *, int, unsigned short);
@@ -163,6 +164,14 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 		if(xattr_exclude_preg) {
 			res = regexec(xattr_exclude_preg, p, (size_t) 0, NULL, 0);
 			if(res == 0) {
+				p += strlen(p) + 1;
+				continue;
+			}
+		}
+
+		if(xattr_include_preg) {
+			res = regexec(xattr_include_preg, p, (size_t) 0, NULL, 0);
+			if(res) {
 				p += strlen(p) + 1;
 				continue;
 			}
