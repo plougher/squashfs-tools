@@ -35,6 +35,7 @@
 #include <limits.h>
 #include <dirent.h>
 #include <stdlib.h>
+#include <regex.h>
 
 #include "squashfs_fs.h"
 #include "squashfs_swap.h"

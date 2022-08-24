@@ -35,6 +35,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/xattr.h>
+#include <regex.h>
 
 #include "squashfs_fs.h"
 #include "squashfs_swap.h"
@@ -78,6 +79,7 @@ extern int no_xattrs, noX;
 extern long long bytes;
 extern int fd;
 extern unsigned int xattr_bytes, total_xattr_bytes;
+extern regex_t *xattr_exclude_preg;
 
 /* helper functions from mksquashfs.c */
 extern unsigned short get_checksum(char *, int, unsigned short);
@@ -154,20 +156,30 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 		break;
 	}
 
-	for(i = 0, p = xattr_names; p < xattr_names + size; i++) {
-		struct xattr_list *x = realloc(xattr_list, (i + 1) *
-						sizeof(struct xattr_list));
+	for(i = 0, p = xattr_names; p < xattr_names + size;) {
+		struct xattr_list *x;
+		int res;
+
+		if(xattr_exclude_preg) {
+			res = regexec(xattr_exclude_preg, p, (size_t) 0, NULL, 0);
+			if(res == 0) {
+				p += strlen(p) + 1;
+				continue;
+			}
+		}
+
+		x = realloc(xattr_list, (i + 1) * sizeof(struct xattr_list));
 		if(x == NULL)
 			MEM_ERROR();
 		xattr_list = x;
 
 		xattr_list[i].type = xattr_get_prefix(&xattr_list[i], p);
 		p += strlen(p) + 1;
+
 		if(xattr_list[i].type == -1) {
 			ERROR("Unrecognised xattr prefix %s\n",
 				xattr_list[i].full_name);
 			free(xattr_list[i].full_name);
-			i--;
 			continue;
 		}
 
@@ -206,12 +218,15 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 			
 			break;
 		}
+
 		xattr_list[i].vsize = vsize;
 
 		TRACE("read_xattrs_from_system: filename %s, xattr name %s,"
 			" vsize %d\n", filename, xattr_list[i].full_name,
 			xattr_list[i].vsize);
+		i++;
 	}
+
 	free(xattr_names);
 	if(i > 0)
 		*xattrs = xattr_list;
@@ -724,4 +739,26 @@ void restore_xattrs()
 
 	/* restore the state of the xattr id table */
 	xattr_ids = sxattr_ids;
+}
+
+
+regex_t *xattr_regex(char *pattern, char *option)
+{
+	int error;
+	regex_t *preg = malloc(sizeof(regex_t));
+
+	if(preg == NULL)
+		MEM_ERROR();
+
+	error = regcomp(preg, pattern, REG_EXTENDED|REG_NOSUB);
+
+	if(error) {
+		char str[1024]; /* overflow safe */
+
+		regerror(error, preg, str, 1024);
+		BAD_ERROR("invalid regex %s in xattrs-%s option, because %s\n",
+				pattern, option, str);
+	}
+
+	return preg;
 }

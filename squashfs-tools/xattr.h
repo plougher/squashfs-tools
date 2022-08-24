@@ -76,6 +76,7 @@ extern int write_xattr(char *, unsigned int);
 extern unsigned int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long long *);
 extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern void free_xattr(struct xattr_list *, int);
+extern regex_t *xattr_regex(char *pattern, char *option);
 #else
 #include "squashfs_swap.h"
 
@@ -147,6 +148,11 @@ static inline unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_b
 
 
 static inline struct xattr_list *get_xattr(int i, unsigned int *count, int j)
+{
+	return NULL;
+}
+
+static inline regex_t *xattr_regex(char *pattern, char *option)
 {
 	return NULL;
 }

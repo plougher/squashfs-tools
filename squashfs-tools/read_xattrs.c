@@ -30,6 +30,7 @@
 #define FALSE 0
 #include <stdio.h>
 #include <string.h>
+#include <regex.h>
 
 #include "squashfs_fs.h"
 #include "squashfs_swap.h"
