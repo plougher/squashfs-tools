@@ -104,7 +104,7 @@ sed -i "s/^ *-X/  -X/" $tmp/mksquashfs.help
 # help2man expects the options usage to be separated from the
 # option and operands text by at least 2 spaces.
 
-sed -i -e "s/expr> as/expr>  as/" -e "s/exp> as/exp>  as/" -e "s/file> as/file>  as/" $tmp/mksquashfs.help
+sed -i -e "s/expr> as/expr>  as/" -e "s/exp> as/exp>  as/" -e "s/file> as/file>  as/" -e "s/regex> exclude/regex>  exclude/" -e "s/regex> include/regex>  include/" $tmp/mksquashfs.help
 
 # Expand certain operands truncated in help text due to lack of space
 
