@@ -6035,7 +6035,6 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-noI)\n");
 	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
 	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
-	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
 	fprintf(stream, "-no-tailends\t\tdo not pack tail ends into fragments (default)\n");
 	fprintf(stream, "-tailends\t\tpack tail ends into fragments\n");
 	fprintf(stream, "-no-fragments\t\tdo not use fragments\n");
@@ -6093,6 +6092,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "regular expression, e.g. -xattrs-include ");
 	fprintf(stream, "'^user.'\n\t\t\tincludes xattrs from the user ");
 	fprintf(stream, "namespace\n");
+	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
 	fprintf(stream, "\nFilesystem append options:\n");
 	fprintf(stream, "-noappend\t\tdo not append to existing filesystem\n");
 	fprintf(stream, "-root-becomes <name>\twhen appending source ");
