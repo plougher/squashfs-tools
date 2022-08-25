@@ -1,7 +1,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2021
+ * Copyright (c) 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -42,6 +42,7 @@
 #define TRUE 1
 #define FALSE 0
 
+extern regex_t *xattr_exclude_preg;
 
 static char *base64_decode(char *source, int size, int *bytes)
 {
@@ -122,6 +123,13 @@ void read_tar_xattr(char *name, char *value, int size, int encoding, struct tar_
 	for(i = 0; i < file->xattrs; i++)
 		if(strcmp(name, file->xattr_list[i].full_name) == 0)
 			return;
+
+	if(xattr_exclude_preg) {
+		int res = regexec(xattr_exclude_preg, name, (size_t) 0, NULL, 0);
+
+		if(res == 0)
+			return;
+	}
 
 	if(encoding == ENCODING_BASE64) {
 		data = base64_decode(value, size, &size);
