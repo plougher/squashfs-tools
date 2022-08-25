@@ -94,6 +94,11 @@ sed -i "1d" $tmp/sqfstar.help
 sed -i "s/^-/  -/" $tmp/sqfstar.help
 sed -i "s/^ *-X/  -X/" $tmp/sqfstar.help
 
+# help2man expects the options usage to be separated from the
+# option and operands text by at least 2 spaces.
+
+sed -i -e "s/regex> exclude/regex>  exclude/" -e "s/regex> include/regex>  include/" $tmp/sqfstar.help
+
 # Uppercase the options operands (between < and > ) to make it conform
 # more to man page standards
 
