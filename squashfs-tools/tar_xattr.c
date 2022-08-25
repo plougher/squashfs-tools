@@ -43,6 +43,7 @@
 #define FALSE 0
 
 extern regex_t *xattr_exclude_preg;
+extern regex_t *xattr_include_preg;
 
 static char *base64_decode(char *source, int size, int *bytes)
 {
@@ -128,6 +129,13 @@ void read_tar_xattr(char *name, char *value, int size, int encoding, struct tar_
 		int res = regexec(xattr_exclude_preg, name, (size_t) 0, NULL, 0);
 
 		if(res == 0)
+			return;
+	}
+
+	if(xattr_include_preg) {
+		int res = regexec(xattr_include_preg, name, (size_t) 0, NULL, 0);
+
+		if(res)
 			return;
 	}
 
