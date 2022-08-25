@@ -6087,12 +6087,12 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "matching <regex>.  <regex> is a\n\t\t\tPOSIX ");
 	fprintf(stream, "regular expression, e.g. -xattrs-exclude ");
 	fprintf(stream, "'^user.'\n\t\t\texcludes xattrs from the user ");
-	fprintf(stream, "namespace.\n");
+	fprintf(stream, "namespace\n");
 	fprintf(stream, "-xattrs-include <regex>\tinclude any xattr names ");
 	fprintf(stream, "matching <regex>.  <regex> is a\n\t\t\tPOSIX ");
 	fprintf(stream, "regular expression, e.g. -xattrs-include ");
 	fprintf(stream, "'^user.'\n\t\t\tincludes xattrs from the user ");
-	fprintf(stream, "namespace.\n");
+	fprintf(stream, "namespace\n");
 	fprintf(stream, "\nFilesystem append options:\n");
 	fprintf(stream, "-noappend\t\tdo not append to existing filesystem\n");
 	fprintf(stream, "-root-becomes <name>\twhen appending source ");
