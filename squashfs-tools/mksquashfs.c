@@ -297,7 +297,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-m
 	"recovery-path", "throttle", "limit", "processors", "mem", "offset",
 	"o", "log", "a", "va", "ta", "fa", "af", "vaf", "taf", "faf",
 	"read-queue", "write-queue", "fragment-queue", "root-time", "root-uid",
-	"root-gid", NULL
+	"root-gid", "xattrs-exclude", "xattrs-include", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
