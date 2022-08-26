@@ -34,6 +34,7 @@ extern int user_xattrs;
 extern int ignore_errors;
 extern int strict_errors;
 extern regex_t *xattr_exclude_preg;
+extern regex_t *xattr_include_preg;
 
 int write_xattr(char *pathname, unsigned int xattr)
 {
@@ -70,6 +71,14 @@ int write_xattr(char *pathname, unsigned int xattr)
 				xattr_list[i].full_name, (size_t) 0, NULL, 0);
 
 			if(res == 0)
+				continue;
+		}
+
+		if(xattr_include_preg) {
+			int res = regexec(xattr_include_preg,
+				xattr_list[i].full_name, (size_t) 0, NULL, 0);
+
+			if(res)
 				continue;
 		}
 

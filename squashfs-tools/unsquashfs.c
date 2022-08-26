@@ -104,6 +104,7 @@ char *pseudo_name;
 int no_xattrs = XATTR_DEF;
 int user_xattrs = FALSE;
 regex_t *xattr_exclude_preg = NULL;
+regex_t *xattr_include_preg = NULL;
 
 int lookup_type[] = {
 	0,
@@ -3829,6 +3830,11 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "regular expression, e.g.\n\t\t\t\t-xattrs-exclude ");
 	fprintf(stream, "'^user.' excludes xattrs from\n\t\t\t\tthe user ");
 	fprintf(stream, "namespace\n");
+	fprintf(stream, "\t-xattrs-include <regex>\tinclude any xattr names ");
+	fprintf(stream, "matching <regex>.\n\t\t\t\t<regex> is a POSIX ");
+	fprintf(stream, "regular expression, e.g.\n\t\t\t\t-xattrs-include ");
+	fprintf(stream, "'^user.' includes xattrs from\n\t\t\t\tthe user ");
+	fprintf(stream, "namespace\n");
 	fprintf(stream, "\t-u[ser-xattrs]\t\tonly extract user xattrs in file ");
 	fprintf(stream, "system.\n\t\t\t\tEnables extracting xattrs\n");
 	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
@@ -4159,6 +4165,16 @@ int parse_options(int argc, char *argv[])
 				exit(1);
 			} else
 				xattr_exclude_preg = xattr_regex(argv[i], "exclude");
+		} else if(strcmp(argv[i], "-xattrs-include") == 0) {
+			if(!xattrs_supported()) {
+				ERROR("%s: xattrs are unsupported in "
+						"this build\n", argv[0]);
+				exit(1);
+			} else if(++i == argc) {
+				ERROR("%s: -xattrs-include missing regex pattern\n", argv[0]);
+				exit(1);
+			} else
+				xattr_include_preg = xattr_regex(argv[i], "include");
 		} else if(strcmp(argv[i], "-dest") == 0 ||
 				strcmp(argv[i], "-d") == 0) {
 			if(++i == argc) {
