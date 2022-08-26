@@ -78,8 +78,6 @@ unsigned int total_files = 0, total_inodes = 0;
 long long total_blocks = 0;
 long long cur_blocks = 0;
 int inode_number = 1;
-int no_xattrs = XATTR_DEF;
-int user_xattrs = FALSE;
 int ignore_errors = FALSE;
 int strict_errors = FALSE;
 int use_localtime = TRUE;
@@ -101,6 +99,11 @@ struct pathname *extract = NULL, *exclude = NULL;
 int writer_fd = 1;
 int pseudo_file = FALSE;
 char *pseudo_name;
+
+/* extended attribute flags */
+int no_xattrs = XATTR_DEF;
+int user_xattrs = FALSE;
+regex_t *xattr_exclude_preg = NULL;
 
 int lookup_type[] = {
 	0,
@@ -3821,6 +3824,11 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-no[-xattrs]\t\tdo not extract xattrs in file system");
 	fprintf(stream, NOXOPT_STR"\n");
 	fprintf(stream, "\t-x[attrs]\t\textract xattrs in file system" XOPT_STR "\n");
+	fprintf(stream, "\t-xattrs-exclude <regex>\texclude any xattr names ");
+	fprintf(stream, "matching <regex>.\n\t\t\t\t<regex> is a POSIX ");
+	fprintf(stream, "regular expression, e.g.\n\t\t\t\t-xattrs-exclude ");
+	fprintf(stream, "'^user.' excludes xattrs from\n\t\t\t\tthe user ");
+	fprintf(stream, "namespace\n");
 	fprintf(stream, "\t-u[ser-xattrs]\t\tonly extract user xattrs in file ");
 	fprintf(stream, "system.\n\t\t\t\tEnables extracting xattrs\n");
 	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
@@ -4141,6 +4149,16 @@ int parse_options(int argc, char *argv[])
 					"this build\n", argv[0]);
 				exit(1);
 			}
+		} else if(strcmp(argv[i], "-xattrs-exclude") == 0) {
+			if(!xattrs_supported()) {
+				ERROR("%s: xattrs are unsupported in "
+						"this build\n", argv[0]);
+				exit(1);
+			} else if(++i == argc) {
+				ERROR("%s: -xattrs-exclude missing regex pattern\n", argv[0]);
+				exit(1);
+			} else
+				xattr_exclude_preg = xattr_regex(argv[i], "exclude");
 		} else if(strcmp(argv[i], "-dest") == 0 ||
 				strcmp(argv[i], "-d") == 0) {
 			if(++i == argc) {

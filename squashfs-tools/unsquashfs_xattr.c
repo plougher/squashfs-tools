@@ -33,6 +33,7 @@ extern int root_process;
 extern int user_xattrs;
 extern int ignore_errors;
 extern int strict_errors;
+extern regex_t *xattr_exclude_preg;
 
 int write_xattr(char *pathname, unsigned int xattr)
 {
@@ -63,6 +64,14 @@ int write_xattr(char *pathname, unsigned int xattr)
 
 		if(ignore_xattrs || (user_xattrs && prefix != SQUASHFS_XATTR_USER))
 			continue;
+
+		if(xattr_exclude_preg) {
+			int res = regexec(xattr_exclude_preg,
+				xattr_list[i].full_name, (size_t) 0, NULL, 0);
+
+			if(res == 0)
+				continue;
+		}
 
 		if(root_process || prefix == SQUASHFS_XATTR_USER) {
 			int res = lsetxattr(pathname, xattr_list[i].full_name,
@@ -147,4 +156,26 @@ int write_xattr(char *pathname, unsigned int xattr)
 	free_xattr(xattr_list, count);
 
 	return !failed;
+}
+
+
+regex_t *xattr_regex(char *pattern, char *option)
+{
+	int error;
+	regex_t *preg = malloc(sizeof(regex_t));
+
+	if(preg == NULL)
+		MEM_ERROR();
+
+	error = regcomp(preg, pattern, REG_EXTENDED|REG_NOSUB);
+
+	if(error) {
+		char str[1024]; /* overflow safe */
+
+		regerror(error, preg, str, 1024);
+		BAD_ERROR("invalid regex %s in xattrs-%s option, because %s\n",
+				pattern, option, str);
+	}
+
+	return preg;
 }
