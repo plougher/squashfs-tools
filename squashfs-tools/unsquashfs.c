@@ -102,7 +102,6 @@ char *pseudo_name;
 
 /* extended attribute flags */
 int no_xattrs = XATTR_DEF;
-int user_xattrs = FALSE;
 regex_t *xattr_exclude_preg = NULL;
 regex_t *xattr_include_preg = NULL;
 
@@ -3835,8 +3834,6 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "regular expression, e.g.\n\t\t\t\t-xattrs-include ");
 	fprintf(stream, "'^user.' includes xattrs from\n\t\t\t\tthe user ");
 	fprintf(stream, "namespace\n");
-	fprintf(stream, "\t-u[ser-xattrs]\t\tonly extract user xattrs in file ");
-	fprintf(stream, "system.\n\t\t\t\tEnables extracting xattrs\n");
 	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
 	fprintf(stream, "By default will use\n");
 	fprintf(stream, "\t\t\t\tthe number of processors available\n");
@@ -4147,13 +4144,13 @@ int parse_options(int argc, char *argv[])
 			}
 		} else if(strcmp(argv[i], "-user-xattrs") == 0 ||
 				strcmp(argv[i], "-u") == 0) {
-			if(xattrs_supported()) {
-				user_xattrs = TRUE;
-				no_xattrs = FALSE;
-			} else {
+			if(!xattrs_supported()) {
 				ERROR("%s: xattrs are unsupported in "
-					"this build\n", argv[0]);
-				exit(1);
+						"this build\n", argv[0]);
+                                exit(1);
+			} else {
+				xattr_include_preg = xattr_regex("^user.", "include");
+				no_xattrs = FALSE;
 			}
 		} else if(strcmp(argv[i], "-xattrs-exclude") == 0) {
 			if(!xattrs_supported()) {

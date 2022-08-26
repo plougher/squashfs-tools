@@ -30,7 +30,6 @@
 #define NOSPACE_MAX 10
 
 extern int root_process;
-extern int user_xattrs;
 extern int ignore_errors;
 extern int strict_errors;
 extern regex_t *xattr_exclude_preg;
@@ -63,7 +62,7 @@ int write_xattr(char *pathname, unsigned int xattr)
 	for(i = 0; i < count; i++) {
 		int prefix = xattr_list[i].type & SQUASHFS_XATTR_PREFIX_MASK;
 
-		if(ignore_xattrs || (user_xattrs && prefix != SQUASHFS_XATTR_USER))
+		if(ignore_xattrs)
 			continue;
 
 		if(xattr_exclude_preg) {
@@ -153,7 +152,7 @@ int write_xattr(char *pathname, unsigned int xattr)
 					"superuser!\n",
 					xattr_list[i].full_name, pathname);
 			EXIT_UNSQUASH_STRICT("write_xattr: to avoid this error message, either"
-				" specify -user-xattrs, -no-xattrs, or run as "
+				" specify -xattrs-include '^user.', -no-xattrs, or run as "
 				"superuser!\n");
 			ERROR("Further error messages of this type are "
 				"suppressed!\n");
