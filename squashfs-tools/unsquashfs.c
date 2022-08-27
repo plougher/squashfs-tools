@@ -4160,8 +4160,10 @@ int parse_options(int argc, char *argv[])
 			} else if(++i == argc) {
 				ERROR("%s: -xattrs-exclude missing regex pattern\n", argv[0]);
 				exit(1);
-			} else
+			} else {
 				xattr_exclude_preg = xattr_regex(argv[i], "exclude");
+				no_xattrs = FALSE;
+			}
 		} else if(strcmp(argv[i], "-xattrs-include") == 0) {
 			if(!xattrs_supported()) {
 				ERROR("%s: xattrs are unsupported in "
@@ -4170,8 +4172,10 @@ int parse_options(int argc, char *argv[])
 			} else if(++i == argc) {
 				ERROR("%s: -xattrs-include missing regex pattern\n", argv[0]);
 				exit(1);
-			} else
+			} else {
 				xattr_include_preg = xattr_regex(argv[i], "include");
+				no_xattrs = FALSE;
+			}
 		} else if(strcmp(argv[i], "-dest") == 0 ||
 				strcmp(argv[i], "-d") == 0) {
 			if(++i == argc) {
