@@ -3803,8 +3803,10 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-v[ersion]\t\tprint version, licence and copyright ");
 	fprintf(stream, "information\n");
 	fprintf(stream, "\t-cat\t\t\tcat the files on the command line to stdout\n");
-	fprintf(stream, "\t-d[est] <pathname>\textract to <pathname>, default ");
-	fprintf(stream, "\"squashfs-root\"\n");
+	fprintf(stream, "\t-d[est] <pathname>\textract to <pathname>, ");
+	fprintf(stream, "default \"squashfs-root\".\n\t\t\t\tThis option ");
+	fprintf(stream, "also sets the prefix used when\n\t\t\t\tlisting the ");
+	fprintf(stream, "filesystem\n");
 	fprintf(stream, "\t-max[-depth] <levels>\tdescend at most <levels> of ");
 	fprintf(stream, "directories when\n\t\t\t\textracting or listing\n");
 	fprintf(stream, "\t-excludes\t\ttreat files on command line as exclude files\n");
