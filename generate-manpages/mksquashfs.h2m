@@ -73,6 +73,21 @@ too, as seen in this example.
 Note: pseudo file definitions should be quoted (as in the above examples), to
 ensure that they are passed to Mksquashfs as a single argument, and to ensure
 that they are not processed by the shell.
+
+.SS Using extended attribute options
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -no-xattrs
+Do not store any extended attributes in the Squashfs filesystem.  Any extended
+attributes in the source files will be ignored.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -xattrs-include "^user."
+Filter the extended attributes in the source files, and only store extended
+attributes in the user namespace in the Squashfs filesystem.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -xattrs-exclude "^user."
+Filter the extended attributes in the source files, and don't store any
+extended attributes in the user namespace in the Squashfs filesystem.
+
 .SS Using Actions to not compress, change attributes etc.
 .TP
 mksquashfs DIRECTORY IMAGE.SQSH -action "uncompressed @ (name(*.jpg) || name(*.mpg) ) || (name(*.img) && filesize(+1G))"
