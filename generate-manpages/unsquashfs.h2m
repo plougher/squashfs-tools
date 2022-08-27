@@ -30,7 +30,11 @@ the filesystem to "squashfs-root".
 .TP
 unsquashfs -lls IMAGE.SQFS
 Output a listing of IMAGE.SQFS with file attributes to stdout, but do not
-extract the filesystem.
+extract the filesystem.  The listing will be prefixed with "squashfs-root".
+.TP
+unsquashfs -d "" -lls IMAGE.SQFS
+Output a listing of IMAGE.SQFS with file attributes to stdout, but do not
+extract the filesystem.  The listing will not be prefixed with "squashfs-root".
 .TP
 unsquashfs IMAGE.SQFS fs/squashfs
 Extract only the "fs/squashfs" directory.
