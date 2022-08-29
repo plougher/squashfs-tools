@@ -7,6 +7,11 @@ if [ $# -lt 3 ]; then
 	exit 1;
 fi
 
+if [ ! -f $1/generate-manpages/functions.sh ]; then
+	echo "$0: <arg1> doesn't seem to contain the path to the git-root/source-root" >&2
+	exit 1
+fi
+
 source $1/generate-manpages/functions.sh
 
 if [ -z "$2" ]; then
