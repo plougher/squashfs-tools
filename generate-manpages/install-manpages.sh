@@ -1,12 +1,13 @@
 #!/bin/sh
 
-source $1/generate-manpages/functions.sh
 
 if [ $# -lt 3 ]; then
-	error "$0: Insufficient arguments."
-	error "$0: <path to git-root/source-root> <path to install manpages> <use prebuilt manpages=y/n>"
+	echo "$0: Insufficient arguments." >&2
+	echo "$0: <path to git-root/source-root> <path to install manpages> <use prebuilt manpages=y/n>" >&2
 	exit 1;
 fi
+
+source $1/generate-manpages/functions.sh
 
 if [ -z "$2" ]; then
 	error "$0: Install path for manpages empty.  Skipping manpage install"
