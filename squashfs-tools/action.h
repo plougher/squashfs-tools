@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2011, 2012, 2013, 2014, 2021
+ * Copyright (c) 2011, 2012, 2013, 2014, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -161,22 +161,22 @@ struct type_entry {
 /*
  * Action definitions
  */
-#define FRAGMENT_ACTION 0
-#define EXCLUDE_ACTION 1
-#define FRAGMENTS_ACTION 2
-#define NO_FRAGMENTS_ACTION 3
-#define ALWAYS_FRAGS_ACTION 4
-#define NO_ALWAYS_FRAGS_ACTION 5
-#define COMPRESSED_ACTION 6
-#define UNCOMPRESSED_ACTION 7
-#define UID_ACTION 8
-#define GID_ACTION 9
-#define GUID_ACTION 10
-#define MODE_ACTION 11
-#define EMPTY_ACTION 12
-#define MOVE_ACTION 13
-#define PRUNE_ACTION 14
-#define NOOP_ACTION 15
+#define FRAGMENT_ACTION		0
+#define EXCLUDE_ACTION		1
+#define FRAGMENTS_ACTION	2
+#define NO_FRAGMENTS_ACTION	3
+#define ALWAYS_FRAGS_ACTION	4
+#define NO_ALWAYS_FRAGS_ACTION	5
+#define COMPRESSED_ACTION	6
+#define UNCOMPRESSED_ACTION	7
+#define UID_ACTION		8
+#define GID_ACTION		9
+#define GUID_ACTION		10
+#define MODE_ACTION		11
+#define EMPTY_ACTION		12
+#define MOVE_ACTION		13
+#define PRUNE_ACTION		14
+#define NOOP_ACTION		15
 
 /*
  * Define what file types each action operates over
