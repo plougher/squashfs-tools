@@ -177,6 +177,7 @@ struct type_entry {
 #define MOVE_ACTION		13
 #define PRUNE_ACTION		14
 #define NOOP_ACTION		15
+#define XATTR_EXC_ACTION	16
 
 /*
  * Define what file types each action operates over
@@ -292,6 +293,15 @@ struct move_ent {
 
 
 /*
+ * Xattr action specific definitions
+ */
+struct xattr_data {
+	regex_t			preg;
+	struct xattr_data	*next;
+};
+
+
+/*
  * Perm test function specific definitions
  */
 #define PERM_ALL 1
@@ -317,6 +327,9 @@ extern void eval_actions(struct dir_info *, struct dir_ent *);
 extern int eval_empty_actions(struct dir_info *, struct dir_ent *dir_ent);
 extern void eval_move_actions(struct dir_info *, struct dir_ent *);
 extern int eval_prune_actions(struct dir_info *, struct dir_ent *);
+extern struct xattr_data *eval_xattr_exc_actions(struct dir_info *,
+							struct dir_ent *);
+extern int match_xattr_exc_actions(struct xattr_data *, char *);
 extern void do_move_actions();
 extern long long read_bytes(int, void *, long long);
 extern int any_actions();
@@ -326,4 +339,5 @@ extern int empty_actions();
 extern int read_action_file(char *, int);
 extern int exclude_actions();
 extern int prune_actions();
+extern int xattr_exc_actions();
 #endif

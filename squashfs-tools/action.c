@@ -59,12 +59,14 @@ static struct action *exclude_spec = NULL;
 static struct action *empty_spec = NULL;
 static struct action *move_spec = NULL;
 static struct action *prune_spec = NULL;
+static struct action *xattr_exc_spec = NULL;
 static struct action *other_spec = NULL;
 static int fragment_count = 0;
 static int exclude_count = 0;
 static int empty_count = 0;
 static int move_count = 0;
 static int prune_count = 0;
+static int xattr_exc_count = 0;
 static int other_count = 0;
 static struct action_entry *parsing_action;
 
@@ -687,6 +689,10 @@ skip_args:
 	case PRUNE_ACTION:
 		spec_count = prune_count ++;
 		spec_list = &prune_spec;
+		break;
+	case XATTR_EXC_ACTION:
+		spec_count = xattr_exc_count ++;
+		spec_list = &xattr_exc_spec;
 		break;
 	default:
 		spec_count = other_count ++;
@@ -2134,6 +2140,85 @@ int eval_prune_actions(struct dir_info *root, struct dir_ent *dir_ent)
 
 
 /*
+ * Xattr specific action code
+ */
+int xattr_exc_actions()
+{
+	return xattr_exc_count;
+}
+
+
+static int parse_xattr_args(struct action_entry *action, int args,
+					char **argv, void **data)
+{
+	struct xattr_data *xattr_data;
+	int error;
+
+	xattr_data = malloc(sizeof(*xattr_data));
+	if (xattr_data == NULL)
+		MEM_ERROR();
+
+	error = regcomp(&xattr_data->preg, argv[0], REG_EXTENDED|REG_NOSUB);
+	if(error) {
+		char str[1024]; /* overflow safe */
+
+		regerror(error, &xattr_data->preg, str, 1024);
+		SYNTAX_ERROR("invalid regex %s because %s\n", argv[0], str);
+		free(xattr_data);
+		return 0;
+	}
+
+	*data = xattr_data;
+
+	return 1;
+}
+
+
+struct xattr_data *eval_xattr_exc_actions (struct dir_info *root,
+					struct dir_ent *dir_ent)
+{
+	int i;
+	struct action_data action_data;
+	struct xattr_data *head = NULL;
+
+	action_data.name = dir_ent->name;
+	action_data.pathname = strdup(pathname(dir_ent));
+	action_data.subpath = strdup(subpathname(dir_ent));
+	action_data.buf = &dir_ent->inode->buf;
+	action_data.depth = dir_ent->our_dir->depth;
+	action_data.dir_ent = dir_ent;
+	action_data.root = root;
+
+	for (i = 0; i < xattr_exc_count; i++) {
+		struct xattr_data *data = xattr_exc_spec[i].data;
+		int match = eval_expr_top(&xattr_exc_spec[i], &action_data);
+
+		if(match) {
+			data->next = head;
+			head = data;
+		}
+	}
+
+	return head;
+}
+
+
+int match_xattr_exc_actions(struct xattr_data *head, char *name)
+{
+	struct xattr_data *cur;
+
+	for(cur = head; cur != NULL; cur = cur->next) {
+		int match = regexec(&cur->preg, name, (size_t) 0, NULL, 0);
+
+		if(match == 0)
+			return 1;
+	}
+
+	return 0;
+}
+
+
+/*
  * Noop specific action code
  */
 static void noop_action(struct action *action, struct dir_ent *dir_ent)
@@ -3368,6 +3453,7 @@ static struct action_entry action_table[] = {
 	{ "move", MOVE_ACTION, 1, ACTION_ALL_LNK, NULL, NULL},
 	{ "prune", PRUNE_ACTION, 0, ACTION_ALL_LNK, NULL, NULL},
 	{ "chmod", MODE_ACTION, -2, ACTION_ALL, parse_mode_args, mode_action },
+	{ "xattrs-exclude", XATTR_EXC_ACTION, 1, ACTION_ALL, parse_xattr_args, NULL},
 	{ "noop", NOOP_ACTION, 0, ACTION_ALL, NULL, noop_action },
 	{ "", 0, -1, 0, NULL, NULL}
 };

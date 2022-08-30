@@ -45,6 +45,7 @@
 #include "progressbar.h"
 #include "pseudo.h"
 #include "tar.h"
+#include "action.h"
 
 /* compressed xattr table */
 static char *xattr_table = NULL;
@@ -116,12 +117,14 @@ int xattr_get_prefix(struct xattr_list *xattr, char *name)
 }
 
 	
-static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
+static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
+						struct xattr_list **xattrs)
 {
 	ssize_t size, vsize;
 	char *xattr_names, *p;
 	int i;
 	struct xattr_list *xattr_list = NULL;
+	struct xattr_data *xattr_exc_list;
 
 	while(1) {
 		size = llistxattr(filename, NULL, 0);
@@ -157,9 +160,17 @@ static int read_xattrs_from_system(char *filename, struct xattr_list **xattrs)
 		break;
 	}
 
+	xattr_exc_list = eval_xattr_exc_actions(root_dir, dir_ent);
+
 	for(i = 0, p = xattr_names; p < xattr_names + size;) {
 		struct xattr_list *x;
 		int res;
+
+		res = match_xattr_exc_actions(xattr_exc_list, p);
+		if(res) {
+			p += strlen(p) + 1;
+			continue;
+		}
 
 		if(xattr_exclude_preg) {
 			res = regexec(xattr_exclude_preg, p, (size_t) 0, NULL, 0);
@@ -649,7 +660,7 @@ int read_xattrs(void *d)
 	if(IS_TARFILE(inode))
 		xattrs = read_xattrs_from_tarfile(inode, &xattr_list);
 	else
-		xattrs = read_xattrs_from_system(filename, &xattr_list);
+		xattrs = read_xattrs_from_system(dir_ent, filename, &xattr_list);
 	if(xattrs == 0)
 		return SQUASHFS_INVALID_XATTR;
 
