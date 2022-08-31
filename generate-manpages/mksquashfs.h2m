@@ -87,6 +87,10 @@ attributes in the user namespace in the Squashfs filesystem.
 mksquashfs DIRECTORY IMAGE.SQFS -xattrs-exclude "^user."
 Filter the extended attributes in the source files, and don't store any
 extended attributes in the user namespace in the Squashfs filesystem.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -action "-xattrs-include(^user.) @ type(f)"
+Filter the extended attributes but only in regular files (type f), and only
+store extended attributes in the user namespace.
 
 .SS Using Actions to not compress, change attributes etc.
 .TP
@@ -112,6 +116,10 @@ mksquashfs DIRECTORY IMAGE.SQSH -action "exclude @ depth(3)"
 Create a Squashfs filesystem containing the two top most levels (contents of
 DIRECTORY and immediate sub-directories), and exclude anything at level 3 or
 below.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -action "-xattrs-include(^user.) @ type(f)"
+Filter the extended attributes but only in regular files (type f), and only
+store extended attributes in the user namespace.
 .PP
 Note: actions should be quoted (as in the above examples), to ensure that they
 are passed to Mksquashfs as a single argument, and to ensure that they are not
