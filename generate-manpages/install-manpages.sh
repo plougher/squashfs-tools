@@ -36,7 +36,7 @@ cd $1/generate-manpages
 # If help2man doesn't exist, or the manpage generation fails, use
 # the pre-built manpages.
 
-if [ $3 == "y" ]; then
+if [ $3 = "y" ]; then
 	print "$0: Using pre-built manpages"
 elif which help2man > /dev/null 2>&1; then
 	for i in mksquashfs unsquashfs sqfstar sqfscat; do
@@ -54,7 +54,7 @@ else
 fi
 
 if [ -z "$source" ]; then
-	if [ "$failed" == "y" ]; then
+	if [ "$failed" = "y" ]; then
 		error "$0: WARNING: Installing pre-built manpages."
 		error "$0: WARNING: These pages are built with the Makefile defaults, and all"
 		error "$0: WARNING: the compressors configured (except the deprecated lzma).  This may not"
