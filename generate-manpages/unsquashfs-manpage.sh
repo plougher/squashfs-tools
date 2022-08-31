@@ -1,11 +1,16 @@
 #!/bin/sh
 
-source ./functions.sh
-
 # This script generates a manpage from the unsquashfs -help and -version
 # output, using help2man.  The script does various modfications to the
 # output from -help and -version, before passing it to help2man, to allow
 # it be successfully processed into a manpage by help2man.
+
+if [ ! -f functions.sh ]; then
+	echo "$0: this script should be run in the <git-root/source-root>/generate-manpages directory" >&2
+	exit 1
+fi
+
+source ./functions.sh
 
 if [ $# -lt 2 ]; then
 	error "$0: Insufficient arguments"
