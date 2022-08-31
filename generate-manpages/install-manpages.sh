@@ -12,7 +12,7 @@ if [ ! -f $1/generate-manpages/functions.sh ]; then
 	exit 1
 fi
 
-source $1/generate-manpages/functions.sh
+. $1/generate-manpages/functions.sh
 
 if [ -z "$2" ]; then
 	error "$0: Install path for manpages empty.  Skipping manpage install"

@@ -10,7 +10,7 @@ if [ ! -f functions.sh ]; then
 	exit 1
 fi
 
-source ./functions.sh
+. ./functions.sh
 
 if [ $# -lt 2 ]; then
 	error "$0: Insufficient arguments"
