@@ -125,6 +125,7 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 	int i;
 	struct xattr_list *xattr_list = NULL;
 	struct xattr_data *xattr_exc_list;
+	struct xattr_data *xattr_inc_list;
 
 	while(1) {
 		size = llistxattr(filename, NULL, 0);
@@ -161,6 +162,7 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 	}
 
 	xattr_exc_list = eval_xattr_exc_actions(root_dir, dir_ent);
+	xattr_inc_list = eval_xattr_inc_actions(root_dir, dir_ent);
 
 	for(i = 0, p = xattr_names; p < xattr_names + size;) {
 		struct xattr_list *x;
@@ -178,6 +180,12 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 				p += strlen(p) + 1;
 				continue;
 			}
+		}
+
+		res = match_xattr_inc_actions(xattr_inc_list, p);
+		if(res) {
+			p += strlen(p) + 1;
+			continue;
 		}
 
 		if(xattr_include_preg) {

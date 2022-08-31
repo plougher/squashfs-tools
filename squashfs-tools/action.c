@@ -60,6 +60,7 @@ static struct action *empty_spec = NULL;
 static struct action *move_spec = NULL;
 static struct action *prune_spec = NULL;
 static struct action *xattr_exc_spec = NULL;
+static struct action *xattr_inc_spec = NULL;
 static struct action *other_spec = NULL;
 static int fragment_count = 0;
 static int exclude_count = 0;
@@ -67,6 +68,7 @@ static int empty_count = 0;
 static int move_count = 0;
 static int prune_count = 0;
 static int xattr_exc_count = 0;
+static int xattr_inc_count = 0;
 static int other_count = 0;
 static struct action_entry *parsing_action;
 
@@ -693,6 +695,10 @@ skip_args:
 	case XATTR_EXC_ACTION:
 		spec_count = xattr_exc_count ++;
 		spec_list = &xattr_exc_spec;
+		break;
+	case XATTR_INC_ACTION:
+		spec_count = xattr_inc_count ++;
+		spec_list = &xattr_inc_spec;
 		break;
 	default:
 		spec_count = other_count ++;
@@ -2142,12 +2148,6 @@ int eval_prune_actions(struct dir_info *root, struct dir_ent *dir_ent)
 /*
  * Xattr specific action code
  */
-int xattr_exc_actions()
-{
-	return xattr_exc_count;
-}
-
-
 static int parse_xattr_args(struct action_entry *action, int args,
 					char **argv, void **data)
 {
@@ -2174,8 +2174,8 @@ static int parse_xattr_args(struct action_entry *action, int args,
 }
 
 
-struct xattr_data *eval_xattr_exc_actions (struct dir_info *root,
-					struct dir_ent *dir_ent)
+static struct xattr_data *eval_xattr_actions (struct action *spec,
+		int count, struct dir_info *root, struct dir_ent *dir_ent)
 {
 	int i;
 	struct action_data action_data;
@@ -2189,9 +2189,9 @@ struct xattr_data *eval_xattr_exc_actions (struct dir_info *root,
 	action_data.dir_ent = dir_ent;
 	action_data.root = root;
 
-	for (i = 0; i < xattr_exc_count; i++) {
-		struct xattr_data *data = xattr_exc_spec[i].data;
-		int match = eval_expr_top(&xattr_exc_spec[i], &action_data);
+	for (i = 0; i < count; i++) {
+		struct xattr_data *data = spec[i].data;
+		int match = eval_expr_top(&spec[i], &action_data);
 
 		if(match) {
 			data->next = head;
@@ -2200,6 +2200,19 @@ struct xattr_data *eval_xattr_exc_actions (struct dir_info *root,
 	}
 
 	return head;
+}
+
+
+int xattr_exc_actions()
+{
+	return xattr_exc_count;
+}
+
+
+struct xattr_data *eval_xattr_exc_actions (struct dir_info *root,
+					struct dir_ent *dir_ent)
+{
+	return eval_xattr_actions(xattr_exc_spec, xattr_exc_count, root, dir_ent);
 }
 
 
@@ -2215,6 +2228,28 @@ int match_xattr_exc_actions(struct xattr_data *head, char *name)
 	}
 
 	return 0;
+}
+
+
+int xattr_inc_actions()
+{
+	return xattr_inc_count;
+}
+
+
+struct xattr_data *eval_xattr_inc_actions (struct dir_info *root,
+					struct dir_ent *dir_ent)
+{
+	return eval_xattr_actions(xattr_inc_spec, xattr_inc_count, root, dir_ent);
+}
+
+
+int match_xattr_inc_actions(struct xattr_data *head, char *name)
+{
+	if(head == NULL)
+		return 0;
+	else
+		return !match_xattr_exc_actions(head, name);
 }
 
 
@@ -3454,6 +3489,7 @@ static struct action_entry action_table[] = {
 	{ "prune", PRUNE_ACTION, 0, ACTION_ALL_LNK, NULL, NULL},
 	{ "chmod", MODE_ACTION, -2, ACTION_ALL, parse_mode_args, mode_action },
 	{ "xattrs-exclude", XATTR_EXC_ACTION, 1, ACTION_ALL, parse_xattr_args, NULL},
+	{ "xattrs-include", XATTR_INC_ACTION, 1, ACTION_ALL, parse_xattr_args, NULL},
 	{ "noop", NOOP_ACTION, 0, ACTION_ALL, NULL, noop_action },
 	{ "", 0, -1, 0, NULL, NULL}
 };
