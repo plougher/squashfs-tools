@@ -796,7 +796,7 @@ int read_pax_header(struct tar_file *file, long long st_size)
 		else if(strcmp(keyword, "path") == 0)
 			file->pathname = strdup(skip_components(value, vsize, NULL));
 		else if(strcmp(keyword, "linkpath") == 0)
-			file->link = strdup(skip_components(value, vsize, NULL));
+			file->link = strdup(value);
 		else if(strcmp(keyword, "GNU.sparse.major") == 0) {
 			res = sscanf(value, "%lld %n", &number, &bytes);
 			if(res < 1 || value[bytes] != '\0')
@@ -1392,9 +1392,20 @@ again:
 	}
 
 	/* Handle hard links */
-	if(type == S_IFHRD && file->link == FALSE) {
-		filename = skip_components(header.link, 100, &size);
-		file->link = strndup(filename, size);
+	if(type == S_IFHRD) {
+		if(file->link) {
+			char *link = skip_components(file->link, strlen(file->link), NULL);
+
+			if(link != file->link) {
+				char *old = file->link;
+
+				file->link = strdup(link);
+				free(old);
+			}
+		} else {
+			filename = skip_components(header.link, 100, &size);
+			file->link = strndup(filename, size);
+		}
 	}
 
 	*status = TAR_OK;
