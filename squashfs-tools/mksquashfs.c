@@ -327,8 +327,8 @@ static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir);
 static struct file_info *add_non_dup(long long file_size, long long bytes,
 	unsigned int blocks, long long sparse, unsigned int *block_list, long long start,
 	struct fragment *fragment, unsigned short checksum,
-	unsigned short fragment_checksum, int checksum_flag, int checksum_frag_flag,
-	int blocks_dup, int frag_dup, int bl_hash);
+	unsigned short fragment_checksum, int checksum_flag,
+	int checksum_frag_flag, int blocks_dup, int frag_dup, int bl_hash);
 long long generic_write_table(long long, void *, int, void *, int);
 void restorefs();
 struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
@@ -543,7 +543,8 @@ long long read_bytes(int fd, void *buff, long long bytes)
 	long long res, count;
 
 	for(count = 0; count < bytes; count += res) {
-		int len = (bytes - count) > MAXIMUM_READ_SIZE ? MAXIMUM_READ_SIZE : bytes - count;
+		int len = (bytes - count) > MAXIMUM_READ_SIZE ?
+					MAXIMUM_READ_SIZE : bytes - count;
 
 		res = read(fd, buff + count, len);
 		if(res < 1) {
@@ -592,7 +593,8 @@ int write_bytes(int fd, void *buff, long long bytes)
 	long long res, count;
 
 	for(count = 0; count < bytes; count += res) {
-		int len = (bytes - count) > MAXIMUM_READ_SIZE ? MAXIMUM_READ_SIZE : bytes - count;
+		int len = (bytes - count) > MAXIMUM_READ_SIZE ?
+					MAXIMUM_READ_SIZE : bytes - count;
 
 		res = write(fd, buff + count, len);
 		if(res == -1) {
@@ -1139,8 +1141,8 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 
 	inode_count ++;
 
-	TRACE("Created inode 0x%llx, type %d, uid %d, guid %d\n", MKINODE(inode), type,
-		base->uid, base->guid);
+	TRACE("Created inode 0x%llx, type %d, uid %d, guid %d\n",
+				MKINODE(inode), type, base->uid, base->guid);
 
 	return MKINODE(inode);
 }
@@ -1869,18 +1871,26 @@ void add_file(long long start, long long file_size, long long file_bytes,
 		}
 
 		if(dupl_ptr) {
-			/* Our blocks have already been added. If we don't
-			 * have a fragment, then we've finished checking  */
+			/*
+			 * Our blocks have already been added. If we don't
+			 * have a fragment, then we've finished checking
+			 */
 			if(fragment == SQUASHFS_INVALID_FRAG)
 				return;
 
-			/* This entry probably created both the blocks and
-			 * the tail-end fragment, and so check for that */
-			if((fragment == dupl_ptr->fragment->index) && (offset == dupl_ptr->fragment->offset) && (bytes == dupl_ptr->fragment->size))
+			/*
+			 * This entry probably created both the blocks and
+			 * the tail-end fragment, and so check for that
+			 */
+			if((fragment == dupl_ptr->fragment->index) &&
+					(offset == dupl_ptr->fragment->offset)
+					&& (bytes == dupl_ptr->fragment->size))
 				return;
 
-			/* Remember our blocks are duplicate, and continue
-			 * looking for the tail-end fragment */
+			/*
+			 * Remember our blocks are duplicate, and continue
+			 * looking for the tail-end fragment
+			 */
 			blocks_dup = TRUE;
 		}
 	}
@@ -1889,12 +1899,17 @@ void add_file(long long start, long long file_size, long long file_bytes,
 		dupl_ptr = dupl_frag[bytes];
 
 		for(; dupl_ptr; dupl_ptr = dupl_ptr->frag_next)
-			if((fragment == dupl_ptr->fragment->index) && (offset == dupl_ptr->fragment->offset) && (bytes == dupl_ptr->fragment->size))
+			if((fragment == dupl_ptr->fragment->index) &&
+					(offset == dupl_ptr->fragment->offset)
+					&& (bytes == dupl_ptr->fragment->size))
 				break;
 
 		if(dupl_ptr) {
-			/* Our tail-end fragment entry has already been added.
-			 * If there's no blocks or they're dup, then we're done here */
+			/*
+			 * Our tail-end fragment entry has already been added.
+			 * If there's no blocks or they're dup, then we're done
+			 * here
+			 */
 			if(blocks == 0 || blocks_dup)
 				return;
 
@@ -1911,8 +1926,8 @@ void add_file(long long start, long long file_size, long long file_bytes,
 	frg->offset = offset;
 	frg->size = bytes;
 
-	file = add_non_dup(file_size, file_bytes, blocks, 0, block_list, start, frg, 0, 0,
-		FALSE, FALSE, blocks_dup, frag_dup, bl_hash);
+	file = add_non_dup(file_size, file_bytes, blocks, 0, block_list, start,
+			frg, 0, 0, FALSE, FALSE, blocks_dup, frag_dup, bl_hash);
 
 	if(fragment == SQUASHFS_INVALID_FRAG)
 		return;
@@ -1927,13 +1942,15 @@ void add_file(long long start, long long file_size, long long file_bytes,
 }
 
 
-static int pre_duplicate(long long file_size, struct inode_info *inode, struct file_buffer *buffer, int *bl_hash)
+static int pre_duplicate(long long file_size, struct inode_info *inode,
+				struct file_buffer *buffer, int *bl_hash)
 {
 	struct file_info *dupl_ptr;
 	long long fragment_size;
 	int blocks;
 
-	if(inode->no_fragments || (!inode->always_use_fragments && file_size >= block_size)) {
+	if(inode->no_fragments || (!inode->always_use_fragments && file_size >=
+								block_size)) {
 		blocks = (file_size + block_size - 1) >> block_log;
 		fragment_size = 0;
 	} else {
@@ -1944,7 +1961,7 @@ static int pre_duplicate(long long file_size, struct inode_info *inode, struct f
 	/* Look for a possible duplicate set of blocks */
 	if(blocks) {
 		*bl_hash = block_hash(buffer->size, blocks);
-		for(dupl_ptr = dupl_block[*bl_hash]; dupl_ptr; dupl_ptr = dupl_ptr->block_next)
+		for(dupl_ptr = dupl_block[*bl_hash]; dupl_ptr;dupl_ptr = dupl_ptr->block_next)
 			if(dupl_ptr->blocks == blocks && dupl_ptr->block_list[0] == buffer->c_byte)
 				return TRUE;
 	}
@@ -2050,12 +2067,16 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, int *du
 	if(file_buffer->duplicate)
 		dupl_ptr = dupl_start;
 	else {
-		for(dupl_ptr = dupl_frag[file_size]; dupl_ptr && dupl_ptr != dupl_start; dupl_ptr = dupl_ptr->frag_next) {
+		for(dupl_ptr = dupl_frag[file_size];
+				dupl_ptr && dupl_ptr != dupl_start;
+				dupl_ptr = dupl_ptr->frag_next) {
 			if(file_size == dupl_ptr->fragment->size) {
 				if(get_fragment_checksum(dupl_ptr) == checksum) {
 					buffer = get_fragment(dupl_ptr->fragment);
-					res = memcmp(file_buffer->data, buffer->data +
-						dupl_ptr->fragment->offset, file_size);
+					res = memcmp(file_buffer->data,
+						buffer->data +
+						dupl_ptr->fragment->offset,
+						file_size);
 					cache_block_put(buffer);
 					if(res == 0)
 						break;
@@ -2079,7 +2100,8 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, int *du
 	} else {
 		struct dup_info *dup;
 
-		/* File also has a block list.  Create a new file without
+		/*
+		 * File also has a block list.  Create a new file without
 		 * a block_list, and link it to this file.  First check whether
 		 * it is already there.
 		 */
@@ -2092,7 +2114,8 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, int *du
 		if(dup == NULL)
 			MEM_ERROR();
 
-		dup->file = create_non_dup(file_size, 0, 0, 0, NULL, 0, dupl_ptr->fragment, 0, checksum, TRUE, TRUE);
+		dup->file = create_non_dup(file_size, 0, 0, 0, NULL, 0,
+				dupl_ptr->fragment, 0, checksum, TRUE, TRUE);
 		dup->next = NULL;
 		dupl_ptr->dup = dup;
 		*duplicate = FALSE;
@@ -2101,11 +2124,14 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, int *du
 }
 
 
-static struct file_info *duplicate(int *dupf, int *block_dup, long long file_size, long long bytes,
-	unsigned int *block_list, long long start, struct dir_ent *dir_ent,
-	struct file_buffer *file_buffer, int blocks, long long sparse, int bl_hash)
+static struct file_info *duplicate(int *dupf, int *block_dup,
+	long long file_size, long long bytes, unsigned int *block_list,
+	long long start, struct dir_ent *dir_ent,
+	struct file_buffer *file_buffer, int blocks, long long sparse,
+	int bl_hash)
 {
-	struct file_info *dupl_ptr, *block_dupl = NULL, *frag_dupl = NULL, *file;
+	struct file_info *dupl_ptr, *file;
+	struct file_info *block_dupl = NULL, *frag_dupl = NULL;
 	struct dup_info *dup;
 	int frag_bytes = file_buffer ? file_buffer->size : 0;
 	unsigned short fragment_checksum = file_buffer ?
@@ -2115,13 +2141,17 @@ static struct file_info *duplicate(int *dupf, int *block_dup, long long file_siz
 	struct fragment *fragment;
 
 	/* Look for a possible duplicate set of blocks */
-	for(dupl_ptr = dupl_block[bl_hash]; dupl_ptr; dupl_ptr = dupl_ptr->block_next) {
+	for(dupl_ptr = dupl_block[bl_hash]; dupl_ptr;
+					dupl_ptr = dupl_ptr->block_next) {
 		if(bytes == dupl_ptr->bytes && blocks == dupl_ptr->blocks) {
 			long long target_start, dup_start = dupl_ptr->start;
 			int block;
 
-			/* Block list has same uncompressed size and same compressed size.
-			 * Now check if each block compressed to the same size */
+			/*
+			 * Block list has same uncompressed size and same
+			 * compressed size.  Now check if each block compressed
+			 * to the same size
+			 */
 			if(memcmp(block_list, dupl_ptr->block_list, blocks *
 					sizeof(unsigned int)) != 0)
 				continue;
@@ -2142,7 +2172,10 @@ static struct file_info *duplicate(int *dupf, int *block_dup, long long file_siz
 			if(checksum != dupl_ptr->checksum)
 				continue;
 
-			/* Checksums match, so now we need to do a byte by byte comparison */
+			/*
+			 * Checksums match, so now we need to do a byte by byte
+			 * comparison
+			 */
 			target_start = start;
 			for(block = 0; block < blocks; block ++) {
 				int size = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[block]);
@@ -2155,11 +2188,14 @@ static struct file_info *duplicate(int *dupf, int *block_dup, long long file_siz
 				if(size == 0)
 					continue;
 
-				/* Get the block for our file.  This will be in
-				 * the cache unless the cache wasn't large enough
-				 * to hold the entire file, in which case the block
-				 * will have been written to disk. */
-				target_buffer = cache_lookup(bwriter_buffer, target_start);
+				/*
+				 * Get the block for our file.  This will be in
+				 * the cache unless the cache wasn't large
+				 * enough to hold the entire file, in which case
+				 * the block will have been written to disk.
+				 */
+				target_buffer = cache_lookup(bwriter_buffer,
+								target_start);
 				if(target_buffer)
 					target_data = target_buffer->data;
 				else {
@@ -2172,9 +2208,12 @@ static struct file_info *duplicate(int *dupf, int *block_dup, long long file_siz
 					}
 				}
 
-				/* Get the block for the other file.  This may still
-				 * be in the cache (if it was written recently),
-				 * otherwise it will have to be read back from disk */
+				/*
+				 * Get the block for the other file.  This may
+				 * still be in the cache (if it was written
+				 * recently), otherwise it will have to be read
+				 * back from disk
+				 */
 				dup_buffer = cache_lookup(bwriter_buffer, dup_start);
 				if(dup_buffer)
 					dup_data = dup_buffer->data;
@@ -2200,10 +2239,11 @@ static struct file_info *duplicate(int *dupf, int *block_dup, long long file_siz
 			if(block != blocks)
 				continue;
 
-			/* Yes, the block list matches.  We can use this, rather
+			/*
+			 * Yes, the block list matches.  We can use this, rather
 			 * than writing an identical block list.
-			 * If both it and us doesn't have a tail-end fragment, then we're
-			 * finished.  Return the duplicate.
+			 * If both it and us doesn't have a tail-end fragment
+			 * then we're finished.  Return the duplicate.
 			 *
 			 * We have to deal with the special case where the
 			 * last block is a sparse block.  This means the
@@ -2212,38 +2252,56 @@ static struct file_info *duplicate(int *dupf, int *block_dup, long long file_siz
 			 * anything from 1 byte to block_size - 1 in size, but
 			 * stored as zero).  We can still use the block list in
 			 * this case, but, we must return a new entry with the
-			 * correct file size */
+			 * correct file size
+			 */
 			if(!frag_bytes && !dupl_ptr->fragment->size) {
 				*dupf = *block_dup = TRUE;
 				if(file_size == dupl_ptr->file_size)
 					return dupl_ptr;
 				else
-					return create_non_dup(file_size, bytes, blocks, sparse, dupl_ptr->block_list,
-						dupl_ptr->start, dupl_ptr->fragment, checksum, 0, checksum_flag, FALSE);
+					return create_non_dup(file_size, bytes,
+						blocks, sparse,
+						dupl_ptr->block_list,
+						dupl_ptr->start,
+						dupl_ptr->fragment, checksum, 0,
+						checksum_flag, FALSE);
 			}
 
-			/* We've got a tail-end fragment, and this file most likely
-			 * has a matching tail-end fragment (i.e. it is a completely
-			 * duplicate file).  So save time and have a look now.
+			/*
+			 * We've got a tail-end fragment, and this file most
+			 * likely has a matching tail-end fragment (i.e. it is
+			 * a completely duplicate file).  So save time and have
+			 * a look now.
 			 */
-			if(frag_bytes == dupl_ptr->fragment->size && fragment_checksum == get_fragment_checksum(dupl_ptr)) {
-				/* Checksums match, so now we need to do a byte by byte comparison */
+			if(frag_bytes == dupl_ptr->fragment->size &&
+					fragment_checksum ==
+					get_fragment_checksum(dupl_ptr)) {
+				/*
+				 * Checksums match, so now we need to do a byte
+				 * by byte comparison
+				 * */
 				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
-				int res = memcmp(file_buffer->data, frag_buffer->data + dupl_ptr->fragment->offset, frag_bytes);
+				int res = memcmp(file_buffer->data,
+					frag_buffer->data +
+					dupl_ptr->fragment->offset, frag_bytes);
 
 				cache_block_put(frag_buffer);
 
 				if(res == 0) {
-					/* Yes, the fragment matches.  We're now finished.
-					 * Return the duplicate */
+					/*
+					 * Yes, the fragment matches.  We're now
+					 * finished.  Return the duplicate
+					 */
 					*dupf = *block_dup = TRUE;
 					return dupl_ptr;
 				}
 			}
 
-			/* No, the fragment didn't match.  Remember the file with
-			 * the matching blocks, and look for a matching fragment in
-			 * the fragment list */
+			/*
+			 * No, the fragment didn't match.  Remember the file
+			 * with the matching blocks, and look for a matching
+			 * fragment in the fragment list
+			 */
 			block_dupl = dupl_ptr;
 			break;
 		}
@@ -2251,25 +2309,39 @@ static struct file_info *duplicate(int *dupf, int *block_dup, long long file_siz
 
 	/* Look for a possible duplicate fragment */
 	if(frag_bytes) {
-		for(dupl_ptr = dupl_frag[frag_bytes]; dupl_ptr; dupl_ptr = dupl_ptr->frag_next) {
-			if(frag_bytes == dupl_ptr->fragment->size && fragment_checksum == get_fragment_checksum(dupl_ptr)) {
-				/* Checksums match, so now we need to do a byte by byte comparison */
+		for(dupl_ptr = dupl_frag[frag_bytes]; dupl_ptr;
+					dupl_ptr = dupl_ptr->frag_next) {
+			if(frag_bytes == dupl_ptr->fragment->size &&
+					fragment_checksum ==
+					get_fragment_checksum(dupl_ptr)) {
+				/*
+				 * Checksums match, so now we need to do a byte
+				 * by byte comparison
+				 */
 				struct file_buffer *frag_buffer = get_fragment(dupl_ptr->fragment);
-				int res = memcmp(file_buffer->data, frag_buffer->data + dupl_ptr->fragment->offset, frag_bytes);
+				int res = memcmp(file_buffer->data,
+					frag_buffer->data +
+					dupl_ptr->fragment->offset, frag_bytes);
 
 				cache_block_put(frag_buffer);
 
 				if(res == 0) {
-					/* Yes, the fragment matches.  This file may have
-					 * a matching block list and fragment, in which case
-					 * we're finished. */
+					/*
+					 * Yes, the fragment matches.  This file
+					 * may have a matching block list and
+					 * fragment, in which case we're
+					 * finished.
+					 */
 					if(block_dupl && block_dupl->start == dupl_ptr->start) {
 						*dupf = *block_dup = TRUE;
 						return dupl_ptr;
 					}
 
-					/* Block list doesn't match.  We can construct a hybrid
-					 * from these two partially matching files */
+					/*
+					 * Block list doesn't match.  We can
+					 * construct a hybrid from these two
+					 * partially matching files
+					 */
 					frag_dupl = dupl_ptr;
 					break;
 				}
@@ -2277,41 +2349,51 @@ static struct file_info *duplicate(int *dupf, int *block_dup, long long file_siz
 		}
 	}
 
-	/* If we've got here, then we've either matched on nothing, or got a partial match.
-	 * Matched on nothing is straightforward */
+	/*
+	 * If we've got here, then we've either matched on nothing, or got a
+	 * partial match.  Matched on nothing is straightforward
+	 */
 	if(!block_dupl && !frag_dupl) {
 		*dupf = *block_dup = FALSE;
 		fragment = get_and_fill_fragment(file_buffer, dir_ent, TRUE);
 
-		return add_non_dup(file_size, bytes, blocks, sparse, block_list, start, fragment, checksum,
-			fragment_checksum, checksum_flag, file_buffer != NULL, FALSE, FALSE, bl_hash);
+		return add_non_dup(file_size, bytes, blocks, sparse, block_list,
+				start, fragment, checksum, fragment_checksum,
+				checksum_flag, file_buffer != NULL, FALSE,
+				FALSE, bl_hash);
 	}
 
-	/* At this point, we may have
-	 * 1. A partially matching single file.  For example the file may contain
-	 *    the block list we want, but, it has the wrong tail-end, or vice-versa,
+	/*
+	 * At this point, we may have
+	 * 1. A partially matching single file.  For example the file may
+	 *    contain the block list we want, but, it has the wrong tail-end,
+	 *    or vice-versa,
 	 * 2. A partially matching single file for another reason.  For example
 	 *    it has the block list we want, and a tail-end, whereas we don't
-	 *    have a tail-end.  Note the vice-versa situation doesn't appear here
-	 *    (it is handled in frag_duplicate).
+	 *    have a tail-end.  Note the vice-versa situation doesn't appear
+	 *    here (it is handled in frag_duplicate).
 	 * 3. We have two partially matching files.  One has the block list we
 	 *    want, and the other has the tail-end we want.
 	 *
-	 * Strictly speaking, a file which is constructed from one or two partial
-	 * matches isn't a duplicate (of any single file), and it will be
-	 * confusing to list it as such (using the -info option).  But a
+	 * Strictly speaking, a file which is constructed from one or two
+	 * partial matches isn't a duplicate (of any single file), and it will
+	 * be confusing to list it as such (using the -info option).  But a
 	 * second and thereafter appearance of this combination *is* a
 	 * duplicate of another file.  Some of this second and thereafter
-	 * appearance is already handled above */
+	 * appearance is already handled above
+	 */
 
 	if(block_dupl && (!frag_bytes || frag_dupl)) {
-		/* This file won't be added to any hash list, because it is a complete
-		 * duplicate, and it doesn't need extra data to be stored, e.g. part 2 & 3 above.
-		 * So keep track of it by adding  it to a linked list.  Obviously check if it's
-		 * already there first.
+		/*
+		 * This file won't be added to any hash list, because it is a
+		 * complete duplicate, and it doesn't need extra data to be
+		 * stored, e.g. part 2 & 3 above.  So keep track of it by adding
+		 * it to a linked list.  Obviously check if it's already there
+		 * first.
 		 */
 		for(dup = block_dupl->dup; dup; dup = dup->next)
-			if((!frag_bytes && dup->frag == NULL) || (frag_bytes && dup->frag == frag_dupl))
+			if((!frag_bytes && dup->frag == NULL) ||
+					(frag_bytes && dup->frag == frag_dupl))
 				break;
 
 		if(dup) {
@@ -2334,12 +2416,15 @@ static struct file_info *duplicate(int *dupf, int *block_dup, long long file_siz
 	*dupf = FALSE;
 	*block_dup = block_dupl != NULL;
 
-	file = create_non_dup(file_size, bytes, blocks, sparse, block_list, start, fragment, checksum,
-		fragment_checksum, checksum_flag, file_buffer != NULL);
+	file = create_non_dup(file_size, bytes, blocks, sparse, block_list,
+		start, fragment, checksum, fragment_checksum, checksum_flag,
+		file_buffer != NULL);
 
 	if(!block_dupl || (frag_bytes && !frag_dupl)) {
-		/* Partial duplicate, had to store some extra data for this file,
-		 * either a block list, or a fragment */
+		/*
+		 * Partial duplicate, had to store some extra data for this
+		 * file, either a block list, or a fragment
+		 */
 		pthread_cleanup_push((void *) pthread_mutex_unlock, &dup_mutex);
 		pthread_mutex_lock(&dup_mutex);
 
@@ -2580,7 +2665,8 @@ static struct file_info *write_file_empty(struct dir_ent *dir_ent,
 	file_count ++;
 	*duplicate_file = FALSE;
 	cache_block_put(file_buffer);
-	return create_non_dup(0, 0, 0, 0, NULL, 0, &empty_fragment, 0, 0, FALSE, FALSE);
+	return create_non_dup(0, 0, 0, 0, NULL, 0, &empty_fragment, 0, 0,
+								FALSE, FALSE);
 }
 
 
@@ -2597,11 +2683,11 @@ static struct file_info *write_file_frag(struct dir_ent *dir_ent,
 		fragment = get_and_fill_fragment(file_buffer, dir_ent, FALSE);
 
 		if(duplicate_checking)
-			file = add_non_dup(size, 0, 0, 0, NULL, 0, fragment, 0, checksum,
-				TRUE, TRUE, FALSE, FALSE, 0);
+			file = add_non_dup(size, 0, 0, 0, NULL, 0, fragment, 0,
+				checksum, TRUE, TRUE, FALSE, FALSE, 0);
 		else
-			file = create_non_dup(size, 0, 0, 0, NULL, 0, fragment, 0, checksum,
-				TRUE, TRUE);
+			file = create_non_dup(size, 0, 0, 0, NULL, 0, fragment,
+				0, checksum, TRUE, TRUE);
 	}
 
 	cache_block_put(file_buffer);
@@ -2683,13 +2769,14 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 	if(duplicate_checking) {
 		int bl_hash = block ? block_hash(block_list[0], block) : 0;
 
-		file = add_non_dup(read_size, file_bytes, block, sparse, block_list, start, fragment,
-			0, fragment_buffer ? fragment_buffer->checksum : 0,
-			FALSE, TRUE, FALSE, FALSE, bl_hash);
+		file = add_non_dup(read_size, file_bytes, block, sparse,
+			block_list, start, fragment, 0, fragment_buffer ?
+			fragment_buffer->checksum : 0, FALSE, TRUE, FALSE,
+			FALSE, bl_hash);
 	} else
-		file = create_non_dup(read_size, file_bytes, block, sparse, block_list, start, fragment,
-			0, fragment_buffer ? fragment_buffer->checksum : 0,
-			FALSE, TRUE);
+		file = create_non_dup(read_size, file_bytes, block, sparse,
+			block_list, start, fragment, 0, fragment_buffer ?
+			fragment_buffer->checksum : 0, FALSE, TRUE);
 
 	cache_block_put(fragment_buffer);
 	file_count ++;
@@ -2938,12 +3025,14 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 	fragment = get_and_fill_fragment(fragment_buffer, dir_ent, TRUE);
 
 	if(duplicate_checking)
-		file = add_non_dup(read_size, file_bytes, blocks, sparse, block_list,
-			start, fragment, 0, fragment_buffer ? fragment_buffer->checksum : 0,
-			FALSE, TRUE, FALSE, FALSE, bl_hash);
+		file = add_non_dup(read_size, file_bytes, blocks, sparse,
+			block_list, start, fragment, 0, fragment_buffer ?
+			fragment_buffer->checksum : 0, FALSE, TRUE, FALSE,
+			FALSE, bl_hash);
 	else
-		file = create_non_dup(read_size, file_bytes, blocks, sparse, block_list, start, fragment,
-			0, fragment_buffer ? fragment_buffer->checksum : 0, FALSE, TRUE);
+		file = create_non_dup(read_size, file_bytes, blocks, sparse,
+			block_list, start, fragment, 0, fragment_buffer ?
+			fragment_buffer->checksum : 0, FALSE, TRUE);
 
 	cache_block_put(fragment_buffer);
 	file_count ++;
@@ -4535,23 +4624,23 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		 *   pre-existing include encompasses this source.  So nothing
 		 *   more to do.
 		 *
-		 * - Otherwise this is not the leaf of the source, or the leaf of
-		 *   the pre-existing include, so recurse continuing walking the
-		 *   source.
+		 * - Otherwise this is not the leaf of the source, or the leaf
+		 *   of the pre-existing include, so recurse continuing walking
+		 *   the source.
 		 *
 		 * For cpiostyle source handling (leaf directories are not
 		 * recursively descended)
 		 *
-		 * - If we're at the leaf of the source, then we have a pre-existing include.
-		 *   So nothing to do.
+		 * - If we're at the leaf of the source, then we have a
+		 *   pre-existing include.  So nothing to do.
 		 *
 		 * - If we're not at the leaf of the source, but we're at
 		 *   the leaf of the pre-existing include, then recurse
 		 *   walking the source.
 		 *
-		 * - Otherwise this is not the leaf of the source, or the leaf of
-		 *   the pre-existing include, so recurse continuing walking the
-		 *   source.
+		 * - Otherwise this is not the leaf of the source, or the leaf
+		 *   of the pre-existing include, so recurse continuing walking
+		 *   the source.
 		 */
 		if(source[0] == '\0') {
 			if(tarstyle && entry->dir) {
@@ -7104,7 +7193,8 @@ int main(int argc, char *argv[])
 	char *command;
 
 	/* skip leading path components in invocation command */
-	for(command = argv[0] + strlen(argv[0]) - 1; command >= argv[0] && command[0] != '/'; command--);
+	for(command = argv[0] + strlen(argv[0]) - 1;
+			command >= argv[0] && command[0] != '/'; command--);
 
 	if(command < argv[0])
 		command = argv[0];
@@ -7122,9 +7212,11 @@ int main(int argc, char *argv[])
 	block_log = slog(block_size);
 	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
 
-        for(i = 1; i < argc && (argv[i][0] != '-' || strcmp(argv[i], "-") == 0); i++);
+        for(i = 1; i < argc && (argv[i][0] != '-' || strcmp(argv[i], "-") == 0);
+									i++);
 
-	if(i < argc && (strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)) {
+	if(i < argc && (strcmp(argv[i], "-help") == 0 ||
+						strcmp(argv[i], "-h") == 0)) {
 		print_options(stdout, argv[0], total_mem);
 		exit(0);
 	}
@@ -7206,7 +7298,8 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			recovery_pathname = argv[i];
-		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
+		} else if(strcmp(argv[i], "-help") == 0 ||
+						strcmp(argv[i], "-h") == 0) {
 			print_options(stdout, argv[0], total_mem);
 			exit(0);
 		} else if(strcmp(argv[i], "-no-hardlinks") == 0)
@@ -7271,12 +7364,13 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-root-mode") == 0) {
 			if((++i == argc) || !parse_mode(argv[i], &root_mode)) {
 				ERROR("%s: -root-mode missing or invalid mode,"
-					" octal number <= 07777 expected\n", argv[0]);
+					" octal number <= 07777 expected\n",
+					argv[0]);
 				exit(1);
 			}
 			root_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-uid") == 0) {
-			if((++i == argc) || !parse_num_unsigned(argv[i], &root_uid)) {
+			if((++i == argc) ||!parse_num_unsigned(argv[i], &root_uid)) {
 				ERROR("%s: -root-uid missing or invalid uid\n",
 					argv[0]);
 				exit(1);
@@ -7568,7 +7662,8 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-no-fragments") == 0)
 			no_fragments = TRUE;
 
-		 else if(strcmp(argv[i], "-tailends") == 0 || strcmp(argv[i], "-always-use-fragments") == 0)
+		 else if(strcmp(argv[i], "-tailends") == 0 ||
+				 strcmp(argv[i], "-always-use-fragments") == 0)
 			always_use_fragments = TRUE;
 
 		else if(strcmp(argv[i], "-no-tailends") == 0)
@@ -7748,8 +7843,8 @@ print_compressor_options:
 		BAD_ERROR("Pseudo files are unsupported when reading tar files\n");
 
 	/*
-	 * The -noI option implies -noId for backwards compatibility, so reset noId
-	 * if both have been specified
+	 * The -noI option implies -noId for backwards compatibility, so reset
+	 * noId if both have been specified
 	 */
 	if(noI && noId)
 		noId = FALSE;
@@ -8014,11 +8109,11 @@ print_compressor_options:
 		}
 
 		printf("Appending to existing %d.%d filesystem on %s, block "
-			"size %d\n", SQUASHFS_MAJOR, SQUASHFS_MINOR, destination_file,
-			block_size);
+			"size %d\n", SQUASHFS_MAJOR, SQUASHFS_MINOR,
+			destination_file, block_size);
 		printf("All -b, -noI, -noD, -noF, -noX, -noId, -no-duplicates, "
-			"-no-fragments,\n-always-use-fragments, -exportable and "
-			"-comp options ignored\n");
+			"-no-fragments,\n-always-use-fragments, -exportable and"
+			" -comp options ignored\n");
 		printf("\nIf appending is not wanted, please re-run with "
 			"-noappend specified!\n\n");
 
