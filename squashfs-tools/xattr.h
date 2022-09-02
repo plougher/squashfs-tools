@@ -63,6 +63,13 @@ struct prefix {
 	int			type;
 };
 
+struct xattr_add {
+	char			*name;
+	char			*value;
+	unsigned int		vsize;
+	struct xattr_add	*next;
+};
+
 extern int generate_xattrs(int, struct xattr_list *);
 
 #ifdef XATTR_SUPPORT
@@ -77,6 +84,7 @@ extern unsigned int read_xattrs_from_disk(int, struct squashfs_super_block *, in
 extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern void free_xattr(struct xattr_list *, int);
 extern regex_t *xattr_regex(char *pattern, char *option);
+extern struct xattr_add *xattrs_add(struct xattr_add *head, char *str);
 #else
 #include "squashfs_swap.h"
 
@@ -153,6 +161,11 @@ static inline struct xattr_list *get_xattr(int i, unsigned int *count, int j)
 }
 
 static inline regex_t *xattr_regex(char *pattern, char *option)
+{
+	return NULL;
+}
+
+static inline struct xattr_add *xattrs_add(struct xattr_add *head, char *str)
 {
 	return NULL;
 }

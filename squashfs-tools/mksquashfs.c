@@ -288,6 +288,7 @@ int noX = FALSE;
 unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
 regex_t *xattr_exclude_preg = NULL;
 regex_t *xattr_include_preg = NULL;
+struct xattr_add *xattr_add_list = NULL;
 
 /* list of options that have an argument */
 char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-mode",
@@ -297,7 +298,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-m
 	"recovery-path", "throttle", "limit", "processors", "mem", "offset",
 	"o", "log", "a", "va", "ta", "fa", "af", "vaf", "taf", "faf",
 	"read-queue", "write-queue", "fragment-queue", "root-time", "root-uid",
-	"root-gid", "xattrs-exclude", "xattrs-include", NULL
+	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -6181,6 +6182,9 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "regular expression, e.g. -xattrs-include ");
 	fprintf(stream, "'^user.'\n\t\t\tincludes xattrs from the user ");
 	fprintf(stream, "namespace\n");
+	fprintf(stream, "-xattrs-add <name=val>\tadd the xattr <name> with ");
+	fprintf(stream, "text <val> to all files.\n\t\t\tOption can be ");
+	fprintf(stream, "repeated to add multiple xattrs\n");
 	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
 	fprintf(stream, "\nFilesystem append options:\n");
 	fprintf(stream, "-noappend\t\tdo not append to existing filesystem\n");
@@ -7779,6 +7783,18 @@ print_compressor_options:
 				exit(1);
 			} else
 				xattr_include_preg = xattr_regex(argv[i], "include");
+
+		} else if(strcmp(argv[i], "-xattrs-add") == 0) {
+			if(!xattrs_supported()) {
+				ERROR("%s: xattrs are unsupported in "
+					"this build\n", argv[0]);
+				exit(1);
+			} else if(++i == argc) {
+				ERROR("%s: -xattrs-add missing xattr argument\n",
+					argv[0]);
+				exit(1);
+			} else
+				xattr_add_list = xattrs_add(xattr_add_list, argv[i]);
 
 		} else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;

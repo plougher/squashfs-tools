@@ -82,6 +82,7 @@ extern int fd;
 extern unsigned int xattr_bytes, total_xattr_bytes;
 extern regex_t *xattr_exclude_preg;
 extern regex_t *xattr_include_preg;
+extern struct xattr_add *xattr_add_list;
 
 /* helper functions from mksquashfs.c */
 extern unsigned short get_checksum(char *, int, unsigned short);
@@ -126,6 +127,7 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 	struct xattr_list *xattr_list = NULL;
 	struct xattr_data *xattr_exc_list;
 	struct xattr_data *xattr_inc_list;
+	struct xattr_add *entry;
 
 	while(1) {
 		size = llistxattr(filename, NULL, 0);
@@ -256,6 +258,30 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 	}
 
 	free(xattr_names);
+
+	for(entry = xattr_add_list; entry; entry=entry->next) {
+		struct xattr_list *x;
+
+		x = realloc(xattr_list, (i + 1) * sizeof(struct xattr_list));
+		if(x == NULL)
+			MEM_ERROR();
+		xattr_list = x;
+
+		xattr_list[i].type = xattr_get_prefix(&xattr_list[i], entry->name);
+
+		xattr_list[i].value = malloc(entry->vsize);
+		if(xattr_list[i].value == NULL)
+			MEM_ERROR();
+
+		memcpy(xattr_list[i].value, entry->value, entry->vsize);
+		xattr_list[i].vsize = entry->vsize;
+
+		TRACE("read_xattrs_from_system: filename %s, xattr name %s,"
+			" vsize %d\n", filename, xattr_list[i].full_name,
+			xattr_list[i].vsize);
+		i++;
+	}
+
 	if(i > 0)
 		*xattrs = xattr_list;
 	else
@@ -789,4 +815,50 @@ regex_t *xattr_regex(char *pattern, char *option)
 	}
 
 	return preg;
+}
+
+
+struct xattr_add *xattrs_add(struct xattr_add *head, char *str)
+{
+	struct xattr_add *entry = malloc(sizeof(struct xattr_add));
+	char *value;
+	int i;
+
+	if(entry == NULL)
+		MEM_ERROR();
+
+	/*
+	 * Look for the "=" separating the xattr name from the value
+	 */
+	for(value = str; *value != '=' && *value != '\0'; value ++);
+	if(*value == '\0')
+		BAD_ERROR("invalid argument %s in xattrs-add option, because"
+				" no `=` found\n", str);
+
+	if(value == str)
+		BAD_ERROR("invalid argument %s in xattrs-add option, because"
+				" xattr name is empty\n", str);
+
+	if(*(value + 1) == '\0')
+		BAD_ERROR("invalid argument %s in xattrs-add option, because"
+				" xattr value is empty\n", str);
+
+	entry->name = strndup(str, value - str);
+	entry->value = strdup(++value);
+	entry->vsize = strlen(entry->value) + 1;
+
+	for(i = 0; prefix_table[i].type != -1; i++) {
+		struct prefix *p = &prefix_table[i];
+		if(strncmp(entry->name, p->prefix, strlen(p->prefix)) == 0)
+			break;
+	}
+
+	if(prefix_table[i].type == -1)
+		BAD_ERROR("-xattrs-add: unrecognised xattr prefix in %s\n",
+							entry->name);
+
+	entry->next = head;
+	head = entry;
+
+	return head;
 }
