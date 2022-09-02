@@ -123,7 +123,7 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 {
 	ssize_t size, vsize;
 	char *xattr_names, *p;
-	int i;
+	int i = 0;
 	struct xattr_list *xattr_list = NULL;
 	struct xattr_data *xattr_exc_list;
 	struct xattr_data *xattr_inc_list;
@@ -138,7 +138,7 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 					strerror(errno));
 				ERROR_EXIT(".  Ignoring\n");
 			}
-			return 0;
+			goto skip_system_xattrs;
 		}
 
 		xattr_names = malloc(size);
@@ -166,7 +166,7 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 	xattr_exc_list = eval_xattr_exc_actions(root_dir, dir_ent);
 	xattr_inc_list = eval_xattr_inc_actions(root_dir, dir_ent);
 
-	for(i = 0, p = xattr_names; p < xattr_names + size;) {
+	for(p = xattr_names; p < xattr_names + size;) {
 		struct xattr_list *x;
 		int res;
 
@@ -259,6 +259,7 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 
 	free(xattr_names);
 
+skip_system_xattrs:
 	for(entry = xattr_add_list; entry; entry=entry->next) {
 		struct xattr_list *x;
 
