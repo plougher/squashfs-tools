@@ -6906,7 +6906,7 @@ print_sqfstar_compressor_options:
 			}
 			delete = TRUE;
 
-			/* ensure Mksquashfs doesn't try to read
+			/* ensure Sqfstar doesn't try to read
 			 * the destination file as input, which
 			 * will result in an I/O loop */
 			if(stat(destination_file, &buf) == -1) {
@@ -6949,7 +6949,7 @@ print_sqfstar_compressor_options:
 					"writing as destination");
 				exit(1);
 			}
-			/* ensure Mksquashfs doesn't try to read
+			/* ensure Sqfstar doesn't try to read
 			 * the destination file as input, which
 			 * will result in an I/O loop */
 			ADD_ENTRY(buf);
