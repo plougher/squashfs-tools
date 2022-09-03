@@ -907,7 +907,7 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 	void *inode;
 	char *filename = pathname(dir_ent);
 	int nlink = dir_ent->inode->nlink;
-	int xattr = read_xattrs(dir_ent);
+	int xattr = read_xattrs(dir_ent, type);
 
 	switch(type) {
 	case SQUASHFS_FILE_TYPE:

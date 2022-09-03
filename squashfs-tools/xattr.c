@@ -130,8 +130,8 @@ int xattr_get_prefix(struct xattr_list *xattr, char *name)
 }
 
 	
-static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
-						struct xattr_list **xattrs)
+static int read_xattrs_from_system(struct dir_ent *dir_ent, int type,
+				char *filename, struct xattr_list **xattrs)
 {
 	ssize_t size, vsize;
 	char *xattr_names, *p;
@@ -275,12 +275,18 @@ skip_system_xattrs:
 	for(entry = xattr_add_list; entry; entry=entry->next) {
 		struct xattr_list *x;
 
+		if((entry->type == SQUASHFS_XATTR_USER) &&
+				(type != SQUASHFS_FILE_TYPE &&
+				 type != SQUASHFS_DIR_TYPE))
+			continue;
+
 		x = realloc(xattr_list, (i + 1) * sizeof(struct xattr_list));
 		if(x == NULL)
 			MEM_ERROR();
 		xattr_list = x;
 
-		xattr_list[i].type = xattr_get_prefix(&xattr_list[i], entry->name);
+		xattr_list[i].type = entry->type;
+		xattr_copy_prefix(&xattr_list[i], entry->type, entry->name);
 
 		xattr_list[i].value = malloc(entry->vsize);
 		if(xattr_list[i].value == NULL)
@@ -693,7 +699,7 @@ int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 }
 
 
-int read_xattrs(void *d)
+int read_xattrs(void *d, int type)
 {
 	struct dir_ent *dir_ent = d;
 	struct inode_info *inode = dir_ent->inode;
@@ -707,7 +713,9 @@ int read_xattrs(void *d)
 	if(IS_TARFILE(inode))
 		xattrs = read_xattrs_from_tarfile(inode, &xattr_list);
 	else
-		xattrs = read_xattrs_from_system(dir_ent, filename, &xattr_list);
+		xattrs = read_xattrs_from_system(dir_ent, type,
+							filename, &xattr_list);
+
 	if(xattrs == 0)
 		return SQUASHFS_INVALID_XATTR;
 
@@ -858,8 +866,9 @@ struct xattr_add *xattrs_add(struct xattr_add *head, char *str)
 	entry->name = strndup(str, value - str);
 	entry->value = strdup(++value);
 	entry->vsize = strlen(entry->value) + 1;
+	entry->type = xattr_get_type(entry->name);
 
-	if(xattr_get_type(entry->name) == -1)
+	if(entry->type == -1)
 		BAD_ERROR("-xattrs-add: unrecognised xattr prefix in %s\n",
 							entry->name);
 

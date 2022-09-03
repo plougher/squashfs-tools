@@ -67,6 +67,7 @@ struct xattr_add {
 	char			*name;
 	char			*value;
 	unsigned int		vsize;
+	int			type;
 	struct xattr_add	*next;
 };
 
@@ -74,7 +75,7 @@ extern int generate_xattrs(int, struct xattr_list *);
 
 #ifdef XATTR_SUPPORT
 extern int get_xattrs(int, struct squashfs_super_block *);
-extern int read_xattrs(void *);
+extern int read_xattrs(void *, int type);
 extern long long write_xattrs();
 extern void save_xattrs();
 extern void restore_xattrs();
@@ -99,7 +100,7 @@ static inline int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 }
 
 
-static inline int read_xattrs(void *dir_ent)
+static inline int read_xattrs(void *dir_ent, int type)
 {
 	return SQUASHFS_INVALID_XATTR;
 }
