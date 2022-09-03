@@ -835,7 +835,6 @@ struct xattr_add *xattrs_add(struct xattr_add *head, char *str)
 {
 	struct xattr_add *entry = malloc(sizeof(struct xattr_add));
 	char *value;
-	int i;
 
 	if(entry == NULL)
 		MEM_ERROR();
@@ -860,13 +859,7 @@ struct xattr_add *xattrs_add(struct xattr_add *head, char *str)
 	entry->value = strdup(++value);
 	entry->vsize = strlen(entry->value) + 1;
 
-	for(i = 0; prefix_table[i].type != -1; i++) {
-		struct prefix *p = &prefix_table[i];
-		if(strncmp(entry->name, p->prefix, strlen(p->prefix)) == 0)
-			break;
-	}
-
-	if(prefix_table[i].type == -1)
+	if(xattr_get_type(entry->name) == -1)
 		BAD_ERROR("-xattrs-add: unrecognised xattr prefix in %s\n",
 							entry->name);
 
