@@ -97,24 +97,36 @@ extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern struct prefix prefix_table[];
 
 
-int xattr_get_prefix(struct xattr_list *xattr, char *name)
+static int xattr_get_type(char *name)
 {
 	int i;
 
-	xattr->full_name = strdup(name);
-
 	for(i = 0; prefix_table[i].type != -1; i++) {
 		struct prefix *p = &prefix_table[i];
-		if(strncmp(xattr->full_name, p->prefix, strlen(p->prefix)) == 0)
+		if(strncmp(name, p->prefix, strlen(p->prefix)) == 0)
 			break;
 	}
 
-	if(prefix_table[i].type != -1) {
-		xattr->name = xattr->full_name + strlen(prefix_table[i].prefix);
-		xattr->size = strlen(xattr->name);
-	}
-
 	return prefix_table[i].type;
+}
+
+
+static void xattr_copy_prefix(struct xattr_list *xattr, int t, char *name)
+{
+	xattr->full_name = strdup(name);
+	xattr->name = xattr->full_name + strlen(prefix_table[t].prefix);
+	xattr->size = strlen(xattr->name);
+}
+
+
+int xattr_get_prefix(struct xattr_list *xattr, char *name)
+{
+	int type = xattr_get_type(name);
+
+	if(type != -1)
+		xattr_copy_prefix(xattr, type, name);
+
+	return type;
 }
 
 	
