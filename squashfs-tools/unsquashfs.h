@@ -334,5 +334,5 @@ extern void squashfs_closedir(struct dir *);
 extern int check_directory(struct dir *);
 
 /* unsquash-12.c */
-extern void sort_directory(struct dir *);
+extern void sort_directory(struct dir_ent **, int);
 #endif

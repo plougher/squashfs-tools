@@ -387,7 +387,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 	}
 
 	/* check directory for duplicate names.  Need to sort directory first */
-	sort_directory(dir);
+	sort_directory(&(dir->dirs), dir->dir_count);
 	if(check_directory(dir) == FALSE) {
 		ERROR("File system corrupted: directory has duplicate names\n");
 		goto corrupted;

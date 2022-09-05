@@ -478,7 +478,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 	}
 
 	if(needs_sorting)
-		sort_directory(dir);
+		sort_directory(&(dir->dirs), dir->dir_count);
 
 	/* check directory for duplicate names and sorting */
 	if(check_directory(dir) == FALSE) {
