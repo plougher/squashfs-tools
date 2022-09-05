@@ -75,6 +75,9 @@ static struct xattr_list *dupl_value[65536];
 /* xattr hash table for id duplicate detection */
 static struct dupl_id *dupl_id[65536];
 
+/* xattr-add option names and values */
+static struct xattr_add *xattr_add_list = NULL;
+
 /* file system globals from mksquashfs.c */
 extern int no_xattrs, noX;
 extern long long bytes;
@@ -82,7 +85,6 @@ extern int fd;
 extern unsigned int xattr_bytes, total_xattr_bytes;
 extern regex_t *xattr_exclude_preg;
 extern regex_t *xattr_include_preg;
-extern struct xattr_add *xattr_add_list;
 
 /* helper functions from mksquashfs.c */
 extern unsigned short get_checksum(char *, int, unsigned short);
@@ -839,7 +841,7 @@ regex_t *xattr_regex(char *pattern, char *option)
 }
 
 
-struct xattr_add *xattrs_add(struct xattr_add *head, char *str)
+void xattrs_add(char *str)
 {
 	struct xattr_add *entry = malloc(sizeof(struct xattr_add));
 	char *value;
@@ -872,8 +874,6 @@ struct xattr_add *xattrs_add(struct xattr_add *head, char *str)
 		BAD_ERROR("-xattrs-add: unrecognised xattr prefix in %s\n",
 							entry->name);
 
-	entry->next = head;
-	head = entry;
-
-	return head;
+	entry->next = xattr_add_list;
+	xattr_add_list = entry;
 }

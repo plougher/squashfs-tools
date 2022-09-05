@@ -85,7 +85,7 @@ extern unsigned int read_xattrs_from_disk(int, struct squashfs_super_block *, in
 extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern void free_xattr(struct xattr_list *, int);
 extern regex_t *xattr_regex(char *pattern, char *option);
-extern struct xattr_add *xattrs_add(struct xattr_add *head, char *str);
+extern void xattrs_add(char *str);
 #else
 #include "squashfs_swap.h"
 
@@ -166,9 +166,8 @@ static inline regex_t *xattr_regex(char *pattern, char *option)
 	return NULL;
 }
 
-static inline struct xattr_add *xattrs_add(struct xattr_add *head, char *str)
+static inline void xattrs_add(char *str)
 {
-	return NULL;
 }
 #endif
 

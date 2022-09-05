@@ -289,7 +289,6 @@ int noX = FALSE;
 unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
 regex_t *xattr_exclude_preg = NULL;
 regex_t *xattr_include_preg = NULL;
-struct xattr_add *xattr_add_list = NULL;
 
 /* list of options that have an argument */
 char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-mode",
@@ -7717,7 +7716,7 @@ print_compressor_options:
 					argv[0]);
 				exit(1);
 			} else
-				xattr_add_list = xattrs_add(xattr_add_list, argv[i]);
+				xattrs_add(argv[i]);
 
 		} else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;
