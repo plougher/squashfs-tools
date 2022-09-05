@@ -46,6 +46,7 @@
 #include "pseudo.h"
 #include "tar.h"
 #include "action.h"
+#include "merge_sort.h"
 
 /* compressed xattr table */
 static char *xattr_table = NULL;
@@ -879,4 +880,12 @@ void xattrs_add(char *str)
 	xattr_add_list = entry;
 
 	xattr_add_count ++;
+}
+
+/* Instantiate implementation of merge sort */
+SORT(sort_list, xattr_add);
+
+void sort_xattr_add_list(void)
+{
+	sort_list(&xattr_add_list, xattr_add_count);
 }

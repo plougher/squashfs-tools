@@ -86,6 +86,7 @@ extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern void free_xattr(struct xattr_list *, int);
 extern regex_t *xattr_regex(char *pattern, char *option);
 extern void xattrs_add(char *str);
+extern void sort_xattr_add_list(void);
 #else
 #include "squashfs_swap.h"
 
@@ -167,6 +168,10 @@ static inline regex_t *xattr_regex(char *pattern, char *option)
 }
 
 static inline void xattrs_add(char *str)
+{
+}
+
+static inline void sort_xattr_add_list(void)
 {
 }
 #endif

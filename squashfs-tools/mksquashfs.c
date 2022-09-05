@@ -7803,6 +7803,11 @@ print_compressor_options:
 	if(!silent)
 		progress = force_progress;
 		
+	/*
+	 * Sort all the xattr-add options now they're all processed
+	 */
+	sort_xattr_add_list();
+
 #ifdef SQUASHFS_TRACE
 	/*
 	 * Disable progress bar if full debug tracing is enabled.
