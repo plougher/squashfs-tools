@@ -77,6 +77,7 @@ static struct dupl_id *dupl_id[65536];
 
 /* xattr-add option names and values */
 static struct xattr_add *xattr_add_list = NULL;
+static int xattr_add_count = 0;
 
 /* file system globals from mksquashfs.c */
 extern int no_xattrs, noX;
@@ -876,4 +877,6 @@ void xattrs_add(char *str)
 
 	entry->next = xattr_add_list;
 	xattr_add_list = entry;
+
+	xattr_add_count ++;
 }
