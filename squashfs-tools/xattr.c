@@ -851,6 +851,14 @@ char *base64_decode(char *source, int size, int *bytes)
 	int output = 0;
 	int count;
 
+	if(size % 4 == 0) {
+		/* Check for and ignore any end padding */
+		if(source_ptr[size - 2] == '=' && source_ptr[size - 1] == '=')
+			size -= 2;
+		else if(source_ptr[size - 1] == '=')
+			size --;
+	}
+
 	/* Calculate number of bytes the base64 encoding represents */
 	count = size * 3 / 4;
 
@@ -912,6 +920,7 @@ void xattrs_add(char *str)
 {
 	struct xattr_add *entry = malloc(sizeof(struct xattr_add));
 	char *value;
+	int prefix, size;
 
 	if(entry == NULL)
 		MEM_ERROR();
@@ -932,14 +941,60 @@ void xattrs_add(char *str)
 		BAD_ERROR("invalid argument %s in xattrs-add option, because"
 				" xattr value is empty\n", str);
 
-	entry->name = strndup(str, value - str);
-	entry->value = strdup(++value);
-	entry->vsize = strlen(entry->value) + 1;
+	entry->name = strndup(str, value++ - str);
 	entry->type = xattr_get_type(entry->name);
 
 	if(entry->type == -1)
 		BAD_ERROR("-xattrs-add: unrecognised xattr prefix in %s\n",
 							entry->name);
+
+	/*
+	 * Evaluate the format prefix (if any)
+	 */
+	if(*(value + 1) == '\0')
+		/*
+		 * By definition an xattr value of 1 byte hasn't a prefix,
+		 * and should be treated as binary
+		 */
+		prefix = 0;
+	else
+		prefix = (*value << 8) + *(value + 1);
+
+	switch(prefix) {
+	case PREFIX_BASE64_0S:
+	case PREFIX_BASE64_0s:
+		value += 2;
+		if(*value == 0)
+			BAD_ERROR("invalid argument %s in xattrs-add option, "
+				"because xattr value is empty after format "
+				"prefix 0S or Os\n", str);
+
+		entry->value = base64_decode(value, strlen(value), &size);
+		entry->vsize = size;
+
+		if(entry->value == NULL)
+			BAD_ERROR("invalid argument %s in xattrs-add option, "
+				"because invalid base64 xattr value\n", str);
+		break;
+
+	case PREFIX_BINARY_0B:
+	case PREFIX_BINARY_0b:
+		value += 2;
+		if(*value == 0)
+			BAD_ERROR("invalid argument %s in xattrs-add option, "
+				"because xattr value is empty after format "
+				"prefix 0B or Ob\n, str");
+
+		/* fall through */
+	default:
+		entry->vsize = strlen(value);
+		entry->value = malloc(entry->vsize);
+
+		if(entry->value == NULL)
+			MEM_ERROR();
+
+		memcpy(entry->value, value, entry->vsize);
+	}
 
 	entry->next = xattr_add_list;
 	xattr_add_list = entry;

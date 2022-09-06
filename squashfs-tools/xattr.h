@@ -39,6 +39,11 @@
 
 #define IS_XATTR(a)		(a != SQUASHFS_INVALID_XATTR)
 
+#define PREFIX_BASE64_0S	(0x3000 + 0x53)
+#define PREFIX_BASE64_0s	(0x3000 + 0x73)
+#define PREFIX_BINARY_0B	(0x3000 + 0x42)
+#define PREFIX_BINARY_0b	(0x3000 + 0x62)
+
 struct xattr_list {
 	char			*name;
 	char			*full_name;
