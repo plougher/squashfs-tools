@@ -843,6 +843,71 @@ regex_t *xattr_regex(char *pattern, char *option)
 }
 
 
+char *base64_decode(char *source, int size, int *bytes)
+{
+	char *dest;
+	unsigned char *dest_ptr, *source_ptr = (unsigned char *) source;
+	int bit_pos = 0;
+	int output = 0;
+	int count;
+
+	/* Calculate number of bytes the base64 encoding represents */
+	count = size * 3 / 4;
+
+	dest = malloc(count);
+
+	for(dest_ptr = (unsigned char *) dest; size; size --, source_ptr ++) {
+		int value = *source_ptr;
+
+		if(value >= 'A' && value <= 'Z')
+			value -= 'A';
+		else if(value >= 'a' && value <= 'z')
+			value -= 'a' - 26;
+		else if(value >= '0' && value <= '9')
+			value -= '0' - 52;
+		else if(value == '+')
+			value = 62;
+		else if(value == '/')
+			value = 63;
+		else
+			goto failed;
+
+		if(bit_pos == 24) {
+			dest_ptr[0] = output >> 16;
+			dest_ptr[1] = (output >> 8) & 0xff;
+			dest_ptr[2] = output & 0xff;
+			bit_pos = 0;
+			output = 0;
+			dest_ptr += 3;
+		}
+
+		output = (output << 6) | value;
+		bit_pos += 6;
+	}
+
+	output = output << (24 - bit_pos);
+
+	if(bit_pos == 6)
+		goto failed;
+
+	if(bit_pos >= 12)
+		dest_ptr[0] = output >> 16;
+
+	if(bit_pos >= 18)
+		dest_ptr[1] = (output >> 8) & 0xff;
+
+	if(bit_pos == 24)
+		dest_ptr[2] = output & 0xff;
+
+	*bytes = (dest_ptr - (unsigned char *) dest) + (bit_pos / 8);
+	return dest;
+
+failed:
+	free(dest);
+	return NULL;
+}
+
+
 void xattrs_add(char *str)
 {
 	struct xattr_add *entry = malloc(sizeof(struct xattr_add));

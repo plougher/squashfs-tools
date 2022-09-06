@@ -87,6 +87,7 @@ extern void free_xattr(struct xattr_list *, int);
 extern regex_t *xattr_regex(char *pattern, char *option);
 extern void xattrs_add(char *str);
 extern void sort_xattr_add_list(void);
+extern char *base64_decode(char *source, int size, int *bytes);
 #else
 #include "squashfs_swap.h"
 
