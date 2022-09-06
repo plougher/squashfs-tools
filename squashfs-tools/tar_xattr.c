@@ -71,11 +71,8 @@ static char *base64_decode(char *source, int size, int *bytes)
 			value = 62;
 		else if(value == '/')
 			value = 63;
-		else {
-			ERROR("Invalid character in LIBARCHIVE xattr base64 value, ignoring\n");
-			free(dest);
-			return NULL;
-		}
+		else
+			goto failed;
 
 		if(bit_pos == 24) {
 			dest_ptr[0] = output >> 16;
@@ -92,11 +89,8 @@ static char *base64_decode(char *source, int size, int *bytes)
 
 	output = output << (24 - bit_pos);
 
-	if(bit_pos == 6) {
-		ERROR("Invalid length in LIBARCHIVE xattr base64 value, ignoring\n");
-		free(dest);
-		return NULL;
-	}
+	if(bit_pos == 6)
+		goto failed;
 
 	if(bit_pos >= 12)
 		dest_ptr[0] = output >> 16;
@@ -109,6 +103,10 @@ static char *base64_decode(char *source, int size, int *bytes)
 
 	*bytes = (dest_ptr - (unsigned char *) dest) + (bit_pos / 8);
 	return dest;
+
+failed:
+	free(dest);
+	return NULL;
 }
 
 
@@ -141,8 +139,10 @@ void read_tar_xattr(char *name, char *value, int size, int encoding, struct tar_
 
 	if(encoding == ENCODING_BASE64) {
 		data = base64_decode(value, size, &size);
-		if(data == NULL)
+		if(data == NULL) {
+			ERROR("Invalid LIBARCHIVE xattr base64 value, ignoring\n");
 			return;
+		}
 	} else {
 		data = malloc(size);
 		if(data == NULL)
