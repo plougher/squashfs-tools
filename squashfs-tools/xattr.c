@@ -1008,14 +1008,14 @@ void xattrs_add(char *str)
 		if(*value == 0)
 			BAD_ERROR("invalid argument %s in xattrs-add option, "
 				"because xattr value is empty after format "
-				"prefix 0S or Os\n", str);
+				"prefix 0S or 0s\n", str);
 
 		entry->value = base64_decode(value, strlen(value), &size);
 		entry->vsize = size;
 
 		if(entry->value == NULL)
 			BAD_ERROR("invalid argument %s in xattrs-add option, "
-				"because invalid base64 xattr value\n", str);
+				"because invalid base64 value\n", str);
 		break;
 
 	case PREFIX_HEX_0X:
@@ -1040,7 +1040,7 @@ void xattrs_add(char *str)
 		if(*value == 0)
 			BAD_ERROR("invalid argument %s in xattrs-add option, "
 				"because xattr value is empty after format "
-				"prefix 0B or Ob\n, str");
+				"prefix 0B or 0b\n, str");
 
 		/* fall through */
 	default:
