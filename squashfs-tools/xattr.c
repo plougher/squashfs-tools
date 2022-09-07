@@ -916,6 +916,47 @@ failed:
 }
 
 
+char *hex_decode(char *source, int size, int *bytes)
+{
+	char *dest;
+	unsigned char *dest_ptr, *source_ptr = (unsigned char *) source;
+	int first = 0;
+
+	if(size % 2 != 0)
+		return NULL;
+
+	dest = malloc(size >> 2);
+	if(dest == NULL)
+		MEM_ERROR();
+
+	for(dest_ptr = (unsigned char *) dest ; size; size --) {
+		int digit = *source_ptr ++;
+
+		if(digit >= 'A' && digit <= 'F')
+			digit -= 'A' - 10;
+		else if(digit >= 'a' && digit <= 'f')
+			digit -= 'a' - 10;
+		else if(digit >= '0' && digit <= '9')
+			digit -= '0';
+		else
+			goto failed;
+
+		if(size % 2 == 0)
+			first = digit;
+		else
+			*dest_ptr ++ = (first << 4) | digit; 
+	}
+
+	*bytes = dest_ptr - (unsigned char *) dest;
+
+	return dest;
+
+failed:
+	free(dest);
+	return NULL;
+}
+
+
 void xattrs_add(char *str)
 {
 	struct xattr_add *entry = malloc(sizeof(struct xattr_add));
@@ -975,6 +1016,22 @@ void xattrs_add(char *str)
 		if(entry->value == NULL)
 			BAD_ERROR("invalid argument %s in xattrs-add option, "
 				"because invalid base64 xattr value\n", str);
+		break;
+
+	case PREFIX_HEX_0X:
+	case PREFIX_HEX_0x:
+		value += 2;
+		if(*value == 0)
+			BAD_ERROR("invalid argument %s in xattrs-add option, "
+				"because xattr value is empty after format "
+				"prefix 0X or 0x\n", str);
+
+		entry->value = hex_decode(value, strlen(value), &size);
+		entry->vsize = size;
+
+		if(entry->value == NULL)
+			BAD_ERROR("invalid argument %s in xattrs-add option, "
+				"because invalid hexidecimal value\n", str);
 		break;
 
 	case PREFIX_BINARY_0B:
