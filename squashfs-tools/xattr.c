@@ -279,6 +279,10 @@ skip_system_xattrs:
 	for(entry = xattr_add_list; entry; entry=entry->next) {
 		struct xattr_list *x;
 
+		/*
+		 * User extended attributes are only allowed for files and
+		 * directories.  See man 7 xattr for explanation.
+		 */
 		if((entry->type == SQUASHFS_XATTR_USER) &&
 				(type != SQUASHFS_FILE_TYPE &&
 				 type != SQUASHFS_DIR_TYPE))
