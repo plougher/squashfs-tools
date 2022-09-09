@@ -6105,8 +6105,11 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "'^user.'\n\t\t\tincludes xattrs from the user ");
 	fprintf(stream, "namespace\n");
 	fprintf(stream, "-xattrs-add <name=val>\tadd the xattr <name> with ");
-	fprintf(stream, "text <val> to all files.\n\t\t\tOption can be ");
-	fprintf(stream, "repeated to add multiple xattrs\n");
+	fprintf(stream, "text <val> to files.  If a\n\t\t\tuser xattr it ");
+	fprintf(stream, "will be added to regular files and\n");
+	fprintf(stream, "\t\t\tdirectories (see man 7 xattr).  Otherwise it ");
+	fprintf(stream, "will be\n\t\t\tadded to all files.  Option can be ");
+	fprintf(stream, "repeated to add\n\t\t\tmultiple xattrs\n");
 	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
 	fprintf(stream, "\nFilesystem append options:\n");
 	fprintf(stream, "-noappend\t\tdo not append to existing filesystem\n");
