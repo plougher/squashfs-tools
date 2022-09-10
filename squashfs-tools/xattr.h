@@ -45,6 +45,8 @@
 #define PREFIX_BINARY_0b	(0x3000 + 0x62)
 #define PREFIX_HEX_0X		(0x3000 + 0x58)
 #define PREFIX_HEX_0x		(0x3000 + 0x78)
+#define PREFIX_TEXT_0T		(0x3000 + 0x54)
+#define PREFIX_TEXT_0t		(0x3000 + 0x74)
 
 struct xattr_list {
 	char			*name;

@@ -961,6 +961,64 @@ failed:
 }
 
 
+int decode_octal(unsigned char *ptr)
+{
+	int i, output = 0;
+
+	for(i = 0; i < 3; i++) {
+		int val = *ptr ++;
+
+		if(val < '0' || val > '7')
+			return -1;
+
+		output = (output << 3) | (val - '0');
+	}
+
+	return output < 256 ? output : -1;
+}
+
+
+char *text_decode(char *source, int *bytes)
+{
+	unsigned char *dest, *dest_ptr, *ptr = (unsigned char *) source;
+	int size = 0;
+
+	for(; *ptr; size ++, ptr ++) {
+		if(*ptr == '\\') {
+			if(ptr[1] != '\0' && ptr[2] != '\0' && ptr[3] != '\0')
+				ptr += 3;
+			else
+				return NULL;
+		}
+	}
+
+	dest = malloc(size);
+	if(dest == NULL)
+		MEM_ERROR();
+
+	*bytes = size;
+
+	for(ptr = (unsigned char *) source, dest_ptr = dest; size; size --) {
+		if(*ptr == '\\') {
+			int res = decode_octal(++ ptr);
+
+			if(res == -1)
+				goto failed;
+
+			*dest_ptr ++ = res;
+			ptr += 3;
+		} else
+			*dest_ptr ++ = *ptr ++;
+	}
+
+	return (char *) dest;
+
+failed:
+	free(dest);
+	return NULL;
+}
+
+
 void xattrs_add(char *str)
 {
 	struct xattr_add *entry = malloc(sizeof(struct xattr_add));
@@ -1036,6 +1094,22 @@ void xattrs_add(char *str)
 		if(entry->value == NULL)
 			BAD_ERROR("invalid argument %s in xattrs-add option, "
 				"because invalid hexidecimal value\n", str);
+		break;
+
+	case PREFIX_TEXT_0T:
+	case PREFIX_TEXT_0t:
+		value += 2;
+		if(*value == 0)
+			BAD_ERROR("invalid argument %s in xattrs-add option, "
+				"because xattr value is empty after format "
+				"prefix 0T or 0t\n", str);
+
+		entry->value = text_decode(value, &size);
+		entry->vsize = size;
+
+		if(entry->value == NULL)
+			BAD_ERROR("invalid argument %s in xattrs-add option, "
+				"because invalid text value\n", str);
 		break;
 
 	case PREFIX_BINARY_0B:
