@@ -6819,10 +6819,18 @@ print_sqfstar_compressor_options:
 				strcmp(argv[i], "-noXattrCompression") == 0)
 			noX = TRUE;
 
-		else if(strcmp(argv[i], "-no-xattrs") == 0)
+		else if(strcmp(argv[i], "-no-xattrs") == 0) {
+			if(xattr_exclude_preg || xattr_include_preg ||
+							add_xattrs()) {
+				ERROR("%s: -no-xattrs should not be used in "
+					"combination with -xattrs-* options\n",
+					argv[0]);
+				exit(1);
+			}
+
 			no_xattrs = TRUE;
 
-		else if(strcmp(argv[i], "-xattrs") == 0) {
+		} else if(strcmp(argv[i], "-xattrs") == 0) {
 			if(xattrs_supported())
 				no_xattrs = FALSE;
 			else {
