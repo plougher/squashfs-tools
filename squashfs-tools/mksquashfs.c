@@ -6840,9 +6840,10 @@ print_sqfstar_compressor_options:
 				ERROR("%s: -xattrs-exclude missing regex pattern\n",
 					argv[0]);
 				exit(1);
-			} else
+			} else {
 				xattr_exclude_preg = xattr_regex(argv[i], "exclude");
-
+				no_xattrs = FALSE;
+			}
 		} else if(strcmp(argv[i], "-xattrs-include") == 0) {
 			if(!xattrs_supported()) {
 				ERROR("%s: xattrs are unsupported in "
@@ -6852,8 +6853,10 @@ print_sqfstar_compressor_options:
 				ERROR("%s: -xattrs-include missing regex pattern\n",
 					argv[0]);
 				exit(1);
-			} else
+			} else {
 				xattr_include_preg = xattr_regex(argv[i], "include");
+				no_xattrs = FALSE;
+			}
 		} else if(strcmp(argv[i], "-xattrs-add") == 0) {
 			if(!xattrs_supported()) {
 				ERROR("%s: xattrs are unsupported in "
@@ -6863,8 +6866,10 @@ print_sqfstar_compressor_options:
 				ERROR("%s: -xattrs-add missing xattr argument\n",
 					argv[0]);
 				exit(1);
-			} else
+			} else {
 				xattrs_add(argv[i]);
+				no_xattrs = FALSE;
+			}
 
 		} else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;
