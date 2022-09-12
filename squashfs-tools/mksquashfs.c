@@ -304,7 +304,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-m
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-mode", "force-uid", "force-gid", "throttle", "limit",
 	"processors", "mem", "offset", "o", "root-time", "root-uid",
-	"root-gid", "xattrs-exclude", "xattrs-include", NULL
+	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes);
@@ -6854,6 +6854,17 @@ print_sqfstar_compressor_options:
 				exit(1);
 			} else
 				xattr_include_preg = xattr_regex(argv[i], "include");
+		} else if(strcmp(argv[i], "-xattrs-add") == 0) {
+			if(!xattrs_supported()) {
+				ERROR("%s: xattrs are unsupported in "
+					"this build\n", argv[0]);
+				exit(1);
+			} else if(++i == argc) {
+				ERROR("%s: -xattrs-add missing xattr argument\n",
+					argv[0]);
+				exit(1);
+			} else
+				xattrs_add(argv[i]);
 
 		} else if(strcmp(argv[i], "-nopad") == 0)
 			nopad = TRUE;
@@ -6903,6 +6914,11 @@ print_sqfstar_compressor_options:
 	 */
 	if(!silent)
 		progress = force_progress;
+
+	/*
+	 * Sort all the xattr-add options now they're all processed
+	 */
+	sort_xattr_add_list();
 
 #ifdef SQUASHFS_TRACE
 	/*

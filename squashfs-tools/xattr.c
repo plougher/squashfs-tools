@@ -134,8 +134,8 @@ int xattr_get_prefix(struct xattr_list *xattr, char *name)
 }
 
 	
-static int read_xattrs_from_system(struct dir_ent *dir_ent, int type,
-				char *filename, struct xattr_list **xattrs)
+static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
+						struct xattr_list **xattrs)
 {
 	ssize_t size, vsize;
 	char *xattr_names, *p;
@@ -143,7 +143,6 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, int type,
 	struct xattr_list *xattr_list = NULL;
 	struct xattr_data *xattr_exc_list;
 	struct xattr_data *xattr_inc_list;
-	struct xattr_add *entry;
 
 	while(1) {
 		size = llistxattr(filename, NULL, 0);
@@ -154,7 +153,7 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, int type,
 					strerror(errno));
 				ERROR_EXIT(".  Ignoring\n");
 			}
-			goto skip_system_xattrs;
+			return 0;
 		}
 
 		xattr_names = malloc(size);
@@ -274,40 +273,6 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, int type,
 	}
 
 	free(xattr_names);
-
-skip_system_xattrs:
-	for(entry = xattr_add_list; entry; entry=entry->next) {
-		struct xattr_list *x;
-
-		/*
-		 * User extended attributes are only allowed for files and
-		 * directories.  See man 7 xattr for explanation.
-		 */
-		if((entry->type == SQUASHFS_XATTR_USER) &&
-				(type != SQUASHFS_FILE_TYPE &&
-				 type != SQUASHFS_DIR_TYPE))
-			continue;
-
-		x = realloc(xattr_list, (i + 1) * sizeof(struct xattr_list));
-		if(x == NULL)
-			MEM_ERROR();
-		xattr_list = x;
-
-		xattr_list[i].type = entry->type;
-		xattr_copy_prefix(&xattr_list[i], entry->type, entry->name);
-
-		xattr_list[i].value = malloc(entry->vsize);
-		if(xattr_list[i].value == NULL)
-			MEM_ERROR();
-
-		memcpy(xattr_list[i].value, entry->value, entry->vsize);
-		xattr_list[i].vsize = entry->vsize;
-
-		TRACE("read_xattrs_from_system: filename %s, xattr name %s,"
-			" vsize %d\n", filename, xattr_list[i].full_name,
-			xattr_list[i].vsize);
-		i++;
-	}
 
 	if(i > 0)
 		*xattrs = xattr_list;
@@ -712,22 +677,55 @@ int read_xattrs(void *d, int type)
 	struct dir_ent *dir_ent = d;
 	struct inode_info *inode = dir_ent->inode;
 	char *filename = pathname(dir_ent);
-	struct xattr_list *xattr_list;
-	int xattrs;
+	struct xattr_list *xattr_list = NULL;
+	int i;
+	struct xattr_add *entry;
 
 	if(no_xattrs || IS_PSEUDO(inode) || inode->root_entry || inode->dummy_root_dir)
 		return SQUASHFS_INVALID_XATTR;
 
 	if(IS_TARFILE(inode))
-		xattrs = read_xattrs_from_tarfile(inode, &xattr_list);
+		i = read_xattrs_from_tarfile(inode, &xattr_list);
 	else
-		xattrs = read_xattrs_from_system(dir_ent, type,
-							filename, &xattr_list);
+		i = read_xattrs_from_system(dir_ent, filename, &xattr_list);
 
-	if(xattrs == 0)
+	for(entry = xattr_add_list; entry; entry=entry->next) {
+		struct xattr_list *x;
+
+		/*
+		 * User extended attributes are only allowed for files and
+		 * directories.  See man 7 xattr for explanation.
+		 */
+		if((entry->type == SQUASHFS_XATTR_USER) &&
+				(type != SQUASHFS_FILE_TYPE &&
+				 type != SQUASHFS_DIR_TYPE))
+			continue;
+
+		x = realloc(xattr_list, (i + 1) * sizeof(struct xattr_list));
+		if(x == NULL)
+			MEM_ERROR();
+		xattr_list = x;
+
+		xattr_list[i].type = entry->type;
+		xattr_copy_prefix(&xattr_list[i], entry->type, entry->name);
+
+		xattr_list[i].value = malloc(entry->vsize);
+		if(xattr_list[i].value == NULL)
+			MEM_ERROR();
+
+		memcpy(xattr_list[i].value, entry->value, entry->vsize);
+		xattr_list[i].vsize = entry->vsize;
+
+		TRACE("read_xattrs: filename %s, xattr name %s,"
+			" vsize %d\n", filename, xattr_list[i].full_name,
+			xattr_list[i].vsize);
+		i++;
+	}
+
+	if(i == 0)
 		return SQUASHFS_INVALID_XATTR;
 
-	return generate_xattrs(xattrs, xattr_list);
+	return generate_xattrs(i, xattr_list);
 }
 
 
