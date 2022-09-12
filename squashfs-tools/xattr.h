@@ -97,6 +97,7 @@ extern regex_t *xattr_regex(char *pattern, char *option);
 extern void xattrs_add(char *str);
 extern void sort_xattr_add_list(void);
 extern char *base64_decode(char *source, int size, int *bytes);
+extern int add_xattrs(void);
 #else
 #include "squashfs_swap.h"
 
@@ -183,6 +184,11 @@ static inline void xattrs_add(char *str)
 
 static inline void sort_xattr_add_list(void)
 {
+}
+
+static inline int add_xattrs(void)
+{
+	return 0;
 }
 #endif
 

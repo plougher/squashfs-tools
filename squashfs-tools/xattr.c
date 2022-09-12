@@ -1137,6 +1137,12 @@ void xattrs_add(char *str)
 	xattr_add_count ++;
 }
 
+
+int add_xattrs(void) {
+	return xattr_add_count;
+}
+
+
 /* Instantiate implementation of merge sort */
 SORT(sort_list, xattr_add);
 
