@@ -1031,16 +1031,16 @@ void xattrs_add(char *str)
 	 */
 	for(value = str; *value != '=' && *value != '\0'; value ++);
 	if(*value == '\0')
-		BAD_ERROR("invalid argument %s in xattrs-add option, because"
-				" no `=` found\n", str);
+		BAD_ERROR("invalid argument \"%s\" in xattrs-add option, "
+				"because no `=` found\n", str);
 
 	if(value == str)
-		BAD_ERROR("invalid argument %s in xattrs-add option, because"
-				" xattr name is empty\n", str);
+		BAD_ERROR("invalid argument \"%s\" in xattrs-add option, "
+				"because xattr name is empty\n", str);
 
 	if(*(value + 1) == '\0')
-		BAD_ERROR("invalid argument %s in xattrs-add option, because"
-				" xattr value is empty\n", str);
+		BAD_ERROR("invalid argument \"%s\" in xattrs-add option, "
+				"because xattr value is empty\n", str);
 
 	entry->name = strndup(str, value++ - str);
 	entry->type = xattr_get_type(entry->name);
