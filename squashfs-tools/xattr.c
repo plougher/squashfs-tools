@@ -678,15 +678,15 @@ int read_xattrs(void *d, int type)
 	struct inode_info *inode = dir_ent->inode;
 	char *filename = pathname(dir_ent);
 	struct xattr_list *xattr_list = NULL;
-	int i;
+	int i = 0;
 	struct xattr_add *entry;
 
-	if(no_xattrs || IS_PSEUDO(inode) || inode->root_entry || inode->dummy_root_dir)
+	if(no_xattrs || inode->root_entry || inode->dummy_root_dir)
 		return SQUASHFS_INVALID_XATTR;
 
 	if(IS_TARFILE(inode))
 		i = read_xattrs_from_tarfile(inode, &xattr_list);
-	else
+	else if(!IS_PSEUDO(inode))
 		i = read_xattrs_from_system(dir_ent, filename, &xattr_list);
 
 	for(entry = xattr_add_list; entry; entry=entry->next) {
