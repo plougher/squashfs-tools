@@ -1017,37 +1017,46 @@ failed:
 }
 
 
-void xattrs_add(char *str)
+struct xattr_add *xattr_parse(char *str, char *pre, char *option)
 {
-	struct xattr_add *entry = malloc(sizeof(struct xattr_add));
+	struct xattr_add *entry;
 	char *value;
 	int prefix, size;
-
-	if(entry == NULL)
-		MEM_ERROR();
 
 	/*
 	 * Look for the "=" separating the xattr name from the value
 	 */
 	for(value = str; *value != '=' && *value != '\0'; value ++);
-	if(*value == '\0')
-		BAD_ERROR("invalid argument \"%s\" in xattrs-add option, "
-				"because no `=` found\n", str);
+	if(*value == '\0') {
+		ERROR("%sinvalid argument \"%s\" in %s option, because no "
+				"`=` found\n", pre, str, option);
+		goto failed;
+	}
 
-	if(value == str)
-		BAD_ERROR("invalid argument \"%s\" in xattrs-add option, "
-				"because xattr name is empty\n", str);
+	if(value == str) {
+		ERROR("%sinvalid argument \"%s\" in %s option, because xattr "
+				"name is empty\n", pre, str, option);
+		goto failed;
+	}
 
-	if(*(value + 1) == '\0')
-		BAD_ERROR("invalid argument \"%s\" in xattrs-add option, "
-				"because xattr value is empty\n", str);
+	if(*(value + 1) == '\0') {
+		ERROR("%sinvalid argument \"%s\" in %s option, because xattr "
+				"value is empty\n", pre, str, option);
+		goto failed;
+	}
+
+	entry = malloc(sizeof(struct xattr_add));
+	if(entry == NULL)
+		MEM_ERROR();
 
 	entry->name = strndup(str, value++ - str);
 	entry->type = xattr_get_type(entry->name);
 
-	if(entry->type == -1)
-		BAD_ERROR("-xattrs-add: unrecognised xattr prefix in %s\n",
-							entry->name);
+	if(entry->type == -1) {
+		ERROR("%s%s: unrecognised xattr prefix in %s\n", pre, option,
+								entry->name);
+		goto failed2;
+	}
 
 	/*
 	 * Evaluate the format prefix (if any)
@@ -1065,58 +1074,72 @@ void xattrs_add(char *str)
 	case PREFIX_BASE64_0S:
 	case PREFIX_BASE64_0s:
 		value += 2;
-		if(*value == 0)
-			BAD_ERROR("invalid argument %s in xattrs-add option, "
-				"because xattr value is empty after format "
-				"prefix 0S or 0s\n", str);
+		if(*value == 0) {
+			ERROR("%sinvalid argument %s in %s option, because "
+				"xattr value is empty after format prefix 0S "
+				"or 0s\n", pre, str, option);
+			goto failed2;
+		}
 
 		entry->value = base64_decode(value, strlen(value), &size);
 		entry->vsize = size;
 
-		if(entry->value == NULL)
-			BAD_ERROR("invalid argument %s in xattrs-add option, "
-				"because invalid base64 value\n", str);
+		if(entry->value == NULL) {
+			ERROR("%sinvalid argument %s in %s option, because "
+				"invalid base64 value\n", pre, str, option);
+			goto failed2;
+		}
 		break;
 
 	case PREFIX_HEX_0X:
 	case PREFIX_HEX_0x:
 		value += 2;
-		if(*value == 0)
-			BAD_ERROR("invalid argument %s in xattrs-add option, "
-				"because xattr value is empty after format "
-				"prefix 0X or 0x\n", str);
+		if(*value == 0) {
+			ERROR("%sinvalid argument %s in %s option, because "
+				"xattr value is empty after format prefix 0X "
+				"or 0x\n", pre, str, option);
+			goto failed2;
+		}
 
 		entry->value = hex_decode(value, strlen(value), &size);
 		entry->vsize = size;
 
-		if(entry->value == NULL)
-			BAD_ERROR("invalid argument %s in xattrs-add option, "
-				"because invalid hexidecimal value\n", str);
+		if(entry->value == NULL) {
+			ERROR("%sinvalid argument %s in %s option, because "
+				"invalid hexidecimal value\n", pre, str, option);
+			goto failed2;
+		}
 		break;
 
 	case PREFIX_TEXT_0T:
 	case PREFIX_TEXT_0t:
 		value += 2;
-		if(*value == 0)
-			BAD_ERROR("invalid argument %s in xattrs-add option, "
-				"because xattr value is empty after format "
-				"prefix 0T or 0t\n", str);
+		if(*value == 0) {
+			ERROR("%sinvalid argument %s in %s option, because "
+				"xattr value is empty after format prefix 0T "
+				"or 0t\n", pre, str, option);
+			goto failed2;
+		}
 
 		entry->value = text_decode(value, &size);
 		entry->vsize = size;
 
-		if(entry->value == NULL)
-			BAD_ERROR("invalid argument %s in xattrs-add option, "
-				"because invalid text value\n", str);
+		if(entry->value == NULL) {
+			ERROR("%sinvalid argument %s in %s option, because "
+				"invalid text value\n", pre, str, option);
+			goto failed2;
+		}
 		break;
 
 	case PREFIX_BINARY_0B:
 	case PREFIX_BINARY_0b:
 		value += 2;
-		if(*value == 0)
-			BAD_ERROR("invalid argument %s in xattrs-add option, "
-				"because xattr value is empty after format "
-				"prefix 0B or 0b\n, str");
+		if(*value == 0) {
+			ERROR("%sinvalid argument %s in %s option, because "
+				"xattr value is empty after format prefix 0B "
+				"or 0b\n", pre, str, option);
+			goto failed2;
+		}
 
 		/* fall through */
 	default:
@@ -1129,10 +1152,29 @@ void xattrs_add(char *str)
 		memcpy(entry->value, value, entry->vsize);
 	}
 
-	entry->next = xattr_add_list;
-	xattr_add_list = entry;
+	return entry;
 
-	xattr_add_count ++;
+failed2:
+	free(entry->name);
+	free(entry);
+failed:
+	return NULL;
+}
+
+
+void xattrs_add(char *str)
+{
+	struct xattr_add *entry;
+
+	entry = xattr_parse(str, "FATAL ERROR: ", "xattrs-add");
+
+	if(entry) {
+		entry->next = xattr_add_list;
+		xattr_add_list = entry;
+
+		xattr_add_count ++;
+	} else
+		exit(1);
 }
 
 
