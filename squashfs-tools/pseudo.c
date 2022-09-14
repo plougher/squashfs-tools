@@ -472,7 +472,7 @@ static int read_pseudo_def_pseudo_link(char *orig_def, char *filename, char *nam
 	else
 		pseudo_ent = pseudo_lookup(pseudo, link);
 
-	if(pseudo_ent == NULL) {
+	if(pseudo_ent == NULL || pseudo_ent->dev == NULL) {
 		ERROR("Pseudo LINK file %s doesn't exist\n", linkname);
 		goto error;
 	}
