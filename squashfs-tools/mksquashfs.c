@@ -3910,12 +3910,12 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			dir_ent = lookup_name(dir, pseudo_ent->name);
 
 			if(dir_ent && dir_ent->inode->root_entry) {
-				ERROR_START("WARNING: Pseudo directory \"%s\" "
+				BAD_ERROR("Pseudo files: File \"%s\" "
 					"already exists in root directory of "
 					"the\nfilesystem being appended to. "
-					"Pseudo definitions can\'t be added to "
-					"it.", pseudo_ent->name);
-				ERROR_EXIT("  Ignoring.\n\n");
+					"Pseudo definitions can\'t modify it "
+					"or (if directory) add files to it\n",
+					pseudo_ent->name);
 			}
 		}
 
