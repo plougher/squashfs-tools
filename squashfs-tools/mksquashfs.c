@@ -3255,6 +3255,7 @@ static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pse
 	inode->nlink = 1;
 	inode->inode_number = 0;
 	inode->dummy_root_dir = FALSE;
+	inode->xattr = NULL;
 	inode->tarfile = FALSE;
 
 	/*
@@ -3903,6 +3904,9 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			dir_scan2(dirent->dir, pseudo_subdir(name, pseudo));
 	}
 
+	/*
+	 * Process pseudo modify and add (file, directory etc) definitions
+	 */
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
 		struct dir_ent *dir_ent = NULL;
 
@@ -3992,6 +3996,28 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				pseudo_ent->pathname, NULL,
 				lookup_inode2(&buf, pseudo_ent->dev), dir);
 		}
+	}
+
+	/*
+	 * Process pseudo xattr definitions
+	 */
+	pseudo->count = 0;
+	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
+		struct dir_ent *dir_ent = NULL;
+
+		if(pseudo_ent->xattr == NULL)
+			continue;
+
+		dir_ent = lookup_name(dir, pseudo_ent->name);
+		if(dir_ent == NULL) {
+			ERROR_START("Pseudo xattr file \"%s\" does not "
+				"exist in source filesystem.",
+				pseudo_ent->pathname);
+			ERROR_EXIT("  Ignoring.\n");
+			continue;
+		}
+
+		dir_ent->inode->xattr = pseudo_ent->xattr;
 	}
 }
 

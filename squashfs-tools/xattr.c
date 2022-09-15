@@ -689,7 +689,46 @@ int read_xattrs(void *d, int type)
 	else if(!IS_PSEUDO(inode))
 		i = read_xattrs_from_system(dir_ent, filename, &xattr_list);
 
+	/*
+	 * Add global xattrs created by -xattrs-add command line option
+	 */
 	for(entry = xattr_add_list; entry; entry=entry->next) {
+		struct xattr_list *x;
+
+		/*
+		 * User extended attributes are only allowed for files and
+		 * directories.  See man 7 xattr for explanation.
+		 */
+		if((entry->type == SQUASHFS_XATTR_USER) &&
+				(type != SQUASHFS_FILE_TYPE &&
+				 type != SQUASHFS_DIR_TYPE))
+			continue;
+
+		x = realloc(xattr_list, (i + 1) * sizeof(struct xattr_list));
+		if(x == NULL)
+			MEM_ERROR();
+		xattr_list = x;
+
+		xattr_list[i].type = entry->type;
+		xattr_copy_prefix(&xattr_list[i], entry->type, entry->name);
+
+		xattr_list[i].value = malloc(entry->vsize);
+		if(xattr_list[i].value == NULL)
+			MEM_ERROR();
+
+		memcpy(xattr_list[i].value, entry->value, entry->vsize);
+		xattr_list[i].vsize = entry->vsize;
+
+		TRACE("read_xattrs: filename %s, xattr name %s,"
+			" vsize %d\n", filename, xattr_list[i].full_name,
+			xattr_list[i].vsize);
+		i++;
+	}
+
+	/*
+	 * Add specific xattrs created by xattr pseudo definition
+	 */
+	for(entry = inode->xattr; entry; entry=entry->next) {
 		struct xattr_list *x;
 
 		/*

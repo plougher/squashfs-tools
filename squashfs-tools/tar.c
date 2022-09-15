@@ -1,7 +1,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2021
+ * Copyright (c) 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -248,6 +248,7 @@ static struct inode_info *new_inode(struct tar_file *tar_file)
 	inode->inode_number = 0;
 	inode->pseudo = NULL;
 	inode->dummy_root_dir = FALSE;
+	inode->xattr = NULL;
 	inode->tarfile = TRUE;
 
 	/*

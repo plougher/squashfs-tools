@@ -36,10 +36,13 @@
 #include <ctype.h>
 #include <time.h>
 #include <ctype.h>
+#include <regex.h>
 
 #include "pseudo.h"
 #include "mksquashfs_error.h"
 #include "progressbar.h"
+#include "squashfs_fs.h"
+#include "xattr.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -61,6 +64,84 @@ static char *get_component(char *target, char **targname)
 		target ++;
 
 	return target;
+}
+
+
+/*
+ * Add pseudo xattr to the set of pseudo definitions.
+ */
+struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *xattr,
+	char *target, char *alltarget)
+{
+	char *targname;
+	int i;
+
+	target = get_component(target, &targname);
+
+	if(pseudo == NULL) {
+		pseudo = malloc(sizeof(struct pseudo));
+		if(pseudo == NULL)
+			MEM_ERROR();
+
+		pseudo->names = 0;
+		pseudo->count = 0;
+		pseudo->name = NULL;
+	}
+
+	for(i = 0; i < pseudo->names; i++)
+		if(strcmp(pseudo->name[i].name, targname) == 0)
+			break;
+
+	if(i == pseudo->names) {
+		/* allocate new name entry */
+		pseudo->names ++;
+		pseudo->name = realloc(pseudo->name, (i + 1) *
+			sizeof(struct pseudo_entry));
+		if(pseudo->name == NULL)
+			MEM_ERROR();
+		pseudo->name[i].name = targname;
+		pseudo->name[i].pathname = NULL;
+		pseudo->name[i].dev = NULL;
+
+		if(target[0] == '\0') {
+			/* at leaf pathname component */
+			pseudo->name[i].pseudo = NULL;
+			pseudo->name[i].xattr = xattr;
+			xattr->next = NULL;
+		} else {
+			/* recurse adding child components */
+			pseudo->name[i].xattr = NULL;
+			pseudo->name[i].pseudo = add_pseudo_xattr(NULL, xattr,
+				target, alltarget);
+		}
+	} else {
+		/* existing matching entry */
+
+		free(targname);
+
+		if(target[0] == '\0') {
+			/* Add xattr to this entry */
+			xattr->next = pseudo->name[i].xattr;
+			pseudo->name[i].xattr = xattr;
+		} else {
+			/* recurse adding child components */
+			pseudo->name[i].pseudo = add_pseudo_xattr(pseudo->name[i].pseudo, xattr, target, alltarget);
+		}
+	}
+
+	return pseudo;
+}
+
+
+struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo,
+	struct xattr_add *xattr, char *target, char *alltarget)
+{
+	/* if there's a root pseudo definition, skip it before walking target */
+	if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
+		pseudo->name[0].pseudo = add_pseudo_xattr(pseudo->name[0].pseudo, xattr, target, alltarget);
+		return pseudo;
+	} else
+		return add_pseudo_xattr(pseudo, xattr, target, alltarget);
 }
 
 
@@ -98,6 +179,7 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 		if(pseudo->name == NULL)
 			MEM_ERROR();
 		pseudo->name[i].name = targname;
+		pseudo->name[i].xattr = NULL;
 
 		if(target[0] == '\0') {
 			/* at leaf pathname component */
@@ -116,14 +198,16 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 
 		if(pseudo->name[i].pseudo == NULL) {
 			/* No sub-directory which means this is the leaf
-			 * component of a pre-existing pseudo file.
+			 * component, this may or may not be a pre-existing
+			 * pseudo file.
 			 */
 			if(target[0] != '\0') {
 				/*
 				 * entry must exist as either a 'd' type or
-				 * 'm' type pseudo file
+				 * 'm' type pseudo file, or not exist at all
 				 */
-				if(pseudo->name[i].dev->type == 'd' ||
+				if(pseudo->name[i].dev == NULL ||
+					pseudo->name[i].dev->type == 'd' ||
 					pseudo->name[i].dev->type == 'm')
 					/* recurse adding child components */
 					pseudo->name[i].pseudo =
@@ -136,6 +220,10 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 					ERROR_EXIT(".  Ignoring %s!\n",
 						alltarget);
 				}
+			} else if(pseudo->name[i].dev == NULL) {
+				/* add this pseudo definition */
+				pseudo->name[i].pathname = strdup(alltarget);
+				pseudo->name[i].dev = pseudo_dev;
 			} else if(memcmp(pseudo_dev, pseudo->name[i].dev,
 					sizeof(struct pseudo_dev)) != 0) {
 				ERROR_START("%s already exists as a different "
@@ -420,6 +508,23 @@ static void print_definitions()
 	ERROR("\tfilename S time mode uid gid symlink\n");
 	ERROR("\tfilename I time mode uid gid [s|f]\n");
 	ERROR("\tfilename R time mode uid gid length offset\n");
+}
+
+
+static int read_pseudo_xattr(char *orig_def, char *filename, char *name, char *def)
+{
+	struct xattr_add *xattr = xattr_parse(def, "", "pseudo xattr");
+
+	if(xattr == NULL) {
+		print_definitions();
+		free(filename);
+		return FALSE;
+	}
+
+	pseudo = add_pseudo_xattr_definition(pseudo, xattr, name, name);
+
+	free(filename);
+	return TRUE;
 }
 
 
@@ -1229,7 +1334,9 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 		goto error;
 	}
 
-	if(type == 'l')
+	if(type == 'x')
+		return read_pseudo_xattr(orig_def, filename, name, def);
+	else if(type == 'l')
 		return read_pseudo_def_link(orig_def, filename, name, def, destination);
 	else if(type == 'L')
 		return read_pseudo_def_pseudo_link(orig_def, filename, name, def);

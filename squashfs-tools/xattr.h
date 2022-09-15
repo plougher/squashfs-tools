@@ -98,6 +98,7 @@ extern void xattrs_add(char *str);
 extern void sort_xattr_add_list(void);
 extern char *base64_decode(char *source, int size, int *bytes);
 extern int add_xattrs(void);
+extern struct xattr_add *xattr_parse(char *, char *, char *);
 #else
 #include "squashfs_swap.h"
 
@@ -189,6 +190,11 @@ static inline void sort_xattr_add_list(void)
 static inline int add_xattrs(void)
 {
 	return 0;
+}
+
+static inline struct xattr_add *xattr_parse(char *a, char *b, char *c)
+{
+	return NULL;
 }
 #endif
 

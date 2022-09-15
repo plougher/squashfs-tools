@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2014, 2017, 2021
+ * Copyright (c) 2009, 2010, 2014, 2017, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -75,6 +75,7 @@ struct pseudo_entry {
 	char			*pathname;
 	struct pseudo		*pseudo;
 	struct pseudo_dev	*dev;
+	struct xattr_add	*xattr;
 };
 	
 struct pseudo {
