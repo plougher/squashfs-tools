@@ -3906,7 +3906,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
 		struct dir_ent *dir_ent = NULL;
 
-		if(appending && dir->depth == 1 && pseudo_ent->dev == NULL) {
+		if(appending && dir->depth == 1) {
 			dir_ent = lookup_name(dir, pseudo_ent->name);
 
 			if(dir_ent && dir_ent->inode->root_entry) {
@@ -3922,7 +3922,8 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		if(pseudo_ent->dev == NULL)
 			continue;
 
-		dir_ent = lookup_name(dir, pseudo_ent->name);
+		if(dir_ent == NULL)
+			dir_ent = lookup_name(dir, pseudo_ent->name);
 
 		if(pseudo_ent->dev->type == 'm' || pseudo_ent->dev->type == 'M') {
 			struct stat *buf;
@@ -3930,14 +3931,6 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				ERROR_START("Pseudo modify file \"%s\" does "
 					"not exist in source filesystem.",
 					pseudo_ent->pathname);
-				ERROR_EXIT("  Ignoring.\n");
-				continue;
-			}
-			if(dir_ent->inode->root_entry) {
-				ERROR_START("Pseudo modify file \"%s\" is a "
-					"pre-existing file in the filesystem "
-					"being appended to.  It cannot be "\
-					"modified.", pseudo_ent->pathname);
 				ERROR_EXIT("  Ignoring.\n");
 				continue;
 			}
@@ -3952,20 +3945,10 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		}
 
 		if(dir_ent) {
-			if(dir_ent->inode->root_entry) {
-				ERROR_START("Pseudo file \"%s\" is a "
-					"pre-existing file in the filesystem "
-					"being appended to.",
-					pseudo_ent->pathname);
-				ERROR_EXIT("  Ignoring.\n");
-			} else {
-				ERROR_START("Pseudo file \"%s\" exists in "
-					"source filesystem \"%s\".",
-					pseudo_ent->pathname,
-					pathname(dir_ent));
-				ERROR_EXIT("\nIgnoring, exclude it (-e/-ef) to "
-					"override.\n");
-			}
+			ERROR_START("Pseudo file \"%s\" exists in source "
+				"filesystem \"%s\".", pseudo_ent->pathname,
+				pathname(dir_ent));
+			ERROR_EXIT("\nIgnoring, exclude it (-e/-ef) to override.\n");
 			continue;
 		}
 
