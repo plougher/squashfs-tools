@@ -3888,25 +3888,27 @@ static struct dir_ent *scan2_readdir(struct dir_info *dir, struct dir_ent *dir_e
 
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 {
-	struct dir_ent *dir_ent = NULL;
+	struct dir_ent *dirent = NULL;
 	struct pseudo_entry *pseudo_ent;
 	struct stat buf;
 	
-	while((dir_ent = scan2_readdir(dir, dir_ent)) != NULL) {
-		struct inode_info *inode_info = dir_ent->inode;
+	while((dirent = scan2_readdir(dir, dirent)) != NULL) {
+		struct inode_info *inode_info = dirent->inode;
 		struct stat *buf = &inode_info->buf;
-		char *name = dir_ent->name;
+		char *name = dirent->name;
 
-		eval_actions(root_dir, dir_ent);
+		eval_actions(root_dir, dirent);
 
 		if((buf->st_mode & S_IFMT) == S_IFDIR)
-			dir_scan2(dir_ent->dir, pseudo_subdir(name, pseudo));
+			dir_scan2(dirent->dir, pseudo_subdir(name, pseudo));
 	}
 
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
-		dir_ent = lookup_name(dir, pseudo_ent->name);
+		struct dir_ent *dir_ent = NULL;
 
-		if(pseudo_ent->dev == NULL) {
+		if(appending && dir->depth == 1 && pseudo_ent->dev == NULL) {
+			dir_ent = lookup_name(dir, pseudo_ent->name);
+
 			if(dir_ent && dir_ent->inode->root_entry) {
 				ERROR_START("WARNING: Pseudo directory \"%s\" "
 					"already exists in root directory of "
@@ -3915,8 +3917,12 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 					"it.", pseudo_ent->name);
 				ERROR_EXIT("  Ignoring.\n\n");
 			}
-			continue;
 		}
+
+		if(pseudo_ent->dev == NULL)
+			continue;
+
+		dir_ent = lookup_name(dir, pseudo_ent->name);
 
 		if(pseudo_ent->dev->type == 'm' || pseudo_ent->dev->type == 'M') {
 			struct stat *buf;
