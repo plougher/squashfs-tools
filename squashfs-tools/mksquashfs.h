@@ -53,7 +53,7 @@ struct inode_info {
 	struct inode_info	*next;
 	struct pseudo_dev	*pseudo;
 	struct tar_file		*tar_file;
-	struct xattr_add	*xattr;
+	struct pseudo_xattr	*xattr;
 	squashfs_inode		inode;
 	unsigned int		inode_number;
 	unsigned int		nlink;

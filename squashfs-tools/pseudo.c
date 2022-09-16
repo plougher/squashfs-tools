@@ -67,6 +67,24 @@ static char *get_component(char *target, char **targname)
 }
 
 
+static void add_xattr(struct pseudo_xattr **xattr, struct xattr_add *entry)
+{
+	if(*xattr == NULL) {
+		*xattr = malloc(sizeof(struct pseudo_xattr));
+		if(*xattr == NULL)
+			MEM_ERROR();
+
+		(*xattr)->xattr = entry;
+		entry->next = NULL;
+		(*xattr)->count = 1;
+	} else {
+		entry->next = (*xattr)->xattr;
+		(*xattr)->xattr = entry;
+		(*xattr)->count ++;
+	}
+}
+
+
 /*
  * Add pseudo xattr to the set of pseudo definitions.
  */
@@ -102,15 +120,14 @@ struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *xattr,
 		pseudo->name[i].name = targname;
 		pseudo->name[i].pathname = NULL;
 		pseudo->name[i].dev = NULL;
+		pseudo->name[i].xattr = NULL;
 
 		if(target[0] == '\0') {
 			/* at leaf pathname component */
 			pseudo->name[i].pseudo = NULL;
-			pseudo->name[i].xattr = xattr;
-			xattr->next = NULL;
+			add_xattr(&pseudo->name[i].xattr, xattr);
 		} else {
 			/* recurse adding child components */
-			pseudo->name[i].xattr = NULL;
 			pseudo->name[i].pseudo = add_pseudo_xattr(NULL, xattr,
 				target, alltarget);
 		}
@@ -121,8 +138,7 @@ struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *xattr,
 
 		if(target[0] == '\0') {
 			/* Add xattr to this entry */
-			xattr->next = pseudo->name[i].xattr;
-			pseudo->name[i].xattr = xattr;
+			add_xattr(&pseudo->name[i].xattr, xattr);
 		} else {
 			/* recurse adding child components */
 			pseudo->name[i].pseudo = add_pseudo_xattr(pseudo->name[i].pseudo, xattr, target, alltarget);

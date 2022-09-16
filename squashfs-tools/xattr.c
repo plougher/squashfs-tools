@@ -672,6 +672,10 @@ int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 }
 
 
+/* Instantiate implementation of merge sort */
+SORT(sort_list, xattr_add);
+
+
 int read_xattrs(void *d, int type)
 {
 	struct dir_ent *dir_ent = d;
@@ -679,7 +683,7 @@ int read_xattrs(void *d, int type)
 	char *filename = pathname(dir_ent);
 	struct xattr_list *xattr_list = NULL;
 	int i = 0;
-	struct xattr_add *entry;
+	struct xattr_add *l1 = xattr_add_list, *l2 = NULL;
 
 	if(no_xattrs || inode->root_entry || inode->dummy_root_dir)
 		return SQUASHFS_INVALID_XATTR;
@@ -690,46 +694,40 @@ int read_xattrs(void *d, int type)
 		i = read_xattrs_from_system(dir_ent, filename, &xattr_list);
 
 	/*
-	 * Add global xattrs created by -xattrs-add command line option
+	 * At this point we may have a list of xattrs created by the global
+	 * xattrs-add command line, and a list of xattrs created by
+	 * one or more pseudo xattr definitions on this file.
+	 *
+	 * The global xattrs are sorted, but, the pseudo xattr list is not.
+	 *
+	 * So sort the pseudo xattr list, and merge the two sorted lists
+	 * together whilst adding them to the xattr_list
 	 */
-	for(entry = xattr_add_list; entry; entry=entry->next) {
-		struct xattr_list *x;
 
-		/*
-		 * User extended attributes are only allowed for files and
-		 * directories.  See man 7 xattr for explanation.
-		 */
-		if((entry->type == SQUASHFS_XATTR_USER) &&
-				(type != SQUASHFS_FILE_TYPE &&
-				 type != SQUASHFS_DIR_TYPE))
-			continue;
-
-		x = realloc(xattr_list, (i + 1) * sizeof(struct xattr_list));
-		if(x == NULL)
-			MEM_ERROR();
-		xattr_list = x;
-
-		xattr_list[i].type = entry->type;
-		xattr_copy_prefix(&xattr_list[i], entry->type, entry->name);
-
-		xattr_list[i].value = malloc(entry->vsize);
-		if(xattr_list[i].value == NULL)
-			MEM_ERROR();
-
-		memcpy(xattr_list[i].value, entry->value, entry->vsize);
-		xattr_list[i].vsize = entry->vsize;
-
-		TRACE("read_xattrs: filename %s, xattr name %s,"
-			" vsize %d\n", filename, xattr_list[i].full_name,
-			xattr_list[i].vsize);
-		i++;
+	if(inode->xattr) {
+		sort_list(&(inode->xattr->xattr), inode->xattr->count);
+		l2 = inode->xattr->xattr;
 	}
 
-	/*
-	 * Add specific xattrs created by xattr pseudo definition
-	 */
-	for(entry = inode->xattr; entry; entry=entry->next) {
+	while(l1 || l2) {
 		struct xattr_list *x;
+		struct xattr_add *entry;
+
+		if(l1 && l2) {
+			if(strcmp(l1->name, l2->name) <= 0) {
+				entry = l1;
+				l1 = l1->next;
+			} else {
+				entry = l2;
+				l2 = l2->next;
+			}
+		} else if(l1) {
+			entry = l1;
+			l1 = l1->next;
+		} else {
+			entry = l2;
+			l2 = l2->next;
+		}
 
 		/*
 		 * User extended attributes are only allowed for files and
@@ -1221,9 +1219,6 @@ int add_xattrs(void) {
 	return xattr_add_count;
 }
 
-
-/* Instantiate implementation of merge sort */
-SORT(sort_list, xattr_add);
 
 void sort_xattr_add_list(void)
 {

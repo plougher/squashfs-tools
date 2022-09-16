@@ -75,13 +75,18 @@ struct pseudo_entry {
 	char			*pathname;
 	struct pseudo		*pseudo;
 	struct pseudo_dev	*dev;
-	struct xattr_add	*xattr;
+	struct pseudo_xattr	*xattr;
 };
 	
 struct pseudo {
 	int			names;
 	int			count;
 	struct pseudo_entry	*name;
+};
+
+struct pseudo_xattr {
+	int			count;
+	struct xattr_add	*xattr;
 };
 
 extern long long read_bytes(int, void *, long long);
