@@ -514,6 +514,7 @@ static void print_definitions()
 	ERROR("\tfilename f mode uid gid command\n");
 	ERROR("\tfilename s mode uid gid symlink\n");
 	ERROR("\tfilename i mode uid gid [s|f]\n");
+	ERROR("\tfilename x name=value\n");
 	ERROR("\tfilename l filename\n");
 	ERROR("\tfilename L pseudo_filename\n");
 	ERROR("\tfilename D time mode uid gid\n");
