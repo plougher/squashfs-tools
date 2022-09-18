@@ -6213,6 +6213,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\"filename f mode uid gid command\"\tcreate file from stdout of command\n");
 	fprintf(stream, "\"filename s mode uid gid symlink\"\tcreate a symbolic link\n");
 	fprintf(stream, "\"filename i mode uid gid [s|f]\"\t\tcreate a socket (s) or FIFO (f)\n");
+	fprintf(stream, "\"filename x name=val\"\t\t\tcreate an extended attribute\n");
 	fprintf(stream, "\"filename l linkname\"\t\t\tcreate a hard-link to linkname\n");
 	fprintf(stream, "\"filename L pseudo_filename\"\t\tsame, but link to pseudo file\n");
 	fprintf(stream, "\"filename D time mode uid gid\"\t\tcreate a directory with timestamp time\n");
