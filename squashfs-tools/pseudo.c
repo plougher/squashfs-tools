@@ -124,6 +124,7 @@ struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *xattr,
 
 		if(target[0] == '\0') {
 			/* at leaf pathname component */
+			pseudo->name[i].pathname = strdup(alltarget);
 			pseudo->name[i].pseudo = NULL;
 			add_xattr(&pseudo->name[i].xattr, xattr);
 		} else {
@@ -138,6 +139,7 @@ struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *xattr,
 
 		if(target[0] == '\0') {
 			/* Add xattr to this entry */
+			pseudo->name[i].pathname = strdup(alltarget);
 			add_xattr(&pseudo->name[i].xattr, xattr);
 		} else {
 			/* recurse adding child components */
