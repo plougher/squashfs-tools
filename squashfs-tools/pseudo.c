@@ -154,6 +154,33 @@ struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *xattr,
 struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo,
 	struct xattr_add *xattr, char *target, char *alltarget)
 {
+	/* special case if a root pseudo definition is being added */
+	if(strcmp(target, "/") == 0) {
+		/* if already have a root pseudo just add xattr */
+		if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
+			add_xattr(&pseudo->name[0].xattr, xattr);
+			return pseudo;
+		} else {
+			struct pseudo *new = malloc(sizeof(struct pseudo));
+			if(new == NULL)
+				MEM_ERROR();
+
+			new->names = 1;
+			new->count = 0;
+			new->name = malloc(sizeof(struct pseudo_entry));
+			if(new->name == NULL)
+				MEM_ERROR();
+
+			new->name[0].name = "/";
+			new->name[0].pseudo = pseudo;
+			new->name[0].pathname = "/";
+			new->name[0].dev = NULL;
+			new->name[0].xattr = NULL;
+			add_xattr(&new->name[0].xattr, xattr);
+			return new;
+		}
+	}
+
 	/* if there's a root pseudo definition, skip it before walking target */
 	if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
 		pseudo->name[0].pseudo = add_pseudo_xattr(pseudo->name[0].pseudo, xattr, target, alltarget);
@@ -312,6 +339,7 @@ struct pseudo *add_pseudo_definition(struct pseudo *pseudo, struct pseudo_dev *p
 			new->name[0].pseudo = pseudo;
 			new->name[0].pathname = "/";
 			new->name[0].dev = pseudo_dev;
+			new->name[0].xattr = NULL;
 			return new;
 		}
 	}

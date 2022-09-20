@@ -3413,8 +3413,12 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	 * If sources have been specified, then just ignore it, as sources
 	 * on the command line take precedence.
 	 */
-	if(pseudo != NULL && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0)
+	if(pseudo != NULL && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
+		if(pseudo->name[0].xattr)
+			root_dir->dir_ent->inode->xattr = pseudo->name[0].xattr;
+
 		pseudo = pseudo->name[0].pseudo;
+	}
 
 	if(actions() || get_pseudo())
 		dir_scan2(root_dir, pseudo);
