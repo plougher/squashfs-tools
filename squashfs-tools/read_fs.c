@@ -570,7 +570,9 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		}
 	}
 	
-	printf("Read existing filesystem, %d inodes scanned\n", files);
+	if(!quiet)
+		printf("Read existing filesystem, %d inodes scanned\n", files);
+
 	return inode_table;
 
 corrupted:
@@ -667,6 +669,9 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 		ERROR("Compressor failed to set compressor options\n");
 		goto failed_mount;
 	}
+
+	if(quiet)
+		return comp;
 
 	printf("Found a valid %sSQUASHFS superblock on %s.\n",
 		SQUASHFS_EXPORTABLE(sBlk->flags) ? "exportable " : "", source);
@@ -978,7 +983,8 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 	unsigned int *id_table = NULL;
 	int res;
 
-	printf("Scanning existing filesystem...\n");
+	if(!quiet)
+		printf("Scanning existing filesystem...\n");
 
 	if(get_xattrs(fd, sBlk) == 0)
 		goto error;

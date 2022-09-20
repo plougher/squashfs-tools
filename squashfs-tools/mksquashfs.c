@@ -5526,8 +5526,11 @@ static void write_recovery_data(struct squashfs_super_block *sBlk)
 	char header[] = RECOVER_ID;
 
 	if(recover == FALSE) {
-		printf("No recovery data option specified.\n");
-		printf("Skipping saving recovery file.\n\n");
+		if(!quiet) {
+			printf("No recovery data option specified.\n");
+			printf("Skipping saving recovery file.\n\n");
+		}
+
 		return;
 	}
 
@@ -8143,14 +8146,17 @@ print_compressor_options:
 				BAD_ERROR("Out of memory in save filesystem state\n");
 		}
 
-		printf("Appending to existing %d.%d filesystem on %s, block "
-			"size %d\n", SQUASHFS_MAJOR, SQUASHFS_MINOR,
-			destination_file, block_size);
-		printf("All -b, -noI, -noD, -noF, -noX, -noId, -no-duplicates, "
-			"-no-fragments,\n-always-use-fragments, -exportable and"
-			" -comp options ignored\n");
-		printf("\nIf appending is not wanted, please re-run with "
-			"-noappend specified!\n\n");
+		if(!quiet) {
+			printf("Appending to existing %d.%d filesystem on "
+				"%s, block size %d\n", SQUASHFS_MAJOR,
+				SQUASHFS_MINOR, destination_file, block_size);
+			printf("All -b, -noI, -noD, -noF, -noX, -noId, "
+				"-no-duplicates, -no-fragments,\n"
+				"-always-use-fragments, -exportable and "
+				"-comp options ignored\n");
+			printf("\nIf appending is not wanted, please re-run "
+				"with -noappend specified!\n\n");
+		}
 
 		compressed_data = (inode_dir_offset + inode_dir_file_size) &
 			~(SQUASHFS_METADATA_SIZE - 1);

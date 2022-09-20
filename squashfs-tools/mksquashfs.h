@@ -4,7 +4,7 @@
  * Squashfs
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011
- * 2012, 2013, 2014, 2019, 2021
+ * 2012, 2013, 2014, 2019, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -243,6 +243,7 @@ extern unsigned int root_uid;
 extern int root_gid_opt;
 extern unsigned int root_gid;
 extern struct inode_info *inode_info[INODE_HASH_SIZE];
+extern int quiet;
 
 extern int read_fs_bytes(int, long long, long long, void *);
 extern void add_file(long long, long long, long long, unsigned int *, int,
