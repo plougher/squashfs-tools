@@ -685,12 +685,12 @@ int read_xattrs(void *d, int type)
 	int i = 0;
 	struct xattr_add *l1 = xattr_add_list, *l2 = NULL;
 
-	if(no_xattrs || inode->root_entry || inode->dummy_root_dir)
+	if(no_xattrs || inode->root_entry)
 		return SQUASHFS_INVALID_XATTR;
 
 	if(IS_TARFILE(inode))
 		i = read_xattrs_from_tarfile(inode, &xattr_list);
-	else if(!IS_PSEUDO(inode))
+	else if(!inode->dummy_root_dir && !IS_PSEUDO(inode))
 		i = read_xattrs_from_system(dir_ent, filename, &xattr_list);
 
 	/*
