@@ -4001,7 +4001,9 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 	/*
 	 * Process pseudo xattr definitions
 	 */
-	pseudo->count = 0;
+	if(pseudo)
+		pseudo->count = 0;
+
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
 		struct dir_ent *dir_ent = NULL;
 
