@@ -258,7 +258,7 @@ CFLAGS += -DXATTR_SUPPORT -DXATTR_DEFAULT
 else
 CFLAGS += -DXATTR_SUPPORT
 endif
-MKSQUASHFS_OBJS += xattr.o read_xattrs.o tar_xattr.o
+MKSQUASHFS_OBJS += xattr.o read_xattrs.o tar_xattr.o pseudo_xattr.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
 endif
 
@@ -358,6 +358,8 @@ sort.o: sort.c squashfs_fs.h mksquashfs.h sort.h mksquashfs_error.h progressbar.
 swap.o: swap.c
 
 pseudo.o: pseudo.c pseudo.h mksquashfs_error.h progressbar.h
+
+pseudo_xattr.o: pseudo_xattr.c xattr.h mksquashfs_error.h progressbar.h
 
 compressor.o: Makefile compressor.c compressor.h squashfs_fs.h
 

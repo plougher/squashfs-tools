@@ -89,6 +89,8 @@ struct pseudo_xattr {
 	struct xattr_add	*xattr;
 };
 
+extern struct pseudo *pseudo;
+
 extern long long read_bytes(int, void *, long long);
 extern int read_pseudo_definition(char *, char *);
 extern int read_pseudo_file(char *, char *);
@@ -98,4 +100,6 @@ extern struct pseudo_dev *get_pseudo_file(int);
 extern int pseudo_exec_file(struct pseudo_dev *, int *);
 extern struct pseudo *get_pseudo();
 extern void dump_pseudos();
+extern char *get_element(char *target, char **targname);
+extern void print_definitions();
 #endif

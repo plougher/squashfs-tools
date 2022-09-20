@@ -99,6 +99,7 @@ extern void sort_xattr_add_list(void);
 extern char *base64_decode(char *source, int size, int *bytes);
 extern int add_xattrs(void);
 extern struct xattr_add *xattr_parse(char *, char *, char *);
+extern int read_pseudo_xattr(char *orig_def, char *filename, char *name, char *def);
 #else
 #include "squashfs_swap.h"
 
@@ -195,6 +196,15 @@ static inline int add_xattrs(void)
 static inline struct xattr_add *xattr_parse(char *a, char *b, char *c)
 {
 	return NULL;
+}
+
+
+static inline int read_pseudo_xattr(char *orig_def, char *filename, char *name, char *def)
+{
+	free(filename);
+	fprintf(stderr, "Xattrs are unsupported in this build\n");
+
+	return 0;
 }
 #endif
 

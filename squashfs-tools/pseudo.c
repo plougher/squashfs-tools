@@ -53,7 +53,7 @@
 
 struct pseudo *pseudo = NULL;
 
-static char *get_component(char *target, char **targname)
+char *get_element(char *target, char **targname)
 {
 	char *start;
 
@@ -70,129 +70,6 @@ static char *get_component(char *target, char **targname)
 }
 
 
-static void add_xattr(struct pseudo_xattr **xattr, struct xattr_add *entry)
-{
-	if(*xattr == NULL) {
-		*xattr = malloc(sizeof(struct pseudo_xattr));
-		if(*xattr == NULL)
-			MEM_ERROR();
-
-		(*xattr)->xattr = entry;
-		entry->next = NULL;
-		(*xattr)->count = 1;
-	} else {
-		entry->next = (*xattr)->xattr;
-		(*xattr)->xattr = entry;
-		(*xattr)->count ++;
-	}
-}
-
-
-/*
- * Add pseudo xattr to the set of pseudo definitions.
- */
-struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *xattr,
-	char *target, char *alltarget)
-{
-	char *targname;
-	int i;
-
-	target = get_component(target, &targname);
-
-	if(pseudo == NULL) {
-		pseudo = malloc(sizeof(struct pseudo));
-		if(pseudo == NULL)
-			MEM_ERROR();
-
-		pseudo->names = 0;
-		pseudo->count = 0;
-		pseudo->name = NULL;
-	}
-
-	for(i = 0; i < pseudo->names; i++)
-		if(strcmp(pseudo->name[i].name, targname) == 0)
-			break;
-
-	if(i == pseudo->names) {
-		/* allocate new name entry */
-		pseudo->names ++;
-		pseudo->name = realloc(pseudo->name, (i + 1) *
-			sizeof(struct pseudo_entry));
-		if(pseudo->name == NULL)
-			MEM_ERROR();
-		pseudo->name[i].name = targname;
-		pseudo->name[i].pathname = NULL;
-		pseudo->name[i].dev = NULL;
-		pseudo->name[i].xattr = NULL;
-
-		if(target[0] == '\0') {
-			/* at leaf pathname component */
-			pseudo->name[i].pathname = strdup(alltarget);
-			pseudo->name[i].pseudo = NULL;
-			add_xattr(&pseudo->name[i].xattr, xattr);
-		} else {
-			/* recurse adding child components */
-			pseudo->name[i].pseudo = add_pseudo_xattr(NULL, xattr,
-				target, alltarget);
-		}
-	} else {
-		/* existing matching entry */
-
-		free(targname);
-
-		if(target[0] == '\0') {
-			/* Add xattr to this entry */
-			pseudo->name[i].pathname = strdup(alltarget);
-			add_xattr(&pseudo->name[i].xattr, xattr);
-		} else {
-			/* recurse adding child components */
-			pseudo->name[i].pseudo = add_pseudo_xattr(pseudo->name[i].pseudo, xattr, target, alltarget);
-		}
-	}
-
-	return pseudo;
-}
-
-
-struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo,
-	struct xattr_add *xattr, char *target, char *alltarget)
-{
-	/* special case if a root pseudo definition is being added */
-	if(strcmp(target, "/") == 0) {
-		/* if already have a root pseudo just add xattr */
-		if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
-			add_xattr(&pseudo->name[0].xattr, xattr);
-			return pseudo;
-		} else {
-			struct pseudo *new = malloc(sizeof(struct pseudo));
-			if(new == NULL)
-				MEM_ERROR();
-
-			new->names = 1;
-			new->count = 0;
-			new->name = malloc(sizeof(struct pseudo_entry));
-			if(new->name == NULL)
-				MEM_ERROR();
-
-			new->name[0].name = "/";
-			new->name[0].pseudo = pseudo;
-			new->name[0].pathname = "/";
-			new->name[0].dev = NULL;
-			new->name[0].xattr = NULL;
-			add_xattr(&new->name[0].xattr, xattr);
-			return new;
-		}
-	}
-
-	/* if there's a root pseudo definition, skip it before walking target */
-	if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
-		pseudo->name[0].pseudo = add_pseudo_xattr(pseudo->name[0].pseudo, xattr, target, alltarget);
-		return pseudo;
-	} else
-		return add_pseudo_xattr(pseudo, xattr, target, alltarget);
-}
-
-
 /*
  * Add pseudo device target to the set of pseudo devices.  Pseudo_dev
  * describes the pseudo device attributes.
@@ -203,7 +80,7 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 	char *targname;
 	int i;
 
-	target = get_component(target, &targname);
+	target = get_element(target, &targname);
 
 	if(pseudo == NULL) {
 		pseudo = malloc(sizeof(struct pseudo));
@@ -516,7 +393,7 @@ struct pseudo_entry *pseudo_lookup(struct pseudo *pseudo, char *target)
 	if(pseudo == NULL)
 		return NULL;
 
-	target = get_component(target, &targname);
+	target = get_element(target, &targname);
 
 	for(i = 0; i < pseudo->names; i++)
 		if(strcmp(pseudo->name[i].name, targname) == 0)
@@ -537,7 +414,7 @@ struct pseudo_entry *pseudo_lookup(struct pseudo *pseudo, char *target)
 }
 
 
-static void print_definitions()
+void print_definitions()
 {
 	ERROR("Pseudo definitions should be of the format\n");
 	ERROR("\tfilename d mode uid gid\n");
@@ -558,23 +435,6 @@ static void print_definitions()
 	ERROR("\tfilename S time mode uid gid symlink\n");
 	ERROR("\tfilename I time mode uid gid [s|f]\n");
 	ERROR("\tfilename R time mode uid gid length offset\n");
-}
-
-
-static int read_pseudo_xattr(char *orig_def, char *filename, char *name, char *def)
-{
-	struct xattr_add *xattr = xattr_parse(def, "", "pseudo xattr");
-
-	if(xattr == NULL) {
-		print_definitions();
-		free(filename);
-		return FALSE;
-	}
-
-	pseudo = add_pseudo_xattr_definition(pseudo, xattr, name, name);
-
-	free(filename);
-	return TRUE;
 }
 
 
