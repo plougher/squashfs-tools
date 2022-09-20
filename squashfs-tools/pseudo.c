@@ -37,11 +37,14 @@
 #include <time.h>
 #include <ctype.h>
 #include <regex.h>
+#include <dirent.h>
+#include <sys/types.h>
 
 #include "pseudo.h"
 #include "mksquashfs_error.h"
 #include "progressbar.h"
 #include "squashfs_fs.h"
+#include "mksquashfs.h"
 #include "xattr.h"
 
 #define TRUE 1
