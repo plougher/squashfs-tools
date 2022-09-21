@@ -104,6 +104,11 @@ where the value is given in base64 encoding, representing "hello world".
 mksquashfs DIRECTORY IMAGE.SQFS -action "-xattrs-include(^user.) @ type(f)"
 Filter the extended attributes but only in regular files (type f), and only
 store extended attributes in the user namespace.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -p "hello_world x user.comment=0salve mundi\\012"
+Add the extended attribute called "user.comment" to the file called
+"hello_world", with the contents of the extended attribute being "salve mundi"
+with a trailing newline character (012 octal).
 
 .SS Using Actions to not compress, change attributes etc.
 .TP
