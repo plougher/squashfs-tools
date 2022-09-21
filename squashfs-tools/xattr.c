@@ -682,8 +682,9 @@ int read_xattrs(void *d, int type)
 	struct inode_info *inode = dir_ent->inode;
 	char *filename = pathname(dir_ent);
 	struct xattr_list *xattr_list = NULL;
-	int i = 0;
-	struct xattr_add *l1 = xattr_add_list, *l2 = NULL;
+	int count, i = 0;
+	struct xattr_add *l1 = xattr_add_list, *l2 = NULL, *l3 = NULL;
+	struct xattr_add *action_add_list;
 
 	if(no_xattrs || inode->root_entry)
 		return SQUASHFS_INVALID_XATTR;
@@ -693,14 +694,21 @@ int read_xattrs(void *d, int type)
 	else if(!inode->dummy_root_dir && !IS_PSEUDO(inode))
 		i = read_xattrs_from_system(dir_ent, filename, &xattr_list);
 
+	action_add_list = eval_xattr_add_actions(root_dir, dir_ent, &count);
+
 	/*
-	 * At this point we may have a list of xattrs created by the global
-	 * xattrs-add command line, and a list of xattrs created by
-	 * one or more pseudo xattr definitions on this file.
+	 * At this point we may have up to 3 lists of xattrs:
 	 *
-	 * The global xattrs are sorted, but, the pseudo xattr list is not.
+	 * 1. a list of xattrs created by the global xattrs-add command line
+	 * 2. a list of xattrs created by one or more pseudo xattr definitions
+	 *    on this file.
+	 * 3. a list of xattrs created by one or more xattr add actions on this
+	 *    file.
 	 *
-	 * So sort the pseudo xattr list, and merge the two sorted lists
+	 * The global xattrs are sorted, but, the pseudo xattr list and action
+	 * xattr list are not.
+	 *
+	 * So sort the pseudo and action lists, and merge the three sorted lists
 	 * together whilst adding them to the xattr_list
 	 */
 
@@ -709,11 +717,34 @@ int read_xattrs(void *d, int type)
 		l2 = inode->xattr->xattr;
 	}
 
-	while(l1 || l2) {
+	if(action_add_list) {
+		sort_list(&action_add_list, count);
+		l3 = action_add_list;
+	}
+
+	while(l1 || l2 || l3) {
 		struct xattr_list *x;
 		struct xattr_add *entry;
 
-		if(l1 && l2) {
+		if(l1 && l2 && l3) {
+			if(strcmp(l1->name, l2->name) <= 0) {
+				if(strcmp(l1->name, l3->name) <= 0) {
+					entry= l1;
+					l1 = l1->next;
+				} else {
+					entry = l3;
+					l3 = l3->next;
+				}
+			} else {
+				if(strcmp(l2->name, l3->name) <= 0) {
+					entry = l2;
+					l2 = l2->next;
+				} else {
+					entry = l3;
+					l3 = l3->next;
+				}
+			}
+		} else if(l1 && l2) {
 			if(strcmp(l1->name, l2->name) <= 0) {
 				entry = l1;
 				l1 = l1->next;
@@ -721,12 +752,31 @@ int read_xattrs(void *d, int type)
 				entry = l2;
 				l2 = l2->next;
 			}
+		} else if(l1 && l3) {
+			if(strcmp(l1->name, l3->name) <= 0) {
+				entry = l1;
+				l1 = l1->next;
+			} else {
+				entry = l3;
+				l3 = l3->next;
+			}
+		} else if(l2 && l3) {
+			if(strcmp(l2->name, l3->name) <= 0) {
+				entry = l2;
+				l2 = l2->next;
+			} else {
+				entry = l3;
+				l3 = l3->next;
+			}
 		} else if(l1) {
 			entry = l1;
 			l1 = l1->next;
-		} else {
+		} else if(l2) {
 			entry = l2;
 			l2 = l2->next;
+		} else {
+			entry = l3;
+			l3 = l3->next;
 		}
 
 		/*

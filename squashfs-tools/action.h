@@ -179,6 +179,7 @@ struct type_entry {
 #define NOOP_ACTION		15
 #define XATTR_EXC_ACTION	16
 #define XATTR_INC_ACTION	17
+#define XATTR_ADD_ACTION	18
 
 /*
  * Define what file types each action operates over
@@ -334,6 +335,8 @@ extern int match_xattr_exc_actions(struct xattr_data *, char *);
 extern struct xattr_data *eval_xattr_inc_actions(struct dir_info *,
 							struct dir_ent *);
 extern int match_xattr_inc_actions(struct xattr_data *, char *);
+extern struct xattr_add *eval_xattr_add_actions(struct dir_info *root,
+					struct dir_ent *dir_ent, int *items);
 extern void do_move_actions();
 extern long long read_bytes(int, void *, long long);
 extern int any_actions();
@@ -344,4 +347,5 @@ extern int read_action_file(char *, int);
 extern int exclude_actions();
 extern int prune_actions();
 extern int xattr_exc_actions();
+extern int xattr_add_actions();
 #endif

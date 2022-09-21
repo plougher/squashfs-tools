@@ -44,6 +44,7 @@
 #include "action.h"
 #include "mksquashfs_error.h"
 #include "fnmatch_compat.h"
+#include "xattr.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -61,6 +62,7 @@ static struct action *move_spec = NULL;
 static struct action *prune_spec = NULL;
 static struct action *xattr_exc_spec = NULL;
 static struct action *xattr_inc_spec = NULL;
+static struct action *xattr_add_spec = NULL;
 static struct action *other_spec = NULL;
 static int fragment_count = 0;
 static int exclude_count = 0;
@@ -69,6 +71,7 @@ static int move_count = 0;
 static int prune_count = 0;
 static int xattr_exc_count = 0;
 static int xattr_inc_count = 0;
+static int xattr_add_count = 0;
 static int other_count = 0;
 static struct action_entry *parsing_action;
 
@@ -699,6 +702,10 @@ skip_args:
 	case XATTR_INC_ACTION:
 		spec_count = xattr_inc_count ++;
 		spec_list = &xattr_inc_spec;
+		break;
+	case XATTR_ADD_ACTION:
+		spec_count = xattr_add_count ++;
+		spec_list = &xattr_add_spec;
 		break;
 	default:
 		spec_count = other_count ++;
@@ -2146,7 +2153,7 @@ int eval_prune_actions(struct dir_info *root, struct dir_ent *dir_ent)
 
 
 /*
- * Xattr specific action code
+ * Xattr include/exclude specific action code
  */
 static int parse_xattr_args(struct action_entry *action, int args,
 					char **argv, void **data)
@@ -2250,6 +2257,60 @@ int match_xattr_inc_actions(struct xattr_data *head, char *name)
 		return 0;
 	else
 		return !match_xattr_exc_actions(head, name);
+}
+
+
+/*
+ * Xattr add specific action code
+ */
+static int parse_xattr_add_args(struct action_entry *action, int args,
+					char **argv, void **data)
+{
+	struct xattr_add *xattr = xattr_parse(argv[0], "", "action xattr add");
+
+	if(xattr == NULL)
+		return 0;
+
+	*data = xattr;
+
+	return 1;
+}
+
+
+struct xattr_add *eval_xattr_add_actions(struct dir_info *root,
+					struct dir_ent *dir_ent, int *items)
+{
+	int i, count = 0;
+	struct action_data action_data;
+	struct xattr_add *head = NULL;
+
+	action_data.name = dir_ent->name;
+	action_data.pathname = strdup(pathname(dir_ent));
+	action_data.subpath = strdup(subpathname(dir_ent));
+	action_data.buf = &dir_ent->inode->buf;
+	action_data.depth = dir_ent->our_dir->depth;
+	action_data.dir_ent = dir_ent;
+	action_data.root = root;
+
+	for (i = 0; i < xattr_add_count; i++) {
+		struct xattr_add *data = xattr_add_spec[i].data;
+		int match = eval_expr_top(&xattr_add_spec[i], &action_data);
+
+		if(match) {
+			data->next = head;
+			head = data;
+			count ++;
+		}
+	}
+
+	*items = count;
+	return head;
+}
+
+
+int xattr_add_actions()
+{
+	return xattr_add_count;
 }
 
 
@@ -3490,6 +3551,7 @@ static struct action_entry action_table[] = {
 	{ "chmod", MODE_ACTION, -2, ACTION_ALL, parse_mode_args, mode_action },
 	{ "xattrs-exclude", XATTR_EXC_ACTION, 1, ACTION_ALL, parse_xattr_args, NULL},
 	{ "xattrs-include", XATTR_INC_ACTION, 1, ACTION_ALL, parse_xattr_args, NULL},
+	{ "xattrs-add", XATTR_ADD_ACTION, 1, ACTION_ALL, parse_xattr_add_args, NULL},
 	{ "noop", NOOP_ACTION, 0, ACTION_ALL, NULL, noop_action },
 	{ "", 0, -1, 0, NULL, NULL}
 };
