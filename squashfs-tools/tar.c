@@ -854,7 +854,13 @@ int read_pax_header(struct tar_file *file, long long st_size)
 			read_tar_xattr(keyword + strlen("LIBARCHIVE.xattr."), value, strlen(value), ENCODING_BASE64, file);
 		else if(strncmp(keyword, "SCHILY.xattr.", strlen("SCHILY.xattr.")) == 0)
 			read_tar_xattr(keyword + strlen("SCHILY.xattr."), value, vsize, ENCODING_BINARY, file);
-		else if(strcmp(keyword, "GNU.sparse.numblocks") != 0 && strcmp(keyword, "GNU.sparse.offset") != 0 && strcmp(keyword, "GNU.sparse.numbytes") != 0 && strcmp(keyword, "GNU.sparse.map") != 0 && strcmp(keyword, "atime") != 0 && strcmp(keyword, "ctime") != 0 && strcmp(keyword, "comment") != 0)
+		else if(strcmp(keyword, "GNU.sparse.numblocks") != 0 &&
+				strcmp(keyword, "GNU.sparse.offset") != 0 &&
+				strcmp(keyword, "GNU.sparse.numbytes") != 0 &&
+				strcmp(keyword, "GNU.sparse.map") != 0 &&
+				strcmp(keyword, "atime") != 0 &&
+				strcmp(keyword, "ctime") != 0 &&
+				strcmp(keyword, "comment") != 0)
 			ERROR("Unrecognised keyword \"%s\" in pax header, ignoring\n", keyword);
 
 		//printf("%s = %s\n", keyword, value);
