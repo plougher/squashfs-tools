@@ -863,7 +863,6 @@ int read_pax_header(struct tar_file *file, long long st_size)
 				strcmp(keyword, "comment") != 0)
 			ERROR("Unrecognised keyword \"%s\" in pax header, ignoring\n", keyword);
 
-		//printf("%s = %s\n", keyword, value);
 		ptr += length;
 	}
 
