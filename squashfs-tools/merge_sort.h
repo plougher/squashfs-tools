@@ -34,8 +34,8 @@
  * it doesn't require any extra storage,
  */ 
 
-#define SORT(NAME, LIST_TYPE) \
-void NAME(struct LIST_TYPE **head, int count) \
+#define SORT(FUNCTION_NAME, LIST_TYPE, NAME, NEXT) \
+void FUNCTION_NAME(struct LIST_TYPE **head, int count) \
 { \
 	struct LIST_TYPE *cur, *l1, *l2, *next; \
 	int len1, len2, stride = 1; \
@@ -65,7 +65,7 @@ void NAME(struct LIST_TYPE **head, int count) \
 		 */ \
 		while(l2) { \
 			l1 = l2; \
-			for(len1 = 0; l2 && len1 < stride; len1 ++, l2 = l2->next); \
+			for(len1 = 0; l2 && len1 < stride; len1 ++, l2 = l2->NEXT); \
 			len2 = stride; \
  \
 			/* \
@@ -74,18 +74,18 @@ void NAME(struct LIST_TYPE **head, int count) \
 			 * Merge them onto the output list \
 			 */ \
 			while(len1 && l2 && len2) { \
-				if(strcmp(l1->name, l2->name) <= 0) { \
+				if(strcmp(l1->NAME, l2->NAME) <= 0) { \
 					next = l1; \
-					l1 = l1->next; \
+					l1 = l1->NEXT; \
 					len1 --; \
 				} else { \
 					next = l2; \
-					l2 = l2->next; \
+					l2 = l2->NEXT; \
 					len2 --; \
 				} \
  \
 				if(cur) { \
-					cur->next = next; \
+					cur->NEXT = next; \
 					cur = next; \
 				} else \
 					*head = cur = next; \
@@ -94,22 +94,22 @@ void NAME(struct LIST_TYPE **head, int count) \
 			 * One sublist is now empty, copy the other one onto the \
 			 * output list \
 			 */ \
-			for(; len1; len1 --, l1 = l1->next) { \
+			for(; len1; len1 --, l1 = l1->NEXT) { \
 				if(cur) { \
-					cur->next = l1; \
+					cur->NEXT = l1; \
 					cur = l1; \
 				} else \
 					*head = cur = l1; \
 			} \
-			for(; l2 && len2; len2 --, l2 = l2->next) { \
+			for(; l2 && len2; len2 --, l2 = l2->NEXT) { \
 				if(cur) { \
-					cur->next = l2; \
+					cur->NEXT = l2; \
 					cur = l2; \
 				} else \
 					*head = cur = l2; \
 			} \
 		} \
-		cur->next = NULL; \
+		cur->NEXT = NULL; \
 		stride = stride << 1; \
 	} while(stride < count); \
 }

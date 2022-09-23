@@ -4194,7 +4194,7 @@ static void dir_scan5(struct dir_info *dir)
  * as sorting is not done in place), but it is ideal for linked lists because
  * it doesn't require any extra storage,
  */ 
-SORT(sort_directory, dir_ent);
+SORT(sort_directory, dir_ent, name, next);
 
 static void dir_scan6(struct dir_info *dir)
 {

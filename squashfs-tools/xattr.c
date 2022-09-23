@@ -673,7 +673,8 @@ int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 
 
 /* Instantiate implementation of merge sort */
-SORT(sort_list, xattr_add);
+SORT(sort_list, xattr_add, name, next);
+SORT(sort_xattr_list, xattr_list, full_name, vnext);
 
 
 int read_xattrs(void *d, int type)
@@ -681,8 +682,8 @@ int read_xattrs(void *d, int type)
 	struct dir_ent *dir_ent = d;
 	struct inode_info *inode = dir_ent->inode;
 	char *filename = pathname(dir_ent);
-	struct xattr_list *xattr_list = NULL;
-	int count, i = 0;
+	struct xattr_list *xattr_list = NULL, *head;
+	int count, i = 0, j;
 	struct xattr_add *l1 = xattr_add_list, *l2 = NULL, *l3 = NULL;
 	struct xattr_add *action_add_list;
 
@@ -811,6 +812,22 @@ int read_xattrs(void *d, int type)
 
 	if(i == 0)
 		return SQUASHFS_INVALID_XATTR;
+
+	/*
+	 * Sort and check xattr list for duplicates
+	 */
+	for(j = 1;  j < i; j++)
+		xattr_list[j - 1].vnext = &xattr_list[j];
+
+	xattr_list[j].vnext = NULL;
+	head = xattr_list;
+
+	sort_xattr_list(&head, i);
+
+	for(j = 0; j < i - 1; head=head->vnext, j++)
+		if(strcmp(head->full_name, head->vnext->full_name) == 0)
+			BAD_ERROR("Duplicate xattr name %s in file %s\n",
+					head->full_name, filename);
 
 	return generate_xattrs(i, xattr_list);
 }

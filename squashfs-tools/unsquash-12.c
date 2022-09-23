@@ -27,4 +27,4 @@
 #include "unsquashfs.h"
 #include "merge_sort.h"
 
-SORT(sort_directory, dir_ent);
+SORT(sort_directory, dir_ent, name, next);
