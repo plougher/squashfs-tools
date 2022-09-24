@@ -672,7 +672,9 @@ int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 }
 
 
-/* Instantiate implementation of merge sort */
+/*
+ * Instantiate two implementations of merge sort with different types and names
+ */
 SORT(sort_list, xattr_add, name, next);
 SORT(sort_xattr_list, xattr_list, full_name, vnext);
 
