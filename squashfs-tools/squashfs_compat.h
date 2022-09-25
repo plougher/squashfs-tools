@@ -28,8 +28,7 @@
  */
 
 #define SQUASHFS_CHECK			2
-#define SQUASHFS_CHECK_DATA(flags)		SQUASHFS_BIT(flags, \
-						SQUASHFS_CHECK)
+#define SQUASHFS_CHECK_DATA(flags)	SQUASHFS_BIT(flags, SQUASHFS_CHECK)
 
 /* Max number of uids and gids */
 #define SQUASHFS_UIDS			256
