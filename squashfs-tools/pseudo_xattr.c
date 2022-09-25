@@ -22,29 +22,15 @@
  * pseudo_xattr.c
  */
 
-#include <pwd.h>
-#include <grp.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <sys/stat.h>
-#include <ctype.h>
-#include <time.h>
-#include <ctype.h>
 #include <regex.h>
 #include <dirent.h>
-#include <sys/types.h>
 
 #include "pseudo.h"
 #include "mksquashfs_error.h"
-#include "progressbar.h"
 #include "squashfs_fs.h"
-#include "mksquashfs.h"
 #include "xattr.h"
 
 #define TRUE 1
