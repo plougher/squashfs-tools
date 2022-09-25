@@ -21,16 +21,11 @@
  * tar_xattr.c
  */
 
-#include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <pwd.h>
-#include <grp.h>
-#include <time.h>
 #include <regex.h>
 
 #include "squashfs_fs.h"
