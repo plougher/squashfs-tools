@@ -3420,7 +3420,7 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 		pseudo = pseudo->name[0].pseudo;
 	}
 
-	if(actions() || get_pseudo())
+	if(actions() || pseudo)
 		dir_scan2(root_dir, pseudo);
 
 	/*
