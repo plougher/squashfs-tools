@@ -121,9 +121,9 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 	unsigned char *cur_ptr;
 	unsigned char *inode_table = NULL;
 	int byte, files = 0;
-	unsigned int directory_start_block, bytes = 0, size = 0;
+	unsigned int directory_start_block;
 	struct squashfs_base_inode_header base;
-	int alloc_size;
+	long long alloc_size, bytes = 0, size = 0;
 
 	TRACE("scan_inode_table: start 0x%llx, end 0x%llx, root_inode_start "
 		"0x%llx\n", start, end, root_inode_start);
@@ -150,8 +150,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			*root_inode_block = bytes;
 		}
 		if(size - bytes < SQUASHFS_METADATA_SIZE) {
-			inode_table = realloc(inode_table, size
-				+= alloc_size);
+			inode_table = realloc(inode_table, size += alloc_size);
 			if(inode_table == NULL)
 				MEM_ERROR();
 		}
