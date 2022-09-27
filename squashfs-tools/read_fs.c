@@ -715,7 +715,7 @@ failed_mount:
 
 
 unsigned char *squashfs_readdir(int fd, int root_entries,
-	unsigned int directory_start_block, int offset, int size,
+	unsigned int directory_start_block, int offset, unsigned int dir_size,
 	unsigned int *last_directory_block, struct squashfs_super_block *sBlk,
 	void (push_directory_entry)(char *, squashfs_inode, unsigned int, int))
 {
@@ -724,9 +724,9 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 		__attribute__ ((aligned));
 	struct squashfs_dir_entry *dire = (struct squashfs_dir_entry *) buffer;
 	unsigned char *directory_table = NULL;
-	int byte, bytes = 0, dir_count;
-	long long start = sBlk->directory_table_start + directory_start_block,
-		last_start_block = start; 
+	int byte, dir_count;
+	long long start = sBlk->directory_table_start + directory_start_block;
+	long long last_start_block = start, size = dir_size, bytes = 0;
 
 	size += offset;
 	directory_table = malloc((size + SQUASHFS_METADATA_SIZE * 2 - 1) &
@@ -739,7 +739,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 			SQUASHFS_METADATA_SIZE : 0;
 
 		TRACE("squashfs_readdir: reading block 0x%llx, bytes read so "
-			"far %d\n", start, bytes);
+			"far %lld\n", start, bytes);
 
 		last_start_block = start;
 		byte = read_block(fd, start, &start, expected, directory_table + bytes);
@@ -769,7 +769,7 @@ unsigned char *squashfs_readdir(int fd, int root_entries,
 		}
 
 		TRACE("squashfs_readdir: Read directory header @ byte position "
-			"0x%x, 0x%x directory entries\n", bytes, dir_count);
+			"0x%llx, 0x%x directory entries\n", bytes, dir_count);
 		bytes += sizeof(dirh);
 
 		while(dir_count--) {
