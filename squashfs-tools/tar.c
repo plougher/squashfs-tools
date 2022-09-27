@@ -595,7 +595,6 @@ static void skip_file(struct tar_file *tar_file)
 	progress_bar_size(-blocks);
 }
 
-static int seq = 0;
 static void read_tar_data(struct tar_file *tar_file)
 {
 	struct stat *buf = &tar_file->buf;
@@ -611,7 +610,7 @@ static void read_tar_data(struct tar_file *tar_file)
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_size = read_size;
 		file_buffer->tar_file = tar_file;
-		file_buffer->sequence = seq ++;
+		file_buffer->sequence = sequence_count ++;
 		file_buffer->noD = noD;
 		file_buffer->error = FALSE;
 
@@ -1492,7 +1491,7 @@ void read_tar_file()
 		file_buffer->cache = NULL;
 		file_buffer->fragment = FALSE;
 		file_buffer->tar_file = tar_file;
-		file_buffer->sequence = seq ++;
+		file_buffer->sequence = sequence_count ++;
 		seq_queue_put(to_main, file_buffer);
 
 		if(status == TAR_EOF)

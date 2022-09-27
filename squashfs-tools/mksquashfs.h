@@ -244,6 +244,7 @@ extern int root_gid_opt;
 extern unsigned int root_gid;
 extern struct inode_info *inode_info[INODE_HASH_SIZE];
 extern int quiet;
+extern int sequence_count;
 
 extern int read_fs_bytes(int, long long, long long, void *);
 extern void add_file(long long, long long, long long, unsigned int *, int,

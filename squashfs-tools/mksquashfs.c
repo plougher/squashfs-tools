@@ -222,6 +222,7 @@ pthread_mutex_t	dup_mutex = PTHREAD_MUTEX_INITIALIZER;
 struct seq_queue *to_order;
 pthread_t order_thread;
 pthread_cond_t fragment_waiting = PTHREAD_COND_INITIALIZER;
+int sequence_count = 0;
 
 int reproducible = REP_DEF;
 
@@ -3471,8 +3472,7 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 		write_destination(fd, SQUASHFS_START, 4, "\0\0\0\0");
 	}
 
-	if(!tarfile)
-		queue_put(to_reader, root_dir);
+	queue_put(to_reader, root_dir);
 
 	if(sorted)
 		sort_files_and_write(root_dir);
@@ -7875,9 +7875,6 @@ print_compressor_options:
 	 */
 	if(tarfile && any_actions())
 		BAD_ERROR("Actions are unsupported when reading tar files\n");
-
-	if(tarfile && get_pseudo())
-		BAD_ERROR("Pseudo files are unsupported when reading tar files\n");
 
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset

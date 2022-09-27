@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2021
+ * Copyright (c) 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -133,7 +133,6 @@ static void put_file_buffer(struct file_buffer *file_buffer)
 }
 
 
-static int seq = 0;
 static void reader_read_process(struct dir_ent *dir_ent)
 {
 	long long bytes = 0;
@@ -150,13 +149,13 @@ static void reader_read_process(struct dir_ent *dir_ent)
 	file = pseudo_exec_file(inode->pseudo, &child);
 	if(!file) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->sequence = seq ++;
+		file_buffer->sequence = sequence_count ++;
 		goto read_err;
 	}
 
 	while(1) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->sequence = seq ++;
+		file_buffer->sequence = sequence_count ++;
 		file_buffer->noD = inode->noD;
 
 		byte = read_bytes(file, file_buffer->data, block_size);
@@ -209,7 +208,7 @@ static void reader_read_process(struct dir_ent *dir_ent)
 		prev_buffer = file_buffer;
 	else {
 		cache_block_put(file_buffer);
-		seq --;
+		sequence_count --;
 	}
 	prev_buffer->file_size = bytes;
 	prev_buffer->fragment = is_fragment(inode);
@@ -222,7 +221,7 @@ read_err2:
 read_err:
 	if(prev_buffer) {
 		cache_block_put(file_buffer);
-		seq --;
+		sequence_count --;
 		file_buffer = prev_buffer;
 	}
 	file_buffer->error = TRUE;
@@ -255,14 +254,14 @@ again:
 
 	if(file == -1) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->sequence = seq ++;
+		file_buffer->sequence = sequence_count ++;
 		goto read_err2;
 	}
 
 	do {
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_size = read_size;
-		file_buffer->sequence = seq ++;
+		file_buffer->sequence = sequence_count ++;
 		file_buffer->noD = inode->noD;
 		file_buffer->error = FALSE;
 
@@ -387,7 +386,7 @@ static void reader_read_data(struct dir_ent *dir_ent)
 	do {
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_size = read_size;
-		file_buffer->sequence = seq ++;
+		file_buffer->sequence = sequence_count ++;
 		file_buffer->noD = inode->noD;
 		file_buffer->error = FALSE;
 
@@ -421,7 +420,8 @@ void reader_scan(struct dir_info *dir)
 
 	for(; dir_ent; dir_ent = dir_ent->next) {
 		struct stat *buf = &dir_ent->inode->buf;
-		if(dir_ent->inode->root_entry)
+
+		if(dir_ent->inode->root_entry || IS_TARFILE(dir_ent->inode))
 			continue;
 
 		if(IS_PSEUDO_PROCESS(dir_ent->inode)) {
@@ -461,9 +461,12 @@ void *reader(void *arg)
 		setitimer(ITIMER_REAL, &itimerval, NULL);
 	}
 
-	if(tarfile)
+	if(tarfile) {
 		read_tar_file();
-	else if(!sorted)
+		dir = queue_get(to_reader);
+	}
+
+	if(!sorted)
 		reader_scan(dir);
 	else{
 		int i;
