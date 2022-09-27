@@ -8115,15 +8115,15 @@ print_compressor_options:
 		} else			
 			bytes = sizeof(struct squashfs_super_block);
 	} else {
-		unsigned int last_directory_block, inode_dir_offset,
-			inode_dir_file_size, root_inode_size,
-			inode_dir_start_block, uncompressed_data,
-			compressed_data, inode_dir_inode_number,
-			inode_dir_parent_inode;
+		unsigned int last_directory_block, inode_dir_file_size,
+			root_inode_size, inode_dir_start_block,
+			uncompressed_data, compressed_data,
+			inode_dir_inode_number, inode_dir_parent_inode;
 		unsigned int root_inode_start =
 			SQUASHFS_INODE_BLK(sBlk.root_inode),
 			root_inode_offset =
 			SQUASHFS_INODE_OFFSET(sBlk.root_inode);
+		int inode_dir_offset;
 
 		if((bytes = read_filesystem(root_name, fd, &sBlk, &inode_table,
 				&data_cache, &directory_table,

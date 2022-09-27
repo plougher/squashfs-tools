@@ -3,7 +3,8 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2013
+ * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2013,
+ * 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -26,10 +27,10 @@
 extern struct compressor *read_super(int, struct squashfs_super_block *,
 	char *);
 extern long long read_filesystem(char *, int, struct squashfs_super_block *,
-char **, char **, char **, char **, unsigned int *, unsigned int *,
+char **, char **, char **, char **, unsigned int *, int *, unsigned int *,
 unsigned int *, unsigned int *, unsigned int *, unsigned int *, unsigned int *,
-unsigned int *, unsigned int *, unsigned int *, unsigned int *, long long *,
-long long *, long long *, unsigned int *, unsigned int *,
-void (push_directory_entry)(char *, squashfs_inode, unsigned int, int),
-struct squashfs_fragment_entry **, squashfs_inode **);
+unsigned int *, unsigned int *, unsigned int *, long long *, long long *,
+long long *, unsigned int *, unsigned int *, void (push_directory_entry)
+(char *, squashfs_inode, unsigned int, int), struct squashfs_fragment_entry **,
+squashfs_inode **);
 #endif

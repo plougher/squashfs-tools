@@ -959,7 +959,7 @@ squashfs_inode *read_inode_lookup_table(int fd, struct squashfs_super_block *sBl
 long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *sBlk,
 	char **cinode_table, char **data_cache, char **cdirectory_table,
 	char **directory_data_cache, unsigned int *last_directory_block,
-	unsigned int *inode_dir_offset, unsigned int *inode_dir_file_size,
+	int *inode_dir_offset, unsigned int *inode_dir_file_size,
 	unsigned int *root_inode_size, unsigned int *inode_dir_start_block,
 	unsigned int *file_count, unsigned int *sym_count, unsigned int *dev_count,
 	unsigned int *dir_count, unsigned int *fifo_count, unsigned int *sock_count,
