@@ -180,7 +180,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		goto corrupted;
 
 	/*
-	 * The number of bytes available after the root inode medata block
+	 * The number of bytes available after the root inode metadata block
 	 * should be at least the root inode offset + the size of a
 	 * regular directory inode, if not the filesystem is corrupted
 	 *
@@ -649,7 +649,7 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 	 * line which need to be over-ridden).
 	 *
 	 * Compressor_extract_options is also used to ensure that 
-	 * we know how decompress a filesystem compressed with these
+	 * we know how to decompress a filesystem compressed with these
 	 * compression options.
 	 */
 	if(SQUASHFS_COMP_OPTS(sBlk->flags)) {
