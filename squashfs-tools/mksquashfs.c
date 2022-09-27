@@ -8162,10 +8162,10 @@ print_compressor_options:
 				"with -noappend specified!\n\n");
 		}
 
-		compressed_data = (inode_dir_offset + inode_dir_file_size) &
-			~(SQUASHFS_METADATA_SIZE - 1);
-		uncompressed_data = (inode_dir_offset + inode_dir_file_size) &
-			(SQUASHFS_METADATA_SIZE - 1);
+		compressed_data = ((long long) inode_dir_offset +
+			inode_dir_file_size) & ~(SQUASHFS_METADATA_SIZE - 1);
+		uncompressed_data = ((long long) inode_dir_offset +
+			inode_dir_file_size) & (SQUASHFS_METADATA_SIZE - 1);
 		
 		/* save original filesystem state for restoring ... */
 		sfragments = fragments;
