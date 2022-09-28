@@ -157,6 +157,11 @@ s/\n *\([^ ]* (default)$\)/, \1/
 b again
 }" $tmp/sqfstar.help
 
+# Make the pseudo file definitions into "options" so they're handled
+# properly by help2man
+
+sed -i "s/^\"filename/  -p \"filename/" $tmp/sqfstar.help
+
 # Make each compressor entry in the compressors available section, a subsection
 # First, have to deal with the deprecated lzma compressor separately, because
 # it doesn't have any options (i.e. text prefixed with -).
@@ -218,6 +223,10 @@ s/\([^.]\)\n/\1.\n/
 # Make Compressors available header into a manpage section
 
 sed -i "s/\(Compressors available and compressor specific options\):/*\1*/" $tmp/sqfstar.help
+
+# Make pseudo definition format header into a manpage section
+
+sed -i "s/\(Pseudo file definition format\):/*\1*/" $tmp/sqfstar.help
 
 # Add reference to manpages for other squashfs-tools programs
 sed -i "s/See also:/See also:\nmksquashfs(1), unsquashfs(1), sqfscat(1)\n/" $tmp/sqfstar.help
