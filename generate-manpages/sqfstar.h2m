@@ -56,3 +56,29 @@ and will match anywhere.
 .PP
 Note: when passing wildcarded names to Sqfstar, they should be quoted (as in
 the above examples), to ensure that they are not processed by the shell.
+
+.SS Using pseudo file definitions
+.TP
+sqfstar -p "build_dir d 0644 0 0" IMAGE.SQFS < archive.tar
+Create a directory called "build_dir" in the output filesystem.
+.TP
+sqfstar -p "version.txt l /tmp/build/version" IMAGE.SQFS < archive.tar
+Create a reference called "version.txt" to a file not in the tar archive,
+which acts as if that file was in the tar archive.
+.TP
+sqfstar -p "date.txt f 0644 0 0 date" IMAGE.SQFS < archive.tar
+Create a file called "date.txt" which holds the output (stdout) from running
+the "date" command.
+.TP
+sqfstar -p "\\"hello world\\" f 0644 0 0 date" IMAGE.SQFS < archive.tar
+As above, but, showing that filenames can have spaces, if they are quoted.
+The quotes need to be blackslashed to protect them from the shell.
+.TP
+sqfstar -p "input f 0644 root root dd if=/dev/sda1 bs=1024" IMAGE.SQFS < archive.tar
+Create a file containing the contents of partition /dev/sda1".  The above allows
+input from these special files to be captured and placed in the Squashfs
+filesystem.
+.PP
+Note: pseudo file definitions should be quoted (as in the above examples), to
+ensure that they are passed to Mksquashfs as a single argument, and to ensure
+that they are not processed by the shell.
