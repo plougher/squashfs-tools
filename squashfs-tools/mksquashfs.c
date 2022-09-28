@@ -305,7 +305,8 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-m
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-mode", "force-uid", "force-gid", "throttle", "limit",
 	"processors", "mem", "offset", "o", "root-time", "root-uid",
-	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", NULL
+	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
+	NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes);
@@ -6718,6 +6719,21 @@ print_sqfstar_compressor_options:
 			}
 			i += args;
 
+		} else if(strcmp(argv[i], "-pf") == 0) {
+			if(++i == dest_index) {
+				ERROR("%s: -pf missing filename\n", argv[0]);
+				exit(1);
+			}
+			if(read_pseudo_file(argv[i], argv[dest_index]) == FALSE)
+				exit(1);
+		} else if(strcmp(argv[i], "-p") == 0) {
+			if(++i == dest_index) {
+				ERROR("%s: -p missing pseudo file definition\n",
+					argv[0]);
+				exit(1);
+			}
+			if(read_pseudo_definition(argv[i], argv[dest_index]) == FALSE)
+				exit(1);
 		} else if(strcmp(argv[i], "-regex") == 0)
 			use_regex = TRUE;
 		else if(strcmp(argv[i], "-no-sparse") == 0)
