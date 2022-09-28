@@ -6665,21 +6665,21 @@ int sqfstar(int argc, char *argv[])
 			}
 			root_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-uid") == 0) {
-			if((++i == argc) || !parse_num_unsigned(argv[i], &root_uid)) {
+			if((++i == dest_index) || !parse_num_unsigned(argv[i], &root_uid)) {
 				ERROR("%s: -root-uid missing or invalid uid\n",
 					argv[0]);
 				exit(1);
 			}
 			root_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-gid") == 0) {
-			if((++i == argc) || !parse_num_unsigned(argv[i], &root_gid)) {
+			if((++i == dest_index) || !parse_num_unsigned(argv[i], &root_gid)) {
 				ERROR("%s: -root-gid missing or invalid gid\n",
 					argv[0]);
 				exit(1);
 			}
 			root_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-time") == 0) {
-			if((++i == argc) || !parse_num_unsigned(argv[i], &root_time)) {
+			if((++i == dest_index) || !parse_num_unsigned(argv[i], &root_time)) {
 				ERROR("%s: -root-time missing or invalid time\n",
 					argv[0]);
 				exit(1);
@@ -6899,7 +6899,7 @@ print_sqfstar_compressor_options:
 				ERROR("%s: xattrs are unsupported in "
 					"this build\n", argv[0]);
 				exit(1);
-			} else if(++i == argc) {
+			} else if(++i == dest_index) {
 				ERROR("%s: -xattrs-exclude missing regex pattern\n",
 					argv[0]);
 				exit(1);
@@ -6912,7 +6912,7 @@ print_sqfstar_compressor_options:
 				ERROR("%s: xattrs are unsupported in "
 					"this build\n", argv[0]);
 				exit(1);
-			} else if(++i == argc) {
+			} else if(++i == dest_index) {
 				ERROR("%s: -xattrs-include missing regex pattern\n",
 					argv[0]);
 				exit(1);
@@ -6925,7 +6925,7 @@ print_sqfstar_compressor_options:
 				ERROR("%s: xattrs are unsupported in "
 					"this build\n", argv[0]);
 				exit(1);
-			} else if(++i == argc) {
+			} else if(++i == dest_index) {
 				ERROR("%s: -xattrs-add missing xattr argument\n",
 					argv[0]);
 				exit(1);
