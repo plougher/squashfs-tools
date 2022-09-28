@@ -6300,6 +6300,12 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
 	fprintf(stream, "\nFilesystem filter options:\n");
+	fprintf(stream, "-p <pseudo-definition>\tadd pseudo file ");
+	fprintf(stream, "definition.  The definition should\n");
+	fprintf(stream, "\t\t\tbe quoted\n");
+	fprintf(stream, "-pf <pseudo-file>\tadd list of pseudo file ");
+	fprintf(stream, "definitions.  Pseudo file\n\t\t\tdefinitions in ");
+	fprintf(stream, "pseudo-files should not be quoted\n");
 	fprintf(stream, "-ef <exclude_file>\tlist of exclude dirs/files.  ");
 	fprintf(stream, "One per line\n");
 	fprintf(stream, "-regex\t\t\tallow POSIX regular expressions to be used in ");
@@ -6376,6 +6382,24 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-h\t\t\toutput this options text to stdout\n");
 	fprintf(stream, "\n-Xhelp\t\t\tprint compressor options for selected ");
 	fprintf(stream, "compressor\n");
+	fprintf(stream, "\nPseudo file definition format:\n");;
+	fprintf(stream, "\"filename d mode uid gid\"\t\tcreate a directory\n");
+	fprintf(stream, "\"filename m mode uid gid\"\t\tmodify filename\n");
+	fprintf(stream, "\"filename b mode uid gid major minor\"\tcreate a block device\n");
+	fprintf(stream, "\"filename c mode uid gid major minor\"\tcreate a character device\n");
+	fprintf(stream, "\"filename f mode uid gid command\"\tcreate file from stdout of command\n");
+	fprintf(stream, "\"filename s mode uid gid symlink\"\tcreate a symbolic link\n");
+	fprintf(stream, "\"filename i mode uid gid [s|f]\"\t\tcreate a socket (s) or FIFO (f)\n");
+	fprintf(stream, "\"filename x name=val\"\t\t\tcreate an extended attribute\n");
+	fprintf(stream, "\"filename l linkname\"\t\t\tcreate a hard-link to linkname\n");
+	fprintf(stream, "\"filename L pseudo_filename\"\t\tsame, but link to pseudo file\n");
+	fprintf(stream, "\"filename D time mode uid gid\"\t\tcreate a directory with timestamp time\n");
+	fprintf(stream, "\"filename M time mode uid gid\"\t\tmodify a file with timestamp time\n");
+	fprintf(stream, "\"filename B time mode uid gid major minor\"\n\t\t\t\t\tcreate block device with timestamp time\n");
+	fprintf(stream, "\"filename C time mode uid gid major minor\"\n\t\t\t\t\tcreate char device with timestamp time\n");
+	fprintf(stream, "\"filename F time mode uid gid command\"\tcreate file with timestamp time\n");
+	fprintf(stream, "\"filename S time mode uid gid symlink\"\tcreate symlink with timestamp time\n");
+	fprintf(stream, "\"filename I time mode uid gid [s|f]\"\tcreate socket/fifo with timestamp time\n");
 	fprintf(stream, "\nCompressors available and compressor specific options:\n");
 	display_compressor_usage(stream, COMP_DEFAULT);
 
