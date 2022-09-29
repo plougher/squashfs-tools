@@ -44,6 +44,9 @@ int display_progress_bar = FALSE;
 /* flag whether the progress bar is temporarily disbled */
 int temp_disabled = FALSE;
 
+/* flag whether to display full progress bar or just a percentage */
+int percent = FALSE;
+
 /* flag whether we need to output a newline before printing
  * a line - this is because progressbar printing does *not*
  * output a newline */
@@ -72,6 +75,12 @@ static void sigwinch_handler(int arg)
 }
 
 
+void progressbar_percentage()
+{
+	percent = TRUE;
+}
+
+
 void inc_progress_bar()
 {
 	cur_uncompressed ++;
@@ -93,7 +102,7 @@ void progress_bar_size(int count)
 }
 
 
-static void progress_bar(long long current, long long max, int columns)
+static void progressbar(long long current, long long max, int columns)
 {
 	char rotate_list[] = { '|', '/', '-', '\\' };
 	int max_digits, used, hashes, spaces, percentage;
@@ -144,6 +153,28 @@ static void progress_bar(long long current, long long max, int columns)
 	printf("] %*lld/%*lld", max_digits, current, max_digits, max);
 	printf(" %3d%%", percentage);
 	fflush(stdout);
+}
+
+
+static void display_percentage(long long current, long long max)
+{
+	int percentage = max == 0 ? 100 : current * 100 / max;
+	static int previous = -1;
+
+	if(percentage != previous) {
+		printf("%d\n", percentage);
+		fflush(stdout);
+		previous = percentage;
+	}
+}
+
+
+static void progress_bar(long long current, long long max, int columns)
+{
+	if(percent)
+		display_percentage(current, max);
+	else
+		progressbar(current, max, columns);
 }
 
 
