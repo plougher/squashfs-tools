@@ -1217,10 +1217,6 @@ int create_inode(char *pathname, struct inode *i)
 					pathname, strerror(errno));
 			}
 
-			res = write_xattr(pathname, i->xattr);
-			if(res == FALSE)
-				failed = TRUE;
-	
 			if(root_process) {
 				res = lchown(pathname, i->uid, i->gid);
 				if(res == -1) {
@@ -1231,6 +1227,10 @@ int create_inode(char *pathname, struct inode *i)
 					failed = TRUE;
 				}
 			}
+
+			res = write_xattr(pathname, i->xattr);
+			if(res == FALSE)
+				failed = TRUE;
 
 			if(failed)
 				goto failed;
