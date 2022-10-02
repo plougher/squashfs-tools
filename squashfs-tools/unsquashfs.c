@@ -73,7 +73,7 @@ int columns;
 int rotate = 0;
 pthread_mutex_t	screen_mutex;
 pthread_mutex_t pos_mutex = PTHREAD_MUTEX_INITIALIZER;
-int progress = TRUE, progress_enabled = FALSE;
+int progress = TRUE, progress_enabled = FALSE, percent = FALSE;
 unsigned int total_files = 0, total_inodes = 0;
 long long total_blocks = 0;
 long long cur_blocks = 0;
@@ -2935,7 +2935,8 @@ void progressbar_info(char *fmt, ...)
 	pthread_mutex_unlock(&screen_mutex);
 }
 
-void progress_bar(long long current, long long max, int columns)
+
+void progressbar(long long current, long long max, int columns)
 {
 	char rotate_list[] = { '|', '/', '-', '\\' };
 	int max_digits, used, hashes, spaces;
@@ -2976,6 +2977,28 @@ void progress_bar(long long current, long long max, int columns)
 	printf("] %*lld/%*lld", max_digits, current, max_digits, max);
 	printf(" %3lld%%", current * 100 / max);
 	fflush(stdout);
+}
+
+
+void display_percentage(long long current, long long max)
+{
+	int percentage = max == 0 ? 100 : current * 100 / max;
+	static int previous = -1;
+
+	if(percentage != previous) {
+		printf("%d\n", percentage);
+		fflush(stdout);
+		previous = percentage;
+	}
+}
+
+
+void progress_bar(long long current, long long max, int columns)
+{
+	if(percent)
+		display_percentage(current, max);
+	else
+		progressbar(current, max, columns);
 }
 
 
@@ -3823,6 +3846,9 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "can't be\n\t\t\t\tresolved in -follow-symlinks\n");
 	fprintf(stream, "\t-q[uiet]\t\tno verbose output\n");
 	fprintf(stream, "\t-n[o-progress]\t\tdo not display the progress bar\n");
+	fprintf(stream, "\t-percentage\t\tdisplay a percentage rather than ");
+	fprintf(stream, "the full\n\t\t\t\tprogress bar.  Can be used with ");
+	fprintf(stream, "dialog --gauge\n\t\t\t\tetc.\n");
 	fprintf(stream, "\t-no[-xattrs]\t\tdo not extract xattrs in file system");
 	fprintf(stream, NOXOPT_STR"\n");
 	fprintf(stream, "\t-x[attrs]\t\textract xattrs in file system" XOPT_STR "\n");
@@ -4132,6 +4158,8 @@ int parse_options(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-no-progress") == 0 ||
 				strcmp(argv[i], "-n") == 0)
 			progress = FALSE;
+		else if(strcmp(argv[i], "-percentage") == 0)
+			percent = progress = TRUE;
 		else if(strcmp(argv[i], "-no-xattrs") == 0 ||
 				strcmp(argv[i], "-no") == 0)
 			no_xattrs = TRUE;
