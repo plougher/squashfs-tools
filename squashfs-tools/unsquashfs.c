@@ -98,6 +98,7 @@ struct pathnames *extracts = NULL, *excludes = NULL;
 struct pathname *extract = NULL, *exclude = NULL;
 int writer_fd = 1;
 int pseudo_file = FALSE;
+int pseudo_stdout = FALSE;
 char *pseudo_name;
 
 /* extended attribute flags */
@@ -3712,10 +3713,16 @@ int generate_pseudo(char *pseudo_file)
 {
 	int res;
 
-	writer_fd = open_wait(pseudo_file, O_CREAT | O_TRUNC | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-	if(writer_fd == -1)
-		EXIT_UNSQUASH("generate_pseudo: failed to create pseudo file %s,"
-			" because %s\n", pseudo_file, strerror(errno));
+	if(pseudo_stdout)
+		writer_fd = STDOUT_FILENO;
+	else {
+		writer_fd = open_wait(pseudo_file, O_CREAT | O_TRUNC | O_WRONLY,
+					S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+		if(writer_fd == -1)
+			EXIT_UNSQUASH("generate_pseudo: failed to create "
+				"pseudo file %s, because %s\n", pseudo_file,
+				strerror(errno));
+	}
 
 	res = pseudo_scan1("/", SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extracts, excludes, 1);
@@ -3741,7 +3748,8 @@ int generate_pseudo(char *pseudo_file)
 
 	disable_progress_bar();
 
-	close(writer_fd);
+	if(pseudo_stdout == FALSE)
+		close(writer_fd);
 
 	return 0;
 
@@ -3899,7 +3907,7 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-exclude-file <file>\tlist of directories or files to ");
 	fprintf(stream, "exclude.\n\t\t\t\tOne per line\n");
 	fprintf(stream, "\t-pf <file>\t\toutput a pseudo file equivalent ");
-	fprintf(stream, "of the input\n\t\t\t\tSquashfs filesystem\n");
+	fprintf(stream, "of the input\n\t\t\t\tSquashfs filesystem, use - for stdout\n");
 	fprintf(stream, "\t-pseudo-file <file>\talternative name for -pf\n");
 	fprintf(stream, "\t-e[f] <extract file>\tsynonym for -extract-file\n");
 	fprintf(stream, "\t-exc[f] <exclude file>\tsynonym for -exclude-file\n");
@@ -4356,6 +4364,11 @@ int parse_options(int argc, char *argv[])
 	if(no_wildcards && use_regex)
 		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be "
 								"set\n");
+
+	if(pseudo_file && strcmp(pseudo_name, "-") == 0) {
+		info = progress = FALSE;
+		pseudo_stdout = quiet = TRUE;
+	}
 
 #ifdef SQUASHFS_TRACE
 	/*
