@@ -6355,6 +6355,9 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-no-progress\t\tdo not display the progress bar\n");
 	fprintf(stream, "-progress\t\tdisplay progress bar when using the -info ");
 	fprintf(stream, "option\n");
+	fprintf(stream, "-percentage\t\tdisplay a percentage rather than the ");
+	fprintf(stream, "full progress bar.\n\t\t\tCan be used with dialog ");
+	fprintf(stream, "--gauge etc.\n");
 	fprintf(stream, "-throttle <percentage>\tthrottle the I/O input rate by the ");
 	fprintf(stream, "given percentage.\n\t\t\tThis can be used to reduce the I/O ");
 	fprintf(stream, "and CPU consumption\n\t\t\tof Sqfstar\n");
@@ -6992,7 +6995,11 @@ print_sqfstar_compressor_options:
 		else if(strcmp(argv[i], "-exit-on-error") == 0)
 			exit_on_error = TRUE;
 
-		else if(strcmp(argv[i], "-version") == 0) {
+		else if(strcmp(argv[i], "-percentage") == 0) {
+			progressbar_percentage();
+			progress = silent = TRUE;
+
+		} else if(strcmp(argv[i], "-version") == 0) {
 			print_version("sqfstar");
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
