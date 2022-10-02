@@ -4337,6 +4337,10 @@ int parse_options(int argc, char *argv[])
 	if(lsonly)
 		quiet = TRUE;
 
+	if(lsonly && pseudo_file)
+		EXIT_UNSQUASH("File listing only (-ls, -lls etc.) and -pf "
+							"should not be set\n");
+
 	if(strict_errors && ignore_errors)
 		EXIT_UNSQUASH("Both -strict-errors and -ignore-errors should "
 								"not be set\n");
