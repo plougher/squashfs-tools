@@ -12,8 +12,8 @@
 # below, and change COMP_DEFAULT to one of the compression types you have
 # selected.
 #
-# Obviously, you must select at least one of the available gzip, lzma, lzo
-# compression types.
+# Obviously, you must select at least one of the available gzip, xz, lzo,
+# lz4, zstd or lzma (deprecated) compression types.
 #
 GZIP_SUPPORT = 1
 
