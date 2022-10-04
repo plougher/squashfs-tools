@@ -7924,11 +7924,12 @@ print_compressor_options:
 		BAD_ERROR("Sources on the command line should be -, "
 			"when using -tar option\n");
 
-	/* If -tar option is set, then check that actions and pseudo files
-	 * have not been specified, which are unsupported with tar file reading
+	/* If -tar option is set, then check that actions have not been
+	 * specified, which are unsupported with tar file reading
 	 */
 	if(tarfile && any_actions())
 		BAD_ERROR("Actions are unsupported when reading tar files\n");
+
 
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset
