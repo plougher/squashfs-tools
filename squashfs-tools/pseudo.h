@@ -46,6 +46,7 @@ struct pseudo_stat {
 struct pseudo_file {
 	char		*filename;
 	long long	start;
+	long long	current;
 	int		fd;
 };
 

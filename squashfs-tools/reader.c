@@ -361,27 +361,37 @@ static void reader_read_data(struct dir_ent *dir_ent)
 	if(inode->pseudo->data->file != file) {
 		/* Reading the first or a different pseudo file, if
 		 * a different one, first close the previous pseudo
-		 * file */
-		if(file && file->fd != -1) {
+		 * file, unless it is stdin */
+		if(file && file->fd > 0) {
 			close(file->fd);
 			file->fd = -1;
 		}
 
 		file = inode->pseudo->data->file;
 
-		while(1) {
-			file->fd = open(file->filename, O_RDONLY);
-			if(file->fd != -1 || errno != EINTR)
-				break;
-		}
+		if(file->fd == -1) {
+			while(1) {
+				file->fd = open(file->filename, O_RDONLY);
+				if(file->fd != -1 || errno != EINTR)
+					break;
+			}
 
-		if(file->fd == -1)
-			BAD_ERROR("Could not open pseudo file %s because %s\n", file->filename, strerror(errno));
+			if(file->fd == -1)
+				BAD_ERROR("Could not open pseudo file %s "
+					"because %s\n", file->filename,
+					strerror(errno));
+		}
 	}
 
-	res = lseek(file->fd, file->start + inode->pseudo->data->offset, SEEK_SET);
-	if(res == -1)
-		BAD_ERROR("Lseek on pseudo file %s failed because %s\n", file->filename, strerror(errno));
+	if(file->current != file->start + inode->pseudo->data->offset) {
+		res = lseek(file->fd, file->start + inode->pseudo->data->offset,
+								SEEK_SET);
+		if(res == -1)
+			BAD_ERROR("Lseek on pseudo file %s failed because %s\n",
+					file->filename, strerror(errno));
+
+		file->current = file->start + inode->pseudo->data->offset;
+	}
 
 	do {
 		file_buffer = cache_get_nohash(reader_buffer);
@@ -397,6 +407,7 @@ static void reader_read_data(struct dir_ent *dir_ent)
 				BAD_ERROR("Failed to read pseudo file %s, it appears to be truncated or corrupted\n", file->filename);
 
 			bytes += file_buffer->size;
+			file->current += file_buffer->size;
 
 			file_buffer->fragment = FALSE;
 			put_file_buffer(file_buffer);
@@ -406,6 +417,8 @@ static void reader_read_data(struct dir_ent *dir_ent)
 			file_buffer->size = read_bytes(file->fd, file_buffer->data, expected);
 			if(file_buffer->size != expected)
 				BAD_ERROR("Failed to read pseudo file %s, it appears to be truncated or corrupted\n", file->filename);
+
+			file->current += file_buffer->size;
 		}
 	} while(-- blocks > 0);
 

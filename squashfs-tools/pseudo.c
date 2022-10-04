@@ -1275,12 +1275,17 @@ int read_pseudo_file(char *filename, char *destination)
 	int res, size = 0;
 	struct pseudo_file *file = NULL;
 	long long bytes = 0;
+	int pseudo_stdin = strcmp(filename, "-") == 0;
 
-	fd = fopen(filename, "r");
-	if(fd == NULL) {
-		ERROR("Could not open pseudo device file \"%s\" because %s\n",
-			filename, strerror(errno));
-		return FALSE;
+	if(pseudo_stdin)
+		fd = stdin;
+	else {
+		fd = fopen(filename, "r");
+		if(fd == NULL) {
+			ERROR("Could not open pseudo device file \"%s\" "
+				"because %s\n", filename, strerror(errno));
+			return FALSE;
+		}
 	}
 
 	while(1) {
@@ -1363,9 +1368,14 @@ int read_pseudo_file(char *filename, char *destination)
 		 * it is the data demarker */
 		if(*def == '#') {
 			if(strcmp(def, "# START OF DATA - DO NOT MODIFY") == 0) {
-				if(file)
-					file->start = bytes + 2;
-				fclose(fd);
+				if(file) {
+					file->start = file->current = bytes + 2;
+					file->fd = pseudo_stdin ? 0 : -1;
+					fgetc(fd);
+					fgetc(fd);
+				}
+				if(!pseudo_stdin)
+					fclose(fd);
 				free(line);
 				return TRUE;
 			} else
@@ -1383,12 +1393,14 @@ int read_pseudo_file(char *filename, char *destination)
 		goto failed;
 	}
 
-	fclose(fd);
+	if(!pseudo_stdin)
+		fclose(fd);
 	free(line);
 	return TRUE;
 
 failed:
-	fclose(fd);
+	if(!pseudo_stdin)
+		fclose(fd);
 	free(line);
 	return FALSE;
 }

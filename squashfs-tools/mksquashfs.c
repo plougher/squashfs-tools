@@ -6096,8 +6096,9 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "definition.  The definition should\n");
 	fprintf(stream, "\t\t\tbe quoted\n");
 	fprintf(stream, "-pf <pseudo-file>\tadd list of pseudo file ");
-	fprintf(stream, "definitions.  Pseudo file\n\t\t\tdefinitions in ");
-	fprintf(stream, "pseudo-files should not be quoted\n");
+	fprintf(stream, "definitions from <pseudo-file>,\n\t\t\tuse - for ");
+	fprintf(stream, "stdin.  Pseudo file definitions should not be\n");
+	fprintf(stream, "\t\t\tquoted\n");
 	fprintf(stream, "-sort <sort_file>\tsort files according to priorities in ");
 	fprintf(stream, "<sort_file>.  One\n\t\t\tfile or dir with priority per ");
 	fprintf(stream, "line.  Priority -32768 to\n\t\t\t32767, default priority 0\n");
