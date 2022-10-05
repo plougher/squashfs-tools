@@ -7381,7 +7381,8 @@ int main(int argc, char *argv[])
 	 */
 	if((!cpiostyle || tarfile || pseudo_stdin) &&
 				(!tarfile || cpiostyle || pseudo_stdin) &&
-				(!pseudo_stdin || cpiostyle || tarfile))
+				(!pseudo_stdin || cpiostyle || tarfile) &&
+				(cpiostyle || tarfile || pseudo_stdin))
 		BAD_ERROR("Only one of cpiostyle, tar file or pseudo file "
 				"reading from stdin can be specified\n");
 
@@ -7925,8 +7926,9 @@ print_compressor_options:
 			print_version("mksquashfs");
 		} else if(strcmp(argv[i], "-cpiostyle") == 0 ||
 				strcmp(argv[i], "-cpiostyle0") == 0 ||
-				strcmp(argv[i], "-tar") == 0 ||
-				strcmp(argv[i], "comp") == 0) {
+				strcmp(argv[i], "-tar") == 0) {
+			/* parsed previously */
+		} else if(strcmp(argv[i], "-comp") == 0) {
 			/* parsed previously */
 			i++;
 		} else {
