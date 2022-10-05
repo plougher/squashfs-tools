@@ -284,6 +284,9 @@ dev_t cur_dev;
 /* Is Mksquashfs processing a tarfile? */
 int tarfile = FALSE;
 
+/* Is Mksquashfs reading a pseudo file from stdin? */
+int pseudo_stdin = FALSE;
+
 /* Xattr options and stats */
 int no_xattrs = XATTR_DEF;
 int noX = FALSE;
@@ -7346,12 +7349,44 @@ int main(int argc, char *argv[])
 	if(comp == NULL)
 		comp = lookup_compressor(COMP_DEFAULT);
 
+	/*
+	 * Scan the command line for -cpiostyle, -tar and -pf xxx options, this
+	 * is to ensure only one thing is trying to read from stdin
+	 */
 	for(i = option_offset; i < argc; i++) {
-		if(strcmp(argv[i], "-tar") == 0) {
+		if(strcmp(argv[i], "-cpiostyle") == 0)
+			cpiostyle = TRUE;
+		else if(strcmp(argv[i], "-cpiostyle0") == 0) {
+			cpiostyle = TRUE;
+			filename_terminator = '\0';
+		} else if(strcmp(argv[i], "-tar") == 0) {
 			tarfile = TRUE;
 			always_use_fragments = TRUE;
-			exportable = FALSE;
-		} else if(strcmp(argv[i], "-one-file-system") == 0)
+		} else if(strcmp(argv[i], "-pf") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -pf missing filename\n", argv[0]);
+				exit(1);
+			}
+			if(strcmp(argv[i], "-") == 0)
+				pseudo_stdin = TRUE;
+		} else if(strcmp(argv[i], "-e") == 0)
+			break;
+		else if(option_with_arg(argv[i], option_table))
+			i++;
+	}
+
+	/*
+	 * Only one of cpiostyle, tar and pseudo file reading from stdin can
+	 * be specified
+	 */
+	if((!cpiostyle || tarfile || pseudo_stdin) &&
+				(!tarfile || cpiostyle || pseudo_stdin) &&
+				(!pseudo_stdin || cpiostyle || tarfile))
+		BAD_ERROR("Only one of cpiostyle, tar file or pseudo file "
+				"reading from stdin can be specified\n");
+
+	for(i = option_offset; i < argc; i++) {
+		if(strcmp(argv[i], "-one-file-system") == 0)
 			one_file_system = TRUE;
 		else if(strcmp(argv[i], "-one-file-system-x") == 0)
 			one_file_system = one_file_system_x = TRUE;
@@ -7371,12 +7406,7 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-no-strip") == 0 ||
 					strcmp(argv[i], "-tarstyle") == 0)
 			tarstyle = TRUE;
-		else if(strcmp(argv[i], "-cpiostyle") == 0)
-			cpiostyle = TRUE;
-		else if(strcmp(argv[i], "-cpiostyle0") == 0) {
-			cpiostyle = TRUE;
-			filename_terminator = '\0';
-		} else if(strcmp(argv[i], "-throttle") == 0) {
+		else if(strcmp(argv[i], "-throttle") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
 				ERROR("%s: %s missing or invalid value\n",
 							argv[0], argv[i - 1]);
@@ -7546,11 +7576,7 @@ int main(int argc, char *argv[])
 			if(read_action_file(argv[i], ACTION_LOG_FALSE) == FALSE)
 				exit(1);
 
-		} else if(strcmp(argv[i], "-comp") == 0)
-			/* parsed previously */
-			i++;
-
-		else if(strncmp(argv[i], "-X", 2) == 0) {
+		} else if(strncmp(argv[i], "-X", 2) == 0) {
 			int args;
 
 			if(strcmp(argv[i] + 2, "help") == 0)
@@ -7579,11 +7605,7 @@ print_compressor_options:
 			i += args;
 
 		} else if(strcmp(argv[i], "-pf") == 0) {
-			if(++i == argc) {
-				ERROR("%s: -pf missing filename\n", argv[0]);
-				exit(1);
-			}
-			if(read_pseudo_file(argv[i], destination_file) == FALSE)
+			if(read_pseudo_file(argv[++i], destination_file) == FALSE)
 				exit(1);
 		} else if(strcmp(argv[i], "-p") == 0) {
 			if(++i == argc) {
@@ -7901,6 +7923,12 @@ print_compressor_options:
 			progress = silent = TRUE;
 		} else if(strcmp(argv[i], "-version") == 0) {
 			print_version("mksquashfs");
+		} else if(strcmp(argv[i], "-cpiostyle") == 0 ||
+				strcmp(argv[i], "-cpiostyle0") == 0 ||
+				strcmp(argv[i], "-tar") == 0 ||
+				strcmp(argv[i], "comp") == 0) {
+			/* parsed previously */
+			i++;
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
 			print_options(stderr, argv[0], total_mem);
@@ -7929,7 +7957,6 @@ print_compressor_options:
 	 */
 	if(tarfile && any_actions())
 		BAD_ERROR("Actions are unsupported when reading tar files\n");
-
 
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset
