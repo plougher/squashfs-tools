@@ -3684,7 +3684,6 @@ int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offse
 				if(lookup(i->inode_number) == NULL) {
 					update_info(pathname);
 
-					i = s_ops->read_inode(start_block, offset);
 					res = cat_file(i, pathname);
 					if(res == FALSE) {
 						free_subdir(newt);
@@ -3730,6 +3729,7 @@ int generate_pseudo(char *pseudo_file)
 		goto failed;
 
 	free_inumber_table();
+	inode_number = 1;
 	free_lookup_table();
 
 	dprintf(writer_fd, "#\n# START OF DATA - DO NOT MODIFY\n#\n");
