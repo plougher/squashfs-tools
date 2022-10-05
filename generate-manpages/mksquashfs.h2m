@@ -69,6 +69,12 @@ to be captured and placed in the Squashfs filesystem.   Note there are no other
 sources than the pseudo file, and so the command line source is "-".  If there
 are no other sources than pseudo files, the root (/) directory must be defined
 too, as seen in this example.
+.TP
+unsquashfs -pf - IMAGE.SQFS | mksquashfs - NEW.SQFS -pf -
+Transcode IMAGE.SQFS to NEW.SQFS by piping the pseudo file output from
+Unsquashfs to Mksquashfs using stdout and stdin.  This can convert from
+earlier Squashfs filesystems or change compression algorithm, block size etc.
+without needing to unpack into an intermediate directory or file.
 .PP
 Note: pseudo file definitions should be quoted (as in the above examples), to
 ensure that they are passed to Mksquashfs as a single argument, and to ensure
