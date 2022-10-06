@@ -3473,7 +3473,7 @@ char *process_filename(char *filename)
 	filename = ptr;
 
 	while(*ptr != '\0') {
-		if(*ptr == '\'' || *ptr == '\"' || *ptr == '\\' || *ptr == ' ')
+		if(*ptr == '\"' || *ptr == '\\' || isspace(*ptr))
 			count ++;
 		ptr ++;
 	}
@@ -3486,7 +3486,7 @@ char *process_filename(char *filename)
 		MEM_ERROR();
 
 	for(ptr = saved; *filename != '\0'; ptr ++, filename ++) {
-		if(*filename == '\'' || *filename == '\"' || *filename == '\\' || *filename == ' ')
+		if(*filename == '\"' || *filename == '\\' || isspace(*filename))
 			*ptr ++ = '\\';
 
 		*ptr = *filename;
