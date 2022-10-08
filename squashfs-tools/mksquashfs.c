@@ -6078,8 +6078,6 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-no-tailends\t\tdo not pack tail ends into fragments (default)\n");
 	fprintf(stream, "-tailends\t\tpack tail ends into fragments\n");
 	fprintf(stream, "-no-fragments\t\tdo not use fragments\n");
-	fprintf(stream, "-always-use-fragments\tuse fragment blocks for files larger ");
-	fprintf(stream, "than block size\n");
 	fprintf(stream, "-no-duplicates\t\tdo not perform duplicate checking\n");
 	fprintf(stream, "-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n");
 	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
@@ -6212,6 +6210,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\tDefault 0 bytes\n");
 	fprintf(stream, "-o <offset>\t\tsynonym for -offset\n");
 	fprintf(stream, "\nMiscellaneous options:\n");
+	fprintf(stream, "-always-use-fragments\talternative name for -tailends\n");
 	fprintf(stream, "-root-owned\t\talternative name for -all-root\n");
 	fprintf(stream, "-noInodeCompression\talternative name for -noI\n");
 	fprintf(stream, "-noIdTableCompression\talternative name for -noId\n");
