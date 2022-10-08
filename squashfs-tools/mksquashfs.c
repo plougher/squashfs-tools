@@ -6159,6 +6159,11 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\toriginal root become a subdirectory in the new root\n");
 	fprintf(stream, "\t\t\tcalled <name>, rather than adding the new source items\n");
 	fprintf(stream, "\t\t\tto the original root\n");
+	fprintf(stream, "-no-recovery\t\tdo not generate a recovery file\n");
+	fprintf(stream, "-recovery-path <name>\tuse <name> as the directory ");
+	fprintf(stream, "to store the recovery file\n");
+	fprintf(stream, "-recover <name>\t\trecover filesystem data using recovery ");
+	fprintf(stream, "file <name>\n");
 	fprintf(stream, "\nFilesystem actions options:\n");
 	fprintf(stream, "-action <action@expr>\tevaluate <expr> on every file, ");
 	fprintf(stream, "and execute <action>\n\t\t\tif it returns TRUE\n");
@@ -6179,11 +6184,6 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\nMksquashfs runtime options:\n");
 	fprintf(stream, "-version\t\tprint version, licence and copyright message\n");
 	fprintf(stream, "-exit-on-error\t\ttreat normally ignored errors as fatal\n");
-	fprintf(stream, "-recover <name>\t\trecover filesystem data using recovery ");
-	fprintf(stream, "file <name>\n");
-	fprintf(stream, "-no-recovery\t\tdo not generate a recovery file\n");
-	fprintf(stream, "-recovery-path <name>\tuse <name> as the directory ");
-	fprintf(stream, "to store the recovery file\n");
 	fprintf(stream, "-quiet\t\t\tno verbose output\n");
 	fprintf(stream, "-info\t\t\tprint files written to filesystem\n");
 	fprintf(stream, "-no-progress\t\tdo not display the progress bar\n");
