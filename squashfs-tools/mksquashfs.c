@@ -6063,7 +6063,6 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "timestamp to <time>, which is\n\t\t\tan unsigned ");
 	fprintf(stream, "32-bit int indicating seconds since the\n\t\t\t");
 	fprintf(stream, "epoch (1970-01-01)\n");
-	fprintf(stream, "-fstime <time>\t\tsynonym for mkfs-time\n");
 	fprintf(stream, "-all-time <time>\tset all file timestamps to ");
 	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int ");
 	fprintf(stream, "indicating seconds since the epoch\n\t\t\t(1970-01-01)\n");
@@ -6210,6 +6209,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\tDefault 0 bytes\n");
 	fprintf(stream, "-o <offset>\t\tsynonym for -offset\n");
 	fprintf(stream, "\nMiscellaneous options:\n");
+	fprintf(stream, "-fstime <time>\t\talternative name for -mkfs-time\n");
 	fprintf(stream, "-always-use-fragments\talternative name for -tailends\n");
 	fprintf(stream, "-root-owned\t\talternative name for -all-root\n");
 	fprintf(stream, "-noInodeCompression\talternative name for -noI\n");
