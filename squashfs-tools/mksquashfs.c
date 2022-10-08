@@ -6038,6 +6038,19 @@ static void print_options(FILE *stream, char *name, int total_mem)
 {
 	fprintf(stream, "SYNTAX:%s source1 source2 ...  FILESYSTEM [OPTIONS] ", name);
 	fprintf(stream, "[-e list of\nexclude dirs/files]\n");
+	fprintf(stream, "\nFilesystem compression options:\n");
+	fprintf(stream, "-b <block_size>\t\tset data block to <block_size>.  Default ");
+	fprintf(stream, "128 Kbytes.\n");
+	fprintf(stream, "\t\t\tOptionally a suffix of K or M can be given to ");
+	fprintf(stream, "specify\n\t\t\tKbytes or Mbytes respectively\n");
+	fprintf(stream, "-comp <comp>\t\tselect <comp> compression\n");
+	fprintf(stream, "\t\t\tCompressors available:\n");
+	display_compressors(stream, "\t\t\t", COMP_DEFAULT);
+	fprintf(stream, "-noI\t\t\tdo not compress inode table\n");
+	fprintf(stream, "-noId\t\t\tdo not compress the uid/gid table (implied by ");
+	fprintf(stream, "-noI)\n");
+	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
+	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
 	fprintf(stream, "\nFilesystem build options:\n");
 	fprintf(stream, "-tar\t\t\tread uncompressed tar file from standard in (stdin)\n");
 	fprintf(stream, "-no-strip\t\tact like tar, and do not strip leading ");
@@ -6048,13 +6061,6 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-cpiostyle0\t\tlike -cpiostyle, but filenames are ");
 	fprintf(stream, "null terminated.  Can\n\t\t\tbe used with find ");
 	fprintf(stream, "-print0 action\n");
-	fprintf(stream, "-comp <comp>\t\tselect <comp> compression\n");
-	fprintf(stream, "\t\t\tCompressors available:\n");
-	display_compressors(stream, "\t\t\t", COMP_DEFAULT);
-	fprintf(stream, "-b <block_size>\t\tset data block to <block_size>.  Default ");
-	fprintf(stream, "128 Kbytes.\n");
-	fprintf(stream, "\t\t\tOptionally a suffix of K or M can be given to ");
-	fprintf(stream, "specify\n\t\t\tKbytes or Mbytes respectively\n");
 	fprintf(stream, "-reproducible\t\tbuild filesystems that are reproducible");
 	fprintf(stream, REP_STR "\n");
 	fprintf(stream, "-not-reproducible\tbuild filesystems that are not reproducible");
@@ -6069,11 +6075,6 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-no-exports\t\tdo not make filesystem exportable via NFS (-tar default)\n");
 	fprintf(stream, "-exports\t\tmake filesystem exportable via NFS (default)\n");
 	fprintf(stream, "-no-sparse\t\tdo not detect sparse files\n");
-	fprintf(stream, "-noI\t\t\tdo not compress inode table\n");
-	fprintf(stream, "-noId\t\t\tdo not compress the uid/gid table (implied by ");
-	fprintf(stream, "-noI)\n");
-	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
-	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
 	fprintf(stream, "-no-tailends\t\tdo not pack tail ends into fragments (default)\n");
 	fprintf(stream, "-tailends\t\tpack tail ends into fragments\n");
 	fprintf(stream, "-no-fragments\t\tdo not use fragments\n");
