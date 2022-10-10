@@ -342,11 +342,34 @@ read_err2:
 }
 
 
+static int read_data(struct pseudo_file *file, long long current,
+		struct file_buffer *file_buffer, int size)
+{
+	int res;
+
+	if(current != file->current) {
+		res = lseek(file->fd, current + file->start, SEEK_SET);
+		if(res == -1)
+			BAD_ERROR("Lseek on pseudo file %s failed because %s\n",
+					file->filename, strerror(errno));
+
+		file->current = current;
+	}
+
+	res = read_bytes(file->fd, file_buffer->data, size);
+
+	if(res != -1)
+		file->current += size;
+
+	return res;
+}
+
+
 static void reader_read_data(struct dir_ent *dir_ent)
 {
 	struct file_buffer *file_buffer;
-	int blocks, res;
-	long long bytes, read_size;
+	int blocks;
+	long long bytes, read_size, current;
 	struct inode_info *inode = dir_ent->inode;
 	static struct pseudo_file *file = NULL;
 
@@ -383,15 +406,7 @@ static void reader_read_data(struct dir_ent *dir_ent)
 		}
 	}
 
-	if(file->current != file->start + inode->pseudo->data->offset) {
-		res = lseek(file->fd, file->start + inode->pseudo->data->offset,
-								SEEK_SET);
-		if(res == -1)
-			BAD_ERROR("Lseek on pseudo file %s failed because %s\n",
-					file->filename, strerror(errno));
-
-		file->current = file->start + inode->pseudo->data->offset;
-	}
+	current = inode->pseudo->data->offset;
 
 	do {
 		file_buffer = cache_get_nohash(reader_buffer);
@@ -402,23 +417,23 @@ static void reader_read_data(struct dir_ent *dir_ent)
 
 		if(blocks > 1) {
 			/* non-tail block should be exactly block_size */
-			file_buffer->size = read_bytes(file->fd, file_buffer->data, block_size);
+			file_buffer->size = read_data(file, current, file_buffer, block_size);
 			if(file_buffer->size != block_size)
 				BAD_ERROR("Failed to read pseudo file %s, it appears to be truncated or corrupted\n", file->filename);
 
+			current += file_buffer->size;
 			bytes += file_buffer->size;
-			file->current += file_buffer->size;
 
 			file_buffer->fragment = FALSE;
 			put_file_buffer(file_buffer);
 		} else {
 			int expected = read_size - bytes;
 
-			file_buffer->size = read_bytes(file->fd, file_buffer->data, expected);
+			file_buffer->size = read_data(file, current, file_buffer, expected);
 			if(file_buffer->size != expected)
 				BAD_ERROR("Failed to read pseudo file %s, it appears to be truncated or corrupted\n", file->filename);
 
-			file->current += file_buffer->size;
+			current += file_buffer->size;
 		}
 	} while(-- blocks > 0);
 

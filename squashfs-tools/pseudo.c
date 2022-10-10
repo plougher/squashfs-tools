@@ -1369,7 +1369,8 @@ int read_pseudo_file(char *filename, char *destination)
 		if(*def == '#') {
 			if(strcmp(def, "# START OF DATA - DO NOT MODIFY") == 0) {
 				if(file) {
-					file->start = file->current = bytes + 2;
+					file->start = bytes + 2;
+					file->current = 0;
 					file->fd = pseudo_stdin ? 0 : -1;
 					fgetc(fd);
 					fgetc(fd);
