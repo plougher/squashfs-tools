@@ -6267,14 +6267,20 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 {
 	fprintf(stream, "SYNTAX:%s [OPTIONS] FILESYSTEM ", name);
 	fprintf(stream, "[list of exclude dirs/files]\n");
-	fprintf(stream, "\nFilesystem build options:\n");
-	fprintf(stream, "-comp <comp>\t\tselect <comp> compression\n");
-	fprintf(stream, "\t\t\tCompressors available:\n");
-	display_compressors(stream, "\t\t\t", COMP_DEFAULT);
+	fprintf(stream, "\nFilesystem compression options:\n");
 	fprintf(stream, "-b <block_size>\t\tset data block to <block_size>.  Default ");
 	fprintf(stream, "128 Kbytes.\n");
 	fprintf(stream, "\t\t\tOptionally a suffix of K or M can be given to ");
 	fprintf(stream, "specify\n\t\t\tKbytes or Mbytes respectively\n");
+	fprintf(stream, "-comp <comp>\t\tselect <comp> compression\n");
+	fprintf(stream, "\t\t\tCompressors available:\n");
+	display_compressors(stream, "\t\t\t", COMP_DEFAULT);
+	fprintf(stream, "-noI\t\t\tdo not compress inode table\n");
+	fprintf(stream, "-noId\t\t\tdo not compress the uid/gid table (implied by ");
+	fprintf(stream, "-noI)\n");
+	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
+	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
+	fprintf(stream, "\nFilesystem build options:\n");
 	fprintf(stream, "-reproducible\t\tbuild filesystems that are reproducible");
 	fprintf(stream, REP_STR "\n");
 	fprintf(stream, "-not-reproducible\tbuild filesystems that are not reproducible");
@@ -6288,11 +6294,6 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "indicating seconds since the epoch\n\t\t\t(1970-01-01)\n");
 	fprintf(stream, "-exports\t\tmake the filesystem exportable via NFS\n");
 	fprintf(stream, "-no-sparse\t\tdo not detect sparse files\n");
-	fprintf(stream, "-noI\t\t\tdo not compress inode table\n");
-	fprintf(stream, "-noId\t\t\tdo not compress the uid/gid table (implied by ");
-	fprintf(stream, "-noI)\n");
-	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
-	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
 	fprintf(stream, "-no-fragments\t\tdo not use fragments\n");
 	fprintf(stream, "-no-tailends\t\tdo not pack tail ends into fragments\n");
 	fprintf(stream, "-no-duplicates\t\tdo not perform duplicate checking\n");
