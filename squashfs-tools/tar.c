@@ -47,7 +47,7 @@
 
 extern int silent;
 
-long long read_octal(char *s, int size)
+static long long read_octal(char *s, int size)
 {
 	long long res = 0;
 
@@ -66,7 +66,7 @@ long long read_octal(char *s, int size)
 }
 
 
-long long read_binary(char *src, int size)
+static long long read_binary(char *src, int size)
 {
 	unsigned char *s = (unsigned char *) src;
 	long long res = 0;
@@ -78,7 +78,7 @@ long long read_binary(char *src, int size)
 }
 
 
-long long read_number(char *s, int size)
+static long long read_number(char *s, int size)
 {
 	if(*((signed char *) s) == -128)
 		return read_binary(s + 1, size - 1);
@@ -87,7 +87,7 @@ long long read_number(char *s, int size)
 }
 
 
-long long read_decimal(char *s, int maxsize, int *bytes)
+static long long read_decimal(char *s, int maxsize, int *bytes)
 {
 	long long res = 0;
 	int size = maxsize;
@@ -109,7 +109,7 @@ long long read_decimal(char *s, int maxsize, int *bytes)
 }
 
 
-char *read_long_string(int size, int skip)
+static char *read_long_string(int size, int skip)
 {
 	char buffer[512];
 	char *name = malloc(size + 1);
@@ -169,7 +169,7 @@ char *read_long_string(int size, int skip)
 }
 
 
-int all_zero(struct tar_header *header)
+static int all_zero(struct tar_header *header)
 {
 	int i;
 
@@ -181,7 +181,7 @@ int all_zero(struct tar_header *header)
 }
 
 
-int checksum_matches(struct tar_header *header)
+static int checksum_matches(struct tar_header *header)
 {
 	int checksum = read_number(header->checksum, 8);
 	int computed = 0;
@@ -540,7 +540,7 @@ int sparse_reader(struct tar_file *file, long long cur_offset, char *dest, int b
 }
 
 
-int read_sparse_block(struct tar_file *file, int fd, char *dest, int bytes, int block)
+static int read_sparse_block(struct tar_file *file, int fd, char *dest, int bytes, int block)
 {
 	static long long offset;
 	long long cur_offset = (long long) block * block_size;
@@ -643,7 +643,7 @@ static void read_tar_data(struct tar_file *tar_file)
 }
 
 
-char *skip_components(char *filename, int size, int *sizep)
+static char *skip_components(char *filename, int size, int *sizep)
 {
 	while(1) {
 		if(size >= 3 && strncmp(filename, "../", 3) == 0) {
@@ -666,7 +666,7 @@ char *skip_components(char *filename, int size, int *sizep)
 }
 
 
-int read_sparse_value(struct tar_file *file, char *value, int map_entries)
+static int read_sparse_value(struct tar_file *file, char *value, int map_entries)
 {
 	int bytes, res, i = 0;
 	long long number;
@@ -699,7 +699,7 @@ failed:
 }
 
 
-int read_pax_header(struct tar_file *file, long long st_size)
+static int read_pax_header(struct tar_file *file, long long st_size)
 {
 	long long size = (st_size + 511) & ~511;
 	char *data, *ptr, *end, *keyword, *value;
@@ -898,7 +898,7 @@ failed:
 }
 
 
-int check_sparse_map(struct file_map *map, int map_entries, long long size, long long realsize)
+static int check_sparse_map(struct file_map *map, int map_entries, long long size, long long realsize)
 {
 	long long total_data = 0;
 	long long total_sparse = map[0].offset;
@@ -914,7 +914,7 @@ int check_sparse_map(struct file_map *map, int map_entries, long long size, long
 }
 
 
-struct file_map *read_sparse_headers(struct tar_file *file, struct short_sparse_header *short_header, int *entries)
+static struct file_map *read_sparse_headers(struct tar_file *file, struct short_sparse_header *short_header, int *entries)
 {
 	struct long_sparse_header long_header;
 	int res, i, map_entries, isextended;
@@ -1032,12 +1032,12 @@ failed:
 }
 
 
-struct file_map *read_sparse_map(struct tar_file *file, int *entries)
+static struct file_map *read_sparse_map(struct tar_file *file, int *entries)
 {
 	int map_entries, bytes, size;
 	struct file_map *map = NULL;
 	char buffer[529], *src = buffer;
-	long long offset, number, res;
+	long long offset = 0, number, res;
 	int atoffset = TRUE, i = 0;
 
 	res = read_bytes(STDIN_FILENO, buffer, 512);
