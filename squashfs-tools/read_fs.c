@@ -714,7 +714,7 @@ failed_mount:
 }
 
 
-unsigned char *squashfs_readdir(int fd, int root_entries,
+static unsigned char *squashfs_readdir(int fd, int root_entries,
 	unsigned int directory_start_block, int offset, unsigned int dir_size,
 	unsigned int *last_directory_block, struct squashfs_super_block *sBlk,
 	void (push_directory_entry)(char *, squashfs_inode, unsigned int, int))
@@ -804,7 +804,7 @@ all_done:
 }
 
 
-unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
+static unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 {
 	int indexes = SQUASHFS_ID_BLOCKS(sBlk->no_ids);
 	long long index[indexes];
@@ -855,7 +855,7 @@ unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 }
 
 
-struct squashfs_fragment_entry *read_fragment_table(int fd, struct squashfs_super_block *sBlk)
+static struct squashfs_fragment_entry *read_fragment_table(int fd, struct squashfs_super_block *sBlk)
 {
 	int res;
 	unsigned int i;
@@ -909,7 +909,7 @@ struct squashfs_fragment_entry *read_fragment_table(int fd, struct squashfs_supe
 }
 
 
-squashfs_inode *read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk)
+static squashfs_inode *read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk)
 {
 	int lookup_bytes = SQUASHFS_LOOKUP_BYTES(sBlk->inodes);
 	int indexes = SQUASHFS_LOOKUP_BLOCKS(sBlk->inodes);
