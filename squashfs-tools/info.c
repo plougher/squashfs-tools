@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2014, 2019, 2021
+ * Copyright (c) 2013, 2014, 2019, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -61,7 +61,7 @@ void update_info(struct dir_ent *dir_ent)
 }
 
 
-void print_filename()
+static void print_filename()
 {
 	struct dir_ent *dir_ent = ent;
 
@@ -75,7 +75,7 @@ void print_filename()
 }
 
 
-void dump_state()
+static void dump_state()
 {
 	disable_progress_bar();
 
@@ -141,7 +141,7 @@ void dump_state()
 }
 
 
-void *info_thrd(void *arg)
+static void *info_thrd(void *arg)
 {
 	sigset_t sigmask;
 	struct timespec timespec = { .tv_sec = 1, .tv_nsec = 0 };
