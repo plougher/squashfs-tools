@@ -39,26 +39,26 @@
 #define TRUE 1
 
 /* flag whether progressbar display is enabled or not */
-int display_progress_bar = FALSE;
+static int display_progress_bar = FALSE;
 
 /* flag whether the progress bar is temporarily disbled */
-int temp_disabled = FALSE;
+static int temp_disabled = FALSE;
 
 /* flag whether to display full progress bar or just a percentage */
-int percent = FALSE;
+static int percent = FALSE;
 
 /* flag whether we need to output a newline before printing
  * a line - this is because progressbar printing does *not*
  * output a newline */
-int need_nl = FALSE;
+static int need_nl = FALSE;
 
-int rotate = 0;
-long long cur_uncompressed = 0, estimated_uncompressed = 0;
-int columns;
+static int rotate = 0;
+static long long cur_uncompressed = 0, estimated_uncompressed = 0;
+static int columns;
 
-pthread_t progress_thread;
-pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t size_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_t progress_thread;
+static pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t size_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 static void sigwinch_handler(int arg)
@@ -219,7 +219,7 @@ void set_progressbar_state(int state)
 }
 
 
-void *progress_thrd(void *arg)
+static void *progress_thrd(void *arg)
 {
 	struct timespec requested_time, remaining;
 	struct winsize winsize;
