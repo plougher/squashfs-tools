@@ -57,7 +57,7 @@ static void add_xattr(struct pseudo_xattr **xattr, struct xattr_add *entry)
 /*
  * Add pseudo xattr to the set of pseudo definitions.
  */
-struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *xattr,
+static struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *xattr,
 	char *target, char *alltarget)
 {
 	char *targname;
@@ -120,7 +120,7 @@ struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *xattr,
 }
 
 
-struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo,
+static struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo,
 	struct xattr_add *xattr, char *target, char *alltarget)
 {
 	/* special case if a root pseudo definition is being added */
