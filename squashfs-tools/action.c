@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2011, 2012, 2013, 2014, 2021
+ * Copyright (c) 2011, 2012, 2013, 2014, 2021, 2022
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -744,7 +744,7 @@ failed:
 #define LOG_PRINT	2
 #define LOG_ENABLED	3
 
-char *_expr_log(char *string, int cmnd)
+static char *_expr_log(char *string, int cmnd)
 {
 	static char *expr_msg = NULL;
 	static int cur_size = 0, alloc_size = 0;
@@ -787,19 +787,19 @@ char *_expr_log(char *string, int cmnd)
 }
 
 
-char *expr_log_cmnd(int cmnd)
+static char *expr_log_cmnd(int cmnd)
 {
 	return _expr_log(NULL, cmnd);
 }
 
 
-char *expr_log(char *string)
+static char *expr_log(char *string)
 {
 	return _expr_log(string, LOG_PRINT);
 }
 
 
-void expr_log_atom(struct atom *atom)
+static void expr_log_atom(struct atom *atom)
 {
 	int i;
 
@@ -820,7 +820,7 @@ void expr_log_atom(struct atom *atom)
 }
 
 
-void expr_log_match(int match)
+static void expr_log_match(int match)
 {
 	if(match)
 		expr_log("=True");
@@ -938,25 +938,25 @@ static int eval_expr_top(struct action *action, struct action_data *action_data)
  * 
  * Blank lines and comment lines indicated by # are supported.
  */
-int parse_action_true(char *s)
+static int parse_action_true(char *s)
 {
 	return parse_action(s, ACTION_LOG_TRUE);
 }
 
 
-int parse_action_false(char *s)
+static int parse_action_false(char *s)
 {
 	return parse_action(s, ACTION_LOG_FALSE);
 }
 
 
-int parse_action_verbose(char *s)
+static int parse_action_verbose(char *s)
 {
 	return parse_action(s, ACTION_LOG_VERBOSE);
 }
 
 
-int parse_action_nonverbose(char *s)
+static int parse_action_nonverbose(char *s)
 {
 	return parse_action(s, ACTION_LOG_NONE);
 }
@@ -2720,7 +2720,7 @@ static int parse_group_arg(struct test_entry *test, struct atom *atom)
 /*
  * Type test specific code
  */
-struct type_entry type_table[] = {
+static struct type_entry type_table[] = {
 	{ S_IFSOCK, 's' },
 	{ S_IFLNK, 'l' },
 	{ S_IFREG, 'f' },
