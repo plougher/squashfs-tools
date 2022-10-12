@@ -74,7 +74,7 @@ char *get_element(char *target, char **targname)
  * Add pseudo device target to the set of pseudo devices.  Pseudo_dev
  * describes the pseudo device attributes.
  */
-struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
+static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 	char *target, char *alltarget)
 {
 	char *targname;
@@ -189,7 +189,7 @@ struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 }
 
 
-struct pseudo *add_pseudo_definition(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
+static struct pseudo *add_pseudo_definition(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 	char *target, char *alltarget)
 {
 	/* special case if a root pseudo definition is being added */
@@ -302,7 +302,7 @@ failed:
 }
 
 
-int pseudo_exec_date(char *string, unsigned int *mtime)
+static int pseudo_exec_date(char *string, unsigned int *mtime)
 {
 	int res, pipefd[2], child, status;
 	int bytes = 0;
@@ -385,7 +385,7 @@ failed:
 }
 
 
-struct pseudo_entry *pseudo_lookup(struct pseudo *pseudo, char *target)
+static struct pseudo_entry *pseudo_lookup(struct pseudo *pseudo, char *target)
 {
 	char *targname;
 	int i;
