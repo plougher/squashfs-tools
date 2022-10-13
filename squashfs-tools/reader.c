@@ -47,6 +47,9 @@
 #include "pseudo.h"
 #include "sort.h"
 #include "tar.h"
+#include "reader.h"
+
+static struct readahead **readahead_table = NULL;
 
 static void sigalrm_handler(int arg)
 {
@@ -342,26 +345,224 @@ read_err2:
 }
 
 
-static int read_data(struct pseudo_file *file, long long current,
+static void remove_readahead(int index, struct readahead *prev, struct readahead *new)
+{
+	if(prev)
+		prev->next = new->next;
+	else
+		readahead_table[index] = new->next;
+}
+
+
+static void add_readahead(struct readahead *new)
+{
+	int index = READAHEAD_INDEX(new->start);
+
+	new->next = readahead_table[index];
+	readahead_table[index] = new;
+}
+
+
+static int get_bytes(char *data, int size)
+{
+	int res = fread(data, 1, size, stdin);
+
+	if(res == size)
+		return res;
+
+	return feof(stdin) ? 0 : -1;
+}
+
+
+static int get_readahead(struct pseudo_file *file, long long current,
+		struct file_buffer *file_buffer, int size)
+{
+	int count = size;
+	char *dest = file_buffer->data;
+
+	if(readahead_table == NULL)
+		return -1;
+
+	while(size) {
+		int index = READAHEAD_INDEX(current);
+		struct readahead *buffer = readahead_table[index], *prev = NULL;
+
+		for(; buffer; prev = buffer, buffer = buffer->next) {
+			if(buffer->start <= current && buffer->start + buffer->size > current) {
+				int offset = READAHEAD_OFFSET(current);
+				int buffer_offset = READAHEAD_OFFSET(buffer->start);
+
+				/*
+				 * Four posibilities:
+				 * 1. Wanted data is whole of buffer
+				 * 2. Wanted data is at start of buffer
+				 * 3. Wanted data is at end of buffer
+				 * 4. Wanted data is in middle of buffer
+				 */
+				if(offset == buffer_offset && size >= buffer->size) {
+					memcpy(dest, buffer->src, buffer->size);
+					dest += buffer->size;
+					size -= buffer->size;
+					current += buffer->size;
+
+					remove_readahead(index, prev, buffer);
+					free(buffer);
+					break;
+				} else if(offset == buffer_offset) {
+					memcpy(dest, buffer->src, size);
+					buffer->start += size;
+					buffer->src += size;
+					buffer->size -= size;
+
+					remove_readahead(index, prev, buffer);
+					add_readahead(buffer);
+
+					goto finished;
+				} else if(buffer_offset + buffer->size <= offset+ size) {
+					int bytes = buffer_offset + buffer->size - offset;
+
+					memcpy(dest, buffer->src + offset - buffer_offset, bytes);
+					buffer->size -= bytes;
+					dest += bytes;
+					size -= bytes;
+					current += bytes;
+					break;
+				} else {
+					struct readahead *left, *right;
+					int left_size = offset - buffer_offset;
+					int right_size = buffer->size - (offset + size);
+
+					memcpy(dest, buffer->src + offset - buffer_offset, size);
+
+					/* Split buffer into two */
+					left = malloc(sizeof(struct readahead) + left_size);
+					right = malloc(sizeof(struct readahead) + right_size);
+
+					if(left == NULL || right == NULL)
+						MEM_ERROR();
+
+					left->start = buffer->start;
+					left->size = left_size;
+					left->src = left->data;
+					memcpy(left->data, buffer->src, left_size);
+
+					right->start = current + size;
+					right->size = right_size;
+					right->src = right->data;
+					memcpy(right->data, buffer->src + offset + size, right_size);
+
+					remove_readahead(index, prev, buffer);
+					free(buffer);
+
+					add_readahead(left);
+					add_readahead(right);
+					goto finished;
+				}
+			}
+		}
+
+		if(buffer == NULL)
+			return -1;
+	}
+
+finished:
+	return count;
+}
+
+
+static int do_readahead(struct pseudo_file *file, long long current,
 		struct file_buffer *file_buffer, int size)
 {
 	int res;
+	long long readahead = current - file->current;
 
-	if(current != file->current) {
-		res = lseek(file->fd, current + file->start, SEEK_SET);
-		if(res == -1)
-			BAD_ERROR("Lseek on pseudo file %s failed because %s\n",
-					file->filename, strerror(errno));
+	if(readahead_table == NULL) {
+		readahead_table = malloc(READAHEAD_ALLOC);
+		if(readahead_table == NULL)
+			MEM_ERROR();
 
-		file->current = current;
+		memset(readahead_table, 0, READAHEAD_ALLOC);
 	}
 
-	res = read_bytes(file->fd, file_buffer->data, size);
+	while(readahead) {
+		int offset = READAHEAD_OFFSET(file->current);
+		int bytes = READAHEAD_SIZE - offset < readahead ? READAHEAD_SIZE - offset : readahead;
+		struct readahead *buffer = malloc(sizeof(struct readahead) + bytes);
+
+		if(buffer == NULL)
+			MEM_ERROR();
+
+		res = get_bytes(buffer->data, bytes);
+
+		if(res == -1) {
+			free(buffer);
+			return res;
+		}
+
+		buffer->start = file->current;
+		buffer->size = bytes;
+		buffer->src = buffer->data;
+		add_readahead(buffer);
+
+		file->current += bytes;
+		readahead -= bytes;
+	}
+
+	res = get_bytes(file_buffer->data, size);
 
 	if(res != -1)
 		file->current += size;
 
 	return res;
+}
+
+
+static int read_data(struct pseudo_file *file, long long current,
+		struct file_buffer *file_buffer, int size)
+{
+	int res;
+
+	if(file->fd != STDIN_FILENO) {
+		if(current != file->current) {
+			/*
+			 * File data reading is not in the same order as stored
+			 * in the pseudo file.  As this is not stdin, we can
+			 * lseek() to the wanted data
+			 */
+			res = lseek(file->fd, current + file->start, SEEK_SET);
+			if(res == -1)
+				BAD_ERROR("Lseek on pseudo file %s failed because %s\n",
+					file->filename, strerror(errno));
+
+			file->current = current;
+		}
+
+		res = read_bytes(file->fd, file_buffer->data, size);
+
+		if(res != -1)
+			file->current += size;
+
+		return res;
+	}
+
+	/*
+	 * Reading from stdin.  Three possibilities
+	 * 1. We are at the current place in stdin, so just read data
+	 * 2. Data we want has already been read and buffered (readahead).
+	 * 3. Data is later in the file, readahead and buffer data to that point
+	 */
+
+	if(current == file->current) {
+		res = get_bytes(file_buffer->data, size);
+
+		if(res != -1)
+			file->current += size;
+
+		return res;
+	} else if(current < file->current)
+		return get_readahead(file, current, file_buffer, size);
+	else
+		return do_readahead(file, current, file_buffer, size);
 }
 
 
@@ -403,6 +604,8 @@ static void reader_read_data(struct dir_ent *dir_ent)
 				BAD_ERROR("Could not open pseudo file %s "
 					"because %s\n", file->filename,
 					strerror(errno));
+
+			file->current = -file->start;
 		}
 	}
 
