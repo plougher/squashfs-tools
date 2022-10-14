@@ -2596,9 +2596,17 @@ static char *get_start(char *s, int n)
 
 static int subpathname_fn(struct atom *atom, struct action_data *action_data)
 {
-	return fnmatch(atom->argv[0], get_start(strdupa(action_data->subpath),
-		count_components(atom->argv[0])),
-		FNM_PATHNAME|FNM_EXTMATCH) == 0;
+	char *s, *tmp;
+	int ret;
+
+	s = tmp = strdup(action_data->subpath);
+	tmp = get_start(tmp, count_components(atom->argv[0]));
+
+	ret = fnmatch(atom->argv[0], tmp, FNM_PATHNAME|FNM_EXTMATCH);
+
+	free(s);
+
+	return ret == 0;
 }
 
 /*
