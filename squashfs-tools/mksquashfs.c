@@ -6280,6 +6280,7 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-noI)\n");
 	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
 	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
+	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
 	fprintf(stream, "\nFilesystem build options:\n");
 	fprintf(stream, "-reproducible\t\tbuild filesystems that are reproducible");
 	fprintf(stream, REP_STR "\n");
@@ -6348,7 +6349,6 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "which obviously can be used\n\t\t\tto encode ");
 	fprintf(stream, "control codes.  The option can be repeated\n");
 	fprintf(stream, "\t\t\tmultiple times to add multiple xattrs\n");
-	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
 	fprintf(stream, "\nSqfstar runtime options:\n");
 	fprintf(stream, "-version\t\tprint version, licence and copyright message\n");
 	fprintf(stream, "-force\t\t\tforce Sqfstar to write to block device ");
