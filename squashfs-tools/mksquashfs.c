@@ -6051,6 +6051,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-noI)\n");
 	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
 	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
+	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
 	fprintf(stream, "\nFilesystem build options:\n");
 	fprintf(stream, "-tar\t\t\tread uncompressed tar file from standard in (stdin)\n");
 	fprintf(stream, "-no-strip\t\tact like tar, and do not strip leading ");
@@ -6149,7 +6150,6 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "which obviously can be used\n\t\t\tto encode ");
 	fprintf(stream, "control codes.  The option can be repeated\n");
 	fprintf(stream, "\t\t\tmultiple times to add multiple xattrs\n");
-	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
 	fprintf(stream, "\nMksquashfs runtime options:\n");
 	fprintf(stream, "-version\t\tprint version, licence and copyright message\n");
 	fprintf(stream, "-exit-on-error\t\ttreat normally ignored errors as fatal\n");
