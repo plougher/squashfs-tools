@@ -6052,6 +6052,9 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
 	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
 	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
+	fprintf(stream, "-no-compression\t\tdo not compress any of the data ");
+	fprintf(stream, "or metadata.  This is\n\t\t\tequivalent to ");
+	fprintf(stream, "specifying -noI -noD -noF and -noX\n");
 	fprintf(stream, "\nFilesystem build options:\n");
 	fprintf(stream, "-tar\t\t\tread uncompressed tar file from standard in (stdin)\n");
 	fprintf(stream, "-no-strip\t\tact like tar, and do not strip leading ");
@@ -6924,6 +6927,9 @@ print_sqfstar_compressor_options:
 		else if(strcmp(argv[i], "-noX") == 0 ||
 				strcmp(argv[i], "-noXattrCompression") == 0)
 			noX = TRUE;
+
+		else if(strcmp(argv[i], "-no-compression") == 0)
+			noI = noD = noF = noX = TRUE;
 
 		else if(strcmp(argv[i], "-no-xattrs") == 0) {
 			if(xattr_exclude_preg || xattr_include_preg ||
