@@ -3831,8 +3831,6 @@ static void print_options(FILE *stream, char *name)
 {
 	fprintf(stream, "SYNTAX: %s [OPTIONS] FILESYSTEM [files ", name);
 	fprintf(stream, "to extract or exclude (with -excludes) or cat (with -cat )]\n");
-	fprintf(stream, "\t-v[ersion]\t\tprint version, licence and copyright ");
-	fprintf(stream, "information\n");
 	fprintf(stream, "\t-cat\t\t\tcat the files on the command line to stdout\n");
 	fprintf(stream, "\t-d[est] <pathname>\textract to <pathname>, ");
 	fprintf(stream, "default \"squashfs-root\".\n\t\t\t\tThis option ");
@@ -3852,11 +3850,6 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "file.\n\t\t\t\tImplies -no-wildcards\n");
 	fprintf(stream, "\t-missing[-symlinks]\tUnsquashfs will abort if any symlink ");
 	fprintf(stream, "can't be\n\t\t\t\tresolved in -follow-symlinks\n");
-	fprintf(stream, "\t-q[uiet]\t\tno verbose output\n");
-	fprintf(stream, "\t-n[o-progress]\t\tdo not display the progress bar\n");
-	fprintf(stream, "\t-percentage\t\tdisplay a percentage rather than ");
-	fprintf(stream, "the full\n\t\t\t\tprogress bar.  Can be used with ");
-	fprintf(stream, "dialog --gauge\n\t\t\t\tetc.\n");
 	fprintf(stream, "\t-no[-xattrs]\t\tdo not extract xattrs in file system");
 	fprintf(stream, NOXOPT_STR"\n");
 	fprintf(stream, "\t-x[attrs]\t\textract xattrs in file system" XOPT_STR "\n");
@@ -3870,9 +3863,6 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "regular expression, e.g.\n\t\t\t\t-xattrs-include ");
 	fprintf(stream, "'^user.' includes xattrs from\n\t\t\t\tthe user ");
 	fprintf(stream, "namespace\n");
-	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
-	fprintf(stream, "By default will use\n");
-	fprintf(stream, "\t\t\t\tthe number of processors available\n");
 	fprintf(stream, "\t-i[nfo]\t\t\tprint files as they are extracted\n");
 	fprintf(stream, "\t-li[nfo]\t\tprint files as they are extracted with file\n");
 	fprintf(stream, "\t\t\t\tattributes (like ls -l output)\n");
@@ -3890,11 +3880,6 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "specify\n\t\t\t\tKbytes, Mbytes or Gbytes respectively ");
 	fprintf(stream, "(default\n\t\t\t\t0 bytes).\n");
 	fprintf(stream, "\t-f[orce]\t\tif file already exists then overwrite\n");
-	fprintf(stream, "\t-ig[nore-errors]\ttreat errors writing files to output ");
-	fprintf(stream, "as\n\t\t\t\tnon-fatal\n");
-	fprintf(stream, "\t-st[rict-errors]\ttreat all errors as fatal\n");
-	fprintf(stream, "\t-no-exit[-code]\t\tdo not set exit code (to nonzero) on ");
-	fprintf(stream, "non-fatal\n\t\t\t\terrors\n");
 	fprintf(stream, "\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
 	fprintf(stream, "\t-UTC\t\t\tuse UTC rather than local time zone ");
 	fprintf(stream, "when\n\t\t\t\tdisplaying time\n");
@@ -3911,10 +3896,6 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-pseudo-file <file>\talternative name for -pf\n");
 	fprintf(stream, "\t-e[f] <extract file>\tsynonym for -extract-file\n");
 	fprintf(stream, "\t-exc[f] <exclude file>\tsynonym for -exclude-file\n");
-	fprintf(stream, "\t-da[ta-queue] <size>\tset data queue to <size> Mbytes.  ");
-	fprintf(stream, "Default %d\n\t\t\t\tMbytes\n", DATA_BUFFER_DEFAULT);
-	fprintf(stream, "\t-fr[ag-queue] <size>\tset fragment queue to <size> Mbytes.  ");
-	fprintf(stream, "Default\n\t\t\t\t%d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
 	fprintf(stream, "\t-no-wild[cards]\t\tdo not use wildcard matching in extract ");
 	fprintf(stream, "and\n\t\t\t\texclude names\n");
 	fprintf(stream, "\t-r[egex]\t\ttreat extract names as POSIX regular ");
@@ -3923,6 +3904,29 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "wildcard\n\t\t\t\texpansion (globbing)\n");
 	fprintf(stream, "\t-L\t\t\tsynonym for -follow-symlinks\n");
 	fprintf(stream, "\t-h[elp]\t\t\toutput this options text to stdout\n");
+	fprintf(stream, "\nUnsquashfs runtime options:\n");
+	fprintf(stream, "\t-v[ersion]\t\tprint version, licence and ");
+	fprintf(stream, "copyright information\n");
+	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
+	fprintf(stream, "By default will use\n");
+	fprintf(stream, "\t\t\t\tthe number of processors available\n");
+	fprintf(stream, "\t-q[uiet]\t\tno verbose output\n");
+	fprintf(stream, "\t-n[o-progress]\t\tdo not display the progress ");
+	fprintf(stream, "bar\n");
+	fprintf(stream, "\t-percentage\t\tdisplay a percentage rather than ");
+	fprintf(stream, "the full\n\t\t\t\tprogress bar.  Can be used with ");
+	fprintf(stream, "dialog --gauge\n\t\t\t\tetc.\n");
+	fprintf(stream, "\t-ig[nore-errors]\ttreat errors writing files to ");
+	fprintf(stream, "output as\n\t\t\t\tnon-fatal\n");
+	fprintf(stream, "\t-st[rict-errors]\ttreat all errors as fatal\n");
+	fprintf(stream, "\t-no-exit[-code]\t\tdo not set exit code (to ");
+	fprintf(stream, "nonzero) on non-fatal\n\t\t\t\terrors\n");
+	fprintf(stream, "\t-da[ta-queue] <size>\tset data queue to <size> ");
+	fprintf(stream, "Mbytes.  Default ");
+	fprintf(stream, "%d\n\t\t\t\tMbytes\n", DATA_BUFFER_DEFAULT);
+	fprintf(stream, "\t-fr[ag-queue] <size>\tset fragment queue to ");
+	fprintf(stream, "<size> Mbytes.  Default\n\t\t\t\t");
+	fprintf(stream, "%d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
 	fprintf(stream, "\nDecompressors available:\n");
 	display_compressors(stream, "", "");
 
