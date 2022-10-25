@@ -48,7 +48,7 @@ static int has_xattrs(unsigned int xattr)
 static void print_xattr_name_value(struct xattr_list *xattr, int writer_fd)
 {
 	unsigned char *value = xattr->value;
-	int i, count = 0, printable = TRUE;
+	int i, count = 0, printable = TRUE, res;
 
 	for(i = 0; i < xattr->vsize; i++) {
 		if(value[i] < 32 || value[i] > 126) {
@@ -80,9 +80,15 @@ static void print_xattr_name_value(struct xattr_list *xattr, int writer_fd)
 	} else
 		count = xattr->vsize;
 	
-	dprintf(writer_fd, "%s=", xattr->full_name);
+	res = dprintf(writer_fd, "%s=", xattr->full_name);
+	if(res == -1)
+		EXIT_UNSQUASH("Failed to write to pseudo output file\n");
+
 	write_bytes(writer_fd, (char *) value, count);
-	dprintf(writer_fd, "\n");
+
+	res = dprintf(writer_fd, "\n");
+	if(res == -1)
+		EXIT_UNSQUASH("Failed to write to pseudo output file\n");
 
 	if(!printable)
 		free(value);
@@ -93,7 +99,7 @@ void print_xattr(char *pathname, unsigned int xattr, int writer_fd)
 {
 	unsigned int count;
 	struct xattr_list *xattr_list;
-	int i, failed;
+	int i, failed, res;
 
 	if(!has_xattrs(xattr))
 		return;
@@ -125,7 +131,10 @@ void print_xattr(char *pathname, unsigned int xattr, int writer_fd)
 				continue;
 		}
 
-		dprintf(writer_fd, "%s x ", pathname);
+		res = dprintf(writer_fd, "%s x ", pathname);
+		if(res == -1)
+			EXIT_UNSQUASH("Failed to write to pseudo output file\n");
+
 		print_xattr_name_value(&xattr_list[i], writer_fd);
 	}
 

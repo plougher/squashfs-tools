@@ -3509,7 +3509,9 @@ void pseudo_print(char *pathname, struct inode *inode, char *link, long long off
 	if(link) {
 		char *name = strdup(filename);
 		char *linkname = process_filename(link);
-		dprintf(writer_fd, "%s L %s\n", name, linkname);
+		res = dprintf(writer_fd, "%s L %s\n", name, linkname);
+		if(res == -1)
+			EXIT_UNSQUASH("Failed to write to pseudo output file\n");
 		free(name);
 		return;
 	}
@@ -3526,29 +3528,34 @@ void pseudo_print(char *pathname, struct inode *inode, char *link, long long off
 	else if(res >= 12)
 		EXIT_UNSQUASH("snprintf returned more than 11 digits in pseudo_print()\n");
 
-	dprintf(writer_fd, "%s %c %ld %o %s %s", filename, type, inode->time, inode->mode & ~S_IFMT, userstr, groupstr);
+	res = dprintf(writer_fd, "%s %c %ld %o %s %s", filename, type, inode->time, inode->mode & ~S_IFMT, userstr, groupstr);
+	if(res == -1)
+		EXIT_UNSQUASH("Failed to write to pseudo output file\n");
 
 	switch(inode->mode & S_IFMT) {
 		case S_IFDIR:
-			dprintf(writer_fd, "\n");
+			res = dprintf(writer_fd, "\n");
 			break;
 		case S_IFLNK:
-			dprintf(writer_fd, " %s\n", inode->symlink);
+			res = dprintf(writer_fd, " %s\n", inode->symlink);
 			break;
 		case S_IFSOCK:
 		case S_IFIFO:
 			if(inode->type == SQUASHFS_SOCKET_TYPE || inode->type == SQUASHFS_LSOCKET_TYPE)
-				dprintf(writer_fd, " s\n");
+				res = dprintf(writer_fd, " s\n");
 			else
-				dprintf(writer_fd, " f\n");
+				res = dprintf(writer_fd, " f\n");
 			break;
 		case S_IFCHR:
 		case S_IFBLK:
-			dprintf(writer_fd, " %d %d\n", (int) inode->data >> 8, (int) inode->data & 0xff);
+			res = dprintf(writer_fd, " %d %d\n", (int) inode->data >> 8, (int) inode->data & 0xff);
 			break;
 		case S_IFREG:
-			dprintf(writer_fd, " %lld %lld\n", inode->data, offset);
+			res = dprintf(writer_fd, " %lld %lld\n", inode->data, offset);
 	}
+
+	if(res == -1)
+		EXIT_UNSQUASH("Failed to write to pseudo output file\n");
 
 	print_xattr(filename, inode->xattr, writer_fd);
 }
@@ -3734,7 +3741,9 @@ int generate_pseudo(char *pseudo_file)
 	inode_number = 1;
 	free_lookup_table();
 
-	dprintf(writer_fd, "#\n# START OF DATA - DO NOT MODIFY\n#\n");
+	res = dprintf(writer_fd, "#\n# START OF DATA - DO NOT MODIFY\n#\n");
+	if(res == -1)
+		EXIT_UNSQUASH("Failed to write to pseudo output file\n");
 
 	enable_progress_bar();
 
