@@ -3549,6 +3549,8 @@ void pseudo_print(char *pathname, struct inode *inode, char *link, long long off
 		case S_IFREG:
 			dprintf(writer_fd, " %lld %lld\n", inode->data, offset);
 	}
+
+	print_xattr(filename, inode->xattr, writer_fd);
 }
 
 

@@ -304,6 +304,7 @@ extern void enable_progress_bar();
 extern void disable_progress_bar();
 extern void dump_queue(struct queue *);
 extern void dump_cache(struct cache *);
+extern int write_bytes(int, char *, int);
 
 /* unsquash-1.c */
 int read_super_1(squashfs_operations **, void *);

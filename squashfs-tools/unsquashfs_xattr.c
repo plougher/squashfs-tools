@@ -45,6 +45,94 @@ static int has_xattrs(unsigned int xattr)
 }
 
 
+static void print_xattr_name_value(struct xattr_list *xattr, int writer_fd)
+{
+	unsigned char *value = xattr->value;
+	int i, count = 0, printable = TRUE;
+
+	for(i = 0; i < xattr->vsize; i++) {
+		if(value[i] < 32 || value[i] > 126) {
+			printable = FALSE;
+			count += 4;
+		} else if(value[i] == '\\')
+			count += 4;
+		else
+			count ++;
+	}
+
+	if(!printable) {
+		unsigned char *new = malloc(count + 2), *dest;
+		if(new == NULL)
+			MEM_ERROR();
+
+		memcpy(new, "0t", 2);
+		count += 2;
+
+		for(dest = new + 2, i = 0; i < xattr->vsize; i++) {
+			if(value[i] < 32 || value[i] > 126 || value[i] == '\\') {
+				sprintf((char *) dest, "\\%03o", value[i]);
+				dest += 4;
+			} else
+				*dest ++ = value[i];
+		}
+
+		value = new;
+	} else
+		count = xattr->vsize;
+	
+	dprintf(writer_fd, "%s=", xattr->full_name);
+	write_bytes(writer_fd, (char *) value, count);
+	dprintf(writer_fd, "\n");
+
+	if(!printable)
+		free(value);
+}
+
+
+void print_xattr(char *pathname, unsigned int xattr, int writer_fd)
+{
+	unsigned int count;
+	struct xattr_list *xattr_list;
+	int i, failed;
+
+	if(!has_xattrs(xattr))
+		return;
+
+	if(xattr >= sBlk.xattr_ids)
+		EXIT_UNSQUASH("File system corrupted - xattr index in inode too large (xattr: %u)\n", xattr);
+
+	xattr_list = get_xattr(xattr, &count, &failed);
+	if(xattr_list == NULL && failed == FALSE)
+		exit(1);
+
+	if(failed)
+		EXIT_UNSQUASH_STRICT("write_xattr: Failed to read one or more xattrs for %s\n", pathname);
+
+	for(i = 0; i < count; i++) {
+		if(xattr_exclude_preg) {
+			int res = regexec(xattr_exclude_preg,
+				xattr_list[i].full_name, (size_t) 0, NULL, 0);
+
+			if(res == 0)
+				continue;
+		}
+
+		if(xattr_include_preg) {
+			int res = regexec(xattr_include_preg,
+				xattr_list[i].full_name, (size_t) 0, NULL, 0);
+
+			if(res)
+				continue;
+		}
+
+		dprintf(writer_fd, "%s x ", pathname);
+		print_xattr_name_value(&xattr_list[i], writer_fd);
+	}
+
+	free_xattr(xattr_list, count);
+}
+
+
 int write_xattr(char *pathname, unsigned int xattr)
 {
 	unsigned int count;
