@@ -84,7 +84,9 @@ static void print_xattr_name_value(struct xattr_list *xattr, int writer_fd)
 	if(res == -1)
 		EXIT_UNSQUASH("Failed to write to pseudo output file\n");
 
-	write_bytes(writer_fd, (char *) value, count);
+	res = write_bytes(writer_fd, (char *) value, count);
+	if(res == -1)
+		EXIT_UNSQUASH("Failed to write to pseudo output file\n");
 
 	res = dprintf(writer_fd, "\n");
 	if(res == -1)
