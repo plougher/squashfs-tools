@@ -1024,7 +1024,7 @@ int write_file(struct inode *inode, char *pathname)
 {
 	unsigned int file_fd, i;
 	unsigned int *block_list = NULL;
-	int file_end = inode->data / block_size;
+	int file_end = inode->data / block_size, res;
 	long long start = inode->start;
 	mode_t mode = inode->mode;
 
@@ -1033,8 +1033,14 @@ int write_file(struct inode *inode, char *pathname)
 	if(!root_process && !(mode & S_IWUSR) && has_xattrs(inode->xattr))
 		mode |= S_IWUSR;
 
-	file_fd = open_wait(pathname, O_CREAT | O_WRONLY |
-		(force ? O_TRUNC : 0), mode & 0777);
+	if(force) {
+		res = unlink(pathname);
+		if(res == -1)
+			EXIT_UNSQUASH("write_file: failed to unlink file %s,"
+				" because %s\n", pathname, strerror(errno));
+	}
+
+	file_fd = open_wait(pathname, O_CREAT | O_WRONLY, mode & 0777);
 	if(file_fd == -1) {
 		EXIT_UNSQUASH_IGNORE("write_file: failed to create file %s,"
 			" because %s\n", pathname, strerror(errno));
