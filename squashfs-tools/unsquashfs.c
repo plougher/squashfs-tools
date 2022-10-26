@@ -836,11 +836,12 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 	unsigned int xattr, unsigned int set_mode)
 {
 	struct utimbuf times = { time, time };
+	int failed = FALSE;
 
 	if(utime(pathname, &times) == -1) {
 		EXIT_UNSQUASH_STRICT("set_attributes: failed to set time on "
 			"%s, because %s\n", pathname, strerror(errno));
-		return FALSE;
+		failed = TRUE;
 	}
 
 	if(root_process) {
@@ -848,7 +849,7 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 			EXIT_UNSQUASH_STRICT("set_attributes: failed to change"
 				" uid and gids on %s, because %s\n", pathname,
 				strerror(errno));
-			return FALSE;
+			failed = TRUE;
 		}
 	} else
 		mode &= ~06000;
@@ -866,11 +867,14 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 			EXIT_UNSQUASH_STRICT("set_attributes: failed to change"
 				" mode %s, because %s\n", pathname,
 				strerror(errno));
-			return FALSE;
+			failed = TRUE;
 		}
 	}
 
-	return write_xattr(pathname, xattr);
+	if(write_xattr(pathname, xattr) == FALSE)
+		failed = TRUE;
+
+	return !failed;
 }
 
 
