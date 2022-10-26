@@ -854,6 +854,9 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 	} else
 		mode &= ~06000;
 
+	if(write_xattr(pathname, xattr) == FALSE)
+		failed = TRUE;
+
 	if((set_mode || (mode & 07000)) &&
 					chmod(pathname, (mode_t) mode) == -1) {
 		/*
@@ -870,9 +873,6 @@ int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 			failed = TRUE;
 		}
 	}
-
-	if(write_xattr(pathname, xattr) == FALSE)
-		failed = TRUE;
 
 	return !failed;
 }
