@@ -1026,11 +1026,15 @@ int write_file(struct inode *inode, char *pathname)
 	unsigned int *block_list = NULL;
 	int file_end = inode->data / block_size;
 	long long start = inode->start;
+	mode_t mode = inode->mode;
 
 	TRACE("write_file: regular file, blocks %d\n", inode->blocks);
 
+	if(!root_process && !(mode & S_IWUSR) && has_xattrs(inode->xattr))
+		mode |= S_IWUSR;
+
 	file_fd = open_wait(pathname, O_CREAT | O_WRONLY |
-		(force ? O_TRUNC : 0), (mode_t) inode->mode & 0777);
+		(force ? O_TRUNC : 0), mode & 0777);
 	if(file_fd == -1) {
 		EXIT_UNSQUASH_IGNORE("write_file: failed to create file %s,"
 			" because %s\n", pathname, strerror(errno));
@@ -2524,9 +2528,11 @@ void *writer(void *arg)
 
 		close_wake(file_fd);
 		if(local_fail == FALSE) {
+			int set = !root_process && !(file->mode & S_IWUSR) && has_xattrs(file->xattr);
+
 			res = set_attributes(file->pathname, file->mode,
 				file->uid, file->gid, file->time, file->xattr,
-				force);
+				force || set);
 			if(res == FALSE)
 				exit_code = TRUE;
 		} else

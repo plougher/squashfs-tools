@@ -35,7 +35,7 @@ extern int strict_errors;
 extern regex_t *xattr_exclude_preg;
 extern regex_t *xattr_include_preg;
 
-static int has_xattrs(unsigned int xattr)
+int has_xattrs(unsigned int xattr)
 {
 	if(xattr == SQUASHFS_INVALID_XATTR ||
 			sBlk.s.xattr_id_table_start == SQUASHFS_INVALID_BLK)
