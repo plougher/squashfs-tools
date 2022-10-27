@@ -3864,10 +3864,6 @@ static void print_options(FILE *stream, char *name)
 {
 	fprintf(stream, "SYNTAX: %s [OPTIONS] FILESYSTEM [files ", name);
 	fprintf(stream, "to extract or exclude (with -excludes) or cat (with -cat )]\n");
-	fprintf(stream, "\t-cat\t\t\tcat the files on the command line to stdout\n");
-	fprintf(stream, "\t-f[orce]\t\tif file already exists then overwrite\n");
-	fprintf(stream, "\t-pf <file>\t\toutput a pseudo file equivalent ");
-	fprintf(stream, "of the input\n\t\t\t\tSquashfs filesystem, use - for stdout\n");
 	fprintf(stream, "\nFilesystem extraction (filtering) options:\n");
 	fprintf(stream, "\t-d[est] <pathname>\textract to <pathname>, ");
 	fprintf(stream, "default \"squashfs-root\".\n\t\t\t\tThis option ");
@@ -3897,6 +3893,10 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "expressions\n");
 	fprintf(stream, "\t\t\t\trather than use the default shell ");
 	fprintf(stream, "wildcard\n\t\t\t\texpansion (globbing)\n");
+	fprintf(stream, "\t-cat\t\t\tcat the files on the command line to stdout\n");
+	fprintf(stream, "\t-f[orce]\t\tif file already exists then overwrite\n");
+	fprintf(stream, "\t-pf <file>\t\toutput a pseudo file equivalent ");
+	fprintf(stream, "of the input\n\t\t\t\tSquashfs filesystem, use - for stdout\n");
 	fprintf(stream, "\nFilesystem information and listing options:\n");
 	fprintf(stream, "\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
 	fprintf(stream, "\t-mkfs-time\t\tdisplay filesystem superblock time, which is an\n");
