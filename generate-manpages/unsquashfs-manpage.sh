@@ -174,6 +174,26 @@ sed -i "s/\(Decompressors available\):/*\1*/" $tmp/unsquashfs.help
 
 sed -i "s/\(Exit status\):/*\1*/" $tmp/unsquashfs.help
 
+# Make Filesystem extraction (filtering) header into manpage section
+
+sed -i "s/\(Filesystem extraction (filtering) options\):/*\1*/" $tmp/unsquashfs.help
+
+# Make Filesystem information and listing header into manpage section
+
+sed -i "s/\(Filesystem information and listing options\):/*\1*/" $tmp/unsquashfs.help
+
+# Make Filesystem extended attribute (xattrs) header into manpage section
+
+sed -i "s/\(Filesystem extended attribute (xattrs) options\):/*\1*/" $tmp/unsquashfs.help
+
+# Make Unsquashfs runtime header into manpage section
+
+sed -i "s/\(Unsquashfs runtime options\):/*\1*/" $tmp/unsquashfs.help
+
+# Make Miscellaneous header into manpage section
+
+sed -i "s/\(Miscellaneous options\):/*\1*/" $tmp/unsquashfs.help
+
 # Add reference to manpages for other squashfs-tools programs
 sed -i "s/See also:/See also:\nmksquashfs(1), sqfstar(1), sqfscat(1)\n/" $tmp/unsquashfs.help
 
