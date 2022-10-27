@@ -1027,18 +1027,24 @@ int write_file(struct inode *inode, char *pathname)
 	int file_end = inode->data / block_size, res;
 	long long start = inode->start;
 	mode_t mode = inode->mode;
+	struct stat buf;
 
 	TRACE("write_file: regular file, blocks %d\n", inode->blocks);
 
 	if(!root_process && !(mode & S_IWUSR) && has_xattrs(inode->xattr))
 		mode |= S_IWUSR;
 
-	if(force) {
+	res = lstat(pathname, &buf);
+	if(res != -1 && force) {
 		res = unlink(pathname);
 		if(res == -1)
 			EXIT_UNSQUASH("write_file: failed to unlink file %s,"
 				" because %s\n", pathname, strerror(errno));
-	}
+	} else if(res != -1)
+		EXIT_UNSQUASH("write_file: file %s already exists\n", pathname);
+	else if(errno != ENOENT)
+		EXIT_UNSQUASH("write_file: failed to lstat file %s,"
+			" because %s\n", pathname, strerror(errno));
 
 	file_fd = open_wait(pathname, O_CREAT | O_WRONLY, mode & 0777);
 	if(file_fd == -1) {
