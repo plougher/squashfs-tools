@@ -3883,10 +3883,6 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-llc\t\t\tlist filesystem concisely with file ");
 	fprintf(stream, "attributes,\n\t\t\t\tdisplaying only files and empty ");
 	fprintf(stream, "directories.\n\t\t\t\tDo not extract files\n");
-	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  ");
-	fprintf(stream, "Optionally\n\t\t\t\ta suffix of K, M or G can be given to ");
-	fprintf(stream, "specify\n\t\t\t\tKbytes, Mbytes or Gbytes respectively ");
-	fprintf(stream, "(default\n\t\t\t\t0 bytes).\n");
 	fprintf(stream, "\t-f[orce]\t\tif file already exists then overwrite\n");
 	fprintf(stream, "\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
 	fprintf(stream, "\t-UTC\t\t\tuse UTC rather than local time zone ");
@@ -3894,14 +3890,8 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-mkfs-time\t\tdisplay filesystem superblock time, which is an\n");
 	fprintf(stream, "\t\t\t\tunsigned 32-bit int representing the time in\n");
 	fprintf(stream, "\t\t\t\tseconds since the epoch (1970-01-01)\n");
-	fprintf(stream, "\t-fstime\t\t\tsynonym for -mkfs-time\n");
 	fprintf(stream, "\t-pf <file>\t\toutput a pseudo file equivalent ");
 	fprintf(stream, "of the input\n\t\t\t\tSquashfs filesystem, use - for stdout\n");
-	fprintf(stream, "\t-pseudo-file <file>\talternative name for -pf\n");
-	fprintf(stream, "\t-e[f] <extract file>\tsynonym for -extract-file\n");
-	fprintf(stream, "\t-exc[f] <exclude file>\tsynonym for -exclude-file\n");
-	fprintf(stream, "\t-L\t\t\tsynonym for -follow-symlinks\n");
-	fprintf(stream, "\t-h[elp]\t\t\toutput this options text to stdout\n");
 	fprintf(stream, "\nFilesystem extraction (filtering) options:\n");
 	fprintf(stream, "\t-max[-depth] <levels>\tdescend at most <levels> of ");
 	fprintf(stream, "directories when\n\t\t\t\textracting\n");
@@ -3964,6 +3954,17 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-fr[ag-queue] <size>\tset fragment queue to ");
 	fprintf(stream, "<size> Mbytes.  Default\n\t\t\t\t");
 	fprintf(stream, "%d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
+	fprintf(stream, "Miscellaneous options:\n");
+	fprintf(stream, "\t-h[elp]\t\t\toutput this options text to stdout\n");
+	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  ");
+	fprintf(stream, "Optionally\n\t\t\t\ta suffix of K, M or G can be given to ");
+	fprintf(stream, "specify\n\t\t\t\tKbytes, Mbytes or Gbytes respectively ");
+	fprintf(stream, "(default\n\t\t\t\t0 bytes).\n");
+	fprintf(stream, "\t-fstime\t\t\tsynonym for -mkfs-time\n");
+	fprintf(stream, "\t-e[f] <extract file>\tsynonym for -extract-file\n");
+	fprintf(stream, "\t-exc[f] <exclude file>\tsynonym for -exclude-file\n");
+	fprintf(stream, "\t-L\t\t\tsynonym for -follow-symlinks\n");
+	fprintf(stream, "\t-pseudo-file <file>\talternative name for -pf\n");
 	fprintf(stream, "\nDecompressors available:\n");
 	display_compressors(stream, "", "");
 
