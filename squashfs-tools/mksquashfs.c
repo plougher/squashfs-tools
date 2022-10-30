@@ -51,7 +51,9 @@
 #include <ctype.h>
 #include <sys/sysinfo.h>
 
-#ifndef linux
+#ifdef linux
+#include <sched.h>
+#else
 #include <sys/sysctl.h>
 #endif
 
@@ -5138,7 +5140,15 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
 	if(processors == -1) {
-#ifndef linux
+#ifdef linux
+		cpu_set_t cpu_set;
+		CPU_ZERO(&cpu_set);
+
+		if(sched_getaffinity(0, sizeof cpu_set, &cpu_set) == -1)
+			processors = sysconf(_SC_NPROCESSORS_ONLN);
+		else
+			processors = CPU_COUNT(&cpu_set);
+#else
 		int mib[2];
 		size_t len = sizeof(processors);
 
@@ -5155,8 +5165,6 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 			ERROR_EXIT("  Defaulting to 1\n");
 			processors = 1;
 		}
-#else
-		processors = sysconf(_SC_NPROCESSORS_ONLN);
 #endif
 	}
 
