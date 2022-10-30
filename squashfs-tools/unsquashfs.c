@@ -33,6 +33,7 @@
 #include "fnmatch_compat.h"
 
 #ifdef __linux__
+#include <sched.h>
 #include <sys/sysinfo.h>
 #include <sys/sysmacros.h>
 #elif defined __FreeBSD__
@@ -2745,7 +2746,15 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size, int cat_
 	}
 
 	if(processors == -1) {
-#ifndef linux
+#ifdef linux
+		cpu_set_t cpu_set;
+		CPU_ZERO(&cpu_set);
+
+		if(sched_getaffinity(0, sizeof cpu_set, &cpu_set) == -1)
+			processors = sysconf(_SC_NPROCESSORS_ONLN);
+		else
+			processors = CPU_COUNT(&cpu_set);
+#else
 		int mib[2];
 		size_t len = sizeof(processors);
 
@@ -2761,8 +2770,6 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size, int cat_
 				"Defaulting to 1\n");
 			processors = 1;
 		}
-#else
-		processors = sysconf(_SC_NPROCESSORS_ONLN);
 #endif
 	}
 
