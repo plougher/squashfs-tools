@@ -101,6 +101,7 @@ long long start_offset = 0;
 int sleep_time = 0;
 
 long long global_uid = -1, global_gid = -1;
+int pseudo_override = 0;
 
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
@@ -951,15 +952,15 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 		break;
 	}
 
-	if(global_uid == -1)
-		uid = buf->st_uid;
-	else
+	if(!pseudo_override && global_uid != -1)
 		uid = (unsigned int) global_uid;
-
-	if(global_gid == -1)
-		gid = buf->st_gid;
 	else
+		uid = buf->st_uid;
+
+	if(!pseudo_override && global_gid != -1)
 		gid = (unsigned int) global_gid;
+	else
+		gid = buf->st_gid;
 			
 	base->mode = SQUASHFS_MODE(buf->st_mode);
 	base->inode_type = type;
@@ -3919,6 +3920,12 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 		eval_actions(root_dir, dirent);
 
+		if(pseudo_override && global_uid != -1)
+			buf->st_uid = (unsigned int) global_uid;
+
+		if(pseudo_override && global_gid != -1)
+			buf->st_gid = (unsigned int) global_gid;
+			
 		if((buf->st_mode & S_IFMT) == S_IFDIR)
 			dir_scan2(dirent->dir, pseudo_subdir(name, pseudo));
 	}
@@ -6101,6 +6108,9 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
 	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
+	fprintf(stream, "-pseudo-override\tmake pseudo file uids and gids ");
+	fprintf(stream, "override -all-root,\n\t\t\t-force-uid and");
+	fprintf(stream, "-force-gid options\n"); 
 	fprintf(stream, "-no-exports\t\tdo not make filesystem exportable via NFS (-tar default)\n");
 	fprintf(stream, "-exports\t\tmake filesystem exportable via NFS (default)\n");
 	fprintf(stream, "-no-sparse\t\tdo not detect sparse files\n");
@@ -7838,7 +7848,9 @@ print_compressor_options:
 					exit(1);
 				}
 			}
-		} else if(strcmp(argv[i], "-noI") == 0 ||
+		} else if(strcmp(argv[i], "-pseudo-override") == 0)
+			pseudo_override = TRUE;
+		else if(strcmp(argv[i], "-noI") == 0 ||
 				strcmp(argv[i], "-noInodeCompression") == 0)
 			noI = TRUE;
 
