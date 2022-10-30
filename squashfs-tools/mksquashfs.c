@@ -915,6 +915,7 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 	char *filename = pathname(dir_ent);
 	int nlink = dir_ent->inode->nlink;
 	int xattr = read_xattrs(dir_ent, type);
+	unsigned int uid, gid;
 
 	switch(type) {
 	case SQUASHFS_FILE_TYPE:
@@ -949,13 +950,21 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 			type = SQUASHFS_LSOCKET_TYPE;
 		break;
 	}
+
+	if(global_uid == -1)
+		uid = buf->st_uid;
+	else
+		uid = (unsigned int) global_uid;
+
+	if(global_gid == -1)
+		gid = buf->st_gid;
+	else
+		gid = (unsigned int) global_gid;
 			
 	base->mode = SQUASHFS_MODE(buf->st_mode);
-	base->uid = get_uid((unsigned int) global_uid == -1 ?
-		buf->st_uid : global_uid);
 	base->inode_type = type;
-	base->guid = get_guid((unsigned int) global_gid == -1 ?
-		buf->st_gid : global_gid);
+	base->uid = get_uid(uid);
+	base->guid = get_guid(gid);
 	base->mtime = get_time(buf->st_mtime);
 	base->inode_number = get_inode_no(dir_ent->inode);
 
