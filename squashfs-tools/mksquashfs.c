@@ -102,6 +102,7 @@ int sleep_time = 0;
 
 long long global_uid = -1, global_gid = -1;
 int pseudo_override = 0;
+int max_depth = -1;
 
 /* superblock attributes */
 int block_size = SQUASHFS_FILE_SIZE, block_log;
@@ -3766,6 +3767,12 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 		return NULL;
 	}
 
+	if(max_depth != -1 && depth > max_depth) {
+		add_excluded(dir);
+		scan1_freedir(dir);
+		return dir;
+	}
+
 	while((dir_ent = _readdir(dir))) {
 		struct dir_info *sub_dir;
 		struct stat buf;
@@ -6140,6 +6147,8 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "used in\n\t\t\texclude dirs/files\n");
 	fprintf(stream, "-regex\t\t\tallow POSIX regular expressions to be used in ");
 	fprintf(stream, "exclude\n\t\t\tdirs/files\n");
+	fprintf(stream, "-max-depth <levels>\tdescend at most <levels> of ");
+	fprintf(stream, "directories when scanning\n\t\t\tfilesystem\n");
 	fprintf(stream, "-one-file-system\tdo not cross filesystem ");
 	fprintf(stream, "boundaries.  If a directory\n\t\t\tcrosses the ");
 	fprintf(stream, "boundary, create an empty directory for\n\t\t\teach ");
@@ -7449,7 +7458,13 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-no-strip") == 0 ||
 					strcmp(argv[i], "-tarstyle") == 0)
 			tarstyle = TRUE;
-		else if(strcmp(argv[i], "-throttle") == 0) {
+		else if(strcmp(argv[i], "-max-depth") == 0) {
+			if((++i == argc) || !parse_num(argv[i], &max_depth)) {
+				ERROR("%s: %s missing or invalid value\n",
+							argv[0], argv[i - 1]);
+				exit(1);
+			}
+		} else if(strcmp(argv[i], "-throttle") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
 				ERROR("%s: %s missing or invalid value\n",
 							argv[0], argv[i - 1]);
