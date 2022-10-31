@@ -6334,6 +6334,9 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
 	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
+	fprintf(stream, "-pseudo-override\tmake pseudo file uids and gids ");
+	fprintf(stream, "override -all-root,\n\t\t\t-force-uid and");
+	fprintf(stream, "-force-gid options\n");
 	fprintf(stream, "-exports\t\tmake the filesystem exportable via NFS\n");
 	fprintf(stream, "-no-sparse\t\tdo not detect sparse files\n");
 	fprintf(stream, "-no-fragments\t\tdo not use fragments\n");
@@ -6938,7 +6941,9 @@ print_sqfstar_compressor_options:
 					exit(1);
 				}
 			}
-		} else if(strcmp(argv[i], "-noI") == 0 ||
+		} else if(strcmp(argv[i], "-pseudo-override") == 0)
+			pseudo_override = TRUE;
+		else if(strcmp(argv[i], "-noI") == 0 ||
 				strcmp(argv[i], "-noInodeCompression") == 0)
 			noI = TRUE;
 
