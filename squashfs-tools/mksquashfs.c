@@ -962,7 +962,7 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 		gid = (unsigned int) global_gid;
 	else
 		gid = buf->st_gid;
-			
+
 	base->mode = SQUASHFS_MODE(buf->st_mode);
 	base->inode_type = type;
 	base->uid = get_uid(uid);
@@ -3535,6 +3535,12 @@ static squashfs_inode scan_single(char *pathname, int progress)
 	if(root_time_opt)
 		buf.st_mtime = root_time;
 
+	if(pseudo_override && global_uid != -1)
+		buf.st_uid = (unsigned int) global_uid;
+
+	if(pseudo_override && global_gid != -1)
+		buf.st_gid = (unsigned int) global_gid;
+
 	dir_ent->inode = lookup_inode(&buf);
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
@@ -3577,6 +3583,12 @@ static squashfs_inode scan_encomp(int progress)
 		buf.st_mtime = root_time;
 	else
 		buf.st_mtime = time(NULL);
+	if(pseudo_override && global_uid != -1)
+		buf.st_uid = (unsigned int) global_uid;
+
+	if(pseudo_override && global_gid != -1)
+		buf.st_gid = (unsigned int) global_gid;
+
 	buf.st_dev = 0;
 	buf.st_ino = 0;
 	dir_ent->inode = lookup_inode(&buf);
@@ -4924,6 +4936,11 @@ static squashfs_inode process_source(int progress)
 			buf.st_mtime = root_time;
 		else
 			buf.st_mtime = time(NULL);
+		if(pseudo_override && global_uid != -1)
+			buf.st_uid = (unsigned int) global_uid;
+		if(pseudo_override && global_gid != -1)
+			buf.st_gid = (unsigned int) global_gid;
+
 		entry = create_dir_entry("", NULL, "", new);
 		entry->inode = lookup_inode(&buf);
 		entry->inode->dummy_root_dir = TRUE;
@@ -4936,6 +4953,10 @@ static squashfs_inode process_source(int progress)
 			buf.st_gid = root_gid;
 		if(root_time_opt)
 			buf.st_mtime = root_time;
+		if(pseudo_override && global_uid != -1)
+			buf.st_uid = (unsigned int) global_uid;
+		if(pseudo_override && global_gid != -1)
+			buf.st_gid = (unsigned int) global_gid;
 
 		entry = create_dir_entry("", NULL, pathname, new);
 		entry->inode = lookup_inode(&buf);
