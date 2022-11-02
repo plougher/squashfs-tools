@@ -7093,6 +7093,15 @@ print_sqfstar_compressor_options:
 	 */
 	sort_xattr_add_list();
 
+	/*
+	 * If -pseudo-override option has been specified and there are
+	 * no pseudo files then reset option.  -pseudo-override relies
+	 * on dir_scan2() being run, which won't be if there's no
+	 * actions or pseudo files
+	 */
+	if(pseudo_override && !get_pseudo())
+		pseudo_override = FALSE;
+
 #ifdef SQUASHFS_TRACE
 	/*
 	 * Disable progress bar if full debug tracing is enabled.
@@ -8049,6 +8058,15 @@ print_compressor_options:
 	 * Sort all the xattr-add options now they're all processed
 	 */
 	sort_xattr_add_list();
+
+	/*
+	 * If -pseudo-override option has been specified and there are
+	 * no pseudo files then reset option.  -pseudo-override relies
+	 * on dir_scan2() being run, which won't be if there's no
+	 * actions or pseudo files
+	 */
+	if(pseudo_override && !get_pseudo())
+		pseudo_override = FALSE;
 
 #ifdef SQUASHFS_TRACE
 	/*
