@@ -4525,6 +4525,9 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 	char *name, *newsubpath = NULL;
 	int res;
 
+	if(max_depth != -1 && depth > max_depth)
+		return NULL;
+
 	if(dir == NULL)
 		dir = create_dir("", subpath, depth);
 
