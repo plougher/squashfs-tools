@@ -46,6 +46,7 @@
 #define FALSE 0
 
 extern int silent;
+int ignore_zeros = FALSE;
 
 static long long read_octal(char *s, int size)
 {
@@ -1159,8 +1160,12 @@ again:
 		goto failed;
 	}
 
-	if(all_zero(&header))
-		goto eof;
+	if(all_zero(&header)) {
+		if(ignore_zeros)
+			goto again;
+		else
+			goto eof;
+	}
 
 	if(checksum_matches(&header) == FALSE) {
 		ERROR("Tar header checksum does not match!\n");

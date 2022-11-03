@@ -6387,6 +6387,13 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "One per line\n");
 	fprintf(stream, "-regex\t\t\tallow POSIX regular expressions to be used in ");
 	fprintf(stream, "exclude\n\t\t\tdirs/files\n");
+	fprintf(stream, "-ignore-zeros\t\tallow tar files to be concatenated ");
+	fprintf(stream, "together and fed to\n\t\t\tSqfstar.  Normally a ");
+	fprintf(stream, "tarfile has two consecutive 512\n\t\t\tbyte blocks ");
+	fprintf(stream, "filled with zeros which means EOF and\n");
+	fprintf(stream, "\t\t\tSqfstar will stop reading after the first tar ");
+	fprintf(stream, "file on\n\t\t\tencountering them. This option makes ");
+	fprintf(stream, "Sqfstar ignore the\n\t\t\tzero filled blocks\n");
 	fprintf(stream, "\nFilesystem extended attribute (xattrs) options:\n");
 	fprintf(stream, "-no-xattrs\t\tdo not store extended attributes" NOXOPT_STR "\n");
 	fprintf(stream, "-xattrs\t\t\tstore extended attributes" XOPT_STR "\n");
@@ -6711,7 +6718,9 @@ int sqfstar(int argc, char *argv[])
 	always_use_fragments = TRUE;
 
 	for(i = 1; i < dest_index; i++) {
-		if(strcmp(argv[i], "-no-hardlinks") == 0)
+		if(strcmp(argv[i], "-ignore-zeros") == 0)
+			ignore_zeros = TRUE;
+		else if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-throttle") == 0) {
 			if((++i == dest_index) || !parse_num(argv[i], &sleep_time)) {

@@ -132,6 +132,7 @@ struct tar_file {
 
 extern void read_tar_file();
 extern squashfs_inode process_tar_file(int progress);
+extern int ignore_zeros;
 
 #ifdef XATTR_SUPPORT
 extern int xattr_get_prefix(struct xattr_list *, char *);
