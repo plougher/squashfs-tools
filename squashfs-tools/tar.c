@@ -1152,16 +1152,15 @@ static struct tar_file *read_tar_header(int *status)
 again:
 	res = read_bytes(STDIN_FILENO, &header, 512);
 	if(res < 512) {
+		if(res == 0)
+			goto eof;
 		if(res != -1)
 			ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
 		goto failed;
 	}
 
-	if(all_zero(&header)) {
-		*status = TAR_EOF;
-		free(file);
-		return NULL;
-	}
+	if(all_zero(&header))
+		goto eof;
 
 	if(checksum_matches(&header) == FALSE) {
 		ERROR("Tar header checksum does not match!\n");
@@ -1444,6 +1443,11 @@ ignored:
 	free(file->link);
 	free(file);
 	*status = TAR_IGNORED;
+	return NULL;
+
+eof:
+	*status = TAR_EOF;
+	free(file);
 	return NULL;
 }
 
