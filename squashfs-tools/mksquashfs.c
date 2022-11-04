@@ -311,7 +311,8 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-m
 	"recovery-path", "throttle", "limit", "processors", "mem", "offset",
 	"o", "log", "a", "va", "ta", "fa", "af", "vaf", "taf", "faf",
 	"read-queue", "write-queue", "fragment-queue", "root-time", "root-uid",
-	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", NULL
+	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add",
+	"default-mode", "default-uid", "default-gid", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -6277,6 +6278,23 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n");
 	fprintf(stream, "\t\t\tDefault 0 bytes\n");
 	fprintf(stream, "-o <offset>\t\tsynonym for -offset\n");
+	fprintf(stream, "\nTar file only options:\n");
+	fprintf(stream, "-default-mode <mode>\ttar files often do not store ");
+	fprintf(stream, "permissions for\n\t\t\tintermediate directories.  ");
+	fprintf(stream, "This option sets the default\n\t\t\tdirectory ");
+	fprintf(stream, "permissions to octal <mode>, rather than 0755.\n");
+	fprintf(stream, "\t\t\tThis also sets the root inode mode\n");
+	fprintf(stream, "-default-uid <uid>\ttar files often do not store ");
+	fprintf(stream, "uids for intermediate\n\t\t\tdirectories.  This ");
+	fprintf(stream, "option sets the default directory\n\t\t\towner to ");
+	fprintf(stream, "<uid>, rather than the user running Mksquashfs.\n");
+	fprintf(stream, "\t\t\tThis also sets the root inode uid\n");
+	fprintf(stream, "-default-gid <gid>\ttar files often do not store ");
+	fprintf(stream, "gids for intermediate\n\t\t\tdirectories.  This ");
+	fprintf(stream, "option sets the default directory\n\t\t\tgroup to ");
+	fprintf(stream, "<gid>, rather than the group of the user\n");
+	fprintf(stream, "\t\t\trunning Mksquashfs.  This also sets the root ");
+	fprintf(stream, "inode gid\n");
 	fprintf(stream, "\nMiscellaneous options:\n");
 	fprintf(stream, "-fstime <time>\t\talternative name for -mkfs-time\n");
 	fprintf(stream, "-always-use-fragments\talternative name for -tailends\n");
@@ -7631,6 +7649,30 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 			root_time_opt = TRUE;
+		} else if(strcmp(argv[i], "-default-mode") == 0) {
+			if((++i == argc) || !parse_mode(argv[i], &default_mode)) {
+				ERROR("%s: -default-mode missing or invalid mode,"
+					" octal number <= 07777 expected\n", argv[0]);
+				exit(1);
+			}
+			root_mode = default_mode;
+			default_mode_opt = root_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-default-uid") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &default_uid)) {
+				ERROR("%s: -default-uid missing or invalid uid\n",
+					argv[0]);
+				exit(1);
+			}
+			root_uid = default_uid;
+			default_uid_opt = root_uid_opt = TRUE;
+		} else if(strcmp(argv[i], "-default-gid") == 0) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &default_gid)) {
+				ERROR("%s: -default-gid missing or invalid gid\n",
+					argv[0]);
+				exit(1);
+			}
+			root_gid = default_gid;
+			default_gid_opt = root_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-log") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing log file\n",
