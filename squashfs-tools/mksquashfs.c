@@ -240,7 +240,9 @@ unsigned int root_time;
 int root_time_opt = FALSE;
 
 /* Values that override uids and gids for all files and directories */
-long long global_uid = -1, global_gid = -1;
+long long global_gid = -1;
+int global_uid_opt = FALSE;
+unsigned int global_uid;
 
 /* Time value over-ride options */
 unsigned int mkfs_time;
@@ -955,8 +957,8 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 		break;
 	}
 
-	if(!pseudo_override && global_uid != -1)
-		uid = (unsigned int) global_uid;
+	if(!pseudo_override && global_uid_opt)
+		uid = global_uid;
 	else
 		uid = buf->st_uid;
 
@@ -3537,8 +3539,8 @@ static squashfs_inode scan_single(char *pathname, int progress)
 	if(root_time_opt)
 		buf.st_mtime = root_time;
 
-	if(pseudo_override && global_uid != -1)
-		buf.st_uid = (unsigned int) global_uid;
+	if(pseudo_override && global_uid_opt)
+		buf.st_uid = global_uid;
 
 	if(pseudo_override && global_gid != -1)
 		buf.st_gid = (unsigned int) global_gid;
@@ -3585,8 +3587,8 @@ static squashfs_inode scan_encomp(int progress)
 		buf.st_mtime = root_time;
 	else
 		buf.st_mtime = time(NULL);
-	if(pseudo_override && global_uid != -1)
-		buf.st_uid = (unsigned int) global_uid;
+	if(pseudo_override && global_uid_opt)
+		buf.st_uid = global_uid;
 
 	if(pseudo_override && global_gid != -1)
 		buf.st_gid = (unsigned int) global_gid;
@@ -3941,8 +3943,8 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 		eval_actions(root_dir, dirent);
 
-		if(pseudo_override && global_uid != -1)
-			buf->st_uid = (unsigned int) global_uid;
+		if(pseudo_override && global_uid_opt)
+			buf->st_uid = global_uid;
 
 		if(pseudo_override && global_gid != -1)
 			buf->st_gid = (unsigned int) global_gid;
@@ -4941,8 +4943,8 @@ static squashfs_inode process_source(int progress)
 			buf.st_mtime = root_time;
 		else
 			buf.st_mtime = time(NULL);
-		if(pseudo_override && global_uid != -1)
-			buf.st_uid = (unsigned int) global_uid;
+		if(pseudo_override && global_uid_opt)
+			buf.st_uid = global_uid;
 		if(pseudo_override && global_gid != -1)
 			buf.st_gid = (unsigned int) global_gid;
 
@@ -4958,8 +4960,8 @@ static squashfs_inode process_source(int progress)
 			buf.st_gid = root_gid;
 		if(root_time_opt)
 			buf.st_mtime = root_time;
-		if(pseudo_override && global_uid != -1)
-			buf.st_uid = (unsigned int) global_uid;
+		if(pseudo_override && global_uid_opt)
+			buf.st_uid = global_uid;
 		if(pseudo_override && global_gid != -1)
 			buf.st_gid = (unsigned int) global_gid;
 
@@ -6936,10 +6938,10 @@ print_sqfstar_compressor_options:
 			always_use_fragments = FALSE;
 
 		else if(strcmp(argv[i], "-all-root") == 0 ||
-				strcmp(argv[i], "-root-owned") == 0)
+				strcmp(argv[i], "-root-owned") == 0) {
 			global_uid = global_gid = 0;
-
-		else if(strcmp(argv[i], "-force-uid") == 0) {
+			global_uid_opt = TRUE;
+		} else if(strcmp(argv[i], "-force-uid") == 0) {
 			if(++i == dest_index) {
 				ERROR("%s: -force-uid missing uid or user\n",
 					argv[0]);
@@ -6962,6 +6964,7 @@ print_sqfstar_compressor_options:
 					exit(1);
 				}
 			}
+			global_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-gid") == 0) {
 			if(++i == dest_index) {
 				ERROR("%s: -force-gid missing gid or group\n",
@@ -7863,10 +7866,10 @@ print_compressor_options:
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-all-root") == 0 ||
-				strcmp(argv[i], "-root-owned") == 0)
+				strcmp(argv[i], "-root-owned") == 0) {
 			global_uid = global_gid = 0;
-
-		else if(strcmp(argv[i], "-force-uid") == 0) {
+			global_uid_opt = TRUE;
+		} else if(strcmp(argv[i], "-force-uid") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -force-uid missing uid or user\n",
 					argv[0]);
@@ -7889,6 +7892,7 @@ print_compressor_options:
 					exit(1);
 				}
 			}
+			global_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-gid") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -force-gid missing gid or group\n",
