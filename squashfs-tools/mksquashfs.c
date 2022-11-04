@@ -79,17 +79,12 @@
 int delete = FALSE;
 int quiet = FALSE;
 int fd;
-struct squashfs_super_block sBlk;
 
 /* filesystem flags for building */
 int comp_opts = FALSE;
 int duplicate_checking = TRUE;
-int noF = FALSE;
 int no_fragments = FALSE;
 int always_use_fragments = FALSE;
-int noI = FALSE;
-int noId = FALSE;
-int noD = FALSE;
 int silent = TRUE;
 int exportable = TRUE;
 int sparse_files = TRUE;
@@ -100,10 +95,20 @@ int exit_on_error = FALSE;
 long long start_offset = 0;
 int sleep_time = 0;
 
+/* Compression options */
+int noF = FALSE;
+int noI = FALSE;
+int noId = FALSE;
+int noD = FALSE;
+
+/* Do pseudo uids and guids override -all-root, -force-uid and -force-gid? */
 int pseudo_override = 0;
+
+/* Is max depth option in effect, and max depth to descend into directories */
 int max_depth = -1;
 
 /* superblock attributes */
+struct squashfs_super_block sBlk;
 int block_size = SQUASHFS_FILE_SIZE, block_log;
 unsigned int id_count = 0;
 unsigned int file_count = 0, sym_count = 0, dev_count = 0, dir_count = 0,
@@ -209,11 +214,15 @@ struct id *id_table[SQUASHFS_IDS], *sid_table[SQUASHFS_IDS];
 unsigned int uid_count = 0, guid_count = 0;
 unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 
+/* caches used to store buffers being worked on, and queues
+ * used to send buffers between threads */
 struct cache *reader_buffer, *fragment_buffer, *reserve_cache;
 struct cache *bwriter_buffer, *fwriter_buffer;
 struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
 	*to_frag, *locked_fragment, *to_process_frag;
 struct seq_queue *to_main;
+
+/* pthread threads and mutexes */
 pthread_t reader_thread, writer_thread, main_thread;
 pthread_t *deflator_thread, *frag_deflator_thread, *frag_thread;
 pthread_t *restore_thread = NULL;
@@ -248,7 +257,6 @@ unsigned int global_gid;
 /* Time value over-ride options */
 unsigned int mkfs_time;
 int mkfs_time_opt = FALSE;
-
 unsigned int all_time;
 int all_time_opt = FALSE;
 int clamping = TRUE;
@@ -296,7 +304,7 @@ int tarfile = FALSE;
 /* Is Mksquashfs reading a pseudo file from stdin? */
 int pseudo_stdin = FALSE;
 
-/* Xattr options and stats */
+/* Is Mksquashfs storing Xattrs, or excluding/including xattrs using regexs? */
 int no_xattrs = XATTR_DEF;
 int noX = FALSE;
 unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
