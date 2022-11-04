@@ -6271,13 +6271,6 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "actions from <f>\n");
 	fprintf(stream, "-false-action-file <f>\tas -false-action, but read ");
 	fprintf(stream, "actions from <f>\n");
-	fprintf(stream, "\nExpert options (these may make the filesystem unmountable):\n");
-	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
-	fprintf(stream, "-offset <offset>\tskip <offset> bytes at the beginning of ");
-	fprintf(stream, "FILESYSTEM.\n\t\t\tOptionally a suffix of K, M or G can be given ");
-	fprintf(stream, "to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n");
-	fprintf(stream, "\t\t\tDefault 0 bytes\n");
-	fprintf(stream, "-o <offset>\t\tsynonym for -offset\n");
 	fprintf(stream, "\nTar file only options:\n");
 	fprintf(stream, "-default-mode <mode>\ttar files often do not store ");
 	fprintf(stream, "permissions for\n\t\t\tintermediate directories.  ");
@@ -6302,6 +6295,13 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\tMksquashfs will stop reading after the first tar ");
 	fprintf(stream, "file on\n\t\t\tencountering them. This option makes ");
 	fprintf(stream, "Mksquashfs ignore\n\t\t\tthe zero filled blocks\n");
+	fprintf(stream, "\nExpert options (these may make the filesystem unmountable):\n");
+	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
+	fprintf(stream, "-offset <offset>\tskip <offset> bytes at the beginning of ");
+	fprintf(stream, "FILESYSTEM.\n\t\t\tOptionally a suffix of K, M or G can be given ");
+	fprintf(stream, "to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n");
+	fprintf(stream, "\t\t\tDefault 0 bytes\n");
+	fprintf(stream, "-o <offset>\t\tsynonym for -offset\n");
 	fprintf(stream, "\nMiscellaneous options:\n");
 	fprintf(stream, "-fstime <time>\t\talternative name for -mkfs-time\n");
 	fprintf(stream, "-always-use-fragments\talternative name for -tailends\n");
