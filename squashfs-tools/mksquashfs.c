@@ -100,7 +100,6 @@ int exit_on_error = FALSE;
 long long start_offset = 0;
 int sleep_time = 0;
 
-long long global_uid = -1, global_gid = -1;
 int pseudo_override = 0;
 int max_depth = -1;
 
@@ -239,6 +238,9 @@ int root_gid_opt = FALSE;
 unsigned int root_gid;
 unsigned int root_time;
 int root_time_opt = FALSE;
+
+/* Values that override uids and gids for all files and directories */
+long long global_uid = -1, global_gid = -1;
 
 /* Time value over-ride options */
 unsigned int mkfs_time;
