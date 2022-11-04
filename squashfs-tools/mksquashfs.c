@@ -6295,6 +6295,13 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "<gid>, rather than the group of the user\n");
 	fprintf(stream, "\t\t\trunning Mksquashfs.  This also sets the root ");
 	fprintf(stream, "inode gid\n");
+	fprintf(stream, "-ignore-zeros\t\tallow tar files to be concatenated ");
+	fprintf(stream, "together and fed to\n\t\t\tMksquashfs.  Normally a ");
+	fprintf(stream, "tarfile has two consecutive 512\n\t\t\tbyte blocks ");
+	fprintf(stream, "filled with zeros which means EOF and\n");
+	fprintf(stream, "\t\t\tMksquashfs will stop reading after the first tar ");
+	fprintf(stream, "file on\n\t\t\tencountering them. This option makes ");
+	fprintf(stream, "Mksquashfs ignore\n\t\t\tthe zero filled blocks\n");
 	fprintf(stream, "\nMiscellaneous options:\n");
 	fprintf(stream, "-fstime <time>\t\talternative name for -mkfs-time\n");
 	fprintf(stream, "-always-use-fragments\talternative name for -tailends\n");
@@ -7545,6 +7552,8 @@ int main(int argc, char *argv[])
 				"reading from stdin can be specified\n");
 
 	for(i = option_offset; i < argc; i++) {
+		if(strcmp(argv[i], "-ignore-zeros") == 0)
+			ignore_zeros = TRUE;
 		if(strcmp(argv[i], "-one-file-system") == 0)
 			one_file_system = TRUE;
 		else if(strcmp(argv[i], "-one-file-system-x") == 0)
