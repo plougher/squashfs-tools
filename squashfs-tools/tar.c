@@ -47,6 +47,13 @@
 
 extern int silent;
 int ignore_zeros = FALSE;
+extern int ignore_zeros;
+int default_uid_opt = FALSE;
+unsigned int default_uid;
+int default_gid_opt = FALSE;
+unsigned int default_gid;
+int default_mode_opt = FALSE;
+mode_t default_mode;
 
 static long long read_octal(char *s, int size)
 {
@@ -296,9 +303,19 @@ static void fixup_tree(struct dir_info *dir)
 			struct stat buf;
 
 			memset(&buf, 0, sizeof(buf));
-			buf.st_mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH | S_IFDIR;
-			buf.st_uid = getuid();
-			buf.st_gid = getgid();
+			if(default_mode_opt)
+				buf.st_mode = default_mode | S_IFDIR;
+			else
+				buf.st_mode = S_IRWXU | S_IRGRP | S_IXGRP |
+					S_IROTH | S_IXOTH | S_IFDIR;
+			if(default_uid_opt)
+				buf.st_uid = default_uid;
+			else
+				buf.st_uid = getuid();
+			if(default_gid_opt)
+				buf.st_gid = default_gid;
+			else
+				buf.st_gid = getgid();
 			buf.st_mtime = time(NULL);
 			buf.st_dev = 0;
 			buf.st_ino = 0;

@@ -318,7 +318,7 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-mode", "force-uid", "force-gid", "throttle", "limit",
 	"processors", "mem", "offset", "o", "root-time", "root-uid",
 	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
-	NULL
+	"default-mode", "default-uid", "default-gid", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes);
@@ -6372,6 +6372,22 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
 	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
+	fprintf(stream, "-default-mode <mode>\ttar files often do not store ");
+	fprintf(stream, "permissions for\n\t\t\tintermediate directories.  ");
+	fprintf(stream, "This option sets the default\n\t\t\tdirectory ");
+	fprintf(stream, "permissions to octal <mode>, rather than 0755.\n");
+	fprintf(stream, "\t\t\tThis also sets the root inode mode\n");
+	fprintf(stream, "-default-uid <uid>\ttar files often do not store ");
+	fprintf(stream, "uids for intermediate\n\t\t\tdirectories.  This ");
+	fprintf(stream, "option sets the default directory\n\t\t\towner to ");
+	fprintf(stream, "<uid>, rather than the user running Sqfstar.\n");
+	fprintf(stream, "\t\t\tThis also sets the root inode uid\n");
+	fprintf(stream, "-default-gid <gid>\ttar files often do not store ");
+	fprintf(stream, "gids for intermediate\n\t\t\tdirectories.  This ");
+	fprintf(stream, "option sets the default directory\n\t\t\tgroup to ");
+	fprintf(stream, "<gid>, rather than the group of the user\n");
+	fprintf(stream, "\t\t\trunning Sqfstar.  This also sets the root ");
+	fprintf(stream, "inode gid\n");
 	fprintf(stream, "-pseudo-override\tmake pseudo file uids and gids ");
 	fprintf(stream, "override -all-root,\n\t\t\t-force-uid and");
 	fprintf(stream, "-force-gid options\n");
@@ -6804,6 +6820,30 @@ int sqfstar(int argc, char *argv[])
 				exit(1);
 			}
 			root_time_opt = TRUE;
+		} else if(strcmp(argv[i], "-default-mode") == 0) {
+			if((++i == dest_index) || !parse_mode(argv[i], &default_mode)) {
+				ERROR("%s: -default-mode missing or invalid mode,"
+					" octal number <= 07777 expected\n", argv[0]);
+				exit(1);
+			}
+			root_mode = default_mode;
+			default_mode_opt = root_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-default-uid") == 0) {
+			if((++i == dest_index) || !parse_num_unsigned(argv[i], &default_uid)) {
+				ERROR("%s: -default-uid missing or invalid uid\n",
+					argv[0]);
+				exit(1);
+			}
+			root_uid = default_uid;
+			default_uid_opt = root_uid_opt = TRUE;
+		} else if(strcmp(argv[i], "-default-gid") == 0) {
+			if((++i == dest_index) || !parse_num_unsigned(argv[i], &default_gid)) {
+				ERROR("%s: -default-gid missing or invalid gid\n",
+					argv[0]);
+				exit(1);
+			}
+			root_gid = default_gid;
+			default_gid_opt = root_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-comp") == 0)
 			/* parsed previously */
 			i++;
