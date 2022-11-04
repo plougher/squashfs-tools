@@ -1634,6 +1634,11 @@ squashfs_inode process_tar_file(int progress)
 		buf.st_mtime = root_time;
 	else
 		buf.st_mtime = time(NULL);
+	if(pseudo_override && global_uid_opt)
+		buf.st_uid = global_uid;
+
+	if(pseudo_override && global_gid_opt)
+		buf.st_gid = global_gid;
 	buf.st_dev = 0;
 	buf.st_ino = 0;
 	dir_ent->inode = lookup_inode(&buf);
