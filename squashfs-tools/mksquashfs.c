@@ -77,22 +77,8 @@
 #include "merge_sort.h"
 
 int delete = FALSE;
-int quiet = FALSE;
-int fd;
 
 /* filesystem flags for building */
-int comp_opts = FALSE;
-int duplicate_checking = TRUE;
-int no_fragments = FALSE;
-int always_use_fragments = FALSE;
-int silent = TRUE;
-int exportable = TRUE;
-int sparse_files = TRUE;
-int old_exclude = TRUE;
-int use_regex = FALSE;
-int nopad = FALSE;
-int exit_on_error = FALSE;
-long long start_offset = 0;
 int sleep_time = 0;
 
 /* Compression options */
@@ -100,20 +86,111 @@ int noF = FALSE;
 int noI = FALSE;
 int noId = FALSE;
 int noD = FALSE;
+int noX = FALSE;
+
+/* block size used to build filesystem */
+int block_size = SQUASHFS_FILE_SIZE;
+int block_log;
+
+/* Fragment options, are fragments in filesystem and are they used for tailends? */
+int no_fragments = FALSE;
+int always_use_fragments = FALSE;
+
+/* Are duplicates detected in fileystem ? */
+int duplicate_checking = TRUE;
+
+/* Are filesystems exportable via NFS? */
+int exportable = TRUE;
+
+/* Are sparse files detected and stored? */
+int sparse_files = TRUE;
+
+/* Options which override root inode settings */
+int root_mode_opt = FALSE;
+mode_t root_mode;
+int root_uid_opt = FALSE;
+unsigned int root_uid;
+int root_gid_opt = FALSE;
+unsigned int root_gid;
+unsigned int root_time;
+int root_time_opt = FALSE;
+
+/* Values that override uids and gids for all files and directories */
+int global_uid_opt = FALSE;
+unsigned int global_uid;
+int global_gid_opt = FALSE;
+unsigned int global_gid;
 
 /* Do pseudo uids and guids override -all-root, -force-uid and -force-gid? */
-int pseudo_override = 0;
+int pseudo_override = FALSE;
+
+/* Time value over-ride options */
+unsigned int mkfs_time;
+int mkfs_time_opt = FALSE;
+unsigned int all_time;
+int all_time_opt = FALSE;
+int clamping = TRUE;
 
 /* Is max depth option in effect, and max depth to descend into directories */
 int max_depth = -1;
 
+/* how should Mksquashfs treat the source files? */
+int tarstyle = FALSE;
+int keep_as_directory = FALSE;
+
+/* should Mksquashfs read files from stdin, like cpio? */
+int cpiostyle = FALSE;
+char filename_terminator = '\n';
+
+/* Should Mksquashfs detect hardlinked files? */
+int no_hardlinks = FALSE;
+
+/* Should Mksquashfs cross filesystem boundaries? */
+int one_file_system = FALSE;
+int one_file_system_x = FALSE;
+dev_t *source_dev;
+dev_t cur_dev;
+
+/* Is Mksquashfs processing a tarfile? */
+int tarfile = FALSE;
+
+/* Is Mksquashfs reading a pseudo file from stdin? */
+int pseudo_stdin = FALSE;
+
+/* Is Mksquashfs storing Xattrs, or excluding/including xattrs using regexs? */
+int no_xattrs = XATTR_DEF;
+unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
+regex_t *xattr_exclude_preg = NULL;
+regex_t *xattr_include_preg = NULL;
+
+/* Does Mksquashfs print a summary and other information when running? */
+int quiet = FALSE;
+
+/* Does Mksquashfs display filenames as they are archived? */
+int silent = TRUE;
+
+/* Is Mksquashfs using the older non-wildcard exclude code? */
+int old_exclude = TRUE;
+
+/* Is Mksquashfs using regexs in exclude file matching (default wildcards)? */
+int use_regex = FALSE;
+
+/* Will Mksquashfs pad the filesystem to a multiple of 4 Kbytes? */
+int nopad = FALSE;
+
+/* Should Mksquashfs treat normally ignored errors as fatal? */
+int exit_on_error = FALSE;
+
+/* Is filesystem stored at an offset from the start of the block device/file? */
+long long start_offset = 0;
+
+/* File count statistics used to print summary and fill in superblock */
+unsigned int file_count = 0, sym_count = 0, dev_count = 0, dir_count = 0,
+fifo_count = 0, sock_count = 0, id_count = 0;
+long long hardlnk_count = 0;
+
 /* superblock attributes */
 struct squashfs_super_block sBlk;
-int block_size = SQUASHFS_FILE_SIZE, block_log;
-unsigned int id_count = 0;
-unsigned int file_count = 0, sym_count = 0, dev_count = 0, dir_count = 0,
-fifo_count = 0, sock_count = 0;
-long long hardlnk_count = 0;
 
 /* write position within data section */
 long long bytes = 0, total_bytes = 0;
@@ -136,7 +213,6 @@ unsigned int cache_bytes = 0, cache_size = 0, inode_count = 0;
 
 /* inode lookup table */
 squashfs_inode *inode_lookup_table = NULL;
-
 struct inode_info *inode_info[INODE_HASH_SIZE];
 
 /* hash tables used to do fast duplicate searches in duplicate check */
@@ -146,7 +222,6 @@ unsigned int dup_files = 0;
 
 int exclude = 0;
 struct exclude_info *exclude_paths = NULL;
-static int old_excluded(char *filename, struct stat *buf);
 
 struct path_entry {
 	char *name;
@@ -182,18 +257,14 @@ struct old_root_entry_info *old_root_entry;
  * cancelled */
 int appending = FALSE;
 char *sdata_cache, *sdirectory_data_cache, *sdirectory_compressed;
-
 long long sbytes, stotal_bytes;
-
 long long sinode_bytes, stotal_inode_bytes;
 long long sdirectory_bytes, stotal_directory_bytes;
-
 unsigned int scache_bytes, sdirectory_cache_bytes,
 	sdirectory_compressed_bytes, sinode_count = 0,
 	sfile_count, ssym_count, sdev_count, sdir_count,
 	sfifo_count, ssock_count, sdup_files;
 unsigned int sfragments;
-int threads;
 
 /* flag whether destination file is a block device */
 int block_device = FALSE;
@@ -235,40 +306,17 @@ struct seq_queue *to_order;
 pthread_t order_thread;
 pthread_cond_t fragment_waiting = PTHREAD_COND_INITIALIZER;
 int sequence_count = 0;
-
 int reproducible = REP_DEF;
-
-/* Options which over-ride root directory settings */
-int root_mode_opt = FALSE;
-mode_t root_mode;
-int root_uid_opt = FALSE;
-unsigned int root_uid;
-int root_gid_opt = FALSE;
-unsigned int root_gid;
-unsigned int root_time;
-int root_time_opt = FALSE;
-
-/* Values that override uids and gids for all files and directories */
-int global_uid_opt = FALSE;
-unsigned int global_uid;
-int global_gid_opt = FALSE;
-unsigned int global_gid;
-
-/* Time value over-ride options */
-unsigned int mkfs_time;
-int mkfs_time_opt = FALSE;
-unsigned int all_time;
-int all_time_opt = FALSE;
-int clamping = TRUE;
 
 /* user options that control parallelisation */
 int processors = -1;
 int bwriter_size;
 
-/* compression operations */
+/* Compressor options (-X) and initialised compressor (-comp XXX) */
+int comp_opts = FALSE;
+int X_opt_parsed = FALSE;
 struct compressor *comp = NULL;
 int compressor_opt_parsed = FALSE;
-int X_opt_parsed = FALSE;
 void *stream = NULL;
 
 /* fragment to file mapping used when appending */
@@ -281,46 +329,19 @@ struct dir_info *root_dir;
 FILE *log_fd;
 int logging=FALSE;
 
-/* how should Mksquashfs treat the source files? */
-int tarstyle = FALSE;
-int keep_as_directory = FALSE;
-
-/* should Mksquashfs read files from stdin, like cpio? */
-int cpiostyle = FALSE;
-char filename_terminator = '\n';
-
-/* Should Mksquashfs detect hardlinked files? */
-int no_hardlinks = FALSE;
-
-/* Should Mksquashfs cross filesystem boundaries? */
-int one_file_system = FALSE;
-int one_file_system_x = FALSE;
-dev_t *source_dev;
-dev_t cur_dev;
-
-/* Is Mksquashfs processing a tarfile? */
-int tarfile = FALSE;
-
-/* Is Mksquashfs reading a pseudo file from stdin? */
-int pseudo_stdin = FALSE;
-
-/* Is Mksquashfs storing Xattrs, or excluding/including xattrs using regexs? */
-int no_xattrs = XATTR_DEF;
-int noX = FALSE;
-unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
-regex_t *xattr_exclude_preg = NULL;
-regex_t *xattr_include_preg = NULL;
+/* file descriptor of the output filesystem */
+int fd;
 
 /* list of options that have an argument */
-char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time", "root-mode",
-	"force-uid", "force-gid", "action", "log-action", "true-action",
-	"false-action", "action-file", "log-action-file", "true-action-file",
-	"false-action-file", "p", "pf", "sort", "root-becomes", "recover",
-	"recovery-path", "throttle", "limit", "processors", "mem", "offset",
-	"o", "log", "a", "va", "ta", "fa", "af", "vaf", "taf", "faf",
-	"read-queue", "write-queue", "fragment-queue", "root-time", "root-uid",
-	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add",
-	"default-mode", "default-uid", "default-gid", NULL
+char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
+	"root-mode", "force-uid", "force-gid", "action", "log-action",
+	"true-action", "false-action", "action-file", "log-action-file",
+	"true-action-file", "false-action-file", "p", "pf", "sort",
+	"root-becomes", "recover", "recovery-path", "throttle", "limit",
+	"processors", "mem", "offset", "o", "log", "a", "va", "ta", "fa", "af",
+	"vaf", "taf", "faf", "read-queue", "write-queue", "fragment-queue",
+	"root-time", "root-uid", "root-gid", "xattrs-exclude", "xattrs-include",
+	"xattrs-add", "default-mode", "default-uid", "default-gid", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -333,8 +354,9 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 static char *read_from_disk(long long start, unsigned int avail_bytes);
 static void add_old_root_entry(char *name, squashfs_inode inode,
 	unsigned int inode_number, int type);
-static struct file_info *duplicate(int *dup, int *block_dup, long long file_size, long long bytes,
-	unsigned int *block_list, long long start, struct dir_ent *dir_ent,
+static struct file_info *duplicate(int *dup, int *block_dup,
+	long long file_size, long long bytes, unsigned int *block_list,
+	long long start, struct dir_ent *dir_ent,
 	struct file_buffer *file_buffer, int blocks, long long sparse,
 	int bl_hash);
 static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
@@ -349,8 +371,8 @@ static struct dir_ent *scan1_readdir(struct dir_info *dir);
 static struct dir_ent *scan1_single_readdir(struct dir_info *dir);
 static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir);
 static struct file_info *add_non_dup(long long file_size, long long bytes,
-	unsigned int blocks, long long sparse, unsigned int *block_list, long long start,
-	struct fragment *fragment, unsigned short checksum,
+	unsigned int blocks, long long sparse, unsigned int *block_list,
+	long long start, struct fragment *fragment, unsigned short checksum,
 	unsigned short fragment_checksum, int checksum_flag,
 	int checksum_frag_flag, int blocks_dup, int frag_dup, int bl_hash);
 long long generic_write_table(long long, void *, int, void *, int);
@@ -361,6 +383,7 @@ unsigned short get_checksum_mem(char *buff, int bytes);
 static void check_usable_phys_mem(int total_mem);
 static void print_summary();
 void write_destination(int fd, long long byte, long long bytes, void *buff);
+static int old_excluded(char *filename, struct stat *buf);
 
 
 void prep_exit()
