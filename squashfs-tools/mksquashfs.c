@@ -129,7 +129,8 @@ int all_time_opt = FALSE;
 int clamping = TRUE;
 
 /* Is max depth option in effect, and max depth to descend into directories */
-int max_depth = -1;
+int max_depth_opt = FALSE;
+unsigned int max_depth;
 
 /* how should Mksquashfs treat the source files? */
 int tarstyle = FALSE;
@@ -3813,7 +3814,7 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 		return NULL;
 	}
 
-	if(max_depth != -1 && depth > max_depth) {
+	if(max_depth_opt && depth > max_depth) {
 		add_excluded(dir);
 		scan1_freedir(dir);
 		return dir;
@@ -4559,7 +4560,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 	char *name, *newsubpath = NULL;
 	int res;
 
-	if(max_depth != -1 && depth > max_depth)
+	if(max_depth_opt && depth > max_depth)
 		return NULL;
 
 	if(dir == NULL)
@@ -7603,7 +7604,7 @@ int main(int argc, char *argv[])
 					strcmp(argv[i], "-tarstyle") == 0)
 			tarstyle = TRUE;
 		else if(strcmp(argv[i], "-max-depth") == 0) {
-			if((++i == argc) || !parse_num(argv[i], &max_depth)) {
+			if((++i == argc) || !parse_num_unsigned(argv[i], &max_depth)) {
 				ERROR("%s: %s missing or invalid value\n",
 							argv[0], argv[i - 1]);
 				exit(1);
