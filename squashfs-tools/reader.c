@@ -22,6 +22,8 @@
  * reader.c
  */
 
+/* if throttling I/O, time to sleep between reads (in tenths of a second) */
+int sleep_time;
 
 #define TRUE 1
 #define FALSE 0

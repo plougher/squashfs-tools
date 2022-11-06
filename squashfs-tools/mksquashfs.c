@@ -78,9 +78,6 @@
 
 int delete = FALSE;
 
-/* filesystem flags for building */
-int sleep_time = 0;
-
 /* Compression options */
 int noF = FALSE;
 int noI = FALSE;
