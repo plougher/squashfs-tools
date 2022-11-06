@@ -30,7 +30,7 @@ struct dir_info {
 	char			*subpath;
 	unsigned int		count;
 	unsigned int		directory_count;
-	int			depth;
+	unsigned int		depth;
 	unsigned int		excluded;
 	char			dir_is_ldir;
 	struct dir_ent		*dir_ent;
@@ -276,9 +276,9 @@ extern void add_dir_entry(struct dir_ent *dir_ent, struct dir_info *sub_dir,
 	struct inode_info *inode_info);
 extern void free_dir_entry(struct dir_ent *dir_ent);
 extern void free_dir(struct dir_info *dir);
-extern struct dir_info *create_dir(char *pathname, char *subpath, int depth);
+extern struct dir_info *create_dir(char *pathname, char *subpath, unsigned int depth);
 extern char *subpathname(struct dir_ent *dir_ent);
-extern struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
+extern struct dir_info *scan1_opendir(char *pathname, char *subpath, unsigned int depth);
 extern squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress);
 extern struct inode_info *lookup_inode(struct stat *buf);
 #endif

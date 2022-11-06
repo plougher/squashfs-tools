@@ -1119,7 +1119,7 @@ int exclude_actions()
 
 
 int eval_exclude_actions(char *name, char *pathname, char *subpath,
-	struct stat *buf, int depth, struct dir_ent *dir_ent)
+	struct stat *buf, unsigned int depth, struct dir_ent *dir_ent)
 {
 	int i, match = 0;
 	struct action_data action_data;

@@ -358,7 +358,7 @@ static struct file_info *duplicate(int *dup, int *block_dup,
 	struct file_buffer *file_buffer, int blocks, long long sparse,
 	int bl_hash);
 static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
-	struct dir_ent *(_readdir)(struct dir_info *), int);
+	struct dir_ent *(_readdir)(struct dir_info *), unsigned int);
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
 static void dir_scan3(struct dir_info *dir);
 static void dir_scan4(struct dir_info *dir, int symlink);
@@ -375,7 +375,8 @@ static struct file_info *add_non_dup(long long file_size, long long bytes,
 	int checksum_frag_flag, int blocks_dup, int frag_dup, int bl_hash);
 long long generic_write_table(long long, void *, int, void *, int);
 void restorefs();
-struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth);
+struct dir_info *scan1_opendir(char *pathname, char *subpath,
+							unsigned int depth);
 static void write_filesystem_tables(struct squashfs_super_block *sBlk);
 unsigned short get_checksum_mem(char *buff, int bytes);
 static void check_usable_phys_mem(int total_mem);
@@ -3349,7 +3350,7 @@ static inline void alloc_inode_no(struct inode_info *inode, unsigned int use_thi
 }
 
 
-struct dir_info *create_dir(char *pathname, char *subpath, int depth)
+struct dir_info *create_dir(char *pathname, char *subpath, unsigned int depth)
 {
 	struct dir_info *dir;
 
@@ -3652,7 +3653,7 @@ squashfs_inode dir_scan(int directory, int progress)
  * Exclude actions are processed here (in contrast to the other actions)
  * because they affect what is scanned.
  */
-struct dir_info *scan1_opendir(char *pathname, char *subpath, int depth)
+struct dir_info *scan1_opendir(char *pathname, char *subpath, unsigned int depth)
 {
 	struct dir_info *dir;
 
@@ -3803,7 +3804,7 @@ static void scan1_freedir(struct dir_info *dir)
 
 static struct dir_info *dir_scan1(char *filename, char *subpath,
 	struct pathnames *paths,
-	struct dir_ent *(_readdir)(struct dir_info *), int depth)
+	struct dir_ent *(_readdir)(struct dir_info *), unsigned int depth)
 {
 	struct dir_info *dir = scan1_opendir(filename, subpath, depth);
 	struct dir_ent *dir_ent;
@@ -4550,7 +4551,7 @@ static char *walk_source(char *source, char **pathname, char **name)
 
 static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		char *subpath, char *file, char **prefix,
-		struct pathnames *paths, int depth)
+		struct pathnames *paths, unsigned int depth)
 {
 	struct dir_info *sub;
 	struct dir_ent *entry;
