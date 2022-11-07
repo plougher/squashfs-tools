@@ -76,8 +76,6 @@
 #include "tar.h"
 #include "merge_sort.h"
 
-int delete = FALSE;
-
 /* Compression options */
 int noF = FALSE;
 int noI = FALSE;
@@ -247,23 +245,6 @@ int source = 0;
 char **source_path;
 int option_offset;
 
-/* list of root directory entries read from original filesystem */
-int old_root_entries = 0;
-struct old_root_entry_info *old_root_entry;
-
-/* restore orignal filesystem state if appending to existing filesystem is
- * cancelled */
-int appending = FALSE;
-char *sdata_cache, *sdirectory_data_cache, *sdirectory_compressed;
-long long sbytes, stotal_bytes;
-long long sinode_bytes, stotal_inode_bytes;
-long long sdirectory_bytes, stotal_directory_bytes;
-unsigned int scache_bytes, sdirectory_cache_bytes,
-	sdirectory_compressed_bytes, sinode_count = 0,
-	sfile_count, ssym_count, sdev_count, sdir_count,
-	sfifo_count, ssock_count, sdup_files;
-unsigned int sfragments;
-
 /* flag whether destination file is a block device */
 int block_device = FALSE;
 
@@ -272,11 +253,6 @@ int sorted = FALSE;
 
 /* save destination file name for deleting on error */
 char *destination_file = NULL;
-
-/* recovery file for abnormal exit on appending */
-char *recovery_file = NULL;
-char *recovery_pathname = NULL;
-int recover = TRUE;
 
 struct id *id_hash_table[ID_ENTRIES];
 struct id *id_table[SQUASHFS_IDS], *sid_table[SQUASHFS_IDS];
@@ -317,9 +293,6 @@ struct compressor *comp = NULL;
 int compressor_opt_parsed = FALSE;
 void *stream = NULL;
 
-/* fragment to file mapping used when appending */
-struct append_file **file_mapping;
-
 /* root of the in-core directory structure */
 struct dir_info *root_dir;
 
@@ -329,6 +302,34 @@ int logging=FALSE;
 
 /* file descriptor of the output filesystem */
 int fd;
+
+/* Variables used for appending */
+int appending = FALSE;
+int delete = FALSE;
+
+/* restore orignal filesystem state if appending to existing filesystem is
+ * cancelled */
+char *sdata_cache, *sdirectory_data_cache, *sdirectory_compressed;
+long long sbytes, stotal_bytes;
+long long sinode_bytes, stotal_inode_bytes;
+long long sdirectory_bytes, stotal_directory_bytes;
+unsigned int scache_bytes, sdirectory_cache_bytes,
+	sdirectory_compressed_bytes, sinode_count = 0,
+	sfile_count, ssym_count, sdev_count, sdir_count,
+	sfifo_count, ssock_count, sdup_files;
+unsigned int sfragments;
+
+/* list of root directory entries read from original filesystem */
+int old_root_entries = 0;
+struct old_root_entry_info *old_root_entry;
+
+/* fragment to file mapping used when appending */
+struct append_file **file_mapping;
+
+/* recovery file for abnormal exit on appending */
+char *recovery_file = NULL;
+char *recovery_pathname = NULL;
+int recover = TRUE;
 
 /* list of options that have an argument */
 char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
