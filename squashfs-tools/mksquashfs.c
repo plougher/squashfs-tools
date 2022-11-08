@@ -304,8 +304,7 @@ int logging=FALSE;
 int fd;
 
 /* Variables used for appending */
-int appending = FALSE;
-int delete = FALSE;
+int appending = TRUE;
 
 /* restore orignal filesystem state if appending to existing filesystem is
  * cancelled */
@@ -403,7 +402,7 @@ void prep_exit()
 			pthread_kill(*restore_thread, SIGUSR1);
 			pthread_exit(NULL);
 		}
-	} else if(delete) {
+	} else if(!appending) {
 		if(destination_file && !block_device)
 			unlink(destination_file);
 	} else if(recovery_file)
@@ -7178,7 +7177,7 @@ print_sqfstar_compressor_options:
 			silent = FALSE;
 
 		else if(strcmp(argv[i], "-force") == 0)
-			delete = TRUE;
+			appending = FALSE;
 
 		else if(strcmp(argv[i], "-quiet") == 0)
 			quiet = TRUE;
@@ -7250,13 +7249,13 @@ print_sqfstar_compressor_options:
 	destination_file =  argv[dest_index];
 	if(stat(destination_file, &buf) == -1) {
 		if(errno == ENOENT) { /* Does not exist */
+			appending = FALSE;
 			fd = open(destination_file, O_CREAT | O_TRUNC | O_RDWR,
 				S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 			if(fd == -1) {
 				perror("Could not create destination file");
 				exit(1);
 			}
-			delete = TRUE;
 
 			/* ensure Sqfstar doesn't try to read
 			 * the destination file as input, which
@@ -7278,7 +7277,7 @@ print_sqfstar_compressor_options:
 			exit(1);
 		}
 
-		if(tarfile && !delete) {
+		if(tarfile && appending) {
 			ERROR("Appending is not supported reading tar files\n");
 			ERROR("To force Sqfstar to write to this %s "
 				"use -force\n", S_ISBLK(buf.st_mode) ?
@@ -7326,7 +7325,7 @@ print_sqfstar_compressor_options:
 	for(i = dest_index + 1; i < argc; i++)
 		add_exclude(argv[i]);
 
-	initialise_threads(readq, fragq, bwriteq, fwriteq, delete,
+	initialise_threads(readq, fragq, bwriteq, fwriteq, !appending,
 		destination_file);
 
 	res = compressor_init(comp, &stream, SQUASHFS_METADATA_SIZE, 0);
@@ -8136,7 +8135,7 @@ print_compressor_options:
 			break;
 
 		else if(strcmp(argv[i], "-noappend") == 0)
-			delete = TRUE;
+			appending = FALSE;
 
 		else if(strcmp(argv[i], "-quiet") == 0)
 			quiet = TRUE;
@@ -8265,13 +8264,13 @@ print_compressor_options:
 
 	if(stat(destination_file, &buf) == -1) {
 		if(errno == ENOENT) { /* Does not exist */
+			appending = FALSE;
 			fd = open(destination_file, O_CREAT | O_TRUNC | O_RDWR,
 				S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 			if(fd == -1) {
 				perror("Could not create destination file");
 				exit(1);
 			}
-			delete = TRUE;
 
 			/* ensure Mksquashfs doesn't try to read
 			 * the destination file as input, which
@@ -8293,7 +8292,7 @@ print_compressor_options:
 			exit(1);
 		}
 
-		if(tarfile && !delete) {
+		if(tarfile && appending) {
 			ERROR("Appending is not supported reading tar files\n");
 			ERROR("To force Mksquashfs to write to this %s "
 				"use -noappend\n", S_ISBLK(buf.st_mode) ?
@@ -8310,7 +8309,7 @@ print_compressor_options:
 			block_device = 1;
 
 		} else {
-			fd = open(destination_file, (delete ? O_TRUNC : 0) |
+			fd = open(destination_file, (!appending ? O_TRUNC : 0) |
 				O_RDWR);
 			if(fd == -1) {
 				perror("Could not open regular file for "
@@ -8368,7 +8367,7 @@ print_compressor_options:
 		else if(option_with_arg(argv[i], option_table))
 			i++;
 
-	if(!delete) {
+	if(appending) {
 	        comp = read_super(fd, &sBlk, destination_file);
 	        if(comp == NULL) {
 			ERROR("Failed to read existing filesystem - will not "
@@ -8393,7 +8392,7 @@ print_compressor_options:
 		comp_opts = SQUASHFS_COMP_OPTS(sBlk.flags);
 	}
 
-	initialise_threads(readq, fragq, bwriteq, fwriteq, delete,
+	initialise_threads(readq, fragq, bwriteq, fwriteq, !appending,
 		destination_file);
 
 	res = compressor_init(comp, &stream, SQUASHFS_METADATA_SIZE, 0);
@@ -8411,7 +8410,7 @@ print_compressor_options:
 	memset(dupl_block, 0, 1048576 * sizeof(struct file_info *));
 	memset(dupl_frag, 0, block_size * sizeof(struct file_info *));
 
-	if(delete) {
+	if(!appending) {
 		int size;
 		void *comp_data = compressor_dump_options(comp, block_size,
 			&size);
@@ -8522,7 +8521,6 @@ print_compressor_options:
 		sid_count = id_count;
 		write_recovery_data(&sBlk);
 		save_xattrs();
-		appending = TRUE;
 
 		/*
 		 * set the filesystem state up to be able to append to the
