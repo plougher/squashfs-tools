@@ -7277,7 +7277,7 @@ print_sqfstar_compressor_options:
 			exit(1);
 		}
 
-		if(tarfile && appending) {
+		if(appending) {
 			ERROR("Appending is not supported reading tar files\n");
 			ERROR("To force Sqfstar to write to this %s "
 				"use -force\n", S_ISBLK(buf.st_mode) ?
