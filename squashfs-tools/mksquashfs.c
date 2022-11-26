@@ -6176,7 +6176,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
 	fprintf(stream, "-pseudo-override\tmake pseudo file uids and gids ");
-	fprintf(stream, "override -all-root,\n\t\t\t-force-uid and");
+	fprintf(stream, "override -all-root,\n\t\t\t-force-uid and ");
 	fprintf(stream, "-force-gid options\n"); 
 	fprintf(stream, "-no-exports\t\tdo not make filesystem exportable via NFS (-tar default)\n");
 	fprintf(stream, "-exports\t\tmake filesystem exportable via NFS (default)\n");
