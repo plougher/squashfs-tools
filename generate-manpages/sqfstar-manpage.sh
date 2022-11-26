@@ -182,6 +182,7 @@ sed -i -e "s/^ *\(gzip.*$\)/\1:/" -e "s/^ *\(lzo$\)/\1:/" \
 # Concatenate the options text (normal options and compressor options) on to one
 # line.  Add a full stop to the end of the options text
 
+less $tmp/sqfstar.help
 sed -i "/^  -/ {
 :option
 s/^ *-/  -/
@@ -192,7 +193,7 @@ s/^ *-/  -/
 N
 /\n$/b print
 /\n[^ ]/b print
-/\n *-/b print
+/\n  -/b print
 s/\n */ /
 b again
 
