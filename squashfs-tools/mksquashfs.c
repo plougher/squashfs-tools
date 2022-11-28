@@ -7068,22 +7068,16 @@ print_sqfstar_compressor_options:
 					argv[0]);
 				exit(1);
 			}
-			if((global_uid = strtoll(argv[i], &b, 10)), *b =='\0') {
-				if(global_uid < 0 || global_uid >
-						(((long long) 1 << 32) - 1)) {
-					ERROR("%s: -force-uid uid out of range"
-						"\n", argv[0]);
-					exit(1);
-				}
-			} else {
-				struct passwd *uid = getpwnam(argv[i]);
-				if(uid)
-					global_uid = uid->pw_uid;
-				else {
+
+			res = get_uid_from_arg(argv[i], &global_uid);
+			if(res) {
+				if(res == -2)
+					ERROR("%s: -force-uid uid out of range\n",
+						argv[0]);
+				else
 					ERROR("%s: -force-uid invalid uid or "
 						"unknown user\n", argv[0]);
-					exit(1);
-				}
+				exit(1);
 			}
 			global_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-gid") == 0) {
