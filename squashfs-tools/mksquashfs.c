@@ -6693,6 +6693,31 @@ int option_with_arg(char *string, char *table[])
 }
 
 
+static int get_uid_from_arg(char *arg, unsigned int *uid)
+{
+	char *b;
+	long long res;
+
+	res = strtoll(arg, &b, 10);
+	if(*b =='\0') {
+		if(res < 0 || res > (((long long) 1 << 32) - 1))
+			return -2;
+
+		*uid = res;
+		return 0;
+	} else {
+		struct passwd *id = getpwnam(arg);
+
+		if(id) {
+			*uid = id->pw_uid;
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+
 int sqfstar(int argc, char *argv[])
 {
 	struct stat buf;
