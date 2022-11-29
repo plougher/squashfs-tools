@@ -7486,7 +7486,7 @@ int main(int argc, char *argv[])
 {
 	struct stat buf, source_buf;
 	int res, i;
-	char *b, *root_name = NULL;
+	char *root_name = NULL;
 	squashfs_inode inode;
 	int readq;
 	int fragq;
@@ -8060,22 +8060,16 @@ print_compressor_options:
 					argv[0]);
 				exit(1);
 			}
-			if((global_gid = strtoll(argv[i], &b, 10)), *b =='\0') {
-				if(global_gid < 0 || global_gid >
-						(((long long) 1 << 32) - 1)) {
+
+			res = get_gid_from_arg(argv[i], &global_gid);
+			if(res) {
+				if(res == -2)
 					ERROR("%s: -force-gid gid out of range"
 						"\n", argv[0]);
-					exit(1);
-				}
-			} else {
-				struct group *gid = getgrnam(argv[i]);
-				if(gid)
-					global_gid = gid->gr_gid;
-				else {
+				else
 					ERROR("%s: -force-gid invalid gid or "
 						"unknown group\n", argv[0]);
-					exit(1);
-				}
+				exit(1);
 			}
 			global_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-pseudo-override") == 0)
