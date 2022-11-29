@@ -6718,6 +6718,31 @@ static int get_uid_from_arg(char *arg, unsigned int *uid)
 }
 
 
+static int get_gid_from_arg(char *arg, unsigned int *gid)
+{
+	char *b;
+	long long res;
+
+	res = strtoll(arg, &b, 10);
+	if(*b =='\0') {
+		if(res < 0 || res > (((long long) 1 << 32) - 1))
+			return -2;
+
+		*gid = res;
+		return 0;
+	} else {
+		struct group *id = getgrnam(arg);
+
+		if(id) {
+			*gid = id->gr_gid;
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+
 int sqfstar(int argc, char *argv[])
 {
 	struct stat buf;
