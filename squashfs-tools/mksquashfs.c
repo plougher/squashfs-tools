@@ -6429,7 +6429,9 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-root-uid <uid>\t\tset root directory owner to <uid>\n");
 	fprintf(stream, "-root-gid <gid>\t\tset root directory group to <gid>\n");
 	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
-	fprintf(stream, "-force-uid <uid>\tset all file uids to <uid>\n");
+	fprintf(stream, "-force-uid <value>\tset all file uids to specified ");
+	fprintf(stream, "<value>, <value> can be\n\t\t\teither an integer ");
+	fprintf(stream, "uid or user name\n");
 	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
 	fprintf(stream, "-default-mode <mode>\ttar files often do not store ");
 	fprintf(stream, "permissions for\n\t\t\tintermediate directories.  ");
