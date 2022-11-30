@@ -6432,7 +6432,9 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-force-uid <value>\tset all file uids to specified ");
 	fprintf(stream, "<value>, <value> can be\n\t\t\teither an integer ");
 	fprintf(stream, "uid or user name\n");
-	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
+	fprintf(stream, "-force-gid <value>\tset all file gids to specified ");
+	fprintf(stream, "<value>, <value> can be\n\t\t\teither an integer ");
+	fprintf(stream, "gid or group name\n");
 	fprintf(stream, "-default-mode <mode>\ttar files often do not store ");
 	fprintf(stream, "permissions for\n\t\t\tintermediate directories.  ");
 	fprintf(stream, "This option sets the default\n\t\t\tdirectory ");
