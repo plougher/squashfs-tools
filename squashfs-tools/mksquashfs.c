@@ -6176,7 +6176,9 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-force-uid <value>\tset all file uids to specified ");
 	fprintf(stream, "<value>, <value> can be\n\t\t\teither an integer ");
 	fprintf(stream, "uid or user name\n");
-	fprintf(stream, "-force-gid <gid>\tset all file gids to <gid>\n");
+	fprintf(stream, "-force-gid <value>\tset all file gids to specified ");
+	fprintf(stream, "<value>, <value> can be\n\t\t\teither an integer ");
+	fprintf(stream, "gid or group name\n");
 	fprintf(stream, "-pseudo-override\tmake pseudo file uids and gids ");
 	fprintf(stream, "override -all-root,\n\t\t\t-force-uid and ");
 	fprintf(stream, "-force-gid options\n"); 
