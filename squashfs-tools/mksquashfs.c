@@ -6695,11 +6695,11 @@ int option_with_arg(char *string, char *table[])
 
 static int get_uid_from_arg(char *arg, unsigned int *uid)
 {
-	char *b;
+	char *last;
 	long long res;
 
-	res = strtoll(arg, &b, 10);
-	if(*b =='\0') {
+	res = strtoll(arg, &last, 10);
+	if(*last == '\0') {
 		if(res < 0 || res > (((long long) 1 << 32) - 1))
 			return -2;
 
@@ -6720,11 +6720,11 @@ static int get_uid_from_arg(char *arg, unsigned int *uid)
 
 static int get_gid_from_arg(char *arg, unsigned int *gid)
 {
-	char *b;
+	char *last;
 	long long res;
 
-	res = strtoll(arg, &b, 10);
-	if(*b =='\0') {
+	res = strtoll(arg, &last, 10);
+	if(*last == '\0') {
 		if(res < 0 || res > (((long long) 1 << 32) - 1))
 			return -2;
 
