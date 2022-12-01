@@ -6430,7 +6430,9 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-root-time <time>\tset root directory time to <time>\n");
 	fprintf(stream, "-root-mode <mode>\tset root directory permissions to octal ");
 	fprintf(stream, "<mode>\n");
-	fprintf(stream, "-root-uid <uid>\t\tset root directory owner to <uid>\n");
+	fprintf(stream, "-root-uid <value>\tset root directory owner to ");
+	fprintf(stream, "specified <value>,\n\t\t\t<value> can be either an ");
+	fprintf(stream, "integer uid or user name\n");
 	fprintf(stream, "-root-gid <gid>\t\tset root directory group to <gid>\n");
 	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
 	fprintf(stream, "-force-uid <value>\tset all file uids to specified ");
@@ -6916,9 +6918,20 @@ int sqfstar(int argc, char *argv[])
 			}
 			root_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-uid") == 0) {
-			if((++i == dest_index) || !parse_num_unsigned(argv[i], &root_uid)) {
-				ERROR("%s: -root-uid missing or invalid uid\n",
+			if(++i == dest_index) {
+				ERROR("%s: -root-uid missing uid or user\n",
 					argv[0]);
+				exit(1);
+			}
+
+			res = get_uid_from_arg(argv[i], &root_uid);
+			if(res) {
+				if(res == -2)
+					ERROR("%s: -root-uid uid out of range\n",
+						argv[0]);
+				else
+					ERROR("%s: -root-uid invalid uid or "
+						"unknown user\n", argv[0]);
 				exit(1);
 			}
 			root_uid_opt = TRUE;
