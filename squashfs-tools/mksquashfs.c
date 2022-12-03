@@ -6167,7 +6167,9 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-all-time <time>\tset all file timestamps to ");
 	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int ");
 	fprintf(stream, "indicating seconds since the epoch\n\t\t\t(1970-01-01)\n");
-	fprintf(stream, "-root-time <time>\tset root directory time to <time>\n");
+	fprintf(stream, "-root-time <time>\tset root directory time to ");
+	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int ");
+	fprintf(stream, "indicating seconds since the epoch\n\t\t\t(1970-01-01)\n");
 	fprintf(stream, "-root-mode <mode>\tset root directory permissions to octal ");
 	fprintf(stream, "<mode>\n");
 	fprintf(stream, "-root-uid <value>\tset root directory owner to ");
