@@ -6433,7 +6433,9 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-root-uid <value>\tset root directory owner to ");
 	fprintf(stream, "specified <value>,\n\t\t\t<value> can be either an ");
 	fprintf(stream, "integer uid or user name\n");
-	fprintf(stream, "-root-gid <gid>\t\tset root directory group to <gid>\n");
+	fprintf(stream, "-root-gid <value>\tset root directory group to ");
+	fprintf(stream, "specified <value>,\n\t\t\t<value> can be either an ");
+	fprintf(stream, "integer gid or group name\n");
 	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
 	fprintf(stream, "-force-uid <value>\tset all file uids to specified ");
 	fprintf(stream, "<value>, <value> can be\n\t\t\teither an integer ");
@@ -6936,9 +6938,20 @@ int sqfstar(int argc, char *argv[])
 			}
 			root_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-gid") == 0) {
-			if((++i == dest_index) || !parse_num_unsigned(argv[i], &root_gid)) {
-				ERROR("%s: -root-gid missing or invalid gid\n",
+			if(++i == dest_index) {
+				ERROR("%s: -root-gid missing gid or group\n",
 					argv[0]);
+				exit(1);
+			}
+
+			res = get_gid_from_arg(argv[i], &root_gid);
+			if(res) {
+				if(res == -2)
+					ERROR("%s: -root-gid gid out of range\n",
+						argv[0]);
+				else
+					ERROR("%s: -root-gid invalid gid or "
+						"unknown group\n", argv[0]);
 				exit(1);
 			}
 			root_gid_opt = TRUE;
