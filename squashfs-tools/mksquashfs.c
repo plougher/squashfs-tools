@@ -7766,7 +7766,7 @@ int main(int argc, char *argv[])
 			root_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-gid") == 0) {
 			if(++i == argc) {
-				ERROR("%s: -root-gid missing gid or group\n",
+				ERROR("%s: -root-gid missing gid or group name\n",
 					argv[0]);
 				exit(1);
 			}
@@ -7778,7 +7778,7 @@ int main(int argc, char *argv[])
 						argv[0]);
 				else
 					ERROR("%s: -root-gid invalid gid or "
-						"unknown group\n", argv[0]);
+						"unknown group name\n", argv[0]);
 				exit(1);
 			}
 			root_gid_opt = TRUE;
@@ -8113,7 +8113,7 @@ print_compressor_options:
 			global_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-gid") == 0) {
 			if(++i == argc) {
-				ERROR("%s: -force-gid missing gid or group\n",
+				ERROR("%s: -force-gid missing gid or group name\n",
 					argv[0]);
 				exit(1);
 			}
@@ -8125,7 +8125,7 @@ print_compressor_options:
 						"\n", argv[0]);
 				else
 					ERROR("%s: -force-gid invalid gid or "
-						"unknown group\n", argv[0]);
+						"unknown group name\n", argv[0]);
 				exit(1);
 			}
 			global_gid_opt = TRUE;
