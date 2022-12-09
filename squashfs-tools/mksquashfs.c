@@ -6925,7 +6925,7 @@ int sqfstar(int argc, char *argv[])
 			root_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-uid") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -root-uid missing uid or user\n",
+				ERROR("%s: -root-uid missing uid or user name\n",
 					argv[0]);
 				exit(1);
 			}
@@ -6937,7 +6937,7 @@ int sqfstar(int argc, char *argv[])
 						argv[0]);
 				else
 					ERROR("%s: -root-uid invalid uid or "
-						"unknown user\n", argv[0]);
+						"unknown user name\n", argv[0]);
 				exit(1);
 			}
 			root_uid_opt = TRUE;
@@ -7130,7 +7130,7 @@ print_sqfstar_compressor_options:
 			global_uid_opt = global_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-uid") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -force-uid missing uid or user\n",
+				ERROR("%s: -force-uid missing uid or user name\n",
 					argv[0]);
 				exit(1);
 			}
@@ -7142,7 +7142,7 @@ print_sqfstar_compressor_options:
 						argv[0]);
 				else
 					ERROR("%s: -force-uid invalid uid or "
-						"unknown user\n", argv[0]);
+						"unknown user name\n", argv[0]);
 				exit(1);
 			}
 			global_uid_opt = TRUE;
