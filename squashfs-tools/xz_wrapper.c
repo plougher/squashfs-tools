@@ -84,7 +84,7 @@ static int xz_options(char *argv[], int argc)
 						(name[n] == '\0' ||
 						 name[n] == ',')) {
 					if(bcj[i].selected == 0) {
-				 		bcj[i].selected = 1;
+						bcj[i].selected = 1;
 						filter_count++;
 					}
 					name += name[n] == ',' ? n + 1 : n;
@@ -97,7 +97,7 @@ static int xz_options(char *argv[], int argc)
 				goto failed;
 			}
 		}
-	
+
 		return 1;
 	} else if(strcmp(argv[0], "-Xdict-size") == 0) {
 		char *b;
@@ -144,7 +144,7 @@ static int xz_options(char *argv[], int argc)
 	}
 
 	return -1;
-	
+
 failed:
 	return -2;
 }
@@ -188,7 +188,7 @@ static int xz_options_post(int block_size)
 		/*
 		 * dictionary_size must be storable in xz header as either
 		 * 2^n or as  2^n+2^(n+1)
-	 	*/
+		*/
 		n = ffs(dictionary_size) - 1;
 		if(dictionary_size != (1 << n) && 
 				dictionary_size != ((1 << n) + (1 << (n + 1)))) {
@@ -287,7 +287,7 @@ static int xz_extract_options(int block_size, void *buffer, int size)
 		/* check passed comp opts struct is of the correct length */
 		if(size != sizeof(struct comp_opts))
 			goto failed;
-					 
+
 		SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
 
 		dictionary_size = comp_opts->dictionary_size;
@@ -446,8 +446,8 @@ static int xz_compress(void *strm, void *dest, void *src,  int size,
 	for(i = 0; i < stream->filters; i++) {
 		struct filter *filter = &stream->filter[i];
 
-        	if(lzma_lzma_preset(&stream->opt, LZMA_PRESET_DEFAULT))
-                	goto failed;
+		if(lzma_lzma_preset(&stream->opt, LZMA_PRESET_DEFAULT))
+			goto failed;
 
 		stream->opt.dict_size = stream->dictionary_size;
 
@@ -455,7 +455,7 @@ static int xz_compress(void *strm, void *dest, void *src,  int size,
 		res = lzma_stream_buffer_encode(filter->filter,
 			LZMA_CHECK_CRC32, NULL, src, size, filter->buffer,
 			&filter->length, block_size);
-	
+
 		if(res == LZMA_OK) {
 			if(!selected || selected->length > filter->length)
 				selected = filter;

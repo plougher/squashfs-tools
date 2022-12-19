@@ -78,7 +78,7 @@ struct pseudo_entry {
 	struct pseudo_dev	*dev;
 	struct pseudo_xattr	*xattr;
 };
-	
+
 struct pseudo {
 	int			names;
 	int			count;

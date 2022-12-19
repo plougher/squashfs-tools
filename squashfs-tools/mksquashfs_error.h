@@ -31,7 +31,7 @@ extern void prep_exit();
 
 #define INFO(s, args...) \
 		do {\
-			 if(!silent)\
+			if(!silent)\
 				progressbar_info(s, ## args);\
 		} while(0)
 

@@ -323,7 +323,7 @@ static void fixup_tree(struct dir_info *dir)
 			entry->inode->tar_file = NULL;
 			entry->inode->tarfile = TRUE;
 		}
-		
+
 		if(entry->dir == NULL && S_ISDIR(entry->inode->buf.st_mode)) {
 			/* Tar file created this directory, but, never created
 			 * anything in it.  This will leave a NULL sub-directory,
@@ -1325,7 +1325,7 @@ again:
 		file->pathname[strlen(file->pathname) - 1] = '\0';
 		type = S_IFDIR;
 	}
-	
+
 	file->buf.st_mode |= type;
 
 	/* Get user information - if file->uname non NULL (from PAX header),
@@ -1344,7 +1344,7 @@ again:
 		if(pwuid)
 			res = pwuid->pw_uid;
 	}
-		
+
 	if(res == -1) {
 		if(file->have_uid == FALSE) {
 			res = read_number(header.uid, 8);
@@ -1375,7 +1375,7 @@ again:
 		if(grgid)
 			res = grgid->gr_gid;
 	}
-		
+
 	if(res == -1) {
 		if(file->have_gid == FALSE) {
 			res = read_number(header.gid, 8);
@@ -1478,7 +1478,7 @@ void read_tar_file()
 {
 	struct tar_file *tar_file;
 	int status, res;
-       
+
 	while(1) {
 		struct file_buffer *file_buffer;
 

@@ -95,12 +95,12 @@ static int read_fragment_table(long long *table_start)
 		MEM_ERROR();
 
 	if(swap) {
-		 unsigned int *sfragment_table_index = malloc(length);
+		unsigned int *sfragment_table_index = malloc(length);
 
 		if(sfragment_table_index == NULL)
 			MEM_ERROR();
 
-		 res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
+		res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
 			length, sfragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
@@ -318,8 +318,8 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			i.data = inodep->symlink_size;
 			break;
 		}
- 		case SQUASHFS_BLKDEV_TYPE:
-	 	case SQUASHFS_CHRDEV_TYPE: {
+		case SQUASHFS_BLKDEV_TYPE:
+		case SQUASHFS_CHRDEV_TYPE: {
 			squashfs_dev_inode_header_2 *inodep = &header.dev;
 
 			if(swap) {
@@ -588,7 +588,7 @@ corrupted:
 
 int read_super_2(squashfs_operations **s_ops, void *s)
 {
-	 squashfs_super_block_3 *sBlk_3 = s;
+	squashfs_super_block_3 *sBlk_3 = s;
 
 	if(sBlk_3->s_magic != SQUASHFS_MAGIC || sBlk_3->s_major != 2 ||
 							sBlk_3->s_minor > 1)

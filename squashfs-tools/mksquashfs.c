@@ -421,7 +421,7 @@ int shift_overflow(int a, int shift)
 	return (INT_MAX >> shift) < a;
 }
 
- 
+
 int multiply_overflow(int a, int multiplier)
 {
 	return (INT_MAX / multiplier) < a;
@@ -451,9 +451,9 @@ void restorefs()
 	directory_cache_bytes = sdirectory_cache_bytes;
 	inode_bytes = sinode_bytes;
 	directory_bytes = sdirectory_bytes;
- 	memcpy(directory_table + directory_bytes, sdirectory_compressed,
+	memcpy(directory_table + directory_bytes, sdirectory_compressed,
 		sdirectory_compressed_bytes);
- 	directory_bytes += sdirectory_compressed_bytes;
+	directory_bytes += sdirectory_compressed_bytes;
 	total_bytes = stotal_bytes;
 	total_inode_bytes = stotal_inode_bytes;
 	total_directory_bytes = stotal_directory_bytes;
@@ -927,7 +927,7 @@ static inline unsigned int get_parent_no(struct dir_info *dir)
 	return dir->depth ? get_inode_no(dir->dir_ent->inode) : inode_no;
 }
 
-	
+
 static inline time_t get_time(time_t time)
 {
 	if(all_time_opt) {
@@ -1744,7 +1744,7 @@ long long generic_write_table(long long length, void *buffer, int length2,
 	int compressed_size, i, list_size = meta_blocks * sizeof(long long);
 	unsigned short c_byte;
 	char cbuffer[(SQUASHFS_METADATA_SIZE << 2) + 2];
-	
+
 #ifdef SQUASHFS_TRACE
 	long long obytes = bytes;
 	long long olength = length;
@@ -1778,7 +1778,7 @@ long long generic_write_table(long long length, void *buffer, int length2,
 		bytes += length2;
 		total_bytes += length2;
 	}
-		
+
 	SQUASHFS_INSWAP_LONG_LONGS(list, meta_blocks);
 	write_destination(fd, bytes, list_size, list);
 	bytes += list_size;
@@ -3499,7 +3499,7 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	if(empty_actions())
 		dir_scan5(root_dir);
 
- 	/*
+	/*
 	 * Sort directories and compute the inode numbers
 	 */
 	dir_scan6(root_dir);
@@ -3883,7 +3883,7 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 
 		if(exclude_actions()) {
 			subpath = subpathname(dir_ent);
-			
+
 			if(eval_exclude_actions(dir_name, filename, subpath,
 							&buf, depth, dir_ent)) {
 				add_excluded(dir);
@@ -3967,7 +3967,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 	struct dir_ent *dirent = NULL;
 	struct pseudo_entry *pseudo_ent;
 	struct stat buf;
-	
+
 	while((dirent = scan2_readdir(dir, dirent)) != NULL) {
 		struct inode_info *inode_info = dirent->inode;
 		struct stat *buf = &inode_info->buf;
@@ -3980,7 +3980,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 		if(pseudo_override && global_gid_opt)
 			buf->st_gid = global_gid;
-			
+
 		if((buf->st_mode & S_IFMT) == S_IFDIR)
 			dir_scan2(dirent->dir, pseudo_subdir(name, pseudo));
 	}
@@ -4150,7 +4150,7 @@ void free_dir(struct dir_info *dir)
 	free(dir->subpath);
 	free(dir);
 }
-	
+
 
 static void dir_scan4(struct dir_info *dir, int symlink)
 {
@@ -4188,7 +4188,7 @@ static void dir_scan4(struct dir_info *dir, int symlink)
 				prev->next = dir_ent;
 			else
 				dir->list = dir_ent;
-			
+
 			/* free it */
 			free_dir_entry(tmp);
 
@@ -4239,7 +4239,7 @@ static void dir_scan5(struct dir_info *dir)
 					prev->next = dir_ent;
 				else
 					dir->list = dir_ent;
-			
+
 				/* free it */
 				free_dir_entry(tmp);
 
@@ -4348,9 +4348,9 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 	struct directory dir;
 	struct dir_ent *dir_ent = NULL;
 	struct file_info *file;
-	
+
 	scan7_init_dir(&dir);
-	
+
 	while((dir_ent = scan7_readdir(&dir, dir_info, dir_ent)) != NULL) {
 		struct stat *buf = &dir_ent->inode->buf;
 
@@ -4449,7 +4449,7 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 			}
 			dir_ent->inode->inode = *inode;
 			dir_ent->inode->type = squashfs_type;
-		 } else {
+		} else {
 			*inode = dir_ent->inode->inode;
 			squashfs_type = dir_ent->inode->type;
 			switch(squashfs_type) {
@@ -4489,7 +4489,7 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 			}
 			hardlnk_count ++;
 		}
-		
+
 		add_dir(*inode, get_inode_no(dir_ent->inode), dir_ent->name,
 			squashfs_type, &dir);
 	}
@@ -5509,7 +5509,7 @@ static int excluded_match(char *name, struct pathname *path, struct pathnames **
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
 
 		if(match) {
-			 if(path->name[i].paths == NULL || new == NULL)
+			if(path->name[i].paths == NULL || new == NULL)
 				/* match on a leaf component, any subdirectories
 			 	* in the filesystem should be excluded */
 				return TRUE;
@@ -5528,7 +5528,7 @@ static int excluded_match(char *name, struct pathname *path, struct pathnames **
 int excluded(char *name, struct pathnames *paths, struct pathnames **new)
 {
 	int n;
-		
+
 	if(stickypath && excluded_match(name, stickypath, NULL))
 		return TRUE;
 
@@ -5658,7 +5658,7 @@ static void write_recovery_data(struct squashfs_super_block *sBlk)
 	if(recoverfd == -1)
 		BAD_ERROR("Failed to create recovery file, because %s.  "
 			"Aborting\n", strerror(errno));
-		
+
 	if(write_bytes(recoverfd, header, RECOVER_ID_SIZE) == -1)
 		BAD_ERROR("Failed to write recovery file, because %s\n",
 			strerror(errno));
@@ -5678,7 +5678,7 @@ static void write_recovery_data(struct squashfs_super_block *sBlk)
 				strerror(errno));
 
 	free(metadata);
-	
+
 	printf("Recovery file \"%s\" written\n", recovery_file);
 	printf("If Mksquashfs aborts abnormally (i.e. power failure), run\n");
 	printf("mksquashfs - %s -recover %s\n", destination_file,
@@ -5769,7 +5769,7 @@ static void read_recovery_data(char *recovery_file, char *destination_file)
 
 	printf("Successfully wrote recovery file \"%s\".  Exiting\n",
 		recovery_file);
-	
+
 	exit(0);
 }
 
@@ -5903,7 +5903,7 @@ static int parse_number(char *start, int *res, int size)
 
 	if(!_parse_numberll(start, &number, size, 10))
 		return 0;
-	
+
 	/* check if long result will overflow signed int */
 	if(number > INT_MAX)
 		return 0;
@@ -5919,7 +5919,7 @@ static int parse_number_unsigned(char *start, unsigned int *res, int size)
 
 	if(!_parse_numberll(start, &number, size, 10))
 		return 0;
-	
+
 	/* check if long result will overflow unsigned int */
 	if(number > UINT_MAX)
 		return 0;
@@ -6007,7 +6007,7 @@ static void check_usable_phys_mem(int total_mem)
 	int mem = get_physical_memory();
 
 	mem = (mem >> 1) + (mem >> 2); /* 75% */
-						
+
 	if(total_mem > mem && mem) {
 		ERROR("Total memory requested is more than 75%% of physical "
 						"memory.\n");
@@ -7121,7 +7121,7 @@ print_sqfstar_compressor_options:
 		else if(strcmp(argv[i], "-no-fragments") == 0)
 			no_fragments = TRUE;
 
-		 else if(strcmp(argv[i], "-no-tailends") == 0)
+		else if(strcmp(argv[i], "-no-tailends") == 0)
 			always_use_fragments = FALSE;
 
 		else if(strcmp(argv[i], "-all-root") == 0 ||
@@ -7585,7 +7585,7 @@ int main(int argc, char *argv[])
 	 */
 	for(; i < argc; i++) {
 		struct compressor *prev_comp = comp;
-		
+
 		if(strcmp(argv[i], "-comp") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -comp missing compression type\n",
@@ -8077,7 +8077,7 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-no-fragments") == 0)
 			no_fragments = TRUE;
 
-		 else if(strcmp(argv[i], "-tailends") == 0 ||
+		else if(strcmp(argv[i], "-tailends") == 0 ||
 				 strcmp(argv[i], "-always-use-fragments") == 0)
 			always_use_fragments = TRUE;
 
@@ -8305,7 +8305,7 @@ print_compressor_options:
 	 */
 	if(!silent)
 		progress = force_progress;
-		
+
 	/*
 	 * Sort all the xattr-add options now they're all processed
 	 */
@@ -8457,8 +8457,8 @@ print_compressor_options:
 			i++;
 
 	if(appending) {
-	        comp = read_super(fd, &sBlk, destination_file);
-	        if(comp == NULL) {
+		comp = read_super(fd, &sBlk, destination_file);
+		if(comp == NULL) {
 			ERROR("Failed to read existing filesystem - will not "
 				"overwrite - ABORTING!\n");
 			ERROR("To force Mksquashfs to write to this %s "
@@ -8516,7 +8516,7 @@ print_compressor_options:
 		 */
 		if(comp_data) {
 			unsigned short c_byte = size | SQUASHFS_COMPRESSED_BIT;
-	
+
 			SQUASHFS_INSWAP_SHORTS(&c_byte, 1);
 			write_destination(fd, sizeof(struct squashfs_super_block),
 				sizeof(c_byte), &c_byte);
@@ -8579,7 +8579,7 @@ print_compressor_options:
 			inode_dir_file_size) & ~(SQUASHFS_METADATA_SIZE - 1);
 		uncompressed_data = ((long long) inode_dir_offset +
 			inode_dir_file_size) & (SQUASHFS_METADATA_SIZE - 1);
-		
+
 		/* save original filesystem state for restoring ... */
 		sfragments = fragments;
 		sbytes = bytes;

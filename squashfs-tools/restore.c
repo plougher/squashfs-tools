@@ -74,7 +74,7 @@ void *restore_thrd(void *arg)
 		if((sig == SIGINT || sig == SIGTERM) && !interrupted) {
 			ERROR("Interrupting will restore original "
 				"filesystem!\n");
-                	ERROR("Interrupt again to quit\n");
+			ERROR("Interrupt again to quit\n");
 			interrupted = TRUE;
 			continue;
 		}

@@ -145,7 +145,7 @@ re_read:
 		ERROR("WARNING: Mkisofs style sortlist detected! This is "
 			"supported but please\n");
 		ERROR("convert to mksquashfs style sortlist! A sortlist entry");
-	        ERROR(" should be\neither absolute (starting with ");
+		ERROR(" should be\neither absolute (starting with ");
 		ERROR("'/') start with './' or '../' (taken to be\nrelative to "
 			"$PWD), otherwise it ");
 		ERROR("is assumed the entry is relative to one\nof the source "

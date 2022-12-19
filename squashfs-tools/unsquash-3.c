@@ -358,8 +358,8 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			i.data = inodep->symlink_size;
 			break;
 		}
- 		case SQUASHFS_BLKDEV_TYPE:
-	 	case SQUASHFS_CHRDEV_TYPE: {
+		case SQUASHFS_BLKDEV_TYPE:
+		case SQUASHFS_CHRDEV_TYPE: {
 			squashfs_dev_inode_header_3 *inodep = &header.dev;
 
 			if(swap) {
@@ -447,7 +447,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 				SQUASHFS_SWAP_DIR_HEADER_3(&dirh, &sdirh);
 		} else
 			res = read_directory_data(&dirh, &start, &offset, sizeof(dirh));
-	
+
 		if(res == FALSE)
 			goto corrupted;
 

@@ -79,7 +79,7 @@ static void print_xattr_name_value(struct xattr_list *xattr, int writer_fd)
 		value = new;
 	} else
 		count = xattr->vsize;
-	
+
 	res = dprintf(writer_fd, "%s=", xattr->full_name);
 	if(res == -1)
 		EXIT_UNSQUASH("Failed to write to pseudo output file\n");

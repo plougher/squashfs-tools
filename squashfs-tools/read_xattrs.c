@@ -403,7 +403,7 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 				return NULL;
 			}
 		}
-			
+
 		SQUASHFS_SWAP_XATTR_ENTRY(xptr, &entry);
 		xptr += sizeof(entry);
 
@@ -422,7 +422,7 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 		}
 
 		xptr += entry.size;
-			
+
 		TRACE("get_xattr: xattr %d, type %d, size %d, name %s\n", j,
 			entry.type, entry.size, xattr_list[j].full_name); 
 

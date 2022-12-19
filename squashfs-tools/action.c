@@ -172,7 +172,7 @@ static int read_file(char *filename, char *type, int (parse_line)(char *))
 
 		if(err == NULL) {
 			if(ferror(fd)) {
-                		ERROR("Reading %s file \"%s\" failed "
+				ERROR("Reading %s file \"%s\" failed "
 					"because %s\n", type, filename,
 					strerror(errno));
 				goto failed;
@@ -545,7 +545,7 @@ static struct expr *parse_expr(int subexp)
 			}
 			break;
 		}
-		
+
 		if (op != TOK_AND && op != TOK_OR) {
 			free_parse_tree(expr);
 			SYNTAX_ERROR("Unexpected token \"%s\", expected "
@@ -664,7 +664,7 @@ skip_args:
 						TOK_TO_STR(token, string));
 		goto failed;
 	}
-	
+
 	parsing_action = action;
 	expr = parse_expr(0);
 
@@ -711,7 +711,7 @@ skip_args:
 		spec_count = other_count ++;
 		spec_list = &other_spec;
 	}
-	
+
 	*spec_list = realloc(*spec_list, (spec_count + 1) *
 					sizeof(struct action));
 	if (*spec_list == NULL)
@@ -1449,16 +1449,16 @@ parse_operation:
 				"'%c'\n", *arg);
 			goto failed;
 		}
-	
+
 		arg ++;
-	
+
 		/* Parse PERMS */
 		if (*arg == 'u' || *arg == 'g' || *arg == 'o') {
-	 		/* PERMS = [ugo] */
+			/* PERMS = [ugo] */
 			mode = - *arg;
 			arg ++;
 		} else {
-	 		/* PERMS = [rwxXst]* */
+			/* PERMS = [rwxXst]* */
 			while(1) {
 				switch(*arg) {
 				case 'r':
@@ -1490,11 +1490,11 @@ parse_operation:
 								"'%c'\n", *arg);
 					goto failed;
 				}
-	
+
 				arg ++;
 			}
 		}
-	
+
 perms_parsed:
 		mode_data = malloc(sizeof(*mode_data));
 		if (mode_data == NULL)
@@ -1694,7 +1694,7 @@ int eval_empty_actions(struct dir_info *root, struct dir_ent *dir_ent)
 		if ((data->val == EMPTY_EXCLUDED && !dir->excluded) ||
 				(data->val == EMPTY_SOURCE && dir->excluded))
 			continue;
-		
+
 		match = eval_expr_top(&empty_spec[i], &action_data);
 	}
 
@@ -2449,7 +2449,7 @@ static int parse_range_args(struct test_entry *test, struct atom *atom)
 			"expected\n");
 		return 0;
 	}
- 
+
 	res = parse_number(atom->argv[1], &end, &type, &error);
 	if (res == 0) {
 		TEST_SYNTAX_ERROR(test, 1, "%s\n", error);
@@ -2461,7 +2461,7 @@ static int parse_range_args(struct test_entry *test, struct atom *atom)
 			"expected\n");
 		return 0;
 	}
- 
+
 	range = malloc(sizeof(*range));
 	if (range == NULL)
 		MEM_ERROR();
@@ -2592,7 +2592,7 @@ static char *get_start(char *s, int n)
 
 	return s;
 }
-	
+
 
 static int subpathname_fn(struct atom *atom, struct action_data *action_data)
 {
@@ -2753,7 +2753,7 @@ failed:
 		"'c', 'b', 'l', 's' or 'p'\n");
 	return 0;
 }
-	
+
 
 static int type_fn(struct atom *atom, struct action_data *action_data)
 {
@@ -2866,7 +2866,7 @@ static int file_fn(struct atom *atom, struct action_data *action_data)
 
 	if (res == -1)
 		BAD_ERROR("file_fn waitpid failed\n");
- 
+
 	if (!WIFEXITED(status) || WEXITSTATUS(status) != 0)
 		BAD_ERROR("file_fn file returned error\n");
 
@@ -2942,7 +2942,7 @@ static int exec_fn(struct atom *atom, struct action_data *action_data)
 
 	if (res == -1)
 		BAD_ERROR("exec_fn waitpid failed\n");
- 
+
 	return WIFEXITED(status) ? WEXITSTATUS(status) == 0 : 0;
 }
 
@@ -3086,7 +3086,7 @@ static int parse_expr_argX(struct test_entry *test, struct atom *atom,
 {
 	/* Call parse_expr to parse argument, which should be an expression */
 
-	 /* save the current parser state */
+	/* save the current parser state */
 	char *save_cur_ptr = cur_ptr;
 	char *save_source = source;
 
@@ -3382,7 +3382,7 @@ static int parse_perm_args(struct test_entry *test, struct atom *atom)
 	perm_data->mode = mode;
 
 	atom->data = perm_data;
-	
+
 finish:
 	while(head) {
 		struct mode_data *tmp = head;

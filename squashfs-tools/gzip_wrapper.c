@@ -115,7 +115,7 @@ static int gzip_options(char *argv[], int argc)
 						(name[n] == '\0' ||
 						 name[n] == ',')) {
 					if(strategy[i].selected == 0) {
-				 		strategy[i].selected = 1;
+						strategy[i].selected = 1;
 						strategy_count++;
 					}
 					name += name[n] == ',' ? n + 1 : n;
@@ -128,7 +128,7 @@ static int gzip_options(char *argv[], int argc)
 				goto failed;
 			}
 		}
-	
+
 		return 1;
 	}
 
@@ -265,7 +265,7 @@ static int gzip_extract_options(int block_size, void *buffer, int size)
 		} else
 			strategy[i].selected = 0;
 	}
-	
+
 	return 0;
 
 failed:
@@ -371,7 +371,7 @@ static int gzip_init(void **strm, int block_size, int datablock)
 			j++;
 		}
 	}
-		
+
 	stream->stream.zalloc = Z_NULL;
 	stream->stream.zfree = Z_NULL;
 	stream->stream.opaque = 0;

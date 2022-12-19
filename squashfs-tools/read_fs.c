@@ -50,7 +50,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 	unsigned short c_byte;
 	int res, compressed;
 	int outlen = expected ? expected : SQUASHFS_METADATA_SIZE;
-	
+
 	/* Read block size */
 	res = read_fs_bytes(fd, start, 2, &c_byte);
 	if(res == 0)
@@ -207,7 +207,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 	*root_inode_size = bytes - (*root_inode_block + root_inode_offset);
 	bytes = *root_inode_block + root_inode_offset;
 	SQUASHFS_SWAP_DIR_INODE_HEADER(inode_table + bytes, &dir_inode->dir);
-	
+
 	if(dir_inode->base.inode_type == SQUASHFS_DIR_TYPE) {
 		directory_start_block = dir_inode->dir.start_block;
 		if(*root_inode_size < sizeof(struct squashfs_dir_inode_header))
@@ -328,7 +328,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			add_file(start, inode.file_size, file_bytes,
 				block_list, blocks, inode.fragment,
 				inode.offset, frag_bytes);
-				
+
 			cur_ptr += blocks * sizeof(unsigned int);
 			break;
 		}	
@@ -436,7 +436,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			if(NO_INODE_BYTES(squashfs_dir_inode_header))
 				/* corrupted filesystem */
 				goto corrupted;
-				
+
 			SQUASHFS_SWAP_DIR_INODE_HEADER(cur_ptr, &dir_inode);
 
 			if(dir_inode.start_block < directory_start_block)
@@ -475,7 +475,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 				if(NO_BYTES(sizeof(index)))
 					/* corrupted filesystem */
 					goto corrupted;
-			
+
 				SQUASHFS_SWAP_DIR_INDEX(cur_ptr, &index);
 
 				cur_ptr += sizeof(index);
@@ -488,8 +488,8 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			}
 			break;
 		}
-	 	case SQUASHFS_BLKDEV_TYPE:
-	 	case SQUASHFS_CHRDEV_TYPE:
+		case SQUASHFS_BLKDEV_TYPE:
+		case SQUASHFS_CHRDEV_TYPE:
 			/*
 			 * There should always be enough bytes to read an
 			 * inode of the expected type
@@ -501,8 +501,8 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			(*dev_count) ++;
 			cur_ptr += sizeof(struct squashfs_dev_inode_header);
 			break;
-	 	case SQUASHFS_LBLKDEV_TYPE:
-	 	case SQUASHFS_LCHRDEV_TYPE:
+		case SQUASHFS_LBLKDEV_TYPE:
+		case SQUASHFS_LCHRDEV_TYPE:
 			/*
 			 * There should always be enough bytes to read an
 			 * inode of the expected type
@@ -562,13 +562,13 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 			(*sock_count) ++;
 			cur_ptr += sizeof(struct squashfs_lipc_inode_header);
 			break;
-	 	default:
+		default:
 			ERROR("Unknown inode type %d in scan_inode_table!\n",
 					base.inode_type);
 			goto corrupted;
 		}
 	}
-	
+
 	if(!quiet)
 		printf("Read existing filesystem, %d inodes scanned\n", files);
 
@@ -756,7 +756,7 @@ static unsigned char *squashfs_readdir(int fd, int root_entries,
 		goto all_done;
 
 	bytes = offset;
- 	while(bytes < size) {			
+	while(bytes < size) {			
 		SQUASHFS_SWAP_DIR_HEADER(directory_table + bytes, &dirh);
 
 		dir_count = dirh.count + 1;
@@ -1042,7 +1042,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 		if(*cinode_table == NULL)
 			MEM_ERROR();
 
-	       	res = read_fs_bytes(fd, start, root_inode_start, *cinode_table);
+		res = read_fs_bytes(fd, start, root_inode_start, *cinode_table);
 		if(res == 0) {
 			ERROR("Failed to read inode table\n");
 			ERROR("Filesystem corrupted?\n");

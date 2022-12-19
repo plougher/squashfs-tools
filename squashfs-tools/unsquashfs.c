@@ -185,7 +185,7 @@ int shift_overflow(int a, int shift)
 	return (INT_MAX >> shift) < a;
 }
 
- 
+
 int multiply_overflow(int a, int multiplier)
 {
 	return (INT_MAX / multiplier) < a;
@@ -438,7 +438,7 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 	return entry;
 }
 
-	
+
 void cache_block_ready(struct cache_entry *entry, int error)
 {
 	/*
@@ -566,7 +566,7 @@ void print_filename(char *pathname, struct inode *inode)
 			userstr = dummy;
 	} else
 		userstr = user->pw_name;
-		 
+
 	group = numeric ? NULL : getgrgid(inode->gid);
 	if(group == NULL) {
 		int res = snprintf(dummy2, 12, "%u", inode->gid);
@@ -614,7 +614,7 @@ void print_filename(char *pathname, struct inode *inode)
 		printf(" -> %s", inode->symlink);
 	printf("\n");
 }
-	
+
 
 int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 {
@@ -908,8 +908,8 @@ int write_block(int file_fd, char *buffer, int size, long long hole, int sparse)
 
 	if(hole) {
 		if(sparse && lseek_broken == FALSE) {
-			 int error = lseek(file_fd, off, SEEK_CUR);
-			 if(error == -1)
+			int error = lseek(file_fd, off, SEEK_CUR);
+			if(error == -1)
 				/* failed to seek beyond end of file */
 				lseek_broken = TRUE;
 		}
@@ -1260,10 +1260,10 @@ int create_inode(char *pathname, struct inode *i)
 			sym_count ++;
 			break;
 		}
- 		case SQUASHFS_BLKDEV_TYPE:
-	 	case SQUASHFS_CHRDEV_TYPE:
- 		case SQUASHFS_LBLKDEV_TYPE:
-	 	case SQUASHFS_LCHRDEV_TYPE: {
+		case SQUASHFS_BLKDEV_TYPE:
+		case SQUASHFS_CHRDEV_TYPE:
+		case SQUASHFS_LBLKDEV_TYPE:
+		case SQUASHFS_LCHRDEV_TYPE: {
 			int chrdev = 0;
 			unsigned major, minor;
 			if ( i->type == SQUASHFS_CHRDEV_TYPE ||

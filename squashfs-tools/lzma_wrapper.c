@@ -39,7 +39,7 @@ static int lzma_compress(void *strm, void *dest, void *src, int size, int block_
 
 	res = LzmaCompress(dest + LZMA_HEADER_SIZE, &outlen, src, size, dest,
 		&props_size, 5, block_size, 3, 0, 2, 32, 1);
-	
+
 	if(res == SZ_ERROR_OUTPUT_EOF) {
 		/*
 		 * Output buffer overflow.  Return out of buffer space error
@@ -98,7 +98,7 @@ static int lzma_uncompress(void *dest, void *src, int size, int outsize,
 
 	res = LzmaUncompress(dest, &outlen, src + LZMA_HEADER_SIZE, &inlen, src,
 		LZMA_PROPS_SIZE);
-	
+
 	if(res == SZ_OK)
 		return outlen;
 	else {

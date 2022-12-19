@@ -285,8 +285,8 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 				i.xattr = SQUASHFS_INVALID_XATTR;
 			break;
 		}
- 		case SQUASHFS_BLKDEV_TYPE:
-	 	case SQUASHFS_CHRDEV_TYPE: {
+		case SQUASHFS_BLKDEV_TYPE:
+		case SQUASHFS_CHRDEV_TYPE: {
 			struct squashfs_dev_inode_header *inode = &header.dev;
 
 			res = read_inode_data(inode, &start, &offset, sizeof(*inode));
@@ -300,8 +300,8 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			i.xattr = SQUASHFS_INVALID_XATTR;
 			break;
 		}
- 		case SQUASHFS_LBLKDEV_TYPE:
-	 	case SQUASHFS_LCHRDEV_TYPE: {
+		case SQUASHFS_LBLKDEV_TYPE:
+		case SQUASHFS_LCHRDEV_TYPE: {
 			struct squashfs_ldev_inode_header *inode = &header.ldev;
 
 			res = read_inode_data(inode, &start, &offset, sizeof(*inode));
@@ -397,7 +397,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 			goto corrupted;
 
 		SQUASHFS_INSWAP_DIR_HEADER(&dirh);
-	
+
 		dir_count = dirh.count + 1;
 		TRACE("squashfs_opendir: Read directory header @ byte position "
 			"%d, %d directory entries\n", bytes, dir_count);

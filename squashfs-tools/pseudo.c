@@ -1020,7 +1020,7 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 					"match minor\n");
 			goto error;
 		}	
-		
+
 		if(major > 0xfff) {
 			ERROR("Major %d out of range\n", major);
 			goto error;
@@ -1112,7 +1112,7 @@ static int read_pseudo_def_original(char type, char *orig_def, char *filename, c
 			goto error;
 		}
 	}
-		
+
 	gid = strtoll(sgid, &ptr, 10);
 	if(*ptr == '\0') {
 		if(gid < 0 || gid > ((1LL << 32) - 1)) {

@@ -390,7 +390,7 @@ static struct file_buffer *_cache_get(struct cache *cache, long long index,
 {
 	/* Get a free block out of the cache indexed on index. */
 	struct file_buffer *entry = NULL;
- 
+
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
