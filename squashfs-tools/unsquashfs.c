@@ -2271,25 +2271,15 @@ int read_super(char *source)
 
 	if(res != -1)
 		return res;
-	else {
-		res = read_super_3(source, &s_ops, &sBlk_3);
-
-		if(res != -1)
-			return res;
-		else  {
-			res = read_super_2(&s_ops, &sBlk_3);
-
-			if(res != -1)
-				return res;
-
-			else {
-				res = read_super_1(&s_ops, &sBlk_3);
-
-				if(res != -1)
-					return res;
-			}
-		}
-	}
+	res = read_super_3(source, &s_ops, &sBlk_3);
+	if(res != -1)
+		return res;
+	res = read_super_2(&s_ops, &sBlk_3);
+	if(res != -1)
+		return res;
+	res = read_super_1(&s_ops, &sBlk_3);
+	if(res != -1)
+		return res;
 
 	return FALSE;
 }
