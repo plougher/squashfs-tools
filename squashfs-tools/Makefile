@@ -334,7 +334,9 @@ DATE := $(firstword $(FULLDATE))
 endif
 endif
 
-CFLAGS += -DVERSION=\"$(VERSION)\" -DDATE=\"$(DATE)\"
+YEAR := $(firstword $(subst /, , $(DATE)))
+
+CFLAGS += -DVERSION=\"$(VERSION)\" -DDATE=\"$(DATE)\" -DYEAR=\"$(YEAR)\"
 
 .PHONY: all
 all: mksquashfs unsquashfs

@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2017, 2019, 2021, 2022
+ * 2012, 2013, 2014, 2017, 2019, 2021, 2022, 2023
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -6607,7 +6607,7 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 static void print_version(char *string)
 {
 	printf("%s version " VERSION " (" DATE ")\n", string);
-	printf("copyright (C) 2022 Phillip Lougher ");
+	printf("copyright (C) " YEAR " Phillip Lougher ");
 	printf("<phillip@squashfs.org.uk>\n\n");
 	printf("This program is free software; you can redistribute it and/or\n");
 	printf("modify it under the terms of the GNU General Public License\n");
