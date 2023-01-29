@@ -183,8 +183,8 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	}
 
 	xattr_table_start = id_table.xattr_table_start;
-	index_bytes = SQUASHFS_XATTR_BLOCK_BYTES((long long) ids);
-	indexes = SQUASHFS_XATTR_BLOCKS((long long) ids);
+	index_bytes = SQUASHFS_XATTR_BLOCK_BYTES(ids);
+	indexes = SQUASHFS_XATTR_BLOCKS(ids);
 
 	/*
 	 * The size of the index table (index_bytes) should match the
@@ -233,7 +233,7 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	 * Allocate enough space for the uncompressed xattr id table, and
 	 * read and decompress it
 	 */
-	bytes = SQUASHFS_XATTR_BYTES((long long) ids);
+	bytes = SQUASHFS_XATTR_BYTES(ids);
 	xattr_ids = malloc(bytes);
 	if(xattr_ids == NULL) {
 		ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
