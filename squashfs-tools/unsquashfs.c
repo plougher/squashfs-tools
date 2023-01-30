@@ -3991,7 +3991,7 @@ static void print_options(FILE *stream, char *name)
 void print_version(char *string)
 {
 	printf("%s version " VERSION " (" DATE ")\n", string);
-	printf("copyright (C) 2022 Phillip Lougher ");
+	printf("copyright (C) " YEAR " Phillip Lougher ");
 	printf("<phillip@squashfs.org.uk>\n\n");
 	printf("This program is free software; you can redistribute it and/or\n");
 	printf("modify it under the terms of the GNU General Public License\n");
