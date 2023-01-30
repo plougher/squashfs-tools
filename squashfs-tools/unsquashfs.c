@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2017, 2019, 2020, 2021, 2022
+ * 2012, 2013, 2014, 2017, 2019, 2020, 2021, 2022, 2023
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -3988,27 +3988,9 @@ static void print_options(FILE *stream, char *name)
 }
 
 
-void print_cat_version()
+void print_version(char *string)
 {
-	printf("sqfscat version " VERSION " (" DATE ")\n");
-	printf("copyright (C) 2022 Phillip Lougher ");
-	printf("<phillip@squashfs.org.uk>\n\n");
-	printf("This program is free software; you can redistribute it and/or\n");
-	printf("modify it under the terms of the GNU General Public License\n");
-	printf("as published by the Free Software Foundation; either version ");
-	printf("2,\n");
-	printf("or (at your option) any later version.\n\n");
-	printf("This program is distributed in the hope that it will be ");
-	printf("useful,\n");
-	printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");
-	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");
-	printf("GNU General Public License for more details.\n");
-}
-
-
-void print_version()
-{
-	printf("unsquashfs version " VERSION " (" DATE ")\n");
+	printf("%s version " VERSION " (" DATE ")\n", string);
 	printf("copyright (C) 2022 Phillip Lougher ");
 	printf("<phillip@squashfs.org.uk>\n\n");
 	printf("This program is free software; you can redistribute it and/or\n");
@@ -4050,7 +4032,7 @@ int parse_cat_options(int argc, char *argv[])
 			ignore_errors = TRUE;
 		else if(strcmp(argv[i], "-version") == 0 ||
 				strcmp(argv[i], "-v") == 0) {
-			print_cat_version();
+			print_version("sqfscat");
 			version = TRUE;
 		} else if(strcmp(argv[i], "-processors") == 0 ||
 				strcmp(argv[i], "-p") == 0) {
@@ -4192,7 +4174,7 @@ int parse_options(int argc, char *argv[])
 			quiet = TRUE;
 		else if(strcmp(argv[i], "-version") == 0 ||
 				strcmp(argv[i], "-v") == 0) {
-			print_version();
+			print_version("unsquashfs");
 			version = TRUE;
 		} else if(strcmp(argv[i], "-info") == 0 ||
 				strcmp(argv[i], "-i") == 0)
