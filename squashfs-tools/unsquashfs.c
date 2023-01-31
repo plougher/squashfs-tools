@@ -3603,10 +3603,8 @@ int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offse
 		return FALSE;
 	}
 
-	if(inumber_lookup(i->inode_number)) {
-		ERROR("File System corrupted: directory loop detected\n");
-		return FALSE;
-	}
+	if(inumber_lookup(i->inode_number))
+		EXIT_UNSQUASH("File System corrupted: directory loop detected\n");
 
 	pseudo_print(parent_name, i, NULL, 0);
 
