@@ -2119,10 +2119,8 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		return FALSE;
 	}
 
-	if(inumber_lookup(i->inode_number)) {
-		ERROR("File System corrupted: directory loop detected\n");
-		return FALSE;
-	}
+	if(inumber_lookup(i->inode_number))
+		EXIT_UNSQUASH("File System corrupted: directory loop detected\n");
 
 	if((lsonly || info) && (!concise || dir->dir_count ==0))
 		print_filename(parent_name, i);
