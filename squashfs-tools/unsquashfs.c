@@ -2051,10 +2051,8 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	if(dir == NULL)
 		return FALSE;
 
-	if(inumber_lookup(i->inode_number)) {
-		ERROR("File System corrupted: directory loop detected\n");
-		return FALSE;
-	}
+	if(inumber_lookup(i->inode_number))
+		EXIT_UNSQUASH("File System corrupted: directory loop detected\n");
 
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
 		struct inode *i;
