@@ -2051,6 +2051,11 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	if(dir == NULL)
 		return FALSE;
 
+	if(inumber_lookup(i->inode_number)) {
+		ERROR("File System corrupted: directory loop detected\n");
+		return FALSE;
+	}
+
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
 		struct inode *i;
 		char *pathname;
@@ -2113,6 +2118,11 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	if(dir == NULL) {
 		EXIT_UNSQUASH_IGNORE("dir_scan: failed to read directory %s\n",
 			parent_name);
+		return FALSE;
+	}
+
+	if(inumber_lookup(i->inode_number)) {
+		ERROR("File System corrupted: directory loop detected\n");
 		return FALSE;
 	}
 
@@ -3149,7 +3159,6 @@ struct pathname *resolve_symlinks(int argc, char *argv[])
 			SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
 			1, 0, stack);
-		free_inumber_table();
 
 		if(!found) {
 			if(missing_symlinks)
@@ -3468,7 +3477,6 @@ int cat_path(int argc, char *argv[])
 			failed = TRUE;
 
 		free_stack(stack);
-		free_inumber_table();
 	}
 
 	queue_put(to_writer, NULL);
@@ -3599,6 +3607,11 @@ int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offse
 		return FALSE;
 	}
 
+	if(inumber_lookup(i->inode_number)) {
+		ERROR("File System corrupted: directory loop detected\n");
+		return FALSE;
+	}
+
 	pseudo_print(parent_name, i, NULL, 0);
 
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
@@ -3673,6 +3686,11 @@ int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offse
 
 	if(dir == NULL) {
 		ERROR("pseudo_scan2: failed to read directory %s\n", parent_name);
+		return FALSE;
+	}
+
+	if(inumber_lookup(i->inode_number)) {
+		ERROR("File System corrupted: directory loop detected\n");
 		return FALSE;
 	}
 
