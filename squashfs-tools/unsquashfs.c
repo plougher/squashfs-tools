@@ -3683,10 +3683,8 @@ int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offse
 		return FALSE;
 	}
 
-	if(inumber_lookup(i->inode_number)) {
-		ERROR("File System corrupted: directory loop detected\n");
-		return FALSE;
-	}
+	if(inumber_lookup(i->inode_number))
+		EXIT_UNSQUASH("File System corrupted: directory loop detected\n");
 
 	if(max_depth == -1 || depth <= max_depth) {
 		while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
