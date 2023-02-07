@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2021
+ * Copyright (c) 2013, 2021, 2023
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -40,6 +40,7 @@
 #include "squashfs_fs.h"
 #include "unsquashfs.h"
 #include "unsquashfs_error.h"
+#include "signals.h"
 
 char *pathname = NULL;
 
@@ -96,7 +97,6 @@ void dump_state()
 void *info_thrd(void *arg)
 {
 	sigset_t sigmask;
-	struct timespec timespec = { .tv_sec = 1, .tv_nsec = 0 };
 	int sig, waiting = 0;
 
 	sigemptyset(&sigmask);
@@ -104,26 +104,7 @@ void *info_thrd(void *arg)
 	sigaddset(&sigmask, SIGHUP);
 
 	while(1) {
-		if(waiting)
-			sig = sigtimedwait(&sigmask, NULL, &timespec);
-		else
-			sig = sigwaitinfo(&sigmask, NULL);
-
-		if(sig == -1) {
-			switch(errno) {
-			case EAGAIN:
-				/* interval timed out */
-				waiting = 0;
-				/* FALLTHROUGH */
-			case EINTR:
-				/* if waiting, the wait will be longer, but
-				   that's OK */
-				continue;
-			default:
-				BAD_ERROR("sigtimedwait/sigwaitinfo failed "
-					"because %s\n", strerror(errno));
-			}
-		}
+		sig = wait_for_signal(&sigmask, &waiting);
 
 		if(sig == SIGQUIT && !waiting) {
 			if(pathname)
