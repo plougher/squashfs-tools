@@ -163,6 +163,8 @@ static void *info_thrd(void *arg)
 		} else
 			dump_state();
 	}
+
+	return NULL;
 }
 
 
