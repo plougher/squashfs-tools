@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2011, 2012, 2019, 2021, 2022
+ * Copyright (c) 2009, 2010, 2011, 2012, 2019, 2021, 2022, 2023
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -142,7 +142,6 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 	else
 		i.gid = (uid_t) guid_table[header.base.guid];
 
-	i.time = sBlk.s.mkfs_time;
 	i.inode_number = inode_number ++;
 
 	switch(i.type) {
@@ -165,7 +164,10 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			i.data = inode->file_size;
 			i.offset = inode->offset;
 			i.start = inode->start_block;
-			i.time = inode->mtime;
+			if(time_opt)
+				i.time = timeval;
+			else
+				i.time = inode->mtime;
 			break;
 		}
 		case SQUASHFS_FILE_TYPE: {
@@ -185,7 +187,10 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 					"inode %lld:%d\n", start, offset);
 
 			i.data = inode->file_size;
-			i.time = inode->mtime;
+			if(time_opt)
+				i.time = timeval;
+			else
+				i.time = inode->mtime;
 			i.blocks = (i.data + sBlk.s.block_size - 1) >>
 				sBlk.s.block_log;
 			i.start = inode->start_block;
@@ -224,6 +229,10 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 					"inode symbolic link %lld:%d\n", start, offset);
 			i.symlink[inodep->symlink_size] = '\0';
 			i.data = inodep->symlink_size;
+			if(time_opt)
+				i.time = timeval;
+			else
+				i.time = sBlk.s.mkfs_time;
 			break;
 		}
  		case SQUASHFS_BLKDEV_TYPE:
@@ -244,11 +253,19 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 					"inode %lld:%d\n", start, offset);
 
 			i.data = inodep->rdev;
+			if(time_opt)
+				i.time = timeval;
+			else
+				i.time = sBlk.s.mkfs_time;
 			break;
 			}
 		case SQUASHFS_FIFO_TYPE:
 		case SQUASHFS_SOCKET_TYPE: {
 			i.data = 0;
+			if(time_opt)
+				i.time = timeval;
+			else
+				i.time = sBlk.s.mkfs_time;
 			break;
 			}
 		default:

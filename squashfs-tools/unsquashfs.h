@@ -4,7 +4,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2013, 2014, 2019, 2021, 2022
+ * Copyright (c) 2009, 2010, 2013, 2014, 2019, 2021, 2022, 2023
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -294,6 +294,8 @@ extern struct queue *to_reader, *to_inflate, *to_writer;
 extern struct cache *fragment_cache, *data_cache;
 extern struct compressor *comp;
 extern int use_localtime;
+extern unsigned int timeval;
+extern int time_opt;
 
 /* unsquashfs.c */
 extern int read_inode_data(void *, long long *, unsigned int *, int);
@@ -336,4 +338,7 @@ extern int check_directory(struct dir *);
 
 /* unsquash-12.c */
 extern void sort_directory(struct dir_ent **, int);
+
+/* date.c */
+extern int exec_date(char *, unsigned int *);
 #endif

@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2011, 2012, 2013, 2019, 2021, 2022
+ * Copyright (c) 2009, 2010, 2011, 2012, 2013, 2019, 2021, 2022, 2023
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -220,7 +220,10 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 	i.mode = lookup_type[header.base.inode_type] | header.base.mode;
 	i.type = header.base.inode_type;
-	i.time = header.base.mtime;
+	if(time_opt)
+		i.time = timeval;
+	else
+		i.time = header.base.mtime;
 	i.inode_number = header.base.inode_number;
 
 	switch(header.base.inode_type) {

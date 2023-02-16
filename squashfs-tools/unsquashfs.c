@@ -101,6 +101,8 @@ int writer_fd = 1;
 int pseudo_file = FALSE;
 int pseudo_stdout = FALSE;
 char *pseudo_name;
+unsigned int timeval;
+int time_opt = FALSE;
 
 /* extended attribute flags */
 int no_xattrs = XATTR_DEF;
@@ -614,12 +616,37 @@ void print_filename(char *pathname, struct inode *inode)
 		printf(" -> %s", inode->symlink);
 	printf("\n");
 }
-	
+
+
+long long read_bytes(int fd, void *buff, long long bytes)
+{
+	long long res, count;
+
+	for(count = 0; count < bytes; count += res) {
+		int len = (bytes - count) > MAXIMUM_READ_SIZE ?
+					MAXIMUM_READ_SIZE : bytes - count;
+
+		res = read(fd, buff + count, len);
+		if(res < 1) {
+			if(res == 0)
+				break;
+			else if(errno != EINTR) {
+				ERROR("Read failed because %s\n",
+						strerror(errno));
+				return -1;
+			} else
+				res = 0;
+		}
+	}
+
+	return count;
+}
+
 
 int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 {
 	off_t off = byte;
-	long long res, count;
+	long long res;
 
 	TRACE("read_bytes: reading from position 0x%llx, bytes %lld\n", byte,
 		bytes);
@@ -632,26 +659,13 @@ int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 		goto done;
 	}
 
-	for(count = 0; count < bytes; count += res) {
-		int len = (bytes - count) > MAXIMUM_READ_SIZE ? MAXIMUM_READ_SIZE : bytes - count;
-		res = read(fd, buff + count, len);
-		if(res < 1) {
-			if(res == 0) {
-				ERROR("Read on filesystem failed because "
-					"EOF\n");
-				res = FALSE;
-				goto done;
-			} else if(errno != EINTR) {
-				ERROR("Read on filesystem failed because %s\n",
-						strerror(errno));
-				res = FALSE;
-				goto done;
-			} else
-				res = 0;
-		}
-	}
+	res = read_bytes(fd, buff, bytes);
 
-	res = TRUE;
+	if(res != -1 && res < bytes)
+		ERROR("Read on filesystem failed because EOF\n");
+
+	res = res == bytes;
+
 done:
 	pthread_cleanup_pop(1);
 	return res;
@@ -3135,6 +3149,22 @@ int parse_number(char *start, int *res)
 }
 
 
+int parse_number_unsigned(char *start, unsigned int *res)
+{
+	long long number;
+
+	if(!parse_numberll(start, &number, 0))
+		return 0;
+
+	/* check if long result will overflow unsigned int */
+	if(number > UINT_MAX)
+		return 0;
+
+	*res = (unsigned int) number;
+	return 1;
+}
+
+
 struct pathname *resolve_symlinks(int argc, char *argv[])
 {
 	int n, found;
@@ -4361,6 +4391,16 @@ int parse_options(int argc, char *argv[])
 							argv[0], argv[i - 1]);
 				exit(1);
 			}
+		} else if(strcmp(argv[i], "-all-time") == 0 ||
+				strcmp(argv[i], "-all") == 0) {
+			if((++i == argc) ||
+					(!parse_number_unsigned(argv[i], &timeval)
+					&& !exec_date(argv[i], &timeval))) {
+				ERROR("%s: %s missing or invalid time value\n",
+							argv[0], argv[i - 1]);
+				exit(1);
+			}
+			time_opt = TRUE;
 		} else {
 			print_options(stderr, argv[0]);
 			exit(1);
