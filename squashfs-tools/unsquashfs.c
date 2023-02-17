@@ -3930,6 +3930,16 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "expressions\n");
 	fprintf(stream, "\t\t\t\trather than use the default shell ");
 	fprintf(stream, "wildcard\n\t\t\t\texpansion (globbing)\n");
+	fprintf(stream, "\t-all[-time] <time>\tset all file timestamps to ");
+	fprintf(stream, "<time>, rather than\n\t\t\t\tthe time stored in the ");
+	fprintf(stream, "filesystem inode.  <time>\n\t\t\t\tcan be an ");
+	fprintf(stream, "unsigned 32-bit int indicating\n\t\t\t\tseconds ");
+	fprintf(stream, "since the epoch (1970-01-01) or a string\n\t\t\t\t");
+	fprintf(stream, "value which is passed to the \"date\" command to\n");
+	fprintf(stream, "\t\t\t\tparse. Any string value which the date ");
+	fprintf(stream, "command\n\t\t\t\trecognises can be used such as ");
+	fprintf(stream, "\"now\", \"last\n\t\t\t\tweek\", or \"Wed Feb 15 ");
+	fprintf(stream, "21:02:39 GMT 2023\"\n");
 	fprintf(stream, "\t-cat\t\t\tcat the files on the command line to stdout\n");
 	fprintf(stream, "\t-f[orce]\t\tif file already exists then overwrite\n");
 	fprintf(stream, "\t-pf <file>\t\toutput a pseudo file equivalent ");
