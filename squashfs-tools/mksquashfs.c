@@ -49,9 +49,9 @@
 #include <sys/wait.h>
 #include <limits.h>
 #include <ctype.h>
-#include <sys/sysinfo.h>
 
-#ifdef linux
+#ifdef __linux__
+#include <sys/sysinfo.h>
 #include <sched.h>
 #else
 #include <sys/sysctl.h>
@@ -5223,7 +5223,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
 	if(processors == -1) {
-#ifdef linux
+#ifdef __linux__
 		cpu_set_t cpu_set;
 		CPU_ZERO(&cpu_set);
 
