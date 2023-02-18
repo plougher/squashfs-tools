@@ -6161,9 +6161,14 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-not-reproducible\tbuild filesystems that are not reproducible");
 	fprintf(stream, NOREP_STR "\n");
 	fprintf(stream, "-mkfs-time <time>\tset filesystem creation ");
-	fprintf(stream, "timestamp to <time>, which is\n\t\t\tan unsigned ");
-	fprintf(stream, "32-bit int indicating seconds since the\n\t\t\t");
-	fprintf(stream, "epoch (1970-01-01)\n");
+	fprintf(stream, "timestamp to <time>. <time> can\n\t\t\tbe an ");
+	fprintf(stream, "unsigned 32-bit int indicating seconds since the\n");
+	fprintf(stream, "\t\t\tepoch (1970-01-01) or a string value which ");
+	fprintf(stream, "is passed to\n\t\t\tthe \"date\" command to ");
+	fprintf(stream, "parse. Any string value which the\n\t\t\tdate ");
+	fprintf(stream, "command recognises can be used such as \"now\",\n");
+	fprintf(stream, "\t\t\t\"last week\", or \"Wed Feb 15 21:02:39 ");
+	fprintf(stream, "GMT 2023\"\n");
 	fprintf(stream, "-all-time <time>\tset all file timestamps to ");
 	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int ");
 	fprintf(stream, "indicating seconds since the epoch\n\t\t\t(1970-01-01)\n");
@@ -7717,7 +7722,8 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-mkfs-time") == 0 ||
 				strcmp(argv[i], "-fstime") == 0) {
 			if((++i == argc) ||
-				!parse_num_unsigned(argv[i], &mkfs_time)) {
+				(!parse_num_unsigned(argv[i], &mkfs_time) &&
+				!exec_date(argv[i], &mkfs_time))) {
 					ERROR("%s: %s missing or invalid time "
 						"value\n", argv[0],
 						argv[i - 1]);
