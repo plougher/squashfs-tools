@@ -2756,7 +2756,7 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size, int cat_
 	}
 
 	if(processors == -1) {
-#ifdef linux
+#ifdef __linux__
 		cpu_set_t cpu_set;
 		CPU_ZERO(&cpu_set);
 
