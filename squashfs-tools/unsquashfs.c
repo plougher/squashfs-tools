@@ -36,7 +36,7 @@
 #include <sched.h>
 #include <sys/sysinfo.h>
 #include <sys/sysmacros.h>
-#elif defined __FreeBSD__
+#else
 #include <sys/sysctl.h>
 #endif
 
