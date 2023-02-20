@@ -6445,8 +6445,13 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\t\"last week\", or \"Wed Feb 15 21:02:39 ");
 	fprintf(stream, "GMT 2023\"\n");
 	fprintf(stream, "-all-time <time>\tset all file timestamps to ");
-	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int ");
-	fprintf(stream, "indicating seconds since the epoch\n\t\t\t(1970-01-01)\n");
+	fprintf(stream, "<time>. <time> can be an\n\t\t\tunsigned 32-bit ");
+	fprintf(stream, "int indicating seconds since the epoch\n\t\t\t");
+	fprintf(stream, "(1970-01-01) or a string value which is passed to ");
+	fprintf(stream, "the\n\t\t\t\"date\" command to parse. Any string ");
+	fprintf(stream, "value which the date\n\t\t\tcommand recognises can ");
+	fprintf(stream, "be used such as \"now\", \"last\n\t\t\tweek\", or ");
+	fprintf(stream, "\"Wed Feb 15 21:02:39 GMT 2023\"\n");
 	fprintf(stream, "-root-time <time>\tset root directory time to ");
 	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int ");
 	fprintf(stream, "indicating seconds since the epoch\n\t\t\t(1970-01-01)\n");
@@ -6923,7 +6928,8 @@ int sqfstar(int argc, char *argv[])
 			mkfs_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-all-time") == 0) {
 			if((++i == dest_index) ||
-				!parse_num_unsigned(argv[i], &all_time)) {
+				(!parse_num_unsigned(argv[i], &all_time) &&
+				!exec_date(argv[i], &all_time))) {
 					ERROR("%s: %s missing or invalid time "
 						"value\n", argv[0],
 						argv[i - 1]);
