@@ -6453,8 +6453,13 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "be used such as \"now\", \"last\n\t\t\tweek\", or ");
 	fprintf(stream, "\"Wed Feb 15 21:02:39 GMT 2023\"\n");
 	fprintf(stream, "-root-time <time>\tset root directory time to ");
-	fprintf(stream, "<time>, which is an unsigned\n\t\t\t32-bit int ");
-	fprintf(stream, "indicating seconds since the epoch\n\t\t\t(1970-01-01)\n");
+	fprintf(stream, "<time>. <time> can be an\n\t\t\tunsigned 32-bit ");
+	fprintf(stream, "int indicating seconds since the epoch\n\t\t\t");
+	fprintf(stream, "(1970-01-01) or a string value which is passed to ");
+	fprintf(stream, "the\n\t\t\t\"date\" command to parse. Any string ");
+	fprintf(stream, "value which the date\n\t\t\tcommand recognises can ");
+	fprintf(stream, "be used such as \"now\", \"last\n\t\t\tweek\", or ");
+	fprintf(stream, "\"Wed Feb 15 21:02:39 GMT 2023\"\n");
 	fprintf(stream, "-root-mode <mode>\tset root directory permissions to octal ");
 	fprintf(stream, "<mode>\n");
 	fprintf(stream, "-root-uid <value>\tset root directory owner to ");
@@ -6985,7 +6990,9 @@ int sqfstar(int argc, char *argv[])
 			}
 			root_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-time") == 0) {
-			if((++i == dest_index) || !parse_num_unsigned(argv[i], &root_time)) {
+			if((++i == argc) ||
+					(!parse_num_unsigned(argv[i], &root_time) &&
+					!exec_date(argv[i], &root_time))) {
 				ERROR("%s: -root-time missing or invalid time\n",
 					argv[0]);
 				exit(1);
