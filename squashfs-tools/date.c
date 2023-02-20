@@ -106,7 +106,7 @@ int exec_date(char *string, unsigned int *mtime)
 		goto failed;
 	}
 
-	return TRUE;;
+	return TRUE;
 failed:
 	close(pipefd[0]);
 	close(pipefd[1]);
