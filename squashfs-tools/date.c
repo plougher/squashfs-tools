@@ -114,7 +114,7 @@ int exec_date(char *string, unsigned int *mtime)
 	}
 
 	if(time > UINT_MAX) {
-		ERROR("Error, number returned from date >= 2^32, dates should be before 2106-02-07 06:28:16\n");
+		ERROR("Error, number returned from date >= 2^32, dates should be before 2106-02-07 06:28:16 UTC\n");
 		return FALSE;
 	}
 
