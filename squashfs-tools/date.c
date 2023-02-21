@@ -58,7 +58,6 @@ int exec_date(char *string, unsigned int *mtime)
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-
 		execl("/usr/bin/date", "date", "-d", string, "+%s", (char *) NULL);
 		exit(EXIT_FAILURE);
 	}
@@ -69,7 +68,7 @@ int exec_date(char *string, unsigned int *mtime)
 		res = read_bytes(pipefd[0], buffer, 11);
 		if(res == -1) {
 			ERROR("Error executing date\n");
-			goto failed;
+			goto failed2;
 		} else if(res == 0)
 			break;
 
@@ -82,7 +81,7 @@ int exec_date(char *string, unsigned int *mtime)
 			break;
 		else if(errno != EINTR) {
 			ERROR("Error executing data, waitpid failed\n");
-			goto failed;
+			goto failed2;
 		}
 	}
 
@@ -90,12 +89,12 @@ int exec_date(char *string, unsigned int *mtime)
 
 	if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
 		ERROR("Error executing date, failed to parse date string\n");
-		goto failed;
+		return FALSE;
 	}
 
 	if(bytes == 0 || bytes > 11) {
 		ERROR("Error executing date, unexpected result\n");
-		goto failed;
+		return FALSE;
 	}
 
 	/* replace trailing newline with string terminator */
@@ -105,7 +104,7 @@ int exec_date(char *string, unsigned int *mtime)
 
 	if(res < 1) {
 		ERROR("Error, unexpected result from date\n");
-		goto failed;
+		return FALSE;
 	}
 
 	if(time < 0) {
@@ -123,7 +122,8 @@ int exec_date(char *string, unsigned int *mtime)
 	return TRUE;
 
 failed:
-	close(pipefd[0]);
 	close(pipefd[1]);
+failed2:
+	close(pipefd[0]);
 	return FALSE;
 }
