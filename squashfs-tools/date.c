@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <limits.h>
 
 #include "date.h"
 #include "error.h"
@@ -109,6 +110,11 @@ int exec_date(char *string, unsigned int *mtime)
 
 	if(time < 0) {
 		ERROR("Error, negative number returned from date, dates should be on or after the epoch of 1970-01-01 00:00 UTC\n");
+		return FALSE;
+	}
+
+	if(time > UINT_MAX) {
+		ERROR("Error, number returned from date >= 2^32, dates should be before 2106-02-07 06:28:16\n");
 		return FALSE;
 	}
 
