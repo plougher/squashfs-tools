@@ -605,6 +605,8 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 			goto error;
 		}
 
+		free(string);
+
 		n = sscanf(def, "%o %99s %99s %n", &mode, suid, sgid, &bytes);
 		def += bytes;
 		if(n < 3) {
@@ -874,6 +876,7 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 
 error:
 	print_definitions();
+	free(filename);
 	return FALSE;
 }
 
