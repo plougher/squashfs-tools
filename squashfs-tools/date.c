@@ -35,6 +35,7 @@ int exec_date(char *string, unsigned int *mtime)
 {
 	int res, pipefd[2], child, status;
 	int bytes = 0;
+	long long time;
 	char buffer[11];
 
 	res = pipe(pipefd);
@@ -99,14 +100,22 @@ int exec_date(char *string, unsigned int *mtime)
 	/* replace trailing newline with string terminator */
 	buffer[bytes - 1] = '\0';
 
-	res = sscanf(buffer, "%u", mtime);
+	res = sscanf(buffer, "%lld", &time);
 
 	if(res < 1) {
 		ERROR("Error, unexpected result from date\n");
 		goto failed;
 	}
 
+	if(time < 0) {
+		ERROR("Error, negative number returned from date, dates should be on or after the epoch of 1970-01-01 00:00 UTC\n");
+		return FALSE;
+	}
+
+	*mtime = (unsigned int) time;
+
 	return TRUE;
+
 failed:
 	close(pipefd[0]);
 	close(pipefd[1]);
