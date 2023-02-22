@@ -103,6 +103,7 @@ int pseudo_stdout = FALSE;
 char *pseudo_name;
 unsigned int timeval;
 int time_opt = FALSE;
+int full_precision = FALSE;
 
 /* extended attribute flags */
 int no_xattrs = XATTR_DEF;
@@ -610,8 +611,13 @@ void print_filename(char *pathname, struct inode *inode)
 
 	t = use_localtime ? localtime(&inode->time) : gmtime(&inode->time);
 
-	printf("%d-%02d-%02d %02d:%02d %s", t->tm_year + 1900, t->tm_mon + 1,
-		t->tm_mday, t->tm_hour, t->tm_min, pathname);
+	if(full_precision)
+		printf("%d-%02d-%02d %02d:%02d:%02d %s", t->tm_year + 1900,
+			t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min,
+			t->tm_sec, pathname);
+	else
+		printf("%d-%02d-%02d %02d:%02d %s", t->tm_year + 1900,
+			t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, pathname);
 	if((inode->mode & S_IFMT) == S_IFLNK)
 		printf(" -> %s", inode->symlink);
 	printf("\n");
@@ -3960,6 +3966,9 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-llc\t\t\tlist filesystem concisely with file ");
 	fprintf(stream, "attributes,\n\t\t\t\tdisplaying only files and empty ");
 	fprintf(stream, "directories.\n\t\t\t\tDo not extract files\n");
+	fprintf(stream, "\t-full[-precision]\tuse full precision when ");
+	fprintf(stream, "displaying times\n\t\t\t\tincluding seconds.  Use ");
+	fprintf(stream, "with -linfo, -lls, -lln\n\t\t\t\tand -llc\n");
 	fprintf(stream, "\t-UTC\t\t\tuse UTC rather than local time zone ");
 	fprintf(stream, "when\n\t\t\t\tdisplaying time\n");
 	fprintf(stream, "\t-mkfs-time\t\tdisplay filesystem superblock time, which is an\n");
@@ -4411,7 +4420,10 @@ int parse_options(int argc, char *argv[])
 				exit(1);
 			}
 			time_opt = TRUE;
-		} else {
+		} else if(strcmp(argv[i], "-full-precision") == 0 ||
+				strcmp(argv[i], "-full") == 0)
+			full_precision = TRUE;
+		else {
 			print_options(stderr, argv[0]);
 			exit(1);
 		}
