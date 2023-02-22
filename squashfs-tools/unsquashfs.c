@@ -3946,9 +3946,8 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "of the input\n\t\t\t\tSquashfs filesystem, use - for stdout\n");
 	fprintf(stream, "\nFilesystem information and listing options:\n");
 	fprintf(stream, "\t-s[tat]\t\t\tdisplay filesystem superblock information\n");
-	fprintf(stream, "\t-mkfs-time\t\tdisplay filesystem superblock time, which is an\n");
-	fprintf(stream, "\t\t\t\tunsigned 32-bit int representing the time in\n");
-	fprintf(stream, "\t\t\t\tseconds since the epoch (1970-01-01)\n");
+	fprintf(stream, "\t-max[-depth] <levels>\tdescend at most <levels> of ");
+	fprintf(stream, "directories when\n\t\t\t\tlisting\n");
 	fprintf(stream, "\t-i[nfo]\t\t\tprint files as they are extracted\n");
 	fprintf(stream, "\t-li[nfo]\t\tprint files as they are extracted with file\n");
 	fprintf(stream, "\t\t\t\tattributes (like ls -l output)\n");
@@ -3961,10 +3960,11 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-llc\t\t\tlist filesystem concisely with file ");
 	fprintf(stream, "attributes,\n\t\t\t\tdisplaying only files and empty ");
 	fprintf(stream, "directories.\n\t\t\t\tDo not extract files\n");
-	fprintf(stream, "\t-max[-depth] <levels>\tdescend at most <levels> of ");
-	fprintf(stream, "directories when\n\t\t\t\tlisting\n");
 	fprintf(stream, "\t-UTC\t\t\tuse UTC rather than local time zone ");
 	fprintf(stream, "when\n\t\t\t\tdisplaying time\n");
+	fprintf(stream, "\t-mkfs-time\t\tdisplay filesystem superblock time, which is an\n");
+	fprintf(stream, "\t\t\t\tunsigned 32-bit int representing the time in\n");
+	fprintf(stream, "\t\t\t\tseconds since the epoch (1970-01-01)\n");
 	fprintf(stream, "\nFilesystem extended attribute (xattrs) options:\n");
 	fprintf(stream, "\t-no[-xattrs]\t\tdo not extract xattrs in file system");
 	fprintf(stream, NOXOPT_STR"\n");
