@@ -1,0 +1,189 @@
+	UNSQUASHFS - a tool to extract and list Squashfs filesystems
+
+XXXX this is the out-of-date usage from the USAGE file.  To be updated.
+
+Unsquashfs allows you to decompress and extract a Squashfs filesystem without
+mounting it.  It can extract the entire filesystem, or a specific
+file or directory.
+
+Unsquashfs can decompress all official Squashfs filesystem versions.
+
+The Unsquashfs usage info is:
+
+SYNTAX: unsquashfs [options] filesystem [files to extract or exclude (with -excludes) or cat (with -cat )]
+	-v[ersion]		print version, licence and copyright information
+	-cat			cat the listed files to stdout
+	-d[est] <pathname>	unsquash to <pathname>, default "squashfs-root"
+	-max[-depth] <levels>	descend at most <levels> of directories when
+				unsquashing or listing
+	-excludes		treat files on command line as exclude files
+	-ex[clude-list]		list of files to be excluded, terminated with ;
+	-follow[-symlinks]	follow symlinks in extract files, and add all
+				files/symlinks needed to resolve extract file.
+				Implies -no-wildcards
+	-missing[-symlinks]	Unsquashfs will abort if any symlink can't be
+				resolved in -follow-symlinks
+	-q[uiet]		no verbose output
+	-n[o-progress]		don't display the progress bar
+	-no[-xattrs]		don't extract xattrs in file system
+	-x[attrs]		extract xattrs in file system (default)
+	-u[ser-xattrs]		only extract user xattrs in file system.
+				Enables extracting xattrs
+	-p[rocessors] <number>	use <number> processors.  By default will use
+				number of processors available
+	-i[nfo]			print files as they are unsquashed
+	-li[nfo]		print files as they are unsquashed with file
+				attributes (like ls -l output)
+	-l[s]			list filesystem, but don't unsquash
+	-ll[s]			list filesystem with file attributes (like
+				ls -l output), but don't unsquash
+	-lln[umeric]		-lls but with numeric uids and gids
+	-lc			list filesystem concisely, displaying only files
+				and empty directories.  Don't unsquash
+	-llc			list filesystem concisely with file attributes,
+				displaying only files and empty directories.
+				Don't unsquash
+	-o[ffset] <bytes>	skip <bytes> at start of <dest>.  Optionally a
+				suffix of K, M or G can be given to specify
+				Kbytes, Mbytes or Gbytes respectively (default
+				0 bytes).
+	-f[orce]		if file already exists then overwrite
+	-ig[nore-errors]	treat errors writing files to output as
+				non-fatal
+	-st[rict-errors]	treat all errors as fatal
+	-no-exit[-code]		don't set exit code (to nonzero) on non-fatal
+				errors
+	-s[tat]			display filesystem superblock information
+	-UTC			use UTC rather than local time zone when
+				displaying time
+	-mkfs-time		display filesystem superblock time
+	-fstime			synonym for -mkfs-time
+	-extract-file <file>	list of directories or files to extract.
+				One per line
+	-exclude-file <file>	list of directories or files to exclude.
+				One per line
+	-pf <file>		output a pseudo file equivalent of the input
+				Squashfs filesystem
+	-pseudo-file <file>	alternative name for -pf
+	-e[f] <extract file>	synonym for -extract-file
+	-exc[f] <exclude file>	synonym for -exclude-file
+	-da[ta-queue] <size>	set data queue to <size> Mbytes.  Default 256
+				Mbytes
+	-fr[ag-queue] <size>	set fragment queue to <size> Mbytes.  Default
+				256 Mbytes
+	-no-wild[cards]		do not use wildcard matching in extract names
+	-r[egex]		treat extract names as POSIX regular expressions
+				rather than use the default shell wildcard
+				expansion (globbing)
+	-L			synonym for -follow-symlinks
+	-h[elp]			output this options text to stdout
+
+Decompressors available:
+	gzip
+	lzo
+	lz4
+	xz
+	zstd
+
+To extract a subset of the filesystem, the filenames or directory
+trees that are to be extracted can be specified on the command line.  The
+files/directories should be specified using the full path to the
+files/directories as they appear within the Squashfs filesystem.  The
+files/directories will also be extracted to those positions within the specified
+destination directory.
+
+The extract files can also be given in a file using the "-e[f]" option.
+
+Similarly to Mksquashfs, wildcard matching is performed on the extract
+files.  Wildcard matching is enabled by default.
+
+Examples:
+
+  1. unsquashfs image.sqsh 'test/*.gz'
+
+     Extract all files matching "*.gz" in the top level directory "test".
+
+  2. unsquashfs image.sqsh '[Tt]est/example*'
+
+     Extract all files beginning with "example" inside top level directories
+     called "Test" or "test".
+
+  Using extended wildcards, negative matching is also possible.
+
+  3. unsquashfs image.sqsh 'test/!(*data*).gz'
+
+     Extract all files matching "*.gz" in top level directory "test",
+     except those with "data" in the name.
+
+
+4.1 Unsquashfs options
+----------------------
+
+The "-ls" option can be used to list the contents of a filesystem without
+decompressing the filesystem data itself.  The "-lls" option is similar
+but it also displays file attributes (ls -l style output).  The "-lln"
+option is the same but displays uids and gids numerically.
+
+The "-lc" option is similar to the -ls option except it only displays files
+and empty directories.  The -llc option displays file attributes.
+
+The "-info" option forces Unsquashfs to print each file as it is decompressed.
+The -"linfo" is similar but it also displays file attributes.
+
+The "-dest" option specifies the directory that is used to decompress
+the filesystem data.  If this option is not given then the filesystem is
+decompressed to the directory "squashfs-root" in the current working directory.
+
+The "-force" option forces Unsquashfs to output to the destination
+directory even if files or directories already exist.  This allows you
+to update an existing directory tree, or to Unsquashfs to a partially
+filled directory.  Without the "-force" option, Unsquashfs will
+refuse to overwrite any existing files, or to create any directories if they
+already exist.  This is done to protect data in case of mistakes, and
+so the "-force" option should be used with caution.
+
+The "-stat" option displays filesystem superblock information.  This is
+useful to discover the filesystem version, byte ordering, whether it has a NFS
+export table, and what options were used to compress the filesystem, etc.
+
+The -mkfs-time option displays the make filesystem time contained
+in the super-block.  This is displayed as the number of seconds since
+the epoch of 1970-01-01 00:00:00 UTC.
+
+The -UTC option makes Unsquashfs display all times in the UTC time zone
+rather than using the default local time zone.
+
+4.2. Dealing with errors
+------------------------
+
+Unsquashfs splits errors into two categories: fatal errors and non-fatal
+errors.
+
+Fatal errors are those which cause Unsquashfs to abort instantly.
+These are generally due to failure to read the filesystem (corruption),
+and/or failure to write files to the output filesystem, due to I/O error
+or out of space.  Generally anything which is unexpected is a fatal error.
+
+Non-fatal errors are generally where support is lacking in the
+output filesystem, and it can be considered to be an expected failure.
+This includes the inability to write extended attributes (xattrs) to
+a filesystem that doesn't support them, the inability to create files on
+filesystem that doesn't support them (i.e. symbolic links on VFAT), and the
+inability to execute privileged operations as a user-process.
+
+The user may well know the filesystem cannot support certain operations
+and would prefer Unsquashfs to ignore then without aborting.
+
+In the past Unsquashfs was much more tolerant of errors, in this
+release a significant number of errors that were non-fatal have been
+hardened to fatal.
+
+4.2.1. -ignore-errors
+
+This makes Unsquashfs behave like previous versions, and treats more
+errors as non-fatal.
+
+4.2.2 -strict-errors
+
+This makes Unsquashfs treat every error as fatal, and it will abort
+instantly.
