@@ -640,8 +640,8 @@ Obviously anything "date" accepts as a valid string can be used, such as
 "yesterday", "last week" etc.
 
 
-8. REDUCING CPU AND I/O SQFSTAR USES
-------------------------------------
+8. REDUCING CPU AND I/O USAGE
+-----------------------------
 
 By default Sqfstar will use all the CPUs available to compress and create the
 filesystem, and will read from the TAR archive and write to the output
@@ -663,7 +663,7 @@ usage as there is insufficient data rate to use all cores.
 
 Which option should you use?  Both will effectively reduce CPU and I/O in
 normal cases where intensive use is being made of both I/O and CPUs.  But
-in edge cases there can be an imbalence where reducing one has no effect, or
+in edge cases there can be an imbalance where reducing one has no effect, or
 it can't be reduced any further.  For instance when there is only 1 or 2 cores
 available, setting -processors to the minimum of 1 may still use too much
 CPU.  Additionally if your input source is slow Sqfstar may still max it out
