@@ -603,7 +603,44 @@ root uid/gid and a mode of rw-rw-rw, overriding the attributes obtained
 from the source filesystem.
 
 
-7. REDUCING CPU AND I/O SQFSTAR USES
+7. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
+---------------------------------------------------
+
+The Pseudo file definitions described above do not allow the timestamp
+of the created file to be specified, and the files will be timestamped
+with the current time.
+
+Extended versions of the Pseudo file definitions are supported which
+take a <time> timestamp.  These are distinquished from the previous
+definitions by using an upper-case type character.  For example the "D"
+definition is identical to the "d" definition, but it takes a <time>
+timestamp.
+
+The list of extended definitions are:
+
+	filename D time mode uid gid
+	filename M time mode uid gid
+	filename B time mode uid gid major minor
+	filename C time mode uid gid major minor
+	filename F time mode uid gid command
+	filename S time mode uid gid symlink
+
+<time> can be either an unsigned decimal integer (which represents the
+seconds since the epoch of 1970-01-01 00:00 UTC), or a "date string"
+which is parsed and converted into an integer since the epoch, by calling
+the "date" command.
+
+Because most date strings have spaces, they will need to be quoted, and if
+entered on the command line, these quotes will need to be protected from the
+shell by backslashes, i.e.
+
+% sqfstar img.sqfs -p "file D \"1 jan 1980\" 0777 phillip phillip" < archive.tar
+
+Obviously anything "date" accepts as a valid string can be used, such as
+"yesterday", "last week" etc.
+
+
+8. REDUCING CPU AND I/O SQFSTAR USES
 ------------------------------------
 
 By default Sqfstar will use all the CPUs available to compress and create the
