@@ -669,7 +669,77 @@ symlink s 0 root root example
 
 8reates a symlink "symlink" to file "example" with root uid/gid.
 
-7.5. MODIFYING ATTRIBUTES OF AN EXISTING FILE
+8.5 CREATING HARD LINKS (FILE REFERENCES)
+-----------------------------------------
+
+The "f" Pseudo definition allows a regular file to be created from the output of
+a command (or shell).  Often this is used to reference a file outside the source
+directories by executing "cat", e.g.
+
+README f 0555 0 0 cat /home/phillip/latest-version/README
+
+Because this is a quite frequent use of the definition, an alternative faster
+"File reference" or Hard Link Pseudo definition exists:
+
+README l /home/phillip/latest-version/README
+
+Will create a reference to "/home/phillip/latest-version/README",
+and obviously the timestamp/mode and owership will be used.
+
+The definition also be used to create additional references to
+files within the source directories.  For instance if "phillip/latest/README"
+was a file being added to the filesystem, then
+
+README l phillip/latest/README
+
+Will create a Hard Link (and increment the nlink count on the inode).
+
+In both cases, the path to the file being referenced is the system
+filesystem path, and can be absolute (prefixed with /), or relative
+to the current working directory.
+
+There is an additional 'L' Pseudo definition, which closes a loophole in
+the above 'l' definition.  The 'l' Pseudo definition cannot create references
+or Hard Links to files created by Pseudo definitions, because by
+definition they do not exist in the system filesystem.
+
+with 'L' the referenced file is expected to be a Pseudo file, and in this case
+the path is taken to be from the root of the Squashfs filesystem being created,
+e.g.
+
+char-dev c 0555 0 0 1 2
+
+link L char-dev
+
+Will create a Hard Link named "link" to the character device called "char-dev"
+created by the previous Pseudo definition.
+
+8.5. CREATING SOCKETS/FIFOS
+---------------------------
+
+Pseudo definition
+
+filename i mode uid gid [s|f]
+
+To create a Unix domain socket, 's' should be used, i.e.
+
+filename i 0777 root root s
+
+and to create a FIFO, 'f' should be used, i.e.
+
+filename i 0777 root root f
+
+8.6 ADDING EXTENDED ATTRIBUTES TO FILES
+---------------------------------------
+
+Pseudo definition
+
+filename x name=val
+
+Will add the extended attribute <name> to <filename> with <val > contents.  See
+Section 7 for a description of the <val> formats supported.
+
+8.7. MODIFYING ATTRIBUTES OF AN EXISTING FILE
 ---------------------------------------------
 
 Pseudo definition
@@ -688,6 +758,7 @@ Changes the attributes of the file "dmesg" in the filesystem to have
 root uid/gid and a mode of rw-rw-rw, overriding the attributes obtained
 from the source filesystem.
 
+
 9. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
 ---------------------------------------------------
 
@@ -703,12 +774,13 @@ timestamp.
 
 The list of extended definitions are:
 
+	filename F time mode uid gid command
 	filename D time mode uid gid
-	filename M time mode uid gid
 	filename B time mode uid gid major minor
 	filename C time mode uid gid major minor
-	filename F time mode uid gid command
 	filename S time mode uid gid symlink
+	filename I time mode uid gid [s|f]
+	filename M time mode uid gid
 
 <time> can be either an unsigned decimal integer (which represents the
 seconds since the epoch of 1970-01-01 00:00 UTC), or a "date string"
