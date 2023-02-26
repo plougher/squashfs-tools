@@ -449,7 +449,63 @@ Non-anchored excludes
      except those with "data" in the name.
 
 
-6. PSEUDO FILE SUPPORT
+6. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
+----------------------------------------------------
+
+Sqfstar has a number of options which allow extended attributes (xattrs) to be
+filtered from the TAR archive or added to the created Squashfs filesystem.
+
+The -no-xattrs option removes any extended attributes which may exist in the
+TAR archive, and creates a filesystem without any extended attributes.
+
+The -xattrs-exclude option specifies a regular expression (regex), which
+removes any extended attribute that matches the regular expression from all
+files.  For example the regex '^user.' will remove all User extended attributes.
+
+The -xattrs-include option instead specifies a regular expression (regex)
+which includes any extended attribute that matches, and removes anything
+that does't match.  For example the regex '^user.' will only keep User
+extended attributes and anything else will be removed.
+
+Sqfstar also allows you to add extended attributes to files in the Squashfs
+filesystem using the -xattrs-add option.  This option takes an xattr name and
+value pair separated by the '=' character.
+
+The extended attribute name can be any valid name and can be in the namespaces
+security, system, trusted, or user.  User extended attributes are added to files
+and directories (see man 7 xattr for explanation), and the others are added to
+all files.
+
+The extended attribute value by default will be treated as binary (i.e. an
+uninterpreted byte sequence), but it can be prefixed with 0s, where it will be
+treated as base64 encoded, or prefixed with 0x, where it will be treated as
+hexidecimal.
+
+Obviously using base64 or hexidecimal allows values to be used that cannot be
+entered on the command line such as non-printable characters etc.  But it
+renders the string non-human readable.  To keep readability and to allow
+non-printable characters to be entered, the 0t prefix is supported.  This
+encoding is similar to binary encoding, except backslashes are specially
+treated, and a backslash followed by three octal digits can be used to encode
+any ASCII character, which obviously can be used to encode non-printable values.
+
+The following four command lines are equivalent
+
+sqfstar -xattrs-add "user.comment=hello world" image.sqfs
+sqfstar -xattrs-add "user.comment=0saGVsbG8gd29ybGQ=" image.sqfs
+sqfstar -xattrs-add "user.comment=0x68656c6c6f20776f726c64"
+sqfstar -xattrs-add "user.comment=0thello world" image.sqfs
+
+Obviously in the above example there are no non-printable characters and so
+the 0t prefixed string is identical to the first line.  The following three
+command lines are identical, but where the space has been replaced by the
+non-printable NUL '\0' (null character).
+
+sqfstar -xattrs-add "user.comment=0thello\000world" image.sqfs
+sqfstar -xattrs-add "user.comment=0saGVsbG8Ad29ybGQ=" image.sqfs
+sqfstar -xattrs-add "user.comment=0x68656c6c6f00776f726c64" image.sqsh
+
+7. PSEUDO FILE SUPPORT
 ----------------------
 
 Sqfstar supports pseudo files, these allow files, directories, character
@@ -468,7 +524,7 @@ Two Sqfstar options are supported, -p allows one pseudo file to be specified
 on the command line, and -pf allows a pseudo file to be specified containing a
 list of pseduo definitions, one per line.
 
-6.1 CREATING A DYNAMIC FILE
+7.1 CREATING A DYNAMIC FILE
 ---------------------------
 
 Pseudo definition
@@ -525,7 +581,7 @@ given a device, fifo, or named socket will place that special file within the
 Squashfs filesystem, the above allows input from these special files to be
 captured and placed in the Squashfs filesystem.
 
-6.2. CREATING A BLOCK OR CHARACTER DEVICE
+7.2. CREATING A BLOCK OR CHARACTER DEVICE
 -----------------------------------------
 
 Pseudo definition
@@ -549,7 +605,7 @@ creates a character device "/dev/chr_dev" with major:minor 100:1 and
 a block device "/dev/blk_dev" with major:minor 200:200, both with root
 uid/gid and a mode of rw-rw-rw.
 
-6.3. CREATING A DIRECTORY
+7.3. CREATING A DIRECTORY
 -------------------------
 
 Pseudo definition
@@ -566,7 +622,7 @@ For example:
 
 creates a directory "/pseudo_dir" with root uid/gid and mode of rw-rw-rw.
 
-6.4. CREATING A SYMBOLIC LINK
+7.4. CREATING A SYMBOLIC LINK
 -----------------------------
 
 Pseudo definition
@@ -583,7 +639,7 @@ symlink s 0 root root example
 
 creates a symlink "symlink" to file "example" with root uid/gid.
 
-6.5. MODIFYING ATTRIBUTES OF AN EXISTING FILE
+7.5. MODIFYING ATTRIBUTES OF AN EXISTING FILE
 ---------------------------------------------
 
 Pseudo definition
@@ -603,7 +659,7 @@ root uid/gid and a mode of rw-rw-rw, overriding the attributes obtained
 from the source filesystem.
 
 
-7. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
+8. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
 ---------------------------------------------------
 
 The Pseudo file definitions described above do not allow the timestamp
@@ -640,7 +696,7 @@ Obviously anything "date" accepts as a valid string can be used, such as
 "yesterday", "last week" etc.
 
 
-8. REDUCING CPU AND I/O USAGE
+9. REDUCING CPU AND I/O USAGE
 -----------------------------
 
 By default Sqfstar will use all the CPUs available to compress and create the
@@ -670,7 +726,7 @@ CPU.  Additionally if your input source is slow Sqfstar may still max it out
 with -processors set to the minimum of 1.  In this case you can use -throttle
 in addition to -processors or on its own.
 
-8. MISCELLANEOUS OPTIONS
+10. MISCELLANEOUS OPTIONS
 ------------------------
 
 The -info option displays the files/directories as they are compressed and
