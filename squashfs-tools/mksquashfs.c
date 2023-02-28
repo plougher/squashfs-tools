@@ -5509,11 +5509,13 @@ static int excluded_match(char *name, struct pathname *path, struct pathnames **
 				FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
 
 		if(match) {
-			 if(path->name[i].paths == NULL || new == NULL)
+			 if(path->name[i].paths == NULL) {
 				/* match on a leaf component, any subdirectories
 			 	* in the filesystem should be excluded */
+				free(*new);
+				*new = NULL;
 				return TRUE;
-			else
+			 } else
 				/* match on a non-leaf component, add any
 				 * subdirectories to the new set of
 				 * subdirectories to scan for this name */
@@ -5529,16 +5531,13 @@ int excluded(char *name, struct pathnames *paths, struct pathnames **new)
 {
 	int n;
 		
-	if(stickypath && excluded_match(name, stickypath, NULL))
+	if(stickypath && excluded_match(name, stickypath, new))
 		return TRUE;
 
 	for(n = 0; paths && n < paths->count; n++) {
 		int res = excluded_match(name, paths->path[n], new);
-		if(res) {
-			free(*new);
-			*new = NULL;
+		if(res)
 			return TRUE;
-		}
 	}
 
 	/*
