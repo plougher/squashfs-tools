@@ -1568,10 +1568,9 @@ struct pathname *add_path(struct pathname *paths, int type, char *target,
 }
 
 
-struct pathname *add_extract(struct pathname *paths, char *target,
-							char *alltarget)
+void add_extract(char *target, char *alltarget)
 {
-	return add_path(paths, PATH_TYPE_EXTRACT, target, alltarget);
+	extract = add_path(extract, PATH_TYPE_EXTRACT, target, alltarget);
 }
 
 
@@ -2310,7 +2309,7 @@ int read_super(char *source)
 }
 
 
-struct pathname *process_extract_files(struct pathname *path, char *filename)
+void process_extract_files(char *filename)
 {
 	FILE *fd;
 	char buffer[MAX_LINE + 1]; /* overflow safe */
@@ -2355,7 +2354,7 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 		if(*name == '\0')
 			continue;
 
-		path = add_extract(path, name, name);
+		add_extract(name, name);
 	}
 
 	if(ferror(fd))
@@ -2363,7 +2362,6 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 			filename, strerror(errno));
 
 	fclose(fd);
-	return path;
 }
 
 
@@ -3169,13 +3167,12 @@ int parse_number_unsigned(char *start, unsigned int *res)
 }
 
 
-struct pathname *resolve_symlinks(int argc, char *argv[])
+void resolve_symlinks(int argc, char *argv[])
 {
 	int n, found;
 	struct directory_stack *stack;
 	struct symlink *symlink;
 	char *pathname;
-	struct pathname *path = NULL;
 
 	for(n = 0; n < argc; n++) {
 		/*
@@ -3198,23 +3195,20 @@ struct pathname *resolve_symlinks(int argc, char *argv[])
 				ERROR("Extract filename %s can't be resolved\n",
 								argv[n]);
 
-			path = add_extract(path, argv[n], argv[n]);
+			add_extract(argv[n], argv[n]);
 			free_stack(stack);
 			continue;
 		}
 
 		pathname = stack_pathname(stack, stack->name);
-		path = add_extract(path, pathname, pathname);
+		add_extract(pathname, pathname);
 		free(pathname);
 
 		for(symlink = stack->symlink; symlink; symlink = symlink->next)
-			path = add_extract(path, symlink->pathname,
-							symlink->pathname);
+			add_extract(symlink->pathname, symlink->pathname);
 
 		free_stack(stack);
 	}
-
-	return path;
 }
 
 
@@ -4386,7 +4380,7 @@ int parse_options(int argc, char *argv[])
 					argv[0]);
 				exit(1);
 			}
-			extract = process_extract_files(extract, argv[i]);
+			process_extract_files(argv[i]);
 		} else if(strcmp(argv[i], "-exclude-file") == 0 ||
 				strcmp(argv[i], "-excf") == 0 ||
 				strcmp(argv[i], "-exc") == 0) {
@@ -4582,10 +4576,10 @@ int main(int argc, char *argv[])
 		for(n = i + 1; n < argc; n++)
 			add_exclude(argv[n], argv[n]);
 	else if(follow_symlinks)
-		extract = resolve_symlinks(argc - i - 1, argv + i + 1);
+		resolve_symlinks(argc - i - 1, argv + i + 1);
 	else
 		for(n = i + 1; n < argc; n++)
-			extract = add_extract(extract, argv[n], argv[n]);
+			add_extract(argv[n], argv[n]);
 
 	if(extract) {
 		extracts = init_subdir();
