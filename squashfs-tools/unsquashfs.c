@@ -1575,10 +1575,9 @@ struct pathname *add_extract(struct pathname *paths, char *target,
 }
 
 
-struct pathname *add_exclude(struct pathname *paths, char *target,
-							char *alltarget)
+void add_exclude(char *target, char *alltarget)
 {
-	return add_path(paths, PATH_TYPE_EXCLUDE, target, alltarget);
+	exclude = add_path(exclude, PATH_TYPE_EXCLUDE, target, alltarget);
 }
 
 
@@ -2368,7 +2367,7 @@ struct pathname *process_extract_files(struct pathname *path, char *filename)
 }
 
 
-struct pathname *process_exclude_files(struct pathname *path, char *filename)
+void process_exclude_files(char *filename)
 {
 	FILE *fd;
 	char buffer[MAX_LINE + 1]; /* overflow safe */
@@ -2413,7 +2412,7 @@ struct pathname *process_exclude_files(struct pathname *path, char *filename)
 		if(*name == '\0')
 			continue;
 
-		path = add_exclude(path, name, name);
+		add_exclude(name, name);
 	}
 
 	if(ferror(fd))
@@ -2421,7 +2420,6 @@ struct pathname *process_exclude_files(struct pathname *path, char *filename)
 			filename, strerror(errno));
 
 	fclose(fd);
-	return path;
 }
 
 
@@ -3838,14 +3836,14 @@ failed:
 }
 
 
-int parse_excludes(int argc, char *argv[], struct pathname **exclude)
+int parse_excludes(int argc, char *argv[])
 {
 	int i;
 
 	for(i = 0; i < argc; i ++) {
 		if(strcmp(argv[i], ";") == 0)
 			break;
-		*exclude = add_exclude(*exclude, argv[i], argv[i]);
+		add_exclude(argv[i], argv[i]);
 	}
 
 	return (i == argc) ? 0 : i;
@@ -4198,7 +4196,7 @@ int parse_options(int argc, char *argv[])
 			treat_as_excludes = TRUE;
 		else if(strcmp(argv[i], "-exclude-list") == 0 ||
 				strcmp(argv[i], "-ex") == 0) {
-			res = parse_excludes(argc - i - 1, argv + i + 1, &exclude);
+			res = parse_excludes(argc - i - 1, argv + i + 1);
 			if(res == 0) {
 				fprintf(stderr, "%s: -exclude-list missing "
 					"filenames or no ';' terminator\n", argv[0]);
@@ -4397,7 +4395,7 @@ int parse_options(int argc, char *argv[])
 					argv[0]);
 				exit(1);
 			}
-			exclude = process_exclude_files(exclude, argv[i]);
+			process_exclude_files(argv[i]);
 		} else if(strcmp(argv[i], "-regex") == 0 ||
 				strcmp(argv[i], "-r") == 0)
 			use_regex = TRUE;
@@ -4582,7 +4580,7 @@ int main(int argc, char *argv[])
 		return cat_path(argc - i - 1, argv + i + 1);
 	else if(treat_as_excludes)
 		for(n = i + 1; n < argc; n++)
-			exclude = add_exclude(exclude, argv[n], argv[n]);
+			add_exclude(argv[n], argv[n]);
 	else if(follow_symlinks)
 		extract = resolve_symlinks(argc - i - 1, argv + i + 1);
 	else
