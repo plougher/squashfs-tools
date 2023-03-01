@@ -1568,9 +1568,9 @@ struct pathname *add_path(struct pathname *paths, int type, char *target,
 }
 
 
-void add_extract(char *target, char *alltarget)
+void add_extract(char *target)
 {
-	extract = add_path(extract, PATH_TYPE_EXTRACT, target, alltarget);
+	extract = add_path(extract, PATH_TYPE_EXTRACT, target, target);
 }
 
 
@@ -2354,7 +2354,7 @@ void process_extract_files(char *filename)
 		if(*name == '\0')
 			continue;
 
-		add_extract(name, name);
+		add_extract(name);
 	}
 
 	if(ferror(fd))
@@ -3195,17 +3195,17 @@ void resolve_symlinks(int argc, char *argv[])
 				ERROR("Extract filename %s can't be resolved\n",
 								argv[n]);
 
-			add_extract(argv[n], argv[n]);
+			add_extract(argv[n]);
 			free_stack(stack);
 			continue;
 		}
 
 		pathname = stack_pathname(stack, stack->name);
-		add_extract(pathname, pathname);
+		add_extract(pathname);
 		free(pathname);
 
 		for(symlink = stack->symlink; symlink; symlink = symlink->next)
-			add_extract(symlink->pathname, symlink->pathname);
+			add_extract(symlink->pathname);
 
 		free_stack(stack);
 	}
@@ -4579,7 +4579,7 @@ int main(int argc, char *argv[])
 		resolve_symlinks(argc - i - 1, argv + i + 1);
 	else
 		for(n = i + 1; n < argc; n++)
-			add_extract(argv[n], argv[n]);
+			add_extract(argv[n]);
 
 	if(extract) {
 		extracts = init_subdir();
