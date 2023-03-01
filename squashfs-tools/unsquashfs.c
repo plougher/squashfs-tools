@@ -1683,9 +1683,47 @@ empty_set:
 }
 
 
+int exclude_match(struct pathname *path, char *name, struct pathnames **new)
+{
+	int i, match;
+
+	for(i = 0; i < path->names; i++) {
+		if(no_wildcards)
+			match = strcmp(path->name[i].name, name) == 0;
+		else if(use_regex)
+			match = regexec(path->name[i].preg, name,
+				(size_t) 0, NULL, 0) == 0;
+		else
+			match = fnmatch(path->name[i].name, name,
+				FNM_PATHNAME|FNM_PERIOD| FNM_EXTMATCH) == 0;
+
+		if(match && path->name[i].type == PATH_TYPE_EXCLUDE) {
+			/*
+			 * match on a leaf component, any subdirectories
+			 * will implicitly match, therefore return an
+			 * empty new search set
+			 */
+			free(*new);
+			*new = NULL;
+			return TRUE;
+		}
+
+		if(match)
+			/*
+			 * match on a non-leaf component, add any
+			 * subdirectories to the new set of
+			 * subdirectories to scan for this name
+			 */
+			*new = add_subdir(*new, path->name[i].paths);
+	}
+
+	return FALSE;
+}
+
+
 int exclude_matches(struct pathnames *paths, char *name, struct pathnames **new)
 {
-	int i, n;
+	int n;
 
 	/* nothing to match, don't exclude */
 	if(paths == NULL) {
@@ -1696,36 +1734,10 @@ int exclude_matches(struct pathnames *paths, char *name, struct pathnames **new)
 	*new = init_subdir();
 
 	for(n = 0; n < paths->count; n++) {
-		struct pathname *path = paths->path[n];
-		for(i = 0; i < path->names; i++) {
-			int match;
+		int res = exclude_match(paths->path[n], name, new);
 
-			if(no_wildcards)
-				match = strcmp(path->name[i].name, name) == 0;
-			else if(use_regex)
-				match = regexec(path->name[i].preg, name,
-					(size_t) 0, NULL, 0) == 0;
-			else
-				match = fnmatch(path->name[i].name,
-					name, FNM_PATHNAME|FNM_PERIOD|
-					FNM_EXTMATCH) == 0;
-
-			if(match && path->name[i].type == PATH_TYPE_EXCLUDE)
-				/*
-				 * match on a leaf component, any subdirectories
-				 * will implicitly match, therefore return an
-				 * empty new search set
-				 */
-				goto empty_set;
-
-			if(match)
-				/*
-				 * match on a non-leaf component, add any
-				 * subdirectories to the new set of
-				 * subdirectories to scan for this name
-				 */
-				*new = add_subdir(*new, path->name[i].paths);
-		}
+		if(res)
+			return TRUE;
 	}
 
 	if((*new)->count == 0) {
@@ -1743,14 +1755,6 @@ int exclude_matches(struct pathnames *paths, char *name, struct pathnames **new)
 	 * return new search set and return FALSE
 	 */
 	return FALSE;
-
-empty_set:
-	/*
-	 * found matching leaf exclude, delete search set and return TRUE
-	 */
-	free_subdir(*new);
-	*new = NULL;
-	return TRUE;
 }
 
 
