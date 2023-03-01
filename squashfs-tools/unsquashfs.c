@@ -1574,9 +1574,9 @@ void add_extract(char *target, char *alltarget)
 }
 
 
-void add_exclude(char *target, char *alltarget)
+void add_exclude(char *target)
 {
-	exclude = add_path(exclude, PATH_TYPE_EXCLUDE, target, alltarget);
+	exclude = add_path(exclude, PATH_TYPE_EXCLUDE, target, target);
 }
 
 
@@ -2410,7 +2410,7 @@ void process_exclude_files(char *filename)
 		if(*name == '\0')
 			continue;
 
-		add_exclude(name, name);
+		add_exclude(name);
 	}
 
 	if(ferror(fd))
@@ -3837,7 +3837,7 @@ int parse_excludes(int argc, char *argv[])
 	for(i = 0; i < argc; i ++) {
 		if(strcmp(argv[i], ";") == 0)
 			break;
-		add_exclude(argv[i], argv[i]);
+		add_exclude(argv[i]);
 	}
 
 	return (i == argc) ? 0 : i;
@@ -4574,7 +4574,7 @@ int main(int argc, char *argv[])
 		return cat_path(argc - i - 1, argv + i + 1);
 	else if(treat_as_excludes)
 		for(n = i + 1; n < argc; n++)
-			add_exclude(argv[n], argv[n]);
+			add_exclude(argv[n]);
 	else if(follow_symlinks)
 		resolve_symlinks(argc - i - 1, argv + i + 1);
 	else
