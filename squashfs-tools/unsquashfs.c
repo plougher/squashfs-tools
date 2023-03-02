@@ -96,7 +96,7 @@ int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
 int data_buffer_size = DATA_BUFFER_DEFAULT;
 char *dest = "squashfs-root";
 struct pathnames *extracts = NULL, *excludes = NULL;
-struct pathname *extract = NULL, *exclude = NULL;
+struct pathname *extract = NULL, *exclude = NULL, *stickypath = NULL;
 int writer_fd = 1;
 int pseudo_file = FALSE;
 int pseudo_stdout = FALSE;
@@ -1574,9 +1574,12 @@ void add_extract(char *target)
 }
 
 
-void add_exclude(char *target)
+void add_exclude(char *str)
 {
-	exclude = add_path(exclude, PATH_TYPE_EXCLUDE, target, target);
+	if(strncmp(str, "... ", 4) == 0)
+		stickypath = add_path(stickypath, PATH_TYPE_EXCLUDE, str + 4, str + 4);
+	else
+		exclude = add_path(exclude, PATH_TYPE_EXCLUDE, str, str);
 }
 
 
@@ -1726,14 +1729,17 @@ int exclude_matches(struct pathnames *paths, char *name, struct pathnames **new)
 	int n;
 
 	/* nothing to match, don't exclude */
-	if(paths == NULL) {
+	if(paths == NULL && stickypath == NULL) {
 		*new = NULL;
 		return FALSE;
 	}
 
 	*new = init_subdir();
 
-	for(n = 0; n < paths->count; n++) {
+	if(stickypath && exclude_match(stickypath, name, new))
+		return TRUE;
+
+	for(n = 0; paths && n < paths->count; n++) {
 		int res = exclude_match(paths->path[n], name, new);
 
 		if(res)
