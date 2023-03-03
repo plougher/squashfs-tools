@@ -4047,8 +4047,11 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			buf.st_mtime = pseudo_ent->dev->buf->mtime;
 			buf.st_ino = pseudo_ent->dev->buf->ino;
 
-			if(pseudo_ent->dev->type == 'r')
+			if(pseudo_ent->dev->type == 'r') {
 				buf.st_size = pseudo_ent->dev->data->length;
+				if(pseudo_ent->dev->data->sparse == FALSE)
+					buf.st_blocks = (buf.st_size + 511) >> 9;
+			}
 		}
 
 		if(pseudo_ent->dev->type == 'd') {

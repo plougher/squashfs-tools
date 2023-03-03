@@ -351,7 +351,7 @@ void print_definitions()
 	ERROR("\tfilename F time mode uid gid command\n");
 	ERROR("\tfilename S time mode uid gid symlink\n");
 	ERROR("\tfilename I time mode uid gid [s|f]\n");
-	ERROR("\tfilename R time mode uid gid length offset\n");
+	ERROR("\tfilename R time mode uid gid length offset sparse\n");
 }
 
 
@@ -553,6 +553,7 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 	struct pseudo_dev *dev;
 	static int pseudo_ino = 1;
 	long long file_length, pseudo_offset;
+	int sparse;
 
 	n = sscanf(def, "%u %o %n", &mtime, &mode, &bytes);
 
@@ -707,14 +708,16 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 			goto error;
 		}
 
-		n = sscanf(def, "%lld %lld %n", &file_length, &pseudo_offset, &bytes);
+		n = sscanf(def, "%lld %lld %d %n", &file_length, &pseudo_offset,
+						&sparse, &bytes);
 		def += bytes;
 
-		if(n < 2) {
+		if(n < 3) {
 			ERROR("Not enough or invalid arguments in inline read "
 				"pseudo file definition \"%s\"\n", orig_def);
 			ERROR("Read filename, type, time, mode, uid and gid, "
-				"but failed to read or match file length or offset\n");
+				"but failed to read or match file length, "
+						"offset or sparse\n");
 			goto error;
 		}
 		break;
@@ -860,6 +863,7 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 		dev->data->file = *file;
 		dev->data->length = file_length;
 		dev->data->offset = pseudo_offset;
+		dev->data->sparse = sparse;
 	} else if(type == 'F') {
 		dev->pseudo_type = PSEUDO_FILE_PROCESS;
 		dev->command = strdup(command);

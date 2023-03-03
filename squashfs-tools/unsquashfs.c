@@ -3612,7 +3612,8 @@ void pseudo_print(char *pathname, struct inode *inode, char *link, long long off
 			res = dprintf(writer_fd, " %d %d\n", (int) inode->data >> 8, (int) inode->data & 0xff);
 			break;
 		case S_IFREG:
-			res = dprintf(writer_fd, " %lld %lld\n", inode->data, offset);
+			res = dprintf(writer_fd, " %lld %lld %d\n", inode->data,
+						offset, inode->sparse);
 	}
 
 	if(res == -1)
