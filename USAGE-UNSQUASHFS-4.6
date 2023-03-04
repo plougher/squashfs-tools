@@ -397,23 +397,32 @@ definitions supported by Msquashfs.
 
 Regular files (with data) are supported with the "R" pseudo definition, which is
 
-filename R time mode uid gid length offset
+filename R time mode uid gid length offset sparse
 
 <length> specifies the size of the file, and <offset> is a byte offset into the
 pseudo file where the data is stored.  This offset is taken from the start of
 the data section (see below), rather than from the start of the file (this is to
 allow the pseudo file entries to be edited without altering the data offsets).
-
 Data is deliberately stored out of line (i.e. unlike tar), to make the file more
 easily editable manually.
+
+<sparse> is a special boolean parameter.  It controls whether the file is
+presented to user-space as a "sparse" file when the filesystem is mounted,
+or is extracted as a "sparse" file by Unsquashfs.  This flag is important
+because Mksquashfs will always convert a file to a "sparse" file in the
+filesystem if it has block size sequences of zeros.  These zeros will not be
+stored and replaced with a hole.  But Mksquashfs is careful to preserve
+the semantics of the files it stores, if is was originally non-sparse it
+will flag that, so it doesn't appear as sparse to user-space or get
+copied as sparse by Unsquashfs.
 
 An example pseudo file output for a filesystem consisting of a directory, two
 regular files, and a symbolic link might be
 
 	/ D 1625536033 1777 0 0
 	test D 1625536969 755 1000 100
-	test/hello_world R 1625535696 644 1000 100 12 0
-	test/regfile R 1625536928 644 1000 100 37 12
+	test/hello_world R 1625535696 644 1000 100 12 0 0
+	test/regfile R 1625536928 644 1000 100 37 12 0
 	test/symlink S 1625535712 777 1000 100 hello_world
 	#
 	# START OF DATA - DO NOT MODIFY
