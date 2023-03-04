@@ -6204,6 +6204,8 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "value which the date\n\t\t\tcommand recognises can ");
 	fprintf(stream, "be used such as \"now\", \"last\n\t\t\tweek\", or ");
 	fprintf(stream, "\"Wed Feb 15 21:02:39 GMT 2023\"\n");
+	fprintf(stream, "-root-mode <mode>\tset root directory permissions ");
+	fprintf(stream, "to octal <mode>\n");
 	fprintf(stream, "-root-uid <value>\tset root directory owner to ");
 	fprintf(stream, "specified <value>,\n\t\t\t<value> can be either an ");
 	fprintf(stream, "integer uid or user name\n");
