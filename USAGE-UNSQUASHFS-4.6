@@ -123,36 +123,18 @@ Decompressors available:
 	xz
 	zstd
 
-To extract a subset of the filesystem, the filenames or directory
-trees that are to be extracted can be specified on the command line.  The
-files/directories should be specified using the full path to the
-files/directories as they appear within the Squashfs filesystem.  The
-files/directories will also be extracted to those positions within the specified
-destination directory.
 
-The extract files can also be given in a file using the "-e[f]" option.
+By default Unsquashfs will extract all the files in the Squashfs filesystem
+into the directory "squashfs-root", placed in the current working directory.
+The location and name of the directory can be changed with the -dest option.
 
-Similarly to Mksquashfs, wildcard matching is performed on the extract
-files.  Wildcard matching is enabled by default.
+Unsquashfs can also extract only part of the filesystem, with both extract
+filenames and exclude filenames supported.  These can be combined to specify
+a set of directories to be extracted, and then a set of files or directories
+to be excluded within them.
 
-Examples:
-
-  1. unsquashfs image.sqsh 'test/*.gz'
-
-     Extract all files matching "*.gz" in the top level directory "test".
-
-  2. unsquashfs image.sqsh '[Tt]est/example*'
-
-     Extract all files beginning with "example" inside top level directories
-     called "Test" or "test".
-
-  Using extended wildcards, negative matching is also possible.
-
-  3. unsquashfs image.sqsh 'test/!(*data*).gz'
-
-     Extract all files matching "*.gz" in top level directory "test",
-     except those with "data" in the name.
-
+Section 2 describes using extract files with Unsquashfs, and Section 3 describes
+using exclude files with Unsquashfs. 
 
 1. FREQUENTLY USED UNSQUASHFS OPTIONS
 -------------------------------------
@@ -195,106 +177,41 @@ the epoch of 1970-01-01 00:00:00 UTC.
 The -UTC option makes Unsquashfs display all times in the UTC time zone
 rather than using the default local time zone.
 
-2. DEALING WITH ERRORS
-----------------------
+2. USING "EXTRACT" FILES
+------------------------
 
-Unsquashfs splits errors into two categories: fatal errors and non-fatal
-errors.
+To extract a subset of the filesystem, the filenames or directory
+trees that are to be extracted can be specified on the command line.  The
+files/directories should be specified using the full path to the
+files/directories as they appear within the Squashfs filesystem.  The
+files/directories will also be extracted to those positions within the
+specified destination directory.
 
-Fatal errors are those which cause Unsquashfs to abort instantly.
-These are generally due to failure to read the filesystem (corruption),
-and/or failure to write files to the output filesystem, due to I/O error
-or out of space.  Generally anything which is unexpected is a fatal error.
+The extract files can also be given in a file using the "-e[f]" option.
 
-Non-fatal errors are generally where support is lacking in the
-output filesystem, and it can be considered to be an expected failure.
-This includes the inability to write extended attributes (xattrs) to
-a filesystem that doesn't support them, the inability to create files on
-filesystem that doesn't support them (i.e. symbolic links on VFAT), and the
-inability to execute privileged operations as a user-process.
+Similarly to Mksquashfs, wildcard matching is performed on the extract
+files.  Wildcard matching is enabled by default.
 
-The user may well know the filesystem cannot support certain operations
-and would prefer Unsquashfs to ignore then without aborting.
+Examples:
 
-In the past Unsquashfs was much more tolerant of errors, now a significant
-number of errors that were non-fatal have been hardened to fatal.
+  1. unsquashfs image.sqsh 'test/*.gz'
 
--ignore-errors
+     Extract all files matching "*.gz" in the top level directory "test".
 
-This makes Unsquashfs behave like previous versions, and treats more
-errors as non-fatal.
+  2. unsquashfs image.sqsh '[Tt]est/example*'
 
--strict-errors
+     Extract all files beginning with "example" inside top level directories
+     called "Test" or "test".
 
-This makes Unsquashfs treat every error as fatal, and it will abort
-instantly.
+  Using extended wildcards, negative matching is also possible.
 
+  3. unsquashfs image.sqsh 'test/!(*data*).gz'
 
-3. FOLLOWING SYMBOLIC LINKS IN EXTRACT FILES
---------------------------------------------
-
-Unsquashfs walks the extract file paths as it recursively descends
-the Squashfs filesystem from top to bottom.  During that recursive
-extraction symbolic links are obviously not followed (see below).
-
-The consequence of this is if an extract file ends in a symbolic link
-(leaf component) it is extracted and left as a dangling symlink,
-unless the real file it links to has also specified as an extract file.
-
-Additionally, if the extract file pathname traverses symbolic links
-while walking the pathname (i.e. the extract file pathname has
-embedded symbolic links), the extraction will stop at that point.
-
-One way of solving this problem is by following (or dereferencing) the
-symbolic link(s), and replacing them with what they actually link to,
-in a similar way to "cp -L".  But this is dangerous, and can cause
-Unsquashfs to produce output which does not match the input Squashfs
-filesystem, which is something Unsquashfs should never do.
-
-The reason for this is whereas "cp -L" is derefencing the *input*,
-Unsquashfs is dereferencing the *output*.  If a filesystem has a real
-filename, say
-
-	a/b/c/hello_world
-
-and two symlinks
-
-	a/symlink1 ---> b/c/hello_world
-	a/symlink2 ---> b/c
-
-There are multiple different ways (or paths) to the *single* hello_world file.
-
-	a/b/c/hello_world
-	a/symlink1
-	a/symlink2/hello_world
-
-If Unsquashfs was given all three paths as extract files, and Unsquashfs
-dereferenced them on output, you will get *three* copies of the hello_world
-file, and two copies of directory "c".
-
-Superficially the output may look the same, but, it may not work the same,
-and obviously edits to the one hello_world file will not get reflected in
-the other copies.  Any option that can be accidently or maliciously used
-to produce such an output is too dangerous to be added.
-
-Unsquashfs solves the problem in an equivalent way, but which does not alter
-the output, and so it is a completely safe option.
-
-If the -follow-symlinks option is specified, Unsquashfs will canonicalise
-the extract files to produce the canonical pathname (that is the
-"real" pathname without any symbolic links).  It will then add all
-the symbolic links necessary to ensure that the extract file can be
-resolved.
-
-The -missing-symlinks option is similar to -follow-symlinks except it
-will cause Unsquashfs to abort if any symbolic link cannot be resolved.
-
-Note: as a side effect of the canonicalisation, with the above options
-enabled extract filenames can also now have ".", ".." elements within
-the pathnames.
+     Extract all files matching "*.gz" in top level directory "test",
+     except those with "data" in the name.
 
 
-4. USING "EXCLUDE" FILES IN ADDITION TO "EXTRACT" FILES
+3. USING "EXCLUDE" FILES IN ADDITION TO "EXTRACT" FILES
 -------------------------------------------------------
 
 Unsquashfs allows exclude files to be specified, either on their own, or in
@@ -365,7 +282,105 @@ define the set of directories/files to be extracted, and exclude files remove
 directories/files from that sub-set.
 
 
-5. UNSQUASHFS PSEUDO FILE OUTPUT
+4. FOLLOWING SYMBOLIC LINKS IN EXTRACT FILES
+--------------------------------------------
+
+Unsquashfs walks the extract file paths as it recursively descends
+the Squashfs filesystem from top to bottom.  During that recursive
+extraction symbolic links are obviously not followed (see below).
+
+The consequence of this is if an extract file ends in a symbolic link
+(leaf component) it is extracted and left as a dangling symlink,
+unless the real file it links to has also specified as an extract file.
+
+Additionally, if the extract file pathname traverses symbolic links
+while walking the pathname (i.e. the extract file pathname has
+embedded symbolic links), the extraction will stop at that point.
+
+One way of solving this problem is by following (or dereferencing) the
+symbolic link(s), and replacing them with what they actually link to,
+in a similar way to "cp -L".  But this is dangerous, and can cause
+Unsquashfs to produce output which does not match the input Squashfs
+filesystem, which is something Unsquashfs should never do.
+
+The reason for this is whereas "cp -L" is derefencing the *input*,
+Unsquashfs is dereferencing the *output*.  If a filesystem has a real
+filename, say
+
+	a/b/c/hello_world
+
+and two symlinks
+
+	a/symlink1 ---> b/c/hello_world
+	a/symlink2 ---> b/c
+
+There are multiple different ways (or paths) to the *single* hello_world file.
+
+	a/b/c/hello_world
+	a/symlink1
+	a/symlink2/hello_world
+
+If Unsquashfs was given all three paths as extract files, and Unsquashfs
+dereferenced them on output, you will get *three* copies of the hello_world
+file, and two copies of directory "c".
+
+Superficially the output may look the same, but, it may not work the same,
+and obviously edits to the one hello_world file will not get reflected in
+the other copies.  Any option that can be accidently or maliciously used
+to produce such an output is too dangerous to be added.
+
+Unsquashfs solves the problem in an equivalent way, but which does not alter
+the output, and so it is a completely safe option.
+
+If the -follow-symlinks option is specified, Unsquashfs will canonicalise
+the extract files to produce the canonical pathname (that is the
+"real" pathname without any symbolic links).  It will then add all
+the symbolic links necessary to ensure that the extract file can be
+resolved.
+
+The -missing-symlinks option is similar to -follow-symlinks except it
+will cause Unsquashfs to abort if any symbolic link cannot be resolved.
+
+Note: as a side effect of the canonicalisation, with the above options
+enabled extract filenames can also now have ".", ".." elements within
+the pathnames.
+
+5. DEALING WITH ERRORS
+----------------------
+
+Unsquashfs splits errors into two categories: fatal errors and non-fatal
+errors.
+
+Fatal errors are those which cause Unsquashfs to abort instantly.
+These are generally due to failure to read the filesystem (corruption),
+and/or failure to write files to the output filesystem, due to I/O error
+or out of space.  Generally anything which is unexpected is a fatal error.
+
+Non-fatal errors are generally where support is lacking in the
+output filesystem, and it can be considered to be an expected failure.
+This includes the inability to write extended attributes (xattrs) to
+a filesystem that doesn't support them, the inability to create files on
+filesystem that doesn't support them (i.e. symbolic links on VFAT), and the
+inability to execute privileged operations as a user-process.
+
+The user may well know the filesystem cannot support certain operations
+and would prefer Unsquashfs to ignore then without aborting.
+
+In the past Unsquashfs was much more tolerant of errors, now a significant
+number of errors that were non-fatal have been hardened to fatal.
+
+-ignore-errors
+
+This makes Unsquashfs behave like previous versions, and treats more
+errors as non-fatal.
+
+-strict-errors
+
+This makes Unsquashfs treat every error as fatal, and it will abort
+instantly.
+
+
+6. UNSQUASHFS PSEUDO FILE OUTPUT
 --------------------------------
 
 If the Pseudo file (-pf) option is given, Unsquashfs will output a Pseudo file
