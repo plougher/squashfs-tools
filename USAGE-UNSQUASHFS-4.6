@@ -232,7 +232,9 @@ In the above example, trying to remove the binaries (.o etc) when you've only
 got "extract" files capability becomes extremely messy.  It is a lot easier to
 do that with "exclude" files.
 
-Unsquashfs supports two ways of specifying exclude files.
+Unsquashfs supports two ways of specifying exclude files, and it supports
+"anchored" and "non-anchored" excludes.  The two ways of specifying exclude
+files is described first.
 
 The most straightforward way is to tell Unsquashfs to treat extract files as
 exclude files.  That is extract files are specified on the command line as a
@@ -265,8 +267,8 @@ For example, the following are equivalent:
 
 % unsquashfs -exclude-list file1 file2 file3 \; img
 
-Note the black-slashing of ";" to prevent it from being
-interpreted by the shell as a special character.
+Note the black-slashing of ";" to prevent it from being interpreted by the shell
+as a special character.
 
 Obviously, where the -exclude-list option comes into its own is when it is mixed
 with extract files, for example:
@@ -280,6 +282,61 @@ From this it should be clear that the precedence is extract files and then
 exclude files, because it doesn't make any sense otherwise.  Extract files
 define the set of directories/files to be extracted, and exclude files remove
 directories/files from that sub-set.
+
+Now the concepts of "anchored" and "non-anchored" exclude files can be
+explained.  An anchored exclude is one which matches from the root of the
+directory and nowhere else, a non-anchored exclude matches anywhere.  For
+example given the directory hierarchy "a/b/c/a/b", the anchored exclude
+"a/b" will match "a/b" at the root of the directory hierarchy, but
+it will not match the "/a/b" sub-directory within directory "c", whereas a
+non-anchored exclude would.
+
+A couple of examples should make this clearer.
+
+Anchored excludes
+
+  1. unsquashfs -excludes image.sqsh 'test/*.gz'
+
+     Exclude all files matching "*.gz" in the top level directory "test".
+
+  2. unsquashfs -excludes image.sqsh '*/[Tt]est/example*'
+
+     Exclude all files beginning with "example" inside directories called
+     "Test" or "test", that occur inside any top level directory.
+
+  Using extended wildcards, negative matching is also possible.
+
+  3. unsquashfs -excludes image.sqsh 'test/!(*data*).gz'
+
+     Exclude all files matching "*.gz" in top level directory "test",
+     except those with "data" in the name.
+
+Non-anchored excludes
+
+  By default excludes match from the top level directory, but it is
+  often useful to exclude a file matching anywhere in the Squashfs filesystem.
+  For this non-anchored excludes can be used, specified by pre-fixing the
+  exclude with "...".
+
+  Examples:
+
+  1. unsquashfs -excludes image.sqsh '... *.gz'
+
+     Exclude files matching "*.gz" anywhere in the Squashfs filesystem.
+     For example this will match "example.gz", "test/example.gz", and
+     "test/test/example.gz".
+
+  2. unsquashfs -excludes image.sqsh '... [Tt]est/*.gz'
+
+     Exclude files matching "*.gz" inside directories called "Test" or
+     "test" that occur anywhere in the Squashfs filesystem.
+
+  Again, using extended wildcards, negative matching is also possible.
+
+  3. unsquashfs -excludes image.sqsh '... !(*data*).gz'
+
+     Exclude all files matching "*.gz" anywhere in the Squashfs filesystem,
+     except those with "data" in the name.
 
 
 4. FOLLOWING SYMBOLIC LINKS IN EXTRACT FILES
