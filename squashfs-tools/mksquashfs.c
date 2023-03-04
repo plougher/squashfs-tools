@@ -5047,10 +5047,27 @@ static squashfs_inode no_sources(int progress)
 	dir_ent = create_dir_entry("", NULL, "", scan1_opendir("", "", 0));
 
 	memset(&buf, 0, sizeof(buf));
-	buf.st_mode = pseudo_ent->dev->buf->mode;
-	buf.st_uid = pseudo_ent->dev->buf->uid;
-	buf.st_gid = pseudo_ent->dev->buf->gid;
-	buf.st_mtime = pseudo_ent->dev->buf->mtime;
+
+	if(root_mode_opt)
+		buf.st_mode = root_mode | S_IFDIR;
+	else
+		buf.st_mode = pseudo_ent->dev->buf->mode;
+
+	if(root_uid_opt)
+		buf.st_uid = root_uid;
+	else
+		buf.st_uid = pseudo_ent->dev->buf->uid;
+
+	if(root_gid_opt)
+		buf.st_gid = root_gid;
+	else
+		buf.st_gid = pseudo_ent->dev->buf->gid;
+
+	if(root_time_opt)
+		buf.st_mtime = root_time;
+	else
+		buf.st_mtime = pseudo_ent->dev->buf->mtime;
+
 	buf.st_ino = pseudo_ent->dev->buf->ino;
 
 	dir_ent->inode = lookup_inode2(&buf, pseudo_ent->dev);
