@@ -722,3 +722,53 @@ Changing the empty action to
 	empty@true
 
 Will produce an empty filesystem.
+
+5.5 Actions performed at filesystem creation (stage 6)
+------------------------------------------------------
+
+5.5.1 xattrs-exclude(regex)
+
+The xattrs-exclude action excludes any xattr names matching <regex>.  <regex> is
+a POSIX regular expression, e.g. xattrs-exclude("^user.")  excludes xattrs from
+the user namespace.
+
+5.5.2 xattrs-include(regex)
+
+The xattrs-include action includes any xattr names matching <regex>.  <regex> is
+a POSIX regular expression, e.g. -xattrs-include("^user.") includes xattrs from
+the user namespace.
+
+5.5.3 xattrs-add(name=val)
+
+The xattrs-add action adds the xattr <name> with contents <val>.  If an user
+xattr it can be added to regular files and directories (see man 7 xattr).
+Otherwise it can be added to all files.
+
+The extended attribute value by default will be treated as binary (i.e. an
+uninterpreted byte sequence), but it can be prefixed with 0s, where it will be
+treated as base64 encoded, or prefixed with 0x, where it will be treated as
+hexidecimal.
+
+Obviously using base64 or hexidecimal allows values to be used that cannot be
+entered on the command line such as non-printable characters etc.  But it
+renders the string non-human readable.  To keep readability and to allow
+non-printable characters to be entered, the 0t prefix is supported.  This
+encoding is similar to binary encoding, except backslashes are specially
+treated, and a backslash followed by three octal digits can be used to encode
+any ASCII character, which obviously can be used to encode non-printable values.
+
+The following four actions are equivalent
+
+-xattrs-add("user.comment=hello world")
+-xattrs-add("user.comment=0saGVsbG8gd29ybGQ=")
+-xattrs-add("user.comment=0x68656c6c6f20776f726c64")
+-xattrs-add("user.comment=0thello world")
+
+Obviously in the above example there are no non-printable characters and so
+the 0t prefixed string is identical to the first line.  The following three
+actions are identical, but where the space has been replaced by the
+non-printable NUL '\0' (null character).
+
+-xattrs-add("user.comment=0thello\000world")
+-xattrs-add("user.comment=0saGVsbG8Ad29ybGQ=")
+-xattrs-add("user.comment=0x68656c6c6f00776f726c64")
