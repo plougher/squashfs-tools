@@ -1,7 +1,6 @@
 	MKSQUASHFS - a tool to create Squashfs filesystems
 
-
-As squashfs is a read-only filesystem, the mksquashfs program must be used to
+As Squashfs is a read-only filesystem, the Mksquashfs program must be used to
 create populated squashfs filesystems.
 
 SYNTAX:mksquashfs source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of
@@ -237,11 +236,11 @@ Pseudo file definition format:
 
 Source1 source2 ... are the source directories/files containing the
 files/directories that will form the squashfs filesystem.  If a single
-directory is specified (i.e. mksquashfs source output_fs) the squashfs
+directory is specified (i.e. mksquashfs source image.sqfs) the squashfs
 filesystem will consist of that directory, with the top-level root
-directory corresponding to the source directory.
+directory containing the contents.
 
-If multiple source directories or files are specified, mksquashfs will merge
+If multiple source directories or files are specified, Mksquashfs will merge
 the specified sources into a single filesystem, with the root directory
 containing each of the source files/directories.  The name of each directory
 entry will be the basename of the source path.   If more than one source
@@ -254,14 +253,14 @@ Source directory "goodies" contains "goodies1", "goodies2" and "goodies3".
 
 usage example 1:
 
-%mksquashfs /home/phillip/test output_fs
+% mksquashfs /home/phillip/test image.sqfs
 
 This will generate a squashfs filesystem with root entries
 "file1", "file2" and "dir1".
 
 example 2:
 
-%mksquashfs /home/phillip/test goodies output_fs
+% mksquashfs /home/phillip/test goodies image.sqfs
 
 This will create a squashfs filesystem with the root containing
 entries "test" and "goodies" corresponding to the source
@@ -269,7 +268,7 @@ directories "/home/phillip/test" and "goodies".
 
 example 3:
 
-%mksquashfs /home/phillip/test goodies test output_fs
+% mksquashfs /home/phillip/test goodies test image.sqfs
 
 This is the same as the previous example, except a third
 source directory "test" has been specified.  This conflicts
@@ -285,29 +284,39 @@ the contents of the directory.  For example:
 
 example 4:
 
-%mksquashfs /home/phillip/test output_fs -keep-as-directory
+% mksquashfs /home/phillip/test image.sqfs -keep-as-directory
 
 This is the same as example 1, except for -keep-as-directory.
 This will generate a root directory containing directory "test",
 rather than the "test" directory contents "file1", "file2" and "dir1".
 
+If you want the full path to retained (like TAR behaviour), you can specify the
+-no-strip option.
+
+example 5:
+
+% mksquashfs /home/phillip/test image.sqfs -no-strip
+
+This will make a filesystem with "home", "home/phillip" and "home/phillip/test"
+directories, see section 4 for more details.
+
 The Dest argument is the destination where the squashfs filesystem will be
 written.  This can either be a conventional file or a block device.  If the file
 doesn't exist it will be created, if it does exist and a squashfs
-filesystem exists on it, mksquashfs will append.  The -noappend option will
+filesystem exists on it, Mksquashfs will append.  The -noappend option will
 write a new filesystem irrespective of whether an existing filesystem is
-present.
+present.  See section 12 for more details about appending.
 
-2. CHANGING COMPRESSION ALGORITHM AND COMPRESSION SPECIFIC OPTIONS
+1. CHANGING COMPRESSION ALGORITHM AND COMPRESSION SPECIFIC OPTIONS
 ------------------------------------------------------------------
 
-By default Mksquashfs will compress using the gzip compression algorithm.  This 
+By default Mksquashfs will compress using the GZIP compression algorithm.  This
 algorithm offers a good trade-off between compression ratio, and memory and time
 taken to decompress.
 
 Squashfs also supports LZ4, LZO, XZ and ZSTD compression.  LZO offers worse
-compression ratio than gzip, but is faster to decompress.  XZ offers better
-compression ratio than gzip, but at the expense of greater memory and time
+compression ratio than GZIP, but is faster to decompress.  XZ offers better
+compression ratio than GZIP, but at the expense of greater memory and time
 to decompress (and significantly more time to compress).  LZ4 is similar
 to LZO.  ZSTD has been developed by Facebook, and aims to compress well and
 be fast to decompress.  You should experiment with the compressors to
@@ -371,12 +380,12 @@ specific to the compressor in question, and the compressor documentation and
 web sites should be consulted to understand their behaviour.  In general
 the Mksquashfs compression defaults for each compressor are optimised to
 give the best performance for each compressor, where what constitutes
-best depends on the compressor.  For gzip/xz best means highest compression,
+best depends on the compressor.  For GZIP/XZ best means highest compression,
 for LZO/LZ4 best means a tradeoff between compression and (de)-compression
 overhead (LZO/LZ4 by definition are intended for weaker processors).
 
 
-3. REDUCING CPU AND I/O USAGE
+2. REDUCING CPU AND I/O USAGE
 -----------------------------
 
 By default Mksquashfs will use all the CPUs available to compress and create the
@@ -407,27 +416,26 @@ with -processors set to the minimum of 1.  In this case you can use -throttle
 in addition to -processors or on its own.
 
 
-4. CHANGING GLOBAL COMPRESSION DEFAULTS USED IN MKSQUASHFS
+3. CHANGING GLOBAL COMPRESSION DEFAULTS USED IN MKSQUASHFS
 ----------------------------------------------------------
 
 There are a large number of options that can be used to control the 
 compression in Mksquashfs.  By and large the defaults are the most
 optimum settings and should rarely need to be changed.
 
-Note, this does not apply to the block size, increasing the block size
-from the default of 128Kbytes will increase compression (especially
-for the xz compressor) and should increase I/O performance too.  However,
-a block size of greater than 128Kbytes may increase latency in certain
-cases (where the filesystem contains lots of fragments, and no locality
-of reference is observed).  For this reason the block size default is
-configured to the less optimal 128Kbytes.  Users should experiment
-with 256Kbyte sizes or above.
+Note, this does not apply to the block size, increasing the block size from the
+default of 128 Kbytes will increase compression (especially for the XZ and ZSTD
+compressors) and should increase I/O performance too.  However, a block size of
+greater than 128 Kbytes may increase latency in certain cases (where the
+filesystem contains lots of fragments, and no locality of reference is
+observed).  For this reason the block size default is configured to the less
+optimal 128 Kbytes.  Users should experiment with 256 Kbyte sizes or above.
 
 The -b option allows the block size to be selected, both "K" and "M" postfixes
 are supported, this can be either 4K, 8K, 16K, 32K, 64K, 128K, 256K, 512K or
 1M bytes.
 
-The -noI, -noD, -noF and noX options can be used to force Mksquashfs to not
+The -noI, -noD, -noF and -noX options can be used to force Mksquashfs to not
 compress inodes/directories, data, fragments and extended attributes
 respectively.  Giving all options generates an uncompressed filesystem.
 
@@ -441,77 +449,76 @@ You don't want to enable this option unless you fully understand the effects.
 The -tailends option tells Mksquashfs to always generate fragments for files
 irrespective of the file length.  By default only small files less than the data
 block size are packed into fragment blocks.  The tail ends of files which do not
-fit fully into a block, are NOT by default packed into fragments.  That is a
+fit fully into a block, are NOT by default packed into fragments.  This is a
 legacy setting when hard disks were mechanical, and had slow seek times.  In
 general setting this option will gain a little more compression, without
 affecting I/O performance.
 
-The -no-duplicates option tells sqfstar to not check the files being
-added to the filesystem for duplicates.  This can result in quicker filesystem
+The -no-duplicates option tells Mksquashfs to not check the files being added to
+the filesystem for duplicates.  This can result in quicker filesystem
 generation although obviously compression will suffer badly if there is a lot
+of duplicates.
 
 
-5. TAR STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
+4. TAR STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
 -------------------------------------------------------
 
-Mksquashfs has always stripped the leading directories of any source
-pathnames given on the command line.
+Mksquashfs has always stripped the leading directories of any source pathnames
+given on the command line.
 
 For example given the command line
 
 % mksquashfs dir-a/dir-b/dir-c/file1 dir-A/dir-B/file2 sqfs
 
-Mksquashfs will strip the leading directories, and put file1 and file2
-into the same root directory.  If file1 and file2 are directories it
-will place the directories into the same root directory, but, if
-only one directory is specified, it will put the contents of that
-directory into the root directory.  Obviously, for a lot of the time
-this is what you want.  But, if it isn't what you want it can be
-quite difficult to get Mksquashfs to do something different.
+Mksquashfs will strip the leading directories, and put file1 and file2 into
+the same root directory.  If file1 and file2 are directories it will place the
+directories into the same root directory, but, if only one directory is
+specified, it will put the contents of that directory into the root directory.
+Obviously, for a lot of the time this is what you want.  But, if it isn't what
+you want it can be quite difficult to get Mksquashfs to do something different.
 
-A lot of people don't like this, and would prefer Mksquashfs acted
-like "tar", which does not strip leading directories.  This allows
-you to create a directory hierarchy from the pathnames of the supplied
-files.  In the above example, the tar archive would contain the pathnames
-"dir-a/dir-b/dir-c/file1" and "dir-A/dir-B/file2".
+A lot of people don't like this, and would prefer Mksquashfs acted like "tar",
+which does not strip leading directories.  This allows you to create a directory
+hierarchy from the pathnames of the supplied files.  In the above example, the
+tar archive would contain the pathnames "dir-a/dir-b/dir-c/file1" and
+"dir-A/dir-B/file2".
 
 Mksquashfs will act like tar if given the option -no-strip, or -tarstyle.
 
 
-6. CPIO STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
+5. CPIO STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
 --------------------------------------------------------
 
-Mksquashfs allows you to pipe the set of files to be added to the
-filesystem to standard in (stdin), if the -cpiostyle option is given.
+Mksquashfs allows you to pipe the set of files to be added to the filesystem to
+standard in (stdin), if the -cpiostyle option is given.
 
-As with cpio, directories are not recursively scanned, and their contents
-added.  Evey file to be added to the filesystem must be explicitly
-specified.
+As with cpio, directories are not recursively scanned and their contents added.
+Evey file to be added to the filesystem must be explicitly specified.
 
-Typically the list of files to be added will be produced via find, or a
-similar utility.
+Typically the list of files to be added will be produced via find, or a similar
+utility.
 
 For example
 
 % find /home/phillip/squashfs-tools | mksquashfs - img.sqfs -cpiostyle
 
 Will create an image containing everything in squashfs-tools and its
-sub-directories.  Note, "-" is given as the source pathname in Mksquashfs,
-and indicates no commmand line sources.
+sub-directories.  Note, "-" is given as the source pathname in Mksquashfs, and
+indicates no commmand line sources.
 
-and the following will add just the files ending in .c, .h and .o.
+The following will add just the files ending in .c, .h and .o.
 
 % find /home/phillip/squashfs-tools -name "*.[cho]" | mksquashfs - img.sqfs -cpiostyle
 
 
-7. SPECIFYING THE UIDs/GIDs USED IN THE FILESYSTEM
+6. SPECIFYING THE UIDs/GIDs USED IN THE FILESYSTEM
 --------------------------------------------------
 
 By default files in the generated filesystem inherit the UID and GID ownership
 of the original file.  However,  Mksquashfs provides a number of options which
 can be used to override the ownership.
 
-The options -all-root option forces all file uids/gids in the generated Squashfs
+The -all-root option forces all file uids/gids in the generated Squashfs
 filesystem to be root.  This allows root owned filesystems to be built without
 root access on the host machine.
 
@@ -524,7 +531,7 @@ filesystem to be group owned by the specified gid.  The gid can be specified
 either by name (i.e. "root") or by number.
 
 
-8. EXCLUDING FILES FROM THE FILESYSTEM
+7. EXCLUDING FILES FROM THE FILESYSTEM
 --------------------------------------
 
 The -e and -ef options allow files/directories to be specified which are
@@ -538,7 +545,7 @@ extended wildcard matching.  Basic exclude matching is a legacy feature
 retained for backwards compatibility with earlier versions of Mksquashfs.
 Extended wildcard matching should be used in preference.
 
-8.1 BASIC EXCLUDE MATCHING
+7.1 BASIC EXCLUDE MATCHING
 --------------------------
 
 Each exclude file is treated as an exact match of a file/directory in
@@ -547,12 +554,12 @@ prefixed with /, ../, or ./) the entry is treated as absolute, however, if an
 exclude file/directory is relative, it is treated as being relative to each of
 the sources in turn, i.e.
 
-%mksquashfs /tmp/source1 source2  output_fs -e ex1 /tmp/source1/ex2 out/ex3
+% mksquashfs /tmp/source1 source2  output_fs -e ex1 /tmp/source1/ex2 out/ex3
 
 Will generate exclude files /tmp/source1/ex2, /tmp/source1/ex1, source2/ex1,
 /tmp/source1/out/ex3 and source2/out/ex3.
 
-8.2 EXTENDED EXCLUDE FILE HANDLING
+7.2 EXTENDED EXCLUDE FILE HANDLING
 ----------------------------------
 
 Extended exclude file matching treats each exclude file as a wildcard or
@@ -617,7 +624,7 @@ Non-anchored excludes
      except those with "data" in the name.
 
 
-9. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
+8. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
 ----------------------------------------------------
 
 Mksquashfs has a number of options which allow extended attributes (xattrs) to
@@ -672,8 +679,8 @@ mksquashfs dir image.sqfs -xattrs-add "user.comment=0thello\000world"
 mksquashfs dir image.sqfs -xattrs-add "user.comment=0saGVsbG8Ad29ybGQ="
 mksquashfs dir image.sqfs -xattrs-add "user.comment=0x68656c6c6f00776f726c64"
 
-10. PSEUDO FILE SUPPORT
------------------------
+9. PSEUDO FILE SUPPORT
+----------------------
 
 Mksquashfs supports pseudo files, these allow files, directories, character
 devices, block devices, fifos, symbolic links, hard links and extended
@@ -685,15 +692,15 @@ root access.
 Pseudo files also support "dynamic pseudo files" and a modify operation.
 Dynamic pseudo files allow files to be dynamically created when Mksquashfs
 is run, their contents being the result of running a command or piece of
-shell script.  The modifiy operation allows the mode/uid/gid of an existing
+shell script.  The modify operation allows the mode/uid/gid of an existing
 file in the source filesystem to be modified.
 
 Two Mksquashfs options are supported, -p allows one pseudo file to be specified
 on the command line, and -pf allows a pseudo file to be specified containing a
 list of pseduo definitions, one per line.
 
-10.1 CREATING A DYNAMIC FILE
-----------------------------
+9.1 CREATING A DYNAMIC FILE
+---------------------------
 
 Pseudo definition
 
@@ -749,8 +756,8 @@ given a device, fifo, or named socket will place that special file within the
 Squashfs filesystem, the above allows input from these special files to be
 captured and placed in the Squashfs filesystem.
 
-10.2. CREATING A BLOCK OR CHARACTER DEVICE
-------------------------------------------
+9.2 CREATING A BLOCK OR CHARACTER DEVICE
+----------------------------------------
 
 Pseudo definition
 
@@ -773,8 +780,8 @@ creates a character device "/dev/chr_dev" with major:minor 100:1 and
 a block device "/dev/blk_dev" with major:minor 200:200, both with root
 uid/gid and a mode of rw-rw-rw.
 
-10.3. CREATING A DIRECTORY
---------------------------
+9.3 CREATING A DIRECTORY
+-------------------------
 
 Pseudo definition
 
@@ -790,8 +797,8 @@ For example:
 
 creates a directory "/pseudo_dir" with root uid/gid and mode of rw-rw-rw.
 
-10.4. CREATING A SYMBOLIC LINK
-------------------------------
+9.4 CREATING A SYMBOLIC LINK
+-----------------------------
 
 Pseudo definition
 
@@ -807,8 +814,8 @@ symlink s 0 root root example
 
 8reates a symlink "symlink" to file "example" with root uid/gid.
 
-10.5 CREATING HARD LINKS (FILE REFERENCES)
-------------------------------------------
+9.5 CREATING HARD LINKS (FILE REFERENCES)
+-----------------------------------------
 
 The "f" Pseudo definition allows a regular file to be created from the output of
 a command (or shell).  Often this is used to reference a file outside the source
@@ -852,8 +859,8 @@ link L char-dev
 Will create a Hard Link named "link" to the character device called "char-dev"
 created by the previous Pseudo definition.
 
-10.6. CREATING SOCKETS/FIFOS
-----------------------------
+9.6 CREATING SOCKETS/FIFOS
+---------------------------
 
 Pseudo definition
 
@@ -867,18 +874,18 @@ and to create a FIFO, 'f' should be used, i.e.
 
 filename i 0777 root root f
 
-10.7 ADDING EXTENDED ATTRIBUTES TO FILES
-----------------------------------------
+9.7 ADDING EXTENDED ATTRIBUTES TO FILES
+---------------------------------------
 
 Pseudo definition
 
 filename x name=val
 
-Will add the extended attribute <name> to <filename> with <val > contents.  See
+Will add the extended attribute <name> to <filename> with <val> contents.  See
 Section 7 for a description of the <val> formats supported.
 
-10.8. MODIFYING ATTRIBUTES OF AN EXISTING FILE
-----------------------------------------------
+9.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
+--------------------------------------------
 
 Pseudo definition
 
@@ -896,7 +903,7 @@ Changes the attributes of the file "dmesg" in the filesystem to have
 root uid/gid and a mode of rw-rw-rw, overriding the attributes obtained
 from the source filesystem.
 
-11. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
+10. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
 ----------------------------------------------------
 
 The Pseudo file definitions described above do not allow the timestamp
@@ -928,13 +935,13 @@ Because most date strings have spaces, they will need to be quoted, and if
 entered on the command line, these quotes will need to be protected from the
 shell by backslashes, i.e.
 
-% sqfstar img.sqfs -p "file D \"1 jan 1980\" 0777 phillip phillip" < archive.tar
+% mksquashfs dir image.sqsh -p "file D \"1 jan 1980\" 0777 phillip phillip"
 
 Obviously anything "date" accepts as a valid string can be used, such as
 "yesterday", "last week" etc.
 
 
-12. APPENDING TO SQUASHFS FILESYSTEMS
+11. APPENDING TO SQUASHFS FILESYSTEMS
 -------------------------------------
 
 Running Mksquashfs with the destination directory containing an existing
@@ -947,14 +954,14 @@ To make this clear... An existing filesystem "image" contains root entries
 
 example 1:
 
-%mksquashfs /home/phillip/test image
+% mksquashfs /home/phillip/test image
 
 Will create a new "image" with root entries "old1", "old2", "file1", "file2" and
 "dir1"
 
 example 2:
 
-%mksquashfs /home/phillip/test image -keep-as-directory
+% mksquashfs /home/phillip/test image -keep-as-directory
 
 Will create a new "image" with root entries "old1", "old2", and "test".
 As shown in the previous section, for single source directories
@@ -963,7 +970,7 @@ contents of the directory.
 
 example 3:
 
-%mksquashfs /home/phillip/test image -keep-as-directory -root-becomes
+% mksquashfs /home/phillip/test image -keep-as-directory -root-becomes
 original-root
 
 Will create a new "image" with root entries "original-root", and "test".  The
@@ -977,7 +984,7 @@ source will create a filesystem with the two source trees, but only the
 changed files will take extra room, the unchanged files will be detected as
 duplicates.
 
-13. APPENDING RECOVERY FILE FEATURE
+12. APPENDING RECOVERY FILE FEATURE
 -----------------------------------
 
 Recovery files are created when appending to existing Squashfs
@@ -1046,7 +1053,7 @@ operators && (and), || (or) and ! (not), and can be bracketed.
 Please see the ACTIONS-README file for syntax and extra information.
 
 
-15. MISCELLANEOUS OPTIONS
+14. MISCELLANEOUS OPTIONS
 ------------------------
 
 The -info option displays the files/directories as they are compressed and
@@ -1054,7 +1061,7 @@ added to the filesystem.  The original uncompressed size of each file
 is printed, along with DUPLICATE if the file is a duplicate of a
 file in the filesystem.
 
-The -nopad option informs mksquashfs to not pad the filesystem to a 4K multiple.
+The -nopad option informs Mksquashfs to not pad the filesystem to a 4K multiple.
 This is performed by default to enable the output filesystem file to be mounted
 by loopback, which requires files to be a 4K multiple.  If the filesystem is
 being written to a block device, or is to be stored in a bootimage, the extra
