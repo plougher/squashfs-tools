@@ -48,10 +48,20 @@ This will extract everything except for files that match *data*.gz in the
 test directory.  The -excludes option tells Unsquashfs to exclude the files
 on the command line rather than extract them.
 .TP
+unsquashfs -excludes IMAGE.SQFS "... *.gz"
+This will extract everything except for files that match *.gz anywhere
+in the image.   The "..." means this is a non-anchored exclude which
+matches anywhere.
+.TP
 unsquashfs -ex "test/*data*.gz" \; IMAGE.SQFS test
 This uses both extract and exclude options, to tell Unsquashfs to only
 extract the "test" directory, and to exclude any files within it that
 match *data*.gz.
+.TP
+unsquashfs -ex "... *.gz" IMAGE.SQFS test
+This uses both extract and exclude options, to tell Unsquashfs to only
+extract the "test" directory, and to exclude files which match "*.gz"
+anywhere within "test" directory or sub-directories.
 .TP
 unsquashfs -dest output -max-depth 2 IMAGE.SQFS
 Extract only the top two levels of IMAGE.SQFS to "output" directory.
