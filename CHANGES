@@ -78,18 +78,20 @@
 		    zeros which means EOF and Sqfstar will stop reading after
 		    the first tar file on encountering them. This option makes
 		    Sqfstar ignore the zero filled blocks.
-		6.2 -mkfs-time, -all-time and -root-time options now take
+		6.2 Do not abort if ZERO filled blocks indicating end of the
+		    TAR archive are missing.
+		6.3 -mkfs-time, -all-time and -root-time options now take
 		    a human date string, in addition to the seconds since
 		    the epoch of 1970 00:00 UTC.  For example "now",
 		    "last week", "Wed Mar 8 05:55:01 GMT 2023" are supported.
-		6.3 -root-uid, -root-gid, -force-uid and -force-gid options now
+		6.4 -root-uid, -root-gid, -force-uid and -force-gid options now
 		     take a user/group name in addition to the integer uid/gid.
-		6.4 New -no-compression option which produces no compression,
+		6.5 New -no-compression option which produces no compression,
 		    and it is a short-cut for -noI, -noD, -noF and -noX.
-		6.5 New -percentage option added which rather than generating
+		6.6 New -percentage option added which rather than generating
 		    the full progress-bar instead outputs a percentage.  This
 		    can be used with dialog --gauge etc.
-		6.6 New -pseudo-override option which makes pseudo file uids
+		6.7 New -pseudo-override option which makes pseudo file uids
 		    and gids override -all-root, -force-uid and -force-gid
 		    options.  Normally these options take precedence.
 
