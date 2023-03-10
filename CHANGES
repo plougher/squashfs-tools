@@ -95,22 +95,31 @@
 		    and gids override -all-root, -force-uid and -force-gid
 		    options.  Normally these options take precedence.
 
-	7. Major bug fixes
+	7. Other minor improvements
 
-		7.1 Following a symlink in Sqfscat or where -follow-symlinks
+		7.1 If Mksquashfs/Unsquashfs fails to execute generating the
+		    manpages because they have been cross-compiled, fall back
+		    to using the pre-built manpages.
+		7.2 Add new Makefile configure option USE_PREBUILT_MANPAGES
+		    to always use pre-built manpages rather than generating
+		    them when "make install" is run.
+
+	8. Major bug fixes
+
+		8.1 Following a symlink in Sqfscat or where -follow-symlinks
 		    option is given with Unsquashfs, incorrectly triggered the
 		    corrupted filesystem loop detection code.
-		7.2 In Unsquashfs if a file was not writable it could not add
+		8.2 In Unsquashfs if a file was not writable it could not add
 		    extended attributes to it.
-		7.3 Sqfstar would incorrectly reject compressor specific
+		8.3 Sqfstar would incorrectly reject compressor specific
 		    options that have an argument.
-		7.4 Sqfstar would incorrectly strip pathname components in PAX
+		8.4 Sqfstar would incorrectly strip pathname components in PAX
 		    header linkpath if symbolic.
-		7.5 Sqfstar -root-uid, -root-gid and -root-time options were
+		8.5 Sqfstar -root-uid, -root-gid and -root-time options were
 		    documented but not implemented.
-		7.6 Mksquashfs -one-file-system option would not create empty
+		8.6 Mksquashfs -one-file-system option would not create empty
 		    mount point directory when filesystem boundary crossed.
-		7.7 In Mksquashfs check the close() return result.
+		8.7 In Mksquashfs check the close() return result.
 
 
 4.5.1	17 MAR 2022	New Manpages, Fix CVE-2021-41072 and miscellaneous
