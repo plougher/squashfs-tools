@@ -2,94 +2,94 @@
 
 4.6	xx MAR 2023	TEXT HERE
 
-	@. Extended attribute handling improved in Mksquashfs and Sqfstar
+	1. Extended attribute handling improved in Mksquashfs and Sqfstar
 
-		@.1.New -xattrs-exclude option to exclude extended attributes
+		1.1.New -xattrs-exclude option to exclude extended attributes
 		    from files using a regular expression.
-		@.2 New -xattrs-include option to include extended attributes
+		1.2 New -xattrs-include option to include extended attributes
 		    from files using a regular expression.
-		@.3 New -xattrs-add option to add extended attributes to files.
-		@.4 New Pseudo file xattr definition to add extended attributes
+		1.3 New -xattrs-add option to add extended attributes to files.
+		1.4 New Pseudo file xattr definition to add extended attributes
 		    to files.
-		@.5 New xattrs-add Action to add extended attributes to files
+		1.5 New xattrs-add Action to add extended attributes to files
 		    (Mksquashfs only).
 
-	@. Extended attribute handling improved in Unsquashfs
+	2. Extended attribute handling improved in Unsquashfs
 
-		@.1 New -xattrs-exclude option to exclude extended attributes
+		2.1 New -xattrs-exclude option to exclude extended attributes
 		    from files using a regular expression.
-		@.2 New -xattrs-include option to include extended attributes
+		2.2 New -xattrs-include option to include extended attributes
 		    from files using a regular expression.
-		@.3 Extended attributes are now supported in Pseudo file output.
+		2.3 Extended attributes are now supported in Pseudo file output.
 
-	@. Other major improvements
+	3. Other major improvements
 
-		@1. Unsquashfs can now output Pseudo files to standard out.
-		@2. Mksquashfs can now input Pseudo files from standard in,
+		3.1 Unsquashfs can now output Pseudo files to standard out.
+		3.2 Mksquashfs can now input Pseudo files from standard in,
 		    this allows Squashfs filesystems to be converted (different
 		    block size, compression etc) without unpacking to an
 		    intermediate filesystem, by piping the output of Unsquashfs
 		    to Mksquashfs.
-		@3. Pseudo files are now supported by Sqfstar.
-		@4. "Non-anchored" excludes are now supported by Unsquashfs.
+		3.3 Pseudo files are now supported by Sqfstar.
+		3.4 "Non-anchored" excludes are now supported by Unsquashfs.
 
 
-	@. Mksquashfs minor improvements
+	4. Mksquashfs minor improvements
 
-		@.1 A new -max-depth option has been added, which limits
+		4.1 A new -max-depth option has been added, which limits
 		    the depth Mksquashfs descends when creating the filesystem.
-		@.2 -mkfs-time, -all-time and -root-time options now take
+		4.2 -mkfs-time, -all-time and -root-time options now take
 		    a human date string, in addition to the seconds since
 		    the epoch of 1970 00:00 UTC.  For example "now",
 		    "last week", "Wed Mar 8 05:55:01 GMT 2023" are supported.
-		@.3 -root-uid, -root-gid, -force-uid and -force-gid options now
+		4.3 -root-uid, -root-gid, -force-uid and -force-gid options now
 		     take a user/group name in addition to the integer uid/gid.
-		@.4 New -no-compression option which produces no compression,
+		4.4 New -no-compression option which produces no compression,
 		    and it is a short-cut for -noI, -noD, -noF and -noX.
-		@.5 New -percentage option added which rather than generating
+		4.5 New -percentage option added which rather than generating
 		    the full progress-bar instead outputs a percentage.  This
 		    can be used with dialog --gauge etc.
-		@.6 New -pseudo-override option which makes pseudo file uids
+		4.6 New -pseudo-override option which makes pseudo file uids
 		    and gids override -all-root, -force-uid and -force-gid
 		    options.  Normally these options take precedence.
 
-	@. Unsquashfs minor improvements
+	5. Unsquashfs minor improvements
 
-		@.1 New -all-time option which sets all file timestamps to
+		5.1 New -all-time option which sets all file timestamps to
 		    <time>, rather than the time stored in the filesystem
 		    inode.  <time> can be an integer indicating seconds since
 		    the epoch (1970-01-01) or a human string value such as
 		    "now", "last week", or "Wed Feb 15 21:02:39 GMT 2023".
-		@.2 New -full-precision option which uses full precision when
+		5.2 New -full-precision option which uses full precision when
 		    displaying times including seconds.  Use with -linfo, -lls,
 		    -lln and -llc options.
-		@.3 New -match option where Unsquashfs will abort if any
+		5.3 New -match option where Unsquashfs will abort if any
 		    extract file does not match on anything, and can not be
 		    resolved.
-		@.4 New -percentage option added which rather than generating
+		5.4 New -percentage option added which rather than generating
 		    the full progress-bar instead outputs a percentage.  This
 		    can be used with dialog --gauge etc.
 
-	@. Sqfstar minor improvements
+	6. Sqfstar minor improvements
 
-		@.1 New -ignore-zeros option added which allows tar files to be
+		6.1 New -ignore-zeros option added which allows tar files to be
 		    concatenated together and fed to Sqfstar.  Normally a
 		    tarfile has two consecutive 512 byte blocks filled with
 		    zeros which means EOF and Sqfstar will stop reading after
 		    the first tar file on encountering them. This option makes
 		    Sqfstar ignore the zero filled blocks.
-		@.2 -mkfs-time, -all-time and -root-time options now take
+		6.2 -mkfs-time, -all-time and -root-time options now take
 		    a human date string, in addition to the seconds since
 		    the epoch of 1970 00:00 UTC.  For example "now",
 		    "last week", "Wed Mar 8 05:55:01 GMT 2023" are supported.
-		@.3 -root-uid, -root-gid, -force-uid and -force-gid options now
+		6.3 -root-uid, -root-gid, -force-uid and -force-gid options now
 		     take a user/group name in addition to the integer uid/gid.
-		@.4 New -no-compression option which produces no compression,
+		6.4 New -no-compression option which produces no compression,
 		    and it is a short-cut for -noI, -noD, -noF and -noX.
-		@.5 New -percentage option added which rather than generating
+		6.5 New -percentage option added which rather than generating
 		    the full progress-bar instead outputs a percentage.  This
 		    can be used with dialog --gauge etc.
-		@.6 New -pseudo-override option which makes pseudo file uids
+		6.6 New -pseudo-override option which makes pseudo file uids
 		    and gids override -all-root, -force-uid and -force-gid
 		    options.  Normally these options take precedence.
 
