@@ -189,14 +189,15 @@ static int all_zero(struct tar_header *header)
 }
 
 
-static int checksum_matches(struct tar_header *header)
+static int checksum_matches(struct tar_header *header, int silent)
 {
 	int checksum = read_number(header->checksum, 8);
 	int computed = 0;
 	int i;
 
 	if(checksum == -1) {
-		ERROR("Failed to read checksum in tar header\n");
+		if(!silent)
+			ERROR("Failed to read checksum in tar header\n");
 		return FALSE;
 	}
 
@@ -1149,6 +1150,35 @@ static void copy_tar_header(struct tar_file *dest, struct tar_file *source)
 }
 
 
+static int skip_to_valid_header(struct tar_header *header)
+{
+	int res, first = TRUE;
+
+	while(1) {
+		res = read_bytes(STDIN_FILENO, header, 512);
+
+		if(res < 512) {
+			if(res == 0)
+				return 0;
+			if(res != -1)
+				ERROR("Unexpected EOF (end of file), the tarfile appears to be truncated or corrupted\n");
+			return -1;
+		}
+
+		if(all_zero(header))
+			continue;
+
+		if(checksum_matches(header, TRUE))
+			return 1;
+
+		if(first) {
+			ERROR("sqfstar: Skipping to next header\n");
+			first = FALSE;
+		}
+	}
+}
+
+
 static struct tar_file *read_tar_header(int *status)
 {
 	struct tar_header header;
@@ -1178,13 +1208,15 @@ again:
 	}
 
 	if(all_zero(&header)) {
-		if(ignore_zeros)
-			goto again;
-		else
+		if(ignore_zeros) {
+			res = skip_to_valid_header(&header);
+			if(res == 0)
+				goto eof;
+			if(res == -1)
+				goto failed;
+		} else
 			goto eof;
-	}
-
-	if(checksum_matches(&header) == FALSE) {
+	} else if(checksum_matches(&header, FALSE) == FALSE) {
 		ERROR("Tar header checksum does not match!\n");
 		goto failed;
 	}
