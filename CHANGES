@@ -119,7 +119,7 @@
 		    documented but not implemented.
 		8.6 Mksquashfs -one-file-system option would not create empty
 		    mount point directory when filesystem boundary crossed.
-		8.7 In Mksquashfs check the close() return result.
+		8.7 Mksquashfs did not check the close() return result.
 
 
 4.5.1	17 MAR 2022	New Manpages, Fix CVE-2021-41072 and miscellaneous
