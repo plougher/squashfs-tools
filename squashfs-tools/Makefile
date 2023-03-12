@@ -15,7 +15,10 @@
 # Obviously, you must select at least one of the available gzip, xz, lzo,
 # lz4, zstd or lzma (deprecated) compression types.
 #
-GZIP_SUPPORT = 1
+# To build WITHOUT gzip support, invoke
+#   GZIP_SUPPORT=0 make
+#
+GZIP_SUPPORT ?= 1
 
 ########### Building XZ support #############
 #
@@ -27,10 +30,10 @@ GZIP_SUPPORT = 1
 # supported by most modern distributions.  Please refer to
 # your distribution package manager.
 #
-# To build install the library and uncomment
-# the XZ_SUPPORT line below.
+# To build with XZ support, install the library and invoke
+#   XZ_SUPPORT=1 make
 #
-#XZ_SUPPORT = 1
+XZ_SUPPORT ?= 0
 
 
 ############ Building LZO support ##############
@@ -41,10 +44,10 @@ GZIP_SUPPORT = 1
 # supported by most modern distributions.  Please refer to
 # your distribution package manager.
 #
-# To build install the library and uncomment
-# the LZO_SUPPORT line below.
+# To build with LZO support, install the library and invoke
+#   LZO_SUPPORT=1 make
 #
-#LZO_SUPPORT = 1
+LZO_SUPPORT ?= 0
 
 
 ########### Building LZ4 support #############
@@ -57,10 +60,10 @@ GZIP_SUPPORT = 1
 # supported by most modern distributions.  Please refer to
 # your distribution package manager.
 #
-# To build install and uncomment
-# the LZ4_SUPPORT line below.
+# To build with LZ4 support, install the library and invoke
+#   LZ4_SUPPORT=1 make
 #
-#LZ4_SUPPORT = 1
+LZ4_SUPPORT ?= 0
 
 
 ########### Building ZSTD support ############
@@ -73,10 +76,10 @@ GZIP_SUPPORT = 1
 # supported by most modern distributions.  Please refer to
 # your distribution package manager.
 #
-# To build install the library and uncomment
-# the ZSTD_SUPPORT line below.
+# To build WITHOUT zstd support, invoke
+#   ZSTD_SUPPORT=0 make
 #
-#ZSTD_SUPPORT = 1
+ZSTD_SUPPORT ?= 1
 
 
 ######## Specifying default compression ########
@@ -85,7 +88,7 @@ GZIP_SUPPORT = 1
 # in Mksquashfs.  Obviously the compression algorithm must have been
 # selected to be built
 #
-COMP_DEFAULT = gzip
+COMP_DEFAULT ?= gzip
 
 
 ###############################################
@@ -95,9 +98,9 @@ COMP_DEFAULT = gzip
 # Building XATTR support for Mksquashfs and Unsquashfs
 #
 # If your C library or build/target environment doesn't support XATTRs then
-# comment out the next line to build Mksquashfs and Unsquashfs without XATTR
-# support
-XATTR_SUPPORT = 1
+# invoke this command to build Mksquashfs and Unsquashfs without XATTR support
+#   XATTR_SUPPORT=0 make
+XATTR_SUPPORT ?= 1
 
 # Select whether you wish xattrs to be stored by Mksquashfs and extracted
 # by Unsquashfs by default.  If selected users can disable xattr support by
@@ -105,7 +108,7 @@ XATTR_SUPPORT = 1
 #
 # If unselected, Mksquashfs/Unsquashfs won't store and extract xattrs by
 # default.  Users can enable xattrs by using the -xattrs option.
-XATTR_DEFAULT = 1
+XATTR_DEFAULT ?= 1
 
 
 ###############################################
@@ -116,7 +119,7 @@ XATTR_DEFAULT = 1
 # can disable reproducible builds using the not-reproducible option.
 # If not selected, users can enable reproducible builds using the
 # -reproducible option
-REPRODUCIBLE_DEFAULT = 1
+REPRODUCIBLE_DEFAULT ?= 1
 
 ###############################################
 #               Manpage generation            #
@@ -133,7 +136,7 @@ REPRODUCIBLE_DEFAULT = 1
 # Change next variable to "y" to use the pre-built manpages by default,
 # and not attempt to generate "custom" manpages.  This will eliminate
 # errors and warnings at install time.
-USE_PREBUILT_MANPAGES=n
+USE_PREBUILT_MANPAGES ?= n
 
 ###############################################
 #              INSTALL PATHS                  #
@@ -145,9 +148,9 @@ USE_PREBUILT_MANPAGES=n
 # To skip building and installing manpages,
 # unset INSTALL_MANPAGES_DIR or set to ""
 #
-INSTALL_PREFIX = /usr/local
-INSTALL_DIR = $(INSTALL_PREFIX)/bin
-INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
+INSTALL_PREFIX ?= /usr/local
+INSTALL_DIR ?= $(INSTALL_PREFIX)/bin
+INSTALL_MANPAGES_DIR ?= $(INSTALL_PREFIX)/man/man1
 
 ###############################################
 #              Obsolete options               #
@@ -170,15 +173,15 @@ INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
 # work) - download and unpack it, uncomment and set LZMA_DIR to unpacked source,
 # and uncomment the LZMA_SUPPORT line below.
 #
-#LZMA_XZ_SUPPORT = 1
-#LZMA_SUPPORT = 1
-#LZMA_DIR = ../../../../LZMA/lzma465
+LZMA_XZ_SUPPORT ?= 0
+LZMA_SUPPORT    ?= 0
+LZMA_DIR        ?= ../../../../LZMA/lzma465
 
 ###############################################
 #        End of BUILD options section         #
 ###############################################
 #
-INCLUDEDIR = -I.
+INCLUDEDIR ?= -I.
 
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
@@ -193,7 +196,7 @@ CFLAGS += $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 \
 	-D_LARGEFILE_SOURCE -D_GNU_SOURCE -DCOMP_DEFAULT=\"$(COMP_DEFAULT)\" \
 	-Wall
 
-LIBS = -lpthread -lm
+LIBS ?= -lpthread -lm
 ifeq ($(GZIP_SUPPORT),1)
 CFLAGS += -DGZIP_SUPPORT
 MKSQUASHFS_OBJS += gzip_wrapper.o
@@ -347,7 +350,7 @@ mksquashfs: $(MKSQUASHFS_OBJS)
 
 mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h squashfs_swap.h mksquashfs.h \
 	sort.h pseudo.h compressor.h xattr.h action.h mksquashfs_error.h progressbar.h \
-	info.h caches-queues-lists.h read_fs.h restore.h process_fragments.h 
+	info.h caches-queues-lists.h read_fs.h restore.h process_fragments.h
 
 reader.o: squashfs_fs.h mksquashfs.h caches-queues-lists.h progressbar.h \
 	mksquashfs_error.h pseudo.h sort.h
