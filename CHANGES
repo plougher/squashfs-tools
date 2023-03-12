@@ -1,6 +1,8 @@
 			SQUASHFS CHANGE LOG
 
-4.6	xx MAR 2023	TEXT HERE
+4.6	13 MAR 2023	Major improvements in extended attribute handling,
+			pseudo file handling, and miscellaneous new options and
+			improvements
 
 	1. Extended attribute handling improved in Mksquashfs and Sqfstar
 
@@ -32,7 +34,6 @@
 		    to Mksquashfs.
 		3.3 Pseudo files are now supported by Sqfstar.
 		3.4 "Non-anchored" excludes are now supported by Unsquashfs.
-
 
 	4. Mksquashfs minor improvements
 
