@@ -72,6 +72,18 @@ Only extract the gzipped files in the test directory.
 unsquashfs -llc -max-depth 2 IMAGE.SQFS "test/*.gz"
 Output a listing of the gzipped files in the test directory to stdout,
 but do not extract them.
+.TP
+unsquashfs -no-xattrs IMAGE.SQFS
+Do not extract any extended attributes.  Any extended attributes in the
+filesystem will be ignored.
+.TP
+unsquashfs -xattrs-include "^user." IMAGE.SQFS
+Filter the extended attributes and only extract extended attributes in the
+user namespace from the Squashfs filesystem.
+.TP
+unsquashfs -xattrs-exclude "^user." IMAGE.SQFS
+Filter the extended attributes and do not extract any extended attributes in
+the user namespace from the Squashfs filesystem.
 .PP
 Note: when passing wildcarded names to Unsquashfs, they should be quoted (as in
 the above examples), to ensure that they are not processed by the shell.
