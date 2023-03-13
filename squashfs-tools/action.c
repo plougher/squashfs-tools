@@ -2188,6 +2188,9 @@ static struct xattr_data *eval_xattr_actions (struct action *spec,
 	struct action_data action_data;
 	struct xattr_data *head = NULL;
 
+	if(count == 0)
+		return NULL;
+
 	action_data.name = dir_ent->name;
 	action_data.pathname = strdup(pathname(dir_ent));
 	action_data.subpath = strdup(subpathname(dir_ent));
@@ -2205,6 +2208,9 @@ static struct xattr_data *eval_xattr_actions (struct action *spec,
 			head = data;
 		}
 	}
+
+	free(action_data.pathname);
+	free(action_data.subpath);
 
 	return head;
 }
