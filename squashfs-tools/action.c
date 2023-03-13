@@ -2290,6 +2290,11 @@ struct xattr_add *eval_xattr_add_actions(struct dir_info *root,
 	struct action_data action_data;
 	struct xattr_add *head = NULL;
 
+	if(xattr_add_count == 0) {
+		*items = 0;
+		return NULL;
+	}
+
 	action_data.name = dir_ent->name;
 	action_data.pathname = strdup(pathname(dir_ent));
 	action_data.subpath = strdup(subpathname(dir_ent));
@@ -2308,6 +2313,9 @@ struct xattr_add *eval_xattr_add_actions(struct dir_info *root,
 			count ++;
 		}
 	}
+
+	free(action_data.pathname);
+	free(action_data.subpath);
 
 	*items = count;
 	return head;
