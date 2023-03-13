@@ -1,8 +1,12 @@
 ###############################################
-#          Compression build options          #
+#                Build options                #
 ###############################################
 #
+# Edit the following definitions to customise the build, or run
+# "CONFIG=1 make" with the build options below to customise the build on
+# the command line.
 #
+ifndef CONFIG
 ############# Building gzip support ###########
 #
 # Gzip support is by default enabled, and the compression type default
@@ -173,6 +177,25 @@ INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
 #LZMA_XZ_SUPPORT = 1
 #LZMA_SUPPORT = 1
 #LZMA_DIR = ../../../../LZMA/lzma465
+else
+GZIP_SUPPORT ?= 1
+ZX_SUPPORT ?= 0
+LZO_SUPPORT ?= 0
+LZ4_SUPPORT ?= 0
+ZSTD_SUPPORT ?= 0
+COMP_DEFAULT ?= gzip
+XATTR_SUPPORT ?= 1
+XATTR_DEFAULT ?= 1
+REPRODUCIBLE_DEFAULT ?= 1
+USE_PREBUILT_MANPAGES ?= 1
+INSTALL_PREFIX ?= /usr/local
+INSTALL_DIR ?= $(INSTALL_PREFIX)/bin
+INSTALL_MANPAGES_DIR ?= $(INSTALL_PREFIX)/man/man1
+LZMA_XZ_SUPPORT ?= 0
+LZMA_SUPPORT ?= 0
+LZMA_DIR ?= ../../../../LZMA/lzma465
+endif
+
 
 ###############################################
 #        End of BUILD options section         #
