@@ -3807,7 +3807,7 @@ int generate_pseudo(char *pseudo_file)
 
 	free_inumber_table();
 	inode_number = 1;
-	free_lookup_table();
+	free_lookup_table(TRUE);
 
 	res = dprintf(writer_fd, "#\n# START OF DATA - DO NOT MODIFY\n#\n");
 	if(res == -1)
@@ -4614,7 +4614,7 @@ int main(int argc, char *argv[])
 
 		free_inumber_table();
 		inode_number = 1;
-		free_lookup_table();
+		free_lookup_table(FALSE);
 
 		if(!quiet)  {
 			printf("Parallel unsquashfs: Using %d processor%s\n",

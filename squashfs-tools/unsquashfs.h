@@ -275,6 +275,7 @@ struct directory_stack {
 #define LOOKUP_INDEX(NUMBER)		((NUMBER) >> 12)
 #define LOOKUP_OFFSET(NUMBER)		((NUMBER) & 0xfff)
 #define LOOKUP_BYTES			32768
+#define LOOKUP_OFFSETS			4096
 
 /* Maximum transfer size for Linux read() call on both 32-bit and 64-bit systems.
  * See READ(2) */
@@ -329,7 +330,7 @@ extern int inumber_lookup(unsigned int);
 extern void free_inumber_table();
 extern char *lookup(unsigned int);
 extern void insert_lookup(unsigned int, char *);
-extern void free_lookup_table();
+extern void free_lookup_table(int);
 
 /* unsquash-1234.c */
 extern int check_name(char *, int);

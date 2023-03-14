@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2019, 2022
+ * Copyright (c) 2019, 2022, 2023
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -161,14 +161,22 @@ void insert_lookup(unsigned int number, char *pathname)
 }
 
 
-void free_lookup_table()
+void free_lookup_table(int free_pathname)
 {
 	int i, indexes = LOOKUP_INDEXES(sBlk.s.inodes);
 
 	if(lookup_table) {
 		for(i = 0; i < indexes; i++)
-			if(lookup_table[i])
+			if(lookup_table[i]) {
+				if(free_pathname) {
+					int j;
+
+					for(j = 0; j < LOOKUP_OFFSETS; j++)
+						if(lookup_table[i][j])
+							free(lookup_table[i][j]);
+				}
 				free(lookup_table[i]);
+			}
 		free(lookup_table);
 		lookup_table = NULL;
 	}
