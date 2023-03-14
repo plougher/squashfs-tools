@@ -538,6 +538,19 @@ long long write_xattrs()
 }
 
 
+void free_xattr_list(int xattrs, struct xattr_list *xattr_list)
+{
+	int i;
+
+	for(i = 0; i < xattrs; i++) {
+		free(xattr_list[i].full_name);
+		free(xattr_list[i].value);
+	}
+
+	free(xattr_list);
+}
+
+
 int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 {
 	int total_size, i;
@@ -551,8 +564,10 @@ int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 	 * id
 	 */
 	xattr_dupl = check_id_dupl(xattr_list, xattrs);
-	if(xattr_dupl->xattr_id != SQUASHFS_INVALID_XATTR)
+	if(xattr_dupl->xattr_id != SQUASHFS_INVALID_XATTR) {
+		free_xattr_list(xattrs, xattr_list);
 		return xattr_dupl->xattr_id;
+	}
 	 
 	/*
 	 * Scan the xattr_list deciding which type to assign to each
@@ -821,7 +836,7 @@ int read_xattrs(void *d, int type)
 	for(j = 1;  j < i; j++)
 		xattr_list[j - 1].vnext = &xattr_list[j];
 
-	xattr_list[i - 1].vnext = NULL;
+	xattr_list[j].vnext = NULL;
 	head = xattr_list;
 
 	sort_xattr_list(&head, i);
