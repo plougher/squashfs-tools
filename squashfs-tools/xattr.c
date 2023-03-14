@@ -829,6 +829,8 @@ int read_xattrs(void *d, int type)
 
 	if(i == 0)
 		return SQUASHFS_INVALID_XATTR;
+	else if(i == 1)
+		goto skip_dup_check;
 
 	/*
 	 * Sort and check xattr list for duplicates
@@ -846,6 +848,7 @@ int read_xattrs(void *d, int type)
 			BAD_ERROR("Duplicate xattr name %s in file %s\n",
 					head->full_name, filename);
 
+skip_dup_check:
 	return generate_xattrs(i, xattr_list);
 }
 
