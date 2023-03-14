@@ -4380,7 +4380,9 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 						file->block_list,
 						file->fragment, NULL,
 						file->sparse);
-					if(duplicate_checking == FALSE && !(tarfile && no_hardlinks)) {
+					if((duplicate_checking == FALSE &&
+							!(tarfile && no_hardlinks)) ||
+							file->file_size == 0) {
 						free_fragment(file->fragment);
 						free(file->block_list);
 						free(file);
