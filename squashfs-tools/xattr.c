@@ -838,7 +838,7 @@ int read_xattrs(void *d, int type)
 	for(j = 1;  j < i; j++)
 		xattr_list[j - 1].vnext = &xattr_list[j];
 
-	xattr_list[j].vnext = NULL;
+	xattr_list[i - 1].vnext = NULL;
 	head = xattr_list;
 
 	sort_xattr_list(&head, i);
