@@ -339,7 +339,8 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"processors", "mem", "offset", "o", "log", "a", "va", "ta", "fa", "af",
 	"vaf", "taf", "faf", "read-queue", "write-queue", "fragment-queue",
 	"root-time", "root-uid", "root-gid", "xattrs-exclude", "xattrs-include",
-	"xattrs-add", "default-mode", "default-uid", "default-gid", NULL
+	"xattrs-add", "default-mode", "default-uid", "default-gid",
+	"mem-percent", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -6318,6 +6319,8 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "to %dM\n", total_mem);
 	fprintf(stream, "\t\t\tOptionally a suffix of K, M or G can be given to ");
 	fprintf(stream, "specify\n\t\t\tKbytes, Mbytes or Gbytes respectively\n");
+	fprintf(stream, "-mem-percent <percent>\tUse <percent> of physical "
+			"memory for caches\n");
 	fprintf(stream, "\nFilesystem append options:\n");
 	fprintf(stream, "-noappend\t\tdo not append to existing filesystem\n");
 	fprintf(stream, "-root-becomes <name>\twhen appending source ");
@@ -8108,6 +8111,48 @@ print_compressor_options:
 					SQUASHFS_LOWMEM / SQUASHFS_TAKE);
 				exit(1);
 			}
+			calculate_queue_sizes(total_mem, &readq, &fragq,
+				&bwriteq, &fwriteq);
+		} else if(strcmp(argv[i], "-mem-percent") == 0) {
+			int percent, phys_mem;
+
+			/*
+			 * Percentage of 75% and larger is dealt with later.
+			 * In the same way a fixed mem size if more than 75%
+			 * of memory is dealt with later.
+			 */
+			if((++i == argc) ||
+					!parse_number(argv[i], &percent, 1) ||
+					(percent < 1)) {
+				ERROR("%s: -mem-percent missing or invalid "
+					"percentage: it should be 1 - 75%\n",
+					 argv[0]);
+				exit(1);
+			}
+
+			phys_mem = get_physical_memory();
+
+			if(phys_mem == 0) {
+				ERROR("%s: -mem-percent unable to get physical "
+					"memory, use -mem instead\n", argv[0]);
+				exit(1);
+			}
+
+			if(multiply_overflow(phys_mem, percent)) {
+				ERROR("%s: -mem-percent requested phys mem too "
+					"large\n", argv[0]);
+				exit(1);
+			}
+
+			total_mem = phys_mem * percent / 100;
+
+			if(total_mem < (SQUASHFS_LOWMEM / SQUASHFS_TAKE)) {
+				ERROR("%s: -mem-percent mem too small, should "
+					"be %d Mbytes or larger\n", argv[0],
+					SQUASHFS_LOWMEM / SQUASHFS_TAKE);
+				exit(1);
+			}
+
 			calculate_queue_sizes(total_mem, &readq, &fragq,
 				&bwriteq, &fwriteq);
 		} else if(strcmp(argv[i], "-b") == 0) {
