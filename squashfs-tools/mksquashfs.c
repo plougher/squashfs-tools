@@ -6601,6 +6601,7 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, " Mbytes or Gbytes respectively\n");
 	fprintf(stream, "-mem-percent <percent>\tuse <percent> physical ");
 	fprintf(stream, "memory for caches.  Default 25%%\n");
+	fprintf(stream, "-mem-default\t\tprint default memory usage in Mbytes\n");
 	fprintf(stream, "\nExpert options (these may make the filesystem unmountable):\n");
 	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
 	fprintf(stream, "-offset <offset>\tskip <offset> bytes at the beginning of ");
@@ -6845,6 +6846,11 @@ int sqfstar(int argc, char *argv[])
 
 	if(argc == 2 && (strcmp(argv[1], "-help") == 0 || strcmp(argv[1], "-h") == 0)) {
 		print_sqfstar_options(stdout, argv[0], total_mem);
+		exit(0);
+	}
+
+	if(argc == 2 && strcmp(argv[1], "-mem-default") == 0) {
+		printf("%d\n", total_mem);
 		exit(0);
 	}
 
@@ -7195,6 +7201,9 @@ print_sqfstar_compressor_options:
 			}
 			calculate_queue_sizes(total_mem, &readq, &fragq,
 				&bwriteq, &fwriteq);
+		} else if(strcmp(argv[i], "-mem-default") == 0) {
+			printf("%d\n", total_mem);
+			exit(0);
 		} else if(strcmp(argv[i], "-b") == 0) {
 			if(++i == dest_index) {
 				ERROR("%s: -b missing block size\n", argv[0]);
