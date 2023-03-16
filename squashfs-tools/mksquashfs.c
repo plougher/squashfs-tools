@@ -6320,6 +6320,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, " Mbytes or Gbytes respectively\n");
 	fprintf(stream, "-mem-percent <percent>\tuse <percent> physical ");
 	fprintf(stream, "memory for caches.  Default 25%%\n");
+	fprintf(stream, "-mem-default\t\tprint default memory usage in Mbytes\n");
 	fprintf(stream, "\nFilesystem append options:\n");
 	fprintf(stream, "-noappend\t\tdo not append to existing filesystem\n");
 	fprintf(stream, "-root-becomes <name>\twhen appending source ");
@@ -7661,6 +7662,11 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
+	if(i < argc && strcmp(argv[i], "-mem-default") == 0) {
+		printf("%d\n", total_mem);
+		exit(0);
+	}
+
 	if(i < 3) {
 		print_options(stderr, argv[0], total_mem);
 		exit(1);
@@ -8196,6 +8202,9 @@ print_compressor_options:
 
 			calculate_queue_sizes(total_mem, &readq, &fragq,
 				&bwriteq, &fwriteq);
+		} else if(strcmp(argv[i], "-mem-default") == 0) {
+			printf("%d\n", total_mem);
+			exit(0);
 		} else if(strcmp(argv[i], "-b") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -b missing block size\n", argv[0]);
