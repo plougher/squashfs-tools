@@ -114,12 +114,6 @@ sed -i "s/<[^>]*>/\U&/g" $tmp/sqfstar.help
 
 sed -i -e "s/<//g" -e "s/>//g" $tmp/sqfstar.help
 
-# The help text reports the amount of physical RAM that Sqfstar
-# will use on the machine.  This is't much use for a man page as that
-# will change on different machines
-
-sed -i "s/  Currently set to [0-9]*M//" $tmp/sqfstar.help
-
 # help2man doesn't deal well with the list of supported compressors.
 # So concatenate them onto one line with commas
 

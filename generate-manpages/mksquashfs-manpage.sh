@@ -125,12 +125,6 @@ sed -i "s/<[^>]*>/\U&/g" $tmp/mksquashfs.help
 
 sed -i -e "s/<//g" -e "s/>//g" $tmp/mksquashfs.help
 
-# The help text reports the amount of physical RAM that Mksquashfs
-# will use on the machine.  This is't much use for a man page as that
-# will change on different machines
-
-sed -i "s/  Currently set to [0-9]*M//" $tmp/mksquashfs.help
-
 # help2man doesn't deal well with the list of supported compressors.
 # So concatenate them onto one line with commas
 
