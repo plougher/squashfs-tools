@@ -347,7 +347,7 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-mode", "force-uid", "force-gid", "throttle", "limit",
 	"processors", "mem", "offset", "o", "root-time", "root-uid",
 	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
-	"default-mode", "default-uid", "default-gid", NULL
+	"default-mode", "default-uid", "default-gid", "mem-percent", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes);
@@ -6600,6 +6600,8 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "to %dM\n", total_mem);
 	fprintf(stream, "\t\t\tOptionally a suffix of K, M or G can be given to ");
 	fprintf(stream, "specify\n\t\t\tKbytes, Mbytes or Gbytes respectively\n");
+	fprintf(stream, "-mem-percent <percent>\tUse <percent> of physical "
+			"memory for caches\n");
 	fprintf(stream, "\nExpert options (these may make the filesystem unmountable):\n");
 	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
 	fprintf(stream, "-offset <offset>\tskip <offset> bytes at the beginning of ");
@@ -7148,6 +7150,47 @@ print_sqfstar_compressor_options:
 			if(total_mem < (SQUASHFS_LOWMEM / SQUASHFS_TAKE)) {
 				ERROR("%s: -mem should be %d Mbytes or "
 					"larger\n", argv[0],
+					SQUASHFS_LOWMEM / SQUASHFS_TAKE);
+				exit(1);
+			}
+			calculate_queue_sizes(total_mem, &readq, &fragq,
+				&bwriteq, &fwriteq);
+		} else if(strcmp(argv[i], "-mem-percent") == 0) {
+			int percent, phys_mem;
+
+			/*
+			 * Percentage of 75% and larger is dealt with later.
+			 * In the same way a fixed mem size if more than 75%
+			 * of memory is dealt with later.
+			 */
+			if((++i == dest_index) ||
+					!parse_number(argv[i], &percent, 1) ||
+					(percent < 1)) {
+				ERROR("%s: -mem-percent missing or invalid "
+					"percentage: it should be 1 - 75%\n",
+					 argv[0]);
+				exit(1);
+			}
+
+			phys_mem = get_physical_memory();
+
+			if(phys_mem == 0) {
+				ERROR("%s: -mem-percent unable to get physical "
+					"memory, use -mem instead\n", argv[0]);
+				exit(1);
+			}
+
+			if(multiply_overflow(phys_mem, percent)) {
+				ERROR("%s: -mem-percent requested phys mem too "
+					"large\n", argv[0]);
+				exit(1);
+			}
+
+			total_mem = phys_mem * percent / 100;
+
+			if(total_mem < (SQUASHFS_LOWMEM / SQUASHFS_TAKE)) {
+				ERROR("%s: -mem-percent mem too small, should "
+					"be %d Mbytes or larger\n", argv[0],
 					SQUASHFS_LOWMEM / SQUASHFS_TAKE);
 				exit(1);
 			}
