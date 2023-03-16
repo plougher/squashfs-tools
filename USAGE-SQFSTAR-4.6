@@ -144,9 +144,10 @@ Sqfstar runtime options:
 			of Sqfstar (alternative to -throttle)
 -processors <number>	use <number> processors.  By default will use number of
 			processors available
--mem <size>		use <size> physical memory.  Currently set to X
-			Optionally a suffix of K, M or G can be given to specify
-			Kbytes, Mbytes or Gbytes respectively
+-mem <size>		use <size> physical memory for caches.  Use K, M or G to
+			specify Kbytes, Mbytes or Gbytes respectively
+-mem-percent <percent>	use <percent> physical memory for caches.  Default 25%
+-mem-default		print default memory usage in Mbytes
 
 Expert options (these may make the filesystem unmountable):
 -nopad			do not pad filesystem to a multiple of 4K

@@ -7,6 +7,7 @@ file or directory.
 Unsquashfs can decompress all official Squashfs filesystem versions.
 
 The Unsquashfs usage info is:
+
 SYNTAX: unsquashfs [OPTIONS] FILESYSTEM [files to extract or exclude (with -excludes) or cat (with -cat )]
 
 Filesystem extraction (filtering) options:
@@ -115,13 +116,6 @@ Miscellaneous options:
 	-exc[f] <exclude file>	synonym for -exclude-file
 	-L			synonym for -follow-symlinks
 	-pseudo-file <file>	alternative name for -pf
-
-Decompressors available:
-	gzip
-	lzo
-	lz4
-	xz
-	zstd
 
 
 By default Unsquashfs will extract all the files in the Squashfs filesystem

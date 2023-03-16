@@ -143,9 +143,10 @@ Mksquashfs runtime options:
 			of Mksquashfs (alternative to -throttle)
 -processors <number>	use <number> processors.  By default will use number of
 			processors available
--mem <size>		use <size> physical memory.  Currently set to 640M
-			Optionally a suffix of K, M or G can be given to specify
-			Kbytes, Mbytes or Gbytes respectively
+-mem <size>		use <size> physical memory for caches.  Use K, M or G to
+			specify Kbytes, Mbytes or Gbytes respectively
+-mem-percent <percent>	use <percent> physical memory for caches.  Default 25%
+-mem-default		print default memory usage in Mbytes
 
 Filesystem append options:
 -noappend		do not append to existing filesystem
