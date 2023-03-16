@@ -6315,12 +6315,11 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "consumption\n\t\t\tof Mksquashfs (alternative to -throttle)\n");
 	fprintf(stream, "-processors <number>\tuse <number> processors.  By default ");
 	fprintf(stream, "will use number of\n\t\t\tprocessors available\n");
-	fprintf(stream, "-mem <size>\t\tuse <size> physical memory.  Currently set ");
-	fprintf(stream, "to %dM\n", total_mem);
-	fprintf(stream, "\t\t\tOptionally a suffix of K, M or G can be given to ");
-	fprintf(stream, "specify\n\t\t\tKbytes, Mbytes or Gbytes respectively\n");
-	fprintf(stream, "-mem-percent <percent>\tUse <percent> of physical "
-			"memory for caches\n");
+	fprintf(stream, "-mem <size>\t\tuse <size> physical memory for ");
+	fprintf(stream, "caches.  Use K, M or G to\n\t\t\tspecify Kbytes,");
+	fprintf(stream, " Mbytes or Gbytes respectively\n");
+	fprintf(stream, "-mem-percent <percent>\tuse <percent> physical ");
+	fprintf(stream, "memory for caches.  Default 25%%\n");
 	fprintf(stream, "\nFilesystem append options:\n");
 	fprintf(stream, "-noappend\t\tdo not append to existing filesystem\n");
 	fprintf(stream, "-root-becomes <name>\twhen appending source ");
