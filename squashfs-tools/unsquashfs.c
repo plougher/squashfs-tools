@@ -3897,12 +3897,12 @@ static void print_cat_options(FILE *stream, char *name)
 	fprintf(stream, "-no-exit-code options for how they affect\nthe exit ");
 	fprintf(stream, "status.\n");
 	fprintf(stream, "\nSee also:\n");
-	fprintf(stream, "The README for the Squash-tools 4.5.1 release, ");
+	fprintf(stream, "The README for the Squash-tools 4.6 release, ");
 	fprintf(stream, "describing the new features can be\n");
-	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.5.1\n");
+	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6\n");
 
 	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
-	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE\n");
+	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n");
 }
 
 
@@ -4041,12 +4041,12 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "-no-exit-code options for how they affect\nthe exit ");
 	fprintf(stream, "status.\n");
 	fprintf(stream, "\nSee also:\n");
-	fprintf(stream, "The README for the Squash-tools 4.5.1 release, ");
+	fprintf(stream, "The README for the Squash-tools 4.6 release, ");
 	fprintf(stream, "describing the new features can be\n");
-	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.5.1\n");
+	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6\n");
 
 	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
-	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE\n");
+	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n");
 }
 
 
