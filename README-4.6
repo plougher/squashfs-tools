@@ -7,11 +7,15 @@
 Welcome to Squashfs-Tools 4.6.  The last release was a year ago, and there are
 substantial improvements to the tools in this release.
 
-Following is a summary of the changes to Squashfs-tools, and later sections
-gives some usage guides to the new features.
+Please see the INSTALL file for instructions on installing the tools, and the
+USAGE-4.6 files for documentation on how to use the tools.
 
-Please see the INSTALL file for instructions on installing the tools,
-and the USAGE-4.6 files for additional documentation on how to use the tools.
+This README will describe the improvements, and has the following sections:
+
+1. Summary of changes
+2. Filtering and adding extended attributes (XATTRs)
+3. Squashfs filesystems conversion (piping Unsquashfs output to Mksquashfs)
+4. Author info
 
 1. Summary of changes
 ---------------------
@@ -315,3 +319,10 @@ If you want to update all the file timestamps to "now", and make every
 file owned by "phillip":
 
 % unsquashfs -pf - image.sqsh | mksquashfs - new.sqsh -all-time now -force-uid phillip -pf -
+
+4. AUTHOR INFO
+--------------
+
+Squashfs was written by Phillip Lougher, email phillip@squashfs.org.uk,
+in Chepstow, Wales, UK.   If you like the program, or have any problems,
+then please email me, as it's nice to get feedback!
