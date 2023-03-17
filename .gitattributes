@@ -2,3 +2,6 @@ version.mk export-subst
 kernel export-ignore
 README export-ignore
 README-4.5 export-ignore
+README-4.5.1 export-ignore
+USAGE export-ignore
+RELEASE-READMEs export-ignore
