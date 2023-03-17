@@ -39,12 +39,12 @@ and the USAGE-4.6 files for additional documentation on how to use the tools.
 3. Other major improvements
 
 	3.1 Unsquashfs can now output Pseudo files to standard out.
-	3.2 Mksquashfs can now input Pseudo files from standard in, this allows
-	    Squashfs filesystems to be converted (different block size
-	    compression etc) without unpacking to an intermediate filesystem, by
-	    piping the output of Unsquashfs to Mksquashfs.
-	3.3 Pseudo files are now supported by Sqfstar.
-	3.4 "Non-anchored" excludes are now supported by Unsquashfs.
+	3.2 Mksquashfs can now input Pseudo files from standard in.
+	3.3 Squashfs filesystems can now be converted (different block size
+	    compression etc) without unpacking to an intermediate filesystem or
+	    mounting, by piping the output of Unsquashfs to Mksquashfs.
+	3.4 Pseudo files are now supported by Sqfstar.
+	3.5 "Non-anchored" excludes are now supported by Unsquashfs.
 
 4. Mksquashfs minor improvements
 
@@ -231,40 +231,87 @@ Again, as above, the following are equivalent:
 ----------------------------------------------------------
 
 Finally Mksquashfs allows extended attributes to be filtered and added to files
-using the -xattrs-exclude, -xattrs-include and -xattrs-add actions.
+using the xattrs-exclude, xattrs-include and xattrs-add actions.
 
--xattrs-exclude(regex), this action excludes any extended attributes matching
+xattrs-exclude(regex), this action excludes any extended attributes matching
 the regular expression, for any file matching the action tests.
 
--xattrs-include(regex), this action includes any extended attributes matching
+xattrs-include(regex), this action includes any extended attributes matching
 the regular expression, for any file matching the action tests.
 
--xattrs-add(name=val), this action will add the extended attribute <name>
+xattrs-add(name=val), this action will add the extended attribute <name>
 with contents <val>, to any file matching the action tests.
 
 Examples: 
 
-% mksquashfs dir image.sqfs -action "-xattrs-exclude(^user.)@true"
+% mksquashfs dir image.sqfs -action "xattrs-exclude(^user.)@true"
 
 This will exclude all extended attributes in the User namespace for all
 files (true matches on everything).  It is directly equivalent to
 -xattrs-exclude(^user.).
 
-% mksquashfs dir image.sqfs -action "-xattrs-exclude(^user.)@type(f)"
+% mksquashfs dir image.sqfs -action "xattrs-exclude(^user.)@type(f)"
 
 This will exclude all extended attributes in the User namespace but only for
 regular files.
 
-% mksquashfs dir image.sqfs -action "-xattrs-include(^user.)@user(phillip)&&type(f)"
+% mksquashfs dir image.sqfs -action "xattrs-include(^user.)@user(phillip)&&type(f)"
 
 Likewise this will include only extended attributes in the User namespace, but
 it will only be applied to regular files owned by user Phillip.
 
-% mksquashfs dir image.sqsh -action "-xattrs-add(user.comment=Hello_World)@name(hello*)"
+% mksquashfs dir image.sqsh -action "xattrs-add(user.comment=Hello_World)@name(hello*)"
 
 This will add the extended attribute "user.comment" to any file named "hello*".
 
 The following two commands are equivalent:
 
-% mksquashfs dir image.sqsh -action "-xattrs-add(user.comment=Hello_World)@pathname(Hello_World)"
+% mksquashfs dir image.sqsh -action "xattrs-add(user.comment=Hello_World)@pathname(Hello_World)"
 % mksquashfs dir image.sqsh -p "Hello_Word x user.comment=Hello_World"
+
+
+3. Squashfs filesystems conversion (piping Unsquashfs output to Mksquashfs)
+---------------------------------------------------------------------------
+
+Sometimes you have an existing Squashfs filesystem which you want to
+regenerate using a different set of compression options, such as compression
+algorithm, block-size, tail-packing etc.  Or you want to modify some parts of
+the filesystem such as excluding files, change ownership etc.
+
+Obviously you have been able to mount the Squashfs filesystem and regenerate
+the filesystem by running Mksquashfs on the mounted directory.  But, this
+requires root access (which sometimes isn't available).  The only other
+alternative until now has been to extract the Squashfs filesystem to an
+intermediate uncompressed directory, and then regenerate the filesystem by
+running Mksquashfs on that.  This, however, is slow and requires storage to
+store the uncompressed filesystem.
+
+Unsquashfs can now output a Pseudo file representing the input filesystem
+to stdout, and Mksquashfs can now read a Pseudo file from stdin.  This allows
+the output of Unsquashfs to be piped to Mksquashfs.
+
+Some examples follow.
+
+If you had a GZIP filesystem and wanted to convert it to ZSTD, you can do:
+
+% unsquashfs -pf - image.sqsh | mksquashfs - new.sqsh -pf - -comp zstd
+
+If you wanted to change to XZ compression, increase to a 1 Mbyte block size, and
+use -tailend packing, you could do:
+
+% unsquashfs -pf - image.sqsh | mksquashfs - new.sqsh -pf - -comp xz -b 1M -tailends
+
+If you only want the directory "foobar" you can tell Unsquashfs to only
+extract that:
+
+% unsquashfs -pf - image.sqsh foobar | mksquashfs - new.sqsh -pf -
+
+If you had inadvertantly stored binary ".o" files, you can remove them by
+using the new "non-anchored" Unsquashfs exclude file functionality:
+
+% unsquashfs -excludes -pf - image.sqsh "... *.o" | mksquashfs - new.sqsh -pf -
+
+If you want to update all the file timestamps to "now", and make every
+file owned by "phillip":
+
+% unsquashfs -pf - image.sqsh | mksquashfs - new.sqsh -all-time now -force-uid phillip -pf -
