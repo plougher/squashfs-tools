@@ -6424,12 +6424,12 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\thttps://reproducible-builds.org/docs/source-date-epoch/\n");
 	fprintf(stream, "\t\t\tfor more information\n");
 	fprintf(stream, "\nSee also:");
-	fprintf(stream, "\nThe README for the Squash-tools 4.5.1 release, ");
+	fprintf(stream, "\nThe README for the Squash-tools 4.6 release, ");
 	fprintf(stream, "describing the new features can be\n");
-	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.5.1\n");
+	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6\n");
 
 	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
-	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE\n");
+	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n");
 	fprintf(stream, "\nThe ACTIONS-README file describing how to use the new actions feature can be\n");
 	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n");
 }
@@ -6651,12 +6651,12 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\thttps://reproducible-builds.org/docs/source-date-epoch/\n");
 	fprintf(stream, "\t\t\tfor more information\n");
 	fprintf(stream, "\nSee also:\n");
-	fprintf(stream, "The README for the Squash-tools 4.5.1 release, ");
+	fprintf(stream, "The README for the Squash-tools 4.6 release, ");
 	fprintf(stream, "describing the new features can be\n");
-	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.5.1\n");
+	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6\n");
 
 	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
-	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE\n");
+	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n");
 }
 
 
