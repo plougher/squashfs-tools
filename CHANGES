@@ -1,6 +1,6 @@
 			SQUASHFS CHANGE LOG
 
-4.6	13 MAR 2023	Major improvements in extended attribute handling,
+4.6	17 MAR 2023	Major improvements in extended attribute handling,
 			pseudo file handling, and miscellaneous new options and
 			improvements
 
@@ -27,13 +27,13 @@
 	3. Other major improvements
 
 		3.1 Unsquashfs can now output Pseudo files to standard out.
-		3.2 Mksquashfs can now input Pseudo files from standard in,
-		    this allows Squashfs filesystems to be converted (different
-		    block size, compression etc) without unpacking to an
-		    intermediate filesystem, by piping the output of Unsquashfs
+		3.2 Mksquashfs can now input Pseudo files from standard in.
+		3.3 Squashfs filesystems can now be converted (different block
+		    size compression etc) without unpacking to an intermediate
+		    filesystem or mounting, by piping the output of Unsquashfs
 		    to Mksquashfs.
-		3.3 Pseudo files are now supported by Sqfstar.
-		3.4 "Non-anchored" excludes are now supported by Unsquashfs.
+		3.4 Pseudo files are now supported by Sqfstar.
+		3.5 "Non-anchored" excludes are now supported by Unsquashfs.
 
 	4. Mksquashfs minor improvements
 
