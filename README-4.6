@@ -4,8 +4,8 @@
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs-Tools 4.6.  The last release was just under 1 year
-ago, and there are substantial improvements to the tools in this release.
+Welcome to Squashfs-Tools 4.6.  The last release was a year ago, and there are
+substantial improvements to the tools in this release.
 
 Following is a summary of the changes to Squashfs-tools, and later sections
 gives some usage guides to the new features.
@@ -50,18 +50,23 @@ and the USAGE-4.6 files for additional documentation on how to use the tools.
 
 	4.1 A new -max-depth option has been added, which limits the depth
 	    Mksquashfs descends when creating the filesystem.
-	4.2 -mkfs-time, -all-time and -root-time options now take a human date
+	4.2 A new -mem-percent option which allows memory for caches to be
+	    specified as a percentage of physical RAM, rather than requiring an
+	    absolute value.
+	4.3 A new -percentage option added which rather than generating the full
+	    progress-bar instead outputs a percentage.  This can be used with
+	    dialog --gauge etc.
+	4.4 -mkfs-time, -all-time and -root-time options now take a human date
 	    string, in addition to the seconds since the epoch of 1970 00:00
 	    UTC.  For example "now", "last week", "Wed Mar 8 05:55:01 GMT 2023"
 	    are supported.
-	4.3 -root-uid, -root-gid, -force-uid and -force-gid options now take a
+	4.5 -root-uid, -root-gid, -force-uid and -force-gid options now take a
 	    user/group name in addition to the integer uid/gid.
-	4.4 New -no-compression option which produces no compression, and it is
-	    a short-cut for -noI, -noD, -noF and -noX.
-	4.5 New -percentage option added which rather than generating the full
-	    progress-bar instead outputs a percentage.  This can be used with
-	    dialog --gauge etc.
-	4.6 New -pseudo-override option which makes pseudo file uids and gids
+	4.6 A new -mem-default option which displays default memory usage for
+	    caches in Mbytes.
+	4.7 A new -no-compression option which produces no compression, and it
+	    is a short-cut for -noI, -noD, -noF and -noX.
+	4.8 A new -pseudo-override option which makes pseudo file uids and gids
 	    override -all-root, -force-uid and -force-gid options.  Normally
 	    these options take precedence.
 
@@ -89,22 +94,27 @@ and the USAGE-4.6 files for additional documentation on how to use the tools.
 	    and Sqfstar will stop reading after the first tar file on
 	    encountering them. This option makes Sqfstar ignore the zero filled
 	    blocks.
-	6.2 Do not abort if ZERO filled blocks indicating end of the TAR archive
-	    are missing.
-	6.3 -mkfs-time, -all-time and -root-time options now take a human date
+	6.2 A new -mem-percent option which allows memory for caches to be
+	    specified as a percentage of physical RAM, rather than requiring an
+	    absolute value.
+	6.3 A new -percentage option added which rather than generating the full
+	    progress-bar instead outputs a percentage.  This can be used with
+	    dialog --gauge etc.
+	6.4 -mkfs-time, -all-time and -root-time options now take a human date
 	     string, in addition to the seconds since the epoch of 1970 00:00
 	     UTC.  For example "now", "last week", "Wed Mar 8 05:55:01 GMT 2023"
 	     are supported.
-	6.4 -root-uid, -root-gid, -force-uid and -force-gid options now take a
+	6.5 -root-uid, -root-gid, -force-uid and -force-gid options now take a
 	     user/group name in addition to the integer uid/gid.
-	6.5 New -no-compression option which produces no compression, and it is
-	    a short-cut for -noI, -noD, -noF and -noX.
-	6.6 New -percentage option added which rather than generating the full
-	    progress-bar instead outputs a percentage.  This can be used with
-	    dialog --gauge etc.
-	6.7 New -pseudo-override option which makes pseudo file uids and gids
+	6.6 A new -mem-default option which displays default memory usage for
+	    caches in Mbytes.
+	6.7 A new -no-compression option which produces no compression, and it
+	    is a short-cut for -noI, -noD, -noF and -noX.
+	6.8 A new -pseudo-override option which makes pseudo file uids and gids
 	    override -all-root, -force-uid and -force-gid options.  Normally
 	    these options take precedence.
+	6.9 Do not abort if ZERO filled blocks indicating end of the TAR archive
+	    are missing.
 
 7. Other minor improvements
 
