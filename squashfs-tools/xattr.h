@@ -216,7 +216,8 @@ static inline void print_xattr(char *pathname, unsigned int xattr, int writer_fd
 
 
 static inline int has_xattrs(unsigned int xattr)
-	return FALSE;
+{
+	return 0;
 }
 #endif
 
