@@ -22,6 +22,8 @@
  * xattr.c
  */
 
+#include "endian_compat.h"
+
 #define TRUE 1
 #define FALSE 0
 
@@ -47,6 +49,13 @@
 #include "tar.h"
 #include "action.h"
 #include "merge_sort.h"
+
+#ifdef XATTR_NOFOLLOW /* Apple's xattrs */
+	#define llistxattr(path_, buf_, sz_) \
+		listxattr(path_, buf_, sz_, XATTR_NOFOLLOW)
+	#define lgetxattr(path_, name_, val_, sz_) \
+		getxattr(path_, name_, val_, sz_, 0, XATTR_NOFOLLOW)
+#endif
 
 /* compressed xattr table */
 static char *xattr_table = NULL;

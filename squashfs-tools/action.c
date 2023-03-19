@@ -39,6 +39,10 @@
 #include <errno.h>
 #include <ctype.h>
 
+#ifndef FNM_EXTMATCH /* glibc extension */
+	#define FNM_EXTMATCH 0
+#endif
+
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "action.h"

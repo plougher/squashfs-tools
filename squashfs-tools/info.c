@@ -150,6 +150,7 @@ static void *info_thrd(void *arg)
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGQUIT);
 	sigaddset(&sigmask, SIGHUP);
+	sigaddset(&sigmask, SIGALRM);
 
 	while(1) {
 		sig = wait_for_signal(&sigmask, &waiting);
@@ -160,8 +161,12 @@ static void *info_thrd(void *arg)
 			/* set one second interval period, if ^\ received
 			   within then, dump queue and cache status */
 			waiting = 1;
-		} else
+			alarm(1);
+		} else if (sig == SIGQUIT) {
 			dump_state();
+		} else if (sig == SIGALRM) {
+			waiting = 0;
+		}
 	}
 
 	return NULL;

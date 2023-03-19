@@ -35,7 +35,6 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/sysmacros.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <dirent.h>
@@ -50,8 +49,13 @@
 #include <limits.h>
 #include <ctype.h>
 
+#ifndef FNM_EXTMATCH /* glibc extension */
+	#define FNM_EXTMATCH 0
+#endif
+
 #ifdef __linux__
 #include <sys/sysinfo.h>
+#include <sys/sysmacros.h>
 #include <sched.h>
 #else
 #include <sys/sysctl.h>
@@ -5231,6 +5235,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGQUIT);
 	sigaddset(&sigmask, SIGHUP);
+	sigaddset(&sigmask, SIGALRM);
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) != 0)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
