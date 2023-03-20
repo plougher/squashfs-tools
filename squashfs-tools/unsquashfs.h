@@ -46,6 +46,10 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 
+#ifndef FNM_EXTMATCH /* glibc extension */
+        #define FNM_EXTMATCH 0
+#endif
+
 #include "endian_compat.h"
 #include "squashfs_fs.h"
 #include "unsquashfs_error.h"

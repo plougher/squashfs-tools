@@ -35,7 +35,6 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/sysmacros.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <dirent.h>
@@ -50,8 +49,13 @@
 #include <limits.h>
 #include <ctype.h>
 
+#ifndef FNM_EXTMATCH /* glibc extension */
+	#define FNM_EXTMATCH 0
+#endif
+
 #ifdef __linux__
 #include <sys/sysinfo.h>
+#include <sys/sysmacros.h>
 #include <sched.h>
 #else
 #include <sys/sysctl.h>
