@@ -91,7 +91,6 @@ void read_tar_xattr(char *name, char *value, int size, int encoding, struct tar_
 	xattr->type = xattr_get_prefix(xattr, name);
 	if(xattr->type == -1) {
 		ERROR("Unrecognised tar xattr prefix %s, ignoring\n", name);
-		free(xattr->full_name);
 		free(data);
 		return;
 	}
