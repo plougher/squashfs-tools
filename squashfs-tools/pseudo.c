@@ -78,7 +78,7 @@ static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseud
 	char *target, char *alltarget)
 {
 	char *targname;
-	int i;
+	struct pseudo_entry *ent;
 
 	target = get_element(target, &targname);
 
@@ -88,40 +88,41 @@ static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseud
 			MEM_ERROR();
 
 		pseudo->names = 0;
-		pseudo->count = 0;
-		pseudo->name = NULL;
+		pseudo->current = NULL;
+		pseudo->head = NULL;
 	}
 
-	for(i = 0; i < pseudo->names; i++)
-		if(strcmp(pseudo->name[i].name, targname) == 0)
+	for(ent = pseudo->head; ent; ent = ent->next)
+		if(strcmp(ent->name, targname) == 0)
 			break;
 
-	if(i == pseudo->names) {
+	if(ent == NULL) {
 		/* allocate new name entry */
 		pseudo->names ++;
-		pseudo->name = realloc(pseudo->name, (i + 1) *
-			sizeof(struct pseudo_entry));
-		if(pseudo->name == NULL)
+		ent = malloc(sizeof(struct pseudo_entry));
+		if(ent == NULL)
 			MEM_ERROR();
-		pseudo->name[i].name = targname;
-		pseudo->name[i].xattr = NULL;
+		ent->name = targname;
+		ent->xattr = NULL;
+		ent->next = pseudo->head;
+		pseudo->head = ent;
 
 		if(target[0] == '\0') {
 			/* at leaf pathname component */
-			pseudo->name[i].pseudo = NULL;
-			pseudo->name[i].pathname = strdup(alltarget);
-			pseudo->name[i].dev = pseudo_dev;
+			ent->pseudo = NULL;
+			ent->pathname = strdup(alltarget);
+			ent->dev = pseudo_dev;
 		} else {
 			/* recurse adding child components */
-			pseudo->name[i].dev = NULL;
-			pseudo->name[i].pseudo = add_pseudo(NULL, pseudo_dev,
+			ent->dev = NULL;
+			ent->pseudo = add_pseudo(NULL, pseudo_dev,
 				target, alltarget);
 		}
 	} else {
 		/* existing matching entry */
 		free(targname);
 
-		if(pseudo->name[i].pseudo == NULL) {
+		if(ent->pseudo == NULL) {
 			/* No sub-directory which means this is the leaf
 			 * component, this may or may not be a pre-existing
 			 * pseudo file.
@@ -131,25 +132,23 @@ static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseud
 				 * entry must exist as either a 'd' type or
 				 * 'm' type pseudo file, or not exist at all
 				 */
-				if(pseudo->name[i].dev == NULL ||
-					pseudo->name[i].dev->type == 'd' ||
-					pseudo->name[i].dev->type == 'm')
+				if(ent->dev == NULL ||
+					ent->dev->type == 'd' ||
+					ent->dev->type == 'm')
 					/* recurse adding child components */
-					pseudo->name[i].pseudo =
-						add_pseudo(NULL, pseudo_dev,
-						target, alltarget);
+					ent->pseudo = add_pseudo(NULL,
+						pseudo_dev, target, alltarget);
 				else {
 					ERROR_START("%s already exists as a "
-						"non directory.",
-						pseudo->name[i].name);
+						"non directory.", ent->name);
 					ERROR_EXIT(".  Ignoring %s!\n",
 						alltarget);
 				}
-			} else if(pseudo->name[i].dev == NULL) {
+			} else if(ent->dev == NULL) {
 				/* add this pseudo definition */
-				pseudo->name[i].pathname = strdup(alltarget);
-				pseudo->name[i].dev = pseudo_dev;
-			} else if(memcmp(pseudo_dev, pseudo->name[i].dev,
+				ent->pathname = strdup(alltarget);
+				ent->dev = pseudo_dev;
+			} else if(memcmp(pseudo_dev, ent->dev,
 					sizeof(struct pseudo_dev)) != 0) {
 				ERROR_START("%s already exists as a different "
 					"pseudo definition.", alltarget);
@@ -165,22 +164,21 @@ static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseud
 				 * sub-directory exists, which means we can only
 				 * add a pseudo file of type 'd' or type 'm'
 				 */
-				if(pseudo->name[i].dev == NULL &&
+				if(ent->dev == NULL &&
 						(pseudo_dev->type == 'd' ||
 						pseudo_dev->type == 'm')) {
-					pseudo->name[i].pathname =
-						strdup(alltarget);
-					pseudo->name[i].dev = pseudo_dev;
+					ent->pathname = strdup(alltarget);
+					ent->dev = pseudo_dev;
 				} else {
 					ERROR_START("%s already exists as a "
 						"different pseudo definition.",
-						pseudo->name[i].name);
+						ent->name);
 					ERROR_EXIT("  Ignoring %s!\n",
 						alltarget);
 				}
 			} else
 				/* recurse adding child components */
-				add_pseudo(pseudo->name[i].pseudo, pseudo_dev,
+				add_pseudo(ent->pseudo, pseudo_dev,
 					target, alltarget);
 		}
 	}
@@ -201,8 +199,8 @@ static struct pseudo *add_pseudo_definition(struct pseudo *pseudo, struct pseudo
 		}
 
 		/* if already have a root pseudo just replace */
-		if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
-			pseudo->name[0].dev = pseudo_dev;
+		if(pseudo && pseudo->names == 1 && strcmp(pseudo->head->name, "/") == 0) {
+			pseudo->head->dev = pseudo_dev;
 			return pseudo;
 		} else {
 			struct pseudo *new = malloc(sizeof(struct pseudo));
@@ -210,23 +208,24 @@ static struct pseudo *add_pseudo_definition(struct pseudo *pseudo, struct pseudo
 				MEM_ERROR();
 
 			new->names = 1;
-			new->count = 0;
-			new->name = malloc(sizeof(struct pseudo_entry));
-			if(new->name == NULL)
+			new->current = NULL;
+			new->head = malloc(sizeof(struct pseudo_entry));
+			if(new->head == NULL)
 				MEM_ERROR();
 
-			new->name[0].name = "/";
-			new->name[0].pseudo = pseudo;
-			new->name[0].pathname = "/";
-			new->name[0].dev = pseudo_dev;
-			new->name[0].xattr = NULL;
+			new->head->name = "/";
+			new->head->pseudo = pseudo;
+			new->head->pathname = "/";
+			new->head->dev = pseudo_dev;
+			new->head->xattr = NULL;
+			new->head->next = NULL;
 			return new;
 		}
 	}
 
 	/* if there's a root pseudo definition, skip it before walking target */
-	if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
-		pseudo->name[0].pseudo = add_pseudo(pseudo->name[0].pseudo, pseudo_dev, target, alltarget);
+	if(pseudo && pseudo->names == 1 && strcmp(pseudo->head->name, "/") == 0) {
+		pseudo->head->pseudo = add_pseudo(pseudo->head->pseudo, pseudo_dev, target, alltarget);
 		return pseudo;
 	} else
 		return add_pseudo(pseudo, pseudo_dev, target, alltarget);
@@ -240,14 +239,14 @@ static struct pseudo *add_pseudo_definition(struct pseudo *pseudo, struct pseudo
  */
 struct pseudo *pseudo_subdir(char *filename, struct pseudo *pseudo)
 {
-	int i;
+	struct pseudo_entry *ent;
 
 	if(pseudo == NULL)
 		return NULL;
 
-	for(i = 0; i < pseudo->names; i++)
-		if(strcmp(filename, pseudo->name[i].name) == 0)
-			return pseudo->name[i].pseudo;
+	for(ent = pseudo->head; ent; ent = ent->next)
+		if(strcmp(filename, ent->name) == 0)
+			return ent->pseudo;
 
 	return NULL;
 }
@@ -258,10 +257,12 @@ struct pseudo_entry *pseudo_readdir(struct pseudo *pseudo)
 	if(pseudo == NULL)
 		return NULL;
 
-	while(pseudo->count < pseudo->names)
-		return &pseudo->name[pseudo->count++];
+	if(pseudo->current == NULL)
+		pseudo->current = pseudo->head;
+	else
+		pseudo->current = pseudo->current->next;
 
-	return NULL;
+	return pseudo->current;
 }
 
 
@@ -305,29 +306,29 @@ failed:
 static struct pseudo_entry *pseudo_lookup(struct pseudo *pseudo, char *target)
 {
 	char *targname;
-	int i;
+	struct pseudo_entry *ent;
 
 	if(pseudo == NULL)
 		return NULL;
 
 	target = get_element(target, &targname);
 
-	for(i = 0; i < pseudo->names; i++)
-		if(strcmp(pseudo->name[i].name, targname) == 0)
+	for(ent = pseudo->head; ent; ent = ent->next)
+		if(strcmp(ent->name, targname) == 0)
 			break;
 
 	free(targname);
 
-	if(i == pseudo->names)
+	if(ent == NULL)
 		return NULL;
 
 	if(target[0] == '\0')
-		return &pseudo->name[i];
+		return ent;
 
-	if(pseudo->name[i].pseudo == NULL)
+	if(ent->pseudo == NULL)
 		return NULL;
 
-	return pseudo_lookup(pseudo->name[i].pseudo, target);
+	return pseudo_lookup(ent->pseudo, target);
 }
 
 
@@ -399,8 +400,8 @@ static int read_pseudo_def_pseudo_link(char *orig_def, char *filename, char *nam
 
 	/* Lookup linkname in pseudo definition tree */
 	/* if there's a root pseudo definition, skip it before walking target */
-	if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0)
-		pseudo_ent = pseudo_lookup(pseudo->name[0].pseudo, link);
+	if(pseudo && pseudo->names == 1 && strcmp(pseudo->head->name, "/") == 0)
+		pseudo_ent = pseudo_lookup(pseudo->head->pseudo, link);
 	else
 		pseudo_ent = pseudo_lookup(pseudo, link);
 
@@ -1340,11 +1341,11 @@ struct pseudo *get_pseudo()
 #ifdef SQUASHFS_TRACE
 static void dump_pseudo(struct pseudo *pseudo, char *string)
 {
-	int i, res;
+	int res;
 	char *path;
+	struct pseudo_entry *entry;
 
-	for(i = 0; i < pseudo->names; i++) {
-		struct pseudo_entry *entry = &pseudo->name[i];
+	for(entry = pseudo->head; entry; entry = entry->next) {
 		if(string) {
 			res = asprintf(&path, "%s/%s", string, entry->name);
 			if(res == -1)

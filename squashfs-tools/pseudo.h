@@ -78,12 +78,13 @@ struct pseudo_entry {
 	struct pseudo		*pseudo;
 	struct pseudo_dev	*dev;
 	struct pseudo_xattr	*xattr;
+	struct pseudo_entry	*next;
 };
 	
 struct pseudo {
 	int			names;
-	int			count;
-	struct pseudo_entry	*name;
+	struct pseudo_entry	*current;
+	struct pseudo_entry	*head;
 };
 
 struct pseudo_xattr {

@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2022
+ * Copyright (c) 2022, 2023
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -61,7 +61,7 @@ static struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *
 	char *target, char *alltarget)
 {
 	char *targname;
-	int i;
+	struct pseudo_entry *ent;
 
 	target = get_element(target, &targname);
 
@@ -71,34 +71,35 @@ static struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *
 			MEM_ERROR();
 
 		pseudo->names = 0;
-		pseudo->count = 0;
-		pseudo->name = NULL;
+		pseudo->current = NULL;
+		pseudo->head = NULL;
 	}
 
-	for(i = 0; i < pseudo->names; i++)
-		if(strcmp(pseudo->name[i].name, targname) == 0)
+	for(ent = pseudo->head; ent; ent = ent->next)
+		if(strcmp(ent->name, targname) == 0)
 			break;
 
-	if(i == pseudo->names) {
+	if(ent == NULL) {
 		/* allocate new name entry */
 		pseudo->names ++;
-		pseudo->name = realloc(pseudo->name, (i + 1) *
-			sizeof(struct pseudo_entry));
-		if(pseudo->name == NULL)
+		ent = malloc(sizeof(struct pseudo_entry));
+		if(ent == NULL)
 			MEM_ERROR();
-		pseudo->name[i].name = targname;
-		pseudo->name[i].pathname = NULL;
-		pseudo->name[i].dev = NULL;
-		pseudo->name[i].xattr = NULL;
+		ent->name = targname;
+		ent->pathname = NULL;
+		ent->dev = NULL;
+		ent->xattr = NULL;
+		ent->next = pseudo->head;
+		pseudo->head = ent;
 
 		if(target[0] == '\0') {
 			/* at leaf pathname component */
-			pseudo->name[i].pathname = strdup(alltarget);
-			pseudo->name[i].pseudo = NULL;
-			add_xattr(&pseudo->name[i].xattr, xattr);
+			ent->pathname = strdup(alltarget);
+			ent->pseudo = NULL;
+			add_xattr(&ent->xattr, xattr);
 		} else {
 			/* recurse adding child components */
-			pseudo->name[i].pseudo = add_pseudo_xattr(NULL, xattr,
+			ent->pseudo = add_pseudo_xattr(NULL, xattr,
 				target, alltarget);
 		}
 	} else {
@@ -108,11 +109,11 @@ static struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *
 
 		if(target[0] == '\0') {
 			/* Add xattr to this entry */
-			pseudo->name[i].pathname = strdup(alltarget);
-			add_xattr(&pseudo->name[i].xattr, xattr);
+			ent->pathname = strdup(alltarget);
+			add_xattr(&ent->xattr, xattr);
 		} else {
 			/* recurse adding child components */
-			pseudo->name[i].pseudo = add_pseudo_xattr(pseudo->name[i].pseudo, xattr, target, alltarget);
+			ent->pseudo = add_pseudo_xattr(ent->pseudo, xattr, target, alltarget);
 		}
 	}
 
@@ -126,8 +127,8 @@ static struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo,
 	/* special case if a root pseudo definition is being added */
 	if(strcmp(target, "/") == 0) {
 		/* if already have a root pseudo just add xattr */
-		if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
-			add_xattr(&pseudo->name[0].xattr, xattr);
+		if(pseudo && pseudo->names == 1 && strcmp(pseudo->head->name, "/") == 0) {
+			add_xattr(&pseudo->head->xattr, xattr);
 			return pseudo;
 		} else {
 			struct pseudo *new = malloc(sizeof(struct pseudo));
@@ -135,24 +136,25 @@ static struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo,
 				MEM_ERROR();
 
 			new->names = 1;
-			new->count = 0;
-			new->name = malloc(sizeof(struct pseudo_entry));
-			if(new->name == NULL)
+			new->current = NULL;
+			new->head = malloc(sizeof(struct pseudo_entry));
+			if(new->head == NULL)
 				MEM_ERROR();
 
-			new->name[0].name = "/";
-			new->name[0].pseudo = pseudo;
-			new->name[0].pathname = "/";
-			new->name[0].dev = NULL;
-			new->name[0].xattr = NULL;
-			add_xattr(&new->name[0].xattr, xattr);
+			new->head->name = "/";
+			new->head->pseudo = pseudo;
+			new->head->pathname = "/";
+			new->head->dev = NULL;
+			new->head->xattr = NULL;
+			new->head->next = NULL;
+			add_xattr(&new->head->xattr, xattr);
 			return new;
 		}
 	}
 
 	/* if there's a root pseudo definition, skip it before walking target */
-	if(pseudo && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
-		pseudo->name[0].pseudo = add_pseudo_xattr(pseudo->name[0].pseudo, xattr, target, alltarget);
+	if(pseudo && pseudo->names == 1 && strcmp(pseudo->head->name, "/") == 0) {
+		pseudo->head->pseudo = add_pseudo_xattr(pseudo->head->pseudo, xattr, target, alltarget);
 		return pseudo;
 	} else
 		return add_pseudo_xattr(pseudo, xattr, target, alltarget);

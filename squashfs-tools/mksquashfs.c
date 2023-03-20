@@ -3468,11 +3468,11 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	 * If sources have been specified, then just ignore it, as sources
 	 * on the command line take precedence.
 	 */
-	if(pseudo != NULL && pseudo->names == 1 && strcmp(pseudo->name[0].name, "/") == 0) {
-		if(pseudo->name[0].xattr)
-			root_dir->dir_ent->inode->xattr = pseudo->name[0].xattr;
+	if(pseudo != NULL && pseudo->names == 1 && strcmp(pseudo->head->name, "/") == 0) {
+		if(pseudo->head->xattr)
+			root_dir->dir_ent->inode->xattr = pseudo->head->xattr;
 
-		pseudo = pseudo->name[0].pseudo;
+		pseudo = pseudo->head->pseudo;
 	}
 
 	if(actions() || pseudo)
@@ -4087,7 +4087,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 	 * Process pseudo xattr definitions
 	 */
 	if(pseudo)
-		pseudo->count = 0;
+		pseudo->current = NULL;
 
 	while((pseudo_ent = pseudo_readdir(pseudo)) != NULL) {
 		struct dir_ent *dir_ent = NULL;
@@ -5031,13 +5031,13 @@ static squashfs_inode no_sources(int progress)
 	struct pseudo_entry *pseudo_ent;
 	struct pseudo *pseudo = get_pseudo();
 
-	if(pseudo == NULL || pseudo->names != 1 || strcmp(pseudo->name[0].name, "/") != 0) {
+	if(pseudo == NULL || pseudo->names != 1 || strcmp(pseudo->head->name, "/") != 0) {
 		ERROR_START("Source is \"-\", but no pseudo definition for \"/\"\n");
 		ERROR_EXIT("Did you forget to specify -cpiostyle or -tar?\n");
 		EXIT_MKSQUASHFS();
 	}
 
-	pseudo_ent = &pseudo->name[0];
+	pseudo_ent = pseudo->head;
 
 	/* create root directory */
 	root_dir = scan1_opendir("", "", 1);
