@@ -49,10 +49,6 @@
 #include <limits.h>
 #include <ctype.h>
 
-#ifndef FNM_EXTMATCH /* glibc extension */
-	#define FNM_EXTMATCH 0
-#endif
-
 #ifdef __linux__
 #include <sys/sysinfo.h>
 #include <sys/sysmacros.h>
