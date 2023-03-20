@@ -219,14 +219,14 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 		xattr_list = x;
 
 		xattr_list[i].type = xattr_get_prefix(&xattr_list[i], p);
-		p += strlen(p) + 1;
 
 		if(xattr_list[i].type == -1) {
-			ERROR("Unrecognised xattr prefix %s\n",
-				xattr_list[i].full_name);
-			free(xattr_list[i].full_name);
+			ERROR("Unrecognised xattr prefix %s\n", p);
+			p += strlen(p) + 1;
 			continue;
 		}
+
+		p += strlen(p) + 1;
 
 		while(1) {
 			vsize = lgetxattr(filename, xattr_list[i].full_name,
