@@ -219,6 +219,7 @@ static int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 		xattr_list = x;
 
 		xattr_list[i].type = xattr_get_prefix(&xattr_list[i], p);
+		xattr_list[i].full_name = strdup(p);
 		p += strlen(p) + 1;
 
 		if(xattr_list[i].type == -1) {
