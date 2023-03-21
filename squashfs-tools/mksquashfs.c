@@ -3968,6 +3968,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 	struct dir_ent *dirent = NULL;
 	struct pseudo_entry *pseudo_ent;
 	struct stat buf;
+	int empty = dir->count == 0;
 	
 	while((dirent = scan2_readdir(dir, dirent)) != NULL) {
 		struct inode_info *inode_info = dirent->inode;
@@ -4005,7 +4006,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			}
 		}
 
-		if(pseudo_ent->dev == NULL)
+		if(pseudo_ent->dev == NULL && !empty)
 			continue;
 
 		if(dir_ent == NULL)
