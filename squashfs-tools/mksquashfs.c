@@ -4006,10 +4006,10 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			}
 		}
 
-		if(pseudo_ent->dev == NULL && !empty)
+		if(pseudo_ent->dev == NULL)
 			continue;
 
-		if(dir_ent == NULL)
+		if((!appending || dir->depth != 1) && !empty)
 			dir_ent = lookup_name(dir, pseudo_ent->name);
 
 		if(pseudo_ent->dev->type == 'm' || pseudo_ent->dev->type == 'M') {
