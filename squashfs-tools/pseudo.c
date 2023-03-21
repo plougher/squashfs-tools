@@ -70,6 +70,45 @@ char *get_element(char *target, char **targname)
 }
 
 
+struct pseudo_entry *pseudo_search(struct pseudo *pseudo, char *targname,
+								int *new)
+{
+	struct pseudo_entry *cur, *ent, *prev;
+
+	for(cur = pseudo->head, prev = NULL; cur; prev = cur, cur = cur->next) {
+		int res = strcmp(cur->name, targname);
+
+		if(res == 0) {
+			*new = FALSE;
+			return cur;
+		} else if(res < 0)
+			break;
+	}
+
+	ent = malloc(sizeof(struct pseudo_entry));
+	if(ent == NULL)
+		MEM_ERROR();
+
+	ent->name = targname;
+	ent->pathname = NULL;
+	ent->dev = NULL;
+	ent->pseudo = NULL;
+	ent->xattr = NULL;
+
+	if(prev)
+		prev->next = ent;
+	else
+		pseudo->head = ent;
+
+	ent->next = cur;
+
+	pseudo->names ++;
+	*new = TRUE;
+
+	return ent;
+}
+
+
 /*
  * Add pseudo device target to the set of pseudo devices.  Pseudo_dev
  * describes the pseudo device attributes.
@@ -78,6 +117,7 @@ static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseud
 	char *target, char *alltarget)
 {
 	char *targname;
+	int new;
 	struct pseudo_entry *ent;
 
 	target = get_element(target, &targname);
@@ -92,29 +132,15 @@ static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseud
 		pseudo->head = NULL;
 	}
 
-	for(ent = pseudo->head; ent; ent = ent->next)
-		if(strcmp(ent->name, targname) == 0)
-			break;
+	ent = pseudo_search(pseudo, targname, &new);
 
-	if(ent == NULL) {
-		/* allocate new name entry */
-		pseudo->names ++;
-		ent = malloc(sizeof(struct pseudo_entry));
-		if(ent == NULL)
-			MEM_ERROR();
-		ent->name = targname;
-		ent->xattr = NULL;
-		ent->next = pseudo->head;
-		pseudo->head = ent;
-
+	if(new) {
 		if(target[0] == '\0') {
 			/* at leaf pathname component */
-			ent->pseudo = NULL;
 			ent->pathname = strdup(alltarget);
 			ent->dev = pseudo_dev;
 		} else {
 			/* recurse adding child components */
-			ent->dev = NULL;
 			ent->pseudo = add_pseudo(NULL, pseudo_dev,
 				target, alltarget);
 		}

@@ -105,4 +105,5 @@ extern struct pseudo *get_pseudo();
 extern void dump_pseudos();
 extern char *get_element(char *target, char **targname);
 extern void print_definitions();
+extern struct pseudo_entry *pseudo_search(struct pseudo *, char *, int *);
 #endif
