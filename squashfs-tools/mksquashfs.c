@@ -2673,7 +2673,10 @@ static void *frag_order_deflator(void *arg)
 		write_buffer->sequence = file_buffer->sequence;
 		write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
 		write_buffer->fragment = FALSE;
+		pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
+		pthread_mutex_lock(&fragment_mutex);
 		fragment_table[file_buffer->block].size = c_byte;
+		pthread_cleanup_pop(1);
 		seq_queue_put(to_order, write_buffer);
 		TRACE("Writing fragment %lld, uncompressed size %d, "
 			"compressed size %d\n", file_buffer->block,
