@@ -1,5 +1,19 @@
 			SQUASHFS CHANGE LOG
 
+4.6.1	25 MAR 2023	Bug fix release to fix race condition and XATTRs
+			code
+
+	1. Race condition which can cause corruption of the "fragment table"
+	   fixed.  This is a regression introduced in August 2022, and it has
+	   been seen when tailend packing is used (-tailends option).
+	2. Fix build failure when the tools are being built without extended
+	   attribute (XATTRs) support.
+	3. Fix XATTR error message when an unrecognised prefix is found
+	   (Christian Hesse).
+	4. Fix incorrect free of pointer when an unrecognised XATTR prefix is
+	   found.
+
+
 4.6	17 MAR 2023	Major improvements in extended attribute handling,
 			pseudo file handling, and miscellaneous new options and
 			improvements

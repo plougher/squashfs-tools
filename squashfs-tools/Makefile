@@ -1,3 +1,6 @@
+# Squashfs-tools 4.6.1 release
+RELEASE_VERSION = 4.6.1
+RELEASE_DATE = 2023/03/25
 ###############################################
 #                Build options                #
 ###############################################
@@ -349,7 +352,7 @@ VERSION := $(RELEASE_VERSION)
 DATE := $(RELEASE_DATE)
 else
 ifeq ($(HASH),$Format:%h$)
-VERSION := 4.6-$(shell git show -s --pretty=format:%h)
+VERSION := 4.6.1-$(shell git show -s --pretty=format:%h)
 DATE := $(firstword $(subst -,/,$(shell git show -s --pretty=format:%ci)))
 else
 VERSION := 4.6-$(HASH)
