@@ -129,4 +129,9 @@ static inline int compressor_option_args(struct compressor *comp, char *option)
 		return 0;
 	return comp->option_args(option);
 }
+
+
+int is_compressible(const void *in, int size, void *out, int outsize);
+
+
 #endif

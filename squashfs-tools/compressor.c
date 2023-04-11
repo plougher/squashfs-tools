@@ -25,6 +25,11 @@
 #include "compressor.h"
 #include "squashfs_fs.h"
 
+#ifdef ZSTD_SUPPORT
+#include <zstd.h>
+#include <zstd_errors.h>
+#endif
+
 #ifndef GZIP_SUPPORT
 static struct compressor gzip_comp_ops =  {
 	ZLIB_COMPRESSION, "gzip"
@@ -142,4 +147,17 @@ void display_compressor_usage(FILE *stream, char *def_comp)
 				fprintf(stream, "\t%s (no options)%s\n",
 					compressor[i]->name, str);
 		}
+}
+
+
+int is_compressible(const void *in, int size, void *out, int outsize) {
+#ifndef ZSTD_SUPPORT
+	return 1;
+#else
+	size_t ret = ZSTD_compress(out, outsize, in, size, 1);
+	if (ZSTD_isError(ret)) {
+		return 0;
+	}
+	return ret < size;
+#endif
 }

@@ -293,6 +293,9 @@ struct compressor *comp = NULL;
 int compressor_opt_parsed = FALSE;
 void *stream = NULL;
 
+int comp_early_abort = FALSE;
+long long comp_early_abort_bytes = 0;
+
 /* root of the in-core directory structure */
 struct dir_info *root_dir;
 
@@ -509,6 +512,13 @@ static int mangle2(void *strm, char *d, char *s, int size,
 	int block_size, int uncompressed, int data_block)
 {
 	int error, c_byte = 0;
+
+	if(!uncompressed && comp_early_abort) {
+		if(!is_compressible(s, size, d, block_size)) {
+			comp_early_abort_bytes += size;
+			uncompressed = 1;
+		}
+	}
 
 	if(!uncompressed) {
 		c_byte = compressor_compress(comp, strm, d, s, size, block_size,
@@ -6172,6 +6182,10 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-no-compression\t\tdo not compress any of the data ");
 	fprintf(stream, "or metadata.  This is\n\t\t\tequivalent to ");
 	fprintf(stream, "specifying -noI -noD -noF and -noX\n");
+#ifdef ZSTD_SUPPORT
+	fprintf(stream, "-comp-early-abort\tskip compression earlier if the");
+	fprintf(stream, " data is deemed not\n\t\t\tcompressible\n");
+#endif
 	fprintf(stream, "\nFilesystem build options:\n");
 	fprintf(stream, "-tar\t\t\tread uncompressed tar file from standard in (stdin)\n");
 	fprintf(stream, "-no-strip\t\tact like tar, and do not strip leading ");
@@ -6716,6 +6730,13 @@ static void print_summary()
 		printf("\t%.2f%% of uncompressed xattr table size (%d bytes)\n",
 			((float) xattr_bytes / total_xattr_bytes) * 100.0,
 			total_xattr_bytes);
+	}
+	if(comp_early_abort) {
+		printf("Compression early abort size %.2f Kbytes (%.2f Mbytes)\n",
+			comp_early_abort_bytes / 1024.0,
+			comp_early_abort_bytes / (1024.0 * 1024.0));
+		printf("\t%.2f%% of uncompressed filesystem size\n",
+			((float) comp_early_abort_bytes / total_bytes) * 100.0);
 	}
 	if(duplicate_checking)
 		printf("Number of duplicate files found %u\n", file_count -
@@ -8320,7 +8341,10 @@ print_compressor_options:
 
 		else if(strcmp(argv[i], "-no-compression") == 0)
 			noI = noD = noF = noX = TRUE;
-
+#ifdef ZSTD_SUPPORT
+		else if(strcmp(argv[i], "-comp-early-abort") == 0)
+			comp_early_abort = TRUE;
+#endif
 		else if(strcmp(argv[i], "-no-xattrs") == 0) {
 			if(xattr_exclude_preg || xattr_include_preg ||
 							add_xattrs()) {
