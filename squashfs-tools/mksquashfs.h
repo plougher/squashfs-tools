@@ -167,7 +167,7 @@ struct directory {
 	unsigned int		start_block;
 	unsigned int		size;
 	unsigned char		*buff;
-	unsigned char		*p;
+	unsigned int		offset;
 	unsigned int		entry_count;
 	unsigned char		*entry_count_p;
 	unsigned int		i_count;

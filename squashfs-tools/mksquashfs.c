@@ -1220,14 +1220,12 @@ static void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 			"\n", SQUASHFS_NAME_LEN);
 	}
 
-	if(dir->p + sizeof(struct squashfs_dir_entry) + size +
-			sizeof(struct squashfs_dir_header)
-			>= dir->buff + dir->size) {
+	if(dir->offset + sizeof(struct squashfs_dir_entry) + size +
+			sizeof(struct squashfs_dir_header) >= dir->size) {
 		buff = realloc(dir->buff, dir->size += SQUASHFS_METADATA_SIZE);
 		if(buff == NULL)
 			MEM_ERROR();
 
-		dir->p = (dir->p - dir->buff) + buff;
 		if(dir->entry_count_p) 
 			dir->entry_count_p = (dir->entry_count_p - dir->buff +
 			buff);
@@ -1237,7 +1235,7 @@ static void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 
 	if(dir->entry_count == 256 || start_block != dir->start_block ||
 			((dir->entry_count_p != NULL) &&
-			((dir->p + sizeof(struct squashfs_dir_entry) + size -
+			((dir->buff + dir->offset + sizeof(struct squashfs_dir_entry) + size -
 			dir->index_count_p) > SQUASHFS_METADATA_SIZE)) ||
 			((long long) inode_number - dir->inode_number) > 32767
 			|| ((long long) inode_number - dir->inode_number)
@@ -1245,7 +1243,7 @@ static void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 		if(dir->entry_count_p) {
 			struct squashfs_dir_header dir_header;
 
-			if((dir->p + sizeof(struct squashfs_dir_entry) + size -
+			if((dir->buff + dir->offset + sizeof(struct squashfs_dir_entry) + size -
 					dir->index_count_p) >
 					SQUASHFS_METADATA_SIZE) {
 				if(dir->i_count % I_COUNT_SIZE == 0) {
@@ -1255,13 +1253,12 @@ static void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 					if(dir->index == NULL)
 						MEM_ERROR();
 				}
-				dir->index[dir->i_count].index.index =
-					dir->p - dir->buff;
+				dir->index[dir->i_count].index.index = dir->offset;
 				dir->index[dir->i_count].index.size = size - 1;
 				dir->index[dir->i_count++].name = name;
 				dir->i_size += sizeof(struct squashfs_dir_index)
 					+ size;
-				dir->index_count_p = dir->p;
+				dir->index_count_p = dir->buff + dir->offset;
 			}
 
 			dir_header.count = dir->entry_count - 1;
@@ -1273,20 +1270,20 @@ static void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 		}
 
 
-		dir->entry_count_p = dir->p;
+		dir->entry_count_p = dir->buff + dir->offset;
 		dir->start_block = start_block;
 		dir->entry_count = 0;
 		dir->inode_number = inode_number;
-		dir->p += sizeof(struct squashfs_dir_header);
+		dir->offset += sizeof(struct squashfs_dir_header);
 	}
 
 	idir.offset = offset;
 	idir.type = type;
 	idir.size = size - 1;
 	idir.inode_number = ((long long) inode_number - dir->inode_number);
-	SQUASHFS_SWAP_DIR_ENTRY(&idir, dir->p);
-	strncpy((char *) dir->p + name_off, name, size);
-	dir->p += sizeof(struct squashfs_dir_entry) + size;
+	SQUASHFS_SWAP_DIR_ENTRY(&idir, (dir->buff + dir->offset));
+	strncpy((char *) dir->buff + dir->offset + name_off, name, size);
+	dir->offset += sizeof(struct squashfs_dir_entry) + size;
 	dir->entry_count ++;
 }
 
@@ -1294,7 +1291,7 @@ static void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 static squashfs_inode write_dir(struct dir_info *dir_info,
 	struct directory *dir)
 {
-	long long dir_size = dir->p - dir->buff;
+	long long dir_size = dir->offset;
 	int data_space = directory_cache_size - directory_cache_bytes;
 	unsigned int directory_block, directory_offset, i_count, index;
 	unsigned short c_byte;
@@ -1384,7 +1381,7 @@ static squashfs_inode write_dir(struct dir_info *dir_info,
 
 		TRACE("Directory contents of inode 0x%llx\n", inode);
 		dirp = dir->buff;
-		while(dirp < dir->p) {
+		while(dirp < (dir->buff + dir->offset)) {
 			char buffer[SQUASHFS_NAME_LEN + 1];
 			struct squashfs_dir_entry idir, *idirp;
 			struct squashfs_dir_header dirh;
@@ -4317,7 +4314,8 @@ static void scan7_init_dir(struct directory *dir)
 		MEM_ERROR();
 
 	dir->size = SQUASHFS_METADATA_SIZE;
-	dir->p = dir->index_count_p = dir->buff;
+	dir->offset = 0;
+	dir->index_count_p = dir->buff;
 	dir->entry_count = 256;
 	dir->entry_count_p = NULL;
 	dir->index = NULL;
