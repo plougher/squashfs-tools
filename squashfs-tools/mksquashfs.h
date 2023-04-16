@@ -173,7 +173,7 @@ struct directory {
 	unsigned int		i_count;
 	unsigned int		i_size;
 	struct cached_dir_index	*index;
-	unsigned char		*index_count_p;
+	unsigned int		index_count_offset;
 	unsigned int		inode_number;
 };
 
