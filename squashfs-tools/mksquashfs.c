@@ -4917,13 +4917,13 @@ static char *get_next_filename()
 
 static squashfs_inode process_source(int progress)
 {
-	int i, res, first = TRUE, same = FALSE;
+	int res, first = TRUE, same = FALSE;
 	char *filename, *prefix, *pathname;
 	struct stat buf, buf2;
 	struct dir_ent *entry;
 	struct dir_info *new;
 
-	for(i = 0; (filename = get_next_filename()); i++) {
+	while((filename = get_next_filename())) {
 		new = add_source(root_dir, filename, "", NULL, &prefix, paths, 1);
 
 		if(new) {
