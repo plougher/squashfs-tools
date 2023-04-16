@@ -169,12 +169,13 @@ struct directory {
 	unsigned char		*buff;
 	unsigned int		offset;
 	unsigned int		entry_count;
-	unsigned char		*entry_count_p;
+	unsigned int		entry_count_offset;
 	unsigned int		i_count;
 	unsigned int		i_size;
 	struct cached_dir_index	*index;
 	unsigned int		index_count_offset;
 	unsigned int		inode_number;
+	char			have_dir_header;
 };
 
 /* exclude file handling */

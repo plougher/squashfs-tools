@@ -1226,20 +1226,17 @@ static void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 		if(buff == NULL)
 			MEM_ERROR();
 
-		if(dir->entry_count_p) 
-			dir->entry_count_p = (dir->entry_count_p - dir->buff +
-			buff);
 		dir->buff = buff;
 	}
 
 	if(dir->entry_count == 256 || start_block != dir->start_block ||
-			((dir->entry_count_p != NULL) &&
+			(dir->have_dir_header &&
 			((dir->offset + sizeof(struct squashfs_dir_entry) + size -
 			dir->index_count_offset) > SQUASHFS_METADATA_SIZE)) ||
 			((long long) inode_number - dir->inode_number) > 32767
 			|| ((long long) inode_number - dir->inode_number)
 			< -32768) {
-		if(dir->entry_count_p) {
+		if(dir->have_dir_header) {
 			struct squashfs_dir_header dir_header;
 
 			if((dir->offset + sizeof(struct squashfs_dir_entry) + size -
@@ -1264,12 +1261,13 @@ static void add_dir(squashfs_inode inode, unsigned int inode_number, char *name,
 			dir_header.start_block = dir->start_block;
 			dir_header.inode_number = dir->inode_number;
 			SQUASHFS_SWAP_DIR_HEADER(&dir_header,
-				dir->entry_count_p);
+				(dir->buff + dir->entry_count_offset));
 
 		}
 
 
-		dir->entry_count_p = dir->buff + dir->offset;
+		dir->entry_count_offset = dir->offset;
+		dir->have_dir_header = TRUE;
 		dir->start_block = start_block;
 		dir->entry_count = 0;
 		dir->inode_number = inode_number;
@@ -1314,7 +1312,7 @@ static squashfs_inode write_dir(struct dir_info *dir_info,
 		dir_header.count = dir->entry_count - 1;
 		dir_header.start_block = dir->start_block;
 		dir_header.inode_number = dir->inode_number;
-		SQUASHFS_SWAP_DIR_HEADER(&dir_header, dir->entry_count_p);
+		SQUASHFS_SWAP_DIR_HEADER(&dir_header, (dir->buff + dir->entry_count_offset));
 		memcpy(directory_data_cache + directory_cache_bytes, dir->buff,
 			dir_size);
 	}
@@ -4316,7 +4314,8 @@ static void scan7_init_dir(struct directory *dir)
 	dir->offset = 0;
 	dir->index_count_offset = 0;
 	dir->entry_count = 256;
-	dir->entry_count_p = NULL;
+	dir->entry_count_offset = 0;
+	dir->have_dir_header = FALSE;
 	dir->index = NULL;
 	dir->i_count = dir->i_size = 0;
 }
