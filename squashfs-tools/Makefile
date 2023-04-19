@@ -36,6 +36,10 @@ GZIP_SUPPORT = 1
 #
 #XZ_SUPPORT = 1
 
+# Enable support for OpenWrt extended compression options by uncommenting
+# next line.  Do not do this unless you understand the implications.
+#XZ_EXTENDED_OPTIONS = 1
+
 
 ############ Building LZO support ##############
 #
@@ -194,6 +198,7 @@ INSTALL_MANPAGES_DIR ?= $(INSTALL_PREFIX)/man/man1
 LZMA_XZ_SUPPORT ?= 0
 LZMA_SUPPORT ?= 0
 LZMA_DIR ?= ../../../../LZMA/lzma465
+XZ_EXTENDED_OPTIONS ?= 0
 endif
 
 
@@ -245,8 +250,13 @@ endif
 
 ifeq ($(XZ_SUPPORT),1)
 CFLAGS += -DXZ_SUPPORT
+ifeq ($(XZ_EXTENDED_OPTIONS),1)
+MKSQUASHFS_OBJS += xz_wrapper_extended.o
+UNSQUASHFS_OBJS += xz_wrapper_extended.o
+else
 MKSQUASHFS_OBJS += xz_wrapper.o
 UNSQUASHFS_OBJS += xz_wrapper.o
+endif
 LIBS += -llzma
 COMPRESSORS += xz
 endif
@@ -424,6 +434,8 @@ lzo_wrapper.o: lzo_wrapper.c squashfs_fs.h lzo_wrapper.h compressor.h
 lz4_wrapper.o: lz4_wrapper.c squashfs_fs.h lz4_wrapper.h compressor.h
 
 xz_wrapper.o: xz_wrapper.c squashfs_fs.h xz_wrapper.h compressor.h
+
+xz_wrapper_extended.o: xz_wrapper_extended.c squashfs_fs.h xz_wrapper.h compressor.h
 
 unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@

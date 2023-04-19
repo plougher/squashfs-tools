@@ -16,10 +16,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- * xz_wrapper.c
+ * xz_wrapper_extended.c
  *
  * Support for XZ (LZMA2) compression using XZ Utils liblzma
  * http://tukaani.org/xz/
+ *
+ * This file supports OpenWrt extended XZ compression options.
  */
 
 #include <stdio.h>
@@ -44,7 +46,10 @@ static struct bcj bcj[] = {
 static int filter_count = 1;
 static int dictionary_size = 0;
 static float dictionary_percent = 0;
-
+static int preset = LZMA_PRESET_DEFAULT;
+static int lc = -1;
+static int lp = -1;
+static int pb = -1;
 
 /*
  * This function is called by the options parsing code in mksquashfs.c
@@ -53,6 +58,11 @@ static float dictionary_percent = 0;
  * Two specific options are supported:
  *	-Xbcj
  *	-Xdict-size
+ *	-Xpreset
+ *	-Xe
+ *	-Xlc
+ *	-Xlp
+ *	-Xpb
  *
  * This function returns:
  *	>=0 (number of additional args parsed) on success
@@ -84,7 +94,7 @@ static int xz_options(char *argv[], int argc)
 						(name[n] == '\0' ||
 						 name[n] == ',')) {
 					if(bcj[i].selected == 0) {
-				 		bcj[i].selected = 1;
+						bcj[i].selected = 1;
 						filter_count++;
 					}
 					name += name[n] == ',' ? n + 1 : n;
@@ -97,7 +107,7 @@ static int xz_options(char *argv[], int argc)
 				goto failed;
 			}
 		}
-	
+
 		return 1;
 	} else if(strcmp(argv[0], "-Xdict-size") == 0) {
 		char *b;
@@ -141,10 +151,89 @@ static int xz_options(char *argv[], int argc)
 		}
 
 		return 1;
+	} else if(strcmp(argv[0], "-Xpreset") == 0) {
+		char *b;
+		long val;
+
+		if(argc < 2) {
+			fprintf(stderr, "xz: -Xpreset missing preset-level "
+				"(valid value 0-9)\n");
+			goto failed;
+		}
+
+		val = strtol(argv[1], &b, 10);
+		if (*b != '\0' || (int) val < 0 || (int) val & ~LZMA_PRESET_LEVEL_MASK) {
+			fprintf(stderr, "xz: -Xpreset can't be "
+				"negative or more than the max preset\n");
+			goto failed;
+		}
+
+		preset &= ~LZMA_PRESET_LEVEL_MASK;
+		preset |= (int) val;
+
+		return 1;
+	} else if(strcmp(argv[0], "-Xe") == 0) {
+		preset |= LZMA_PRESET_EXTREME;
+
+		return 0;
+	} else if(strcmp(argv[0], "-Xlc") == 0) {
+		char *b;
+		long val;
+
+		if(argc < 2) {
+			fprintf(stderr, "xz: -Xlc missing value\n");
+			goto failed;
+		}
+
+		val = strtol(argv[1], &b, 10);
+		if (*b != '\0' || (int) val < LZMA_LCLP_MIN || (int) val > LZMA_LCLP_MAX) {
+			fprintf(stderr, "xz: -Xlc invalid value\n");
+			goto failed;
+		}
+
+		lc = (int) val;
+
+		return 1;
+	} else if(strcmp(argv[0], "-Xlp") == 0) {
+		char *b;
+		long val;
+
+		if(argc < 2) {
+			fprintf(stderr, "xz: -Xlp missing value\n");
+			goto failed;
+		}
+
+		val = strtol(argv[1], &b, 10);
+		if (*b != '\0' || (int) val < LZMA_LCLP_MIN || (int) val > LZMA_LCLP_MAX) {
+			fprintf(stderr, "xz: -Xlp invalid value\n");
+			goto failed;
+		}
+
+		lp = (int) val;
+
+		return 1;
+	} else if(strcmp(argv[0], "-Xpb") == 0) {
+		char *b;
+		long val;
+
+		if(argc < 2) {
+			fprintf(stderr, "xz: -Xpb missing value\n");
+			goto failed;
+		}
+
+		val = strtol(argv[1], &b, 10);
+		if (*b != '\0' || (int) val < LZMA_PB_MIN || (int) val > LZMA_PB_MAX) {
+			fprintf(stderr, "xz: -Xpb invalid value\n");
+			goto failed;
+		}
+
+		pb = (int) val;
+
+		return 1;
 	}
 
 	return -1;
-	
+
 failed:
 	return -2;
 }
@@ -188,9 +277,9 @@ static int xz_options_post(int block_size)
 		/*
 		 * dictionary_size must be storable in xz header as either
 		 * 2^n or as  2^n+2^(n+1)
-	 	*/
+		 */
 		n = ffs(dictionary_size) - 1;
-		if(dictionary_size != (1 << n) && 
+		if(dictionary_size != (1 << n) &&
 				dictionary_size != ((1 << n) + (1 << (n + 1)))) {
 			fprintf(stderr, "xz: -Xdict-size is an unsupported "
 				"value, dict-size must be storable in xz "
@@ -287,7 +376,7 @@ static int xz_extract_options(int block_size, void *buffer, int size)
 		/* check passed comp opts struct is of the correct length */
 		if(size != sizeof(struct comp_opts))
 			goto failed;
-					 
+
 		SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
 
 		dictionary_size = comp_opts->dictionary_size;
@@ -298,7 +387,7 @@ static int xz_extract_options(int block_size, void *buffer, int size)
 		 * size should 2^n or 2^n+2^(n+1)
 		 */
 		n = ffs(dictionary_size) - 1;
-		if(dictionary_size != (1 << n) && 
+		if(dictionary_size != (1 << n) &&
 				dictionary_size != ((1 << n) + (1 << (n + 1))))
 			goto failed;
 	}
@@ -342,7 +431,7 @@ static void xz_display_options(void *buffer, int size)
 	 * size should 2^n or 2^n+2^(n+1)
 	 */
 	n = ffs(dictionary_size) - 1;
-	if(dictionary_size != (1 << n) && 
+	if(dictionary_size != (1 << n) &&
 			dictionary_size != ((1 << n) + (1 << (n + 1))))
 		goto failed;
 
@@ -370,7 +459,7 @@ static void xz_display_options(void *buffer, int size)
 failed:
 	fprintf(stderr, "xz: error reading stored compressor options from "
 		"filesystem!\n");
-}	
+}
 
 
 /*
@@ -446,16 +535,25 @@ static int xz_compress(void *strm, void *dest, void *src,  int size,
 	for(i = 0; i < stream->filters; i++) {
 		struct filter *filter = &stream->filter[i];
 
-		if(lzma_lzma_preset(&stream->opt, LZMA_PRESET_DEFAULT))
+		if(lzma_lzma_preset(&stream->opt, preset))
 			goto failed;
 
 		stream->opt.dict_size = stream->dictionary_size;
+
+		if (lc >= 0)
+			stream->opt.lc = lc;
+
+		if (lp >= 0)
+			stream->opt.lp = lp;
+
+		if (pb >= 0)
+			stream->opt.pb = pb;
 
 		filter->length = 0;
 		res = lzma_stream_buffer_encode(filter->filter,
 			LZMA_CHECK_CRC32, NULL, src, size, filter->buffer,
 			&filter->length, block_size);
-	
+
 		if(res == LZMA_OK) {
 			if(!selected || selected->length > filter->length)
 				selected = filter;
@@ -465,8 +563,8 @@ static int xz_compress(void *strm, void *dest, void *src,  int size,
 
 	if(!selected)
 		/*
-	 	 * Output buffer overflow.  Return out of buffer space
-	 	 */
+		 * Output buffer overflow.  Return out of buffer space
+		 */
 		return 0;
 
 	if(selected->buffer != dest)
@@ -521,13 +619,28 @@ static void xz_usage(FILE *stream)
 	fprintf(stream, " header as either 2^n or as 2^n+2^(n+1).\n\t\t");
 	fprintf(stream, "Example dict-sizes are 75%%, 50%%, 37.5%%, 25%%, or");
 	fprintf(stream, " 32K, 16K, 8K\n\t\tetc.\n");
+	fprintf(stream, "\t  -Xpreset <preset-level>\n");
+	fprintf(stream, "\t\tUse <preset-value> as the custom preset to use");
+	fprintf(stream, " on compress.\n\t\t<preset-level> should be 0 .. 9");
+	fprintf(stream, " (default 6)\n");
+	fprintf(stream, "\t  -Xe\n");
+	fprintf(stream, "\t\tEnable additional compression settings by passing");
+	fprintf(stream, " the EXTREME\n\t\tflag to the compression flags.\n");
+	fprintf(stream, "\t  -Xlc <value>\n");
+	fprintf(stream, "\t  -Xlp <value>\n");
+	fprintf(stream, "\t  -Xpb <value>\n");
 }
 
 
 static int option_args(char *option)
 {
 	if(strcmp(option, "-Xbcj") == 0 ||
-				strcmp(option, "-Xdict-size") == 0)
+	   strcmp(option, "-Xdict-size") == 0 ||
+	   strcmp(option, "-Xpreset") == 0 ||
+	   strcmp(option, "-Xe") == 0 ||
+	   strcmp(option, "-Xlc") == 0 ||
+	   strcmp(option, "-Xlp") == 0 ||
+	   strcmp(option, "-Xpb") == 0)
 		return 1;
 
 	return 0;
