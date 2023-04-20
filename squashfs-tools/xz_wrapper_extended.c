@@ -55,7 +55,7 @@ static int pb = -1;
  * This function is called by the options parsing code in mksquashfs.c
  * to parse any -X compressor option.
  *
- * Two specific options are supported:
+ * Seven options are supported:
  *	-Xbcj
  *	-Xdict-size
  *	-Xpreset
