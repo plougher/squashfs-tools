@@ -637,7 +637,6 @@ static int option_args(char *option)
 	if(strcmp(option, "-Xbcj") == 0 ||
 	   strcmp(option, "-Xdict-size") == 0 ||
 	   strcmp(option, "-Xpreset") == 0 ||
-	   strcmp(option, "-Xe") == 0 ||
 	   strcmp(option, "-Xlc") == 0 ||
 	   strcmp(option, "-Xlp") == 0 ||
 	   strcmp(option, "-Xpb") == 0)
