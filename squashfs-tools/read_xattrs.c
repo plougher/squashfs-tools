@@ -48,6 +48,8 @@ static struct hash_entry {
 	struct hash_entry	*next;
 } *hash_table[65536];
 
+static unsigned int xattr_table_length = 0;
+
 static struct squashfs_xattr_id *xattr_ids;
 static void *xattrs = NULL;
 static long long xattr_table_start;
@@ -303,6 +305,8 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 				length);
 			goto failed3;
 		}
+
+		xattr_table_length += length;
 	}
 
 	/* swap if necessary the xattr id entries */
@@ -378,12 +382,11 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 	offset = SQUASHFS_XATTR_OFFSET(xattr_ids[i].xattr);
 	xptr_offset = get_xattr_block(start);
 
-	if(xptr_offset == -1) {
-		ERROR("FATAL ERROR: file system is corrupt - incorrect xattr value in metadata\n");
-		*failed = FALSE;
-		return NULL;
-	}
+	if(xptr_offset == -1)
+		goto corrupted;
 
+	if(xptr_offset + offset > xattr_table_length)
+		goto corrupted;
 
 	xptr = xattrs + xptr_offset + offset;
 
@@ -403,16 +406,31 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 				return NULL;
 			}
 		}
-			
+
+		if((xptr - xattrs + sizeof(entry)) > xattr_table_length)
+			goto corrupted;
+
 		SQUASHFS_SWAP_XATTR_ENTRY(xptr, &entry);
 		xptr += sizeof(entry);
+
+		if((xptr - xattrs + entry.size) > xattr_table_length)
+			goto corrupted;
 
 		res = read_xattr_entry(&xattr_list[j], &entry, xptr);
 		if(res == 0) {
 			/* unknown type, skip, and set error flag */
 			xptr += entry.size;
+
+			if((xptr - xattrs + sizeof(val)) > xattr_table_length)
+				goto corrupted;
+
 			SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
-			xptr += sizeof(val) + val.vsize;
+			xptr += sizeof(val);
+
+			if((xptr - xattrs + val.vsize) > xattr_table_length)
+				goto corrupted;
+
+			xptr += val.vsize;
 			*failed = TRUE;
 			continue;
 		} else if(res == -1) {
@@ -430,18 +448,35 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 			long long xattr;
 			void *ool_xptr;
 
+			if((xptr - xattrs + sizeof(val)) > xattr_table_length)
+				goto corrupted;
+
+			SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
 			xptr += sizeof(val);
+
+			if(val.vsize != sizeof(xattr))
+				goto corrupted;
+
 			SQUASHFS_SWAP_LONG_LONGS(xptr, &xattr, 1);
 			xptr += sizeof(xattr);	
+
 			start = SQUASHFS_XATTR_BLK(xattr) + xattr_table_start;
 			offset = SQUASHFS_XATTR_OFFSET(xattr);
 			ool_xptr = xattrs + get_xattr_block(start) + offset;
 			SQUASHFS_SWAP_XATTR_VAL(ool_xptr, &val);
 			xattr_list[j].value = ool_xptr + sizeof(val);
 		} else {
+			if((xptr - xattrs + sizeof(val)) > xattr_table_length)
+				goto corrupted;
+
 			SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
-			xattr_list[j].value = xptr + sizeof(val);
-			xptr += sizeof(val) + val.vsize;
+			xptr += sizeof(val);
+
+			if((xptr - xattrs + val.vsize) > xattr_table_length)
+				goto corrupted;
+
+			xattr_list[j].value = xptr;
+			xptr += val.vsize;
 		}
 
 		TRACE("get_xattr: xattr %d, vsize %d\n", j, val.vsize);
@@ -451,4 +486,9 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 
 	*count = j;
 	return xattr_list;
+
+corrupted:
+	ERROR("FATAL ERROR: file system is corrupt - incorrect xattr value in metadata\n");
+	*failed = FALSE;
+	return NULL;
 }
