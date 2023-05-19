@@ -1,0 +1,340 @@
+	SQUASHFS-TOOLS 4.6.1 - A squashed read-only filesystem for Linux
+
+	Copyright 2002-2023 Phillip Lougher <phillip@squashfs.org.uk>
+
+	Released under the GPL licence (version 2 or later).
+
+Welcome to Squashfs-Tools 4.6.1.  This is a bug fix update release to
+Squashfs-Tools 4.6.
+
+Please see the INSTALL file for instructions on installing the tools, and the
+USAGE-4.6 files for documentation on how to use the tools.
+
+This README will describe the improvements, and has the following sections:
+
+1. Bug fixes in 4.6.1
+2. Summary of changes in 4.6
+3. Filtering and adding extended attributes (XATTRs)
+4. Squashfs filesystems conversion (piping Unsquashfs output to Mksquashfs)
+5. Author info
+
+1. Bug fixes in 4.6.1
+---------------------
+
+1. Race condition which can cause corruption of the "fragment table" fixed.
+   This is a regression introduced in August 2022, and it has been seen when
+   tailend packing is used (-tailends option).
+2. Fix build failure when the tools are being built without extended attribute
+   (XATTRs) support.
+3. Fix XATTR error message when an unrecognised prefix is found (Christian Hesse).
+4. Fix incorrect free of pointer when an unrecognised XATTR prefix is found.
+
+2. Summary of changes in 4.6
+----------------------------
+
+1. Extended attribute handling improved in Mksquashfs and Sqfstar
+
+	1.1.New -xattrs-exclude option to exclude extended attributes from files
+	    using a regular expression.
+	1.2 New -xattrs-include option to include extended attributes from files
+	    using a regular expression.
+	1.3 New -xattrs-add option to add extended attributes to files.
+	1.4 New Pseudo file xattr definition to add extended attributes to
+	    files.
+	1.5 New xattrs-add Action to add extended attributes to files
+	    (Mksquashfs only).
+
+2. Extended attribute handling improved in Unsquashfs
+
+	2.1 New -xattrs-exclude option to exclude extended attributes from files
+	    using a regular expression.
+	2.2 New -xattrs-include option to include extended attributes from files
+	     using a regular expression.
+	2.3 Extended attributes are now supported in Pseudo file output.
+
+3. Other major improvements
+
+	3.1 Unsquashfs can now output Pseudo files to standard out.
+	3.2 Mksquashfs can now input Pseudo files from standard in.
+	3.3 Squashfs filesystems can now be converted (different block size
+	    compression etc) without unpacking to an intermediate filesystem or
+	    mounting, by piping the output of Unsquashfs to Mksquashfs.
+	3.4 Pseudo files are now supported by Sqfstar.
+	3.5 "Non-anchored" excludes are now supported by Unsquashfs.
+
+4. Mksquashfs minor improvements
+
+	4.1 A new -max-depth option has been added, which limits the depth
+	    Mksquashfs descends when creating the filesystem.
+	4.2 A new -mem-percent option which allows memory for caches to be
+	    specified as a percentage of physical RAM, rather than requiring an
+	    absolute value.
+	4.3 A new -percentage option added which rather than generating the full
+	    progress-bar instead outputs a percentage.  This can be used with
+	    dialog --gauge etc.
+	4.4 -mkfs-time, -all-time and -root-time options now take a human date
+	    string, in addition to the seconds since the epoch of 1970 00:00
+	    UTC.  For example "now", "last week", "Wed Mar 8 05:55:01 GMT 2023"
+	    are supported.
+	4.5 -root-uid, -root-gid, -force-uid and -force-gid options now take a
+	    user/group name in addition to the integer uid/gid.
+	4.6 A new -mem-default option which displays default memory usage for
+	    caches in Mbytes.
+	4.7 A new -no-compression option which produces no compression, and it
+	    is a short-cut for -noI, -noD, -noF and -noX.
+	4.8 A new -pseudo-override option which makes pseudo file uids and gids
+	    override -all-root, -force-uid and -force-gid options.  Normally
+	    these options take precedence.
+
+5. Unsquashfs minor improvements
+
+	5.1 New -all-time option which sets all file timestamps to <time>,
+	    rather than the time stored in the filesystem inode.  <time> can be
+	    an integer indicating seconds since the epoch (1970-01-01) or a
+	    human string value such as "now", "last week", or
+	    "Wed Feb 15 21:02:39 GMT 2023".
+	5.2 New -full-precision option which uses full precision when displaying
+	    times including seconds.  Use with -linfo, -lls, -lln and -llc
+	    options.
+	5.3 New -match option where Unsquashfs will abort if any extract file
+	    does not match on anything, and can not be resolved.
+	5.4 New -percentage option added which rather than generating the full
+	    progress-bar instead outputs a percentage.  This can be used with
+	    dialog --gauge etc.
+
+6. Sqfstar minor improvements
+
+	6.1 New -ignore-zeros option added which allows tar files to be
+	    concatenated together and fed to Sqfstar.  Normally a tarfile has
+	    two consecutive 512 byte blocks filled with zeros which means EOF
+	    and Sqfstar will stop reading after the first tar file on
+	    encountering them. This option makes Sqfstar ignore the zero filled
+	    blocks.
+	6.2 A new -mem-percent option which allows memory for caches to be
+	    specified as a percentage of physical RAM, rather than requiring an
+	    absolute value.
+	6.3 A new -percentage option added which rather than generating the full
+	    progress-bar instead outputs a percentage.  This can be used with
+	    dialog --gauge etc.
+	6.4 -mkfs-time, -all-time and -root-time options now take a human date
+	     string, in addition to the seconds since the epoch of 1970 00:00
+	     UTC.  For example "now", "last week", "Wed Mar 8 05:55:01 GMT 2023"
+	     are supported.
+	6.5 -root-uid, -root-gid, -force-uid and -force-gid options now take a
+	     user/group name in addition to the integer uid/gid.
+	6.6 A new -mem-default option which displays default memory usage for
+	    caches in Mbytes.
+	6.7 A new -no-compression option which produces no compression, and it
+	    is a short-cut for -noI, -noD, -noF and -noX.
+	6.8 A new -pseudo-override option which makes pseudo file uids and gids
+	    override -all-root, -force-uid and -force-gid options.  Normally
+	    these options take precedence.
+	6.9 Do not abort if ZERO filled blocks indicating end of the TAR archive
+	    are missing.
+
+7. Other minor improvements
+
+	7.1 If Mksquashfs/Unsquashfs fails to execute generating the manpages
+	    because they have been cross-compiled, fall back to using the
+	    pre-built manpages.
+	7.2 Add new Makefile configure option USE_PREBUILT_MANPAGES to always
+	    use pre-built manpages rather than generating them when "make
+	    install" is run.
+
+8. Major bug fixes
+
+	8.1 Following a symlink in Sqfscat or where -follow-symlinks option is
+	    given with Unsquashfs, incorrectly triggered the corrupted
+	    filesystem loop detection code.
+	8.2 In Unsquashfs if a file was not writable it could not add extended
+	    attributes to it.
+	8.3 Sqfstar would incorrectly reject compressor specific options that
+	    have an argument.
+	8.4 Sqfstar would incorrectly strip pathname components in PAX header
+	    linkpath if symbolic.
+	8.5 Sqfstar -root-uid, -root-gid and -root-time options were documented
+	    but not implemented.
+	8.6 Mksquashfs -one-file-system option would not create empty mount
+	    point directory when filesystem boundary crossed.
+	8.7 Mksquashfs did not check the close() return result.
+
+
+3. Filtering and adding extended attributes (XATTRs)
+----------------------------------------------------
+
+Mksquashfs, Unsquashfs and Sqfstar have a number of new options which allow
+extended attributes (xattrs) to be filtered from the source files or added to
+the created Squashfs filesystem.
+
+The -xattrs-exclude option specifies a regular expression (regex), which
+removes any extended attribute that matches the regular expression from all
+files.
+
+The -xattrs-include option instead specifies a regular expression (regex)
+which includes any extended attribute that matches, and removes anything
+that does't match.
+
+Examples:
+
+% mksquashfs directory image.sqsh -xattrs-exclude "^user."
+
+Exclude any extended attributes in the User namespace from the Squashfs
+filesystem.
+
+% unsquashfs -xattrs-exclude "^user." image.sqsh
+
+As above, but exclude them from the Squashfs filesystem when extracting.
+
+% mksquashfs directory image.sqsh -xattrs-include "^user."
+
+Only include extended attributes in the User namespace in the Squashfs
+filesystem.
+
+3.1 Adding extended attributes
+------------------------------
+
+Mksquashfs and Sqfstar also allows you to add extended attributes to files in
+the Squashfs filesystem using the -xattrs-add option and the Pseudo file "x"
+definition.  Both options take an xattr name and value pair separated by the
+'=' character.
+
+The extended attribute name can be any valid name and can be in the namespaces
+security, system, trusted, or user.  User extended attributes are added to files
+and directories (see man 7 xattr for explanation), and the others are added to
+all files.
+
+The extended attribute value by default will be treated as binary (i.e. an
+uninterpreted byte sequence), but it can be prefixed with 0s, where it will be
+treated as base64 encoded, or prefixed with 0x, where it will be treated as
+hexidecimal.
+
+Obviously using base64 or hexidecimal allows values to be used that cannot be
+entered on the command line such as non-printable characters etc.  But it
+renders the string non-human readable.  To keep readability and to allow
+non-printable characters to be entered, the 0t prefix is supported.  This
+encoding is similar to binary encoding, except backslashes are specially
+treated, and a backslash followed by three octal digits can be used to encode
+any ASCII character, which obviously can be used to encode non-printable values.
+The following four command lines are equivalent, and will add the extended
+attribute "user.comment" to all files:
+
+mksquashfs dir image.sqfs -xattrs-add "user.comment=hello world"
+mksquashfs dir image.sqfs -xattrs-add "user.comment=0saGVsbG8gd29ybGQ="
+mksquashfs dir image.sqfs -xattrs-add "user.comment=0x68656c6c6f20776f726c64"
+mksquashfs dir image.sqfs -xattrs-add "user.comment=0thello world"
+
+Obviously in the above example there are no non-printable characters and so
+the 0t prefixed string is identical to the first line.  The following three
+command lines are identical, but where the space has been replaced by the
+non-printable NUL '\0' (null character):
+
+mksquashfs dir image.sqfs -xattrs-add "user.comment=0thello\000world"
+mksquashfs dir image.sqfs -xattrs-add "user.comment=0saGVsbG8Ad29ybGQ="
+mksquashfs dir image.sqfs -xattrs-add "user.comment=0x68656c6c6f00776f726c64"
+
+The following will add an extended attribute to the file named "Hello_World"
+using the Pseudo file "x" definition.
+
+% mksquashfs dir image.sqsh -p "Hello_Word x user.comment=Hello_World"
+
+Again, as above, the following are equivalent:
+
+% mksquashfs dir image.sqfs -p "Hello_World x user.comment=0thello\000world"
+% mksquashfs dir image.sqfs -p "Hello_World x user.comment=0saGVsbG8Ad29ybGQ="
+% mksquashfs dir image.sqfs -p "Hello_World x user.comment=0x68656c6c6f00776f726c64"
+
+3.2 Filtering and adding extended attributes using Actions
+----------------------------------------------------------
+
+Finally Mksquashfs allows extended attributes to be filtered and added to files
+using the xattrs-exclude, xattrs-include and xattrs-add actions.
+
+xattrs-exclude(regex), this action excludes any extended attributes matching
+the regular expression, for any file matching the action tests.
+
+xattrs-include(regex), this action includes any extended attributes matching
+the regular expression, for any file matching the action tests.
+
+xattrs-add(name=val), this action will add the extended attribute <name>
+with contents <val>, to any file matching the action tests.
+
+Examples: 
+
+% mksquashfs dir image.sqfs -action "xattrs-exclude(^user.)@true"
+
+This will exclude all extended attributes in the User namespace for all
+files (true matches on everything).  It is directly equivalent to
+-xattrs-exclude(^user.).
+
+% mksquashfs dir image.sqfs -action "xattrs-exclude(^user.)@type(f)"
+
+This will exclude all extended attributes in the User namespace but only for
+regular files.
+
+% mksquashfs dir image.sqfs -action "xattrs-include(^user.)@user(phillip)&&type(f)"
+
+Likewise this will include only extended attributes in the User namespace, but
+it will only be applied to regular files owned by user Phillip.
+
+% mksquashfs dir image.sqsh -action "xattrs-add(user.comment=Hello_World)@name(hello*)"
+
+This will add the extended attribute "user.comment" to any file named "hello*".
+
+The following two commands are equivalent:
+
+% mksquashfs dir image.sqsh -action "xattrs-add(user.comment=Hello_World)@pathname(Hello_World)"
+% mksquashfs dir image.sqsh -p "Hello_Word x user.comment=Hello_World"
+
+
+4. Squashfs filesystems conversion (piping Unsquashfs output to Mksquashfs)
+---------------------------------------------------------------------------
+
+Sometimes you have an existing Squashfs filesystem which you want to
+regenerate using a different set of compression options, such as compression
+algorithm, block-size, tail-packing etc.  Or you want to modify some parts of
+the filesystem such as excluding files, change ownership etc.
+
+Obviously you have been able to mount the Squashfs filesystem and regenerate
+the filesystem by running Mksquashfs on the mounted directory.  But, this
+requires root access (which sometimes isn't available).  The only other
+alternative until now has been to extract the Squashfs filesystem to an
+intermediate uncompressed directory, and then regenerate the filesystem by
+running Mksquashfs on that.  This, however, is slow and requires storage to
+store the uncompressed filesystem.
+
+Unsquashfs can now output a Pseudo file representing the input filesystem
+to stdout, and Mksquashfs can now read a Pseudo file from stdin.  This allows
+the output of Unsquashfs to be piped to Mksquashfs.
+
+Some examples follow.
+
+If you had a GZIP filesystem and wanted to convert it to ZSTD, you can do:
+
+% unsquashfs -pf - image.sqsh | mksquashfs - new.sqsh -pf - -comp zstd
+
+If you wanted to change to XZ compression, increase to a 1 Mbyte block size, and
+use -tailend packing, you could do:
+
+% unsquashfs -pf - image.sqsh | mksquashfs - new.sqsh -pf - -comp xz -b 1M -tailends
+
+If you only want the directory "foobar" you can tell Unsquashfs to only
+extract that:
+
+% unsquashfs -pf - image.sqsh foobar | mksquashfs - new.sqsh -pf -
+
+If you had inadvertantly stored binary ".o" files, you can remove them by
+using the new "non-anchored" Unsquashfs exclude file functionality:
+
+% unsquashfs -excludes -pf - image.sqsh "... *.o" | mksquashfs - new.sqsh -pf -
+
+If you want to update all the file timestamps to "now", and make every
+file owned by "phillip":
+
+% unsquashfs -pf - image.sqsh | mksquashfs - new.sqsh -all-time now -force-uid phillip -pf -
+
+5. AUTHOR INFO
+--------------
+
+Squashfs was written by Phillip Lougher, email phillip@squashfs.org.uk,
+in Chepstow, Wales, UK.   If you like the program, or have any problems,
+then please email me, as it's nice to get feedback!
