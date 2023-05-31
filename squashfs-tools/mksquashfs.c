@@ -6703,9 +6703,13 @@ static void print_summary()
 		total_inode_bytes);
 	printf("Directory table size %lld bytes (%.2f Kbytes)\n",
 		directory_bytes, directory_bytes / 1024.0);
-	printf("\t%.2f%% of uncompressed directory table size (%lld bytes)\n",
-		((float) directory_bytes / total_directory_bytes) * 100.0,
-		total_directory_bytes);
+	if(total_directory_bytes)
+		printf("\t%.2f%% of uncompressed directory table size"
+			" (%lld bytes)\n", ((float) directory_bytes /
+			total_directory_bytes) * 100.0, total_directory_bytes);
+	else
+		printf("\t100%% of uncompressed directory table size"
+			" (%lld bytes)\n", total_directory_bytes);
 	if(total_xattr_bytes) {
 		printf("Xattr table size %d bytes (%.2f Kbytes)\n",
 			xattr_bytes, xattr_bytes / 1024.0);
