@@ -357,7 +357,7 @@ static struct file_info *duplicate(int *dup, int *block_dup,
 	long long file_size, long long bytes, unsigned int *block_list,
 	long long start, struct dir_ent *dir_ent,
 	struct file_buffer *file_buffer, int blocks, long long sparse,
-	int bl_hash);
+	int bl_hash, int thresh);
 static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), unsigned int);
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
@@ -2174,11 +2174,28 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, int *du
 }
 
 
+static void reset_and_truncate(long long start, int thresh)
+{
+	bytes = start;
+	if(thresh && !block_device) {
+		int res;
+
+		queue_put(to_writer, NULL);
+		if(queue_get(from_writer) != 0)
+			EXIT_MKSQUASHFS();
+		res = ftruncate(fd, bytes);
+		if(res != 0)
+			BAD_ERROR("Failed to truncate dest file because"
+				"  %s\n", strerror(errno));
+	}
+}
+
+
 static struct file_info *duplicate(int *dupf, int *block_dup,
 	long long file_size, long long bytes, unsigned int *block_list,
 	long long start, struct dir_ent *dir_ent,
 	struct file_buffer *file_buffer, int blocks, long long sparse,
-	int bl_hash)
+	int bl_hash, int thresh)
 {
 	struct file_info *dupl_ptr, *file;
 	struct file_info *block_dupl = NULL, *frag_dupl = NULL;
@@ -2189,6 +2206,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 	unsigned short checksum = 0;
 	char checksum_flag = FALSE;
 	struct fragment *fragment;
+	long long dupl_start;
 
 	/* Look for a possible duplicate set of blocks */
 	for(dupl_ptr = dupl_block[bl_hash]; dupl_ptr;
@@ -2306,6 +2324,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 			 */
 			if(!frag_bytes && !dupl_ptr->fragment->size) {
 				*dupf = *block_dup = TRUE;
+				reset_and_truncate(start, thresh);
 				if(file_size == dupl_ptr->file_size)
 					return dupl_ptr;
 				else
@@ -2343,6 +2362,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					 * finished.  Return the duplicate
 					 */
 					*dupf = *block_dup = TRUE;
+					reset_and_truncate(start, thresh);
 					return dupl_ptr;
 				}
 			}
@@ -2384,6 +2404,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					 */
 					if(block_dupl && block_dupl->start == dupl_ptr->start) {
 						*dupf = *block_dup = TRUE;
+						reset_and_truncate(start, thresh);
 						return dupl_ptr;
 					}
 
@@ -2449,8 +2470,20 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		if(dup) {
 			/* Found a matching file.  Return the duplicate */
 			*dupf = *block_dup = TRUE;
+			reset_and_truncate(start, thresh);
 			return dup->file;
 		}
+	}
+
+	if(block_dupl && !frag_dupl) {
+		/*
+		 * We have a matching block list but no matching fragment.
+		 * We have to reset the bytes counter to the start of the
+		 * block list before getting and filling the fragment because
+		 * if the current fragment is too full, this will force a
+		 * write out of the fragment.
+		 */
+		reset_and_truncate(start, thresh);
 	}
 
 	if(frag_dupl)
@@ -2459,15 +2492,16 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		fragment = get_and_fill_fragment(file_buffer, dir_ent, TRUE);
 
 	if(block_dupl) {
-		start = block_dupl->start;
+		dupl_start = block_dupl->start;
 		block_list = block_dupl->block_list;
-	}
+	} else
+		dupl_start = start;
 
 	*dupf = FALSE;
 	*block_dup = block_dupl != NULL;
 
 	file = create_non_dup(file_size, bytes, blocks, sparse, block_list,
-		start, fragment, checksum, fragment_checksum, checksum_flag,
+		dupl_start, fragment, checksum, fragment_checksum, checksum_flag,
 		file_buffer != NULL);
 
 	if(!block_dupl || (frag_bytes && !frag_dupl)) {
@@ -2500,6 +2534,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		dup->file = file;
 		dup->next = block_dupl->dup;
 		block_dupl->dup = dup;
+		reset_and_truncate(start, thresh);
 	}
 
 	return file;
@@ -2940,7 +2975,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 		sparse = 0;
 
 	file = duplicate(duplicate_file, &block_dup, read_size, file_bytes, block_list,
-		start, dir_ent, fragment_buffer, blocks, sparse, bl_hash);
+		start, dir_ent, fragment_buffer, blocks, sparse, bl_hash, thresh);
 
 	if(block_dup == FALSE) {
 		for(block = thresh; block < blocks; block ++)
@@ -2949,18 +2984,6 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 	} else {
 		for(block = thresh; block < blocks; block ++)
 			cache_block_put(buffer_list[block]);
-		bytes = start;
-		if(thresh && !block_device) {
-			int res;
-
-			queue_put(to_writer, NULL);
-			if(queue_get(from_writer) != 0)
-				EXIT_MKSQUASHFS();
-			res = ftruncate(fd, bytes);
-			if(res != 0)
-				BAD_ERROR("Failed to truncate dest file because"
-					"  %s\n", strerror(errno));
-		}
 	}
 
 	if(!reproducible)
