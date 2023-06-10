@@ -37,6 +37,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <pthread.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"

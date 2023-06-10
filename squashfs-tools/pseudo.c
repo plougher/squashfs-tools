@@ -39,6 +39,7 @@
 #include <regex.h>
 #include <dirent.h>
 #include <sys/types.h>
+#include <pthread.h>
 
 #include "pseudo.h"
 #include "mksquashfs_error.h"

@@ -36,6 +36,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <regex.h>
+#include <pthread.h>
 
 #include "squashfs_fs.h"
 #include "squashfs_swap.h"

@@ -48,6 +48,7 @@
 #include <sys/wait.h>
 #include <limits.h>
 #include <ctype.h>
+#include <pthread.h>
 
 #ifdef __linux__
 #include <sys/sysinfo.h>

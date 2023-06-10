@@ -32,6 +32,7 @@
 #include <grp.h>
 #include <time.h>
 #include <regex.h>
+#include <pthread.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
