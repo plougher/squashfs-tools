@@ -2788,6 +2788,8 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size, int cat_
 			processors = sysconf(_SC_NPROCESSORS_ONLN);
 		else
 			processors = CPU_COUNT(&cpu_set);
+#elif defined(__OpenBSD__)
+		processors = sysconf(_SC_NPROCESSORS_ONLN);
 #else
 		int mib[2];
 		size_t len = sizeof(processors);
