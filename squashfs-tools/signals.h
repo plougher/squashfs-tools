@@ -28,7 +28,7 @@ static inline int wait_for_signal(sigset_t *sigmask, int *waiting)
 {
 	int sig;
 
-#if defined(__APPLE__) && defined(__MACH__)
+#ifndef __linux__
 	sigwait(sigmask, &sig);
 	*waiting = 0;
 #else
