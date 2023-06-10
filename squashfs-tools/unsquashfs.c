@@ -1194,6 +1194,23 @@ int cat_file(struct inode *inode, char *pathname)
 	return TRUE;
 }
 
+static int
+set_time(char *pathname, struct inode *i) {
+#ifdef __OpenBSD__
+	struct timespec times[2] = {
+		{ i->time, 0 },
+		{ i->time, 0 }
+	};
+	return utimensat(AT_FDCWD, pathname, times,
+			AT_SYMLINK_NOFOLLOW);
+#else
+	struct timeval times[2] = {
+		{ i->time, 0 },
+		{ i->time, 0 }
+	};
+	return lutimes(pathname, times);
+#endif
+}
 
 int create_inode(char *pathname, struct inode *i)
 {
@@ -1232,10 +1249,6 @@ int create_inode(char *pathname, struct inode *i)
 			break;
 		case SQUASHFS_SYMLINK_TYPE:
 		case SQUASHFS_LSYMLINK_TYPE: {
-			struct timeval times[2] = {
-				{ i->time, 0 },
-				{ i->time, 0 }
-			};
 
 			TRACE("create_inode: symlink, symlink_size %lld\n",
 				i->data);
@@ -1251,7 +1264,7 @@ int create_inode(char *pathname, struct inode *i)
 				goto failed;
 			}
 
-			res = lutimes(pathname, times);
+			res = set_time(pathname, i);
 			if(res == -1) {
 				EXIT_UNSQUASH_STRICT("create_inode: failed to"
 					" set time on %s, because %s\n",
