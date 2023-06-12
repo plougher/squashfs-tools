@@ -4805,8 +4805,11 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 	struct dir_ent *entry;
 	struct dir_info *new;
 
-	for(entry = dir->list; entry; entry = entry->next)
-		if(S_ISDIR(entry->inode->buf.st_mode) && !entry->inode->root_entry) {
+	for(entry = dir->list; entry; entry = entry->next) {
+		if(entry->inode->root_entry)
+			continue;
+
+		if(S_ISDIR(entry->inode->buf.st_mode)) {
 			struct pathnames *newp = NULL;
 
 			excluded(entry->name, paths, &newp);
@@ -4833,6 +4836,7 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 
 			free(newp);
 		}
+	}
 
 	return dir;
 }
