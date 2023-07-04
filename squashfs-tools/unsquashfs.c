@@ -105,6 +105,15 @@ unsigned int timeval;
 int time_opt = FALSE;
 int full_precision = FALSE;
 
+/* should unsquashfs cross filesystem boundaries? */
+int one_file_system = FALSE;
+char **mp_list = NULL;
+int mp_nextidx = 0, mp_count = 0;
+int mp_use_fallback = FALSE;
+
+/* initial length of the mount points list, which expands as needed */
+#define MP_INITIAL_ELEMENTS	8
+
 /* extended attribute flags */
 int no_xattrs = XATTR_DEF;
 regex_t *xattr_exclude_preg = NULL;
@@ -1208,14 +1217,18 @@ int create_inode(char *pathname, struct inode *i)
 		if(force)
 			unlink(pathname);
 
-		if(link(link_path, pathname) == -1) {
+		if(link(link_path, pathname) == 0) {
+			hardlnk_count++;
+			return TRUE;
+		}
+		else if(one_file_system || errno != EXDEV) {
 			EXIT_UNSQUASH_IGNORE("create_inode: failed to create"
 				" hardlink, because %s\n", strerror(errno));
 			return FALSE;
 		}
 
-		hardlnk_count++;
-		return TRUE;
+		/* trying to dereference hard link outside filesystem boundaries */
+		TRACE("create_inode: hard link across different mounts\n");
 	}
 
 	switch(i->type) {
@@ -2061,6 +2074,121 @@ int follow_path(char *path, char *name, unsigned int start_block,
 }
 
 
+void grow_mounts_list(void)
+{
+	/* Mount points list will be expanded as needed */
+	int i, cnt = (mp_count ? mp_count << 1: MP_INITIAL_ELEMENTS);
+	size_t buflen = sizeof(mp_list[0]) * cnt;
+
+	mp_list = (char **) realloc((void *)mp_list, buflen);
+	if(!mp_list)
+		MEM_ERROR();
+	for(i = mp_count; i < cnt; i++)
+		mp_list[i] = NULL;
+	mp_count = cnt;
+}
+
+
+void free_mounts_list(void)
+{
+	if(!mp_list)
+		return;
+	for(int i = 0; i < mp_nextidx; i++)
+		free((void *)mp_list[i]);
+	mp_count = mp_nextidx = 0;
+	free((void *)mp_list);
+	mp_list = NULL;
+}
+
+
+void load_mounts_list(const char *root)
+{
+	char linebuf[1024];
+	char *start, *end;
+	size_t slen;
+	FILE *fp;
+
+	/* Read the second field from /proc/mounts if /proc is mounted,
+	 * and write to mp_list[] only those mount points that start with
+	 * <root>. With reading errors a fallback will be used. This code
+	 * is based on mountpoint.c from the sysvinit-utils package. */
+	if((fp = fopen("/proc/mounts", "r")) == NULL) {
+		mp_use_fallback = TRUE;
+		return;
+	}
+	slen = strlen(root);
+	TRACE("load_mounts_list: locate %s\n", root);
+
+	for(;;) {
+		/* Read each input line into <linebuf> */
+		if(!fgets(linebuf, sizeof(linebuf), fp)) {
+			if(feof(fp))
+				break;
+			mp_use_fallback = TRUE;
+			free_mounts_list();
+			break;
+		}
+
+		/* Locate the second field inside <linebuf> */
+		start = linebuf;
+		while(*start != ' ')
+			start ++;
+		end = ++start;
+		while(*end != ' ')
+			end ++;
+		*end = '\0';
+
+		/* Save only mount points that start with <root> */
+		if(!strncmp(root, start, slen)) {
+			if(mp_nextidx >= mp_count)
+				grow_mounts_list();
+			if((mp_list[mp_nextidx++] = strdup(start)) == NULL)
+				MEM_ERROR();
+			TRACE("load_mounts_list: added %s\n", start);
+		}
+	}
+
+	fclose(fp);
+}
+
+
+int is_mpoint(const char* p)
+{
+	TRACE("is_mpoint: check %s\n", p);
+
+	/* Primary way: check <p> by short list. It's very fast. */
+	if(mp_list) {
+		for(int i = 0; i < mp_nextidx; i++)
+			if(!strcmp(mp_list[i], p))
+				return TRUE;
+		return FALSE;
+	}
+
+	/* This fallback slows down unsquashfs and is only used when /proc
+	 * is not mounted. This code is based on mountpoint.c from the
+	 * sysvinit-utils package. Unfortunately, not all bind mounts
+	 * can be caught this way. */
+	if(!mp_use_fallback)
+		return FALSE;
+	struct stat st1, st2;
+	char *newp;
+
+	if(lstat(p, &st1))
+		return FALSE;
+	if(!S_ISDIR(st1.st_mode))
+		return FALSE;
+	if(asprintf(&newp, "%s/..", p) == -1)
+		MEM_ERROR();
+	if(stat(newp, &st2)) {
+		free(newp);
+		return FALSE;
+	}
+	free(newp);
+
+	return (st1.st_dev != st2.st_dev) || (st1.st_ino == st2.st_ino);
+}
+
+
 int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *extracts, struct pathnames *excludes, int depth)
 {
@@ -2080,6 +2208,12 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 
 	if(inumber_lookup(i->inode_number))
 		EXIT_UNSQUASH("File System corrupted: directory loop detected\n");
+
+	if(!lsonly && depth != 1 && one_file_system && is_mpoint(parent_name)) {
+		TRACE("pre_scan: skipping mount point %s\n", parent_name);
+		squashfs_closedir(dir);
+		return TRUE;
+	}
 
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
 		struct inode *i;
@@ -2102,7 +2236,7 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			MEM_ERROR();
 
 		if(type == SQUASHFS_DIR_TYPE) {
-			res = pre_scan(parent_name, start_block, offset, newt,
+			res = pre_scan(pathname, start_block, offset, newt,
 							newc, depth + 1);
 			if(res == FALSE)
 				scan_res = FALSE;
@@ -2135,6 +2269,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 {
 	unsigned int type;
 	int scan_res = TRUE;
+	int mp = FALSE;
 	char *name;
 	struct pathnames *newt, *newc = NULL;
 	struct inode *i;
@@ -2164,8 +2299,11 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 			/*
 			 * Skip directory if mkdir fails, unless we're
 			 * forcing and the error is -EEXIST
+			 * or if this directory is a mount point
 			 */
-			if((depth != 1 && !force) || errno != EEXIST) {
+			if(depth != 1 && errno == EEXIST)
+				mp = is_mpoint(parent_name);
+			if((depth != 1 && !force && !mp) || errno != EEXIST) {
 				EXIT_UNSQUASH_IGNORE("dir_scan: failed to make"
 					" directory %s, because %s\n",
 					parent_name, strerror(errno));
@@ -2189,7 +2327,10 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 		}
 	}
 
-	if(max_depth == -1 || depth <= max_depth) {
+	if(mp && one_file_system) {
+		TRACE("dir_scan: skipping mount point %s\n", parent_name);
+	}
+	else if(max_depth == -1 || depth <= max_depth) {
 		while(squashfs_readdir(dir, &name, &start_block, &offset,
 								&type)) {
 			char *pathname;
@@ -4224,6 +4365,8 @@ int parse_options(int argc, char *argv[])
 			no_wildcards = TRUE;
 		else if(strcmp(argv[i], "-UTC") == 0)
 			use_localtime = FALSE;
+		else if(strcmp(argv[i], "-one-file-system") == 0)
+			one_file_system = TRUE;
 		else if(strcmp(argv[i], "-strict-errors") == 0 ||
 				strcmp(argv[i], "-st") == 0)
 			strict_errors = TRUE;
@@ -4573,8 +4716,10 @@ int main(int argc, char *argv[])
 	else
 		data_buffer_size <<= 20 - block_log;
 
-	if(!lsonly)
+	if(!lsonly) {
+		load_mounts_list(dest);
 		initialise_threads(fragment_buffer_size, data_buffer_size, cat_files);
+	}
 
 	res = s_ops->read_filesystem_tables();
 	if(res == FALSE)
@@ -4636,6 +4781,7 @@ int main(int argc, char *argv[])
 		res = (long) queue_get(from_writer);
 		if(res == TRUE && set_exit_code)
 			exit_code = 2;
+		free_mounts_list();
 	}
 
 	disable_progress_bar();
