@@ -198,6 +198,9 @@ target_link_libraries(unsquashfs
         ${XATTR_LIBRARIES}
 )
 
-install(TARGETS unsquashfs mksquashfs DESTINATION ${CMAKE_INSTALL_BINDIR}) #[FIXME: missing symlinks]
+install(TARGETS unsquashfs mksquashfs DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(CODE "execute_process(COMMAND ln -fs ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/unsquashfs ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/sqfscat)")
+install(CODE "execute_process(COMMAND ln -fs ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/mksquashfs ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/sqfstar)")
+
 #install(FILES unsquashfs.1 mksquashfs.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1) #[TODO]
 
