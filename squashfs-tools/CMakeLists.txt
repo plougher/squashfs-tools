@@ -16,7 +16,7 @@ option(ZSTD_SUPPORT "Build with zstd support" ON)
 option(XATTR_SUPPORT "Build with xattr support" ON)
 option(XATTR_DEFAULT "xattrs to be stored by Mksquashfs and extracted by Unsquashfs by default" ON)
 option(REPRODUCIBLE_DEFAULT "Reproducible builds by default" ON)
-option(USE_PREBUILT_MANPAGES "" OFF) # [TODO]
+option(USE_PREBUILT_MANPAGES "Use the pre-built manpages by default" ON) # [FIXME] Broken when trying to rebuild manpages
 # Note: LZMA1 compression support not implemented [FIXME maybe]
 ################
 
@@ -130,6 +130,10 @@ if(REPRODUCIBLE_DEFAULT)
     add_definitions(-DREPRODUCIBLE_DEFAULT)
 endif()
 
+if(USE_PREBUILT_MANPAGES)
+    set(USE_PREBUILT_MANPAGES "y")
+endif()
+
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 find_library(MATH_LIBRARY m REQUIRED)
@@ -201,6 +205,5 @@ target_link_libraries(unsquashfs
 install(TARGETS unsquashfs mksquashfs DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(CODE "execute_process(COMMAND ln -fs ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/unsquashfs ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/sqfscat)")
 install(CODE "execute_process(COMMAND ln -fs ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/mksquashfs ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/sqfstar)")
-
-#install(FILES unsquashfs.1 mksquashfs.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1) #[TODO]
+install(CODE "execute_process(COMMAND ${CMAKE_SOURCE_DIR}/../generate-manpages/install-manpages.sh ${CMAKE_SOURCE_DIR}/.. ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_MANDIR}/man1 ${USE_PREBUILT_MANPAGES})")
 
