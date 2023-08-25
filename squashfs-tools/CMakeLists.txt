@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.13.4)
 project(
     squashfs-tools
     LANGUAGES C
+    VERSION 4.6.1
 )
 
 ######## User defined variables & options
@@ -16,20 +17,33 @@ option(ZSTD_SUPPORT "Build with zstd support" ON)
 option(XATTR_SUPPORT "Build with xattr support" ON)
 option(XATTR_DEFAULT "xattrs to be stored by Mksquashfs and extracted by Unsquashfs by default" ON)
 option(REPRODUCIBLE_DEFAULT "Reproducible builds by default" ON)
-option(USE_PREBUILT_MANPAGES "Use the pre-built manpages by default" ON) # [FIXME] Broken when trying to rebuild manpages
+option(USE_PREBUILT_MANPAGES "Use the pre-built manpages by default" ON)
 # Note: LZMA1 compression support not implemented [FIXME maybe]
 ################
 
-######## [FIXME] Release version & date
+include(version.cmake)
+# Example values for HASH and FULLDATE
+#set(HASH "d8cb82d9")
+#set(FULLDATE "2023-03-01 20:53:37 +0000")
+separate_arguments(FULLDATE)
+list(GET FULLDATE 0 DATE)
+
 if(DEFINED ENV{RELEASE_VERSION} AND DEFINED ENV{RELEASE_DATE})
+    # GET RELEASE_VERSION AND RELEASE_DATE from environment
     add_definitions(-DDATE="$ENV{RELEASE_DATE}")
     add_definitions(-DVERSION="$ENV{RELEASE_VERSION}")
 else()
-    add_definitions(-DDATE="20230821")
-    add_definitions(-DVERSION="4.6.1")
+    if(${HASH} STREQUAL "$Format:%h$")
+        execute_process(COMMAND git show -s --pretty=format:%ci OUTPUT_VARIABLE FULLDATE)
+        separate_arguments(FULLDATE)
+        list(GET FULLDATE 0 DATE)
+        execute_process(COMMAND git show -s --pretty=format:%h OUTPUT_VARIABLE HASH)
+    endif()
+    add_definitions(-DDATE="${DATE}")
+    add_definitions(-DVERSION="${PROJECT_VERSION}-${HASH}")
+    string(REGEX MATCH ^[0-9]+ YEAR ${DATE})
 endif()
-add_definitions(-DYEAR="2023")
-################
+add_definitions(-DYEAR="${YEAR}")
 
 include(CheckSymbolExists)
 include(GNUInstallDirs)
