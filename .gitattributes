@@ -1,4 +1,3 @@
-version.mk export-subst
 version.cmake export-subst
 kernel export-ignore
 README export-ignore
