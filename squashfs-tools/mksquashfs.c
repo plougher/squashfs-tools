@@ -7569,6 +7569,7 @@ print_sqfstar_compressor_options:
 			SQUASHFS_MAJOR, SQUASHFS_MINOR,
 			destination_file, block_size);
 
+	bytes = sizeof(struct squashfs_super_block);
 	/*
 	 * store any compressor specific options after the superblock,
 	 * and set the COMP_OPT flag to show that the filesystem has
@@ -7582,11 +7583,9 @@ print_sqfstar_compressor_options:
 			sizeof(c_byte), &c_byte);
 		write_destination(fd, sizeof(struct squashfs_super_block) +
 			sizeof(c_byte), size, comp_data);
-		bytes = sizeof(struct squashfs_super_block) + sizeof(c_byte)
-			+ size;
+		bytes += sizeof(c_byte) + size;
 		comp_opts = TRUE;
-	} else
-		bytes = sizeof(struct squashfs_super_block);
+	}
 
 	if(path)
 		paths = add_subdir(paths, path);
@@ -8703,6 +8702,7 @@ print_compressor_options:
 				SQUASHFS_MAJOR, SQUASHFS_MINOR,
 				destination_file, block_size);
 
+		bytes = sizeof(struct squashfs_super_block);
 		/*
 		 * store any compressor specific options after the superblock,
 		 * and set the COMP_OPT flag to show that the filesystem has
@@ -8716,11 +8716,9 @@ print_compressor_options:
 				sizeof(c_byte), &c_byte);
 			write_destination(fd, sizeof(struct squashfs_super_block) +
 				sizeof(c_byte), size, comp_data);
-			bytes = sizeof(struct squashfs_super_block) + sizeof(c_byte)
-				+ size;
+			bytes += sizeof(c_byte)	+ size;
 			comp_opts = TRUE;
-		} else			
-			bytes = sizeof(struct squashfs_super_block);
+		}
 	} else {
 		unsigned int last_directory_block, inode_dir_file_size,
 			root_inode_size, inode_dir_start_block,
