@@ -180,6 +180,12 @@ int exit_on_error = FALSE;
 /* Is filesystem stored at an offset from the start of the block device/file? */
 long long start_offset = 0;
 
+/* Do we have an extra_info metadata block? */
+int extra_info = FALSE;
+/* parameters for the extra_info block */
+char *volume_label = NULL;
+char *uuid = NULL;
+
 /* File count statistics used to print summary and fill in superblock */
 unsigned int file_count = 0, sym_count = 0, dev_count = 0, dir_count = 0,
 fifo_count = 0, sock_count = 0, id_count = 0;
@@ -340,7 +346,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"vaf", "taf", "faf", "read-queue", "write-queue", "fragment-queue",
 	"root-time", "root-uid", "root-gid", "xattrs-exclude", "xattrs-include",
 	"xattrs-add", "default-mode", "default-uid", "default-gid",
-	"mem-percent", NULL
+	"mem-percent", "label", "uuid", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -6263,6 +6269,8 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-keep-as-directory\tif one source directory is specified, ");
 	fprintf(stream, "create a root\n");
 	fprintf(stream, "\t\t\tdirectory containing that directory, rather than the\n");
+	fprintf(stream, "-label <volume-label>\tSet the volume label\n");
+	fprintf(stream, "-uuid <UUID>\tSet the volume UUID\n");
 	fprintf(stream, "\t\t\tcontents of the directory\n");
 	fprintf(stream, "\nFilesystem filter options:\n");
 	fprintf(stream, "-p <pseudo-definition>\tadd pseudo file ");
@@ -7606,7 +7614,7 @@ print_sqfstar_compressor_options:
 	sBlk.block_log = block_log;
 	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, noId, no_fragments,
 		always_use_fragments, duplicate_checking, exportable,
-		no_xattrs, comp_opts);
+		no_xattrs, comp_opts, extra_info);
 	sBlk.mkfs_time = mkfs_time_opt ? mkfs_time : time(NULL);
 
 	disable_info();
@@ -7653,6 +7661,70 @@ print_sqfstar_compressor_options:
 		fclose(log_fd);
 
 	return 0;
+}
+
+
+void *info_dump(int *psize) {
+	int bytes = 0, pos = 0;
+	unsigned char *buf;
+	const int UUID_LEN = 16;  /* avoid depending on uuid-dev for now */
+	int label_len;
+
+	/* The extra_info section contains one or more entries of the form:
+	   TAG byte
+	   LEN byte
+	   VAL byte_1 ... byte_len
+
+	   Terminated by the tag: SQUASHFS_EXTRA_INFO_TAG_END
+	 */
+	if (volume_label) {
+		label_len = strlen(volume_label);
+		if (label_len > 255) label_len = 255;
+		bytes += 1 + 1 + label_len;
+	}
+	if (uuid)
+		bytes += 1 + 1 + UUID_LEN;
+	if (!bytes)
+		return NULL;
+	bytes += 1; /* TAG_END */
+
+	buf = malloc(bytes);
+
+	if (volume_label) {
+		buf[pos++] = SQUASHFS_EXTRA_INFO_TAG_LABEL;
+		buf[pos++] = label_len;
+		memcpy(&buf[pos], volume_label, label_len);
+		pos += label_len;
+	}
+	if (uuid) {
+		char *puuid = uuid;
+		buf[pos++] = SQUASHFS_EXTRA_INFO_TAG_UUID;
+		buf[pos++] = UUID_LEN;
+		/* poor man's uuid_parse() */
+		for (int i = 0; i < UUID_LEN; i++) {
+			char hex[3] = {};
+			char *endptr = NULL;
+			if (*puuid == '-') {
+				puuid++;
+			}
+			if (puuid[0] && puuid[1]) {
+				memcpy(&hex[0], puuid, 2);
+				buf[pos++] = strtoul(hex, &endptr, 16);
+			}
+			if (endptr != hex + 2) {
+				ERROR("invalid UUID: %s\n", uuid);
+				exit(1);
+			}
+			puuid += 2;
+		}
+	}
+	buf[pos++] = SQUASHFS_EXTRA_INFO_TAG_END;
+	if (pos != bytes) {
+		ERROR("extra_info legth mismatch\n");
+		exit(1);
+	}
+	*psize = bytes;
+	return buf;
 }
 
 
@@ -8447,6 +8519,20 @@ print_compressor_options:
 		} else if(strcmp(argv[i], "-comp") == 0) {
 			/* parsed previously */
 			i++;
+		} else if (strcmp(argv[i], "-label") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -label: missing label\n",
+					argv[0]);
+				exit(1);
+			}
+			volume_label = argv[i];
+		} else if (strcmp(argv[i], "-uuid") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -uuid: missing uuid\n",
+					argv[0]);
+				exit(1);
+			}
+			uuid = argv[i];
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
 			print_options(stderr, argv[0], total_mem);
@@ -8672,6 +8758,7 @@ print_compressor_options:
 		exportable = SQUASHFS_EXPORTABLE(sBlk.flags);
 		no_xattrs = SQUASHFS_NO_XATTRS(sBlk.flags);
 		comp_opts = SQUASHFS_COMP_OPTS(sBlk.flags);
+		extra_info = SQUASHFS_EXTRA_INFO(sBlk.flags);
 	}
 
 	initialise_threads(readq, fragq, bwriteq, fwriteq, !appending,
@@ -8693,9 +8780,12 @@ print_compressor_options:
 	memset(dupl_frag, 0, block_size * sizeof(struct file_info *));
 
 	if(!appending) {
-		int size;
+		int comp_size;
 		void *comp_data = compressor_dump_options(comp, block_size,
-			&size);
+			&comp_size);
+
+		int info_size;
+		void *info_data = info_dump(&info_size);
 
 		if(!quiet)
 			printf("Creating %d.%d filesystem on %s, block size %d.\n",
@@ -8709,15 +8799,24 @@ print_compressor_options:
 		 * compressor specfic options
 		 */
 		if(comp_data) {
-			unsigned short c_byte = size | SQUASHFS_COMPRESSED_BIT;
+			unsigned short c_byte = comp_size | SQUASHFS_COMPRESSED_BIT;
 	
 			SQUASHFS_INSWAP_SHORTS(&c_byte, 1);
-			write_destination(fd, sizeof(struct squashfs_super_block),
-				sizeof(c_byte), &c_byte);
-			write_destination(fd, sizeof(struct squashfs_super_block) +
-				sizeof(c_byte), size, comp_data);
-			bytes += sizeof(c_byte)	+ size;
+			write_destination(fd, bytes, sizeof(c_byte), &c_byte);
+			bytes += sizeof(c_byte);
+			write_destination(fd, bytes, comp_size, comp_data);
+			bytes += comp_size;
 			comp_opts = TRUE;
+		}
+		if (info_data) {
+			unsigned short i_byte = info_size | SQUASHFS_COMPRESSED_BIT;
+	
+			SQUASHFS_INSWAP_SHORTS(&i_byte, 1);
+			write_destination(fd, bytes, sizeof(i_byte), &i_byte);
+			bytes += sizeof(i_byte);
+			write_destination(fd, bytes, info_size, info_data);
+			bytes += info_size;
+			extra_info = TRUE;
 		}
 	} else {
 		unsigned int last_directory_block, inode_dir_file_size,
@@ -8878,7 +8977,7 @@ print_compressor_options:
 	sBlk.block_log = block_log;
 	sBlk.flags = SQUASHFS_MKFLAGS(noI, noD, noF, noX, noId, no_fragments,
 		always_use_fragments, duplicate_checking, exportable,
-		no_xattrs, comp_opts);
+		no_xattrs, comp_opts, extra_info);
 	sBlk.mkfs_time = mkfs_time_opt ? mkfs_time : time(NULL);
 
 	disable_info();
