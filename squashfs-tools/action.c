@@ -2618,6 +2618,12 @@ static int subpathname_fn(struct atom *atom, struct action_data *data)
 	return res == 0;
 }
 
+/* calculate tailsize */
+static off_t get_tailsize(struct action_data *action_data)
+{
+	return action_data->buf->st_size & (block_size - 1);
+}
+
 /*
  * Inode attribute test operations using generic
  * TEST_VAR_FN(test name, file scope, attribute name) macro.
@@ -2625,6 +2631,8 @@ static int subpathname_fn(struct atom *atom, struct action_data *data)
  * They just take a variable and compare it against a number.
  */
 TEST_VAR_FN(filesize, ACTION_REG, action_data->buf->st_size)
+
+TEST_VAR_FN(tailsize, ACTION_REG, get_tailsize(action_data))
 
 TEST_VAR_FN(dirsize, ACTION_DIR, action_data->buf->st_size)
 
@@ -2645,6 +2653,8 @@ TEST_VAR_FN(dircount, ACTION_DIR, action_data->dir_ent->dir->count)
 TEST_VAR_FN(depth, ACTION_ALL_LNK, action_data->depth)
 
 TEST_VAR_RANGE_FN(filesize, ACTION_REG, action_data->buf->st_size)
+
+TEST_VAR_RANGE_FN(tailsize, ACTION_REG, get_tailsize(action_data))
 
 TEST_VAR_RANGE_FN(dirsize, ACTION_DIR, action_data->buf->st_size)
 
@@ -3507,6 +3517,7 @@ static struct test_entry test_table[] = {
 	{ "pathname", 1, pathname_fn, check_pathname, 1, 0},
 	{ "subpathname", 1, subpathname_fn, check_pathname, 1, 0},
 	{ "filesize", 1, filesize_fn, parse_number_arg, 1, 0},
+	{ "tailsize", 1, tailsize_fn, parse_number_arg, 1, 0},
 	{ "dirsize", 1, dirsize_fn, parse_number_arg, 1, 0},
 	{ "size", 1, size_fn, parse_number_arg, 1, 0},
 	{ "inode", 1, inode_fn, parse_number_arg, 1, 0},
@@ -3521,6 +3532,7 @@ static struct test_entry test_table[] = {
 	{ "depth", 1, depth_fn, parse_number_arg, 1, 0},
 	{ "dircount", 1, dircount_fn, parse_number_arg, 0, 0},
 	{ "filesize_range", 2, filesize_range_fn, parse_range_args, 1, 0},
+	{ "tailsize_range", 2, tailsize_range_fn, parse_range_args, 1, 0},
 	{ "dirsize_range", 2, dirsize_range_fn, parse_range_args, 1, 0},
 	{ "size_range", 2, size_range_fn, parse_range_args, 1, 0},
 	{ "inode_range", 2, inode_range_fn, parse_range_args, 1, 0},

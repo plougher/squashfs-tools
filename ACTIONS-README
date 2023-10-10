@@ -153,6 +153,13 @@ Return TRUE if the size of the file is less than, equal to, or larger than
 <value>, where <value> can be [<-]number, number, [>+]number.  Returns FALSE
 on anything not a file.
 
+4.4.1 tailsize(value)
+-------------------
+
+Return TRUE if the size of tail end of the file is less than, equal to,
+or larger than <value>, where <value> can be [<-]number, number, [>+]number.
+Returns FALSE on anything not a file.
+
 4.5 dirsize(value)
 ------------------
 
