@@ -248,6 +248,12 @@ Returns FALSE on anything not a directory.
 Return TRUE if the size of the file is within the range [<minimum>, <maximum>]
 inclusive.  Returns FALSE on anything not a file.
 
+4.18.1 tailsize_range(minimum, maximum)
+-------------------------------------
+
+Return TRUE if the size of tail end of the file is within the range
+[<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a file.
+
 4.19 dirsize_range(minimum, maximum)
 ------------------------------------
 
