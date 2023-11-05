@@ -752,18 +752,8 @@ static unsigned char *squashfs_readdir(int fd, int root_entries,
 		bytes += byte;
 	}
 
-	if(!root_entries) {
-		/*
-		 * Special case for -root-becomes when the end of the root
-		 * directory is aligned to the end of the METADATA block.  In
-		 * this case last_start_block should be updated to the end
-		 * of the METADATA block.
-		 */
-		if((size & (SQUASHFS_METADATA_SIZE - 1)) == 0)
-			last_start_block = start;
-
+	if(!root_entries)
 		goto all_done;
-	}
 
 	bytes = offset;
  	while(bytes < size) {			
