@@ -7670,6 +7670,7 @@ int main(int argc, char *argv[])
 	int total_mem = get_default_phys_mem();
 	int progress = TRUE;
 	int force_progress = FALSE;
+	int exclude_option = FALSE;
 	struct file_buffer **fragment = NULL;
 	char *command;
 
@@ -8264,6 +8265,7 @@ print_compressor_options:
 			if(++i == argc) {
 				ERROR("%s: -ef missing filename\n", argv[0]);
 				exit(1);
+			exclude_option = TRUE;
 			}
 		} else if(strcmp(argv[i], "-no-duplicates") == 0)
 			duplicate_checking = FALSE;
@@ -8414,10 +8416,11 @@ print_compressor_options:
 		else if(strcmp(argv[i], "-info") == 0)
 			silent = FALSE;
 
-		else if(strcmp(argv[i], "-e") == 0)
+		else if(strcmp(argv[i], "-e") == 0) {
+			exclude_option = TRUE;
 			break;
 
-		else if(strcmp(argv[i], "-noappend") == 0)
+		} else if(strcmp(argv[i], "-noappend") == 0)
 			appending = FALSE;
 
 		else if(strcmp(argv[i], "-quiet") == 0)
@@ -8476,6 +8479,12 @@ print_compressor_options:
 	 */
 	if(tarfile && any_actions())
 		BAD_ERROR("Actions are unsupported when reading tar files\n");
+
+	/* If -tar option is set and there are exclude files (either -ef or -e),
+	 * then -wildcards must be set too.  The older legacy exclude code
+	 * cannot be used with tar files */
+	if(tarfile && exclude_option && old_exclude)
+		BAD_ERROR("-wildcards must be specified with tar files and -ef/-e\n");
 
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset
