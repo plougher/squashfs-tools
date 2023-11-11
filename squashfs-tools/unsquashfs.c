@@ -1232,7 +1232,11 @@ int create_inode(char *pathname, struct inode *i)
 			break;
 		case SQUASHFS_SYMLINK_TYPE:
 		case SQUASHFS_LSYMLINK_TYPE: {
+#ifdef __OpenBSD__
+			struct timespec times[2] = {
+#else
 			struct timeval times[2] = {
+#endif
 				{ i->time, 0 },
 				{ i->time, 0 }
 			};
@@ -1251,7 +1255,11 @@ int create_inode(char *pathname, struct inode *i)
 				goto failed;
 			}
 
+#ifdef __OpenBSD__
+			res = utimensat(AT_FDCWD, pathname, times, AT_SYMLINK_NOFOLLOW);
+#else
 			res = lutimes(pathname, times);
+#endif
 			if(res == -1) {
 				EXIT_UNSQUASH_STRICT("create_inode: failed to"
 					" set time on %s, because %s\n",
