@@ -724,7 +724,7 @@ static unsigned char *squashfs_readdir(int fd, int root_entries,
 		__attribute__ ((aligned));
 	struct squashfs_dir_entry *dire = (struct squashfs_dir_entry *) buffer;
 	unsigned char *directory_table = NULL;
-	int byte, dir_count;
+	int dir_count;
 	long long start = sBlk->directory_table_start + directory_start_block;
 	long long last_start_block = start, size = dir_size, bytes = 0;
 
@@ -734,22 +734,22 @@ static unsigned char *squashfs_readdir(int fd, int root_entries,
 	if(directory_table == NULL)
 		MEM_ERROR();
 
-	while(bytes < size) {
-		int expected = (size - bytes) >= SQUASHFS_METADATA_SIZE ?
-			SQUASHFS_METADATA_SIZE : 0;
-
+	for(; size - bytes >= SQUASHFS_METADATA_SIZE; bytes += SQUASHFS_METADATA_SIZE) {
 		TRACE("squashfs_readdir: reading block 0x%llx, bytes read so "
 			"far %lld\n", start, bytes);
 
-		last_start_block = start;
-		byte = read_block(fd, start, &start, expected, directory_table + bytes);
-		if(byte == 0) {
-			ERROR("Failed to read directory\n");
-			ERROR("Filesystem corrupted?\n");
-			free(directory_table);
-			return NULL;
-		}
-		bytes += byte;
+		if(read_block(fd, start, &start, SQUASHFS_METADATA_SIZE, directory_table + bytes) == 0)
+			goto read_error;
+	}
+
+	last_start_block = start;
+
+	if(size - bytes) {
+		TRACE("squashfs_readdir: reading block 0x%llx, bytes read so "
+			"far %lld\n", start, bytes);
+
+		if(read_block(fd, start, &start, 0, directory_table + bytes) == 0)
+			goto read_error;
 	}
 
 	if(!root_entries)
@@ -801,6 +801,12 @@ all_done:
 	*last_directory_block = (unsigned int) last_start_block -
 		sBlk->directory_table_start;
 	return directory_table;
+
+read_error:
+	ERROR("Failed to read directory\n");
+	ERROR("Filesystem corrupted?\n");
+	free(directory_table);
+	return NULL;
 }
 
 
