@@ -363,7 +363,7 @@ VERSION := 4.6.1-$(shell git show -s --pretty=format:%h)
 DATE := $(firstword $(subst -,/,$(shell git show -s --pretty=format:%ci)))
 else
 VERSION := 4.6.1-$(HASH)
-DATE := $(firstword $(FULLDATE))
+DATE := $(firstword $(subst -,/,$(FULLDATE)))
 endif
 endif
 
