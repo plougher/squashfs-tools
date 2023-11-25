@@ -3596,7 +3596,7 @@ void pseudo_print(char *pathname, struct inode *inode, char *link, long long off
 	else if(res >= 12)
 		EXIT_UNSQUASH("snprintf returned more than 11 digits in pseudo_print()\n");
 
-	res = dprintf(writer_fd, "%s %c %ld %o %s %s", filename, type, inode->time, inode->mode & ~S_IFMT, userstr, groupstr);
+	res = dprintf(writer_fd, "%s %c %lld %o %s %s", filename, type, (long long int) inode->time, inode->mode & ~S_IFMT, userstr, groupstr);
 	if(res == -1)
 		EXIT_UNSQUASH("Failed to write to pseudo output file\n");
 
