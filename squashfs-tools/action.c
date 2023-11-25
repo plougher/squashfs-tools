@@ -3042,8 +3042,9 @@ static struct dir_ent *follow_path(struct dir_info *dir, char *pathname)
 	if(comp) {
 		free(comp);
 		comp = get_comp(&path);
-		free(comp);
+
 		if(comp != NULL)
+			free(comp);
 			/* Not a leaf component */
 			return NULL;
 	} else {
