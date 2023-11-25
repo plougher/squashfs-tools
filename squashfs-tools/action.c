@@ -3043,10 +3043,11 @@ static struct dir_ent *follow_path(struct dir_info *dir, char *pathname)
 		free(comp);
 		comp = get_comp(&path);
 
-		if(comp != NULL)
-			free(comp);
+		if(comp != NULL) {
 			/* Not a leaf component */
+			free(comp);
 			return NULL;
+		}
 	} else {
 		/* Fully walked pathname, dir_ent contains correct value unless
 		 * we've walked to the parent ("..") in which case we need
