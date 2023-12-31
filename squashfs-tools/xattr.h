@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2013, 2014, 2019, 2021, 2022
+ * Copyright (c) 2010, 2012, 2013, 2014, 2019, 2021, 2022, 2023
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -83,13 +83,20 @@ struct xattr_add {
 extern int generate_xattrs(int, struct xattr_list *);
 
 #ifdef XATTR_SUPPORT
+#ifdef XATTR_OS_SUPPORT
+extern int write_xattr(char *, unsigned int);
+#else
+static inline int write_xattr(char *pathname, unsigned int xattr)
+{
+	return 1;
+}
+#endif
 extern int get_xattrs(int, struct squashfs_super_block *);
 extern int read_xattrs(void *, int type);
 extern long long write_xattrs();
 extern void save_xattrs();
 extern void restore_xattrs();
 extern unsigned int xattr_bytes, total_xattr_bytes;
-extern int write_xattr(char *, unsigned int);
 extern unsigned int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long long *);
 extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern void free_xattr(struct xattr_list *, int);
@@ -223,6 +230,7 @@ static inline int has_xattrs(unsigned int xattr)
 
 #ifdef XATTR_SUPPORT
 #define xattrs_supported() TRUE
+#ifdef XATTR_OS_SUPPORT
 #ifdef XATTR_DEFAULT
 #define NOXOPT_STR
 #define XOPT_STR " (default)"
@@ -231,6 +239,17 @@ static inline int has_xattrs(unsigned int xattr)
 #define NOXOPT_STR " (default)"
 #define XOPT_STR
 #define XATTR_DEF 1
+#endif
+#else
+#ifdef XATTR_DEFAULT
+#define NOXOPT_STR
+#define XOPT_STR " (default - no OS support)"
+#define XATTR_DEF 0
+#else
+#define NOXOPT_STR " (default)"
+#define XOPT_STR " (no OS support)"
+#define XATTR_DEF 1
+#endif
 #endif
 #else
 #define xattrs_supported() FALSE

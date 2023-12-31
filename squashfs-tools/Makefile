@@ -100,12 +100,22 @@ COMP_DEFAULT = gzip
 #  Extended attribute (XATTRs) build options  #
 ###############################################
 #
-# Building XATTR support for Mksquashfs and Unsquashfs
+# Building XATTR support for Squashfs tools.
 #
-# If your C library or build/target environment doesn't support XATTRs then
-# comment out the next line to build Mksquashfs and Unsquashfs without XATTR
-# support
+# If you don't want to read, write or store XATTRs in Squashfs
+# filesystems, then comment out the next definition.  Generally
+# speaking you want to define this option even if your C library
+# or operating system doesn't support XATTRs, because this option
+# contains support to add XATTRs to the Squashfs filesystem
+# on the command line, via actions and input and output them via
+# pseudo-files etc. which is independent of library/OS support.
 XATTR_SUPPORT = 1
+
+# If your C library or operating system doesn't support XATTRs then
+# this definition is the one you should comment out.  Commenting
+# this out will not build code to read XATTRs from the source filesystem
+# or write XATTRs to the target filesystem.
+XATTR_OS_SUPPORT = 1
 
 # Select whether you wish xattrs to be stored by Mksquashfs and extracted
 # by Unsquashfs by default.  If selected users can disable xattr support by
@@ -189,6 +199,7 @@ LZ4_SUPPORT ?= 0
 ZSTD_SUPPORT ?= 0
 COMP_DEFAULT ?= gzip
 XATTR_SUPPORT ?= 1
+XATTR_OS_SUPPORT ?= 1
 XATTR_DEFAULT ?= 1
 REPRODUCIBLE_DEFAULT ?= 1
 USE_PREBUILT_MANPAGES ?= 1
@@ -291,8 +302,14 @@ CFLAGS += -DXATTR_SUPPORT -DXATTR_DEFAULT
 else
 CFLAGS += -DXATTR_SUPPORT
 endif
+ifeq ($(XATTR_OS_SUPPORT),1)
+CFLAGS += -DXATTR_OS_SUPPORT
+MKSQUASHFS_OBJS += xattr.o read_xattrs.o tar_xattr.o pseudo_xattr.o xattr_system.o
+UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o unsquashfs_xattr_system.o
+else
 MKSQUASHFS_OBJS += xattr.o read_xattrs.o tar_xattr.o pseudo_xattr.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
+endif
 endif
 
 ifeq ($(REPRODUCIBLE_DEFAULT),1)
