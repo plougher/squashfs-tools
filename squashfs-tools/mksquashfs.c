@@ -7809,7 +7809,7 @@ int main(int argc, char *argv[])
 	for(i = option_offset; i < argc; i++) {
 		if(strcmp(argv[i], "-ignore-zeros") == 0)
 			ignore_zeros = TRUE;
-		if(strcmp(argv[i], "-one-file-system") == 0)
+		else if(strcmp(argv[i], "-one-file-system") == 0)
 			one_file_system = TRUE;
 		else if(strcmp(argv[i], "-one-file-system-x") == 0)
 			one_file_system = one_file_system_x = TRUE;
