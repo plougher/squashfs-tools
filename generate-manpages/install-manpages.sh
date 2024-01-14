@@ -59,7 +59,8 @@ if [ -z "$source" ]; then
 		error "$0: WARNING: These pages are built with the Makefile defaults, and all"
 		error "$0: WARNING: the compressors configured (except the deprecated lzma).  This may not"
 		error "$0: WARNING: match your build configuration."
-		error -e "\n$0: Set USE_PREBUILT_MANPAGES to "y" in Makefile, to avoid these errors/warnings" 
+		error
+		error "$0: Set USE_PREBUILT_MANPAGES to "y" in Makefile, to avoid these errors/warnings"
 	fi
 	source=../manpages
 fi
