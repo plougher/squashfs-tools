@@ -27,7 +27,7 @@ if [ ! -x $1/unsquashfs ]; then
 fi
 
 # Sanity check, check that the utilities this script depends on, are in PATH
-for i in sed help2man; do
+for i in help2man; do
 	if ! which $i > /dev/null 2>&1; then
 		error "$0: This script needs $i, which is not in your PATH."
 		error "$0: Fix PATH or install before running this script!"
@@ -69,11 +69,11 @@ chmod u+x $tmp/unsquashfs.sh
 # help2man gets confused by the version date returned by -version,
 # and includes it in the version string
 
-sed -i "s/ (.*)$//" $tmp/unsquashfs.version
+${SED} -i "s/ (.*)$//" $tmp/unsquashfs.version
 
 # help2man expects copyright to have an upper-case C ...
 
-sed -i "s/^copyright/Copyright/" $tmp/unsquashfs.version
+${SED} -i "s/^copyright/Copyright/" $tmp/unsquashfs.version
 
 # help2man doesn't pick up the author from the version.  Easiest to add
 # it here.
@@ -83,44 +83,44 @@ print "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/unsquashfs.
 
 # help2man expects "Usage: ", and so rename "SYNTAX:" to "Usage: "
 
-sed -i "s/^SYNTAX:/Usage: /" $tmp/unsquashfs.help
+${SED} -i "s/^SYNTAX:/Usage: /" $tmp/unsquashfs.help
 
 # Man pages expect the options to be in the "Options" section.  So insert
 # Options section after Usage
 
-sed -i "/^Usage/a *OPTIONS*" $tmp/unsquashfs.help
+${SED} -i "/^Usage/a *OPTIONS*" $tmp/unsquashfs.help
 
 # help2man expects options to start in the 2nd column
 
-sed -i "s/^\t-/  -/" $tmp/unsquashfs.help
+${SED} -i "s/^\t-/  -/" $tmp/unsquashfs.help
 
 # Split combined short-form/long-form options into separate short-form,
 # and long form, i.e.
 # -da[ta-queue] <size> becomes
 # -da <size>, -data-queue <size>
 
-sed -i "s/\([^ ][^ \[]*\)\[\([a-z-]*\)\] \(<[a-z-]*>\)/\1 \3, \1\2 \3/" $tmp/unsquashfs.help
-sed -i "s/\([^ ][^ \[]*\)\[\([a-z-]*\)\]/\1, \1\2/" $tmp/unsquashfs.help
+${SED} -i "s/\([^ ][^ \[]*\)\[\([a-z-]*\)\] \(<[a-z-]*>\)/\1 \3, \1\2 \3/" $tmp/unsquashfs.help
+${SED} -i "s/\([^ ][^ \[]*\)\[\([a-z-]*\)\]/\1, \1\2/" $tmp/unsquashfs.help
 
 # help2man expects the options usage to be separated from the
 # option and operands text by at least 2 spaces.
 
-sed -i "s/\t/  /g" $tmp/unsquashfs.help
+${SED} -i "s/\t/  /g" $tmp/unsquashfs.help
 
 # Uppercase the options operands (between < and > ) to make it conform
 # more to man page standards
 
-sed -i "s/<[^>]*>/\U&/g" $tmp/unsquashfs.help
+${SED} -i "s/<[^>]*>/\U&/g" $tmp/unsquashfs.help
 
 # Remove the "<" and ">" around options operands to make it conform
 # more to man page standards
 
-sed -i -e "s/<//g" -e "s/>//g" $tmp/unsquashfs.help
+${SED} -i -e "s/<//g" -e "s/>//g" $tmp/unsquashfs.help
 
 # help2man doesn't deal well with the list of supported compressors.
 # So concatenate them onto one line with commas
 
-sed -i "/^Decompressors available:/ {
+${SED} -i "/^Decompressors available:/ {
 n
 s/^  //
 
@@ -135,7 +135,7 @@ b again
 # Concatenate the options text on to one line.  Add a full stop to the end of
 # the options text
 
-sed -i "/^  -/ {
+${SED} -i "/^  -/ {
 :again
 N
 /\n$/b print
@@ -152,7 +152,7 @@ s/^.*\n//
 
 # Concatenate the exit status text on to one line.
 
-sed -i "/^  [012]/ {
+${SED} -i "/^  [012]/ {
 :again
 N
 /\n$/b print
@@ -168,18 +168,18 @@ s/^.*\n//
 
 # Make Decompressors available header into a manpage section
 
-sed -i "s/\(Decompressors available\):/*\1*/" $tmp/unsquashfs.help
+${SED} -i "s/\(Decompressors available\):/*\1*/" $tmp/unsquashfs.help
 
 # Make Exit status header into a manpage section
 
-sed -i "s/\(Exit status\):/*\1*/" $tmp/unsquashfs.help
+${SED} -i "s/\(Exit status\):/*\1*/" $tmp/unsquashfs.help
 
 # Add reference to manpages for other squashfs-tools programs
-sed -i "s/See also:/See also:\nmksquashfs(1), sqfstar(1), sqfscat(1)\n/" $tmp/unsquashfs.help
+${SED} -i "s/See also:/See also:\nmksquashfs(1), sqfstar(1), sqfscat(1)\n/" $tmp/unsquashfs.help
 
 # Make See also header into a manpage section
 
-sed -i "s/\(See also\):/*\1*/" $tmp/unsquashfs.help
+${SED} -i "s/\(See also\):/*\1*/" $tmp/unsquashfs.help
 
 if ! help2man -Ni unsquashfs.h2m -o $2 $tmp/unsquashfs.sh; then
 	error "$0: help2man returned error.  Aborting"
