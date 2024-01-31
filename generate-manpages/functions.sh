@@ -45,7 +45,6 @@ check_sed () {
 	return 1
 }
 
-
 # Sanity check, check that the non-builtin echo exists and is in PATH
 if ! which echo > /dev/null 2>&1; then
 	echo "$0: This script needs the non-builtin echo, which is not in your PATH." >&2
@@ -58,12 +57,24 @@ ECHO=$(which echo)
 # The manpage generation scripts rely on sed being GNU sed.  Check whether
 # 'sed' looks like GNU sed, and if not try gsed which is often what GNU sed is
 # named on BSD systems.
-if check_sed sed; then
+#
+# If SED has been already defined on the command line then use that, but,
+# check that it looks like GNU sed too.
+if [ -n "${SED}" ]; then
+	if ! check_sed "${SED}"; then
+		error "$0: SED set to ${SED}, but this doesn't seem to be GNU sed!"
+		error "$0: Fix variable or install GNU sed before running this script!"
+		exit 1
+	fi
+elif check_sed sed; then
 	SED=sed;
 elif check_sed gsed; then
 	SED=gsed
 else
 	error "$0: You don't seem to have GNU sed installed, either as sed or gsed."
-	error "$0: Fix PATH or install before running this script!"
+	error "$0: Fix PATH or install GNU sed before running this script!"
+	error "$0: If GNU sed is not named sed or gsed on your system"
+	error "$0: use SED=xxx on command line"
+
 	exit 1
 fi
