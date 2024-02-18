@@ -17,8 +17,8 @@ needed.
 .TP
 mksquashfs DIRECTORY IMAGE.SQFS
 Create a Squashfs filesystem from the contents of DIRECTORY, writing the output
-to IMAGE.SQSH.  Mksquashfs will use the default compressor (normally gzip), and
-block size of 128 Kbytes.
+to IMAGE.SQFS.  Mksquashfs will use the default compressor (normally gzip), and
+a block size of 128 Kbytes.
 .TP
 mksquashfs DIRECTORY FILE1 FILE2 IMAGE.SQFS
 Create a Squashfs filesystem containing DIRECTORY and FILE1 and FILE2.  If
@@ -118,25 +118,25 @@ with a trailing newline character (012 octal).
 
 .SS Using Actions to not compress, change attributes etc.
 .TP
-mksquashfs DIRECTORY IMAGE.SQSH -action "uncompressed @ (name(*.jpg) || name(*.mpg) ) || (name(*.img) && filesize(+1G))"
+mksquashfs DIRECTORY IMAGE.SQFS -action "uncompressed @ (name(*.jpg) || name(*.mpg) ) || (name(*.img) && filesize(+1G))"
 Specify that any files matching the wildcards "*.jpg" and "*.mpg" should not be
 compressed.  Additionally, it also specifies any files matching the wildcard
 "*.img" and are larger than 1 Gigabyte should be uncompressed too.  This shows
 test operators can be combined with logical expressions.
 .TP
-mksquashfs DIRECTORY IMAGE.SQSH -action "chmod(o+r)@! perm(o+r)"
+mksquashfs DIRECTORY IMAGE.SQFS -action "chmod(o+r)@! perm(o+r)"
 If any files within DIRECTORY are not readable by "others", then make them
 readable by others in the Squashfs filesystem.
 .TP
-mksquashfs DIRECTORY IMAGE.SQSH -action "uid(phillip)@! perm(o+r)"
+mksquashfs DIRECTORY IMAGE.SQFS -action "uid(phillip)@! perm(o+r)"
 As previous, match on any files which are not readable by "others", but, in
 this case change the owner of the file to "phillip" in the Squashfs filesystem.
 .TP
-mksquashfs DIRECTORY IMAGE.SQSH -action "prune @ type(l) && ! exists"
+mksquashfs DIRECTORY IMAGE.SQFS -action "prune @ type(l) && ! exists"
 Delete any symbolic link within DIRECTORY which points outside of DIRECTORY,
 i.e. will be unresolvable in the Squashfs filesystem.
 .TP
-mksquashfs DIRECTORY IMAGE.SQSH -action "exclude @ depth(3)"
+mksquashfs DIRECTORY IMAGE.SQFS -action "exclude @ depth(3)"
 Create a Squashfs filesystem containing the two top most levels (contents of
 DIRECTORY and immediate sub-directories), and exclude anything at level 3 or
 below.
