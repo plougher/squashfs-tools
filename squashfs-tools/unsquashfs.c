@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2017, 2019, 2020, 2021, 2022, 2023
+ * 2012, 2013, 2014, 2017, 2019, 2020, 2021, 2022, 2023, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -3957,7 +3957,11 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\"now\", \"last\n\t\t\t\tweek\", or \"Wed Feb 15 ");
 	fprintf(stream, "21:02:39 GMT 2023\"\n");
 	fprintf(stream, "\t-cat\t\t\tcat the files on the command line to stdout\n");
-	fprintf(stream, "\t-f[orce]\t\tif file already exists then overwrite\n");
+	fprintf(stream, "\t-f[orce]\t\tif destination directory already ");
+	fprintf(stream, "exists, descend\n\t\t\t\tinto it and any ");
+	fprintf(stream, "sub-directories, and unlink\n\t\t\t\t(delete) files ");
+	fprintf(stream, "if they already exist before\n\t\t\t\textracting ");
+	fprintf(stream, "to them\n");
 	fprintf(stream, "\t-pf <file>\t\toutput a pseudo file equivalent ");
 	fprintf(stream, "of the input\n\t\t\t\tSquashfs filesystem, use - for stdout\n");
 	fprintf(stream, "\nFilesystem information and listing options:\n");
