@@ -33,8 +33,8 @@ cd $1/generate-manpages
 # built squashfs-tools, incorporating build choices (the
 # compressors built, default compressors, XATTR support etc).
 #
-# If help2man doesn't exist, or the manpage generation fails, use
-# the pre-built manpages.
+# Use the pre-built manpages if we've been told to use them ($3 = y), or
+# if help2man doesn't exist, or the manpage generation fails.
 
 if [ $3 = "y" ]; then
 	print "$0: Using pre-built manpages"
