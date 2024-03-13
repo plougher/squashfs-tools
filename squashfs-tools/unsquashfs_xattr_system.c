@@ -22,15 +22,11 @@
  * unsquashfs_xattr_system.c
  */
 
-#include "unsquashfs.h"
-#include "xattr.h"
-
 #include <sys/xattr.h>
 
-#ifdef XATTR_NOFOLLOW /* Apple's xattrs */
-	#define lsetxattr(path_, name_, val_, sz_, flags_) \
-		setxattr(path_, name_, val_, sz_, 0, flags_ | XATTR_NOFOLLOW)
-#endif
+#include "unsquashfs.h"
+#include "xattr.h"
+#include "xattr_compat.h"
 
 #define NOSPACE_MAX 10
 

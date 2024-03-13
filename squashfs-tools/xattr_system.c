@@ -39,13 +39,7 @@
 #include "pseudo.h"
 #include "tar.h"
 #include "action.h"
-
-#ifdef XATTR_NOFOLLOW /* Apple's xattrs */
-	#define llistxattr(path_, buf_, sz_) \
-		listxattr(path_, buf_, sz_, XATTR_NOFOLLOW)
-	#define lgetxattr(path_, name_, val_, sz_) \
-		getxattr(path_, name_, val_, sz_, 0, XATTR_NOFOLLOW)
-#endif
+#include "xattr_compat.h"
 
 extern regex_t *xattr_exclude_preg;
 extern regex_t *xattr_include_preg;
