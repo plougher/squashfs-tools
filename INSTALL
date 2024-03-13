@@ -33,12 +33,12 @@ By default the Makefile is configured to build Mksquashfs and Unsquashfs
 with GZIP suppport.  Read the Makefile in squashfs-tools for instructions on
 building LZO, LZ4, XZ and ZSTD compression support.
 
-2.2 Extended attribute support
+2.2 Extended attribute support (XATTRs)
 
 By default the Makefile is configured to build Mksquashfs and Unsquashfs
 with extended attribute support.  Read the Makefile in squashfs-tools for
-instructions on how to disable extended attribute support, if not supported
-by your distribution/C library, or if it is not needed.
+instructions on how to disable operating system support for extended attributes
+if not supported by your system, or completely disable them if it is not needed.
 
 2.3 Reproducible builds
 
