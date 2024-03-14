@@ -1,5 +1,5 @@
-#ifndef XATTR_COMPAT
-#define XATTR_COMPAT
+#ifndef XATTR_COMPAT_H
+#define XATTR_COMPAT_H
 /*
  * Squashfs
  *
