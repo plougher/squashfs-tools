@@ -1,5 +1,5 @@
-#ifndef FNMATCH_COMPAT
-#define FNMATCH_COMPAT
+#ifndef FNMATCH_COMPAT_H
+#define FNMATCH_COMPAT_H
 /*
  * Squashfs
  *
