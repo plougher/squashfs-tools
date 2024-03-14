@@ -1,3 +1,5 @@
+#ifndef DATE_H
+#define DATE_H
 /*
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
@@ -26,3 +28,4 @@ extern long long read_bytes(int, void *, long long);
 
 #define TRUE 1
 #define FALSE 0
+#endif
