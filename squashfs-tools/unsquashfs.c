@@ -31,6 +31,7 @@
 #include "unsquashfs_info.h"
 #include "stdarg.h"
 #include "fnmatch_compat.h"
+#include "time_compat.h"
 
 #ifdef __linux__
 #include <sched.h>
@@ -1231,16 +1232,7 @@ int create_inode(char *pathname, struct inode *i)
 			file_count ++;
 			break;
 		case SQUASHFS_SYMLINK_TYPE:
-		case SQUASHFS_LSYMLINK_TYPE: {
-#ifdef __OpenBSD__
-			struct timespec times[2] = {
-#else
-			struct timeval times[2] = {
-#endif
-				{ i->time, 0 },
-				{ i->time, 0 }
-			};
-
+		case SQUASHFS_LSYMLINK_TYPE:
 			TRACE("create_inode: symlink, symlink_size %lld\n",
 				i->data);
 
@@ -1255,11 +1247,7 @@ int create_inode(char *pathname, struct inode *i)
 				goto failed;
 			}
 
-#ifdef __OpenBSD__
-			res = utimensat(AT_FDCWD, pathname, times, AT_SYMLINK_NOFOLLOW);
-#else
-			res = lutimes(pathname, times);
-#endif
+			res = set_timestamp(pathname, i);
 			if(res == -1) {
 				EXIT_UNSQUASH_STRICT("create_inode: failed to"
 					" set time on %s, because %s\n",
@@ -1286,7 +1274,6 @@ int create_inode(char *pathname, struct inode *i)
 
 			sym_count ++;
 			break;
-		}
  		case SQUASHFS_BLKDEV_TYPE:
 	 	case SQUASHFS_CHRDEV_TYPE:
  		case SQUASHFS_LBLKDEV_TYPE:
