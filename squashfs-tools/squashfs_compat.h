@@ -1,5 +1,5 @@
-#ifndef SQUASHFS_COMPAT
-#define SQUASHFS_COMPAT
+#ifndef SQUASHFS_COMPAT_H
+#define SQUASHFS_COMPAT_H
 /*
  * Squashfs
  *
