@@ -52,9 +52,6 @@
 #ifdef __linux__
 #include <sys/sysinfo.h>
 #include <sys/sysmacros.h>
-#include <sched.h>
-#else
-#include <sys/sysctl.h>
 #endif
 
 #include "squashfs_fs.h"
@@ -75,6 +72,7 @@
 #include "fnmatch_compat.h"
 #include "tar.h"
 #include "merge_sort.h"
+#include "nprocessors_compat.h"
 
 /* Compression options */
 int noF = FALSE;
@@ -5272,34 +5270,8 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) != 0)
 		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
 
-	if(processors == -1) {
-#ifdef __linux__
-		cpu_set_t cpu_set;
-		CPU_ZERO(&cpu_set);
-
-		if(sched_getaffinity(0, sizeof cpu_set, &cpu_set) == -1)
-			processors = sysconf(_SC_NPROCESSORS_ONLN);
-		else
-			processors = CPU_COUNT(&cpu_set);
-#else
-		int mib[2];
-		size_t len = sizeof(processors);
-
-		mib[0] = CTL_HW;
-#ifdef HW_AVAILCPU
-		mib[1] = HW_AVAILCPU;
-#else
-		mib[1] = HW_NCPU;
-#endif
-
-		if(sysctl(mib, 2, &processors, &len, NULL, 0) == -1) {
-			ERROR_START("Failed to get number of available "
-				"processors.");
-			ERROR_EXIT("  Defaulting to 1\n");
-			processors = 1;
-		}
-#endif
-	}
+	if(processors == -1)
+		processors = get_nprocessors();
 
 	if(multiply_overflow(processors, 3) ||
 			multiply_overflow(processors * 3, sizeof(pthread_t)))
