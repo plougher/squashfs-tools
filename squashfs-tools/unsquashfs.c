@@ -32,13 +32,11 @@
 #include "stdarg.h"
 #include "fnmatch_compat.h"
 #include "time_compat.h"
+#include "nprocessors_compat.h"
 
 #ifdef __linux__
-#include <sched.h>
 #include <sys/sysinfo.h>
 #include <sys/sysmacros.h>
-#else
-#include <sys/sysctl.h>
 #endif
 
 #include <sys/types.h>
@@ -2761,33 +2759,8 @@ void initialise_threads(int fragment_buffer_size, int data_buffer_size, int cat_
 			EXIT_UNSQUASH("Failed to set signal mask in initialise_threads\n");
 	}
 
-	if(processors == -1) {
-#ifdef __linux__
-		cpu_set_t cpu_set;
-		CPU_ZERO(&cpu_set);
-
-		if(sched_getaffinity(0, sizeof cpu_set, &cpu_set) == -1)
-			processors = sysconf(_SC_NPROCESSORS_ONLN);
-		else
-			processors = CPU_COUNT(&cpu_set);
-#else
-		int mib[2];
-		size_t len = sizeof(processors);
-
-		mib[0] = CTL_HW;
-#ifdef HW_AVAILCPU
-		mib[1] = HW_AVAILCPU;
-#else
-		mib[1] = HW_NCPU;
-#endif
-
-		if(sysctl(mib, 2, &processors, &len, NULL, 0) == -1) {
-			ERROR("Failed to get number of available processors.  "
-				"Defaulting to 1\n");
-			processors = 1;
-		}
-#endif
-	}
+	if(processors == -1)
+		processors = get_nprocessors();
 
 	if(add_overflow(processors, 3) ||
 			multiply_overflow(processors + 3, sizeof(pthread_t)))
