@@ -1,10 +1,10 @@
                            MKSQUASHFS ACTIONS
                            ==================
 
-The new Mksquashfs Actions code allows an "action" to be executed
-on a file if one or more "tests" succeed.  If you're familiar
-with the "find" command, then an action is similar to "-print",
-and a test is similar to say "-name" or "-type".
+The Mksquashfs Actions code allows an "action" to be executed on a
+file if one or more "tests" succeed.  If you're familiar with the
+"find" command, then an action is similar to "-print", and a test is
+similar to say "-name" or "-type".
 
 Actions add greater flexibility when building images from sources.
 They can be used to optimise compression, I/O performance, and they
@@ -98,7 +98,7 @@ But, if typed on the command line, it will need to be:
 
 Tests can be combined with the logical operators && (and), || (or) and
 can be negated with the unary ! (not).  Expressions thus formed can also
-be bracketed with "(" and ")", to create nested expressions.
+be bracketed with "(" and ")" to create nested expressions.
 
 Operators do not have precedence and are evaluated strictly left to
 right.  To enforce precedence use brackets, e.g.
@@ -249,15 +249,15 @@ Return TRUE if the size of the file is within the range [<minimum>, <maximum>]
 inclusive.  Returns FALSE on anything not a file.
 
 4.18.1 tailsize_range(minimum, maximum)
--------------------------------------
+---------------------------------------
 
-Return TRUE if the size of tail end of the file is within the range
+Return TRUE if the size of the file tail-end is within the range
 [<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a file.
 
 4.19 dirsize_range(minimum, maximum)
 ------------------------------------
 
-Return TRUE if the size of the directory is within the rang
+Return TRUE if the size of the directory is within the range
 [<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a directory.
 
 4.20 size_range(minimum, maximum)
@@ -568,7 +568,7 @@ certain files into fragments.
 
 Tell Mksquashfs to use tail-end packing for the files matching the
 expression.  Normally Mksquashfs does not pack tail-ends into fragments,
-as it may affect I/O performance because it may produce more disk head
+as it may reduce I/O performance because it may produce more disk head
 seeking.
 
 But tail-end packing can increase compression.  Additionally with modern
