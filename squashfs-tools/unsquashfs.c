@@ -35,7 +35,6 @@
 #include "nprocessors_compat.h"
 
 #ifdef __linux__
-#include <sys/sysinfo.h>
 #include <sys/sysmacros.h>
 #endif
 
