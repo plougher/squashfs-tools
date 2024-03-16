@@ -37,7 +37,6 @@ static inline int get_physical_memory()
 	 */
 	long long num_pages = sysconf(_SC_PHYS_PAGES);
 	long long page_size = sysconf(_SC_PAGESIZE);
-	int phys_mem;
 
 	if(num_pages == -1 || page_size == -1) {
 		struct sysinfo sys;
@@ -50,13 +49,7 @@ static inline int get_physical_memory()
 		page_size = sys.mem_unit;
 	}
 
-	phys_mem = num_pages * page_size >> 20;
-
-	if(phys_mem < SQUASHFS_LOWMEM)
-		BAD_ERROR("Mksquashfs requires more physical memory than is "
-			"available!\n");
-
-	return phys_mem;
+	return num_pages * page_size >> 20;
 }
 #else
 static inline int get_physical_memory()
@@ -67,18 +60,11 @@ static inline int get_physical_memory()
 	 */
 	long long num_pages = sysconf(_SC_PHYS_PAGES);
 	long long page_size = sysconf(_SC_PAGESIZE);
-	int phys_mem;
 
 	if(num_pages == -1 || page_size == -1)
 		return 0;
-
-	phys_mem = num_pages * page_size >> 20;
-
-	if(phys_mem < SQUASHFS_LOWMEM)
-		BAD_ERROR("Mksquashfs requires more physical memory than is "
-			"available!\n");
-
-	return phys_mem;
+	else
+		return phys_mem = num_pages * page_size >> 20;
 }
 #endif
 #endif

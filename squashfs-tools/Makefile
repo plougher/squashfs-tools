@@ -221,7 +221,7 @@ INCLUDEDIR = -I.
 
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
-	caches-queues-lists.o reader.o tar.o date.o
+	caches-queues-lists.o reader.o tar.o date.o memory.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o unsquash-123.o unsquash-34.o unsquash-1234.o unsquash-12.o \
@@ -439,6 +439,8 @@ tar.o: tar.h
 tar_xattr.o: tar.h xattr.h
 
 date.o: date.h error.h
+
+memory.o: error.h memory_compat.h memory.h
 
 gzip_wrapper.o: gzip_wrapper.c squashfs_fs.h gzip_wrapper.h compressor.h
 
