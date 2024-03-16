@@ -72,6 +72,7 @@
 #include "tar.h"
 #include "merge_sort.h"
 #include "nprocessors_compat.h"
+#include "memory_compat.h"
 
 /* Compression options */
 int noF = FALSE;
@@ -5973,42 +5974,6 @@ static int parse_mode(char *arg, mode_t *res)
 
 	*res = (mode_t) number;
 	return 1;
-}
-
-
-static int get_physical_memory()
-{
-	/*
-	 * Long longs are used here because with PAE, a 32-bit
-	 * machine can have more than 4GB of physical memory
-	 *
-	 * sysconf(_SC_PHYS_PAGES) relies on /proc being mounted.
-	 * If it fails use sysinfo, if that fails return 0
-	 */
-	long long num_pages = sysconf(_SC_PHYS_PAGES);
-	long long page_size = sysconf(_SC_PAGESIZE);
-	int phys_mem;
-
-#ifdef __linux__
-	if(num_pages == -1 || page_size == -1) {
-		struct sysinfo sys;
-		int res = sysinfo(&sys);
-
-		if(res == -1)
-			return 0;
-
-		num_pages = sys.totalram;
-		page_size = sys.mem_unit;
-	}
-#endif
-
-	phys_mem = num_pages * page_size >> 20;
-
-	if(phys_mem < SQUASHFS_LOWMEM)
-		BAD_ERROR("Mksquashfs requires more physical memory than is "
-			"available!\n");
-
-	return phys_mem;
 }
 
 
