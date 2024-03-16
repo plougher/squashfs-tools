@@ -176,6 +176,10 @@ int nopad = FALSE;
 /* Should Mksquashfs treat normally ignored errors as fatal? */
 int exit_on_error = FALSE;
 
+/* Should Mksquashfs ignore the -mem and -mem-options because the
+ * amount of system memory cannot be obtained? */
+int mem_options_disabled = FALSE;
+
 /* Is filesystem stored at an offset from the start of the block device/file? */
 long long start_offset = 0;
 
@@ -5994,9 +5998,9 @@ static int get_default_phys_mem()
 
 		ERROR("Warning: Cannot get size of physical memory, probably "
 				"because /proc is missing.\n");
-		ERROR("Warning: Defaulting to minimal use of %d Mbytes, use "
-				"-mem to set a better value,\n", mem);
-		ERROR("Warning: or fix /proc.\n");
+		ERROR("Warning: Defaulting to minimal use of %d Mbytes, fix "
+				"/proc to get a better value,\n", mem);
+		mem_options_disabled = TRUE;
 	} else if(mem < SQUASHFS_LOWMEM)
                 BAD_ERROR("Mksquashfs requires more physical memory than is available!\n");
 	else
@@ -7061,6 +7065,12 @@ print_sqfstar_compressor_options:
 		} else if(strcmp(argv[i], "-mem") == 0) {
 			long long number;
 
+			if(mem_options_disabled) {
+				ERROR("Ignoring -mem option because amount of "
+					"system memory unknown!\n)");
+				continue;
+			}
+
 			if((++i == dest_index) ||
 					!parse_numberll(argv[i], &number, 1)) {
 				ERROR("%s: -mem missing or invalid mem size\n",
@@ -7089,6 +7099,12 @@ print_sqfstar_compressor_options:
 		} else if(strcmp(argv[i], "-mem-percent") == 0) {
 			int percent, phys_mem;
 
+			if(mem_options_disabled) {
+				ERROR("Ignoring -mem-percent option because amount of "
+					"system memory unknown!\n)");
+				continue;
+			}
+
 			/*
 			 * Percentage of 75% and larger is dealt with later.
 			 * In the same way a fixed mem size if more than 75%
@@ -7107,7 +7123,7 @@ print_sqfstar_compressor_options:
 
 			if(phys_mem == 0) {
 				ERROR("%s: -mem-percent unable to get physical "
-					"memory, use -mem instead\n", argv[0]);
+					"memory\n", argv[0]);
 				exit(1);
 			}
 
@@ -8071,6 +8087,12 @@ print_compressor_options:
 		} else if(strcmp(argv[i], "-mem") == 0) {
 			long long number;
 
+			if(mem_options_disabled) {
+				ERROR("Ignoring -mem option because amount of "
+					"system memory unknown!\n)");
+				continue;
+			}
+
 			if((++i == argc) ||
 					!parse_numberll(argv[i], &number, 1)) {
 				ERROR("%s: -mem missing or invalid mem size\n",
@@ -8099,6 +8121,11 @@ print_compressor_options:
 		} else if(strcmp(argv[i], "-mem-percent") == 0) {
 			int percent, phys_mem;
 
+			if(mem_options_disabled) {
+				ERROR("Ignoring -mem-percent option because amount of "
+					"system memory unknown!\n)");
+				continue;
+			}
 			/*
 			 * Percentage of 75% and larger is dealt with later.
 			 * In the same way a fixed mem size if more than 75%
@@ -8117,7 +8144,7 @@ print_compressor_options:
 
 			if(phys_mem == 0) {
 				ERROR("%s: -mem-percent unable to get physical "
-					"memory, use -mem instead\n", argv[0]);
+					"memory\n", argv[0]);
 				exit(1);
 			}
 
