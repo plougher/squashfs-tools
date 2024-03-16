@@ -5227,9 +5227,11 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 		BAD_ERROR("Queue sizes rediculously too large\n");
 	total_mem += fwriteq;
 
-	res = check_usable_phys_mem(total_mem);
-	if(res != TRUE)
-		EXIT_MKSQUASHFS();
+	if(!mem_options_disabled) {
+		res = check_usable_phys_mem(total_mem);
+		if(res != TRUE)
+			EXIT_MKSQUASHFS();
+	}
 
 	/*
 	 * convert from queue size in Mbytes to queue size in
