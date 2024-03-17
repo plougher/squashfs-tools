@@ -41,9 +41,14 @@ int check_usable_phys_mem(int total_mem)
 	 */
 	int mem = get_physical_memory();
 
+	if(mem == 0) {
+		ERROR("FATAL_ERROR: get_physical_memory() failed to get available system memory\n");
+		return FALSE;
+	}
+
 	mem = (mem >> 1) + (mem >> 2); /* 75% */
 
-	if(total_mem > mem && mem) {
+	if(total_mem > mem) {
 		ERROR("Total memory requested is more than 75%% of physical "
 						"memory.\n");
 		ERROR("Mksquashfs uses memory to cache data from disk to "
