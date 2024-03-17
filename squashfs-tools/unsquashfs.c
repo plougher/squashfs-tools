@@ -3830,6 +3830,9 @@ static void print_cat_options(FILE *stream, char *name)
 	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
 	fprintf(stream, "By default will use\n");
 	fprintf(stream, "\t\t\t\tthe number of processors available\n");
+	fprintf(stream, "\t-mem <size>\t\tuse <size> physical memory for ");
+	fprintf(stream, "caches.  Use K, M\n\t\t\t\tor G to specify Kbytes,");
+	fprintf(stream, " Mbytes or Gbytes\n\t\t\t\trespectively\n");
 	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.\n");
 	fprintf(stream, "\t\t\t\tOptionally a suffix of K, M or G can be given to\n");
 	fprintf(stream, "\t\t\t\tspecify Kbytes, Mbytes or Gbytes respectively\n");
@@ -4084,6 +4087,33 @@ int parse_cat_options(int argc, char *argv[])
 					argv[0]);
 				exit(1);
 			}
+		} else if(strcmp(argv[i], "-mem") == 0) {
+			long long number;
+
+			if((++i == argc) ||
+					!parse_numberll(argv[i], &number, 1)) {
+				ERROR("%s: -mem missing or invalid mem size\n",
+					 argv[0]);
+				exit(1);
+			}
+
+			/*
+			 * convert from bytes to Mbytes, ensuring the value
+			 * does not overflow a signed int
+			 */
+			if(number >= (1LL << 51)) {
+				ERROR("%s: -mem invalid mem size\n", argv[0]);
+				exit(1);
+			}
+
+			number = number / 1048576;
+			if(number < 2) {
+				ERROR("%s: -mem should be 2 Mbytes or "
+					"larger\n", argv[0]);
+				exit(1);
+			}
+			data_buffer_size = number / 2;
+			fragment_buffer_size = number / 2;
 		} else if(strcmp(argv[i], "-data-queue") == 0 ||
 					 strcmp(argv[i], "-da") == 0) {
 			if((++i == argc) ||
