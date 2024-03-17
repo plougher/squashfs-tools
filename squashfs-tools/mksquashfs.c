@@ -5197,7 +5197,7 @@ static void add_old_root_entry(char *name, squashfs_inode inode,
 
 
 static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
-	int freelst, char *destination_file)
+	int freelst, char *destination_file, char *command)
 {
 	int i, res;
 	sigset_t sigmask, old_mask;
@@ -5228,7 +5228,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	total_mem += fwriteq;
 
 	if(!mem_options_disabled) {
-		res = check_usable_phys_mem(total_mem);
+		res = check_usable_phys_mem(total_mem, command);
 		if(res != TRUE)
 			EXIT_MKSQUASHFS();
 	}
@@ -7458,7 +7458,7 @@ print_sqfstar_compressor_options:
 		add_exclude(argv[i]);
 
 	initialise_threads(readq, fragq, bwriteq, fwriteq, !appending,
-		destination_file);
+		destination_file, "Sqfstar");
 
 	res = compressor_init(comp, &stream, SQUASHFS_METADATA_SIZE, 0);
 	if(res)
@@ -8609,7 +8609,7 @@ print_compressor_options:
 	}
 
 	initialise_threads(readq, fragq, bwriteq, fwriteq, !appending,
-		destination_file);
+		destination_file, "Mksquashfs");
 
 	res = compressor_init(comp, &stream, SQUASHFS_METADATA_SIZE, 0);
 	if(res)

@@ -27,7 +27,7 @@
 #include "memory_compat.h"
 #include "memory.h"
 
-int check_usable_phys_mem(int total_mem)
+int check_usable_phys_mem(int total_mem, char *name)
 {
 	/*
 	 * We want to allow users to use as much of their physical
@@ -51,8 +51,8 @@ int check_usable_phys_mem(int total_mem)
 	if(total_mem > mem) {
 		ERROR("Total memory requested is more than 75%% of physical "
 						"memory.\n");
-		ERROR("Mksquashfs uses memory to cache data from disk to "
-						"optimise performance.\n");
+		ERROR("%s uses memory to cache data from disk to "
+					"optimise performance.\n", name);
 		ERROR("It is pointless to ask it to use more than this amount "
 						"of memory, as this\n");
 		ERROR("causes thrashing and it is thus self-defeating.\n");

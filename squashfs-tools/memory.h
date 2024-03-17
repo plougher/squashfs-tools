@@ -23,7 +23,7 @@
  * memory.h
  */
 
-extern int check_usable_phys_mem(int total_mem);
+extern int check_usable_phys_mem(int total_mem, char *name);
 
 #define TRUE 1
 #define FALSE 0
