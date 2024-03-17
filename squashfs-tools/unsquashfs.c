@@ -33,6 +33,7 @@
 #include "fnmatch_compat.h"
 #include "time_compat.h"
 #include "nprocessors_compat.h"
+#include "memory.h"
 
 #ifdef __linux__
 #include <sys/sysmacros.h>
@@ -4526,6 +4527,17 @@ int main(int argc, char *argv[])
 	if(block_size != (1 << block_log))
 		EXIT_UNSQUASH("Block size and block_log do not match."
 			"  File system is corrupt.\n");
+
+	/*
+	 * Check the requested queue sizes do not exceed available
+	 * system memory
+	 */
+	if(add_overflow(data_buffer_size, fragment_buffer_size))
+		EXIT_UNSQUASH("Combined Data and Fragment queue sizes are too large\n");
+
+	res = check_usable_phys_mem(data_buffer_size + fragment_buffer_size, command);
+	if(res == FALSE)
+		exit(1);
 
 	/*
 	 * convert from queue size in Mbytes to queue size in
