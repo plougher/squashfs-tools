@@ -3842,10 +3842,6 @@ static void print_cat_options(FILE *stream, char *name)
 	fprintf(stream, "\t-st[rict-errors]\ttreat all errors as fatal\n");
 	fprintf(stream, "\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on ");
 	fprintf(stream, "non-fatal\n\t\t\t\terrors\n");
-	fprintf(stream, "\t-da[ta-queue] <size>\tset data queue to <size> Mbytes.  ");
-	fprintf(stream, "Default %d\n\t\t\t\tMbytes\n", DATA_BUFFER_DEFAULT);
-	fprintf(stream, "\t-fr[ag-queue] <size>\tset fragment queue to <size> Mbytes.  ");
-	fprintf(stream, "Default\n\t\t\t\t%d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
 	fprintf(stream, "\t-no-wild[cards]\t\tdo not use wildcard matching in filenames\n");
 	fprintf(stream, "\t-r[egex]\t\ttreat filenames as POSIX regular ");
 	fprintf(stream, "expressions\n");
