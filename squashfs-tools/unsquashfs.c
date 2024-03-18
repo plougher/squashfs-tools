@@ -4595,7 +4595,8 @@ int main(int argc, char *argv[])
 	if(add_overflow(data_buffer_size, fragment_buffer_size))
 		EXIT_UNSQUASH("Combined Data and Fragment queue sizes are too large\n");
 
-	res = check_usable_phys_mem(data_buffer_size + fragment_buffer_size, command);
+	res = check_usable_phys_mem(data_buffer_size + fragment_buffer_size,
+		strcmp(command, "sqfscat") == 0 ? "Sqfscat" : "Unsquashfs");
 	if(res == FALSE)
 		exit(1);
 
