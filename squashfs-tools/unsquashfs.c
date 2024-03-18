@@ -3985,12 +3985,6 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-st[rict-errors]\ttreat all errors as fatal\n");
 	fprintf(stream, "\t-no-exit[-code]\t\tdo not set exit code (to ");
 	fprintf(stream, "nonzero) on non-fatal\n\t\t\t\terrors\n");
-	fprintf(stream, "\t-da[ta-queue] <size>\tset data queue to <size> ");
-	fprintf(stream, "Mbytes.  Default ");
-	fprintf(stream, "%d\n\t\t\t\tMbytes\n", DATA_BUFFER_DEFAULT);
-	fprintf(stream, "\t-fr[ag-queue] <size>\tset fragment queue to ");
-	fprintf(stream, "<size> Mbytes.  Default\n\t\t\t\t");
-	fprintf(stream, "%d Mbytes\n", FRAGMENT_BUFFER_DEFAULT);
 	fprintf(stream, "\nMiscellaneous options:\n");
 	fprintf(stream, "\t-h[elp]\t\t\toutput this options text to stdout\n");
 	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  ");
