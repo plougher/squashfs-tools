@@ -3832,7 +3832,7 @@ static void print_cat_options(FILE *stream, char *name)
 	fprintf(stream, "\t\t\t\tthe number of processors available\n");
 	fprintf(stream, "\t-mem <size>\t\tuse <size> physical memory for ");
 	fprintf(stream, "caches.  Use K, M\n\t\t\t\tor G to specify Kbytes,");
-	fprintf(stream, " Mbytes or Gbytes\n\t\t\t\trespectively\n");
+	fprintf(stream, " Mbytes or Gbytes\n\t\t\t\trespectively.  Default 512 Mbytes\n");
 	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.\n");
 	fprintf(stream, "\t\t\t\tOptionally a suffix of K, M or G can be given to\n");
 	fprintf(stream, "\t\t\t\tspecify Kbytes, Mbytes or Gbytes respectively\n");
@@ -3969,7 +3969,7 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t\t\t\tthe number of processors available\n");
 	fprintf(stream, "\t-mem <size>\t\tuse <size> physical memory for ");
 	fprintf(stream, "caches.  Use K, M\n\t\t\t\tor G to specify Kbytes,");
-	fprintf(stream, " Mbytes or Gbytes\n\t\t\t\trespectively\n");
+	fprintf(stream, " Mbytes or Gbytes\n\t\t\t\trespectively.  Default 512 Mbytes\n");
 	fprintf(stream, "\t-q[uiet]\t\tno verbose output\n");
 	fprintf(stream, "\t-n[o-progress]\t\tdo not display the progress ");
 	fprintf(stream, "bar\n");
