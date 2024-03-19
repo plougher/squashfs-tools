@@ -33,6 +33,7 @@
 #include "fnmatch_compat.h"
 #include "time_compat.h"
 #include "nprocessors_compat.h"
+#include "memory_compat.h"
 #include "memory.h"
 
 #ifdef __linux__
@@ -3970,6 +3971,8 @@ static void print_options(FILE *stream, char *name)
 	fprintf(stream, "\t-mem <size>\t\tuse <size> physical memory for ");
 	fprintf(stream, "caches.  Use K, M\n\t\t\t\tor G to specify Kbytes,");
 	fprintf(stream, " Mbytes or Gbytes\n\t\t\t\trespectively.  Default 512 Mbytes\n");
+	fprintf(stream, "\t-mem-percent <percent>\tuse <percent> physical ");
+	fprintf(stream, "memory for caches.\n");
 	fprintf(stream, "\t-q[uiet]\t\tno verbose output\n");
 	fprintf(stream, "\t-n[o-progress]\t\tdo not display the progress ");
 	fprintf(stream, "bar\n");
@@ -4350,6 +4353,47 @@ int parse_options(int argc, char *argv[])
 			}
 			data_buffer_size = number / 2;
 			fragment_buffer_size = number / 2;
+		} else if(strcmp(argv[i], "-mem-percent") == 0) {
+			int percent, phys_mem;
+
+			/*
+			 * Percentage of 75% and larger is dealt with later.
+			 * In the same way a fixed mem size if more than 75%
+			 * of memory is dealt with later.
+			 */
+			if((++i == argc) ||
+					!parse_number(argv[i], &percent) ||
+					(percent < 1)) {
+				ERROR("%s: -mem-percent missing or invalid "
+					"percentage: it should be 1 - 75%\n",
+					 argv[0]);
+				exit(1);
+			}
+
+			phys_mem = get_physical_memory();
+
+			if(phys_mem == 0) {
+				ERROR("%s: -mem-percent unable to get physical "
+					"memory\n", argv[0]);
+				exit(1);
+			}
+
+			if(multiply_overflow(phys_mem, percent)) {
+				ERROR("%s: -mem-percent requested phys mem too "
+					"large\n", argv[0]);
+				exit(1);
+			}
+
+			phys_mem = phys_mem * percent / 100;
+
+			if(phys_mem < 2) {
+				ERROR("%s: -mem-percent mem too small, should "
+					"be 2 Mbytes or larger\n", argv[0]);
+				exit(1);
+			}
+
+			data_buffer_size = phys_mem / 2;
+			fragment_buffer_size = phys_mem / 2;
 		} else if(strcmp(argv[i], "-data-queue") == 0 ||
 					 strcmp(argv[i], "-da") == 0) {
 			if((++i == argc) ||
