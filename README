@@ -1,9 +1,9 @@
-NEWS
-----
+This is the official Squashfs-tools repository.
 
-Squashfs-tools 4.6.1 released (25th March 2023)
+To build and install the tools please read the INSTALL file.
 
-If you like the recent releases please "star" the
-project.
+To find out how use the latest release please start by reading
+README-4.6.1.
 
 Thanks
+
