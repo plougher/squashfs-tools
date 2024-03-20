@@ -212,6 +212,24 @@ struct old_root_entry_info {
  * See READ(2) */
 #define MAXIMUM_READ_SIZE 0x7ffff000
 
+static inline int get_pathmax()
+{
+	int path_max;
+
+#ifdef PATH_MAX
+	path_max = PATH_MAX;
+#else
+	path_max = pathconf(".", _PC_PATH_MAX);
+	if(path_max <= 0)
+		path_max = 4096;
+#endif
+	/* limit to no more than 64K */
+	if(path_max > 65536)
+		path_max = 65536;
+
+	return path_max;
+}
+
 extern int sleep_time;
 extern struct cache *reader_buffer, *fragment_buffer, *reserve_cache;
 extern struct cache *bwriter_buffer, *fwriter_buffer;

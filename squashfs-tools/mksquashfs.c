@@ -4856,18 +4856,8 @@ static char *get_filename_from_stdin(char terminator)
 	int used = 0;
 
 	/* Get the maximum pathname size supported on this system */
-	if(path_max == -1) {
-#ifdef PATH_MAX
-		path_max = PATH_MAX;
-#else
-		path_max = pathconf(".", _PC_PATH_MAX);
-		if(path_max <= 0)
-			path_max = 4096;
-#endif
-		/* limit to no more than 64K */
-		if(path_max > 65536)
-			path_max = 65536;
-	}
+	if(path_max == -1)
+		path_max = get_pathmax();
 
 	if(buffer == NULL) {
 		buffer = malloc(4096);
