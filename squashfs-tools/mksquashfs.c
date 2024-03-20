@@ -8134,7 +8134,7 @@ print_compressor_options:
 			 * of memory is dealt with later.
 			 */
 			if((++i == argc) ||
-					!parse_number(argv[i], &percent, 1) ||
+					!parse_number(argv[i], &percent, 0) ||
 					(percent < 1)) {
 				ERROR("%s: -mem-percent missing or invalid "
 					"percentage: it should be 1 - 75%\n",
