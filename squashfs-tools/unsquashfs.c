@@ -3051,6 +3051,9 @@ int parse_numberll(char *start, long long *res, int size)
 
 	if(size) {
 		/*
+		 * Allow a multiplier of  k, K, m, M, g, G optionally
+		 * followed by bytes.
+
 		 * Check for multiplier and trailing junk.
 		 * But first check that a number exists before the
 		 * multiplier
