@@ -58,6 +58,9 @@ set all file timestamps to TIME, rather than the time stored in the filesystem i
 \fB\-cat\fR
 cat the files on the command line to stdout.
 .TP
+\fB\-one\-file\-system\fR
+do not cross filesystem boundaries.  If a directory is an existing mount point, just skip it.
+.TP
 \fB\-f\fR, \fB\-force\fR
 if destination directory already exists, descend into it and any sub\-directories, and unlink (delete) files if they already exist before extracting to them.
 .TP
