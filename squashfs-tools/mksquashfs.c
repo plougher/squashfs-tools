@@ -7117,7 +7117,7 @@ print_sqfstar_compressor_options:
 			 * of memory is dealt with later.
 			 */
 			if((++i == dest_index) ||
-					!parse_number(argv[i], &percent, 0) ||
+					!parse_number(argv[i], &percent, 2) ||
 					(percent < 1)) {
 				ERROR("%s: -mem-percent missing or invalid "
 					"percentage: it should be 1 - 75%\n",
