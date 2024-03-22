@@ -3049,7 +3049,7 @@ int parse_numberll(char *start, long long *res, int size)
 	if(number < 0)
 		return 0;
 
-	if(size) {
+	if(size == 1) {
 		/*
 		 * Allow a multiplier of  k, K, m, M, g, G optionally
 		 * followed by bytes.
@@ -3107,6 +3107,17 @@ int parse_numberll(char *start, long long *res, int size)
 			/* trailing junk after number */
 			return 0;
 		}
+	} else if(size == 2) {
+		/*
+		 * Allow number to be followed by %
+		 * But first check that a number exists before any possible %
+		 */
+		if(end == start)
+			return 0;
+
+		if(end[0] != '\0' && (end[0] != '%' || end[1] != '\0'))
+			/* trailing junk after number */
+			return 0;
 	} else if(end[0] != '\0')
 		/* trailing junk after number */
 		return 0;
@@ -3121,6 +3132,22 @@ int parse_number(char *start, int *res)
 	long long number;
 
 	if(!parse_numberll(start, &number, 0))
+		return 0;
+
+	/* check if long result will overflow signed int */
+	if(number > INT_MAX)
+		return 0;
+
+	*res = (int) number;
+	return 1;
+}
+
+
+int parse_number_percent(char *start, int *res)
+{
+	long long number;
+
+	if(!parse_numberll(start, &number, 2))
 		return 0;
 
 	/* check if long result will overflow signed int */
@@ -4408,7 +4435,7 @@ int parse_options(int argc, char *argv[])
 			 * of memory is dealt with later.
 			 */
 			if((++i == argc) ||
-					!parse_number(argv[i], &percent) ||
+					!parse_number_percent(argv[i], &percent) ||
 					(percent < 1)) {
 				ERROR("%s: -mem-percent missing or invalid "
 					"percentage: it should be 1 - 75%\n",
