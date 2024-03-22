@@ -4148,7 +4148,7 @@ int parse_cat_options(int argc, char *argv[])
 			 * of memory is dealt with later.
 			 */
 			if((++i == argc) ||
-					!parse_number(argv[i], &percent) ||
+					!parse_number_percent(argv[i], &percent) ||
 					(percent < 1)) {
 				ERROR("%s: -mem-percent missing or invalid "
 					"percentage: it should be 1 - 75%\n",
