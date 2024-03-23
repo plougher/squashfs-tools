@@ -225,6 +225,9 @@ ${SED} -i "s/\(Pseudo file definition format\):/*\1*/" $tmp/sqfstar.help
 # Add reference to manpages for other squashfs-tools programs
 ${SED} -i "s/See also:/See also:\nmksquashfs(1), unsquashfs(1), sqfscat(1)\n/" $tmp/sqfstar.help
 
+# Make Exit status header into a manpage section
+
+${SED} -i "s/\(Exit status\):/*\1*/" $tmp/sqfstar.help
 # Make See also header into a manpage section
 
 ${SED} -i "s/\(See also\):/*\1*/" $tmp/sqfstar.help
