@@ -6587,6 +6587,10 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\tSOURCE_DATE_EPOCH.  See\n");
 	fprintf(stream, "\t\t\thttps://reproducible-builds.org/docs/source-date-epoch/\n");
 	fprintf(stream, "\t\t\tfor more information\n");
+	fprintf(stream, "\nExit status:\n");
+	fprintf(stream, "  0\tSqfstar successfully generated a filesystem.\n");
+	fprintf(stream, "  1\tFatal errors occurred, Sqfstar aborted and ");
+	fprintf(stream, "did not generate a\n\tfilesystem.\n");
 	fprintf(stream, "\nSee also:\n");
 	fprintf(stream, "The README for the Squashfs-tools 4.6.1 release, ");
 	fprintf(stream, "describing the new features can be\n");
