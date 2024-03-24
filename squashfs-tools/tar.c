@@ -47,7 +47,6 @@
 
 extern int silent;
 int ignore_zeros = FALSE;
-extern int ignore_zeros;
 int default_uid_opt = FALSE;
 unsigned int default_uid;
 int default_gid_opt = FALSE;
