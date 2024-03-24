@@ -128,7 +128,7 @@ int lookup_type[] = {
 	S_IFSOCK
 };
 
-struct test table[] = {
+static struct test table[] = {
 	{ S_IFMT, S_IFSOCK, 0, 's' },
 	{ S_IFMT, S_IFLNK, 0, 'l' },
 	{ S_IFMT, S_IFBLK, 0, 'b' },
@@ -153,11 +153,11 @@ struct test table[] = {
 	{ 0, 0, 0, 0}
 };
 
-void progress_bar(long long current, long long max, int columns);
+static void progress_bar(long long current, long long max, int columns);
 
 #define MAX_LINE 16384
 
-void sigwinch_handler(int arg)
+static void sigwinch_handler(int arg)
 {
 	struct winsize winsize;
 
@@ -171,31 +171,31 @@ void sigwinch_handler(int arg)
 }
 
 
-void sigalrm_handler(int arg)
+static void sigalrm_handler(int arg)
 {
 	rotate = (rotate + 1) % 4;
 }
 
 
-int add_overflow(int a, int b)
+static int add_overflow(int a, int b)
 {
 	return (INT_MAX - a) < b;
 }
 
 
-int shift_overflow(int a, int shift)
+static int shift_overflow(int a, int shift)
 {
 	return (INT_MAX >> shift) < a;
 }
 
  
-int multiply_overflow(int a, int multiplier)
+static int multiply_overflow(int a, int multiplier)
 {
 	return (INT_MAX / multiplier) < a;
 }
 
 
-struct queue *queue_init(int size)
+static struct queue *queue_init(int size)
 {
 	struct queue *queue = malloc(sizeof(struct queue));
 	if(queue == NULL)
@@ -219,7 +219,7 @@ struct queue *queue_init(int size)
 }
 
 
-void queue_put(struct queue *queue, void *data)
+static void queue_put(struct queue *queue, void *data)
 {
 	int nextp;
 
@@ -235,7 +235,7 @@ void queue_put(struct queue *queue, void *data)
 }
 
 
-void *queue_get(struct queue *queue)
+static void *queue_get(struct queue *queue)
 {
 	void *data;
 	pthread_mutex_lock(&queue->mutex);
@@ -268,7 +268,7 @@ void dump_queue(struct queue *queue)
 
 
 /* Called with the cache mutex held */
-void insert_hash_table(struct cache *cache, struct cache_entry *entry)
+static void insert_hash_table(struct cache *cache, struct cache_entry *entry)
 {
 	int hash = TABLE_HASH(entry->block);
 
@@ -281,7 +281,7 @@ void insert_hash_table(struct cache *cache, struct cache_entry *entry)
 
 
 /* Called with the cache mutex held */
-void remove_hash_table(struct cache *cache, struct cache_entry *entry)
+static void remove_hash_table(struct cache *cache, struct cache_entry *entry)
 {
 	if(entry->hash_prev)
 		entry->hash_prev->hash_next = entry->hash_next;
@@ -296,7 +296,7 @@ void remove_hash_table(struct cache *cache, struct cache_entry *entry)
 
 
 /* Called with the cache mutex held */
-void insert_free_list(struct cache *cache, struct cache_entry *entry)
+static void insert_free_list(struct cache *cache, struct cache_entry *entry)
 {
 	if(cache->free_list) {
 		entry->free_next = cache->free_list;
@@ -311,7 +311,7 @@ void insert_free_list(struct cache *cache, struct cache_entry *entry)
 
 
 /* Called with the cache mutex held */
-void remove_free_list(struct cache *cache, struct cache_entry *entry)
+static void remove_free_list(struct cache *cache, struct cache_entry *entry)
 {
 	if(entry->free_prev == NULL || entry->free_next == NULL)
 		/* not in free list */
@@ -331,7 +331,7 @@ void remove_free_list(struct cache *cache, struct cache_entry *entry)
 }
 
 
-struct cache *cache_init(int buffer_size, int max_buffers)
+static struct cache *cache_init(int buffer_size, int max_buffers)
 {
 	struct cache *cache = malloc(sizeof(struct cache));
 	if(cache == NULL)
@@ -353,7 +353,7 @@ struct cache *cache_init(int buffer_size, int max_buffers)
 }
 
 
-struct cache_entry *cache_get(struct cache *cache, long long block, int size)
+static struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 {
 	/*
 	 * Get a block out of the cache.  If the block isn't in the cache
@@ -442,7 +442,7 @@ struct cache_entry *cache_get(struct cache *cache, long long block, int size)
 }
 
 	
-void cache_block_ready(struct cache_entry *entry, int error)
+static void cache_block_ready(struct cache_entry *entry, int error)
 {
 	/*
 	 * mark cache entry as being complete, reading and (if necessary)
@@ -467,7 +467,7 @@ void cache_block_ready(struct cache_entry *entry, int error)
 }
 
 
-void cache_block_wait(struct cache_entry *entry)
+static void cache_block_wait(struct cache_entry *entry)
 {
 	/*
 	 * wait for this cache entry to become ready, when reading and (if
@@ -485,7 +485,7 @@ void cache_block_wait(struct cache_entry *entry)
 }
 
 
-void cache_block_put(struct cache_entry *entry)
+static void cache_block_put(struct cache_entry *entry)
 {
 	/*
 	 * finished with this cache entry, once the usage count reaches zero it
@@ -526,7 +526,7 @@ void dump_cache(struct cache *cache)
 }
 
 
-char *modestr(char *str, int mode)
+static char *modestr(char *str, int mode)
 {
 	int i;
 
@@ -542,7 +542,7 @@ char *modestr(char *str, int mode)
 
 
 #define TOTALCHARS  25
-void print_filename(char *pathname, struct inode *inode)
+static void print_filename(char *pathname, struct inode *inode)
 {
 	char str[11], dummy[12], dummy2[12]; /* overflow safe */
 	char *userstr, *groupstr;
@@ -853,7 +853,7 @@ int read_directory_data(void *buffer, long long *blk, unsigned int *off, int len
 }
 
 
-int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
+static int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
 	unsigned int xattr, unsigned int set_mode)
 {
 	struct utimbuf times = { time, time };
@@ -922,7 +922,7 @@ int write_bytes(int fd, char *buff, int bytes)
 int lseek_broken = FALSE;
 char *zero_data = NULL;
 
-int write_block(int file_fd, char *buffer, int size, long long hole, int sparse)
+static int write_block(int file_fd, char *buffer, int size, long long hole, int sparse)
 {
 	off_t off = hole;
 
@@ -964,20 +964,20 @@ failure:
 }
 
 
-pthread_mutex_t open_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t open_empty = PTHREAD_COND_INITIALIZER;
-int open_unlimited, open_count;
+static pthread_mutex_t open_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t open_empty = PTHREAD_COND_INITIALIZER;
+static int open_unlimited, open_count;
 #define OPEN_FILE_MARGIN 10
 
 
-void open_init(int count)
+static void open_init(int count)
 {
 	open_count = count;
 	open_unlimited = count == -1;
 }
 
 
-int open_wait(char *pathname, int flags, mode_t mode)
+static int open_wait(char *pathname, int flags, mode_t mode)
 {
 	if (!open_unlimited) {
 		pthread_mutex_lock(&open_mutex);
@@ -991,7 +991,7 @@ int open_wait(char *pathname, int flags, mode_t mode)
 }
 
 
-void close_wake(int fd)
+static void close_wake(int fd)
 {
 	close(fd);
 
@@ -1004,7 +1004,7 @@ void close_wake(int fd)
 }
 
 
-void queue_file(char *pathname, int file_fd, struct inode *inode)
+static void queue_file(char *pathname, int file_fd, struct inode *inode)
 {
 	struct squashfs_file *file = malloc(sizeof(struct squashfs_file));
 	if(file == NULL)
@@ -1024,7 +1024,7 @@ void queue_file(char *pathname, int file_fd, struct inode *inode)
 }
 
 
-void queue_dir(char *pathname, struct dir *dir)
+static void queue_dir(char *pathname, struct dir *dir)
 {
 	struct squashfs_file *file = malloc(sizeof(struct squashfs_file));
 	if(file == NULL)
@@ -1041,7 +1041,7 @@ void queue_dir(char *pathname, struct dir *dir)
 }
 
 
-int write_file(struct inode *inode, char *pathname)
+static int write_file(struct inode *inode, char *pathname)
 {
 	unsigned int file_fd, i;
 	unsigned int *block_list = NULL;
@@ -1130,7 +1130,7 @@ int write_file(struct inode *inode, char *pathname)
 }
 
 
-int cat_file(struct inode *inode, char *pathname)
+static int cat_file(struct inode *inode, char *pathname)
 {
 	unsigned int i;
 	unsigned int *block_list = NULL;
@@ -1195,7 +1195,7 @@ int cat_file(struct inode *inode, char *pathname)
 }
 
 
-int create_inode(char *pathname, struct inode *i)
+static int create_inode(char *pathname, struct inode *i)
 {
 	int res;
 	int failed = FALSE;
@@ -1384,7 +1384,7 @@ failed:
 }
 
 
-int squashfs_readdir(struct dir *dir, char **name, unsigned int *start_block,
+static int squashfs_readdir(struct dir *dir, char **name, unsigned int *start_block,
 unsigned int *offset, unsigned int *type)
 {
 	if(dir->cur_entry == NULL)
@@ -1404,7 +1404,7 @@ unsigned int *offset, unsigned int *type)
 }
 
 
-char *get_component(char *target, char **targname)
+static char *get_component(char *target, char **targname)
 {
 	char *start;
 
@@ -1427,7 +1427,7 @@ char *get_component(char *target, char **targname)
 }
 
 
-void free_path(struct pathname *paths)
+static void free_path(struct pathname *paths)
 {
 	int i;
 
@@ -1445,7 +1445,7 @@ void free_path(struct pathname *paths)
 }
 
 
-struct pathname *add_path(struct pathname *paths, int type, char *target,
+static struct pathname *add_path(struct pathname *paths, int type, char *target,
 							char *alltarget)
 {
 	char *targname;
@@ -1561,13 +1561,13 @@ struct pathname *add_path(struct pathname *paths, int type, char *target,
 }
 
 
-void add_extract(char *target)
+static void add_extract(char *target)
 {
 	extract = add_path(extract, PATH_TYPE_EXTRACT, target, target);
 }
 
 
-void add_exclude(char *str)
+static void add_exclude(char *str)
 {
 	if(strncmp(str, "... ", 4) == 0)
 		stickypath = add_path(stickypath, PATH_TYPE_EXCLUDE, str + 4, str + 4);
@@ -1576,7 +1576,7 @@ void add_exclude(char *str)
 }
 
 
-struct pathnames *init_subdir()
+static struct pathnames *init_subdir()
 {
 	struct pathnames *new = malloc(sizeof(struct pathnames));
 	if(new == NULL)
@@ -1587,7 +1587,7 @@ struct pathnames *init_subdir()
 }
 
 
-struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
+static struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 {
 	if(paths->count % PATHS_ALLOC_SIZE == 0) {
 		paths = realloc(paths, sizeof(struct pathnames *) +
@@ -1602,13 +1602,13 @@ struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 }
 
 
-void free_subdir(struct pathnames *paths)
+static void free_subdir(struct pathnames *paths)
 {
 	free(paths);
 }
 
 
-int extract_matches(struct pathnames *paths, char *name, struct pathnames **new)
+static int extract_matches(struct pathnames *paths, char *name, struct pathnames **new)
 {
 	int i, n;
 
@@ -1679,7 +1679,7 @@ empty_set:
 }
 
 
-int exclude_match(struct pathname *path, char *name, struct pathnames **new)
+static int exclude_match(struct pathname *path, char *name, struct pathnames **new)
 {
 	int i, match;
 
@@ -1717,7 +1717,7 @@ int exclude_match(struct pathname *path, char *name, struct pathnames **new)
 }
 
 
-int exclude_matches(struct pathnames *paths, char *name, struct pathnames **new)
+static int exclude_matches(struct pathnames *paths, char *name, struct pathnames **new)
 {
 	int n;
 
@@ -1757,7 +1757,7 @@ int exclude_matches(struct pathnames *paths, char *name, struct pathnames **new)
 }
 
 
-struct directory_stack *create_stack()
+static struct directory_stack *create_stack()
 {
 	struct directory_stack *stack = malloc(sizeof(struct directory_stack));
 	if(stack == NULL)
@@ -1772,7 +1772,7 @@ struct directory_stack *create_stack()
 }
 
 
-void add_stack(struct directory_stack *stack, unsigned int start_block,
+static void add_stack(struct directory_stack *stack, unsigned int start_block,
 	unsigned int offset, char *name, int depth)
 {
 	if((depth - 1) == stack->size) {
@@ -1800,7 +1800,7 @@ void add_stack(struct directory_stack *stack, unsigned int start_block,
 }
 
 
-struct directory_stack *clone_stack(struct directory_stack *stack)
+static struct directory_stack *clone_stack(struct directory_stack *stack)
 {
 	int i;
 	struct directory_stack *new = malloc(sizeof(struct directory_stack));
@@ -1825,13 +1825,13 @@ struct directory_stack *clone_stack(struct directory_stack *stack)
 }
 
 
-void pop_stack(struct directory_stack *stack)
+static void pop_stack(struct directory_stack *stack)
 {
 	free(stack->stack[--stack->size].name);
 }
 
 
-void free_stack(struct directory_stack *stack)
+static void free_stack(struct directory_stack *stack)
 {
 	int i;
 	struct symlink *symlink = stack->symlink;
@@ -1853,7 +1853,7 @@ void free_stack(struct directory_stack *stack)
 }
 
 
-char *stack_pathname(struct directory_stack *stack, char *name)
+static char *stack_pathname(struct directory_stack *stack, char *name)
 {
 	int i, size = 0;
 	char *pathname;
@@ -1883,7 +1883,7 @@ char *stack_pathname(struct directory_stack *stack, char *name)
 }
 
 
-void add_symlink(struct directory_stack *stack, char *name)
+static void add_symlink(struct directory_stack *stack, char *name)
 {
 	struct symlink *symlink = malloc(sizeof(struct symlink));
 	if(symlink == NULL)
@@ -1911,7 +1911,7 @@ void add_symlink(struct directory_stack *stack, char *name)
  * or a symlink is encountered which cannot be recursively walked due to
  * the above failures, then return FALSE.
  */
-int follow_path(char *path, char *name, unsigned int start_block,
+static int follow_path(char *path, char *name, unsigned int start_block,
 	unsigned int offset, int depth, int symlinks,
 	struct directory_stack *stack)
 {
@@ -2055,7 +2055,7 @@ int follow_path(char *path, char *name, unsigned int start_block,
 }
 
 
-int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
+static int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *extracts, struct pathnames *excludes, int depth)
 {
 	unsigned int type;
@@ -2124,7 +2124,7 @@ int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 }
 
 
-int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
+static int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *extracts, struct pathnames *excludes, int depth)
 {
 	unsigned int type;
@@ -2251,7 +2251,7 @@ int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 }
 
 
-int check_compression(struct compressor *comp)
+static int check_compression(struct compressor *comp)
 {
 	int res, bytes = 0;
 	char buffer[SQUASHFS_METADATA_SIZE] __attribute__ ((aligned));
@@ -2287,7 +2287,7 @@ int check_compression(struct compressor *comp)
 }
 
 
-int read_super(char *source)
+static int read_super(char *source)
 {
 	squashfs_super_block_3 sBlk_3;
 
@@ -2312,7 +2312,7 @@ int read_super(char *source)
 }
 
 
-void process_extract_files(char *filename)
+static void process_extract_files(char *filename)
 {
 	FILE *fd;
 	char buffer[MAX_LINE + 1]; /* overflow safe */
@@ -2368,7 +2368,7 @@ void process_extract_files(char *filename)
 }
 
 
-void process_exclude_files(char *filename)
+static void process_exclude_files(char *filename)
 {
 	FILE *fd;
 	char buffer[MAX_LINE + 1]; /* overflow safe */
@@ -2428,7 +2428,7 @@ void process_exclude_files(char *filename)
  * reader thread.  This thread processes read requests queued by the
  * cache_get() routine.
  */
-void *reader(void *arg)
+static void *reader(void *arg)
 {
 	while(1) {
 		struct cache_entry *entry = queue_get(to_reader);
@@ -2451,6 +2451,8 @@ void *reader(void *arg)
 			 */
 			cache_block_ready(entry, !res);
 	}
+
+	return NULL;
 }
 
 
@@ -2458,7 +2460,7 @@ void *reader(void *arg)
  * writer thread.  This processes file write requests queued by the
  * write_file() routine.
  */
-void *writer(void *arg)
+static void *writer(void *arg)
 {
 	int i;
 	long exit_code = FALSE;
@@ -2569,10 +2571,12 @@ void *writer(void *arg)
 		free(file);
 
 	}
+
+	return NULL;
 }
 
 
-void *cat_writer(void *arg)
+static void *cat_writer(void *arg)
 {
 	int i;
 	long exit_code = FALSE;
@@ -2644,13 +2648,15 @@ void *cat_writer(void *arg)
 		free(file->pathname);
 		free(file);
 	}
+
+	return NULL;
 }
 
 
 /*
  * decompress thread.  This decompresses buffers queued by the read thread
  */
-void *inflator(void *arg)
+static void *inflator(void *arg)
 {
 	char *tmp = malloc(block_size);
 	if(tmp == NULL)
@@ -2677,10 +2683,12 @@ void *inflator(void *arg)
  		 */ 
 		cache_block_ready(entry, res == -1);
 	}
+
+	return NULL;
 }
 
 
-void *progress_thread(void *arg)
+static void *progress_thread(void *arg)
 {
 	struct timespec requested_time, remaining;
 	struct itimerval itimerval;
@@ -2720,10 +2728,12 @@ void *progress_thread(void *arg)
 			pthread_mutex_unlock(&screen_mutex);
 		}
 	}
+
+	return NULL;
 }
 
 
-void initialise_threads(int fragment_buffer_size, int data_buffer_size, int cat_file)
+static void initialise_threads(int fragment_buffer_size, int data_buffer_size, int cat_file)
 {
 	struct rlimit rlim;
 	int i, max_files, res;
@@ -2956,7 +2966,7 @@ void progressbar_info(char *fmt, ...)
 }
 
 
-void progressbar(long long current, long long max, int columns)
+static void progressbar(long long current, long long max, int columns)
 {
 	char rotate_list[] = { '|', '/', '-', '\\' };
 	int max_digits, used, hashes, spaces;
@@ -3000,7 +3010,7 @@ void progressbar(long long current, long long max, int columns)
 }
 
 
-void display_percentage(long long current, long long max)
+static void display_percentage(long long current, long long max)
 {
 	int percentage = max == 0 ? 100 : current * 100 / max;
 	static int previous = -1;
@@ -3013,7 +3023,7 @@ void display_percentage(long long current, long long max)
 }
 
 
-void progress_bar(long long current, long long max, int columns)
+static void progress_bar(long long current, long long max, int columns)
 {
 	if(percent)
 		display_percentage(current, max);
@@ -3022,13 +3032,13 @@ void progress_bar(long long current, long long max, int columns)
 }
 
 
-int multiply_overflowll(long long a, int multiplier)
+static int multiply_overflowll(long long a, int multiplier)
 {
 	return (LLONG_MAX / multiplier) < a;
 }
 
 
-int parse_numberll(char *start, long long *res, int size)
+static int parse_numberll(char *start, long long *res, int size)
 {
 	char *end;
 	long long number;
@@ -3127,7 +3137,7 @@ int parse_numberll(char *start, long long *res, int size)
 }
 
 
-int parse_number(char *start, int *res)
+static int parse_number(char *start, int *res)
 {
 	long long number;
 
@@ -3143,7 +3153,7 @@ int parse_number(char *start, int *res)
 }
 
 
-int parse_number_percent(char *start, int *res)
+static int parse_number_percent(char *start, int *res)
 {
 	long long number;
 
@@ -3159,7 +3169,7 @@ int parse_number_percent(char *start, int *res)
 }
 
 
-int parse_number_unsigned(char *start, unsigned int *res)
+static int parse_number_unsigned(char *start, unsigned int *res)
 {
 	long long number;
 
@@ -3175,7 +3185,7 @@ int parse_number_unsigned(char *start, unsigned int *res)
 }
 
 
-void resolve_symlinks(int argc, char *argv[])
+static void resolve_symlinks(int argc, char *argv[])
 {
 	int n, found;
 	struct directory_stack *stack;
@@ -3220,7 +3230,7 @@ void resolve_symlinks(int argc, char *argv[])
 }
 
 
-char *new_pathname(char *path, char *name)
+static char *new_pathname(char *path, char *name)
 {
 	char *newpath;
 
@@ -3245,7 +3255,7 @@ char *new_pathname(char *path, char *name)
 }
 
 
-char *add_pathname(char *path, char *name)
+static char *add_pathname(char *path, char *name)
 {
 	if(strcmp(path, "/") == 0) {
 		path = realloc(path, strlen(name) + 2);
@@ -3266,7 +3276,7 @@ char *add_pathname(char *path, char *name)
 }
 
 
-int cat_scan(char *path, char *curpath, char *name, unsigned int start_block,
+static int cat_scan(char *path, char *curpath, char *name, unsigned int start_block,
 	unsigned int offset, int depth, struct directory_stack *stack)
 {
 	struct inode *i;
@@ -3492,7 +3502,7 @@ int cat_scan(char *path, char *curpath, char *name, unsigned int start_block,
 }
 
 
-int cat_path(int argc, char *argv[])
+static int cat_path(int argc, char *argv[])
 {
 	int n, res, failed = FALSE;
 	struct directory_stack *stack;
@@ -3518,7 +3528,7 @@ int cat_path(int argc, char *argv[])
 }
 
 
-char *process_filename(char *filename)
+static char *process_filename(char *filename)
 {
 	static char *saved = NULL;
 	char *ptr;
@@ -3557,7 +3567,7 @@ char *process_filename(char *filename)
 }
 
 
-void pseudo_print(char *pathname, struct inode *inode, char *link, long long offset)
+static void pseudo_print(char *pathname, struct inode *inode, char *link, long long offset)
 {
 	char userstr[12], groupstr[12]; /* overflow safe */
 	char *type_string = "DRSBCIIDRSBCII";
@@ -3621,7 +3631,7 @@ void pseudo_print(char *pathname, struct inode *inode, char *link, long long off
 }
 
 
-int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offset,
+static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *extracts, struct pathnames *excludes, int depth)
 {
 	unsigned int type;
@@ -3706,7 +3716,7 @@ int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offse
 }
 
 
-int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offset,
+static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathnames *extracts, struct pathnames *excludes, int depth)
 {
 	unsigned int type;
@@ -3783,7 +3793,7 @@ int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offse
 }
 
 
-int generate_pseudo(char *pseudo_file)
+static int generate_pseudo(char *pseudo_file)
 {
 	int res;
 
@@ -3839,7 +3849,7 @@ failed:
 }
 
 
-int parse_excludes(int argc, char *argv[])
+static int parse_excludes(int argc, char *argv[])
 {
 	int i;
 
@@ -4052,7 +4062,7 @@ static void print_options(FILE *stream, char *name)
 }
 
 
-void print_version(char *string)
+static void print_version(char *string)
 {
 	printf("%s version " VERSION " (" DATE ")\n", string);
 	printf("copyright (C) " YEAR " Phillip Lougher ");
@@ -4070,7 +4080,7 @@ void print_version(char *string)
 }
 
 
-int parse_cat_options(int argc, char *argv[])
+static int parse_cat_options(int argc, char *argv[])
 {
 	int i;
 
@@ -4246,7 +4256,7 @@ int parse_cat_options(int argc, char *argv[])
 }
 
 
-int parse_options(int argc, char *argv[])
+static int parse_options(int argc, char *argv[])
 {
 	int i, res;
 
