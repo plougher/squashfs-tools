@@ -80,8 +80,6 @@ struct xattr_add {
 	struct xattr_add	*next;
 };
 
-extern int generate_xattrs(int, struct xattr_list *);
-
 #ifdef XATTR_SUPPORT
 #ifdef XATTR_OS_SUPPORT
 extern int write_xattr(char *, unsigned int);
