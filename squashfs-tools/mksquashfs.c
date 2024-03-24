@@ -1808,16 +1808,22 @@ static long long write_fragment_table()
 }
 
 
-char read_from_file_buffer[SQUASHFS_FILE_MAX_SIZE];
 static char *read_from_disk(long long start, unsigned int avail_bytes)
 {
 	int res;
+	static char *buffer = NULL;
 
-	res = read_fs_bytes(fd, start, avail_bytes, read_from_file_buffer);
+	if(buffer == NULL) {
+		buffer = malloc(block_size);
+		if(buffer == NULL)
+			MEM_ERROR();
+	}
+
+	res = read_fs_bytes(fd, start, avail_bytes, buffer);
 	if(res == 0)
 		return NULL;
 
-	return read_from_file_buffer;
+	return buffer;
 }
 
 
