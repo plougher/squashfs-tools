@@ -501,7 +501,7 @@ void restorefs()
 }
 
 
-void sighandler(int arg)
+static void sighandler(int arg)
 {
 	EXIT_MKSQUASHFS();
 }
@@ -637,7 +637,7 @@ int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 }
 
 
-int write_bytes(int fd, void *buff, long long bytes)
+static int write_bytes(int fd, void *buff, long long bytes)
 {
 	long long res, count;
 
@@ -3653,7 +3653,7 @@ static squashfs_inode scan_encomp(int progress)
 }
 
 
-squashfs_inode dir_scan(int directory, int progress)
+static squashfs_inode dir_scan(int directory, int progress)
 {
 	int single = !keep_as_directory && source == 1;
 
@@ -6690,7 +6690,7 @@ static void print_summary()
 }
 
 
-int option_with_arg(char *string, char *table[])
+static int option_with_arg(char *string, char *table[])
 {
 	int i;
 
@@ -6758,7 +6758,7 @@ static int get_gid_from_arg(char *arg, unsigned int *gid)
 }
 
 
-int sqfstar(int argc, char *argv[])
+static int sqfstar(int argc, char *argv[])
 {
 	struct stat buf;
 	int res, i;
