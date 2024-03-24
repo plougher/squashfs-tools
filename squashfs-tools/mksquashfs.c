@@ -353,7 +353,7 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"default-mode", "default-uid", "default-gid", "mem-percent", NULL
 };
 
-static char *read_from_disk(long long start, unsigned int avail_bytes);
+static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
 static void add_old_root_entry(char *name, squashfs_inode inode,
 	unsigned int inode_number, int type);
 static struct file_info *duplicate(int *dup, int *block_dup,
@@ -1498,7 +1498,7 @@ again:
 		if(compressed_buffer)
 			data = compressed_buffer->data;
 		else {
-			data = read_from_disk(start_block, size);
+			data = read_from_disk(start_block, size, 0);
 			if(data == NULL) {
 				ERROR("Failed to read fragment from output"
 					" filesystem\n");
@@ -1808,35 +1808,23 @@ static long long write_fragment_table()
 }
 
 
-static char *read_from_disk(long long start, unsigned int avail_bytes)
+static char *read_from_disk(long long start, unsigned int avail_bytes, int buff)
 {
 	int res;
-	static char *buffer = NULL;
+	static char *buffer1 = NULL, *buffer2 = NULL;
+	char **buffer = buff == 0 ? &buffer1 : &buffer2;
 
-	if(buffer == NULL) {
-		buffer = malloc(block_size);
-		if(buffer == NULL)
+	if(*buffer == NULL) {
+		*buffer = malloc(block_size);
+		if(*buffer == NULL)
 			MEM_ERROR();
 	}
 
-	res = read_fs_bytes(fd, start, avail_bytes, buffer);
+	res = read_fs_bytes(fd, start, avail_bytes, *buffer);
 	if(res == 0)
 		return NULL;
 
-	return buffer;
-}
-
-
-char read_from_file_buffer2[SQUASHFS_FILE_MAX_SIZE];
-static char *read_from_disk2(long long start, unsigned int avail_bytes)
-{
-	int res;
-
-	res = read_fs_bytes(fd, start, avail_bytes, read_from_file_buffer2);
-	if(res == 0)
-		return NULL;
-
-	return read_from_file_buffer2;
+	return *buffer;
 }
 
 
@@ -1874,7 +1862,7 @@ static unsigned short get_checksum_disk(long long start, long long l,
 				chksum);
 			cache_block_put(write_buffer);
 		} else {
-			void *data = read_from_disk(start, bytes);
+			void *data = read_from_disk(start, bytes, 0);
 			if(data == NULL) {	
 				ERROR("Failed to checksum data from output"
 					" filesystem\n");
@@ -2275,7 +2263,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				if(target_buffer)
 					target_data = target_buffer->data;
 				else {
-					target_data = read_from_disk(target_start, size);
+					target_data = read_from_disk(target_start, size, 0);
 					if(target_data == NULL) {
 						ERROR("Failed to read data from"
 							" output filesystem\n");
@@ -2294,7 +2282,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				if(dup_buffer)
 					dup_data = dup_buffer->data;
 				else {
-					dup_data = read_from_disk2(dup_start, size);
+					dup_data = read_from_disk(dup_start, size, 1);
 					if(dup_data == NULL) {
 						ERROR("Failed to read data from"
 							" output filesystem\n");
