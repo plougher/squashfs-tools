@@ -1051,13 +1051,13 @@ struct xattr_add *xattr_parse(char *str, char *pre, char *option)
 		}
 
 		entry->value = base64_decode(value, strlen(value), &size);
-		entry->vsize = size;
-
 		if(entry->value == NULL) {
 			ERROR("%sinvalid argument %s in %s option, because "
 				"invalid base64 value\n", pre, str, option);
 			goto failed2;
 		}
+
+		entry->vsize = size;
 		break;
 
 	case PREFIX_HEX_0X:
@@ -1071,13 +1071,13 @@ struct xattr_add *xattr_parse(char *str, char *pre, char *option)
 		}
 
 		entry->value = hex_decode(value, strlen(value), &size);
-		entry->vsize = size;
-
 		if(entry->value == NULL) {
 			ERROR("%sinvalid argument %s in %s option, because "
 				"invalid hexidecimal value\n", pre, str, option);
 			goto failed2;
 		}
+
+		entry->vsize = size;
 		break;
 
 	case PREFIX_TEXT_0T:
@@ -1091,13 +1091,13 @@ struct xattr_add *xattr_parse(char *str, char *pre, char *option)
 		}
 
 		entry->value = text_decode(value, &size);
-		entry->vsize = size;
-
 		if(entry->value == NULL) {
 			ERROR("%sinvalid argument %s in %s option, because "
 				"invalid text value\n", pre, str, option);
 			goto failed2;
 		}
+
+		entry->vsize = size;
 		break;
 
 	case PREFIX_BINARY_0B:
