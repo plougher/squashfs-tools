@@ -13,10 +13,10 @@ Thanks
 The top-level directory contains the following information files:
 
 * **README-4.6.1** - description of the changes in the latest Squashfs-tools release.
-* **USAGE-4.6** - general discription of the four tools Mksquashfs, Unsquashfs, Sqfstar and Sqfscat.
+* **USAGE-4.6** - general description of the four tools Mksquashfs, Unsquashfs, Sqfstar and Sqfscat.
 * **USAGE-MKSQUASHFS-4.6** - how to use the Mksquashfs program to create Squashfs images.
 * **USAGE-UNSQUASHFS-4.6** - how to use the Unsquashfs program to extract and list Squashfs images.
-* **USAGE-SQFSTAR-4.6** - how to use the Sqfstar program to covert tarfiles to Squashfs images.
+* **USAGE-SQFSTAR-4.6** - how to use the Sqfstar program to convert tarfiles to Squashfs images.
 * **USAGE-SQFSCAT-4.6** - how to use the Sqfscat program to cat (print) one or more files to stdout from Squashfs images.
 * **INSTALL** - installation instructions.
 * **CHANGES** - a chronological list of changes from the earliest release to the latest release.
