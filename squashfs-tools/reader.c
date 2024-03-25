@@ -647,7 +647,7 @@ static void reader_read_data(struct dir_ent *dir_ent)
 }
 
 
-void reader_scan(struct dir_info *dir)
+static void reader_scan(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = dir->list;
 
