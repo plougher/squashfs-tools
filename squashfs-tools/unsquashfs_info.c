@@ -42,9 +42,9 @@
 #include "unsquashfs_error.h"
 #include "signals.h"
 
-char *pathname = NULL;
+static char *pathname = NULL;
 
-pthread_t info_thread;
+static pthread_t info_thread;
 
 
 void disable_info()
