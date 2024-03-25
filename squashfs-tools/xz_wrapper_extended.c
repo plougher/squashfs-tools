@@ -43,6 +43,9 @@ static struct bcj bcj[] = {
 #ifdef LZMA_FILTER_ARM64
 	{ "arm64", LZMA_FILTER_ARM64, 0 },
 #endif
+#ifdef LZMA_FILTER_RISCV
+	{ "riscv", LZMA_FILTER_RISCV, 0 },
+#endif
 	{ NULL, LZMA_VLI_UNKNOWN, 0 }
 };
 
@@ -550,6 +553,11 @@ static int xz_compress(void *strm, void *dest, void *src,  int size,
 		}
 #endif
 
+#ifdef LZMA_FILTER_RISCV
+		if(filter->filter[0].id == LZMA_FILTER_RISCV)
+			stream->opt.lp = 1;
+#endif
+
 		if (lc >= 0)
 			stream->opt.lc = lc;
 
@@ -618,7 +626,7 @@ static void xz_usage(FILE *stream)
 	fprintf(stream, " turn\n\t\t(in addition to no filter), and choose");
 	fprintf(stream, " the best compression.\n");
 	fprintf(stream, "\t\tAvailable filters: x86, arm, armthumb, arm64,");
-	fprintf(stream, " powerpc, sparc,\n\t\tia64\n");
+	fprintf(stream, " powerpc, sparc,\n\t\tia64, riscv\n");
 	fprintf(stream, "\t  -Xdict-size <dict-size>\n");
 	fprintf(stream, "\t\tUse <dict-size> as the XZ dictionary size.  The");
 	fprintf(stream, " dictionary size\n\t\tcan be specified as a");
