@@ -72,6 +72,7 @@
 #define SQUASHFS_NO_XATTR		9
 #define SQUASHFS_COMP_OPT		10
 #define SQUASHFS_NOID			11
+#define SQUASHFS_INFO			12
 
 #define SQUASHFS_BIT(flag, bit)		((flag >> bit) & 1)
 
@@ -108,12 +109,16 @@
 #define SQUASHFS_UNCOMPRESSED_IDS(flags)	SQUASHFS_BIT(flags, \
 						SQUASHFS_NOID)
 
+#define SQUASHFS_EXTRA_INFO(flags)		SQUASHFS_BIT(flags, \
+						SQUASHFS_INFO)
+
 #define SQUASHFS_MKFLAGS(noi, nod, nof, nox, noid, no_frag, always_frag, \
-		duplicate_checking, exportable, no_xattr, comp_opt) (noi | \
+		duplicate_checking, exportable, no_xattr, comp_opt, \
+		extra_info) (noi | \
 		(nod << 1) | (nof << 3) | (no_frag << 4) | \
 		(always_frag << 5) | (duplicate_checking << 6) | \
 		(exportable << 7) | (nox << 8) | (no_xattr << 9) | \
-		(comp_opt << 10) | (noid << 11))
+		(comp_opt << 10) | (noid << 11) | (extra_info << 12))
 
 /* Max number of types and file types */
 #define SQUASHFS_DIR_TYPE		1
@@ -288,6 +293,10 @@ typedef long long		squashfs_inode;
 #define XZ_COMPRESSION		4
 #define LZ4_COMPRESSION		5
 #define ZSTD_COMPRESSION	6
+
+#define SQUASHFS_EXTRA_INFO_TAG_END   0
+#define SQUASHFS_EXTRA_INFO_TAG_LABEL 1
+#define SQUASHFS_EXTRA_INFO_TAG_UUID  2
 
 struct squashfs_super_block {
 	unsigned int		s_magic;
