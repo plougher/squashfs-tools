@@ -29,6 +29,13 @@ struct priority_entry {
 	struct priority_entry *next;
 };
 
+struct sort_info {
+	dev_t			st_dev;
+	ino_t			st_ino;
+	int			priority;
+	struct sort_info	*next;
+};
+
 extern int read_sort_file(char *, int, char *[]);
 extern void sort_files_and_write(struct dir_info *);
 extern void generate_file_priorities(struct dir_info *, int priority,

@@ -46,13 +46,6 @@
 
 static int mkisofs_style = -1;
 
-struct sort_info {
-	dev_t			st_dev;
-	ino_t			st_ino;
-	int			priority;
-	struct sort_info	*next;
-};
-
 static struct sort_info *sort_info_list[65536];
 
 struct priority_entry *priority_list[65536];
