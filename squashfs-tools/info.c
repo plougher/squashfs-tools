@@ -47,7 +47,7 @@
 static int silent = 0;
 static struct dir_ent *ent = NULL;
 
-pthread_t info_thread;
+static pthread_t info_thread;
 
 
 void disable_info()
