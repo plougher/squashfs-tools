@@ -6447,12 +6447,19 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\t<value> can be either an integer uid ");
 	fprintf(stream, "or user name.  This\n\t\t\talso sets the root ");
 	fprintf(stream, "inode uid\n");
-	fprintf(stream, "-default-gid <gid>\ttar files often do not store ");
+
+
+	fprintf(stream, "-default-gid <value>\ttar files often do not store ");
 	fprintf(stream, "gids for intermediate\n\t\t\tdirectories.  This ");
 	fprintf(stream, "option sets the default directory\n\t\t\tgroup to ");
-	fprintf(stream, "<gid>, rather than the group of the user\n");
-	fprintf(stream, "\t\t\trunning Sqfstar.  This also sets the root ");
-	fprintf(stream, "inode gid\n");
+	fprintf(stream, "<value>, rather than the group of the user\n");
+	fprintf(stream, "\t\t\trunning Sqfstar.  <value> can be either an ");
+	fprintf(stream, "integer uid\n\t\t\tor group name.  This also sets ");
+	fprintf(stream, "the root inode gid\n");
+
+
+
+
 	fprintf(stream, "-pseudo-override\tmake pseudo file uids and gids ");
 	fprintf(stream, "override -all-root,\n\t\t\t-force-uid and ");
 	fprintf(stream, "-force-gid options\n");
@@ -7003,9 +7010,20 @@ static int sqfstar(int argc, char *argv[])
 			root_uid = default_uid;
 			default_uid_opt = root_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-gid") == 0) {
-			if((++i == dest_index) || !parse_num_unsigned(argv[i], &default_gid)) {
-				ERROR("%s: -default-gid missing or invalid gid\n",
+			if(++i == dest_index) {
+				ERROR("%s: -default-gid missing gid or group name\n",
 					argv[0]);
+				exit(1);
+			}
+
+			res = get_gid_from_arg(argv[i], &default_gid);
+			if(res) {
+				if(res == -2)
+					ERROR("%s: -default-gid gid out of range"
+						"\n", argv[0]);
+				else
+					ERROR("%s: -default-gid invalid gid or "
+						"unknown group name\n", argv[0]);
 				exit(1);
 			}
 			root_gid = default_gid;
