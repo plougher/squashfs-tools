@@ -6289,12 +6289,13 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "Mksquashfs.  <value> can be either an integer uid ");
 	fprintf(stream, "or\n\t\t\tuser name.  This also sets the root ");
 	fprintf(stream, "inode uid\n");
-	fprintf(stream, "-default-gid <gid>\ttar files often do not store ");
+	fprintf(stream, "-default-gid <value>\ttar files often do not store ");
 	fprintf(stream, "gids for intermediate\n\t\t\tdirectories.  This ");
 	fprintf(stream, "option sets the default directory\n\t\t\tgroup to ");
-	fprintf(stream, "<gid>, rather than the group of the user\n");
-	fprintf(stream, "\t\t\trunning Mksquashfs.  This also sets the root ");
-	fprintf(stream, "inode gid\n");
+	fprintf(stream, "<value>, rather than the group of the user\n");
+	fprintf(stream, "\t\t\trunning Mksquashfs.  <value> can be either an ");
+	fprintf(stream, "integer\n\t\t\tuid or group name.  This also sets ");
+	fprintf(stream, "the root inode gid\n");
 	fprintf(stream, "-ignore-zeros\t\tallow tar files to be concatenated ");
 	fprintf(stream, "together and fed to\n\t\t\tMksquashfs.  Normally a ");
 	fprintf(stream, "tarfile has two consecutive 512\n\t\t\tbyte blocks ");
@@ -7889,9 +7890,20 @@ int main(int argc, char *argv[])
 			root_uid = default_uid;
 			default_uid_opt = root_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-gid") == 0) {
-			if((++i == argc) || !parse_num_unsigned(argv[i], &default_gid)) {
-				ERROR("%s: -default-gid missing or invalid gid\n",
+			if(++i == argc) {
+				ERROR("%s: -default-gid missing gid or group name\n",
 					argv[0]);
+				exit(1);
+			}
+
+			res = get_gid_from_arg(argv[i], &default_gid);
+			if(res) {
+				if(res == -2)
+					ERROR("%s: -default-gid gid out of range"
+						"\n", argv[0]);
+				else
+					ERROR("%s: -default-gid invalid gid or "
+						"unknown group name\n", argv[0]);
 				exit(1);
 			}
 			root_gid = default_gid;
