@@ -6282,11 +6282,13 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "This option sets the default\n\t\t\tdirectory ");
 	fprintf(stream, "permissions to octal <mode>, rather than 0755.\n");
 	fprintf(stream, "\t\t\tThis also sets the root inode mode\n");
-	fprintf(stream, "-default-uid <uid>\ttar files often do not store ");
+	fprintf(stream, "-default-uid <value>\ttar files often do not store ");
 	fprintf(stream, "uids for intermediate\n\t\t\tdirectories.  This ");
 	fprintf(stream, "option sets the default directory\n\t\t\towner to ");
-	fprintf(stream, "<uid>, rather than the user running Mksquashfs.\n");
-	fprintf(stream, "\t\t\tThis also sets the root inode uid\n");
+	fprintf(stream, "<value>, rather than the user running\n\t\t\t");
+	fprintf(stream, "Mksquashfs.  <value> can be either an integer uid ");
+	fprintf(stream, "or\n\t\t\tuser name.  This also sets the root ");
+	fprintf(stream, "inode uid\n");
 	fprintf(stream, "-default-gid <gid>\ttar files often do not store ");
 	fprintf(stream, "gids for intermediate\n\t\t\tdirectories.  This ");
 	fprintf(stream, "option sets the default directory\n\t\t\tgroup to ");
@@ -7868,9 +7870,20 @@ int main(int argc, char *argv[])
 			root_mode = default_mode;
 			default_mode_opt = root_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-uid") == 0) {
-			if((++i == argc) || !parse_num_unsigned(argv[i], &default_uid)) {
-				ERROR("%s: -default-uid missing or invalid uid\n",
+			if(++i == argc) {
+				ERROR("%s: -default-uid missing uid or user name\n",
 					argv[0]);
+				exit(1);
+			}
+
+			res = get_uid_from_arg(argv[i], &default_uid);
+			if(res) {
+				if(res == -2)
+					ERROR("%s: -default-uid uid out of range\n",
+						argv[0]);
+				else
+					ERROR("%s: -default-uid invalid uid or "
+						"unknown user name\n", argv[0]);
 				exit(1);
 			}
 			root_uid = default_uid;
