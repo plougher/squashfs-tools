@@ -6892,7 +6892,7 @@ static int sqfstar(int argc, char *argv[])
 			}
 			readq = 4;
 		} else if(strcmp(argv[i], "-limit") == 0) {
-			if((++i == dest_index) || !parse_num(argv[i], &sleep_time)) {
+			if((++i == dest_index) || !parse_number(argv[i], &sleep_time, 0)) {
 				ERROR("%s: %s missing or invalid value\n",
 							argv[0], argv[i - 1]);
 				exit(1);
