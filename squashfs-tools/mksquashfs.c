@@ -7790,7 +7790,7 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-throttle") == 0) {
-			if((++i == argc) || !parse_num(argv[i], &sleep_time)) {
+			if((++i == argc) || !parse_number(argv[i], &sleep_time, 2)) {
 				ERROR("%s: %s missing or invalid value\n",
 							argv[0], argv[i - 1]);
 				exit(1);
