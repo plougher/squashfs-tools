@@ -6880,7 +6880,7 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-throttle") == 0) {
-			if((++i == dest_index) || !parse_num(argv[i], &sleep_time)) {
+			if((++i == dest_index) || !parse_number(argv[i], &sleep_time, 2)) {
 				ERROR("%s: %s missing or invalid value\n",
 							argv[0], argv[i - 1]);
 				exit(1);
