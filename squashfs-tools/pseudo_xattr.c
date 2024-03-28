@@ -60,11 +60,11 @@ static void add_xattr(struct pseudo_xattr **xattr, struct xattr_add *entry)
 static struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *xattr,
 	char *target, char *alltarget)
 {
-	char *targname;
+	char *targname, *subpathend;
 	int new;
 	struct pseudo_entry *ent;
 
-	target = get_element(target, &targname);
+	target = get_element(target, &targname, &subpathend);
 
 	if(pseudo == NULL) {
 		pseudo = malloc(sizeof(struct pseudo));
@@ -76,12 +76,11 @@ static struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *
 		pseudo->head = NULL;
 	}
 
-	ent = pseudo_search(pseudo, targname, &new);
+	ent = pseudo_search(pseudo, targname, alltarget, subpathend, &new);
 
 	if(new) {
 		if(target[0] == '\0') {
 			/* at leaf pathname component */
-			ent->pathname = strdup(alltarget);
 			add_xattr(&ent->xattr, xattr);
 		} else {
 			/* recurse adding child components */
@@ -95,7 +94,6 @@ static struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *
 
 		if(target[0] == '\0') {
 			/* Add xattr to this entry */
-			ent->pathname = strdup(alltarget);
 			add_xattr(&ent->xattr, xattr);
 		} else {
 			/* recurse adding child components */

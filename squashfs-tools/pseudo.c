@@ -53,7 +53,7 @@
 
 struct pseudo *pseudo = NULL;
 
-char *get_element(char *target, char **targname)
+char *get_element(char *target, char **targname, char **subpathend)
 {
 	char *start;
 
@@ -62,6 +62,7 @@ char *get_element(char *target, char **targname)
 		target ++;
 
 	*targname = strndup(start, target - start);
+	*subpathend = target;
 
 	while(*target == '/')
 		target ++;
@@ -71,7 +72,7 @@ char *get_element(char *target, char **targname)
 
 
 struct pseudo_entry *pseudo_search(struct pseudo *pseudo, char *targname,
-								int *new)
+				char *alltarget, char *subpathend, int *new)
 {
 	struct pseudo_entry *cur, *ent, *prev;
 
@@ -90,7 +91,7 @@ struct pseudo_entry *pseudo_search(struct pseudo *pseudo, char *targname,
 		MEM_ERROR();
 
 	ent->name = targname;
-	ent->pathname = NULL;
+	ent->pathname = strndup(alltarget, subpathend - alltarget);
 	ent->dev = NULL;
 	ent->pseudo = NULL;
 	ent->xattr = NULL;
@@ -116,11 +117,11 @@ struct pseudo_entry *pseudo_search(struct pseudo *pseudo, char *targname,
 static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseudo_dev,
 	char *target, char *alltarget)
 {
-	char *targname;
+	char *targname, *subpathend;
 	int new;
 	struct pseudo_entry *ent;
 
-	target = get_element(target, &targname);
+	target = get_element(target, &targname, &subpathend);
 
 	if(pseudo == NULL) {
 		pseudo = malloc(sizeof(struct pseudo));
@@ -132,12 +133,11 @@ static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseud
 		pseudo->head = NULL;
 	}
 
-	ent = pseudo_search(pseudo, targname, &new);
+	ent = pseudo_search(pseudo, targname, alltarget, subpathend, &new);
 
 	if(new) {
 		if(target[0] == '\0') {
 			/* at leaf pathname component */
-			ent->pathname = strdup(alltarget);
 			ent->dev = pseudo_dev;
 		} else {
 			/* recurse adding child components */
@@ -172,7 +172,6 @@ static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseud
 				}
 			} else if(ent->dev == NULL) {
 				/* add this pseudo definition */
-				ent->pathname = strdup(alltarget);
 				ent->dev = pseudo_dev;
 			} else if(memcmp(pseudo_dev, ent->dev,
 					sizeof(struct pseudo_dev)) != 0) {
@@ -193,7 +192,6 @@ static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseud
 				if(ent->dev == NULL &&
 						(pseudo_dev->type == 'd' ||
 						pseudo_dev->type == 'm')) {
-					ent->pathname = strdup(alltarget);
 					ent->dev = pseudo_dev;
 				} else {
 					ERROR_START("%s already exists as a "
@@ -331,13 +329,13 @@ failed:
 
 static struct pseudo_entry *pseudo_lookup(struct pseudo *pseudo, char *target)
 {
-	char *targname;
+	char *targname, *subpathend;
 	struct pseudo_entry *ent;
 
 	if(pseudo == NULL)
 		return NULL;
 
-	target = get_element(target, &targname);
+	target = get_element(target, &targname, &subpathend);
 
 	for(ent = pseudo->head; ent; ent = ent->next)
 		if(strcmp(ent->name, targname) == 0)

@@ -103,7 +103,7 @@ extern struct pseudo_dev *get_pseudo_file(int);
 extern int pseudo_exec_file(struct pseudo_dev *, int *);
 extern struct pseudo *get_pseudo();
 extern void dump_pseudos();
-extern char *get_element(char *target, char **targname);
+extern char *get_element(char *, char **, char **);
 extern void print_definitions();
-extern struct pseudo_entry *pseudo_search(struct pseudo *, char *, int *);
+extern struct pseudo_entry *pseudo_search(struct pseudo *, char *, char *, char *, int *);
 #endif
