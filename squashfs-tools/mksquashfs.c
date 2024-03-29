@@ -4022,11 +4022,23 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			}
 		}
 
-		if(pseudo_ent->dev == NULL)
-			continue;
-
 		if((!appending || dir->depth != 1) && !empty)
 			dir_ent = lookup_name(dir, pseudo_ent->name);
+
+		if(pseudo_ent->dev == NULL) {
+			if(dir_ent == NULL)
+				BAD_ERROR("Pathname \"%s\" does not exist in "
+					"filesystem.  Some pseudo definitions "
+					"will not be created.\n",
+					pseudo_ent->pathname);
+			else if(dir_ent && !S_ISDIR(dir_ent->inode->buf.st_mode) &&
+								pseudo_ent->pseudo)
+				BAD_ERROR("Pathname \"%s\" is not a directory.  Some "
+					"pseudo definitions will not be created.\n",
+					pseudo_ent->pathname);
+			else
+				continue;
+		}
 
 		if(pseudo_ent->dev->type == 'm' || pseudo_ent->dev->type == 'M') {
 			struct stat *buf;
