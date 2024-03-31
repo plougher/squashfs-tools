@@ -104,7 +104,8 @@ extern void sort_xattr_add_list(void);
 extern char *base64_decode(char *source, int size, int *bytes);
 extern int add_xattrs(void);
 extern struct xattr_add *xattr_parse(char *, char *, char *);
-extern int read_pseudo_xattr(char *orig_def, char *name, char *def);
+extern struct xattr_add *read_pseudo_xattr(char *orig_def, char *name, char *def);
+extern struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo, struct xattr_add *xattr, char *target, char *alltarget);
 extern void print_xattr(char *, unsigned int, int);
 extern int has_xattrs(unsigned int);
 #else
@@ -206,12 +207,18 @@ static inline struct xattr_add *xattr_parse(char *a, char *b, char *c)
 }
 
 
-static inline int read_pseudo_xattr(char *orig_def, char *filename, char *name, char *def)
+static inline struct xattr_add *read_pseudo_xattr(char *orig_def, char *filename, char *name, char *def)
 {
 	free(filename);
 	fprintf(stderr, "Xattrs are unsupported in this build\n");
 
-	return 0;
+	return NULL;
+}
+
+
+static inline struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo, struct xattr_add *xattr, char *target, char *alltarget)
+{
+	return NULL;
 }
 
 

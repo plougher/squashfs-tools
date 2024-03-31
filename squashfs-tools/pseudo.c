@@ -380,7 +380,7 @@ void print_definitions()
 }
 
 
-static int read_pseudo_def_pseudo_link(char *orig_def, char *name, char *def)
+static struct pseudo_dev *read_pseudo_def_pseudo_link(char *orig_def, char *name, char *def)
 {
 	char *linkname, *link;
 	int quoted = FALSE;
@@ -439,19 +439,17 @@ static int read_pseudo_def_pseudo_link(char *orig_def, char *name, char *def)
 		goto error;
 	}
 
-	pseudo = add_pseudo_definition(pseudo, pseudo_ent->dev, name, name);
-
 	free(linkname);
-	return TRUE;
+	return pseudo_ent->dev;
 
 error:
 	print_definitions();
 	free(linkname);
-	return FALSE;
+	return NULL;
 }
 
 
-static int read_pseudo_def_link(char *orig_def, char *name, char *def, char *destination)
+static struct pseudo_dev *read_pseudo_def_link(char *orig_def, char *name, char *def, char *destination)
 {
 	char *linkname, *link;
 	int quoted = FALSE;
@@ -546,10 +544,8 @@ static int read_pseudo_def_link(char *orig_def, char *name, char *def, char *des
 	dev->pseudo_type = PSEUDO_FILE_OTHER;
 	dev->linkname = strdup(linkname);
 
-	pseudo = add_pseudo_definition(pseudo, dev, name, name);
-
 	free(linkname);
-	return TRUE;
+	return dev;
 
 error:
 	print_definitions();
@@ -557,11 +553,11 @@ error:
 		free(dev->linkbuf);
 	free(dev);
 	free(linkname);
-	return FALSE;
+	return NULL;
 }
 
 
-static int read_pseudo_def_extended(char type, char *orig_def, char *name,
+static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, char *name,
 	char *def, char *pseudo_file, struct pseudo_file **file)
 {
 	int n, bytes;
@@ -894,17 +890,15 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *name,
 	if(type == 'S')
 		dev->symlink = strdup(symlink);
 
-	pseudo = add_pseudo_definition(pseudo, dev, name, name);
-
-	return TRUE;
+	return dev;
 
 error:
 	print_definitions();
-	return FALSE;
+	return NULL;
 }
 
 
-static int read_pseudo_def_original(char type, char *orig_def, char *name, char *def)
+static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, char *name, char *def)
 {
 	int n, bytes;
 	unsigned int major = 0, minor = 0, mode;
@@ -1123,23 +1117,23 @@ static int read_pseudo_def_original(char type, char *orig_def, char *name, char 
 	if(type == 's')
 		dev->symlink = strdup(symlink);
 
-	pseudo = add_pseudo_definition(pseudo, dev, name, name);
-
-	return TRUE;
+	return dev;
 
 error:
 	print_definitions();
-	return FALSE;
+	return NULL;
 }
 
 
 static int read_pseudo_def(char *def, char *destination, char *pseudo_file, struct pseudo_file **file)
 {
-	int n, bytes, res;
+	int n, bytes;
 	int quoted = 0;
 	char type;
 	char *filename, *name;
 	char *orig_def = def;
+	struct pseudo_dev *dev = NULL;
+	struct xattr_add *xattr = NULL;
 
 	/*
 	 * Scan for filename, don't use sscanf() and "%s" because
@@ -1186,18 +1180,23 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	}
 
 	if(type == 'x')
-		res = read_pseudo_xattr(orig_def, name, def);
+		xattr = read_pseudo_xattr(orig_def, name, def);
 	else if(type == 'l')
-		res = read_pseudo_def_link(orig_def, name, def, destination);
+		dev = read_pseudo_def_link(orig_def, name, def, destination);
 	else if(type == 'L')
-		res = read_pseudo_def_pseudo_link(orig_def, name, def);
+		dev = read_pseudo_def_pseudo_link(orig_def, name, def);
 	else if(isupper(type))
-		res = read_pseudo_def_extended(type, orig_def, name, def, pseudo_file, file);
+		dev = read_pseudo_def_extended(type, orig_def, name, def, pseudo_file, file);
 	else
-		res = read_pseudo_def_original(type, orig_def, name, def);
+		dev = read_pseudo_def_original(type, orig_def, name, def);
+
+	if(dev)
+		pseudo = add_pseudo_definition(pseudo, dev, name, name);
+	else if(xattr)
+		pseudo = add_pseudo_xattr_definition(pseudo, xattr, name, name);
 
 	free(filename);
-	return res;
+	return dev != NULL || xattr != NULL;
 
 error:
 	print_definitions();
