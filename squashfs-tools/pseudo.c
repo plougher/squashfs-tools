@@ -1186,7 +1186,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	}
 
 	if(type == 'x')
-		return read_pseudo_xattr(orig_def, filename, name, def);
+		res = read_pseudo_xattr(orig_def, name, def);
 	else if(type == 'l')
 		res = read_pseudo_def_link(orig_def, name, def, destination);
 	else if(type == 'L')
