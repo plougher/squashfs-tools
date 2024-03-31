@@ -380,7 +380,7 @@ void print_definitions()
 }
 
 
-static int read_pseudo_def_pseudo_link(char *orig_def, char *filename, char *name, char *def)
+static int read_pseudo_def_pseudo_link(char *orig_def, char *name, char *def)
 {
 	char *linkname, *link;
 	int quoted = FALSE;
@@ -441,13 +441,11 @@ static int read_pseudo_def_pseudo_link(char *orig_def, char *filename, char *nam
 
 	pseudo = add_pseudo_definition(pseudo, pseudo_ent->dev, name, name);
 
-	free(filename);
 	free(linkname);
 	return TRUE;
 
 error:
 	print_definitions();
-	free(filename);
 	free(linkname);
 	return FALSE;
 }
@@ -1194,7 +1192,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	else if(type == 'l')
 		return read_pseudo_def_link(orig_def, filename, name, def, destination);
 	else if(type == 'L')
-		return read_pseudo_def_pseudo_link(orig_def, filename, name, def);
+		res = read_pseudo_def_pseudo_link(orig_def, name, def);
 	else if(isupper(type))
 		res = read_pseudo_def_extended(type, orig_def, name, def, pseudo_file, file);
 	else
