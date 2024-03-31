@@ -565,8 +565,8 @@ error:
 }
 
 
-static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
-	char *name, char *def, char *pseudo_file, struct pseudo_file **file)
+static int read_pseudo_def_extended(char type, char *orig_def, char *name,
+	char *def, char *pseudo_file, struct pseudo_file **file)
 {
 	int n, bytes;
 	int quoted = FALSE;
@@ -900,12 +900,10 @@ static int read_pseudo_def_extended(char type, char *orig_def, char *filename,
 
 	pseudo = add_pseudo_definition(pseudo, dev, name, name);
 
-	free(filename);
 	return TRUE;
 
 error:
 	print_definitions();
-	free(filename);
 	return FALSE;
 }
 
@@ -1198,7 +1196,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	else if(type == 'L')
 		return read_pseudo_def_pseudo_link(orig_def, filename, name, def);
 	else if(isupper(type))
-		return read_pseudo_def_extended(type, orig_def, filename, name, def, pseudo_file, file);
+		res = read_pseudo_def_extended(type, orig_def, name, def, pseudo_file, file);
 	else
 		res = read_pseudo_def_original(type, orig_def, name, def);
 
