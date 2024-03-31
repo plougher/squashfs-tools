@@ -30,5 +30,5 @@ The top-level directory has the following directories:
 * **generate-manpages** - shell scripts etc used to generate the manpages.
 * **examples** - an old example file on how to use pseudo-file definitions.
 * **RELEASE-READMEs** - README files from previous releases.
-* **kernel** - directory containing Squashfs kernel source code.  This directory has been unused since mainlining Squashfs into the kernel in 2009.  The files are obsolete and not undated and are preserved for historical reasons.
+* **kernel** - directory containing Squashfs kernel source code.  This directory has been unused since mainlining Squashfs into the kernel in 2009.  The files are obsolete and not updated and are preserved for historical reasons.
 
