@@ -451,7 +451,7 @@ error:
 }
 
 
-static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char *def, char *destination)
+static int read_pseudo_def_link(char *orig_def, char *name, char *def, char *destination)
 {
 	char *linkname, *link;
 	int quoted = FALSE;
@@ -548,7 +548,6 @@ static int read_pseudo_def_link(char *orig_def, char *filename, char *name, char
 
 	pseudo = add_pseudo_definition(pseudo, dev, name, name);
 
-	free(filename);
 	free(linkname);
 	return TRUE;
 
@@ -557,7 +556,6 @@ error:
 	if(dev)
 		free(dev->linkbuf);
 	free(dev);
-	free(filename);
 	free(linkname);
 	return FALSE;
 }
@@ -1190,7 +1188,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	if(type == 'x')
 		return read_pseudo_xattr(orig_def, filename, name, def);
 	else if(type == 'l')
-		return read_pseudo_def_link(orig_def, filename, name, def, destination);
+		res = read_pseudo_def_link(orig_def, name, def, destination);
 	else if(type == 'L')
 		res = read_pseudo_def_pseudo_link(orig_def, name, def);
 	else if(isupper(type))
