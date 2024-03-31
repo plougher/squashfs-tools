@@ -6389,8 +6389,9 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\nFilesystem compression options:\n");
 	fprintf(stream, "-b <block_size>\t\tset data block to <block_size>.  Default ");
 	fprintf(stream, "128 Kbytes.\n");
-	fprintf(stream, "\t\t\tOptionally a suffix of K or M can be given to ");
-	fprintf(stream, "specify\n\t\t\tKbytes or Mbytes respectively\n");
+	fprintf(stream, "\t\t\tOptionally a suffix of K, KB, Kbytes or ");
+	fprintf(stream, "M, MB, Mbytes\n\t\t\tcan be given to ");
+	fprintf(stream, "specify Kbytes or Mbytes respectively\n");
 	fprintf(stream, "-comp <comp>\t\tselect <comp> compression\n");
 	fprintf(stream, "\t\t\tCompressors available:\n");
 	display_compressors(stream, "\t\t\t", COMP_DEFAULT);
