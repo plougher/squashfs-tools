@@ -5855,7 +5855,7 @@ static int _parse_numberll(char *start, long long *res, int size, int base)
 	if(size == 1) {
 		/*
 		 * Allow a multiplier of  k, K, m, M, g, G optionally
-		 * followed by bytes.
+		 * followed by B, b, or bytes.
 		 *
 		 * Check for multiplier and trailing junk.
 		 * But first check that a number exists before the
@@ -5873,8 +5873,8 @@ static int _parse_numberll(char *start, long long *res, int size, int base)
 
 			if(end[1] != '\0')
 				/* trailing junk after multiplier, but
-				 * allow it to be "bytes" */
-				if(strcmp(end + 1, "bytes"))
+				 * allow it to be B, b or bytes */
+				if(strcmp(end + 1, "bytes") && strcmp(end + 1, "B") && strcmp(end + 1, "b"))
 					return 0;
 
 			break;
@@ -5886,8 +5886,8 @@ static int _parse_numberll(char *start, long long *res, int size, int base)
 
 			if(end[1] != '\0')
 				/* trailing junk after multiplier, but
-				 * allow it to be "bytes" */
-				if(strcmp(end + 1, "bytes"))
+				 * allow it to be B, b or bytes */
+				if(strcmp(end + 1, "bytes") && strcmp(end + 1, "B") && strcmp(end + 1, "b"))
 					return 0;
 
 			break;
@@ -5899,8 +5899,8 @@ static int _parse_numberll(char *start, long long *res, int size, int base)
 
 			if(end[1] != '\0')
 				/* trailing junk after multiplier, but
-				 * allow it to be "bytes" */
-				if(strcmp(end + 1, "bytes"))
+				 * allow it to be B, b or bytes */
+				if(strcmp(end + 1, "bytes") && strcmp(end + 1, "B") && strcmp(end + 1, "b"))
 					return 0;
 
 			break;
