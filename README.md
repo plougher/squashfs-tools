@@ -19,7 +19,7 @@ The top-level directory contains the following information files:
 * **USAGE-SQFSTAR-4.6** - how to use the Sqfstar program to convert tarfiles to Squashfs images.
 * **USAGE-SQFSCAT-4.6** - how to use the Sqfscat program to cat (print) one or more files to stdout from Squashfs images.
 * **INSTALL** - installation instructions.
-* **CHANGES** - a chronological list of changes from the earliest release to the latest release.
+* **CHANGES** - a reverse chronological list of changes from the latest release to the earliest release.
 * **ACTION-README** - instructions on how to use the Actions feature of Mksquashfs.
 * **TECHNICAL-INFO** - some technical information on Reproducible builds, Extended Attributes and the filesystem layout.
 
