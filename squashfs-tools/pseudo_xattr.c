@@ -147,10 +147,5 @@ struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo,
 
 struct xattr_add *read_pseudo_xattr(char *orig_def, char *name, char *def)
 {
-	struct xattr_add *xattr = xattr_parse(def, "", "pseudo xattr");
-
-	if(xattr == NULL)
-		print_definitions();
-
-	return xattr;
+	return xattr_parse(def, "", "pseudo xattr");
 }

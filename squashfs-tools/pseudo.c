@@ -356,7 +356,7 @@ static struct pseudo_entry *pseudo_lookup(struct pseudo *pseudo, char *target)
 }
 
 
-void print_definitions()
+static void print_definitions()
 {
 	ERROR("Pseudo definitions should be of the format\n");
 	ERROR("\tfilename d mode uid gid\n");
@@ -443,7 +443,6 @@ static struct pseudo_dev *read_pseudo_def_pseudo_link(char *orig_def, char *name
 	return pseudo_ent->dev;
 
 error:
-	print_definitions();
 	free(linkname);
 	return NULL;
 }
@@ -548,7 +547,6 @@ static struct pseudo_dev *read_pseudo_def_link(char *orig_def, char *name, char 
 	return dev;
 
 error:
-	print_definitions();
 	if(dev)
 		free(dev->linkbuf);
 	free(dev);
@@ -611,7 +609,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 			ERROR("Not enough or invalid arguments in pseudo file "
 				"definition \"%s\"\n", orig_def);
 			free(string);
-			goto error;
+			return NULL;
 		}
 
 		n = exec_date(string, &mtime);
@@ -620,7 +618,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 					"unsigned decimal integer "
 					"expected\n");
 			free(string);
-			goto error;
+			return NULL;
 		}
 
 		free(string);
@@ -645,7 +643,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 					"to read or match gid\n");
 				break;
 			}
-			goto error;
+			return NULL;
 		}
 	} else {
 		def += bytes;
@@ -667,7 +665,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 					"to read or match gid\n");
 				break;
 			}
-			goto error;
+			return NULL;
 		}
 	}
 
@@ -689,17 +687,17 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 				ERROR("Read filename, type, time, mode, uid, gid "
 					"and major, but failed to read  or "
 					"match minor\n");
-			goto error;
+			return NULL;
 		}
 
 		if(major > 0xfff) {
 			ERROR("Major %d out of range\n", major);
-			goto error;
+			return NULL;
 		}
 
 		if(minor > 0xfffff) {
 			ERROR("Minor %d out of range\n", minor);
-			goto error;
+			return NULL;
 		}
 		break;
 	case 'I':
@@ -711,18 +709,18 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 				"pseudo file definition \"%s\"\n", orig_def);
 			ERROR("Read filename, type, mode, uid and gid, "
 				"but failed to read or match ipc_type\n");
-			goto error;
+			return NULL;
 		}
 
 		if(ipc_type != 's' && ipc_type != 'f') {
 			ERROR("Ipc_type should be s or f\n");
-			goto error;
+			return NULL;
 		}
 		break;
 	case 'R':
 		if(pseudo_file == NULL) {
 			ERROR("'R' definition can only be used in a Pseudo file\n");
-			goto error;
+			return NULL;
 		}
 
 		n = sscanf(def, "%lld %lld %d %n", &file_length, &pseudo_offset,
@@ -735,7 +733,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 			ERROR("Read filename, type, time, mode, uid and gid, "
 				"but failed to read or match file length, "
 						"offset or sparse\n");
-			goto error;
+			return NULL;
 		}
 		break;
 	case 'D':
@@ -747,7 +745,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 				"definition \"%s\"\n", orig_def);
 			ERROR("Expected command, which can be an executable "
 				"or a piece of shell script\n");
-			goto error;
+			return NULL;
 		}
 		command = def;
 		def += strlen(def);
@@ -757,20 +755,20 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 			ERROR("Not enough arguments in symlink pseudo "
 				"definition \"%s\"\n", orig_def);
 			ERROR("Expected symlink\n");
-			goto error;
+			return NULL;
 		}
 
 		if(strlen(def) > 65535) {
 			ERROR("Symlink pseudo definition %s is greater than 65535"
 								" bytes!\n", def);
-			goto error;
+			return NULL;
 		}
 		symlink = def;
 		def += strlen(def);
 		break;
 	default:
 		ERROR("Unsupported type %c\n", type);
-		goto error;
+		return NULL;
 	}
 
 	/*
@@ -779,19 +777,19 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 	if(def[0] != '\0') {
 		ERROR("Unexpected tailing characters in pseudo file "
 			"definition \"%s\"\n", orig_def);
-		goto error;
+		return NULL;
 	}
 
 	if(mode > 07777) {
 		ERROR("Mode %o out of range\n", mode);
-		goto error;
+		return NULL;
 	}
 
 	uid = strtoll(suid, &ptr, 10);
 	if(*ptr == '\0') {
 		if(uid < 0 || uid > ((1LL << 32) - 1)) {
 			ERROR("Uid %s out of range\n", suid);
-			goto error;
+			return NULL;
 		}
 	} else {
 		struct passwd *pwuid = getpwnam(suid);
@@ -799,7 +797,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 			uid = pwuid->pw_uid;
 		else {
 			ERROR("Uid %s invalid uid or unknown user\n", suid);
-			goto error;
+			return NULL;
 		}
 	}
 
@@ -807,7 +805,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 	if(*ptr == '\0') {
 		if(gid < 0 || gid > ((1LL << 32) - 1)) {
 			ERROR("Gid %s out of range\n", sgid);
-			goto error;
+			return NULL;
 		}
 	} else {
 		struct group *grgid = getgrnam(sgid);
@@ -815,7 +813,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 			gid = grgid->gr_gid;
 		else {
 			ERROR("Gid %s invalid uid or unknown user\n", sgid);
-			goto error;
+			return NULL;
 		}
 	}
 
@@ -891,10 +889,6 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, ch
 		dev->symlink = strdup(symlink);
 
 	return dev;
-
-error:
-	print_definitions();
-	return NULL;
 }
 
 
@@ -934,7 +928,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 				"to read or match gid\n");
 			break; 
 		}
-		goto error;
+		return NULL;
 	}
 
 	switch(type) {
@@ -955,17 +949,17 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 				ERROR("Read filename, type, mode, uid, gid "
 					"and major, but failed to read  or "
 					"match minor\n");
-			goto error;
+			return NULL;
 		}	
 		
 		if(major > 0xfff) {
 			ERROR("Major %d out of range\n", major);
-			goto error;
+			return NULL;
 		}
 
 		if(minor > 0xfffff) {
 			ERROR("Minor %d out of range\n", minor);
-			goto error;
+			return NULL;
 		}
 		break;
 	case 'i':
@@ -977,12 +971,12 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 				"pseudo file definition \"%s\"\n", orig_def);
 			ERROR("Read filename, type, mode, uid and gid, "
 				"but failed to read or match ipc_type\n");
-			goto error;
+			return NULL;
 		}
 
 		if(ipc_type != 's' && ipc_type != 'f') {
 			ERROR("Ipc_type should be s or f\n");
-			goto error;
+			return NULL;
 		}
 		break;
 	case 'd':
@@ -994,7 +988,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 				"definition \"%s\"\n", orig_def);
 			ERROR("Expected command, which can be an executable "
 				"or a piece of shell script\n");
-			goto error;
+			return NULL;
 		}	
 		command = def;
 		def += strlen(def);
@@ -1004,20 +998,20 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 			ERROR("Not enough arguments in symlink pseudo "
 				"definition \"%s\"\n", orig_def);
 			ERROR("Expected symlink\n");
-			goto error;
+			return NULL;
 		}
 
 		if(strlen(def) > 65535) {
 			ERROR("Symlink pseudo definition %s is greater than 65535"
 								" bytes!\n", def);
-			goto error;
+			return NULL;
 		}
 		symlink = def;
 		def += strlen(def);
 		break;
 	default:
 		ERROR("Unsupported type %c\n", type);
-		goto error;
+		return NULL;
 	}
 
 	/*
@@ -1026,19 +1020,19 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 	if(def[0] != '\0') {
 		ERROR("Unexpected tailing characters in pseudo file "
 			"definition \"%s\"\n", orig_def);
-		goto error;
+		return NULL;
 	}
 
 	if(mode > 07777) {
 		ERROR("Mode %o out of range\n", mode);
-		goto error;
+		return NULL;
 	}
 
 	uid = strtoll(suid, &ptr, 10);
 	if(*ptr == '\0') {
 		if(uid < 0 || uid > ((1LL << 32) - 1)) {
 			ERROR("Uid %s out of range\n", suid);
-			goto error;
+			return NULL;
 		}
 	} else {
 		struct passwd *pwuid = getpwnam(suid);
@@ -1046,7 +1040,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 			uid = pwuid->pw_uid;
 		else {
 			ERROR("Uid %s invalid uid or unknown user\n", suid);
-			goto error;
+			return NULL;
 		}
 	}
 		
@@ -1054,7 +1048,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 	if(*ptr == '\0') {
 		if(gid < 0 || gid > ((1LL << 32) - 1)) {
 			ERROR("Gid %s out of range\n", sgid);
-			goto error;
+			return NULL;
 		}
 	} else {
 		struct group *grgid = getgrnam(sgid);
@@ -1062,7 +1056,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 			gid = grgid->gr_gid;
 		else {
 			ERROR("Gid %s invalid uid or unknown user\n", sgid);
-			goto error;
+			return NULL;
 		}
 	}
 
@@ -1118,10 +1112,6 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 		dev->symlink = strdup(symlink);
 
 	return dev;
-
-error:
-	print_definitions();
-	return NULL;
 }
 
 
@@ -1194,6 +1184,8 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 		pseudo = add_pseudo_definition(pseudo, dev, name, name);
 	else if(xattr)
 		pseudo = add_pseudo_xattr_definition(pseudo, xattr, name, name);
+	else
+		print_definitions();
 
 	free(filename);
 	return dev != NULL || xattr != NULL;
