@@ -892,7 +892,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 }
 
 
-static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, char *name, char *def)
+static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, char *def)
 {
 	int n, bytes;
 	unsigned int major = 0, minor = 0, mode;
@@ -1178,7 +1178,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	else if(isupper(type))
 		dev = read_pseudo_def_extended(type, orig_def, def, pseudo_file, file);
 	else
-		dev = read_pseudo_def_original(type, orig_def, name, def);
+		dev = read_pseudo_def_original(type, orig_def, def);
 
 	if(dev)
 		pseudo = add_pseudo_definition(pseudo, dev, name, name);
