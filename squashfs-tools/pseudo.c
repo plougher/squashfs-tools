@@ -555,7 +555,7 @@ error:
 }
 
 
-static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def, char *name,
+static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 	char *def, char *pseudo_file, struct pseudo_file **file)
 {
 	int n, bytes;
@@ -1176,7 +1176,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	else if(type == 'L')
 		dev = read_pseudo_def_pseudo_link(orig_def, def);
 	else if(isupper(type))
-		dev = read_pseudo_def_extended(type, orig_def, name, def, pseudo_file, file);
+		dev = read_pseudo_def_extended(type, orig_def, def, pseudo_file, file);
 	else
 		dev = read_pseudo_def_original(type, orig_def, name, def);
 
