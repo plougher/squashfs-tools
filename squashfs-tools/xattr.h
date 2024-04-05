@@ -104,7 +104,7 @@ extern void sort_xattr_add_list(void);
 extern char *base64_decode(char *source, int size, int *bytes);
 extern int add_xattrs(void);
 extern struct xattr_add *xattr_parse(char *, char *, char *);
-extern struct xattr_add *read_pseudo_xattr(char *orig_def, char *name, char *def);
+extern struct xattr_add *read_pseudo_xattr(char *def);
 extern struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo, struct xattr_add *xattr, char *target, char *alltarget);
 extern void print_xattr(char *, unsigned int, int);
 extern int has_xattrs(unsigned int);

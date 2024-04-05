@@ -1170,7 +1170,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	}
 
 	if(type == 'x')
-		xattr = read_pseudo_xattr(orig_def, name, def);
+		xattr = read_pseudo_xattr(def);
 	else if(type == 'l')
 		dev = read_pseudo_def_link(orig_def, def, destination);
 	else if(type == 'L')
