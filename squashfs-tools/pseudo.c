@@ -448,7 +448,7 @@ error:
 }
 
 
-static struct pseudo_dev *read_pseudo_def_link(char *orig_def, char *name, char *def, char *destination)
+static struct pseudo_dev *read_pseudo_def_link(char *orig_def, char *def, char *destination)
 {
 	char *linkname, *link;
 	int quoted = FALSE;
@@ -1172,7 +1172,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	if(type == 'x')
 		xattr = read_pseudo_xattr(orig_def, name, def);
 	else if(type == 'l')
-		dev = read_pseudo_def_link(orig_def, name, def, destination);
+		dev = read_pseudo_def_link(orig_def, def, destination);
 	else if(type == 'L')
 		dev = read_pseudo_def_pseudo_link(orig_def, def);
 	else if(isupper(type))
