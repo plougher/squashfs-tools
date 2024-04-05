@@ -380,7 +380,7 @@ static void print_definitions()
 }
 
 
-static struct pseudo_dev *read_pseudo_def_pseudo_link(char *orig_def, char *name, char *def)
+static struct pseudo_dev *read_pseudo_def_pseudo_link(char *orig_def, char *def)
 {
 	char *linkname, *link;
 	int quoted = FALSE;
@@ -1174,7 +1174,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	else if(type == 'l')
 		dev = read_pseudo_def_link(orig_def, name, def, destination);
 	else if(type == 'L')
-		dev = read_pseudo_def_pseudo_link(orig_def, name, def);
+		dev = read_pseudo_def_pseudo_link(orig_def, def);
 	else if(isupper(type))
 		dev = read_pseudo_def_extended(type, orig_def, name, def, pseudo_file, file);
 	else
