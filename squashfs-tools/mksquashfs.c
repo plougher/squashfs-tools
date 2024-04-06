@@ -4026,7 +4026,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			dir_ent = lookup_name(dir, pseudo_ent->name);
 
 		if(pseudo_ent->dev == NULL) {
-			if(dir_ent == NULL)
+			if(dir_ent == NULL && pseudo_ent->pseudo)
 				BAD_ERROR("Pathname \"%s\" does not exist in "
 					"filesystem.  Some pseudo definitions "
 					"will not be created.\n",
