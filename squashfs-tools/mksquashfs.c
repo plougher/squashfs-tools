@@ -4125,12 +4125,9 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			continue;
 
 		dir_ent = lookup_name(dir, pseudo_ent->name);
-		if(dir_ent == NULL) {
-			ERROR_START("File \"%s\" does not exist, can not add Pseudo xattr to it.",
+		if(dir_ent == NULL)
+			BAD_ERROR("File \"%s\" does not exist, can not add Pseudo xattr to it.\n",
 				pseudo_ent->pathname);
-			ERROR_EXIT("  Ignoring.\n");
-			continue;
-		}
 
 		dir_ent->inode->xattr = pseudo_ent->xattr;
 	}
