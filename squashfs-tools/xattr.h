@@ -207,9 +207,8 @@ static inline struct xattr_add *xattr_parse(char *a, char *b, char *c)
 }
 
 
-static inline struct xattr_add *read_pseudo_xattr(char *orig_def, char *filename, char *name, char *def)
+static inline struct xattr_add *read_pseudo_xattr(char *def)
 {
-	free(filename);
 	fprintf(stderr, "Xattrs are unsupported in this build\n");
 
 	return NULL;
