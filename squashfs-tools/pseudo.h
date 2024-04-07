@@ -96,6 +96,7 @@ extern struct pseudo *pseudo;
 
 extern long long read_bytes(int, void *, long long);
 extern int read_pseudo_definition(char *, char *);
+extern struct pseudo_dev *read_pseudo_dir(char *def);
 extern int read_pseudo_file(char *, char *);
 extern struct pseudo *pseudo_subdir(char *, struct pseudo *);
 extern struct pseudo_entry *pseudo_readdir(struct pseudo *);

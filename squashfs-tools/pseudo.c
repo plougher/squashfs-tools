@@ -1197,6 +1197,33 @@ error:
 }
 
 
+struct pseudo_dev *read_pseudo_dir(char *def)
+{
+	int n, bytes;
+	char type;
+
+	n = sscanf(def, " %c %n", &type, &bytes);
+
+	if(n < 1) {
+		ERROR("Not enough arguments in pseudo file definition \"%s\"\n", def);
+		goto error;
+	}
+
+	if(type == 'd')
+		return read_pseudo_def_original(type, def, def + bytes);
+	else if(type == 'D')
+		return read_pseudo_def_extended(type, def, def + bytes, NULL, NULL);
+
+	ERROR("Invalid type %c in pseudo file definition \"%s\"\n", type, def);
+
+error:
+	ERROR("Pseudo file definition should be of the form:\n");
+	ERROR("\td mode uid gid\n");
+	ERROR("\tD time mode uid gid\n");
+	return NULL;
+}
+
+
 int read_pseudo_definition(char *filename, char *destination)
 {
 	return read_pseudo_def(filename, destination, NULL, NULL);

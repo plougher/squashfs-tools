@@ -152,6 +152,10 @@ int tarfile = FALSE;
 /* Is Mksquashfs reading a pseudo file from stdin? */
 int pseudo_stdin = FALSE;
 
+/* has a default Pseudo file directory been defined for cases where
+ * a directory in the pathname is missing? */
+struct pseudo_dev *pseudo_dir = NULL;
+
 /* Is Mksquashfs storing Xattrs, or excluding/including xattrs using regexs? */
 int no_xattrs = XATTR_DEF;
 unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
@@ -4026,7 +4030,26 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			dir_ent = lookup_name(dir, pseudo_ent->name);
 
 		if(pseudo_ent->dev == NULL) {
-			if(dir_ent == NULL && pseudo_ent->pseudo)
+			if(dir_ent == NULL && pseudo_dir) {
+				struct dir_ent *dir_ent = create_dir_entry(pseudo_ent->name, NULL,
+						pseudo_ent->pathname, dir);
+				char *subpath = subpathname(dir_ent);
+				struct dir_info *sub_dir = scan1_opendir("", subpath, dir->depth + 1);
+
+				memset(&buf, 0, sizeof(buf));
+				buf.st_mode = pseudo_dir->buf->mode;
+				buf.st_uid = pseudo_dir->buf->uid;
+				buf.st_gid = pseudo_dir->buf->gid;
+				buf.st_rdev = makedev(pseudo_dir->buf->major,
+					pseudo_dir->buf->minor);
+				buf.st_mtime = pseudo_dir->buf->mtime;
+				buf.st_ino = pseudo_dir->buf->ino;
+
+				dir_scan2(sub_dir, pseudo_ent->pseudo);
+				dir->directory_count ++;
+				add_dir_entry(dir_ent, sub_dir, lookup_inode2(&buf, pseudo_dir));
+				continue;
+			} else if(dir_ent == NULL && pseudo_ent->pseudo)
 				BAD_ERROR("Pathname \"%s\" does not exist in "
 					"filesystem.  Some pseudo definitions "
 					"will not be created.\n",
@@ -8079,6 +8102,16 @@ print_compressor_options:
 				exit(1);
 			}
 			if(read_pseudo_definition(argv[i], destination_file) == FALSE)
+				exit(1);
+		} else if(strcmp(argv[i], "-pd") == 0 || strcmp(argv[i], "-pseudo-dir") == 0) {
+			if(++i == argc) {
+				ERROR("%s: %s missing pseudo file definition\n",
+					argv[0], argv[i]);
+				exit(1);
+			}
+
+			pseudo_dir = read_pseudo_dir(argv[i]);
+			if(pseudo_dir == NULL)
 				exit(1);
 		} else if(strcmp(argv[i], "-recover") == 0) {
 			if(++i == argc) {
