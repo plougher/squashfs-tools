@@ -4040,8 +4040,6 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				buf.st_mode = pseudo_dir->buf->mode;
 				buf.st_uid = pseudo_dir->buf->uid;
 				buf.st_gid = pseudo_dir->buf->gid;
-				buf.st_rdev = makedev(pseudo_dir->buf->major,
-					pseudo_dir->buf->minor);
 				buf.st_mtime = pseudo_dir->buf->mtime;
 				buf.st_ino = pseudo_dir->buf->ino;
 
