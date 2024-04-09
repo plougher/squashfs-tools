@@ -202,8 +202,8 @@ static char *unsquashfs_text[]={
 		"errors\n",
 	"\n", "Help options:", "\n",
 	"\t-h[elp]\t\t\tprint help summary information to stdout\n",
-	"\t-help-option <regex>\tprint the help information for Unsquashfs "
-		"options matching <regex> to stdout\n",
+	"\t-help-option <regex>\tprint the help information for options "
+		"matching <regex> to pager (or stdout if not a terminal)\n",
 	"\t-help-section <section>\tprint the help information for section "
 		"<section> to pager (or stdout if not a terminal).  Use "
 		"\"sections\" or \"h\" as section name to get a list of "
@@ -275,8 +275,8 @@ static char *sqfscat_text[]={
 		"than use the default shell wildcard expansion (globbing)\n",
 	"\n", "Help options:", "\n",
 	"\t-h[elp]\t\t\tprint help summary information to stdout\n",
-	"\t-help-option <regex>\tprint the help information for Sqfscat "
-		"options matching <regex> to stdout\n",
+	"\t-help-option <regex>\tprint the help information for options "
+		"matching <regex> to pager (or stdout if not a terminal)\n",
 	"\t-help-section <section>\tprint the help information for section "
 		"<section> to pager (or stdout if not a terminal).  Use "
 		"\"sections\" or \"h\" as section name to get a list of "
