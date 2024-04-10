@@ -354,7 +354,8 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-mode", "force-uid", "force-gid", "throttle", "limit",
 	"processors", "mem", "offset", "o", "root-time", "root-uid",
 	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
-	"default-mode", "default-uid", "default-gid", "mem-percent", NULL
+	"default-mode", "default-uid", "default-gid", "mem-percent", "pd",
+	"pseudo-dir", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
@@ -7106,6 +7107,16 @@ print_sqfstar_compressor_options:
 				exit(1);
 			}
 			if(read_pseudo_definition(argv[i], argv[dest_index]) == FALSE)
+				exit(1);
+		} else if(strcmp(argv[i], "-pd") == 0 || strcmp(argv[i], "-pseudo-dir") == 0) {
+			if(++i == dest_index) {
+				ERROR("%s: %s missing pseudo file definition\n",
+					argv[0], argv[i-1]);
+				exit(1);
+			}
+
+			pseudo_dir = read_pseudo_dir(argv[i]);
+			if(pseudo_dir == NULL)
 				exit(1);
 		} else if(strcmp(argv[i], "-regex") == 0)
 			use_regex = TRUE;
