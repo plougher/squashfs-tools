@@ -917,9 +917,8 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 				orig_def);
 			break;
 		case 1:
-			ERROR("Couldn't parse filename, type or octal mode\n");
-			ERROR("If the filename has spaces, either quote it, or "
-				"backslash the spaces\n");
+			ERROR("Failed to read uid or user name in pseudo file definition \"%s\"\n",
+				orig_def);
 			break;
 		case 2:
 			ERROR("Read filename, type and mode, but failed to "
