@@ -913,7 +913,9 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 		case -1:
 			/* FALLTHROUGH */
 		case 0:
-			/* FALLTHROUGH */
+			ERROR("Failed to read octal mode in pseudo file definition \"%s\"\n",
+				orig_def);
+			break;
 		case 1:
 			ERROR("Couldn't parse filename, type or octal mode\n");
 			ERROR("If the filename has spaces, either quote it, or "
