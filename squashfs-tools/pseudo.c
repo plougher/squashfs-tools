@@ -1126,6 +1126,19 @@ static int is_original_def(char type)
 
 	return FALSE;
 }
+
+
+static int is_extended_def(char type)
+{
+	int i;
+	char valid_type[] = "BCDFIMRS";
+
+	for(i = 0; i < sizeof(valid_type); i++)
+		if(type == valid_type[i])
+			return TRUE;
+
+	return FALSE;
+}
 static int read_pseudo_def(char *def, char *destination, char *pseudo_file, struct pseudo_file **file)
 {
 	int n, bytes;
@@ -1188,7 +1201,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 		dev = read_pseudo_def_pseudo_link(orig_def, def);
 	if(is_original_def(type))
 		dev = read_pseudo_def_original(type, orig_def, def);
-	else if(isupper(type))
+	else if(is_extended_def(type))
 		dev = read_pseudo_def_extended(type, orig_def, def, pseudo_file, file);
 
 	if(dev)
