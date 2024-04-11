@@ -1115,6 +1115,17 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 }
 
 
+static int is_original_def(char type)
+{
+	int i;
+	char valid_type[] = "bcdfims";
+
+	for(i = 0; i < sizeof(valid_type); i++)
+		if(type == valid_type[i])
+			return TRUE;
+
+	return FALSE;
+}
 static int read_pseudo_def(char *def, char *destination, char *pseudo_file, struct pseudo_file **file)
 {
 	int n, bytes;
@@ -1175,10 +1186,10 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 		dev = read_pseudo_def_link(orig_def, def, destination);
 	else if(type == 'L')
 		dev = read_pseudo_def_pseudo_link(orig_def, def);
+	if(is_original_def(type))
+		dev = read_pseudo_def_original(type, orig_def, def);
 	else if(isupper(type))
 		dev = read_pseudo_def_extended(type, orig_def, def, pseudo_file, file);
-	else
-		dev = read_pseudo_def_original(type, orig_def, def);
 
 	if(dev)
 		pseudo = add_pseudo_definition(pseudo, dev, name, name);
