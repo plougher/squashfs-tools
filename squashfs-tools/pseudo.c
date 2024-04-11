@@ -1203,6 +1203,11 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 		dev = read_pseudo_def_original(type, orig_def, def);
 	else if(is_extended_def(type))
 		dev = read_pseudo_def_extended(type, orig_def, def, pseudo_file, file);
+	else {
+		ERROR("Pseudo definition type \"%c\" is invalid in pseudo file definition \"%s\"\n",
+			 type, orig_def);
+		ERROR("If the filename has spaces, either quote it, or backslash the spaces\n");
+	}
 
 	if(dev)
 		pseudo = add_pseudo_definition(pseudo, dev, name, name);
