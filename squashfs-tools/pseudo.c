@@ -920,14 +920,10 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 			ERROR("Failed to read uid or user name in pseudo file definition \"%s\"\n",
 				orig_def);
 			break;
-		case 2:
-			ERROR("Read filename, type and mode, but failed to "
-				"read or match uid\n");
-			break;
 		default:
-			ERROR("Read filename, type, mode and uid, but failed "
-				"to read or match gid\n");
-			break; 
+			ERROR("Failed to read gid or group name in pseudo file definition \"%s\"\n",
+				orig_def);
+			break;
 		}
 		return NULL;
 	}
