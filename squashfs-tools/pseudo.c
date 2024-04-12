@@ -963,13 +963,12 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 		if(n < 1) {
 			ERROR("Not enough or invalid arguments in ipc "
 				"pseudo file definition \"%s\"\n", orig_def);
-			ERROR("Read filename, type, mode, uid and gid, "
-				"but failed to read or match ipc_type\n");
+			ERROR("Failed to read ipc_type in pseudo file definition \"%s\"\n", orig_def);
 			return NULL;
 		}
 
 		if(ipc_type != 's' && ipc_type != 'f') {
-			ERROR("Ipc_type should be s or f\n");
+			ERROR("Ipc_type should be \"s\" or \"f\" in pseudo file definition \"%s\"\n", orig_def);
 			return NULL;
 		}
 		break;
