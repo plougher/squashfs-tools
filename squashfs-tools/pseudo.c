@@ -940,22 +940,19 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 				"pseudo file definition \"%s\"\n", type == 'b' ?
 				"block" : "character", orig_def);
 			if(n < 1)
-				ERROR("Read filename, type, mode, uid and gid, "
-					"but failed to read or match major\n");
+				ERROR("Failed to read major number in pseudo file definition \"%s\"\n", orig_def);
 			else
-				ERROR("Read filename, type, mode, uid, gid "
-					"and major, but failed to read  or "
-					"match minor\n");
+				ERROR("Failed to read minor number in pseudo file definition \"%s\"\n", orig_def);
 			return NULL;
 		}	
 		
 		if(major > 0xfff) {
-			ERROR("Major %d out of range\n", major);
+			ERROR("Major %u out of range in pseudo file definition \"%s\"\n", major, orig_def);
 			return NULL;
 		}
 
 		if(minor > 0xfffff) {
-			ERROR("Minor %d out of range\n", minor);
+			ERROR("Minor %u out of range in pseudo file definition \"%s\"\n", minor, orig_def);
 			return NULL;
 		}
 		break;
