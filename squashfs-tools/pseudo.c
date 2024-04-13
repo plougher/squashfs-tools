@@ -1015,14 +1015,14 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 	}
 
 	if(mode > 07777) {
-		ERROR("Mode %o out of range\n", mode);
+		ERROR("Mode %o out of range in pseudo file definition \"%s\"\n", mode, orig_def);
 		return NULL;
 	}
 
 	uid = strtoll(suid, &ptr, 10);
 	if(*ptr == '\0') {
 		if(uid < 0 || uid > ((1LL << 32) - 1)) {
-			ERROR("Uid %s out of range\n", suid);
+			ERROR("Uid %s out of range in pseudo file definition \"%s\"\n", suid, orig_def);
 			return NULL;
 		}
 	} else {
@@ -1030,7 +1030,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 		if(pwuid)
 			uid = pwuid->pw_uid;
 		else {
-			ERROR("Uid %s invalid uid or unknown user\n", suid);
+			ERROR("Uid %s invalid uid or unknown user in pseudo file definition \"%s\"\n", suid, orig_def);
 			return NULL;
 		}
 	}
@@ -1038,7 +1038,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 	gid = strtoll(sgid, &ptr, 10);
 	if(*ptr == '\0') {
 		if(gid < 0 || gid > ((1LL << 32) - 1)) {
-			ERROR("Gid %s out of range\n", sgid);
+			ERROR("Gid %s out of range in pseudo file definition \"%s\"\n", sgid, orig_def);
 			return NULL;
 		}
 	} else {
@@ -1046,7 +1046,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 		if(grgid)
 			gid = grgid->gr_gid;
 		else {
-			ERROR("Gid %s invalid uid or unknown user\n", sgid);
+			ERROR("Gid %s invalid uid or unknown user in pseudo file definition \"%s\"\n", sgid, orig_def);
 			return NULL;
 		}
 	}
