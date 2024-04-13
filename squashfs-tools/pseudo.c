@@ -988,9 +988,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 		break;
 	case 's':
 		if(def[0] == '\0') {
-			ERROR("Not enough arguments in symlink pseudo "
-				"definition \"%s\"\n", orig_def);
-			ERROR("Expected symlink\n");
+			ERROR("Expected symlink in pseudo file definition \"%s\"\n", orig_def);
 			return NULL;
 		}
 
