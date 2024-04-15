@@ -1123,6 +1123,8 @@ static int is_extended_def(char type)
 
 	return FALSE;
 }
+
+
 static int read_pseudo_def(char *def, char *destination, char *pseudo_file, struct pseudo_file **file)
 {
 	int n, bytes;
@@ -1191,14 +1193,13 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 		ERROR("Pseudo definition type \"%c\" is invalid in pseudo file definition \"%s\"\n",
 			 type, orig_def);
 		ERROR("If the filename has spaces, either quote it, or backslash the spaces\n");
+		print_definitions();
 	}
 
 	if(dev)
 		pseudo = add_pseudo_definition(pseudo, dev, name, name);
 	else if(xattr)
 		pseudo = add_pseudo_xattr_definition(pseudo, xattr, name, name);
-	else
-		print_definitions();
 
 	free(filename);
 	return dev != NULL || xattr != NULL;
