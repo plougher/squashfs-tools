@@ -53,6 +53,28 @@
 
 struct pseudo *pseudo = NULL;
 
+char *pseudo_definitions[] = {
+	"d mode uid gid",
+	"m mode uid gid",
+	"b mode uid gid major minor",
+	"c mode uid gid major minor",
+	"f mode uid gid command",
+	"s mode uid gid symlink",
+	"i mode uid gid [s|f]",
+	"x name=value",
+	"l filename",
+	"L pseudo_filename",
+	"D time mode uid gid",
+	"M time mode uid gid",
+	"B time mode uid gid major minor",
+	"C time mode uid gid major minor",
+	"F time mode uid gid command",
+	"S time mode uid gid symlink",
+	"I time mode uid gid [s|f]",
+	"R time mode uid gid length offset sparse",
+	NULL
+};
+
 char *get_element(char *target, char **targname, char **subpathend)
 {
 	char *start;
@@ -358,25 +380,12 @@ static struct pseudo_entry *pseudo_lookup(struct pseudo *pseudo, char *target)
 
 static void print_definitions()
 {
+	int i;
+
 	ERROR("Pseudo definitions should be of the format\n");
-	ERROR("\tfilename d mode uid gid\n");
-	ERROR("\tfilename m mode uid gid\n");
-	ERROR("\tfilename b mode uid gid major minor\n");
-	ERROR("\tfilename c mode uid gid major minor\n");
-	ERROR("\tfilename f mode uid gid command\n");
-	ERROR("\tfilename s mode uid gid symlink\n");
-	ERROR("\tfilename i mode uid gid [s|f]\n");
-	ERROR("\tfilename x name=value\n");
-	ERROR("\tfilename l filename\n");
-	ERROR("\tfilename L pseudo_filename\n");
-	ERROR("\tfilename D time mode uid gid\n");
-	ERROR("\tfilename M time mode uid gid\n");
-	ERROR("\tfilename B time mode uid gid major minor\n");
-	ERROR("\tfilename C time mode uid gid major minor\n");
-	ERROR("\tfilename F time mode uid gid command\n");
-	ERROR("\tfilename S time mode uid gid symlink\n");
-	ERROR("\tfilename I time mode uid gid [s|f]\n");
-	ERROR("\tfilename R time mode uid gid length offset sparse\n");
+
+	for(i = 0; pseudo_definitions[i] != NULL; i++)
+		ERROR("\tfilename %s\n", pseudo_definitions[i]);
 }
 
 
