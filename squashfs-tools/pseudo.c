@@ -389,6 +389,18 @@ static void print_definitions()
 }
 
 
+static void print_definition(char type)
+{
+	int i;
+
+	ERROR("Pseudo definition should be of the format\n");
+
+	for(i = 0; pseudo_definitions[i] != NULL; i++)
+		if(pseudo_definitions[i][0] == type)
+			ERROR("\tfilename %s\n", pseudo_definitions[i]);
+}
+
+
 static struct pseudo_dev *read_pseudo_def_pseudo_link(char *orig_def, char *def)
 {
 	char *linkname, *link;
@@ -1202,13 +1214,15 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 		ERROR("Pseudo definition type \"%c\" is invalid in pseudo file definition \"%s\"\n",
 			 type, orig_def);
 		ERROR("If the filename has spaces, either quote it, or backslash the spaces\n");
-		print_definitions();
+		goto error;
 	}
 
 	if(dev)
 		pseudo = add_pseudo_definition(pseudo, dev, name, name);
 	else if(xattr)
 		pseudo = add_pseudo_xattr_definition(pseudo, xattr, name, name);
+	else
+		print_definition(type);
 
 	free(filename);
 	return dev != NULL || xattr != NULL;
