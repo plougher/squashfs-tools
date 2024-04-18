@@ -647,8 +647,6 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		n = sscanf(def, "%o %99s %99s %n", &mode, suid, sgid, &bytes);
 		def += bytes;
 		if(n < 3) {
-			ERROR("Not enough or invalid arguments in pseudo file "
-				"definition \"%s\"\n", orig_def);
 			switch(n) {
 			case -1:
 				/* FALLTHROUGH */
@@ -673,8 +671,6 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		def += bytes;
 
 		if(n < 2) {
-			ERROR("Not enough or invalid arguments in pseudo file "
-				"definition \"%s\"\n", orig_def);
 			switch(n) {
 			case -1:
 				/* FALLTHROUGH */
@@ -699,9 +695,6 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		def += bytes;
 
 		if(n < 2) {
-			ERROR("Not enough or invalid arguments in %s device "
-				"pseudo file definition \"%s\"\n", type == 'B' ?
-				"block" : "character", orig_def);
 			if(n < 1)
 				ERROR("Failed to read major number in pseudo file definition \"%s\"\n", orig_def);
 			else
@@ -724,8 +717,6 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		def += bytes;
 
 		if(n < 1) {
-			ERROR("Not enough or invalid arguments in ipc "
-				"pseudo file definition \"%s\"\n", orig_def);
 			ERROR("Failed to read ipc_type in pseudo file definition \"%s\"\n", orig_def);
 			return NULL;
 		}
@@ -746,8 +737,6 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		def += bytes;
 
 		if(n < 3) {
-			ERROR("Not enough or invalid arguments in inline read "
-				"pseudo file definition \"%s\"\n", orig_def);
 			ERROR("Failed to read file length, offset or sparse in pseudo file definition \"%s\"\n", orig_def);
 			return NULL;
 		}
