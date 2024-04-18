@@ -921,8 +921,6 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 	def += bytes;
 
 	if(n < 3) {
-		ERROR("Not enough or invalid arguments in pseudo file "
-			"definition \"%s\"\n", orig_def);
 		switch(n) {
 		case -1:
 			/* FALLTHROUGH */
@@ -950,9 +948,6 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 		def += bytes;
 
 		if(n < 2) {
-			ERROR("Not enough or invalid arguments in %s device "
-				"pseudo file definition \"%s\"\n", type == 'b' ?
-				"block" : "character", orig_def);
 			if(n < 1)
 				ERROR("Failed to read major number in pseudo file definition \"%s\"\n", orig_def);
 			else
@@ -975,8 +970,6 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 		def += bytes;
 
 		if(n < 1) {
-			ERROR("Not enough or invalid arguments in ipc "
-				"pseudo file definition \"%s\"\n", orig_def);
 			ERROR("Failed to read ipc_type in pseudo file definition \"%s\"\n", orig_def);
 			return NULL;
 		}
