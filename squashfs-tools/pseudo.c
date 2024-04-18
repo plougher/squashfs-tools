@@ -799,7 +799,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		if(pwuid)
 			uid = pwuid->pw_uid;
 		else {
-			ERROR("Uid %s invalid uid or unknown user in pseudo file definition \"%s\"\n", suid, orig_def);
+			ERROR("%s is an invalid uid or unknown user in pseudo file definition \"%s\"\n", suid, orig_def);
 			return NULL;
 		}
 	}
@@ -815,7 +815,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		if(grgid)
 			gid = grgid->gr_gid;
 		else {
-			ERROR("Gid %s invalid uid or unknown user in pseudo file definition \"%s\"\n", sgid, orig_def);
+			ERROR("%s is an invalid gid or unknown group in pseudo file definition \"%s\"\n", sgid, orig_def);
 			return NULL;
 		}
 	}
@@ -1026,7 +1026,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 		if(pwuid)
 			uid = pwuid->pw_uid;
 		else {
-			ERROR("Uid %s invalid uid or unknown user in pseudo file definition \"%s\"\n", suid, orig_def);
+			ERROR("%s is an invalid uid or unknown user in pseudo file definition \"%s\"\n", suid, orig_def);
 			return NULL;
 		}
 	}
@@ -1042,7 +1042,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 		if(grgid)
 			gid = grgid->gr_gid;
 		else {
-			ERROR("Gid %s invalid uid or unknown user in pseudo file definition \"%s\"\n", sgid, orig_def);
+			ERROR("%s is an invalid gid or unknown group in pseudo file definition \"%s\"\n", sgid, orig_def);
 			return NULL;
 		}
 	}
