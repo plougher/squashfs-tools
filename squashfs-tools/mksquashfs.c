@@ -6196,8 +6196,9 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "\t\t\tcontents of the directory\n");
 	fprintf(stream, "\nFilesystem filter options:\n");
 	fprintf(stream, "-p <pseudo-definition>\tadd pseudo file ");
-	fprintf(stream, "definition.  The definition should\n");
-	fprintf(stream, "\t\t\tbe quoted\n");
+	fprintf(stream, "definition.  The definition should\n\t\t\tbe ");
+	fprintf(stream, "quoted.  See section \"Pseudo file definition ");
+	fprintf(stream, "format\"\n\t\t\tlater for format details\n");
 	fprintf(stream, "-pf <pseudo-file>\tadd list of pseudo file ");
 	fprintf(stream, "definitions from <pseudo-file>,\n\t\t\tuse - for ");
 	fprintf(stream, "stdin.  Pseudo file definitions should not be\n");
