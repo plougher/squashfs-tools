@@ -120,6 +120,11 @@ ${SED} -i -e "s/act@/action@/g" -e "s/expr>/expression>/g" -e "s/exp>/expression
 
 ${SED} -i "s/<[^>]*>/\U&/g" $tmp/mksquashfs.help
 
+# Undo the above for the -pd option, where the case actually matters!  Also
+# expand the truncated uid and gid in help text due to lack of space
+
+${SED} -i -e "s/D MODE UID GID/d mode uid gid/" -e "s/D TIME MODE U G/D time mode uid gid/" $tmp/mksquashfs.help 
+
 # Remove the "<" and ">" around options operands to make it conform
 # more to man page standards
 
