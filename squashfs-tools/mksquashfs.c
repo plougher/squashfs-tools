@@ -6525,6 +6525,8 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "specifying all the directories in ");
 	fprintf(stream, "the\n\t\t\tpathname.  The definition should be ");
 	fprintf(stream, "quoted\n");
+	fprintf(stream, "-pd <D time mode u g>\tas above, but also allow a ");
+	fprintf(stream, "timestamp to be specified\n");
 	fprintf(stream, "-pf <pseudo-file>\tadd list of pseudo file ");
 	fprintf(stream, "definitions.  Pseudo file\n\t\t\tdefinitions in ");
 	fprintf(stream, "pseudo-files should not be quoted\n");
