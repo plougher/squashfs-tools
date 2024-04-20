@@ -6199,6 +6199,14 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "definition.  The definition should\n\t\t\tbe ");
 	fprintf(stream, "quoted.  See section \"Pseudo file definition ");
 	fprintf(stream, "format\"\n\t\t\tlater for format details\n");
+	fprintf(stream, "-pd <d mode uid gid>\tspecify a default pseudo ");
+	fprintf(stream, "directory which will be used in\n\t\t\tpseudo ");
+	fprintf(stream, "definitions if a directory in the pathname ");
+	fprintf(stream, "does\n\t\t\tnot exist.  This also allows pseudo ");
+	fprintf(stream, "definitions to be\n\t\t\tspecified without ");
+	fprintf(stream, "specifying all the directories in ");
+	fprintf(stream, "the\n\t\t\tpathname.  The definition should be ");
+	fprintf(stream, "quoted\n");
 	fprintf(stream, "-pf <pseudo-file>\tadd list of pseudo file ");
 	fprintf(stream, "definitions from <pseudo-file>,\n\t\t\tuse - for ");
 	fprintf(stream, "stdin.  Pseudo file definitions should not be\n");
