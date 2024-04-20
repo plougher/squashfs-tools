@@ -6207,6 +6207,8 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "specifying all the directories in ");
 	fprintf(stream, "the\n\t\t\tpathname.  The definition should be ");
 	fprintf(stream, "quoted\n");
+	fprintf(stream, "-pd <D time mode u g>\tas above, but also allow a ");
+	fprintf(stream, "timestamp to be specified\n");
 	fprintf(stream, "-pf <pseudo-file>\tadd list of pseudo file ");
 	fprintf(stream, "definitions from <pseudo-file>,\n\t\t\tuse - for ");
 	fprintf(stream, "stdin.  Pseudo file definitions should not be\n");
