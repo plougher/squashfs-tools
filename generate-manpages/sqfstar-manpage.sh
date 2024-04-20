@@ -109,6 +109,11 @@ ${SED} -i -e "s/regex> exclude/regex>  exclude/" -e "s/regex> include/regex>  in
 
 ${SED} -i "s/<[^>]*>/\U&/g" $tmp/sqfstar.help
 
+# Undo the above for the -pd option, where the case actually matters!  Also
+# expand the truncated uid and gid in help text due to lack of space
+
+${SED} -i -e "s/D MODE UID GID/d mode uid gid/" -e "s/D TIME MODE U G/D time mode uid gid/" $tmp/sqfstar.help 
+
 # Remove the "<" and ">" around options operands to make it conform
 # more to man page standards
 
