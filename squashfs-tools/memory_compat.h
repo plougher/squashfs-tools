@@ -64,7 +64,7 @@ static inline int get_physical_memory()
 	if(num_pages == -1 || page_size == -1)
 		return 0;
 	else
-		return phys_mem = num_pages * page_size >> 20;
+		return num_pages * page_size >> 20;
 }
 #endif
 #endif
