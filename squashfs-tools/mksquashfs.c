@@ -6108,7 +6108,7 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "SYNTAX:%s source1 source2 ...  FILESYSTEM [OPTIONS] ", name);
 	fprintf(stream, "[-e list of\nexclude dirs/files]\n");
 	fprintf(stream, "\nFilesystem compression options:\n");
-	fprintf(stream, "-b <block_size>\t\tset data block to <block_size>.  Default ");
+	fprintf(stream, "-b <block-size>\t\tset data block to <block-size>.  Default ");
 	fprintf(stream, "128 Kbytes.\n");
 	fprintf(stream, "\t\t\tOptionally a suffix of K, KB, Kbytes or M, ");
 	fprintf(stream, "MB, Mbytes\n\t\t\tcan be given to ");
@@ -6213,10 +6213,10 @@ static void print_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "definitions from <pseudo-file>,\n\t\t\tuse - for ");
 	fprintf(stream, "stdin.  Pseudo file definitions should not be\n");
 	fprintf(stream, "\t\t\tquoted\n");
-	fprintf(stream, "-sort <sort_file>\tsort files according to priorities in ");
-	fprintf(stream, "<sort_file>.  One\n\t\t\tfile or dir with priority per ");
+	fprintf(stream, "-sort <sort-file>\tsort files according to priorities in ");
+	fprintf(stream, "<sort-file>.  One\n\t\t\tfile or dir with priority per ");
 	fprintf(stream, "line.  Priority -32768 to\n\t\t\t32767, default priority 0\n");
-	fprintf(stream, "-ef <exclude_file>\tlist of exclude dirs/files.  ");
+	fprintf(stream, "-ef <exclude-file>\tlist of exclude dirs/files.  ");
 	fprintf(stream, "One per line\n");
 	fprintf(stream, "-wildcards\t\tallow extended shell wildcards (globbing) to be ");
 	fprintf(stream, "used in\n\t\t\texclude dirs/files\n");
