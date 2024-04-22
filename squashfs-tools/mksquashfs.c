@@ -6416,7 +6416,7 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "SYNTAX:%s [OPTIONS] FILESYSTEM ", name);
 	fprintf(stream, "[list of exclude dirs/files]\n");
 	fprintf(stream, "\nFilesystem compression options:\n");
-	fprintf(stream, "-b <block_size>\t\tset data block to <block_size>.  Default ");
+	fprintf(stream, "-b <block-size>\t\tset data block to <block-size>.  Default ");
 	fprintf(stream, "128 Kbytes.\n");
 	fprintf(stream, "\t\t\tOptionally a suffix of K, KB, Kbytes or ");
 	fprintf(stream, "M, MB, Mbytes\n\t\t\tcan be given to ");
@@ -6530,7 +6530,7 @@ static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
 	fprintf(stream, "-pf <pseudo-file>\tadd list of pseudo file ");
 	fprintf(stream, "definitions.  Pseudo file\n\t\t\tdefinitions in ");
 	fprintf(stream, "pseudo-files should not be quoted\n");
-	fprintf(stream, "-ef <exclude_file>\tlist of exclude dirs/files.  ");
+	fprintf(stream, "-ef <exclude-file>\tlist of exclude dirs/files.  ");
 	fprintf(stream, "One per line\n");
 	fprintf(stream, "-regex\t\t\tallow POSIX regular expressions to be used in ");
 	fprintf(stream, "exclude\n\t\t\tdirs/files\n");
