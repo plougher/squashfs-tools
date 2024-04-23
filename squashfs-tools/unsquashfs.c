@@ -919,11 +919,11 @@ int write_bytes(int fd, char *buff, int bytes)
 }
 
 
-char *zero_data = NULL;
 
 static int write_block(int file_fd, char *buffer, int size, long long hole, int sparse)
 {
 	static int lseek_broken = FALSE;
+	static char *zero_data = NULL;
 	off_t off = hole;
 
 	if(hole) {
