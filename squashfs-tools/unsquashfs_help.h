@@ -1,5 +1,5 @@
-#ifndef MKSQUASHFS_HELP_H
-#define MKSQUASHFS_HELP_H
+#ifndef UNSQUASHFS_HELP_H
+#define UNSQUASHFS_HELP_H
 /*
  * Squashfs
  *
@@ -20,18 +20,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- * mksquashfs_help.h
+ * unsquashfs_help.h
  */
-
-#ifdef REPRODUCIBLE_DEFAULT
-#define NOREP_STR
-#define REP_STR " (default)"
-#define REP_DEF 1
-#else
-#define NOREP_STR " (default)"
-#define REP_STR
-#define REP_DEF 0
-#endif
 
 #ifdef XATTR_SUPPORT
 #ifdef XATTR_OS_SUPPORT

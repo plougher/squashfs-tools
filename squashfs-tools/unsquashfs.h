@@ -49,6 +49,7 @@
 #include "endian_compat.h"
 #include "squashfs_fs.h"
 #include "unsquashfs_error.h"
+#include "unsquashfs_help.h"
 
 #define TABLE_HASH(start)	(start & 0xffff)
 

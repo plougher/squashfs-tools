@@ -236,29 +236,19 @@ static inline int has_xattrs(unsigned int xattr)
 #define xattrs_supported() TRUE
 #ifdef XATTR_OS_SUPPORT
 #ifdef XATTR_DEFAULT
-#define NOXOPT_STR
-#define XOPT_STR " (default)"
 #define XATTR_DEF 0
 #else
-#define NOXOPT_STR " (default)"
-#define XOPT_STR
 #define XATTR_DEF 1
 #endif
 #else
 #ifdef XATTR_DEFAULT
-#define NOXOPT_STR
-#define XOPT_STR " (default - no OS support)"
 #define XATTR_DEF 0
 #else
-#define NOXOPT_STR " (default)"
-#define XOPT_STR " (no OS support)"
 #define XATTR_DEF 1
 #endif
 #endif
 #else
 #define xattrs_supported() FALSE
-#define NOXOPT_STR " (default)"
-#define XOPT_STR " (unsupported)"
 #define XATTR_DEF 1
 #endif
 #endif
