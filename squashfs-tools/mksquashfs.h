@@ -142,16 +142,6 @@ struct append_file {
  * compressed size */
 #define BLOCK_OFFSET 2
 
-#ifdef REPRODUCIBLE_DEFAULT
-#define NOREP_STR
-#define REP_STR " (default)"
-#define REP_DEF 1
-#else
-#define NOREP_STR " (default)"
-#define REP_STR
-#define REP_DEF 0
-#endif
-
 /* in memory directory data */
 #define I_COUNT_SIZE		128
 #define DIR_ENTRIES		32

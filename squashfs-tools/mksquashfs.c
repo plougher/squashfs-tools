@@ -74,6 +74,7 @@
 #include "nprocessors_compat.h"
 #include "memory_compat.h"
 #include "memory.h"
+#include "mksquashfs_help.h"
 
 /* Compression options */
 int noF = FALSE;
