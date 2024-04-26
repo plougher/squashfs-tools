@@ -8138,7 +8138,7 @@ print_compressor_options:
 		} else if(strcmp(argv[i], "-pd") == 0 || strcmp(argv[i], "-pseudo-dir") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing pseudo file definition\n",
-					argv[0], argv[i]);
+					argv[0], argv[i - 1]);
 				exit(1);
 			}
 
