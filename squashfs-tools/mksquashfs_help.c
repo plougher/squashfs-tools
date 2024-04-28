@@ -27,7 +27,30 @@
 #include "mksquashfs_help.h"
 #include "compressor.h"
 
-static char *options[]={
+static char *options[] = {
+	"-b" "-noI", "-noId", "-noD", "-noF", "-noX", "-no-compression", "-tar",
+	"-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0", "-reproducible",
+	"-not-reproducible", "-mkfs-time", "-all-time", "-root-time",
+	"-root-mode", "-root-uid", "-root-gid", "-all-root", "-force-uid",
+	"-force-gid", "-pseudo-override", "-no-exports", "-exports",
+	"-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
+	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "-p", "-pd",
+	"-pf", "-sort", "-wildcards", "-regex", "-max-depth",
+	"-one-file-system", "-one-file-system-x", "-no-xattrs", "-xattrs",
+	"-xattrs-exclude", "-xattrs-include", "-xattrs-add" "-no-progress",
+	"-progress", "-percentage", "-throttle", "-limit", "-processors",
+	"-mem", "-mem-percent", "-mem-default", "-noappend", "-root-becomes",
+	"-no-recovery", "-recovery-path", "-recover", "-action", "-log-action",
+	"-true-action", "-false-action", "-action-file", "-log-action-file",
+	"-true-action-file", "-false-action-file", "-default-mode",
+	"-default-uid", "-default-gid", "-ignore-zeros", "-nopad", "-offset",
+	"-o", "-fstime", "-always-use-fragments", "-root-owned",
+	"-noInodeCompression", "-noIdTableCompression", "-noDataCompression",
+	"-noFragmentCompression", "-noXattrCompression", "-help", "-h",
+	"-Xhelp", NULL
+};
+
+static char *options_text[]={
 	"Filesystem compression options:\n",
 	"-b <block-size>\t\tset data block to <block-size>.  Default 128 Kbytes.\n\t\t\tOptionally a suffix of K, KB, Kbytes or M, MB, Mbytes\n\t\t\tcan be given to specify Kbytes or Mbytes respectively\n",
 	"-comp <comp>\t\tselect <comp> compression\n\t\t\tCompressors available:\n\t\t\t\t" COMPRESSORS "\n",
@@ -160,8 +183,8 @@ void print_options(FILE *stream, char *name)
 	fprintf(stream, "SYNTAX:%s source1 source2 ...  FILESYSTEM [OPTIONS] ", name);
 	fprintf(stream, "[-e list of\nexclude dirs/files]\n");
 
-	for(i = 0; options[i] != NULL; i++)
-		fprintf(stream, options[i]);
+	for(i = 0; options_text[i] != NULL; i++)
+		fprintf(stream, options_text[i]);
 
 	fprintf(stream, "\nCompressors available and compressor specific options:\n");
 
