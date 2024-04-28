@@ -221,7 +221,7 @@ INCLUDEDIR = -I.
 
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
-	caches-queues-lists.o reader.o tar.o date.o memory.o
+	caches-queues-lists.o reader.o tar.o date.o memory.o mksquashfs_help.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o unsquash-123.o unsquash-34.o unsquash-1234.o unsquash-12.o \
@@ -238,7 +238,11 @@ CFLAGS += -DGZIP_SUPPORT
 MKSQUASHFS_OBJS += gzip_wrapper.o
 UNSQUASHFS_OBJS += gzip_wrapper.o
 LIBS += -lz
+ifeq ($(COMP_DEFAULT),gzip)
+COMPRESSORS += gzip@(default)
+else
 COMPRESSORS += gzip
+endif
 endif
 
 ifeq ($(LZMA_SUPPORT),1)
@@ -248,7 +252,11 @@ INCLUDEDIR += -I$(LZMA_DIR)/C
 CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
 UNSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
+ifeq ($(COMP_DEFAULT),lzma)
+COMPRESSORS += lzma@(default)
+else
 COMPRESSORS += lzma
+endif
 endif
 
 ifeq ($(LZMA_XZ_SUPPORT),1)
@@ -256,7 +264,11 @@ CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += lzma_xz_wrapper.o
 UNSQUASHFS_OBJS += lzma_xz_wrapper.o
 LIBS += -llzma
+ifeq ($(COMP_DEFAULT),lzma)
+COMPRESSORS += lzma@(default)
+else
 COMPRESSORS += lzma
+endif
 endif
 
 ifeq ($(XZ_SUPPORT),1)
@@ -269,7 +281,11 @@ MKSQUASHFS_OBJS += xz_wrapper.o
 UNSQUASHFS_OBJS += xz_wrapper.o
 endif
 LIBS += -llzma
-COMPRESSORS += xz
+ifeq ($(COMP_DEFAULT),xz)
+COMPRESSORS += xz@(default)
+else
+COMPRESSORS +=xz
+endif
 endif
 
 ifeq ($(LZO_SUPPORT),1)
@@ -277,7 +293,11 @@ CFLAGS += -DLZO_SUPPORT
 MKSQUASHFS_OBJS += lzo_wrapper.o
 UNSQUASHFS_OBJS += lzo_wrapper.o
 LIBS += -llzo2
+ifeq ($(COMP_DEFAULT),lzo)
+COMPRESSORS += lzo@(default)
+else
 COMPRESSORS += lzo
+endif
 endif
 
 ifeq ($(LZ4_SUPPORT),1)
@@ -285,7 +305,11 @@ CFLAGS += -DLZ4_SUPPORT
 MKSQUASHFS_OBJS += lz4_wrapper.o
 UNSQUASHFS_OBJS += lz4_wrapper.o
 LIBS += -llz4
+ifeq ($(COMP_DEFAULT),lz4)
+COMPRESSORS += lz4@(default)
+else
 COMPRESSORS += lz4
+endif
 endif
 
 ifeq ($(ZSTD_SUPPORT),1)
@@ -293,7 +317,11 @@ CFLAGS += -DZSTD_SUPPORT
 MKSQUASHFS_OBJS += zstd_wrapper.o
 UNSQUASHFS_OBJS += zstd_wrapper.o
 LIBS += -lzstd
+ifeq ($(COMP_DEFAULT),zstd)
+COMPRESSORS += zstd@(default)
+else
 COMPRESSORS += zstd
+endif
 endif
 
 ifeq ($(XATTR_SUPPORT),1)
@@ -356,6 +384,9 @@ ifeq (, $(findstring $(COMP_DEFAULT), $(COMPRESSORS)))
 $(error "COMP_DEFAULT is set to ${COMP_DEFAULT}, which isn't selected to be \
 	built!")
 endif
+
+space := $(subst ,, )
+CFLAGS += -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n\t\t\t\t,$(COMPRESSORS)))\""
 
 #
 # Get VERSION and DATE for Mksquashfs/Unsquashfs version strings.
@@ -455,6 +486,8 @@ lz4_wrapper.o: lz4_wrapper.c squashfs_fs.h lz4_wrapper.h compressor.h
 xz_wrapper.o: xz_wrapper.c squashfs_fs.h xz_wrapper.h compressor.h
 
 xz_wrapper_extended.o: xz_wrapper_extended.c squashfs_fs.h xz_wrapper.h compressor.h
+
+mksquashfs_help.o: mksquashfs_help.h Makefile
 
 unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@

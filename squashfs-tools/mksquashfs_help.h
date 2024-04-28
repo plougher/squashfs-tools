@@ -55,4 +55,6 @@
 #define NOXOPT_STR " (default)"
 #define XOPT_STR " (unsupported)"
 #endif
+
+extern void print_options(FILE *stream, char *name, int total_mem);
 #endif
