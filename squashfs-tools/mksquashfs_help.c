@@ -153,7 +153,7 @@ static char *options[]={
 	NULL};
 
 
-void print_options(FILE *stream, char *name, int total_mem)
+void print_options(FILE *stream, char *name)
 {
 	int i;
 

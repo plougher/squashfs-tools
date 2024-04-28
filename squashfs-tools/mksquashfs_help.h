@@ -56,5 +56,5 @@
 #define XOPT_STR " (unsupported)"
 #endif
 
-extern void print_options(FILE *stream, char *name, int total_mem);
+extern void print_options(FILE *stream, char *name);
 #endif

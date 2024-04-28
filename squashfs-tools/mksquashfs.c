@@ -7410,7 +7410,7 @@ int main(int argc, char *argv[])
 
 	if(i < argc && (strcmp(argv[i], "-help") == 0 ||
 						strcmp(argv[i], "-h") == 0)) {
-		print_options(stdout, argv[0], total_mem);
+		print_options(stdout, argv[0]);
 		exit(0);
 	}
 
@@ -7420,7 +7420,7 @@ int main(int argc, char *argv[])
 	}
 
 	if(i < 3) {
-		print_options(stderr, argv[0], total_mem);
+		print_options(stderr, argv[0]);
 		exit(1);
 	}
 
@@ -7533,7 +7533,7 @@ int main(int argc, char *argv[])
 			recovery_pathname = argv[i];
 		} else if(strcmp(argv[i], "-help") == 0 ||
 						strcmp(argv[i], "-h") == 0) {
-			print_options(stdout, argv[0], total_mem);
+			print_options(stdout, argv[0]);
 			exit(0);
 		} else if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
@@ -8205,7 +8205,7 @@ print_compressor_options:
 			i++;
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
-			print_options(stderr, argv[0], total_mem);
+			print_options(stderr, argv[0]);
 			exit(1);
 		}
 	}
