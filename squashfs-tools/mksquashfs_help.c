@@ -23,12 +23,13 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "mksquashfs_help.h"
 #include "compressor.h"
 
 static char *options[] = {
-	NULL, "-b" "-noI", "-noId", "-noD", "-noF", "-noX", "-no-compression",
+	NULL, "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX", "-no-compression",
 	NULL, "-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
 	"-reproducible", "-not-reproducible", "-mkfs-time", "-all-time",
 	"-root-time", "-root-mode", "-root-uid", "-root-gid", "-all-root",
@@ -90,8 +91,7 @@ static char *options_text[]={
 	"-keep-as-directory\tif one source directory is specified, create a root\n\t\t\tdirectory containing that directory, rather than the\n\t\t\tcontents of the directory\n",
 	"\nFilesystem filter options:\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition should\n\t\t\tbe quoted.  See section \"Pseudo file definition format\"\n\t\t\tlater for format details\n",
-	"-pd <d mode uid gid>\tspecify a default pseudo directory which will be used in\n\t\t\tpseudo definitions if a directory in the pathname does\n\t\t\tnot exist.  This also allows pseudo definitions to be\n\t\t\tspecified without specifying all the directories in the\n\t\t\tpathname.  The definition should be quoted\n",
-	"-pd <D time mode u g>\tas above, but also allow a timestamp to be specified\n",
+	"-pd <d mode uid gid>\tspecify a default pseudo directory which will be used in\n\t\t\tpseudo definitions if a directory in the pathname does\n\t\t\tnot exist.  This also allows pseudo definitions to be\n\t\t\tspecified without specifying all the directories in the\n\t\t\tpathname.  The definition should be quoted\n-pd <D time mode u g>\tas above, but also allow a timestamp to be specified\n",
 	"-pf <pseudo-file>\tadd list of pseudo file definitions from <pseudo-file>,\n\t\t\tuse - for stdin.  Pseudo file definitions should not be\n\t\t\tquoted\n",
 	"-sort <sort-file>\tsort files according to priorities in <sort-file>.  One\n\t\t\tfile or dir with priority per line.  Priority -32768 to\n\t\t\t32767, default priority 0\n-ef <exclude-file>\tlist of exclude dirs/files.  One per line\n",
 	"-wildcards\t\tallow extended shell wildcards (globbing) to be used in\n\t\t\texclude dirs/files\n",
@@ -212,4 +212,19 @@ void print_options(FILE *stream, char *name)
 	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n");
 	fprintf(stream, "\nThe ACTIONS-README file describing how to use the new actions feature can be\n");
 	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n");
+}
+
+
+int print_option(FILE *stream, char *option)
+{
+	int i;
+
+	for(i = 0; options[i] != NULL || options[i + 1] != NULL; i++) {
+		if(options[i] && strcmp(option, options[i]) == 0) {
+			fprintf(stream, options_text[i]);
+			return TRUE;
+		}
+	}
+
+	return FALSE;
 }

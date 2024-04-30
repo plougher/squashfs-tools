@@ -7414,6 +7414,22 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
+	if(i < argc && (strcmp(argv[i], "-help-option") == 0 ||
+						strcmp(argv[i], "-ho") == 0)) {
+		if(++i == argc) {
+			ERROR("%s: %s missing option\n", argv[0], argv[i - 1]);
+			exit(1);
+		}
+
+		res = print_option(stdout, argv[i]);
+		if(res == FALSE) {
+			ERROR("%s: %s %s is not a recognised option\n",
+				argv[0], argv[i - 1], argv[i]);
+			exit(1);
+		} else
+			exit(0);
+	}
+
 	if(i < argc && strcmp(argv[i], "-mem-default") == 0) {
 		printf("%d\n", total_mem);
 		exit(0);
@@ -7535,6 +7551,21 @@ int main(int argc, char *argv[])
 						strcmp(argv[i], "-h") == 0) {
 			print_options(stdout, argv[0]);
 			exit(0);
+		} else if((strcmp(argv[i], "-help-option") == 0 ||
+						strcmp(argv[i], "-ho") == 0)) {
+			if(++i == argc) {
+				ERROR("%s: %s missing option\n",
+							argv[0], argv[i - 1]);
+				exit(1);
+			}
+
+			res = print_option(stdout, argv[i]);
+			if(res == FALSE) {
+				ERROR("%s: %s %s is not a recognised option\n",
+					argv[0], argv[i - 1], argv[i]);
+				exit(1);
+			} else
+				exit(0);
 		} else if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-no-strip") == 0 ||

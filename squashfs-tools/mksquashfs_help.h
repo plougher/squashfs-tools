@@ -56,5 +56,9 @@
 #define XOPT_STR " (unsupported)"
 #endif
 
+#define TRUE 1
+#define FALSE 0
+
 extern void print_options(FILE *stream, char *name);
+extern int print_option(FILE *stream, char *option);
 #endif
