@@ -49,7 +49,7 @@ static char *options[] = {
 	"-nopad", "-offset", "-o", NULL, "-fstime", "-always-use-fragments",
 	"-root-owned", "-noInodeCompression", "-noIdTableCompression",
 	"-noDataCompression", "-noFragmentCompression", "-noXattrCompression",
-	"-help", "-h", "-Xhelp", NULL, NULL
+	"", "-help", "-h", "", "-Xhelp", NULL, NULL
 };
 
 static char *options_text[]={
@@ -153,9 +153,11 @@ static char *options_text[]={
 	"-noDataCompression\talternative name for -noD\n",
 	"-noFragmentCompression\talternative name for -noF\n",
 	"-noXattrCompression\talternative name for -noX\n",
-	"\n-help\t\t\toutput this options text to stdout\n",
+	"\n",
+	"-help\t\t\toutput this options text to stdout\n",
 	"-h\t\t\toutput this options text to stdout\n",
-	"\n-Xhelp\t\t\tprint compressor options for selected compressor\n",
+	"\n",
+	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"\nPseudo file definition format:\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
 	"\"filename m mode uid gid\"\t\tmodify filename\n",
