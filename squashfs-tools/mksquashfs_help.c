@@ -49,7 +49,7 @@ static char *options[] = {
 	"-nopad", "-offset", "-o", "", NULL, "-fstime", "-always-use-fragments",
 	"-root-owned", "-noInodeCompression", "-noIdTableCompression",
 	"-noDataCompression", "-noFragmentCompression", "-noXattrCompression",
-	"", "-help", "-h", "", "-Xhelp", NULL, NULL
+	"", "-help", "-h", "-help-option", "-ho", "", "-Xhelp", NULL, NULL
 };
 
 static char *options_text[]={
