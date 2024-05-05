@@ -49,7 +49,7 @@ static char *options[] = {
 	"-nopad", "-offset", "-o", "", NULL, "-fstime", "-always-use-fragments",
 	"-root-owned", "-noInodeCompression", "-noIdTableCompression",
 	"-noDataCompression", "-noFragmentCompression", "-noXattrCompression",
-	"", "-help", "-h", "-help-option", "-ho", "", "-Xhelp", NULL, NULL
+	"", "-help", "-h", "-help-option", "-ho", "-Xhelp", NULL, NULL
 };
 
 static char *options_text[]={
@@ -157,7 +157,7 @@ static char *options_text[]={
 	"-h\t\t\tprint help information for all Mksquashfs options to\n\t\t\tstdout\n",
 	"-help-option <option>\tprint the help information for Mksquashfs option\n\t\t\t<option> to stdout\n",
 	"-ho <option>\t\tprint the help information for Mksquashfs option\n\t\t\t<option> to stdout\n",
-	"\n", "-Xhelp\t\t\tprint compressor options for selected compressor\n",
+	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"\n", "Pseudo file definition format:\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
 	"\"filename m mode uid gid\"\t\tmodify filename\n",
