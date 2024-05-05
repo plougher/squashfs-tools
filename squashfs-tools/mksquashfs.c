@@ -7421,13 +7421,7 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		res = print_option(stdout, argv[i]);
-		if(res == FALSE) {
-			ERROR("%s: %s %s is not a recognised option\n",
-				argv[0], argv[i - 1], argv[i]);
-			exit(1);
-		} else
-			exit(0);
+		print_option(argv[0], argv[i - 1], argv[i]);
 	}
 
 	if(i < argc && strcmp(argv[i], "-mem-default") == 0) {
@@ -7559,13 +7553,7 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 
-			res = print_option(stdout, argv[i]);
-			if(res == FALSE) {
-				ERROR("%s: %s %s is not a recognised option\n",
-					argv[0], argv[i - 1], argv[i]);
-				exit(1);
-			} else
-				exit(0);
+			print_option(argv[0], argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-no-strip") == 0 ||

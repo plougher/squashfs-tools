@@ -60,5 +60,5 @@
 #define FALSE 0
 
 extern void print_options(FILE *stream, char *name);
-extern int print_option(FILE *stream, char *option);
+extern void print_option(char *prog_name, char *opt_name, char *pattern);
 #endif

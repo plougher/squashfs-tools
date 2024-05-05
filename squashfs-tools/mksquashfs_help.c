@@ -24,7 +24,10 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <regex.h>
+#include <stdlib.h>
 
+#include "mksquashfs_error.h"
 #include "mksquashfs_help.h"
 #include "compressor.h"
 
@@ -217,16 +220,38 @@ void print_options(FILE *stream, char *name)
 }
 
 
-int print_option(FILE *stream, char *option)
+void print_option(char *prog_name, char *opt_name, char *pattern)
 {
-	int i;
+	int i, res, matched = FALSE;
+	regex_t *preg = malloc(sizeof(regex_t));
+
+	if(preg == NULL)
+		MEM_ERROR();
+
+	res = regcomp(preg, pattern, REG_EXTENDED|REG_NOSUB);
+
+	if(res) {
+		char str[1024]; /* overflow safe */
+
+		regerror(res, preg, str, 1024);
+		ERROR("%s: %s invalid regex %s because %s\n", prog_name, opt_name, pattern, str);
+		exit(1);
+	}
 
 	for(i = 0; options[i] != NULL || options[i + 1] != NULL; i++) {
-		if(options[i] && strcmp(option, options[i]) == 0) {
-			fprintf(stream, options_text[i]);
-			return TRUE;
+		if(options[i] == NULL)
+			continue;
+
+		res = regexec(preg, options[i], (size_t) 0, NULL, 0);
+		if(!res) {
+			matched = TRUE;
+			printf(options_text[i]);
 		}
 	}
 
-	return FALSE;
+	if(!matched) {
+		ERROR("%s: %s %s does not match any Mksquashfs option\n", prog_name, opt_name, pattern);
+		exit(1);
+	} else
+		exit(0);
 }
