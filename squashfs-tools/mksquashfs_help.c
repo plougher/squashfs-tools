@@ -32,27 +32,27 @@
 #include "compressor.h"
 
 static char *options[] = {
-	NULL, "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX", "-no-compression",
-	"", NULL, "-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
+	"", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX", "-no-compression",
+	"", "", "-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
 	"-reproducible", "-not-reproducible", "-mkfs-time", "-all-time",
 	"-root-time", "-root-mode", "-root-uid", "-root-gid", "-all-root",
 	"-force-uid", "-force-gid", "-pseudo-override", "-no-exports",
 	"-exports", "-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
-	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", NULL, "-p",
+	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "-p",
 	"-pd", "-pf", "-sort", "-wildcards", "-regex", "-max-depth",
-	"-one-file-system", "-one-file-system-x", "", NULL, "-no-xattrs", "-xattrs",
-	"-xattrs-exclude", "-xattrs-include", "-xattrs-add", "", NULL, "-version",
+	"-one-file-system", "-one-file-system-x", "", "", "-no-xattrs", "-xattrs",
+	"-xattrs-exclude", "-xattrs-include", "-xattrs-add", "", "", "-version",
 	"-exit-on-error", "-quiet", "-info", "-no-progress", "-progress",
 	"-percentage", "-throttle", "-limit", "-processors", "-mem",
-	"-mem-percent", "-mem-default", "", NULL, "-noappend", "-root-becomes",
-	"-no-recovery", "-recovery-path", "-recover", "", NULL, "-action",
+	"-mem-percent", "-mem-default", "", "", "-noappend", "-root-becomes",
+	"-no-recovery", "-recovery-path", "-recover", "", "", "-action",
 	"-log-action", "-true-action", "-false-action", "-action-file",
-	"-log-action-file", "-true-action-file", "-false-action-file", "", NULL,
-	"-default-mode", "-default-uid", "-default-gid", "-ignore-zeros", "", NULL,
-	"-nopad", "-offset", "-o", "", NULL, "-fstime", "-always-use-fragments",
+	"-log-action-file", "-true-action-file", "-false-action-file", "", "",
+	"-default-mode", "-default-uid", "-default-gid", "-ignore-zeros", "", "",
+	"-nopad", "-offset", "-o", "", "", "-fstime", "-always-use-fragments",
 	"-root-owned", "-noInodeCompression", "-noIdTableCompression",
 	"-noDataCompression", "-noFragmentCompression", "-noXattrCompression",
-	"", "-help", "-h", "-help-option", "-ho", "-Xhelp", NULL, NULL
+	"", "-help", "-h", "-help-option", "-ho", "-Xhelp", NULL,
 };
 
 static char *options_text[]={
@@ -238,10 +238,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 		exit(1);
 	}
 
-	for(i = 0; options[i] != NULL || options[i + 1] != NULL; i++) {
-		if(options[i] == NULL)
-			continue;
-
+	for(i = 0; options[i] != NULL; i++) {
 		res = regexec(preg, options[i], (size_t) 0, NULL, 0);
 		if(!res) {
 			matched = TRUE;
