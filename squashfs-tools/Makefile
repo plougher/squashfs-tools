@@ -245,49 +245,6 @@ COMPRESSORS += gzip
 endif
 endif
 
-ifeq ($(LZMA_SUPPORT),1)
-LZMA_OBJS = $(LZMA_DIR)/C/Alloc.o $(LZMA_DIR)/C/LzFind.o \
-	$(LZMA_DIR)/C/LzmaDec.o $(LZMA_DIR)/C/LzmaEnc.o $(LZMA_DIR)/C/LzmaLib.o
-INCLUDEDIR += -I$(LZMA_DIR)/C
-CFLAGS += -DLZMA_SUPPORT
-MKSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
-UNSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
-ifeq ($(COMP_DEFAULT),lzma)
-COMPRESSORS += lzma@(default)
-else
-COMPRESSORS += lzma
-endif
-endif
-
-ifeq ($(LZMA_XZ_SUPPORT),1)
-CFLAGS += -DLZMA_SUPPORT
-MKSQUASHFS_OBJS += lzma_xz_wrapper.o
-UNSQUASHFS_OBJS += lzma_xz_wrapper.o
-LIBS += -llzma
-ifeq ($(COMP_DEFAULT),lzma)
-COMPRESSORS += lzma@(default)
-else
-COMPRESSORS += lzma
-endif
-endif
-
-ifeq ($(XZ_SUPPORT),1)
-CFLAGS += -DXZ_SUPPORT
-ifeq ($(XZ_EXTENDED_OPTIONS),1)
-MKSQUASHFS_OBJS += xz_wrapper_extended.o
-UNSQUASHFS_OBJS += xz_wrapper_extended.o
-else
-MKSQUASHFS_OBJS += xz_wrapper.o
-UNSQUASHFS_OBJS += xz_wrapper.o
-endif
-LIBS += -llzma
-ifeq ($(COMP_DEFAULT),xz)
-COMPRESSORS += xz@(default)
-else
-COMPRESSORS +=xz
-endif
-endif
-
 ifeq ($(LZO_SUPPORT),1)
 CFLAGS += -DLZO_SUPPORT
 MKSQUASHFS_OBJS += lzo_wrapper.o
@@ -312,6 +269,23 @@ COMPRESSORS += lz4
 endif
 endif
 
+ifeq ($(XZ_SUPPORT),1)
+CFLAGS += -DXZ_SUPPORT
+ifeq ($(XZ_EXTENDED_OPTIONS),1)
+MKSQUASHFS_OBJS += xz_wrapper_extended.o
+UNSQUASHFS_OBJS += xz_wrapper_extended.o
+else
+MKSQUASHFS_OBJS += xz_wrapper.o
+UNSQUASHFS_OBJS += xz_wrapper.o
+endif
+LIBS += -llzma
+ifeq ($(COMP_DEFAULT),xz)
+COMPRESSORS += xz@(default)
+else
+COMPRESSORS +=xz
+endif
+endif
+
 ifeq ($(ZSTD_SUPPORT),1)
 CFLAGS += -DZSTD_SUPPORT
 MKSQUASHFS_OBJS += zstd_wrapper.o
@@ -321,6 +295,32 @@ ifeq ($(COMP_DEFAULT),zstd)
 COMPRESSORS += zstd@(default)
 else
 COMPRESSORS += zstd
+endif
+endif
+
+ifeq ($(LZMA_SUPPORT),1)
+LZMA_OBJS = $(LZMA_DIR)/C/Alloc.o $(LZMA_DIR)/C/LzFind.o \
+	$(LZMA_DIR)/C/LzmaDec.o $(LZMA_DIR)/C/LzmaEnc.o $(LZMA_DIR)/C/LzmaLib.o
+INCLUDEDIR += -I$(LZMA_DIR)/C
+CFLAGS += -DLZMA_SUPPORT
+MKSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
+UNSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
+ifeq ($(COMP_DEFAULT),lzma)
+COMPRESSORS += lzma@(default)
+else
+COMPRESSORS += lzma
+endif
+endif
+
+ifeq ($(LZMA_XZ_SUPPORT),1)
+CFLAGS += -DLZMA_SUPPORT
+MKSQUASHFS_OBJS += lzma_xz_wrapper.o
+UNSQUASHFS_OBJS += lzma_xz_wrapper.o
+LIBS += -llzma
+ifeq ($(COMP_DEFAULT),lzma)
+COMPRESSORS += lzma@(default)
+else
+COMPRESSORS += lzma
 endif
 endif
 
