@@ -39,7 +39,7 @@ static char *options[] = {
 	"-force-uid", "-force-gid", "-pseudo-override", "-no-exports",
 	"-exports", "-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
 	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "-p",
-	"-pd", "-pf", "-sort", "-wildcards", "-regex", "-max-depth",
+	"-pd", "-pd", "-pf", "-sort", "-wildcards", "-regex", "-max-depth",
 	"-one-file-system", "-one-file-system-x", "", "", "-no-xattrs", "-xattrs",
 	"-xattrs-exclude", "-xattrs-include", "-xattrs-add", "", "", "-version",
 	"-exit-on-error", "-quiet", "-info", "-no-progress", "-progress",
@@ -53,6 +53,19 @@ static char *options[] = {
 	"-root-owned", "-noInodeCompression", "-noIdTableCompression",
 	"-noDataCompression", "-noFragmentCompression", "-noXattrCompression",
 	"", "-help", "-h", "-help-option", "-ho", "-Xhelp", NULL,
+};
+
+static char *options_args[]={
+	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+	"<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
+	"", "<value>", "<value>", "", "", "", "", "", "", "", "", "", "", "", "", "",
+	"<d mode uid gid>", "<D time mode uid gid>", "<pseudo-file>", "<sort-file>", "", "",
+	"<levels>", "", "", "", "", "", "", "<regex>", "<regex>", "<name=val>", "", "", "", "", "", "",
+	"", "", "", "<percentage>", "<percentage>", "<number>", "<size>", "<percent>", "", "", "", "",
+	"<name>", "", "<name>", "<name>", "", "", "<action@expression>", "<action@expression>", "<action@expression>",
+	"<action@expression>", "<file>", "<file>", "<file>", "<file>", "", "", "<mode>", "<value>", "<value>",
+	"", "", "", "", "<offset>", "<offset>", "", "", "<time>", "", "", "", "", "", "", "",
+	"", "", "", "<regex>", "<regex>", ""
 };
 
 static char *options_text[]={
@@ -94,7 +107,8 @@ static char *options_text[]={
 	"-keep-as-directory\tif one source directory is specified, create a root\n\t\t\tdirectory containing that directory, rather than the\n\t\t\tcontents of the directory\n",
 	"\n", "Filesystem filter options:\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition should\n\t\t\tbe quoted.  See section \"Pseudo file definition format\"\n\t\t\tlater for format details\n",
-	"-pd <d mode uid gid>\tspecify a default pseudo directory which will be used in\n\t\t\tpseudo definitions if a directory in the pathname does\n\t\t\tnot exist.  This also allows pseudo definitions to be\n\t\t\tspecified without specifying all the directories in the\n\t\t\tpathname.  The definition should be quoted\n-pd <D time mode u g>\tas above, but also allow a timestamp to be specified\n",
+	"-pd <d mode uid gid>\tspecify a default pseudo directory which will be used in\n\t\t\tpseudo definitions if a directory in the pathname does\n\t\t\tnot exist.  This also allows pseudo definitions to be\n\t\t\tspecified without specifying all the directories in the\n\t\t\tpathname.  The definition should be quoted\n",
+	"-pd <D time mode u g>\tas above, but also allow a timestamp to be specified\n",
 	"-pf <pseudo-file>\tadd list of pseudo file definitions from <pseudo-file>,\n\t\t\tuse - for stdin.  Pseudo file definitions should not be\n\t\t\tquoted\n",
 	"-sort <sort-file>\tsort files according to priorities in <sort-file>.  One\n\t\t\tfile or dir with priority per line.  Priority -32768 to\n\t\t\t32767, default priority 0\n-ef <exclude-file>\tlist of exclude dirs/files.  One per line\n",
 	"-wildcards\t\tallow extended shell wildcards (globbing) to be used in\n\t\t\texclude dirs/files\n",
@@ -158,8 +172,8 @@ static char *options_text[]={
 	"-noXattrCompression\talternative name for -noX\n",
 	"\n", "-help\t\t\tprint help information for all Mksquashfs options to\n\t\t\tstdout\n",
 	"-h\t\t\tprint help information for all Mksquashfs options to\n\t\t\tstdout\n",
-	"-help-option <regex>\tprint the help information for Mksquashfs options\n\t\tmatching <regex> to stdout\n",
-	"-ho <regex>\tprint the help information for Mksquashfs options\n\t\tmatching <regex> to stdout\n",
+	"-help-option <regex>\tprint the help information for Mksquashfs options\n\t\t\tmatching <regex> to stdout\n",
+	"-ho <regex>\t\tprint the help information for Mksquashfs options\n\t\t\tmatching <regex> to stdout\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"\n", "Pseudo file definition format:\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
@@ -240,6 +254,8 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 
 	for(i = 0; options[i] != NULL; i++) {
 		res = regexec(preg, options[i], (size_t) 0, NULL, 0);
+		if(res)
+			res = regexec(preg, options_args[i], (size_t) 0, NULL, 0);
 		if(!res) {
 			matched = TRUE;
 			printf(options_text[i]);
