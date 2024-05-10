@@ -61,4 +61,5 @@
 
 extern void print_options(FILE *stream, char *name);
 extern void print_option(char *prog_name, char *opt_name, char *pattern);
+extern void print_section(char *prog_name, char *opt_name, char *sec_name);
 #endif

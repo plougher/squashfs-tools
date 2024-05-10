@@ -68,6 +68,10 @@ static char *options_args[]={
 	"", "", "", "<regex>", "<regex>", ""
 };
 
+static char *sections[]={
+	"compression", "build", "filter", "xattrs", "runtime", "append", "actions", "tar", "expert", "misc", NULL
+};
+
 static char *options_text[]={
 	"Filesystem compression options:\n",
 	"-b <block-size>\t\tset data block to <block-size>.  Default 128 Kbytes.\n\t\t\tOptionally a suffix of K, KB, Kbytes or M, MB, Mbytes\n\t\t\tcan be given to specify Kbytes or Mbytes respectively\n",
@@ -267,4 +271,30 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 		exit(1);
 	} else
 		exit(0);
+}
+
+
+void print_section(char *prog_name, char *opt_name, char *sec_name)
+{
+	int i, j, secs;
+
+	for(i = 0; sections[i] != NULL; i++)
+		if(strcmp(sections[i], sec_name) == 0)
+			break;
+
+	if(sections[i] == NULL) {
+		ERROR("%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
+		exit(1);
+	}
+
+	i++;
+
+	for(j = 0, secs = 0; options_text[j] != NULL && secs <= i; j ++) {
+		if(options_text[j][0] != '-' && options_text[j][0] != '\n')
+			secs++;
+		if(i == secs)
+			printf(options_text[j]);
+	}
+
+	exit(0);
 }
