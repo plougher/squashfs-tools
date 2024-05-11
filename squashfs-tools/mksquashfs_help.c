@@ -274,9 +274,29 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 }
 
 
+static void print_section_names(int exit_code)
+{
+	int i, j;
+
+	printf("\nUse following section name to print Mksquashfs help information for that section\n");
+	printf("\nSECTION NAME\t\tSECTION\n");
+
+	for(i = 0, j = 0; sections[i] != NULL; j++)
+		if(options_text[j][0] != '-' && options_text[j][0] != '\n') {
+			printf("%s\t\t%s%s", sections[i], strlen(sections[i]) > 7 ? "" : "\t", options_text[j]);
+			i++;
+		}
+
+	exit(exit_code);
+}
+
+
 void print_section(char *prog_name, char *opt_name, char *sec_name)
 {
 	int i, j, secs;
+
+	if(strcmp(sec_name, "help") == 0i || strcmp(sec_name, "h") == 0)
+		print_section_names(0);
 
 	for(i = 0; sections[i] != NULL; i++)
 		if(strcmp(sections[i], sec_name) == 0)
@@ -284,7 +304,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 
 	if(sections[i] == NULL) {
 		ERROR("%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
-		exit(1);
+		print_section_names(1);
 	}
 
 	i++;
