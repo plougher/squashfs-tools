@@ -295,7 +295,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 {
 	int i, j, secs;
 
-	if(strcmp(sec_name, "help") == 0i || strcmp(sec_name, "h") == 0)
+	if(strcmp(sec_name, "help") == 0 || strcmp(sec_name, "h") == 0)
 		print_section_names(0);
 
 	for(i = 0; sections[i] != NULL; i++)
