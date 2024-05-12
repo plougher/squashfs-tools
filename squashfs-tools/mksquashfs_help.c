@@ -274,6 +274,12 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 }
 
 
+int is_header(int i)
+{
+	return options_text[i][0] != '-' && options_text[i][0] != '\n';
+}
+
+
 static void print_section_names(int exit_code)
 {
 	int i, j;
@@ -282,7 +288,7 @@ static void print_section_names(int exit_code)
 	printf("\nSECTION NAME\t\tSECTION\n");
 
 	for(i = 0, j = 0; sections[i] != NULL; j++)
-		if(options_text[j][0] != '-' && options_text[j][0] != '\n') {
+		if(is_header(j)) {
 			printf("%s\t\t%s%s", sections[i], strlen(sections[i]) > 7 ? "" : "\t", options_text[j]);
 			i++;
 		}
@@ -310,7 +316,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 	i++;
 
 	for(j = 0, secs = 0; options_text[j] != NULL && secs <= i; j ++) {
-		if(options_text[j][0] != '-' && options_text[j][0] != '\n')
+		if(is_header(j))
 			secs++;
 		if(i == secs)
 			printf(options_text[j]);
