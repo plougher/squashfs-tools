@@ -276,7 +276,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 
 int is_header(int i)
 {
-	return options_text[i][0] != '-' && options_text[i][0] != '\n';
+	return options_text[i][0] != '-' && options_text[i][0] != '\n' && options_text[i][0] != '"';
 }
 
 
