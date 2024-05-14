@@ -69,7 +69,7 @@ static char *options_args[]={
 };
 
 static char *sections[]={
-	"compression", "build", "filter", "xattrs", "runtime", "append", "actions", "tar", "expert", "misc", NULL
+	"compression", "build", "filter", "xattrs", "runtime", "append", "actions", "tar", "expert", "misc", "pseudo", NULL
 };
 
 static char *options_text[]={
