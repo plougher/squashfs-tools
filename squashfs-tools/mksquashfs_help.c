@@ -284,7 +284,6 @@ static void print_section_names(int exit_code)
 {
 	int i, j;
 
-	printf("\nUse following section name to print Mksquashfs help information for that section\n");
 	printf("\nSECTION NAME\t\tSECTION\n");
 
 	for(i = 0, j = 0; sections[i] != NULL; j++)
@@ -301,8 +300,10 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 {
 	int i, j, secs;
 
-	if(strcmp(sec_name, "help") == 0 || strcmp(sec_name, "h") == 0)
+	if(strcmp(sec_name, "help") == 0 || strcmp(sec_name, "h") == 0) {
+		printf("\nUse following section name to print Mksquashfs help information for that section\n");
 		print_section_names(0);
+	}
 
 	for(i = 0; sections[i] != NULL; i++)
 		if(strcmp(sections[i], sec_name) == 0)
