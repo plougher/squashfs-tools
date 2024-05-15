@@ -285,7 +285,7 @@ static void print_section_names(int error, char *string)
 	int i, j;
 	FILE * out = error ? stderr : stdout;
 
-	printf("%sSECTION NAME\t\tSECTION\n", string);
+	fprintf(out, "%sSECTION NAME\t\tSECTION\n", string);
 
 	for(i = 0, j = 0; sections[i] != NULL; j++)
 		if(is_header(j)) {
