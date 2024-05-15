@@ -280,19 +280,18 @@ int is_header(int i)
 }
 
 
-static void print_section_names(int exit_code)
+static void print_section_names(int error, char *string)
 {
 	int i, j;
+	FILE * out = error ? stderr : stdout;
 
-	printf("\nSECTION NAME\t\tSECTION\n");
+	printf("%sSECTION NAME\t\tSECTION\n", string);
 
 	for(i = 0, j = 0; sections[i] != NULL; j++)
 		if(is_header(j)) {
-			printf("%s\t\t%s%s", sections[i], strlen(sections[i]) > 7 ? "" : "\t", options_text[j]);
+			fprintf(out, "%s%s\t\t%s%s", string, sections[i], strlen(sections[i]) > 7 ? "" : "\t", options_text[j]);
 			i++;
 		}
-
-	exit(exit_code);
 }
 
 
@@ -301,8 +300,9 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 	int i, j, secs;
 
 	if(strcmp(sec_name, "help") == 0 || strcmp(sec_name, "h") == 0) {
-		printf("\nUse following section name to print Mksquashfs help information for that section\n");
-		print_section_names(0);
+		printf("\nUse following section name to print Mksquashfs help information for that section\n\n");
+		print_section_names(FALSE, "");
+		exit(0);
 	}
 
 	for(i = 0; sections[i] != NULL; i++)
@@ -311,7 +311,8 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 
 	if(sections[i] == NULL) {
 		ERROR("%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
-		print_section_names(1);
+		print_section_names(TRUE, "");
+		exit(1);
 	}
 
 	i++;
@@ -324,4 +325,14 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 	}
 
 	exit(0);
+}
+
+
+void handle_invalid_option(char *prog_name, char *opt_name)
+{
+	ERROR("%s: %s is an invalid option\n\n", prog_name, opt_name);
+	ERROR("Run \"%s -help-section <section-name>\" to get help on the following sections\n", prog_name);
+	print_section_names(TRUE, "\t");
+	ERROR("\nOr run \"%s -help\" to get help on all the sections\n", prog_name);
+	exit(1);
 }

@@ -8241,11 +8241,8 @@ print_compressor_options:
 		} else if(strcmp(argv[i], "-comp") == 0) {
 			/* parsed previously */
 			i++;
-		} else {
-			ERROR("%s: %s is an invalid option\n\n", argv[0], argv[i]);
-			print_options(stderr, argv[0]);
-			exit(1);
-		}
+		} else
+			handle_invalid_option(argv[0], argv[i]);
 	}
 
 	check_env_var();
