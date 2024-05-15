@@ -8242,7 +8242,7 @@ print_compressor_options:
 			/* parsed previously */
 			i++;
 		} else {
-			ERROR("%s: invalid option\n\n", argv[0]);
+			ERROR("%s: %s is an invalid option\n\n", argv[0], argv[i]);
 			print_options(stderr, argv[0]);
 			exit(1);
 		}
