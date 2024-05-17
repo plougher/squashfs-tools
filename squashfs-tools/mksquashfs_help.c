@@ -333,6 +333,7 @@ void handle_invalid_option(char *prog_name, char *opt_name)
 	ERROR("%s: %s is an invalid option\n\n", prog_name, opt_name);
 	ERROR("Run \"%s -help-section <section-name>\" to get help on the following sections\n", prog_name);
 	print_section_names(TRUE, "\t");
+	ERROR("\nOr run\ \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	ERROR("\nOr run \"%s -help\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
