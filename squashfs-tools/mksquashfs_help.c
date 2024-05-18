@@ -54,7 +54,7 @@ static char *options[] = {
 	"-nopad", "-offset", "-o", "", "", "-fstime", "-always-use-fragments",
 	"-root-owned", "-noInodeCompression", "-noIdTableCompression",
 	"-noDataCompression", "-noFragmentCompression", "-noXattrCompression",
-	"", "-help", "-h", "-help-option", "-ho", "-Xhelp", NULL,
+	"", "-help", "-h", "-help-option", "-ho", "-help-section", "-Xhelp", NULL,
 };
 
 static char *options_args[]={
@@ -67,7 +67,7 @@ static char *options_args[]={
 	"<name>", "", "<name>", "<name>", "", "", "<action@expression>", "<action@expression>", "<action@expression>",
 	"<action@expression>", "<file>", "<file>", "<file>", "<file>", "", "", "<mode>", "<value>", "<value>",
 	"", "", "", "", "<offset>", "<offset>", "", "", "<time>", "", "", "", "", "", "", "",
-	"", "", "", "<regex>", "<regex>", ""
+	"", "", "", "<regex>", "<regex>", "section", ""
 };
 
 static char *sections[]={
@@ -180,6 +180,7 @@ static char *options_text[]={
 	"-h\t\t\tprint help information for all Mksquashfs options to\n\t\t\tstdout\n",
 	"-help-option <regex>\tprint the help information for Mksquashfs options\n\t\t\tmatching <regex> to stdout\n",
 	"-ho <regex>\t\tprint the help information for Mksquashfs options\n\t\t\tmatching <regex> to stdout\n",
+	"-help-section <section>\tprint the help information for section <section> to\n\t\t\tstdout.  Use \"help\" as section name to get a list of\n\t\t\tsections and their names\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"\n", "Pseudo file definition format:\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
