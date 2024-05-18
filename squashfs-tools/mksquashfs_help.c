@@ -31,6 +31,8 @@
 #include "mksquashfs_help.h"
 #include "compressor.h"
 
+#define SYNTAX "SYNTAX:%s source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of\nexclude dirs/files]\n"
+
 static char *options[] = {
 	"", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX", "-no-compression",
 	"", "", "-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
@@ -204,8 +206,7 @@ void print_options(FILE *stream, char *name)
 {
 	int i;
 
-	fprintf(stream, "SYNTAX:%s source1 source2 ...  FILESYSTEM [OPTIONS] ", name);
-	fprintf(stream, "[-e list of\nexclude dirs/files]\n");
+	fprintf(stream, SYNTAX, name);
 
 	for(i = 0; options_text[i] != NULL; i++)
 		fprintf(stream, options_text[i]);
