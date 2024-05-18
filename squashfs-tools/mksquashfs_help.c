@@ -51,10 +51,10 @@ static char *options[] = {
 	"-log-action", "-true-action", "-false-action", "-action-file",
 	"-log-action-file", "-true-action-file", "-false-action-file", "", "",
 	"-default-mode", "-default-uid", "-default-gid", "-ignore-zeros", "", "",
-	"-nopad", "-offset", "-o", "", "", "-fstime", "-always-use-fragments",
-	"-root-owned", "-noInodeCompression", "-noIdTableCompression",
-	"-noDataCompression", "-noFragmentCompression", "-noXattrCompression",
-	"", "-help", "-help-option", "-help-section", "-Xhelp", "-h", "-ho", "-hs", NULL,
+	"-nopad", "-offset", "-o", "", "", "-help", "-help-option", "-help-section",
+	"-Xhelp", "-h", "-ho", "-hs", "", "", "-fstime", "-always-use-fragments",
+	"-root-owned", "-noInodeCompression", "-noIdTableCompression", "-noDataCompression",
+	"-noFragmentCompression", "-noXattrCompression", NULL,
 };
 
 static char *options_args[]={
@@ -66,12 +66,12 @@ static char *options_args[]={
 	"", "", "", "<percentage>", "<percentage>", "<number>", "<size>", "<percent>", "", "", "", "",
 	"<name>", "", "<name>", "<name>", "", "", "<action@expression>", "<action@expression>", "<action@expression>",
 	"<action@expression>", "<file>", "<file>", "<file>", "<file>", "", "", "<mode>", "<value>", "<value>",
-	"", "", "", "", "<offset>", "<offset>", "", "", "<time>", "", "", "", "", "", "", "",
-	"", "", "<regex>", "<section>", "", "", "<regex>", "<section>"
+	"", "", "", "", "<offset>", "<offset>", "", "", "", "<regex>", "<section>", "", "", "<regex>", "<section>",
+	"", "", "<time>", "", "", "", "", "", "", "",
 };
 
 static char *sections[]={
-	"compression", "build", "filter", "xattrs", "runtime", "append", "actions", "tar", "expert", "misc", "pseudo", NULL
+	"compression", "build", "filter", "xattrs", "runtime", "append", "actions", "tar", "expert", "help", "misc", "pseudo", NULL
 };
 
 static char *options_text[]={
@@ -167,6 +167,14 @@ static char *options_text[]={
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
 	"-offset <offset>\tskip <offset> bytes at the beginning of FILESYSTEM.\n\t\t\tOptionally a suffix of K, M or G can be given to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n\t\t\tDefault 0 bytes\n",
 	"-o <offset>\t\tsynonym for -offset\n",
+	"\n", "Help options:\n",
+	"-help\t\t\tprint help information for all Mksquashfs options to\n\t\t\tstdout\n",
+	"-help-option <regex>\tprint the help information for Mksquashfs options\n\t\t\tmatching <regex> to stdout\n",
+	"-help-section <section>\tprint the help information for section <section> to\n\t\t\tstdout.  Use \"help\" as section name to get a list of\n\t\t\tsections and their names\n",
+	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
+	"-h\t\t\tshorthand alternative to -help\n",
+	"-ho <regex>\t\tshorthand aternative to -help-option\n",
+	"-hs <section>\t\tshorthand alternative to -help-section\n",
 	"\n", "Miscellaneous options:\n",
 	"-fstime <time>\t\talternative name for -mkfs-time\n",
 	"-always-use-fragments\talternative name for -tailends\n",
@@ -176,13 +184,6 @@ static char *options_text[]={
 	"-noDataCompression\talternative name for -noD\n",
 	"-noFragmentCompression\talternative name for -noF\n",
 	"-noXattrCompression\talternative name for -noX\n",
-	"\n", "-help\t\t\tprint help information for all Mksquashfs options to\n\t\t\tstdout\n",
-	"-help-option <regex>\tprint the help information for Mksquashfs options\n\t\t\tmatching <regex> to stdout\n",
-	"-help-section <section>\tprint the help information for section <section> to\n\t\t\tstdout.  Use \"help\" as section name to get a list of\n\t\t\tsections and their names\n",
-	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
-	"-h\t\t\tshorthand alternative to -help\n",
-	"-ho <regex>\t\tshorthand aternative to -help-option\n",
-	"-hs <section>\t\tshorthand alternative to -help-section\n",
 	"\n", "Pseudo file definition format:\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
 	"\"filename m mode uid gid\"\t\tmodify filename\n",
