@@ -7439,10 +7439,8 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
-	if(i < 3) {
-		print_options(stderr, argv[0]);
-		exit(1);
-	}
+	if(i < 3)
+		print_help(argv[0]);
 
 	option_offset = i;
 	destination_file = argv[i - 1];
