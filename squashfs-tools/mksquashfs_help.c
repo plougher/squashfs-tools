@@ -170,7 +170,7 @@ static char *options_text[]={
 	"\n", "Help options:\n",
 	"-help\t\t\tprint help information for all Mksquashfs options to\n\t\t\tstdout\n",
 	"-help-option <regex>\tprint the help information for Mksquashfs options\n\t\t\tmatching <regex> to stdout\n",
-	"-help-section <section>\tprint the help information for section <section> to\n\t\t\tstdout.  Use \"help\" as section name to get a list of\n\t\t\tsections and their names\n",
+	"-help-section <section>\tprint the help information for section <section> to\n\t\t\tstdout.  Use \"sections\" or \"h\" as section name to get a\n\t\t\tlist of sections and their names\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"-h\t\t\tshorthand alternative to -help\n",
 	"-ho <regex>\t\tshorthand aternative to -help-option\n",
@@ -303,7 +303,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 {
 	int i, j, secs;
 
-	if(strcmp(sec_name, "help") == 0 || strcmp(sec_name, "h") == 0) {
+	if(strcmp(sec_name, "sections") == 0 || strcmp(sec_name, "h") == 0) {
 		printf("\nUse following section name to print Mksquashfs help information for that section\n\n");
 		print_section_names(FALSE, "");
 		exit(0);
