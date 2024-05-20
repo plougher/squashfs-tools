@@ -54,7 +54,7 @@ static char *options[] = {
 	"-nopad", "-offset", "-o", "", "", "-help", "-help-option", "-help-section",
 	"-Xhelp", "-h", "-ho", "-hs", "", "", "-fstime", "-always-use-fragments",
 	"-root-owned", "-noInodeCompression", "-noIdTableCompression", "-noDataCompression",
-	"-noFragmentCompression", "-noXattrCompression", NULL,
+	"-noFragmentCompression", "-noXattrCompression", "-pseudo-dir", NULL,
 };
 
 static char *options_args[]={
@@ -67,7 +67,7 @@ static char *options_args[]={
 	"<name>", "", "<name>", "<name>", "", "", "<action@expression>", "<action@expression>", "<action@expression>",
 	"<action@expression>", "<file>", "<file>", "<file>", "<file>", "", "", "<mode>", "<value>", "<value>",
 	"", "", "", "", "<offset>", "<offset>", "", "", "", "<regex>", "<section>", "", "", "<regex>", "<section>",
-	"", "", "<time>", "", "", "", "", "", "", "",
+	"", "", "<time>", "", "", "", "", "", "", "", ""
 };
 
 static char *sections[]={
@@ -184,6 +184,7 @@ static char *options_text[]={
 	"-noDataCompression\talternative name for -noD\n",
 	"-noFragmentCompression\talternative name for -noF\n",
 	"-noXattrCompression\talternative name for -noX\n",
+	"-pseudo-dir\t\talternative name for -pd\n",
 	"\n", "Pseudo file definition format:\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
 	"\"filename m mode uid gid\"\t\tmodify filename\n",
