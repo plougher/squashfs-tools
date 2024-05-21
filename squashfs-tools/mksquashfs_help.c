@@ -71,7 +71,7 @@ static char *options_args[]={
 };
 
 static char *sections[]={
-	"compression", "build", "filter", "xattrs", "runtime", "append", "actions", "tar", "expert", "help", "misc", "pseudo", NULL
+	"compression", "build", "filter", "xattrs", "runtime", "append", "actions", "tar", "expert", "help", "misc", "pseudo", "environment", NULL
 };
 
 static char *options_text[]={
@@ -203,6 +203,13 @@ static char *options_text[]={
 	"\"filename F time mode uid gid command\"\tcreate file with timestamp time\n",
 	"\"filename S time mode uid gid symlink\"\tcreate symlink with timestamp time\n",
 	"\"filename I time mode uid gid [s|f]\"\tcreate socket/fifo with timestamp time\n",
+	"\n", "Environment:", "\n"
+	"SOURCE_DATE_EPOCH\tIf set, this is used as the filesystem creation\n",
+	"\t\t\ttimestamp.  Also any file timestamps which are\n",
+	"\t\t\tafter SOURCE_DATE_EPOCH will be clamped to\n",
+	"\t\t\tSOURCE_DATE_EPOCH.  See\n",
+	"\t\t\thttps://reproducible-builds.org/docs/source-date-epoch/\n",
+	"\t\t\tfor more information\n",
 	NULL};
 
 
@@ -219,14 +226,6 @@ void print_options(FILE *stream, char *name)
 
 	display_compressor_usage(stream, COMP_DEFAULT);
 
-	fprintf(stream, "\nEnvironment:\n");
-	fprintf(stream, "SOURCE_DATE_EPOCH\tIf set, this is used as the ");
-	fprintf(stream,	"filesystem creation\n");
-	fprintf(stream, "\t\t\ttimestamp.  Also any file timestamps which are\n");
-	fprintf(stream, "\t\t\tafter SOURCE_DATE_EPOCH will be clamped to\n");
-	fprintf(stream, "\t\t\tSOURCE_DATE_EPOCH.  See\n");
-	fprintf(stream, "\t\t\thttps://reproducible-builds.org/docs/source-date-epoch/\n");
-	fprintf(stream, "\t\t\tfor more information\n");
 	fprintf(stream, "\nExit status:\n");
 	fprintf(stream, "  0\tMksquashfs successfully generated a filesystem.\n");
 	fprintf(stream, "  1\tFatal errors occurred, Mksquashfs aborted and ");
