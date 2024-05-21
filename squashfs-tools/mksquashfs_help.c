@@ -34,40 +34,40 @@
 #define SYNTAX "SYNTAX:%s source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of\nexclude dirs/files]\n"
 
 static char *options[] = {
-	"", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX", "-no-compression",
-	"", "", "-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
+	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX", "-no-compression",
+	"", "", "", "-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
 	"-reproducible", "-not-reproducible", "-mkfs-time", "-all-time",
 	"-root-time", "-root-mode", "-root-uid", "-root-gid", "-all-root",
 	"-force-uid", "-force-gid", "-pseudo-override", "-no-exports",
 	"-exports", "-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
-	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "-p",
+	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "", "-p",
 	"-pd", "-pd", "-pf", "-sort", "-wildcards", "-regex", "-max-depth",
-	"-one-file-system", "-one-file-system-x", "", "", "-no-xattrs", "-xattrs",
-	"-xattrs-exclude", "-xattrs-include", "-xattrs-add", "", "", "-version",
+	"-one-file-system", "-one-file-system-x", "", "", "", "-no-xattrs", "-xattrs",
+	"-xattrs-exclude", "-xattrs-include", "-xattrs-add", "", "", "", "-version",
 	"-exit-on-error", "-quiet", "-info", "-no-progress", "-progress",
 	"-percentage", "-throttle", "-limit", "-processors", "-mem",
-	"-mem-percent", "-mem-default", "", "", "-noappend", "-root-becomes",
-	"-no-recovery", "-recovery-path", "-recover", "", "", "-action",
+	"-mem-percent", "-mem-default", "", "", "", "-noappend", "-root-becomes",
+	"-no-recovery", "-recovery-path", "-recover", "", "", "", "-action",
 	"-log-action", "-true-action", "-false-action", "-action-file",
-	"-log-action-file", "-true-action-file", "-false-action-file", "", "",
-	"-default-mode", "-default-uid", "-default-gid", "-ignore-zeros", "", "",
-	"-nopad", "-offset", "-o", "", "", "-help", "-help-option", "-help-section",
-	"-Xhelp", "-h", "-ho", "-hs", "", "", "-fstime", "-always-use-fragments",
+	"-log-action-file", "-true-action-file", "-false-action-file", "", "", "",
+	"-default-mode", "-default-uid", "-default-gid", "-ignore-zeros", "", "", "",
+	"-nopad", "-offset", "-o", "", "", "", "-help", "-help-option", "-help-section",
+	"-Xhelp", "-h", "-ho", "-hs", "", "", "", "-fstime", "-always-use-fragments",
 	"-root-owned", "-noInodeCompression", "-noIdTableCompression", "-noDataCompression",
 	"-noFragmentCompression", "-noXattrCompression", "-pseudo-dir", NULL,
 };
 
 static char *options_args[]={
-	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	"<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
-	"", "<value>", "<value>", "", "", "", "", "", "", "", "", "", "", "", "", "",
+	"", "<value>", "<value>", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	"<d mode uid gid>", "<D time mode uid gid>", "<pseudo-file>", "<sort-file>", "", "",
-	"<levels>", "", "", "", "", "", "", "<regex>", "<regex>", "<name=val>", "", "", "", "", "", "",
-	"", "", "", "<percentage>", "<percentage>", "<number>", "<size>", "<percent>", "", "", "", "",
-	"<name>", "", "<name>", "<name>", "", "", "<action@expression>", "<action@expression>", "<action@expression>",
-	"<action@expression>", "<file>", "<file>", "<file>", "<file>", "", "", "<mode>", "<value>", "<value>",
-	"", "", "", "", "<offset>", "<offset>", "", "", "", "<regex>", "<section>", "", "", "<regex>", "<section>",
-	"", "", "<time>", "", "", "", "", "", "", "", ""
+	"<levels>", "", "", "", "", "", "", "", "<regex>", "<regex>", "<name=val>", "", "", "", "", "", "",
+	"", "", "", "", "<percentage>", "<percentage>", "<number>", "<size>", "<percent>", "", "", "", "", "",
+	"<name>", "", "<name>", "<name>", "", "", "", "<action@expression>", "<action@expression>", "<action@expression>",
+	"<action@expression>", "<file>", "<file>", "<file>", "<file>", "", "", "", "<mode>", "<value>", "<value>",
+	"", "", "", "", "", "<offset>", "<offset>", "", "", "", "", "<regex>", "<section>", "", "", "<regex>", "<section>",
+	"", "", "", "<time>", "", "", "", "", "", "", "", ""
 };
 
 static char *sections[]={
@@ -75,7 +75,7 @@ static char *sections[]={
 };
 
 static char *options_text[]={
-	"Filesystem compression options:\n",
+	"Filesystem compression options:", "\n",
 	"-b <block-size>\t\tset data block to <block-size>.  Default 128 Kbytes.\n\t\t\tOptionally a suffix of K, KB, Kbytes or M, MB, Mbytes\n\t\t\tcan be given to specify Kbytes or Mbytes respectively\n",
 	"-comp <comp>\t\tselect <comp> compression\n\t\t\tCompressors available:\n\t\t\t\t" COMPRESSORS "\n",
 	"-noI\t\t\tdo not compress inode table\n",
@@ -84,7 +84,7 @@ static char *options_text[]={
 	"-noF\t\t\tdo not compress fragment blocks\n",
 	"-noX\t\t\tdo not compress extended attributes\n",
 	"-no-compression\t\tdo not compress any of the data or metadata.  This is\n\t\t\tequivalent to specifying -noI -noD -noF and -noX\n",
-	"\n", "Filesystem build options:\n",
+	"\n", "Filesystem build options:", "\n",
 	"-tar\t\t\tread uncompressed tar file from standard in (stdin)\n",
 	"-no-strip\t\tact like tar, and do not strip leading directories\n\t\t\tfrom source files\n",
 	"-tarstyle\t\talternative name for -no-strip\n",
@@ -111,7 +111,7 @@ static char *options_text[]={
 	"-no-duplicates\t\tdo not perform duplicate checking\n",
 	"-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n",
 	"-keep-as-directory\tif one source directory is specified, create a root\n\t\t\tdirectory containing that directory, rather than the\n\t\t\tcontents of the directory\n",
-	"\n", "Filesystem filter options:\n",
+	"\n", "Filesystem filter options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition should\n\t\t\tbe quoted.  See section \"Pseudo file definition format\"\n\t\t\tlater for format details\n",
 	"-pd <d mode uid gid>\tspecify a default pseudo directory which will be used in\n\t\t\tpseudo definitions if a directory in the pathname does\n\t\t\tnot exist.  This also allows pseudo definitions to be\n\t\t\tspecified without specifying all the directories in the\n\t\t\tpathname.  The definition should be quoted\n",
 	"-pd <D time mode u g>\tas above, but also allow a timestamp to be specified\n",
@@ -122,14 +122,14 @@ static char *options_text[]={
 	"-max-depth <levels>\tdescend at most <levels> of directories when scanning\n\t\t\tfilesystem\n",
 	"-one-file-system\tdo not cross filesystem boundaries.  If a directory\n\t\t\tcrosses the boundary, create an empty directory for\n\t\t\teach mount point.  If a file crosses the boundary\n\t\t\tignore it\n",
 	"-one-file-system-x\tdo not cross filesystem boundaries. Like\n\t\t\t-one-file-system option except directories are also\n\t\t\tignored if they cross the boundary\n",
-	"\n", "Filesystem extended attribute (xattrs) options:\n",
+	"\n", "Filesystem extended attribute (xattrs) options:", "\n",
 	"-no-xattrs\t\tdo not store extended attributes" NOXOPT_STR "\n",
 	"-xattrs\t\t\tstore extended attributes" XOPT_STR "\n",
 	"-xattrs-exclude <regex>\texclude any xattr names matching <regex>.  <regex> is a\n\t\t\tPOSIX regular expression, e.g. -xattrs-exclude '^user.'\n\t\t\texcludes xattrs from the user namespace\n",
 	"-xattrs-include <regex>\tinclude any xattr names matching <regex>.  <regex> is a\n\t\t\tPOSIX regular expression, e.g. -xattrs-include '^user.'\n\t\t\tincludes xattrs from the user namespace\n",
 	"-xattrs-add <name=val>\tadd the xattr <name> with <val> to files.  If an\n\t\t\tuser xattr it will be added to regular files and\n\t\t\tdirectories (see man 7 xattr).  Otherwise it will be\n\t\t\tadded to all files.  <val> by default will be treated as\n\t\t\tbinary (i.e. an uninterpreted byte sequence), but it can\n\t\t\tbe prefixed with 0s, where it will be treated as base64\n\t\t\tencoded, or prefixed with 0x, where val will be treated\n\t\t\tas hexidecimal.  Additionally it can be prefixed with\n\t\t\t0t where this encoding is similar to binary encoding,\n\t\t\texcept backslashes are specially treated, and a\n\t\t\tbackslash followed by 3 octal digits can be used to\n\t\t\tencode any ASCII character, which obviously can be used\n\t\t\tto encode control codes.  The option can be repeated\n"
 "\t\t\tmultiple times to add multiple xattrs\n",
-	"\n", "Mksquashfs runtime options:\n",
+	"\n", "Mksquashfs runtime options:", "\n",
 	"-version\t\tprint version, licence and copyright message\n",
 	"-exit-on-error\t\ttreat normally ignored errors as fatal\n",
 	"-quiet\t\t\tno verbose output\n",
@@ -143,13 +143,13 @@ static char *options_text[]={
 	"-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or G to\n\t\t\tspecify Kbytes, Mbytes or Gbytes respectively\n",
 	"-mem-percent <percent>\tuse <percent> physical memory for caches.  Default 25%%\n",
 	"-mem-default\t\tprint default memory usage in Mbytes\n",
-	"\n", "Filesystem append options:\n",
+	"\n", "Filesystem append options:", "\n",
 	"-noappend\t\tdo not append to existing filesystem\n",
 	"-root-becomes <name>\twhen appending source files/directories, make the\n\t\t\toriginal root become a subdirectory in the new root\n\t\t\tcalled <name>, rather than adding the new source items\n\t\t\tto the original root\n",
 	"-no-recovery\t\tdo not generate a recovery file\n",
 	"-recovery-path <name>\tuse <name> as the directory to store the recovery file\n",
 	"-recover <name>\t\trecover filesystem data using recovery file <name>\n",
-	"\n", "Filesystem actions options:\n",
+	"\n", "Filesystem actions options:", "\n",
 	"-action <action@expr>\tevaluate <expr> on every file, and execute <action>\n\t\t\tif it returns TRUE\n",
 	"-log-action <act@expr>\tas above, but log expression evaluation results and\n\t\t\tactions performed\n",
 	"-true-action <act@expr>\tas above, but only log expressions which return TRUE\n",
@@ -158,16 +158,16 @@ static char *options_text[]={
 	"-log-action-file <file>\tas -log-action, but read actions from <file>\n",
 	"-true-action-file <f>\tas -true-action, but read actions from <f>\n",
 	"-false-action-file <f>\tas -false-action, but read actions from <f>\n",
-	"\n", "Tar file only options:\n",
+	"\n", "Tar file only options:", "\n",
 	"-default-mode <mode>\ttar files often do not store permissions for\n\t\t\tintermediate directories.  This option sets the default\n\t\t\tdirectory permissions to octal <mode>, rather than 0755.\n\t\t\tThis also sets the root inode mode\n",
 	"-default-uid <value>\ttar files often do not store uids for intermediate\n\t\t\tdirectories.  This option sets the default directory\n\t\t\towner to <value>, rather than the user running\n\t\t\tMksquashfs.  <value> can be either an integer uid or\n\t\t\tuser name.  This also sets the root inode uid\n",
 	"-default-gid <value>\ttar files often do not store gids for intermediate\n\t\t\tdirectories.  This option sets the default directory\n\t\t\tgroup to <value>, rather than the group of the user\n\t\t\trunning Mksquashfs.  <value> can be either an integer\n\t\t\tuid or group name.  This also sets the root inode gid\n",
 	"-ignore-zeros\t\tallow tar files to be concatenated together and fed to\n\t\t\tMksquashfs.  Normally a tarfile has two consecutive 512\n\t\t\tbyte blocks filled with zeros which means EOF and\n\t\t\tMksquashfs will stop reading after the first tar file on\n\t\t\tencountering them. This option makes Mksquashfs ignore\n\t\t\tthe zero filled blocks\n",
-	"\n", "Expert options (these may make the filesystem unmountable):\n",
+	"\n", "Expert options (these may make the filesystem unmountable):", "\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
 	"-offset <offset>\tskip <offset> bytes at the beginning of FILESYSTEM.\n\t\t\tOptionally a suffix of K, M or G can be given to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n\t\t\tDefault 0 bytes\n",
 	"-o <offset>\t\tsynonym for -offset\n",
-	"\n", "Help options:\n",
+	"\n", "Help options:", "\n",
 	"-help\t\t\tprint help information for all Mksquashfs options to\n\t\t\tstdout\n",
 	"-help-option <regex>\tprint the help information for Mksquashfs options\n\t\t\tmatching <regex> to stdout\n",
 	"-help-section <section>\tprint the help information for section <section> to\n\t\t\tstdout.  Use \"sections\" or \"h\" as section name to get a\n\t\t\tlist of sections and their names\n",
@@ -175,7 +175,7 @@ static char *options_text[]={
 	"-h\t\t\tshorthand alternative to -help\n",
 	"-ho <regex>\t\tshorthand aternative to -help-option\n",
 	"-hs <section>\t\tshorthand alternative to -help-section\n",
-	"\n", "Miscellaneous options:\n",
+	"\n", "Miscellaneous options:", "\n",
 	"-fstime <time>\t\talternative name for -mkfs-time\n",
 	"-always-use-fragments\talternative name for -tailends\n",
 	"-root-owned\t\talternative name for -all-root\n",
@@ -185,7 +185,7 @@ static char *options_text[]={
 	"-noFragmentCompression\talternative name for -noF\n",
 	"-noXattrCompression\talternative name for -noX\n",
 	"-pseudo-dir\t\talternative name for -pd\n",
-	"\n", "Pseudo file definition format:\n",
+	"\n", "Pseudo file definition format:", "\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
 	"\"filename m mode uid gid\"\t\tmodify filename\n",
 	"\"filename b mode uid gid major minor\"\tcreate a block device\n",
@@ -281,7 +281,9 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 
 int is_header(int i)
 {
-	return options_text[i][0] != '-' && options_text[i][0] != '\n' && options_text[i][0] != '"';
+	int length = strlen(options_text[i]);
+
+	return length && options_text[i][length - 1] == ':';
 }
 
 
@@ -294,7 +296,7 @@ static void print_section_names(int error, char *string)
 
 	for(i = 0, j = 0; sections[i] != NULL; j++)
 		if(is_header(j)) {
-			fprintf(out, "%s%s\t\t%s%s", string, sections[i], strlen(sections[i]) > 7 ? "" : "\t", options_text[j]);
+			fprintf(out, "%s%s\t\t%s%s\n", string, sections[i], strlen(sections[i]) > 7 ? "" : "\t", options_text[j]);
 			i++;
 		}
 }
