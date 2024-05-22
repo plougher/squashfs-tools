@@ -71,7 +71,7 @@ static char *options_args[]={
 };
 
 static char *sections[]={
-	"compression", "build", "filter", "xattrs", "runtime", "append", "actions", "tar", "expert", "help", "misc", "pseudo", "environment", NULL
+	"compression", "build", "filter", "xattrs", "runtime", "append", "actions", "tar", "expert", "help", "misc", "pseudo", "environment", "exit", NULL
 };
 
 static char *options_text[]={
@@ -210,6 +210,10 @@ static char *options_text[]={
 	"\t\t\tSOURCE_DATE_EPOCH.  See\n",
 	"\t\t\thttps://reproducible-builds.org/docs/source-date-epoch/\n",
 	"\t\t\tfor more information\n",
+	"\n", "Exit status:", "\n",
+	"  0\tMksquashfs successfully generated a filesystem.\n"
+	"  1\tFatal errors occurred, Mksquashfs aborted and did not generate a\n",
+	"\tfilesystem (or update if appending).\n",
 	NULL};
 
 
@@ -226,11 +230,6 @@ void print_options(FILE *stream, char *name)
 
 	display_compressor_usage(stream, COMP_DEFAULT);
 
-	fprintf(stream, "\nExit status:\n");
-	fprintf(stream, "  0\tMksquashfs successfully generated a filesystem.\n");
-	fprintf(stream, "  1\tFatal errors occurred, Mksquashfs aborted and ");
-	fprintf(stream, "did not generate a\n\tfilesystem (or update if ");
-	fprintf(stream, "appending).\n");
 	fprintf(stream, "\nSee also:");
 	fprintf(stream, "\nThe README for the Squashfs-tools 4.6.1 release, ");
 	fprintf(stream, "describing the new features can be\n");
