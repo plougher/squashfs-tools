@@ -71,7 +71,7 @@ static char *options_args[]={
 };
 
 static char *sections[]={
-	"compression", "build", "filter", "xattrs", "runtime", "append", "actions", "tar", "expert", "help", "misc", "pseudo", "environment", "exit", NULL
+	"compression", "build", "filter", "xattrs", "runtime", "append", "actions", "tar", "expert", "help", "misc", "pseudo", "environment", "exit", "extra", NULL
 };
 
 static char *options_text[]={
@@ -214,6 +214,13 @@ static char *options_text[]={
 	"  0\tMksquashfs successfully generated a filesystem.\n"
 	"  1\tFatal errors occurred, Mksquashfs aborted and did not generate a\n",
 	"\tfilesystem (or update if appending).\n",
+	"\n","See also (extra information elsewhere):", "\n",
+	"The README for the Squashfs-tools 4.6.1 release, describing the new features can be\n",
+	"read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6.1\n",
+	"\nThe Squashfs-tools USAGE guide can be read here\n",
+	"https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n",
+	"\nThe ACTIONS-README file describing how to use the new actions feature can be\n",
+	"read here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n",
 	NULL};
 
 
@@ -229,15 +236,6 @@ void print_options(FILE *stream, char *name)
 	fprintf(stream, "\nCompressors available and compressor specific options:\n");
 
 	display_compressor_usage(stream, COMP_DEFAULT);
-
-	fprintf(stream, "\nSee also:");
-	fprintf(stream, "\nThe README for the Squashfs-tools 4.6.1 release, ");
-	fprintf(stream, "describing the new features can be\n");
-	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6.1\n");
-	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
-	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n");
-	fprintf(stream, "\nThe ACTIONS-README file describing how to use the new actions feature can be\n");
-	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n");
 }
 
 
