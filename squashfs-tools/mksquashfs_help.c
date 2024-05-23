@@ -352,3 +352,14 @@ void print_help(char *prog_name)
 	ERROR("\nOr run\n  \"%s -help\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
+
+
+void print_option_help(char *prog_name, char *option)
+{
+	ERROR("\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
+	ERROR("Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(TRUE, "\t");
+	ERROR("\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	ERROR("\nOr run\n  \"%s -help\" to get help on all the sections\n", prog_name);
+	exit(1);
+}
