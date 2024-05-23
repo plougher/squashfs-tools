@@ -8053,8 +8053,8 @@ print_compressor_options:
 			if(++i == argc) {
 				ERROR("%s: -ef missing filename\n", argv[0]);
 				print_option_help(argv[0], argv[i - 1]);
-			exclude_option = TRUE;
 			}
+			exclude_option = TRUE;
 		} else if(strcmp(argv[i], "-no-duplicates") == 0)
 			duplicate_checking = FALSE;
 
