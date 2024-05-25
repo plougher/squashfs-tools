@@ -59,7 +59,7 @@
 #define TRUE 1
 #define FALSE 0
 
-extern void print_options(FILE *stream, char *name);
+extern void print_help_all(char *name);
 extern void print_option(char *prog_name, char *opt_name, char *pattern);
 extern void print_section(char *prog_name, char *opt_name, char *sec_name);
 extern void handle_invalid_option(char *prog_name, char *opt_name);

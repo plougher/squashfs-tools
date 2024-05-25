@@ -224,18 +224,19 @@ static char *options_text[]={
 	NULL};
 
 
-void print_options(FILE *stream, char *name)
+void print_help_all(char *name)
 {
 	int i;
 
-	fprintf(stream, SYNTAX, name);
+	printf(SYNTAX, name);
 
 	for(i = 0; options_text[i] != NULL; i++)
-		fprintf(stream, options_text[i]);
+		printf(options_text[i]);
 
-	fprintf(stream, "\nCompressors available and compressor specific options:\n");
+	printf("\nCompressors available and compressor specific options:\n");
 
-	display_compressor_usage(stream, COMP_DEFAULT);
+	display_compressor_usage(stdout, COMP_DEFAULT);
+	exit(0);
 }
 
 
