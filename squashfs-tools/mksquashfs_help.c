@@ -168,9 +168,10 @@ static char *options_text[]={
 	"-offset <offset>\tskip <offset> bytes at the beginning of FILESYSTEM.\n\t\t\tOptionally a suffix of K, M or G can be given to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n\t\t\tDefault 0 bytes\n",
 	"-o <offset>\t\tsynonym for -offset\n",
 	"\n", "Help options:", "\n",
-	"-help\t\t\tprint help information for all Mksquashfs options to\n\t\t\tstdout\n",
+	"-help\t\t\tprint help summary information to stdout\n",
 	"-help-option <regex>\tprint the help information for Mksquashfs options\n\t\t\tmatching <regex> to stdout\n",
 	"-help-section <section>\tprint the help information for section <section> to\n\t\t\tstdout.  Use \"sections\" or \"h\" as section name to get a\n\t\t\tlist of sections and their names\n",
+	"-help-all\t\tprint help information for all Mksquashfs options and\n\t\t\tsections to stdout\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"-h\t\t\tshorthand alternative to -help\n",
 	"-ho <regex>\t\tshorthand aternative to -help-option\n",
@@ -337,7 +338,7 @@ void handle_invalid_option(char *prog_name, char *opt_name)
 	ERROR("Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stderr, "\t");
 	ERROR("\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	ERROR("\nOr run\n  \"%s -help\" to get help on all the sections\n", prog_name);
+	ERROR("\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
 
@@ -350,7 +351,7 @@ void print_help(int error, char *prog_name)
 	fprintf(stream, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stream, "\t");
 	fprintf(stream, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	fprintf(stream, "\nOr run\n  \"%s -help\" to get help on all the sections\n", prog_name);
+	fprintf(stream, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(error);
 }
 
@@ -361,6 +362,6 @@ void print_option_help(char *prog_name, char *option)
 	ERROR("Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stderr, "\t");
 	ERROR("\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	ERROR("\nOr run\n  \"%s -help\" to get help on all the sections\n", prog_name);
+	ERROR("\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
