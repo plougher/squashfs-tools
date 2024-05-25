@@ -276,7 +276,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 }
 
 
-int is_header(int i)
+static int is_header(int i)
 {
 	int length = strlen(options_text[i]);
 
