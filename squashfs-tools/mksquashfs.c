@@ -7409,10 +7409,8 @@ int main(int argc, char *argv[])
 									i++);
 
 	if(i < argc && (strcmp(argv[i], "-help") == 0 ||
-						strcmp(argv[i], "-h") == 0)) {
-		print_options(stdout, argv[0]);
-		exit(0);
-	}
+						strcmp(argv[i], "-h") == 0))
+		print_help(FALSE, argv[0]);
 
 	if(i < argc && (strcmp(argv[i], "-help-option") == 0 ||
 						strcmp(argv[i], "-ho") == 0)) {
@@ -7552,10 +7550,9 @@ int main(int argc, char *argv[])
 			}
 			recovery_pathname = argv[i];
 		} else if(strcmp(argv[i], "-help") == 0 ||
-						strcmp(argv[i], "-h") == 0) {
-			print_options(stdout, argv[0]);
-			exit(0);
-		} else if((strcmp(argv[i], "-help-option") == 0 ||
+						strcmp(argv[i], "-h") == 0)
+			print_help(FALSE, argv[0]);
+		else if((strcmp(argv[i], "-help-option") == 0 ||
 						strcmp(argv[i], "-ho") == 0)) {
 			if(++i == argc) {
 				ERROR("%s: %s missing option\n",
