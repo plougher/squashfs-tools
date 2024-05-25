@@ -341,14 +341,16 @@ void handle_invalid_option(char *prog_name, char *opt_name)
 }
 
 
-void print_help(char *prog_name)
+void print_help(int error, char *prog_name)
 {
-	ERROR(SYNTAX "\n", prog_name);
-	ERROR("Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t");
-	ERROR("\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	ERROR("\nOr run\n  \"%s -help\" to get help on all the sections\n", prog_name);
-	exit(1);
+	FILE *stream = error ? stderr : stdout;
+
+	fprintf(stream, SYNTAX "\n", prog_name);
+	fprintf(stream, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(stream, "\t");
+	fprintf(stream, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	fprintf(stream, "\nOr run\n  \"%s -help\" to get help on all the sections\n", prog_name);
+	exit(error);
 }
 
 

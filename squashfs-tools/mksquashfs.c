@@ -7441,7 +7441,7 @@ int main(int argc, char *argv[])
 
 	if(i < 3) {
 		ERROR("%s: fatal error: no arguments specified on command line\n\n", argv[0]);
-		print_help(argv[0]);
+		print_help(TRUE, argv[0]);
 	}
 
 	option_offset = i;
