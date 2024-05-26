@@ -41,7 +41,7 @@ tmp=$(mktemp -d)
 # $tmp/mksquashfs.help.  This is to allow it to be modified before
 # passing to help2man.
 
-if ! $1/mksquashfs -help > $tmp/mksquashfs.help2 2>&1; then
+if ! $1/mksquashfs -help-all > $tmp/mksquashfs.help2 2>&1; then
 	error "$0: Running Mksquashfs failed.  Cross-compiled or incompatible binary?"
 	exit 1
 fi
