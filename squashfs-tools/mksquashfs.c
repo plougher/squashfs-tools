@@ -7382,6 +7382,7 @@ int main(int argc, char *argv[])
 	int progress = TRUE;
 	int force_progress = FALSE;
 	int exclude_option = FALSE;
+	int Xhelp = FALSE;
 	struct file_buffer **fragment = NULL;
 	char *command;
 
@@ -7441,26 +7442,12 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
-	if(i < 3) {
-		ERROR("%s: fatal error: no arguments specified on command line\n\n", argv[0]);
-		print_help(TRUE, argv[0]);
-	}
-
-	option_offset = i;
-	destination_file = argv[i - 1];
-
-	if(argv[1][0] != '-') {
-		source_path = argv + 1;
-		source = i - 2;
-	} else {
-		source_path = NULL;
-		source = 0;
-	}
-
 	/*
 	 * Scan the command line for -comp xxx option, this is to ensure
 	 * any -X compressor specific options are passed to the
-	 * correct compressor
+	 * correct compressor.
+	 *
+	 * Also scan for -Xhelp specified on command line,
 	 */
 	for(; i < argc; i++) {
 		struct compressor *prev_comp = comp;
@@ -7488,7 +7475,9 @@ int main(int argc, char *argv[])
 			}
 			compressor_opt_parsed = 1;
 
-		} else if(strcmp(argv[i], "-e") == 0)
+		} else if(strcmp(argv[i], "-Xhelp") == 0)
+			Xhelp = TRUE;
+		else if(strcmp(argv[i], "-e") == 0)
 			break;
 		else if(option_with_arg(argv[i], option_table))
 			i++;
@@ -7501,6 +7490,27 @@ int main(int argc, char *argv[])
 	 */
 	if(comp == NULL)
 		comp = lookup_compressor(COMP_DEFAULT);
+
+	if(Xhelp) {
+		print_compressor_options(stdout, comp, argv[0]);
+		exit(0);
+	}
+
+	if(i < 3) {
+		ERROR("%s: fatal error: no arguments specified on command line\n\n", argv[0]);
+		print_help(TRUE, argv[0]);
+	}
+
+	option_offset = i;
+	destination_file = argv[i - 1];
+
+	if(argv[1][0] != '-') {
+		source_path = argv + 1;
+		source = i - 2;
+	} else {
+		source_path = NULL;
+		source = 0;
+	}
 
 	/*
 	 * Scan the command line for -cpiostyle, -tar and -pf xxx options, this
