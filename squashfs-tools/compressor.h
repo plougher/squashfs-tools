@@ -43,6 +43,7 @@ extern struct compressor *lookup_compressor(char *);
 extern struct compressor *lookup_compressor_id(int);
 extern void display_compressors(FILE *stream, char *, char *);
 extern void display_compressor_usage(FILE *stream, char *);
+extern void print_compressor_options(FILE *stream, struct compressor *comp, char *prog_name);
 
 static inline int compressor_init(struct compressor *comp, void **stream,
 	int block_size, int datablock)

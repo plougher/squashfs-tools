@@ -143,3 +143,12 @@ void display_compressor_usage(FILE *stream, char *def_comp)
 					compressor[i]->name, str);
 		}
 }
+
+
+void print_compressor_options(FILE *stream, struct compressor *comp, char *prog_name)
+{
+	fprintf(stream, "%s: selected compressor \"%s\".  Options supported: %s\n",
+		prog_name, comp->name, comp->usage ? "" : "none");
+	if(comp->usage)
+		comp->usage(stream);
+}

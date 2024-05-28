@@ -7831,8 +7831,10 @@ int main(int argc, char *argv[])
 		} else if(strncmp(argv[i], "-X", 2) == 0) {
 			int args;
 
-			if(strcmp(argv[i] + 2, "help") == 0)
-				goto print_compressor_options;
+			if(strcmp(argv[i] + 2, "help") == 0) {
+				print_compressor_options(stdout, comp, argv[0]);
+				exit(0);
+			}
 
 			args = compressor_options(comp, argv + i, argc - i);
 			if(args < 0) {
@@ -7844,13 +7846,7 @@ int main(int argc, char *argv[])
 						ERROR("%s: Did you forget to"
 							" specify -comp?\n",
 							argv[0]);
-print_compressor_options:
-					ERROR("%s: selected compressor \"%s\""
-						".  Options supported: %s\n",
-						argv[0], comp->name,
-						comp->usage ? "" : "none");
-					if(comp->usage)
-						comp->usage(stderr);
+					print_compressor_options(stderr, comp, argv[0]);
 				}
 				exit(1);
 			}
