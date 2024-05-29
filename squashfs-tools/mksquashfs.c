@@ -7383,6 +7383,7 @@ int main(int argc, char *argv[])
 	int force_progress = FALSE;
 	int exclude_option = FALSE;
 	int Xhelp = FALSE;
+	char *help_comp = NULL;
 	struct file_buffer **fragment = NULL;
 	char *command;
 
@@ -7475,6 +7476,14 @@ int main(int argc, char *argv[])
 			}
 			compressor_opt_parsed = 1;
 
+		} if(strcmp(argv[i], "-help-comp") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -help-comp missing compressor name\n",
+					argv[0]);
+				print_option_help(argv[0], argv[i - 1]);
+			}
+
+			help_comp = argv[i];
 		} else if(strcmp(argv[i], "-Xhelp") == 0)
 			Xhelp = TRUE;
 		else if(strcmp(argv[i], "-e") == 0)
@@ -7493,6 +7502,11 @@ int main(int argc, char *argv[])
 
 	if(Xhelp) {
 		print_selected_comp_options(stdout, comp, argv[0]);
+		exit(0);
+	}
+
+	if(help_comp) {
+		print_compressor_options(help_comp, argv[0]);
 		exit(0);
 	}
 
