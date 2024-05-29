@@ -7839,14 +7839,8 @@ int main(int argc, char *argv[])
 				exit(1);
 
 		} else if(strncmp(argv[i], "-X", 2) == 0) {
-			int args;
+			int args = compressor_options(comp, argv + i, argc - i);
 
-			if(strcmp(argv[i] + 2, "help") == 0) {
-				print_compressor_options(stdout, comp, argv[0]);
-				exit(0);
-			}
-
-			args = compressor_options(comp, argv + i, argc - i);
 			if(args < 0) {
 				if(args == -1) {
 					ERROR("%s: Unrecognised compressor"
