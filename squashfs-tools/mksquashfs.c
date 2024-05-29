@@ -7492,7 +7492,7 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	if(Xhelp) {
-		print_compressor_options(stdout, comp, argv[0]);
+		print_selected_comp_options(stdout, comp, argv[0]);
 		exit(0);
 	}
 
@@ -7850,7 +7850,7 @@ int main(int argc, char *argv[])
 						ERROR("%s: Did you forget to"
 							" specify -comp?\n",
 							argv[0]);
-					print_compressor_options(stderr, comp, argv[0]);
+					print_selected_comp_options(stderr, comp, argv[0]);
 				}
 				exit(1);
 			}
