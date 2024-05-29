@@ -7476,7 +7476,7 @@ int main(int argc, char *argv[])
 			}
 			compressor_opt_parsed = 1;
 
-		} if(strcmp(argv[i], "-help-comp") == 0) {
+		} else if(strcmp(argv[i], "-help-comp") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -help-comp missing compressor name\n",
 					argv[0]);
