@@ -77,7 +77,7 @@ static char *sections[]={
 static char *options_text[]={
 	"Filesystem compression options:", "\n",
 	"-b <block-size>\t\tset data block to <block-size>.  Default 128 Kbytes.\n\t\t\tOptionally a suffix of K, KB, Kbytes or M, MB, Mbytes\n\t\t\tcan be given to specify Kbytes or Mbytes respectively\n",
-	"-comp <comp>\t\tselect <comp> compression\n\t\t\tCompressors available:\n\t\t\t\t" COMPRESSORS "\n",
+	"-comp <comp>\t\tselect <comp> compression.  Run -help-comp <comp> to get\n\t\t\tcompressor options.\n\t\t\tCompressors available:\n\t\t\t\t" COMPRESSORS "\n",
 	"-noI\t\t\tdo not compress inode table\n",
 	"-noId\t\t\tdo not compress the uid/gid table (implied by -noI)\n",
 	"-noD\t\t\tdo not compress data blocks\n",
