@@ -233,7 +233,7 @@ void print_help_all(char *name)
 	printf(SYNTAX, name);
 
 	for(i = 0; options_text[i] != NULL; i++)
-		printf(options_text[i]);
+		printf("%s", options_text[i]);
 
 	printf("\nCompressors available and compressor specific options:\n");
 
@@ -266,7 +266,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 			res = regexec(preg, options_args[i], (size_t) 0, NULL, 0);
 		if(!res) {
 			matched = TRUE;
-			printf(options_text[i]);
+			printf("%s", options_text[i]);
 		}
 	}
 
@@ -326,7 +326,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 		if(is_header(j))
 			secs++;
 		if(i == secs)
-			printf(options_text[j]);
+			printf("%s", options_text[j]);
 	}
 
 	exit(0);
