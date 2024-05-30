@@ -52,7 +52,7 @@ static char *options[] = {
 	"-log-action-file", "-true-action-file", "-false-action-file", "", "", "",
 	"-default-mode", "-default-uid", "-default-gid", "-ignore-zeros", "", "", "",
 	"-nopad", "-offset", "-o", "", "", "", "-help", "-help-option", "-help-section",
-	"-Xhelp", "-h", "-ho", "-hs", "", "", "", "-fstime", "-always-use-fragments",
+	"-help-all", "-Xhelp", "-h", "-ho", "-hs", "", "", "", "-fstime", "-always-use-fragments",
 	"-root-owned", "-noInodeCompression", "-noIdTableCompression", "-noDataCompression",
 	"-noFragmentCompression", "-noXattrCompression", "-pseudo-dir", NULL,
 };
@@ -66,7 +66,7 @@ static char *options_args[]={
 	"", "", "", "", "<percentage>", "<percentage>", "<number>", "<size>", "<percent>", "", "", "", "", "",
 	"<name>", "", "<name>", "<name>", "", "", "", "<action@expression>", "<action@expression>", "<action@expression>",
 	"<action@expression>", "<file>", "<file>", "<file>", "<file>", "", "", "", "<mode>", "<value>", "<value>",
-	"", "", "", "", "", "<offset>", "<offset>", "", "", "", "", "<regex>", "<section>", "", "", "<regex>", "<section>",
+	"", "", "", "", "", "<offset>", "<offset>", "", "", "", "", "<regex>", "<section>", "", "", "", "<regex>", "<section>",
 	"", "", "", "<time>", "", "", "", "", "", "", "", ""
 };
 
