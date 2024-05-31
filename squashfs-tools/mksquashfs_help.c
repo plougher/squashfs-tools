@@ -141,7 +141,7 @@ static char *options_text[]={
 	"-limit <percentage>\tlimit the I/O input rate to the given percentage.\n\t\t\tThis can be used to reduce the I/O and CPU consumption\n\t\t\tof Mksquashfs (alternative to -throttle)\n",
 	"-processors <number>\tuse <number> processors.  By default will use number of\n\t\t\tprocessors available\n",
 	"-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or G to\n\t\t\tspecify Kbytes, Mbytes or Gbytes respectively\n",
-	"-mem-percent <percent>\tuse <percent> physical memory for caches.  Default 25%%\n",
+	"-mem-percent <percent>\tuse <percent> physical memory for caches.  Default 25%\n",
 	"-mem-default\t\tprint default memory usage in Mbytes\n",
 	"\n", "Filesystem append options:", "\n",
 	"-noappend\t\tdo not append to existing filesystem\n",
