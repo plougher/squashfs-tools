@@ -7371,7 +7371,7 @@ print_sqfstar_compressor_options:
 int main(int argc, char *argv[])
 {
 	struct stat buf, source_buf;
-	int res, i;
+	int res, i, j;
 	char *root_name = NULL;
 	squashfs_inode inode;
 	int readq;
@@ -7450,19 +7450,19 @@ int main(int argc, char *argv[])
 	 *
 	 * Also scan for -Xhelp specified on command line,
 	 */
-	for(; i < argc; i++) {
+	for(j = i; j < argc; j++) {
 		struct compressor *prev_comp = comp;
 		
-		if(strcmp(argv[i], "-comp") == 0) {
-			if(++i == argc) {
+		if(strcmp(argv[j], "-comp") == 0) {
+			if(++j == argc) {
 				ERROR("%s: -comp missing compression type\n",
 					argv[0]);
-				print_option_help(argv[0], argv[i - 1]);
+				print_option_help(argv[0], argv[j - 1]);
 			}
-			comp = lookup_compressor(argv[i]);
+			comp = lookup_compressor(argv[j]);
 			if(!comp->supported) {
 				ERROR("%s: Compressor \"%s\" is not supported!"
-					"\n", argv[0], argv[i]);
+					"\n", argv[0], argv[j]);
 				ERROR("%s: Compressors available:\n", argv[0]);
 				display_compressors(stderr, "", COMP_DEFAULT);
 				exit(1);
@@ -7476,20 +7476,20 @@ int main(int argc, char *argv[])
 			}
 			compressor_opt_parsed = 1;
 
-		} else if(strcmp(argv[i], "-help-comp") == 0) {
-			if(++i == argc) {
+		} else if(strcmp(argv[j], "-help-comp") == 0) {
+			if(++j == argc) {
 				ERROR("%s: -help-comp missing compressor name\n",
 					argv[0]);
-				print_option_help(argv[0], argv[i - 1]);
+				print_option_help(argv[0], argv[j - 1]);
 			}
 
-			help_comp = argv[i];
-		} else if(strcmp(argv[i], "-Xhelp") == 0)
+			help_comp = argv[j];
+		} else if(strcmp(argv[j], "-Xhelp") == 0)
 			Xhelp = TRUE;
-		else if(strcmp(argv[i], "-e") == 0)
+		else if(strcmp(argv[j], "-e") == 0)
 			break;
-		else if(option_with_arg(argv[i], option_table))
-			i++;
+		else if(option_with_arg(argv[j], option_table))
+			j++;
 	}
 
 	/*
