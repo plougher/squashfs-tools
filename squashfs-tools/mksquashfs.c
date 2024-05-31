@@ -7448,7 +7448,7 @@ int main(int argc, char *argv[])
 	 * any -X compressor specific options are passed to the
 	 * correct compressor.
 	 *
-	 * Also scan for -Xhelp specified on command line,
+	 * Also scan for -Xhelp and -help-comp specified on command line,
 	 */
 	for(j = i; j < argc; j++) {
 		struct compressor *prev_comp = comp;
