@@ -256,7 +256,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 		char str[1024]; /* overflow safe */
 
 		regerror(res, preg, str, 1024);
-		ERROR("%s: %s invalid regex %s because %s\n", prog_name, opt_name, pattern, str);
+		fprintf(stderr, "%s: %s invalid regex %s because %s\n", prog_name, opt_name, pattern, str);
 		exit(1);
 	}
 
@@ -271,7 +271,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 	}
 
 	if(!matched) {
-		ERROR("%s: %s %s does not match any Mksquashfs option\n", prog_name, opt_name, pattern);
+		fprintf(stderr, "%s: %s %s does not match any Mksquashfs option\n", prog_name, opt_name, pattern);
 		exit(1);
 	} else
 		exit(0);
@@ -315,7 +315,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 			break;
 
 	if(sections[i] == NULL) {
-		ERROR("%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
+		fprintf(stderr, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
 		print_section_names(stderr, "");
 		exit(1);
 	}
@@ -335,11 +335,11 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 
 void handle_invalid_option(char *prog_name, char *opt_name)
 {
-	ERROR("%s: %s is an invalid option\n\n", prog_name, opt_name);
-	ERROR("Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	fprintf(stderr, "%s: %s is an invalid option\n\n", prog_name, opt_name);
+	fprintf(stderr, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stderr, "\t");
-	ERROR("\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	ERROR("\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	fprintf(stderr, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	fprintf(stderr, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
 
@@ -359,10 +359,10 @@ void print_help(int error, char *prog_name)
 
 void print_option_help(char *prog_name, char *option)
 {
-	ERROR("\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
-	ERROR("Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	fprintf(stderr, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
+	fprintf(stderr, "Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stderr, "\t");
-	ERROR("\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	ERROR("\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	fprintf(stderr, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	fprintf(stderr, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
