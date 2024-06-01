@@ -25,7 +25,7 @@ The top-level directory contains the following information files:
 
 The top-level directory has the following directories:
 
-* **squashfs-tools** - the source code directory, enter this directory and type `make` to build, or `make install` to install.  Edit the Makefile to change the compressors built and other defaults.
+* **squashfs-tools** - the source code directory, enter this directory and type `make` to build, or `make install` to install.
 * **manpages** - pre-generated manpages, these can be viewed using `man -l`.
 * **generate-manpages** - shell scripts etc used to generate the manpages.
 * **examples** - an old example file on how to use pseudo-file definitions.

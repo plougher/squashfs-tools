@@ -226,42 +226,6 @@ static char *options_text[]={
 	NULL};
 
 
-void autowrap_print(FILE *stream, char *text, int maxl)
-{
-	char *cur = text, *sol, *lw, *eow;
-	int length;
- 
-	while(*cur != '\0') {
-		sol = cur;
-		lw = eow = NULL;
-		length = 0;
-
-		while(length < maxl && *cur != '\n' && *cur != '\0') {
-			length = (*cur == '\t') ? (length + 8) & ~7 : length + 1;
-			if(*cur == '\t' || *cur == ' ')
-				eow = lw;
-			else
-				lw = cur;
-			cur ++;
-		}
-
-		if(*cur == '\n')
-			cur ++;
-		else if(eow)
-			cur = eow ++;
-
-		for(; sol < cur; sol ++)
-			fputc(*sol, stream);
-
-		if(eow && length == maxl) {
-			if(*sol != '\n')
-				fputc('\n', stream);
-			while(*cur == ' ')
-				cur ++;
-	}
-}
-
-
 void print_help_all(char *name)
 {
 	int i;
@@ -269,9 +233,9 @@ void print_help_all(char *name)
 	printf(SYNTAX, name);
 
 	for(i = 0; options_text[i] != NULL; i++)
-		autowrap_print(stdout, options_text[i], 80);
+		printf("%s", options_text[i]);
 
-	autowrap_print(stdout, "\nCompressors available and compressor specific options:\n", 80);
+	printf("\nCompressors available and compressor specific options:\n");
 
 	display_compressor_usage(stdout, COMP_DEFAULT);
 	exit(0);
@@ -302,7 +266,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 			res = regexec(preg, options_args[i], (size_t) 0, NULL, 0);
 		if(!res) {
 			matched = TRUE;
-			autowrap_print(stdout, options_text[i], 80);
+			printf("%s", options_text[i]);
 		}
 	}
 
@@ -341,7 +305,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 	int i, j, secs;
 
 	if(strcmp(sec_name, "sections") == 0 || strcmp(sec_name, "h") == 0) {
-		autowrap_print(stdout, "\nUse following section name to print Mksquashfs help information for that section\n\n", 80);
+		printf("\nUse following section name to print Mksquashfs help information for that section\n\n");
 		print_section_names(stdout, "");
 		exit(0);
 	}
@@ -362,7 +326,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 		if(is_header(j))
 			secs++;
 		if(i == secs)
-			autowrap_print(stdout, options_text[j], 80);
+			printf("%s", options_text[j]);
 	}
 
 	exit(0);
