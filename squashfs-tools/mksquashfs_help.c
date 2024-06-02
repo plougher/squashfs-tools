@@ -226,6 +226,57 @@ static char *options_text[]={
 	NULL};
 
 
+void autowrap_print(FILE *stream, char *text, int maxl)
+{
+	char *cur = text;
+	int first_line = TRUE, tab_out = 0, length = 0;
+
+	while(*cur != '\0') {
+		char *sol = cur, *lw = NULL, *eow = NULL;
+		int wrapped = FALSE;
+
+		while(length <= maxl && *cur != '\n' && *cur != '\0') {
+			if(*cur == '\t') {
+				length = (length + 8) & ~7;
+				if(first_line)
+					tab_out = length;
+			} else
+				length ++;
+
+			if(*cur == '\t' || *cur == ' ')
+				eow = lw;
+			else
+				lw = cur;
+			cur ++;
+		}
+
+		first_line = FALSE;
+
+		if(*cur == '\n')
+			cur ++;
+		else if(*cur != '\0') {
+			if(eow)
+				cur = eow + 1;
+			wrapped = TRUE;
+		}
+
+		while(sol < cur)
+			fputc(*sol ++, stream);
+
+		if(wrapped) {
+			fputc('\n', stream);
+
+			for(length = 0; length < tab_out; length += 8)
+				fputc('\t', stream);
+
+			while(*cur == ' ')
+			cur ++;
+		} else
+			length = 0;
+	}
+}
+
+
 void print_help_all(char *name)
 {
 	int i;
@@ -233,9 +284,9 @@ void print_help_all(char *name)
 	printf(SYNTAX, name);
 
 	for(i = 0; options_text[i] != NULL; i++)
-		printf("%s", options_text[i]);
+		autowrap_print(stdout, options_text[i], 80);
 
-	printf("\nCompressors available and compressor specific options:\n");
+	autowrap_print(stdout, "\nCompressors available and compressor specific options:\n", 80);
 
 	display_compressor_usage(stdout, COMP_DEFAULT);
 	exit(0);
@@ -266,7 +317,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 			res = regexec(preg, options_args[i], (size_t) 0, NULL, 0);
 		if(!res) {
 			matched = TRUE;
-			printf("%s", options_text[i]);
+			autowrap_print(stdout, options_text[i], 80);
 		}
 	}
 
@@ -305,7 +356,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 	int i, j, secs;
 
 	if(strcmp(sec_name, "sections") == 0 || strcmp(sec_name, "h") == 0) {
-		printf("\nUse following section name to print Mksquashfs help information for that section\n\n");
+		autowrap_print(stdout, "\nUse following section name to print Mksquashfs help information for that section\n\n", 80);
 		print_section_names(stdout, "");
 		exit(0);
 	}
@@ -326,7 +377,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 		if(is_header(j))
 			secs++;
 		if(i == secs)
-			printf("%s", options_text[j]);
+			autowrap_print(stdout, options_text[j], 80);
 	}
 
 	exit(0);
