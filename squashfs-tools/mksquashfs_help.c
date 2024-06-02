@@ -76,33 +76,63 @@ static char *sections[]={
 
 static char *options_text[]={
 	"Filesystem compression options:", "\n",
-	"-b <block-size>\t\tset data block to <block-size>.  Default 128 Kbytes.\n\t\t\tOptionally a suffix of K, KB, Kbytes or M, MB, Mbytes\n\t\t\tcan be given to specify Kbytes or Mbytes respectively\n",
-	"-comp <comp>\t\tselect <comp> compression.  Run -help-comp <comp> to get\n\t\t\tcompressor options.\n\t\t\tCompressors available:\n\t\t\t\t" COMPRESSORS "\n",
+	"-b <block-size>\t\tset data block to <block-size>.  Default 128 "
+		"Kbytes.  Optionally a suffix of K, KB, Kbytes or M, MB, "
+		"Mbytes can be given to specify Kbytes or Mbytes "
+		"respectively\n",
+	"-comp <comp>\t\tselect <comp> compression.  Run -help-comp <comp> to "
+		"get compressor options.\n\t\t\tCompressors available:\n"
+		"\t\t\t\t" COMPRESSORS "\n",
 	"-noI\t\t\tdo not compress inode table\n",
 	"-noId\t\t\tdo not compress the uid/gid table (implied by -noI)\n",
 	"-noD\t\t\tdo not compress data blocks\n",
 	"-noF\t\t\tdo not compress fragment blocks\n",
 	"-noX\t\t\tdo not compress extended attributes\n",
-	"-no-compression\t\tdo not compress any of the data or metadata.  This is\n\t\t\tequivalent to specifying -noI -noD -noF and -noX\n",
+	"-no-compression\t\tdo not compress any of the data or metadata.  "
+		"This is equivalent to specifying -noI -noD -noF and -noX\n",
 	"\n", "Filesystem build options:", "\n",
 	"-tar\t\t\tread uncompressed tar file from standard in (stdin)\n",
-	"-no-strip\t\tact like tar, and do not strip leading directories\n\t\t\tfrom source files\n",
+	"-no-strip\t\tact like tar, and do not strip leading directories from "
+		"source files\n",
 	"-tarstyle\t\talternative name for -no-strip\n",
-	"-cpiostyle\t\tact like cpio, and read file pathnames from standard in\n\t\t\t(stdin)\n",
-	"-cpiostyle0\t\tlike -cpiostyle, but filenames are null terminated.  Can\n\t\t\tbe used with find -print0 action\n",
+	"-cpiostyle\t\tact like cpio, and read file pathnames from standard in "
+		"(stdin)\n",
+	"-cpiostyle0\t\tlike -cpiostyle, but filenames are null terminated.  "
+		"Can be used with find -print0 action\n",
 	"-reproducible\t\tbuild filesystems that are reproducible" REP_STR "\n",
-	"-not-reproducible\tbuild filesystems that are not reproducible" NOREP_STR "\n",
-	"-mkfs-time <time>\tset filesystem creation timestamp to <time>. <time> can\n\t\t\tbe an unsigned 32-bit int indicating seconds since the\n\t\t\tepoch (1970-01-01) or a string value which is passed to\n\t\t\tthe \"date\" command to parse. Any string value which the\n\t\t\tdate command recognises can be used such as \"now\",\n\t\t\t\"last week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
-	"-all-time <time>\tset all file timestamps to <time>. <time> can be an\n\t\t\tunsigned 32-bit int indicating seconds since the epoch\n\t\t\t(1970-01-01) or a string value which is passed to the\n\t\t\t\"date\" command to parse. Any string value which the date\n\t\t\tcommand recognises can be used such as \"now\", \"last\n\t\t\tweek\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
-	"-root-time <time>\tset root directory time to <time>. <time> can be an\n\t\t\tunsigned 32-bit int indicating seconds since the epoch\n\t\t\t(1970-01-01) or a string value which is passed to the\n\t\t\t\"date\" command to parse. Any string value which the date\n\t\t\tcommand recognises can be used such as \"now\", \"last\n\t\t\tweek\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
+	"-not-reproducible\tbuild filesystems that are not reproducible"			NOREP_STR "\n",
+	"-mkfs-time <time>\tset filesystem creation timestamp to <time>. "
+		"<time> can be an unsigned 32-bit int indicating seconds since "
+		"the epoch (1970-01-01) or a string value which is passed to "
+		"the \"date\" command to parse. Any string value which the "
+		"date command recognises can be used such as \"now\", \"last "
+		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
+	"-all-time <time>\tset all file timestamps to <time>. <time> can be an "
+		"unsigned 32-bit int indicating seconds since the epoch "
+		"(1970-01-01) or a string value which is passed to the "
+		"\"date\" command to parse. Any string value which the date "
+		"command recognises can be used such as \"now\", \"last "
+		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
+	"-root-time <time>\tset root directory time to <time>. <time> can be "
+		"an unsigned 32-bit int indicating seconds since the epoch "
+		"(1970-01-01) or a string value which is passed to the "
+		"\"date\" command to parse. Any string value which the date "
+		"command recognises can be used such as \"now\", \"last "
+		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
 	"-root-mode <mode>\tset root directory permissions to octal <mode>\n",
-	"-root-uid <value>\tset root directory owner to specified <value>,\n\t\t\t<value> can be either an integer uid or user name\n",
-	"-root-gid <value>\tset root directory group to specified <value>,\n\t\t\t<value> can be either an integer gid or group name\n",
+	"-root-uid <value>\tset root directory owner to specified <value>, "
+		"<value> can be either an integer uid or user name\n",
+	"-root-gid <value>\tset root directory group to specified <value>, "
+		"<value> can be either an integer gid or group name\n",
 	"-all-root\t\tmake all files owned by root\n",
-	"-force-uid <value>\tset all file uids to specified <value>, <value> can be\n\t\t\teither an integer uid or user name\n",
-	"-force-gid <value>\tset all file gids to specified <value>, <value> can be\n\t\t\teither an integer gid or group name\n",
-	"-pseudo-override\tmake pseudo file uids and gids override -all-root,\n\t\t\t-force-uid and -force-gid options\n",
-	"-no-exports\t\tdo not make filesystem exportable via NFS (-tar default)\n",
+	"-force-uid <value>\tset all file uids to specified <value>, <value> "
+		"can be either an integer uid or user name\n",
+	"-force-gid <value>\tset all file gids to specified <value>, <value> "
+		"can be either an integer gid or group name\n",
+	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
+		"-force-uid and -force-gid options\n",
+	"-no-exports\t\tdo not make filesystem exportable via NFS (-tar "
+		"default)\n",
 	"-exports\t\tmake filesystem exportable via NFS (default)\n",
 	"-no-sparse\t\tdo not detect sparse files\n",
 	"-no-tailends\t\tdo not pack tail ends into fragments (default)\n",
@@ -110,7 +140,9 @@ static char *options_text[]={
 	"-no-fragments\t\tdo not use fragments\n",
 	"-no-duplicates\t\tdo not perform duplicate checking\n",
 	"-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n",
-	"-keep-as-directory\tif one source directory is specified, create a root\n\t\t\tdirectory containing that directory, rather than the\n\t\t\tcontents of the directory\n",
+	"-keep-as-directory\tif one source directory is specified, create a "
+		"root directory containing that directory, rather than the "
+		"contents of the directory\n",
 	"\n", "Filesystem filter options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition should\n\t\t\tbe quoted.  See section \"Pseudo file definition format\"\n\t\t\tlater for format details\n",
 	"-pd <d mode uid gid>\tspecify a default pseudo directory which will be used in\n\t\t\tpseudo definitions if a directory in the pathname does\n\t\t\tnot exist.  This also allows pseudo definitions to be\n\t\t\tspecified without specifying all the directories in the\n\t\t\tpathname.  The definition should be quoted\n",
