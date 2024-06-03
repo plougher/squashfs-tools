@@ -41,7 +41,7 @@ static char *options[] = {
 	"-force-uid", "-force-gid", "-pseudo-override", "-no-exports",
 	"-exports", "-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
 	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "", "-p",
-	"-pd", "-pd", "-pf", "-sort", "-wildcards", "-regex", "-max-depth",
+	"-pd", "-pd", "-pf", "-sort", "-ef", "-wildcards", "-regex", "-max-depth",
 	"-one-file-system", "-one-file-system-x", "", "", "", "-no-xattrs", "-xattrs",
 	"-xattrs-exclude", "-xattrs-include", "-xattrs-add", "", "", "", "-version",
 	"-exit-on-error", "-quiet", "-info", "-no-progress", "-progress",
@@ -61,7 +61,7 @@ static char *options_args[]={
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	"<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
 	"", "<value>", "<value>", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
-	"<d mode uid gid>", "<D time mode uid gid>", "<pseudo-file>", "<sort-file>", "", "",
+	"<d mode uid gid>", "<D time mode uid gid>", "<pseudo-file>", "<sort-file>", "<exclude-file>", "", "",
 	"<levels>", "", "", "", "", "", "", "", "<regex>", "<regex>", "<name=val>", "", "", "", "", "", "",
 	"", "", "", "", "<percentage>", "<percentage>", "<number>", "<size>", "<percent>", "", "", "", "", "",
 	"<name>", "", "<name>", "<name>", "", "", "", "<action@expression>", "<action@expression>", "<action@expression>",
@@ -100,7 +100,8 @@ static char *options_text[]={
 	"-cpiostyle0\t\tlike -cpiostyle, but filenames are null terminated.  "
 		"Can be used with find -print0 action\n",
 	"-reproducible\t\tbuild filesystems that are reproducible" REP_STR "\n",
-	"-not-reproducible\tbuild filesystems that are not reproducible"			NOREP_STR "\n",
+	"-not-reproducible\tbuild filesystems that are not reproducible"
+		NOREP_STR "\n",
 	"-mkfs-time <time>\tset filesystem creation timestamp to <time>. "
 		"<time> can be an unsigned 32-bit int indicating seconds since "
 		"the epoch (1970-01-01) or a string value which is passed to "
@@ -148,7 +149,8 @@ static char *options_text[]={
 	"-pd <d mode uid gid>\tspecify a default pseudo directory which will be used in\n\t\t\tpseudo definitions if a directory in the pathname does\n\t\t\tnot exist.  This also allows pseudo definitions to be\n\t\t\tspecified without specifying all the directories in the\n\t\t\tpathname.  The definition should be quoted\n",
 	"-pd <D time mode u g>\tas above, but also allow a timestamp to be specified\n",
 	"-pf <pseudo-file>\tadd list of pseudo file definitions from <pseudo-file>,\n\t\t\tuse - for stdin.  Pseudo file definitions should not be\n\t\t\tquoted\n",
-	"-sort <sort-file>\tsort files according to priorities in <sort-file>.  One\n\t\t\tfile or dir with priority per line.  Priority -32768 to\n\t\t\t32767, default priority 0\n-ef <exclude-file>\tlist of exclude dirs/files.  One per line\n",
+	"-sort <sort-file>\tsort files according to priorities in <sort-file>.  One\n\t\t\tfile or dir with priority per line.  Priority -32768 to\n\t\t\t32767, default priority 0\n",
+	"-ef <exclude-file>\tlist of exclude dirs/files.  One per line\n",
 	"-wildcards\t\tallow extended shell wildcards (globbing) to be used in\n\t\t\texclude dirs/files\n",
 	"-regex\t\t\tallow POSIX regular expressions to be used in exclude\n\t\t\tdirs/files\n",
 	"-max-depth <levels>\tdescend at most <levels> of directories when scanning\n\t\t\tfilesystem\n",
