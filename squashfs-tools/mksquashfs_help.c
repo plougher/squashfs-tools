@@ -145,24 +145,59 @@ static char *options_text[]={
 		"root directory containing that directory, rather than the "
 		"contents of the directory\n",
 	"\n", "Filesystem filter options:", "\n",
-	"-p <pseudo-definition>\tadd pseudo file definition.  The definition should\n\t\t\tbe quoted.  See section \"Pseudo file definition format\"\n\t\t\tlater for format details\n",
-	"-pd <d mode uid gid>\tspecify a default pseudo directory which will be used in\n\t\t\tpseudo definitions if a directory in the pathname does\n\t\t\tnot exist.  This also allows pseudo definitions to be\n\t\t\tspecified without specifying all the directories in the\n\t\t\tpathname.  The definition should be quoted\n",
-	"-pd <D time mode u g>\tas above, but also allow a timestamp to be specified\n",
-	"-pf <pseudo-file>\tadd list of pseudo file definitions from <pseudo-file>,\n\t\t\tuse - for stdin.  Pseudo file definitions should not be\n\t\t\tquoted\n",
-	"-sort <sort-file>\tsort files according to priorities in <sort-file>.  One\n\t\t\tfile or dir with priority per line.  Priority -32768 to\n\t\t\t32767, default priority 0\n",
+	"-p <pseudo-definition>\tadd pseudo file definition.  The definition "
+		"should be quoted.  See section \"Pseudo file definition "
+		"format\" later for format details\n",
+	"-pd <d mode uid gid>\tspecify a default pseudo directory which will "
+		"be used in pseudo definitions if a directory in the pathname "
+		"does not exist.  This also allows pseudo definitions to be "
+		"specified without specifying all the directories in the "
+		"pathname.  The definition should be quoted\n",
+	"-pd <D time mode u g>\tas above, but also allow a timestamp to be "
+		"specified\n",
+	"-pf <pseudo-file>\tadd list of pseudo file definitions from "
+		"<pseudo-file>, use - for stdin.  Pseudo file definitions "
+		"should not be quoted\n",
+	"-sort <sort-file>\tsort files according to priorities in <sort-file>."
+		"  One file or dir with priority per line.  Priority -32768 "
+		"to 32767, default priority 0\n",
 	"-ef <exclude-file>\tlist of exclude dirs/files.  One per line\n",
-	"-wildcards\t\tallow extended shell wildcards (globbing) to be used in\n\t\t\texclude dirs/files\n",
-	"-regex\t\t\tallow POSIX regular expressions to be used in exclude\n\t\t\tdirs/files\n",
-	"-max-depth <levels>\tdescend at most <levels> of directories when scanning\n\t\t\tfilesystem\n",
-	"-one-file-system\tdo not cross filesystem boundaries.  If a directory\n\t\t\tcrosses the boundary, create an empty directory for\n\t\t\teach mount point.  If a file crosses the boundary\n\t\t\tignore it\n",
-	"-one-file-system-x\tdo not cross filesystem boundaries. Like\n\t\t\t-one-file-system option except directories are also\n\t\t\tignored if they cross the boundary\n",
+	"-wildcards\t\tallow extended shell wildcards (globbing) to be used "
+		"in exclude dirs/files\n",
+	"-regex\t\t\tallow POSIX regular expressions to be used in exclude "
+		"dirs/files\n",
+	"-max-depth <levels>\tdescend at most <levels> of directories when "
+		"scanning filesystem\n",
+	"-one-file-system\tdo not cross filesystem boundaries.  If a "
+		"directory crosses the boundary, create an empty directory "
+		"for each mount point.  If a file crosses the boundary ignore "
+		"it\n",
+	"-one-file-system-x\tdo not cross filesystem boundaries. Like "
+		"-one-file-system option except directories are also ignored "
+		"if they cross the boundary\n",
 	"\n", "Filesystem extended attribute (xattrs) options:", "\n",
 	"-no-xattrs\t\tdo not store extended attributes" NOXOPT_STR "\n",
 	"-xattrs\t\t\tstore extended attributes" XOPT_STR "\n",
-	"-xattrs-exclude <regex>\texclude any xattr names matching <regex>.  <regex> is a\n\t\t\tPOSIX regular expression, e.g. -xattrs-exclude '^user.'\n\t\t\texcludes xattrs from the user namespace\n",
-	"-xattrs-include <regex>\tinclude any xattr names matching <regex>.  <regex> is a\n\t\t\tPOSIX regular expression, e.g. -xattrs-include '^user.'\n\t\t\tincludes xattrs from the user namespace\n",
-	"-xattrs-add <name=val>\tadd the xattr <name> with <val> to files.  If an\n\t\t\tuser xattr it will be added to regular files and\n\t\t\tdirectories (see man 7 xattr).  Otherwise it will be\n\t\t\tadded to all files.  <val> by default will be treated as\n\t\t\tbinary (i.e. an uninterpreted byte sequence), but it can\n\t\t\tbe prefixed with 0s, where it will be treated as base64\n\t\t\tencoded, or prefixed with 0x, where val will be treated\n\t\t\tas hexidecimal.  Additionally it can be prefixed with\n\t\t\t0t where this encoding is similar to binary encoding,\n\t\t\texcept backslashes are specially treated, and a\n\t\t\tbackslash followed by 3 octal digits can be used to\n\t\t\tencode any ASCII character, which obviously can be used\n\t\t\tto encode control codes.  The option can be repeated\n"
-"\t\t\tmultiple times to add multiple xattrs\n",
+	"-xattrs-exclude <regex>\texclude any xattr names matching <regex>.  "
+		"<regex> is a POSIX regular expression, e.g. -xattrs-exclude "
+		"'^user.' excludes xattrs from the user namespace\n",
+	"-xattrs-include <regex>\tinclude any xattr names matching <regex>.  "
+		"<regex> is a POSIX regular expression, e.g. -xattrs-include "
+		"'^user.' includes xattrs from the user namespace\n",
+	"-xattrs-add <name=val>\tadd the xattr <name> with <val> to files.  "
+		"If an user xattr it will be added to regular files and "
+		"directories (see man 7 xattr).  Otherwise it will be added "
+		"to all files.  <val> by default will be treated as binary "
+		"(i.e. an uninterpreted byte sequence), but it can be "
+		"prefixed with 0s, where it will be treated as base64 "
+		"encoded, or prefixed with 0x, where val will be treated as "
+		"hexidecimal.  Additionally it can be prefixed with 0t where "
+		"this encoding is similar to binary encoding, except "
+		"backslashes are specially treated, and a backslash followed "
+		"by 3 octal digits can be used to encode any ASCII character, "
+		"which obviously can be used to encode control codes.  The "
+		"option can be repeated multiple times to add multiple "
+		"xattrs\n",
 	"\n", "Mksquashfs runtime options:", "\n",
 	"-version\t\tprint version, licence and copyright message\n",
 	"-exit-on-error\t\ttreat normally ignored errors as fatal\n",
@@ -170,12 +205,20 @@ static char *options_text[]={
 	"-info\t\t\tprint files written to filesystem\n",
 	"-no-progress\t\tdo not display the progress bar\n",
 	"-progress\t\tdisplay progress bar when using the -info option\n",
-	"-percentage\t\tdisplay a percentage rather than the full progress bar.\n\t\t\tCan be used with dialog --gauge etc.\n",
-	"-throttle <percentage>\tthrottle the I/O input rate by the given percentage.\n\t\t\tThis can be used to reduce the I/O and CPU consumption\n\t\t\tof Mksquashfs\n",
-	"-limit <percentage>\tlimit the I/O input rate to the given percentage.\n\t\t\tThis can be used to reduce the I/O and CPU consumption\n\t\t\tof Mksquashfs (alternative to -throttle)\n",
-	"-processors <number>\tuse <number> processors.  By default will use number of\n\t\t\tprocessors available\n",
-	"-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or G to\n\t\t\tspecify Kbytes, Mbytes or Gbytes respectively\n",
-	"-mem-percent <percent>\tuse <percent> physical memory for caches.  Default 25%\n",
+	"-percentage\t\tdisplay a percentage rather than the full progress bar."
+		"  Can be used with dialog --gauge etc.\n",
+	"-throttle <percentage>\tthrottle the I/O input rate by the given "
+		"percentage.  This can be used to reduce the I/O and CPU "
+		"consumption of Mksquashfs\n",
+	"-limit <percentage>\tlimit the I/O input rate to the given percentage."
+		"  This can be used to reduce the I/O and CPU consumption of "
+		"Mksquashfs (alternative to -throttle)\n",
+	"-processors <number>\tuse <number> processors.  By default will use "
+		"number of processors available\n",
+	"-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or G "
+		"to specify Kbytes, Mbytes or Gbytes respectively\n",
+	"-mem-percent <percent>\tuse <percent> physical memory for caches.  "
+		"Default 25%\n",
 	"-mem-default\t\tprint default memory usage in Mbytes\n",
 	"\n", "Filesystem append options:", "\n",
 	"-noappend\t\tdo not append to existing filesystem\n",
