@@ -399,7 +399,7 @@ void autowrap_print(FILE *stream, char *text, int maxl)
 				fputc('\t', stream);
 
 			while(*cur == ' ')
-			cur ++;
+				cur ++;
 		} else
 			length = 0;
 	}
