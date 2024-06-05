@@ -26,6 +26,8 @@
 #include <string.h>
 #include <regex.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
 
 #include "mksquashfs_error.h"
 #include "mksquashfs_help.h"
@@ -355,6 +357,20 @@ static char *options_text[]={
 	NULL};
 
 
+int get_column_width()
+{
+	struct winsize winsize;
+
+	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
+		if(isatty(STDOUT_FILENO))
+			ERROR("TIOCGWINSZ ioctl failed, defaulting to 80 "
+				"columns\n");
+		return 80;
+	} else
+		return winsize.ws_col;
+}
+
+
 void autowrap_print(FILE *stream, char *text, int maxl)
 {
 	char *cur = text;
@@ -408,14 +424,13 @@ void autowrap_print(FILE *stream, char *text, int maxl)
 
 void print_help_all(char *name)
 {
-	int i;
-
+	int i, cols = get_column_width();
 	printf(SYNTAX, name);
 
 	for(i = 0; options_text[i] != NULL; i++)
-		autowrap_print(stdout, options_text[i], 80);
+		autowrap_print(stdout, options_text[i], cols);
 
-	autowrap_print(stdout, "\nCompressors available and compressor specific options:\n", 80);
+	autowrap_print(stdout, "\nCompressors available and compressor specific options:\n", cols);
 
 	display_compressor_usage(stdout, COMP_DEFAULT);
 	exit(0);
@@ -426,6 +441,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 {
 	int i, res, matched = FALSE;
 	regex_t *preg = malloc(sizeof(regex_t));
+	int cols = get_column_width();
 
 	if(preg == NULL)
 		MEM_ERROR();
@@ -446,7 +462,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 			res = regexec(preg, options_args[i], (size_t) 0, NULL, 0);
 		if(!res) {
 			matched = TRUE;
-			autowrap_print(stdout, options_text[i], 80);
+			autowrap_print(stdout, options_text[i], cols);
 		}
 	}
 
@@ -483,9 +499,10 @@ static void print_section_names(FILE *out, char *string)
 void print_section(char *prog_name, char *opt_name, char *sec_name)
 {
 	int i, j, secs;
+	int cols = get_column_width();
 
 	if(strcmp(sec_name, "sections") == 0 || strcmp(sec_name, "h") == 0) {
-		autowrap_print(stdout, "\nUse following section name to print Mksquashfs help information for that section\n\n", 80);
+		autowrap_print(stdout, "\nUse following section name to print Mksquashfs help information for that section\n\n", cols);
 		print_section_names(stdout, "");
 		exit(0);
 	}
@@ -506,7 +523,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 		if(is_header(j))
 			secs++;
 		if(i == secs)
-			autowrap_print(stdout, options_text[j], 80);
+			autowrap_print(stdout, options_text[j], cols);
 	}
 
 	exit(0);
