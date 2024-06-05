@@ -222,34 +222,67 @@ static char *options_text[]={
 	"-mem-default\t\tprint default memory usage in Mbytes\n",
 	"\n", "Filesystem append options:", "\n",
 	"-noappend\t\tdo not append to existing filesystem\n",
-	"-root-becomes <name>\twhen appending source files/directories, make the\n\t\t\toriginal root become a subdirectory in the new root\n\t\t\tcalled <name>, rather than adding the new source items\n\t\t\tto the original root\n",
+	"-root-becomes <name>\twhen appending source files/directories, make "
+		"the original root become a subdirectory in the new root "
+		"called <name>, rather than adding the new source items to the "
+		"original root\n",
 	"-no-recovery\t\tdo not generate a recovery file\n",
-	"-recovery-path <name>\tuse <name> as the directory to store the recovery file\n",
-	"-recover <name>\t\trecover filesystem data using recovery file <name>\n",
+	"-recovery-path <name>\tuse <name> as the directory to store the "
+		"recovery file\n",
+	"-recover <name>\t\trecover filesystem data using recovery file "
+		"<name>\n",
 	"\n", "Filesystem actions options:", "\n",
-	"-action <action@expr>\tevaluate <expr> on every file, and execute <action>\n\t\t\tif it returns TRUE\n",
-	"-log-action <act@expr>\tas above, but log expression evaluation results and\n\t\t\tactions performed\n",
-	"-true-action <act@expr>\tas above, but only log expressions which return TRUE\n",
-	"-false-action <act@exp>\tas above, but only log expressions which return FALSE\n",
+	"-action <action@expr>\tevaluate <expr> on every file, and execute "
+		"<action> if it returns TRUE\n",
+	"-log-action <act@expr>\tas above, but log expression evaluation "
+		"results and actions performed\n",
+	"-true-action <act@expr>\tas above, but only log expressions which "
+		"return TRUE\n",
+	"-false-action <act@exp>\tas above, but only log expressions which "
+		"return FALSE\n",
 	"-action-file <file>\tas action, but read actions from <file>\n",
-	"-log-action-file <file>\tas -log-action, but read actions from <file>\n",
+	"-log-action-file <file>\tas -log-action, but read actions from "
+		"<file>\n",
 	"-true-action-file <f>\tas -true-action, but read actions from <f>\n",
 	"-false-action-file <f>\tas -false-action, but read actions from <f>\n",
 	"\n", "Tar file only options:", "\n",
-	"-default-mode <mode>\ttar files often do not store permissions for\n\t\t\tintermediate directories.  This option sets the default\n\t\t\tdirectory permissions to octal <mode>, rather than 0755.\n\t\t\tThis also sets the root inode mode\n",
-	"-default-uid <value>\ttar files often do not store uids for intermediate\n\t\t\tdirectories.  This option sets the default directory\n\t\t\towner to <value>, rather than the user running\n\t\t\tMksquashfs.  <value> can be either an integer uid or\n\t\t\tuser name.  This also sets the root inode uid\n",
-	"-default-gid <value>\ttar files often do not store gids for intermediate\n\t\t\tdirectories.  This option sets the default directory\n\t\t\tgroup to <value>, rather than the group of the user\n\t\t\trunning Mksquashfs.  <value> can be either an integer\n\t\t\tuid or group name.  This also sets the root inode gid\n",
-	"-ignore-zeros\t\tallow tar files to be concatenated together and fed to\n\t\t\tMksquashfs.  Normally a tarfile has two consecutive 512\n\t\t\tbyte blocks filled with zeros which means EOF and\n\t\t\tMksquashfs will stop reading after the first tar file on\n\t\t\tencountering them. This option makes Mksquashfs ignore\n\t\t\tthe zero filled blocks\n",
-	"\n", "Expert options (these may make the filesystem unmountable):", "\n",
+	"-default-mode <mode>\ttar files often do not store permissions for "
+		"intermediate directories.  This option sets the default "
+		"directory permissions to octal <mode>, rather than 0755.  "
+		"This also sets the root inode mode\n",
+	"-default-uid <value>\ttar files often do not store uids for "
+		"intermediate directories.  This option sets the default "
+		"directory owner to <value>, rather than the user running "
+		"Mksquashfs.  <value> can be either an integer uid or user "
+		"name.  This also sets the root inode uid\n",
+	"-default-gid <value>\ttar files often do not store gids for "
+		"intermediate directories.  This option sets the default "
+		"directory group to <value>, rather than the group of the user "
+		"running Mksquashfs.  <value> can be either an integer uid or "
+		"group name.  This also sets the root inode gid\n",
+	"-ignore-zeros\t\tallow tar files to be concatenated together and fed "
+		"to Mksquashfs.  Normally a tarfile has two consecutive 512 "
+		"byte blocks filled with zeros which means EOF and Mksquashfs "
+		"will stop reading after the first tar file on encountering "
+		"them. This option makes Mksquashfs ignore the zero filled "
+		"blocks\n",
+	"\n", "Expert options (these may make the filesystem unmountable):",
+	"\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
-	"-offset <offset>\tskip <offset> bytes at the beginning of FILESYSTEM.\n\t\t\tOptionally a suffix of K, M or G can be given to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n\t\t\tDefault 0 bytes\n",
+	"-offset <offset>\tskip <offset> bytes at the beginning of FILESYSTEM."
+		"  Optionally a suffix of K, M or G can be given to specify "
+		"Kbytes, Mbytes or Gbytes respectively.  Default 0 bytes\n",
 	"-o <offset>\t\tsynonym for -offset\n",
 	"\n", "Help options:", "\n",
 	"-help\t\t\tprint help summary information to stdout\n",
-	"-help-option <regex>\tprint the help information for Mksquashfs options\n\t\t\tmatching <regex> to stdout\n",
-	"-help-section <section>\tprint the help information for section <section> to\n\t\t\tstdout.  Use \"sections\" or \"h\" as section name to get a\n\t\t\tlist of sections and their names\n",
+	"-help-option <regex>\tprint the help information for Mksquashfs "
+		"options matching <regex> to stdout\n",
+	"-help-section <section>\tprint the help information for section "
+		"<section> to stdout.  Use \"sections\" or \"h\" as section "
+		"name to get a list of sections and their names\n",
 	"-help-comp <comp>\tprint compressor options for compressor <comp>\n",
-	"-help-all\t\tprint help information for all Mksquashfs options and\n\t\t\tsections to stdout\n",
+	"-help-all\t\tprint help information for all Mksquashfs options and "
+		"sections to stdout\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"-h\t\t\tshorthand alternative to -help\n",
 	"-ho <regex>\t\tshorthand aternative to -help-option\n",
@@ -269,37 +302,47 @@ static char *options_text[]={
 	"\"filename m mode uid gid\"\t\tmodify filename\n",
 	"\"filename b mode uid gid major minor\"\tcreate a block device\n",
 	"\"filename c mode uid gid major minor\"\tcreate a character device\n",
-	"\"filename f mode uid gid command\"\tcreate file from stdout of command\n",
+	"\"filename f mode uid gid command\"\tcreate file from stdout of "
+		"command\n",
 	"\"filename s mode uid gid symlink\"\tcreate a symbolic link\n",
-	"\"filename i mode uid gid [s|f]\"\t\tcreate a socket (s) or FIFO (f)\n",
+	"\"filename i mode uid gid [s|f]\"\t\tcreate a socket (s) or FIFO "
+		"(f)\n",
 	"\"filename x name=val\"\t\t\tcreate an extended attribute\n",
 	"\"filename l linkname\"\t\t\tcreate a hard-link to linkname\n",
 	"\"filename L pseudo_filename\"\t\tsame, but link to pseudo file\n",
-	"\"filename D time mode uid gid\"\t\tcreate a directory with timestamp time\n",
-	"\"filename M time mode uid gid\"\t\tmodify a file with timestamp time\n",
-	"\"filename B time mode uid gid major minor\"\n\t\t\t\t\tcreate block device with timestamp time\n",
-	"\"filename C time mode uid gid major minor\"\n\t\t\t\t\tcreate char device with timestamp time\n",
-	"\"filename F time mode uid gid command\"\tcreate file with timestamp time\n",
-	"\"filename S time mode uid gid symlink\"\tcreate symlink with timestamp time\n",
-	"\"filename I time mode uid gid [s|f]\"\tcreate socket/fifo with timestamp time\n",
-	"\n", "Environment:", "\n"
-	"SOURCE_DATE_EPOCH\tIf set, this is used as the filesystem creation\n",
-	"\t\t\ttimestamp.  Also any file timestamps which are\n",
-	"\t\t\tafter SOURCE_DATE_EPOCH will be clamped to\n",
-	"\t\t\tSOURCE_DATE_EPOCH.  See\n",
-	"\t\t\thttps://reproducible-builds.org/docs/source-date-epoch/\n",
-	"\t\t\tfor more information\n",
+	"\"filename D time mode uid gid\"\t\tcreate a directory with timestamp "
+		"time\n",
+	"\"filename M time mode uid gid\"\t\tmodify a file with timestamp "
+		"time\n",
+	"\"filename B time mode uid gid major minor\"\n\t\t\t\t\tcreate block "
+		"device with timestamp time\n",
+	"\"filename C time mode uid gid major minor\"\n\t\t\t\t\tcreate char "
+		"device with timestamp time\n",
+	"\"filename F time mode uid gid command\"\tcreate file with timestamp "
+		"time\n",
+	"\"filename S time mode uid gid symlink\"\tcreate symlink with "
+		"timestamp time\n",
+	"\"filename I time mode uid gid [s|f]\"\tcreate socket/fifo with "
+		"timestamp time\n",
+	"\n", "Environment:", "\n",
+	"SOURCE_DATE_EPOCH\tIf set, this is used as the filesystem creation "
+		"timestamp.  Also any file timestamps which are after "
+		"SOURCE_DATE_EPOCH will be clamped to SOURCE_DATE_EPOCH.  "
+		"See https://reproducible-builds.org/docs/source-date-epoch/"
+		" for more information\n",
 	"\n", "Exit status:", "\n",
 	"  0\tMksquashfs successfully generated a filesystem.\n"
-	"  1\tFatal errors occurred, Mksquashfs aborted and did not generate a\n",
-	"\tfilesystem (or update if appending).\n",
+	"  1\tFatal errors occurred, Mksquashfs aborted and did not generate a "
+		"filesystem (or update if appending).\n",
 	"\n","See also (extra information elsewhere):", "\n",
-	"The README for the Squashfs-tools 4.6.1 release, describing the new features can be\n",
-	"read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6.1\n",
-	"\nThe Squashfs-tools USAGE guide can be read here\n",
-	"https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n",
-	"\nThe ACTIONS-README file describing how to use the new actions feature can be\n",
-	"read here https://github.com/plougher/squashfs-tools/blob/master/ACTIONS-README\n",
+	"The README for the Squashfs-tools 4.6.1 release, describing the new "
+		"features can be read here https://github.com/plougher/"
+		"squashfs-tools/blob/master/README-4.6.1\n",
+	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/"
+		"plougher/squashfs-tools/blob/master/USAGE-4.6\n",
+	"\nThe ACTIONS-README file describing how to use the new actions "
+		"feature can be read here https://github.com/plougher/"
+		"squashfs-tools/blob/master/ACTIONS-README\n",
 	NULL};
 
 
