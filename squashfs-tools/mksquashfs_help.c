@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <stdarg.h>
 
 #include "mksquashfs_error.h"
 #include "mksquashfs_help.h"
@@ -428,6 +429,24 @@ void autowrap_print(FILE *stream, char *text, int maxl)
 }
 
 
+void autowrap_printf(FILE *stream, int maxl, char *fmt, ...)
+{
+	va_list ap;
+	char *text;
+	int res;
+
+	va_start(ap, fmt);
+	res = vasprintf(&text, fmt, ap);
+	va_end(ap);
+
+	if(res == -1)
+		BAD_ERROR("Vasprintf failed in autowrap_printf\n");
+
+	autowrap_print(stream, text, maxl);
+	free(text);
+}
+
+
 void print_help_all(char *name)
 {
 	int i, cols = get_column_width();
@@ -458,7 +477,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 		char str[1024]; /* overflow safe */
 
 		regerror(res, preg, str, 1024);
-		fprintf(stderr, "%s: %s invalid regex %s because %s\n", prog_name, opt_name, pattern, str);
+		autowrap_printf(stderr, cols, "%s: %s invalid regex %s because %s\n", prog_name, opt_name, pattern, str);
 		exit(1);
 	}
 
@@ -473,7 +492,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 	}
 
 	if(!matched) {
-		fprintf(stderr, "%s: %s %s does not match any Mksquashfs option\n", prog_name, opt_name, pattern);
+		autowrap_printf(stderr, cols, "%s: %s %s does not match any Mksquashfs option\n", prog_name, opt_name, pattern);
 		exit(1);
 	} else
 		exit(0);
@@ -491,12 +510,13 @@ static int is_header(int i)
 static void print_section_names(FILE *out, char *string)
 {
 	int i, j;
+	int cols = get_column_width();
 
-	fprintf(out, "%sSECTION NAME\t\tSECTION\n", string);
+	autowrap_printf(out, cols, "%sSECTION NAME\t\tSECTION\n", string);
 
 	for(i = 0, j = 0; sections[i] != NULL; j++)
 		if(is_header(j)) {
-			fprintf(out, "%s%s\t\t%s%s\n", string, sections[i], strlen(sections[i]) > 7 ? "" : "\t", options_text[j]);
+			autowrap_printf(out, cols, "%s%s\t\t%s%s\n", string, sections[i], strlen(sections[i]) > 7 ? "" : "\t", options_text[j]);
 			i++;
 		}
 }
@@ -518,7 +538,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 			break;
 
 	if(sections[i] == NULL) {
-		fprintf(stderr, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
+		autowrap_printf(stderr, cols, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
 		print_section_names(stderr, "");
 		exit(1);
 	}
@@ -538,11 +558,13 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 
 void handle_invalid_option(char *prog_name, char *opt_name)
 {
-	fprintf(stderr, "%s: %s is an invalid option\n\n", prog_name, opt_name);
+	int cols = get_column_width();
+
+	autowrap_printf(stderr, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
 	fprintf(stderr, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stderr, "\t");
-	fprintf(stderr, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	fprintf(stderr, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
 
@@ -550,22 +572,25 @@ void handle_invalid_option(char *prog_name, char *opt_name)
 void print_help(int error, char *prog_name)
 {
 	FILE *stream = error ? stderr : stdout;
+	int cols = get_column_width();
 
-	fprintf(stream, SYNTAX "\n", prog_name);
-	fprintf(stream, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	autowrap_printf(stream, cols, SYNTAX "\n", prog_name);
+	autowrap_printf(stream, cols, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stream, "\t");
-	fprintf(stream, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	fprintf(stream, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(error);
 }
 
 
 void print_option_help(char *prog_name, char *option)
 {
-	fprintf(stderr, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
-	fprintf(stderr, "Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	int cols = get_column_width();
+
+	autowrap_printf(stderr, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
+	autowrap_printf(stderr, cols, "Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stderr, "\t");
-	fprintf(stderr, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	fprintf(stderr, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
