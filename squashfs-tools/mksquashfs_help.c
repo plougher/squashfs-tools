@@ -393,7 +393,9 @@ void autowrap_print(FILE *stream, char *text, int maxl)
 				eow = lw;
 			else
 				lw = cur;
-			cur ++;
+
+			if(length <= maxl)
+				cur ++;
 		}
 
 		first_line = FALSE;
@@ -403,8 +405,8 @@ void autowrap_print(FILE *stream, char *text, int maxl)
 		else if(*cur != '\0') {
 			if(eow)
 				cur = eow + 1;
-			else if(cur - sol >= 2)
-				cur --;
+			else if(cur - sol == 0)
+				cur ++;
 
 			if(tab_out >= maxl)
 				tab_out = 0;
