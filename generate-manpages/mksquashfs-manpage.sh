@@ -136,7 +136,9 @@ ${SED} -i -e "s/<//g" -e "s/>//g" $tmp/mksquashfs.help
 
 ${SED} -i "/^  -comp/ {
 N
-s/\n */. /
+s/\n */ /
+N
+s/\n */ /
 s/:/: /
 
 N
