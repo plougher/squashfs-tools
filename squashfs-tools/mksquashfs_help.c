@@ -29,6 +29,8 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <stdarg.h>
+#include <sys/wait.h>
+#include <signal.h>
 
 #include "mksquashfs_error.h"
 #include "mksquashfs_help.h"
@@ -358,6 +360,59 @@ static char *options_text[]={
 	NULL};
 
 
+FILE *exec_pager(pid_t *process)
+{
+	FILE *file;
+	int res, pipefd[2];
+	pid_t child;
+
+	res = pipe(pipefd);
+	if(res == -1) {
+		ERROR("Error executing pager, pipe failed\n");
+		return NULL;
+	}
+
+	child = fork();
+	if(child == -1) {
+		ERROR("Error executing pager, fork failed\n");
+		close(pipefd[0]);
+		close(pipefd[1]);
+		return NULL;
+	}
+
+	if(child == 0) { /* child */
+		close(pipefd[1]);
+		close(STDIN_FILENO);
+		res = dup(pipefd[0]);
+		if(res == -1)
+			exit(EXIT_FAILURE);
+
+		execl("/usr/bin/pager", "pager", (char *) NULL);
+		close(pipefd[0]);
+		exit(EXIT_FAILURE);
+	}
+
+	/* parent */
+	close(pipefd[0]);
+
+	file = fdopen(pipefd[1], "w");
+	if(file == NULL) {
+		ERROR("Error executing pager, fork failed\n");
+		goto failed;
+	}
+
+	*process = child;
+	return file;
+
+failed:
+	res = kill(child, SIGKILL);
+	if(res == -1)
+	ERROR("Error executing pager, kill failed\n");
+	close(pipefd[1]);
+	return NULL;
+}
+
+
 int get_column_width()
 {
 	struct winsize winsize;
@@ -451,15 +506,24 @@ void autowrap_printf(FILE *stream, int maxl, char *fmt, ...)
 
 void print_help_all(char *name)
 {
-	int i, cols = get_column_width();
-	printf(SYNTAX, name);
+	int status, i, cols = get_column_width();
+	pid_t pager_pid;
+	FILE *pager = exec_pager(&pager_pid);
+
+	if(pager == NULL)
+		exit(1);
+
+	autowrap_printf(pager, cols, SYNTAX, name);
 
 	for(i = 0; options_text[i] != NULL; i++)
-		autowrap_print(stdout, options_text[i], cols);
+		autowrap_print(pager, options_text[i], cols);
 
-	autowrap_print(stdout, "\nCompressors available and compressor specific options:\n", cols);
+	autowrap_print(pager, "\nCompressors available and compressor specific options:\n", cols);
 
-	display_compressor_usage(stdout, COMP_DEFAULT);
+	display_compressor_usage(pager, COMP_DEFAULT);
+	//fflush(pager);
+	fclose(pager);
+	waitpid(pager_pid, &status, 0);
 	exit(0);
 }
 
