@@ -506,12 +506,20 @@ void autowrap_printf(FILE *stream, int maxl, char *fmt, ...)
 
 void print_help_all(char *name)
 {
-	int status, i, cols = get_column_width();
+	int status, i, cols, tty = isatty(STDOUT_FILENO);
 	pid_t pager_pid;
-	FILE *pager = exec_pager(&pager_pid);
+	FILE *pager;
 
-	if(pager == NULL)
-		exit(1);
+	if(tty) {
+		cols = get_column_width();
+
+		pager = exec_pager(&pager_pid);
+		if(pager == NULL)
+			exit(1);
+	} else {
+		cols = 80;
+		pager = stdout;
+	}
 
 	autowrap_printf(pager, cols, SYNTAX, name);
 
@@ -521,8 +529,12 @@ void print_help_all(char *name)
 	autowrap_print(pager, "\nCompressors available and compressor specific options:\n", cols);
 
 	display_compressor_usage(pager, COMP_DEFAULT);
-	fclose(pager);
-	waitpid(pager_pid, &status, 0);
+
+	if(tty) {
+		fclose(pager);
+		waitpid(pager_pid, &status, 0);
+	}
+
 	exit(0);
 }
 
