@@ -397,7 +397,7 @@ FILE *exec_pager(pid_t *process)
 
 	file = fdopen(pipefd[1], "w");
 	if(file == NULL) {
-		ERROR("Error executing pager, fork failed\n");
+		ERROR("Error executing pager, fdopen failed\n");
 		goto failed;
 	}
 
@@ -521,7 +521,6 @@ void print_help_all(char *name)
 	autowrap_print(pager, "\nCompressors available and compressor specific options:\n", cols);
 
 	display_compressor_usage(pager, COMP_DEFAULT);
-	//fflush(pager);
 	fclose(pager);
 	waitpid(pager_pid, &status, 0);
 	exit(0);
