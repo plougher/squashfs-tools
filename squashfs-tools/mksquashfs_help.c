@@ -601,13 +601,25 @@ static void print_section_names(FILE *out, char *string)
 
 void print_section(char *prog_name, char *opt_name, char *sec_name)
 {
-	int i, j, secs;
-	int cols = get_column_width();
+	int status, i, j, secs, cols, tty = isatty(STDOUT_FILENO);
+	pid_t pager_pid;
+	FILE *pager;
+
+	if(tty) {
+		cols = get_column_width();
+
+		pager = exec_pager(&pager_pid);
+		if(pager == NULL)
+			exit(1);
+	} else {
+		cols = 80;
+		pager = stdout;
+	}
 
 	if(strcmp(sec_name, "sections") == 0 || strcmp(sec_name, "h") == 0) {
-		autowrap_print(stdout, "\nUse following section name to print Mksquashfs help information for that section\n\n", cols);
-		print_section_names(stdout, "");
-		exit(0);
+		autowrap_print(pager, "\nUse following section name to print Mksquashfs help information for that section\n\n", cols);
+		print_section_names(pager , "");
+		goto finish;
 	}
 
 	for(i = 0; sections[i] != NULL; i++)
@@ -615,9 +627,9 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 			break;
 
 	if(sections[i] == NULL) {
-		autowrap_printf(stderr, cols, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
-		print_section_names(stderr, "");
-		exit(1);
+		autowrap_printf(pager, cols, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
+		print_section_names(pager, "");
+		goto finish;
 	}
 
 	i++;
@@ -626,7 +638,13 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 		if(is_header(j))
 			secs++;
 		if(i == secs)
-			autowrap_print(stdout, options_text[j], cols);
+			autowrap_print(pager, options_text[j], cols);
+	}
+
+finish:
+	if(tty) {
+		fclose(pager);
+		waitpid(pager_pid, &status, 0);
 	}
 
 	exit(0);
