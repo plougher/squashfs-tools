@@ -36,7 +36,7 @@
 #include "mksquashfs_help.h"
 #include "compressor.h"
 
-#define SYNTAX "SYNTAX:%s source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of\nexclude dirs/files]\n"
+#define SYNTAX "SYNTAX:%s source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of exclude dirs/files]\n"
 
 static char *options[] = {
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
