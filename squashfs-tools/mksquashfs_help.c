@@ -387,7 +387,7 @@ FILE *exec_pager(pid_t *process)
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-		execl("/usr/bin/pager", "pager", (char *) NULL);
+		execl("/usr/bin/pager", "pager", "--quit-if-one-screen", (char *) NULL);
 		close(pipefd[0]);
 		exit(EXIT_FAILURE);
 	}
