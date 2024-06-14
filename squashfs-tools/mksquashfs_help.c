@@ -31,10 +31,13 @@
 #include <stdarg.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "mksquashfs_error.h"
 #include "mksquashfs_help.h"
 #include "compressor.h"
+
+extern long long read_bytes(int, void *, long long);
 
 #define SYNTAX "SYNTAX:%s source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of exclude dirs/files]\n"
 
@@ -359,11 +362,87 @@ static char *options_text[]={
 		"squashfs-tools/blob/master/ACTIONS-README\n",
 	NULL};
 
+int determine_pager(void)
+{
+	int bytes, status, res, pipefd[2];
+	pid_t child;
+	char buffer[1024];
+
+	res = pipe(pipefd);
+	if(res == -1) {
+		ERROR("Error determining pager, pipe failed\n");
+		return UNKNOWN_PAGER;
+	}
+
+	child = fork();
+	if(child == -1) {
+		ERROR("Error determining pager, fork failed\n");
+		close(pipefd[0]);
+		close(pipefd[1]);
+		return UNKNOWN_PAGER;
+	}
+
+	if(child == 0) { /* child */
+		close(pipefd[0]);
+		close(STDOUT_FILENO);
+		res = dup(pipefd[1]);
+		if(res == -1)
+			exit(EXIT_FAILURE);
+
+		execl("/usr/bin/pager", "pager", "--version", (char *) NULL);
+		close(pipefd[1]);
+		exit(EXIT_FAILURE);
+	}
+
+	/* parent */
+	close(pipefd[1]);
+
+	bytes = read_bytes(pipefd[0], buffer, 1024);
+
+	if(bytes == -1) {
+		ERROR("Error determining pager\n");
+		close(pipefd[0]);
+		return UNKNOWN_PAGER;
+	}
+
+	if(res == 1024) {
+		ERROR("Pager returned unexpectedly large amount of data for --version\n");
+		close(pipefd[0]);
+		return UNKNOWN_PAGER;
+	}
+
+	while(1) {
+		res = waitpid(child, &status, 0);
+		if(res != -1)
+			break;
+		else if(errno != EINTR) {
+			ERROR("Error determining pager, waitpid failed\n");
+			close(pipefd[0]);
+			return UNKNOWN_PAGER;
+		}
+	}
+
+	close(pipefd[0]);
+
+	if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+		/* Pager didn't understand --version?  Return unknown pager */
+		return UNKNOWN_PAGER;
+	}
+
+	if(strncmp(buffer, "less", strlen("less")) == 0)
+		return LESS_PAGER;
+	else if(strncmp(buffer, "more", strlen("more")) == 0 ||
+				strncmp(buffer, "pager", strlen("pager")) == 0)
+		return MORE_PAGER;
+	else
+		return UNKNOWN_PAGER;
+}
+
 
 FILE *exec_pager(pid_t *process)
 {
 	FILE *file;
-	int res, pipefd[2];
+	int res, pipefd[2], pager = determine_pager();
 	pid_t child;
 
 	res = pipe(pipefd);
@@ -387,7 +466,12 @@ FILE *exec_pager(pid_t *process)
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-		execl("/usr/bin/pager", "pager", "--quit-if-one-screen", (char *) NULL);
+		if(pager == LESS_PAGER)
+			execl("/usr/bin/pager", "pager", "--quit-if-one-screen", (char *) NULL);
+		else if(pager == MORE_PAGER)
+			execl("/usr/bin/pager", "pager", "--exit-on-eof", (char *) NULL);
+		else
+			execl("/usr/bin/pager", "pager", (char *) NULL);
 		close(pipefd[0]);
 		exit(EXIT_FAILURE);
 	}
