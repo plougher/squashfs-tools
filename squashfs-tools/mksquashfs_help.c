@@ -439,6 +439,25 @@ int determine_pager(void)
 }
 
 
+void wait_to_die(pid_t process)
+{
+	int res, status;
+
+	while(1) {
+		res = waitpid(process, &status, 0);
+		if(res != -1)
+			break;
+		else if(errno != EINTR) {
+			ERROR("Error executing pager, waitpid failed\n");
+			return;
+		}
+	}
+
+	if(!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+		ERROR("Pager exited unexpectedly or with an errror status");
+}
+
+
 FILE *exec_pager(pid_t *process)
 {
 	FILE *file;
@@ -595,7 +614,7 @@ void autowrap_printf(FILE *stream, int maxl, char *fmt, ...)
 
 void print_help_all(char *name)
 {
-	int status, i, cols, tty = isatty(STDOUT_FILENO);
+	int i, cols, tty = isatty(STDOUT_FILENO);
 	pid_t pager_pid;
 	FILE *pager;
 
@@ -621,7 +640,7 @@ void print_help_all(char *name)
 
 	if(tty) {
 		fclose(pager);
-		waitpid(pager_pid, &status, 0);
+		wait_to_die(pager_pid);
 	}
 
 	exit(0);
@@ -689,7 +708,7 @@ static void print_section_names(FILE *out, char *string, int cols)
 
 void print_section(char *prog_name, char *opt_name, char *sec_name)
 {
-	int status, i, j, secs, cols, tty = isatty(STDOUT_FILENO);
+	int i, j, secs, cols, tty = isatty(STDOUT_FILENO);
 	pid_t pager_pid;
 	FILE *pager;
 
@@ -732,7 +751,7 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 finish:
 	if(tty) {
 		fclose(pager);
-		waitpid(pager_pid, &status, 0);
+		wait_to_die(pager_pid);
 	}
 
 	exit(0);
