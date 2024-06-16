@@ -6104,256 +6104,6 @@ static void check_env_var()
 }
 
 
-static void print_sqfstar_options(FILE *stream, char *name)
-{
-	fprintf(stream, "SYNTAX:%s [OPTIONS] FILESYSTEM ", name);
-	fprintf(stream, "[list of exclude dirs/files]\n");
-	fprintf(stream, "\nFilesystem compression options:\n");
-	fprintf(stream, "-b <block-size>\t\tset data block to <block-size>.  Default ");
-	fprintf(stream, "128 Kbytes.\n");
-	fprintf(stream, "\t\t\tOptionally a suffix of K, KB, Kbytes or ");
-	fprintf(stream, "M, MB, Mbytes\n\t\t\tcan be given to ");
-	fprintf(stream, "specify Kbytes or Mbytes respectively\n");
-	fprintf(stream, "-comp <comp>\t\tselect <comp> compression\n");
-	fprintf(stream, "\t\t\tCompressors available:\n");
-	display_compressors(stream, "\t\t\t", COMP_DEFAULT);
-	fprintf(stream, "-noI\t\t\tdo not compress inode table\n");
-	fprintf(stream, "-noId\t\t\tdo not compress the uid/gid table (implied by ");
-	fprintf(stream, "-noI)\n");
-	fprintf(stream, "-noD\t\t\tdo not compress data blocks\n");
-	fprintf(stream, "-noF\t\t\tdo not compress fragment blocks\n");
-	fprintf(stream, "-noX\t\t\tdo not compress extended attributes\n");
-	fprintf(stream, "-no-compression\t\tdo not compress any of the data ");
-	fprintf(stream, "or metadata.  This is\n\t\t\tequivalent to ");
-	fprintf(stream, "specifying -noI -noD -noF and -noX\n");
-	fprintf(stream, "\nFilesystem build options:\n");
-	fprintf(stream, "-reproducible\t\tbuild filesystems that are reproducible");
-	fprintf(stream, REP_STR "\n");
-	fprintf(stream, "-not-reproducible\tbuild filesystems that are not reproducible");
-	fprintf(stream, NOREP_STR "\n");
-	fprintf(stream, "-mkfs-time <time>\tset filesystem creation ");
-	fprintf(stream, "timestamp to <time>. <time> can\n\t\t\tbe an ");
-	fprintf(stream, "unsigned 32-bit int indicating seconds since the\n");
-	fprintf(stream, "\t\t\tepoch (1970-01-01) or a string value which ");
-	fprintf(stream, "is passed to\n\t\t\tthe \"date\" command to ");
-	fprintf(stream, "parse. Any string value which the\n\t\t\tdate ");
-	fprintf(stream, "command recognises can be used such as \"now\",\n");
-	fprintf(stream, "\t\t\t\"last week\", or \"Wed Feb 15 21:02:39 ");
-	fprintf(stream, "GMT 2023\"\n");
-	fprintf(stream, "-all-time <time>\tset all file timestamps to ");
-	fprintf(stream, "<time>. <time> can be an\n\t\t\tunsigned 32-bit ");
-	fprintf(stream, "int indicating seconds since the epoch\n\t\t\t");
-	fprintf(stream, "(1970-01-01) or a string value which is passed to ");
-	fprintf(stream, "the\n\t\t\t\"date\" command to parse. Any string ");
-	fprintf(stream, "value which the date\n\t\t\tcommand recognises can ");
-	fprintf(stream, "be used such as \"now\", \"last\n\t\t\tweek\", or ");
-	fprintf(stream, "\"Wed Feb 15 21:02:39 GMT 2023\"\n");
-	fprintf(stream, "-root-time <time>\tset root directory time to ");
-	fprintf(stream, "<time>. <time> can be an\n\t\t\tunsigned 32-bit ");
-	fprintf(stream, "int indicating seconds since the epoch\n\t\t\t");
-	fprintf(stream, "(1970-01-01) or a string value which is passed to ");
-	fprintf(stream, "the\n\t\t\t\"date\" command to parse. Any string ");
-	fprintf(stream, "value which the date\n\t\t\tcommand recognises can ");
-	fprintf(stream, "be used such as \"now\", \"last\n\t\t\tweek\", or ");
-	fprintf(stream, "\"Wed Feb 15 21:02:39 GMT 2023\"\n");
-	fprintf(stream, "-root-mode <mode>\tset root directory permissions to octal ");
-	fprintf(stream, "<mode>\n");
-	fprintf(stream, "-root-uid <value>\tset root directory owner to ");
-	fprintf(stream, "specified <value>,\n\t\t\t<value> can be either an ");
-	fprintf(stream, "integer uid or user name\n");
-	fprintf(stream, "-root-gid <value>\tset root directory group to ");
-	fprintf(stream, "specified <value>,\n\t\t\t<value> can be either an ");
-	fprintf(stream, "integer gid or group name\n");
-	fprintf(stream, "-all-root\t\tmake all files owned by root\n");
-	fprintf(stream, "-force-uid <value>\tset all file uids to specified ");
-	fprintf(stream, "<value>, <value> can be\n\t\t\teither an integer ");
-	fprintf(stream, "uid or user name\n");
-	fprintf(stream, "-force-gid <value>\tset all file gids to specified ");
-	fprintf(stream, "<value>, <value> can be\n\t\t\teither an integer ");
-	fprintf(stream, "gid or group name\n");
-	fprintf(stream, "-default-mode <mode>\ttar files often do not store ");
-	fprintf(stream, "permissions for\n\t\t\tintermediate directories.  ");
-	fprintf(stream, "This option sets the default\n\t\t\tdirectory ");
-	fprintf(stream, "permissions to octal <mode>, rather than 0755.\n");
-	fprintf(stream, "\t\t\tThis also sets the root inode mode\n");
-	fprintf(stream, "-default-uid <value>\ttar files often do not store ");
-	fprintf(stream, "uids for intermediate\n\t\t\tdirectories.  This ");
-	fprintf(stream, "option sets the default directory\n\t\t\towner to ");
-	fprintf(stream, "<value>, rather than the user running Sqfstar.\n");
-	fprintf(stream, "\t\t\t<value> can be either an integer uid ");
-	fprintf(stream, "or user name.  This\n\t\t\talso sets the root ");
-	fprintf(stream, "inode uid\n");
-
-
-	fprintf(stream, "-default-gid <value>\ttar files often do not store ");
-	fprintf(stream, "gids for intermediate\n\t\t\tdirectories.  This ");
-	fprintf(stream, "option sets the default directory\n\t\t\tgroup to ");
-	fprintf(stream, "<value>, rather than the group of the user\n");
-	fprintf(stream, "\t\t\trunning Sqfstar.  <value> can be either an ");
-	fprintf(stream, "integer uid\n\t\t\tor group name.  This also sets ");
-	fprintf(stream, "the root inode gid\n");
-
-
-
-
-	fprintf(stream, "-pseudo-override\tmake pseudo file uids and gids ");
-	fprintf(stream, "override -all-root,\n\t\t\t-force-uid and ");
-	fprintf(stream, "-force-gid options\n");
-	fprintf(stream, "-exports\t\tmake the filesystem exportable via NFS\n");
-	fprintf(stream, "-no-sparse\t\tdo not detect sparse files\n");
-	fprintf(stream, "-no-fragments\t\tdo not use fragments\n");
-	fprintf(stream, "-no-tailends\t\tdo not pack tail ends into fragments\n");
-	fprintf(stream, "-no-duplicates\t\tdo not perform duplicate checking\n");
-	fprintf(stream, "-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n");
-	fprintf(stream, "\nFilesystem filter options:\n");
-	fprintf(stream, "-p <pseudo-definition>\tadd pseudo file ");
-	fprintf(stream, "definition.  The definition should\n\t\t\tbe ");
-	fprintf(stream, "quoted.  See section \"Pseudo file definition ");
-	fprintf(stream, "format\"\n\t\t\tlater for format details\n");
-	fprintf(stream, "-pd <d mode uid gid>\tspecify a default pseudo ");
-	fprintf(stream, "directory which will be used in\n\t\t\tpseudo ");
-	fprintf(stream, "definitions if a directory in the pathname ");
-	fprintf(stream, "does\n\t\t\tnot exist.  This also allows pseudo ");
-	fprintf(stream, "definitions to be\n\t\t\tspecified without ");
-	fprintf(stream, "specifying all the directories in ");
-	fprintf(stream, "the\n\t\t\tpathname.  The definition should be ");
-	fprintf(stream, "quoted\n");
-	fprintf(stream, "-pd <D time mode u g>\tas above, but also allow a ");
-	fprintf(stream, "timestamp to be specified\n");
-	fprintf(stream, "-pf <pseudo-file>\tadd list of pseudo file ");
-	fprintf(stream, "definitions.  Pseudo file\n\t\t\tdefinitions in ");
-	fprintf(stream, "pseudo-files should not be quoted\n");
-	fprintf(stream, "-ef <exclude-file>\tlist of exclude dirs/files.  ");
-	fprintf(stream, "One per line\n");
-	fprintf(stream, "-regex\t\t\tallow POSIX regular expressions to be used in ");
-	fprintf(stream, "exclude\n\t\t\tdirs/files\n");
-	fprintf(stream, "-ignore-zeros\t\tallow tar files to be concatenated ");
-	fprintf(stream, "together and fed to\n\t\t\tSqfstar.  Normally a ");
-	fprintf(stream, "tarfile has two consecutive 512\n\t\t\tbyte blocks ");
-	fprintf(stream, "filled with zeros which means EOF and\n");
-	fprintf(stream, "\t\t\tSqfstar will stop reading after the first tar ");
-	fprintf(stream, "file on\n\t\t\tencountering them. This option makes ");
-	fprintf(stream, "Sqfstar ignore the\n\t\t\tzero filled blocks\n");
-	fprintf(stream, "\nFilesystem extended attribute (xattrs) options:\n");
-	fprintf(stream, "-no-xattrs\t\tdo not store extended attributes" NOXOPT_STR "\n");
-	fprintf(stream, "-xattrs\t\t\tstore extended attributes" XOPT_STR "\n");
-	fprintf(stream, "-xattrs-exclude <regex>\texclude any xattr names ");
-	fprintf(stream, "matching <regex>.  <regex> is a\n\t\t\tPOSIX ");
-	fprintf(stream, "regular expression, e.g. -xattrs-exclude ");
-	fprintf(stream, "'^user.'\n\t\t\texcludes xattrs from the user ");
-	fprintf(stream, "namespace\n");
-	fprintf(stream, "-xattrs-include <regex>\tinclude any xattr names ");
-	fprintf(stream, "matching <regex>.  <regex> is a\n\t\t\tPOSIX ");
-	fprintf(stream, "regular expression, e.g. -xattrs-include ");
-	fprintf(stream, "'^user.'\n\t\t\tincludes xattrs from the user ");
-	fprintf(stream, "namespace\n");
-	fprintf(stream, "-xattrs-add <name=val>\tadd the xattr <name> with ");
-	fprintf(stream, "<val> to files.  If an\n\t\t\tuser xattr it ");
-	fprintf(stream, "will be added to regular files and\n");
-	fprintf(stream, "\t\t\tdirectories (see man 7 xattr).  Otherwise it ");
-	fprintf(stream, "will be\n\t\t\tadded to all files.  <val> by ");
-	fprintf(stream, "default will be treated as\n\t\t\tbinary (i.e. an ");
-	fprintf(stream, "uninterpreted byte sequence), but it can\n\t\t\tbe ");
-	fprintf(stream, "prefixed with 0s, where it will be treated as ");
-	fprintf(stream, "base64\n\t\t\tencoded, or prefixed with 0x, where ");
-	fprintf(stream, "val will be treated\n\t\t\tas hexidecimal.  ");
-	fprintf(stream, "Additionally it can be prefixed with\n\t\t\t0t ");
-	fprintf(stream, "where this encoding is similar to binary encoding,\n");
-	fprintf(stream, "\t\t\texcept backslashes are specially treated, and ");
-	fprintf(stream, "a\n\t\t\tbackslash followed by 3 octal digits can ");
-	fprintf(stream, "be used to\n\t\t\tencode any ASCII character, ");
-	fprintf(stream, "which obviously can be used\n\t\t\tto encode ");
-	fprintf(stream, "control codes.  The option can be repeated\n");
-	fprintf(stream, "\t\t\tmultiple times to add multiple xattrs\n");
-	fprintf(stream, "\nSqfstar runtime options:\n");
-	fprintf(stream, "-version\t\tprint version, licence and copyright message\n");
-	fprintf(stream, "-force\t\t\tforce Sqfstar to write to block device ");
-	fprintf(stream, "or file\n");
-	fprintf(stream, "-exit-on-error\t\ttreat normally ignored errors as fatal\n");
-	fprintf(stream, "-quiet\t\t\tno verbose output\n");
-	fprintf(stream, "-info\t\t\tprint files written to filesystem\n");
-	fprintf(stream, "-no-progress\t\tdo not display the progress bar\n");
-	fprintf(stream, "-progress\t\tdisplay progress bar when using the -info ");
-	fprintf(stream, "option\n");
-	fprintf(stream, "-percentage\t\tdisplay a percentage rather than the ");
-	fprintf(stream, "full progress bar.\n\t\t\tCan be used with dialog ");
-	fprintf(stream, "--gauge etc.\n");
-	fprintf(stream, "-throttle <percentage>\tthrottle the I/O input rate by the ");
-	fprintf(stream, "given percentage.\n\t\t\tThis can be used to reduce the I/O ");
-	fprintf(stream, "and CPU consumption\n\t\t\tof Sqfstar\n");
-	fprintf(stream, "-limit <percentage>\tlimit the I/O input rate to the given ");
-	fprintf(stream, "percentage.\n\t\t\tThis can be used to reduce the I/O and CPU ");
-	fprintf(stream, "consumption\n\t\t\tof Sqfstar (alternative to -throttle)\n");
-	fprintf(stream, "-processors <number>\tuse <number> processors.  By default ");
-	fprintf(stream, "will use number of\n\t\t\tprocessors available\n");
-	fprintf(stream, "-mem <size>\t\tuse <size> physical memory for ");
-	fprintf(stream, "caches.  Use K, M or G to\n\t\t\tspecify Kbytes,");
-	fprintf(stream, " Mbytes or Gbytes respectively\n");
-	fprintf(stream, "-mem-percent <percent>\tuse <percent> physical ");
-	fprintf(stream, "memory for caches.  Default 25%%\n");
-	fprintf(stream, "-mem-default\t\tprint default memory usage in Mbytes\n");
-	fprintf(stream, "\nExpert options (these may make the filesystem unmountable):\n");
-	fprintf(stream, "-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n");
-	fprintf(stream, "-offset <offset>\tskip <offset> bytes at the beginning of ");
-	fprintf(stream, "FILESYSTEM.\n\t\t\tOptionally a suffix of K, M or G can be given ");
-	fprintf(stream, "to specify\n\t\t\tKbytes, Mbytes or Gbytes respectively.\n");
-	fprintf(stream, "\t\t\tDefault 0 bytes\n");
-	fprintf(stream, "-o <offset>\t\tsynonym for -offset\n");
-	fprintf(stream, "\nMiscellaneous options:\n");
-	fprintf(stream, "-fstime <time>\t\talternative name for mkfs-time\n");
-	fprintf(stream, "-root-owned\t\talternative name for -all-root\n");
-	fprintf(stream, "-noInodeCompression\talternative name for -noI\n");
-	fprintf(stream, "-noIdTableCompression\talternative name for -noId\n");
-	fprintf(stream, "-noDataCompression\talternative name for -noD\n");
-	fprintf(stream, "-noFragmentCompression\talternative name for -noF\n");
-	fprintf(stream, "-noXattrCompression\talternative name for -noX\n");
-	fprintf(stream, "\n-help\t\t\toutput this options text to stdout\n");
-	fprintf(stream, "-h\t\t\toutput this options text to stdout\n");
-	fprintf(stream, "\n-Xhelp\t\t\tprint compressor options for selected ");
-	fprintf(stream, "compressor\n");
-	fprintf(stream, "\nPseudo file definition format:\n");;
-	fprintf(stream, "\"filename d mode uid gid\"\t\tcreate a directory\n");
-	fprintf(stream, "\"filename m mode uid gid\"\t\tmodify filename\n");
-	fprintf(stream, "\"filename b mode uid gid major minor\"\tcreate a block device\n");
-	fprintf(stream, "\"filename c mode uid gid major minor\"\tcreate a character device\n");
-	fprintf(stream, "\"filename f mode uid gid command\"\tcreate file from stdout of command\n");
-	fprintf(stream, "\"filename s mode uid gid symlink\"\tcreate a symbolic link\n");
-	fprintf(stream, "\"filename i mode uid gid [s|f]\"\t\tcreate a socket (s) or FIFO (f)\n");
-	fprintf(stream, "\"filename x name=val\"\t\t\tcreate an extended attribute\n");
-	fprintf(stream, "\"filename l linkname\"\t\t\tcreate a hard-link to linkname\n");
-	fprintf(stream, "\"filename L pseudo_filename\"\t\tsame, but link to pseudo file\n");
-	fprintf(stream, "\"filename D time mode uid gid\"\t\tcreate a directory with timestamp time\n");
-	fprintf(stream, "\"filename M time mode uid gid\"\t\tmodify a file with timestamp time\n");
-	fprintf(stream, "\"filename B time mode uid gid major minor\"\n\t\t\t\t\tcreate block device with timestamp time\n");
-	fprintf(stream, "\"filename C time mode uid gid major minor\"\n\t\t\t\t\tcreate char device with timestamp time\n");
-	fprintf(stream, "\"filename F time mode uid gid command\"\tcreate file with timestamp time\n");
-	fprintf(stream, "\"filename S time mode uid gid symlink\"\tcreate symlink with timestamp time\n");
-	fprintf(stream, "\"filename I time mode uid gid [s|f]\"\tcreate socket/fifo with timestamp time\n");
-	fprintf(stream, "\nCompressors available and compressor specific options:\n");
-	display_compressor_usage(stream, COMP_DEFAULT);
-
-	fprintf(stream, "\nEnvironment:\n");
-	fprintf(stream, "SOURCE_DATE_EPOCH\tIf set, this is used as the ");
-	fprintf(stream,	"filesystem creation\n");
-	fprintf(stream, "\t\t\ttimestamp.  Also any file timestamps which are\n");
-	fprintf(stream, "\t\t\tafter SOURCE_DATE_EPOCH will be clamped to\n");
-	fprintf(stream, "\t\t\tSOURCE_DATE_EPOCH.  See\n");
-	fprintf(stream, "\t\t\thttps://reproducible-builds.org/docs/source-date-epoch/\n");
-	fprintf(stream, "\t\t\tfor more information\n");
-	fprintf(stream, "\nExit status:\n");
-	fprintf(stream, "  0\tSqfstar successfully generated a filesystem.\n");
-	fprintf(stream, "  1\tFatal errors occurred, Sqfstar aborted and ");
-	fprintf(stream, "did not generate a\n\tfilesystem.\n");
-	fprintf(stream, "\nSee also:\n");
-	fprintf(stream, "The README for the Squashfs-tools 4.6.1 release, ");
-	fprintf(stream, "describing the new features can be\n");
-	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6.1\n");
-
-	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
-	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n");
-}
-
-
 static void print_version(char *string)
 {
 	printf("%s version " VERSION " (" DATE ")\n", string);
@@ -6543,7 +6293,7 @@ static int sqfstar(int argc, char *argv[])
 	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
 
 	if(argc == 2 && (strcmp(argv[1], "-help") == 0 || strcmp(argv[1], "-h") == 0)) {
-		print_sqfstar_options(stdout, argv[0]);
+		sqfstar_help_all(argv[0]);
 		exit(0);
 	}
 
@@ -6599,7 +6349,7 @@ static int sqfstar(int argc, char *argv[])
 	}
 
 	if(i >= argc) {
-		print_sqfstar_options(stderr, argv[0]);
+		sqfstar_help_all(argv[0]);
 		exit(1);
 	}
 
@@ -7123,7 +6873,7 @@ print_sqfstar_compressor_options:
 			print_version("sqfstar");
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
-			print_sqfstar_options(stderr, argv[0]);
+			sqfstar_help_all(argv[0]);
 			exit(1);
 		}
 	}
