@@ -7416,7 +7416,7 @@ int main(int argc, char *argv[])
 
 	if(i < argc && (strcmp(argv[i], "-help-all") == 0 ||
 						strcmp(argv[i], "-ha") == 0))
-		print_help_all(argv[0]);
+		mksquashfs_help_all(argv[0]);
 
 	if(i < argc && (strcmp(argv[i], "-help-option") == 0 ||
 						strcmp(argv[i], "-ho") == 0)) {
@@ -7582,7 +7582,7 @@ int main(int argc, char *argv[])
 			print_help(FALSE, argv[0]);
 		else if(strcmp(argv[i], "-help-all") == 0 ||
 						strcmp(argv[i], "-ha") == 0)
-			print_help_all(argv[0]);
+			mksquashfs_help_all(argv[0]);
 		else if((strcmp(argv[i], "-help-option") == 0 ||
 						strcmp(argv[i], "-ho") == 0)) {
 			if(++i == argc) {

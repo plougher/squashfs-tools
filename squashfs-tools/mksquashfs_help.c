@@ -39,7 +39,8 @@
 
 extern long long read_bytes(int, void *, long long);
 
-#define SYNTAX "SYNTAX:%s source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of exclude dirs/files]\n"
+#define MKSQUASHFS_SYNTAX "SYNTAX:%s source1 source2 ...  FILESYSTEM " \
+	"[OPTIONS] [-e list of exclude dirs/files]\n"
 
 static char *options[] = {
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
@@ -91,7 +92,7 @@ static char *sections[]={
 	"exit", "extra", NULL
 };
 
-static char *options_text[]={
+static char *mksquashfs_text[]={
 	"Filesystem compression options:", "\n",
 	"-b <block-size>\t\tset data block to <block-size>.  Default 128 "
 		"Kbytes.  Optionally a suffix of K, KB, Kbytes or M, MB, "
@@ -612,7 +613,7 @@ void autowrap_printf(FILE *stream, int maxl, char *fmt, ...)
 }
 
 
-void print_help_all(char *name)
+static void print_help_all(char *name, char *syntax, char **options_text)
 {
 	int i, cols, tty = isatty(STDOUT_FILENO);
 	pid_t pager_pid;
@@ -629,7 +630,7 @@ void print_help_all(char *name)
 		pager = stdout;
 	}
 
-	autowrap_printf(pager, cols, SYNTAX, name);
+	autowrap_printf(pager, cols, syntax, name);
 
 	for(i = 0; options_text[i] != NULL; i++)
 		autowrap_print(pager, options_text[i], cols);
@@ -672,7 +673,7 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 			res = regexec(preg, options_args[i], (size_t) 0, NULL, 0);
 		if(!res) {
 			matched = TRUE;
-			autowrap_print(stdout, options_text[i], cols);
+			autowrap_print(stdout, mksquashfs_text[i], cols);
 		}
 	}
 
@@ -686,9 +687,9 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 
 static int is_header(int i)
 {
-	int length = strlen(options_text[i]);
+	int length = strlen(mksquashfs_text[i]);
 
-	return length && options_text[i][length - 1] == ':';
+	return length && mksquashfs_text[i][length - 1] == ':';
 }
 
 
@@ -700,7 +701,7 @@ static void print_section_names(FILE *out, char *string, int cols)
 
 	for(i = 0, j = 0; sections[i] != NULL; j++)
 		if(is_header(j)) {
-			autowrap_printf(out, cols, "%s%s\t\t%s%s\n", string, sections[i], strlen(sections[i]) > 7 ? "" : "\t", options_text[j]);
+			autowrap_printf(out, cols, "%s%s\t\t%s%s\n", string, sections[i], strlen(sections[i]) > 7 ? "" : "\t", mksquashfs_text[j]);
 			i++;
 		}
 }
@@ -741,11 +742,11 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 
 	i++;
 
-	for(j = 0, secs = 0; options_text[j] != NULL && secs <= i; j ++) {
+	for(j = 0, secs = 0; mksquashfs_text[j] != NULL && secs <= i; j ++) {
 		if(is_header(j))
 			secs++;
 		if(i == secs)
-			autowrap_print(pager, options_text[j], cols);
+			autowrap_print(pager, mksquashfs_text[j], cols);
 	}
 
 finish:
@@ -776,7 +777,7 @@ void print_help(int error, char *prog_name)
 	FILE *stream = error ? stderr : stdout;
 	int cols = get_column_width();
 
-	autowrap_printf(stream, cols, SYNTAX "\n", prog_name);
+	autowrap_printf(stream, cols, MKSQUASHFS_SYNTAX "\n", prog_name);
 	autowrap_printf(stream, cols, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stream, "\t", cols);
 	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
@@ -795,4 +796,10 @@ void print_option_help(char *prog_name, char *option)
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
+}
+
+
+void mksquashfs_help_all(char *name)
+{
+	print_help_all(name, MKSQUASHFS_SYNTAX, mksquashfs_text);
 }

@@ -63,7 +63,7 @@
 #define MORE_PAGER 2
 #define UNKNOWN_PAGER 3
 
-extern void print_help_all(char *name);
+extern void mksquashfs_help_all(char *name);
 extern void print_option(char *prog_name, char *opt_name, char *pattern);
 extern void print_section(char *prog_name, char *opt_name, char *sec_name);
 extern void handle_invalid_option(char *prog_name, char *opt_name);
