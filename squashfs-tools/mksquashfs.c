@@ -6104,7 +6104,7 @@ static void check_env_var()
 }
 
 
-static void print_sqfstar_options(FILE *stream, char *name, int total_mem)
+static void print_sqfstar_options(FILE *stream, char *name)
 {
 	fprintf(stream, "SYNTAX:%s [OPTIONS] FILESYSTEM ", name);
 	fprintf(stream, "[list of exclude dirs/files]\n");
@@ -6543,7 +6543,7 @@ static int sqfstar(int argc, char *argv[])
 	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
 
 	if(argc == 2 && (strcmp(argv[1], "-help") == 0 || strcmp(argv[1], "-h") == 0)) {
-		print_sqfstar_options(stdout, argv[0], total_mem);
+		print_sqfstar_options(stdout, argv[0]);
 		exit(0);
 	}
 
@@ -6599,7 +6599,7 @@ static int sqfstar(int argc, char *argv[])
 	}
 
 	if(i >= argc) {
-		print_sqfstar_options(stderr, argv[0], total_mem);
+		print_sqfstar_options(stderr, argv[0]);
 		exit(1);
 	}
 
@@ -7123,7 +7123,7 @@ print_sqfstar_compressor_options:
 			print_version("sqfstar");
 		} else {
 			ERROR("%s: invalid option\n\n", argv[0]);
-			print_sqfstar_options(stderr, argv[0], total_mem);
+			print_sqfstar_options(stderr, argv[0]);
 			exit(1);
 		}
 	}
