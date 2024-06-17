@@ -528,6 +528,7 @@ static char *sqfstar_text[]={
 	"\"filename c mode uid gid major minor\"\tcreate a character device\n",
 	"\"filename f mode uid gid command\"\tcreate file from stdout of "
 		"command\n",
+	"\"filename s mode uid gid symlink\"\tcreate a symbolic link\n",
 	"\"filename i mode uid gid [s|f]\"\t\tcreate a socket (s) or FIFO "
 		"(f)\n",
 	"\"filename x name=val\"\t\t\tcreate an extended attribute\n",
