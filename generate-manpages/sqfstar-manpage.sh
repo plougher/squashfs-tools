@@ -84,6 +84,13 @@ ${SED} -i "s/^copyright/Copyright/" $tmp/sqfstar.version
 print >> $tmp/sqfstar.version
 print "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/sqfstar.version
 
+# If the second line isn't empty, it means the first line has wrapped.
+
+${SED} -i "1 {
+N
+/\n$/!s/\n/ /
+}" $tmp/sqfstar.help
+
 # Man pages expect the options to be in the "Options" section.  So insert
 # Options section after first line
 
