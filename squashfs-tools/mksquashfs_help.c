@@ -43,7 +43,7 @@ extern long long read_bytes(int, void *, long long);
 	"[OPTIONS] [-e list of exclude dirs/files]\n"
 
 #define SQFSTAR_SYNTAX "SYNTAX:%s [OPTIONS] FILESYSTEM [list of exclude " \
-	"dirs/files]\n"
+	"dirs/files]\n\n"
 
 static char *options[] = {
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
