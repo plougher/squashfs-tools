@@ -42,8 +42,7 @@ extern long long read_bytes(int, void *, long long);
 #define MKSQUASHFS_SYNTAX "SYNTAX:%s source1 source2 ...  FILESYSTEM " \
 	"[OPTIONS] [-e list of exclude dirs/files]\n"
 
-#define SQFSTAR_SYNTAX "SYNTAX:%s [OPTIONS] FILESYSTEM [list of exclude " \
-	"dirs/files]\n\n"
+#define SQFSTAR_SYNTAX "SYNTAX:%s [OPTIONS] FILESYSTEM [list of exclude dirs/files]\n\n"
 
 static char *options[] = {
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
@@ -374,7 +373,7 @@ static char *sqfstar_text[]={
 		"Kbytes. Optionally a suffix of K, KB, Kbytes or M, MB, Mbytes "
 		"can be given to specify Kbytes or Mbytes respectively\n",
 	"-comp <comp>\t\tselect <comp> compression\n", "\t\t\tCompressors "
-		"available:\n\t\t\t" COMPRESSORS "\n",
+		"available:\n\t\t\t\t" COMPRESSORS "\n",
 	"-noI\t\t\tdo not compress inode table\n",
 	"-noId\t\t\tdo not compress the uid/gid table (implied by -noI)\n",
 	"-noD\t\t\tdo not compress data blocks\n",
