@@ -40,7 +40,7 @@
 extern long long read_bytes(int, void *, long long);
 
 #define MKSQUASHFS_SYNTAX "SYNTAX:%s source1 source2 ...  FILESYSTEM " \
-	"[OPTIONS] [-e list of exclude dirs/files]\n"
+	"[OPTIONS] [-e list of exclude dirs/files]\n\n"
 
 #define SQFSTAR_SYNTAX "SYNTAX:%s [OPTIONS] FILESYSTEM [list of exclude dirs/files]\n\n"
 
