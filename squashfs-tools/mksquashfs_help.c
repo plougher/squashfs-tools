@@ -39,6 +39,10 @@
 
 extern long long read_bytes(int, void *, long long);
 
+static char *pager_command = "/usr/bin/pager";
+static char *pager_name = "pager";
+static int pager_from_env_var = FALSE;
+
 #define MKSQUASHFS_SYNTAX "SYNTAX:%s source1 source2 ...  FILESYSTEM " \
 	"[OPTIONS] [-e list of exclude dirs/files]\n\n"
 
@@ -566,6 +570,90 @@ static char *sqfstar_text[]={
 	NULL
 };
 
+
+static char *get_base(char *pathname)
+{
+	char *cur = pathname, *sow = NULL, *eow = NULL;
+
+	while(*cur != '\0') {
+		if(*cur == '/')
+			cur ++;
+		else if(strcmp(cur, ".") == 0)
+			cur ++;
+		else if(strcmp(cur, "..") == 0)
+			cur += 2;
+		else if(strncmp(cur, "./", 2) == 0)
+			cur +=2;
+		else if(strncmp(cur, "../", 3) == 0)
+			cur += 3;
+		else {
+			sow = cur;
+
+			do {
+				cur ++;
+			} while(*cur != '/' && *cur != '\0');
+
+			eow = cur;
+		}
+	}
+
+	if(sow == NULL || eow != cur)
+		return NULL;
+	else
+		return sow;
+}
+
+
+int check_and_set_pager(char *pager)
+{
+	int i, length = strlen(pager);
+	char *base;
+
+	/* Check string :-
+	 * 1. Isn't empty,
+	 * 2. Doesn't contain spaces, tabs, pipes, command separators or file
+	 *    redirects.
+	 *
+	 * Note: this isn't an exhaustive check of what can't be in the
+	 *	 pager name, as the execlp() will do this.  It is more
+	 *	 intended to check for common shell metacharacters and
+	 *	 warn users this isn't supported in a friendlier way.
+	 */
+	if(length == 0) {
+		ERROR("PAGER environment variable is empty!\n");
+		return FALSE;
+	}
+
+	base = get_base(pager);
+	if(base == NULL) {
+		ERROR("PAGER doesn't have a name in it or has trailing '/', '.' or '..' name!\n");
+		return FALSE;
+	}
+
+	for(i = 0; i < length; i ++) {
+		if(pager[i] == ' ' || pager[i] == '\t') {
+			ERROR("PAGER cannot have spaces or tabs!\n");
+			goto failed;
+		} else if(pager[i] == '|') {
+			ERROR("PAGER cannot have pipes ! or command separators\n");
+			goto failed;
+		} else if(pager[i] == '<' || pager[i] == '>' || pager[i] == '&') {
+			ERROR("PAGER cannot have file redirections !\n");
+			goto failed;
+		}
+	}
+
+	pager_command = pager;
+	pager_name = base;
+	pager_from_env_var = TRUE;
+	return TRUE;
+
+failed:
+	ERROR("If you want to do this, please use a wrapper script!\n");
+	return FALSE;
+}
+
+
 int determine_pager(void)
 {
 	int bytes, status, res, pipefd[2];
@@ -593,7 +681,7 @@ int determine_pager(void)
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-		execl("/usr/bin/pager", "pager", "--version", (char *) NULL);
+		execlp(pager_command, pager_name, "--version", (char *) NULL);
 		close(pipefd[1]);
 		exit(EXIT_FAILURE);
 	}
@@ -658,7 +746,7 @@ void wait_to_die(pid_t process)
 	}
 
 	if(!WIFEXITED(status) || WEXITSTATUS(status) != 0)
-		ERROR("Pager exited unexpectedly or with an errror status");
+		ERROR("Pager failed to run or failed with an error status\n");
 }
 
 
@@ -690,15 +778,17 @@ FILE *exec_pager(pid_t *process)
 			exit(EXIT_FAILURE);
 
 		if(pager == LESS_PAGER)
-			execl("/usr/bin/pager", "pager", "--quit-if-one-screen", (char *) NULL);
+			execlp(pager_command, pager_name, "--quit-if-one-screen", (char *) NULL);
 		else if(pager == MORE_PAGER)
-			execl("/usr/bin/pager", "pager", "--exit-on-eof", (char *) NULL);
+			execlp(pager_command, pager_name, "--exit-on-eof", (char *) NULL);
 		else
-			execl("/usr/bin/pager", "pager", (char *) NULL);
+			execlp(pager_command, pager_name,  (char *) NULL);
 
-		execl("/usr/bin/less", "less", "--quit-if-one-screen", (char *) NULL);
-		execl("/usr/bin/more", "more", "--exit-on-eof", (char *) NULL);
-		execl("/usr/bin/cat", "cat", (char *) NULL);
+		if(pager_from_env_var == FALSE) {
+			execl("/usr/bin/less", "less", "--quit-if-one-screen", (char *) NULL);
+			execl("/usr/bin/more", "more", "--exit-on-eof", (char *) NULL);
+			execl("/usr/bin/cat", "cat", (char *) NULL);
+		}
 
 		close(pipefd[0]);
 		exit(EXIT_FAILURE);

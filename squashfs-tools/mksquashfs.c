@@ -6074,7 +6074,7 @@ static void open_log_file(char *filename)
 }
 
 
-static void check_env_var()
+static void check_source_date_epoch()
 {
 	char *time_string = getenv("SOURCE_DATE_EPOCH");
 	unsigned int time;
@@ -6100,6 +6100,19 @@ static void check_env_var()
 
 		all_time = mkfs_time = time;
 		all_time_opt = mkfs_time_opt = TRUE;
+	}
+}
+
+
+static void check_pager()
+{
+	char * string = getenv("PAGER");
+
+	if(string != NULL) {
+		int res = check_and_set_pager(string);
+
+		if(res == FALSE)
+			EXIT_MKSQUASHFS();
 	}
 }
 
@@ -6878,7 +6891,7 @@ print_sqfstar_compressor_options:
 		}
 	}
 
-	check_env_var();
+	check_source_date_epoch();
 
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset noId
@@ -7136,6 +7149,8 @@ int main(int argc, char *argv[])
 	char *help_comp = NULL;
 	struct file_buffer **fragment = NULL;
 	char *command;
+
+	check_pager();
 
 	/* skip leading path components in invocation command */
 	for(command = argv[0] + strlen(argv[0]) - 1;
@@ -8013,7 +8028,7 @@ int main(int argc, char *argv[])
 			handle_invalid_option(argv[0], argv[i]);
 	}
 
-	check_env_var();
+	check_source_date_epoch();
 
 	/* If cpiostyle is set, then file names  will be read-in
 	 * from standard in.  We do not expect to have any sources
