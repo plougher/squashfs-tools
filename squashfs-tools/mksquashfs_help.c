@@ -626,7 +626,7 @@ int check_and_set_pager(char *pager)
 
 	base = get_base(pager);
 	if(base == NULL) {
-		ERROR("PAGER doesn't have a name in it or has trailing '/', '.' or '..' name!\n");
+		ERROR("PAGER doesn't have a name in it or has trailing '/', '.' or '..' characters!\n");
 		return FALSE;
 	}
 
@@ -635,10 +635,10 @@ int check_and_set_pager(char *pager)
 			ERROR("PAGER cannot have spaces or tabs!\n");
 			goto failed;
 		} else if(pager[i] == '|') {
-			ERROR("PAGER cannot have pipes ! or command separators\n");
+			ERROR("PAGER cannot have pipes or command separators!\n");
 			goto failed;
 		} else if(pager[i] == '<' || pager[i] == '>' || pager[i] == '&') {
-			ERROR("PAGER cannot have file redirections !\n");
+			ERROR("PAGER cannot have file redirections!\n");
 			goto failed;
 		}
 	}
