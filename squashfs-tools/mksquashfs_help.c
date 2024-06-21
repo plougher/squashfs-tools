@@ -634,7 +634,7 @@ int check_and_set_pager(char *pager)
 		if(pager[i] == ' ' || pager[i] == '\t') {
 			ERROR("PAGER cannot have spaces or tabs!\n");
 			goto failed;
-		} else if(pager[i] == '|') {
+		} else if(pager[i] == '|' || pager[i] == ';') {
 			ERROR("PAGER cannot have pipes or command separators!\n");
 			goto failed;
 		} else if(pager[i] == '<' || pager[i] == '>' || pager[i] == '&') {
