@@ -353,7 +353,10 @@ static char *mksquashfs_text[]={
 		"timestamp.  Also any file timestamps which are after "
 		"SOURCE_DATE_EPOCH will be clamped to SOURCE_DATE_EPOCH.  "
 		"See https://reproducible-builds.org/docs/source-date-epoch/"
-		" for more information\n",
+		" for more information\n", "\n",
+	"PAGER\t\t\tIf set, this is used as the name of the program used to "
+		"display the help text.  The value can be a simple command or "
+		"a pathname.  The default is /usr/bin/pager\n",
 	"\n", "Exit status:", "\n",
 	"  0\tMksquashfs successfully generated a filesystem.\n"
 	"  1\tFatal errors occurred, Mksquashfs aborted and did not generate a "
