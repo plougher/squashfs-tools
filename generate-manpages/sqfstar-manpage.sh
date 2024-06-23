@@ -227,6 +227,23 @@ b again
 s/\([^.]\)\n/\1.\n/
 }" $tmp/sqfstar.help
 
+# Concatenate the PAGER text on to one line.  Indent the line by
+# two and add a full stop to the end of the line
+
+${SED} -i " /PAGER/ {
+s/PAGER/  PAGER/
+
+:again
+N
+/\n$/b print
+s/\n */ /
+b again
+
+:print
+s/\([^.]\)\n/\1.\n/
+}" $tmp/sqfstar.help
+
+# Make Compressors available header into a manpage section
 # Make Compressors available header into a manpage section
 
 ${SED} -i "s/\(Compressors available and compressor specific options\):/*\1*/" $tmp/sqfstar.help
