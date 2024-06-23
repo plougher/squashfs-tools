@@ -48,7 +48,7 @@ static int pager_from_env_var = FALSE;
 
 #define SQFSTAR_SYNTAX "SYNTAX:%s [OPTIONS] FILESYSTEM [list of exclude dirs/files]\n\n"
 
-static char *options[] = {
+static char *mksquashfs_options[] = {
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
 	"-no-compression", "", "", "", "-tar", "-no-strip", "-tarstyle",
 	"-cpiostyle", "-cpiostyle0", "-reproducible", "-not-reproducible",
@@ -75,7 +75,7 @@ static char *options[] = {
 	"-noXattrCompression", "-pseudo-dir", NULL,
 };
 
-static char *options_args[]={
+static char *mksquashfs_args[]={
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	"", "", "<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
 	"", "<value>", "<value>", "", "", "", "", "", "", "", "", "", "", "",
@@ -947,7 +947,8 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 }
 
 
-void print_option(char *prog_name, char *opt_name, char *pattern)
+static void print_option(char *prog_name, char *opt_name, char *pattern, char *syntax,
+				char **options, char **options_args, char **options_text)
 {
 	int i, res, matched = FALSE;
 	regex_t *preg = malloc(sizeof(regex_t));
@@ -972,12 +973,12 @@ void print_option(char *prog_name, char *opt_name, char *pattern)
 			res = regexec(preg, options_args[i], (size_t) 0, NULL, 0);
 		if(!res) {
 			matched = TRUE;
-			autowrap_print(stdout, mksquashfs_text[i], cols);
+			autowrap_print(stdout, options_text[i], cols);
 		}
 	}
 
 	if(!matched) {
-		autowrap_printf(stderr, cols, "%s: %s %s does not match any Mksquashfs option\n", prog_name, opt_name, pattern);
+		autowrap_printf(stderr, cols, "%s: %s %s does not match any %s option\n", prog_name, opt_name, pattern, prog_name);
 		exit(1);
 	} else
 		exit(0);
@@ -1107,4 +1108,11 @@ void mksquashfs_help_all(char *name)
 void sqfstar_help_all(char *name)
 {
 	print_help_all(name, SQFSTAR_SYNTAX, sqfstar_text);
+}
+
+
+void mksquashfs_option(char *prog_name, char *opt_name, char *pattern)
+{
+	print_option(prog_name, opt_name, pattern, MKSQUASHFS_SYNTAX,
+			mksquashfs_options, mksquashfs_args, mksquashfs_text);
 }

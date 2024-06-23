@@ -7190,7 +7190,7 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		print_option(argv[0], argv[i - 1], argv[i]);
+		mksquashfs_option(argv[0], argv[i - 1], argv[i]);
 	}
 
 	if(i < argc && (strcmp(argv[i], "-help-section") == 0 ||
@@ -7356,7 +7356,7 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 
-			print_option(argv[0], argv[i - 1], argv[i]);
+			mksquashfs_option(argv[0], argv[i - 1], argv[i]);
 		} else if((strcmp(argv[i], "-help-section") == 0 ||
 						strcmp(argv[i], "-hs") == 0)) {
 			if(++i == argc) {
