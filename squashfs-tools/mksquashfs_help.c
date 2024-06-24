@@ -75,6 +75,24 @@ static char *mksquashfs_options[] = {
 	"-noXattrCompression", "-pseudo-dir", NULL,
 };
 
+static char *sqfstar_options[]={
+	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
+	"-no-compression", "", "", "", "-reproducible", "-not-reproducible",
+	"-mkfs-time", "-all-time", "-root-time", "-root-mode", "-root-uid",
+	"-root-gid", "-all-root", "-force-uid", "-force-gid", "-default-mode",
+	"-default-uid", "-default-gid", "-pseudo-override", "-exports",
+	"-no-sparse", "-no-fragments", "-no-tailends", "-no-duplicates",
+	"-no-hardlinks", "", "", "", "-p", "-pd", "-pd", "-pf", "-ef", "-regex",
+	"-ignore-zeros", "", "", "", "-no-xattrs", "-xattrs", "-xattrs-exclude",
+	"-xattrs-include", "-xattrs-add", "", "","", "-version", "-force",
+	"-exit-on-error", "-quiet", "-info", "-no-progress", "-progress",
+	"-percentage", "-throttle", "-limit", "-processors", "-mem",
+	"-mem-percent", "-mem-default", "", "", "", "-nopad", "-offset", "-o",
+	"", "", "", "-fstime", "-root-owned", "-noInodeCompression",
+	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
+	"-noXattrCompression", "", -help", "-h", "-Xhelp", NULL
+};
+
 static char *mksquashfs_args[]={
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	"", "", "<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
@@ -524,9 +542,9 @@ static char *sqfstar_text[]={
 	"-noDataCompression\talternative name for -noD\n",
 	"-noFragmentCompression\talternative name for -noF\n",
 	"-noXattrCompression\talternative name for -noX\n",
-	"\n-help\t\t\toutput this options text to stdout\n",
+	"\n", -help\t\t\toutput this options text to stdout\n",
 	"-h\t\t\toutput this options text to stdout\n",
-	"\n-Xhelp\t\t\tprint compressor options for selected compressor\n",
+	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"\n","Pseudo file definition format:", "\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
 	"\"filename m mode uid gid\"\t\tmodify filename\n",
