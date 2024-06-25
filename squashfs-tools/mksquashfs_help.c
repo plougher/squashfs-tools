@@ -90,7 +90,7 @@ static char *sqfstar_options[]={
 	"-mem-percent", "-mem-default", "", "", "", "-nopad", "-offset", "-o",
 	"", "", "", "-fstime", "-root-owned", "-noInodeCompression",
 	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
-	"-noXattrCompression", "", -help", "-h", "-Xhelp", NULL
+	"-noXattrCompression", "", "-help", "-h", "-Xhelp", NULL
 };
 
 static char *mksquashfs_args[]={
@@ -108,6 +108,18 @@ static char *mksquashfs_args[]={
 	"<value>", "", "", "", "", "", "<offset>", "<offset>", "", "", "", "",
 	"<regex>", "<section>", "comp", "", "", "", "<regex>", "<section>", "",
 	"", "", "<time>", "", "", "", "", "", "", "", ""
+};
+
+static char *sqfstar_args[]={
+	"", "", "<block-size>", "<comp>",  "", "", "", "", "", "", "", "", "",
+	"", "", "<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
+	"", "<value>", "<value>", "<mode>", "<value>", "<value>", "", "", "",
+	"", "", "", "", "", "", "", "<pseudo-definition>", "<d mode uid gid>",
+	"<D time mode u g>", "<pseudo-file>", "<exclude-file>", "", "", "", "",
+	"", "", "", "<regex>", "<regex>", "<name=val>", "", "","", "", "", "",
+	"", "", "", "", "", "", "<percentage>", "<percentage>", "<number>",
+	"<size>", "<percent>", "", "", "", "", "", "<offset>", "<offset>", "",
+	"", "", "<time>", "", "", "", "", "", "", "", "", "", ""
 };
 
 static char *sections[]={
@@ -542,7 +554,7 @@ static char *sqfstar_text[]={
 	"-noDataCompression\talternative name for -noD\n",
 	"-noFragmentCompression\talternative name for -noF\n",
 	"-noXattrCompression\talternative name for -noX\n",
-	"\n", -help\t\t\toutput this options text to stdout\n",
+	"\n", "-help\t\t\toutput this options text to stdout\n",
 	"-h\t\t\toutput this options text to stdout\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"\n","Pseudo file definition format:", "\n",
