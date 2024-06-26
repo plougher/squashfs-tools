@@ -1146,3 +1146,10 @@ void mksquashfs_option(char *prog_name, char *opt_name, char *pattern)
 	print_option(prog_name, opt_name, pattern, MKSQUASHFS_SYNTAX,
 			mksquashfs_options, mksquashfs_args, mksquashfs_text);
 }
+
+
+void sqfstar_option(char *prog_name, char *opt_name, char *pattern)
+{
+	print_option(prog_name, opt_name, pattern, SQFSTAR_SYNTAX,
+			sqfstar_options, sqfstar_args, sqfstar_text);
+}
