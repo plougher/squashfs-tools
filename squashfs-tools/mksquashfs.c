@@ -6303,9 +6303,6 @@ static int sqfstar(int argc, char *argv[])
 		exit(0);
 	}
 
-	block_log = slog(block_size);
-	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
-
 	if(argc == 2 && (strcmp(argv[1], "-help") == 0 || strcmp(argv[1], "-h") == 0)) {
 		sqfstar_help_all(argv[0]);
 		exit(0);
@@ -6315,6 +6312,9 @@ static int sqfstar(int argc, char *argv[])
 		printf("%d\n", total_mem);
 		exit(0);
 	}
+
+	block_log = slog(block_size);
+	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
 
 	comp = lookup_compressor(COMP_DEFAULT);
 
