@@ -6303,10 +6303,9 @@ static int sqfstar(int argc, char *argv[])
 		if(strcmp(argv[i], "-version") == 0) {
 			print_version("sqfstar");
 			exit(0);
-		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
+		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			sqfstar_help_all(argv[0]);
-			exit(0);
-		} else if(strcmp(argv[1], "-mem-default") == 0) {
+		else if(strcmp(argv[1], "-mem-default") == 0) {
 			printf("%d\n", total_mem);
 			exit(0);
 		} else if(argv[i][0] != '-')
