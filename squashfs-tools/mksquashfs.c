@@ -6305,7 +6305,14 @@ static int sqfstar(int argc, char *argv[])
 			exit(0);
 		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			sqfstar_help_all(argv[0]);
-		else if(strcmp(argv[1], "-mem-default") == 0) {
+		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
+			if(++i == argc) {
+				ERROR("%s: %s missing missing option\n", argv[0], argv[i - 1]);
+				exit(1);
+			}
+
+			sqfstar_option(argv[0], argv[i - 1], argv[i]);
+		} else if(strcmp(argv[1], "-mem-default") == 0) {
 			printf("%d\n", total_mem);
 			exit(0);
 		} else if(argv[i][0] != '-')
