@@ -117,7 +117,7 @@ static char *sqfstar_args[]={
 	"", "", "", "", "", "", "", "<pseudo-definition>", "<d mode uid gid>",
 	"<D time mode u g>", "<pseudo-file>", "<exclude-file>", "", "", "", "",
 	"", "", "", "<regex>", "<regex>", "<name=val>", "", "","", "", "", "",
-	"", "", "", "", "", "", "<percentage>", "<percentage>", "<number>",
+	"", "", "", "", "", "<percentage>", "<percentage>", "<number>",
 	"<size>", "<percent>", "", "", "", "", "", "<offset>", "<offset>", "",
 	"", "", "<time>", "", "", "", "", "", "", "", "", "", ""
 };
@@ -409,7 +409,7 @@ static char *sqfstar_text[]={
 	"-b <block-size>\t\tset data block to <block-size>.  Default 128 "
 		"Kbytes. Optionally a suffix of K, KB, Kbytes or M, MB, Mbytes "
 		"can be given to specify Kbytes or Mbytes respectively\n",
-	"-comp <comp>\t\tselect <comp> compression\n", "\t\t\tCompressors "
+	"-comp <comp>\t\tselect <comp> compression\n\t\t\tCompressors "
 		"available:\n\t\t\t\t" COMPRESSORS "\n",
 	"-noI\t\t\tdo not compress inode table\n",
 	"-noId\t\t\tdo not compress the uid/gid table (implied by -noI)\n",
@@ -419,9 +419,9 @@ static char *sqfstar_text[]={
 	"-no-compression\t\tdo not compress any of the data or metadata.  This "
 		"is equivalent to specifying -noI -noD -noF and -noX\n",
 	"\n", "Filesystem build options:", "\n",
-	"-reproducible\t\tbuild filesystems that are reproducible", REP_STR
+	"-reproducible\t\tbuild filesystems that are reproducible" REP_STR
 		"\n",
-	"-not-reproducible\tbuild filesystems that are not reproducible",
+	"-not-reproducible\tbuild filesystems that are not reproducible"
 		NOREP_STR "\n",
 	"-mkfs-time <time>\tset filesystem creation timestamp to <time>. "
 		"<time> can be an unsigned 32-bit int indicating seconds since "
@@ -495,8 +495,8 @@ static char *sqfstar_text[]={
 		"stop reading after the first tar file on encountering them. "
 		"This option makes Sqfstar ignore the zero filled blocks\n",
 	"\n", "Filesystem extended attribute (xattrs) options:", "\n",
-	"-no-xattrs\t\tdo not store extended attributes" NOXOPT_STR "\n"
-	"-xattrs\t\t\tstore extended attributes" XOPT_STR "\n"
+	"-no-xattrs\t\tdo not store extended attributes" NOXOPT_STR "\n",
+	"-xattrs\t\t\tstore extended attributes" XOPT_STR "\n",
 	"-xattrs-exclude <regex>\texclude any xattr names matching <regex>.  "
 		"<regex> is a POSIX regular expression, e.g. -xattrs-exclude "
 		"'^user.' excludes xattrs from the user namespace\n",
