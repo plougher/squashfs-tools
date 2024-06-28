@@ -535,7 +535,7 @@ static char *sqfstar_text[]={
 	"-processors <number>\tuse <number> processors.  By default will use "
 		"number of processors available\n",
 	"-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or G "
-		"to\n\t\t\tspecify Kbytes, Mbytes or Gbytes respectively\n",
+		"to specify Kbytes, Mbytes or Gbytes respectively\n",
 	"-mem-percent <percent>\tuse <percent> physical memory for caches.  "
 		"Default 25%\n",
 	"-mem-default\t\tprint default memory usage in Mbytes\n",
