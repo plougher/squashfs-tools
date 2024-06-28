@@ -90,7 +90,7 @@ static char *sqfstar_options[]={
 	"-mem-percent", "-mem-default", "", "", "", "-nopad", "-offset", "-o",
 	"", "", "", "-fstime", "-root-owned", "-noInodeCompression",
 	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
-	"-noXattrCompression", "", "-help", "-h", "-Xhelp", NULL
+	"-noXattrCompression", "", "-help", "help-option", "-h", "-Xhelp", NULL
 };
 
 static char *mksquashfs_args[]={
@@ -119,7 +119,7 @@ static char *sqfstar_args[]={
 	"", "", "", "<regex>", "<regex>", "<name=val>", "", "","", "", "", "",
 	"", "", "", "", "", "<percentage>", "<percentage>", "<number>",
 	"<size>", "<percent>", "", "", "", "", "", "<offset>", "<offset>", "",
-	"", "", "<time>", "", "", "", "", "", "", "", "", "", ""
+	"", "", "<time>", "", "", "", "", "", "", "", "", "<regex>", "", ""
 };
 
 static char *sections[]={
@@ -555,6 +555,8 @@ static char *sqfstar_text[]={
 	"-noFragmentCompression\talternative name for -noF\n",
 	"-noXattrCompression\talternative name for -noX\n",
 	"\n", "-help\t\t\toutput this options text to stdout\n",
+	"-help-option <regex>\tprint the help information for Sqfstar "
+		"options matching <regex> to stdout\n",
 	"-h\t\t\toutput this options text to stdout\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"\n","Pseudo file definition format:", "\n",
