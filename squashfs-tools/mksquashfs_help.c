@@ -559,6 +559,7 @@ static char *sqfstar_text[]={
 		"options matching <regex> to stdout\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"-h\t\t\toutput this options text to stdout\n",
+	"-ho <regex>\t\tshorthand alternative to -help-option\n",
 	"\n","Pseudo file definition format:", "\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
 	"\"filename m mode uid gid\"\t\tmodify filename\n",
