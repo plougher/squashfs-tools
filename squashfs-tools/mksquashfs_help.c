@@ -90,7 +90,7 @@ static char *sqfstar_options[]={
 	"-mem-percent", "-mem-default", "", "", "", "-nopad", "-offset", "-o",
 	"", "", "", "-fstime", "-root-owned", "-noInodeCompression",
 	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
-	"-noXattrCompression", "", "-help", "help-option", "-h", "-Xhelp", NULL
+	"-noXattrCompression", "", "-help", "help-option", "-Xhelp", "-h", NULL
 };
 
 static char *mksquashfs_args[]={
@@ -557,8 +557,8 @@ static char *sqfstar_text[]={
 	"\n", "-help\t\t\toutput this options text to stdout\n",
 	"-help-option <regex>\tprint the help information for Sqfstar "
 		"options matching <regex> to stdout\n",
-	"-h\t\t\toutput this options text to stdout\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
+	"-h\t\t\toutput this options text to stdout\n",
 	"\n","Pseudo file definition format:", "\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
 	"\"filename m mode uid gid\"\t\tmodify filename\n",
