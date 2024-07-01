@@ -554,11 +554,11 @@ static char *sqfstar_text[]={
 	"-noDataCompression\talternative name for -noD\n",
 	"-noFragmentCompression\talternative name for -noF\n",
 	"-noXattrCompression\talternative name for -noX\n",
-	"\n", "-help\t\t\toutput this options text to stdout\n",
+	"\n", "-help\t\t\tprint help summary information to stdout\n",
 	"-help-option <regex>\tprint the help information for Sqfstar "
 		"options matching <regex> to stdout\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
-	"-h\t\t\toutput this options text to stdout\n",
+	"-h\t\t\tshorthand alternative to -help\n",
 	"-ho <regex>\t\tshorthand alternative to -help-option\n",
 	"\n","Pseudo file definition format:", "\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
