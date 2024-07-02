@@ -128,6 +128,11 @@ static char *mksquashfs_sections[]={
 	"exit", "extra", NULL
 };
 
+static char *sqfstar_sections[]={
+	"compression", "build", "filter", "xattrs", "runtime", "expert",
+	"misc", "pseudo", "environment", "exit", "extra", NULL
+};
+
 static char *mksquashfs_text[]={
 	"Filesystem compression options:", "\n",
 	"-b <block-size>\t\tset data block to <block-size>.  Default 128 "
@@ -1160,4 +1165,9 @@ void sqfstar_option(char *prog_name, char *opt_name, char *pattern)
 void mksquashfs_section(char *prog_name, char *opt_name, char *sec_name)
 {
 	print_section(prog_name, opt_name, sec_name, mksquashfs_sections, mksquashfs_text);
+}
+
+void sqfstar_section(char *prog_name, char *opt_name, char *sec_name)
+{
+	print_section(prog_name, opt_name, sec_name, sqfstar_sections, sqfstar_text);
 }
