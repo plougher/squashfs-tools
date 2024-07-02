@@ -7207,7 +7207,7 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 
-		print_section(argv[0], argv[i - 1], argv[i]);
+		mksquashfs_section(argv[0], argv[i - 1], argv[i]);
 	}
 
 	if(i < argc && strcmp(argv[i], "-mem-default") == 0) {
@@ -7372,7 +7372,7 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 
-			print_section(argv[0], argv[i - 1], argv[i]);
+			mksquashfs_section(argv[0], argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-no-strip") == 0 ||

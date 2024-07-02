@@ -122,7 +122,7 @@ static char *sqfstar_args[]={
 	"", "", "<time>", "", "", "", "", "", "", "", "", "<regex>", "", ""
 };
 
-static char *sections[]={
+static char *mksquashfs_sections[]={
 	"compression", "build", "filter", "xattrs", "runtime", "append",
 	"actions", "tar", "expert", "help", "misc", "pseudo", "environment",
 	"exit", "extra", NULL
@@ -1018,29 +1018,29 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char *s
 }
 
 
-static int is_header(int i)
+static int is_header(int i, char **options_text)
 {
-	int length = strlen(mksquashfs_text[i]);
+	int length = strlen(options_text[i]);
 
-	return length && mksquashfs_text[i][length - 1] == ':';
+	return length && options_text[i][length - 1] == ':';
 }
 
 
-static void print_section_names(FILE *out, char *string, int cols)
+static void print_section_names(FILE *out, char *string, int cols, char **sections, char **options_text)
 {
 	int i, j;
 
 	autowrap_printf(out, cols, "%sSECTION NAME\t\tSECTION\n", string);
 
 	for(i = 0, j = 0; sections[i] != NULL; j++)
-		if(is_header(j)) {
-			autowrap_printf(out, cols, "%s%s\t\t%s%s\n", string, sections[i], strlen(sections[i]) > 7 ? "" : "\t", mksquashfs_text[j]);
+		if(is_header(j, options_text)) {
+			autowrap_printf(out, cols, "%s%s\t\t%s%s\n", string, sections[i], strlen(sections[i]) > 7 ? "" : "\t", options_text[j]);
 			i++;
 		}
 }
 
 
-void print_section(char *prog_name, char *opt_name, char *sec_name)
+static void print_section(char *prog_name, char *opt_name, char *sec_name, char **sections, char **options_text)
 {
 	int i, j, secs, cols, tty = isatty(STDOUT_FILENO);
 	pid_t pager_pid;
@@ -1058,8 +1058,8 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 	}
 
 	if(strcmp(sec_name, "sections") == 0 || strcmp(sec_name, "h") == 0) {
-		autowrap_print(pager, "\nUse following section name to print Mksquashfs help information for that section\n\n", cols);
-		print_section_names(pager , "", cols);
+		autowrap_printf(pager, cols, "\nUse following section name to print %s help information for that section\n\n", prog_name);
+		print_section_names(pager , "", cols, sections, options_text);
 		goto finish;
 	}
 
@@ -1069,17 +1069,17 @@ void print_section(char *prog_name, char *opt_name, char *sec_name)
 
 	if(sections[i] == NULL) {
 		autowrap_printf(pager, cols, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
-		print_section_names(pager, "", cols);
+		print_section_names(pager, "", cols, sections, options_text);
 		goto finish;
 	}
 
 	i++;
 
-	for(j = 0, secs = 0; mksquashfs_text[j] != NULL && secs <= i; j ++) {
-		if(is_header(j))
+	for(j = 0, secs = 0; options_text[j] != NULL && secs <= i; j ++) {
+		if(is_header(j, options_text))
 			secs++;
 		if(i == secs)
-			autowrap_print(pager, mksquashfs_text[j], cols);
+			autowrap_print(pager, options_text[j], cols);
 	}
 
 finish:
@@ -1098,7 +1098,7 @@ void handle_invalid_option(char *prog_name, char *opt_name)
 
 	autowrap_printf(stderr, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
 	fprintf(stderr, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols);
+	print_section_names(stderr, "\t", cols, mksquashfs_sections, mksquashfs_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
@@ -1112,7 +1112,7 @@ void print_help(int error, char *prog_name)
 
 	autowrap_printf(stream, cols, MKSQUASHFS_SYNTAX "\n", prog_name);
 	autowrap_printf(stream, cols, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stream, "\t", cols);
+	print_section_names(stream, "\t", cols, mksquashfs_sections, mksquashfs_text);
 	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(error);
@@ -1125,7 +1125,7 @@ void print_option_help(char *prog_name, char *option)
 
 	autowrap_printf(stderr, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
 	autowrap_printf(stderr, cols, "Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols);
+	print_section_names(stderr, "\t", cols, mksquashfs_sections, mksquashfs_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
@@ -1155,4 +1155,9 @@ void sqfstar_option(char *prog_name, char *opt_name, char *pattern)
 {
 	print_option(prog_name, opt_name, pattern, SQFSTAR_SYNTAX,
 			sqfstar_options, sqfstar_args, sqfstar_text);
+}
+
+void mksquashfs_section(char *prog_name, char *opt_name, char *sec_name)
+{
+	print_section(prog_name, opt_name, sec_name, mksquashfs_sections, mksquashfs_text);
 }
