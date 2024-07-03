@@ -1186,3 +1186,8 @@ void mksquashfs_help(int error, char *prog_name)
 {
 	print_help(error, prog_name, MKSQUASHFS_SYNTAX, mksquashfs_sections, mksquashfs_text);
 }
+
+void sqfstar_help(int error, char *prog_name)
+{
+	print_help(error, prog_name, SQFSTAR_SYNTAX, sqfstar_sections, sqfstar_text);
+}
