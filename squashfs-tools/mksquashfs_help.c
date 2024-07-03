@@ -1120,14 +1120,14 @@ void handle_invalid_option(char *prog_name, char *opt_name)
 }
 
 
-void print_help(int error, char *prog_name)
+static void print_help(int error, char *prog_name, char *syntax, char **sections, char **options_text)
 {
 	FILE *stream = error ? stderr : stdout;
 	int cols = get_column_width();
 
-	autowrap_printf(stream, cols, MKSQUASHFS_SYNTAX "\n", prog_name);
+	autowrap_printf(stream, cols, syntax, prog_name);
 	autowrap_printf(stream, cols, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stream, "\t", cols, mksquashfs_sections, mksquashfs_text);
+	print_section_names(stream, "\t", cols, sections, options_text);
 	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(error);
@@ -1180,4 +1180,9 @@ void mksquashfs_section(char *prog_name, char *opt_name, char *sec_name)
 void sqfstar_section(char *prog_name, char *opt_name, char *sec_name)
 {
 	print_section(prog_name, opt_name, sec_name, sqfstar_sections, sqfstar_text);
+}
+
+void mksquashfs_help(int error, char *prog_name)
+{
+	print_help(error, prog_name, MKSQUASHFS_SYNTAX, mksquashfs_sections, mksquashfs_text);
 }

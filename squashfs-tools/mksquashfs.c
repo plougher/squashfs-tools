@@ -7193,7 +7193,7 @@ int main(int argc, char *argv[])
 
 	if(i < argc && (strcmp(argv[i], "-help") == 0 ||
 						strcmp(argv[i], "-h") == 0))
-		print_help(FALSE, argv[0]);
+		mksquashfs_help(FALSE, argv[0]);
 
 	if(i < argc && (strcmp(argv[i], "-help-all") == 0 ||
 						strcmp(argv[i], "-ha") == 0))
@@ -7293,7 +7293,7 @@ int main(int argc, char *argv[])
 
 	if(i < 3) {
 		ERROR("%s: fatal error: no arguments specified on command line\n\n", argv[0]);
-		print_help(TRUE, argv[0]);
+		mksquashfs_help(TRUE, argv[0]);
 	}
 
 	option_offset = i;
@@ -7360,7 +7360,7 @@ int main(int argc, char *argv[])
 			recovery_pathname = argv[i];
 		} else if(strcmp(argv[i], "-help") == 0 ||
 						strcmp(argv[i], "-h") == 0)
-			print_help(FALSE, argv[0]);
+			mksquashfs_help(FALSE, argv[0]);
 		else if(strcmp(argv[i], "-help-all") == 0 ||
 						strcmp(argv[i], "-ha") == 0)
 			mksquashfs_help_all(argv[0]);
