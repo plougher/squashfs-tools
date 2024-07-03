@@ -69,10 +69,10 @@ static char *mksquashfs_options[] = {
 	"-false-action-file", "", "", "", "-default-mode", "-default-uid",
 	"-default-gid", "-ignore-zeros", "", "", "", "-nopad", "-offset", "-o",
 	"", "", "", "-help", "-help-option", "-help-section", "help-comp",
-	"-help-all", "-Xhelp", "-h", "-ho", "-hs", "", "", "", "-fstime",
-	"-always-use-fragments", "-root-owned", "-noInodeCompression",
-	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
-	"-noXattrCompression", "-pseudo-dir", NULL,
+	"-help-all", "-Xhelp", "-h", "-ho", "-hs", "-ha", "", "", "",
+	"-fstime", "-always-use-fragments", "-root-owned",
+	"-noInodeCompression", "-noIdTableCompression", "-noDataCompression",
+	"-noFragmentCompression", "-noXattrCompression", "-pseudo-dir", NULL,
 };
 
 static char *sqfstar_options[]={
@@ -108,7 +108,7 @@ static char *mksquashfs_args[]={
 	"<file>", "<file>", "<file>", "<file>", "", "", "", "<mode>", "<value>",
 	"<value>", "", "", "", "", "", "<offset>", "<offset>", "", "", "", "",
 	"<regex>", "<section>", "comp", "", "", "", "<regex>", "<section>", "",
-	"", "", "<time>", "", "", "", "", "", "", "", ""
+	"", "", "", "<time>", "", "", "", "", "", "", "", ""
 };
 
 static char *sqfstar_args[]={
@@ -348,6 +348,7 @@ static char *mksquashfs_text[]={
 	"-h\t\t\tshorthand alternative to -help\n",
 	"-ho <regex>\t\tshorthand aternative to -help-option\n",
 	"-hs <section>\t\tshorthand alternative to -help-section\n",
+	"-ha\t\t\tshorthand alternative to -help-all\n",
 	"\n", "Miscellaneous options:", "\n",
 	"-fstime <time>\t\talternative name for -mkfs-time\n",
 	"-always-use-fragments\talternative name for -tailends\n",
