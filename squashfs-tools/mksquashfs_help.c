@@ -90,7 +90,8 @@ static char *sqfstar_options[]={
 	"-mem-percent", "-mem-default", "", "", "", "-nopad", "-offset", "-o",
 	"", "", "", "-fstime", "-root-owned", "-noInodeCompression",
 	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
-	"-noXattrCompression", "", "-help", "help-option", "-Xhelp", "-h", NULL
+	"-noXattrCompression", "", "-help", "help-option", "-help-section",
+	"-Xhelp", "-h", "-ho", "-hs", NULL
 };
 
 static char *mksquashfs_args[]={
@@ -119,7 +120,8 @@ static char *sqfstar_args[]={
 	"", "", "", "<regex>", "<regex>", "<name=val>", "", "","", "", "", "",
 	"", "", "", "", "", "<percentage>", "<percentage>", "<number>",
 	"<size>", "<percent>", "", "", "", "", "", "<offset>", "<offset>", "",
-	"", "", "<time>", "", "", "", "", "", "", "", "", "<regex>", "", ""
+	"", "", "<time>", "", "", "", "", "", "", "", "", "<regex>",
+	"<section>", "", "", "<regex>", "<section>"
 };
 
 static char *mksquashfs_sections[]={
@@ -562,9 +564,13 @@ static char *sqfstar_text[]={
 	"\n", "-help\t\t\tprint help summary information to stdout\n",
 	"-help-option <regex>\tprint the help information for Sqfstar "
 		"options matching <regex> to stdout\n",
+	"-help-section <section>\tprint the help information for section "
+		"<section> to stdout.  Use \"sections\" or \"h\" as section "
+		"name to get a list of sections and their names\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"-h\t\t\tshorthand alternative to -help\n",
 	"-ho <regex>\t\tshorthand alternative to -help-option\n",
+	"-hs <section>\t\tshorthand alternative to -help-section\n",
 	"\n","Pseudo file definition format:", "\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
 	"\"filename m mode uid gid\"\t\tmodify filename\n",
