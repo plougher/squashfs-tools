@@ -611,7 +611,7 @@ static char *sqfstar_text[]={
 	"  0\tSqfstar successfully generated a filesystem.\n",
 	"  1\tFatal errors occurred, Sqfstar aborted and did not generate a "
 		"filesystem.\n",
-	"\n", "See also:", "\n",
+	"\n","See also (extra information elsewhere):", "\n",
 	"The README for the Squashfs-tools 4.6.1 release, describing the new "
 		"features can be read here https://github.com/plougher/"
 		"squashfs-tools/blob/master/README-4.6.1\n",
