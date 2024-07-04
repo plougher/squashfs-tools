@@ -1107,13 +1107,13 @@ finish:
 }
 
 
-void handle_invalid_option(char *prog_name, char *opt_name)
+static void handle_invalid_option(char *prog_name, char *opt_name, char **sections, char **options_text)
 {
 	int cols = get_column_width();
 
 	autowrap_printf(stderr, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
 	fprintf(stderr, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols, mksquashfs_sections, mksquashfs_text);
+	print_section_names(stderr, "\t", cols, sections, options_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
@@ -1188,4 +1188,9 @@ void mksquashfs_help(int error, char *prog_name)
 void sqfstar_help(int error, char *prog_name)
 {
 	print_help(error, prog_name, SQFSTAR_SYNTAX, sqfstar_sections, sqfstar_text);
+}
+
+void mksquashfs_invalid_option(char *prog_name, char *opt_name)
+{
+	handle_invalid_option(prog_name, opt_name, mksquashfs_sections, mksquashfs_text);
 }
