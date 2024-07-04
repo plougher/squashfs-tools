@@ -995,8 +995,8 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 }
 
 
-static void print_option(char *prog_name, char *opt_name, char *pattern, char *syntax,
-				char **options, char **options_args, char **options_text)
+static void print_option(char *prog_name, char *opt_name, char *pattern, char **options,
+					char **options_args, char **options_text)
 {
 	int i, res, matched = FALSE;
 	regex_t *preg = malloc(sizeof(regex_t));
@@ -1161,15 +1161,13 @@ void sqfstar_help_all(char *name)
 
 void mksquashfs_option(char *prog_name, char *opt_name, char *pattern)
 {
-	print_option(prog_name, opt_name, pattern, MKSQUASHFS_SYNTAX,
-			mksquashfs_options, mksquashfs_args, mksquashfs_text);
+	print_option(prog_name, opt_name, pattern, mksquashfs_options, mksquashfs_args, mksquashfs_text);
 }
 
 
 void sqfstar_option(char *prog_name, char *opt_name, char *pattern)
 {
-	print_option(prog_name, opt_name, pattern, SQFSTAR_SYNTAX,
-			sqfstar_options, sqfstar_args, sqfstar_text);
+	print_option(prog_name, opt_name, pattern, sqfstar_options, sqfstar_args, sqfstar_text);
 }
 
 void mksquashfs_section(char *prog_name, char *opt_name, char *sec_name)
