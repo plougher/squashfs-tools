@@ -6309,7 +6309,7 @@ static int sqfstar(int argc, char *argv[])
 			sqfstar_help_all(argv[0]);
 		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
 			if(++i == argc) {
-				ERROR("%s: %s missing missing option\n", argv[0], argv[i - 1]);
+				ERROR("%s: %s missing option\n", argv[0], argv[i - 1]);
 				exit(1);
 			}
 
