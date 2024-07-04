@@ -6901,11 +6901,8 @@ print_sqfstar_compressor_options:
 			progressbar_percentage();
 			progress = silent = TRUE;
 
-		} else {
-			ERROR("%s: invalid option\n\n", argv[0]);
-			sqfstar_help_all(argv[0]);
-			exit(1);
-		}
+		} else
+			sqfstar_invalid_option(argv[0], argv[i]);
 	}
 
 	check_source_date_epoch();
