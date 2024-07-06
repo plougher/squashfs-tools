@@ -6410,25 +6410,21 @@ static int sqfstar(int argc, char *argv[])
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-throttle") == 0) {
 			if((++i == dest_index) || !parse_number(argv[i], &sleep_time, 2)) {
-				ERROR("%s: %s missing or invalid value\n",
-							argv[0], argv[i - 1]);
+				ERROR("%s: -throttle missing or invalid value\n", argv[0]);
 				exit(1);
 			}
 			if(sleep_time > 99) {
-				ERROR("%s: %s value should be between 0 and "
-						"99\n", argv[0], argv[i - 1]);
+				ERROR("%s: -throttle value should be between 0 and 99\n", argv[0];
 				exit(1);
 			}
 			readq = 4;
 		} else if(strcmp(argv[i], "-limit") == 0) {
 			if((++i == dest_index) || !parse_number(argv[i], &sleep_time, 0)) {
-				ERROR("%s: %s missing or invalid value\n",
-							argv[0], argv[i - 1]);
+				ERROR("%s: -limit missing or invalid value\n", argv[0]);
 				exit(1);
 			}
 			if(sleep_time < 1 || sleep_time > 100) {
-				ERROR("%s: %s value should be between 1 and "
-						"100\n", argv[0], argv[i - 1]);
+				ERROR("%s: -limit value should be between 1 and 100\n", argv[0]);
 				exit(1);
 			}
 			sleep_time = 100 - sleep_time;
@@ -6448,9 +6444,7 @@ static int sqfstar(int argc, char *argv[])
 			if((++i == dest_index) ||
 				(!parse_num_unsigned(argv[i], &all_time) &&
 				!exec_date(argv[i], &all_time))) {
-					ERROR("%s: %s missing or invalid time "
-						"value\n", argv[0],
-						argv[i - 1]);
+					ERROR("%s: -all-time missing or invalid time value\n", argv[0]);
 				exit(1);
 			}
 			all_time_opt = TRUE;
