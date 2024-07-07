@@ -6413,7 +6413,7 @@ static int sqfstar(int argc, char *argv[])
 				exit(1);
 			}
 			if(sleep_time > 99) {
-				ERROR("%s: -throttle value should be between 0 and 99\n", argv[0];
+				ERROR("%s: -throttle value should be between 0 and 99\n", argv[0]);
 				exit(1);
 			}
 			readq = 4;
