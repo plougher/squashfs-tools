@@ -6348,14 +6348,13 @@ static int sqfstar(int argc, char *argv[])
 			struct compressor *prev_comp = comp;
 
 			if(++i == argc) {
-				ERROR("%s: -comp missing compression type\n",
-					argv[0]);
+				ERROR("%s: -comp missing compression type\n", argv[0]);
 				exit(1);
 			}
 			comp = lookup_compressor(argv[i]);
 			if(!comp->supported) {
-				ERROR("%s: Compressor \"%s\" is not supported!"
-					"\n", argv[0], argv[i]);
+				ERROR("%s: Compressor \"%s\" is not supported!\n",
+								argv[0], argv[i]);
 				ERROR("%s: Compressors available:\n", argv[0]);
 				display_compressors(stderr, "", COMP_DEFAULT);
 				exit(1);
