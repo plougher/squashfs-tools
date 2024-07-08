@@ -214,8 +214,10 @@ static char *mksquashfs_text[]={
 		"does not exist.  This also allows pseudo definitions to be "
 		"specified without specifying all the directories in the "
 		"pathname.  The definition should be quoted\n",
-	"-pd <D time mode u g>\tas above, but also allow a timestamp to be "
-		"specified\n",
+	"-pd <D time mode u g>\tspecify a default pseudo directory which will "
+		"be used in pseudo definitions if a directory in the pathname "
+		"does not exist.  The D type also allows a timestamp to be "
+		"specified in addition to mode, uid and gid\n",
 	"-pf <pseudo-file>\tadd list of pseudo file definitions from "
 		"<pseudo-file>, use - for stdin.  Pseudo file definitions "
 		"should not be quoted\n",
@@ -490,8 +492,10 @@ static char *sqfstar_text[]={
 		"does not exist.  This also allows pseudo definitions to be "
 		"specified without specifying all the directories in the "
 		"pathname.  The definition should be quoted\n",
-	"-pd <D time mode u g>\tas above, but also allow a timestamp to be "
-		"specified\n",
+	"-pd <D time mode u g>\tspecify a default pseudo directory which will "
+		"be used in pseudo definitions if a directory in the pathname "
+		"does not exist.  The D type also allows a timestamp to be "
+		"specified in addition to mode, uid and gid\n",
 	"-pf <pseudo-file>\tadd list of pseudo file definitions.  Pseudo file "
 		"definitions in pseudo-files should not be quoted\n",
 	"-ef <exclude-file>\tlist of exclude dirs/files.  One per line\n",
