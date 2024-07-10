@@ -6378,13 +6378,11 @@ static int sqfstar(int argc, char *argv[])
 			i++;
 	}
 
-	if(i >= argc) {
-		ERROR("%s: fatal error: no arguments specified on command line\n\n", argv[0]);
-		sqfstar_help(TRUE, argv[0]);
-		exit(1);
-	}
+	if(i >= argc)
+		dest_index = argc;
+	else
+		dest_index = i;
 
-	dest_index = i;
 	source_path = NULL;
 	source = 0;
 	old_exclude = FALSE;
@@ -6896,6 +6894,12 @@ print_sqfstar_compressor_options:
 
 		} else
 			sqfstar_invalid_option(argv[0], argv[i]);
+	}
+
+	if(i == argc) {
+		ERROR("%s: fatal error: no output filesystem specified on command line\n\n", argv[0]);
+		sqfstar_help(TRUE, argv[0]);
+		exit(1);
 	}
 
 	check_source_date_epoch();
