@@ -1041,6 +1041,36 @@ static void queue_dir(char *pathname, struct dir *dir)
 }
 
 
+static void unlink_file(char *pathname, struct stat *stat_buf)
+{
+	struct stat buf;
+	int res;
+
+	if(stat_buf == NULL) {
+		res = lstat(pathname, stat_buf = &buf);
+		if(res == -1) {
+			if(errno != ENOENT)
+				EXIT_UNSQUASH("unlink_file: failed to lstat file %s,"
+					" because %s\n", pathname, strerror(errno));
+			else
+				return;
+		}
+	}
+
+	if(S_ISDIR(stat_buf->st_mode)) {
+		res = rmdir(pathname);
+		if(res == -1)
+			EXIT_UNSQUASH("unlink_file: failed to rmdir directory %s,"
+				" because %s\n", pathname, strerror(errno));
+	} else {
+		res = unlink(pathname);
+		if(res == -1)
+			EXIT_UNSQUASH("unlink_file: failed to unlink file %s,"
+				" because %s\n", pathname, strerror(errno));
+	}
+}
+
+
 static int write_file(struct inode *inode, char *pathname)
 {
 	unsigned int file_fd, i;
@@ -1236,7 +1266,7 @@ static int create_inode(char *pathname, struct inode *i)
 				i->data);
 
 			if(force)
-				unlink(pathname);
+				unlink_file(pathname, NULL);
 
 			res = symlink(i->symlink, pathname);
 			if(res == -1) {
