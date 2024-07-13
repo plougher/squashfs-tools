@@ -1353,7 +1353,7 @@ static int create_inode(char *pathname, struct inode *i)
 			TRACE("create_inode: fifo\n");
 
 			if(force)
-				unlink(pathname);
+				unlink_file(pathname, NULL);
 
 			res = mknod(pathname, S_IFIFO, 0);
 			if(res == -1) {
