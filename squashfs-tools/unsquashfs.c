@@ -1236,7 +1236,7 @@ static int create_inode(char *pathname, struct inode *i)
 	if(link_path) {
 		TRACE("create_inode: hard link\n");
 		if(force)
-			unlink(pathname);
+			unlink_file(pathname, NULL);
 
 		if(link(link_path, pathname) == -1) {
 			EXIT_UNSQUASH_IGNORE("create_inode: failed to create"
