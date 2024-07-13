@@ -1373,6 +1373,9 @@ static int create_inode(char *pathname, struct inode *i)
 		case SQUASHFS_LSOCKET_TYPE:
 			TRACE("create_inode: socket\n");
 
+			if(force)
+				unlink_file(pathname, NULL);
+
 			res = mknod(pathname, S_IFSOCK, 0);
 			if (res == -1) {
 				ERROR("create_inode: failed to create socket "
