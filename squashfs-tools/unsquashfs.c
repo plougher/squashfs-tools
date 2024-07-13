@@ -1087,10 +1087,7 @@ static int write_file(struct inode *inode, char *pathname)
 
 	res = lstat(pathname, &buf);
 	if(res != -1 && force) {
-		res = unlink(pathname);
-		if(res == -1)
-			EXIT_UNSQUASH("write_file: failed to unlink file %s,"
-				" because %s\n", pathname, strerror(errno));
+		unlink_file(pathname, &buf);
 	} else if(res != -1)
 		EXIT_UNSQUASH("write_file: file %s already exists\n", pathname);
 	else if(errno != ENOENT)
