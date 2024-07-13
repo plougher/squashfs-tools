@@ -1316,7 +1316,7 @@ static int create_inode(char *pathname, struct inode *i)
 			TRACE("create_inode: dev, rdev 0x%llx\n", i->data);
 			if(root_process) {
 				if(force)
-					unlink(pathname);
+					unlink_file(pathname, NULL);
 
 				/* Based on new_decode_dev() in kernel source */
 				major = (i->data & 0xfff00) >> 8;
