@@ -7183,40 +7183,37 @@ int main(int argc, char *argv[])
 	block_log = slog(block_size);
 	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
 
+	/* Find the first option */
         for(i = 1; i < argc && (argv[i][0] != '-' || strcmp(argv[i], "-") == 0);
 									i++);
 
-	if(i < argc && (strcmp(argv[i], "-help") == 0 ||
-						strcmp(argv[i], "-h") == 0))
-		mksquashfs_help(FALSE, argv[0]);
+	/* Scan the command line for options that will immediately quit afterwards */
+	for(j = i; j < argc; j++) {
+		if(strcmp(argv[j], "-help") == 0 || strcmp(argv[j], "-h") == 0)
+			mksquashfs_help(FALSE, argv[0]);
+		else if(strcmp(argv[j], "-help-all") == 0 || strcmp(argv[j], "-ha") == 0)
+			mksquashfs_help_all(argv[0]);
+		else if(strcmp(argv[j], "-help-option") == 0 || strcmp(argv[j], "-ho") == 0) {
+			if(++j == argc) {
+				ERROR("%s: %s missing regex\n", argv[0], argv[j - 1]);
+				exit(1);
+			}
 
-	if(i < argc && (strcmp(argv[i], "-help-all") == 0 ||
-						strcmp(argv[i], "-ha") == 0))
-		mksquashfs_help_all(argv[0]);
+			mksquashfs_option(argv[0], argv[j - 1], argv[j]);
+		} else if(strcmp(argv[j], "-help-section") == 0 || strcmp(argv[j], "-hs") == 0) {
+			if(++j == argc) {
+				ERROR("%s: %s missing section\n", argv[0], argv[j - 1]);
+				exit(1);
+			}
 
-	if(i < argc && (strcmp(argv[i], "-help-option") == 0 ||
-						strcmp(argv[i], "-ho") == 0)) {
-		if(++i == argc) {
-			ERROR("%s: %s missing regex\n", argv[0], argv[i - 1]);
-			exit(1);
-		}
-
-		mksquashfs_option(argv[0], argv[i - 1], argv[i]);
-	}
-
-	if(i < argc && (strcmp(argv[i], "-help-section") == 0 ||
-						strcmp(argv[i], "-hs") == 0)) {
-		if(++i == argc) {
-			ERROR("%s: %s missing section\n", argv[0], argv[i - 1]);
-			exit(1);
-		}
-
-		mksquashfs_section(argv[0], argv[i - 1], argv[i]);
-	}
-
-	if(i < argc && strcmp(argv[i], "-mem-default") == 0) {
-		printf("%d\n", total_mem);
-		exit(0);
+			mksquashfs_section(argv[0], argv[j - 1], argv[j]);
+		} else if(strcmp(argv[j], "-mem-default") == 0) {
+			printf("%d\n", total_mem);
+			exit(0);
+		} else if(strcmp(argv[j], "-e") == 0)
+			break;
+		else if(option_with_arg(argv[j], option_table))
+			j++;
 	}
 
 	/*
@@ -7353,30 +7350,6 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[0], argv[i - 1]);
 			}
 			recovery_pathname = argv[i];
-		} else if(strcmp(argv[i], "-help") == 0 ||
-						strcmp(argv[i], "-h") == 0)
-			mksquashfs_help(FALSE, argv[0]);
-		else if(strcmp(argv[i], "-help-all") == 0 ||
-						strcmp(argv[i], "-ha") == 0)
-			mksquashfs_help_all(argv[0]);
-		else if((strcmp(argv[i], "-help-option") == 0 ||
-						strcmp(argv[i], "-ho") == 0)) {
-			if(++i == argc) {
-				ERROR("%s: %s missing regex\n",
-							argv[0], argv[i - 1]);
-				exit(1);
-			}
-
-			mksquashfs_option(argv[0], argv[i - 1], argv[i]);
-		} else if((strcmp(argv[i], "-help-section") == 0 ||
-						strcmp(argv[i], "-hs") == 0)) {
-			if(++i == argc) {
-				ERROR("%s: %s missing section\n",
-							argv[0], argv[i - 1]);
-				exit(1);
-			}
-
-			mksquashfs_section(argv[0], argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-no-strip") == 0 ||
@@ -7827,9 +7800,6 @@ int main(int argc, char *argv[])
 
 			calculate_queue_sizes(total_mem, &readq, &fragq,
 				&bwriteq, &fwriteq);
-		} else if(strcmp(argv[i], "-mem-default") == 0) {
-			printf("%d\n", total_mem);
-			exit(0);
 		} else if(strcmp(argv[i], "-b") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -b missing block size\n", argv[0]);
