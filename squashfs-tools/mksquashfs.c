@@ -7284,7 +7284,10 @@ int main(int argc, char *argv[])
 	}
 
 	if(i < 3) {
-		ERROR("%s: fatal error: no arguments specified on command line\n\n", argv[0]);
+		if(i == 1)
+			ERROR("%s: fatal error: no source or output filesystem specified on command line\n\n", argv[0]);
+		else
+			ERROR("%s: fatal error: no output filesystem specified on command line\n\n", argv[0]);
 		mksquashfs_help(TRUE, argv[0]);
 	}
 
