@@ -7196,14 +7196,14 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[j], "-help-option") == 0 || strcmp(argv[j], "-ho") == 0) {
 			if(++j == argc) {
 				ERROR("%s: %s missing regex\n", argv[0], argv[j - 1]);
-				exit(1);
+				mksquashfs_option_help(argv[0], argv[j - 1]);
 			}
 
 			mksquashfs_option(argv[0], argv[j - 1], argv[j]);
 		} else if(strcmp(argv[j], "-help-section") == 0 || strcmp(argv[j], "-hs") == 0) {
 			if(++j == argc) {
 				ERROR("%s: %s missing section\n", argv[0], argv[j - 1]);
-				exit(1);
+				mksquashfs_option_help(argv[0], argv[j - 1]);
 			}
 
 			mksquashfs_section(argv[0], argv[j - 1], argv[j]);
