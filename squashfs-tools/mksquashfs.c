@@ -7157,7 +7157,6 @@ int main(int argc, char *argv[])
 	int force_progress = FALSE;
 	int exclude_option = FALSE;
 	int Xhelp = FALSE;
-	char *help_comp = NULL;
 	struct file_buffer **fragment = NULL;
 	char *command;
 
@@ -7207,6 +7206,15 @@ int main(int argc, char *argv[])
 			}
 
 			mksquashfs_section(argv[0], argv[j - 1], argv[j]);
+		} else if(strcmp(argv[j], "-help-comp") == 0) {
+			if(++j == argc) {
+				ERROR("%s: -help-comp missing compressor name\n",
+					argv[0]);
+				mksquashfs_option_help(argv[0], argv[j - 1]);
+			}
+
+			print_compressor_options(argv[j], argv[0]);
+			exit(0);
 		} else if(strcmp(argv[j], "-mem-default") == 0) {
 			printf("%d\n", total_mem);
 			exit(0);
@@ -7249,14 +7257,6 @@ int main(int argc, char *argv[])
 			}
 			compressor_opt_parsed = 1;
 
-		} else if(strcmp(argv[j], "-help-comp") == 0) {
-			if(++j == argc) {
-				ERROR("%s: -help-comp missing compressor name\n",
-					argv[0]);
-				mksquashfs_option_help(argv[0], argv[j - 1]);
-			}
-
-			help_comp = argv[j];
 		} else if(strcmp(argv[j], "-Xhelp") == 0)
 			Xhelp = TRUE;
 		else if(strcmp(argv[j], "-e") == 0)
@@ -7275,11 +7275,6 @@ int main(int argc, char *argv[])
 
 	if(Xhelp) {
 		print_selected_comp_options(stdout, comp, argv[0]);
-		exit(0);
-	}
-
-	if(help_comp) {
-		print_compressor_options(help_comp, argv[0]);
 		exit(0);
 	}
 
