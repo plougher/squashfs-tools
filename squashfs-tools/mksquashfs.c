@@ -6310,14 +6310,14 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing regex\n", argv[0], argv[i - 1]);
-				exit(1);
+				sqfstar_option_help(argv[0], argv[i - 1]);
 			}
 
 			sqfstar_option(argv[0], argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-help-section") == 0 || strcmp(argv[i], "-hs") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing section\n", argv[0], argv[i - 1]);
-				exit(1);
+				sqfstar_option_help(argv[0], argv[i - 1]);
 			}
 
 			sqfstar_section(argv[0], argv[i - 1], argv[i]);
