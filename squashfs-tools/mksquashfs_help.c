@@ -68,7 +68,7 @@ static char *mksquashfs_options[] = {
 	"-action-file", "-log-action-file", "-true-action-file",
 	"-false-action-file", "", "", "", "-default-mode", "-default-uid",
 	"-default-gid", "-ignore-zeros", "", "", "", "-nopad", "-offset", "-o",
-	"", "", "", "-help", "-help-option", "-help-section", "help-comp",
+	"", "", "", "-help", "-help-option", "-help-section", "-help-comp",
 	"-help-all", "-Xhelp", "-h", "-ho", "-hs", "-ha", "", "", "",
 	"-fstime", "-always-use-fragments", "-root-owned",
 	"-noInodeCompression", "-noIdTableCompression", "-noDataCompression",
