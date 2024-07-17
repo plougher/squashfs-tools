@@ -107,7 +107,7 @@ static char *mksquashfs_args[]={
 	"<action@expression>", "<action@expression>", "<action@expression>",
 	"<file>", "<file>", "<file>", "<file>", "", "", "", "<mode>", "<value>",
 	"<value>", "", "", "", "", "", "<offset>", "<offset>", "", "", "", "",
-	"<regex>", "<section>", "comp", "", "", "", "<regex>", "<section>", "",
+	"<regex>", "<section>", "<comp>", "", "", "", "<regex>", "<section>", "",
 	"", "", "", "<time>", "", "", "", "", "", "", "", ""
 };
 
