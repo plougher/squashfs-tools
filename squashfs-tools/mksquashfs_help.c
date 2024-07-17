@@ -91,7 +91,7 @@ static char *sqfstar_options[]={
 	"", "", "", "-fstime", "-root-owned", "-noInodeCompression",
 	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
 	"-noXattrCompression", "", "-help", "help-option", "-help-section",
-	"-help-all", "-Xhelp", "-h", "-ho", "-hs", "-ha", NULL
+	"-help-comp", "-help-all", "-Xhelp", "-h", "-ho", "-hs", "-ha", NULL
 };
 
 static char *mksquashfs_args[]={
@@ -121,7 +121,7 @@ static char *sqfstar_args[]={
 	"", "", "", "", "", "<percentage>", "<percentage>", "<number>",
 	"<size>", "<percent>", "", "", "", "", "", "<offset>", "<offset>", "",
 	"", "", "<time>", "", "", "", "", "", "", "", "", "<regex>",
-	"<section>", "", "", "", "<regex>", "<section>", ""
+	"<section>", "<comp>", "", "", "", "<regex>", "<section>", ""
 };
 
 static char *mksquashfs_sections[]={
@@ -572,6 +572,7 @@ static char *sqfstar_text[]={
 	"-help-section <section>\tprint the help information for section "
 		"<section> to stdout.  Use \"sections\" or \"h\" as section "
 		"name to get a list of sections and their names\n",
+	"-help-comp <comp>\tprint compressor options for compressor <comp>\n",
 	"-help-all\t\tprint help information for all Sqfstar options and "
 		"sections to stdout\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
