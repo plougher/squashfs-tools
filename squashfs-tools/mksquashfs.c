@@ -6293,6 +6293,7 @@ static int sqfstar(int argc, char *argv[])
 	int total_mem = get_default_phys_mem();
 	int progress = TRUE;
 	int force_progress = FALSE;
+	int Xhelp = FALSE;
 	int dest_index;
 	struct file_buffer **fragment = NULL;
 	int size;
@@ -6347,6 +6348,8 @@ static int sqfstar(int argc, char *argv[])
 	 * Scan the command line for -comp xxx option, this should occur before
 	 * any -X compression specific options to ensure these options are passed
 	 * to the correct compressor
+	 *
+	 * Also scan for -Xhelp
 	 */
 	for(i = 1; i < argc; i++) {
 		if(strncmp(argv[i], "-X", 2) == 0)
@@ -6380,10 +6383,17 @@ static int sqfstar(int argc, char *argv[])
 					"-X option\n", argv[0]);
 				exit(1);
 			}
-		} else if(argv[i][0] != '-')
+		} else if(strcmp(argv[i], "-Xhelp") == 0)
+			Xhelp = TRUE;
+		else if(argv[i][0] != '-')
 			break;
 		else if(option_with_arg(argv[i], sqfstar_option_table))
 			i++;
+	}
+
+	if(Xhelp) {
+		print_selected_comp_options(stdout, comp, argv[0]);
+		exit(0);
 	}
 
 	if(i >= argc)
@@ -6560,12 +6570,8 @@ static int sqfstar(int argc, char *argv[])
 			/* parsed previously */
 			i++;
 		else if(strncmp(argv[i], "-X", 2) == 0) {
-			int args;
+			int args = compressor_options(comp, argv + i, dest_index - i);
 
-			if(strcmp(argv[i] + 2, "help") == 0)
-				goto print_sqfstar_compressor_options;
-
-			args = compressor_options(comp, argv + i, dest_index - i);
 			if(args < 0) {
 				if(args == -1) {
 					ERROR("%s: Unrecognised compressor"
@@ -6577,13 +6583,7 @@ static int sqfstar(int argc, char *argv[])
 							"specify it after the"
 							" -X options?\n",
 							argv[0]);
-print_sqfstar_compressor_options:
-					ERROR("%s: selected compressor \"%s\""
-						".  Options supported: %s\n",
-						argv[0], comp->name,
-						comp->usage ? "" : "none");
-					if(comp->usage)
-						comp->usage(stderr);
+					print_selected_comp_options(stderr, comp, argv[0]);
 				}
 				exit(1);
 			}
