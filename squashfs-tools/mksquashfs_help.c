@@ -88,10 +88,11 @@ static char *sqfstar_options[]={
 	"-exit-on-error", "-quiet", "-info", "-no-progress", "-progress",
 	"-percentage", "-throttle", "-limit", "-processors", "-mem",
 	"-mem-percent", "-mem-default", "", "", "", "-nopad", "-offset", "-o",
-	"", "", "", "-fstime", "-root-owned", "-noInodeCompression",
-	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
-	"-noXattrCompression", "", "-help", "help-option", "-help-section",
-	"-help-comp", "-help-all", "-Xhelp", "-h", "-ho", "-hs", "-ha", NULL
+	"", "", "", "-help", "help-option", "-help-section", "-help-comp",
+	"-help-all", "-Xhelp", "-h", "-ho", "-hs", "-ha", "", "", "",
+	"-fstime", "-root-owned", "-noInodeCompression",
+	"-noIdTableCompression", "-noDataCompression",
+	"-noFragmentCompression", "-noXattrCompression", NULL
 };
 
 static char *mksquashfs_args[]={
@@ -120,8 +121,8 @@ static char *sqfstar_args[]={
 	"", "", "", "<regex>", "<regex>", "<name=val>", "", "","", "", "", "",
 	"", "", "", "", "", "<percentage>", "<percentage>", "<number>",
 	"<size>", "<percent>", "", "", "", "", "", "<offset>", "<offset>", "",
-	"", "", "<time>", "", "", "", "", "", "", "", "", "<regex>",
-	"<section>", "<comp>", "", "", "", "<regex>", "<section>", ""
+	"", "", "", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
+	"<section>", "" "", "", "", "<time>", "", "", "", "", "", "", ""
 };
 
 static char *mksquashfs_sections[]={
@@ -132,7 +133,7 @@ static char *mksquashfs_sections[]={
 
 static char *sqfstar_sections[]={
 	"compression", "build", "filter", "xattrs", "runtime", "expert",
-	"misc", "pseudo", "environment", "exit", "extra", NULL
+	"help", "misc", "pseudo", "environment", "exit", "extra", NULL
 };
 
 static char *mksquashfs_text[]={
@@ -558,15 +559,8 @@ static char *sqfstar_text[]={
 		"specify Kbytes, Mbytes or Gbytes respectively.  Default 0 "
 		"bytes\n",
 	"-o <offset>\t\tsynonym for -offset\n",
-	"\n", "Miscellaneous options:", "\n",
-	"-fstime <time>\t\talternative name for mkfs-time\n",
-	"-root-owned\t\talternative name for -all-root\n",
-	"-noInodeCompression\talternative name for -noI\n",
-	"-noIdTableCompression\talternative name for -noId\n",
-	"-noDataCompression\talternative name for -noD\n",
-	"-noFragmentCompression\talternative name for -noF\n",
-	"-noXattrCompression\talternative name for -noX\n",
-	"\n", "-help\t\t\tprint help summary information to stdout\n",
+	"\n", "Help options:", "\n",
+	"-help\t\t\tprint help summary information to stdout\n",
 	"-help-option <regex>\tprint the help information for Sqfstar "
 		"options matching <regex> to stdout\n",
 	"-help-section <section>\tprint the help information for section "
@@ -580,6 +574,14 @@ static char *sqfstar_text[]={
 	"-ho <regex>\t\tshorthand alternative to -help-option\n",
 	"-hs <section>\t\tshorthand alternative to -help-section\n",
 	"-ha\t\t\tshorthand alternative to -help-all\n",
+	"\n", "Miscellaneous options:", "\n",
+	"-fstime <time>\t\talternative name for mkfs-time\n",
+	"-root-owned\t\talternative name for -all-root\n",
+	"-noInodeCompression\talternative name for -noI\n",
+	"-noIdTableCompression\talternative name for -noId\n",
+	"-noDataCompression\talternative name for -noD\n",
+	"-noFragmentCompression\talternative name for -noF\n",
+	"-noXattrCompression\talternative name for -noX\n",
 	"\n","Pseudo file definition format:", "\n",
 	"\"filename d mode uid gid\"\t\tcreate a directory\n",
 	"\"filename m mode uid gid\"\t\tmodify filename\n",
