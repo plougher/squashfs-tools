@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2010, 2013, 2014, 2021, 2022
+ * Copyright (c) 2009, 2010, 2013, 2014, 2021, 2022, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -29,6 +29,7 @@
 #include "squashfs_fs.h"
 #include "gzip_wrapper.h"
 #include "compressor.h"
+#include "print_pager.h"
 
 static struct strategy strategy[] = {
 	{ "default", Z_DEFAULT_STRATEGY, 0 },
@@ -470,18 +471,13 @@ static int gzip_uncompress(void *d, void *s, int size, int outsize, int *error)
 
 static void gzip_usage(FILE *stream)
 {
-	fprintf(stream, "\t  -Xcompression-level <compression-level>\n");
-	fprintf(stream, "\t\t<compression-level> should be 1 .. 9 (default "
-		"%d)\n", GZIP_DEFAULT_COMPRESSION_LEVEL);
-	fprintf(stream, "\t  -Xwindow-size <window-size>\n");
-	fprintf(stream, "\t\t<window-size> should be 8 .. 15 (default "
-		"%d)\n", GZIP_DEFAULT_WINDOW_SIZE);
-	fprintf(stream, "\t  -Xstrategy strategy1,strategy2,...,strategyN\n");
-	fprintf(stream, "\t\tCompress using strategy1,strategy2,...,strategyN"
-		" in turn\n");
-	fprintf(stream, "\t\tand choose the best compression.\n");
-	fprintf(stream, "\t\tAvailable strategies: default, filtered, "
-		"huffman_only,\n\t\trun_length_encoded and fixed\n");
+	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n", 80);
+	autowrap_printf(stream, 80, "\t\t<compression-level> should be 1 .. 9 (default %d)\n", GZIP_DEFAULT_COMPRESSION_LEVEL);
+	autowrap_print(stream, "\t  -Xwindow-size <window-size>\n", 80);
+	autowrap_printf(stream, 80, "\t\t<window-size> should be 8 .. 15 (default %d)\n", GZIP_DEFAULT_WINDOW_SIZE);
+	autowrap_print(stream, "\t  -Xstrategy strategy1,strategy2,...,strategyN\n", 80);
+	autowrap_print(stream, "\t\tCompress using strategy1,strategy2,...,strategyN in turn and choose the best compression.\n", 80);
+	autowrap_print(stream, "\t\tAvailable strategies: default, filtered, huffman_only, run_length_encoded and fixed\n", 80);
 }
 
 
