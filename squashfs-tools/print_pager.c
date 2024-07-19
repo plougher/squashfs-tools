@@ -33,7 +33,7 @@
 #include <signal.h>
 #include <errno.h>
 
-#include "mksquashfs_error.h"
+#include "error.h"
 #include "print_pager.h"
 
 extern long long read_bytes(int, void *, long long);
@@ -369,8 +369,10 @@ void autowrap_printf(FILE *stream, int maxl, char *fmt, ...)
 	res = vasprintf(&text, fmt, ap);
 	va_end(ap);
 
-	if(res == -1)
-		BAD_ERROR("Vasprintf failed in autowrap_printf\n");
+	if(res == -1) {
+		ERROR("Vasprintf failed in autowrap_printf\n");
+		exit(1);
+	}
 
 	autowrap_print(stream, text, maxl);
 	free(text);
