@@ -75,6 +75,7 @@
 #include "memory_compat.h"
 #include "memory.h"
 #include "mksquashfs_help.h"
+#include "print_pager.h"
 
 /* Compression options */
 int noF = FALSE;

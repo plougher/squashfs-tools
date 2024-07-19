@@ -59,10 +59,6 @@
 #define TRUE 1
 #define FALSE 0
 
-#define LESS_PAGER 1
-#define MORE_PAGER 2
-#define UNKNOWN_PAGER 3
-
 extern void mksquashfs_help_all(char *name);
 extern void mksquashfs_option(char *prog_name, char *opt_name, char *pattern);
 extern void mksquashfs_section(char *prog_name, char *opt_name, char *sec_name);
@@ -75,5 +71,4 @@ extern void sqfstar_section(char *prog_name, char *opt_name, char *sec_name);
 extern void sqfstar_invalid_option(char *prog_name, char *opt_name);
 extern void sqfstar_help(int error, char *prog_name);
 extern void sqfstar_option_help(char *prog_name, char *option);
-extern int check_and_set_pager(char *pager);
 #endif
