@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2014, 2021. 2022
+ * Copyright (c) 2013, 2014, 2021, 2022, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -30,6 +30,7 @@
 #include "squashfs_fs.h"
 #include "lzo_wrapper.h"
 #include "compressor.h"
+#include "print_pager.h"
 
 static struct lzo_algorithm lzo[] = {
 	{ "lzo1x_1", LZO1X_1_MEM_COMPRESS, lzo1x_1_compress },
@@ -395,17 +396,17 @@ static void lzo_usage(FILE *stream)
 {
 	int i;
 
-	fprintf(stream, "\t  -Xalgorithm <algorithm>\n");
-	fprintf(stream, "\t\tWhere <algorithm> is one of:\n");
+	autowrap_print(stream, "\t  -Xalgorithm <algorithm>\n", 80);
+	autowrap_print(stream, "\t\tWhere <algorithm> is one of:\n", 80);
 
 	for(i = 0; lzo[i].name; i++)
-		fprintf(stream, "\t\t\t%s%s\n", lzo[i].name,
+		autowrap_printf(stream, 80, "\t\t\t%s%s\n", lzo[i].name,
 				i == SQUASHFS_LZO1X_999 ? " (default)" : "");
 
-	fprintf(stream, "\t  -Xcompression-level <compression-level>\n");
-	fprintf(stream, "\t\t<compression-level> should be 1 .. 9 (default "
-		"%d)\n", SQUASHFS_LZO1X_999_COMP_DEFAULT);
-	fprintf(stream, "\t\tOnly applies to lzo1x_999 algorithm\n");
+	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n", 80);
+	autowrap_printf(stream, 80, "\t\t<compression-level> should be 1 .. 9 (default %d)\n",
+							SQUASHFS_LZO1X_999_COMP_DEFAULT);
+	autowrap_print(stream, "\t\tOnly applies to lzo1x_999 algorithm\n", 80);
 }
 
 
