@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2019, 2021
+ * Copyright (c) 2013, 2019, 2021, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -30,6 +30,7 @@
 #include "squashfs_fs.h"
 #include "lz4_wrapper.h"
 #include "compressor.h"
+#include "print_pager.h"
 
 /* LZ4 1.7.0 introduced new functions, and since r131,
  * the older functions produce deprecated warnings.
@@ -287,8 +288,8 @@ static int lz4_uncompress(void *dest, void *src, int size, int outsize,
 
 static void lz4_usage(FILE *stream)
 {
-	fprintf(stream, "\t  -Xhc\n");
-	fprintf(stream, "\t\tCompress using LZ4 High Compression\n");
+	autowrap_print(stream, "\t  -Xhc\n", 80);
+	autowrap_print(stream, "\t\tCompress using LZ4 High Compression\n", 80);
 }
 
 
