@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012, 2013, 2021, 2022
+ * Copyright (c) 2010, 2011, 2012, 2013, 2021, 2022, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -32,6 +32,7 @@
 #include "squashfs_fs.h"
 #include "xz_wrapper.h"
 #include "compressor.h"
+#include "print_pager.h"
 
 static struct bcj bcj[] = {
 	{ "x86", LZMA_FILTER_X86, 0 },
@@ -603,32 +604,30 @@ static int xz_uncompress(void *dest, void *src, int size, int outsize,
 
 static void xz_usage(FILE *stream)
 {
-	fprintf(stream, "\t  -Xbcj filter1,filter2,...,filterN\n");
-	fprintf(stream, "\t\tCompress using filter1,filter2,...,filterN in");
-	fprintf(stream, " turn\n\t\t(in addition to no filter), and choose");
-	fprintf(stream, " the best compression.\n");
-	fprintf(stream, "\t\tAvailable filters: x86, arm, armthumb,");
-	fprintf(stream, " powerpc, sparc, ia64\n");
-	fprintf(stream, "\t  -Xdict-size <dict-size>\n");
-	fprintf(stream, "\t\tUse <dict-size> as the XZ dictionary size.  The");
-	fprintf(stream, " dictionary size\n\t\tcan be specified as a");
-	fprintf(stream, " percentage of the block size, or as an\n\t\t");
-	fprintf(stream, "absolute value.  The dictionary size must be less");
-	fprintf(stream, " than or equal\n\t\tto the block size and 8192 bytes");
-	fprintf(stream, " or larger.  It must also be\n\t\tstorable in the xz");
-	fprintf(stream, " header as either 2^n or as 2^n+2^(n+1).\n\t\t");
-	fprintf(stream, "Example dict-sizes are 75%%, 50%%, 37.5%%, 25%%, or");
-	fprintf(stream, " 32K, 16K, 8K\n\t\tetc.\n");
-	fprintf(stream, "\t  -Xpreset <preset-level>\n");
-	fprintf(stream, "\t\tUse <preset-value> as the custom preset to use");
-	fprintf(stream, " on compress.\n\t\t<preset-level> should be 0 .. 9");
-	fprintf(stream, " (default 6)\n");
-	fprintf(stream, "\t  -Xe\n");
-	fprintf(stream, "\t\tEnable additional compression settings by passing");
-	fprintf(stream, " the EXTREME\n\t\tflag to the compression flags.\n");
-	fprintf(stream, "\t  -Xlc <value>\n");
-	fprintf(stream, "\t  -Xlp <value>\n");
-	fprintf(stream, "\t  -Xpb <value>\n");
+	autowrap_print(stream, "\t  -Xbcj filter1,filter2,...,filterN\n", 80);
+	autowrap_print(stream, "\t\tCompress using filter1,filter2,...,filterN "
+		"in turn (in addition to no filter), and choose the best "
+		"compression.\n", 80);
+	autowrap_print(stream, "\t\tAvailable filters: x86, arm, armthumb, "
+		"powerpc, sparc, ia64\n", 80);
+	autowrap_print(stream, "\t  -Xdict-size <dict-size>\n", 80);
+	autowrap_print(stream, "\t\tUse <dict-size> as the XZ dictionary size.  The "
+		"dictionary size can be specified as a percentage of the block "
+		"size, or as an absolute value.  The dictionary size must be "
+		"less than or equal to the block size and 8192 bytes or "
+		"larger.  It must also be storable in the xz header as either "
+		"2^n or as 2^n+2^(n+1).  Example dict-sizes are 75%, 50%, "
+		"37.5%, 25%, or 32K, 16K, 8K etc.\n", 80);
+	autowrap_print(stream, "\t  -Xpreset <preset-level>\n", 80);
+	autowrap_print(stream, "\t\tUse <preset-value> as the custom preset "
+		"to use on compress.  <preset-level> should be 0 .. 9 "
+		"(default 6)\n", 80);
+	autowrap_print(stream, "\t  -Xe\n", 80);
+	autowrap_print(stream, "\t\tEnable additional compression settings by "
+		"passing the EXTREME flag to the compression flags.\n", 80);
+	autowrap_print(stream, "\t  -Xlc <value>\n", 80);
+	autowrap_print(stream, "\t  -Xlp <value>\n", 80);
+	autowrap_print(stream, "\t  -Xpb <value>\n", 80);
 }
 
 
