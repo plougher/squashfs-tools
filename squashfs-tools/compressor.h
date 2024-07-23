@@ -35,7 +35,7 @@ struct compressor {
 	int (*extract_options)(int, void *, int);
 	int (*check_options)(int, void *, int);
 	void (*display_options)(void *, int);
-	void (*usage)(FILE *);
+	void (*usage)(FILE *, int cols);
 	int (*option_args)(char *);
 };
 

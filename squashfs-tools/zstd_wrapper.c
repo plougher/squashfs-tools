@@ -233,10 +233,10 @@ static int zstd_uncompress(void *dest, void *src, int size, int outsize,
 	return (int)res;
 }
 
-static void zstd_usage(FILE *stream)
+static void zstd_usage(FILE *stream, int cols)
 {
-	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n", 80);
-	autowrap_printf(stream, 80, "\t\t<compression-level> should be 1 .. %d (default %d)\n",
+	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n", cols);
+	autowrap_printf(stream, cols, "\t\t<compression-level> should be 1 .. %d (default %d)\n",
 				ZSTD_maxCLevel(), ZSTD_DEFAULT_COMPRESSION_LEVEL);
 }
 

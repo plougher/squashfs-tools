@@ -139,7 +139,7 @@ void display_compressor_usage(FILE *stream, char *def_comp)
 			if(compressor[i]->usage) {
 				fprintf(stream, "\t%s%s\n",
 					compressor[i]->name, str);
-				compressor[i]->usage(stream);
+				compressor[i]->usage(stream, 80);
 			} else
 				fprintf(stream, "\t%s (no options)%s\n",
 					compressor[i]->name, str);
@@ -152,7 +152,7 @@ void print_selected_comp_options(FILE *stream, struct compressor *comp, char *pr
 	fprintf(stream, "%s: selected compressor \"%s\".  Options supported: %s\n",
 		prog_name, comp->name, comp->usage ? "" : "none");
 	if(comp->usage)
-		comp->usage(stream);
+		comp->usage(stream, 80);
 }
 
 
@@ -167,7 +167,7 @@ void print_compressor_options(char *comp_name, char *prog_name)
 			printf("%s: compressor \"%s\".  Options supported: %s\n",
 				prog_name, comp->name, comp->usage ? "" : "none");
 			if(comp->usage)
-				comp->usage(stdout);
+				comp->usage(stdout, 80);
 
 			return;
 	}

@@ -392,21 +392,21 @@ static int lzo_uncompress(void *dest, void *src, int size, int outsize,
 }
 
 
-static void lzo_usage(FILE *stream)
+static void lzo_usage(FILE *stream, int cols)
 {
 	int i;
 
-	autowrap_print(stream, "\t  -Xalgorithm <algorithm>\n", 80);
-	autowrap_print(stream, "\t\tWhere <algorithm> is one of:\n", 80);
+	autowrap_print(stream, "\t  -Xalgorithm <algorithm>\n", cols);
+	autowrap_print(stream, "\t\tWhere <algorithm> is one of:\n", cols);
 
 	for(i = 0; lzo[i].name; i++)
-		autowrap_printf(stream, 80, "\t\t\t%s%s\n", lzo[i].name,
+		autowrap_printf(stream, cols, "\t\t\t%s%s\n", lzo[i].name,
 				i == SQUASHFS_LZO1X_999 ? " (default)" : "");
 
-	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n", 80);
-	autowrap_printf(stream, 80, "\t\t<compression-level> should be 1 .. 9 (default %d)\n",
+	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n", cols);
+	autowrap_printf(stream, cols, "\t\t<compression-level> should be 1 .. 9 (default %d)\n",
 							SQUASHFS_LZO1X_999_COMP_DEFAULT);
-	autowrap_print(stream, "\t\tOnly applies to lzo1x_999 algorithm\n", 80);
+	autowrap_print(stream, "\t\tOnly applies to lzo1x_999 algorithm\n", cols);
 }
 
 

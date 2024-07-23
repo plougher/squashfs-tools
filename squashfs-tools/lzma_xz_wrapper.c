@@ -152,9 +152,9 @@ failed:
 }
 
 
-static void lzma_usage(FILE *stream)
+static void lzma_usage(FILE *stream, int cols)
 {
-	autowrap_print(stream, "\t  (no options) (deprecated - no kernel support)\n", 80);
+	autowrap_print(stream, "\t  (no options) (deprecated - no kernel support)\n", cols);
 }
 
 

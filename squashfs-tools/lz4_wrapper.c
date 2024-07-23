@@ -286,10 +286,10 @@ static int lz4_uncompress(void *dest, void *src, int size, int outsize,
 }
 
 
-static void lz4_usage(FILE *stream)
+static void lz4_usage(FILE *stream, int cols)
 {
-	autowrap_print(stream, "\t  -Xhc\n", 80);
-	autowrap_print(stream, "\t\tCompress using LZ4 High Compression\n", 80);
+	autowrap_print(stream, "\t  -Xhc\n", cols);
+	autowrap_print(stream, "\t\tCompress using LZ4 High Compression\n", cols);
 }
 
 

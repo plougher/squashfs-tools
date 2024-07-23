@@ -504,22 +504,22 @@ static int xz_uncompress(void *dest, void *src, int size, int outsize,
 }
 
 
-static void xz_usage(FILE *stream)
+static void xz_usage(FILE *stream, int cols)
 {
-	autowrap_print(stream, "\t  -Xbcj filter1,filter2,...,filterN\n", 80);
+	autowrap_print(stream, "\t  -Xbcj filter1,filter2,...,filterN\n", cols);
 	autowrap_print(stream, "\t\tCompress using filter1,filter2,...,filterN "
 		"in turn (in addition to no filter), and choose the best "
-		"compression.\n", 80);
+		"compression.\n", cols);
 	autowrap_print(stream, "\t\tAvailable filters: x86, arm, armthumb, "
-		"powerpc, sparc, ia64\n", 80);
-	autowrap_print(stream, "\t  -Xdict-size <dict-size>\n", 80);
+		"powerpc, sparc, ia64\n", cols);
+	autowrap_print(stream, "\t  -Xdict-size <dict-size>\n", cols);
 	autowrap_print(stream, "\t\tUse <dict-size> as the XZ dictionary size.  The "
 		"dictionary size can be specified as a percentage of the block "
 		"size, or as an absolute value.  The dictionary size must be "
 		"less than or equal to the block size and 8192 bytes or "
 		"larger.  It must also be storable in the xz header as either "
 		"2^n or as 2^n+2^(n+1).  Example dict-sizes are 75%, 50%, "
-		"37.5%, 25%, or 32K, 16K, 8K etc.\n", 80);
+		"37.5%, 25%, or 32K, 16K, 8K etc.\n", cols);
 }
 
 
