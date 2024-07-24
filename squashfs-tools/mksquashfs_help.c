@@ -650,7 +650,7 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 
 	autowrap_print(pager, "\nCompressors available and compressor specific options:\n", cols);
 
-	display_compressor_usage(pager, COMP_DEFAULT);
+	display_compressor_usage(pager, COMP_DEFAULT, cols);
 
 	if(tty) {
 		fclose(pager);

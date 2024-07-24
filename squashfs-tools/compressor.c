@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (c) 2009, 2010, 2011, 2022
+ * Copyright (c) 2009, 2010, 2011, 2022, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -128,7 +128,7 @@ void display_compressors(FILE *stream, char *indent, char *def_comp)
 }
 
 
-void display_compressor_usage(FILE *stream, char *def_comp)
+void display_compressor_usage(FILE *stream, char *def_comp, int cols)
 {
 	int i;
 
@@ -139,7 +139,7 @@ void display_compressor_usage(FILE *stream, char *def_comp)
 			if(compressor[i]->usage) {
 				fprintf(stream, "\t%s%s\n",
 					compressor[i]->name, str);
-				compressor[i]->usage(stream, 80);
+				compressor[i]->usage(stream, cols);
 			} else
 				fprintf(stream, "\t%s (no options)%s\n",
 					compressor[i]->name, str);
