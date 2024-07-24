@@ -150,10 +150,12 @@ void display_compressor_usage(FILE *stream, char *def_comp, int cols)
 
 void print_selected_comp_options(FILE *stream, struct compressor *comp, char *prog_name)
 {
+	int cols = get_column_width();
+
 	fprintf(stream, "%s: selected compressor \"%s\".  Options supported: %s\n",
 		prog_name, comp->name, comp->usage ? "" : "none");
 	if(comp->usage)
-		comp->usage(stream, 80);
+		comp->usage(stream, cols);
 }
 
 
