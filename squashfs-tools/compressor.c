@@ -26,6 +26,7 @@
 
 #include "compressor.h"
 #include "squashfs_fs.h"
+#include "print_pager.h"
 
 #ifndef GZIP_SUPPORT
 static struct compressor gzip_comp_ops =  {
@@ -158,7 +159,7 @@ void print_selected_comp_options(FILE *stream, struct compressor *comp, char *pr
 
 void print_compressor_options(char *comp_name, char *prog_name)
 {
-	int i;
+	int i, cols = get_column_width();
 
 	for(i = 0; compressor[i]->id; i++)
 		if(compressor[i]->supported && strcmp(compressor[i]->name, comp_name) == 0) {
@@ -167,7 +168,7 @@ void print_compressor_options(char *comp_name, char *prog_name)
 			printf("%s: compressor \"%s\".  Options supported: %s\n",
 				prog_name, comp->name, comp->usage ? "" : "none");
 			if(comp->usage)
-				comp->usage(stdout, 80);
+				comp->usage(stdout, cols);
 
 			return;
 	}
