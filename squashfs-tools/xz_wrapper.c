@@ -509,9 +509,8 @@ static void xz_usage(FILE *stream, int cols)
 	autowrap_print(stream, "\t  -Xbcj filter1,filter2,...,filterN\n", cols);
 	autowrap_print(stream, "\t\tCompress using filter1,filter2,...,filterN "
 		"in turn (in addition to no filter), and choose the best "
-		"compression.\n", cols);
-	autowrap_print(stream, "\t\tAvailable filters: x86, arm, armthumb, "
-		"powerpc, sparc, ia64\n", cols);
+		"compression.  Available filters: x86, arm, armthumb, powerpc, "
+		"sparc, ia64\n", cols);
 	autowrap_print(stream, "\t  -Xdict-size <dict-size>\n", cols);
 	autowrap_print(stream, "\t\tUse <dict-size> as the XZ dictionary size.  The "
 		"dictionary size can be specified as a percentage of the block "
