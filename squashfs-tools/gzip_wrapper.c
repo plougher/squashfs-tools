@@ -471,11 +471,15 @@ static int gzip_uncompress(void *d, void *s, int size, int outsize, int *error)
 
 static void gzip_usage(FILE *stream, int cols)
 {
-	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n", cols);
-	autowrap_printf(stream, cols, "\t\t<compression-level> should be 1 .. 9 (default %d)\n", GZIP_DEFAULT_COMPRESSION_LEVEL);
+	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n",
+		cols);
+	autowrap_printf(stream, cols, "\t\t<compression-level> should be 1 .. "
+		"9 (default %d)\n", GZIP_DEFAULT_COMPRESSION_LEVEL);
 	autowrap_print(stream, "\t  -Xwindow-size <window-size>\n", cols);
-	autowrap_printf(stream, cols, "\t\t<window-size> should be 8 .. 15 (default %d)\n", GZIP_DEFAULT_WINDOW_SIZE);
-	autowrap_print(stream, "\t  -Xstrategy strategy1,strategy2,...,strategyN\n", cols);
+	autowrap_printf(stream, cols, "\t\t<window-size> should be 8 .. 15 "
+		"(default %d)\n", GZIP_DEFAULT_WINDOW_SIZE);
+	autowrap_print(stream, "\t  -Xstrategy strategy1,strategy2,...,"
+		"strategyN\n", cols);
 	autowrap_print(stream, "\t\tCompress using strategy1,strategy2,...,"
 		"strategyN in turn and choose the best compression.  Available "
 		"strategies: default, filtered, huffman_only, "
