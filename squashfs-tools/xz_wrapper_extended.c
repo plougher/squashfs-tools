@@ -610,13 +610,13 @@ static void xz_usage(FILE *stream, int cols)
 		"compression.  Available filters: x86, arm, armthumb, powerpc, "
 		"sparc, ia64\n", cols);
 	autowrap_print(stream, "\t  -Xdict-size <dict-size>\n", cols);
-	autowrap_print(stream, "\t\tUse <dict-size> as the XZ dictionary size.  The "
-		"dictionary size can be specified as a percentage of the block "
-		"size, or as an absolute value.  The dictionary size must be "
-		"less than or equal to the block size and 8192 bytes or "
-		"larger.  It must also be storable in the xz header as either "
-		"2^n or as 2^n+2^(n+1).  Example dict-sizes are 75%, 50%, "
-		"37.5%, 25%, or 32K, 16K, 8K etc.\n", cols);
+	autowrap_print(stream, "\t\tUse <dict-size> as the XZ dictionary size."
+		"  The dictionary size can be specified as a percentage of the "
+		"block size, or as an absolute value.  The dictionary size "
+		"must be less than or equal to the block size and 8192 bytes "
+		"or larger.  It must also be storable in the xz header as "
+		"either 2^n or as 2^n+2^(n+1).  Example dict-sizes are 75%, "
+		"50%, 37.5%, 25%, or 32K, 16K, 8K etc.\n", cols);
 	autowrap_print(stream, "\t  -Xpreset <preset-level>\n", cols);
 	autowrap_print(stream, "\t\tUse <preset-value> as the custom preset "
 		"to use on compress.  <preset-level> should be 0 .. 9 "
