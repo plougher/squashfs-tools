@@ -403,7 +403,8 @@ static void lzo_usage(FILE *stream, int cols)
 		autowrap_printf(stream, cols, "\t\t\t%s%s\n", lzo[i].name,
 				i == SQUASHFS_LZO1X_999 ? " (default)" : "");
 
-	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n", cols);
+	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n",
+		cols);
 	autowrap_printf(stream, cols, "\t\t<compression-level> should be 1 .. "
 		"9 (default %d).  Only applies to lzo1x_999 algorithm\n",
 		SQUASHFS_LZO1X_999_COMP_DEFAULT);
