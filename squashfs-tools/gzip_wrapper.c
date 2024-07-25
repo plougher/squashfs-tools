@@ -476,8 +476,10 @@ static void gzip_usage(FILE *stream, int cols)
 	autowrap_print(stream, "\t  -Xwindow-size <window-size>\n", cols);
 	autowrap_printf(stream, cols, "\t\t<window-size> should be 8 .. 15 (default %d)\n", GZIP_DEFAULT_WINDOW_SIZE);
 	autowrap_print(stream, "\t  -Xstrategy strategy1,strategy2,...,strategyN\n", cols);
-	autowrap_print(stream, "\t\tCompress using strategy1,strategy2,...,strategyN in turn and choose the best compression.\n", cols);
-	autowrap_print(stream, "\t\tAvailable strategies: default, filtered, huffman_only, run_length_encoded and fixed\n", cols);
+	autowrap_print(stream, "\t\tCompress using strategy1,strategy2,...,"
+		"strategyN in turn and choose the best compression.  Available "
+		"strategies: default, filtered, huffman_only, "
+		"run_length_encoded and fixed\n", cols);
 }
 
 
