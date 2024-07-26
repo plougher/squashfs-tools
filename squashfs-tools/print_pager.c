@@ -21,12 +21,9 @@
  * print_pager.c
  */
 
-#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
-#include <regex.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/ioctl.h>
 #include <stdarg.h>
 #include <sys/wait.h>
