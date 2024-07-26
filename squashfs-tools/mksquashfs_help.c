@@ -21,17 +21,11 @@
  * mksquashfs_help.c
  */
 
-#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <regex.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/ioctl.h>
-#include <stdarg.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <errno.h>
 
 #include "mksquashfs_error.h"
 #include "mksquashfs_help.h"
