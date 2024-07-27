@@ -45,4 +45,6 @@
 #define NOXOPT_STR " (default)"
 #define XOPT_STR " (unsupported)"
 #endif
+
+extern void unsquashfs_help_all(char *name);
 #endif

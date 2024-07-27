@@ -226,7 +226,8 @@ MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o unsquash-123.o unsquash-34.o unsquash-1234.o unsquash-12.o \
-	swap.o compressor.o unsquashfs_info.o date.o memory.o print_pager.o
+	swap.o compressor.o unsquashfs_info.o date.o memory.o print_pager.o \
+	unsquashfs_help.o
 
 CFLAGS ?= -O2
 CFLAGS += $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 \
@@ -491,6 +492,8 @@ xz_wrapper_extended.o: xz_wrapper_extended.c squashfs_fs.h xz_wrapper.h compress
 mksquashfs_help.o: mksquashfs_help.h Makefile
 
 print_pager.o: print_pager.c print_pager.h
+
+unsquashfs_help.o: unsquashfs_help.c unsquashfs_help.h
 
 unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@
