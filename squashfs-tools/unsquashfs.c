@@ -4147,10 +4147,9 @@ static int parse_options(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
+		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			unsquashfs_help_all(argv[0]);
-			exit(0);
-		} else if(strcmp(argv[i], "-pseudo-file") == 0 ||
+		else if(strcmp(argv[i], "-pseudo-file") == 0 ||
 				strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc) {
 				fprintf(stderr, "%s: -pf missing filename\n",
@@ -4458,10 +4457,8 @@ static int parse_options(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-full-precision") == 0 ||
 				strcmp(argv[i], "-full") == 0)
 			full_precision = TRUE;
-		else {
+		else 
 			unsquashfs_help_all(argv[0]);
-			exit(1);
-		}
 	}
 
 	if(dest[0] == '\0' && !lsonly)
@@ -4511,7 +4508,8 @@ static int parse_options(int argc, char *argv[])
 	if(i == argc) {
 		if(!version)
 			unsquashfs_help_all(argv[0]);
-		exit(1);
+		else
+			exit(1);
 	}
 
 	return i;
