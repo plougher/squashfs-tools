@@ -36,7 +36,7 @@
 
 static char *unsquashfs_text[]= {
 	"Filesystem extraction (filtering) options:", "\n",
-	"\t-d[est] <pathname>\textract to <pathname>, default \"squashfs-root\".  This option ", "also sets the prefix used when listing the filesystem\n",
+	"\t-d[est] <pathname>\textract to <pathname>, default \"squashfs-root\".  This option also sets the prefix used when listing the filesystem\n",
 	"\t-max[-depth] <levels>\tdescend at most <levels> of directories when extracting\n",
 	"\t-excludes\t\ttreat files on command line as exclude files\n",
 	"\t-ex[clude-list]\t\tlist of files to be excluded, terminated with ; e.g. file1 file2 ;\n",
