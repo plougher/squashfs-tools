@@ -34,7 +34,7 @@
 
 #define UNSQUASHFS_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [files to extract or exclude (with -excludes) or cat (with -cat )]\n\n"
 
-static char *unsquashfs_text[]= {
+static char *unsquashfs_text[] = {
 	"Filesystem extraction (filtering) options:", "\n",
 	"\t-d[est] <pathname>\textract to <pathname>, default \"squashfs-root\".  This option also sets the prefix used when listing the filesystem\n",
 	"\t-max[-depth] <levels>\tdescend at most <levels> of directories when extracting\n",
@@ -99,6 +99,10 @@ static char *unsquashfs_text[]= {
 	NULL
 };
 
+static char *unsquashfs_sections[]= {
+	"extraction", "information", "xattrs", "runtime", "misc", "exit", "extra", NULL
+};
+
 static void print_help_all(char *name, char *syntax, char **options_text)
 {
 	int i, cols, tty = isatty(STDOUT_FILENO);
@@ -125,6 +129,80 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 
 	display_compressors(pager, "", "");
 
+	if(tty) {
+		fclose(pager);
+		wait_to_die(pager_pid);
+	}
+
+	exit(0);
+}
+
+
+static int is_header(int i)
+{
+	int length = strlen(unsquashfs_text[i]);
+
+	return length && unsquashfs_text[i][length - 1] == ':';
+}
+
+
+static void print_section_names(FILE *out, char *string, int cols)
+{
+	int i, j;
+
+	autowrap_printf(out, cols, "%sSECTION NAME\t\tSECTION\n", string);
+
+	for(i = 0, j = 0; unsquashfs_sections[i] != NULL; j++)
+		if(is_header(j)) {
+			autowrap_printf(out, cols, "%s%s\t\t%s%s\n", string, unsquashfs_sections[i], strlen(unsquashfs_sections[i]) > 7 ? "" : "\t", unsquashfs_text[j]);
+			i++;
+		}
+}
+
+
+void unsquashfs_section(char *prog_name, char *opt_name, char *sec_name)
+{
+	int i, j, secs, cols, tty = isatty(STDOUT_FILENO);
+	pid_t pager_pid;
+	FILE *pager;
+
+	if(tty) {
+		cols = get_column_width();
+
+		pager = exec_pager(&pager_pid);
+		if(pager == NULL)
+			exit(1);
+	} else {
+		cols = 80;
+		pager = stdout;
+	}
+
+	if(strcmp(sec_name, "sections") == 0 || strcmp(sec_name, "h") == 0) {
+		autowrap_printf(pager, cols, "\nUse following section name to print %s help information for that section\n\n", prog_name);
+		print_section_names(pager , "", cols);
+		goto finish;
+	}
+
+	for(i = 0; unsquashfs_sections[i] != NULL; i++)
+		if(strcmp(unsquashfs_sections[i], sec_name) == 0)
+			break;
+
+	if(unsquashfs_sections[i] == NULL) {
+		autowrap_printf(pager, cols, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
+		print_section_names(pager, "", cols);
+		goto finish;
+	}
+
+	i++;
+
+	for(j = 0, secs = 0; unsquashfs_text[j] != NULL && secs <= i; j ++) {
+		if(is_header(j))
+			secs++;
+		if(i == secs)
+			autowrap_print(pager, unsquashfs_text[j], cols);
+	}
+
+finish:
 	if(tty) {
 		fclose(pager);
 		wait_to_die(pager_pid);

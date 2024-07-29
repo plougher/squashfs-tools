@@ -47,4 +47,5 @@
 #endif
 
 extern void unsquashfs_help_all(char *name);
+extern void unsquashfs_section(char *prog_name, char *opt_name, char *sec_name);
 #endif

@@ -4149,7 +4149,14 @@ static int parse_options(int argc, char *argv[])
 			break;
 		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			unsquashfs_help_all(argv[0]);
-		else if(strcmp(argv[i], "-pseudo-file") == 0 ||
+		else if(strcmp(argv[i], "-help-section") == 0 || strcmp(argv[i], "-hs") == 0) {
+			if(++i == argc) {
+				ERROR("%s: %s missing section\n", argv[0], argv[i - 1]);
+				exit(1);
+			}
+
+			unsquashfs_section(argv[0], argv[i - 1], argv[i]);
+		} else if(strcmp(argv[i], "-pseudo-file") == 0 ||
 				strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc) {
 				fprintf(stderr, "%s: -pf missing filename\n",
