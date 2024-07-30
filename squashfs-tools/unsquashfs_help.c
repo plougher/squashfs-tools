@@ -91,6 +91,8 @@ static char *unsquashfs_text[] = {
 	"\t-exc[f] <exclude file>\tsynonym for -exclude-file\n",
 	"\t-L\t\t\tsynonym for -follow-symlinks\n",
 	"\t-pseudo-file <file>\talternative name for -pf\n",
+	"\n", "Environment:", "\n",
+	"\tPAGER\t\t\tIf set, this is used as the name of the program used to display the help text.  The value can be a simple command or a pathname.  The default is /usr/bin/pager\n",
 	"\n", "Exit status:", "\n",
 	"  0\tThe filesystem listed or extracted OK.\n",
 	"  1\tFATAL errors occurred, e.g. filesystem corruption, I/O errors.  Unsquashfs did not continue and aborted.\n",
@@ -103,7 +105,7 @@ static char *unsquashfs_text[] = {
 };
 
 static char *unsquashfs_sections[]= {
-	"extraction", "information", "xattrs", "runtime", "help", "misc", "exit", "extra", NULL
+	"extraction", "information", "xattrs", "runtime", "help", "misc", "environment", "exit", "extra", NULL
 };
 
 static void print_help_all(char *name, char *syntax, char **options_text)
