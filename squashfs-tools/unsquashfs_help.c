@@ -80,8 +80,9 @@ static char *unsquashfs_text[] = {
 	"\t-ig[nore-errors]\ttreat errors writing files to output as non-fatal\n",
 	"\t-st[rict-errors]\ttreat all errors as fatal\n",
 	"\t-no-exit[-code]\t\tdo not set exit code (to nonzero) on non-fatal errors\n",
-	"\n", "Miscellaneous options:", "\n",
+	"\n", "Help options:", "\n",
 	"\t-h[elp]\t\t\toutput this options text to stdout\n",
+	"\n", "Miscellaneous options:", "\n",
 	"\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  Optionally a suffix of K, M or G can be given to specify Kbytes, Mbytes or Gbytes respectively (default 0 bytes).\n",
 	"\t-fstime\t\t\tsynonym for -mkfs-time\n",
 	"\t-e[f] <extract file>\tsynonym for -extract-file\n",
@@ -100,7 +101,7 @@ static char *unsquashfs_text[] = {
 };
 
 static char *unsquashfs_sections[]= {
-	"extraction", "information", "xattrs", "runtime", "misc", "exit", "extra", NULL
+	"extraction", "information", "xattrs", "runtime", "help", "misc", "exit", "extra", NULL
 };
 
 static void print_help_all(char *name, char *syntax, char **options_text)
