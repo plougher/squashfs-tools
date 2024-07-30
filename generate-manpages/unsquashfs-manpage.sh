@@ -166,6 +166,22 @@ s/^.*\n//
 /^  [012]/b again
 }" $tmp/unsquashfs.help
 
+# Concatenate the PAGER text on to one line.  Indent the line by
+# two and add a full stop to the end of the line
+
+${SED} -i " /  PAGER/ {
+s/PAGER/  PAGER/
+
+:again
+N
+/\n$/b print
+s/\n */ /
+b again
+
+:print
+s/\([^.]\)\n/\1.\n/
+}" $tmp/unsquashfs.help
+
 # Make Decompressors available header into a manpage section
 
 ${SED} -i "s/\(Decompressors available\):/*\1*/" $tmp/unsquashfs.help
