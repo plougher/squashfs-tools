@@ -35,6 +35,7 @@
 #include "nprocessors_compat.h"
 #include "memory_compat.h"
 #include "memory.h"
+#include "print_pager.h"
 #include "unsquashfs_help.h"
 
 #ifdef __linux__
@@ -3946,6 +3947,19 @@ static void print_cat_options(FILE *stream, char *name)
 }
 
 
+static void check_pager()
+{
+	char * string = getenv("PAGER");
+
+	if(string != NULL) {
+		int res = check_and_set_pager(string);
+
+		if(res == FALSE)
+			exit(1);
+	}
+}
+
+
 static void print_version(char *string)
 {
 	printf("%s version " VERSION " (" DATE ")\n", string);
@@ -4529,6 +4543,8 @@ int main(int argc, char *argv[])
 	long res;
 	int exit_code = 0;
 	char *command;
+
+	check_pager();
 
 	pthread_mutex_init(&screen_mutex, NULL);
 	root_process = geteuid() == 0;
