@@ -251,7 +251,6 @@ s/\([^.]\)\n/\1.\n/
 }" $tmp/mksquashfs.help
 
 # Make Compressors available header into a manpage section
-# Make Compressors available header into a manpage section
 
 ${SED} -i "s/\(Compressors available and compressor specific options\):/*\1*/" $tmp/mksquashfs.help
 
