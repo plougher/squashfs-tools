@@ -96,7 +96,7 @@ static char *unsquashfs_text[] = {
 	"  1\tFATAL errors occurred, e.g. filesystem corruption, I/O errors.  Unsquashfs did not continue and aborted.\n",
 	"  2\tNon-fatal errors occurred, e.g. no support for XATTRs, Symbolic links in output filesystem or couldn't write permissions to output filesystem.  Unsquashfs continued and did not abort.\n",
 	"\nSee -ignore-errors, -strict-errors and -no-exit-code options for how they affect the exit status.\n",
-	"\n", "See also:", "\n",
+	"\n", "See also (extra information elsewhere):", "\n",
 	"The README for the Squashfs-tools 4.6.1 release, describing the new features can be read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6.1\n",
 	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n",
 	NULL
