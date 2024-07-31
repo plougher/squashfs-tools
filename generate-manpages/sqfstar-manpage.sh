@@ -244,7 +244,6 @@ s/\([^.]\)\n/\1.\n/
 }" $tmp/sqfstar.help
 
 # Make Compressors available header into a manpage section
-# Make Compressors available header into a manpage section
 
 ${SED} -i "s/\(Compressors available and compressor specific options\):/*\1*/" $tmp/sqfstar.help
 
