@@ -37,7 +37,7 @@ done
 
 tmp=$(mktemp -d)
 
-# Run mksquashfs -help, expand TABS to spaces, and output the help text to
+# Run mksquashfs -help-all, expand TABS to spaces, and output the help text to
 # $tmp/mksquashfs.help.  This is to allow it to be modified before
 # passing to help2man.
 
