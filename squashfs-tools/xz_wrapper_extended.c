@@ -19,7 +19,7 @@
  * xz_wrapper_extended.c
  *
  * Support for XZ (LZMA2) compression using XZ Utils liblzma
- * http://tukaani.org/xz/
+ * https://tukaani.org/xz/
  *
  * This file supports OpenWrt extended XZ compression options.
  */

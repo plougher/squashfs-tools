@@ -18,7 +18,7 @@
  *
  * lzma_xz_wrapper.c
  *
- * Support for LZMA1 compression using XZ Utils liblzma http://tukaani.org/xz/
+ * Support for LZMA1 compression using XZ Utils liblzma https://tukaani.org/xz/
  */
 
 #include <stdio.h>
