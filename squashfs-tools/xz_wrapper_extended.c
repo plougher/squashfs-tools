@@ -34,6 +34,14 @@
 #include "compressor.h"
 #include "print_pager.h"
 
+/*
+ * ARM64 filter was added in liblzma 5.4.0. Keep the build working with
+ * older versions too.
+ */
+#ifndef LZMA_FILTER_ARM64
+#define LZMA_FILTER_ARM64 LZMA_VLI_C(0x0A)
+#endif
+
 static struct bcj bcj[] = {
 	{ "x86", LZMA_FILTER_X86, 0 },
 	{ "powerpc", LZMA_FILTER_POWERPC, 0 },
@@ -41,6 +49,7 @@ static struct bcj bcj[] = {
 	{ "arm", LZMA_FILTER_ARM, 0 },
 	{ "armthumb", LZMA_FILTER_ARMTHUMB, 0 },
 	{ "sparc", LZMA_FILTER_SPARC, 0 },
+	{ "arm64", LZMA_FILTER_ARM64, 0 },
 	{ NULL, LZMA_VLI_UNKNOWN, 0 }
 };
 
@@ -547,6 +556,14 @@ static int xz_compress(void *strm, void *dest, void *src,  int size,
 
 		stream->opt.dict_size = stream->dictionary_size;
 
+		switch(filter->filter[0].id) {
+		case LZMA_FILTER_ARM64:
+			/* 4-byte-aligned instructions */
+			stream->opt.lp = 2;
+			stream->opt.lc = 2;
+			break;
+		}
+
 		if (lc >= 0)
 			stream->opt.lc = lc;
 
@@ -613,8 +630,8 @@ static void xz_usage(FILE *stream, int cols)
 	autowrap_print(stream, "\t  -Xbcj filter1,filter2,...,filterN\n", cols);
 	autowrap_print(stream, "\t\tCompress using filter1,filter2,...,filterN "
 		"in turn (in addition to no filter), and choose the best "
-		"compression.  Available filters: x86, arm, armthumb, powerpc, "
-		"sparc, ia64\n", cols);
+		"compression.  Available filters: x86, arm, armthumb, arm64, "
+		"powerpc, sparc, ia64\n", cols);
 	autowrap_print(stream, "\t  -Xdict-size <dict-size>\n", cols);
 	autowrap_print(stream, "\t\tUse <dict-size> as the XZ dictionary size."
 		"  The dictionary size can be specified as a percentage of the "
