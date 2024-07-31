@@ -476,15 +476,26 @@ static int xz_compress(void *strm, void *dest, void *src,  int size,
 		stream->opt.dict_size = stream->dictionary_size;
 
 		switch(filter->filter[0].id) {
+		case LZMA_FILTER_ARMTHUMB:
 		case LZMA_FILTER_RISCV:
 			/* 2-byte-aligned instructions */
 			stream->opt.lp = 1;
 			break;
 
+		case LZMA_FILTER_POWERPC:
+		case LZMA_FILTER_ARM:
+		case LZMA_FILTER_SPARC:
 		case LZMA_FILTER_ARM64:
 			/* 4-byte-aligned instructions */
 			stream->opt.lp = 2;
 			stream->opt.lc = 2;
+			break;
+
+		case LZMA_FILTER_IA64:
+			/* 16-byte-aligned instructions */
+			stream->opt.pb = 4;
+			stream->opt.lp = 4;
+			stream->opt.lc = 0;
 			break;
 		}
 
