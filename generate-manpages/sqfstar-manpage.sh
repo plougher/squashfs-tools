@@ -37,11 +37,11 @@ done
 
 tmp=$(mktemp -d)
 
-# Run sqfstar -help, expand TABS to spaces, and output the help text to
+# Run sqfstar -help-all, expand TABS to spaces, and output the help text to
 # $tmp/sqfstar.help.  This is to allow it to be modified before
 # passing to help2man.
 
-if ! $1/sqfstar -help > $tmp/sqfstar.help2; then
+if ! $1/sqfstar -help-all > $tmp/sqfstar.help2; then
 	error "$0: Running Sqfstar failed.  Cross-compiled or incompatible binary?"
 	exit 1
 fi
