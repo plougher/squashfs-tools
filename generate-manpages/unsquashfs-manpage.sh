@@ -197,6 +197,10 @@ ${SED} -i "s/See also (extra information elsewhere):/See also:\nmksquashfs(1), s
 
 ${SED} -i "s/\(See also\):/*\1*/" $tmp/unsquashfs.help
 
+# Make Environment header into a manpage section
+
+${SED} -i "s/\(Environment\):/*\1*/" $tmp/unsquashfs.help
+
 if ! help2man -Ni unsquashfs.h2m -o $2 $tmp/unsquashfs.sh; then
 	error "$0: help2man returned error.  Aborting"
 	exit 1
