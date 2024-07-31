@@ -85,6 +85,15 @@ print "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/unsquashfs.
 
 ${SED} -i "s/^SYNTAX:/Usage: /" $tmp/unsquashfs.help
 
+# The Usage text expands over two lines, and that confuses help2man.
+# So concatenate the lines if the second isn't empty
+
+${SED} -i "/^Usage/ {
+N
+/\n$/b
+s/\n/ /
+}" $tmp/unsquashfs.help
+
 # Man pages expect the options to be in the "Options" section.  So insert
 # Options section after Usage
 
