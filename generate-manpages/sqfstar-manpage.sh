@@ -252,7 +252,7 @@ ${SED} -i "s/\(Compressors available and compressor specific options\):/*\1*/" $
 ${SED} -i "s/\(Pseudo file definition format\):/*\1*/" $tmp/sqfstar.help
 
 # Add reference to manpages for other squashfs-tools programs
-${SED} -i "s/See also:/See also:\nmksquashfs(1), unsquashfs(1), sqfscat(1)\n/" $tmp/sqfstar.help
+${SED} -i "s/See also (extra information elsewhere):/See also:\nmksquashfs(1), unsquashfs(1), sqfscat(1)\n/" $tmp/sqfstar.help
 
 # Make Exit status header into a manpage section
 
