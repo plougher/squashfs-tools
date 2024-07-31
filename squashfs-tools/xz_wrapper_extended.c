@@ -107,6 +107,12 @@ static int xz_options(char *argv[], int argc)
 					"filter\n");
 				goto failed;
 			}
+			if(!lzma_filter_encoder_is_supported(bcj[i].id)) {
+				fprintf(stderr, "xz: -Xbcj %s: This filter "
+					"is not supported by the liblzma "
+					"version in use\n", bcj[i].name);
+				goto failed;
+			}
 		}
 
 		return 1;
