@@ -42,6 +42,13 @@
 #define LZMA_FILTER_ARM64 LZMA_VLI_C(0x0A)
 #endif
 
+/*
+ * RISC-V filter was added in liblzma 5.6.0.
+ */
+#ifndef LZMA_FILTER_RISCV
+#define LZMA_FILTER_RISCV LZMA_VLI_C(0x0B)
+#endif
+
 static struct bcj bcj[] = {
 	{ "x86", LZMA_FILTER_X86, 0 },
 	{ "powerpc", LZMA_FILTER_POWERPC, 0 },
@@ -50,6 +57,7 @@ static struct bcj bcj[] = {
 	{ "armthumb", LZMA_FILTER_ARMTHUMB, 0 },
 	{ "sparc", LZMA_FILTER_SPARC, 0 },
 	{ "arm64", LZMA_FILTER_ARM64, 0 },
+	{ "riscv", LZMA_FILTER_RISCV, 0 },
 	{ NULL, LZMA_VLI_UNKNOWN, 0 }
 };
 
@@ -557,6 +565,11 @@ static int xz_compress(void *strm, void *dest, void *src,  int size,
 		stream->opt.dict_size = stream->dictionary_size;
 
 		switch(filter->filter[0].id) {
+		case LZMA_FILTER_RISCV:
+			/* 2-byte-aligned instructions */
+			stream->opt.lp = 1;
+			break;
+
 		case LZMA_FILTER_ARM64:
 			/* 4-byte-aligned instructions */
 			stream->opt.lp = 2;
@@ -631,7 +644,7 @@ static void xz_usage(FILE *stream, int cols)
 	autowrap_print(stream, "\t\tCompress using filter1,filter2,...,filterN "
 		"in turn (in addition to no filter), and choose the best "
 		"compression.  Available filters: x86, arm, armthumb, arm64, "
-		"powerpc, sparc, ia64\n", cols);
+		"powerpc, sparc, ia64, riscv\n", cols);
 	autowrap_print(stream, "\t  -Xdict-size <dict-size>\n", cols);
 	autowrap_print(stream, "\t\tUse <dict-size> as the XZ dictionary size."
 		"  The dictionary size can be specified as a percentage of the "
