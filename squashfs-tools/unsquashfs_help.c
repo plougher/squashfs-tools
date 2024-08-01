@@ -65,7 +65,7 @@ static char *unsquashfs_text[] = {
 	"\t-UTC\t\t\tuse UTC rather than local time zone when displaying time\n",
 	"\t-mkfs-time\t\tdisplay filesystem superblock time, which is an unsigned 32-bit int representing the time in seconds since the epoch (1970-01-01)\n",
 	"\n", "Filesystem extended attribute (xattrs) options:", "\n",
-	"\t-no[-xattrs]\t\tdo not extract xattrs in file system", NOXOPT_STR"\n",
+	"\t-no[-xattrs]\t\tdo not extract xattrs in file system" NOXOPT_STR "\n",
 	"\t-x[attrs]\t\textract xattrs in file system" XOPT_STR "\n",
 	"\t-xattrs-exclude <regex>\texclude any xattr names matching <regex>.  <regex> is a POSIX regular expression, e.g. -xattrs-exclude '^user.' excludes xattrs from the user namespace\n",
 	"\t-xattrs-include <regex>\tinclude any xattr names matching <regex>.  <regex> is a POSIX regular expression, e.g. -xattrs-include '^user.' includes xattrs from the user namespace\n",
