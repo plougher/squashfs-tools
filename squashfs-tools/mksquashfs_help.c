@@ -37,7 +37,7 @@
 
 #define SQFSTAR_SYNTAX "SYNTAX:%s [OPTIONS] FILESYSTEM [list of exclude dirs/files]\n\n"
 
-static char *mksquashfs_options[] = {
+static char *mksquashfs_options[]={
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
 	"-no-compression", "", "", "", "-tar", "-no-strip", "-tarstyle",
 	"-cpiostyle", "-cpiostyle0", "-reproducible", "-not-reproducible",
