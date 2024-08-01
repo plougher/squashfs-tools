@@ -34,7 +34,11 @@
 
 #define UNSQUASHFS_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [files to extract or exclude (with -excludes) or cat (with -cat )]\n\n"
 
-static char *unsquashfs_text[] = {
+static char *unsquashfs_sections[]={
+	"extraction", "information", "xattrs", "runtime", "help", "misc", "environment", "exit", "extra", NULL
+};
+
+static char *unsquashfs_text[]={
 	"Filesystem extraction (filtering) options:", "\n",
 	"\t-d[est] <pathname>\textract to <pathname>, default \"squashfs-root\".  This option also sets the prefix used when listing the filesystem\n",
 	"\t-max[-depth] <levels>\tdescend at most <levels> of directories when extracting\n",
@@ -102,10 +106,6 @@ static char *unsquashfs_text[] = {
 	"The README for the Squashfs-tools 4.6.1 release, describing the new features can be read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6.1\n",
 	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n",
 	NULL
-};
-
-static char *unsquashfs_sections[]= {
-	"extraction", "information", "xattrs", "runtime", "help", "misc", "environment", "exit", "extra", NULL
 };
 
 static void print_help_all(char *name, char *syntax, char **options_text)
