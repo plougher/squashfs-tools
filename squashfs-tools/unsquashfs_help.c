@@ -34,6 +34,30 @@
 
 #define UNSQUASHFS_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [files to extract or exclude (with -excludes) or cat (with -cat )]\n\n"
 
+static char *unsquashfs_options[]={
+	"", "", "-dest", "-max-depth", "-excludes", "-exclude-list",
+	"-extract-file", "-exclude-file", "-match", "-follow-symlinks",
+	"-missing-symlinks", "-no-wildcards", "-regex", "-all-time",
+	"-cat", "-force", "-pf", "", "", "", "-stat", "-max-depth",
+	"-info", "-linfo", "-ls", "-lls", "-llnumeric", "-lc", "-llc",
+	"-full-precision", "-UTC", "-mkfs-time", "", "", "", "-no-xattrs",
+	"-xattrs", "-xattrs-exclude", "-xattrs-include", "", "", "", "-version",
+	"-processors", "-mem", "-mem-percent", "-quiet", "-no-progress",
+	"-percentage", "-ignore-errors", "-strict-errors", "-no-exit-code",
+	"", "", "", "-help", "-help-section", "-hs", "", "", "", "-offset",
+	"-fstime", "-ef", "-excf", "-L", "-pseudo-file", "", "", "", NULL,
+};
+
+static char *unsquashfs_args[]={
+	"", "", "", "", "", "", "<file>", "<file>", "", "", "", "", "",
+	"<time>", "", "", "<file>", "", "", "", "", "<levels>", "", "",
+	"", "", "", "", "", "", "", "", "", "", "", "", "", "<regex>",
+	"<regex>", "", "", "", "", "<number>", "<size>", "<percent>",
+	"", "", "", "", "", "", "", "", "", "", "<section>", "<section>",
+	"", "", "", "<bytes>", "", "<extract file>", "<exclude file>", "",
+	"<file>", "", "", "",
+};
+
 static char *unsquashfs_sections[]={
 	"extraction", "information", "xattrs", "runtime", "help", "misc", "environment", "exit", "extra", NULL
 };
@@ -143,6 +167,44 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 }
 
 
+static void print_option(char *prog_name, char *opt_name, char *pattern, char **options,
+					char **options_args, char **options_text)
+{
+	int i, res, matched = FALSE;
+	regex_t *preg = malloc(sizeof(regex_t));
+	int cols = get_column_width();
+
+	if(preg == NULL)
+		MEM_ERROR();
+
+	res = regcomp(preg, pattern, REG_EXTENDED|REG_NOSUB);
+
+	if(res) {
+		char str[1024]; /* overflow safe */
+
+		regerror(res, preg, str, 1024);
+		autowrap_printf(stderr, cols, "%s: %s invalid regex %s because %s\n", prog_name, opt_name, pattern, str);
+		exit(1);
+	}
+
+	for(i = 0; options[i] != NULL; i++) {
+		res = regexec(preg, options[i], (size_t) 0, NULL, 0);
+		if(res)
+			res = regexec(preg, options_args[i], (size_t) 0, NULL, 0);
+		if(!res) {
+			matched = TRUE;
+			autowrap_print(stdout, options_text[i], cols);
+		}
+	}
+
+	if(!matched) {
+		autowrap_printf(stderr, cols, "%s: %s %s does not match any %s option\n", prog_name, opt_name, pattern, prog_name);
+		exit(1);
+	} else
+		exit(0);
+}
+
+
 static int is_header(int i)
 {
 	int length = strlen(unsquashfs_text[i]);
@@ -220,4 +282,10 @@ finish:
 void unsquashfs_help_all(char *name)
 {
         print_help_all(name, UNSQUASHFS_SYNTAX, unsquashfs_text);
+}
+
+
+void unsquashfs_option(char *prog_name, char *opt_name, char *pattern)
+{
+	print_option(prog_name, opt_name, pattern, unsquashfs_options, unsquashfs_args, unsquashfs_text);
 }
