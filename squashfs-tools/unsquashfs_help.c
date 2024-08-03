@@ -110,7 +110,10 @@ static char *unsquashfs_text[]={
 	"\t-no-exit[-code]\t\tdo not set exit code (to nonzero) on non-fatal errors\n",
 	"\n", "Help options:", "\n",
 	"\t-h[elp]\t\t\toutput this options text to stdout\n",
+	"\t-help-option <regex>\tprint the help information for Unsquashfs "
+		"options matching <regex> to stdout\n",
 	"\t-help-section <section>\tprint the help information for section <section> to stdout.  Use \"sections\" or \"h\" as section name to get a list of sections and their names\n",
+	"\t-ho <regex>\t\tshorthand alternative to -help-option\n",
 	"\t-hs <section>\t\tshorthand alternative to -help-section\n",
 	"\n", "Miscellaneous options:", "\n",
 	"\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  Optionally a suffix of K, M or G can be given to specify Kbytes, Mbytes or Gbytes respectively (default 0 bytes).\n",
