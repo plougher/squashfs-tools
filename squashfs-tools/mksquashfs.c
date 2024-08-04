@@ -3945,7 +3945,7 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 								filename);
 				ERROR_EXIT(", ignoring\n");
 			} else if(byte == 65536) {
-				ERROR_START("Symlink %s is greater than 65536 "
+				ERROR_START("Symlink %s is greater than 65535 "
 							"bytes!", filename);
 				ERROR_EXIT(", ignoring\n");
 			} else {
