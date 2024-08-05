@@ -282,6 +282,20 @@ finish:
 }
 
 
+static void print_help(int error, char *prog_name, char *syntax, char **sections, char **options_text)
+{
+	FILE *stream = error ? stderr : stdout;
+	int cols = get_column_width();
+
+	autowrap_printf(stream, cols, syntax, prog_name);
+	autowrap_printf(stream, cols, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(stream, "\t", cols);
+	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	exit(error);
+}
+
+
 void unsquashfs_help_all(char *name)
 {
         print_help_all(name, UNSQUASHFS_SYNTAX, unsquashfs_text);
@@ -291,4 +305,9 @@ void unsquashfs_help_all(char *name)
 void unsquashfs_option(char *prog_name, char *opt_name, char *pattern)
 {
 	print_option(prog_name, opt_name, pattern, unsquashfs_options, unsquashfs_args, unsquashfs_text);
+}
+
+void unsquashfs_help(int error, char *prog_name)
+{
+	print_help(error, prog_name, UNSQUASHFS_SYNTAX, unsquashfs_sections, unsquashfs_text);
 }
