@@ -338,7 +338,7 @@ static char *mksquashfs_text[]={
 		"sections to stdout\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"-h\t\t\tshorthand alternative to -help\n",
-	"-ho <regex>\t\tshorthand aternative to -help-option\n",
+	"-ho <regex>\t\tshorthand alternative to -help-option\n",
 	"-hs <section>\t\tshorthand alternative to -help-section\n",
 	"-ha\t\t\tshorthand alternative to -help-all\n",
 	"\n", "Miscellaneous options:", "\n",
