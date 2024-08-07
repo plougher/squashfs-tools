@@ -83,7 +83,7 @@ static char *unsquashfs_text[]={
 	"\t-s[tat]\t\t\tdisplay filesystem superblock information\n",
 	"\t-max[-depth] <levels>\tdescend at most <levels> of directories when listing\n",
 	"\t-i[nfo]\t\t\tprint files as they are extracted\n",
-	"\t-li[nfo]\t\tprint files as they are extracted with file tattributes (like ls -l output)\n",
+	"\t-li[nfo]\t\tprint files as they are extracted with file attributes (like ls -l output)\n",
 	"\t-l[s]\t\t\tlist filesystem, but do not extract files\n",
 	"\t-ll[s]\t\t\tlist filesystem with file attributes (like ls -l output), but do not extract files\n",
 	"\t-lln[umeric]\t\tsame as -lls but with numeric uids and gids\n",
