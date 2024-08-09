@@ -11,12 +11,21 @@
 # Mksquashfs 4.1 adds support for "dynamic pseudo files" and a modify operation.
 # Dynamic pseudo files allow files to be dynamically created when Mksquashfs
 # is run, their contents being the result of running a command or piece of
-# shell script.  The modifiy operation allows the mode/uid/gid of an existing
+# shell script.  The modify operation allows the mode/uid/gid of an existing
 # file in the source filesystem to be modified.
 
+# Mksquashfs 4.5 adds support for custom timestamp on pseudo files.
+# Custom timestamping via the use of upper-case character versions allows an
+# extra parameter to be set, for a specific timestamp to be set on the
+# resulting pseudo file.
+# This can be specified as an absolute numeric value, which is taken to be
+# the number of seconds since the epoch of 00:00:00 UTC on 1 January 1970. A
+# string can also be used, which is passed to the "date" command for
+# interpretation, and can be anything that "date" considers a valid date.
+
 # Two Mksquashfs options are supported, -p allows one pseudo file to be
-# specified #on the command line, and -pf allows a pseudo file to be specified
-# containing a list of pseduo definitions, one per line.
+# specified on the command line, and -pf allows a pseudo file to be specified
+# containing a list of pseudo definitions, one per line.
 
 # Pseudo file examples
 # Run mkquashfs . /tmp/img -pf pseudo-file.examples
@@ -65,10 +74,17 @@ blk_dev b 666 0 0 200 200
 pseudo_dir d 444 root root
 
 
-# Modifying attributes of an existing file exmaple
+# Modifying attributes of an existing file example
 
 # Change the attributes of the file "INSTALL" in the filesystem to have
 # root uid/gid and a mode of rw-rw-rw, overriding the attributes obtained
 # from the source filesystem.
 INSTALL m 666 root root
 
+
+# Creating a pseudo directory with a custom timestamp
+
+# Based on the aforementioned creating a directory example above, but with a
+# specific timestamp on using seconds since epoch, as the time and date of
+# directory creation. The resulting timestamp is Fri 26 May 1995 05:45:40
+hidden D 801431140 444 root root
