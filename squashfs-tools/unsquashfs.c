@@ -4536,9 +4536,10 @@ static int parse_options(int argc, char *argv[])
 #endif
 
 	if(i == argc) {
-		if(!version)
+		if(!version) {
+			ERROR("%s: fatal error: no input filesystem specified on command line\n\n", argv[0]);
 			unsquashfs_help(TRUE, argv[0]);
-		else
+		} else
 			exit(1);
 	}
 
