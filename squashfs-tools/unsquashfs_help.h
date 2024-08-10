@@ -51,4 +51,5 @@ extern void unsquashfs_section(char *prog_name, char *opt_name, char *sec_name);
 extern void unsquashfs_option(char *prog_name, char *opt_name, char *pattern);
 extern void unsquashfs_help(int error, char *prog_name);
 extern void unsquashfs_invalid_option(char *prog_name, char *opt_name);
+extern void unsquashfs_option_help(char *prog_name, char *option);
 #endif

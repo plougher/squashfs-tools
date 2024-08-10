@@ -285,6 +285,19 @@ finish:
 }
 
 
+static void handle_invalid_option(char *prog_name, char *opt_name, char **sections, char **options_text)
+{
+	int cols = get_column_width();
+
+	autowrap_printf(stderr, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
+	fprintf(stderr, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(stderr, "\t", cols);
+	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	exit(1);
+}
+
+
 static void print_help(int error, char *prog_name, char *syntax, char **sections, char **options_text)
 {
 	FILE *stream = error ? stderr : stdout;
@@ -299,19 +312,17 @@ static void print_help(int error, char *prog_name, char *syntax, char **sections
 }
 
 
-static void handle_invalid_option(char *prog_name, char *opt_name, char **sections, char **options_text)
+static void print_option_help(char *prog_name, char *option, char **sections, char **options_text)
 {
 	int cols = get_column_width();
 
-	autowrap_printf(stderr, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
-	fprintf(stderr, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	autowrap_printf(stderr, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
+	autowrap_printf(stderr, cols, "Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stderr, "\t", cols);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
-
-
 void unsquashfs_help_all(char *name)
 {
         print_help_all(name, UNSQUASHFS_SYNTAX, unsquashfs_text);
@@ -333,4 +344,10 @@ void unsquashfs_help(int error, char *prog_name)
 void unsquashfs_invalid_option(char *prog_name, char *opt_name)
 {
 	handle_invalid_option(prog_name, opt_name, unsquashfs_sections, unsquashfs_text);
+}
+
+
+void unsquashfs_option_help(char *prog_name, char *option)
+{
+	print_option_help(prog_name, option, unsquashfs_sections, unsquashfs_text);
 }
