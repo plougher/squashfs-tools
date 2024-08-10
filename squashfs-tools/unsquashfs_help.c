@@ -59,7 +59,8 @@ static char *unsquashfs_args[]={
 };
 
 static char *unsquashfs_sections[]={
-	"extraction", "information", "xattrs", "runtime", "help", "misc", "environment", "exit", "extra", NULL
+	"extraction", "information", "xattrs", "runtime", "help", "misc",
+	"environment", "exit", "extra", NULL
 };
 
 static char *unsquashfs_text[]={
