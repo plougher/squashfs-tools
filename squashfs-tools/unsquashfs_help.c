@@ -32,7 +32,8 @@
 #include "print_pager.h"
 #include "compressor.h"
 
-#define UNSQUASHFS_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [files to extract or exclude (with -excludes) or cat (with -cat )]\n\n"
+#define UNSQUASHFS_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [files to extract " \
+	"or exclude (with -excludes) or cat (with -cat )]\n\n"
 
 static char *unsquashfs_options[]={
 	"", "", "-dest", "-max-depth", "-excludes", "-exclude-list",
