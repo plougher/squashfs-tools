@@ -3898,6 +3898,7 @@ static int parse_excludes(int argc, char *argv[])
 static void print_cat_options(FILE *stream, char *name)
 {
 	fprintf(stream, "SYNTAX: %s [OPTIONS] FILESYSTEM [list of files to cat to stdout]\n", name);
+	fprintf(stream, "\nOptions:\n");
 	fprintf(stream, "\t-v[ersion]\t\tprint version, licence and copyright ");
 	fprintf(stream, "information\n");
 	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
