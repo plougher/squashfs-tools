@@ -84,7 +84,8 @@ ${SED} -i "s/^copyright/Copyright/" $tmp/sqfstar.version
 print >> $tmp/sqfstar.version
 print "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/sqfstar.version
 
-# If the second line isn't empty, it means the first line has wrapped.
+# If the second line isn't empty, it means the first line (starting with
+# SYNTAX) has wrapped.
 
 ${SED} -i "1 {
 N
