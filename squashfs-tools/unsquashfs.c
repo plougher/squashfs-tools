@@ -3895,59 +3895,6 @@ static int parse_excludes(int argc, char *argv[])
 }
 
 
-static void print_cat_options(FILE *stream, char *name)
-{
-	fprintf(stream, "SYNTAX: %s [OPTIONS] FILESYSTEM [list of files to cat to stdout]\n", name);
-	fprintf(stream, "\nOptions:\n");
-	fprintf(stream, "\t-v[ersion]\t\tprint version, licence and copyright ");
-	fprintf(stream, "information\n");
-	fprintf(stream, "\t-p[rocessors] <number>\tuse <number> processors.  ");
-	fprintf(stream, "By default will use\n");
-	fprintf(stream, "\t\t\t\tthe number of processors available\n");
-	fprintf(stream, "\t-mem <size>\t\tuse <size> physical memory for ");
-	fprintf(stream, "caches.  Use K, M\n\t\t\t\tor G to specify Kbytes,");
-	fprintf(stream, " Mbytes or Gbytes\n\t\t\t\trespectively.  Default 512 Mbytes\n");
-	fprintf(stream, "\t-mem-percent <percent>\tuse <percent> physical ");
-	fprintf(stream, "memory for caches.\n");
-	fprintf(stream, "\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.\n");
-	fprintf(stream, "\t\t\t\tOptionally a suffix of K, M or G can be given to\n");
-	fprintf(stream, "\t\t\t\tspecify Kbytes, Mbytes or Gbytes respectively\n");
-	fprintf(stream, "\t\t\t\t(default 0 bytes).\n");
-	fprintf(stream, "\t-ig[nore-errors]\ttreat errors writing files to stdout ");
-	fprintf(stream, "as\n\t\t\t\tnon-fatal\n");
-	fprintf(stream, "\t-st[rict-errors]\ttreat all errors as fatal\n");
-	fprintf(stream, "\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on ");
-	fprintf(stream, "non-fatal\n\t\t\t\terrors\n");
-	fprintf(stream, "\t-no-wild[cards]\t\tdo not use wildcard matching in filenames\n");
-	fprintf(stream, "\t-r[egex]\t\ttreat filenames as POSIX regular ");
-	fprintf(stream, "expressions\n");
-	fprintf(stream, "\t\t\t\trather than use the default shell ");
-	fprintf(stream, "wildcard\n\t\t\t\texpansion (globbing)\n");
-	fprintf(stream, "\t-h[elp]\t\t\toutput options text to stdout\n");
-	fprintf(stream, "\nDecompressors available:\n");
-	display_compressors(stream, "", "");
-
-	fprintf(stream, "\nExit status:\n");
-	fprintf(stream, "  0\tThe file or files were output to stdout OK.\n");
-	fprintf(stream, "  1\tFATAL errors occurred, e.g. filesystem ");
-	fprintf(stream, "corruption, I/O errors.\n");
-	fprintf(stream, "\tSqfscat did not continue and aborted.\n");
-	fprintf(stream, "  2\tNon-fatal errors occurred, e.g. not a regular ");
-	fprintf(stream, "file, or failed to resolve\n\tpathname.  Sqfscat ");
-	fprintf(stream, "continued and did not abort.\n");
-	fprintf(stream, "\nSee -ignore-errors, -strict-errors and ");
-	fprintf(stream, "-no-exit-code options for how they affect\nthe exit ");
-	fprintf(stream, "status.\n");
-	fprintf(stream, "\nSee also:\n");
-	fprintf(stream, "The README for the Squashfs-tools 4.6.1 release, ");
-	fprintf(stream, "describing the new features can be\n");
-	fprintf(stream, "read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6.1\n");
-
-	fprintf(stream, "\nThe Squashfs-tools USAGE guide can be read here\n");
-	fprintf(stream, "https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n");
-}
-
-
 static void check_pager()
 {
 	char * string = getenv("PAGER");
@@ -3989,7 +3936,7 @@ static int parse_cat_options(int argc, char *argv[])
 		if(*argv[i] != '-')
 			break;
 		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
-			print_cat_options(stdout, argv[0]);
+			sqfscat_help(argv[0]);
 			exit(0);
 		} else if(strcmp(argv[i], "-no-exit-code") == 0 ||
 				strcmp(argv[i], "-no-exit") == 0)
@@ -4129,10 +4076,8 @@ static int parse_cat_options(int argc, char *argv[])
 							argv[0], argv[i - 1]);
 				exit(1);
 			}
-		} else {
-			print_cat_options(stderr, argv[0]);
-			exit(1);
-		}
+		} else
+			sqfscat_help(argv[0]);
 	}
 
 	if(strict_errors && ignore_errors)
@@ -4147,8 +4092,9 @@ static int parse_cat_options(int argc, char *argv[])
 								"set\n");
 	if(i == argc) {
 		if(!version)
-			print_cat_options(stderr, argv[0]);
-		exit(1);
+			sqfscat_help(argv[0]);
+		else
+			exit(1);
 	}
 
 	return i;
