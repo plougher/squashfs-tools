@@ -210,6 +210,10 @@ static char *sqfscat_text[]={
 	"\t-no-wild[cards]\t\tdo not use wildcard matching in filenames\n",
 	"\t-r[egex]\t\ttreat filenames as POSIX regular expressions rather than use the default shell wildcard expansion (globbing)\n",
 	"\t-h[elp]\t\t\toutput options text to stdout\n",
+	"\n", "Environment:", "\n",
+	"\tPAGER\t\t\tIf set, this is used as the name of the program used to "
+		"display the help text.  The value can be a simple command or "
+		"a pathname.  The default is /usr/bin/pager\n",
 	"\nExit status:\n",
 	"  0\tThe file or files were output to stdout OK.\n",
 	"  1\tFATAL errors occurred, e.g. filesystem corruption, I/O errors.  Sqfscat did not continue and aborted.\n",
