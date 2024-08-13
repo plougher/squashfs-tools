@@ -174,6 +174,22 @@ s/^.*\n//
 /^  [012]/b again
 }" $tmp/sqfscat.help
 
+# Concatenate the PAGER text on to one line.  Indent the line by
+# two and add a full stop to the end of the line
+
+${SED} -i " /PAGER/ {
+s/PAGER/  PAGER/
+
+:again
+N
+/\n$/b print
+s/\n */ /
+b again
+
+:print
+s/\([^.]\)\n/\1.\n/
+}" $tmp/sqfscat.help
+
 # Make Decompressors available header into a manpage section
 
 ${SED} -i "s/\(Decompressors available\):/*\1*/" $tmp/sqfscat.help
@@ -188,6 +204,10 @@ ${SED} -i "s/See also:/See also:\nmksquashfs(1), unsquashfs(1), sqfstar(1)\n/" $
 # Make See also header into a manpage section
 
 ${SED} -i "s/\(See also\):/*\1*/" $tmp/sqfscat.help
+
+# Make Environment header into a manpage section
+
+${SED} -i "s/\(Environment\):/*\1*/" $tmp/sqfscat.help
 
 if ! help2man -Ni sqfscat.h2m -o $2 $tmp/sqfscat.sh; then
 	error "$0: help2man returned error.  Aborting"
