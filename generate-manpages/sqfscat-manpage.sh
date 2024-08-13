@@ -81,6 +81,14 @@ ${SED} -i "s/^copyright/Copyright/" $tmp/sqfscat.version
 print >> $tmp/sqfscat.version
 print "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/sqfscat.version
 
+# If the second line isn't empty, it means the first line (starting with
+# SYNTAX) has wrapped.
+
+${SED} -i "1 {
+N
+/\n$/!s/\n/ /
+}" $tmp/sqfscat.help
+
 # help2man expects "Usage: ", and so rename "SYNTAX:" to "Usage: "
 
 ${SED} -i "s/^SYNTAX:/Usage: /" $tmp/sqfscat.help
