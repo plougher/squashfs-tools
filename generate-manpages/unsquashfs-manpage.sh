@@ -81,18 +81,17 @@ ${SED} -i "s/^copyright/Copyright/" $tmp/unsquashfs.version
 print >> $tmp/unsquashfs.version
 print "Written by Phillip Lougher <phillip@squashfs.org.uk>" >> $tmp/unsquashfs.version
 
+# If the second line isn't empty, it means the first line (starting with
+# SYNTAX) has wrapped.
+
+${SED} -i "1 {
+N
+/\n$/!s/\n/ /
+}" $tmp/unsquashfs.help
+
 # help2man expects "Usage: ", and so rename "SYNTAX:" to "Usage: "
 
 ${SED} -i "s/^SYNTAX:/Usage: /" $tmp/unsquashfs.help
-
-# The Usage text expands over two lines, and that confuses help2man.
-# So concatenate the lines if the second isn't empty
-
-${SED} -i "/^Usage/ {
-N
-/\n$/b
-s/\n/ /
-}" $tmp/unsquashfs.help
 
 # Man pages expect the options to be in the "Options" section.  So insert
 # Options section after Usage
