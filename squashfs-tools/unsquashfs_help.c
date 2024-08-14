@@ -158,10 +158,11 @@ static char *unsquashfs_text[]={
 	"\t-help-option <regex>\tprint the help information for Unsquashfs "
 		"options matching <regex> to stdout\n",
 	"\t-help-section <section>\tprint the help information for section "
-		"<section> to stdout.  Use \"sections\" or \"h\" as section "
-		"name to get a list of sections and their names\n",
+		"<section> to pager (or stdout if not a terminal).  Use "
+		"\"sections\" or \"h\" as section name to get a list of "
+		"sections and their names\n",
 	"\t-help-all\t\tprint help information for all Unsquashfs options and "
-		"sections to stdout\n",
+		"sections to pager (or stdout if not a terminal)\n",
 	"\t-ho <regex>\t\tshorthand alternative to -help-option\n",
 	"\t-hs <section>\t\tshorthand alternative to -help-section\n",
 	"\t-ha\t\t\tshorthand alternative to -help-all\n",
@@ -209,7 +210,7 @@ static char *sqfscat_text[]={
 	"\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on non-fatal errors\n",
 	"\t-no-wild[cards]\t\tdo not use wildcard matching in filenames\n",
 	"\t-r[egex]\t\ttreat filenames as POSIX regular expressions rather than use the default shell wildcard expansion (globbing)\n",
-	"\t-h[elp]\t\t\toutput options text to stdout\n",
+	"\t-h[elp]\t\t\tprint help information for all Sqfscat options to pager (or stdout if not a terminal)\n",
 	"\n", "Environment:", "\n",
 	"\tPAGER\t\t\tIf set, this is used as the name of the program used to "
 		"display the help text.  The value can be a simple command or "
