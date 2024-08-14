@@ -331,11 +331,12 @@ static char *mksquashfs_text[]={
 	"-help-option <regex>\tprint the help information for Mksquashfs "
 		"options matching <regex> to stdout\n",
 	"-help-section <section>\tprint the help information for section "
-		"<section> to stdout.  Use \"sections\" or \"h\" as section "
-		"name to get a list of sections and their names\n",
+		"<section> to pager (or stdout if not a terminal).  Use "
+		"\"sections\" or \"h\" as section name to get a list of "
+		"sections and their names\n",
 	"-help-comp <comp>\tprint compressor options for compressor <comp>\n",
 	"-help-all\t\tprint help information for all Mksquashfs options and "
-		"sections to stdout\n",
+		"sections to pager (or stdout if not a terminal)\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"-h\t\t\tshorthand alternative to -help\n",
 	"-ho <regex>\t\tshorthand alternative to -help-option\n",
@@ -553,11 +554,12 @@ static char *sqfstar_text[]={
 	"-help-option <regex>\tprint the help information for Sqfstar "
 		"options matching <regex> to stdout\n",
 	"-help-section <section>\tprint the help information for section "
-		"<section> to stdout.  Use \"sections\" or \"h\" as section "
-		"name to get a list of sections and their names\n",
+		"<section> to pager (or stdout if not a terminal).  Use "
+		"\"sections\" or \"h\" as section name to get a list of "
+		"sections and their names\n",
 	"-help-comp <comp>\tprint compressor options for compressor <comp>\n",
 	"-help-all\t\tprint help information for all Sqfstar options and "
-		"sections to stdout\n",
+		"sections to pager (or stdout if not a terminal)\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
 	"-h\t\t\tshorthand alternative to -help\n",
 	"-ho <regex>\t\tshorthand alternative to -help-option\n",
