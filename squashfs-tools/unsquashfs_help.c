@@ -51,6 +51,11 @@ static char *unsquashfs_options[]={
 	"-fstime", "-ef", "-excf", "-L", "-pseudo-file", "", "", "", NULL,
 };
 
+static char *sqfscat_options[]={ "", "", "-version", "-processors", "-mem",
+	"-mem-percent", "-offset", "-ignore-errors", "-strict-errors",
+	"-no-exit-code", "-no-wildcards", "-regex", "-help", NULL,
+};
+
 static char *unsquashfs_args[]={
 	"", "", "", "", "", "", "<file>", "<file>", "", "", "", "", "",
 	"<time>", "", "", "<file>", "", "", "", "", "<levels>", "", "",
@@ -59,6 +64,11 @@ static char *unsquashfs_args[]={
 	"", "", "", "", "", "", "", "", "", "", "<section>", "<section>",
 	"", "", "", "<bytes>", "", "<extract file>", "<exclude file>", "",
 	"<file>", "", "", "",
+};
+
+static char *sqfscat_args[]={
+	"", "", "", "<number>", "<size>", "<percent>", "<bytes>", "", "", "",
+	"", "", "",
 };
 
 static char *unsquashfs_sections[]={
@@ -448,4 +458,10 @@ void unsquashfs_option_help(char *prog_name, char *option)
 void sqfscat_help(char *name)
 {
 	print_help_all(name, SQFSCAT_SYNTAX, sqfscat_text);
+}
+
+
+void sqfscat_option(char *prog_name, char *opt_name, char *pattern)
+{
+	print_option(prog_name, opt_name, pattern, sqfscat_options, sqfscat_args, sqfscat_text);
 }
