@@ -200,7 +200,7 @@ static char *unsquashfs_text[]={
 
 
 static char *sqfscat_text[]={
-	"Options:\n",
+	"Options:", "\n",
 	"\t-v[ersion]\t\tprint version, licence and copyright information\n",
 	"\t-p[rocessors] <number>\tuse <number> processors.  By default will use the number of processors available\n",
 	"\t-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or G to specify Kbytes, Mbytes or Gbytes respectively.  Default 512 Mbytes\n",
@@ -216,12 +216,12 @@ static char *sqfscat_text[]={
 	"\tPAGER\t\t\tIf set, this is used as the name of the program used to "
 		"display the help text.  The value can be a simple command or "
 		"a pathname.  The default is /usr/bin/pager\n",
-	"\nExit status:\n",
+	"\n", "Exit status:", "\n",
 	"  0\tThe file or files were output to stdout OK.\n",
 	"  1\tFATAL errors occurred, e.g. filesystem corruption, I/O errors.  Sqfscat did not continue and aborted.\n",
 	"  2\tNon-fatal errors occurred, e.g. not a regular file, or failed to resolve pathname.  Sqfscat continued and did not abort.\n",
 	"\nSee -ignore-errors, -strict-errors and -no-exit-code options for how they affect the exit status.\n",
-	"\nSee also:\n",
+	"\n", "See also:", "\n",
 	"The README for the Squashfs-tools 4.6.1 release describing the new features can be read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6.1\n",
 	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n",
 	NULL,
