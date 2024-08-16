@@ -29,6 +29,8 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "error.h"
 #include "print_pager.h"
