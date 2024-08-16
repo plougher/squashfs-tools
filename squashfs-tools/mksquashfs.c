@@ -6645,7 +6645,7 @@ static int sqfstar(int argc, char *argv[])
 				sqfstar_option_help(argv[0], argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-mem") == 0) {
-			long long number;
+			long long number = 0;
 
 			if(mem_options_disabled) {
 				ERROR("Ignoring -mem option because amount of "
@@ -7727,7 +7727,7 @@ int main(int argc, char *argv[])
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-mem") == 0) {
-			long long number;
+			long long number = 0;
 
 			if(mem_options_disabled) {
 				ERROR("Ignoring -mem option because amount of "
