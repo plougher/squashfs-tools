@@ -47,8 +47,9 @@ static char *unsquashfs_options[]={
 	"-xattrs", "-xattrs-exclude", "-xattrs-include", "", "", "", "-version",
 	"-processors", "-mem", "-mem-percent", "-quiet", "-no-progress",
 	"-percentage", "-ignore-errors", "-strict-errors", "-no-exit-code",
-	"", "", "", "-help", "-help-section", "-hs", "", "", "", "-offset",
-	"-fstime", "-ef", "-excf", "-L", "-pseudo-file", "", "", "", NULL,
+	"", "", "", "-help", "-help-option", "-help-section", "-help-all",
+	"-ho", "-hs", "-ha", "", "", "", "-offset", "-fstime", "-ef", "-excf",
+	"-L", "-pseudo-file", "", "", "", NULL,
 };
 
 static char *sqfscat_options[]={ "", "", "-version", "-processors", "-mem",
@@ -62,9 +63,9 @@ static char *unsquashfs_args[]={
 	"<time>", "", "", "<file>", "", "", "", "", "<levels>", "", "",
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "<regex>",
 	"<regex>", "", "", "", "", "<number>", "<size>", "<percent>",
-	"", "", "", "", "", "", "", "", "", "", "<section>", "<section>",
-	"", "", "", "<bytes>", "", "<extract file>", "<exclude file>", "",
-	"<file>", "", "", "",
+	"", "", "", "", "", "", "", "", "", "", "<regex>", "<section>", "",
+	"<regex>", "<section>", "", "", "", "", "<bytes>", "", "<extract file>",
+	"<exclude file>", "", "<file>", "", "", "",
 };
 
 static char *sqfscat_args[]={
