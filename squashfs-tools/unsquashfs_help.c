@@ -54,8 +54,8 @@ static char *unsquashfs_options[]={
 
 static char *sqfscat_options[]={ "", "", "-version", "-processors", "-mem",
 	"-mem-percent", "-offset", "-ignore-errors", "-strict-errors",
-	"-no-exit-code", "-no-wildcards", "-regex", "", "", "", "-help",
-	"-help-option", "-ho", NULL,
+	"-no-exit-code", "", "", "","-no-wildcards", "-regex", "", "", "",
+	"-help", "-help-option", "-ho", NULL,
 };
 
 static char *unsquashfs_args[]={
@@ -70,7 +70,7 @@ static char *unsquashfs_args[]={
 
 static char *sqfscat_args[]={
 	"", "", "", "<number>", "<size>", "<percent>", "<bytes>", "", "", "",
-	"", "", "", "", "", "", "<regex>", "<regex>"
+	"", "", "", "", "", "", "", "", "", "<regex>", "<regex>"
 };
 
 static char *unsquashfs_sections[]={
@@ -221,6 +221,7 @@ static char *sqfscat_text[]={
 	"\t-ig[nore-errors]\ttreat errors writing files to stdout as non-fatal\n",
 	"\t-st[rict-errors]\ttreat all errors as fatal\n",
 	"\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on non-fatal errors\n",
+	"\n", "Filter options:", "\n",
 	"\t-no-wild[cards]\t\tdo not use wildcard matching in filenames\n",
 	"\t-r[egex]\t\ttreat filenames as POSIX regular expressions rather than use the default shell wildcard expansion (globbing)\n",
 	"\n", "Help options:", "\n",
