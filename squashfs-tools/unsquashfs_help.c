@@ -212,7 +212,7 @@ static char *unsquashfs_text[]={
 
 
 static char *sqfscat_text[]={
-	"Options:", "\n",
+	"Runtime options:", "\n",
 	"\t-v[ersion]\t\tprint version, licence and copyright information\n",
 	"\t-p[rocessors] <number>\tuse <number> processors.  By default will use the number of processors available\n",
 	"\t-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or G to specify Kbytes, Mbytes or Gbytes respectively.  Default 512 Mbytes\n",
