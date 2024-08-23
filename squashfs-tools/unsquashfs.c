@@ -4098,9 +4098,10 @@ static int parse_cat_options(int argc, char *argv[])
 		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be "
 								"set\n");
 	if(i == argc) {
-		if(!version)
+		if(!version) {
+			ERROR("%s: fatal error: no input filesystem specified on command line\n\n", argv[0]);
 			sqfscat_help(argv[0]);
-		else
+		} else
 			exit(1);
 	}
 
