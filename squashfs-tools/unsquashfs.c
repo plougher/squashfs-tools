@@ -4103,6 +4103,9 @@ static int parse_cat_options(int argc, char *argv[])
 			sqfscat_help(argv[0]);
 		} else
 			exit(1);
+	} else if(i + 1 == argc) {
+		ERROR("%s: fatal error: no files specified on command line\n\n", argv[0]);
+		sqfscat_help(argv[0]);
 	}
 
 	return i;
