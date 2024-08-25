@@ -2537,12 +2537,22 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 }
 
 
+void cleanup(void *arg)
+{
+	int fd = *((int *) arg);
+
+	close(fd);
+}
+
+
 static void *writer(void *arg)
 {
 	off_t wpos = 0;
 	int fd = open(destination_file, O_WRONLY);
 	if(fd == -1)
 		BAD_ERROR("Writer failed to open destination file\n");
+
+	pthread_cleanup_push(cleanup, &fd);
 
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(to_writer);
@@ -2575,7 +2585,7 @@ static void *writer(void *arg)
 		cache_block_put(file_buffer);
 	}
 
-	close(fd);
+	pthread_cleanup_pop(1);
 }
 
 
@@ -7122,6 +7132,8 @@ static int sqfstar(int argc, char *argv[])
 	if(queue_get(from_writer) != 0)
 		EXIT_MKSQUASHFS();
 
+	pthread_cancel(writer_thread);
+
 	set_progressbar_state(FALSE);
 	write_filesystem_tables(&sBlk);
 
@@ -8467,6 +8479,8 @@ int main(int argc, char *argv[])
 	queue_put(to_writer, NULL);
 	if(queue_get(from_writer) != 0)
 		EXIT_MKSQUASHFS();
+
+	pthread_cancel(writer_thread);
 
 	set_progressbar_state(FALSE);
 	write_filesystem_tables(&sBlk);
