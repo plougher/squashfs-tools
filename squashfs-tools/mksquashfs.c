@@ -2540,7 +2540,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 static void *writer(void *arg)
 {
 	off_t wpos = 0;
-	int fd = open(destination_file, O_WRONLY), nulls = 0;
+	int fd = open(destination_file, O_WRONLY);
 	if(fd == -1)
 		BAD_ERROR("Writer failed to open destination file\n");
 
@@ -2550,12 +2550,8 @@ static void *writer(void *arg)
 
 		if(file_buffer == NULL) {
 			queue_put(from_writer, NULL);
-			if(++nulls == 2)
-				break;
-			else
-				continue;
-		} else
-			nulls = 0;
+			continue;
+		}
 
 		off = start_offset + file_buffer->block;
 
@@ -2580,7 +2576,6 @@ static void *writer(void *arg)
 	}
 
 	close(fd);
-	pthread_exit(NULL);
 }
 
 
@@ -7123,11 +7118,9 @@ static int sqfstar(int argc, char *argv[])
 	}
 	pthread_cleanup_pop(1);
 
-	for(i = 0; i < 2; i++) {
-		queue_put(to_writer, NULL);
-		if(queue_get(from_writer) != 0)
-			EXIT_MKSQUASHFS();
-	}
+	queue_put(to_writer, NULL);
+	if(queue_get(from_writer) != 0)
+		EXIT_MKSQUASHFS();
 
 	set_progressbar_state(FALSE);
 	write_filesystem_tables(&sBlk);
@@ -8471,11 +8464,9 @@ int main(int argc, char *argv[])
 	}
 	pthread_cleanup_pop(1);
 
-	for(i = 0; i < 2; i++) {
-		queue_put(to_writer, NULL);
-		if(queue_get(from_writer) != 0)
-			EXIT_MKSQUASHFS();
-	}
+	queue_put(to_writer, NULL);
+	if(queue_get(from_writer) != 0)
+		EXIT_MKSQUASHFS();
 
 	set_progressbar_state(FALSE);
 	write_filesystem_tables(&sBlk);
