@@ -318,29 +318,29 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 }
 
 
-static int is_header(int i)
+static int is_header(int i, char **options_text)
 {
-	int length = strlen(unsquashfs_text[i]);
+	int length = strlen(options_text[i]);
 
-	return length && unsquashfs_text[i][length - 1] == ':';
+	return length && options_text[i][length - 1] == ':';
 }
 
 
-static void print_section_names(FILE *out, char *string, int cols)
+static void print_section_names(FILE *out, char *string, int cols, char **sections, char **options_text)
 {
 	int i, j;
 
 	autowrap_printf(out, cols, "%sSECTION NAME\t\tSECTION\n", string);
 
-	for(i = 0, j = 0; unsquashfs_sections[i] != NULL; j++)
-		if(is_header(j)) {
-			autowrap_printf(out, cols, "%s%s\t\t%s%s\n", string, unsquashfs_sections[i], strlen(unsquashfs_sections[i]) > 7 ? "" : "\t", unsquashfs_text[j]);
+	for(i = 0, j = 0; sections[i] != NULL; j++)
+		if(is_header(j, options_text)) {
+			autowrap_printf(out, cols, "%s%s\t\t%s%s\n", string, sections[i], strlen(sections[i]) > 7 ? "" : "\t", options_text[j]);
 			i++;
 		}
 }
 
 
-void unsquashfs_section(char *prog_name, char *opt_name, char *sec_name)
+static void print_section(char *prog_name, char *opt_name, char *sec_name, char **sections, char **options_text)
 {
 	int i, j, secs, cols, tty = isatty(STDOUT_FILENO);
 	pid_t pager_pid;
@@ -359,27 +359,27 @@ void unsquashfs_section(char *prog_name, char *opt_name, char *sec_name)
 
 	if(strcmp(sec_name, "sections") == 0 || strcmp(sec_name, "h") == 0) {
 		autowrap_printf(pager, cols, "\nUse following section name to print %s help information for that section\n\n", prog_name);
-		print_section_names(pager , "", cols);
+		print_section_names(pager , "", cols, sections, options_text);
 		goto finish;
 	}
 
-	for(i = 0; unsquashfs_sections[i] != NULL; i++)
-		if(strcmp(unsquashfs_sections[i], sec_name) == 0)
+	for(i = 0; sections[i] != NULL; i++)
+		if(strcmp(sections[i], sec_name) == 0)
 			break;
 
-	if(unsquashfs_sections[i] == NULL) {
+	if(sections[i] == NULL) {
 		autowrap_printf(pager, cols, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
-		print_section_names(pager, "", cols);
+		print_section_names(pager, "", cols, sections, options_text);
 		goto finish;
 	}
 
 	i++;
 
-	for(j = 0, secs = 0; unsquashfs_text[j] != NULL && secs <= i; j ++) {
-		if(is_header(j))
+	for(j = 0, secs = 0; options_text[j] != NULL && secs <= i; j ++) {
+		if(is_header(j, options_text))
 			secs++;
 		if(i == secs)
-			autowrap_print(pager, unsquashfs_text[j], cols);
+			autowrap_print(pager, options_text[j], cols);
 	}
 
 finish:
@@ -398,7 +398,7 @@ static void handle_invalid_option(char *prog_name, char *opt_name, char **sectio
 
 	autowrap_printf(stderr, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
 	fprintf(stderr, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols);
+	print_section_names(stderr, "\t", cols, sections, options_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
@@ -412,7 +412,7 @@ static void print_help(int error, char *prog_name, char *syntax, char **sections
 
 	autowrap_printf(stream, cols, syntax, prog_name);
 	autowrap_printf(stream, cols, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stream, "\t", cols);
+	print_section_names(stream, "\t", cols, sections, options_text);
 	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(error);
@@ -425,7 +425,7 @@ static void print_option_help(char *prog_name, char *option, char **sections, ch
 
 	autowrap_printf(stderr, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
 	autowrap_printf(stderr, cols, "Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols);
+	print_section_names(stderr, "\t", cols, sections, options_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
@@ -435,6 +435,12 @@ static void print_option_help(char *prog_name, char *option, char **sections, ch
 void unsquashfs_help_all(char *name)
 {
         print_help_all(name, UNSQUASHFS_SYNTAX, unsquashfs_text);
+}
+
+
+void unsquashfs_section(char *prog_name, char *opt_name, char *sec_name)
+{
+	print_section(prog_name, opt_name, sec_name, unsquashfs_sections, unsquashfs_text);
 }
 
 
