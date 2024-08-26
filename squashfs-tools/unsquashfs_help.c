@@ -78,6 +78,10 @@ static char *unsquashfs_sections[]={
 	"environment", "exit", "extra", NULL
 };
 
+static char *sqfscat_sections[]={
+	"runtime", "filter", "help", "environment", "exit", "extra", NULL
+};
+
 static char *unsquashfs_text[]={
 	"Filesystem extraction (filtering) options:", "\n",
 	"\t-d[est] <pathname>\textract to <pathname>, default "
@@ -238,7 +242,7 @@ static char *sqfscat_text[]={
 	"  1\tFATAL errors occurred, e.g. filesystem corruption, I/O errors.  Sqfscat did not continue and aborted.\n",
 	"  2\tNon-fatal errors occurred, e.g. not a regular file, or failed to resolve pathname.  Sqfscat continued and did not abort.\n",
 	"\nSee -ignore-errors, -strict-errors and -no-exit-code options for how they affect the exit status.\n",
-	"\n", "See also:", "\n",
+	"\n", "See also (extra information elsewhere):", "\n",
 	"The README for the Squashfs-tools 4.6.1 release describing the new features can be read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6.1\n",
 	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n",
 	NULL,
@@ -471,6 +475,12 @@ void unsquashfs_option_help(char *prog_name, char *option)
 void sqfscat_help(char *name)
 {
 	print_help_all(name, SQFSCAT_SYNTAX, sqfscat_text);
+}
+
+
+void sqfscat_section(char *prog_name, char *opt_name, char *sec_name)
+{
+	print_section(prog_name, opt_name, sec_name, sqfscat_sections, sqfscat_text);
 }
 
 

@@ -3945,6 +3945,13 @@ static int parse_cat_options(int argc, char *argv[])
 			}
 
 			sqfscat_option(argv[0], argv[i - 1], argv[i]);
+		} else if(strcmp(argv[i], "-help-section") == 0 || strcmp(argv[i], "-hs") == 0) {
+			if(++i == argc) {
+				ERROR("%s: %s missing section\n", argv[0], argv[i - 1]);
+				exit(1);
+			}
+
+			sqfscat_section(argv[0], argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-no-exit-code") == 0 ||
 				strcmp(argv[i], "-no-exit") == 0)
 			set_exit_code = FALSE;
