@@ -55,7 +55,7 @@ static char *unsquashfs_options[]={
 static char *sqfscat_options[]={ "", "", "-version", "-processors", "-mem",
 	"-mem-percent", "-offset", "-ignore-errors", "-strict-errors",
 	"-no-exit-code", "", "", "","-no-wildcards", "-regex", "", "", "",
-	"-help", "-help-option", "-ho", NULL,
+	"-help", "-help-option", "-help-section", "-ho", "-hs", NULL,
 };
 
 static char *unsquashfs_args[]={
@@ -70,7 +70,8 @@ static char *unsquashfs_args[]={
 
 static char *sqfscat_args[]={
 	"", "", "", "<number>", "<size>", "<percent>", "<bytes>", "", "", "",
-	"", "", "", "", "", "", "", "", "", "<regex>", "<regex>"
+	"", "", "", "", "", "", "", "", "", "<regex>", "<section>", "<regex>",
+	"<section>"
 };
 
 static char *unsquashfs_sections[]={
@@ -232,7 +233,12 @@ static char *sqfscat_text[]={
 	"\t-h[elp]\t\t\tprint help information for all Sqfscat options to pager (or stdout if not a terminal)\n",
 	"\t-help-option <regex>\tprint the help information for Sqfscat "
 		"options matching <regex> to stdout\n",
+	"\t-help-section <section>\tprint the help information for section "
+		"<section> to pager (or stdout if not a terminal).  Use "
+		"\"sections\" or \"h\" as section name to get a list of "
+		"sections and their names\n",
 	"\t-ho <regex>\t\tshorthand alternative to -help-option\n",
+	"\t-hs <section>\t\tshorthand alternative to -help-section\n",
 	"\n", "Environment:", "\n",
 	"\tPAGER\t\t\tIf set, this is used as the name of the program used to "
 		"display the help text.  The value can be a simple command or "
