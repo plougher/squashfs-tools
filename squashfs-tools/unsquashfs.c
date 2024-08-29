@@ -3935,10 +3935,9 @@ static int parse_cat_options(int argc, char *argv[])
 	for(i = 1; i < argc; i++) {
 		if(*argv[i] != '-')
 			break;
-		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
+		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			sqfscat_help(FALSE, argv[0]);
-			exit(0);
-		} else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
+		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
 			sqfscat_help_all(argv[0]);
 		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
 			if(++i == argc) {
