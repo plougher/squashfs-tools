@@ -478,7 +478,7 @@ void unsquashfs_option_help(char *prog_name, char *option)
 }
 
 
-void sqfscat_help(char *name)
+void sqfscat_help_all(char *name)
 {
 	print_help_all(name, SQFSCAT_SYNTAX, sqfscat_text);
 }
@@ -493,4 +493,10 @@ void sqfscat_section(char *prog_name, char *opt_name, char *sec_name)
 void sqfscat_option(char *prog_name, char *opt_name, char *pattern)
 {
 	print_option(prog_name, opt_name, pattern, sqfscat_options, sqfscat_args, sqfscat_text);
+}
+
+
+void sqfscat_help(int error, char *prog_name)
+{
+	print_help(error, prog_name, SQFSCAT_SYNTAX, sqfscat_sections, sqfscat_text);
 }

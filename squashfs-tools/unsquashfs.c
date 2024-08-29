@@ -3936,7 +3936,7 @@ static int parse_cat_options(int argc, char *argv[])
 		if(*argv[i] != '-')
 			break;
 		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0) {
-			sqfscat_help(argv[0]);
+			sqfscat_help(FALSE, argv[0]);
 			exit(0);
 		} else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
 			if(++i == argc) {
@@ -4091,7 +4091,7 @@ static int parse_cat_options(int argc, char *argv[])
 				exit(1);
 			}
 		} else
-			sqfscat_help(argv[0]);
+			sqfscat_help(TRUE, argv[0]);
 	}
 
 	if(strict_errors && ignore_errors)
@@ -4107,12 +4107,12 @@ static int parse_cat_options(int argc, char *argv[])
 	if(i == argc) {
 		if(!version) {
 			ERROR("%s: fatal error: no input filesystem specified on command line\n\n", argv[0]);
-			sqfscat_help(argv[0]);
+			sqfscat_help(TRUE, argv[0]);
 		} else
 			exit(1);
 	} else if(i + 1 == argc) {
 		ERROR("%s: fatal error: no files specified on command line\n\n", argv[0]);
-		sqfscat_help(argv[0]);
+		sqfscat_help(TRUE, argv[0]);
 	}
 
 	return i;
