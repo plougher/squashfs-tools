@@ -230,7 +230,7 @@ static char *sqfscat_text[]={
 	"\t-no-wild[cards]\t\tdo not use wildcard matching in filenames\n",
 	"\t-r[egex]\t\ttreat filenames as POSIX regular expressions rather than use the default shell wildcard expansion (globbing)\n",
 	"\n", "Help options:", "\n",
-	"\t-h[elp]\t\t\tprint help information for all Sqfscat options to pager (or stdout if not a terminal)\n",
+	"\t-h[elp]\t\t\tprint help summary information to stdout\n",
 	"\t-help-option <regex>\tprint the help information for Sqfscat "
 		"options matching <regex> to stdout\n",
 	"\t-help-section <section>\tprint the help information for section "
