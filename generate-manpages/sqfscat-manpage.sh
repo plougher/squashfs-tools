@@ -37,11 +37,11 @@ done
 
 tmp=$(mktemp -d)
 
-# Run sqfscat -help, and output the help text to
+# Run sqfscat -help-all, and output the help text to
 # $tmp/sqfscat.help.  This is to allow it to be modified before
 # passing to help2man.
 
-if ! $1/sqfscat -help > $tmp/sqfscat.help; then
+if ! $1/sqfscat -help-all > $tmp/sqfscat.help; then
 	error "$0: Running Sqfscat failed.  Cross-compiled or incompatible binary?"
 	exit 1
 fi
