@@ -35,7 +35,8 @@
 #define UNSQUASHFS_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [files to extract " \
 	"or exclude (with -excludes) or cat (with -cat )]\n\n"
 
-#define SQFSCAT_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [list of files to cat to stdout]\n\n"
+#define SQFSCAT_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [list of files to " \
+	"cat to stdout]\n\n"
 
 static char *unsquashfs_options[]={
 	"", "", "-dest", "-max-depth", "-excludes", "-exclude-list",
