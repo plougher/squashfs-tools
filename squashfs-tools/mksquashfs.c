@@ -5290,7 +5290,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	sigaddset(&sigmask, SIGQUIT);
 	sigaddset(&sigmask, SIGHUP);
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, NULL) != 0)
-		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
+		BAD_ERROR("Failed to set signal mask in initialise_threads\n");
 
 	/*
 	 * temporarily block these signals, so the created sub-threads
@@ -5301,7 +5301,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	sigaddset(&sigmask, SIGTERM);
 	sigaddset(&sigmask, SIGUSR1);
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) != 0)
-		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
+		BAD_ERROR("Failed to set signal mask in initialise_threads\n");
 
 	if(processors == -1)
 		processors = get_nprocessors();
@@ -5360,7 +5360,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 
 	/* Restore the signal mask for the main thread */
 	if(pthread_sigmask(SIG_SETMASK, &old_mask, NULL) != 0)
-		BAD_ERROR("Failed to set signal mask in intialise_threads\n");
+		BAD_ERROR("Failed to set signal mask in initialise_threads\n");
 }
 
 
