@@ -510,3 +510,9 @@ void sqfscat_invalid_option(char *prog_name, char *opt_name)
 {
 	handle_invalid_option(prog_name, opt_name, sqfscat_sections, sqfscat_text);
 }
+
+
+void sqfscat_option_help(char *prog_name, char *option)
+{
+	print_option_help(prog_name, option, sqfscat_sections, sqfscat_text);
+}

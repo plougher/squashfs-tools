@@ -57,4 +57,5 @@ extern void sqfscat_option(char *prog_name, char *opt_name, char *pattern);
 extern void sqfscat_section(char *prog_name, char *opt_name, char *sec_name);
 extern void sqfscat_help(int error, char *prog_name);
 extern void sqfscat_invalid_option(char *prog_name, char *opt_name);
+extern void sqfscat_option_help(char *prog_name, char *option);
 #endif

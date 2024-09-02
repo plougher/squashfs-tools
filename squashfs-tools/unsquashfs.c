@@ -3942,14 +3942,14 @@ static int parse_cat_options(int argc, char *argv[])
 		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing regex\n", argv[0], argv[i - 1]);
-				exit(1);
+				sqfscat_option_help(argv[0], argv[i - 1]);
 			}
 
 			sqfscat_option(argv[0], argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-help-section") == 0 || strcmp(argv[i], "-hs") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing section\n", argv[0], argv[i - 1]);
-				exit(1);
+				sqfscat_option_help(argv[0], argv[i - 1]);
 			}
 
 			sqfscat_section(argv[0], argv[i - 1], argv[i]);
@@ -3976,7 +3976,7 @@ static int parse_cat_options(int argc, char *argv[])
 						&processors)) {
 				ERROR("%s: -processors missing or invalid "
 					"processor number\n", argv[0]);
-				exit(1);
+				sqfscat_option_help(argv[0], argv[i - 1]);
 			}
 			if(processors < 1) {
 				ERROR("%s: -processors should be 1 or larger\n",
@@ -3990,6 +3990,7 @@ static int parse_cat_options(int argc, char *argv[])
 					!parse_numberll(argv[i], &number, 1)) {
 				ERROR("%s: -mem missing or invalid mem size\n",
 					 argv[0]);
+				sqfscat_option_help(argv[0], argv[i - 1]);
 				exit(1);
 			}
 
@@ -4024,7 +4025,7 @@ static int parse_cat_options(int argc, char *argv[])
 				ERROR("%s: -mem-percent missing or invalid "
 					"percentage: it should be 1 - 75%\n",
 					 argv[0]);
-				exit(1);
+				sqfscat_option_help(argv[0], argv[i - 1]);
 			}
 
 			phys_mem = get_physical_memory();
@@ -4089,7 +4090,7 @@ static int parse_cat_options(int argc, char *argv[])
 									1)) {
 				ERROR("%s: %s missing or invalid offset size\n",
 							argv[0], argv[i - 1]);
-				exit(1);
+				sqfscat_option_help(argv[0], argv[i - 1]);
 			}
 		} else
 			sqfscat_invalid_option(argv[0], argv[i]);
