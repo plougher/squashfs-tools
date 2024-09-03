@@ -221,16 +221,24 @@ static char *unsquashfs_text[]={
 static char *sqfscat_text[]={
 	"Runtime options:", "\n",
 	"\t-v[ersion]\t\tprint version, licence and copyright information\n",
-	"\t-p[rocessors] <number>\tuse <number> processors.  By default will use the number of processors available\n",
-	"\t-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or G to specify Kbytes, Mbytes or Gbytes respectively.  Default 512 Mbytes\n",
+	"\t-p[rocessors] <number>\tuse <number> processors.  By default will "
+		"use the number of processors available\n",
+	"\t-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or "
+		"G to specify Kbytes, Mbytes or Gbytes respectively.  Default "
+		"512 Mbytes\n",
 	"\t-mem-percent <percent>\tuse <percent> physical memory for caches.\n",
-	"\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  Optionally a suffix of K, M or G can be given to specify Kbytes, Mbytes or Gbytes respectively (default 0 bytes).\n",
-	"\t-ig[nore-errors]\ttreat errors writing files to stdout as non-fatal\n",
+	"\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  Optionally "
+		"a suffix of K, M or G can be given to specify Kbytes, Mbytes "
+		"or Gbytes respectively (default 0 bytes).\n",
+	"\t-ig[nore-errors]\ttreat errors writing files to stdout as "
+		"non-fatal\n",
 	"\t-st[rict-errors]\ttreat all errors as fatal\n",
-	"\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on non-fatal errors\n",
+	"\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on non-fatal "
+		"errors\n",
 	"\n", "Filter options:", "\n",
 	"\t-no-wild[cards]\t\tdo not use wildcard matching in filenames\n",
-	"\t-r[egex]\t\ttreat filenames as POSIX regular expressions rather than use the default shell wildcard expansion (globbing)\n",
+	"\t-r[egex]\t\ttreat filenames as POSIX regular expressions rather "
+		"than use the default shell wildcard expansion (globbing)\n",
 	"\n", "Help options:", "\n",
 	"\t-h[elp]\t\t\tprint help summary information to stdout\n",
 	"\t-help-option <regex>\tprint the help information for Sqfscat "
@@ -249,12 +257,18 @@ static char *sqfscat_text[]={
 		"a pathname.  The default is /usr/bin/pager\n",
 	"\n", "Exit status:", "\n",
 	"  0\tThe file or files were output to stdout OK.\n",
-	"  1\tFATAL errors occurred, e.g. filesystem corruption, I/O errors.  Sqfscat did not continue and aborted.\n",
-	"  2\tNon-fatal errors occurred, e.g. not a regular file, or failed to resolve pathname.  Sqfscat continued and did not abort.\n",
-	"\nSee -ignore-errors, -strict-errors and -no-exit-code options for how they affect the exit status.\n",
+	"  1\tFATAL errors occurred, e.g. filesystem corruption, I/O errors.  "
+		"Sqfscat did not continue and aborted.\n",
+	"  2\tNon-fatal errors occurred, e.g. not a regular file, or failed to "
+		"resolve pathname.  Sqfscat continued and did not abort.\n",
+	"\nSee -ignore-errors, -strict-errors and -no-exit-code options for "
+		"how they affect the exit status.\n",
 	"\n", "See also (extra information elsewhere):", "\n",
-	"The README for the Squashfs-tools 4.6.1 release describing the new features can be read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6.1\n",
-	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n",
+	"The README for the Squashfs-tools 4.6.1 release describing the new "
+		"features can be read here https://github.com/plougher/"
+		"squashfs-tools/blob/master/README-4.6.1\n",
+	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/"
+		"plougher/squashfs-tools/blob/master/USAGE-4.6\n",
 	NULL,
 };
 
