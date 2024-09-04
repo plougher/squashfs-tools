@@ -317,7 +317,7 @@ struct cache *cache_init(int buffer_size, int max_buffers, int noshrink_lookup,
 	 */
 	cache->first_freelist = first_freelist;
 
-	memset(cache->hash_table, 0, sizeof(struct file_buffer *) * 65536);
+	memset(cache->hash_table, 0, sizeof(struct file_buffer *) * HASH_SIZE);
 	pthread_mutex_init(&cache->mutex, NULL);
 	pthread_cond_init(&cache->wait_for_free, NULL);
 	pthread_cond_init(&cache->wait_for_unlock, NULL);
