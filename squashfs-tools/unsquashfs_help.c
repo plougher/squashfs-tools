@@ -57,7 +57,7 @@ static char *sqfscat_options[]={ "", "", "-version", "-processors", "-mem",
 	"-mem-percent", "-offset", "-ignore-errors", "-strict-errors",
 	"-no-exit-code", "", "", "","-no-wildcards", "-regex", "", "", "",
 	"-help", "-help-option", "-help-section", "-help-all", "-ho", "-hs",
-	NULL,
+	"-ha", NULL,
 };
 
 static char *unsquashfs_args[]={
@@ -73,7 +73,7 @@ static char *unsquashfs_args[]={
 static char *sqfscat_args[]={
 	"", "", "", "<number>", "<size>", "<percent>", "<bytes>", "", "", "",
 	"", "", "", "", "", "", "", "", "", "<regex>", "<section>", "",
-	"<regex>", "<section>"
+	"<regex>", "<section>", ""
 };
 
 static char *unsquashfs_sections[]={
@@ -251,6 +251,7 @@ static char *sqfscat_text[]={
 		"sections to pager (or stdout if not a terminal)\n",
 	"\t-ho <regex>\t\tshorthand alternative to -help-option\n",
 	"\t-hs <section>\t\tshorthand alternative to -help-section\n",
+	"\t-ha\t\t\tshorthand alternative to -help-all\n",
 	"\n", "Environment:", "\n",
 	"\tPAGER\t\t\tIf set, this is used as the name of the program used to "
 		"display the help text.  The value can be a simple command or "
