@@ -8023,7 +8023,7 @@ int main(int argc, char *argv[])
 			/* parsed previously */
 			i++;
 		} else
-			mksquashfs_invalid_option(argv[0], argv[i]);
+			mksquashfs_invalid_option(argv[i]);
 	}
 
 	check_source_date_epoch();

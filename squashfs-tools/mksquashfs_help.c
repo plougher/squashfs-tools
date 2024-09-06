@@ -852,9 +852,9 @@ void sqfstar_help(int error, char *prog_name)
 	print_help(error, prog_name, SQFSTAR_SYNTAX, sqfstar_sections, sqfstar_text);
 }
 
-void mksquashfs_invalid_option(char *prog_name, char *opt_name)
+void mksquashfs_invalid_option(char *opt_name)
 {
-	handle_invalid_option(prog_name, opt_name, mksquashfs_sections, mksquashfs_text);
+	handle_invalid_option("mksquashfs", opt_name, mksquashfs_sections, mksquashfs_text);
 }
 
 void sqfstar_invalid_option(char *prog_name, char *opt_name)
