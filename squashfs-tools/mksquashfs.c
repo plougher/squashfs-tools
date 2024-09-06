@@ -7214,14 +7214,14 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[j], "-help-option") == 0 || strcmp(argv[j], "-ho") == 0) {
 			if(++j == argc) {
 				ERROR("%s: %s missing regex\n", argv[0], argv[j - 1]);
-				mksquashfs_option_help(argv[0], argv[j - 1]);
+				mksquashfs_option_help(argv[j - 1]);
 			}
 
 			mksquashfs_option(argv[0], argv[j - 1], argv[j]);
 		} else if(strcmp(argv[j], "-help-section") == 0 || strcmp(argv[j], "-hs") == 0) {
 			if(++j == argc) {
 				ERROR("%s: %s missing section\n", argv[0], argv[j - 1]);
-				mksquashfs_option_help(argv[0], argv[j - 1]);
+				mksquashfs_option_help(argv[j - 1]);
 			}
 
 			mksquashfs_section(argv[0], argv[j - 1], argv[j]);
@@ -7229,7 +7229,7 @@ int main(int argc, char *argv[])
 			if(++j == argc) {
 				ERROR("%s: -help-comp missing compressor name\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[j - 1]);
+				mksquashfs_option_help(argv[j - 1]);
 			}
 
 			print_compressor_options(argv[j], argv[0]);
@@ -7257,7 +7257,7 @@ int main(int argc, char *argv[])
 			if(++j == argc) {
 				ERROR("%s: -comp missing compression type\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[j - 1]);
+				mksquashfs_option_help(argv[j - 1]);
 			}
 			comp = lookup_compressor(argv[j]);
 			if(!comp->supported) {
@@ -7332,7 +7332,7 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -pf missing filename\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(strcmp(argv[i], "-") == 0)
 				pseudo_stdin = TRUE;
@@ -7364,7 +7364,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: -recovery-path missing pathname\n",
 							argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			recovery_pathname = argv[i];
 		} else if(strcmp(argv[i], "-no-hardlinks") == 0)
@@ -7376,30 +7376,30 @@ int main(int argc, char *argv[])
 			if((++i == argc) || !parse_num_unsigned(argv[i], &max_depth)) {
 				ERROR("%s: -max-depth missing or invalid value\n",
 								argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-throttle") == 0) {
 			if((++i == argc) || !parse_number(argv[i], &sleep_time, 2)) {
 				ERROR("%s: -throttle missing or invalid value\n",
 								argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(sleep_time > 99) {
 				ERROR("%s: -throttle value should be between 0 and "
 								"99\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			readq = 4;
 		} else if(strcmp(argv[i], "-limit") == 0) {
 			if((++i == argc) || !parse_number(argv[i], &sleep_time, 2)) {
 				ERROR("%s: -limit missing or invalid value\n",
 								argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(sleep_time < 1 || sleep_time > 100) {
 				ERROR("%s: -limit value should be between 1 and "
 								"100\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			sleep_time = 100 - sleep_time;
 			readq = 4;
@@ -7411,7 +7411,7 @@ int main(int argc, char *argv[])
 					ERROR("%s: %s missing or invalid time "
 						"value\n", argv[0],
 						argv[i - 1]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			mkfs_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-all-time") == 0) {
@@ -7420,7 +7420,7 @@ int main(int argc, char *argv[])
 				!exec_date(argv[i], &all_time))) {
 					ERROR("%s: -all-time missing or invalid time "
 						"value\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			all_time_opt = TRUE;
 			clamping = FALSE;
@@ -7433,14 +7433,14 @@ int main(int argc, char *argv[])
 				ERROR("%s: -root-mode missing or invalid mode,"
 					" octal number <= 07777 expected\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			root_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-uid") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -root-uid missing uid or user name\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			res = get_uid_from_arg(argv[i], &root_uid);
@@ -7451,14 +7451,14 @@ int main(int argc, char *argv[])
 				else
 					ERROR("%s: -root-uid invalid uid or "
 						"unknown user name\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			root_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-gid") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -root-gid missing gid or group name\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			res = get_gid_from_arg(argv[i], &root_gid);
@@ -7469,7 +7469,7 @@ int main(int argc, char *argv[])
 				else
 					ERROR("%s: -root-gid invalid gid or "
 						"unknown group name\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			root_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-time") == 0) {
@@ -7478,14 +7478,14 @@ int main(int argc, char *argv[])
 					!exec_date(argv[i], &root_time))) {
 				ERROR("%s: -root-time missing or invalid time\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
 			if((++i == argc) || !parse_mode(argv[i], &default_mode)) {
 				ERROR("%s: -default-mode missing or invalid mode,"
 					" octal number <= 07777 expected\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			root_mode = default_mode;
 			default_mode_opt = root_mode_opt = TRUE;
@@ -7493,7 +7493,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: -default-uid missing uid or user name\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			res = get_uid_from_arg(argv[i], &default_uid);
@@ -7504,7 +7504,7 @@ int main(int argc, char *argv[])
 				else
 					ERROR("%s: -default-uid invalid uid or "
 						"unknown user name\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			root_uid = default_uid;
 			default_uid_opt = root_uid_opt = TRUE;
@@ -7512,7 +7512,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: -default-gid missing gid or group name\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			res = get_gid_from_arg(argv[i], &default_gid);
@@ -7523,14 +7523,14 @@ int main(int argc, char *argv[])
 				else
 					ERROR("%s: -default-gid invalid gid or "
 						"unknown group name\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			root_gid = default_gid;
 			default_gid_opt = root_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-log") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -log missing log file\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			open_log_file(argv[i]);
 
@@ -7539,7 +7539,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: %s missing action\n",
 					argv[0], argv[i - 1]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			res = parse_action(argv[i], ACTION_LOG_NONE);
 			if(res == 0)
@@ -7550,7 +7550,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: %s missing action\n",
 					argv[0], argv[i - 1]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			res = parse_action(argv[i], ACTION_LOG_VERBOSE);
 			if(res == 0)
@@ -7561,7 +7561,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: %s missing action\n",
 					argv[0], argv[i - 1]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			res = parse_action(argv[i], ACTION_LOG_TRUE);
 			if(res == 0)
@@ -7572,7 +7572,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: %s missing action\n",
 					argv[0], argv[i - 1]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			res = parse_action(argv[i], ACTION_LOG_FALSE);
 			if(res == 0)
@@ -7583,7 +7583,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: %s missing filename\n", argv[0],
 							argv[i - 1]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(read_action_file(argv[i], ACTION_LOG_NONE) == FALSE)
 				exit(1);
@@ -7593,7 +7593,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: %s missing filename\n", argv[0],
 							argv[i - 1]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(read_action_file(argv[i], ACTION_LOG_VERBOSE) == FALSE)
 				exit(1);
@@ -7603,7 +7603,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: %s missing filename\n", argv[0],
 							argv[i - 1]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(read_action_file(argv[i], ACTION_LOG_TRUE) == FALSE)
 				exit(1);
@@ -7613,7 +7613,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: %s missing filename\n", argv[0],
 							argv[i - 1]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(read_action_file(argv[i], ACTION_LOG_FALSE) == FALSE)
 				exit(1);
@@ -7643,7 +7643,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: -p missing pseudo file definition\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(read_pseudo_definition(argv[i], destination_file) == FALSE)
 				exit(1);
@@ -7651,7 +7651,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: %s missing pseudo file definition\n",
 					argv[0], argv[i - 1]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			pseudo_dir = read_pseudo_dir(argv[i]);
@@ -7661,7 +7661,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: -recover missing recovery file\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			read_recovery_data(argv[i], destination_file);
 		} else if(strcmp(argv[i], "-no-recovery") == 0)
@@ -7688,18 +7688,18 @@ int main(int argc, char *argv[])
 				!parse_numberll(argv[i], &start_offset, 1)) {
 					ERROR("%s: %s missing or invalid offset "
 						"size\n", argv[0], argv[i - 1]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-processors") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &processors)) {
 				ERROR("%s: -processors missing or invalid "
 					"processor number\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(processors < 1) {
 				ERROR("%s: -processors should be 1 or larger\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-read-queue") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &readq)) {
@@ -7749,7 +7749,7 @@ int main(int argc, char *argv[])
 					!parse_numberll(argv[i], &number, 1)) {
 				ERROR("%s: -mem missing or invalid mem size\n",
 					 argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			/*
@@ -7758,7 +7758,7 @@ int main(int argc, char *argv[])
 			 */
 			if(number >= (1LL << 51)) {
 				ERROR("%s: -mem invalid mem size\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			total_mem = number / 1048576;
@@ -7766,7 +7766,7 @@ int main(int argc, char *argv[])
 				ERROR("%s: -mem should be %d Mbytes or "
 					"larger\n", argv[0],
 					SQUASHFS_LOWMEM / SQUASHFS_TAKE);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			calculate_queue_sizes(total_mem, &readq, &fragq,
 				&bwriteq, &fwriteq);
@@ -7789,7 +7789,7 @@ int main(int argc, char *argv[])
 				ERROR("%s: -mem-percent missing or invalid "
 					"percentage: it should be 1 - 75%\n",
 					 argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			phys_mem = get_physical_memory();
@@ -7803,7 +7803,7 @@ int main(int argc, char *argv[])
 			if(multiply_overflow(phys_mem, percent)) {
 				ERROR("%s: -mem-percent requested phys mem too "
 					"large\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			total_mem = phys_mem * percent / 100;
@@ -7812,7 +7812,7 @@ int main(int argc, char *argv[])
 				ERROR("%s: -mem-percent mem too small, should "
 					"be %d Mbytes or larger\n", argv[0],
 					SQUASHFS_LOWMEM / SQUASHFS_TAKE);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			calculate_queue_sizes(total_mem, &readq, &fragq,
@@ -7820,22 +7820,22 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-b") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -b missing block size\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(!parse_number(argv[i], &block_size, 1)) {
 				ERROR("%s: -b invalid block size\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			if((block_log = slog(block_size)) == 0) {
 				ERROR("%s: -b block size not power of two or "
 					"not between 4096 and 1Mbyte\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-ef") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -ef missing filename\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			exclude_option = TRUE;
 		} else if(strcmp(argv[i], "-no-duplicates") == 0)
@@ -7854,7 +7854,7 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-sort") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -sort missing filename\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-all-root") == 0 ||
 				strcmp(argv[i], "-root-owned") == 0) {
@@ -7864,7 +7864,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: -force-uid missing uid or user name\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			res = get_uid_from_arg(argv[i], &global_uid);
@@ -7875,14 +7875,14 @@ int main(int argc, char *argv[])
 				else
 					ERROR("%s: -force-uid invalid uid or "
 						"unknown user name\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			global_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-gid") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -force-gid missing gid or group name\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			res = get_gid_from_arg(argv[i], &global_gid);
@@ -7893,7 +7893,7 @@ int main(int argc, char *argv[])
 				else
 					ERROR("%s: -force-gid invalid gid or "
 						"unknown group name\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 			global_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-pseudo-override") == 0)
@@ -7927,7 +7927,7 @@ int main(int argc, char *argv[])
 				ERROR("%s: -no-xattrs should not be used in "
 					"combination with -xattrs-* options\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			no_xattrs = TRUE;
@@ -7949,7 +7949,7 @@ int main(int argc, char *argv[])
 			} else if(++i == argc) {
 				ERROR("%s: -xattrs-exclude missing regex pattern\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			} else {
 				xattr_exclude_preg = xattr_regex(argv[i], "exclude");
 				no_xattrs = FALSE;
@@ -7963,7 +7963,7 @@ int main(int argc, char *argv[])
 			} else if(++i == argc) {
 				ERROR("%s: -xattrs-include missing regex pattern\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			} else {
 				xattr_include_preg = xattr_regex(argv[i], "include");
 				no_xattrs = FALSE;
@@ -7976,7 +7976,7 @@ int main(int argc, char *argv[])
 			} else if(++i == argc) {
 				ERROR("%s: -xattrs-add missing xattr argument\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			} else {
 				xattrs_add(argv[i]);
 				no_xattrs = FALSE;
@@ -8007,7 +8007,7 @@ int main(int argc, char *argv[])
 			if(++i == argc) {
 				ERROR("%s: -root-becomes: missing name\n",
 					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				mksquashfs_option_help(argv[i - 1]);
 			}	
 			root_name = argv[i];
 		} else if(strcmp(argv[i], "-percentage") == 0) {
