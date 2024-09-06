@@ -842,9 +842,9 @@ void sqfstar_section(char *prog_name, char *opt_name, char *sec_name)
 	print_section(prog_name, opt_name, sec_name, sqfstar_sections, sqfstar_text);
 }
 
-void mksquashfs_help(int error, char *prog_name)
+void mksquashfs_help(int error)
 {
-	print_help(error, prog_name, MKSQUASHFS_SYNTAX, mksquashfs_sections, mksquashfs_text);
+	print_help(error, "mksquashfs", MKSQUASHFS_SYNTAX, mksquashfs_sections, mksquashfs_text);
 }
 
 void sqfstar_help(int error, char *prog_name)

@@ -7208,7 +7208,7 @@ int main(int argc, char *argv[])
 	/* Scan the command line for options that will immediately quit afterwards */
 	for(j = i; j < argc; j++) {
 		if(strcmp(argv[j], "-help") == 0 || strcmp(argv[j], "-h") == 0)
-			mksquashfs_help(FALSE, argv[0]);
+			mksquashfs_help(FALSE);
 		else if(strcmp(argv[j], "-help-all") == 0 || strcmp(argv[j], "-ha") == 0)
 			mksquashfs_help_all(argv[0]);
 		else if(strcmp(argv[j], "-help-option") == 0 || strcmp(argv[j], "-ho") == 0) {
@@ -7302,7 +7302,7 @@ int main(int argc, char *argv[])
 			ERROR("%s: fatal error: no source or output filesystem specified on command line\n\n", argv[0]);
 		else
 			ERROR("%s: fatal error: no output filesystem specified on command line\n\n", argv[0]);
-		mksquashfs_help(TRUE, argv[0]);
+		mksquashfs_help(TRUE);
 	}
 
 	option_offset = i;
