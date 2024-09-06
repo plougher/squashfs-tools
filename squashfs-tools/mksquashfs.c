@@ -7210,7 +7210,7 @@ int main(int argc, char *argv[])
 		if(strcmp(argv[j], "-help") == 0 || strcmp(argv[j], "-h") == 0)
 			mksquashfs_help(FALSE);
 		else if(strcmp(argv[j], "-help-all") == 0 || strcmp(argv[j], "-ha") == 0)
-			mksquashfs_help_all(argv[0]);
+			mksquashfs_help_all();
 		else if(strcmp(argv[j], "-help-option") == 0 || strcmp(argv[j], "-ho") == 0) {
 			if(++j == argc) {
 				ERROR("%s: %s missing regex\n", argv[0], argv[j - 1]);

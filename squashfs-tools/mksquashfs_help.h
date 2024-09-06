@@ -59,7 +59,7 @@
 #define TRUE 1
 #define FALSE 0
 
-extern void mksquashfs_help_all(char *name);
+extern void mksquashfs_help_all(void);
 extern void mksquashfs_option(char *prog_name, char *opt_name, char *pattern);
 extern void mksquashfs_section(char *prog_name, char *opt_name, char *sec_name);
 extern void mksquashfs_invalid_option(char *prog_name, char *opt_name);

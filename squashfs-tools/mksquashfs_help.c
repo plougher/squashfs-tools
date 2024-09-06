@@ -809,9 +809,9 @@ static void print_option_help(char *prog_name, char *option, char **sections, ch
 }
 
 
-void mksquashfs_help_all(char *name)
+void mksquashfs_help_all(void)
 {
-	print_help_all(name, MKSQUASHFS_SYNTAX, mksquashfs_text);
+	print_help_all("mksquashfs", MKSQUASHFS_SYNTAX, mksquashfs_text);
 }
 
 
