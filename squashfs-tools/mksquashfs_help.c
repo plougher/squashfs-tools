@@ -815,9 +815,9 @@ void mksquashfs_help_all(void)
 }
 
 
-void sqfstar_help_all(char *name)
+void sqfstar_help_all(void)
 {
-	print_help_all(name, SQFSTAR_SYNTAX, sqfstar_text);
+	print_help_all("sqfstar", SQFSTAR_SYNTAX, sqfstar_text);
 }
 
 
