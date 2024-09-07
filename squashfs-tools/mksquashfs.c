@@ -6314,7 +6314,7 @@ static int sqfstar(int argc, char *argv[])
 			print_version("sqfstar");
 			exit(0);
 		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
-			sqfstar_help(FALSE, argv[0]);
+			sqfstar_help(FALSE);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
 			sqfstar_help_all(argv[0]);
 		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
@@ -6915,7 +6915,7 @@ static int sqfstar(int argc, char *argv[])
 
 	if(i == argc) {
 		ERROR("%s: fatal error: no output filesystem specified on command line\n\n", argv[0]);
-		sqfstar_help(TRUE, argv[0]);
+		sqfstar_help(TRUE);
 		exit(1);
 	}
 

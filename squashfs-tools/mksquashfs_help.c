@@ -847,9 +847,9 @@ void mksquashfs_help(int error)
 	print_help(error, "mksquashfs", MKSQUASHFS_SYNTAX, mksquashfs_sections, mksquashfs_text);
 }
 
-void sqfstar_help(int error, char *prog_name)
+void sqfstar_help(int error)
 {
-	print_help(error, prog_name, SQFSTAR_SYNTAX, sqfstar_sections, sqfstar_text);
+	print_help(error, "sqfstar", SQFSTAR_SYNTAX, sqfstar_sections, sqfstar_text);
 }
 
 void mksquashfs_invalid_option(char *opt_name)
