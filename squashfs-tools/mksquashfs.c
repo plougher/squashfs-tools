@@ -6910,7 +6910,7 @@ static int sqfstar(int argc, char *argv[])
 			progress = silent = TRUE;
 
 		} else
-			sqfstar_invalid_option(argv[0], argv[i]);
+			sqfstar_invalid_option(argv[i]);
 	}
 
 	if(i == argc) {
