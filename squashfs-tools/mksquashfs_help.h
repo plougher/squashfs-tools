@@ -70,5 +70,5 @@ extern void sqfstar_option(char *prog_name, char *opt_name, char *pattern);
 extern void sqfstar_section(char *prog_name, char *opt_name, char *sec_name);
 extern void sqfstar_invalid_option(char *opt_name);
 extern void sqfstar_help(int error);
-extern void sqfstar_option_help(char *prog_name, char *option);
+extern void sqfstar_option_help(char *option);
 #endif

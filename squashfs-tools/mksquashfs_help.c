@@ -867,7 +867,7 @@ void mksquashfs_option_help(char *option)
 	print_option_help("mksquashfs", option, mksquashfs_sections, mksquashfs_text);
 }
 
-void sqfstar_option_help(char *prog_name, char *option)
+void sqfstar_option_help(char *option)
 {
-	print_option_help(prog_name, option, sqfstar_sections, sqfstar_text);
+	print_option_help("sqfstar", option, sqfstar_sections, sqfstar_text);
 }
