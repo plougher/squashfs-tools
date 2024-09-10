@@ -461,9 +461,9 @@ static void print_option_help(char *prog_name, char *option, char **sections, ch
 }
 
 
-void unsquashfs_help_all(char *name)
+void unsquashfs_help_all(void)
 {
-        print_help_all(name, UNSQUASHFS_SYNTAX, unsquashfs_text);
+        print_help_all("unsquashfs", UNSQUASHFS_SYNTAX, unsquashfs_text);
 }
 
 
