@@ -479,9 +479,9 @@ void unsquashfs_option(char *prog_name, char *opt_name, char *pattern)
 }
 
 
-void unsquashfs_help(int error, char *prog_name)
+void unsquashfs_help(int error)
 {
-	print_help(error, prog_name, UNSQUASHFS_SYNTAX, unsquashfs_sections, unsquashfs_text);
+	print_help(error, "unsquashfs", UNSQUASHFS_SYNTAX, unsquashfs_sections, unsquashfs_text);
 }
 
 
