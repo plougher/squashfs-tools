@@ -821,9 +821,9 @@ void sqfstar_help_all(void)
 }
 
 
-void mksquashfs_option(char *prog_name, char *opt_name, char *pattern)
+void mksquashfs_option(char *opt_name, char *pattern)
 {
-	print_option(prog_name, opt_name, pattern, mksquashfs_options, mksquashfs_args, mksquashfs_text);
+	print_option("mksquashfs", opt_name, pattern, mksquashfs_options, mksquashfs_args, mksquashfs_text);
 }
 
 

@@ -7217,7 +7217,7 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[j - 1]);
 			}
 
-			mksquashfs_option(argv[0], argv[j - 1], argv[j]);
+			mksquashfs_option(argv[j - 1], argv[j]);
 		} else if(strcmp(argv[j], "-help-section") == 0 || strcmp(argv[j], "-hs") == 0) {
 			if(++j == argc) {
 				ERROR("%s: %s missing section\n", argv[0], argv[j - 1]);
