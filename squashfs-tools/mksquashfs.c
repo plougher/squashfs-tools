@@ -7224,7 +7224,7 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[j - 1]);
 			}
 
-			mksquashfs_section(argv[0], argv[j - 1], argv[j]);
+			mksquashfs_section(argv[j - 1], argv[j]);
 		} else if(strcmp(argv[j], "-help-comp") == 0) {
 			if(++j == argc) {
 				ERROR("%s: -help-comp missing compressor name\n",

@@ -61,7 +61,7 @@
 
 extern void mksquashfs_help_all(void);
 extern void mksquashfs_option(char *opt_name, char *pattern);
-extern void mksquashfs_section(char *prog_name, char *opt_name, char *sec_name);
+extern void mksquashfs_section(char *opt_name, char *sec_name);
 extern void mksquashfs_invalid_option(char *opt_name);
 extern void mksquashfs_help(int error);
 extern void mksquashfs_option_help(char *option);

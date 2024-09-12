@@ -832,9 +832,9 @@ void sqfstar_option(char *prog_name, char *opt_name, char *pattern)
 	print_option(prog_name, opt_name, pattern, sqfstar_options, sqfstar_args, sqfstar_text);
 }
 
-void mksquashfs_section(char *prog_name, char *opt_name, char *sec_name)
+void mksquashfs_section(char *opt_name, char *sec_name)
 {
-	print_section(prog_name, opt_name, sec_name, mksquashfs_sections, mksquashfs_text);
+	print_section("mksquashfs", opt_name, sec_name, mksquashfs_sections, mksquashfs_text);
 }
 
 void sqfstar_section(char *prog_name, char *opt_name, char *sec_name)
