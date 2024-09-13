@@ -6330,7 +6330,7 @@ static int sqfstar(int argc, char *argv[])
 				sqfstar_option_help(argv[i - 1]);
 			}
 
-			sqfstar_section(argv[0], argv[i - 1], argv[i]);
+			sqfstar_section(argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-help-comp") == 0) {
 			if(++i == argc) {
 				ERROR("%s: -help-comp missing compressor name\n", argv[0]);

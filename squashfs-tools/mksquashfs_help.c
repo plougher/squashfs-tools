@@ -837,9 +837,9 @@ void mksquashfs_section(char *opt_name, char *sec_name)
 	print_section("mksquashfs", opt_name, sec_name, mksquashfs_sections, mksquashfs_text);
 }
 
-void sqfstar_section(char *prog_name, char *opt_name, char *sec_name)
+void sqfstar_section(char *opt_name, char *sec_name)
 {
-	print_section(prog_name, opt_name, sec_name, sqfstar_sections, sqfstar_text);
+	print_section("sqfstar", opt_name, sec_name, sqfstar_sections, sqfstar_text);
 }
 
 void mksquashfs_help(int error)
