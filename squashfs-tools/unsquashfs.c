@@ -4145,7 +4145,7 @@ static int parse_options(int argc, char *argv[])
 				unsquashfs_option_help(argv[0], argv[i - 1]);
 			}
 
-			unsquashfs_section(argv[0], argv[i - 1], argv[i]);
+			unsquashfs_section(argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-pseudo-file") == 0 ||
 				strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc) {
