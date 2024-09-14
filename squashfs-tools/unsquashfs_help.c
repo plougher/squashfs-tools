@@ -473,9 +473,9 @@ void unsquashfs_section(char *prog_name, char *opt_name, char *sec_name)
 }
 
 
-void unsquashfs_option(char *prog_name, char *opt_name, char *pattern)
+void unsquashfs_option(char *opt_name, char *pattern)
 {
-	print_option(prog_name, opt_name, pattern, unsquashfs_options, unsquashfs_args, unsquashfs_text);
+	print_option("unsquashfs", opt_name, pattern, unsquashfs_options, unsquashfs_args, unsquashfs_text);
 }
 
 

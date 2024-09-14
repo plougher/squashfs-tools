@@ -4138,7 +4138,7 @@ static int parse_options(int argc, char *argv[])
 				unsquashfs_option_help(argv[0], argv[i - 1]);
 			}
 
-			unsquashfs_option(argv[0], argv[i - 1], argv[i]);
+			unsquashfs_option(argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-help-section") == 0 || strcmp(argv[i], "-hs") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing section\n", argv[0], argv[i - 1]);
