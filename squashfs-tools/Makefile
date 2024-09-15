@@ -25,7 +25,7 @@ GZIP_SUPPORT = 1
 #
 # LZMA2 compression.
 #
-# XZ Utils liblzma (http://tukaani.org/xz/) is supported
+# XZ Utils liblzma (https://tukaani.org/xz/) is supported
 #
 # Development packages (libraries and header files) should be
 # supported by most modern distributions.  Please refer to
@@ -178,7 +178,7 @@ INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
 # LZMA1 compression is obsolete, and the newer and better XZ (LZMA2)
 # compression should be used in preference.
 #
-# Both XZ Utils liblzma (http://tukaani.org/xz/) and LZMA SDK
+# Both XZ Utils liblzma (https://tukaani.org/xz/) and LZMA SDK
 # (http://www.7-zip.org/sdk.html) are supported
 #
 # To build using XZ Utils liblzma - install the library and uncomment

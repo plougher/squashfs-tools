@@ -19,7 +19,7 @@
  * xz_wrapper_extended.c
  *
  * Support for XZ (LZMA2) compression using XZ Utils liblzma
- * http://tukaani.org/xz/
+ * https://tukaani.org/xz/
  *
  * This file supports OpenWrt extended XZ compression options.
  */
@@ -34,6 +34,21 @@
 #include "compressor.h"
 #include "print_pager.h"
 
+/*
+ * ARM64 filter was added in liblzma 5.4.0. Keep the build working with
+ * older versions too.
+ */
+#ifndef LZMA_FILTER_ARM64
+#define LZMA_FILTER_ARM64 LZMA_VLI_C(0x0A)
+#endif
+
+/*
+ * RISC-V filter was added in liblzma 5.6.0.
+ */
+#ifndef LZMA_FILTER_RISCV
+#define LZMA_FILTER_RISCV LZMA_VLI_C(0x0B)
+#endif
+
 static struct bcj bcj[] = {
 	{ "x86", LZMA_FILTER_X86, 0 },
 	{ "powerpc", LZMA_FILTER_POWERPC, 0 },
@@ -41,6 +56,8 @@ static struct bcj bcj[] = {
 	{ "arm", LZMA_FILTER_ARM, 0 },
 	{ "armthumb", LZMA_FILTER_ARMTHUMB, 0 },
 	{ "sparc", LZMA_FILTER_SPARC, 0 },
+	{ "arm64", LZMA_FILTER_ARM64, 0 },
+	{ "riscv", LZMA_FILTER_RISCV, 0 },
 	{ NULL, LZMA_VLI_UNKNOWN, 0 }
 };
 
@@ -105,6 +122,12 @@ static int xz_options(char *argv[], int argc)
 			if(bcj[i].name == NULL) {
 				fprintf(stderr, "xz: -Xbcj unrecognised "
 					"filter\n");
+				goto failed;
+			}
+			if(!lzma_filter_encoder_is_supported(bcj[i].id)) {
+				fprintf(stderr, "xz: -Xbcj %s: This filter "
+					"is not supported by the liblzma "
+					"version in use\n", bcj[i].name);
 				goto failed;
 			}
 		}
@@ -541,6 +564,30 @@ static int xz_compress(void *strm, void *dest, void *src,  int size,
 
 		stream->opt.dict_size = stream->dictionary_size;
 
+		switch(filter->filter[0].id) {
+		case LZMA_FILTER_ARMTHUMB:
+		case LZMA_FILTER_RISCV:
+			/* 2-byte-aligned instructions */
+			stream->opt.lp = 1;
+			break;
+
+		case LZMA_FILTER_POWERPC:
+		case LZMA_FILTER_ARM:
+		case LZMA_FILTER_SPARC:
+		case LZMA_FILTER_ARM64:
+			/* 4-byte-aligned instructions */
+			stream->opt.lp = 2;
+			stream->opt.lc = 2;
+			break;
+
+		case LZMA_FILTER_IA64:
+			/* 16-byte-aligned instructions */
+			stream->opt.pb = 4;
+			stream->opt.lp = 4;
+			stream->opt.lc = 0;
+			break;
+		}
+
 		if (lc >= 0)
 			stream->opt.lc = lc;
 
@@ -607,8 +654,8 @@ static void xz_usage(FILE *stream, int cols)
 	autowrap_print(stream, "\t  -Xbcj filter1,filter2,...,filterN\n", cols);
 	autowrap_print(stream, "\t\tCompress using filter1,filter2,...,filterN "
 		"in turn (in addition to no filter), and choose the best "
-		"compression.  Available filters: x86, arm, armthumb, powerpc, "
-		"sparc, ia64\n", cols);
+		"compression.  Available filters: x86, arm, armthumb, arm64, "
+		"powerpc, sparc, ia64, riscv\n", cols);
 	autowrap_print(stream, "\t  -Xdict-size <dict-size>\n", cols);
 	autowrap_print(stream, "\t\tUse <dict-size> as the XZ dictionary size."
 		"  The dictionary size can be specified as a percentage of the "

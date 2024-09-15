@@ -17,7 +17,7 @@ during the long development process of Squashfs 4.3.
 Acknowledgements for Squashfs 4.2
 ---------------------------------
 
-Thanks to Lasse Collin (http://tukaani.org/xz/) for mainlining XZ
+Thanks to Lasse Collin (https://tukaani.org/xz/) for mainlining XZ
 decompression support.
 
 Acknowledgements for Squashfs 4.1
