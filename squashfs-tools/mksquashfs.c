@@ -198,7 +198,7 @@ long long hardlnk_count = 0;
 struct squashfs_super_block sBlk;
 
 /* write position within data section */
-long long bytes = 0, total_bytes = 0;
+long long pos = 0, total_bytes = 0;
 
 /* in memory directory table - possibly compressed */
 char *directory_table = NULL;
@@ -449,13 +449,49 @@ int multiply_overflowll(long long a, int multiplier)
 			+ (((char *)A) - data_cache)))
 
 
+inline void set_pos(long long value)
+{
+	pos = value;
+}
+
+
+inline long long get_pos(void)
+{
+	return pos;
+}
+
+
+long long get_and_inc_pos(long long value)
+{
+	long long tmp = pos;
+
+	pos += value;
+	return tmp;
+}
+
+
+inline long long set_write_buffer(struct file_buffer *buffer, int size)
+{
+	buffer->block = get_and_inc_pos(size);
+	return buffer->block;
+}
+
+
+inline long long set_write_buffer_hash(struct file_buffer *buffer, int size)
+{
+	buffer->block = get_and_inc_pos(size);
+	cache_hash(buffer, buffer->block);
+	return buffer->block;
+}
+
+
 void restorefs()
 {
 	int i, res;
 
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
-	bytes = sbytes;
+	set_pos(sbytes);
 	memcpy(data_cache, sdata_cache, cache_bytes = scache_bytes);
 	memcpy(directory_data_cache, sdirectory_data_cache,
 		sdirectory_cache_bytes);
@@ -482,15 +518,15 @@ void restorefs()
 	write_filesystem_tables(&sBlk);
 
 	if(!block_device) {
-		int res = ftruncate(fd, bytes);
+		int res = ftruncate(fd, get_pos());
 		if(res != 0)
 			BAD_ERROR("Failed to truncate dest file because %s\n",
 				strerror(errno));
 	}
 
-	if(!nopad && (i = bytes & (4096 - 1))) {
+	if(!nopad && (i = get_pos() & (4096 - 1))) {
 		char temp[4096] = {0};
-		write_destination(fd, bytes, 4096 - i, temp);
+		write_destination(fd, get_pos(), 4096 - i, temp);
 	}
 
 	res = close(fd);
@@ -688,7 +724,7 @@ static long long write_inodes()
 	unsigned short c_byte;
 	int avail_bytes;
 	char *datap = data_cache;
-	long long start_bytes = bytes;
+	long long start_bytes;
 
 	while(cache_bytes) {
 		if(inode_size - inode_bytes <
@@ -712,8 +748,8 @@ static long long write_inodes()
 		cache_bytes -= avail_bytes;
 	}
 
-	write_destination(fd, bytes, inode_bytes,  inode_table);
-	bytes += inode_bytes;
+	start_bytes = get_and_inc_pos(inode_bytes);
+	write_destination(fd, start_bytes, inode_bytes,  inode_table);
 
 	return start_bytes;
 }
@@ -724,7 +760,7 @@ static long long write_directories()
 	unsigned short c_byte;
 	int avail_bytes;
 	char *directoryp = directory_data_cache;
-	long long start_bytes = bytes;
+	long long start_bytes;
 
 	while(directory_cache_bytes) {
 		if(directory_size - directory_bytes <
@@ -752,8 +788,9 @@ static long long write_directories()
 		directoryp += avail_bytes;
 		directory_cache_bytes -= avail_bytes;
 	}
-	write_destination(fd, bytes, directory_bytes, directory_table);
-	bytes += directory_bytes;
+
+	start_bytes = get_and_inc_pos(directory_bytes);
+	write_destination(fd, start_bytes, directory_bytes, directory_table);
 
 	return start_bytes;
 }
@@ -1623,9 +1660,7 @@ static void unlock_fragments()
 		write_buffer = queue_get(locked_fragment);
 		frg = write_buffer->block;	
 		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(fragment_table[frg].size);
-		fragment_table[frg].start_block = bytes;
-		write_buffer->block = bytes;
-		bytes += size;
+		fragment_table[frg].start_block = set_write_buffer(write_buffer, size);
 		fragments_outstanding --;
 		queue_put(to_writer, write_buffer);
 		log_fragment(frg, fragment_table[frg].start_block);
@@ -1737,13 +1772,13 @@ long long generic_write_table(long long length, void *buffer, int length2,
 {
 	int meta_blocks = (length + SQUASHFS_METADATA_SIZE - 1) /
 		SQUASHFS_METADATA_SIZE;
-	long long *list, start_bytes;
+	long long *list, start_bytes, bytes;
 	int compressed_size, i, list_size = meta_blocks * sizeof(long long);
 	unsigned short c_byte;
 	char cbuffer[(SQUASHFS_METADATA_SIZE << 2) + 2];
 	
 #ifdef SQUASHFS_TRACE
-	long long obytes = bytes;
+	long long obytes = get_pos();
 	long long olength = length;
 #endif
 
@@ -1758,31 +1793,30 @@ long long generic_write_table(long long length, void *buffer, int length2,
 			SQUASHFS_METADATA_SIZE , avail_bytes,
 			SQUASHFS_METADATA_SIZE, uncompressed, 0);
 		SQUASHFS_SWAP_SHORTS(&c_byte, cbuffer, 1);
-		list[i] = bytes;
 		compressed_size = SQUASHFS_COMPRESSED_SIZE(c_byte) +
 			BLOCK_OFFSET;
-		TRACE("block %d @ 0x%llx, compressed size %d\n", i, bytes,
-			compressed_size);
+		bytes = get_and_inc_pos(compressed_size);
 		write_destination(fd, bytes, compressed_size, cbuffer);
-		bytes += compressed_size;
+		list[i] = bytes;
 		total_bytes += avail_bytes;
 		length -= avail_bytes;
+		TRACE("block %d @ 0x%llx, compressed size %d\n", i, bytes,
+			compressed_size);
 	}
 
-	start_bytes = bytes;
+	start_bytes = get_and_inc_pos(length2);
 	if(length2) {
-		write_destination(fd, bytes, length2, buffer2);
-		bytes += length2;
+		write_destination(fd, start_bytes, length2, buffer2);
 		total_bytes += length2;
 	}
 		
 	SQUASHFS_INSWAP_LONG_LONGS(list, meta_blocks);
+	bytes = get_and_inc_pos(list_size);
 	write_destination(fd, bytes, list_size, list);
-	bytes += list_size;
 	total_bytes += list_size;
 
 	TRACE("generic_write_table: total uncompressed %lld compressed %lld\n",
-		olength, bytes - obytes);
+		olength, get_pos() - obytes);
 
 	free(list);
 
@@ -2172,14 +2206,14 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, int *du
 
 static void reset_and_truncate(long long start, int thresh)
 {
-	bytes = start;
+	set_pos(start);
 	if(thresh && !block_device) {
 		int res;
 
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
 			EXIT_MKSQUASHFS();
-		res = ftruncate(fd, bytes);
+		res = ftruncate(fd, get_pos());
 		if(res != 0)
 			BAD_ERROR("Failed to truncate dest file because"
 				"  %s\n", strerror(errno));
@@ -2669,9 +2703,7 @@ static void *frag_deflator(void *arg)
 		pthread_mutex_lock(&fragment_mutex);
 		if(fragments_locked == FALSE) {
 			fragment_table[file_buffer->block].size = c_byte;
-			fragment_table[file_buffer->block].start_block = bytes;
-			write_buffer->block = bytes;
-			bytes += compressed_size;
+			fragment_table[file_buffer->block].start_block = set_write_buffer(write_buffer, compressed_size);
 			fragments_outstanding --;
 			queue_put(to_writer, write_buffer);
 			log_fragment(file_buffer->block, fragment_table[file_buffer->block].start_block);
@@ -2736,9 +2768,7 @@ static void *frag_orderer(void *arg)
 		int block = write_buffer->block;
 
 		pthread_mutex_lock(&fragment_mutex);
-		fragment_table[block].start_block = bytes;
-		write_buffer->block = bytes;
-		bytes += SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size);
+		fragment_table[block].start_block = set_write_buffer(write_buffer, SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
 		fragments_outstanding --;
 		log_fragment(block, write_buffer->block);
 		queue_put(to_writer, write_buffer);
@@ -2827,7 +2857,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 		lock_fragments();
 
 	file_bytes = 0;
-	start = bytes;
+	start = get_pos();
 	while (1) {
 		read_size = read_buffer->file_size;
 		if(read_buffer->fragment) {
@@ -2841,10 +2871,8 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 				MEM_ERROR();
 			block_list[block ++] = read_buffer->c_byte;
 			if(read_buffer->c_byte) {
-				read_buffer->block = bytes;
-				bytes += read_buffer->size;
-				cache_hash(read_buffer, read_buffer->block);
 				file_bytes += read_buffer->size;
+				set_write_buffer_hash(read_buffer, read_buffer->size);
 				queue_put(to_writer, read_buffer);
 			} else {
 				sparse += read_buffer->size;
@@ -2890,14 +2918,14 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	bytes = start;
+	set_pos(start);
 	if(!block_device) {
 		int res;
 
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
 			EXIT_MKSQUASHFS();
-		res = ftruncate(fd, bytes);
+		res = ftruncate(fd, get_pos());
 		if(res != 0)
 			BAD_ERROR("Failed to truncate dest file because %s\n",
 				strerror(errno));
@@ -2938,7 +2966,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 		lock_fragments();
 
 	file_bytes = 0;
-	start = bytes;
+	start = get_pos();
 	thresh = blocks > bwriter_size ? blocks - bwriter_size : 0;
 
 	for(block = 0; block < blocks;) {
@@ -2951,10 +2979,8 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 			block_list[block] = read_buffer->c_byte;
 
 			if(read_buffer->c_byte) {
-				read_buffer->block = bytes;
-				bytes += read_buffer->size;
+				set_write_buffer_hash(read_buffer, read_buffer->size);
 				file_bytes += read_buffer->size;
-				cache_hash(read_buffer, read_buffer->block);
 				if(block < thresh) {
 					buffer_list[block] = NULL;
 					queue_put(to_writer, read_buffer);
@@ -3016,14 +3042,14 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	bytes = start;
+	set_pos(start);
 	if(thresh && !block_device) {
 		int res;
 
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
 			EXIT_MKSQUASHFS();
-		res = ftruncate(fd, bytes);
+		res = ftruncate(fd, get_pos());
 		if(res != 0)
 			BAD_ERROR("Failed to truncate dest file because %s\n",
 				strerror(errno));
@@ -3068,7 +3094,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 		lock_fragments();
 
 	file_bytes = 0;
-	start = bytes;
+	start = get_pos();
 	for(block = 0; block < blocks;) {
 		if(read_buffer->fragment) {
 			block_list[block] = 0;
@@ -3077,9 +3103,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 		} else {
 			block_list[block] = read_buffer->c_byte;
 			if(read_buffer->c_byte) {
-				read_buffer->block = bytes;
-				bytes += read_buffer->size;
-				cache_hash(read_buffer, read_buffer->block);
+				set_write_buffer_hash(read_buffer, read_buffer->size);
 				file_bytes += read_buffer->size;
 				queue_put(to_writer, read_buffer);
 			} else {
@@ -3134,14 +3158,14 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	bytes = start;
+	set_pos(start);
 	if(!block_device) {
 		int res;
 
 		queue_put(to_writer, NULL);
 		if(queue_get(from_writer) != 0)
 			EXIT_MKSQUASHFS();
-		res = ftruncate(fd, bytes);
+		res = ftruncate(fd, get_pos());
 		if(res != 0)
 			BAD_ERROR("Failed to truncate dest file because %s\n",
 				strerror(errno));
@@ -5848,7 +5872,7 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk)
 		TRACE("sBlk->lookup_table_start 0x%llx\n",
 			sBlk->lookup_table_start);
 
-	sBlk->bytes_used = bytes;
+	sBlk->bytes_used = get_pos();;
 
 	sBlk->compression = comp->id;
 
@@ -6159,10 +6183,10 @@ static void print_summary()
 		"compressed", noI || noId ? "uncompressed" : "compressed");
 	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
 		"not ");
-	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", bytes / 1024.0,
-		bytes / (1024.0 * 1024.0));
+	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", get_pos() / 1024.0,
+		get_pos() / (1024.0 * 1024.0));
 	printf("\t%.2f%% of uncompressed filesystem size (%.2f Kbytes)\n",
-		((float) bytes / total_bytes) * 100.0, total_bytes / 1024.0);
+		((float) get_pos() / total_bytes) * 100.0, total_bytes / 1024.0);
 	printf("Inode table size %lld bytes (%.2f Kbytes)\n",
 		inode_bytes, inode_bytes / 1024.0);
 	printf("\t%.2f%% of uncompressed inode table size (%lld bytes)\n",
@@ -7084,11 +7108,10 @@ static int sqfstar(int argc, char *argv[])
 			sizeof(c_byte), &c_byte);
 		write_destination(fd, sizeof(struct squashfs_super_block) +
 			sizeof(c_byte), size, comp_data);
-		bytes = sizeof(struct squashfs_super_block) + sizeof(c_byte)
-			+ size;
+		set_pos(sizeof(struct squashfs_super_block) + sizeof(c_byte) + size);
 		comp_opts = TRUE;
 	} else
-		bytes = sizeof(struct squashfs_super_block);
+		set_pos(sizeof(struct squashfs_super_block));
 
 	if(path)
 		paths = add_subdir(paths, path);
@@ -7137,9 +7160,9 @@ static int sqfstar(int argc, char *argv[])
 	set_progressbar_state(FALSE);
 	write_filesystem_tables(&sBlk);
 
-	if(!nopad && (i = bytes & (4096 - 1))) {
+	if(!nopad && (i = get_pos() & (4096 - 1))) {
 		char temp[4096] = {0};
-		write_destination(fd, bytes, 4096 - i, temp);
+		write_destination(fd, get_pos(), 4096 - i, temp);
 	}
 
 	res = close(fd);
@@ -8293,11 +8316,10 @@ int main(int argc, char *argv[])
 				sizeof(c_byte), &c_byte);
 			write_destination(fd, sizeof(struct squashfs_super_block) +
 				sizeof(c_byte), size, comp_data);
-			bytes = sizeof(struct squashfs_super_block) + sizeof(c_byte)
-				+ size;
+			set_pos(sizeof(struct squashfs_super_block) + sizeof(c_byte) + size);
 			comp_opts = TRUE;
 		} else			
-			bytes = sizeof(struct squashfs_super_block);
+			set_pos(sizeof(struct squashfs_super_block));
 	} else {
 		unsigned int last_directory_block, inode_dir_file_size,
 			root_inode_size, inode_dir_start_block,
@@ -8308,8 +8330,7 @@ int main(int argc, char *argv[])
 			root_inode_offset =
 			SQUASHFS_INODE_OFFSET(sBlk.root_inode);
 		int inode_dir_offset, uncompressed_data;
-
-		if((bytes = read_filesystem(root_name, fd, &sBlk, &inode_table,
+		long long bytes = read_filesystem(root_name, fd, &sBlk, &inode_table,
 				&data_cache, &directory_table,
 				&directory_data_cache, &last_directory_block,
 				&inode_dir_offset, &inode_dir_file_size,
@@ -8319,13 +8340,18 @@ int main(int argc, char *argv[])
 				&total_inode_bytes, &total_directory_bytes,
 				&inode_dir_inode_number,
 				&inode_dir_parent_inode, add_old_root_entry,
-				&fragment_table, &inode_lookup_table)) == 0) {
+				&fragment_table, &inode_lookup_table);
+
+		if(bytes == 0) {
 			ERROR("Failed to read existing filesystem - will not "
 				"overwrite - ABORTING!\n");
 			ERROR("To force Mksquashfs to write to this block "
 				"device or file use -noappend\n");
 			EXIT_MKSQUASHFS();
 		}
+
+		set_pos(bytes);
+
 		if((fragments = sBlk.fragments)) {
 			fragment_table = realloc((char *) fragment_table,
 				((fragments + FRAG_SIZE - 1) & ~(FRAG_SIZE - 1))
@@ -8485,9 +8511,9 @@ int main(int argc, char *argv[])
 	set_progressbar_state(FALSE);
 	write_filesystem_tables(&sBlk);
 
-	if(!nopad && (i = bytes & (4096 - 1))) {
+	if(!nopad && (i = get_pos() & (4096 - 1))) {
 		char temp[4096] = {0};
-		write_destination(fd, bytes, 4096 - i, temp);
+		write_destination(fd, get_pos(), 4096 - i, temp);
 	}
 
 	res = close(fd);
