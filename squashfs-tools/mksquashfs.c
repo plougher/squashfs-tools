@@ -199,6 +199,7 @@ struct squashfs_super_block sBlk;
 
 /* write position within data section */
 long long pos = 0, total_bytes = 0;
+long long marked_pos = 0;
 
 /* in memory directory table - possibly compressed */
 char *directory_table = NULL;
@@ -470,6 +471,31 @@ long long get_and_inc_pos(long long value)
 }
 
 
+inline void mark_pos()
+{
+	if(marked_pos != 0)
+		BAD_ERROR("BUG: Saved write position should be empty!\n");
+
+	marked_pos = 1;
+}
+
+
+inline long long get_marked_pos(void)
+{
+	long long tmp;
+
+	if(marked_pos == 0)
+		BAD_ERROR("BUG: Saved write position is empty!\n");
+	else if(marked_pos == 1)
+		tmp = get_pos();
+	else
+		tmp = marked_pos;
+
+	marked_pos = 0;
+	return tmp;
+}
+
+
 inline long long set_write_buffer(struct file_buffer *buffer, int size)
 {
 	buffer->block = get_and_inc_pos(size);
@@ -479,6 +505,9 @@ inline long long set_write_buffer(struct file_buffer *buffer, int size)
 
 inline long long set_write_buffer_hash(struct file_buffer *buffer, int size)
 {
+	if(marked_pos == 1)
+		marked_pos = get_pos();
+
 	buffer->block = get_and_inc_pos(size);
 	cache_hash(buffer, buffer->block);
 	return buffer->block;
@@ -2841,7 +2870,7 @@ static void log_file(struct dir_ent *dir_ent, long long start)
 static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent,
 	struct file_buffer *read_buffer, int *duplicate_file)
 {
-	long long read_size, file_bytes, start;
+	long long read_size, file_bytes, start = 0;
 	struct fragment *fragment;
 	unsigned int *block_list = NULL;
 	int block = 0;
@@ -2857,13 +2886,11 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 		lock_fragments();
 
 	file_bytes = 0;
-	start = get_pos();
+	mark_pos();
 	while (1) {
 		read_size = read_buffer->file_size;
 		if(read_buffer->fragment) {
 			fragment_buffer = read_buffer;
-			if(block == 0)
-				start=0;
 		} else {
 			block_list = realloc(block_list, (block + 1) *
 				sizeof(unsigned int));
@@ -2888,6 +2915,9 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 		if(read_buffer->error)
 			goto read_err;
 	}
+
+	if(block)
+		start = get_marked_pos();
 
 	if(!reproducible)
 		unlock_fragments();
@@ -2918,7 +2948,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	set_pos(start);
+	set_pos(get_marked_pos());
 	if(!block_device) {
 		int res;
 
@@ -2943,7 +2973,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 {
 	int block, thresh;
 	long long read_size = read_buffer->file_size;
-	long long file_bytes, start;
+	long long file_bytes;
 	int blocks = (read_size + block_size - 1) >> block_log;
 	unsigned int *block_list;
 	struct file_buffer **buffer_list;
@@ -2966,7 +2996,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 		lock_fragments();
 
 	file_bytes = 0;
-	start = get_pos();
+	mark_pos();
 	thresh = blocks > bwriter_size ? blocks - bwriter_size : 0;
 
 	for(block = 0; block < blocks;) {
@@ -3013,7 +3043,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 		sparse = 0;
 
 	file = duplicate(duplicate_file, &block_dup, read_size, file_bytes, block_list,
-		start, dir_ent, fragment_buffer, blocks, sparse, bl_hash, thresh);
+		get_marked_pos(), dir_ent, fragment_buffer, blocks, sparse, bl_hash, thresh);
 
 	if(block_dup == FALSE) {
 		for(block = thresh; block < blocks; block ++)
@@ -3042,7 +3072,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	set_pos(start);
+	set_pos(get_marked_pos());
 	if(thresh && !block_device) {
 		int res;
 
@@ -3069,7 +3099,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 	struct file_buffer *read_buffer, int *dup)
 {
 	long long read_size = read_buffer->file_size;
-	long long file_bytes, start;
+	long long file_bytes;
 	struct fragment *fragment;
 	unsigned int *block_list;
 	int block;
@@ -3094,7 +3124,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 		lock_fragments();
 
 	file_bytes = 0;
-	start = get_pos();
+	mark_pos();
 	for(block = 0; block < blocks;) {
 		if(read_buffer->fragment) {
 			block_list[block] = 0;
@@ -3138,19 +3168,19 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 
 	if(duplicate_checking)
 		file = add_non_dup(read_size, file_bytes, blocks, sparse,
-			block_list, start, fragment, 0, fragment_buffer ?
+			block_list, get_marked_pos(), fragment, 0, fragment_buffer ?
 			fragment_buffer->checksum : 0, FALSE, TRUE, FALSE,
 			FALSE, bl_hash);
 	else
 		file = create_non_dup(read_size, file_bytes, blocks, sparse,
-			block_list, start, fragment, 0, fragment_buffer ?
+			block_list, get_marked_pos(), fragment, 0, fragment_buffer ?
 			fragment_buffer->checksum : 0, FALSE, TRUE);
 
 	cache_block_put(fragment_buffer);
 	file_count ++;
 	total_bytes += read_size;
 
-	log_file(dir_ent, start);
+	log_file(dir_ent, file->start);
 
 	*status = 0;
 	return file;
@@ -3158,7 +3188,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	set_pos(start);
+	set_pos(get_marked_pos());
 	if(!block_device) {
 		int res;
 
@@ -5872,7 +5902,7 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk)
 		TRACE("sBlk->lookup_table_start 0x%llx\n",
 			sBlk->lookup_table_start);
 
-	sBlk->bytes_used = get_pos();;
+	sBlk->bytes_used = get_pos();
 
 	sBlk->compression = comp->id;
 
