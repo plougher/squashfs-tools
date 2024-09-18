@@ -503,14 +503,13 @@ inline long long set_write_buffer(struct file_buffer *buffer, int size)
 }
 
 
-inline long long set_write_buffer_hash(struct file_buffer *buffer)
+inline void set_write_buffer_hash(struct file_buffer *buffer)
 {
 	if(marked_pos == 1)
 		marked_pos = get_pos();
 
 	buffer->block = get_and_inc_pos(buffer->size);
 	cache_hash(buffer, buffer->block);
-	return buffer->block;
 }
 
 
