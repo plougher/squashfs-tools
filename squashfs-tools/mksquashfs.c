@@ -503,13 +503,16 @@ inline long long set_write_buffer(struct file_buffer *buffer, int size)
 }
 
 
-inline void set_write_buffer_hash(struct file_buffer *buffer)
+inline void put_write_buffer_hash(struct file_buffer *buffer, int put)
 {
 	if(marked_pos == 1)
 		marked_pos = get_pos();
 
 	buffer->block = get_and_inc_pos(buffer->size);
 	cache_hash(buffer, buffer->block);
+
+	if(put)
+		queue_put(to_writer, buffer);
 }
 
 
@@ -2898,8 +2901,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 			block_list[block ++] = read_buffer->c_byte;
 			if(read_buffer->c_byte) {
 				file_bytes += read_buffer->size;
-				set_write_buffer_hash(read_buffer);
-				queue_put(to_writer, read_buffer);
+				put_write_buffer_hash(read_buffer, TRUE);
 			} else {
 				sparse += read_buffer->size;
 				cache_block_put(read_buffer);
@@ -3008,13 +3010,9 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 			block_list[block] = read_buffer->c_byte;
 
 			if(read_buffer->c_byte) {
-				set_write_buffer_hash(read_buffer);
 				file_bytes += read_buffer->size;
-				if(block < thresh) {
-					buffer_list[block] = NULL;
-					queue_put(to_writer, read_buffer);
-				} else
-					buffer_list[block] = read_buffer;
+				buffer_list[block] = block >= thresh ? read_buffer : NULL;
+				put_write_buffer_hash(read_buffer, block < thresh);
 			} else {
 				buffer_list[block] = NULL;
 				sparse += read_buffer->size;
@@ -3132,9 +3130,8 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 		} else {
 			block_list[block] = read_buffer->c_byte;
 			if(read_buffer->c_byte) {
-				set_write_buffer_hash(read_buffer);
 				file_bytes += read_buffer->size;
-				queue_put(to_writer, read_buffer);
+				put_write_buffer_hash(read_buffer, TRUE);
 			} else {
 				sparse += read_buffer->size;
 				cache_block_put(read_buffer);
