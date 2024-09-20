@@ -471,6 +471,20 @@ long long get_and_inc_pos(long long value)
 }
 
 
+inline int reset_pos(void)
+{
+	if(marked_pos == 0)
+		BAD_ERROR("BUG: Saved write position is empty!\n");
+	else if(marked_pos == 1)
+		return FALSE;
+	else {
+		set_pos(marked_pos);
+		marked_pos = 0;
+		return TRUE;
+	}
+}
+
+
 inline void mark_pos()
 {
 	if(marked_pos != 0)
@@ -2875,7 +2889,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 	long long read_size, file_bytes, start = 0;
 	struct fragment *fragment;
 	unsigned int *block_list = NULL;
-	int block = 0;
+	int block = 0, res;
 	long long sparse = 0;
 	struct file_buffer *fragment_buffer = NULL;
 	struct file_info *file;
@@ -2949,8 +2963,8 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	set_pos(get_marked_pos());
-	if(!block_device) {
+	res = reset_pos();
+	if(res && !block_device) {
 		int res;
 
 		queue_put(to_writer, NULL);
@@ -2972,7 +2986,7 @@ read_err:
 static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_ent,
 	struct file_buffer *read_buffer, int *duplicate_file, int bl_hash)
 {
-	int block, thresh;
+	int block, thresh, res;
 	long long read_size = read_buffer->file_size;
 	long long file_bytes;
 	int blocks = (read_size + block_size - 1) >> block_log;
@@ -3069,8 +3083,8 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	set_pos(get_marked_pos());
-	if(thresh && !block_device) {
+	res = reset_pos();
+	if(res && thresh && !block_device) {
 		int res;
 
 		queue_put(to_writer, NULL);
@@ -3099,7 +3113,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 	long long file_bytes;
 	struct fragment *fragment;
 	unsigned int *block_list;
-	int block;
+	int block, res;
 	int blocks = (read_size + block_size - 1) >> block_log;
 	long long sparse = 0;
 	struct file_buffer *fragment_buffer = NULL;
@@ -3184,8 +3198,8 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	set_pos(get_marked_pos());
-	if(!block_device) {
+	res = reset_pos();
+	if(res && !block_device) {
 		int res;
 
 		queue_put(to_writer, NULL);
