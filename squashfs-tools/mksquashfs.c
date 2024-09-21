@@ -369,7 +369,7 @@ static struct file_info *duplicate(int *dup, int *block_dup,
 	long long file_size, long long bytes, unsigned int *block_list,
 	long long start, struct dir_ent *dir_ent,
 	struct file_buffer *file_buffer, int blocks, long long sparse,
-	int bl_hash, int thresh);
+	int bl_hash);
 static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), unsigned int);
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
@@ -2249,10 +2249,11 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, int *du
 }
 
 
-static void reset_and_truncate(long long start, int thresh)
+static void reset_and_truncate(void)
 {
-	set_pos(start);
-	if(thresh && !block_device) {
+	int res = reset_pos();
+
+	if(res && !block_device) {
 		int res;
 
 		queue_put(to_writer, NULL);
@@ -2270,7 +2271,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 	long long file_size, long long bytes, unsigned int *block_list,
 	long long start, struct dir_ent *dir_ent,
 	struct file_buffer *file_buffer, int blocks, long long sparse,
-	int bl_hash, int thresh)
+	int bl_hash)
 {
 	struct file_info *dupl_ptr, *file;
 	struct file_info *block_dupl = NULL, *frag_dupl = NULL;
@@ -2399,7 +2400,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 			 */
 			if(!frag_bytes && !dupl_ptr->fragment->size) {
 				*dupf = *block_dup = TRUE;
-				reset_and_truncate(start, thresh);
+				reset_and_truncate();
 				if(file_size == dupl_ptr->file_size)
 					return dupl_ptr;
 				else
@@ -2437,7 +2438,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					 * finished.  Return the duplicate
 					 */
 					*dupf = *block_dup = TRUE;
-					reset_and_truncate(start, thresh);
+					reset_and_truncate();
 					return dupl_ptr;
 				}
 			}
@@ -2479,7 +2480,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					 */
 					if(block_dupl && block_dupl->start == dupl_ptr->start) {
 						*dupf = *block_dup = TRUE;
-						reset_and_truncate(start, thresh);
+						reset_and_truncate();
 						return dupl_ptr;
 					}
 
@@ -2545,7 +2546,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		if(dup) {
 			/* Found a matching file.  Return the duplicate */
 			*dupf = *block_dup = TRUE;
-			reset_and_truncate(start, thresh);
+			reset_and_truncate();
 			return dup->file;
 		}
 	}
@@ -2558,7 +2559,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		 * if the current fragment is too full, this will force a
 		 * write out of the fragment.
 		 */
-		reset_and_truncate(start, thresh);
+		reset_and_truncate();
 	}
 
 	if(frag_dupl)
@@ -2609,7 +2610,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		dup->file = file;
 		dup->next = block_dupl->dup;
 		block_dupl->dup = dup;
-		reset_and_truncate(start, thresh);
+		reset_and_truncate();
 	}
 
 	return file;
@@ -3054,7 +3055,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 		sparse = 0;
 
 	file = duplicate(duplicate_file, &block_dup, read_size, file_bytes, block_list,
-		get_marked_pos(), dir_ent, fragment_buffer, blocks, sparse, bl_hash, thresh);
+		get_marked_pos(), dir_ent, fragment_buffer, blocks, sparse, bl_hash);
 
 	if(block_dup == FALSE) {
 		for(block = thresh; block < blocks; block ++)
