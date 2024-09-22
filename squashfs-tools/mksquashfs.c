@@ -2887,7 +2887,7 @@ static void log_file(struct dir_ent *dir_ent, long long start)
 static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent,
 	struct file_buffer *read_buffer, int *duplicate_file)
 {
-	long long read_size, file_bytes, start = 0;
+	long long read_size, file_bytes;
 	struct fragment *fragment;
 	unsigned int *block_list = NULL;
 	int block = 0, res;
@@ -2932,9 +2932,6 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 			goto read_err;
 	}
 
-	if(block)
-		start = get_marked_pos();
-
 	if(!reproducible)
 		unlock_fragments();
 
@@ -2944,19 +2941,20 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 		int bl_hash = block ? block_hash(block_list[0], block) : 0;
 
 		file = add_non_dup(read_size, file_bytes, block, sparse,
-			block_list, start, fragment, 0, fragment_buffer ?
-			fragment_buffer->checksum : 0, FALSE, TRUE, FALSE,
-			FALSE, bl_hash);
+			block_list, get_marked_pos(), fragment, 0,
+			fragment_buffer ?  fragment_buffer->checksum : 0, FALSE,
+			TRUE, FALSE, FALSE, bl_hash);
 	} else
 		file = create_non_dup(read_size, file_bytes, block, sparse,
-			block_list, start, fragment, 0, fragment_buffer ?
-			fragment_buffer->checksum : 0, FALSE, TRUE);
+			block_list, get_marked_pos(), fragment, 0,
+			fragment_buffer ?  fragment_buffer->checksum : 0, FALSE,
+			TRUE);
 
 	cache_block_put(fragment_buffer);
 	file_count ++;
 	total_bytes += read_size;
 
-	log_file(dir_ent, start);
+	log_file(dir_ent, file->start);
 
 	*status = 0;
 	return file;
