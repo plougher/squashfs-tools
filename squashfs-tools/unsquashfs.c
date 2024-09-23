@@ -4135,14 +4135,14 @@ static int parse_options(int argc, char *argv[])
 		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing regex\n", argv[0], argv[i - 1]);
-				unsquashfs_option_help(argv[0], argv[i - 1]);
+				unsquashfs_option_help(argv[i - 1]);
 			}
 
 			unsquashfs_option(argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-help-section") == 0 || strcmp(argv[i], "-hs") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing section\n", argv[0], argv[i - 1]);
-				unsquashfs_option_help(argv[0], argv[i - 1]);
+				unsquashfs_option_help(argv[i - 1]);
 			}
 
 			unsquashfs_section(argv[i - 1], argv[i]);
@@ -4151,7 +4151,7 @@ static int parse_options(int argc, char *argv[])
 			if(++i == argc) {
 				fprintf(stderr, "%s: -pf missing filename\n",
 					argv[0]);
-				unsquashfs_option_help(argv[0], argv[i - 1]);
+				unsquashfs_option_help(argv[i - 1]);
 			}
 			pseudo_name = argv[i];
 			pseudo_file = TRUE;
@@ -4165,7 +4165,7 @@ static int parse_options(int argc, char *argv[])
 			if(res == 0) {
 				fprintf(stderr, "%s: -exclude-list missing "
 					"filenames or no ';' terminator\n", argv[0]);
-				unsquashfs_option_help(argv[0], "-exclude-list");
+				unsquashfs_option_help("-exclude-list");
 			}
 			i += res + 1;
 		} else if(strcmp(argv[i], "-no-exit-code") == 0 ||
@@ -4241,7 +4241,7 @@ static int parse_options(int argc, char *argv[])
 				exit(1);
 			} else if(++i == argc) {
 				ERROR("%s: -xattrs-exclude missing regex pattern\n", argv[0]);
-				unsquashfs_option_help(argv[0], "-xattrs-exclude");
+				unsquashfs_option_help("-xattrs-exclude");
 			} else {
 				xattr_exclude_preg = xattr_regex(argv[i], "exclude");
 				no_xattrs = FALSE;
@@ -4253,7 +4253,7 @@ static int parse_options(int argc, char *argv[])
 				exit(1);
 			} else if(++i == argc) {
 				ERROR("%s: -xattrs-include missing regex pattern\n", argv[0]);
-				unsquashfs_option_help(argv[0], "-xattrs-include");
+				unsquashfs_option_help("-xattrs-include");
 			} else {
 				xattr_include_preg = xattr_regex(argv[i], "include");
 				no_xattrs = FALSE;
@@ -4263,7 +4263,7 @@ static int parse_options(int argc, char *argv[])
 			if(++i == argc) {
 				fprintf(stderr, "%s: -dest missing filename\n",
 					argv[0]);
-				unsquashfs_option_help(argv[0], "-dest");
+				unsquashfs_option_help("-dest");
 			}
 			dest = argv[i];
 		} else if(strcmp(argv[i], "-processors") == 0 ||
@@ -4273,7 +4273,7 @@ static int parse_options(int argc, char *argv[])
 						&processors)) {
 				ERROR("%s: -processors missing or invalid "
 					"processor number\n", argv[0]);
-				unsquashfs_option_help(argv[0], "-processors");
+				unsquashfs_option_help("-processors");
 			}
 			if(processors < 1) {
 				ERROR("%s: -processors should be 1 or larger\n",
@@ -4287,7 +4287,7 @@ static int parse_options(int argc, char *argv[])
 						&max_depth)) {
 				ERROR("%s: -max-depth missing or invalid "
 					"levels\n", argv[0]);
-				unsquashfs_option_help(argv[0], "-max-depth");
+				unsquashfs_option_help("-max-depth");
 			}
 		} else if(strcmp(argv[i], "-mem") == 0) {
 			long long number;
@@ -4296,7 +4296,7 @@ static int parse_options(int argc, char *argv[])
 					!parse_numberll(argv[i], &number, 1)) {
 				ERROR("%s: -mem missing or invalid mem size\n",
 					 argv[0]);
-				unsquashfs_option_help(argv[0], "-mem");
+				unsquashfs_option_help("-mem");
 			}
 
 			/*
@@ -4330,7 +4330,7 @@ static int parse_options(int argc, char *argv[])
 				ERROR("%s: -mem-percent missing or invalid "
 					"percentage: it should be 1 - 75%\n",
 					 argv[0]);
-				unsquashfs_option_help(argv[0], "-mem-percent");
+				unsquashfs_option_help("-mem-percent");
 			}
 
 			phys_mem = get_physical_memory();
@@ -4417,7 +4417,7 @@ static int parse_options(int argc, char *argv[])
 			if(++i == argc) {
 				fprintf(stderr, "%s: -extract-file missing filename\n",
 					argv[0]);
-				unsquashfs_option_help(argv[0], "-extract-file");
+				unsquashfs_option_help("-extract-file");
 			}
 			process_extract_files(argv[i]);
 		} else if(strcmp(argv[i], "-exclude-file") == 0 ||
@@ -4426,7 +4426,7 @@ static int parse_options(int argc, char *argv[])
 			if(++i == argc) {
 				fprintf(stderr, "%s: -exclude-file missing filename\n",
 					argv[0]);
-				unsquashfs_option_help(argv[0], "-exclude-file");
+				unsquashfs_option_help("-exclude-file");
 			}
 			process_exclude_files(argv[i]);
 		} else if(strcmp(argv[i], "-regex") == 0 ||
@@ -4439,7 +4439,7 @@ static int parse_options(int argc, char *argv[])
 									1)) {
 				ERROR("%s: %s missing or invalid offset size\n",
 							argv[0], argv[i - 1]);
-				unsquashfs_option_help(argv[0], "-offset");
+				unsquashfs_option_help("-offset");
 			}
 		} else if(strcmp(argv[i], "-all-time") == 0 ||
 				strcmp(argv[i], "-all") == 0) {
@@ -4448,7 +4448,7 @@ static int parse_options(int argc, char *argv[])
 					&& !exec_date(argv[i], &timeval))) {
 				ERROR("%s: %s missing or invalid time value\n",
 							argv[0], argv[i - 1]);
-				unsquashfs_option_help(argv[0], "-all-time");
+				unsquashfs_option_help("-all-time");
 			}
 			time_opt = TRUE;
 		} else if(strcmp(argv[i], "-full-precision") == 0 ||

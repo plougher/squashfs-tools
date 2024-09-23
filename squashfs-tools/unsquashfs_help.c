@@ -491,9 +491,9 @@ void unsquashfs_invalid_option(char *opt_name)
 }
 
 
-void unsquashfs_option_help(char *prog_name, char *option)
+void unsquashfs_option_help(char *option)
 {
-	print_option_help(prog_name, option, unsquashfs_sections, unsquashfs_text);
+	print_option_help("unsquashfs", option, unsquashfs_sections, unsquashfs_text);
 }
 
 
