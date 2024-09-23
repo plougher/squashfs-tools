@@ -50,7 +50,7 @@ extern void unsquashfs_help_all(void);
 extern void unsquashfs_section(char *opt_name, char *sec_name);
 extern void unsquashfs_option(char *opt_name, char *pattern);
 extern void unsquashfs_help(int error);
-extern void unsquashfs_invalid_option(char *prog_name, char *opt_name);
+extern void unsquashfs_invalid_option(char *opt_name);
 extern void unsquashfs_option_help(char *prog_name, char *option);
 extern void sqfscat_help_all(char *name);
 extern void sqfscat_option(char *prog_name, char *opt_name, char *pattern);

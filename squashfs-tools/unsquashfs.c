@@ -4455,7 +4455,7 @@ static int parse_options(int argc, char *argv[])
 				strcmp(argv[i], "-full") == 0)
 			full_precision = TRUE;
 		else 
-			unsquashfs_invalid_option(argv[0], argv[i]);
+			unsquashfs_invalid_option(argv[i]);
 	}
 
 	if(dest[0] == '\0' && !lsonly)
