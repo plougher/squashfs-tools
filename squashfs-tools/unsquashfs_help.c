@@ -509,9 +509,9 @@ void sqfscat_section(char *prog_name, char *opt_name, char *sec_name)
 }
 
 
-void sqfscat_option(char *prog_name, char *opt_name, char *pattern)
+void sqfscat_option(char *opt_name, char *pattern)
 {
-	print_option(prog_name, opt_name, pattern, sqfscat_options, sqfscat_args, sqfscat_text);
+	print_option("sqfscat", opt_name, pattern, sqfscat_options, sqfscat_args, sqfscat_text);
 }
 
 

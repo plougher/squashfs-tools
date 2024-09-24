@@ -3945,7 +3945,7 @@ static int parse_cat_options(int argc, char *argv[])
 				sqfscat_option_help(argv[0], argv[i - 1]);
 			}
 
-			sqfscat_option(argv[0], argv[i - 1], argv[i]);
+			sqfscat_option(argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-help-section") == 0 || strcmp(argv[i], "-hs") == 0) {
 			if(++i == argc) {
 				ERROR("%s: %s missing section\n", argv[0], argv[i - 1]);
