@@ -3952,7 +3952,7 @@ static int parse_cat_options(int argc, char *argv[])
 				sqfscat_option_help(argv[0], argv[i - 1]);
 			}
 
-			sqfscat_section(argv[0], argv[i - 1], argv[i]);
+			sqfscat_section(argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-no-exit-code") == 0 ||
 				strcmp(argv[i], "-no-exit") == 0)
 			set_exit_code = FALSE;
