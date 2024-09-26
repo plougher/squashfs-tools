@@ -515,9 +515,9 @@ void sqfscat_option(char *opt_name, char *pattern)
 }
 
 
-void sqfscat_help(int error, char *prog_name)
+void sqfscat_help(int error)
 {
-	print_help(error, prog_name, SQFSCAT_SYNTAX, sqfscat_sections, sqfscat_text);
+	print_help(error, "sqfscat", SQFSCAT_SYNTAX, sqfscat_sections, sqfscat_text);
 }
 
 
