@@ -4093,7 +4093,7 @@ static int parse_cat_options(int argc, char *argv[])
 				sqfscat_option_help(argv[i - 1]);
 			}
 		} else
-			sqfscat_invalid_option(argv[0], argv[i]);
+			sqfscat_invalid_option(argv[i]);
 	}
 
 	if(strict_errors && ignore_errors)

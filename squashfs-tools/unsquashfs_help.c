@@ -521,9 +521,9 @@ void sqfscat_help(int error)
 }
 
 
-void sqfscat_invalid_option(char *prog_name, char *opt_name)
+void sqfscat_invalid_option(char *opt_name)
 {
-	handle_invalid_option(prog_name, opt_name, sqfscat_sections, sqfscat_text);
+	handle_invalid_option("sqfscat", opt_name, sqfscat_sections, sqfscat_text);
 }
 
 
