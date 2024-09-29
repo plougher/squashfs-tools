@@ -782,7 +782,7 @@ static void handle_invalid_option(char *prog_name, char *opt_name, char **sectio
 }
 
 
-static void print_help(int error, char *prog_name, char *syntax, char **sections, char **options_text)
+static void print_help(char *prog_name, int error, char *syntax, char **sections, char **options_text)
 {
 	FILE *stream = error ? stderr : stdout;
 	int cols = get_column_width();
@@ -844,12 +844,12 @@ void sqfstar_section(char *opt_name, char *sec_name)
 
 void mksquashfs_help(int error)
 {
-	print_help(error, "mksquashfs", MKSQUASHFS_SYNTAX, mksquashfs_sections, mksquashfs_text);
+	print_help("mksquashfs", error, MKSQUASHFS_SYNTAX, mksquashfs_sections, mksquashfs_text);
 }
 
 void sqfstar_help(int error)
 {
-	print_help(error, "sqfstar", SQFSTAR_SYNTAX, sqfstar_sections, sqfstar_text);
+	print_help("sqfstar", error, SQFSTAR_SYNTAX, sqfstar_sections, sqfstar_text);
 }
 
 void mksquashfs_invalid_option(char *opt_name)
