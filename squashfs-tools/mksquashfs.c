@@ -7293,7 +7293,7 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[j - 1]);
 			}
 
-			print_compressor_options(argv[j], argv[0]);
+			print_compressor_options(argv[j], "mksquashfs");
 			exit(0);
 		} else if(strcmp(argv[j], "-mem-default") == 0) {
 			printf("%d\n", total_mem);
@@ -7353,7 +7353,7 @@ int main(int argc, char *argv[])
 		comp = lookup_compressor(COMP_DEFAULT);
 
 	if(Xhelp) {
-		print_selected_comp_options(stdout, comp, argv[0]);
+		print_selected_comp_options(stdout, comp, "mksquashfs");
 		exit(0);
 	}
 
@@ -7663,7 +7663,7 @@ int main(int argc, char *argv[])
 					if(!compressor_opt_parsed)
 						ERROR("mksquashfs: Did you forget to"
 							" specify -comp?\n");
-					print_selected_comp_options(stderr, comp, argv[0]);
+					print_selected_comp_options(stderr, comp, "mksquashfs");
 				}
 				exit(1);
 			}
