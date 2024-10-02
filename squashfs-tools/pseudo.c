@@ -1188,7 +1188,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 		dev = read_pseudo_def_link(orig_def, def, destination);
 	else if(type == 'L')
 		dev = read_pseudo_def_pseudo_link(orig_def, def);
-	if(is_original_def(type))
+	else if(is_original_def(type))
 		dev = read_pseudo_def_original(type, orig_def, def);
 	else if(is_extended_def(type))
 		dev = read_pseudo_def_extended(type, orig_def, def, pseudo_file, file);
