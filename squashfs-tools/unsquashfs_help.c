@@ -434,7 +434,7 @@ static void handle_invalid_option(char *prog_name, char *opt_name, char **sectio
 }
 
 
-static void print_help(int error, char *prog_name, char *syntax, char **sections, char **options_text)
+static void print_help(char *prog_name, int error, char *syntax, char **sections, char **options_text)
 {
 	FILE *stream = error ? stderr : stdout;
 	int cols = get_column_width();
@@ -481,7 +481,7 @@ void unsquashfs_option(char *opt_name, char *pattern)
 
 void unsquashfs_help(int error)
 {
-	print_help(error, "unsquashfs", UNSQUASHFS_SYNTAX, unsquashfs_sections, unsquashfs_text);
+	print_help("unsquashfs", error, UNSQUASHFS_SYNTAX, unsquashfs_sections, unsquashfs_text);
 }
 
 
@@ -517,7 +517,7 @@ void sqfscat_option(char *opt_name, char *pattern)
 
 void sqfscat_help(int error)
 {
-	print_help(error, "sqfscat", SQFSCAT_SYNTAX, sqfscat_sections, sqfscat_text);
+	print_help("sqfscat", error, SQFSCAT_SYNTAX, sqfscat_sections, sqfscat_text);
 }
 
 
