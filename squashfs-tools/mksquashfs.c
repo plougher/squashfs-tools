@@ -6382,21 +6382,21 @@ static int sqfstar(int argc, char *argv[])
 			sqfstar_help_all();
 		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
 			if(++i == argc) {
-				ERROR("%s: %s missing regex\n", argv[0], argv[i - 1]);
+				ERROR("sqfstar: %s missing regex\n", argv[i - 1]);
 				sqfstar_option_help(argv[i - 1]);
 			}
 
 			sqfstar_option(argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-help-section") == 0 || strcmp(argv[i], "-hs") == 0) {
 			if(++i == argc) {
-				ERROR("%s: %s missing section\n", argv[0], argv[i - 1]);
+				ERROR("sqfstar: %s missing section\n", argv[i - 1]);
 				sqfstar_option_help(argv[i - 1]);
 			}
 
 			sqfstar_section(argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-help-comp") == 0) {
 			if(++i == argc) {
-				ERROR("%s: -help-comp missing compressor name\n", argv[0]);
+				ERROR("sqfstar: -help-comp missing compressor name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
@@ -6431,28 +6431,27 @@ static int sqfstar(int argc, char *argv[])
 			struct compressor *prev_comp = comp;
 
 			if(++i == argc) {
-				ERROR("%s: -comp missing compression type\n", argv[0]);
+				ERROR("sqfstar: -comp missing compression type\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			comp = lookup_compressor(argv[i]);
 			if(!comp->supported) {
-				ERROR("%s: Compressor \"%s\" is not supported!\n",
-								argv[0], argv[i]);
-				ERROR("%s: Compressors available:\n", argv[0]);
+				ERROR("sqfstar: Compressor \"%s\" is not supported!\n", argv[i]);
+				ERROR("sqfstar: Compressors available:\n");
 				display_compressors(stderr, "", COMP_DEFAULT);
 				exit(1);
 			}
 			if(compressor_opt_parsed) {
-				ERROR("%s: -comp multiple conflicting -comp"
+				ERROR("sqfstar: -comp multiple conflicting -comp"
 					" options specified on command line"
-					", previously %s, now %s\n", argv[0],
+					", previously %s, now %s\n",
 					prev_comp->name, comp->name);
 				exit(1);
 			}
 			compressor_opt_parsed = 1;
 			if(X_opt_parsed) {
 				ERROR("%s: -comp option should be before any "
-					"-X option\n", argv[0]);
+					"-X option\n");
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-Xhelp") == 0)
@@ -6497,21 +6496,21 @@ static int sqfstar(int argc, char *argv[])
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-throttle") == 0) {
 			if((++i == dest_index) || !parse_number(argv[i], &sleep_time, 2)) {
-				ERROR("%s: -throttle missing or invalid value\n", argv[0]);
+				ERROR("sqfstar: -throttle missing or invalid value\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			if(sleep_time > 99) {
-				ERROR("%s: -throttle value should be between 0 and 99\n", argv[0]);
+				ERROR("sqfstar: -throttle value should be between 0 and 99\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			readq = 4;
 		} else if(strcmp(argv[i], "-limit") == 0) {
 			if((++i == dest_index) || !parse_number(argv[i], &sleep_time, 0)) {
-				ERROR("%s: -limit missing or invalid value\n", argv[0]);
+				ERROR("sqfstar: -limit missing or invalid value\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			if(sleep_time < 1 || sleep_time > 100) {
-				ERROR("%s: -limit value should be between 1 and 100\n", argv[0]);
+				ERROR("sqfstar: -limit value should be between 1 and 100\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			sleep_time = 100 - sleep_time;
@@ -6521,9 +6520,8 @@ static int sqfstar(int argc, char *argv[])
 			if((++i == dest_index) ||
 				(!parse_num_unsigned(argv[i], &mkfs_time) &&
 				!exec_date(argv[i], &mkfs_time))) {
-					ERROR("%s: %s missing or invalid time "
-						"value\n", argv[0],
-						argv[i - 1]);
+					ERROR("sqfstar: %s missing or invalid time "
+						"value\n", argv[i - 1]);
 				sqfstar_option_help(argv[i - 1]);
 			}
 			mkfs_time_opt = TRUE;
@@ -6531,7 +6529,7 @@ static int sqfstar(int argc, char *argv[])
 			if((++i == dest_index) ||
 				(!parse_num_unsigned(argv[i], &all_time) &&
 				!exec_date(argv[i], &all_time))) {
-					ERROR("%s: -all-time missing or invalid time value\n", argv[0]);
+					ERROR("sqfstar: -all-time missing or invalid time value\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			all_time_opt = TRUE;
@@ -6542,44 +6540,40 @@ static int sqfstar(int argc, char *argv[])
 			reproducible = FALSE;
 		else if(strcmp(argv[i], "-root-mode") == 0) {
 			if((++i == dest_index) || !parse_mode(argv[i], &root_mode)) {
-				ERROR("%s: -root-mode missing or invalid mode,"
-					" octal number <= 07777 expected\n", argv[0]);
+				ERROR("sqfstar: -root-mode missing or invalid mode,"
+					" octal number <= 07777 expected\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			root_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-uid") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -root-uid missing uid or user name\n",
-					argv[0]);
+				ERROR("sqfstar: -root-uid missing uid or user name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
 			res = get_uid_from_arg(argv[i], &root_uid);
 			if(res) {
 				if(res == -2)
-					ERROR("%s: -root-uid uid out of range\n",
-						argv[0]);
+					ERROR("sqfstar: -root-uid uid out of range\n");
 				else
-					ERROR("%s: -root-uid invalid uid or "
-						"unknown user name\n", argv[0]);
+					ERROR("sqfstar: -root-uid invalid uid or "
+						"unknown user name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			root_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-gid") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -root-gid missing gid or group name\n",
-					argv[0]);
+				ERROR("sqfstar: -root-gid missing gid or group name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
 			res = get_gid_from_arg(argv[i], &root_gid);
 			if(res) {
 				if(res == -2)
-					ERROR("%s: -root-gid gid out of range\n",
-						argv[0]);
+					ERROR("sqfstar: -root-gid gid out of range\n");
 				else
-					ERROR("%s: -root-gid invalid gid or "
-						"unknown group name\n", argv[0]);
+					ERROR("sqfstar: -root-gid invalid gid or "
+						"unknown group name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			root_gid_opt = TRUE;
@@ -6587,53 +6581,48 @@ static int sqfstar(int argc, char *argv[])
 			if((++i == argc) ||
 					(!parse_num_unsigned(argv[i], &root_time) &&
 					!exec_date(argv[i], &root_time))) {
-				ERROR("%s: -root-time missing or invalid time\n",
-					argv[0]);
+				ERROR("sqfstar: -root-time missing or invalid time\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
 			if((++i == dest_index) || !parse_mode(argv[i], &default_mode)) {
-				ERROR("%s: -default-mode missing or invalid mode,"
-					" octal number <= 07777 expected\n", argv[0]);
+				ERROR("sqfstar: -default-mode missing or invalid mode,"
+					" octal number <= 07777 expected\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			root_mode = default_mode;
 			default_mode_opt = root_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-uid") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -default-uid missing uid or user name\n",
-					argv[0]);
+				ERROR("sqfstar: -default-uid missing uid or user name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
 			res = get_uid_from_arg(argv[i], &default_uid);
 			if(res) {
 				if(res == -2)
-					ERROR("%s: -default-uid uid out of range\n",
-						argv[0]);
+					ERROR("sqfstar: -default-uid uid out of range\n");
 				else
-					ERROR("%s: -default-uid invalid uid or "
-						"unknown user name\n", argv[0]);
+					ERROR("sqfstar: -default-uid invalid uid or "
+						"unknown user name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			root_uid = default_uid;
 			default_uid_opt = root_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-gid") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -default-gid missing gid or group name\n",
-					argv[0]);
+				ERROR("sqfstar: -default-gid missing gid or group name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
 			res = get_gid_from_arg(argv[i], &default_gid);
 			if(res) {
 				if(res == -2)
-					ERROR("%s: -default-gid gid out of range"
-						"\n", argv[0]);
+					ERROR("sqfstar: -default-gid gid out of range\n");
 				else
-					ERROR("%s: -default-gid invalid gid or "
-						"unknown group name\n", argv[0]);
+					ERROR("sqfstar: -default-gid invalid gid or "
+						"unknown group name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			root_gid = default_gid;
@@ -6646,15 +6635,13 @@ static int sqfstar(int argc, char *argv[])
 
 			if(args < 0) {
 				if(args == -1) {
-					ERROR("%s: Unrecognised compressor"
-						" option %s\n", argv[0],
-						argv[i]);
+					ERROR("sqfstar: Unrecognised compressor"
+						" option %s\n", argv[i]);
 					if(!compressor_opt_parsed)
-						ERROR("%s: Did you forget to"
+						ERROR("sqfstar: Did you forget to"
 							" specify -comp, or "
 							"specify it after the"
-							" -X options?\n",
-							argv[0]);
+							" -X options?\n");
 					print_selected_comp_options(stderr, comp, argv[0]);
 				}
 				exit(1);
@@ -6663,23 +6650,22 @@ static int sqfstar(int argc, char *argv[])
 
 		} else if(strcmp(argv[i], "-pf") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -pf missing filename\n", argv[0]);
+				ERROR("sqfstar: -pf missing filename\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			if(read_pseudo_file(argv[i], argv[dest_index]) == FALSE)
 				exit(1);
 		} else if(strcmp(argv[i], "-p") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -p missing pseudo file definition\n",
-					argv[0]);
+				ERROR("sqfstar: -p missing pseudo file definition\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			if(read_pseudo_definition(argv[i], argv[dest_index]) == FALSE)
 				exit(1);
 		} else if(strcmp(argv[i], "-pd") == 0 || strcmp(argv[i], "-pseudo-dir") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: %s missing pseudo file definition\n",
-					argv[0], argv[i-1]);
+				ERROR("sqfstar: %s missing pseudo file definition\n",
+					argv[i-1]);
 				sqfstar_option_help(argv[i - 1]);
 			}
 
@@ -6700,19 +6686,18 @@ static int sqfstar(int argc, char *argv[])
 						strcmp(argv[i], "-o") == 0) {
 			if((++i == dest_index) ||
 				!parse_numberll(argv[i], &start_offset, 1)) {
-					ERROR("%s: %s missing or invalid offset "
-						"size\n", argv[0], argv[i - 1]);
+					ERROR("sqfstar: %s missing or invalid offset "
+						"size\n", argv[i - 1]);
 				sqfstar_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-processors") == 0) {
 			if((++i == dest_index) || !parse_num(argv[i], &processors)) {
-				ERROR("%s: -processors missing or invalid "
-					"processor number\n", argv[0]);
+				ERROR("sqfstar: -processors missing or invalid "
+					"processor number\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			if(processors < 1) {
-				ERROR("%s: -processors should be 1 or larger\n",
-					argv[0]);
+				ERROR("sqfstar: -processors should be 1 or larger\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-mem") == 0) {
@@ -6726,8 +6711,7 @@ static int sqfstar(int argc, char *argv[])
 
 			if((++i == dest_index) ||
 					!parse_numberll(argv[i], &number, 1)) {
-				ERROR("%s: -mem missing or invalid mem size\n",
-					 argv[0]);
+				ERROR("sqfstar: -mem missing or invalid mem size\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
@@ -6736,15 +6720,15 @@ static int sqfstar(int argc, char *argv[])
 			 * does not overflow a signed int
 			 */
 			if(number >= (1LL << 51)) {
-				ERROR("%s: -mem invalid mem size\n", argv[0]);
+				ERROR("sqfstar: -mem invalid mem size\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
 			total_mem = number / 1048576;
 			if(total_mem < (SQUASHFS_LOWMEM / SQUASHFS_TAKE)) {
-				ERROR("%s: -mem should be %d Mbytes or "
-					"larger\n", argv[0],
-					SQUASHFS_LOWMEM / SQUASHFS_TAKE);
+				ERROR("sqfstar: -mem should be %d Mbytes or "
+					"larger\n", SQUASHFS_LOWMEM /
+					SQUASHFS_TAKE);
 				sqfstar_option_help(argv[i - 1]);
 			}
 			calculate_queue_sizes(total_mem, &readq, &fragq,
@@ -6766,31 +6750,30 @@ static int sqfstar(int argc, char *argv[])
 			if((++i == dest_index) ||
 					!parse_number(argv[i], &percent, 2) ||
 					(percent < 1)) {
-				ERROR("%s: -mem-percent missing or invalid "
-					"percentage: it should be 1 - 75%\n",
-					 argv[0]);
+				ERROR("sqfstar: -mem-percent missing or invalid "
+					"percentage: it should be 1 - 75%\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
 			phys_mem = get_physical_memory();
 
 			if(phys_mem == 0) {
-				ERROR("%s: -mem-percent unable to get physical "
-					"memory\n", argv[0]);
+				ERROR("sqfstar: -mem-percent unable to get physical "
+					"memory\n");
 				exit(1);
 			}
 
 			if(multiply_overflow(phys_mem, percent)) {
-				ERROR("%s: -mem-percent requested phys mem too "
-					"large\n", argv[0]);
+				ERROR("sqfstar: -mem-percent requested phys mem too "
+					"large\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
 			total_mem = phys_mem * percent / 100;
 
 			if(total_mem < (SQUASHFS_LOWMEM / SQUASHFS_TAKE)) {
-				ERROR("%s: -mem-percent mem too small, should "
-					"be %d Mbytes or larger\n", argv[0],
+				ERROR("sqfstar: -mem-percent mem too small, should "
+					"be %d Mbytes or larger\n",
 					SQUASHFS_LOWMEM / SQUASHFS_TAKE);
 				sqfstar_option_help(argv[i - 1]);
 			}
@@ -6801,22 +6784,21 @@ static int sqfstar(int argc, char *argv[])
 			exit(0);
 		} else if(strcmp(argv[i], "-b") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -b missing block size\n", argv[0]);
+				ERROR("sqfstar: -b missing block size\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			if(!parse_number(argv[i], &block_size, 1)) {
-				ERROR("%s: -b invalid block size\n", argv[0]);
+				ERROR("sqfstar: -b invalid block size\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			if((block_log = slog(block_size)) == 0) {
-				ERROR("%s: -b block size not power of two or "
-					"not between 4096 and 1Mbyte\n",
-					argv[0]);
+				ERROR("sqfstar: -b block size not power of two or "
+					"not between 4096 and 1Mbyte\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-ef") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -ef missing filename\n", argv[0]);
+				ERROR("sqfstar: -ef missing filename\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-no-duplicates") == 0)
@@ -6834,37 +6816,33 @@ static int sqfstar(int argc, char *argv[])
 			global_uid_opt = global_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-uid") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -force-uid missing uid or user name\n",
-					argv[0]);
+				ERROR("sqfstar: -force-uid missing uid or user name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
 			res = get_uid_from_arg(argv[i], &global_uid);
 			if(res) {
 				if(res == -2)
-					ERROR("%s: -force-uid uid out of range\n",
-						argv[0]);
+					ERROR("sqfstar: -force-uid uid out of range\n");
 				else
-					ERROR("%s: -force-uid invalid uid or "
-						"unknown user name\n", argv[0]);
+					ERROR("sqfstar: -force-uid invalid uid or "
+						"unknown user name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			global_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-gid") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -force-gid missing gid or group name\n",
-					argv[0]);
+				ERROR("sqfstar: -force-gid missing gid or group name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
 			res = get_gid_from_arg(argv[i], &global_gid);
 			if(res) {
 				if(res == -2)
-					ERROR("%s: -force-gid gid out of range"
-						"\n", argv[0]);
+					ERROR("sqfstar: -force-gid gid out of range\n");
 				else
-					ERROR("%s: -force-gid invalid gid or "
-						"unknown group name\n", argv[0]);
+					ERROR("sqfstar: -force-gid invalid gid or "
+						"unknown group name\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			global_gid_opt = TRUE;
@@ -6896,9 +6874,8 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-no-xattrs") == 0) {
 			if(xattr_exclude_preg || xattr_include_preg ||
 							add_xattrs()) {
-				ERROR("%s: -no-xattrs should not be used in "
-					"combination with -xattrs-* options\n",
-					argv[0]);
+				ERROR("sqfstar: -no-xattrs should not be used in "
+					"combination with -xattrs-* options\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
@@ -6908,19 +6885,18 @@ static int sqfstar(int argc, char *argv[])
 			if(xattrs_supported())
 				no_xattrs = FALSE;
 			else {
-				ERROR("%s: xattrs are unsupported in "
-					"this build\n", argv[0]);
+				ERROR("sqfstar: xattrs are unsupported in "
+					"this build\n");
 				exit(1);
 			}
 
 		} else if(strcmp(argv[i], "-xattrs-exclude") == 0) {
 			if(!xattrs_supported()) {
-				ERROR("%s: xattrs are unsupported in "
-					"this build\n", argv[0]);
+				ERROR("sqfstar: xattrs are unsupported in "
+					"this build\n");
 				exit(1);
 			} else if(++i == dest_index) {
-				ERROR("%s: -xattrs-exclude missing regex pattern\n",
-					argv[0]);
+				ERROR("sqfstar: -xattrs-exclude missing regex pattern\n");
 				sqfstar_option_help(argv[i - 1]);
 			} else {
 				xattr_exclude_preg = xattr_regex(argv[i], "exclude");
@@ -6928,12 +6904,11 @@ static int sqfstar(int argc, char *argv[])
 			}
 		} else if(strcmp(argv[i], "-xattrs-include") == 0) {
 			if(!xattrs_supported()) {
-				ERROR("%s: xattrs are unsupported in "
-					"this build\n", argv[0]);
+				ERROR("sqfstar: xattrs are unsupported in "
+					"this build\n");
 				exit(1);
 			} else if(++i == dest_index) {
-				ERROR("%s: -xattrs-include missing regex pattern\n",
-					argv[0]);
+				ERROR("sqfstar: -xattrs-include missing regex pattern\n");
 				sqfstar_option_help(argv[i - 1]);
 			} else {
 				xattr_include_preg = xattr_regex(argv[i], "include");
@@ -6941,12 +6916,11 @@ static int sqfstar(int argc, char *argv[])
 			}
 		} else if(strcmp(argv[i], "-xattrs-add") == 0) {
 			if(!xattrs_supported()) {
-				ERROR("%s: xattrs are unsupported in "
-					"this build\n", argv[0]);
+				ERROR("sqfstar: xattrs are unsupported in "
+					"this build\n");
 				exit(1);
 			} else if(++i == dest_index) {
-				ERROR("%s: -xattrs-add missing xattr argument\n",
-					argv[0]);
+				ERROR("sqfstar: -xattrs-add missing xattr argument\n");
 				sqfstar_option_help(argv[i - 1]);
 			} else {
 				xattrs_add(argv[i]);
@@ -6977,7 +6951,7 @@ static int sqfstar(int argc, char *argv[])
 	}
 
 	if(i == argc) {
-		ERROR("%s: fatal error: no output filesystem specified on command line\n\n", argv[0]);
+		ERROR("sqfstar: fatal error: no output filesystem specified on command line\n\n");
 		sqfstar_help(TRUE);
 		exit(1);
 	}
