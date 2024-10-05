@@ -6400,7 +6400,7 @@ static int sqfstar(int argc, char *argv[])
 				sqfstar_option_help(argv[i - 1]);
 			}
 
-			print_compressor_options(argv[i], argv[0]);
+			print_compressor_options(argv[i], "sqfstar");
 			exit(0);
 		} else if(strcmp(argv[1], "-mem-default") == 0) {
 			printf("%d\n", total_mem);
@@ -6463,7 +6463,7 @@ static int sqfstar(int argc, char *argv[])
 	}
 
 	if(Xhelp) {
-		print_selected_comp_options(stdout, comp, argv[0]);
+		print_selected_comp_options(stdout, comp, "sqfstar");
 		exit(0);
 	}
 
@@ -6642,7 +6642,7 @@ static int sqfstar(int argc, char *argv[])
 							" specify -comp, or "
 							"specify it after the"
 							" -X options?\n");
-					print_selected_comp_options(stderr, comp, argv[0]);
+					print_selected_comp_options(stderr, comp, "sqfstar");
 				}
 				exit(1);
 			}
