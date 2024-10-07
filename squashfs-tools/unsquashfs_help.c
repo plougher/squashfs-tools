@@ -497,9 +497,9 @@ void unsquashfs_option_help(char *option)
 }
 
 
-void sqfscat_help_all(char *name)
+void sqfscat_help_all(void)
 {
-	print_help_all(name, SQFSCAT_SYNTAX, sqfscat_text);
+	print_help_all("sqfscat", SQFSCAT_SYNTAX, sqfscat_text);
 }
 
 

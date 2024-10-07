@@ -52,7 +52,7 @@ extern void unsquashfs_option(char *opt_name, char *pattern);
 extern void unsquashfs_help(int error);
 extern void unsquashfs_invalid_option(char *opt_name);
 extern void unsquashfs_option_help(char *option);
-extern void sqfscat_help_all(char *name);
+extern void sqfscat_help_all(void);
 extern void sqfscat_option(char *opt_name, char *pattern);
 extern void sqfscat_section(char *opt_name, char *sec_name);
 extern void sqfscat_help(int error);
