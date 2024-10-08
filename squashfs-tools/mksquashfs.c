@@ -479,9 +479,17 @@ inline int reset_pos(void)
 		return FALSE;
 	else {
 		set_pos(marked_pos);
-		marked_pos = 0;
 		return TRUE;
 	}
+}
+
+
+inline void unmark_pos()
+{
+	if(marked_pos == 0)
+		BAD_ERROR("BUG: Saved write position should not be empty!\n");
+
+	marked_pos = 0;
 }
 
 
@@ -496,17 +504,12 @@ inline void mark_pos()
 
 inline long long get_marked_pos(void)
 {
-	long long tmp;
-
 	if(marked_pos == 0)
 		BAD_ERROR("BUG: Saved write position is empty!\n");
 	else if(marked_pos == 1)
-		tmp = get_pos();
+		return get_pos();
 	else
-		tmp = marked_pos;
-
-	marked_pos = 0;
-	return tmp;
+		return marked_pos;
 }
 
 
@@ -519,7 +522,9 @@ inline long long set_write_buffer(struct file_buffer *buffer, int size)
 
 inline void put_write_buffer_hash(struct file_buffer *buffer, int put)
 {
-	if(marked_pos == 1)
+	if(marked_pos == 0)
+		BAD_ERROR("BUG: Saved write position should not be empty!\n");
+	else if(marked_pos == 1)
 		marked_pos = get_pos();
 
 	buffer->block = get_and_inc_pos(buffer->size);
@@ -2957,6 +2962,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 	log_file(dir_ent, file->start);
 
 	*status = 0;
+	unmark_pos();
 	return file;
 
 read_err:
@@ -2978,6 +2984,7 @@ read_err:
 		unlock_fragments();
 	free(block_list);
 	cache_block_put(read_buffer);
+	unmark_pos();
 	return NULL;
 }
 
@@ -3077,6 +3084,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 		log_file(dir_ent, file->start);
 
 	*status = 0;
+	unmark_pos();
 	return file;
 
 read_err:
@@ -3101,6 +3109,7 @@ read_err:
 	free(buffer_list);
 	free(block_list);
 	cache_block_put(read_buffer);
+	unmark_pos();
 	return NULL;
 }
 
@@ -3192,6 +3201,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 	log_file(dir_ent, file->start);
 
 	*status = 0;
+	unmark_pos();
 	return file;
 
 read_err:
@@ -3213,6 +3223,7 @@ read_err:
 		unlock_fragments();
 	free(block_list);
 	cache_block_put(read_buffer);
+	unmark_pos();
 	return NULL;
 }
 
