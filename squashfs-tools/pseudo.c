@@ -525,6 +525,14 @@ static struct pseudo_dev *read_pseudo_def_link(char *orig_def, char *def, char *
 		goto error;
 	}
 
+	char *resolved_linkname = realpath(linkname, NULL);
+	if (resolved_linkname == NULL) {
+		ERROR("Cannot resolve pseudo link file %s because %s\n", linkname, strerror(errno));
+		goto error;
+	}
+	free(linkname);
+	linkname = resolved_linkname;
+
 	dev = malloc(sizeof(struct pseudo_dev));
 	if(dev == NULL)
 		MEM_ERROR();
