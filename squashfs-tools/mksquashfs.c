@@ -4209,9 +4209,27 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 				pseudo_ent->dev->symlink,
 				strlen(pseudo_ent->dev->symlink) + 1), dir);
 		} else if(pseudo_ent->dev->type == 'l') {
-			add_dir_entry2(pseudo_ent->name, NULL,
-				pseudo_ent->dev->linkname, NULL,
-				lookup_inode(pseudo_ent->dev->linkbuf), dir);
+			if(S_ISLNK(pseudo_ent->dev->linkbuf->st_mode)) {
+				int byte;
+				static char buff[65536]; /* overflow safe */
+
+				byte = readlink(pseudo_ent->dev->linkname, buff, 65536);
+				if(byte == -1) {
+					ERROR_START("Failed to read symlink %s", pseudo_ent->dev->linkname);
+					ERROR_EXIT(", ignoring\n");
+				} else if(byte == 65536) {
+					ERROR_START("Symlink %s is greater than 65535 bytes!", pseudo_ent->dev->linkname);
+					ERROR_EXIT(", ignoring\n");
+				} else {
+					/* readlink doesn't 0 terminate the returned path */
+					buff[byte] = '\0';
+					add_dir_entry2(pseudo_ent->name, NULL, pseudo_ent->dev->linkname, NULL,
+							lookup_inode3(pseudo_ent->dev->linkbuf, NULL, buff, byte + 1), dir);
+				}
+			} else
+				add_dir_entry2(pseudo_ent->name, NULL,
+					pseudo_ent->dev->linkname, NULL,
+					lookup_inode(pseudo_ent->dev->linkbuf), dir);
 		} else {
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,
