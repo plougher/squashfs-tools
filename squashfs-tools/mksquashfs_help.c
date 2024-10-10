@@ -363,6 +363,7 @@ static char *mksquashfs_text[]={
 	"\"filename i mode uid gid [s|f]\"\t\tcreate a socket (s) or FIFO "
 		"(f)\n",
 	"\"filename x name=val\"\t\t\tcreate an extended attribute\n",
+	"\"filename h linkname\"\t\t\tcreate a hard-link to linkname, follows symlinks\n",
 	"\"filename l linkname\"\t\t\tcreate a hard-link to linkname\n",
 	"\"filename L pseudo_filename\"\t\tsame, but link to pseudo file\n",
 	"\"filename D time mode uid gid\"\t\tcreate a directory with timestamp "
@@ -584,6 +585,7 @@ static char *sqfstar_text[]={
 	"\"filename i mode uid gid [s|f]\"\t\tcreate a socket (s) or FIFO "
 		"(f)\n",
 	"\"filename x name=val\"\t\t\tcreate an extended attribute\n",
+	"\"filename h linkname\"\t\t\tcreate a hard-link to linkname, follows symlinks\n",
 	"\"filename l linkname\"\t\t\tcreate a hard-link to linkname\n",
 	"\"filename L pseudo_filename\"\t\tsame, but link to pseudo file\n",
 	"\"filename D time mode uid gid\"\t\tcreate a directory with timestamp "
