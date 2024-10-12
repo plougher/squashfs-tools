@@ -32,10 +32,10 @@
 #include "print_pager.h"
 #include "compressor.h"
 
-#define MKSQUASHFS_SYNTAX "SYNTAX:%s source1 source2 ...  FILESYSTEM " \
+#define MKSQUASHFS_SYNTAX "SYNTAX: %s source1 source2 ...  FILESYSTEM " \
 	"[OPTIONS] [-e list of exclude dirs/files]\n\n"
 
-#define SQFSTAR_SYNTAX "SYNTAX:%s [OPTIONS] FILESYSTEM [list of exclude dirs/files]\n\n"
+#define SQFSTAR_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [list of exclude dirs/files]\n\n"
 
 static char *mksquashfs_options[]={
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
