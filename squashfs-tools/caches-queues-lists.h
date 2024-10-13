@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2014, 2019, 2021
+ * Copyright (c) 2013, 2014, 2019, 2021, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -54,11 +54,9 @@ void remove_##NAME##_list(TYPE **list, TYPE *entry) { \
 }
 
 
-#define INSERT_HASH_TABLE(NAME, TYPE, HASH_FUNCTION, FIELD, LINK) \
-void insert_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
+#define INSERT_HASH_TABLE(NAME, TYPE, LINK) \
+void insert_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int hash) \
 { \
-	int hash = HASH_FUNCTION(entry->FIELD); \
-\
 	entry->LINK##_next = container->hash_table[hash]; \
 	container->hash_table[hash] = entry; \
 	entry->LINK##_prev = NULL; \
@@ -67,14 +65,13 @@ void insert_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
 }
 
 
-#define REMOVE_HASH_TABLE(NAME, TYPE, HASH_FUNCTION, FIELD, LINK) \
-void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
+#define REMOVE_HASH_TABLE(NAME, TYPE, LINK) \
+void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int hash) \
 { \
 	if(entry->LINK##_prev) \
 		entry->LINK##_prev->LINK##_next = entry->LINK##_next; \
 	else \
-		container->hash_table[HASH_FUNCTION(entry->FIELD)] = \
-			entry->LINK##_next; \
+		container->hash_table[hash] = entry->LINK##_next; \
 	if(entry->LINK##_next) \
 		entry->LINK##_next->LINK##_prev = entry->LINK##_prev; \
 \

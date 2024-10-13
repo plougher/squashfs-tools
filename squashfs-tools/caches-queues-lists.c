@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2014, 2019, 2021
+ * Copyright (c) 2013, 2014, 2019, 2021, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -143,10 +143,10 @@ void dump_queue(struct queue *queue)
 #define CALCULATE_SEQ_HASH(N) CALCULATE_HASH(N)
 
 /* Called with the seq queue mutex held */
-INSERT_HASH_TABLE(seq, struct seq_queue, CALCULATE_SEQ_HASH, sequence, seq)
+INSERT_HASH_TABLE(seq, struct seq_queue, seq)
 
 /* Called with the cache mutex held */
-REMOVE_HASH_TABLE(seq, struct seq_queue, CALCULATE_SEQ_HASH, sequence, seq);
+REMOVE_HASH_TABLE(seq, struct seq_queue, seq);
 
 
 struct seq_queue *seq_queue_init()
@@ -169,7 +169,7 @@ void seq_queue_put(struct seq_queue *queue, struct file_buffer *entry)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
 	pthread_mutex_lock(&queue->mutex);
 
-	insert_seq_hash_table(queue, entry);
+	insert_seq_hash_table(queue, entry, CALCULATE_SEQ_HASH(entry->sequence));
 
 	if(entry->fragment)
 		queue->fragment_count ++;
@@ -211,7 +211,7 @@ struct file_buffer *seq_queue_get(struct seq_queue *queue)
 			else
 				queue->block_count --;
 
-			remove_seq_hash_table(queue, entry);
+			remove_seq_hash_table(queue, entry, hash);
 
 			queue->sequence ++;
 
@@ -264,10 +264,10 @@ void dump_seq_queue(struct seq_queue *queue, int fragment_queue)
 #define CALCULATE_CACHE_HASH(N) CALCULATE_HASH(llabs(N))
 
 /* Called with the cache mutex held */
-INSERT_HASH_TABLE(cache, struct cache, CALCULATE_CACHE_HASH, index, hash)
+INSERT_HASH_TABLE(cache, struct cache, hash)
 
 /* Called with the cache mutex held */
-REMOVE_HASH_TABLE(cache, struct cache, CALCULATE_CACHE_HASH, index, hash);
+REMOVE_HASH_TABLE(cache, struct cache, hash);
 
 /* define cache free list */
 
@@ -364,7 +364,7 @@ static struct file_buffer *cache_freelist(struct cache *cache)
 	remove_free_list(&cache->free_list, entry);
 
 	/* a block on the free_list is hashed */
-	remove_cache_hash_table(cache, entry);
+	remove_cache_hash_table(cache, entry, CALCULATE_CACHE_HASH(entry->index));
 
 	cache->used ++;
 	return entry;
@@ -426,7 +426,7 @@ static struct file_buffer *_cache_get(struct cache *cache, long long index,
 	entry->error = FALSE;
 	if(hash) {
 		entry->index = index;
-		insert_cache_hash_table(cache, entry);
+		insert_cache_hash_table(cache, entry, CALCULATE_CACHE_HASH(entry->index));
 	}
 
 	pthread_cleanup_pop(1);
@@ -455,7 +455,7 @@ void cache_hash(struct file_buffer *entry, long long index)
 	pthread_mutex_lock(&cache->mutex);
 
 	entry->index = index;
-	insert_cache_hash_table(cache, entry);
+	insert_cache_hash_table(cache, entry, CALCULATE_CACHE_HASH(entry->index));
 
 	pthread_cleanup_pop(1);
 }
@@ -555,7 +555,7 @@ struct file_buffer *cache_get_nowait(struct cache *cache, long long index)
 		entry->wait_on_unlock = FALSE;
 		entry->error = FALSE;
 		entry->index = index;
-		insert_cache_hash_table(cache, entry);
+		insert_cache_hash_table(cache, entry, CALCULATE_CACHE_HASH(entry->index));
 	}
 
 	pthread_cleanup_pop(1);
