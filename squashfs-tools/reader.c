@@ -22,9 +22,6 @@
  * reader.c
  */
 
-/* if throttling I/O, time to sleep between reads (in tenths of a second) */
-int sleep_time;
-
 #define TRUE 1
 #define FALSE 0
 
@@ -41,6 +38,8 @@ int sleep_time;
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
+#include <stddef.h>
+
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "caches-queues-lists.h"
@@ -52,6 +51,12 @@ int sleep_time;
 #include "reader.h"
 
 static struct readahead **readahead_table = NULL;
+
+/* if throttling I/O, time to sleep between reads (in tenths of a second) */
+int sleep_time;
+
+/* HEAD of read scanner linked list */
+static struct dir_ent *reader_head = NULL;
 
 static void sigalrm_handler(int arg)
 {
@@ -647,35 +652,28 @@ static void reader_read_data(struct dir_ent *dir_ent)
 }
 
 
-static void reader_scan(struct dir_info *dir)
+static struct dir_ent *reader_scan(struct dir_info *dir, struct dir_ent *prev)
 {
 	struct dir_ent *dir_ent = dir->list;
 
 	for(; dir_ent; dir_ent = dir_ent->next) {
-		struct stat *buf = &dir_ent->inode->buf;
-
 		if(dir_ent->inode->root_entry || IS_TARFILE(dir_ent->inode))
 			continue;
 
-		if(IS_PSEUDO_PROCESS(dir_ent->inode)) {
-			reader_read_process(dir_ent);
-			continue;
-		}
-
-		if(IS_PSEUDO_DATA(dir_ent->inode)) {
-			reader_read_data(dir_ent);
-			continue;
-		}
-
-		switch(buf->st_mode & S_IFMT) {
-			case S_IFREG:
-				reader_read_file(dir_ent);
-				break;
-			case S_IFDIR:
-				reader_scan(dir_ent->dir);
-				break;
-		}
+		if(IS_PSEUDO_PROCESS(dir_ent->inode) ||
+				IS_PSEUDO_DATA(dir_ent->inode) ||
+				S_ISREG(dir_ent->inode->buf.st_mode)) {
+			if(prev)
+				prev->reader_next = dir_ent;
+			else
+				reader_head = dir_ent;
+			dir_ent->reader_next = NULL;
+			prev = dir_ent;
+		} else if(S_ISDIR(dir_ent->inode->buf.st_mode))
+			prev = reader_scan(dir_ent->dir, prev);
 	}
+
+	return prev;
 }
 
 
@@ -700,15 +698,32 @@ void *reader(void *arg)
 	}
 
 	if(!sorted)
-		reader_scan(dir);
-	else{
+		reader_scan(dir, NULL);
+	else {
 		int i;
 		struct priority_entry *entry;
+		struct dir_ent *prev = NULL;
 
 		for(i = 65535; i >= 0; i--)
-			for(entry = priority_list[i]; entry;
-							entry = entry->next)
-				reader_read_file(entry->dir);
+			for(entry = priority_list[i]; entry; prev = entry->dir,
+							entry = entry->next) {
+				if(prev)
+					prev->reader_next = entry->dir;
+				else
+					reader_head = entry->dir;
+				entry->dir->reader_next = NULL;
+			}
+	}
+
+	for(; reader_head; reader_head = reader_head->reader_next) {
+		if(IS_PSEUDO_PROCESS(reader_head->inode))
+			reader_read_process(reader_head);
+		else if(IS_PSEUDO_DATA(reader_head->inode))
+			reader_read_data(reader_head);
+		else if(S_ISREG(reader_head->inode->buf.st_mode))
+			reader_read_file(reader_head);
+		else
+			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
 
 	pthread_exit(NULL);

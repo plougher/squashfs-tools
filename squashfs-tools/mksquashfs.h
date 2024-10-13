@@ -47,6 +47,7 @@ struct dir_ent {
 	struct dir_info		*dir;
 	struct dir_info		*our_dir;
 	struct dir_ent		*next;
+	struct dir_ent		*reader_next;
 };
 
 struct inode_info {
