@@ -2709,7 +2709,7 @@ static void *deflator(void *arg)
 
 		if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
-			seq_queue_put(to_main, file_buffer);
+			reader_queue_put(to_main, file_buffer);
 		} else {
 			write_buffer->c_byte = mangle2(stream,
 				write_buffer->data, file_buffer->data,
@@ -2723,7 +2723,7 @@ static void *deflator(void *arg)
 			write_buffer->fragment = FALSE;
 			write_buffer->error = FALSE;
 			cache_block_put(file_buffer);
-			seq_queue_put(to_main, write_buffer);
+			reader_queue_put(to_main, write_buffer);
 			write_buffer = cache_get_nohash(bwriter_buffer);
 		}
 	}
@@ -2801,7 +2801,7 @@ static void *frag_order_deflator(void *arg)
 		pthread_mutex_lock(&fragment_mutex);
 		fragment_table[file_buffer->block].size = c_byte;
 		pthread_cleanup_pop(1);
-		seq_queue_put(to_order, write_buffer);
+		fragment_queue_put(to_order, write_buffer);
 		TRACE("Writing fragment %lld, uncompressed size %d, "
 			"compressed size %d\n", file_buffer->block,
 			file_buffer->size, SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte));
@@ -2815,7 +2815,7 @@ static void *frag_orderer(void *arg)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 
 	while(1) {
-		struct file_buffer *write_buffer = seq_queue_get(to_order);
+		struct file_buffer *write_buffer = fragment_queue_get(to_order);
 		int block = write_buffer->block;
 
 		pthread_mutex_lock(&fragment_mutex);
@@ -2834,7 +2834,7 @@ static void *frag_orderer(void *arg)
 
 static struct file_buffer *get_file_buffer()
 {
-	struct file_buffer *file_buffer = seq_queue_get(to_main);
+	struct file_buffer *file_buffer = reader_queue_get(to_main);
 
 	return file_buffer;
 }

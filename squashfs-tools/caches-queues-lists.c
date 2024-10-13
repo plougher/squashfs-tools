@@ -139,9 +139,6 @@ void dump_queue(struct queue *queue)
 }
 
 
-/* define seq queue hash tables */
-#define CALCULATE_SEQ_HASH(N) CALCULATE_HASH(N)
-
 /* Called with the seq queue mutex held */
 INSERT_HASH_TABLE(seq, struct seq_queue, seq)
 
@@ -161,70 +158,6 @@ struct seq_queue *seq_queue_init()
 	pthread_cond_init(&queue->wait, NULL);
 
 	return queue;
-}
-
-
-void seq_queue_put(struct seq_queue *queue, struct file_buffer *entry)
-{
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
-
-	insert_seq_hash_table(queue, entry, CALCULATE_SEQ_HASH(entry->sequence));
-
-	if(entry->fragment)
-		queue->fragment_count ++;
-	else
-		queue->block_count ++;
-
-	if(entry->sequence == queue->sequence)
-		pthread_cond_signal(&queue->wait);
-
-	pthread_cleanup_pop(1);
-}
-
-
-struct file_buffer *seq_queue_get(struct seq_queue *queue)
-{
-	/*
-	 * Return next buffer from queue in sequence order (queue->sequence).  If
-	 * found return it, otherwise wait for it to arrive.
-	 */
-	int hash = CALCULATE_SEQ_HASH(queue->sequence);
-	struct file_buffer *entry;
-
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
-
-	while(1) {
-		for(entry = queue->hash_table[hash]; entry;
-						entry = entry->seq_next)
-			if(entry->sequence == queue->sequence)
-				break;
-
-		if(entry) {
-			/*
-			 * found the buffer in the queue, decrement the
-			 * appropriate count, and remove from hash list
-			 */
-			if(entry->fragment)
-				queue->fragment_count --;
-			else
-				queue->block_count --;
-
-			remove_seq_hash_table(queue, entry, hash);
-
-			queue->sequence ++;
-
-			break;
-		}
-
-		/* entry not found, wait for it to arrive */	
-		pthread_cond_wait(&queue->wait, &queue->mutex);
-	}
-
-	pthread_cleanup_pop(1);
-
-	return entry;
 }
 
 
@@ -257,6 +190,140 @@ void dump_seq_queue(struct seq_queue *queue, int fragment_queue)
 						size == 0 ? " (EMPTY)" : "");
 
 	pthread_cleanup_pop(1);
+}
+
+
+/* define reader seq queue hash function */
+#define CALCULATE_READER_HASH(N) CALCULATE_HASH(N)
+
+void reader_queue_put(struct seq_queue *queue, struct file_buffer *entry)
+{
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	insert_seq_hash_table(queue, entry, CALCULATE_READER_HASH(entry->sequence));
+
+	if(entry->fragment)
+		queue->fragment_count ++;
+	else
+		queue->block_count ++;
+
+	if(entry->sequence == queue->sequence)
+		pthread_cond_signal(&queue->wait);
+
+	pthread_cleanup_pop(1);
+}
+
+
+struct file_buffer *reader_queue_get(struct seq_queue *queue)
+{
+	/*
+	 * Return next buffer from queue in sequence order (queue->sequence).  If
+	 * found return it, otherwise wait for it to arrive.
+	 */
+	int hash = CALCULATE_READER_HASH(queue->sequence);
+	struct file_buffer *entry;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	while(1) {
+		for(entry = queue->hash_table[hash]; entry;
+						entry = entry->seq_next)
+			if(entry->sequence == queue->sequence)
+				break;
+
+		if(entry) {
+			/*
+			 * found the buffer in the queue, decrement the
+			 * appropriate count, and remove from hash list
+			 */
+			if(entry->fragment)
+				queue->fragment_count --;
+			else
+				queue->block_count --;
+
+			remove_seq_hash_table(queue, entry, hash);
+
+			queue->sequence ++;
+
+			break;
+		}
+
+		/* entry not found, wait for it to arrive */
+		pthread_cond_wait(&queue->wait, &queue->mutex);
+	}
+
+	pthread_cleanup_pop(1);
+
+	return entry;
+}
+
+
+/* define fragment seq queue hash function */
+#define CALCULATE_FRAG_HASH(N) CALCULATE_HASH(N)
+
+void fragment_queue_put(struct seq_queue *queue, struct file_buffer *entry)
+{
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	insert_seq_hash_table(queue, entry, CALCULATE_FRAG_HASH(entry->sequence));
+
+	if(entry->fragment)
+		queue->fragment_count ++;
+	else
+		queue->block_count ++;
+
+	if(entry->sequence == queue->sequence)
+		pthread_cond_signal(&queue->wait);
+
+	pthread_cleanup_pop(1);
+}
+
+
+struct file_buffer *fragment_queue_get(struct seq_queue *queue)
+{
+	/*
+	 * Return next buffer from queue in sequence order (queue->sequence).  If
+	 * found return it, otherwise wait for it to arrive.
+	 */
+	int hash = CALCULATE_FRAG_HASH(queue->sequence);
+	struct file_buffer *entry;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	while(1) {
+		for(entry = queue->hash_table[hash]; entry;
+						entry = entry->seq_next)
+			if(entry->sequence == queue->sequence)
+				break;
+
+		if(entry) {
+			/*
+			 * found the buffer in the queue, decrement the
+			 * appropriate count, and remove from hash list
+			 */
+			if(entry->fragment)
+				queue->fragment_count --;
+			else
+				queue->block_count --;
+
+			remove_seq_hash_table(queue, entry, hash);
+
+			queue->sequence ++;
+
+			break;
+		}
+
+		/* entry not found, wait for it to arrive */
+		pthread_cond_wait(&queue->wait, &queue->mutex);
+	}
+
+	pthread_cleanup_pop(1);
+
+	return entry;
 }
 
 

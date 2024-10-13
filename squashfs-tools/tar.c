@@ -608,7 +608,7 @@ static void skip_file(struct tar_file *tar_file)
 	int blocks = (tar_file->buf.st_size + block_size - 1) >> block_log, i;
 
 	for(i = 0; i < blocks; i++)
-		cache_block_put(seq_queue_get(to_main));
+		cache_block_put(reader_queue_get(to_main));
 
 	progress_bar_size(-blocks);
 }
@@ -1549,7 +1549,7 @@ void read_tar_file()
 		file_buffer->fragment = FALSE;
 		file_buffer->tar_file = tar_file;
 		file_buffer->sequence = sequence_count ++;
-		seq_queue_put(to_main, file_buffer);
+		reader_queue_put(to_main, file_buffer);
 
 		if(status == TAR_EOF)
 			break;
@@ -1574,7 +1574,7 @@ squashfs_inode process_tar_file(int progress)
 	while(1) {
 		struct inode_info *link = NULL;
 
-		file_buffer = seq_queue_get(to_main);
+		file_buffer = reader_queue_get(to_main);
 		if(file_buffer->tar_file == NULL)
 			break;
 
