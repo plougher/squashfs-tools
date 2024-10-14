@@ -794,7 +794,7 @@ static void squashfs_stat(char *source)
 		printf("Fragments are %scompressed\n",
 			SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.s.flags) ?
 			"un" : "");
-		printf("Always-use-fragments option is %sspecified\n",
+		printf("Tailends are %spacked into fragments\n",
 			SQUASHFS_ALWAYS_FRAGMENTS(sBlk.s.flags) ? "" : "not ");
 	}
 
