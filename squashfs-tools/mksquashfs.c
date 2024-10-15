@@ -8053,15 +8053,16 @@ int main(int argc, char *argv[])
 	 * from standard in.  We do not expect to have any sources
 	 * specified on the command line */
 	if(cpiostyle && source)
-		BAD_ERROR("Sources on the command line should be -, "
-			"when using -cpiostyle[0] options\n");
+		BAD_ERROR("Sources on the command line should be - when using "
+			"-cpiostyle[0] options, i.e. mksquashfs - image.sqfs "
+			"-cpiostyle\n");
 
 	/* If -tar option is set, then files will be read-in
 	 * from standard in.  We do not expect to have any sources
 	 * specified on the command line */
 	if(tarfile && source)
-		BAD_ERROR("Sources on the command line should be -, "
-			"when using -tar option\n");
+		BAD_ERROR("Sources on the command line should be - when using "
+			"-tar option, i.e. mksquashfs - image.sqfs -tar\n");
 
 	/* If -tar option is set, then check that actions have not been
 	 * specified, which are unsupported with tar file reading
