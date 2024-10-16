@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2021
+ * Copyright (c) 2021, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -28,6 +28,7 @@
 
 extern int exit_on_error;
 extern void prep_exit();
+extern int silent;
 
 #define INFO(s, args...) \
 		do {\

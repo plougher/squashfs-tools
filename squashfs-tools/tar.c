@@ -1,7 +1,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2021, 2022
+ * Copyright (c) 2021, 2022, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -45,7 +45,6 @@
 #define TRUE 1
 #define FALSE 0
 
-extern int silent;
 int ignore_zeros = FALSE;
 int default_uid_opt = FALSE;
 unsigned int default_uid;
