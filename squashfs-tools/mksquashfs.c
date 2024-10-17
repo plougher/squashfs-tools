@@ -6973,9 +6973,6 @@ static int sqfstar(int argc, char *argv[])
 
 		else if(strcmp(argv[i], "-percentage") == 0) {
 			progressbar_percentage();
-			progress = TRUE;
-			display_info = FALSE;
-
 		} else
 			sqfstar_invalid_option(argv[i]);
 	}
@@ -8034,8 +8031,6 @@ int main(int argc, char *argv[])
 			root_name = argv[i];
 		} else if(strcmp(argv[i], "-percentage") == 0) {
 			progressbar_percentage();
-			progress = TRUE;
-			display_info = FALSE;
 		} else if(strcmp(argv[i], "-version") == 0) {
 			print_version("mksquashfs");
 		} else if(strcmp(argv[i], "-cpiostyle") == 0 ||
