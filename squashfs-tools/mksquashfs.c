@@ -167,8 +167,8 @@ regex_t *xattr_include_preg = NULL;
 /* Does Mksquashfs print a summary and other information when running? */
 int quiet = FALSE;
 
-/* Does Mksquashfs display filenames as they are archived? */
-int silent = TRUE;
+/* Does Mksquashfs display information as files and directories are archived? */
+int display_info = FALSE;
 
 /* Is Mksquashfs using the older non-wildcard exclude code? */
 int old_exclude = TRUE;
@@ -6960,7 +6960,7 @@ static int sqfstar(int argc, char *argv[])
 			nopad = TRUE;
 
 		else if(strcmp(argv[i], "-info") == 0)
-			silent = FALSE;
+			display_info = TRUE;
 
 		else if(strcmp(argv[i], "-force") == 0)
 			appending = FALSE;
@@ -6973,7 +6973,8 @@ static int sqfstar(int argc, char *argv[])
 
 		else if(strcmp(argv[i], "-percentage") == 0) {
 			progressbar_percentage();
-			progress = silent = TRUE;
+			progress = TRUE;
+			display_info = FALSE;
 
 		} else
 			sqfstar_invalid_option(argv[i]);
@@ -7007,7 +7008,7 @@ static int sqfstar(int argc, char *argv[])
 	 * progress bar unless it has been explicitly enabled with
 	 * the -progress option
 	 */
-	if(!silent)
+	if(display_info)
 		progress = force_progress;
 
 	/*
@@ -8007,7 +8008,7 @@ int main(int argc, char *argv[])
 			nopad = TRUE;
 
 		else if(strcmp(argv[i], "-info") == 0)
-			silent = FALSE;
+			display_info = TRUE;
 
 		else if(strcmp(argv[i], "-e") == 0) {
 			exclude_option = TRUE;
@@ -8033,7 +8034,8 @@ int main(int argc, char *argv[])
 			root_name = argv[i];
 		} else if(strcmp(argv[i], "-percentage") == 0) {
 			progressbar_percentage();
-			progress = silent = TRUE;
+			progress = TRUE;
+			display_info = FALSE;
 		} else if(strcmp(argv[i], "-version") == 0) {
 			print_version("mksquashfs");
 		} else if(strcmp(argv[i], "-cpiostyle") == 0 ||
@@ -8096,7 +8098,7 @@ int main(int argc, char *argv[])
 	 * progress bar unless it has been explicitly enabled with
 	 * the -progress option
 	 */
-	if(!silent)
+	if(display_info)
 		progress = force_progress;
 		
 	/*

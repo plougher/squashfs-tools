@@ -28,11 +28,11 @@
 
 extern int exit_on_error;
 extern void prep_exit();
-extern int silent;
+extern int display_info;
 
 #define INFO(s, args...) \
 		do {\
-			 if(!silent)\
+			 if(display_info)\
 				progressbar_info(s, ## args);\
 		} while(0)
 
