@@ -169,6 +169,7 @@ int quiet = FALSE;
 
 /* Does Mksquashfs display information as files and directories are archived? */
 int display_info = FALSE;
+FILE *info_file = NULL;
 
 /* Is Mksquashfs using the older non-wildcard exclude code? */
 int old_exclude = TRUE;
@@ -351,7 +352,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-time", "root-uid", "root-gid", "xattrs-exclude", "xattrs-include",
 	"xattrs-add", "default-mode", "default-uid", "default-gid",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
-	"hs", NULL
+	"hs", "info-file", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -359,7 +360,8 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"processors", "mem", "offset", "o", "root-time", "root-uid",
 	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
 	"default-mode", "default-uid", "default-gid", "mem-percent", "pd",
-	"pseudo-dir", "help-option", "ho", "help-section", "hs", NULL
+	"pseudo-dir", "help-option", "ho", "help-section", "hs", "info-file",
+	NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
@@ -6382,6 +6384,27 @@ static int get_gid_from_arg(char *arg, unsigned int *gid)
 }
 
 
+FILE *open_info_file(char *filename)
+{
+	FILE *file;
+	struct stat buf;
+	int res;
+
+	res = stat(filename, &buf);
+	if(res == -1) {
+		if(errno != ENOENT)
+			BAD_ERROR("Failed to stat info_file filename \"%s\" because %s\n", strerror(errno));
+
+		file = fopen(filename, "w");
+		if(file == NULL)
+			BAD_ERROR("Failed to create info_file filename \"%s\" because %s\n", filename, strerror(errno));
+	} else
+		BAD_ERROR("Info_file filename \"%s\" already exists!\n", filename);
+
+	return file;
+}
+
+
 static int sqfstar(int argc, char *argv[])
 {
 	struct stat buf;
@@ -6963,7 +6986,16 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-info") == 0)
 			display_info = TRUE;
 
-		else if(strcmp(argv[i], "-force") == 0)
+		else if(strcmp(argv[i], "-info-file") == 0) {
+			if(++i == dest_index) {
+				ERROR("sqfstar: -info-file missing filename\n");
+				sqfstar_option_help(argv[i - 1]);
+			}
+
+			display_info = TRUE;
+			info_file = open_info_file(argv[i]);
+
+		} else if(strcmp(argv[i], "-force") == 0)
 			appending = FALSE;
 
 		else if(strcmp(argv[i], "-quiet") == 0)
@@ -7023,7 +7055,7 @@ static int sqfstar(int argc, char *argv[])
 	 * progress bar unless it has been explicitly enabled with
 	 * the -progress option
 	 */
-	if(display_info)
+	if(display_info && !info_file)
 		progress = force_progress;
 
 	/*
@@ -8026,7 +8058,16 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-info") == 0)
 			display_info = TRUE;
 
-		else if(strcmp(argv[i], "-e") == 0) {
+		else if(strcmp(argv[i], "-info-file") == 0) {
+			if(++i == argc) {
+				ERROR("mksquashfs: -info-file missing filename\n");
+				mksquashfs_option_help(argv[i - 1]);
+			}
+
+			display_info = TRUE;
+			info_file = open_info_file(argv[i]);
+
+		} else if(strcmp(argv[i], "-e") == 0) {
 			exclude_option = TRUE;
 			break;
 
@@ -8129,7 +8170,7 @@ int main(int argc, char *argv[])
 	 * progress bar unless it has been explicitly enabled with
 	 * the -progress option
 	 */
-	if(display_info)
+	if(display_info && !info_file)
 		progress = force_progress;
 		
 	/*
