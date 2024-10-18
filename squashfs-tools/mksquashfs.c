@@ -7011,6 +7011,14 @@ static int sqfstar(int argc, char *argv[])
 			"specified.  Both causes a conflict.\n");
 
 	/*
+	 * Selecting both -no-progress and -progress produces a conflict,
+	 * and so reject such command lines
+	 */
+	if(!progress && force_progress)
+		BAD_ERROR("Only one of -no-progress and -progress can be "
+			"specified.  Both causes a conflict.\n");
+
+	/*
 	 * If the -info option has been selected then disable the
 	 * progress bar unless it has been explicitly enabled with
 	 * the -progress option
@@ -8106,6 +8114,14 @@ int main(int argc, char *argv[])
 	 */
 	if(!progress && percentage)
 		BAD_ERROR("Only one of -no-progress and -percentage can be "
+			"specified.  Both causes a conflict.\n");
+
+	/*
+	 * Selecting both -no-progress and -progress produces a conflict,
+	 * and so reject such command lines
+	 */
+	if(!progress && force_progress)
+		BAD_ERROR("Only one of -no-progress and -progress can be "
 			"specified.  Both causes a conflict.\n");
 
 	/*
