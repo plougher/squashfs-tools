@@ -194,21 +194,23 @@ void dump_seq_queue(struct seq_queue *queue, int fragment_queue)
 
 
 /* define reader seq queue hash function */
-#define CALCULATE_READER_HASH(N) CALCULATE_HASH(N)
+#define CALCULATE_READER_HASH(C,N) (((C << 8) & 0xff00) | (N & 0xff))
 
 void reader_queue_put(struct seq_queue *queue, struct file_buffer *entry)
 {
+	int hash = CALCULATE_READER_HASH(entry->file_count, entry->block);
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
 	pthread_mutex_lock(&queue->mutex);
 
-	insert_seq_hash_table(queue, entry, CALCULATE_READER_HASH(entry->sequence));
+	insert_seq_hash_table(queue, entry, hash);
 
 	if(entry->fragment)
 		queue->fragment_count ++;
 	else
 		queue->block_count ++;
 
-	if(entry->sequence == queue->sequence)
+	if(entry->file_count == queue->file_count &&
+						entry->block == queue->block)
 		pthread_cond_signal(&queue->wait);
 
 	pthread_cleanup_pop(1);
@@ -218,10 +220,10 @@ void reader_queue_put(struct seq_queue *queue, struct file_buffer *entry)
 struct file_buffer *reader_queue_get(struct seq_queue *queue)
 {
 	/*
-	 * Return next buffer from queue in sequence order (queue->sequence).  If
-	 * found return it, otherwise wait for it to arrive.
+	 * Return next buffer from queue in sequence order (queue->file_count
+	 * and queue->block).  If found return it, otherwise wait for it to4		 * arrive.
 	 */
-	int hash = CALCULATE_READER_HASH(queue->sequence);
+	int hash = CALCULATE_READER_HASH(queue->file_count, queue->block);
 	struct file_buffer *entry;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
@@ -230,7 +232,8 @@ struct file_buffer *reader_queue_get(struct seq_queue *queue)
 	while(1) {
 		for(entry = queue->hash_table[hash]; entry;
 						entry = entry->seq_next)
-			if(entry->sequence == queue->sequence)
+			if(entry->file_count == queue->file_count &&
+						entry->block == queue->block)
 				break;
 
 		if(entry) {
@@ -245,7 +248,7 @@ struct file_buffer *reader_queue_get(struct seq_queue *queue)
 
 			remove_seq_hash_table(queue, entry, hash);
 
-			queue->sequence ++;
+			queue->block ++;
 
 			break;
 		}
@@ -257,6 +260,13 @@ struct file_buffer *reader_queue_get(struct seq_queue *queue)
 	pthread_cleanup_pop(1);
 
 	return entry;
+}
+
+
+void set_next_file(struct seq_queue *queue)
+{
+	queue->file_count ++;
+	queue->block = 0;
 }
 
 

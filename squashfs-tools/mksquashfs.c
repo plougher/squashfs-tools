@@ -289,7 +289,6 @@ pthread_mutex_t	dup_mutex = PTHREAD_MUTEX_INITIALIZER;
 struct seq_queue *to_order;
 pthread_t order_thread;
 pthread_cond_t fragment_waiting = PTHREAD_COND_INITIALIZER;
-int sequence_count = 0;
 int reproducible = REP_DEF;
 
 /* user options that control parallelisation */
@@ -3248,6 +3247,8 @@ again:
 		file = write_file_frag(dir, read_buffer, dup);
 	else
 		file = write_file_blocks(&status, dir, read_buffer, dup);
+
+	set_next_file(to_main);
 
 	if(status == 2) {
 		ERROR("File %s changed size while reading filesystem, "

@@ -54,6 +54,8 @@ unsigned int default_gid;
 int default_mode_opt = FALSE;
 mode_t default_mode;
 
+static long long block = 0;
+
 static long long read_octal(char *s, int size)
 {
 	long long res = 0;
@@ -628,7 +630,8 @@ static void read_tar_data(struct tar_file *tar_file)
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_size = read_size;
 		file_buffer->tar_file = tar_file;
-		file_buffer->sequence = sequence_count ++;
+		file_buffer->file_count = 0;
+		file_buffer->block = block ++;
 		file_buffer->noD = noD;
 		file_buffer->error = FALSE;
 
@@ -1548,7 +1551,8 @@ void read_tar_file()
 		file_buffer->cache = NULL;
 		file_buffer->fragment = FALSE;
 		file_buffer->tar_file = tar_file;
-		file_buffer->sequence = sequence_count ++;
+		file_buffer->file_count = 0;
+		file_buffer->block = block ++;
 		reader_queue_put(to_main, file_buffer);
 
 		if(status == TAR_EOF)

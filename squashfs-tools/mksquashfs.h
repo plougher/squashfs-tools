@@ -256,7 +256,6 @@ extern int root_gid_opt;
 extern unsigned int root_gid;
 extern struct inode_info *inode_info[INODE_HASH_SIZE];
 extern int quiet;
-extern int sequence_count;
 extern int pseudo_override;
 extern int global_uid_opt;
 extern unsigned int global_uid;

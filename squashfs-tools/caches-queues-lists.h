@@ -85,7 +85,10 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int 
 /* struct describing a cache entry passed between threads */
 struct file_buffer {
 	long long index;
-	long long sequence;
+	union {
+		long long sequence;
+		long long file_count;
+	};
 	long long file_size;
 	union {
 		long long block;
@@ -143,6 +146,8 @@ struct seq_queue {
 	int			fragment_count;
 	int			block_count;
 	long long		sequence;
+	long long		file_count;
+	long long		block;
 	struct file_buffer	*hash_table[HASH_SIZE];
 	pthread_mutex_t		mutex;
 	pthread_cond_t		wait;
@@ -179,8 +184,9 @@ extern struct seq_queue *seq_queue_init();
 extern void dump_seq_queue(struct seq_queue *, int);
 extern void seq_queue_flush(struct seq_queue *);
 extern void reader_queue_put(struct seq_queue *, struct file_buffer *);
+extern void set_next_file(struct seq_queue *queue);
 extern void fragment_queue_put(struct seq_queue *, struct file_buffer *);
-extern struct file_buffer *fragment_queue_get(struct seq_queue *);
+extern struct file_buffer *reader_queue_get(struct seq_queue *);
 extern struct file_buffer *fragment_queue_get(struct seq_queue *);
 extern struct cache *cache_init(int, int, int, int);
 extern struct file_buffer *cache_lookup(struct cache *, long long);

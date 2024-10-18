@@ -58,6 +58,8 @@ int sleep_time;
 /* HEAD of read scanner linked list */
 static struct dir_ent *reader_head = NULL;
 
+static long long file_count = 0;
+
 static void sigalrm_handler(int arg)
 {
 	struct timespec requested_time, remaining;
@@ -145,7 +147,7 @@ static void put_file_buffer(struct file_buffer *file_buffer)
 
 static void reader_read_process(struct dir_ent *dir_ent)
 {
-	long long bytes = 0;
+	long long bytes = 0, block = 0;
 	struct inode_info *inode = dir_ent->inode;
 	struct file_buffer *prev_buffer = NULL, *file_buffer;
 	int status, byte, res, child;
@@ -159,13 +161,15 @@ static void reader_read_process(struct dir_ent *dir_ent)
 	file = pseudo_exec_file(inode->pseudo, &child);
 	if(!file) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->sequence = sequence_count ++;
+		file_buffer->file_count = file_count;
+		file_buffer->block = block;
 		goto read_err;
 	}
 
 	while(1) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->sequence = sequence_count ++;
+		file_buffer->file_count = file_count;
+		file_buffer->block = block ++;
 		file_buffer->noD = inode->noD;
 
 		byte = read_bytes(file, file_buffer->data, block_size);
@@ -216,10 +220,9 @@ static void reader_read_process(struct dir_ent *dir_ent)
 
 	if(prev_buffer == NULL)
 		prev_buffer = file_buffer;
-	else {
+	else
 		cache_block_put(file_buffer);
-		sequence_count --;
-	}
+
 	prev_buffer->file_size = bytes;
 	prev_buffer->fragment = is_fragment(inode);
 	put_file_buffer(prev_buffer);
@@ -231,7 +234,6 @@ read_err2:
 read_err:
 	if(prev_buffer) {
 		cache_block_put(file_buffer);
-		sequence_count --;
 		file_buffer = prev_buffer;
 	}
 	file_buffer->error = TRUE;
@@ -244,7 +246,7 @@ static void reader_read_file(struct dir_ent *dir_ent)
 	struct stat *buf = &dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
 	int blocks, file, res;
-	long long bytes, read_size;
+	long long bytes, read_size, block;
 	struct inode_info *inode = dir_ent->inode;
 
 	if(inode->read)
@@ -252,7 +254,7 @@ static void reader_read_file(struct dir_ent *dir_ent)
 
 	inode->read = TRUE;
 again:
-	bytes = 0;
+	bytes = block = 0;
 	read_size = buf->st_size;
 	blocks = (read_size + block_size - 1) >> block_log;
 
@@ -264,14 +266,16 @@ again:
 
 	if(file == -1) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->sequence = sequence_count ++;
+		file_buffer->file_count = file_count;
+		file_buffer->block = block;
 		goto read_err2;
 	}
 
 	do {
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_size = read_size;
-		file_buffer->sequence = sequence_count ++;
+		file_buffer->file_count = file_count;
+		file_buffer->block = block ++;
 		file_buffer->noD = inode->noD;
 		file_buffer->error = FALSE;
 
@@ -342,6 +346,7 @@ restat:
 		memcpy(buf, &buf2, sizeof(struct stat));
 		file_buffer->error = 2;
 		put_file_buffer(file_buffer);
+		file_count ++;
 		goto again;
 	}
 read_err:
@@ -577,7 +582,7 @@ static void reader_read_data(struct dir_ent *dir_ent)
 {
 	struct file_buffer *file_buffer;
 	int blocks;
-	long long bytes, read_size, current;
+	long long bytes, read_size, current, block = 0;
 	struct inode_info *inode = dir_ent->inode;
 	static struct pseudo_file *file = NULL;
 
@@ -621,7 +626,8 @@ static void reader_read_data(struct dir_ent *dir_ent)
 	do {
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_size = read_size;
-		file_buffer->sequence = sequence_count ++;
+		file_buffer->file_count = file_count;
+		file_buffer->block = block ++;
 		file_buffer->noD = inode->noD;
 		file_buffer->error = FALSE;
 
@@ -694,6 +700,8 @@ void *reader(void *arg)
 
 	if(tarfile) {
 		read_tar_file();
+		file_count = 1;
+		set_next_file(to_main);
 		dir = queue_get(to_reader);
 	}
 
@@ -715,7 +723,7 @@ void *reader(void *arg)
 			}
 	}
 
-	for(; reader_head; reader_head = reader_head->reader_next) {
+	for(; reader_head; reader_head = reader_head->reader_next, file_count ++) {
 		if(IS_PSEUDO_PROCESS(reader_head->inode))
 			reader_read_process(reader_head);
 		else if(IS_PSEUDO_DATA(reader_head->inode))
