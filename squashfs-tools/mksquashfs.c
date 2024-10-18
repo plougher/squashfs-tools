@@ -6394,6 +6394,7 @@ static int sqfstar(int argc, char *argv[])
 	int total_mem = get_default_phys_mem();
 	int progress = TRUE;
 	int force_progress = FALSE;
+	int percentage = FALSE;
 	int Xhelp = FALSE;
 	int dest_index;
 	struct file_buffer **fragment = NULL;
@@ -6973,6 +6974,7 @@ static int sqfstar(int argc, char *argv[])
 
 		else if(strcmp(argv[i], "-percentage") == 0) {
 			progressbar_percentage();
+			percentage = TRUE;
 		} else
 			sqfstar_invalid_option(argv[i]);
 	}
@@ -6999,6 +7001,14 @@ static int sqfstar(int argc, char *argv[])
 	res = compressor_options_post(comp, block_size);
 	if(res)
 		EXIT_MKSQUASHFS();
+
+	/*
+	 * Selecting both -no-progress and -percentage produces a conflict,
+	 * and so reject such command lines
+	 */
+	if(!progress && percentage)
+		BAD_ERROR("Only one of -no-progress and -percentage can be "
+			"specified.  Both causes a conflict.\n");
 
 	/*
 	 * If the -info option has been selected then disable the
@@ -7237,6 +7247,7 @@ int main(int argc, char *argv[])
 	int total_mem = get_default_phys_mem();
 	int progress = TRUE;
 	int force_progress = FALSE;
+	int percentage = FALSE;
 	int exclude_option = FALSE;
 	int Xhelp = FALSE;
 	struct file_buffer **fragment = NULL;
@@ -8031,6 +8042,7 @@ int main(int argc, char *argv[])
 			root_name = argv[i];
 		} else if(strcmp(argv[i], "-percentage") == 0) {
 			progressbar_percentage();
+			percentage = TRUE;
 		} else if(strcmp(argv[i], "-version") == 0) {
 			print_version("mksquashfs");
 		} else if(strcmp(argv[i], "-cpiostyle") == 0 ||
@@ -8087,6 +8099,14 @@ int main(int argc, char *argv[])
 	res = compressor_options_post(comp, block_size);
 	if(res)
 		EXIT_MKSQUASHFS();
+
+	/*
+	 * Selecting both -no-progress and -percentage produces a conflict,
+	 * and so reject such command lines
+	 */
+	if(!progress && percentage)
+		BAD_ERROR("Only one of -no-progress and -percentage can be "
+			"specified.  Both causes a conflict.\n");
 
 	/*
 	 * If the -info option has been selected then disable the
