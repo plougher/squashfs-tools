@@ -255,8 +255,11 @@ static char *mksquashfs_text[]={
 	"-version\t\tprint version, licence and copyright message\n",
 	"-exit-on-error\t\ttreat normally ignored errors as fatal\n",
 	"-quiet\t\t\tno verbose output\n",
-	"-info\t\t\tprint files written to filesystem\n",
-	"-info-file <file>\tprint files written to filesystem to file <file>\n",
+	"-info\t\t\tprint files written to filesystem to stdout.  This "
+		"automatically disables the progress bar.  See -info-file to "
+		"output to file without disabling the progress bar\n",
+	"-info-file <file>\tprint files written to filesystem to file <file>.  "
+		"This does not disable the progress bar\n",
 	"-no-progress\t\tdo not display the progress bar\n",
 	"-progress\t\tdisplay progress bar when using the -info option\n",
 	"-percentage\t\tdisplay a percentage rather than the full progress bar."
