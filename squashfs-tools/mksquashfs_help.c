@@ -74,10 +74,10 @@ static char *sqfstar_options[]={
 	"-no-hardlinks", "", "", "", "-p", "-pd", "-pd", "-pf", "-ef", "-regex",
 	"-ignore-zeros", "", "", "", "-no-xattrs", "-xattrs", "-xattrs-exclude",
 	"-xattrs-include", "-xattrs-add", "", "","", "-version", "-force",
-	"-exit-on-error", "-quiet", "-info", "-no-progress", "-progress",
-	"-percentage", "-throttle", "-limit", "-processors", "-mem",
-	"-mem-percent", "-mem-default", "", "", "", "-nopad", "-offset", "-o",
-	"", "", "", "-help", "help-option", "-help-section", "-help-comp",
+	"-exit-on-error", "-quiet", "-info", "-info-file", "-no-progress",
+	"-progress", "-percentage", "-throttle", "-limit", "-processors",
+	"-mem", "-mem-percent", "-mem-default", "", "", "", "-nopad", "-offset",
+	"-o", "", "", "", "-help", "help-option", "-help-section", "-help-comp",
 	"-help-all", "-Xhelp", "-h", "-ho", "-hs", "-ha", "", "", "",
 	"-fstime", "-root-owned", "-noInodeCompression",
 	"-noIdTableCompression", "-noDataCompression",
@@ -108,10 +108,11 @@ static char *sqfstar_args[]={
 	"", "", "", "", "", "", "", "<pseudo-definition>", "<d mode uid gid>",
 	"<D time mode u g>", "<pseudo-file>", "<exclude-file>", "", "", "", "",
 	"", "", "", "<regex>", "<regex>", "<name=val>", "", "","", "", "", "",
-	"", "", "", "", "", "<percentage>", "<percentage>", "<number>",
-	"<size>", "<percent>", "", "", "", "", "", "<offset>", "<offset>", "",
-	"", "", "", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
-	"<section>", "" "", "", "", "<time>", "", "", "", "", "", "", ""
+	"", "", "<file>", "", "", "", "<percentage>", "<percentage>",
+	"<number>", "<size>", "<percent>", "", "", "", "", "", "<offset>",
+	"<offset>", "", "", "", "", "<regex>", "<section>", "<comp>", "", "",
+	"", "<regex>", "<section>", "" "", "", "", "<time>", "", "", "", "", "",
+	"", ""
 };
 
 static char *mksquashfs_sections[]={
@@ -530,6 +531,8 @@ static char *sqfstar_text[]={
 	"-exit-on-error\t\ttreat normally ignored errors as fatal\n",
 	"-quiet\t\t\tno verbose output\n",
 	"-info\t\t\tprint files written to filesystem\n",
+	"-info-file <file>\tprint files written to filesystem to file <file>.  "
+		"This does not disable the progress bar\n",
 	"-no-progress\t\tdo not display the progress bar\n",
 	"-progress\t\tdisplay progress bar when using the -info option\n",
 	"-percentage\t\tdisplay a percentage rather than the full progress "
