@@ -530,7 +530,9 @@ static char *sqfstar_text[]={
 	"-force\t\t\tforce Sqfstar to write to block device or file\n",
 	"-exit-on-error\t\ttreat normally ignored errors as fatal\n",
 	"-quiet\t\t\tno verbose output\n",
-	"-info\t\t\tprint files written to filesystem\n",
+	"-info\t\t\tprint files written to filesystem to stdout.  This "
+		"automatically disables the progress bar.  See -info-file to "
+		"output to file without disabling the progress bar\n",
 	"-info-file <file>\tprint files written to filesystem to file <file>.  "
 		"This does not disable the progress bar\n",
 	"-no-progress\t\tdo not display the progress bar\n",
