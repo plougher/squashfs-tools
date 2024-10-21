@@ -388,7 +388,7 @@ $(error "COMP_DEFAULT is set to ${COMP_DEFAULT}, which isn't selected to be \
 endif
 
 space := $(subst ,, )
-CFLAGS += -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n\t\t\t\t,$(COMPRESSORS)))\""
+#CFLAGS += -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n\t\t\t\t,$(COMPRESSORS)))\""
 
 #
 # Get VERSION and DATE for Mksquashfs/Unsquashfs version strings.
@@ -489,7 +489,8 @@ xz_wrapper.o: xz_wrapper.c squashfs_fs.h xz_wrapper.h compressor.h
 
 xz_wrapper_extended.o: xz_wrapper_extended.c squashfs_fs.h xz_wrapper.h compressor.h
 
-mksquashfs_help.o: mksquashfs_help.h Makefile
+mksquashfs_help.o: mksquashfs_help.c mksquashfs_help.h Makefile
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n\t\t\t\t,$(COMPRESSORS)))\"" $<
 
 print_pager.o: print_pager.c print_pager.h
 
