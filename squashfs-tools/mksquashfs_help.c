@@ -42,7 +42,7 @@ static char *mksquashfs_options[]={
 	"-no-compression", "", "", "", "-tar", "-no-strip", "-tarstyle",
 	"-cpiostyle", "-cpiostyle0", "-reproducible", "-not-reproducible",
 	"-mkfs-time", "-all-time", "-root-time", "-root-mode", "-root-uid",
-	"-root-gid", "-all-root", "-force-uid", "-force-gid",
+	"-root-gid", "-all-root", "-force-uid", "-force-gid", "-uid-gid-offset",
 	"-pseudo-override", "-no-exports", "-exports", "-no-sparse",
 	"-no-tailends", "-tailends", "-no-fragments", "-no-duplicates",
 	"-no-hardlinks", "-keep-as-directory", "", "", "", "-p", "-pd", "-pd",
@@ -68,7 +68,7 @@ static char *sqfstar_options[]={
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
 	"-no-compression", "", "", "", "-reproducible", "-not-reproducible",
 	"-mkfs-time", "-all-time", "-root-time", "-root-mode", "-root-uid",
-	"-root-gid", "-all-root", "-force-uid", "-force-gid", "-default-mode",
+	"-root-gid", "-all-root", "-force-uid", "-force-gid", "-uid-gid-offset", "-default-mode",
 	"-default-uid", "-default-gid", "-pseudo-override", "-exports",
 	"-no-sparse", "-no-fragments", "-no-tailends", "-no-duplicates",
 	"-no-hardlinks", "", "", "", "-p", "-pd", "-pd", "-pf", "-ef", "-regex",
@@ -181,6 +181,7 @@ static char *mksquashfs_text[]={
 		"can be either an integer uid or user name\n",
 	"-force-gid <value>\tset all file gids to specified <value>, <value> "
 		"can be either an integer gid or group name\n",
+	"-uid-gid-offset <value>\toffset all uid and gids by specified <value>\n",
 	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
 		"-force-uid and -force-gid options\n",
 	"-no-exports\t\tdo not make filesystem exportable via NFS (-tar "
@@ -452,6 +453,7 @@ static char *sqfstar_text[]={
 		"can be either an integer uid or user name\n",
 	"-force-gid <value>\tset all file gids to specified <value>, <value> "
 		"can be either an integer gid or group name\n",
+	"-uid-gid-offset <value>\toffset all uid and gids by specified <value>\n",
 	"-default-mode <mode>\ttar files often do not store permissions for "
 		"intermediate directories.  This option sets the default "
 		"directory permissions to octal <mode>, rather than 0755.  "

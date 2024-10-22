@@ -117,6 +117,9 @@ unsigned int global_uid;
 int global_gid_opt = FALSE;
 unsigned int global_gid;
 
+/* Offset all uid/gid */
+unsigned int uid_gid_offset = 0;
+
 /* Do pseudo uids and guids override -all-root, -force-uid and -force-gid? */
 int pseudo_override = FALSE;
 
@@ -350,7 +353,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-time", "root-uid", "root-gid", "xattrs-exclude", "xattrs-include",
 	"xattrs-add", "default-mode", "default-uid", "default-gid",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
-	"hs", NULL
+	"hs", "uid-gid-offset", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -358,7 +361,7 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"processors", "mem", "offset", "o", "root-time", "root-uid",
 	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
 	"default-mode", "default-uid", "default-gid", "mem-percent", "pd",
-	"pseudo-dir", "help-option", "ho", "help-section", "hs", NULL
+	"pseudo-dir", "help-option", "ho", "help-section", "hs", "uid-gid-offset", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
@@ -756,6 +759,21 @@ static long long write_directories()
 	bytes += directory_bytes;
 
 	return start_bytes;
+}
+
+
+static int check_id_table_offset()
+{
+    printf("updating id table with offset %d", uid_gid_offset);
+    int i;
+	for(i = 0; i < id_count; i++) {
+        long long id = id_table[i]->id + uid_gid_offset;
+        if (id > (((long long) 1 << 32) - 1)) {
+            return 0;
+        }
+        id_table[i]->id = id;
+    }
+    return 1;
 }
 
 
@@ -6290,6 +6308,24 @@ static int get_gid_from_arg(char *arg, unsigned int *gid)
 }
 
 
+static int get_uid_gid_offset_from_arg(char *arg, unsigned int *offset)
+{
+	char *last;
+	long long res;
+
+	res = strtoll(arg, &last, 10);
+	if(*last == '\0') {
+		if(res < 0 || res > (((long long) 1 << 32) - 1))
+			return -2;
+
+		*offset = res;
+		return 0;
+    }
+
+    return -1;
+}
+
+
 static int sqfstar(int argc, char *argv[])
 {
 	struct stat buf;
@@ -6520,6 +6556,22 @@ static int sqfstar(int argc, char *argv[])
 				sqfstar_option_help(argv[0], argv[i - 1]);
 			}
 			root_gid_opt = TRUE;
+		} else if(strcmp(argv[i], "-uid-gid-offset") == 0) {
+			if(++i == dest_index) {
+				ERROR("%s: -uid-gid-offset missing offset\n",
+					argv[0]);
+				sqfstar_option_help(argv[0], argv[i - 1]);
+			}
+
+			res = get_uid_gid_offset_from_arg(argv[i], &uid_gid_offset);
+			if(res) {
+				if(res == -2)
+					ERROR("%s: -uid-gid-offset out of range\n",
+						argv[0]);
+				else
+					ERROR("%s: -uid-gid-offset invalid number\n", argv[0]);
+				sqfstar_option_help(argv[0], argv[i - 1]);
+			}
 		} else if(strcmp(argv[i], "-root-time") == 0) {
 			if((++i == argc) ||
 					(!parse_num_unsigned(argv[i], &root_time) &&
@@ -7135,6 +7187,11 @@ static int sqfstar(int argc, char *argv[])
 	pthread_cancel(writer_thread);
 
 	set_progressbar_state(FALSE);
+
+    if (!check_id_table_offset()) {
+        ERROR("id entry out of range after applying offset\n");
+        exit(1);
+    }
 	write_filesystem_tables(&sBlk);
 
 	if(!nopad && (i = bytes & (4096 - 1))) {
@@ -7472,6 +7529,22 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[0], argv[i - 1]);
 			}
 			root_gid_opt = TRUE;
+		} else if(strcmp(argv[i], "-uid-gid-offset") == 0) {
+			if(++i == argc) {
+				ERROR("%s: -uid-gid-offset missing offset\n",
+					argv[0]);
+				mksquashfs_option_help(argv[0], argv[i - 1]);
+			}
+
+			res = get_uid_gid_offset_from_arg(argv[i], &uid_gid_offset);
+			if(res) {
+				if(res == -2)
+					ERROR("%s: -uid-gid-offset out of range\n",
+						argv[0]);
+				else
+					ERROR("%s: -uid-gid-offset invalid number\n", argv[0]);
+				mksquashfs_option_help(argv[0], argv[i - 1]);
+			}
 		} else if(strcmp(argv[i], "-root-time") == 0) {
 			if((++i == argc) ||
 					(!parse_num_unsigned(argv[i], &root_time) &&
