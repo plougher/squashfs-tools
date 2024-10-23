@@ -214,7 +214,8 @@ static char *unsquashfs_text[]={
 			"squashfs-tools/blob/master/README-4.6.1\n",
 	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/"
 		"plougher/squashfs-tools/blob/master/USAGE-4.6\n",
-	NULL
+	"\n", "Decompressors available:", "\n",
+	"\t" DECOMPRESSORS "\n", NULL
 };
 
 
@@ -270,7 +271,8 @@ static char *sqfscat_text[]={
 		"squashfs-tools/blob/master/README-4.6.1\n",
 	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/"
 		"plougher/squashfs-tools/blob/master/USAGE-4.6\n",
-	NULL,
+	"\n", "Decompressors available:", "\n",
+	"\t" DECOMPRESSORS "\n", NULL,
 };
 
 
@@ -295,10 +297,6 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 
 	for(i = 0; options_text[i] != NULL; i++)
 		autowrap_print(pager, options_text[i], cols);
-
-	autowrap_print(pager, "\nDecompressors available:\n", cols);
-
-	display_compressors(pager, "", "");
 
 	if(tty) {
 		fclose(pager);
