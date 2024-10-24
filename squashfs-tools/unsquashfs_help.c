@@ -78,11 +78,12 @@ static char *sqfscat_args[]={
 
 static char *unsquashfs_sections[]={
 	"extraction", "information", "xattrs", "runtime", "help", "misc",
-	"environment", "exit", "extra", NULL
+	"environment", "exit", "extra", "decompressors", NULL
 };
 
 static char *sqfscat_sections[]={
-	"runtime", "filter", "help", "environment", "exit", "extra", NULL
+	"runtime", "filter", "help", "environment", "exit", "extra",
+	"decompressors", NULL
 };
 
 static char *unsquashfs_text[]={
