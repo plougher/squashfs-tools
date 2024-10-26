@@ -90,10 +90,7 @@ struct file_buffer {
 		long long file_count;
 	};
 	long long file_size;
-	union {
-		long long block;
-		unsigned short checksum;
-	};
+	long long block;
 	struct cache *cache;
 	union {
 		struct file_info *dupl_start;
@@ -115,6 +112,7 @@ struct file_buffer {
 	};
 	int size;
 	int c_byte;
+	unsigned short checksum;
 	char used;
 	char fragment;
 	char error;
