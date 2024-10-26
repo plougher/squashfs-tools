@@ -2714,8 +2714,8 @@ static void *deflator(void *arg)
 				write_buffer->data, file_buffer->data,
 				file_buffer->size, block_size,
 				file_buffer->noD, 1);
-			write_buffer->sequence = file_buffer->sequence;
 			write_buffer->file_size = file_buffer->file_size;
+			write_buffer->file_count = file_buffer->file_count;
 			write_buffer->block = file_buffer->block;
 			write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK
 				(write_buffer->c_byte);
