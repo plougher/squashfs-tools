@@ -25,6 +25,7 @@
 
 #ifdef __linux__
 #include <sched.h>
+#include <unistd.h>
 
 static inline int get_nprocessors(void)
 {
