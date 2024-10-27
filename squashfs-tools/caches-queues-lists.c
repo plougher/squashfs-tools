@@ -221,7 +221,8 @@ struct file_buffer *reader_queue_get(struct seq_queue *queue)
 {
 	/*
 	 * Return next buffer from queue in sequence order (queue->file_count
-	 * and queue->block).  If found return it, otherwise wait for it to4		 * arrive.
+	 * and queue->block).  If found return it, otherwise wait for it to
+	 * arrive.
 	 */
 	int hash = CALCULATE_READER_HASH(queue->file_count, queue->block);
 	struct file_buffer *entry;
