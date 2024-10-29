@@ -633,7 +633,7 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 		ERROR("Filesystem on %s uses %s compression, this is "
 			"unsupported by this version\n", source, comp->name);
 		ERROR("Compressors available:\n");
-		display_compressors("", "");
+		display_compressors("");
 		goto failed_mount;
 	}
 

@@ -2292,7 +2292,7 @@ static int check_compression(struct compressor *comp)
 		ERROR("Filesystem uses %s compression, this is "
 			"unsupported by this version\n", comp->name);
 		ERROR("Decompressors available:\n");
-		display_compressors("", "");
+		display_compressors("");
 		return FALSE;
 	}
 
