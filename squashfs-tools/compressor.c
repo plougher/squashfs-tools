@@ -176,7 +176,7 @@ void print_compressor_options(char *comp_name, char *prog_name)
 				comp->usage(stdout, cols);
 
 			return;
-	}
+		}
 
 	autowrap_printf(stderr, cols, "%s: Compressor \"%s\" is not "
 		"supported!\n", prog_name, comp_name);
