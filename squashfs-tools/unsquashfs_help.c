@@ -533,5 +533,7 @@ void sqfscat_option_help(char *option)
 
 
 void display_decompressors() {
-	fprintf(stderr, "\t" DECOMPRESSORS "\n");
+	int cols = get_column_width();
+
+	autowrap_print(stderr, "\t" DECOMPRESSORS "\n", cols);
 }
