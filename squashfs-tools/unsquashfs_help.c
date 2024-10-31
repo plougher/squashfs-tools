@@ -530,3 +530,8 @@ void sqfscat_option_help(char *option)
 {
 	print_option_help("sqfscat", option, sqfscat_sections, sqfscat_text);
 }
+
+
+void display_decompressors() {
+	fprintf(stderr, "\t" DECOMPRESSORS "\n");
+}
