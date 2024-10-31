@@ -58,5 +58,5 @@ extern void sqfscat_section(char *opt_name, char *sec_name);
 extern void sqfscat_help(int error);
 extern void sqfscat_invalid_option(char *opt_name);
 extern void sqfscat_option_help(char *option);
-extern void display_decompressors(void);
+extern void display_compressors(void);
 #endif

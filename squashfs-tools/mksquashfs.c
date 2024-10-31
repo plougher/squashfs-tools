@@ -6491,7 +6491,7 @@ static int sqfstar(int argc, char *argv[])
 			if(!comp->supported) {
 				ERROR("sqfstar: Compressor \"%s\" is not supported!\n", argv[i]);
 				ERROR("sqfstar: Compressors available:\n");
-				display_compressors(COMP_DEFAULT);
+				display_compressors();
 				exit(1);
 			}
 			if(compressor_opt_parsed) {
@@ -7376,7 +7376,7 @@ int main(int argc, char *argv[])
 				ERROR("mksquashfs: Compressor \"%s\" is not "
 					"supported!\n", argv[j]);
 				ERROR("mksquashfs: Compressors available:\n");
-				display_compressors(COMP_DEFAULT);
+				display_compressors();
 				exit(1);
 			}
 			if(prev_comp != NULL && prev_comp != comp) {

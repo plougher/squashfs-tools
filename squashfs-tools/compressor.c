@@ -26,6 +26,7 @@
 
 #include "compressor.h"
 #include "squashfs_fs.h"
+#include "mksquashfs_help.h"
 #include "print_pager.h"
 
 #ifndef GZIP_SUPPORT
@@ -116,19 +117,6 @@ struct compressor *lookup_compressor_id(int id)
 }
 
 
-void display_compressors(char *def_comp)
-{
-	int i, cols = get_column_width();
-
-	for(i = 0; compressor[i]->id; i++)
-		if(compressor[i]->supported)
-			autowrap_printf(stderr, cols, "\t%s%s\n",
-				compressor[i]->name,
-				strcmp(compressor[i]->name, def_comp) == 0 ?
-				" (default)" : "");
-}
-
-
 void display_compressor_usage(FILE *stream, char *def_comp, int cols)
 {
 	int i;
@@ -182,6 +170,6 @@ void print_compressor_options(char *comp_name, char *prog_name)
 		"supported!\n", prog_name, comp_name);
 	autowrap_printf(stderr, cols, "%s: Compressors available:\n",
 		prog_name);
-	display_compressors(COMP_DEFAULT);
+	display_compressors();
 	exit(1);
 }

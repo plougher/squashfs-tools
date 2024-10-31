@@ -41,7 +41,6 @@ struct compressor {
 
 extern struct compressor *lookup_compressor(char *);
 extern struct compressor *lookup_compressor_id(int);
-extern void display_compressors(char *);
 extern void display_compressor_usage(FILE *stream, char *, int cols);
 extern void print_selected_comp_options(FILE *stream, struct compressor *comp, char *prog_name);
 extern void print_compressor_options(char *comp_name, char *prog_name);

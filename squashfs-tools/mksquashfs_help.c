@@ -882,3 +882,9 @@ void sqfstar_option_help(char *option)
 {
 	print_option_help("sqfstar", option, sqfstar_sections, sqfstar_text);
 }
+
+void display_compressors() {
+	int cols = get_column_width();
+
+	autowrap_print(stderr, "\t" COMPRESSORS "\n", cols);
+}
