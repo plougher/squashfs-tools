@@ -155,6 +155,11 @@ void print_compressor_options(char *comp_name, char *prog_name)
 {
 	int i, cols = get_column_width();
 
+	if(strcmp(comp_name, "all") == 0) {
+		display_compressor_usage(stdout, COMP_DEFAULT, cols);
+		return;
+	}
+
 	for(i = 0; compressor[i]->id; i++)
 		if(compressor[i]->supported && strcmp(compressor[i]->name, comp_name) == 0) {
 			struct compressor *comp = compressor[i];
