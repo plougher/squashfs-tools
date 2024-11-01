@@ -121,6 +121,8 @@ void display_compressor_usage(FILE *stream, char *def_comp, int cols)
 {
 	int i;
 
+	autowrap_print(stream, "\nCompressors available and compressor specific options:\n", cols);
+
 	for(i = 0; compressor[i]->id; i++)
 		if(compressor[i]->supported) {
 			char *str = strcmp(compressor[i]->name, def_comp) == 0 ?
