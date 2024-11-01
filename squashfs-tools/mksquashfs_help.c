@@ -886,3 +886,30 @@ void display_compressors() {
 
 	autowrap_print(stderr, "\t" COMPRESSORS "\n", cols);
 }
+
+void print_compressor_options(char *comp_name, char *prog_name)
+{
+	int cols, tty = isatty(STDOUT_FILENO);
+	pid_t pager_pid;
+	FILE *pager;
+
+	if(tty) {
+		cols = get_column_width();
+
+		pager = exec_pager(&pager_pid);
+		if(pager == NULL)
+			exit(1);
+	} else {
+		cols = 80;
+		pager = stdout;
+	}
+
+	print_comp_options(pager, cols, comp_name, prog_name);
+
+	if(tty) {
+		fclose(pager);
+		wait_to_die(pager_pid);
+	}
+
+	exit(0);
+}

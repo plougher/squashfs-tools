@@ -151,12 +151,12 @@ void print_selected_comp_options(FILE *stream, struct compressor *comp, char *pr
 }
 
 
-void print_compressor_options(char *comp_name, char *prog_name)
+void print_comp_options(FILE *stream, int cols, char *comp_name, char *prog_name)
 {
-	int i, cols = get_column_width();
+	int i;
 
 	if(strcmp(comp_name, "all") == 0) {
-		display_compressor_usage(stdout, COMP_DEFAULT, cols);
+		display_compressor_usage(stream, COMP_DEFAULT, cols);
 		return;
 	}
 
@@ -164,11 +164,11 @@ void print_compressor_options(char *comp_name, char *prog_name)
 		if(compressor[i]->supported && strcmp(compressor[i]->name, comp_name) == 0) {
 			struct compressor *comp = compressor[i];
 
-			autowrap_printf(stdout, cols, "%s: compressor \"%s\".  "
+			autowrap_printf(stream, cols, "%s: compressor \"%s\".  "
 				"Options supported: %s\n", prog_name,
 				comp->name, comp->usage ? "" : "none");
 			if(comp->usage)
-				comp->usage(stdout, cols);
+				comp->usage(stream, cols);
 
 			return;
 		}

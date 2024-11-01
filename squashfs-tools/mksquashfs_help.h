@@ -72,4 +72,5 @@ extern void sqfstar_invalid_option(char *opt_name);
 extern void sqfstar_help(int error);
 extern void sqfstar_option_help(char *option);
 extern void display_compressors(void);
+extern void print_compressor_options(char *comp_name, char *prog_name);
 #endif
