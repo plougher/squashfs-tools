@@ -889,9 +889,21 @@ void display_compressors() {
 
 void print_compressor_options(char *comp_name, char *prog_name)
 {
-	int cols, tty = isatty(STDOUT_FILENO);
+	int cols, tty;
 	pid_t pager_pid;
 	FILE *pager;
+
+	if(strcmp(comp_name, "all") && !valid_compressor(comp_name)) {
+		cols = get_column_width();
+		autowrap_printf(stderr, cols, "%s: Compressor \"%s\" is not "
+			"supported!\n", prog_name, comp_name);
+		autowrap_printf(stderr, cols, "%s: Compressors available:\n",
+			prog_name);
+		display_compressors();
+		exit(1);
+	}
+
+	tty = isatty(STDOUT_FILENO);
 
 	if(tty) {
 		cols = get_column_width();

@@ -117,6 +117,12 @@ struct compressor *lookup_compressor_id(int id)
 }
 
 
+int valid_compressor(char *name)
+{
+	return lookup_compressor(name)->supported;
+}
+
+
 void display_compressor_usage(FILE *stream, char *def_comp, int cols)
 {
 	int i;
@@ -172,11 +178,4 @@ void print_comp_options(FILE *stream, int cols, char *comp_name, char *prog_name
 
 			return;
 		}
-
-	autowrap_printf(stderr, cols, "%s: Compressor \"%s\" is not "
-		"supported!\n", prog_name, comp_name);
-	autowrap_printf(stderr, cols, "%s: Compressors available:\n",
-		prog_name);
-	display_compressors();
-	exit(1);
 }
