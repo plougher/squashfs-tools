@@ -36,5 +36,5 @@ struct thread {
 #define THREAD_ACTIVE	3
 #define THREAD_IDLE	4
 
-extern int get_thread(int type);
+extern int get_thread_id(int type);
 #endif

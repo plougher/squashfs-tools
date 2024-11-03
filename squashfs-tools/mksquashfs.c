@@ -76,6 +76,7 @@
 #include "memory.h"
 #include "mksquashfs_help.h"
 #include "print_pager.h"
+#include "thread.h"
 
 /* Compression options */
 int noF = FALSE;
@@ -2697,14 +2698,14 @@ static void *deflator(void *arg)
 {
 	struct file_buffer *write_buffer = cache_get_nohash(bwriter_buffer);
 	void *stream = NULL;
-	int res;
+	int res, tid = get_thread_id(THREAD_BLOCK);
 
 	res = compressor_init(comp, &stream, block_size, 1);
 	if(res)
 		BAD_ERROR("deflator:: compressor_init failed\n");
 
 	while(1) {
-		struct file_buffer *file_buffer = queue_get(to_deflate);
+		struct file_buffer *file_buffer = queue_get_tid(tid, to_deflate);
 
 		if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
@@ -2732,7 +2733,7 @@ static void *deflator(void *arg)
 static void *frag_deflator(void *arg)
 {
 	void *stream = NULL;
-	int res;
+	int res, tid = get_thread_id(THREAD_FRAGMENT);
 
 	res = compressor_init(comp, &stream, block_size, 1);
 	if(res)
@@ -2742,7 +2743,7 @@ static void *frag_deflator(void *arg)
 
 	while(1) {
 		int c_byte, compressed_size;
-		struct file_buffer *file_buffer = queue_get(to_frag);
+		struct file_buffer *file_buffer = queue_get_tid(tid, to_frag);
 		struct file_buffer *write_buffer =
 			cache_get(fwriter_buffer, file_buffer->block);
 
@@ -2778,7 +2779,7 @@ static void *frag_deflator(void *arg)
 static void *frag_order_deflator(void *arg)
 {
 	void *stream = NULL;
-	int res;
+	int res, tid = get_thread_id(THREAD_FRAGMENT);
 
 	res = compressor_init(comp, &stream, block_size, 1);
 	if(res)
@@ -2786,7 +2787,7 @@ static void *frag_order_deflator(void *arg)
 
 	while(1) {
 		int c_byte;
-		struct file_buffer *file_buffer = queue_get(to_frag);
+		struct file_buffer *file_buffer = queue_get_tid(tid, to_frag);
 		struct file_buffer *write_buffer =
 			cache_get(fwriter_buffer, file_buffer->block);
 

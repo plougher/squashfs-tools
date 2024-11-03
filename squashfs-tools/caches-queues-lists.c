@@ -123,6 +123,25 @@ void queue_flush(struct queue *queue)
 }
 
 
+void *queue_get_tid(int tid, struct queue *queue)
+{
+	void *data;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	while(queue->readp == queue->writep)
+		pthread_cond_wait(&queue->empty, &queue->mutex);
+
+	data = queue->data[queue->readp];
+	queue->readp = (queue->readp + 1) % queue->size;
+	pthread_cond_signal(&queue->full);
+	pthread_cleanup_pop(1);
+
+	return data;
+}
+
+
 void dump_queue(struct queue *queue)
 {
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);

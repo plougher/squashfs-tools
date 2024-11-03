@@ -177,6 +177,7 @@ extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);
 extern int queue_empty(struct queue *);
 extern void queue_flush(struct queue *);
+extern void *queue_get_tid(int tid, struct queue *);
 extern void dump_queue(struct queue *);
 extern struct seq_queue *seq_queue_init();
 extern void dump_seq_queue(struct seq_queue *, int);
