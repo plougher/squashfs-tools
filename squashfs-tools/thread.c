@@ -64,3 +64,13 @@ int get_thread_id(int type)
 
 	return id;
 }
+
+
+void set_thread_idle(int tid)
+{
+}
+
+
+void wait_thread_idle(int tid, pthread_mutex_t *mutex)
+{
+}

@@ -29,6 +29,7 @@
 
 #include "mksquashfs_error.h"
 #include "caches-queues-lists.h"
+#include "thread.h"
 
 extern int add_overflow(int, int);
 extern int multiply_overflow(int, int);
@@ -129,6 +130,16 @@ void *queue_get_tid(int tid, struct queue *queue)
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
 	pthread_mutex_lock(&queue->mutex);
+
+	while(1) {
+		wait_thread_idle(tid, &queue->mutex);
+
+		if(queue->readp == queue->writep) {
+			set_thread_idle(tid);
+			pthread_cond_wait(&queue->empty, &queue->mutex);
+		} else
+			break;
+	}
 
 	while(queue->readp == queue->writep)
 		pthread_cond_wait(&queue->empty, &queue->mutex);

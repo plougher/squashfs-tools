@@ -37,4 +37,6 @@ struct thread {
 #define THREAD_IDLE	4
 
 extern int get_thread_id(int type);
+extern void set_thread_idle(int tid);
+extern void wait_thread_idle(int tid, pthread_mutex_t *mutex);
 #endif
