@@ -133,7 +133,8 @@ static char *mksquashfs_text[]={
 		"Mbytes can be given to specify Kbytes or Mbytes "
 		"respectively\n",
 	"-comp <comp>\t\tselect <comp> compression.  Run -help-comp <comp> to "
-		"get compressor options.\n\t\t\tCompressors available:\n"
+		"get compressor options for <comp>, or <all> for all the "
+		"compressors.\n\t\t\tCompressors available:\n"
 		"\t\t\t\t" COMPRESSORS "\n",
 	"-noI\t\t\tdo not compress inode table\n",
 	"-noId\t\t\tdo not compress the uid/gid table (implied by -noI)\n",
@@ -339,7 +340,8 @@ static char *mksquashfs_text[]={
 		"<section> to pager (or stdout if not a terminal).  Use "
 		"\"sections\" or \"h\" as section name to get a list of "
 		"sections and their names\n",
-	"-help-comp <comp>\tprint compressor options for compressor <comp>\n",
+	"-help-comp <comp>\tprint compressor options for compressor <comp>.  "
+		"Use <all> to get compressor options for all the compressors\n"
 	"-help-all\t\tprint help information for all Mksquashfs options and "
 		"sections to pager (or stdout if not a terminal)\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
