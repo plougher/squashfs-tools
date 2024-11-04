@@ -29,12 +29,14 @@
 #include "thread.h"
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t idle = PTHREAD_COND_INITIALIZER;
 
 static struct thread *threads = NULL;
 static int total = 0;
 static int cur = 0;
 static int active_frags = 0;
 static int active_blocks = 0;
+static int waiting_threads = 0;
 
 int get_thread_id(int type)
 {
@@ -46,7 +48,7 @@ int get_thread_id(int type)
 	if(threads == NULL) {
 		total = get_nprocessors();
 
-		threads = malloc(total * sizeof(struct thread));
+		threads = malloc(total * 2 * sizeof(struct thread));
 		if(threads == NULL)
 			MEM_ERROR();
 	}
@@ -66,11 +68,42 @@ int get_thread_id(int type)
 }
 
 
+/*
+ * Called with the queue mutex held.
+ */
 void set_thread_idle(int tid)
 {
+	if(threads[tid].type == THREAD_FRAGMENT) {
+		active_frags --;
+		if(waiting_threads)
+			pthread_cond_signal(&idle);
+	} else
+		active_blocks --;
+
+	threads[tid].state = THREAD_IDLE;
 }
 
 
-void wait_thread_idle(int tid, pthread_mutex_t *mutex)
+/*
+ * Called with the queue mutex held.
+ */
+void wait_thread_idle(int tid, pthread_mutex_t *queue_mutex)
 {
+	if(threads[tid].type == THREAD_FRAGMENT && threads[tid].state == THREAD_IDLE)
+		active_frags ++;
+	else if(threads[tid].type == THREAD_BLOCK) {
+		if(threads[tid].state == THREAD_IDLE)
+			active_blocks ++;
+
+		while(active_frags + active_blocks > total) {
+			active_blocks --;
+			threads[tid].state = THREAD_IDLE;
+			waiting_threads ++;
+			pthread_cond_wait(&idle, queue_mutex);
+			waiting_threads --;
+			active_blocks ++;
+		}
+	}
+
+	threads[tid].state = THREAD_ACTIVE;
 }
