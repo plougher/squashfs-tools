@@ -26,7 +26,6 @@
 
 #include "compressor.h"
 #include "squashfs_fs.h"
-#include "mksquashfs_help.h"
 #include "print_pager.h"
 
 #ifndef GZIP_SUPPORT
