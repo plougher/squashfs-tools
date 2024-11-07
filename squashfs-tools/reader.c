@@ -153,11 +153,6 @@ static void reader_read_process(struct dir_ent *dir_ent)
 	int status, byte, res, child;
 	int file;
 
-	if(inode->read)
-		return;
-
-	inode->read = TRUE;
-
 	file = pseudo_exec_file(inode->pseudo, &child);
 	if(!file) {
 		file_buffer = cache_get_nohash(reader_buffer);
@@ -249,10 +244,6 @@ static void reader_read_file(struct dir_ent *dir_ent)
 	long long bytes, read_size, block;
 	struct inode_info *inode = dir_ent->inode;
 
-	if(inode->read)
-		return;
-
-	inode->read = TRUE;
 again:
 	bytes = block = 0;
 	read_size = buf->st_size;
@@ -586,10 +577,6 @@ static void reader_read_data(struct dir_ent *dir_ent)
 	struct inode_info *inode = dir_ent->inode;
 	static struct pseudo_file *file = NULL;
 
-	if(inode->read)
-		return;
-
-	inode->read = TRUE;
 	bytes = 0;
 	read_size = inode->pseudo->data->length;
 	blocks = (read_size + block_size - 1) >> block_log;
@@ -723,15 +710,19 @@ void *reader(void *arg)
 			}
 	}
 
-	for(; reader_head; reader_head = reader_head->reader_next, file_count ++) {
-		if(IS_PSEUDO_PROCESS(reader_head->inode))
-			reader_read_process(reader_head);
-		else if(IS_PSEUDO_DATA(reader_head->inode))
-			reader_read_data(reader_head);
-		else if(S_ISREG(reader_head->inode->buf.st_mode))
-			reader_read_file(reader_head);
-		else
-			BAD_ERROR("Unexpected file type when reading files!\n");
+	for(; reader_head; reader_head = reader_head->reader_next) {
+		if(!reader_head->inode->read) {
+			if(IS_PSEUDO_PROCESS(reader_head->inode))
+				reader_read_process(reader_head);
+			else if(IS_PSEUDO_DATA(reader_head->inode))
+				reader_read_data(reader_head);
+			else if(S_ISREG(reader_head->inode->buf.st_mode))
+				reader_read_file(reader_head);
+			else
+				BAD_ERROR("Unexpected file type when reading files!\n");
+			reader_head->inode->read = TRUE;
+			file_count ++;
+		}
 	}
 
 	pthread_exit(NULL);
