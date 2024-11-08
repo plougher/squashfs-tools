@@ -62,6 +62,7 @@ struct inode_info {
 	char			dummy_root_dir;
 	char			type;
 	char			read;
+	char			scanned;
 	char			root_entry;
 	char			no_fragments;
 	char			always_use_fragments;

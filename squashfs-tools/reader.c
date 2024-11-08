@@ -650,7 +650,7 @@ static struct dir_ent *reader_scan(struct dir_info *dir, struct dir_ent *prev)
 	struct dir_ent *dir_ent = dir->list;
 
 	for(; dir_ent; dir_ent = dir_ent->next) {
-		if(dir_ent->inode->root_entry || IS_TARFILE(dir_ent->inode))
+		if(dir_ent->inode->root_entry || IS_TARFILE(dir_ent->inode) || dir_ent->inode->scanned)
 			continue;
 
 		if(IS_PSEUDO_PROCESS(dir_ent->inode) ||
@@ -661,6 +661,7 @@ static struct dir_ent *reader_scan(struct dir_info *dir, struct dir_ent *prev)
 			else
 				reader_head = dir_ent;
 			dir_ent->reader_next = NULL;
+			dir_ent->inode->scanned = TRUE;
 			prev = dir_ent;
 		} else if(S_ISDIR(dir_ent->inode->buf.st_mode))
 			prev = reader_scan(dir_ent->dir, prev);
@@ -699,30 +700,30 @@ void *reader(void *arg)
 		struct priority_entry *entry;
 		struct dir_ent *prev = NULL;
 
-		for(i = 65535; i >= 0; i--)
+		for(i = 65535; i >= 0; i--) {
 			for(entry = priority_list[i]; entry; prev = entry->dir,
 							entry = entry->next) {
-				if(prev)
-					prev->reader_next = entry->dir;
-				else
-					reader_head = entry->dir;
-				entry->dir->reader_next = NULL;
+				if(!entry->dir->inode->scanned) {
+					if(prev)
+						prev->reader_next = entry->dir;
+					else
+						reader_head = entry->dir;
+					entry->dir->reader_next = NULL;
+					entry->dir->inode->scanned = TRUE;
+				}
 			}
+		}
 	}
 
-	for(; reader_head; reader_head = reader_head->reader_next) {
-		if(!reader_head->inode->read) {
-			if(IS_PSEUDO_PROCESS(reader_head->inode))
-				reader_read_process(reader_head);
-			else if(IS_PSEUDO_DATA(reader_head->inode))
-				reader_read_data(reader_head);
-			else if(S_ISREG(reader_head->inode->buf.st_mode))
-				reader_read_file(reader_head);
-			else
-				BAD_ERROR("Unexpected file type when reading files!\n");
-			reader_head->inode->read = TRUE;
-			file_count ++;
-		}
+	for(; reader_head; reader_head = reader_head->reader_next, file_count ++) {
+		if(IS_PSEUDO_PROCESS(reader_head->inode))
+			reader_read_process(reader_head);
+		else if(IS_PSEUDO_DATA(reader_head->inode))
+			reader_read_data(reader_head);
+		else if(S_ISREG(reader_head->inode->buf.st_mode))
+			reader_read_file(reader_head);
+		else
+			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
 
 	pthread_exit(NULL);
