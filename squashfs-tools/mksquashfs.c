@@ -3411,7 +3411,6 @@ static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pse
 	if(bytes)
 		memcpy(&inode->symlink, symlink, bytes);
 	memcpy(&inode->buf, buf, sizeof(struct stat));
-	inode->read = FALSE;
 	inode->scanned = FALSE;
 	inode->root_entry = FALSE;
 	inode->pseudo = pseudo;

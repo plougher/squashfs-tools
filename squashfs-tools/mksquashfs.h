@@ -61,14 +61,16 @@ struct inode_info {
 	unsigned int		nlink;
 	char			dummy_root_dir;
 	char			type;
-	char			read;
-	char			scanned;
 	char			root_entry;
 	char			no_fragments;
 	char			always_use_fragments;
 	char			noD;
 	char			noF;
 	char			tarfile;
+	union {
+		char		read;
+		char		scanned;
+	};
 	char			symlink[0];
 };
 
