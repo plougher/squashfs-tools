@@ -50,15 +50,17 @@
 #include "tar.h"
 #include "reader.h"
 
+#define READER_ALLOC 1024
+
 static struct readahead **readahead_table = NULL;
 
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
 int sleep_time;
 
-/* HEAD of read scanner linked list */
-static struct dir_ent *reader_head = NULL;
+static struct dir_ent **read_array = NULL;
 
-static long long file_count = 0;
+/* total number of files to be read, excluding hard links  */
+static unsigned int file_count = 0;
 
 static void sigalrm_handler(int arg)
 {
@@ -145,7 +147,7 @@ static void put_file_buffer(struct file_buffer *file_buffer)
 }
 
 
-static void reader_read_process(struct dir_ent *dir_ent)
+static void reader_read_process(struct dir_ent *dir_ent, int count)
 {
 	long long bytes = 0, block = 0;
 	struct inode_info *inode = dir_ent->inode;
@@ -156,14 +158,14 @@ static void reader_read_process(struct dir_ent *dir_ent)
 	file = pseudo_exec_file(inode->pseudo, &child);
 	if(!file) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->file_count = file_count;
+		file_buffer->file_count = count;
 		file_buffer->block = block;
 		goto read_err;
 	}
 
 	while(1) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->file_count = file_count;
+		file_buffer->file_count = count;
 		file_buffer->block = block ++;
 		file_buffer->noD = inode->noD;
 
@@ -236,7 +238,7 @@ read_err:
 }
 
 
-static void reader_read_file(struct dir_ent *dir_ent)
+static void reader_read_file(struct dir_ent *dir_ent, int count)
 {
 	struct stat *buf = &dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
@@ -257,7 +259,7 @@ again:
 
 	if(file == -1) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->file_count = file_count;
+		file_buffer->file_count = count;
 		file_buffer->block = block;
 		goto read_err2;
 	}
@@ -265,7 +267,7 @@ again:
 	do {
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_size = read_size;
-		file_buffer->file_count = file_count;
+		file_buffer->file_count = count;
 		file_buffer->block = block ++;
 		file_buffer->noD = inode->noD;
 		file_buffer->error = FALSE;
@@ -325,6 +327,7 @@ again:
 	return;
 
 restat:
+#if 0
 	res = fstat(file, &buf2);
 	if(res == -1) {
 		ERROR("Cannot stat dir/file %s because %s\n",
@@ -340,6 +343,7 @@ restat:
 		file_count ++;
 		goto again;
 	}
+#endif
 read_err:
 	close(file);
 read_err2:
@@ -569,7 +573,7 @@ static int read_data(struct pseudo_file *file, long long current,
 }
 
 
-static void reader_read_data(struct dir_ent *dir_ent)
+static void reader_read_data(struct dir_ent *dir_ent, int count)
 {
 	struct file_buffer *file_buffer;
 	int blocks;
@@ -613,7 +617,7 @@ static void reader_read_data(struct dir_ent *dir_ent)
 	do {
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_size = read_size;
-		file_buffer->file_count = file_count;
+		file_buffer->file_count = count;
 		file_buffer->block = block ++;
 		file_buffer->noD = inode->noD;
 		file_buffer->error = FALSE;
@@ -645,7 +649,22 @@ static void reader_read_data(struct dir_ent *dir_ent)
 }
 
 
-static struct dir_ent *reader_scan(struct dir_info *dir, struct dir_ent *prev)
+static void add_entry(struct dir_ent *entry)
+{
+	if(read_array == NULL || file_count % READER_ALLOC == 0) {
+		struct dir_ent **tmp = realloc(read_array, (file_count + READER_ALLOC) * sizeof(struct dir_ent *));
+
+		if(tmp == NULL)
+			MEM_ERROR();
+
+		read_array = tmp;
+	}
+
+	read_array[file_count ++] = entry;
+}
+
+
+static void reader_scan(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = dir->list;
 
@@ -656,18 +675,11 @@ static struct dir_ent *reader_scan(struct dir_info *dir, struct dir_ent *prev)
 		if(IS_PSEUDO_PROCESS(dir_ent->inode) ||
 				IS_PSEUDO_DATA(dir_ent->inode) ||
 				S_ISREG(dir_ent->inode->buf.st_mode)) {
-			if(prev)
-				prev->reader_next = dir_ent;
-			else
-				reader_head = dir_ent;
-			dir_ent->reader_next = NULL;
 			dir_ent->inode->scanned = TRUE;
-			prev = dir_ent;
+			add_entry(dir_ent);
 		} else if(S_ISDIR(dir_ent->inode->buf.st_mode))
-			prev = reader_scan(dir_ent->dir, prev);
+			reader_scan(dir_ent->dir);
 	}
-
-	return prev;
 }
 
 
@@ -675,6 +687,7 @@ void *reader(void *arg)
 {
 	struct itimerval itimerval;
 	struct dir_info *dir = queue_get(to_reader);
+	long long n = 0;
 
 	if(sleep_time) {
 		signal(SIGALRM, sigalrm_handler);
@@ -688,40 +701,36 @@ void *reader(void *arg)
 
 	if(tarfile) {
 		read_tar_file();
-		file_count = 1;
+		file_count = n = 1;
 		set_next_file(to_main);
 		dir = queue_get(to_reader);
 	}
 
 	if(!sorted)
-		reader_scan(dir, NULL);
+		reader_scan(dir);
 	else {
 		int i;
 		struct priority_entry *entry;
-		struct dir_ent *prev = NULL;
 
 		for(i = 65535; i >= 0; i--) {
-			for(entry = priority_list[i]; entry; prev = entry->dir,
-							entry = entry->next) {
+			for(entry = priority_list[i]; entry; entry = entry->next) {
 				if(!entry->dir->inode->scanned) {
-					if(prev)
-						prev->reader_next = entry->dir;
-					else
-						reader_head = entry->dir;
-					entry->dir->reader_next = NULL;
 					entry->dir->inode->scanned = TRUE;
+					add_entry(entry->dir);
 				}
 			}
 		}
 	}
 
-	for(; reader_head; reader_head = reader_head->reader_next, file_count ++) {
-		if(IS_PSEUDO_PROCESS(reader_head->inode))
-			reader_read_process(reader_head);
-		else if(IS_PSEUDO_DATA(reader_head->inode))
-			reader_read_data(reader_head);
-		else if(S_ISREG(reader_head->inode->buf.st_mode))
-			reader_read_file(reader_head);
+	for(; n < file_count; n ++) {
+		struct dir_ent *dir_ent = read_array[n];
+
+		if(IS_PSEUDO_PROCESS(dir_ent->inode))
+			reader_read_process(dir_ent, n);
+		else if(IS_PSEUDO_DATA(dir_ent->inode))
+			reader_read_data(dir_ent, n);
+		else if(S_ISREG(dir_ent->inode->buf.st_mode))
+			reader_read_file(dir_ent, n);
 		else
 			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
