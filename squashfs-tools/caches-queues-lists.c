@@ -264,7 +264,8 @@ struct file_buffer *reader_queue_get(struct seq_queue *queue)
 		for(entry = queue->hash_table[hash]; entry;
 						entry = entry->seq_next)
 			if(entry->file_count == queue->file_count &&
-						entry->block == queue->block)
+						entry->block == queue->block &&
+						entry->version == queue->version)
 				break;
 
 		if(entry) {
@@ -296,7 +297,15 @@ struct file_buffer *reader_queue_get(struct seq_queue *queue)
 
 void set_next_file(struct seq_queue *queue)
 {
+	queue->version = 0;
+	queue->block = 0;
 	queue->file_count ++;
+}
+
+
+void set_next_version(struct seq_queue *queue)
+{
+	queue->version ++;
 	queue->block = 0;
 }
 

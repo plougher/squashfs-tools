@@ -113,6 +113,7 @@ struct file_buffer {
 	int size;
 	int c_byte;
 	unsigned short checksum;
+	unsigned short version;
 	char used;
 	char fragment;
 	char error;
@@ -141,6 +142,7 @@ struct queue {
  * thread and the deflate and main threads
  */
 struct seq_queue {
+	unsigned short		version;
 	int			fragment_count;
 	int			block_count;
 	long long		sequence;
@@ -184,6 +186,7 @@ extern void dump_seq_queue(struct seq_queue *, int);
 extern void seq_queue_flush(struct seq_queue *);
 extern void reader_queue_put(struct seq_queue *, struct file_buffer *);
 extern void set_next_file(struct seq_queue *queue);
+extern void set_next_version(struct seq_queue *queue);
 extern void fragment_queue_put(struct seq_queue *, struct file_buffer *);
 extern struct file_buffer *reader_queue_get(struct seq_queue *);
 extern struct file_buffer *fragment_queue_get(struct seq_queue *);

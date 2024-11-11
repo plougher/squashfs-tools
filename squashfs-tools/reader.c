@@ -160,6 +160,7 @@ static void reader_read_process(struct dir_ent *dir_ent, int count)
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_count = count;
 		file_buffer->block = block;
+		file_buffer->version = 0;
 		goto read_err;
 	}
 
@@ -167,6 +168,7 @@ static void reader_read_process(struct dir_ent *dir_ent, int count)
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_count = count;
 		file_buffer->block = block ++;
+		file_buffer->version = 0;
 		file_buffer->noD = inode->noD;
 
 		byte = read_bytes(file, file_buffer->data, block_size);
@@ -243,11 +245,11 @@ static void reader_read_file(struct dir_ent *dir_ent, int count)
 	struct stat *buf = &dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
 	int blocks, file, res;
-	long long bytes, read_size, block;
+	long long bytes = 0, block = 0, read_size;
 	struct inode_info *inode = dir_ent->inode;
+	unsigned short version = 0;
 
 again:
-	bytes = block = 0;
 	read_size = buf->st_size;
 	blocks = (read_size + block_size - 1) >> block_log;
 
@@ -261,6 +263,7 @@ again:
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_count = count;
 		file_buffer->block = block;
+		file_buffer->version = version;
 		goto read_err2;
 	}
 
@@ -268,6 +271,7 @@ again:
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_size = read_size;
 		file_buffer->file_count = count;
+		file_buffer->version = version;
 		file_buffer->block = block ++;
 		file_buffer->noD = inode->noD;
 		file_buffer->error = FALSE;
@@ -327,7 +331,6 @@ again:
 	return;
 
 restat:
-#if 0
 	res = fstat(file, &buf2);
 	if(res == -1) {
 		ERROR("Cannot stat dir/file %s because %s\n",
@@ -340,10 +343,10 @@ restat:
 		memcpy(buf, &buf2, sizeof(struct stat));
 		file_buffer->error = 2;
 		put_file_buffer(file_buffer);
-		file_count ++;
+		bytes = block = 0;
+		version ++;
 		goto again;
 	}
-#endif
 read_err:
 	close(file);
 read_err2:
