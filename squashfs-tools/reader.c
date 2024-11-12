@@ -331,6 +331,11 @@ again:
 	return;
 
 restat:
+	if(version == 1023)
+		/* File has changed size too many times.  Treat this
+		 * as an irretrievable error */
+		goto read_err;
+
 	res = fstat(file, &buf2);
 	if(res == -1) {
 		ERROR("Cannot stat dir/file %s because %s\n",
