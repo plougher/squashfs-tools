@@ -111,7 +111,9 @@ unsigned int root_gid;
 unsigned int root_time;
 int root_time_opt = FALSE;
 
-/* Values that override uids and gids for all files and directories */
+/* Options which override inode settings for all files and directories */
+int global_file_mode_opt = FALSE;
+mode_t global_file_mode;
 int global_uid_opt = FALSE;
 unsigned int global_uid;
 int global_gid_opt = FALSE;
@@ -1046,6 +1048,7 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 	int nlink = dir_ent->inode->nlink;
 	int xattr = read_xattrs(dir_ent, type);
 	unsigned int uid, gid;
+	mode_t mode;
 
 	switch(type) {
 	case SQUASHFS_FILE_TYPE:
@@ -1081,6 +1084,14 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 		break;
 	}
 
+	if(type != SQUASHFS_DIR_TYPE  && type != SQUASHFS_LDIR_TYPE) {
+		if(!pseudo_override && global_file_mode_opt)
+			mode = global_file_mode;
+		else
+			mode = buf->st_mode;
+	} else
+		mode = buf->st_mode;
+
 	if(!pseudo_override && global_uid_opt)
 		uid = global_uid;
 	else
@@ -1091,7 +1102,7 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 	else
 		gid = buf->st_gid;
 
-	base->mode = SQUASHFS_MODE(buf->st_mode);
+	base->mode = SQUASHFS_MODE(mode);
 	base->inode_type = type;
 	base->uid = get_uid(uid);
 	base->guid = get_guid(gid);
@@ -4093,6 +4104,8 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			
 		if((buf->st_mode & S_IFMT) == S_IFDIR)
 			dir_scan2(dirent->dir, pseudo_subdir(name, pseudo));
+		else if(!pseudo_override && global_file_mode_opt)
+			buf->st_mode = (buf->st_mode & S_IFMT) | global_file_mode;
 	}
 
 	/*
@@ -7939,6 +7952,13 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-root-owned") == 0) {
 			global_uid = global_gid = 0;
 			global_uid_opt = global_gid_opt = TRUE;
+		} else if(strcmp(argv[i], "-force-file-mode") == 0) {
+			if((++i == argc) || !parse_mode(argv[i], &global_file_mode)) {
+				ERROR("mksquashfs: -force-mode missing or invalid mode,"
+					" octal number <= 07777 expected\n");
+				mksquashfs_option_help(argv[i - 1]);
+			}
+			global_file_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-uid") == 0) {
 			if(++i == argc) {
 				ERROR("mksquashfs: -force-uid missing uid or user name\n");
