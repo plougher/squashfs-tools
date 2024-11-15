@@ -240,7 +240,8 @@ void reader_queue_put(struct seq_queue *queue, struct file_buffer *entry)
 		queue->block_count ++;
 
 	if(entry->file_count == queue->file_count &&
-						entry->block == queue->block)
+						entry->block == queue->block &&
+						entry->version == queue->version)
 		pthread_cond_signal(&queue->wait);
 
 	pthread_cleanup_pop(1);
