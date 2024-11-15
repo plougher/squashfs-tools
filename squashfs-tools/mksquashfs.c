@@ -3262,6 +3262,8 @@ again:
 		set_next_file(to_main);
 	} else if(status)
 		BAD_ERROR("Unexpected status value in write_file()");
+	else
+		set_next_file(to_main);
 
 	return file;
 }
