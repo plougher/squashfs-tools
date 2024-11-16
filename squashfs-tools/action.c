@@ -45,6 +45,7 @@
 #include "mksquashfs_error.h"
 #include "fnmatch_compat.h"
 #include "xattr.h"
+#include "symbolic_mode.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -1374,149 +1375,12 @@ static int parse_octal_mode_args(int args, char **argv,
 	if (mode_data == NULL)
 		MEM_ERROR();
 
-	mode_data->operation = ACTION_MODE_OCT;
+	mode_data->operation = SYMBOLIC_MODE_OCT;
 	mode_data->mode = mode;
 	mode_data->next = NULL;
 	*data = mode_data;
 
 	return 1;
-}
-
-
-/*
- * Parse symbolic mode of format [ugoa]*[[+-=]PERMS]+
- * PERMS = [rwxXst]+ or [ugo]
- */
-static int parse_sym_mode_arg(char *arg, struct mode_data **head,
-	struct mode_data **cur)
-{
-	struct mode_data *mode_data;
-	int mode;
-	int mask = 0;
-	int op;
-	char X;
-
-	if (arg[0] != 'u' && arg[0] != 'g' && arg[0] != 'o' && arg[0] != 'a') {
-		/* no ownership specifiers, default to a */
-		mask = 0777;
-		goto parse_operation;
-	}
-
-	/* parse ownership specifiers */
-	while(1) {
-		switch(*arg) {
-		case 'u':
-			mask |= 04700;
-			break;
-		case 'g':
-			mask |= 02070;
-			break;
-		case 'o':
-			mask |= 01007;
-			break;
-		case 'a':
-			mask = 07777;
-			break;
-		default:
-			goto parse_operation;
-		}
-		arg ++;
-	}
-
-parse_operation:
-	/* trap a symbolic mode with just an ownership specification */
-	if(*arg == '\0') {
-		SYNTAX_ERROR("Expected one of '+', '-' or '=', got EOF\n");
-		goto failed;
-	}
-
-	while(*arg != '\0') {
-		mode = 0;
-		X = 0;
-
-		switch(*arg) {
-		case '+':
-			op = ACTION_MODE_ADD;
-			break;
-		case '-':
-			op = ACTION_MODE_REM;
-			break;
-		case '=':
-			op = ACTION_MODE_SET;
-			break;
-		default:
-			SYNTAX_ERROR("Expected one of '+', '-' or '=', got "
-				"'%c'\n", *arg);
-			goto failed;
-		}
-	
-		arg ++;
-	
-		/* Parse PERMS */
-		if (*arg == 'u' || *arg == 'g' || *arg == 'o') {
-	 		/* PERMS = [ugo] */
-			mode = - *arg;
-			arg ++;
-		} else {
-	 		/* PERMS = [rwxXst]* */
-			while(1) {
-				switch(*arg) {
-				case 'r':
-					mode |= 0444;
-					break;
-				case 'w':
-					mode |= 0222;
-					break;
-				case 'x':
-					mode |= 0111;
-					break;
-				case 's':
-					mode |= 06000;
-					break;
-				case 't':
-					mode |= 01000;
-					break;
-				case 'X':
-					X = 1;
-					break;
-				case '+':
-				case '-':
-				case '=':
-				case '\0':
-					mode &= mask;
-					goto perms_parsed;
-				default:
-					SYNTAX_ERROR("Unrecognised permission "
-								"'%c'\n", *arg);
-					goto failed;
-				}
-	
-				arg ++;
-			}
-		}
-	
-perms_parsed:
-		mode_data = malloc(sizeof(*mode_data));
-		if (mode_data == NULL)
-			MEM_ERROR();
-
-		mode_data->operation = op;
-		mode_data->mode = mode;
-		mode_data->mask = mask;
-		mode_data->X = X;
-		mode_data->next = NULL;
-
-		if (*cur) {
-			(*cur)->next = mode_data;
-			*cur = mode_data;
-		} else
-			*head = *cur = mode_data;
-	}
-
-	return 1;
-
-failed:
-	return 0;
 }
 
 
@@ -1527,7 +1391,7 @@ static int parse_sym_mode_args(struct action_entry *action, int args,
 	struct mode_data *head = NULL, *cur = NULL;
 
 	for (i = 0; i < args && res; i++)
-		res = parse_sym_mode_arg(argv[i], &head, &cur);
+		res = parse_sym_mode_arg(source, cur_ptr, argv[i], &head, &cur);
 
 	*data = head;
 
@@ -1584,16 +1448,16 @@ static int mode_execute(struct mode_data *mode_data, int st_mode)
 			mode = mode_data->mode;
 
 		switch(mode_data->operation) {
-		case ACTION_MODE_OCT:
+		case SYMBOLIC_MODE_OCT:
 			st_mode = (st_mode & S_IFMT) | mode;
 			break;
-		case ACTION_MODE_SET:
+		case SYMBOLIC_MODE_SET:
 			st_mode = (st_mode & ~mode_data->mask) | mode;
 			break;
-		case ACTION_MODE_ADD:
+		case SYMBOLIC_MODE_ADD:
 			st_mode |= mode;
 			break;
-		case ACTION_MODE_REM:
+		case SYMBOLIC_MODE_REM:
 			st_mode &= ~mode;
 		}
 	}
@@ -3392,7 +3256,7 @@ static int parse_perm_args(struct test_entry *test, struct atom *atom)
 	if(res == -1) {
 		/* parse as sym mode argument */
 		for(i = 0; i < atom->args && res; i++, arg = atom->argv[i])
-			res = parse_sym_mode_arg(arg, &head, &cur);
+			res = parse_sym_mode_arg(source, cur_ptr, arg, &head, &cur);
 	}
 
 	if (res == 0)

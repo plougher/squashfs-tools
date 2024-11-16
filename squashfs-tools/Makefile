@@ -222,7 +222,7 @@ INCLUDEDIR = -I.
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
 	caches-queues-lists.o reader.o tar.o date.o memory.o mksquashfs_help.o \
-	print_pager.o
+	print_pager.o symbolic_mode.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o unsquash-123.o unsquash-34.o unsquash-1234.o unsquash-12.o \
@@ -430,7 +430,7 @@ mksquashfs: $(MKSQUASHFS_OBJS)
 
 mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h squashfs_swap.h mksquashfs.h \
 	sort.h pseudo.h compressor.h xattr.h action.h mksquashfs_error.h progressbar.h \
-	info.h caches-queues-lists.h read_fs.h restore.h process_fragments.h 
+	info.h caches-queues-lists.h read_fs.h restore.h process_fragments.h
 
 reader.o: squashfs_fs.h mksquashfs.h caches-queues-lists.h progressbar.h \
 	mksquashfs_error.h pseudo.h sort.h
@@ -474,6 +474,8 @@ tar_xattr.o: tar.h xattr.h
 date.o: date.h error.h
 
 memory.o: error.h memory_compat.h memory.h
+
+symbolic_mode.o: symbolic_mode.h symbolic_mode.c
 
 gzip_wrapper.o: gzip_wrapper.c squashfs_fs.h gzip_wrapper.h compressor.h
 
