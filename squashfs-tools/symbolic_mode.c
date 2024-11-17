@@ -23,10 +23,55 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #include "mksquashfs_error.h"
 #include "symbolic_mode.h"
 
+int parse_octal_mode_args(char *source, char *cur_ptr, int args, char **argv,
+								void **data)
+{
+	int n, bytes;
+	unsigned int mode;
+	struct mode_data *mode_data;
+
+	/* octal mode number? */
+	n = sscanf(argv[0], "%o%n", &mode, &bytes);
+	if (n == 0)
+		return -1; /* not an octal number arg */
+
+
+	/* check there's no trailing junk */
+	if (argv[0][bytes] != '\0') {
+		SYNTAX_ERROR("Unexpected trailing bytes after octal "
+			"mode number\n");
+		return 0; /* bad octal number arg */
+	}
+
+	/* check there's only one argument */
+	if (args > 1) {
+		SYNTAX_ERROR("Octal mode number is first argument, "
+			"expected one argument, got %d\n", args);
+		return 0; /* bad octal number arg */
+	}
+
+	/*  check mode is within range */
+	if (mode > 07777) {
+		SYNTAX_ERROR("Octal mode %o is out of range\n", mode);
+		return 0; /* bad octal number arg */
+	}
+
+	mode_data = malloc(sizeof(struct mode_data));
+	if (mode_data == NULL)
+		MEM_ERROR();
+
+	mode_data->operation = SYMBOLIC_MODE_OCT;
+	mode_data->mode = mode;
+	mode_data->next = NULL;
+	*data = mode_data;
+
+	return 1;
+}
 /*
  * Parse symbolic mode of format [ugoa]*[[+-=]PERMS]+
  * PERMS = [rwxXst]+ or [ugo]
@@ -161,4 +206,80 @@ perms_parsed:
 
 failed:
 	return 0;
+}
+
+
+static int parse_sym_mode_args(char *source, char *cur_ptr, int args,
+				char **argv, void **data)
+{
+	int i, res = 1;
+	struct mode_data *head = NULL, *cur = NULL;
+
+	for (i = 0; i < args && res; i++)
+		res = parse_sym_mode_arg(source, cur_ptr, argv[i], &head, &cur);
+
+	*data = head;
+
+	return res;
+}
+
+
+int parse_mode_args(char *source, char *cur_ptr, int args, char **argv,
+							void **data)
+{
+	int res = parse_octal_mode_args(source, cur_ptr, args, argv, data);
+
+	if(res >= 0)
+		/* Got an octal mode argument */
+		return res;
+	else  /* not an octal mode argument */
+		return parse_sym_mode_args(source, cur_ptr, args, argv, data);
+}
+
+
+int mode_execute(struct mode_data *mode_data, int st_mode)
+{
+	int mode = 0;
+
+	for (;mode_data; mode_data = mode_data->next) {
+		if (mode_data->mode < 0) {
+			/* 'u', 'g' or 'o' */
+			switch(-mode_data->mode) {
+			case 'u':
+				mode = (st_mode >> 6) & 07;
+				break;
+			case 'g':
+				mode = (st_mode >> 3) & 07;
+				break;
+			case 'o':
+				mode = st_mode & 07;
+				break;
+			}
+			mode = ((mode << 6) | (mode << 3) | mode) &
+				mode_data->mask;
+		} else if (mode_data->X &&
+				((st_mode & S_IFMT) == S_IFDIR ||
+				(st_mode & 0111)))
+			/* X permission, only takes effect if inode is a
+			 * directory or x is set for some owner */
+			mode = mode_data->mode | (0111 & mode_data->mask);
+		else
+			mode = mode_data->mode;
+
+		switch(mode_data->operation) {
+		case SYMBOLIC_MODE_OCT:
+			st_mode = (st_mode & S_IFMT) | mode;
+			break;
+		case SYMBOLIC_MODE_SET:
+			st_mode = (st_mode & ~mode_data->mask) | mode;
+			break;
+		case SYMBOLIC_MODE_ADD:
+			st_mode |= mode;
+			break;
+		case SYMBOLIC_MODE_REM:
+			st_mode &= ~mode;
+		}
+	}
+
+	return st_mode;
 }
