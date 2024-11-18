@@ -43,21 +43,21 @@ int parse_octal_mode_args(char *source, char *cur_ptr, int args, char **argv,
 
 	/* check there's no trailing junk */
 	if (argv[0][bytes] != '\0') {
-		SYNTAX_ERROR("Unexpected trailing bytes after octal "
+		SYNTAX_ERR("Unexpected trailing bytes after octal "
 			"mode number\n");
 		return 0; /* bad octal number arg */
 	}
 
 	/* check there's only one argument */
 	if (args > 1) {
-		SYNTAX_ERROR("Octal mode number is first argument, "
+		SYNTAX_ERR("Octal mode number is first argument, "
 			"expected one argument, got %d\n", args);
 		return 0; /* bad octal number arg */
 	}
 
 	/*  check mode is within range */
 	if (mode > 07777) {
-		SYNTAX_ERROR("Octal mode %o is out of range\n", mode);
+		SYNTAX_ERR("Octal mode %o is out of range\n", mode);
 		return 0; /* bad octal number arg */
 	}
 
@@ -115,7 +115,7 @@ int parse_sym_mode_arg(char *source, char *cur_ptr, char *arg,
 parse_operation:
 	/* trap a symbolic mode with just an ownership specification */
 	if(*arg == '\0') {
-		SYNTAX_ERROR("Expected one of '+', '-' or '=', got EOF\n");
+		SYNTAX_ERR("Expected one of '+', '-' or '=', got EOF\n");
 		goto failed;
 	}
 
@@ -134,7 +134,7 @@ parse_operation:
 			op = SYMBOLIC_MODE_SET;
 			break;
 		default:
-			SYNTAX_ERROR("Expected one of '+', '-' or '=', got "
+			SYNTAX_ERR("Expected one of '+', '-' or '=', got "
 				"'%c'\n", *arg);
 			goto failed;
 		}
@@ -175,7 +175,7 @@ parse_operation:
 					mode &= mask;
 					goto perms_parsed;
 				default:
-					SYNTAX_ERROR("Unrecognised permission "
+					SYNTAX_ERR("Unrecognised permission "
 								"'%c'\n", *arg);
 					goto failed;
 				}
@@ -234,6 +234,36 @@ int parse_mode_args(char *source, char *cur_ptr, int args, char **argv,
 		return res;
 	else  /* not an octal mode argument */
 		return parse_sym_mode_args(source, cur_ptr, args, argv, data);
+}
+
+
+int parse_mode(char *source, void **data)
+{
+	int args = 0, res;
+	char **argv = NULL, *cur_ptr = source, *first = source, **new;
+
+	while(*cur_ptr != '\0') {
+		while(*cur_ptr != ',' && *cur_ptr != '\0')
+			cur_ptr ++;
+
+		new = realloc(argv, (args + 1) * sizeof(char *));
+		if(new == NULL)
+			MEM_ERROR();
+
+		argv = new;
+
+		argv[args ++] = strndup(first, cur_ptr - first);
+
+		printf("arg %d %s\n", args - 1, argv[args - 1]);
+		if(*cur_ptr == ',')
+			first = ++ cur_ptr;
+	}
+
+	res = parse_mode_args(NULL, NULL, args, argv, data);
+
+	free(argv);
+
+	return res;
 }
 
 

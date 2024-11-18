@@ -23,13 +23,16 @@
  * symbolic_mode.h
  */
 
-#define SYNTAX_ERROR(S, ARGS...) { \
-	char *src = strdup(source); \
-	src[cur_ptr - source] = '\0'; \
-	fprintf(stderr, "Failed to parse action \"%s\"\n", source); \
-	fprintf(stderr, "Syntax error: "S, ##ARGS); \
-	fprintf(stderr, "Got here \"%s\"\n", src); \
-	free(src); \
+#define SYNTAX_ERR(S, ARGS...) { \
+	if(source) { \
+		char *src = strdup(source); \
+		src[cur_ptr - source] = '\0'; \
+		fprintf(stderr, "Failed to parse action \"%s\"\n", source); \
+		fprintf(stderr, "Syntax error: "S, ##ARGS); \
+		fprintf(stderr, "Got here \"%s\"\n", src); \
+		free(src); \
+	} else \
+		fprintf(stderr, "Syntax error: "S, ##ARGS); \
 }
 
 /*
@@ -53,4 +56,5 @@ extern int parse_octal_mode_args(char *source, char *cur_ptr, int args, char **a
 extern int parse_sym_mode_arg(char *source, char *cur_ptr, char *arg, struct mode_data **head, struct mode_data **cur);
 extern int parse_mode_args(char *source, char *cur_ptr, int args, char **argv, void **data);
 extern int mode_execute(struct mode_data *mode_data, int st_mode);
+extern int parse_mode(char *source, void **data);
 #endif
