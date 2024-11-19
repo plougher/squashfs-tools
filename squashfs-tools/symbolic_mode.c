@@ -237,7 +237,7 @@ int parse_mode_args(char *source, char *cur_ptr, int args, char **argv,
 }
 
 
-int parse_mode(char *source, void **data)
+int parse_mode(char *source, struct mode_data **data)
 {
 	int args = 0, res;
 	char **argv = NULL, *cur_ptr = source, *first = source, **new;
@@ -254,12 +254,11 @@ int parse_mode(char *source, void **data)
 
 		argv[args ++] = strndup(first, cur_ptr - first);
 
-		printf("arg %d %s\n", args - 1, argv[args - 1]);
 		if(*cur_ptr == ',')
 			first = ++ cur_ptr;
 	}
 
-	res = parse_mode_args(NULL, NULL, args, argv, data);
+	res = parse_mode_args(NULL, NULL, args, argv, (void **) data);
 
 	free(argv);
 
