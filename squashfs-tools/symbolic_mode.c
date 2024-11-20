@@ -72,6 +72,8 @@ int parse_octal_mode_args(char *source, char *cur_ptr, int args, char **argv,
 
 	return 1;
 }
+
+
 /*
  * Parse symbolic mode of format [ugoa]*[[+-=]PERMS]+
  * PERMS = [rwxXst]+ or [ugo]
@@ -239,28 +241,35 @@ int parse_mode_args(char *source, char *cur_ptr, int args, char **argv,
 
 int parse_mode(char *source, struct mode_data **data)
 {
-	int args = 0, res;
+	int args = 0, res = 0;
 	char **argv = NULL, *cur_ptr = source, *first = source, **new;
 
 	while(*cur_ptr != '\0') {
 		while(*cur_ptr != ',' && *cur_ptr != '\0')
 			cur_ptr ++;
 
-		new = realloc(argv, (args + 1) * sizeof(char *));
-		if(new == NULL)
-			MEM_ERROR();
+		if(cur_ptr != first) {
+			new = realloc(argv, (args + 1) * sizeof(char *));
+			if(new == NULL)
+				MEM_ERROR();
 
-		argv = new;
+			argv = new;
 
-		argv[args ++] = strndup(first, cur_ptr - first);
+			argv[args ++] = strndup(first, cur_ptr - first);
+		}
 
 		if(*cur_ptr == ',')
 			first = ++ cur_ptr;
 	}
 
-	res = parse_mode_args(NULL, NULL, args, argv, (void **) data);
+	if(args) {
+		res = parse_mode_args(NULL, NULL, args, argv, (void **) data);
 
-	free(argv);
+		free(argv);
+	} else {
+		source = NULL;
+		SYNTAX_ERR("After skipping commas, no arguments found!\n");
+	}
 
 	return res;
 }
