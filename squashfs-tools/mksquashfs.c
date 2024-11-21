@@ -76,6 +76,7 @@
 #include "memory.h"
 #include "mksquashfs_help.h"
 #include "print_pager.h"
+#include "symbolic_mode.h"
 
 /* Compression options */
 int noF = FALSE;
@@ -113,7 +114,7 @@ int root_time_opt = FALSE;
 
 /* Options which override inode settings for all files and directories */
 int global_file_mode_opt = FALSE;
-mode_t global_file_mode;
+struct mode_data *global_file_mode;
 int global_uid_opt = FALSE;
 unsigned int global_uid;
 int global_gid_opt = FALSE;
@@ -1086,7 +1087,7 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 
 	if(type != SQUASHFS_DIR_TYPE  && type != SQUASHFS_LDIR_TYPE) {
 		if(!pseudo_override && global_file_mode_opt)
-			mode = global_file_mode;
+			mode = mode_execute(global_file_mode, buf->st_mode);
 		else
 			mode = buf->st_mode;
 	} else
@@ -4105,7 +4106,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		if((buf->st_mode & S_IFMT) == S_IFDIR)
 			dir_scan2(dirent->dir, pseudo_subdir(name, pseudo));
 		else if(!pseudo_override && global_file_mode_opt)
-			buf->st_mode = (buf->st_mode & S_IFMT) | global_file_mode;
+			buf->st_mode = mode_execute(global_file_mode, buf->st_mode);
 	}
 
 	/*
@@ -6116,7 +6117,7 @@ static int parse_num_unsigned(char *arg, unsigned int *res)
 }
 
 
-static int parse_mode(char *arg, mode_t *res)
+static int parse_mode_old(char *arg, mode_t *res)
 {
 	long long number;
 
@@ -6605,7 +6606,7 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-not-reproducible") == 0)
 			reproducible = FALSE;
 		else if(strcmp(argv[i], "-root-mode") == 0) {
-			if((++i == dest_index) || !parse_mode(argv[i], &root_mode)) {
+			if((++i == dest_index) || !parse_mode_old(argv[i], &root_mode)) {
 				ERROR("sqfstar: -root-mode missing or invalid mode,"
 					" octal number <= 07777 expected\n");
 				sqfstar_option_help(argv[i - 1]);
@@ -6652,7 +6653,7 @@ static int sqfstar(int argc, char *argv[])
 			}
 			root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
-			if((++i == dest_index) || !parse_mode(argv[i], &default_mode)) {
+			if((++i == dest_index) || !parse_mode_old(argv[i], &default_mode)) {
 				ERROR("sqfstar: -default-mode missing or invalid mode,"
 					" octal number <= 07777 expected\n");
 				sqfstar_option_help(argv[i - 1]);
@@ -7554,7 +7555,7 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-not-reproducible") == 0)
 			reproducible = FALSE;
 		else if(strcmp(argv[i], "-root-mode") == 0) {
-			if((++i == argc) || !parse_mode(argv[i], &root_mode)) {
+			if((++i == argc) || !parse_mode_old(argv[i], &root_mode)) {
 				ERROR("mksquashfs: -root-mode missing or invalid mode,"
 					" octal number <= 07777 expected\n");
 				mksquashfs_option_help(argv[i - 1]);
@@ -7601,7 +7602,7 @@ int main(int argc, char *argv[])
 			}
 			root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
-			if((++i == argc) || !parse_mode(argv[i], &default_mode)) {
+			if((++i == argc) || !parse_mode_old(argv[i], &default_mode)) {
 				ERROR("mksquashfs: -default-mode missing or invalid mode,"
 					" octal number <= 07777 expected\n");
 				mksquashfs_option_help(argv[i - 1]);
