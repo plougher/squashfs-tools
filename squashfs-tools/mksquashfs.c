@@ -104,7 +104,7 @@ int sparse_files = TRUE;
 
 /* Options which override root inode settings */
 int root_mode_opt = FALSE;
-mode_t root_mode;
+struct mode_data *root_mode;
 int root_uid_opt = FALSE;
 unsigned int root_uid;
 int root_gid_opt = FALSE;
@@ -3681,7 +3681,7 @@ static squashfs_inode scan_single(char *pathname, int progress)
 		BAD_ERROR("Cannot stat source directory %s because %s\n",
 						pathname, strerror(errno));
 	if(root_mode_opt)
-		buf.st_mode = root_mode | S_IFDIR;
+		buf.st_mode = mode_execute(root_mode, buf.st_mode);
 
 	if(root_uid_opt)
 		buf.st_uid = root_uid;
@@ -3724,10 +3724,9 @@ static squashfs_inode scan_encomp(int progress)
 	 * command line
 	 */
 	memset(&buf, 0, sizeof(buf));
+	buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
 	if(root_mode_opt)
-		buf.st_mode = root_mode | S_IFDIR;
-	else
-		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+		buf.st_mode = mode_execute(root_mode, buf.st_mode);
 	if(root_uid_opt)
 		buf.st_uid = root_uid;
 	else
@@ -5129,8 +5128,9 @@ static squashfs_inode process_source(int progress)
 		 * top level directory
 		 */
 		memset(&buf, 0, sizeof(buf));
-		buf.st_mode = (root_mode_opt) ? root_mode | S_IFDIR :
-				S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+		if(root_mode_opt)
+			buf.st_mode = mode_execute(root_mode, buf.st_mode);
 		if(root_uid_opt)
 			buf.st_uid = root_uid;
 		else
@@ -5153,7 +5153,7 @@ static squashfs_inode process_source(int progress)
 		entry->inode->dummy_root_dir = TRUE;
 	} else {
 		if(root_mode_opt)
-			buf.st_mode = root_mode | S_IFDIR;
+			buf.st_mode = mode_execute(root_mode, buf.st_mode);;
 		if(root_uid_opt)
 			buf.st_uid = root_uid;
 		if(root_gid_opt)
@@ -5213,10 +5213,9 @@ static squashfs_inode no_sources(int progress)
 
 	memset(&buf, 0, sizeof(buf));
 
+	buf.st_mode = pseudo_ent->dev->buf->mode;
 	if(root_mode_opt)
-		buf.st_mode = root_mode | S_IFDIR;
-	else
-		buf.st_mode = pseudo_ent->dev->buf->mode;
+		buf.st_mode = mode_execute(root_mode, buf.st_mode);;
 
 	if(root_uid_opt)
 		buf.st_uid = root_uid;
@@ -6606,7 +6605,7 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-not-reproducible") == 0)
 			reproducible = FALSE;
 		else if(strcmp(argv[i], "-root-mode") == 0) {
-			if((++i == dest_index) || !parse_mode_old(argv[i], &root_mode)) {
+			if((++i == dest_index) || !parse_mode(argv[i], &root_mode)) {
 				ERROR("sqfstar: -root-mode missing or invalid mode,"
 					" octal number <= 07777 expected\n");
 				sqfstar_option_help(argv[i - 1]);
@@ -6653,7 +6652,7 @@ static int sqfstar(int argc, char *argv[])
 			}
 			root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
-			if((++i == dest_index) || !parse_mode_old(argv[i], &default_mode)) {
+			if((++i == dest_index) || !parse_mode(argv[i], &default_mode)) {
 				ERROR("sqfstar: -default-mode missing or invalid mode,"
 					" octal number <= 07777 expected\n");
 				sqfstar_option_help(argv[i - 1]);
@@ -7555,7 +7554,7 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-not-reproducible") == 0)
 			reproducible = FALSE;
 		else if(strcmp(argv[i], "-root-mode") == 0) {
-			if((++i == argc) || !parse_mode_old(argv[i], &root_mode)) {
+			if((++i == argc) || !parse_mode(argv[i], &root_mode)) {
 				ERROR("mksquashfs: -root-mode missing or invalid mode,"
 					" octal number <= 07777 expected\n");
 				mksquashfs_option_help(argv[i - 1]);
@@ -7602,7 +7601,7 @@ int main(int argc, char *argv[])
 			}
 			root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
-			if((++i == argc) || !parse_mode_old(argv[i], &default_mode)) {
+			if((++i == argc) || !parse_mode(argv[i], &default_mode)) {
 				ERROR("mksquashfs: -default-mode missing or invalid mode,"
 					" octal number <= 07777 expected\n");
 				mksquashfs_option_help(argv[i - 1]);

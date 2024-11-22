@@ -41,6 +41,7 @@
 #include "tar.h"
 #include "progressbar.h"
 #include "info.h"
+#include "symbolic_mode.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -51,7 +52,7 @@ unsigned int default_uid;
 int default_gid_opt = FALSE;
 unsigned int default_gid;
 int default_mode_opt = FALSE;
-mode_t default_mode;
+struct mode_data *default_mode;
 
 static long long read_octal(char *s, int size)
 {
@@ -302,11 +303,9 @@ static void fixup_tree(struct dir_info *dir)
 			struct stat buf;
 
 			memset(&buf, 0, sizeof(buf));
+			buf.st_mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH | S_IFDIR;
 			if(default_mode_opt)
-				buf.st_mode = default_mode | S_IFDIR;
-			else
-				buf.st_mode = S_IRWXU | S_IRGRP | S_IXGRP |
-					S_IROTH | S_IXOTH | S_IFDIR;
+				buf.st_mode = mode_execute(default_mode, buf.st_mode);
 			if(default_uid_opt)
 				buf.st_uid = default_uid;
 			else
@@ -1648,10 +1647,9 @@ squashfs_inode process_tar_file(int progress)
 	dir_ent = create_dir_entry("", NULL, "", scan1_opendir("", "", 0));
 
 	memset(&buf, 0, sizeof(buf));
+	buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
 	if(root_mode_opt)
-		buf.st_mode = root_mode | S_IFDIR;
-	else
-		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+		buf.st_mode = mode_execute(root_mode, buf.st_mode);
 	if(root_uid_opt)
 		buf.st_uid = root_uid;
 	else

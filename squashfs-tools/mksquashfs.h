@@ -246,7 +246,7 @@ extern struct dir_info *root_dir;
 extern struct pathnames *paths;
 extern int tarfile;
 extern int root_mode_opt;
-extern mode_t root_mode;
+extern struct mode_data *root_mode;
 extern int root_time_opt;
 extern unsigned int root_time;
 extern int root_uid_opt;
