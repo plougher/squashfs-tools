@@ -57,10 +57,13 @@ static struct readahead **readahead_table = NULL;
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
 int sleep_time;
 
-static struct read_entry *read_array = NULL;
+static struct read_entry *block_array = NULL;
+static struct read_entry *fragment_array = NULL;
 
 /* total number of files to be read, excluding hard links  */
 static unsigned int file_count = 0;
+static unsigned int block_count = 0;
+static unsigned int fragment_count = 0;
 
 static void sigalrm_handler(int arg)
 {
@@ -657,20 +660,30 @@ static void reader_read_data(struct read_entry *entry)
 }
 
 
-static void add_entry(struct dir_ent *entry)
+static void _add_entry(struct dir_ent *entry, struct read_entry **array, unsigned int *count)
 {
-	if(read_array == NULL || file_count % READER_ALLOC == 0) {
-		struct read_entry *tmp = realloc(read_array, (file_count + READER_ALLOC) * sizeof(struct read_entry));
+	if(*array == NULL || *count % READER_ALLOC == 0) {
+		struct read_entry *tmp = realloc(*array, (*count + READER_ALLOC) * sizeof(struct read_entry));
 
 		if(tmp == NULL)
 			MEM_ERROR();
 
-		read_array = tmp;
+		*array = tmp;
 	}
 
-	read_array[file_count].dir_ent = entry;
-	read_array[file_count].file_count = file_count;
-	file_count ++;
+	(*array)[*count].dir_ent = entry;
+	(*array)[(*count) ++].file_count = file_count ++;
+}
+
+
+static void add_entry(struct dir_ent *dir_ent)
+{
+	if(IS_PSEUDO_PROCESS(dir_ent->inode) ||
+			IS_PSEUDO_DATA(dir_ent->inode) ||
+			!is_fragment(dir_ent->inode))
+		_add_entry(dir_ent, &block_array, &block_count);
+	else
+		_add_entry(dir_ent, &fragment_array, &fragment_count);
 }
 
 
@@ -697,7 +710,7 @@ void *reader(void *arg)
 {
 	struct itimerval itimerval;
 	struct dir_info *dir = queue_get(to_reader);
-	long long n = 0;
+	unsigned int b = 0, f = 0, n = 0;
 
 	if(sleep_time) {
 		signal(SIGALRM, sigalrm_handler);
@@ -732,15 +745,22 @@ void *reader(void *arg)
 		}
 	}
 
-	for(; n < file_count; n ++) {
-		struct dir_ent *dir_ent = read_array[n].dir_ent;
+	printf("Total files %u, f %u, b %u\n", file_count, fragment_count, block_count);
 
-		if(IS_PSEUDO_PROCESS(dir_ent->inode))
-			reader_read_process(&read_array[n]);
-		else if(IS_PSEUDO_DATA(dir_ent->inode))
-			reader_read_data(&read_array[n]);
-		else if(S_ISREG(dir_ent->inode->buf.st_mode))
-			reader_read_file(&read_array[n]);
+	for(; n < file_count; n ++) {
+		struct read_entry *entry;
+
+		if(block_array[b].file_count == n)
+			entry = &block_array[b ++];
+		else
+			entry = &fragment_array[f ++];
+
+		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
+			reader_read_process(entry);
+		else if(IS_PSEUDO_DATA(entry->dir_ent->inode))
+			reader_read_data(entry);
+		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
+			reader_read_file(entry);
 		else
 			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
