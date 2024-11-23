@@ -36,4 +36,9 @@ struct readahead {
 	char			*src;
 	char			data[0] __attribute__((aligned));
 };
+
+struct read_entry {
+	struct dir_ent	*dir_ent;
+	unsigned int	file_count;
+};
 #endif

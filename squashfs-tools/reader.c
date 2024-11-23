@@ -57,7 +57,7 @@ static struct readahead **readahead_table = NULL;
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
 int sleep_time;
 
-static struct dir_ent **read_array = NULL;
+static struct read_entry *read_array = NULL;
 
 /* total number of files to be read, excluding hard links  */
 static unsigned int file_count = 0;
@@ -147,10 +147,10 @@ static void put_file_buffer(struct file_buffer *file_buffer)
 }
 
 
-static void reader_read_process(struct dir_ent *dir_ent, int count)
+static void reader_read_process(struct read_entry *entry)
 {
 	long long bytes = 0, block = 0;
-	struct inode_info *inode = dir_ent->inode;
+	struct inode_info *inode = entry->dir_ent->inode;
 	struct file_buffer *prev_buffer = NULL, *file_buffer;
 	int status, byte, res, child;
 	int file;
@@ -158,7 +158,7 @@ static void reader_read_process(struct dir_ent *dir_ent, int count)
 	file = pseudo_exec_file(inode->pseudo, &child);
 	if(!file) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->file_count = count;
+		file_buffer->file_count = entry->file_count;
 		file_buffer->block = block;
 		file_buffer->version = 0;
 		goto read_err;
@@ -166,7 +166,7 @@ static void reader_read_process(struct dir_ent *dir_ent, int count)
 
 	while(1) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->file_count = count;
+		file_buffer->file_count = entry->file_count;
 		file_buffer->block = block ++;
 		file_buffer->version = 0;
 		file_buffer->noD = inode->noD;
@@ -240,13 +240,13 @@ read_err:
 }
 
 
-static void reader_read_file(struct dir_ent *dir_ent, int count)
+static void reader_read_file(struct read_entry *entry)
 {
-	struct stat *buf = &dir_ent->inode->buf, buf2;
+	struct stat *buf = &entry->dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
 	int blocks, file, res;
 	long long bytes = 0, block = 0, read_size;
-	struct inode_info *inode = dir_ent->inode;
+	struct inode_info *inode = entry->dir_ent->inode;
 	unsigned short version = 0;
 
 again:
@@ -254,14 +254,14 @@ again:
 	blocks = (read_size + block_size - 1) >> block_log;
 
 	while(1) {
-		file = open(pathname(dir_ent), O_RDONLY);
+		file = open(pathname(entry->dir_ent), O_RDONLY);
 		if(file != -1 || errno != EINTR)
 			break;
 	}
 
 	if(file == -1) {
 		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->file_count = count;
+		file_buffer->file_count = entry->file_count;
 		file_buffer->block = block;
 		file_buffer->version = version;
 		goto read_err2;
@@ -270,7 +270,7 @@ again:
 	do {
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_size = read_size;
-		file_buffer->file_count = count;
+		file_buffer->file_count = entry->file_count;
 		file_buffer->version = version;
 		file_buffer->block = block ++;
 		file_buffer->noD = inode->noD;
@@ -339,7 +339,7 @@ restat:
 	res = fstat(file, &buf2);
 	if(res == -1) {
 		ERROR("Cannot stat dir/file %s because %s\n",
-			pathname(dir_ent), strerror(errno));
+			pathname(entry->dir_ent), strerror(errno));
 		goto read_err;
 	}
 
@@ -581,12 +581,12 @@ static int read_data(struct pseudo_file *file, long long current,
 }
 
 
-static void reader_read_data(struct dir_ent *dir_ent, int count)
+static void reader_read_data(struct read_entry *entry)
 {
 	struct file_buffer *file_buffer;
 	int blocks;
 	long long bytes, read_size, current, block = 0;
-	struct inode_info *inode = dir_ent->inode;
+	struct inode_info *inode = entry->dir_ent->inode;
 	static struct pseudo_file *file = NULL;
 
 	bytes = 0;
@@ -625,7 +625,7 @@ static void reader_read_data(struct dir_ent *dir_ent, int count)
 	do {
 		file_buffer = cache_get_nohash(reader_buffer);
 		file_buffer->file_size = read_size;
-		file_buffer->file_count = count;
+		file_buffer->file_count = entry->file_count;
 		file_buffer->block = block ++;
 		file_buffer->noD = inode->noD;
 		file_buffer->error = FALSE;
@@ -660,7 +660,7 @@ static void reader_read_data(struct dir_ent *dir_ent, int count)
 static void add_entry(struct dir_ent *entry)
 {
 	if(read_array == NULL || file_count % READER_ALLOC == 0) {
-		struct dir_ent **tmp = realloc(read_array, (file_count + READER_ALLOC) * sizeof(struct dir_ent *));
+		struct read_entry *tmp = realloc(read_array, (file_count + READER_ALLOC) * sizeof(struct read_entry));
 
 		if(tmp == NULL)
 			MEM_ERROR();
@@ -668,7 +668,9 @@ static void add_entry(struct dir_ent *entry)
 		read_array = tmp;
 	}
 
-	read_array[file_count ++] = entry;
+	read_array[file_count].dir_ent = entry;
+	read_array[file_count].file_count = file_count;
+	file_count ++;
 }
 
 
@@ -731,14 +733,14 @@ void *reader(void *arg)
 	}
 
 	for(; n < file_count; n ++) {
-		struct dir_ent *dir_ent = read_array[n];
+		struct dir_ent *dir_ent = read_array[n].dir_ent;
 
 		if(IS_PSEUDO_PROCESS(dir_ent->inode))
-			reader_read_process(dir_ent, n);
+			reader_read_process(&read_array[n]);
 		else if(IS_PSEUDO_DATA(dir_ent->inode))
-			reader_read_data(dir_ent, n);
+			reader_read_data(&read_array[n]);
 		else if(S_ISREG(dir_ent->inode->buf.st_mode))
-			reader_read_file(dir_ent, n);
+			reader_read_file(&read_array[n]);
 		else
 			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
