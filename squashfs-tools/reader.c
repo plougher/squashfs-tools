@@ -150,6 +150,23 @@ static void put_file_buffer(struct file_buffer *file_buffer)
 }
 
 
+static struct file_buffer *get_buffer(struct cache *cache, struct read_entry *entry,
+	long long file_size, long long block, int version)
+{
+	struct file_buffer *file_buffer = cache_get_nohash(cache);
+
+	file_buffer->noD = entry->dir_ent->inode->noD;
+	file_buffer->file_count = entry->file_count;
+	file_buffer->file_size = file_size;
+	file_buffer->version = version;
+	file_buffer->block = block;
+	file_buffer->error = FALSE;
+	file_buffer->fragment = FALSE;
+
+	return file_buffer;
+}
+
+
 static void reader_read_process(struct read_entry *entry)
 {
 	long long bytes = 0, block = 0;
@@ -160,28 +177,18 @@ static void reader_read_process(struct read_entry *entry)
 
 	file = pseudo_exec_file(inode->pseudo, &child);
 	if(!file) {
-		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->file_count = entry->file_count;
-		file_buffer->block = block;
-		file_buffer->version = 0;
+		file_buffer = get_buffer(reader_buffer, entry, 0, block, 0);
 		goto read_err;
 	}
 
 	while(1) {
-		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->file_count = entry->file_count;
-		file_buffer->block = block ++;
-		file_buffer->version = 0;
-		file_buffer->noD = inode->noD;
+		file_buffer = get_buffer(reader_buffer, entry, -1, block ++, 0);
 
 		byte = read_bytes(file, file_buffer->data, block_size);
 		if(byte == -1)
 			goto read_err2;
 
 		file_buffer->size = byte;
-		file_buffer->file_size = -1;
-		file_buffer->error = FALSE;
-		file_buffer->fragment = FALSE;
 		bytes += byte;
 
 		if(byte == 0)
@@ -263,21 +270,12 @@ again:
 	}
 
 	if(file == -1) {
-		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->file_count = entry->file_count;
-		file_buffer->block = block;
-		file_buffer->version = version;
+		file_buffer = get_buffer(reader_buffer, entry, 0, block, version);
 		goto read_err2;
 	}
 
 	do {
-		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->file_size = read_size;
-		file_buffer->file_count = entry->file_count;
-		file_buffer->version = version;
-		file_buffer->block = block ++;
-		file_buffer->noD = inode->noD;
-		file_buffer->error = FALSE;
+		file_buffer = get_buffer(reader_buffer, entry, read_size, block ++, version);
 
 		/*
 		 * Always try to read block_size bytes from the file rather
@@ -626,12 +624,7 @@ static void reader_read_data(struct read_entry *entry)
 	current = inode->pseudo->data->offset;
 
 	do {
-		file_buffer = cache_get_nohash(reader_buffer);
-		file_buffer->file_size = read_size;
-		file_buffer->file_count = entry->file_count;
-		file_buffer->block = block ++;
-		file_buffer->noD = inode->noD;
-		file_buffer->error = FALSE;
+		file_buffer = get_buffer(reader_buffer, entry, read_size, block ++, 0);
 
 		if(blocks > 1) {
 			/* non-tail block should be exactly block_size */
