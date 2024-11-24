@@ -6116,21 +6116,6 @@ static int parse_num_unsigned(char *arg, unsigned int *res)
 }
 
 
-static int parse_mode_old(char *arg, mode_t *res)
-{
-	long long number;
-
-	if(!_parse_numberll(arg, &number, 0, 8))
-		return 0;
-
-	if(number > 07777)
-		return 0;
-
-	*res = (mode_t) number;
-	return 1;
-}
-
-
 static int get_default_phys_mem()
 {
 	/*
