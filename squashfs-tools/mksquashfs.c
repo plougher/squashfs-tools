@@ -5967,14 +5967,14 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk)
 }
 
 
-static int _parse_numberll(char *start, long long *res, int size, int base)
+static int parse_numberll(char *start, long long *res, int size)
 {
 	char *end;
 	long long number;
 
 	errno = 0; /* To distinguish success/failure after call */
 
-	number = strtoll(start, &end, base);
+	number = strtoll(start, &end, 10);
 
 	/*
 	 * check for strtoll underflow or overflow in conversion, and other
@@ -6066,17 +6066,11 @@ static int _parse_numberll(char *start, long long *res, int size, int base)
 }
 
 
-static int parse_numberll(char *start, long long *res, int size)
-{
-	return _parse_numberll(start, res, size, 10);
-}
-
-
 static int parse_number(char *start, int *res, int size)
 {
 	long long number;
 
-	if(!_parse_numberll(start, &number, size, 10))
+	if(!parse_numberll(start, &number, size))
 		return 0;
 	
 	/* check if long result will overflow signed int */
@@ -6092,7 +6086,7 @@ static int parse_number_unsigned(char *start, unsigned int *res, int size)
 {
 	long long number;
 
-	if(!_parse_numberll(start, &number, size, 10))
+	if(!parse_numberll(start, &number, size))
 		return 0;
 	
 	/* check if long result will overflow unsigned int */
