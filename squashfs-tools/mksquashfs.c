@@ -6586,7 +6586,7 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-root-mode") == 0) {
 			if((++i == dest_index) || !parse_mode(argv[i], &root_mode)) {
 				ERROR("sqfstar: -root-mode missing or invalid mode,"
-					" octal number <= 07777 expected\n");
+					" symbolic mode or octal number expected\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			root_mode_opt = TRUE;
