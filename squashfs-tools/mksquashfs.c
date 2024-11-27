@@ -6861,8 +6861,8 @@ static int sqfstar(int argc, char *argv[])
 			global_uid_opt = global_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-file-mode") == 0) {
 			if((++i == argc) || !parse_mode(argv[i], &global_file_mode)) {
-				ERROR("sqfstar: -force-mode missing or invalid mode,"
-					" octal number <= 07777 expected\n");
+				ERROR("sqfstar: -force-file-mode missing or invalid mode,"
+					" symbolic mode or octal number expected\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 			global_file_mode_opt = TRUE;
