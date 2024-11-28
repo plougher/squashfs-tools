@@ -355,7 +355,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-time", "root-uid", "root-gid", "xattrs-exclude", "xattrs-include",
 	"xattrs-add", "default-mode", "default-uid", "default-gid",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
-	"hs", "info-file", NULL
+	"hs", "info-file", "force-file-mode", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
