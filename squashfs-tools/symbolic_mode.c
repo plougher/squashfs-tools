@@ -116,8 +116,14 @@ int parse_sym_mode_arg(char *source, char *cur_ptr, char *arg,
 
 parse_operation:
 	/* trap a symbolic mode with just an ownership specification */
-	if(*arg == '\0') {
-		SYNTAX_ERR("Expected one of '+', '-' or '=', got EOF\n");
+	if(*arg != '+' && *arg != '-' && *arg != '=') {
+		if(*arg == '\0') {
+			SYNTAX_ERR("Expected ownership specification (ugoa) "
+				"or operator (+-=), but got end of string\n");
+		} else {
+			SYNTAX_ERR("Expected ownership specification (ugoa) "
+				"or operator (+-=), but got '%c'\n", *arg);
+		}
 		goto failed;
 	}
 
@@ -177,8 +183,9 @@ parse_operation:
 					mode &= mask;
 					goto perms_parsed;
 				default:
-					SYNTAX_ERR("Unrecognised permission "
-								"'%c'\n", *arg);
+					SYNTAX_ERR("Expected permission "
+						"specification (rwxstX), but "
+						"got '%c'\n", *arg);
 					goto failed;
 				}
 	
