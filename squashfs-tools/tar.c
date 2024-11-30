@@ -1554,6 +1554,8 @@ void read_tar_file()
 		file_buffer->tar_file = tar_file;
 		file_buffer->file_count = 0;
 		file_buffer->block = block ++;
+		file_buffer->version = 0;
+		file_buffer->next_state = NEXT_BLOCK;
 		reader_queue_put(to_main, file_buffer);
 
 		if(status == TAR_EOF)

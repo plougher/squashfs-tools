@@ -281,7 +281,22 @@ struct file_buffer *reader_queue_get(struct seq_queue *queue)
 
 			remove_seq_hash_table(queue, entry, hash);
 
-			queue->block ++;
+			switch(entry->next_state) {
+				case NEXT_VERSION:
+					queue->version ++;
+					queue->block = 0;
+					break;
+				case NEXT_BLOCK:
+					queue->block ++;
+					break;
+				case NEXT_FILE:
+					queue->version = 0;
+					queue->block = 0;
+					queue->file_count ++;
+					break;
+				default:
+					BAD_ERROR("Unknown file_buffer state!\n");
+			}
 
 			break;
 		}
@@ -293,21 +308,6 @@ struct file_buffer *reader_queue_get(struct seq_queue *queue)
 	pthread_cleanup_pop(1);
 
 	return entry;
-}
-
-
-void set_next_file(struct seq_queue *queue)
-{
-	queue->version = 0;
-	queue->block = 0;
-	queue->file_count ++;
-}
-
-
-void set_next_version(struct seq_queue *queue)
-{
-	queue->version ++;
-	queue->block = 0;
 }
 
 

@@ -130,8 +130,10 @@ static inline int is_fragment(struct inode_info *inode)
 }
 
 
-static void put_file_buffer(struct file_buffer *file_buffer)
+static void put_file_buffer(struct file_buffer *file_buffer, int next_state)
 {
+	file_buffer->next_state = next_state;
+
 	/*
 	 * Decide where to send the file buffer:
 	 * - compressible non-fragment blocks go to the deflate threads,
@@ -162,6 +164,7 @@ static struct file_buffer *get_buffer(struct cache *cache, struct read_entry *en
 	file_buffer->block = block;
 	file_buffer->error = FALSE;
 	file_buffer->fragment = FALSE;
+	file_buffer->next_state = FALSE;
 
 	return file_buffer;
 }
@@ -204,7 +207,7 @@ static void reader_read_process(struct read_entry *entry)
 		progress_bar_size(1);
 
 		if(prev_buffer)
-			put_file_buffer(prev_buffer);
+			put_file_buffer(prev_buffer, NEXT_BLOCK);
 		prev_buffer = file_buffer;
 	}
 
@@ -234,7 +237,7 @@ static void reader_read_process(struct read_entry *entry)
 
 	prev_buffer->file_size = bytes;
 	prev_buffer->fragment = is_fragment(inode);
-	put_file_buffer(prev_buffer);
+	put_file_buffer(prev_buffer, NEXT_FILE);
 
 	return;
 
@@ -246,7 +249,7 @@ read_err:
 		file_buffer = prev_buffer;
 	}
 	file_buffer->error = TRUE;
-	put_file_buffer(file_buffer);
+	put_file_buffer(file_buffer, NEXT_FILE);
 }
 
 
@@ -299,7 +302,7 @@ again:
 				goto restat;
 
 			file_buffer->fragment = FALSE;
-			put_file_buffer(file_buffer);
+			put_file_buffer(file_buffer, NEXT_BLOCK);
 		}
 	} while(-- blocks > 0);
 
@@ -325,7 +328,7 @@ again:
 	}
 
 	file_buffer->fragment = is_fragment(inode);
-	put_file_buffer(file_buffer);
+	put_file_buffer(file_buffer, NEXT_FILE);
 
 	close(file);
 
@@ -348,7 +351,7 @@ restat:
 		close(file);
 		memcpy(buf, &buf2, sizeof(struct stat));
 		file_buffer->error = 2;
-		put_file_buffer(file_buffer);
+		put_file_buffer(file_buffer, NEXT_VERSION);
 		bytes = block = 0;
 		version ++;
 		goto again;
@@ -357,7 +360,7 @@ read_err:
 	close(file);
 read_err2:
 	file_buffer->error = TRUE;
-	put_file_buffer(file_buffer);
+	put_file_buffer(file_buffer, NEXT_FILE);
 }
 
 
@@ -636,7 +639,7 @@ static void reader_read_data(struct read_entry *entry)
 			bytes += file_buffer->size;
 
 			file_buffer->fragment = FALSE;
-			put_file_buffer(file_buffer);
+			put_file_buffer(file_buffer, NEXT_BLOCK);
 		} else {
 			int expected = read_size - bytes;
 
@@ -649,7 +652,7 @@ static void reader_read_data(struct read_entry *entry)
 	} while(-- blocks > 0);
 
 	file_buffer->fragment = is_fragment(inode);
-	put_file_buffer(file_buffer);
+	put_file_buffer(file_buffer, NEXT_FILE);
 }
 
 
@@ -718,7 +721,8 @@ void *reader(void *arg)
 	if(tarfile) {
 		read_tar_file();
 		file_count = n = 1;
-		set_next_file(to_main);
+		to_main->block = to_main->version = 0;
+		to_main->file_count = 1;
 		dir = queue_get(to_reader);
 	}
 

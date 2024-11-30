@@ -82,6 +82,10 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int 
 #define CALCULATE_HASH(n) ((n) & 0xffff)
 
 
+#define NEXT_BLOCK	1
+#define NEXT_FILE	2
+#define NEXT_VERSION	3
+
 /* struct describing a cache entry passed between threads */
 struct file_buffer {
 	long long index;
@@ -121,6 +125,7 @@ struct file_buffer {
 	char wait_on_unlock;
 	char noD;
 	char duplicate;
+	char next_state;
 	char data[0] __attribute__((aligned));
 };
 
@@ -185,8 +190,6 @@ extern struct seq_queue *seq_queue_init();
 extern void dump_seq_queue(struct seq_queue *, int);
 extern void seq_queue_flush(struct seq_queue *);
 extern void reader_queue_put(struct seq_queue *, struct file_buffer *);
-extern void set_next_file(struct seq_queue *queue);
-extern void set_next_version(struct seq_queue *queue);
 extern void fragment_queue_put(struct seq_queue *, struct file_buffer *);
 extern struct file_buffer *reader_queue_get(struct seq_queue *);
 extern struct file_buffer *fragment_queue_get(struct seq_queue *);

@@ -3253,17 +3253,13 @@ again:
 	if(status == 2) {
 		ERROR("File %s changed size while reading filesystem, "
 			"attempting to re-read\n", pathname(dir));
-		set_next_version(to_main);
 		goto again;
 	} else if(status == 1) {
 		ERROR_START("Failed to read file %s", pathname(dir));
 		ERROR_EXIT(", creating empty file\n");
 		file = write_file_empty(dir, NULL, dup);
-		set_next_file(to_main);
 	} else if(status)
 		BAD_ERROR("Unexpected status value in write_file()");
-	else
-		set_next_file(to_main);
 
 	return file;
 }
