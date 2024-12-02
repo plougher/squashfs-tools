@@ -1,4 +1,4 @@
-/*
+/o*
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
@@ -741,8 +741,6 @@ void *reader(void *arg)
 			}
 		}
 	}
-
-	printf("Total files %u, f %u, b %u\n", file_count, fragment_count, block_count);
 
 	for(; n < file_count; n ++) {
 		struct read_entry *entry;
