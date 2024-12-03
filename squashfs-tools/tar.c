@@ -1648,7 +1648,10 @@ squashfs_inode process_tar_file(int progress)
 
 	memset(&buf, 0, sizeof(buf));
 	buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-	if(root_mode_opt)
+	if(global_dir_mode_opt) {
+		if(pseudo_override)
+			buf.st_mode = mode_execute(global_dir_mode, buf.st_mode);
+	} else if(root_mode_opt)
 		buf.st_mode = mode_execute(root_mode, buf.st_mode);
 	if(root_uid_opt)
 		buf.st_uid = root_uid;

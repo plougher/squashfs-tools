@@ -115,6 +115,8 @@ int root_time_opt = FALSE;
 /* Options which override inode settings for all files and directories */
 int global_file_mode_opt = FALSE;
 struct mode_data *global_file_mode;
+int global_dir_mode_opt = FALSE;
+struct mode_data *global_dir_mode;
 int global_uid_opt = FALSE;
 unsigned int global_uid;
 int global_gid_opt = FALSE;
@@ -355,7 +357,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-time", "root-uid", "root-gid", "xattrs-exclude", "xattrs-include",
 	"xattrs-add", "default-mode", "default-uid", "default-gid",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
-	"hs", "info-file", "force-file-mode", NULL
+	"hs", "info-file", "force-file-mode", "force-dir-mode", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -1090,8 +1092,12 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 			mode = mode_execute(global_file_mode, buf->st_mode);
 		else
 			mode = buf->st_mode;
-	} else
-		mode = buf->st_mode;
+	} else {
+		if(!pseudo_override && global_dir_mode_opt)
+			mode = mode_execute(global_dir_mode, buf->st_mode);
+		else
+			mode = buf->st_mode;
+	}
 
 	if(!pseudo_override && global_uid_opt)
 		uid = global_uid;
@@ -3680,7 +3686,10 @@ static squashfs_inode scan_single(char *pathname, int progress)
 		/* source directory has disappeared? */
 		BAD_ERROR("Cannot stat source directory %s because %s\n",
 						pathname, strerror(errno));
-	if(root_mode_opt)
+	if(global_dir_mode_opt) {
+		if(pseudo_override)
+			buf.st_mode = mode_execute(global_dir_mode, buf.st_mode);
+	} else if(root_mode_opt)
 		buf.st_mode = mode_execute(root_mode, buf.st_mode);
 
 	if(root_uid_opt)
@@ -3725,7 +3734,10 @@ static squashfs_inode scan_encomp(int progress)
 	 */
 	memset(&buf, 0, sizeof(buf));
 	buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-	if(root_mode_opt)
+	if(global_dir_mode_opt) {
+		if(pseudo_override)
+			buf.st_mode = mode_execute(global_dir_mode, buf.st_mode);
+	} else if(root_mode_opt)
 		buf.st_mode = mode_execute(root_mode, buf.st_mode);
 	if(root_uid_opt)
 		buf.st_uid = root_uid;
@@ -4102,9 +4114,11 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		if(pseudo_override && global_gid_opt)
 			buf->st_gid = global_gid;
 			
-		if((buf->st_mode & S_IFMT) == S_IFDIR)
+		if((buf->st_mode & S_IFMT) == S_IFDIR) {
+			if(pseudo_override && global_dir_mode_opt)
+				buf->st_mode = mode_execute(global_dir_mode, buf->st_mode);
 			dir_scan2(dirent->dir, pseudo_subdir(name, pseudo));
-		else if(!pseudo_override && global_file_mode_opt)
+		} else if(!pseudo_override && global_file_mode_opt)
 			buf->st_mode = mode_execute(global_file_mode, buf->st_mode);
 	}
 
@@ -5129,7 +5143,10 @@ static squashfs_inode process_source(int progress)
 		 */
 		memset(&buf, 0, sizeof(buf));
 		buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-		if(root_mode_opt)
+		if(global_dir_mode_opt) {
+			if(pseudo_override)
+				buf.st_mode = mode_execute(global_dir_mode, buf.st_mode);
+		} else if(root_mode_opt)
 			buf.st_mode = mode_execute(root_mode, buf.st_mode);
 		if(root_uid_opt)
 			buf.st_uid = root_uid;
@@ -5152,8 +5169,11 @@ static squashfs_inode process_source(int progress)
 		entry->inode = lookup_inode(&buf);
 		entry->inode->dummy_root_dir = TRUE;
 	} else {
-		if(root_mode_opt)
-			buf.st_mode = mode_execute(root_mode, buf.st_mode);;
+		if(global_dir_mode_opt) {
+			if(pseudo_override)
+				buf.st_mode = mode_execute(global_dir_mode, buf.st_mode);
+		} else if(root_mode_opt)
+			buf.st_mode = mode_execute(root_mode, buf.st_mode);
 		if(root_uid_opt)
 			buf.st_uid = root_uid;
 		if(root_gid_opt)
@@ -5214,9 +5234,8 @@ static squashfs_inode no_sources(int progress)
 	memset(&buf, 0, sizeof(buf));
 
 	buf.st_mode = pseudo_ent->dev->buf->mode;
-	if(root_mode_opt)
-		buf.st_mode = mode_execute(root_mode, buf.st_mode);;
-
+	if(root_mode_opt && !global_dir_mode_opt)
+		buf.st_mode = mode_execute(root_mode, buf.st_mode);
 	if(root_uid_opt)
 		buf.st_uid = root_uid;
 	else
@@ -7945,6 +7964,13 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[i - 1]);
 			}
 			global_file_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-force-dir-mode") == 0) {
+			if((++i == argc) || !parse_mode(argv[i], &global_dir_mode)) {
+				ERROR("mksquashfs: -force-dir-mode missing or invalid mode,"
+					" symbolic mode or octal number expected\n");
+				mksquashfs_option_help(argv[i - 1]);
+			}
+			global_dir_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-uid") == 0) {
 			if(++i == argc) {
 				ERROR("mksquashfs: -force-uid missing uid or user name\n");
