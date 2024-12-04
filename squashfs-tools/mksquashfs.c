@@ -366,7 +366,7 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
 	"default-mode", "default-uid", "default-gid", "mem-percent", "pd",
 	"pseudo-dir", "help-option", "ho", "help-section", "hs", "info-file",
-	"force-file-mode", NULL
+	"force-file-mode", "force-dir-mode", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
@@ -6885,6 +6885,13 @@ static int sqfstar(int argc, char *argv[])
 				sqfstar_option_help(argv[i - 1]);
 			}
 			global_file_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-force-dir-mode") == 0) {
+			if((++i == argc) || !parse_mode(argv[i], &global_dir_mode)) {
+				ERROR("sqfstar: -force-dir-mode missing or invalid mode,"
+					" symbolic mode or octal number expected\n");
+				sqfstar_option_help(argv[i - 1]);
+			}
+			global_dir_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-uid") == 0) {
 			if(++i == dest_index) {
 				ERROR("sqfstar: -force-uid missing uid or user name\n");
