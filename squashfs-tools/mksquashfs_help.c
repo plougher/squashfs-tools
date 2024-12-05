@@ -179,8 +179,8 @@ static char *mksquashfs_text[]={
 	"-root-gid <value>\tset root directory group to specified <value>, "
 		"<value> can be either an integer gid or group name\n",
 	"-all-root\t\tmake all files owned by root\n",
-	"-force-uid <value>\tset all file uids to specified <value>, <value> "
-		"can be either an integer uid or user name\n",
+	"-force-uid <value>\tset all file and directory uids to specified "
+		"<value>, <value> can be either an integer uid or user name\n",
 	"-force-gid <value>\tset all file gids to specified <value>, <value> "
 		"can be either an integer gid or group name\n",
 	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
