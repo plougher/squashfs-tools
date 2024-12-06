@@ -161,11 +161,11 @@ static char *mksquashfs_text[]={
 		"the \"date\" command to parse. Any string value which the "
 		"date command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
-	"-all-time <time>\tset all file timestamps to <time>. <time> can be an "
-		"unsigned 32-bit int indicating seconds since the epoch "
-		"(1970-01-01) or a string value which is passed to the "
-		"\"date\" command to parse. Any string value which the date "
-		"command recognises can be used such as \"now\", \"last "
+	"-all-time <time>\tset all file and directory timestamps to <time>. "
+		"<time> can be an unsigned 32-bit int indicating seconds since "
+		"the epoch (1970-01-01) or a string value which is passed to "
+		"the \"date\" command to parse. Any string value which the "
+		"date command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
 	"-root-time <time>\tset root directory time to <time>. <time> can be "
 		"an unsigned 32-bit int indicating seconds since the epoch "
@@ -178,11 +178,11 @@ static char *mksquashfs_text[]={
 		"<value> can be either an integer uid or user name\n",
 	"-root-gid <value>\tset root directory group to specified <value>, "
 		"<value> can be either an integer gid or group name\n",
-	"-all-root\t\tmake all files owned by root\n",
+	"-all-root\t\tmake all files and directories owned by root\n",
 	"-force-uid <value>\tset all file and directory uids to specified "
 		"<value>, <value> can be either an integer uid or user name\n",
-	"-force-gid <value>\tset all file gids to specified <value>, <value> "
-		"can be either an integer gid or group name\n",
+	"-force-gid <value>\tset all file and directory gids to specified "
+		"<value>, <value> can be either an integer gid or group name\n",
 	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
 		"-force-uid and -force-gid options\n",
 	"-no-exports\t\tdo not make filesystem exportable via NFS (-tar "
@@ -291,8 +291,8 @@ static char *mksquashfs_text[]={
 	"-recover <name>\t\trecover filesystem data using recovery file "
 		"<name>\n",
 	"\n", "Filesystem actions options:", "\n",
-	"-action <action@expr>\tevaluate <expr> on every file, and execute "
-		"<action> if it returns TRUE\n",
+	"-action <action@expr>\tevaluate <expr> on every file and directory, "
+		"and execute <action> if it returns TRUE\n",
 	"-log-action <act@expr>\tas above, but log expression evaluation "
 		"results and actions performed\n",
 	"-true-action <act@expr>\tas above, but only log expressions which "
@@ -440,11 +440,11 @@ static char *sqfstar_text[]={
 		"the \"date\" command to parse. Any string value which the "
 		"date command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
-	"-all-time <time>\tset all file timestamps to <time>. <time> can be an "
-		"unsigned 32-bit int indicating seconds since the epoch "
-		"(1970-01-01) or a string value which is passed to the "
-		"\"date\" command to parse. Any string value which the date "
-		"command recognises can be used such as \"now\", \"last "
+	"-all-time <time>\tset all file and directory timestamps to <time>. "
+		"<time> can be an unsigned 32-bit int indicating seconds since "
+		"the epoch (1970-01-01) or a string value which is passed to "
+		"the \"date\" command to parse. Any string value which the "
+		"date command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
 	"-root-time <time>\tset root directory time to " "<time>. <time> can "
 		"be an unsigned 32-bit int indicating seconds since the epoch "
@@ -457,11 +457,11 @@ static char *sqfstar_text[]={
 		"<value> can be either an integer uid or user name\n",
 	"-root-gid <value>\tset root directory group to specified <value>, "
 		"<value> can be either an integer gid or group name\n",
-	"-all-root\t\tmake all files owned by root\n",
-	"-force-uid <value>\tset all file uids to specified <value>, <value> "
-		"can be either an integer uid or user name\n",
-	"-force-gid <value>\tset all file gids to specified <value>, <value> "
-		"can be either an integer gid or group name\n",
+	"-all-root\t\tmake all files and directories owned by root\n",
+	"-force-uid <value>\tset all file and directory uids to specified "
+		"<value>, <value> can be either an integer uid or user name\n",
+	"-force-gid <value>\tset all file and directory gids to specified "
+		"<value>, <value> can be either an integer gid or group name\n",
 	"-default-mode <mode>\ttar files often do not store permissions for "
 		"intermediate directories.  This option sets the default "
 		"directory permissions to octal <mode>, rather than 0755.  "
