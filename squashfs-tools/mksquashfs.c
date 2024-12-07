@@ -294,7 +294,6 @@ int reproducible = REP_DEF;
 
 /* user options that control parallelisation */
 int processors = -1;
-int bwriter_size;
 
 /* Compressor options (-X) and initialised compressor (-comp XXX) */
 int comp_opts = FALSE;
@@ -3004,6 +3003,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 	struct file_buffer *fragment_buffer = NULL;
 	struct file_info *file;
 	int block_dup;
+	int cache_size = cache_maxsize(read_buffer->cache);
 
 	block_list = malloc(blocks * sizeof(unsigned int));
 	if(block_list == NULL)
@@ -3020,7 +3020,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 
 	file_bytes = 0;
 	mark_pos();
-	thresh = blocks > bwriter_size ? blocks - bwriter_size : 0;
+	thresh = blocks > cache_size ? blocks - cache_size : 0;
 
 	for(block = 0; block < blocks;) {
 		if(read_buffer->fragment) {
@@ -5324,10 +5324,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	int reader_size;
 	int fragment_size;
 	int fwriter_size;
-	/*
-	 * bwriter_size is global because it is needed in
-	 * write_file_blocks_dup()
-	 */
+	int bwriter_size;
 
 	/*
 	 * Never allow the total size of the queues to be larger than

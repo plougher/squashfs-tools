@@ -179,6 +179,12 @@ struct cache {
 };
 
 
+inline int cache_maxsize(struct cache *cache)
+{
+	return cache->max_buffers;
+}
+
+
 extern struct queue *queue_init(int);
 extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);
