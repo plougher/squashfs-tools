@@ -745,10 +745,12 @@ void *reader(void *arg)
 	for(; n < file_count; n ++) {
 		struct read_entry *entry;
 
-		if(block_array[b].file_count == n)
+		if(b < block_count && block_array[b].file_count == n)
 			entry = &block_array[b ++];
-		else
+		else if(f < fragment_count && fragment_array[f].file_count == n)
 			entry = &fragment_array[f ++];
+		else
+			BAD_ERROR("No file for file_count %u found!\n", n);
 
 		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
 			reader_read_process(entry);
