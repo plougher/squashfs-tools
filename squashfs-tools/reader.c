@@ -1,4 +1,4 @@
-/o*
+/*
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
