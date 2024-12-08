@@ -4118,7 +4118,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			if(pseudo_override && global_dir_mode_opt)
 				buf->st_mode = mode_execute(global_dir_mode, buf->st_mode);
 			dir_scan2(dirent->dir, pseudo_subdir(name, pseudo));
-		} else if(!pseudo_override && global_file_mode_opt)
+		} else if(pseudo_override && global_file_mode_opt)
 			buf->st_mode = mode_execute(global_file_mode, buf->st_mode);
 	}
 
