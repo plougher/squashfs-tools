@@ -173,7 +173,9 @@ static char *mksquashfs_text[]={
 		"\"date\" command to parse. Any string value which the date "
 		"command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
-	"-root-mode <mode>\tset root directory permissions to octal <mode>\n",
+	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "
+		"can be symbolic or octal (see section Symbolic mode "
+		"specification).  Default root mode is ugo=rwx or 0777 octal\n",
 	"-root-uid <value>\tset root directory owner to specified <value>, "
 		"<value> can be either an integer uid or user name\n",
 	"-root-gid <value>\tset root directory group to specified <value>, "
@@ -452,7 +454,9 @@ static char *sqfstar_text[]={
 		"\"date\" command to parse. Any string value which the date "
 		"command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
-	"-root-mode <mode>\tset root directory permissions to octal <mode>\n",
+	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "
+		"can be symbolic or octal (see section Symbolic mode "
+		"specification).  Default root mode is ugo=rwx or 0777 octal\n",
 	"-root-uid <value>\tset root directory owner to specified <value>, "
 		"<value> can be either an integer uid or user name\n",
 	"-root-gid <value>\tset root directory group to specified <value>, "
