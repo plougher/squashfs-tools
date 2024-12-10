@@ -309,8 +309,10 @@ static char *mksquashfs_text[]={
 	"\n", "Tar file only options:", "\n",
 	"-default-mode <mode>\ttar files often do not store permissions for "
 		"intermediate directories.  This option sets the default "
-		"directory permissions to octal <mode>, rather than 0755.  "
-		"This also sets the root inode mode\n",
+		"directory permissions to <mode>.  <Mode> can be symbolic or "
+		"octal (see section Symbolic mode specification).  Default "
+		"mode is u=rwx,go=rx or 0755 octal.  This also sets the root "
+		"inode mode\n",
 	"-default-uid <value>\ttar files often do not store uids for "
 		"intermediate directories.  This option sets the default "
 		"directory owner to <value>, rather than the user running "
@@ -466,6 +468,12 @@ static char *sqfstar_text[]={
 		"<value>, <value> can be either an integer uid or user name\n",
 	"-force-gid <value>\tset all file and directory gids to specified "
 		"<value>, <value> can be either an integer gid or group name\n",
+	"-default-mode <mode>\ttar files often do not store permissions for "
+		"intermediate directories.  This option sets the default "
+		"directory permissions to <mode>.  <Mode> can be symbolic or "
+		"octal (see section Symbolic mode specification).  Default "
+		"mode is u=rwx,go=rx or 0755 octal.  This also sets the root "
+		"inode mode\n",
 	"-default-mode <mode>\ttar files often do not store permissions for "
 		"intermediate directories.  This option sets the default "
 		"directory permissions to octal <mode>, rather than 0755.  "
