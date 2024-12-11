@@ -345,7 +345,7 @@ static char *mksquashfs_text[]={
 		"\"sections\" or \"h\" as section name to get a list of "
 		"sections and their names\n",
 	"-help-comp <comp>\tprint compressor options for compressor <comp>.  "
-		"Use <all> to get compressor options for all the compressors\n"
+		"Use <all> to get compressor options for all the compressors\n",
 	"-help-all\t\tprint help information for all Mksquashfs options and "
 		"sections to pager (or stdout if not a terminal)\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
@@ -584,7 +584,7 @@ static char *sqfstar_text[]={
 		"\"sections\" or \"h\" as section name to get a list of "
 		"sections and their names\n",
 	"-help-comp <comp>\tprint compressor options for compressor <comp>.  "
-		"Use <all> to get compressor options for all the compressors\n"
+		"Use <all> to get compressor options for all the compressors\n",
 	"-help-all\t\tprint help information for all Sqfstar options and "
 		"sections to pager (or stdout if not a terminal)\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
