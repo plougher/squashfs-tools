@@ -42,7 +42,7 @@ static char *mksquashfs_options[]={
 	"-no-compression", "", "", "", "-tar", "-no-strip", "-tarstyle",
 	"-cpiostyle", "-cpiostyle0", "-reproducible", "-not-reproducible",
 	"-mkfs-time", "-all-time", "-root-time", "-root-mode", "-root-uid",
-	"-root-gid", "-all-root", "-force-uid", "-force-gid",
+	"-root-gid", "-all-root", "-force-file-mode", "-force-uid", "-force-gid",
 	"-pseudo-override", "-no-exports", "-exports", "-no-sparse",
 	"-no-tailends", "-tailends", "-no-fragments", "-no-duplicates",
 	"-no-hardlinks", "-keep-as-directory", "", "", "", "-p", "-pd", "-pd",
@@ -68,7 +68,7 @@ static char *sqfstar_options[]={
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
 	"-no-compression", "", "", "", "-reproducible", "-not-reproducible",
 	"-mkfs-time", "-all-time", "-root-time", "-root-mode", "-root-uid",
-	"-root-gid", "-all-root", "-force-uid", "-force-gid", "-default-mode",
+	"-root-gid", "-all-root", "-force-file-mode", "-force-uid", "-force-gid", "-default-mode",
 	"-default-uid", "-default-gid", "-pseudo-override", "-exports",
 	"-no-sparse", "-no-fragments", "-no-tailends", "-no-duplicates",
 	"-no-hardlinks", "", "", "", "-p", "-pd", "-pd", "-pf", "-ef", "-regex",
@@ -87,7 +87,7 @@ static char *sqfstar_options[]={
 static char *mksquashfs_args[]={
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	"", "", "<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
-	"", "<value>", "<value>", "", "", "", "", "", "", "", "", "", "", "",
+	"", "<mode>", "<value>", "<value>", "", "", "", "", "", "", "", "", "", "", "",
 	"", "", "", "<d mode uid gid>", "<D time mode uid gid>",
 	"<pseudo-file>", "<sort-file>", "<exclude-file>", "", "", "<levels>",
 	"", "", "", "", "", "", "", "<regex>", "<regex>", "<name=val>", "", "",
@@ -104,7 +104,7 @@ static char *mksquashfs_args[]={
 static char *sqfstar_args[]={
 	"", "", "<block-size>", "<comp>",  "", "", "", "", "", "", "", "", "",
 	"", "", "<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
-	"", "<value>", "<value>", "<mode>", "<value>", "<value>", "", "", "",
+	"", "<mode>", "<value>", "<value>", "<mode>", "<value>", "<value>", "", "", "",
 	"", "", "", "", "", "", "", "<pseudo-definition>", "<d mode uid gid>",
 	"<D time mode u g>", "<pseudo-file>", "<exclude-file>", "", "", "", "",
 	"", "", "", "<regex>", "<regex>", "<name=val>", "", "","", "", "", "",
@@ -181,6 +181,9 @@ static char *mksquashfs_text[]={
 	"-root-gid <value>\tset root directory group to specified <value>, "
 		"<value> can be either an integer gid or group name\n",
 	"-all-root\t\tmake all files and directories owned by root\n",
+	"-force-file-mode <mode>\tset all file (non-directory) permissions "
+		"to <mode>.  <Mode> can be symbolic or octal (see section "
+		"Symbolic mode specification)\n",
 	"-force-uid <value>\tset all file and directory uids to specified "
 		"<value>, <value> can be either an integer uid or user name\n",
 	"-force-gid <value>\tset all file and directory gids to specified "
@@ -464,6 +467,9 @@ static char *sqfstar_text[]={
 	"-root-gid <value>\tset root directory group to specified <value>, "
 		"<value> can be either an integer gid or group name\n",
 	"-all-root\t\tmake all files and directories owned by root\n",
+	"-force-file-mode <mode>\tset all file (non-directory) permissions "
+		"to <mode>.  <Mode> can be symbolic or octal (see section "
+		"Symbolic mode specification)\n",
 	"-force-uid <value>\tset all file and directory uids to specified "
 		"<value>, <value> can be either an integer uid or user name\n",
 	"-force-gid <value>\tset all file and directory gids to specified "
