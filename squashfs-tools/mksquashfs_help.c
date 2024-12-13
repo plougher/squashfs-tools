@@ -321,17 +321,17 @@ static char *mksquashfs_text[]={
 		"directory permissions to <mode>.  <Mode> can be symbolic or "
 		"octal (see section Symbolic mode specification).  Default "
 		"mode is u=rwx,go=rx or 0755 octal.  This also sets the root "
-		"inode mode\n",
+		"directory mode\n",
 	"-default-uid <value>\ttar files often do not store uids for "
 		"intermediate directories.  This option sets the default "
 		"directory owner to <value>, rather than the user running "
 		"Mksquashfs.  <value> can be either an integer uid or user "
-		"name.  This also sets the root inode uid\n",
+		"name.  This also sets the root directory uid\n",
 	"-default-gid <value>\ttar files often do not store gids for "
 		"intermediate directories.  This option sets the default "
 		"directory group to <value>, rather than the group of the user "
 		"running Mksquashfs.  <value> can be either an integer uid or "
-		"group name.  This also sets the root inode gid\n",
+		"group name.  This also sets the root directory gid\n",
 	"-ignore-zeros\t\tallow tar files to be concatenated together and fed "
 		"to Mksquashfs.  Normally a tarfile has two consecutive 512 "
 		"byte blocks filled with zeros which means EOF and Mksquashfs "
@@ -488,17 +488,17 @@ static char *sqfstar_text[]={
 		"directory permissions to <mode>.  <Mode> can be symbolic or "
 		"octal (see section Symbolic mode specification).  Default "
 		"mode is u=rwx,go=rx or 0755 octal.  This also sets the root "
-		"inode mode\n",
+		"directory mode\n",
 	"-default-uid <value>\ttar files often do not store uids for "
 		"intermediate directories.  This option sets the default "
 		"directory owner to <value>, rather than the user running "
 		"Sqfstar.  <value> can be either an integer uid or user name.  "
-		"This also sets the " "root inode uid\n",
+		"This also sets the root directory uid\n",
 	"-default-gid <value>\ttar files often do not store gids for "
 		"intermediate directories.  This option sets the default "
 		"directory group to <value>, rather than the group of the "
 		"user running Sqfstar.  <value> can be either an integer uid "
-		"or group name.  This also sets the root inode gid\n",
+		"or group name.  This also sets the root directory gid\n",
 	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
 		"-force-uid and -force-gid options\n",
 	"-exports\t\tmake the filesystem exportable via NFS\n",
