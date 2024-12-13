@@ -42,77 +42,80 @@ static char *mksquashfs_options[]={
 	"-no-compression", "", "", "", "-tar", "-no-strip", "-tarstyle",
 	"-cpiostyle", "-cpiostyle0", "-reproducible", "-not-reproducible",
 	"-mkfs-time", "-all-time", "-root-time", "-root-mode", "-root-uid",
-	"-root-gid", "-all-root", "-force-file-mode", "-force-dir-mode", "-force-uid", "-force-gid",
-	"-pseudo-override", "-no-exports", "-exports", "-no-sparse",
-	"-no-tailends", "-tailends", "-no-fragments", "-no-duplicates",
-	"-no-hardlinks", "-keep-as-directory", "", "", "", "-p", "-pd", "-pd",
-	"-pf", "-sort", "-ef", "-wildcards", "-regex", "-max-depth",
-	"-one-file-system", "-one-file-system-x", "", "", "", "-no-xattrs",
-	"-xattrs", "-xattrs-exclude", "-xattrs-include", "-xattrs-add", "",
-	"", "", "-version", "-exit-on-error", "-quiet", "-info", "-info-file",
-	"-no-progress", "-progress", "-percentage", "-throttle", "-limit",
-	"-processors", "-mem", "-mem-percent", "-mem-default", "", "", "",
-	"-noappend", "-root-becomes", "-no-recovery", "-recovery-path",
-	"-recover", "", "", "", "-action", "-log-action", "-true-action",
-	"-false-action", "-action-file", "-log-action-file",
-	"-true-action-file", "-false-action-file", "", "", "", "-default-mode",
-	"-default-uid", "-default-gid", "-ignore-zeros", "", "", "", "-nopad",
-	"-offset", "-o", "", "", "", "-help", "-help-option", "-help-section",
-	"-help-comp", "-help-all", "-Xhelp", "-h", "-ho", "-hs", "-ha", "", "",
-	"", "-fstime", "-always-use-fragments", "-root-owned",
-	"-noInodeCompression", "-noIdTableCompression", "-noDataCompression",
-	"-noFragmentCompression", "-noXattrCompression", "-pseudo-dir", NULL,
+	"-root-gid", "-all-root", "-force-file-mode", "-force-dir-mode",
+	"-force-uid", "-force-gid", "-pseudo-override", "-no-exports",
+	"-exports", "-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
+	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "",
+	"-p", "-pd", "-pd", "-pf", "-sort", "-ef", "-wildcards", "-regex",
+	"-max-depth", "-one-file-system", "-one-file-system-x", "", "", "",
+	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include",
+	"-xattrs-add", "", "", "", "-version", "-exit-on-error", "-quiet",
+	"-info", "-info-file", "-no-progress", "-progress", "-percentage",
+	"-throttle", "-limit", "-processors", "-mem", "-mem-percent",
+	"-mem-default", "", "", "", "-noappend", "-root-becomes",
+	"-no-recovery", "-recovery-path", "-recover", "", "", "", "-action",
+	"-log-action", "-true-action", "-false-action", "-action-file",
+	"-log-action-file", "-true-action-file", "-false-action-file", "", "",
+	"", "-default-mode", "-default-uid", "-default-gid", "-ignore-zeros",
+	"", "", "", "-nopad", "-offset", "-o", "", "", "", "-help",
+	"-help-option", "-help-section", "-help-comp", "-help-all", "-Xhelp",
+	"-h", "-ho", "-hs", "-ha", "", "", "", "-fstime",
+	"-always-use-fragments", "-root-owned", "-noInodeCompression",
+	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
+	 "-noXattrCompression", "-pseudo-dir", NULL,
 };
 
 static char *sqfstar_options[]={
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
 	"-no-compression", "", "", "", "-reproducible", "-not-reproducible",
 	"-mkfs-time", "-all-time", "-root-time", "-root-mode", "-root-uid",
-	"-root-gid", "-all-root", "-force-file-mode", "-force-dir-mode", "-force-uid", "-force-gid", "-default-mode",
-	"-default-uid", "-default-gid", "-pseudo-override", "-exports",
-	"-no-sparse", "-no-fragments", "-no-tailends", "-no-duplicates",
-	"-no-hardlinks", "", "", "", "-p", "-pd", "-pd", "-pf", "-ef", "-regex",
-	"-ignore-zeros", "", "", "", "-no-xattrs", "-xattrs", "-xattrs-exclude",
+	"-root-gid", "-all-root", "-force-file-mode", "-force-dir-mode",
+	"-force-uid", "-force-gid", "-default-mode", "-default-uid",
+	"-default-gid", "-pseudo-override", "-exports", "-no-sparse",
+	"-no-fragments", "-no-tailends", "-no-duplicates", "-no-hardlinks", "",
+	"", "", "-p", "-pd", "-pd", "-pf", "-ef", "-regex", "-ignore-zeros",
+	"", "", "", "-no-xattrs", "-xattrs", "-xattrs-exclude",
 	"-xattrs-include", "-xattrs-add", "", "","", "-version", "-force",
 	"-exit-on-error", "-quiet", "-info", "-info-file", "-no-progress",
 	"-progress", "-percentage", "-throttle", "-limit", "-processors",
 	"-mem", "-mem-percent", "-mem-default", "", "", "", "-nopad", "-offset",
-	"-o", "", "", "", "-help", "help-option", "-help-section", "-help-comp",
-	"-help-all", "-Xhelp", "-h", "-ho", "-hs", "-ha", "", "", "",
-	"-fstime", "-root-owned", "-noInodeCompression",
-	"-noIdTableCompression", "-noDataCompression",
-	"-noFragmentCompression", "-noXattrCompression", NULL
+	 "-o", "", "", "", "-help", "help-option", "-help-section",
+	"-help-comp", "-help-all", "-Xhelp", "-h", "-ho", "-hs", "-ha", "", "",
+	"", "-fstime", "-root-owned", "-noInodeCompression",
+	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
+	 "-noXattrCompression", NULL
 };
 
 static char *mksquashfs_args[]={
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	"", "", "<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
-	"", "<mode>", "<mode>", "<value>", "<value>", "", "", "", "", "", "", "", "", "", "", "",
-	"", "", "", "<d mode uid gid>", "<D time mode uid gid>",
-	"<pseudo-file>", "<sort-file>", "<exclude-file>", "", "", "<levels>",
-	"", "", "", "", "", "", "", "<regex>", "<regex>", "<name=val>", "", "",
-	"", "", "", "", "", "<file>", "", "", "", "<percentage>",
-	"<percentage>", "<number>", "<size>", "<percent>", "", "", "", "", "",
-	"<name>", "", "<name>", "<name>", "", "", "", "<action@expression>",
-	"<action@expression>", "<action@expression>", "<action@expression>",
-	"<file>", "<file>", "<file>", "<file>", "", "", "", "<mode>", "<value>",
-	"<value>", "", "", "", "", "", "<offset>", "<offset>", "", "", "", "",
-	"<regex>", "<section>", "<comp>", "", "", "", "<regex>", "<section>", "",
-	"", "", "", "<time>", "", "", "", "", "", "", "", ""
+	"", "<mode>", "<mode>", "<value>", "<value>", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "<d mode uid gid>",
+	"<D time mode uid gid>", "<pseudo-file>", "<sort-file>",
+	"<exclude-file>", "", "", "<levels>", "", "", "", "", "", "", "",
+	"<regex>", "<regex>", "<name=val>", "", "", "", "", "", "", "",
+	"<file>", "", "", "", "<percentage>", "<percentage>", "<number>",
+	"<size>", "<percent>", "", "", "", "", "", "<name>", "", "<name>",
+	"<name>", "", "", "", "<action@expression>", "<action@expression>",
+	"<action@expression>", "<action@expression>", "<file>", "<file>",
+	"<file>", "<file>", "", "", "", "<mode>", "<value>", "<value>", "", "",
+	"", "", "", "<offset>", "<offset>", "", "", "", "", "<regex>",
+	"<section>", "<comp>", "", "", "", "<regex>", "<section>", "", "", "",
+	"", "<time>", "", "", "", "", "", "", "", ""
 };
 
 static char *sqfstar_args[]={
 	"", "", "<block-size>", "<comp>",  "", "", "", "", "", "", "", "", "",
 	"", "", "<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
-	"", "<mode>", "<mode>", "<value>", "<value>", "<mode>", "<value>", "<value>", "", "", "",
-	"", "", "", "", "", "", "", "<pseudo-definition>", "<d mode uid gid>",
-	"<D time mode u g>", "<pseudo-file>", "<exclude-file>", "", "", "", "",
-	"", "", "", "<regex>", "<regex>", "<name=val>", "", "","", "", "", "",
-	"", "", "<file>", "", "", "", "<percentage>", "<percentage>",
-	"<number>", "<size>", "<percent>", "", "", "", "", "", "<offset>",
-	"<offset>", "", "", "", "", "<regex>", "<section>", "<comp>", "", "",
-	"", "<regex>", "<section>", "" "", "", "", "<time>", "", "", "", "", "",
-	"", ""
+	"", "<mode>", "<mode>", "<value>", "<value>", "<mode>", "<value>",
+	"<value>", "", "", "", "", "", "", "", "", "", "",
+	"<pseudo-definition>", "<d mode uid gid>", "<D time mode u g>",
+	"<pseudo-file>", "<exclude-file>", "", "", "", "", "", "", "",
+	"<regex>", "<regex>", "<name=val>", "", "","", "", "", "", "", "",
+	"<file>", "", "", "", "<percentage>", "<percentage>", "<number>",
+	"<size>", "<percent>", "", "", "", "", "", "<offset>", "<offset>", "",
+	"", "", "", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
+	"<section>", "" "", "", "", "<time>", "", "", "", "", "", "", ""
 };
 
 static char *mksquashfs_sections[]={
@@ -184,7 +187,9 @@ static char *mksquashfs_text[]={
 	"-force-file-mode <mode>\tset all file (non-directory) permissions "
 		"to <mode>.  <Mode> can be symbolic or octal (see section "
 		"Symbolic mode specification)\n",
-	"-force-dir-mode <mode>\tset all directory permissions to <mode>.  <Mode> can be symbolic or octal (see section Symbolic mode specification)\n",
+	"-force-dir-mode <mode>\tset all directory permissions to <mode>.  "
+		"<Mode> can be symbolic or octal (see section Symbolic mode "
+		"specification)\n",
 	"-force-uid <value>\tset all file and directory uids to specified "
 		"<value>, <value> can be either an integer uid or user name\n",
 	"-force-gid <value>\tset all file and directory gids to specified "
@@ -471,7 +476,9 @@ static char *sqfstar_text[]={
 	"-force-file-mode <mode>\tset all file (non-directory) permissions "
 		"to <mode>.  <Mode> can be symbolic or octal (see section "
 		"Symbolic mode specification)\n",
-	"-force-dir-mode <mode>\tset all directory permissions to <mode>.  <Mode> can be symbolic or octal (see section Symbolic mode specification)\n",
+	"-force-dir-mode <mode>\tset all directory permissions to <mode>.  "
+		"<Mode> can be symbolic or octal (see section Symbolic mode "
+		"specification)\n",
 	"-force-uid <value>\tset all file and directory uids to specified "
 		"<value>, <value> can be either an integer uid or user name\n",
 	"-force-gid <value>\tset all file and directory gids to specified "
@@ -482,15 +489,11 @@ static char *sqfstar_text[]={
 		"octal (see section Symbolic mode specification).  Default "
 		"mode is u=rwx,go=rx or 0755 octal.  This also sets the root "
 		"inode mode\n",
-	"-default-mode <mode>\ttar files often do not store permissions for "
-		"intermediate directories.  This option sets the default "
-		"directory permissions to octal <mode>, rather than 0755.  "
-		"This also sets the root inode mode\n",
 	"-default-uid <value>\ttar files often do not store uids for "
-	"intermediate directories.  This option sets the default directory "
-	"owner to <value>, rather than the user running Sqfstar.  <value> can "
-		"be either an integer uid or user name.  This also sets the "
-		"root inode uid\n",
+		"intermediate directories.  This option sets the default "
+		"directory owner to <value>, rather than the user running "
+		"Sqfstar.  <value> can be either an integer uid or user name.  "
+		"This also sets the " "root inode uid\n",
 	"-default-gid <value>\ttar files often do not store gids for "
 		"intermediate directories.  This option sets the default "
 		"directory group to <value>, rather than the group of the "
