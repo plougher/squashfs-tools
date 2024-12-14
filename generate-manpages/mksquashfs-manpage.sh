@@ -106,9 +106,14 @@ ${SED} -i "s/^-/  -/" $tmp/mksquashfs.help
 ${SED} -i "s/^ *-X/  -X/" $tmp/mksquashfs.help
 
 # help2man expects the options usage to be separated from the
-# option and operands text by at least 2 spaces.
+# option and operands text by at least 2 spaces.  These options
+# due to their length only have one space, and so add an extra
+# space
 
-${SED} -i -e "s/expr> as/expr>  as/" -e "s/exp> as/exp>  as/" -e "s/file> as/file>  as/" -e "s/regex> exclude/regex>  exclude/" -e "s/regex> include/regex>  include/" $tmp/mksquashfs.help
+${SED} -i -e "s/expr> as/expr>  as/" -e "s/exp> as/exp>  as/" \
+	-e "s/file> as/file>  as/" -e "s/regex> exclude/regex>  exclude/" \
+	-e "s/regex> include/regex>  include/" -e "s/mode> set/mode>  set/" \
+	$tmp/mksquashfs.help
 
 # Expand certain operands truncated in help text due to lack of space
 
