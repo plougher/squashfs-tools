@@ -921,6 +921,9 @@ void print_compressor_options(char *comp_name, char *prog_name)
 	pid_t pager_pid;
 	FILE *pager;
 
+	if(strcmp(comp_name, "ALL") == 0 || strcmp(comp_name, "<all>") == 0)
+		comp_name = "all";
+
 	if(strcmp(comp_name, "all") && !valid_compressor(comp_name)) {
 		cols = get_column_width();
 		autowrap_printf(stderr, cols, "%s: Compressor \"%s\" is not "
