@@ -137,7 +137,11 @@ ${SED} -i -e "s/<//g" -e "s/>//g" $tmp/sqfstar.help
 
 ${SED} -i "/^  -comp/ {
 N
-s/\n */. /
+s/\n */ /
+N
+s/\n */ /
+N
+s/\n */ /
 s/:/: /
 
 N
