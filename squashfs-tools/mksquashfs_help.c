@@ -87,7 +87,7 @@ static char *sqfstar_options[]={
 };
 
 static char *mksquashfs_args[]={
-	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+	"", "", "<block-size>", "<comp>", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	"", "", "<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
 	"", "<mode>", "<mode>", "<value>", "<value>", "", "", "", "", "", "",
 	"", "", "", "", "", "", "", "", "<d mode uid gid>",
