@@ -302,11 +302,14 @@ int get_column_width()
 void autowrap_print(FILE *stream, char *text, int maxl)
 {
 	char *cur = text;
-	int first_line = TRUE, tab_out = 0, length = 0;
+	int first_line = TRUE, tab_out = 0, length;
 
 	while(*cur != '\0') {
 		char *sol = cur, *lw = NULL, *eow = NULL;
 		int wrapped = FALSE;
+
+		for(length = 0; length < tab_out; length += 8)
+			fputc('\t', stream);
 
 		while(length <= maxl && *cur != '\n' && *cur != '\0') {
 			if(*cur == '\t') {
@@ -347,13 +350,9 @@ void autowrap_print(FILE *stream, char *text, int maxl)
 		if(wrapped) {
 			fputc('\n', stream);
 
-			for(length = 0; length < tab_out; length += 8)
-				fputc('\t', stream);
-
 			while(*cur == ' ')
 				cur ++;
-		} else
-			length = 0;
+		}
 	}
 }
 
