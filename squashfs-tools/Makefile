@@ -492,7 +492,7 @@ xz_wrapper.o: xz_wrapper.c squashfs_fs.h xz_wrapper.h compressor.h
 xz_wrapper_extended.o: xz_wrapper_extended.c squashfs_fs.h xz_wrapper.h compressor.h
 
 mksquashfs_help.o: mksquashfs_help.c mksquashfs_help.h Makefile
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n\t\t\t\t,$(COMPRESSORS)))\"" $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n\t,$(COMPRESSORS)))\"" $<
 
 print_pager.o: print_pager.c print_pager.h
 

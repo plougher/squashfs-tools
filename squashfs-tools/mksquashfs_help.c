@@ -137,8 +137,8 @@ static char *mksquashfs_text[]={
 		"respectively\n",
 	"-comp <comp>\t\tselect <comp> compression.  Run -help-comp <comp> to "
 		"get compressor options for <comp>, or <all> for all the "
-		"compressors.\n\t\t\tCompressors available:\n"
-		"\t\t\t\t" COMPRESSORS "\n",
+		"compressors.\nCompressors available:\n"
+		"\t" COMPRESSORS "\n",
 	"-noI\t\t\tdo not compress inode table\n",
 	"-noId\t\t\tdo not compress the uid/gid table (implied by -noI)\n",
 	"-noD\t\t\tdo not compress data blocks\n",
@@ -433,8 +433,8 @@ static char *sqfstar_text[]={
 		"can be given to specify Kbytes or Mbytes respectively\n",
 	"-comp <comp>\t\tselect <comp> compression.  Run -help-comp <comp> to "
 		"get compressor options for <comp>, or <all> for all the "
-		"compressors.\n\t\t\tCompressors available:\n"
-		"\t\t\t\t" COMPRESSORS "\n",
+		"compressors.\nCompressors available:\n"
+		"\t" COMPRESSORS "\n",
 	"-noI\t\t\tdo not compress inode table\n",
 	"-noId\t\t\tdo not compress the uid/gid table (implied by -noI)\n",
 	"-noD\t\t\tdo not compress data blocks\n",
