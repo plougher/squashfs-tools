@@ -497,7 +497,7 @@ mksquashfs_help.o: mksquashfs_help.c mksquashfs_help.h Makefile
 print_pager.o: print_pager.c print_pager.h
 
 unsquashfs_help.o: unsquashfs_help.c unsquashfs_help.h
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DDECOMPRESSORS="\"$(subst @(default),,$(subst $(space),\n\t,$(COMPRESSORS)))\"" $<
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DDECOMPRESSORS="\"$(subst @(default),,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
 
 unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@
