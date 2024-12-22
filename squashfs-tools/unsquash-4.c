@@ -158,7 +158,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		EXIT_UNSQUASH("File system corrupted - inode number in inode too large (inode_number: %u)\n", header.base.inode_number);
 
 	if(header.base.inode_number == 0)
-		EXIT_UNSQUASH("File system corrupted - inode number zero is invalid\n", header.base.inode_number);
+		EXIT_UNSQUASH("File system corrupted - inode number zero is invalid\n");
 
 	i.uid = (uid_t) id_table[header.base.uid];
 	i.gid = (uid_t) id_table[header.base.guid];
