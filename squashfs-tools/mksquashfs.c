@@ -7386,7 +7386,7 @@ int main(int argc, char *argv[])
 	 * any -X compressor specific options are passed to the
 	 * correct compressor.
 	 *
-	 * Also scan for -Xhelp and -help-comp specified on command line,
+	 * Also scan for -Xhelp specified on command line.
 	 */
 	for(j = i; j < argc; j++) {
 		struct compressor *prev_comp = comp;
@@ -7424,7 +7424,7 @@ int main(int argc, char *argv[])
 	/*
 	 * if no -comp option specified lookup default compressor.  Note the
 	 * Makefile ensures the default compressor has been built, and so we
-	 * don't need to to check for failure here
+	 * don't need to check for failure here
 	 */
 	if(comp == NULL)
 		comp = lookup_compressor(COMP_DEFAULT);
