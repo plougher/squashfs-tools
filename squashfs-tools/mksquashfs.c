@@ -806,7 +806,7 @@ static long long write_inodes()
 	}
 
 	start_bytes = get_and_inc_pos(inode_bytes);
-	write_destination(fd, start_bytes, inode_bytes,  inode_table);
+	write_destination(fd, start_bytes, inode_bytes, inode_table);
 
 	return start_bytes;
 }
@@ -8146,7 +8146,7 @@ int main(int argc, char *argv[])
 
 	check_source_date_epoch();
 
-	/* If cpiostyle is set, then file names  will be read-in
+	/* If cpiostyle is set, then file names will be read-in
 	 * from standard in.  We do not expect to have any sources
 	 * specified on the command line */
 	if(cpiostyle && source)
