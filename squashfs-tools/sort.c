@@ -260,7 +260,7 @@ int read_sort_file(char *filename, int source, char *source_path[])
 
 		/*
 		 * if filename empty, then line was empty of anything but
-		 * whitespace or a backslash character.  Skip empy lines
+		 * whitespace or a backslash character.  Skip empty lines
 		 */
 		if(sort_filename[0] == '\0')
 			continue;

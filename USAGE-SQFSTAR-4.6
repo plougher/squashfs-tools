@@ -118,7 +118,7 @@ Filesystem extended attribute (xattrs) options:
 			binary (i.e. an uninterpreted byte sequence), but it can
 			be prefixed with 0s, where it will be treated as base64
 			encoded, or prefixed with 0x, where val will be treated
-			as hexidecimal.  Additionally it can be prefixed with
+			as hexadecimal.  Additionally it can be prefixed with
 			0t where this encoding is similar to binary encoding,
 			except backslashes are specially treated, and a
 			backslash followed by 3 octal digits can be used to
@@ -494,7 +494,7 @@ files.  For example the regex '^user.' will remove all User extended attributes.
 
 The -xattrs-include option instead specifies a regular expression (regex)
 which includes any extended attribute that matches, and removes anything
-that does't match.  For example the regex '^user.' will only keep User
+that doesn't match.  For example the regex '^user.' will only keep User
 extended attributes and anything else will be removed.
 
 Sqfstar also allows you to add extended attributes to files in the Squashfs
@@ -509,9 +509,9 @@ all files.
 The extended attribute value by default will be treated as binary (i.e. an
 uninterpreted byte sequence), but it can be prefixed with 0s, where it will be
 treated as base64 encoded, or prefixed with 0x, where it will be treated as
-hexidecimal.
+hexadecimal.
 
-Obviously using base64 or hexidecimal allows values to be used that cannot be
+Obviously using base64 or hexadecimal allows values to be used that cannot be
 entered on the command line such as non-printable characters etc.  But it
 renders the string non-human readable.  To keep readability and to allow
 non-printable characters to be entered, the 0t prefix is supported.  This
@@ -547,12 +547,12 @@ allows device nodes to be added to the filesystem without requiring root access.
 Pseudo files also support "dynamic pseudo files" and a modify operation.
 Dynamic pseudo files allow files to be dynamically created when Sqfstar
 is run, their contents being the result of running a command or piece of
-shell script.  The modifiy operation allows the mode/uid/gid of an existing
+shell script.  The modify operation allows the mode/uid/gid of an existing
 file in the source filesystem to be modified.
 
 Two Sqfstar options are supported, -p allows one pseudo file to be specified
 on the command line, and -pf allows a pseudo file to be specified containing a
-list of pseduo definitions, one per line.
+list of pseudo definitions, one per line.
 
 8.1 CREATING A DYNAMIC FILE
 ---------------------------
@@ -684,7 +684,7 @@ Because this is a quite frequent use of the definition, an alternative faster
 README l /home/phillip/latest-version/README
 
 Will create a reference to "/home/phillip/latest-version/README",
-and obviously the timestamp/mode and owership will be used.
+and obviously the timestamp/mode and ownership will be used.
 
 The definition also can be used to create additional references to files
 within the source directories.  For instance if "phillip/latest/README" was a
@@ -767,7 +767,7 @@ of the created file to be specified, and the files will be timestamped
 with the current time.
 
 Extended versions of the Pseudo file definitions are supported which
-take a <time> timestamp.  These are distinquished from the previous
+take a <time> timestamp.  These are distinguished from the previous
 definitions by using an upper-case type character.  For example the "D"
 definition is identical to the "d" definition, but it takes a <time>
 timestamp.

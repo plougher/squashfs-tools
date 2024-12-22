@@ -32,7 +32,7 @@ and vice-versa:
 
 An action consists of two parts, separated by an "@".  The action to
 be executed is placed before the @, and one or more tests are
-placed afer the @.  If the action or tests has an argument, it is
+placed after the @.  If the action or tests has an argument, it is
 given in brackets.  Brackets are optional if no argument is needed,
 e.g.
 
@@ -580,7 +580,7 @@ solid state media, seeking is not such a major issue anymore.
 Tell Mksquashfs not to use tail-end packing for the files matching the
 exppression.
 
-For obvious reasons this should be used in conjuction with the global
+For obvious reasons this should be used in conjunction with the global
 Mksquashfs option -always-use-fragments.  By default tail-ends are not
 packed into fragments.
 
@@ -662,7 +662,7 @@ Adds the read and write permissions to both user and group.
 
 3. chmod(u=rw,go=r)
 
-Sets the permissions to rw-r--r--, which is eqivalent to
+Sets the permissions to rw-r--r--, which is equivalent to
 
 4. chmod(644)
 
@@ -767,9 +767,9 @@ Otherwise it can be added to all files.
 The extended attribute value by default will be treated as binary (i.e. an
 uninterpreted byte sequence), but it can be prefixed with 0s, where it will be
 treated as base64 encoded, or prefixed with 0x, where it will be treated as
-hexidecimal.
+hexadecimal.
 
-Obviously using base64 or hexidecimal allows values to be used that cannot be
+Obviously using base64 or hexadecimal allows values to be used that cannot be
 entered on the command line such as non-printable characters etc.  But it
 renders the string non-human readable.  To keep readability and to allow
 non-printable characters to be entered, the 0t prefix is supported.  This

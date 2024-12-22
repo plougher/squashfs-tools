@@ -26,10 +26,10 @@
  * recently accessed data Squashfs uses two small metadata and fragment caches.
  *
  * This file implements a generic cache implementation used for both caches,
- * plus functions layered ontop of the generic cache implementation to
+ * plus functions layered on top of the generic cache implementation to
  * access the metadata and fragment caches.
  *
- * To avoid out of memory and fragmentation isssues with vmalloc the cache
+ * To avoid out of memory and fragmentation issues with vmalloc the cache
  * uses sequences of kmalloced PAGE_CACHE_SIZE buffers.
  *
  * It should be noted that the cache is not used for file datablocks, these
@@ -106,7 +106,7 @@ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
 			entry = &cache->entry[i];
 
 			/*
-			 * Initialise choosen cache entry, and fill it in from
+			 * Initialise chosen cache entry, and fill it in from
 			 * disk.
 			 */
 			cache->unused--;

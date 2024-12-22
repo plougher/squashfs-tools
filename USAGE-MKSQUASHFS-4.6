@@ -118,7 +118,7 @@ Filesystem extended attribute (xattrs) options:
 			binary (i.e. an uninterpreted byte sequence), but it can
 			be prefixed with 0s, where it will be treated as base64
 			encoded, or prefixed with 0x, where val will be treated
-			as hexidecimal.  Additionally it can be prefixed with
+			as hexadecimal.  Additionally it can be prefixed with
 			0t where this encoding is similar to binary encoding,
 			except backslashes are specially treated, and a
 			backslash followed by 3 octal digits can be used to
@@ -494,7 +494,7 @@ Mksquashfs allows you to pipe the set of files to be added to the filesystem to
 standard in (stdin), if the -cpiostyle option is given.
 
 As with cpio, directories are not recursively scanned and their contents added.
-Evey file to be added to the filesystem must be explicitly specified.
+Every file to be added to the filesystem must be explicitly specified.
 
 Typically the list of files to be added will be produced via find, or a similar
 utility.
@@ -505,7 +505,7 @@ For example
 
 Will create an image containing everything in squashfs-tools and its
 sub-directories.  Note, "-" is given as the source pathname in Mksquashfs, and
-indicates no commmand line sources.
+indicates no command line sources.
 
 The following will add just the files ending in .c, .h and .o.
 
@@ -538,7 +538,7 @@ either by name (i.e. "root") or by number.
 The -e and -ef options allow files/directories to be specified which are
 excluded from the output filesystem.  The -e option takes the exclude
 files/directories from the command line, the -ef option takes the
-exlude files/directories from the specified exclude file, one file/directory
+exclude files/directories from the specified exclude file, one file/directory
 per line.
 
 Two styles of exclude file matching are supported: basic exclude matching, and
@@ -640,7 +640,7 @@ files.  For example the regex '^user.' will remove all User extended attributes.
 
 The -xattrs-include option instead specifies a regular expression (regex)
 which includes any extended attribute that matches, and removes anything
-that does't match.  For example the regex '^user.' will only keep User
+that doesn't match.  For example the regex '^user.' will only keep User
 extended attributes and anything else will be removed.
 
 Mksquashfs also allows you to add extended attributes to files in the Squashfs
@@ -655,9 +655,9 @@ all files.
 The extended attribute value by default will be treated as binary (i.e. an
 uninterpreted byte sequence), but it can be prefixed with 0s, where it will be
 treated as base64 encoded, or prefixed with 0x, where it will be treated as
-hexidecimal.
+hexadecimal.
 
-Obviously using base64 or hexidecimal allows values to be used that cannot be
+Obviously using base64 or hexadecimal allows values to be used that cannot be
 entered on the command line such as non-printable characters etc.  But it
 renders the string non-human readable.  To keep readability and to allow
 non-printable characters to be entered, the 0t prefix is supported.  This
@@ -698,7 +698,7 @@ file in the source filesystem to be modified.
 
 Two Mksquashfs options are supported, -p allows one pseudo file to be specified
 on the command line, and -pf allows a pseudo file to be specified containing a
-list of pseduo definitions, one per line.
+list of pseudo definitions, one per line.
 
 9.1 CREATING A DYNAMIC FILE
 ---------------------------
@@ -830,7 +830,7 @@ Because this is a quite frequent use of the definition, an alternative faster
 README l /home/phillip/latest-version/README
 
 Will create a reference to "/home/phillip/latest-version/README",
-and obviously the timestamp/mode and owership will be used.
+and obviously the timestamp/mode and ownership will be used.
 
 The definition also be used to create additional references to
 files within the source directories.  For instance if "phillip/latest/README"
@@ -912,7 +912,7 @@ of the created file to be specified, and the files will be timestamped
 with the current time.
 
 Extended versions of the Pseudo file definitions are supported which
-take a <time> timestamp.  These are distinquished from the previous
+take a <time> timestamp.  These are distinguished from the previous
 definitions by using an upper-case type character.  For example the "D"
 definition is identical to the "d" definition, but it takes a <time>
 timestamp.
@@ -1026,7 +1026,7 @@ within fragments.  Specifically, it creates a specialised fragment called
 "cfiles" which packs files matching the wildcard name "*.[ch]".
 
 It also creates another specialised fragment called "ofiles" which packs files
-matching the wilcard name "*.o".
+matching the wildcard name "*.o".
 
 Producing specialised fragments which only pack files which match a range of
 tests, can produce better compression and/or I/O performance as it can optimise

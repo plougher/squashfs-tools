@@ -1073,7 +1073,7 @@ struct xattr_add *xattr_parse(char *str, char *pre, char *option)
 		entry->value = hex_decode(value, strlen(value), &size);
 		if(entry->value == NULL) {
 			ERROR("%sinvalid argument %s in %s option, because "
-				"invalid hexidecimal value\n", pre, str, option);
+				"invalid hexadecimal value\n", pre, str, option);
 			goto failed2;
 		}
 
