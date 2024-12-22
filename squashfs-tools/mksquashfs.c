@@ -2708,7 +2708,7 @@ static void *deflator(void *arg)
 
 		if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
-			reader_queue_put(to_main, file_buffer);
+			main_queue_put(to_main, file_buffer);
 		} else {
 			write_buffer->c_byte = mangle2(stream,
 				write_buffer->data, file_buffer->data,
@@ -2724,7 +2724,7 @@ static void *deflator(void *arg)
 			write_buffer->fragment = FALSE;
 			write_buffer->error = FALSE;
 			cache_block_put(file_buffer);
-			reader_queue_put(to_main, write_buffer);
+			main_queue_put(to_main, write_buffer);
 			write_buffer = cache_get_nohash(bwriter_buffer);
 		}
 	}
@@ -2835,7 +2835,7 @@ static void *frag_orderer(void *arg)
 
 static struct file_buffer *get_file_buffer()
 {
-	struct file_buffer *file_buffer = reader_queue_get(to_main);
+	struct file_buffer *file_buffer = main_queue_get(to_main);
 
 	return file_buffer;
 }

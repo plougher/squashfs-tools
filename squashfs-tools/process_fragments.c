@@ -304,7 +304,7 @@ void *frag_thrd(void *destination_file)
 		 * consist of only a fragment
 		 */
 		if(file_buffer->file_size != file_buffer->size) {
-			reader_queue_put(to_main, file_buffer);
+			main_queue_put(to_main, file_buffer);
 			continue;
 		}
 
@@ -365,7 +365,7 @@ void *frag_thrd(void *destination_file)
 			}
 		}
 
-		reader_queue_put(to_main, file_buffer);
+		main_queue_put(to_main, file_buffer);
 	}
 
 	pthread_cleanup_pop(0);

@@ -142,9 +142,9 @@ static void put_file_buffer(struct file_buffer *file_buffer, int next_state)
 	 */
 	if(file_buffer->error) {
 		file_buffer->fragment = 0;
-		reader_queue_put(to_main, file_buffer);
+		main_queue_put(to_main, file_buffer);
 	} else if (file_buffer->file_size == 0)
-		reader_queue_put(to_main, file_buffer);
+		main_queue_put(to_main, file_buffer);
 	else if(file_buffer->fragment)
 		queue_put(to_process_frag, file_buffer);
 	else

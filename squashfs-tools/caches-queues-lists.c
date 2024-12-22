@@ -223,10 +223,10 @@ void dump_seq_queue(struct seq_queue *queue, int fragment_queue)
 }
 
 
-/* define reader seq queue hash function */
+/* define main seq queue hash function */
 #define CALCULATE_READER_HASH(C,N) (((C << 8) & 0xff00) | (N & 0xff))
 
-void reader_queue_put(struct seq_queue *queue, struct file_buffer *entry)
+void main_queue_put(struct seq_queue *queue, struct file_buffer *entry)
 {
 	int hash = CALCULATE_READER_HASH(entry->file_count, entry->block);
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
@@ -248,7 +248,7 @@ void reader_queue_put(struct seq_queue *queue, struct file_buffer *entry)
 }
 
 
-struct file_buffer *reader_queue_get(struct seq_queue *queue)
+struct file_buffer *main_queue_get(struct seq_queue *queue)
 {
 	/*
 	 * Return next buffer from queue in sequence order (queue->file_count
