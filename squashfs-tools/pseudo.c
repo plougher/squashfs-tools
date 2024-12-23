@@ -85,6 +85,8 @@ char *get_element(char *target, char **targname, char **subpathend)
 		target ++;
 
 	*targname = strndup(start, target - start);
+	if(*targname == NULL)
+		MEM_ERROR();
 	*subpathend = target;
 
 	while(*target == '/')
@@ -115,6 +117,8 @@ struct pseudo_entry *pseudo_search(struct pseudo *pseudo, char *targname,
 
 	ent->name = targname;
 	ent->pathname = strndup(alltarget, subpathend - alltarget);
+	if(ent->pathname == NULL)
+		MEM_ERROR();
 	ent->dev = NULL;
 	ent->pseudo = NULL;
 	ent->xattr = NULL;
@@ -576,6 +580,8 @@ static struct pseudo_dev *read_pseudo_def_link(char *orig_def, char *def, char *
 	dev->type = 'l';
 	dev->pseudo_type = PSEUDO_FILE_OTHER;
 	dev->linkname = strdup(linkname);
+	if(dev->linkname == NULL)
+		MEM_ERROR();
 
 	free(linkname);
 	return dev;
@@ -883,6 +889,8 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 				MEM_ERROR();
 
 			(*file)->filename = strdup(pseudo_file);
+			if ((*file)->filename == NULL)
+				MEM_ERROR();
 			(*file)->fd = -1;
 		}
 
@@ -898,11 +906,16 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 	} else if(type == 'F') {
 		dev->pseudo_type = PSEUDO_FILE_PROCESS;
 		dev->command = strdup(command);
+		if(dev->command == NULL)
+			MEM_ERROR();
 	} else
 		dev->pseudo_type = PSEUDO_FILE_OTHER;
 
-	if(type == 'S')
+	if(type == 'S') {
 		dev->symlink = strdup(symlink);
+		if(dev->symlink == NULL)
+			MEM_ERROR();
+	}
 
 	return dev;
 }
@@ -1105,11 +1118,16 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 	if(type == 'f') {
 		dev->pseudo_type = PSEUDO_FILE_PROCESS;
 		dev->command = strdup(command);
+		if(dev->command == NULL)
+			MEM_ERROR();
 	} else
 		dev->pseudo_type = PSEUDO_FILE_OTHER;
 
-	if(type == 's')
+	if(type == 's') {
 		dev->symlink = strdup(symlink);
+		if(dev->symlink == NULL)
+			MEM_ERROR();
+	}
 
 	return dev;
 }
