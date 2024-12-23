@@ -120,6 +120,8 @@ static int xattr_get_type(char *name)
 static void xattr_copy_prefix(struct xattr_list *xattr, int t, char *name)
 {
 	xattr->full_name = strdup(name);
+	if(xattr->full_name == NULL)
+		MEM_ERROR();
 	xattr->name = xattr->full_name + strlen(prefix_table[t].prefix);
 	xattr->size = strlen(xattr->name);
 }

@@ -805,15 +805,23 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 				goto failed;
 			file->buf.st_mtime = number;
 			file->have_mtime = TRUE;
-		} else if(strcmp(keyword, "uname") == 0)
+		} else if(strcmp(keyword, "uname") == 0) {
 			file->uname = strdup(value);
-		else if(strcmp(keyword, "gname") == 0)
+			if(file->uname == NULL)
+				MEM_ERROR();
+		} else if(strcmp(keyword, "gname") == 0) {
 			file->gname = strdup(value);
-		else if(strcmp(keyword, "path") == 0)
+			if(file->gname == NULL)
+				MEM_ERROR();
+		} else if(strcmp(keyword, "path") == 0) {
 			file->pathname = strdup(skip_components(value, vsize, NULL));
-		else if(strcmp(keyword, "linkpath") == 0)
+			if(file->pathname == NULL)
+				MEM_ERROR();
+		} else if(strcmp(keyword, "linkpath") == 0) {
 			file->link = strdup(value);
-		else if(strcmp(keyword, "GNU.sparse.major") == 0) {
+			if(file->link == NULL)
+				MEM_ERROR();
+		} else if(strcmp(keyword, "GNU.sparse.major") == 0) {
 			res = sscanf(value, "%lld %n", &number, &bytes);
 			if(res < 1 || value[bytes] != '\0')
 				goto failed;
@@ -828,9 +836,11 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 			if(res < 1 || value[bytes] != '\0')
 				goto failed;
 			realsize = number;
-		} else if(strcmp(keyword, "GNU.sparse.name") == 0)
+		} else if(strcmp(keyword, "GNU.sparse.name") == 0) {
 			name = strdup(value);
-		else if(strcmp(keyword, "GNU.sparse.size") == 0) {
+			if(name == NULL)
+				MEM_ERROR();
+		} else if(strcmp(keyword, "GNU.sparse.size") == 0) {
 			res = sscanf(value, "%lld %n", &number, &bytes);
 			if(res < 1 || value[bytes] != '\0')
 				goto failed;
@@ -1136,14 +1146,26 @@ failed:
 static void copy_tar_header(struct tar_file *dest, struct tar_file *source)
 {
 	memcpy(dest, source, sizeof(struct tar_file));
-	if(source->pathname)
+	if(source->pathname) {
 		dest->pathname = strdup(source->pathname);
-	if(source->link)
+		if(dest->pathname == NULL)
+			MEM_ERROR();
+	}
+	if(source->link) {
 		dest->link = strdup(source->link);
-	if(source->uname)
+		if(dest->link == NULL)
+			MEM_ERROR();
+	}
+	if(source->uname) {
 		dest->uname = strdup(source->uname);
-	if(source->gname)
+		if(dest->uname == NULL)
+			MEM_ERROR();
+	}
+	if(source->gname) {
 		dest->gname = strdup(source->gname);
+		if(dest->gname == NULL)
+			MEM_ERROR();
+	}
 }
 
 
@@ -1455,6 +1477,8 @@ again:
 				char *old = file->link;
 
 				file->link = strdup(link);
+				if(file->link == NULL)
+					MEM_ERROR();
 				free(old);
 			}
 		} else {

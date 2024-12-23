@@ -1019,6 +1019,8 @@ static void queue_file(char *pathname, int file_fd, struct inode *inode)
 	file->uid = inode->uid;
 	file->time = inode->time;
 	file->pathname = strdup(pathname);
+	if(file->pathname == NULL)
+		MEM_ERROR();
 	file->blocks = inode->blocks + (inode->frag_bytes > 0);
 	file->sparse = inode->sparse;
 	file->xattr = inode->xattr;
@@ -1038,6 +1040,8 @@ static void queue_dir(char *pathname, struct dir *dir)
 	file->uid = dir->uid;
 	file->time = dir->mtime;
 	file->pathname = strdup(pathname);
+	if(file->pathname == NULL)
+		MEM_ERROR();
 	file->xattr = dir->xattr;
 	queue_put(to_writer, file);
 }
@@ -1229,6 +1233,7 @@ static int create_inode(char *pathname, struct inode *i)
 	int res;
 	int failed = FALSE;
 	char *link_path = lookup(i->inode_number);
+	char *p;
 
 	TRACE("create_inode: pathname %s\n", pathname);
 
@@ -1395,7 +1400,10 @@ static int create_inode(char *pathname, struct inode *i)
 			return FALSE;
 	}
 
-	insert_lookup(i->inode_number, strdup(pathname));
+	p = strdup(pathname);
+	if(p == NULL)
+		MEM_ERROR();
+	insert_lookup(i->inode_number, p);
 
 	return TRUE;
 
@@ -1410,7 +1418,10 @@ failed:
 	 * If we've had some transitory errors, this may produce files
 	 * in various states, which should be hard-linked, but are not.
 	 */
-	insert_lookup(i->inode_number, strdup(pathname));
+	p = strdup(pathname);
+	if(p == NULL)
+		MEM_ERROR();
+	insert_lookup(i->inode_number, p);
 
 	return FALSE;
 }
@@ -1818,6 +1829,8 @@ static void add_stack(struct directory_stack *stack, unsigned int start_block,
 		stack->stack[depth - 1].start_block = start_block;
 		stack->stack[depth - 1].offset = offset;
 		stack->stack[depth - 1].name = strdup(name);
+		if(stack->stack[depth - 1].name == NULL)
+		       MEM_ERROR();
 	} else if((depth + 1) == stack->size)
 			/* Stack shrinking a level */
 			free(stack->stack[depth].name);
@@ -1847,6 +1860,8 @@ static struct directory_stack *clone_stack(struct directory_stack *stack)
 		new->stack[i].start_block = stack->stack[i].start_block;
 		new->stack[i].offset = stack->stack[i].offset;
 		new->stack[i].name = strdup(stack->stack[i].name);
+		if(new->stack[i].name == NULL)
+		       MEM_ERROR();
 	}
 
 	new->size = stack->size;
@@ -2057,6 +2072,8 @@ static int follow_path(char *path, char *name, unsigned int start_block,
 				if(path[0] == '\0') {
 					traversed = TRUE;
 					stack->name = strdup(name);
+					if(stack->name == NULL)
+						MEM_ERROR();
 					stack->type = type;
 					stack->start_block = entry_start;
 					stack->offset = entry_offset;
@@ -2071,6 +2088,8 @@ static int follow_path(char *path, char *name, unsigned int start_block,
 				if(path[0] == '\0') {
 					traversed = TRUE;
 					stack->name = strdup(name);
+					if(stack->name == NULL)
+						MEM_ERROR();
 					stack->type = type;
 					stack->start_block = entry_start;
 					stack->offset = entry_offset;
@@ -3610,6 +3629,8 @@ static void pseudo_print(char *pathname, struct inode *inode, char *link, long l
 	if(link) {
 		char *name = strdup(filename);
 		char *linkname = process_filename(link);
+		if(name == NULL)
+			MEM_ERROR();
 		res = dprintf(writer_fd, "%s L %s\n", name, linkname);
 		if(res == -1)
 			EXIT_UNSQUASH("Failed to write to pseudo output file\n");
@@ -3723,12 +3744,16 @@ static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned in
 			link = lookup(i->inode_number);
 
 			if(link == NULL) {
+				char *p;
 				pseudo_print(pathname, i, NULL, byte_offset);
 				if(type == SQUASHFS_FILE_TYPE) {
 					byte_offset += i->data;
 					total_blocks += (i->data + (block_size - 1)) >> block_log;
 				}
-				insert_lookup(i->inode_number, strdup(pathname));
+				p = strdup(pathname);
+				if(p == NULL)
+					MEM_ERROR();
+				insert_lookup(i->inode_number, p);
 			} else
 				pseudo_print(pathname, i, link, 0);
 
@@ -3799,6 +3824,8 @@ static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned in
 				i = s_ops->read_inode(start_block, offset);
 
 				if(lookup(i->inode_number) == NULL) {
+					char *p;
+
 					update_info(pathname);
 
 					res = cat_file(i, pathname);
@@ -3808,7 +3835,10 @@ static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned in
 						return FALSE;
 					}
 
-					insert_lookup(i->inode_number, strdup(pathname));
+					p = strdup(pathname);
+					if(p == NULL)
+						MEM_ERROR();
+					insert_lookup(i->inode_number, p);
 				} else
 					free(pathname);
 			} else
