@@ -754,6 +754,8 @@ static char *_expr_log(char *string, int cmnd)
 	switch(cmnd) {
 	case LOG_ENABLE:
 		expr_msg = malloc(ALLOC_SZ);
+		if(expr_msg == NULL)
+			MEM_ERROR();
 		alloc_size = ALLOC_SZ;
 		cur_size = 0;
 		return expr_msg;
