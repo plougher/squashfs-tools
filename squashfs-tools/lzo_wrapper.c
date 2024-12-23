@@ -205,7 +205,7 @@ static void *lzo_dump_options(int block_size, int *size)
  * set the default options, this is to ensure any user supplied
  * -X options on the appending mksquashfs command line are over-ridden
  *
- * This function returns 0 on sucessful extraction of options, and
+ * This function returns 0 on successful extraction of options, and
  *			-1 on error
  */
 static int lzo_extract_options(int block_size, void *buffer, int size)
@@ -355,8 +355,8 @@ static int lzo_compress(void *strm, void *dest, void *src,  int size,
 	 * buffer space.  Normally in other compressor APIs they take
 	 * a destination buffer size, and overflows return an error.
 	 * With LZO it lacks a destination size and so we must output
-	 * to a temporary buffer large enough to accomodate any
-	 * result, and explictly check here for overflow
+	 * to a temporary buffer large enough to accommodate any
+	 * result, and explicitly check here for overflow
 	 */
 	if(compsize > block_size)
 		return 0;

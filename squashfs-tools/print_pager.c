@@ -279,7 +279,7 @@ FILE *exec_pager(pid_t *process)
 failed:
 	res = kill(child, SIGKILL);
 	if(res == -1)
-	ERROR("Error executing pager, kill failed\n");
+		ERROR("Error executing pager, kill failed\n");
 	close(pipefd[1]);
 	return NULL;
 }

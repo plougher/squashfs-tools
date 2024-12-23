@@ -179,7 +179,7 @@ static void reader_read_process(struct dir_ent *dir_ent)
 		/*
 		 * Update progress bar size.  This is done
 		 * on every block rather than waiting for all blocks to be
-		 * read incase write_file_process() is running in parallel
+		 * read in case write_file_process() is running in parallel
 		 * with this.  Otherwise the current progress bar position
 		 * may get ahead of the progress bar size.
 		 */
@@ -395,7 +395,7 @@ static int get_readahead(struct pseudo_file *file, long long current,
 				int buffer_offset = READAHEAD_OFFSET(buffer->start);
 
 				/*
-				 * Four posibilities:
+				 * Four possibilities:
 				 * 1. Wanted data is whole of buffer
 				 * 2. Wanted data is at start of buffer
 				 * 3. Wanted data is at end of buffer

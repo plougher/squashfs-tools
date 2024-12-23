@@ -340,7 +340,7 @@ static void fixup_tree(struct dir_info *dir)
 
 
 /*
- * Add source to the tardir directory hierachy.
+ * Add source to the tardir directory hierarchy.
  * Tarfile describes the tar file to be added.
  */
 static struct dir_info *add_tarfile(struct dir_info *sdir, char *source,

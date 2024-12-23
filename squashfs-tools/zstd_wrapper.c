@@ -115,7 +115,7 @@ static void *zstd_dump_options(int block_size, int *size)
  * set the default options, this is to ensure any user supplied
  * -X options on the appending mksquashfs command line are over-ridden.
  *
- * This function returns 0 on sucessful extraction of options, and -1 on error.
+ * This function returns 0 on successful extraction of options, and -1 on error.
  */
 static int zstd_extract_options(int block_size, void *buffer, int size)
 {
@@ -206,7 +206,7 @@ static int zstd_compress(void *strm, void *dest, void *src, int size,
 	if (ZSTD_isError(res)) {
 		/* FIXME:
 		 * zstd does not expose stable error codes. The error enum may
-		 * change between versions. Until upstream zstd stablizes the
+		 * change between versions. Until upstream zstd stabilizes the
 		 * error codes, we have no way of knowing why the error occurs.
 		 * zstd shouldn't fail to compress any input unless there isn't
 		 * enough output space. We assume that is the cause and return

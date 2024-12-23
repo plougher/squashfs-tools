@@ -30,7 +30,7 @@ to /usr/local/bin by typing "sudo make install".
 2.1 Compressors supported
 
 By default the Makefile is configured to build Mksquashfs and Unsquashfs
-with GZIP suppport.  Read the Makefile in squashfs-tools for instructions on
+with GZIP support.  Read the Makefile in squashfs-tools for instructions on
 building LZO, LZ4, XZ and ZSTD compression support.
 
 2.2 Extended attribute support (XATTRs)

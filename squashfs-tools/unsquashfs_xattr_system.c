@@ -89,7 +89,7 @@ int write_xattr(char *pathname, unsigned int xattr)
 				if(errno == ENOTSUP) {
 					/*
 					 * If the destination filesystem cannot
-					 * suppport xattrs, print error, and
+					 * support xattrs, print error, and
 					 * disable xattr output as this error is
 					 * unlikely to go away, and printing
 					 * screenfulls of the same error message
@@ -114,10 +114,10 @@ int write_xattr(char *pathname, unsigned int xattr)
 					 * limits on the amount of xattr
 					 * data that can be stored per file
 					 * (typically one block or 4K), so
-					 * we shouldn't disable xattr ouput,
-					 * as the error may be restriced to one
+					 * we shouldn't disable xattr output,
+					 * as the error may be restricted to one
 					 * file only.  If we get a lot of these
-					 * then suppress the error messsage
+					 * then suppress the error message
 					 */
 					EXIT_UNSQUASH_IGNORE("write_xattr: failed to write "
 						"xattr %s for file %s because "

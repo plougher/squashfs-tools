@@ -41,7 +41,7 @@
 /* flag whether progressbar display is enabled or not */
 static int display_progress_bar = FALSE;
 
-/* flag whether the progress bar is temporarily disbled */
+/* flag whether the progress bar is temporarily disabled */
 static int temp_disabled = FALSE;
 
 /* flag whether to display full progress bar or just a percentage */

@@ -29,7 +29,7 @@
  *
  * Qsort and other O(n log n) algorithms work well with arrays but not
  * linked lists.  Merge sort another O(n log n) sort algorithm on the other hand
- * is not ideal for arrays (as it needs an additonal n storage locations
+ * is not ideal for arrays (as it needs an additional n storage locations
  * as sorting is not done in place), but it is ideal for linked lists because
  * it doesn't require any extra storage,
  */ 
@@ -59,7 +59,7 @@ void FUNCTION_NAME(struct LIST_TYPE **head, int count) \
  \
 		/* \
 		 * Iterate through the linked list, merging adjacent sublists. \
-		 * On each interation l2 points to the next sublist pair to be \
+		 * On each interaction l2 points to the next sublist pair to be \
 		 * merged (if there's only one sublist left this is simply added \
 		 * to the output list) \
 		 */ \

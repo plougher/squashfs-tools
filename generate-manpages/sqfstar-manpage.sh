@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # This script generates a manpage from the sqfstar -help and -version
-# output, using help2man.  The script does various modfications to the
+# output, using help2man.  The script does various modifications to the
 # output from -help and -version, before passing it to help2man, to allow
 # it be successfully processed into a manpage by help2man.
 
