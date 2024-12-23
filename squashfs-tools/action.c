@@ -1511,6 +1511,7 @@ static char *move_pathname(struct move_ent *move)
 static char *get_comp(char **pathname)
 {
 	char *path = *pathname, *start;
+	char *p;
 
 	while(*path == '/')
 		path ++;
@@ -1523,7 +1524,10 @@ static char *get_comp(char **pathname)
 		path ++;
 
 	*pathname = path;
-	return strndup(start, path - start);
+	p = strndup(start, path - start);
+	if(p == NULL)
+		MEM_ERROR();
+	return p;
 }
 
 

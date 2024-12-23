@@ -1462,6 +1462,8 @@ static char *get_component(char *target, char **targname)
 		target ++;
 
 	*targname = strndup(start, target - start);
+	if(*targname == NULL)
+		MEM_ERROR();
 
 	while(*target == '/')
 		target ++;

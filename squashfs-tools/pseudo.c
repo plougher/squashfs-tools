@@ -85,6 +85,8 @@ char *get_element(char *target, char **targname, char **subpathend)
 		target ++;
 
 	*targname = strndup(start, target - start);
+	if(*targname == NULL)
+		MEM_ERROR();
 	*subpathend = target;
 
 	while(*target == '/')
@@ -115,6 +117,8 @@ struct pseudo_entry *pseudo_search(struct pseudo *pseudo, char *targname,
 
 	ent->name = targname;
 	ent->pathname = strndup(alltarget, subpathend - alltarget);
+	if(ent->pathname == NULL)
+		MEM_ERROR();
 	ent->dev = NULL;
 	ent->pseudo = NULL;
 	ent->xattr = NULL;

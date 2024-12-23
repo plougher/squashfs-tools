@@ -1021,6 +1021,8 @@ struct xattr_add *xattr_parse(char *str, char *pre, char *option)
 		MEM_ERROR();
 
 	entry->name = strndup(str, value++ - str);
+	if(entry->name == NULL)
+		MEM_ERROR();
 	entry->type = xattr_get_type(entry->name);
 
 	if(entry->type == -1) {

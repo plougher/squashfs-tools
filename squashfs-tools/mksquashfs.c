@@ -4740,10 +4740,14 @@ static char *walk_source(char *source, char **pathname, char **name)
 		source ++;
 
 	*name = strndup(start, source - start);
+	if(*name == NULL)
+		MEM_ERROR();
 
-	if(*pathname == NULL)
+	if(*pathname == NULL) {
 		*pathname = strndup(path, source - path);
-	else {
+		if(*pathname == NULL)
+			MEM_ERROR();
+	} else {
 		char *orig = *pathname;
 		int size = strlen(orig) + (source - path) + 2;
 
@@ -5575,6 +5579,8 @@ static char *get_component(char *target, char **targname)
 		target ++;
 
 	*targname = strndup(start, target - start);
+	if(*targname == NULL)
+		MEM_ERROR();
 
 	while(*target == '/')
 		target ++;

@@ -228,6 +228,8 @@ static char *get_component(char *target, char **targname)
 		target ++;
 
 	*targname = strndup(start, target - start);
+	if(*targname == NULL)
+		MEM_ERROR();
 
 	while(*target == '/')
 		target ++;
@@ -1344,6 +1346,8 @@ again:
 	} else if (file->pathname == NULL) {
 		filename = skip_components(header.name, 100, &size);
 		file->pathname = strndup(filename, size);
+		if(file->pathname == NULL)
+			MEM_ERROR();
 	}
 
 	/* Ignore empty filenames */
@@ -1387,8 +1391,11 @@ again:
 	res = -1;
 	if(file->uname)
 		user = file->uname;
-	else
+	else {
 		user = strndup(header.user, 32);
+		if(user == NULL)
+			MEM_ERROR();
+	}
 
 	if(strlen(user)) {
 		struct passwd *pwuid = getpwnam(user);
@@ -1418,8 +1425,11 @@ again:
 	res = -1;
 	if(file->gname)
 		group = file->gname;
-	else
+	else {
 		group = strndup(header.group, 32);
+		if(group == NULL)
+			MEM_ERROR();
+	}
 
 	if(strlen(group)) {
 		struct group *grgid = getgrnam(group);
@@ -1464,8 +1474,11 @@ again:
 		/* Permissions on symbolic links are always rwxrwxrwx */
 		file->buf.st_mode = 0777 | S_IFLNK;
 
-		if(file->link == FALSE)
+		if(file->link == FALSE) {
 			file->link = strndup(header.link, 100);
+			if(file->link == NULL)
+				MEM_ERROR();
+		}
 	}
 
 	/* Handle hard links */
@@ -1484,6 +1497,8 @@ again:
 		} else {
 			filename = skip_components(header.link, 100, &size);
 			file->link = strndup(filename, size);
+			if(file->link == NULL)
+				MEM_ERROR();
 		}
 	}
 
