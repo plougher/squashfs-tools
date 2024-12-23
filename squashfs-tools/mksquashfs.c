@@ -2673,7 +2673,7 @@ static void *writer(void *arg)
 		if(wpos != off) {
 			if(lseek(fd, off, SEEK_SET) == -1) {
 				ERROR("writer: Lseek on destination failed because "
-					"%s, offset=0x%llx\n", strerror(errno), off);
+					"%s, offset=0x%llx\n", strerror(errno), (long long)off);
 				BAD_ERROR("Probably out of space on output "
 					"%s\n", block_device ? "block device" :
 					"filesystem");
@@ -6404,7 +6404,7 @@ FILE *open_info_file(char *filename)
 	res = stat(filename, &buf);
 	if(res == -1) {
 		if(errno != ENOENT)
-			BAD_ERROR("Failed to stat info_file filename \"%s\" because %s\n", strerror(errno));
+			BAD_ERROR("Failed to stat info_file filename \"%s\" because %s\n", filename, strerror(errno));
 
 		file = fopen(filename, "w");
 		if(file == NULL)
@@ -6514,7 +6514,7 @@ static int sqfstar(int argc, char *argv[])
 			}
 			compressor_opt_parsed = 1;
 			if(X_opt_parsed) {
-				ERROR("%s: -comp option should be before any "
+				ERROR("sqfstar: -comp option should be before any "
 					"-X option\n");
 				exit(1);
 			}
@@ -6815,7 +6815,7 @@ static int sqfstar(int argc, char *argv[])
 					!parse_number(argv[i], &percent, 2) ||
 					(percent < 1)) {
 				ERROR("sqfstar: -mem-percent missing or invalid "
-					"percentage: it should be 1 - 75%\n");
+					"percentage: it should be 1 - 75%%\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
 
@@ -7893,7 +7893,7 @@ int main(int argc, char *argv[])
 					!parse_number(argv[i], &percent, 2) ||
 					(percent < 1)) {
 				ERROR("mksquashfs: -mem-percent missing or invalid "
-					"percentage: it should be 1 - 75%\n");
+					"percentage: it should be 1 - 75%%\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
 
