@@ -34,7 +34,7 @@ GZIP_SUPPORT = 1
 # To build install the library and uncomment
 # the XZ_SUPPORT line below.
 #
-XZ_SUPPORT = 1
+#XZ_SUPPORT = 1
 
 # Enable support for OpenWrt extended compression options by uncommenting
 # next line.  Do not do this unless you understand the implications.
@@ -52,7 +52,7 @@ XZ_SUPPORT = 1
 # To build install the library and uncomment
 # the LZO_SUPPORT line below.
 #
-LZO_SUPPORT = 1
+#LZO_SUPPORT = 1
 
 
 ########### Building LZ4 support #############
@@ -68,7 +68,7 @@ LZO_SUPPORT = 1
 # To build install and uncomment
 # the LZ4_SUPPORT line below.
 #
-LZ4_SUPPORT = 1
+#LZ4_SUPPORT = 1
 
 
 ########### Building ZSTD support ############
@@ -84,7 +84,7 @@ LZ4_SUPPORT = 1
 # To build install the library and uncomment
 # the ZSTD_SUPPORT line below.
 #
-ZSTD_SUPPORT = 1
+#ZSTD_SUPPORT = 1
 
 
 ######## Specifying default compression ########
