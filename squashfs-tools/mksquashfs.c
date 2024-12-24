@@ -435,7 +435,7 @@ int add_overflow(int a, int b)
 }
 
 
-int shift_overflow(int a, int shift)
+static int shift_overflow(int a, int shift)
 {
 	return (INT_MAX >> shift) < a;
 }
@@ -447,7 +447,7 @@ int multiply_overflow(int a, int multiplier)
 }
 
 
-int multiply_overflowll(long long a, int multiplier)
+static int multiply_overflowll(long long a, int multiplier)
 {
 	return (LLONG_MAX / multiplier) < a;
 }
@@ -457,13 +457,13 @@ int multiply_overflowll(long long a, int multiplier)
 			+ (((char *)A) - data_cache)))
 
 
-inline void set_pos(long long value)
+static inline void set_pos(long long value)
 {
 	pos = value;
 }
 
 
-inline long long get_pos(void)
+static inline long long get_pos(void)
 {
 	return pos;
 }
@@ -478,7 +478,7 @@ long long get_and_inc_pos(long long value)
 }
 
 
-inline int reset_pos(void)
+static inline int reset_pos(void)
 {
 	if(marked_pos == 0)
 		BAD_ERROR("BUG: Saved write position is empty!\n");
@@ -491,7 +491,7 @@ inline int reset_pos(void)
 }
 
 
-inline void unmark_pos()
+static inline void unmark_pos()
 {
 	if(marked_pos == 0)
 		BAD_ERROR("BUG: Saved write position should not be empty!\n");
@@ -500,7 +500,7 @@ inline void unmark_pos()
 }
 
 
-inline void mark_pos()
+static inline void mark_pos()
 {
 	if(marked_pos != 0)
 		BAD_ERROR("BUG: Saved write position should be empty!\n");
@@ -509,7 +509,7 @@ inline void mark_pos()
 }
 
 
-inline long long get_marked_pos(void)
+static inline long long get_marked_pos(void)
 {
 	if(marked_pos == 0)
 		BAD_ERROR("BUG: Saved write position is empty!\n");
@@ -520,14 +520,14 @@ inline long long get_marked_pos(void)
 }
 
 
-inline long long set_write_buffer(struct file_buffer *buffer, int size)
+static inline long long set_write_buffer(struct file_buffer *buffer, int size)
 {
 	buffer->block = get_and_inc_pos(size);
 	return buffer->block;
 }
 
 
-inline void put_write_buffer_hash(struct file_buffer *buffer, int put)
+static inline void put_write_buffer_hash(struct file_buffer *buffer, int put)
 {
 	if(marked_pos == 0)
 		BAD_ERROR("BUG: Saved write position should not be empty!\n");
