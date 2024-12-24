@@ -154,6 +154,15 @@ REPRODUCIBLE_DEFAULT = 1
 USE_PREBUILT_MANPAGES=n
 
 ###############################################
+#         Executables with sanitizers         #
+###############################################
+#
+# Select whether you want to use sanitizers for executables.
+# Sanitizers can be selected through SANITIZERS
+USE_SANITIZERS = 0
+SANITIZERS = address,undefined
+
+###############################################
 #              INSTALL PATHS                  #
 ###############################################
 #
@@ -203,6 +212,8 @@ XATTR_OS_SUPPORT ?= 1
 XATTR_DEFAULT ?= 1
 REPRODUCIBLE_DEFAULT ?= 1
 USE_PREBUILT_MANPAGES ?= 1
+USE_SANITIZERS ?= 0
+SANITIZERS ?= address,undefined
 INSTALL_PREFIX ?= /usr/local
 INSTALL_DIR ?= $(INSTALL_PREFIX)/bin
 INSTALL_MANPAGES_DIR ?= $(INSTALL_PREFIX)/man/man1
@@ -344,6 +355,14 @@ endif
 
 ifeq ($(REPRODUCIBLE_DEFAULT),1)
 CFLAGS += -DREPRODUCIBLE_DEFAULT
+endif
+
+ifeq ($(USE_SANITIZERS),1)
+ifndef SANITIZERS
+$(error "USE_SANITIZERS requires SANITIZERS to be also defined")
+endif
+CFLAGS += -fsanitize=$(SANITIZERS)
+LDFLAGS += -fsanitize=$(SANITIZERS)
 endif
 
 #
