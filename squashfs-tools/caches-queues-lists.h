@@ -143,8 +143,8 @@ struct queue {
 
 
 /*
- * struct describing seq_queues used to pass data between the read
- * thread and the deflate and main threads
+ * struct describing seq_queues used to pass data between the deflate
+ * threads/process fragment threads and the main thread
  */
 struct seq_queue {
 	unsigned short		version;
@@ -156,6 +156,28 @@ struct seq_queue {
 	struct file_buffer	*hash_table[HASH_SIZE];
 	pthread_mutex_t		mutex;
 	pthread_cond_t		wait;
+};
+
+
+/*
+ * struct describing seq_queues used to pass data between the reader
+ * threads and the deflate threads/process fragment threads
+ */
+struct readq_thrd {
+	int			size;
+	struct file_buffer	**buffer;
+	int			readp;
+	int			writep;
+	pthread_cond_t		full;
+};
+
+
+struct read_queue {
+	int			threads;
+	int			count;
+	pthread_mutex_t		mutex;
+	pthread_cond_t		empty;
+	struct readq_thrd	*thread;
 };
 
 
@@ -199,6 +221,12 @@ extern void main_queue_put(struct seq_queue *, struct file_buffer *);
 extern void fragment_queue_put(struct seq_queue *, struct file_buffer *);
 extern struct file_buffer *main_queue_get(struct seq_queue *);
 extern struct file_buffer *fragment_queue_get(struct seq_queue *);
+extern struct read_queue *read_queue_init(int, int);
+extern void read_queue_put(struct read_queue *, int, struct file_buffer *);
+extern struct file_buffer *read_queue_get(struct read_queue *);
+extern struct file_buffer *read_queue_get_tid(int, struct read_queue *);
+extern void read_queue_flush(struct read_queue *);
+extern void dump_read_queue(struct read_queue *);
 extern struct cache *cache_init(int, int, int, int);
 extern struct file_buffer *cache_lookup(struct cache *, long long);
 extern struct file_buffer *cache_get(struct cache *, long long);

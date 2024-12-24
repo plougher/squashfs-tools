@@ -375,6 +375,174 @@ struct file_buffer *fragment_queue_get(struct seq_queue *queue)
 }
 
 
+int earlier_buffer(struct file_buffer *new, struct file_buffer *old) {
+	if(old->file_count == new->file_count) {
+		if(old->version == new->version)
+			return new->block < old->block;
+		else
+			return new->version < old->version;
+	} else
+		return new->file_count < old->file_count;
+}
+
+
+struct read_queue *read_queue_init(int threads, int size)
+{
+	struct read_queue *queue = malloc(sizeof(struct read_queue));
+	int i;
+
+	if(queue == NULL)
+		MEM_ERROR();
+
+	if(add_overflow(size, 1) ||
+				multiply_overflow(size + 1, sizeof(struct file_buffer *)))
+		BAD_ERROR("Size too large in read_queue_init\n");
+
+	queue->thread = malloc(threads * sizeof(struct readq_thrd));
+	if(queue->thread == NULL)
+		MEM_ERROR();
+
+	for(i = 0; i < threads; i++) {
+		queue->thread[i].buffer = malloc(sizeof(struct file_buffer *) * (size + 1));
+		if(queue->thread[i].buffer == NULL)
+			MEM_ERROR();
+		queue->thread[i].size = size + 1;
+		queue->thread[i].readp = queue->thread[i].writep = 0;
+		pthread_cond_init(&queue->thread[i].full, NULL);
+	}
+
+	queue->threads = threads;
+	queue->count = 0;
+	pthread_mutex_init(&queue->mutex, NULL);
+	pthread_cond_init(&queue->empty, NULL);
+
+	return queue;
+}
+
+
+void read_queue_put(struct read_queue *queue, int id, struct file_buffer *buffer)
+{
+	struct readq_thrd *thread;
+	int nextp;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	thread = &queue->thread[id];
+
+	while((nextp = (thread->writep + 1) % thread->size) == thread->readp)
+		pthread_cond_wait(&thread->full, &queue->mutex);
+
+	thread->buffer[thread->writep] = buffer;
+	thread->writep = nextp;
+	queue->count ++;
+	pthread_cond_signal(&queue->empty);
+	pthread_cleanup_pop(1);
+}
+
+
+struct file_buffer *read_queue_get(struct read_queue *queue)
+{
+	struct file_buffer *buffer = NULL;
+	int i, id, empty = TRUE;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	while(1) {
+		for(i = 0; i < queue->threads; i++) {
+			struct readq_thrd *thread = &queue->thread[i];
+
+			if(thread->readp == thread->writep)
+				continue;
+
+			if(buffer == NULL || earlier_buffer(thread->buffer[thread->readp], buffer)) {
+				buffer = thread->buffer[thread->readp];
+				id = i;
+				empty = FALSE;
+			}
+		}
+
+		if(empty)
+			pthread_cond_wait(&queue->empty, &queue->mutex);
+		else
+			break;
+	}
+
+	queue->thread[id].readp = (queue->thread[id].readp + 1) % queue->thread[id].size;
+	queue->count --;
+	pthread_cond_signal(&queue->thread[id].full);
+	pthread_cleanup_pop(1);
+
+	return buffer;
+}
+
+
+struct file_buffer *read_queue_get_tid(int tid, struct read_queue *queue)
+{
+	struct file_buffer *buffer = NULL;
+	int i, id, empty = TRUE;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	while(1) {
+		wait_thread_idle(tid, &queue->mutex);
+
+		for(i = 0; i < queue->threads; i++) {
+			struct readq_thrd *thread = &queue->thread[i];
+
+			if(thread->readp == thread->writep)
+				continue;
+
+			if(buffer == NULL || earlier_buffer(thread->buffer[thread->readp], buffer)) {
+				buffer = thread->buffer[thread->readp];
+				id = i;
+				empty = FALSE;
+			}
+		}
+
+		if(empty) {
+			set_thread_idle(tid);
+			pthread_cond_wait(&queue->empty, &queue->mutex);
+		} else
+			break;
+	}
+
+	queue->thread[id].readp = (queue->thread[id].readp + 1) % queue->thread[id].size;
+	queue->count --;
+	pthread_cond_signal(&queue->thread[id].full);
+	pthread_cleanup_pop(1);
+
+	return buffer;
+}
+
+
+void read_queue_flush(struct read_queue *queue)
+{
+	int i;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	for(i = 0; i < queue->threads; i++)
+		queue->thread[i].readp = queue->thread[i].writep;
+
+	pthread_cleanup_pop(1);
+}
+
+
+void dump_read_queue(struct read_queue *queue)
+{
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	printf("\tSize %d%s\n", queue->count, queue->count == 0 ? " (EMPTY)" : "");
+
+	pthread_cleanup_pop(1);
+}
+
+
 /* define cache hash tables */
 #define CALCULATE_CACHE_HASH(N) CALCULATE_HASH(llabs(N))
 
