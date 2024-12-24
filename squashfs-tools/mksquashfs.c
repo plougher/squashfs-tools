@@ -274,8 +274,8 @@ unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
  * used to send buffers between threads */
 struct cache *reader_buffer, *fragment_buffer, *reserve_cache;
 struct cache *bwriter_buffer, *fwriter_buffer;
-struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
-	*to_frag, *locked_fragment, *to_process_frag;
+struct queue *to_reader, *to_writer, *from_writer, *to_frag, *locked_fragment;
+struct read_queue *to_deflate, *to_process_frag;
 struct seq_queue *to_main;
 
 /* pthread threads and mutexes */
@@ -2704,7 +2704,7 @@ static void *deflator(void *arg)
 		BAD_ERROR("deflator:: compressor_init failed\n");
 
 	while(1) {
-		struct file_buffer *file_buffer = queue_get_tid(tid, to_deflate);
+		struct file_buffer *file_buffer = read_queue_get_tid(tid, to_deflate);
 
 		if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
@@ -5409,8 +5409,8 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	frag_thread = &frag_deflator_thread[processors];
 
 	to_reader = queue_init(1);
-	to_deflate = queue_init(reader_size);
-	to_process_frag = queue_init(reader_size);
+	to_deflate = read_queue_init(1, reader_size);
+	to_process_frag = read_queue_init(1, reader_size);
 	to_writer = queue_init(bwriter_size + fwriter_size);
 	from_writer = queue_init(1);
 	to_frag = queue_init(fragment_size);

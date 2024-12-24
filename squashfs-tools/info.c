@@ -84,11 +84,11 @@ static void dump_state()
 	printf("===========================\n");
 
 	printf("file buffer queue (reader thread -> deflate thread(s))\n");
-	dump_queue(to_deflate);
+	dump_read_queue(to_deflate);
 
 	printf("uncompressed fragment queue (reader thread -> fragment"
 						" thread(s))\n");
-	dump_queue(to_process_frag);
+	dump_read_queue(to_process_frag);
 
 	printf("processed fragment queue (fragment thread(s) -> main"
 						" thread)\n");

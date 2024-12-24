@@ -146,9 +146,9 @@ static void put_file_buffer(struct file_buffer *file_buffer, int next_state)
 	} else if (file_buffer->file_size == 0)
 		main_queue_put(to_main, file_buffer);
 	else if(file_buffer->fragment)
-		queue_put(to_process_frag, file_buffer);
+		read_queue_put(to_process_frag, 0, file_buffer);
 	else
-		queue_put(to_deflate, file_buffer);
+		read_queue_put(to_deflate, 0, file_buffer);
 }
 
 

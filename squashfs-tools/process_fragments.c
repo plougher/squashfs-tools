@@ -50,7 +50,7 @@
 #define FALSE 0
 #define TRUE 1
 
-extern struct queue *to_process_frag;
+extern struct read_queue *to_process_frag;
 extern struct seq_queue *to_main;
 extern int sparse_files;
 extern long long start_offset;
@@ -273,7 +273,7 @@ void *frag_thrd(void *destination_file)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &dup_mutex);
 
 	while(1) {
-		struct file_buffer *file_buffer = queue_get(to_process_frag);
+		struct file_buffer *file_buffer = read_queue_get(to_process_frag);
 		struct file_buffer *buffer;
 		int sparse = checksum_sparse(file_buffer);
 		struct file_info *dupl_ptr;

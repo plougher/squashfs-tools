@@ -517,9 +517,9 @@ static void put_file_buffer(struct file_buffer *file_buffer)
 	 * - fragments go to the process fragment threads,
 	 */
 	if(file_buffer->fragment)
-		queue_put(to_process_frag, file_buffer);
+		read_queue_put(to_process_frag, 0, file_buffer);
 	else
-		queue_put(to_deflate, file_buffer);
+		read_queue_put(to_deflate, 0, file_buffer);
 }
 
 
