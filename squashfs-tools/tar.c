@@ -41,6 +41,7 @@
 #include "tar.h"
 #include "progressbar.h"
 #include "info.h"
+#include "reader.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -627,7 +628,7 @@ static void read_tar_data(struct tar_file *tar_file)
 	blocks = (read_size + block_size - 1) >> block_log;
 
 	do {
-		file_buffer = cache_get_nohash(reader_buffer);
+		file_buffer = cache_get_nohash(reader_buffer[0]);
 		file_buffer->file_size = read_size;
 		file_buffer->tar_file = tar_file;
 		file_buffer->file_count = 0;

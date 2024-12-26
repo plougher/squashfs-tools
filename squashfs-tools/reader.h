@@ -41,4 +41,8 @@ struct read_entry {
 	struct dir_ent	*dir_ent;
 	unsigned int	file_count;
 };
+
+extern int reader_size;
+extern int reader_threads;
+extern struct cache **reader_buffer;
 #endif

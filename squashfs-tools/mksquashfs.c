@@ -77,6 +77,7 @@
 #include "mksquashfs_help.h"
 #include "print_pager.h"
 #include "thread.h"
+#include "reader.h"
 
 /* Compression options */
 int noF = FALSE;
@@ -272,7 +273,7 @@ unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 
 /* caches used to store buffers being worked on, and queues
  * used to send buffers between threads */
-struct cache *reader_buffer, *fragment_buffer, *reserve_cache;
+struct cache *fragment_buffer, *reserve_cache;
 struct cache *bwriter_buffer, *fwriter_buffer;
 struct queue *to_reader, *to_writer, *from_writer, *to_frag, *locked_fragment;
 struct read_queue *to_deflate, *to_process_frag;
@@ -5321,7 +5322,6 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	int i, res;
 	sigset_t sigmask, old_mask;
 	int total_mem = readq;
-	int reader_size;
 	int fragment_size;
 	int fwriter_size;
 	int bwriter_size;
@@ -5419,7 +5419,6 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 		to_order = seq_queue_init();
 	else
 		locked_fragment = queue_init(fragment_size);
-	reader_buffer = cache_init(block_size, reader_size, 0, 0);
 	bwriter_buffer = cache_init(block_size, bwriter_size, 1, freelst);
 	fwriter_buffer = cache_init(block_size, fwriter_size, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_size, 1, 0);

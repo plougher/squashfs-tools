@@ -43,6 +43,7 @@
 #include "progressbar.h"
 #include "caches-queues-lists.h"
 #include "signals.h"
+#include "reader.h"
 
 static int silent = 0;
 static struct dir_ent *ent = NULL;
@@ -78,6 +79,8 @@ static void print_filename()
 
 static void dump_state()
 {
+	int i;
+
 	disable_progress_bar();
 
 	printf("Queue and Cache status dump\n");
@@ -120,8 +123,10 @@ static void dump_state()
 		dump_queue(to_writer);
 	}
 
-	printf("read cache (uncompressed blocks read by reader thread)\n");
-	dump_cache(reader_buffer);
+	for(i = 0; i < reader_threads; i++) {
+		printf("read cache %d (uncompressed blocks read by reader thread %d)\n", i, i);
+		dump_cache(reader_buffer[i]);
+	}
 
 	printf("block write cache (compressed blocks waiting for the writer"
 						" thread)\n");

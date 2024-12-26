@@ -52,6 +52,9 @@
 
 #define READER_ALLOC 1024
 
+int reader_size;
+int reader_threads = 1;
+struct cache **reader_buffer;
 static struct readahead **readahead_table = NULL;
 
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
@@ -707,6 +710,14 @@ void *reader(void *arg)
 	struct itimerval itimerval;
 	struct dir_info *dir = queue_get(to_reader);
 	unsigned int b = 0, f = 0, n = 0;
+	int i, per_thread = reader_size / reader_threads;
+
+	reader_buffer = malloc(reader_threads * sizeof(struct cache *));
+	if(reader_buffer == NULL)
+		MEM_ERROR();
+
+	for(i = 0; i < reader_threads; i++)
+		reader_buffer[i] = cache_init(block_size, per_thread, 0, 0);
 
 	if(sleep_time) {
 		signal(SIGALRM, sigalrm_handler);
@@ -753,11 +764,11 @@ void *reader(void *arg)
 			BAD_ERROR("No file for file_count %u found!\n", n);
 
 		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
-			reader_read_process(0, reader_buffer, entry);
+			reader_read_process(0, reader_buffer[0], entry);
 		else if(IS_PSEUDO_DATA(entry->dir_ent->inode))
-			reader_read_data(0, reader_buffer, entry);
+			reader_read_data(0, reader_buffer[0], entry);
 		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
-			reader_read_file(0, reader_buffer, entry);
+			reader_read_file(0, reader_buffer[0], entry);
 		else
 			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
