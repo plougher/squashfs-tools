@@ -130,7 +130,7 @@ static inline int is_fragment(struct inode_info *inode)
 }
 
 
-static void put_file_buffer(struct file_buffer *file_buffer, int next_state)
+static void put_file_buffer(int id, struct file_buffer *file_buffer, int next_state)
 {
 	file_buffer->next_state = next_state;
 
@@ -146,9 +146,9 @@ static void put_file_buffer(struct file_buffer *file_buffer, int next_state)
 	} else if (file_buffer->file_size == 0)
 		main_queue_put(to_main, file_buffer);
 	else if(file_buffer->fragment)
-		read_queue_put(to_process_frag, 0, file_buffer);
+		read_queue_put(to_process_frag, id, file_buffer);
 	else
-		read_queue_put(to_deflate, 0, file_buffer);
+		read_queue_put(to_deflate, id, file_buffer);
 }
 
 
@@ -170,7 +170,7 @@ static struct file_buffer *get_buffer(struct cache *cache, struct read_entry *en
 }
 
 
-static void reader_read_process(struct cache *cache, struct read_entry *entry)
+static void reader_read_process(int id, struct cache *cache, struct read_entry *entry)
 {
 	long long bytes = 0, block = 0;
 	struct inode_info *inode = entry->dir_ent->inode;
@@ -207,7 +207,7 @@ static void reader_read_process(struct cache *cache, struct read_entry *entry)
 		progress_bar_size(1);
 
 		if(prev_buffer)
-			put_file_buffer(prev_buffer, NEXT_BLOCK);
+			put_file_buffer(id, prev_buffer, NEXT_BLOCK);
 		prev_buffer = file_buffer;
 	}
 
@@ -237,7 +237,7 @@ static void reader_read_process(struct cache *cache, struct read_entry *entry)
 
 	prev_buffer->file_size = bytes;
 	prev_buffer->fragment = is_fragment(inode);
-	put_file_buffer(prev_buffer, NEXT_FILE);
+	put_file_buffer(id, prev_buffer, NEXT_FILE);
 
 	return;
 
@@ -249,11 +249,11 @@ read_err:
 		file_buffer = prev_buffer;
 	}
 	file_buffer->error = TRUE;
-	put_file_buffer(file_buffer, NEXT_FILE);
+	put_file_buffer(id, file_buffer, NEXT_FILE);
 }
 
 
-static void reader_read_file(struct cache *cache, struct read_entry *entry)
+static void reader_read_file(int id, struct cache *cache, struct read_entry *entry)
 {
 	struct stat *buf = &entry->dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
@@ -302,7 +302,7 @@ again:
 				goto restat;
 
 			file_buffer->fragment = FALSE;
-			put_file_buffer(file_buffer, NEXT_BLOCK);
+			put_file_buffer(id, file_buffer, NEXT_BLOCK);
 		}
 	} while(-- blocks > 0);
 
@@ -328,7 +328,7 @@ again:
 	}
 
 	file_buffer->fragment = is_fragment(inode);
-	put_file_buffer(file_buffer, NEXT_FILE);
+	put_file_buffer(id, file_buffer, NEXT_FILE);
 
 	close(file);
 
@@ -351,7 +351,7 @@ restat:
 		close(file);
 		memcpy(buf, &buf2, sizeof(struct stat));
 		file_buffer->error = 2;
-		put_file_buffer(file_buffer, NEXT_VERSION);
+		put_file_buffer(id, file_buffer, NEXT_VERSION);
 		bytes = block = 0;
 		version ++;
 		goto again;
@@ -360,7 +360,7 @@ read_err:
 	close(file);
 read_err2:
 	file_buffer->error = TRUE;
-	put_file_buffer(file_buffer, NEXT_FILE);
+	put_file_buffer(id, file_buffer, NEXT_FILE);
 }
 
 
@@ -585,7 +585,7 @@ static int read_data(struct pseudo_file *file, long long current,
 }
 
 
-static void reader_read_data(struct cache *cache, struct read_entry *entry)
+static void reader_read_data(int id, struct cache *cache, struct read_entry *entry)
 {
 	struct file_buffer *file_buffer;
 	int blocks;
@@ -639,7 +639,7 @@ static void reader_read_data(struct cache *cache, struct read_entry *entry)
 			bytes += file_buffer->size;
 
 			file_buffer->fragment = FALSE;
-			put_file_buffer(file_buffer, NEXT_BLOCK);
+			put_file_buffer(id, file_buffer, NEXT_BLOCK);
 		} else {
 			int expected = read_size - bytes;
 
@@ -652,7 +652,7 @@ static void reader_read_data(struct cache *cache, struct read_entry *entry)
 	} while(-- blocks > 0);
 
 	file_buffer->fragment = is_fragment(inode);
-	put_file_buffer(file_buffer, NEXT_FILE);
+	put_file_buffer(id, file_buffer, NEXT_FILE);
 }
 
 
@@ -753,11 +753,11 @@ void *reader(void *arg)
 			BAD_ERROR("No file for file_count %u found!\n", n);
 
 		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
-			reader_read_process(reader_buffer, entry);
+			reader_read_process(0, reader_buffer, entry);
 		else if(IS_PSEUDO_DATA(entry->dir_ent->inode))
-			reader_read_data(reader_buffer, entry);
+			reader_read_data(0, reader_buffer, entry);
 		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
-			reader_read_file(reader_buffer, entry);
+			reader_read_file(0, reader_buffer, entry);
 		else
 			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
