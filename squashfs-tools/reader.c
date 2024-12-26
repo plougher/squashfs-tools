@@ -170,7 +170,7 @@ static struct file_buffer *get_buffer(struct cache *cache, struct read_entry *en
 }
 
 
-static void reader_read_process(struct read_entry *entry)
+static void reader_read_process(struct cache *cache, struct read_entry *entry)
 {
 	long long bytes = 0, block = 0;
 	struct inode_info *inode = entry->dir_ent->inode;
@@ -180,12 +180,12 @@ static void reader_read_process(struct read_entry *entry)
 
 	file = pseudo_exec_file(inode->pseudo, &child);
 	if(!file) {
-		file_buffer = get_buffer(reader_buffer, entry, 0, block, 0);
+		file_buffer = get_buffer(cache, entry, 0, block, 0);
 		goto read_err;
 	}
 
 	while(1) {
-		file_buffer = get_buffer(reader_buffer, entry, -1, block ++, 0);
+		file_buffer = get_buffer(cache, entry, -1, block ++, 0);
 
 		byte = read_bytes(file, file_buffer->data, block_size);
 		if(byte == -1)
@@ -253,7 +253,7 @@ read_err:
 }
 
 
-static void reader_read_file(struct read_entry *entry)
+static void reader_read_file(struct cache *cache, struct read_entry *entry)
 {
 	struct stat *buf = &entry->dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
@@ -273,12 +273,12 @@ again:
 	}
 
 	if(file == -1) {
-		file_buffer = get_buffer(reader_buffer, entry, 0, block, version);
+		file_buffer = get_buffer(cache, entry, 0, block, version);
 		goto read_err2;
 	}
 
 	do {
-		file_buffer = get_buffer(reader_buffer, entry, read_size, block ++, version);
+		file_buffer = get_buffer(cache, entry, read_size, block ++, version);
 
 		/*
 		 * Always try to read block_size bytes from the file rather
@@ -585,7 +585,7 @@ static int read_data(struct pseudo_file *file, long long current,
 }
 
 
-static void reader_read_data(struct read_entry *entry)
+static void reader_read_data(struct cache *cache, struct read_entry *entry)
 {
 	struct file_buffer *file_buffer;
 	int blocks;
@@ -627,7 +627,7 @@ static void reader_read_data(struct read_entry *entry)
 	current = inode->pseudo->data->offset;
 
 	do {
-		file_buffer = get_buffer(reader_buffer, entry, read_size, block ++, 0);
+		file_buffer = get_buffer(cache, entry, read_size, block ++, 0);
 
 		if(blocks > 1) {
 			/* non-tail block should be exactly block_size */
@@ -753,11 +753,11 @@ void *reader(void *arg)
 			BAD_ERROR("No file for file_count %u found!\n", n);
 
 		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
-			reader_read_process(entry);
+			reader_read_process(reader_buffer, entry);
 		else if(IS_PSEUDO_DATA(entry->dir_ent->inode))
-			reader_read_data(entry);
+			reader_read_data(reader_buffer, entry);
 		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
-			reader_read_file(entry);
+			reader_read_file(reader_buffer, entry);
 		else
 			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
