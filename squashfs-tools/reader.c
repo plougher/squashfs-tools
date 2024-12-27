@@ -706,9 +706,9 @@ static void reader_scan(struct dir_info *dir)
 }
 
 
-void multi_thread(struct dir_info *dir, int n)
+static void multi_thread(struct dir_info *dir)
 {
-	unsigned int b = 0, f = 0;
+	unsigned int n = 0, b = 0, f = 0;
 
 	if(!sorted)
 		reader_scan(dir);
@@ -748,6 +748,58 @@ void multi_thread(struct dir_info *dir, int n)
 }
 
 
+static void single_reader_scan(struct dir_info *dir)
+{
+	struct dir_ent *dir_ent = dir->list;
+	struct read_entry entry;
+
+	for(; dir_ent; dir_ent = dir_ent->next) {
+		if(dir_ent->inode->root_entry || IS_TARFILE(dir_ent->inode) || dir_ent->inode->scanned)
+			continue;
+
+		if(IS_PSEUDO_PROCESS(dir_ent->inode) ||
+				IS_PSEUDO_DATA(dir_ent->inode) ||
+				S_ISREG(dir_ent->inode->buf.st_mode)) {
+			dir_ent->inode->scanned = TRUE;
+			entry.dir_ent = dir_ent;
+			entry.file_count = file_count ++;
+		}
+
+		if(IS_PSEUDO_PROCESS(dir_ent->inode))
+			reader_read_process(0, reader_buffer[0], &entry);
+		else if(IS_PSEUDO_DATA(dir_ent->inode))
+			reader_read_data(0, reader_buffer[0], &entry);
+		else if(S_ISREG(dir_ent->inode->buf.st_mode))
+			reader_read_file(0, reader_buffer[0], &entry);
+		else if(S_ISDIR(dir_ent->inode->buf.st_mode))
+			single_reader_scan(dir_ent->dir);
+	}
+}
+
+
+static void single_thread(struct dir_info *dir)
+{
+	if(!sorted)
+		single_reader_scan(dir);
+	else {
+		int i;
+		struct priority_entry *entry;
+		struct read_entry ent;
+
+		for(i = 65535; i >= 0; i--) {
+			for(entry = priority_list[i]; entry; entry = entry->next) {
+				if(!entry->dir->inode->scanned) {
+					entry->dir->inode->scanned = TRUE;
+					ent.dir_ent = entry->dir;
+					ent.file_count = file_count ++;
+					reader_read_file(0, reader_buffer[0], &ent);
+				}
+			}
+		}
+	}
+}
+
+
 void *reader(void *arg)
 {
 	struct itimerval itimerval;
@@ -779,9 +831,11 @@ void *reader(void *arg)
 		file_count = 1;
 		to_main->block = to_main->version = 0;
 		to_main->file_count = 1;
-		multi_thread(queue_get(to_reader), 1);
-	} else
-		multi_thread(dir, 0);
+		single_thread(queue_get(to_reader));
+	} else if(reader_threads > 1)
+		multi_thread(dir);
+	else
+		single_thread(dir);
 
 	pthread_exit(NULL);
 }
