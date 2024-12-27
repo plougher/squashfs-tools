@@ -56,6 +56,7 @@ int reader_size;
 int reader_threads = 1;
 struct cache **reader_buffer;
 static struct readahead **readahead_table = NULL;
+struct read_queue *to_deflate, *to_process_frag;
 
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
 int sleep_time;
@@ -711,6 +712,9 @@ void *reader(void *arg)
 	struct dir_info *dir = queue_get(to_reader);
 	unsigned int b = 0, f = 0, n = 0;
 	int i, per_thread = reader_size / reader_threads;
+
+	to_deflate = read_queue_init(reader_threads, per_thread);
+	to_process_frag = read_queue_init(reader_threads, per_thread);
 
 	reader_buffer = malloc(reader_threads * sizeof(struct cache *));
 	if(reader_buffer == NULL)
