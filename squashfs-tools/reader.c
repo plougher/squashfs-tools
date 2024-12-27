@@ -752,7 +752,7 @@ void *reader(void *arg)
 {
 	struct itimerval itimerval;
 	struct dir_info *dir = queue_get(to_reader);
-	int i, n = 0, per_thread = reader_size / reader_threads;
+	int i, per_thread = reader_size / reader_threads;
 
 	to_deflate = read_queue_init(reader_threads, per_thread);
 	to_process_frag = read_queue_init(reader_threads, per_thread);
@@ -776,13 +776,12 @@ void *reader(void *arg)
 
 	if(tarfile) {
 		read_tar_file();
-		file_count = n = 1;
+		file_count = 1;
 		to_main->block = to_main->version = 0;
 		to_main->file_count = 1;
-		dir = queue_get(to_reader);
-	}
-
-	multi_thread(dir, n);
+		multi_thread(queue_get(to_reader), 1);
+	} else
+		multi_thread(dir, 0);
 
 	pthread_exit(NULL);
 }
