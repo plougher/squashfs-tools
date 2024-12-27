@@ -706,40 +706,9 @@ static void reader_scan(struct dir_info *dir)
 }
 
 
-void *reader(void *arg)
+void multi_thread(struct dir_info *dir, int n)
 {
-	struct itimerval itimerval;
-	struct dir_info *dir = queue_get(to_reader);
-	unsigned int b = 0, f = 0, n = 0;
-	int i, per_thread = reader_size / reader_threads;
-
-	to_deflate = read_queue_init(reader_threads, per_thread);
-	to_process_frag = read_queue_init(reader_threads, per_thread);
-
-	reader_buffer = malloc(reader_threads * sizeof(struct cache *));
-	if(reader_buffer == NULL)
-		MEM_ERROR();
-
-	for(i = 0; i < reader_threads; i++)
-		reader_buffer[i] = cache_init(block_size, per_thread, 0, 0);
-
-	if(sleep_time) {
-		signal(SIGALRM, sigalrm_handler);
-
-		itimerval.it_value.tv_sec = 0;
-		itimerval.it_value.tv_usec = 100000;
-		itimerval.it_interval.tv_sec = 10;
-		itimerval.it_interval.tv_usec = 0;
-		setitimer(ITIMER_REAL, &itimerval, NULL);
-	}
-
-	if(tarfile) {
-		read_tar_file();
-		file_count = n = 1;
-		to_main->block = to_main->version = 0;
-		to_main->file_count = 1;
-		dir = queue_get(to_reader);
-	}
+	unsigned int b = 0, f = 0;
 
 	if(!sorted)
 		reader_scan(dir);
@@ -776,6 +745,44 @@ void *reader(void *arg)
 		else
 			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
+}
+
+
+void *reader(void *arg)
+{
+	struct itimerval itimerval;
+	struct dir_info *dir = queue_get(to_reader);
+	int i, n = 0, per_thread = reader_size / reader_threads;
+
+	to_deflate = read_queue_init(reader_threads, per_thread);
+	to_process_frag = read_queue_init(reader_threads, per_thread);
+
+	reader_buffer = malloc(reader_threads * sizeof(struct cache *));
+	if(reader_buffer == NULL)
+		MEM_ERROR();
+
+	for(i = 0; i < reader_threads; i++)
+		reader_buffer[i] = cache_init(block_size, per_thread, 0, 0);
+
+	if(sleep_time) {
+		signal(SIGALRM, sigalrm_handler);
+
+		itimerval.it_value.tv_sec = 0;
+		itimerval.it_value.tv_usec = 100000;
+		itimerval.it_interval.tv_sec = 10;
+		itimerval.it_interval.tv_usec = 0;
+		setitimer(ITIMER_REAL, &itimerval, NULL);
+	}
+
+	if(tarfile) {
+		read_tar_file();
+		file_count = n = 1;
+		to_main->block = to_main->version = 0;
+		to_main->file_count = 1;
+		dir = queue_get(to_reader);
+	}
+
+	multi_thread(dir, n);
 
 	pthread_exit(NULL);
 }
