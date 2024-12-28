@@ -707,9 +707,32 @@ static void reader_scan(struct dir_info *dir)
 }
 
 
+void create_resources(int threads)
+{
+	int i, per_thread = reader_size / threads;
+
+	read_queue_set(to_deflate, threads, per_thread);
+	read_queue_set(to_process_frag, threads, per_thread);
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
+	pthread_mutex_lock(&mutex);
+
+	reader_buffer = malloc(threads * sizeof(struct cache *));
+	if(reader_buffer == NULL)
+		MEM_ERROR();
+
+	for(i = 0; i < threads; i++)
+		reader_buffer[i] = cache_init(block_size, per_thread, 0, 0);
+
+	pthread_cleanup_pop(1);
+}
+
+
 static void multi_thread(struct dir_info *dir)
 {
 	unsigned int n = 0, b = 0, f = 0;
+
+	create_resources(reader_threads);
 
 	if(!sorted)
 		reader_scan(dir);
@@ -780,6 +803,8 @@ static void single_reader_scan(struct dir_info *dir)
 
 static void single_thread(struct dir_info *dir)
 {
+	create_resources(1);
+
 	if(!sorted)
 		single_reader_scan(dir);
 	else {
@@ -805,22 +830,6 @@ void *reader(void *arg)
 {
 	struct itimerval itimerval;
 	struct dir_info *dir = queue_get(to_reader);
-	int i, per_thread = reader_size / reader_threads;
-
-	read_queue_set(to_deflate, reader_threads, per_thread);
-	read_queue_set(to_process_frag, reader_threads, per_thread);
-
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
-	pthread_mutex_lock(&mutex);
-
-	reader_buffer = malloc(reader_threads * sizeof(struct cache *));
-	if(reader_buffer == NULL)
-		MEM_ERROR();
-
-	for(i = 0; i < reader_threads; i++)
-		reader_buffer[i] = cache_init(block_size, per_thread, 0, 0);
-
-	pthread_cleanup_pop(1);
 
 	if(sleep_time) {
 		signal(SIGALRM, sigalrm_handler);
