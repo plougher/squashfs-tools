@@ -805,6 +805,9 @@ void *reader(void *arg)
 	struct dir_info *dir = queue_get(to_reader);
 	int i, per_thread = reader_size / reader_threads;
 
+	read_queue_set(to_deflate, reader_threads, per_thread);
+	read_queue_set(to_process_frag, reader_threads, per_thread);
+
 	reader_buffer = malloc(reader_threads * sizeof(struct cache *));
 	if(reader_buffer == NULL)
 		MEM_ERROR();

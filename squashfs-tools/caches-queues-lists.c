@@ -386,17 +386,34 @@ int earlier_buffer(struct file_buffer *new, struct file_buffer *old) {
 }
 
 
-struct read_queue *read_queue_init(int threads, int size)
+struct read_queue *read_queue_init(void)
 {
 	struct read_queue *queue = malloc(sizeof(struct read_queue));
-	int i;
 
 	if(queue == NULL)
 		MEM_ERROR();
 
+	queue->threads = queue->count = 0;
+
+	pthread_mutex_init(&queue->mutex, NULL);
+	pthread_cond_init(&queue->empty, NULL);
+
+	return queue;
+}
+
+
+void read_queue_set(struct read_queue *queue, int threads, int size)
+{
+	int i;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
 	if(add_overflow(size, 1) ||
 				multiply_overflow(size + 1, sizeof(struct file_buffer *)))
 		BAD_ERROR("Size too large in read_queue_init\n");
+
+	queue->threads = threads;
 
 	queue->thread = malloc(threads * sizeof(struct readq_thrd));
 	if(queue->thread == NULL)
@@ -411,12 +428,7 @@ struct read_queue *read_queue_init(int threads, int size)
 		pthread_cond_init(&queue->thread[i].full, NULL);
 	}
 
-	queue->threads = threads;
-	queue->count = 0;
-	pthread_mutex_init(&queue->mutex, NULL);
-	pthread_cond_init(&queue->empty, NULL);
-
-	return queue;
+	pthread_cleanup_pop(1);
 }
 
 

@@ -5409,8 +5409,8 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	frag_thread = &frag_deflator_thread[processors];
 
 	to_reader = queue_init(1);
-	to_deflate = read_queue_init(1, reader_size);
-	to_process_frag = read_queue_init(1, reader_size);
+	to_deflate = read_queue_init();
+	to_process_frag = read_queue_init();
 	to_writer = queue_init(bwriter_size + fwriter_size);
 	from_writer = queue_init(1);
 	to_frag = queue_init(fragment_size);
