@@ -56,6 +56,7 @@ int default_mode_opt = FALSE;
 mode_t default_mode;
 
 static long long block = 0;
+static struct cache **reader_buffer;
 
 static long long read_octal(char *s, int size)
 {
@@ -1515,6 +1516,8 @@ void read_tar_file()
 	struct tar_file *tar_file;
 	int status, res;
        
+	reader_buffer = reader_buffers(&res);
+
 	while(1) {
 		struct file_buffer *file_buffer;
 

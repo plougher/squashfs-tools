@@ -43,6 +43,5 @@ struct read_entry {
 };
 
 extern int reader_size;
-extern int reader_threads;
-extern struct cache **reader_buffer;
+extern struct cache **reader_buffers(int *);
 #endif

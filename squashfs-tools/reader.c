@@ -52,10 +52,11 @@
 
 #define READER_ALLOC 1024
 
-int reader_size;
-int reader_threads = 1;
-struct cache **reader_buffer;
+static int reader_threads = 1;
+static struct cache **reader_buffer = NULL;
 static struct readahead **readahead_table = NULL;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int reader_size;
 
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
 int sleep_time;
@@ -837,4 +838,20 @@ void *reader(void *arg)
 		single_thread(dir);
 
 	pthread_exit(NULL);
+}
+
+
+struct cache **reader_buffers(int *num)
+{
+	struct cache **buffers;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
+	pthread_mutex_lock(&mutex);
+
+	buffers = reader_buffer;
+	*num = reader_buffer ? reader_threads : 0;
+
+	pthread_cleanup_pop(1);
+
+	return buffers;
 }
