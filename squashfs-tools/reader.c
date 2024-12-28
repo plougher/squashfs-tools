@@ -810,12 +810,17 @@ void *reader(void *arg)
 	read_queue_set(to_deflate, reader_threads, per_thread);
 	read_queue_set(to_process_frag, reader_threads, per_thread);
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
+	pthread_mutex_lock(&mutex);
+
 	reader_buffer = malloc(reader_threads * sizeof(struct cache *));
 	if(reader_buffer == NULL)
 		MEM_ERROR();
 
 	for(i = 0; i < reader_threads; i++)
 		reader_buffer[i] = cache_init(block_size, per_thread, 0, 0);
+
+	pthread_cleanup_pop(1);
 
 	if(sleep_time) {
 		signal(SIGALRM, sigalrm_handler);
