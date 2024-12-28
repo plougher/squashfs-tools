@@ -44,4 +44,5 @@ struct read_entry {
 
 extern int reader_size;
 extern struct cache **reader_buffers(int *);
+extern pthread_t *get_reader_threads(int *);
 #endif

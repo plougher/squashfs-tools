@@ -42,11 +42,12 @@
 #include "mksquashfs_error.h"
 #include "progressbar.h"
 #include "info.h"
+#include "reader.h"
 
 #define FALSE 0
 #define TRUE 1
 
-extern pthread_t reader_thread, writer_thread, main_thread, order_thread;
+extern pthread_t reader_thread1, writer_thread, main_thread, order_thread;
 extern pthread_t *deflator_thread, *frag_deflator_thread, *frag_thread;
 extern struct queue *to_writer, *to_frag;
 extern struct read_queue *to_deflate, *to_process_frag;
@@ -61,7 +62,8 @@ static pthread_t restore_thread;
 void *restore_thrd(void *arg)
 {
 	sigset_t sigmask, old_mask;
-	int i, sig;
+	int i, sig, reader_threads;
+	pthread_t *reader_thread;
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
@@ -84,9 +86,16 @@ void *restore_thrd(void *arg)
 		set_progressbar_state(FALSE);
 		disable_info();
 
-		/* first kill the reader thread */
-		pthread_cancel(reader_thread);
-		pthread_join(reader_thread, NULL);
+		/* first kill the main reader thread */
+		pthread_cancel(reader_thread1);
+		pthread_join(reader_thread1, NULL);
+
+		/* then kill any additional reader threads */
+		reader_thread = get_reader_threads(&reader_threads);
+		for(i = 0; i < reader_threads; i++)
+			pthread_cancel(reader_thread[i]);
+		for(i = 0; i < reader_threads; i++)
+			pthread_join(reader_thread[i], NULL);
 
 		/*
 		 * then flush the reader to deflator thread(s) output queue.

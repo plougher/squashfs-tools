@@ -55,6 +55,7 @@
 static int reader_threads = 1;
 static struct cache **reader_buffer = NULL;
 static struct readahead **readahead_table = NULL;
+static pthread_t *reader_thread = NULL;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int reader_size;
 
@@ -854,4 +855,20 @@ struct cache **reader_buffers(int *num)
 	pthread_cleanup_pop(1);
 
 	return buffers;
+}
+
+
+pthread_t *get_reader_threads(int *num)
+{
+	pthread_t *threads;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
+	pthread_mutex_lock(&mutex);
+
+	threads = reader_thread;
+	*num = reader_thread ? reader_threads : 0;
+
+	pthread_cleanup_pop(1);
+
+	return threads;
 }
