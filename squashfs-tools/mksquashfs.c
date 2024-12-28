@@ -276,6 +276,7 @@ unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 struct cache *fragment_buffer, *reserve_cache;
 struct cache *bwriter_buffer, *fwriter_buffer;
 struct queue *to_reader, *to_writer, *from_writer, *to_frag, *locked_fragment;
+struct read_queue *to_deflate, *to_process_frag;
 struct seq_queue *to_main;
 
 /* pthread threads and mutexes */
@@ -5408,6 +5409,8 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	frag_thread = &frag_deflator_thread[processors];
 
 	to_reader = queue_init(1);
+	to_deflate = read_queue_init(1, reader_size);
+	to_process_frag = read_queue_init(1, reader_size);
 	to_writer = queue_init(bwriter_size + fwriter_size);
 	from_writer = queue_init(1);
 	to_frag = queue_init(fragment_size);

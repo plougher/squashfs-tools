@@ -230,6 +230,7 @@ extern struct cache *fragment_buffer, *reserve_cache;
 extern struct cache *bwriter_buffer, *fwriter_buffer;
 extern struct queue *to_reader, *to_writer, *from_writer, *to_frag,
        *locked_fragment;
+extern struct read_queue *to_deflate, *to_process_frag;
 extern struct append_file **file_mapping;
 extern struct seq_queue *to_main, *to_order;
 extern pthread_mutex_t fragment_mutex, dup_mutex;
