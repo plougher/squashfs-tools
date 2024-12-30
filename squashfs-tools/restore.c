@@ -86,11 +86,11 @@ void *restore_thrd(void *arg)
 		set_progressbar_state(FALSE);
 		disable_info();
 
-		/* first kill the main reader thread */
+		/* first kill the initial reader thread */
 		pthread_cancel(reader_thread1);
 		pthread_join(reader_thread1, NULL);
 
-		/* then kill any additional reader threads */
+		/* then kill the worker reader threads */
 		reader_thread = get_reader_threads(&reader_threads);
 		for(i = 0; i < reader_threads; i++)
 			pthread_cancel(reader_thread[i]);

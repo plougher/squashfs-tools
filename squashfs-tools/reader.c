@@ -52,8 +52,8 @@
 
 #define READER_ALLOC 1024
 
-static int reader_threads = 1;
-static struct cache **reader_buffer = NULL;
+static int reader_threads = 2, fragment_threads = 1, block_threads = 1;
+static struct reader *reader = NULL;
 static struct readahead **readahead_table = NULL;
 static pthread_t *reader_thread = NULL;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -81,41 +81,38 @@ static void sigalrm_handler(int arg)
 }
 
 
-static char *pathname(struct dir_ent *dir_ent)
+static char *pathname(struct reader *reader, struct dir_ent *dir_ent)
 {
-	static char *pathname = NULL;
-	static int size = ALLOC_SIZE;
-
 	if (dir_ent->nonstandard_pathname)
 		return dir_ent->nonstandard_pathname;
 
-	if(pathname == NULL) {
-		pathname = malloc(ALLOC_SIZE);
-		if(pathname == NULL)
+	if(reader->pathname == NULL) {
+		reader->pathname = malloc(ALLOC_SIZE);
+		if(reader->pathname == NULL)
 			MEM_ERROR();
 	}
 
 	for(;;) {
-		int res = snprintf(pathname, size, "%s/%s",
+		int res = snprintf(reader->pathname, reader->size, "%s/%s",
 			dir_ent->our_dir->pathname,
 			dir_ent->source_name ? : dir_ent->name);
 
 		if(res < 0)
 			BAD_ERROR("snprintf failed in pathname\n");
-		else if(res >= size) {
+		else if(res >= reader->size) {
 			/*
 			 * pathname is too small to contain the result, so
 			 * increase it and try again
 			 */
-			size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
-			pathname = realloc(pathname, size);
-			if(pathname == NULL)
+			reader->size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
+			reader->pathname = realloc(reader->pathname, reader->size);
+			if(reader->pathname == NULL)
 				MEM_ERROR();
 		} else
 			break;
 	}
 
-	return pathname;
+	return reader->pathname;
 }
 
 
@@ -175,7 +172,7 @@ static struct file_buffer *get_buffer(struct cache *cache, struct read_entry *en
 }
 
 
-static void reader_read_process(int id, struct cache *cache, struct read_entry *entry)
+static void reader_read_process(struct reader *reader, struct read_entry *entry)
 {
 	long long bytes = 0, block = 0;
 	struct inode_info *inode = entry->dir_ent->inode;
@@ -185,12 +182,12 @@ static void reader_read_process(int id, struct cache *cache, struct read_entry *
 
 	file = pseudo_exec_file(inode->pseudo, &child);
 	if(!file) {
-		file_buffer = get_buffer(cache, entry, 0, block, 0);
+		file_buffer = get_buffer(reader->buffer, entry, 0, block, 0);
 		goto read_err;
 	}
 
 	while(1) {
-		file_buffer = get_buffer(cache, entry, -1, block ++, 0);
+		file_buffer = get_buffer(reader->buffer, entry, -1, block ++, 0);
 
 		byte = read_bytes(file, file_buffer->data, block_size);
 		if(byte == -1)
@@ -212,7 +209,7 @@ static void reader_read_process(int id, struct cache *cache, struct read_entry *
 		progress_bar_size(1);
 
 		if(prev_buffer)
-			put_file_buffer(id, prev_buffer, NEXT_BLOCK);
+			put_file_buffer(reader->id, prev_buffer, NEXT_BLOCK);
 		prev_buffer = file_buffer;
 	}
 
@@ -242,7 +239,7 @@ static void reader_read_process(int id, struct cache *cache, struct read_entry *
 
 	prev_buffer->file_size = bytes;
 	prev_buffer->fragment = is_fragment(inode);
-	put_file_buffer(id, prev_buffer, NEXT_FILE);
+	put_file_buffer(reader->id, prev_buffer, NEXT_FILE);
 
 	return;
 
@@ -254,11 +251,11 @@ read_err:
 		file_buffer = prev_buffer;
 	}
 	file_buffer->error = TRUE;
-	put_file_buffer(id, file_buffer, NEXT_FILE);
+	put_file_buffer(reader->id, file_buffer, NEXT_FILE);
 }
 
 
-static void reader_read_file(int id, struct cache *cache, struct read_entry *entry)
+static void reader_read_file(struct reader *reader, struct read_entry *entry)
 {
 	struct stat *buf = &entry->dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
@@ -272,18 +269,18 @@ again:
 	blocks = (read_size + block_size - 1) >> block_log;
 
 	while(1) {
-		file = open(pathname(entry->dir_ent), O_RDONLY);
+		file = open(pathname(reader, entry->dir_ent), O_RDONLY);
 		if(file != -1 || errno != EINTR)
 			break;
 	}
 
 	if(file == -1) {
-		file_buffer = get_buffer(cache, entry, 0, block, version);
+		file_buffer = get_buffer(reader->buffer, entry, 0, block, version);
 		goto read_err2;
 	}
 
 	do {
-		file_buffer = get_buffer(cache, entry, read_size, block ++, version);
+		file_buffer = get_buffer(reader->buffer, entry, read_size, block ++, version);
 
 		/*
 		 * Always try to read block_size bytes from the file rather
@@ -307,7 +304,7 @@ again:
 				goto restat;
 
 			file_buffer->fragment = FALSE;
-			put_file_buffer(id, file_buffer, NEXT_BLOCK);
+			put_file_buffer(reader->id, file_buffer, NEXT_BLOCK);
 		}
 	} while(-- blocks > 0);
 
@@ -333,7 +330,7 @@ again:
 	}
 
 	file_buffer->fragment = is_fragment(inode);
-	put_file_buffer(id, file_buffer, NEXT_FILE);
+	put_file_buffer(reader->id, file_buffer, NEXT_FILE);
 
 	close(file);
 
@@ -348,7 +345,7 @@ restat:
 	res = fstat(file, &buf2);
 	if(res == -1) {
 		ERROR("Cannot stat dir/file %s because %s\n",
-			pathname(entry->dir_ent), strerror(errno));
+			pathname(reader, entry->dir_ent), strerror(errno));
 		goto read_err;
 	}
 
@@ -356,7 +353,7 @@ restat:
 		close(file);
 		memcpy(buf, &buf2, sizeof(struct stat));
 		file_buffer->error = 2;
-		put_file_buffer(id, file_buffer, NEXT_VERSION);
+		put_file_buffer(reader->id, file_buffer, NEXT_VERSION);
 		bytes = block = 0;
 		version ++;
 		goto again;
@@ -365,7 +362,7 @@ read_err:
 	close(file);
 read_err2:
 	file_buffer->error = TRUE;
-	put_file_buffer(id, file_buffer, NEXT_FILE);
+	put_file_buffer(reader->id, file_buffer, NEXT_FILE);
 }
 
 
@@ -590,7 +587,7 @@ static int read_data(struct pseudo_file *file, long long current,
 }
 
 
-static void reader_read_data(int id, struct cache *cache, struct read_entry *entry)
+static void reader_read_data(struct reader *reader, struct read_entry *entry)
 {
 	struct file_buffer *file_buffer;
 	int blocks;
@@ -632,7 +629,7 @@ static void reader_read_data(int id, struct cache *cache, struct read_entry *ent
 	current = inode->pseudo->data->offset;
 
 	do {
-		file_buffer = get_buffer(cache, entry, read_size, block ++, 0);
+		file_buffer = get_buffer(reader->buffer, entry, read_size, block ++, 0);
 
 		if(blocks > 1) {
 			/* non-tail block should be exactly block_size */
@@ -644,7 +641,7 @@ static void reader_read_data(int id, struct cache *cache, struct read_entry *ent
 			bytes += file_buffer->size;
 
 			file_buffer->fragment = FALSE;
-			put_file_buffer(id, file_buffer, NEXT_BLOCK);
+			put_file_buffer(reader->id, file_buffer, NEXT_BLOCK);
 		} else {
 			int expected = read_size - bytes;
 
@@ -657,7 +654,7 @@ static void reader_read_data(int id, struct cache *cache, struct read_entry *ent
 	} while(-- blocks > 0);
 
 	file_buffer->fragment = is_fragment(inode);
-	put_file_buffer(id, file_buffer, NEXT_FILE);
+	put_file_buffer(reader->id, file_buffer, NEXT_FILE);
 }
 
 
@@ -717,27 +714,67 @@ void create_resources(int threads)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
 	pthread_mutex_lock(&mutex);
 
-	reader_buffer = malloc(threads * sizeof(struct cache *));
-	if(reader_buffer == NULL)
+	reader = malloc(threads * sizeof(struct reader));
+	if(reader == NULL)
 		MEM_ERROR();
 
-	for(i = 0; i < threads; i++)
-		reader_buffer[i] = cache_init(block_size, per_thread, 0, 0);
+	for(i = 0; i < threads; i++) {
+		reader[i].id = i;
+		reader[i].buffer = cache_init(block_size, per_thread, 0, 0);
+		reader[i].size = ALLOC_SIZE;
+		reader[i].pathname = NULL;
+	}
 
 	pthread_cleanup_pop(1);
 }
 
 
+void *block_reader(void *arg)
+{
+	struct reader *reader = arg;
+
+	for(int n = 0; n < block_count; n ++) {
+		if(IS_PSEUDO_PROCESS(block_array[n].dir_ent->inode))
+			reader_read_process(reader, &block_array[n]);
+		else if(IS_PSEUDO_DATA(block_array[n].dir_ent->inode))
+			reader_read_data(reader, &block_array[n]);
+		else if(S_ISREG(block_array[n].dir_ent->inode->buf.st_mode))
+			reader_read_file(reader, &block_array[n]);
+		else
+			BAD_ERROR("Unexpected file type when reading files!\n");
+	}
+
+	pthread_exit(NULL);
+}
+
+
+void *fragment_reader(void *arg)
+{
+	struct reader *reader = arg;
+
+	for(int n = 0; n < fragment_count; n ++) {
+		if(IS_PSEUDO_PROCESS(fragment_array[n].dir_ent->inode))
+			reader_read_process(reader, &fragment_array[n]);
+		else if(IS_PSEUDO_DATA(fragment_array[n].dir_ent->inode))
+			reader_read_data(reader, &fragment_array[n]);
+		else if(S_ISREG(fragment_array[n].dir_ent->inode->buf.st_mode))
+			reader_read_file(reader, &fragment_array[n]);
+		else
+			BAD_ERROR("Unexpected file type when reading files!\n");
+	}
+
+	pthread_exit(NULL);
+}
+
+
 static void multi_thread(struct dir_info *dir)
 {
-	unsigned int n = 0, b = 0, f = 0;
-
-	create_resources(reader_threads);
+	pthread_t *thread;
+	int i;
 
 	if(!sorted)
 		reader_scan(dir);
 	else {
-		int i;
 		struct priority_entry *entry;
 
 		for(i = 65535; i >= 0; i--) {
@@ -750,25 +787,31 @@ static void multi_thread(struct dir_info *dir)
 		}
 	}
 
-	for(; n < file_count; n ++) {
-		struct read_entry *entry;
+	if(fragment_threads > fragment_count)
+		fragment_threads = fragment_count;
 
-		if(b < block_count && block_array[b].file_count == n)
-			entry = &block_array[b ++];
-		else if(f < fragment_count && fragment_array[f].file_count == n)
-			entry = &fragment_array[f ++];
-		else
-			BAD_ERROR("No file for file_count %u found!\n", n);
+	if(block_threads > block_count)
+		block_threads = block_count;
 
-		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
-			reader_read_process(0, reader_buffer[0], entry);
-		else if(IS_PSEUDO_DATA(entry->dir_ent->inode))
-			reader_read_data(0, reader_buffer[0], entry);
-		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
-			reader_read_file(0, reader_buffer[0], entry);
-		else
-			BAD_ERROR("Unexpected file type when reading files!\n");
-	}
+	reader_threads = fragment_threads + block_threads;
+	create_resources(reader_threads);
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
+	pthread_mutex_lock(&mutex);
+
+	thread = malloc(reader_threads * sizeof(pthread_t));
+	if(thread == NULL)
+		MEM_ERROR();
+
+	for(i = 0; i < fragment_threads; i++)
+		pthread_create(&thread[i], NULL, fragment_reader, &reader[i]);
+
+	for(i = 0; i < block_threads; i++)
+		pthread_create(&thread[i + fragment_threads], NULL, block_reader, &reader[i + fragment_threads]);
+
+	reader_thread = thread;
+
+	pthread_cleanup_pop(1);
 }
 
 
@@ -790,11 +833,11 @@ static void single_reader_scan(struct dir_info *dir)
 		}
 
 		if(IS_PSEUDO_PROCESS(dir_ent->inode))
-			reader_read_process(0, reader_buffer[0], &entry);
+			reader_read_process(&reader[0], &entry);
 		else if(IS_PSEUDO_DATA(dir_ent->inode))
-			reader_read_data(0, reader_buffer[0], &entry);
+			reader_read_data(&reader[0], &entry);
 		else if(S_ISREG(dir_ent->inode->buf.st_mode))
-			reader_read_file(0, reader_buffer[0], &entry);
+			reader_read_file(&reader[0], &entry);
 		else if(S_ISDIR(dir_ent->inode->buf.st_mode))
 			single_reader_scan(dir_ent->dir);
 	}
@@ -818,7 +861,7 @@ static void single_thread(struct dir_info *dir)
 					entry->dir->inode->scanned = TRUE;
 					ent.dir_ent = entry->dir;
 					ent.file_count = file_count ++;
-					reader_read_file(0, reader_buffer[0], &ent);
+					reader_read_file(&reader[0], &ent);
 				}
 			}
 		}
@@ -826,7 +869,7 @@ static void single_thread(struct dir_info *dir)
 }
 
 
-void *reader(void *arg)
+void *initial_reader(void *arg)
 {
 	struct itimerval itimerval;
 	struct dir_info *dir = queue_get(to_reader);
@@ -856,19 +899,19 @@ void *reader(void *arg)
 }
 
 
-struct cache **reader_buffers(int *num)
+struct reader *get_readers(int *num)
 {
-	struct cache **buffers;
+	struct reader *readers;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
 	pthread_mutex_lock(&mutex);
 
-	buffers = reader_buffer;
-	*num = reader_buffer ? reader_threads : 0;
+	readers = reader;
+	*num = reader ? reader_threads : 0;
 
 	pthread_cleanup_pop(1);
 
-	return buffers;
+	return readers;
 }
 
 

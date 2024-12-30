@@ -80,7 +80,7 @@ static void print_filename()
 static void dump_state()
 {
 	int i, reader_threads;
-	struct cache **reader_buffer;
+	struct reader *reader;
 
 	disable_progress_bar();
 
@@ -124,10 +124,10 @@ static void dump_state()
 		dump_queue(to_writer);
 	}
 
-	reader_buffer = reader_buffers(&reader_threads);
+	reader = get_readers(&reader_threads);
 	for(i = 0; i < reader_threads; i++) {
 		printf("read cache %d (uncompressed blocks read by reader thread %d)\n", i + 1, i + 1);
-		dump_cache(reader_buffer[i]);
+		dump_cache(reader[i].buffer);
 	}
 
 	printf("block write cache (compressed blocks waiting for the writer"

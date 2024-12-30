@@ -5423,7 +5423,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	fwriter_buffer = cache_init(block_size, fwriter_size, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_size, 1, 0);
 	reserve_cache = cache_init(block_size, processors + 1, 1, 0);
-	pthread_create(&reader_thread1, NULL, reader, NULL);
+	pthread_create(&reader_thread1, NULL, initial_reader, NULL);
 	pthread_create(&writer_thread, NULL, writer, NULL);
 	init_progress_bar();
 	init_info();
