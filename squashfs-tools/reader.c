@@ -52,7 +52,7 @@
 
 #define READER_ALLOC 1024
 
-static int reader_threads = 2, fragment_threads = 1, block_threads = 1;
+static int reader_threads = 4, fragment_threads = 3, block_threads = 1;
 static struct reader *reader = NULL;
 static struct readahead **readahead_table = NULL;
 static pthread_t *reader_thread = NULL;
@@ -62,8 +62,8 @@ int reader_size;
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
 int sleep_time;
 
-static struct read_entry *block_array = NULL;
-static struct read_entry *fragment_array = NULL;
+static struct read_entry **block_array = NULL;
+static struct read_entry **fragment_array = NULL;
 
 /* total number of files to be read, excluding hard links  */
 static unsigned int file_count = 0;
@@ -658,10 +658,10 @@ static void reader_read_data(struct reader *reader, struct read_entry *entry)
 }
 
 
-static void _add_entry(struct dir_ent *entry, struct read_entry **array, unsigned int *count)
+static void _add_entry(struct dir_ent *entry, struct read_entry ***array, unsigned int *count)
 {
 	if(*array == NULL || *count % READER_ALLOC == 0) {
-		struct read_entry *tmp = realloc(*array, (*count + READER_ALLOC) * sizeof(struct read_entry));
+		struct read_entry **tmp = realloc(*array, (*count + READER_ALLOC) * sizeof(struct read_entry *));
 
 		if(tmp == NULL)
 			MEM_ERROR();
@@ -669,8 +669,12 @@ static void _add_entry(struct dir_ent *entry, struct read_entry **array, unsigne
 		*array = tmp;
 	}
 
-	(*array)[*count].dir_ent = entry;
-	(*array)[(*count) ++].file_count = file_count ++;
+	(*array)[*count] = malloc(sizeof(struct read_entry));
+	if((*array)[*count] == NULL)
+		MEM_ERROR();
+
+	(*array)[*count]->dir_ent = entry;
+	(*array)[(*count) ++]->file_count = file_count ++;
 }
 
 
@@ -734,12 +738,17 @@ void *block_reader(void *arg)
 	struct reader *reader = arg;
 
 	for(int n = 0; n < block_count; n ++) {
-		if(IS_PSEUDO_PROCESS(block_array[n].dir_ent->inode))
-			reader_read_process(reader, &block_array[n]);
-		else if(IS_PSEUDO_DATA(block_array[n].dir_ent->inode))
-			reader_read_data(reader, &block_array[n]);
-		else if(S_ISREG(block_array[n].dir_ent->inode->buf.st_mode))
-			reader_read_file(reader, &block_array[n]);
+		struct read_entry *entry = __atomic_exchange_n(&block_array[n], NULL, __ATOMIC_SEQ_CST);
+
+		if(entry == NULL)
+			continue;
+
+		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
+			reader_read_process(reader, entry);
+		else if(IS_PSEUDO_DATA(entry->dir_ent->inode))
+			reader_read_data(reader, entry);
+		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
+			reader_read_file(reader, entry);
 		else
 			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
@@ -753,12 +762,17 @@ void *fragment_reader(void *arg)
 	struct reader *reader = arg;
 
 	for(int n = 0; n < fragment_count; n ++) {
-		if(IS_PSEUDO_PROCESS(fragment_array[n].dir_ent->inode))
-			reader_read_process(reader, &fragment_array[n]);
-		else if(IS_PSEUDO_DATA(fragment_array[n].dir_ent->inode))
-			reader_read_data(reader, &fragment_array[n]);
-		else if(S_ISREG(fragment_array[n].dir_ent->inode->buf.st_mode))
-			reader_read_file(reader, &fragment_array[n]);
+		struct read_entry *entry = __atomic_exchange_n(&fragment_array[n], NULL, __ATOMIC_SEQ_CST);
+
+		if(entry == NULL)
+			continue;
+
+		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
+			reader_read_process(reader, entry);
+		else if(IS_PSEUDO_DATA(entry->dir_ent->inode))
+			reader_read_data(reader, entry);
+		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
+			reader_read_file(reader, entry);
 		else
 			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
