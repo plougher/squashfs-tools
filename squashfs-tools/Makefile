@@ -168,6 +168,16 @@ INSTALL_DIR = $(INSTALL_PREFIX)/bin
 INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
 
 ###############################################
+#             __ATOMIC_EXCHANGE_N             #
+###############################################
+#
+# Mksquashfs uses a GCC builtin (also supported by Clang)
+# __atomic_exchange_n() to do lockless thread synchronisation.
+# If this is unavailable on your compiler, uncomment
+# the line below to use a (slower) Pthread mutex.
+#DONT_USE_ATOMIC_EXCHANGE_N = 1
+
+###############################################
 #              Obsolete options               #
 ###############################################
 
@@ -210,6 +220,7 @@ LZMA_XZ_SUPPORT ?= 0
 LZMA_SUPPORT ?= 0
 LZMA_DIR ?= ../../../../LZMA/lzma465
 XZ_EXTENDED_OPTIONS ?= 0
+DONT_USE_ATOMIC_EXCHANGE_N ?= 0
 endif
 
 
@@ -344,6 +355,10 @@ endif
 
 ifeq ($(REPRODUCIBLE_DEFAULT),1)
 CFLAGS += -DREPRODUCIBLE_DEFAULT
+endif
+
+ifeq ($(DONT_USE_ATOMIC_EXCHANGE_N),1)
+CFLAGS += -DDONT_USE_ATOMIC_EXCHANGE_N
 endif
 
 #

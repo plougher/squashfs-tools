@@ -49,6 +49,7 @@
 #include "sort.h"
 #include "tar.h"
 #include "reader.h"
+#include "atomic_swap.h"
 
 #define READER_ALLOC 1024
 
@@ -738,7 +739,7 @@ void *block_reader(void *arg)
 	struct reader *reader = arg;
 
 	for(int n = 0; n < block_count; n ++) {
-		struct read_entry *entry = __atomic_exchange_n(&block_array[n], NULL, __ATOMIC_SEQ_CST);
+		struct read_entry *entry = atomic_swap(&block_array[n], &mutex);
 
 		if(entry == NULL)
 			continue;
@@ -762,7 +763,7 @@ void *fragment_reader(void *arg)
 	struct reader *reader = arg;
 
 	for(int n = 0; n < fragment_count; n ++) {
-		struct read_entry *entry = __atomic_exchange_n(&fragment_array[n], NULL, __ATOMIC_SEQ_CST);
+		struct read_entry *entry = atomic_swap(&fragment_array[n], &mutex);
 
 		if(entry == NULL)
 			continue;
