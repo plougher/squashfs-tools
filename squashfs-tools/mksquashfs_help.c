@@ -410,7 +410,7 @@ static char *mksquashfs_text[]={
 		"display the help text.  The value can be a simple command or "
 		"a pathname.  The default is /usr/bin/pager\n",
 	"\n", "Exit status:", "\n",
-	"  0\tMksquashfs successfully generated a filesystem.\n"
+	"  0\tMksquashfs successfully generated a filesystem.\n",
 	"  1\tFatal errors occurred, Mksquashfs aborted and did not generate a "
 		"filesystem (or update if appending).\n",
 	"\n","See also (extra information elsewhere):", "\n",
