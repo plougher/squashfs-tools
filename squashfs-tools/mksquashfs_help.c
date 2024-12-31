@@ -400,6 +400,29 @@ static char *mksquashfs_text[]={
 		"timestamp time\n",
 	"\"filename I time mode uid gid [s|f]\"\tcreate socket/fifo with "
 		"timestamp time\n",
+	"\n", "Symbolic mode specification:", "\n",
+	"The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+.  PERMS = "
+		"[rwxXst]+ or [ugo], and the sequence can be repeated "
+		"separated with commas.\n\n",
+	"A combination of the letters ugoa specify which permission bits will "
+		"be affected, u means user, g means group, o means other, and "
+		"a means all or ugo.\n\n",
+	"The next letter is +, - or =.  The letter + means add to the existing "
+		"permission bits, - means remove the bits from the existing "
+		"permission bits, and = means set the permission bits.\n\n",
+	"The permission bits (PERMS) are a combination of [rwxXst] which "
+		"sets/adds/removes those bits for the specified ugoa "
+		"combination, r means read, w means write and x means execute "
+		"for files or search for directories.  X has a special "
+		"meaning, if the file is a directory it is equivalent to x or "
+		"search, but if it is a non-directory, it only takes effect if "
+		"execute is already set for user, group or other.  The s flag "
+		"sets user or group ID on execution, and the t flag on a "
+		"directory sets restricted deletion, or historically made the "
+		"file sticky if a non-directory.\n\n",
+		"The permission bits can also be u, g or o, which takes the "
+			"permission bits from the user, group or other of the "
+			"file respectively.\n",
 	"\n", "Environment:", "\n",
 	"SOURCE_DATE_EPOCH\tIf set, this is used as the filesystem creation "
 		"timestamp.  Also any file timestamps which are after "
