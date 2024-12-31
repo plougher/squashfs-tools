@@ -151,7 +151,7 @@ REPRODUCIBLE_DEFAULT = 1
 # Change next variable to "y" to use the pre-built manpages by default,
 # and not attempt to generate "custom" manpages.  This will eliminate
 # errors and warnings at install time.
-USE_PREBUILT_MANPAGES=n
+USE_PREBUILT_MANPAGES = n
 
 ###############################################
 #              INSTALL PATHS                  #
@@ -202,7 +202,7 @@ XATTR_SUPPORT ?= 1
 XATTR_OS_SUPPORT ?= 1
 XATTR_DEFAULT ?= 1
 REPRODUCIBLE_DEFAULT ?= 1
-USE_PREBUILT_MANPAGES ?= 1
+USE_PREBUILT_MANPAGES ?= n
 INSTALL_PREFIX ?= /usr/local
 INSTALL_DIR ?= $(INSTALL_PREFIX)/bin
 INSTALL_MANPAGES_DIR ?= $(INSTALL_PREFIX)/man/man1
