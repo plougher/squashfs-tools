@@ -274,6 +274,10 @@ ${SED} -i "s/\(See also\):/*\1*/" $tmp/sqfstar.help
 
 ${SED} -i "s/\(Environment\):/*\1*/" $tmp/sqfstar.help
 
+# Make Symbolic mode specification header into a manpage section
+
+${SED} -i "s/\(Symbolic mode specification\):/*\1*/" $tmp/sqfstar.help
+
 if ! help2man -Ni sqfstar.h2m -o $2 $tmp/sqfstar.sh; then
 	error "$0: help2man returned error.  Aborting"
 	exit 1
