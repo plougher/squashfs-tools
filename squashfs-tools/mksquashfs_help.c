@@ -120,8 +120,8 @@ static char *sqfstar_args[]={
 
 static char *mksquashfs_sections[]={
 	"compression", "build", "filter", "xattrs", "runtime", "append",
-	"actions", "tar", "expert", "help", "misc", "pseudo", "environment",
-	"exit", "extra", NULL
+	"actions", "tar", "expert", "help", "misc", "pseudo", "symbolic",
+	"environment", "exit", "extra", NULL
 };
 
 static char *sqfstar_sections[]={
