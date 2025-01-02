@@ -126,7 +126,7 @@ static void dump_state()
 
 	reader = get_readers(&reader_threads);
 	for(i = 0; i < reader_threads; i++) {
-		printf("read cache %d (uncompressed blocks read by reader thread %d)\n", i + 1, i + 1);
+		printf("%s read cache %d (uncompressed blocks read by reader thread %d)\n", reader[i].type, i + 1, i + 1);
 		dump_cache(reader[i].buffer);
 	}
 

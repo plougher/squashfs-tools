@@ -725,6 +725,7 @@ void create_resources(int threads)
 
 	for(i = 0; i < threads; i++) {
 		reader[i].id = i;
+		reader[i].type = "";
 		reader[i].buffer = cache_init(block_size, per_thread, 0, 0);
 		reader[i].size = ALLOC_SIZE;
 		reader[i].pathname = NULL;
@@ -818,11 +819,15 @@ static void multi_thread(struct dir_info *dir)
 	if(thread == NULL)
 		MEM_ERROR();
 
-	for(i = 0; i < fragment_threads; i++)
+	for(i = 0; i < fragment_threads; i++) {
+		reader[i].type = "fragment";
 		pthread_create(&thread[i], NULL, fragment_reader, &reader[i]);
+	}
 
-	for(i = 0; i < block_threads; i++)
+	for(i = 0; i < block_threads; i++) {
+		reader[i + fragment_threads].type = "block";
 		pthread_create(&thread[i + fragment_threads], NULL, block_reader, &reader[i + fragment_threads]);
+	}
 
 	reader_thread = thread;
 
@@ -862,6 +867,7 @@ static void single_reader_scan(struct dir_info *dir)
 static void single_thread(struct dir_info *dir)
 {
 	create_resources(1);
+	reader[0].type = "combined";
 
 	if(!sorted)
 		single_reader_scan(dir);

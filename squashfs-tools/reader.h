@@ -45,6 +45,7 @@ struct read_entry {
 struct reader {
 	int		id;
 	int		size;
+	char		*type;
 	char		*pathname;
 	struct cache	*buffer;
 };
