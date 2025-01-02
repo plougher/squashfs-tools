@@ -21,6 +21,7 @@
  * tar.c
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -83,8 +84,11 @@ static long long read_binary(char *src, int size)
 	unsigned char *s = (unsigned char *) src;
 	long long res = 0;
 
-	for(; size; s++, size --)
+	for(; size; s++, size --) {
+		if (res > LLONG_MAX >> 8)
+			return -1;
 		res = (res << 8) + *s;
+	}
 
 	return res;
 }
