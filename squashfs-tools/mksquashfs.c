@@ -5409,11 +5409,11 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	frag_thread = &frag_deflator_thread[processors];
 
 	to_reader = queue_init(1, NULL);
-	to_deflate = read_queue_init(NULL);
+	to_deflate = read_queue_init(&thread_mutex);
 	to_process_frag = read_queue_init(NULL);
 	to_writer = queue_init(bwriter_size + fwriter_size, NULL);
 	from_writer = queue_init(1, NULL);
-	to_frag = queue_init(fragment_size, NULL);
+	to_frag = queue_init(fragment_size, &thread_mutex);
 	to_main = seq_queue_init();
 	if(reproducible)
 		to_order = seq_queue_init();

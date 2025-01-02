@@ -28,7 +28,7 @@
 #include "mksquashfs_error.h"
 #include "thread.h"
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t idle = PTHREAD_COND_INITIALIZER;
 
 static struct thread *threads = NULL;
@@ -42,8 +42,8 @@ int get_thread_id(int type)
 {
 	int id;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
-	pthread_mutex_lock(&mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &thread_mutex);
+	pthread_mutex_lock(&thread_mutex);
 
 	if(threads == NULL) {
 		total = get_nprocessors();
@@ -69,7 +69,7 @@ int get_thread_id(int type)
 
 
 /*
- * Called with the queue mutex held.
+ * Called with the thread mutex held.
  */
 void set_thread_idle(int tid)
 {
@@ -85,7 +85,7 @@ void set_thread_idle(int tid)
 
 
 /*
- * Called with the queue mutex held.
+ * Called with the thread mutex held.
  */
 void wait_thread_idle(int tid, pthread_mutex_t *queue_mutex)
 {
