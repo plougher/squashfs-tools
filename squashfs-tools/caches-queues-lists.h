@@ -135,7 +135,7 @@ struct queue {
 	int			size;
 	int			readp;
 	int			writep;
-	pthread_mutex_t		mutex;
+	pthread_mutex_t		*mutex;
 	pthread_cond_t		empty;
 	pthread_cond_t		full;
 	void			**data;
@@ -207,7 +207,7 @@ inline int cache_maxsize(struct cache *cache)
 }
 
 
-extern struct queue *queue_init(int);
+extern struct queue *queue_init(int, pthread_mutex_t *mutex);
 extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);
 extern int queue_empty(struct queue *);

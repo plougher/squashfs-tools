@@ -37,7 +37,7 @@ extern int multiply_overflow(int, int);
 #define TRUE 1
 #define FALSE 0
 
-struct queue *queue_init(int size)
+struct queue *queue_init(int size, pthread_mutex_t *mutex)
 {
 	struct queue *queue = malloc(sizeof(struct queue));
 
@@ -54,7 +54,17 @@ struct queue *queue_init(int size)
 
 	queue->size = size + 1;
 	queue->readp = queue->writep = 0;
-	pthread_mutex_init(&queue->mutex, NULL);
+
+	if(mutex)
+		queue->mutex = mutex;
+	else {
+		queue->mutex = malloc(sizeof(pthread_mutex_t));
+		if(queue->mutex == NULL)
+			MEM_ERROR();
+
+		pthread_mutex_init(queue->mutex, NULL);
+	}
+
 	pthread_cond_init(&queue->empty, NULL);
 	pthread_cond_init(&queue->full, NULL);
 
@@ -66,11 +76,11 @@ void queue_put(struct queue *queue, void *data)
 {
 	int nextp;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	while((nextp = (queue->writep + 1) % queue->size) == queue->readp)
-		pthread_cond_wait(&queue->full, &queue->mutex);
+		pthread_cond_wait(&queue->full, queue->mutex);
 
 	queue->data[queue->writep] = data;
 	queue->writep = nextp;
@@ -83,11 +93,11 @@ void *queue_get(struct queue *queue)
 {
 	void *data;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	while(queue->readp == queue->writep)
-		pthread_cond_wait(&queue->empty, &queue->mutex);
+		pthread_cond_wait(&queue->empty, queue->mutex);
 
 	data = queue->data[queue->readp];
 	queue->readp = (queue->readp + 1) % queue->size;
@@ -102,8 +112,8 @@ int queue_empty(struct queue *queue)
 {
 	int empty;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	empty = queue->readp == queue->writep;
 
@@ -115,8 +125,8 @@ int queue_empty(struct queue *queue)
 
 void queue_flush(struct queue *queue)
 {
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	queue->readp = queue->writep;
 
@@ -128,15 +138,15 @@ void *queue_get_tid(int tid, struct queue *queue)
 {
 	void *data;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	while(1) {
-		wait_thread_idle(tid, &queue->mutex);
+		wait_thread_idle(tid, queue->mutex);
 
 		if(queue->readp == queue->writep) {
 			set_thread_idle(tid);
-			pthread_cond_wait(&queue->empty, &queue->mutex);
+			pthread_cond_wait(&queue->empty, queue->mutex);
 		} else
 			break;
 	}
@@ -152,8 +162,8 @@ void *queue_get_tid(int tid, struct queue *queue)
 
 void dump_queue(struct queue *queue)
 {
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	printf("\tMax size %d, size %d%s\n", queue->size - 1,  
 		queue->readp <= queue->writep ? queue->writep - queue->readp :

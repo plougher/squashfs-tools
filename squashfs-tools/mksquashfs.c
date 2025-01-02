@@ -5408,17 +5408,17 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	frag_deflator_thread = &deflator_thread[processors];
 	frag_thread = &frag_deflator_thread[processors];
 
-	to_reader = queue_init(1);
+	to_reader = queue_init(1, NULL);
 	to_deflate = read_queue_init();
 	to_process_frag = read_queue_init();
-	to_writer = queue_init(bwriter_size + fwriter_size);
-	from_writer = queue_init(1);
-	to_frag = queue_init(fragment_size);
+	to_writer = queue_init(bwriter_size + fwriter_size, NULL);
+	from_writer = queue_init(1, NULL);
+	to_frag = queue_init(fragment_size, NULL);
 	to_main = seq_queue_init();
 	if(reproducible)
 		to_order = seq_queue_init();
 	else
-		locked_fragment = queue_init(fragment_size);
+		locked_fragment = queue_init(fragment_size, NULL);
 	bwriter_buffer = cache_init(block_size, bwriter_size, 1, freelst);
 	fwriter_buffer = cache_init(block_size, fwriter_size, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_size, 1, 0);
