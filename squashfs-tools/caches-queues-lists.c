@@ -396,7 +396,7 @@ int earlier_buffer(struct file_buffer *new, struct file_buffer *old) {
 }
 
 
-struct read_queue *read_queue_init(void)
+struct read_queue *read_queue_init(pthread_mutex_t *mutex)
 {
 	struct read_queue *queue = malloc(sizeof(struct read_queue));
 
@@ -405,7 +405,16 @@ struct read_queue *read_queue_init(void)
 
 	queue->threads = queue->count = 0;
 
-	pthread_mutex_init(&queue->mutex, NULL);
+	if(mutex)
+		queue->mutex = mutex;
+	else {
+		queue->mutex = malloc(sizeof(pthread_mutex_t));
+		if(queue->mutex == NULL)
+			MEM_ERROR();
+
+		pthread_mutex_init(queue->mutex, NULL);
+	}
+
 	pthread_cond_init(&queue->empty, NULL);
 
 	return queue;
@@ -416,8 +425,8 @@ void read_queue_set(struct read_queue *queue, int threads, int size)
 {
 	int i;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	if(add_overflow(size, 1) ||
 				multiply_overflow(size + 1, sizeof(struct file_buffer *)))
@@ -447,13 +456,13 @@ void read_queue_put(struct read_queue *queue, int id, struct file_buffer *buffer
 	struct readq_thrd *thread;
 	int nextp;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	thread = &queue->thread[id];
 
 	while((nextp = (thread->writep + 1) % thread->size) == thread->readp)
-		pthread_cond_wait(&thread->full, &queue->mutex);
+		pthread_cond_wait(&thread->full, queue->mutex);
 
 	thread->buffer[thread->writep] = buffer;
 	thread->writep = nextp;
@@ -468,8 +477,8 @@ struct file_buffer *read_queue_get(struct read_queue *queue)
 	struct file_buffer *buffer = NULL;
 	int i, id, empty = TRUE;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	while(1) {
 		for(i = 0; i < queue->threads; i++) {
@@ -486,7 +495,7 @@ struct file_buffer *read_queue_get(struct read_queue *queue)
 		}
 
 		if(empty)
-			pthread_cond_wait(&queue->empty, &queue->mutex);
+			pthread_cond_wait(&queue->empty, queue->mutex);
 		else
 			break;
 	}
@@ -505,11 +514,11 @@ struct file_buffer *read_queue_get_tid(int tid, struct read_queue *queue)
 	struct file_buffer *buffer = NULL;
 	int i, id, empty = TRUE;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	while(1) {
-		wait_thread_idle(tid, &queue->mutex);
+		wait_thread_idle(tid, queue->mutex);
 
 		for(i = 0; i < queue->threads; i++) {
 			struct readq_thrd *thread = &queue->thread[i];
@@ -526,7 +535,7 @@ struct file_buffer *read_queue_get_tid(int tid, struct read_queue *queue)
 
 		if(empty) {
 			set_thread_idle(tid);
-			pthread_cond_wait(&queue->empty, &queue->mutex);
+			pthread_cond_wait(&queue->empty, queue->mutex);
 		} else
 			break;
 	}
@@ -544,8 +553,8 @@ void read_queue_flush(struct read_queue *queue)
 {
 	int i;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	for(i = 0; i < queue->threads; i++)
 		queue->thread[i].readp = queue->thread[i].writep;
@@ -556,8 +565,8 @@ void read_queue_flush(struct read_queue *queue)
 
 void dump_read_queue(struct read_queue *queue)
 {
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
-	pthread_mutex_lock(&queue->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
+	pthread_mutex_lock(queue->mutex);
 
 	printf("\tSize %d%s\n", queue->count, queue->count == 0 ? " (EMPTY)" : "");
 
