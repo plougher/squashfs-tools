@@ -44,6 +44,7 @@
 #include "caches-queues-lists.h"
 #include "signals.h"
 #include "reader.h"
+#include "thread.h"
 
 static int silent = 0;
 static struct dir_ent *ent = NULL;
@@ -84,7 +85,7 @@ static void dump_state()
 
 	disable_progress_bar();
 
-	printf("Queue and Cache status dump\n");
+	printf("Queues, caches and threads status dump\n");
 	printf("===========================\n");
 
 	printf("file buffer queue (reader thread -> deflate thread(s))\n");
@@ -144,6 +145,8 @@ static void dump_state()
 	printf("fragment reserve cache (avoids pipeline stall if frag cache"
 						" full in dup check)\n");
 	dump_cache(reserve_cache);
+
+	dump_threads();
 
 	enable_progress_bar();
 }

@@ -23,16 +23,16 @@
 
 #include <pthread.h>
 #include <stdlib.h>
+#include <stdio.h>
 
-#include "nprocessors_compat.h"
 #include "mksquashfs_error.h"
 #include "thread.h"
 
+extern int processors;
 pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t idle = PTHREAD_COND_INITIALIZER;
 
 static struct thread *threads = NULL;
-static int total = 0;
 static int cur = 0;
 static int active_frags = 0;
 static int active_blocks = 0;
@@ -46,9 +46,7 @@ int get_thread_id(int type)
 	pthread_mutex_lock(&thread_mutex);
 
 	if(threads == NULL) {
-		total = get_nprocessors();
-
-		threads = malloc(total * 2 * sizeof(struct thread));
+		threads = malloc(processors * 2 * sizeof(struct thread));
 		if(threads == NULL)
 			MEM_ERROR();
 	}
@@ -95,7 +93,7 @@ void wait_thread_idle(int tid, pthread_mutex_t *queue_mutex)
 		if(threads[tid].state == THREAD_IDLE)
 			active_blocks ++;
 
-		while(active_frags + active_blocks > total) {
+		while(active_frags + active_blocks > processors) {
 			active_blocks --;
 			threads[tid].state = THREAD_IDLE;
 			waiting_threads ++;
@@ -106,4 +104,36 @@ void wait_thread_idle(int tid, pthread_mutex_t *queue_mutex)
 	}
 
 	threads[tid].state = THREAD_ACTIVE;
+}
+
+
+void dump_threads()
+{
+	int i, j;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &thread_mutex);
+	pthread_mutex_lock(&thread_mutex);
+
+	printf("Total fragment deflator threads %d, active %d:", processors, active_frags);
+
+	for(i = 0, j = 1; i < (processors * 2); i++) {
+		if(threads[i].type == THREAD_FRAGMENT) {
+			if(threads[i].state == THREAD_ACTIVE)
+				printf(" %d", j);
+			j ++;
+		}
+	}
+
+	printf("\nTotal block deflator threads %d, active %d:", processors, active_blocks);
+
+	for(i = 0, j = 1; i < (processors * 2); i++) {
+		if(threads[i].type == THREAD_BLOCK) {
+			if(threads[i].state == THREAD_ACTIVE)
+				printf(" %d", j);
+			j ++;
+		}
+	}
+
+	printf("\n");
+	pthread_cleanup_pop(1);
 }
