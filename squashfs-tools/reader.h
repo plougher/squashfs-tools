@@ -29,6 +29,11 @@
 #define READAHEAD_INDEX(A)		((A >> 13) & 0xfffff)
 #define READAHEAD_OFFSET(A)		(A % READAHEAD_SIZE)
 
+/* reader type */
+#define COMBINED_READER	1
+#define FRAGMENT_READER	2
+#define BLOCK_READER	3
+
 struct readahead {
 	long long		start;
 	int			size;

@@ -256,7 +256,7 @@ read_err:
 }
 
 
-static void reader_read_file(struct reader *reader, struct read_entry *entry)
+static void reader_read_file(struct reader *reader, struct read_entry *entry, int reader_type)
 {
 	struct stat *buf = &entry->dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
@@ -750,7 +750,7 @@ void *block_reader(void *arg)
 		else if(IS_PSEUDO_DATA(entry->dir_ent->inode))
 			reader_read_data(reader, entry);
 		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
-			reader_read_file(reader, entry);
+			reader_read_file(reader, entry, BLOCK_READER);
 		else
 			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
@@ -774,7 +774,7 @@ void *fragment_reader(void *arg)
 		else if(IS_PSEUDO_DATA(entry->dir_ent->inode))
 			reader_read_data(reader, entry);
 		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
-			reader_read_file(reader, entry);
+			reader_read_file(reader, entry, FRAGMENT_READER);
 		else
 			BAD_ERROR("Unexpected file type when reading files!\n");
 	}
@@ -857,7 +857,7 @@ static void single_reader_scan(struct dir_info *dir)
 		else if(IS_PSEUDO_DATA(dir_ent->inode))
 			reader_read_data(&reader[0], &entry);
 		else if(S_ISREG(dir_ent->inode->buf.st_mode))
-			reader_read_file(&reader[0], &entry);
+			reader_read_file(&reader[0], &entry, COMBINED_READER);
 		else if(S_ISDIR(dir_ent->inode->buf.st_mode))
 			single_reader_scan(dir_ent->dir);
 	}
@@ -882,7 +882,7 @@ static void single_thread(struct dir_info *dir)
 					entry->dir->inode->scanned = TRUE;
 					ent.dir_ent = entry->dir;
 					ent.file_count = file_count ++;
-					reader_read_file(&reader[0], &ent);
+					reader_read_file(&reader[0], &ent, COMBINED_READER);
 				}
 			}
 		}
