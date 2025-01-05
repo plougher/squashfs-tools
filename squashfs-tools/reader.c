@@ -871,9 +871,6 @@ static void single_reader_scan(struct dir_info *dir)
 
 static void single_thread(struct dir_info *dir)
 {
-	create_resources(1);
-	reader[0].type = "combined";
-
 	if(!sorted)
 		single_reader_scan(dir);
 	else {
@@ -911,15 +908,18 @@ void *initial_reader(void *arg)
 	}
 
 	if(tarfile) {
-		read_tar_file();
-		file_count = 1;
-		to_main->block = to_main->version = 0;
-		to_main->file_count = 1;
+		create_resources(reader_threads = 1);
+		reader[0].type = "combined";
+		file_count = read_tar_file();
 		single_thread(queue_get(to_reader));
 	} else if(reader_threads > 1)
 		multi_thread(dir);
-	else
+	else {
+		create_resources(1);
+		reader[0].type = "combined";
+
 		single_thread(dir);
+	}
 
 	pthread_exit(NULL);
 }

@@ -55,7 +55,7 @@ unsigned int default_gid;
 int default_mode_opt = FALSE;
 mode_t default_mode;
 
-static long long block = 0;
+static long long sequence = 0;
 static struct reader *reader;
 
 static long long read_octal(char *s, int size)
@@ -632,11 +632,12 @@ static void read_tar_data(struct tar_file *tar_file)
 		file_buffer = cache_get_nohash(reader[0].buffer);
 		file_buffer->file_size = read_size;
 		file_buffer->tar_file = tar_file;
-		file_buffer->file_count = 0;
-		file_buffer->block = block ++;
+		file_buffer->file_count = sequence ++;
+		file_buffer->block = 0;
 		file_buffer->version = 0;
 		file_buffer->noD = noD;
 		file_buffer->error = FALSE;
+		file_buffer->next_state = NEXT_FILE;
 
 		if((block + 1) < blocks) {
 			/* non-tail block should be exactly block_size */
@@ -1511,7 +1512,7 @@ eof:
 }
 
 
-void read_tar_file()
+long long read_tar_file()
 {
 	struct tar_file *tar_file;
 	int status, res;
@@ -1556,10 +1557,11 @@ void read_tar_file()
 		file_buffer->cache = NULL;
 		file_buffer->fragment = FALSE;
 		file_buffer->tar_file = tar_file;
-		file_buffer->file_count = 0;
-		file_buffer->block = block ++;
+		file_buffer->file_count = sequence ++;
+		file_buffer->block = 0;
 		file_buffer->version = 0;
-		file_buffer->next_state = NEXT_BLOCK;
+		file_buffer->error = FALSE;
+		file_buffer->next_state = NEXT_FILE;
 		main_queue_put(to_main, file_buffer);
 
 		if(status == TAR_EOF)
@@ -1568,6 +1570,8 @@ void read_tar_file()
 		if(S_ISREG(tar_file->buf.st_mode))
 			read_tar_data(tar_file);
 	}
+
+	return sequence;
 }
 
 
