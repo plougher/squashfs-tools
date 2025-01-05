@@ -338,6 +338,11 @@ again:
 	return;
 
 restat:
+	/* For now the code can't handle files which change size unless
+	 * only a single reader (COMBINED_READER) is being used. */
+	if(reader_type != COMBINED_READER)
+		BAD_ERROR("The reader code can't currently handle files that change size unless a single reader thread is used!");
+
 	if(version == 1023)
 		/* File has changed size too many times.  Treat this
 		 * as an irretrievable error */
