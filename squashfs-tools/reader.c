@@ -955,3 +955,33 @@ pthread_t *get_reader_threads(int *num)
 
 	return threads;
 }
+
+
+int set_read_frag_threads(int fragments)
+{
+	if(fragments <= 0 || fragments > 32)
+		return FALSE;
+
+	fragment_threads = fragments;
+	reader_threads = fragment_threads + block_threads;
+
+	return TRUE;
+}
+
+
+int set_read_block_threads(int blocks)
+{
+	if(blocks <= 0 || blocks > 32)
+		return FALSE;
+
+	block_threads = blocks;
+	reader_threads = fragment_threads + block_threads;
+
+	return TRUE;
+}
+
+
+void set_single_threaded()
+{
+	reader_threads = 1;
+}

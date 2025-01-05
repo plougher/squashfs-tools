@@ -351,7 +351,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-time", "root-uid", "root-gid", "xattrs-exclude", "xattrs-include",
 	"xattrs-add", "default-mode", "default-uid", "default-gid",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
-	"hs", NULL
+	"hs", "frag-reader-threads", "block-reader-threads", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -359,7 +359,8 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"processors", "mem", "offset", "o", "root-time", "root-uid",
 	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
 	"default-mode", "default-uid", "default-gid", "mem-percent", "pd",
-	"pseudo-dir", "help-option", "ho", "help-section", "hs", NULL
+	"pseudo-dir", "help-option", "ho", "help-section", "hs",
+	"frag-reader-threads", "block-reader-threads", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
@@ -6973,7 +6974,27 @@ static int sqfstar(int argc, char *argv[])
 			progressbar_percentage();
 			progress = silent = TRUE;
 
-		} else
+		} else if(strcmp(argv[i], "-frag-reader-threads") == 0) {
+			if(++i == dest_index) {
+				ERROR("sqfstar: -frag-reader-threads missing thread count\n");
+				sqfstar_option_help(argv[i - 1]);
+			}
+			if(!parse_num(argv[i], &res) || set_read_frag_threads(res)) {
+				ERROR("sqfstar: -frag-reader-threads invalid thread count\n");
+				sqfstar_option_help(argv[i - 1]);
+			}
+		} else if(strcmp(argv[i], "-block-reader-threads") == 0) {
+			if(++i == dest_index) {
+				ERROR("sqfstar: -block-reader-threads missing thread count\n");
+				sqfstar_option_help(argv[i - 1]);
+			}
+			if(!parse_num(argv[i], &res) || set_read_block_threads(res)) {
+				ERROR("sqfstar: -block-reader-threads invalid thread count\n");
+				sqfstar_option_help(argv[i - 1]);
+			}
+		} else if(strcmp(argv[i], "-single-reader-thread") == 0)
+				set_single_threaded();
+		else
 			sqfstar_invalid_option(argv[i]);
 	}
 
@@ -8041,7 +8062,27 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-comp") == 0) {
 			/* parsed previously */
 			i++;
-		} else
+		} else if(strcmp(argv[i], "-frag-reader-threads") == 0) {
+			if(++i == argc) {
+				ERROR("mksquashfs: -frag-reader-threads missing thread count\n");
+				mksquashfs_option_help(argv[i - 1]);
+			}
+			if(!parse_num(argv[i], &res) || set_read_frag_threads(res)) {
+				ERROR("mksquashfs: -frag-reader-threads invalid thread count\n");
+				mksquashfs_option_help(argv[i - 1]);
+			}
+		} else if(strcmp(argv[i], "-block-reader-threads") == 0) {
+			if(++i == argc) {
+				ERROR("mksquashfs: -block-reader-threads missing thread count\n");
+				mksquashfs_option_help(argv[i - 1]);
+			}
+			if(!parse_num(argv[i], &res) || set_read_block_threads(res)) {
+				ERROR("mksquashfs: -block-reader-threads invalid thread count\n");
+				mksquashfs_option_help(argv[i - 1]);
+			}
+		} else if(strcmp(argv[i], "-single-reader-thread") == 0)
+				set_single_threaded();
+		else
 			mksquashfs_invalid_option(argv[i]);
 	}
 
