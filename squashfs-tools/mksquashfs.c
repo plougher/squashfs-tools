@@ -340,6 +340,9 @@ char *recovery_file = NULL;
 char *recovery_pathname = NULL;
 int recover = TRUE;
 
+/* temporary variable to force single threaded reader mode */
+int force_single_threaded = FALSE;
+
 /* list of options that have an argument */
 char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-mode", "force-uid", "force-gid", "action", "log-action",
@@ -6983,6 +6986,8 @@ static int sqfstar(int argc, char *argv[])
 				ERROR("sqfstar: -frag-reader-threads invalid thread count\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
+			if(force_single_threaded)
+				BAD_ERROR("Can't set multithreaded reader as pseudo file contains R definition!\n");
 		} else if(strcmp(argv[i], "-block-reader-threads") == 0) {
 			if(++i == dest_index) {
 				ERROR("sqfstar: -block-reader-threads missing thread count\n");
@@ -6992,6 +6997,8 @@ static int sqfstar(int argc, char *argv[])
 				ERROR("sqfstar: -block-reader-threads invalid thread count\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
+			if(force_single_threaded)
+				BAD_ERROR("Can't set multithreaded reader as pseudo file contains R definition!\n");
 		} else if(strcmp(argv[i], "-single-reader-thread") == 0)
 				set_single_threaded();
 		else
@@ -7003,6 +7010,9 @@ static int sqfstar(int argc, char *argv[])
 		sqfstar_help(TRUE);
 		exit(1);
 	}
+
+	if(force_single_threaded)
+		set_single_threaded();
 
 	check_source_date_epoch();
 
@@ -8070,7 +8080,11 @@ int main(int argc, char *argv[])
 			if(!parse_num(argv[i], &res) || set_read_frag_threads(res)) {
 				ERROR("mksquashfs: -frag-reader-threads invalid thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
+			if(force_single_threaded)
+				BAD_ERROR("Can't set multithreaded reader as pseudo file contains R definition!\n");
 			}
+			if(force_single_threaded)
+				BAD_ERROR("Can't set multithreaded reader as pseudo file contains R definition!\n");
 		} else if(strcmp(argv[i], "-block-reader-threads") == 0) {
 			if(++i == argc) {
 				ERROR("mksquashfs: -block-reader-threads missing thread count\n");
@@ -8085,6 +8099,9 @@ int main(int argc, char *argv[])
 		else
 			mksquashfs_invalid_option(argv[i]);
 	}
+
+	if(force_single_threaded)
+		set_single_threaded();
 
 	check_source_date_epoch();
 
