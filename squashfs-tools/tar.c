@@ -976,7 +976,7 @@ static struct file_map *read_sparse_headers(struct tar_file *file, struct short_
 
 	/* If we've read two or less entries, then we expect the isextended
 	 * entry to be FALSE */
-	isextended = read_number(&short_header->isextended, 1);
+	isextended = short_header->isextended;
 	if(i < 3 && isextended) {
 		ERROR("Invalid sparse header\n");
 		goto failed;
@@ -1015,7 +1015,7 @@ static struct file_map *read_sparse_headers(struct tar_file *file, struct short_
 
 		/* If we've read less than 21 entries, then we expect the isextended
 		 * entry to be FALSE */
-		isextended = read_number(&long_header.isextended, 1);
+		isextended = long_header.isextended;
 		if(i < (map_entries + 21) && isextended) {
 			ERROR("Invalid sparse header\n");
 			goto failed;
