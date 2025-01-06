@@ -6982,23 +6982,23 @@ static int sqfstar(int argc, char *argv[])
 				ERROR("sqfstar: -frag-reader-threads missing thread count\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
-			if(!parse_num(argv[i], &res) || set_read_frag_threads(res)) {
+			if(force_single_threaded)
+				ERROR("Warning: ignoring -frag-reader-threads option because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
+			else if(!parse_num(argv[i], &res) || !set_read_frag_threads(res)) {
 				ERROR("sqfstar: -frag-reader-threads invalid thread count\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
-			if(force_single_threaded)
-				BAD_ERROR("Can't set multithreaded reader as pseudo file contains R definition!\n");
 		} else if(strcmp(argv[i], "-block-reader-threads") == 0) {
 			if(++i == dest_index) {
 				ERROR("sqfstar: -block-reader-threads missing thread count\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
-			if(!parse_num(argv[i], &res) || set_read_block_threads(res)) {
+			if(force_single_threaded)
+				ERROR("Warning: ignoring -block-reader-threads option because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
+			else if(!parse_num(argv[i], &res) || !set_read_block_threads(res)) {
 				ERROR("sqfstar: -block-reader-threads invalid thread count\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
-			if(force_single_threaded)
-				BAD_ERROR("Can't set multithreaded reader as pseudo file contains R definition!\n");
 		} else if(strcmp(argv[i], "-single-reader-thread") == 0)
 				set_single_threaded();
 		else
@@ -7011,8 +7011,10 @@ static int sqfstar(int argc, char *argv[])
 		exit(1);
 	}
 
-	if(force_single_threaded)
+	if(force_single_threaded) {
+		ERROR("Warning: using single threaded reader because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
 		set_single_threaded();
+	}
 
 	check_source_date_epoch();
 
@@ -8077,31 +8079,33 @@ int main(int argc, char *argv[])
 				ERROR("mksquashfs: -frag-reader-threads missing thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
-			if(!parse_num(argv[i], &res) || set_read_frag_threads(res)) {
+			if(force_single_threaded)
+				ERROR("Warning: ignoring -frag-reader-threads option because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
+			else if(!parse_num(argv[i], &res) || !set_read_frag_threads(res)) {
 				ERROR("mksquashfs: -frag-reader-threads invalid thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
-			if(force_single_threaded)
-				BAD_ERROR("Can't set multithreaded reader as pseudo file contains R definition!\n");
 			}
-			if(force_single_threaded)
-				BAD_ERROR("Can't set multithreaded reader as pseudo file contains R definition!\n");
 		} else if(strcmp(argv[i], "-block-reader-threads") == 0) {
 			if(++i == argc) {
 				ERROR("mksquashfs: -block-reader-threads missing thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
-			if(!parse_num(argv[i], &res) || set_read_block_threads(res)) {
+			if(force_single_threaded)
+				ERROR("Warning: ignoring -block-reader-threads option because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
+			else if(!parse_num(argv[i], &res) || !set_read_block_threads(res)) {
 				ERROR("mksquashfs: -block-reader-threads invalid thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-single-reader-thread") == 0)
-				set_single_threaded();
+			set_single_threaded();
 		else
 			mksquashfs_invalid_option(argv[i]);
 	}
 
-	if(force_single_threaded)
+	if(force_single_threaded) {
+		ERROR("Warning: using single threaded reader because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
 		set_single_threaded();
+	}
 
 	check_source_date_epoch();
 
