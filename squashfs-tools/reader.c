@@ -718,6 +718,9 @@ void create_resources(int threads)
 {
 	int i, per_thread = reader_size / threads;
 
+	if(per_thread < 4)
+		BAD_ERROR("Insufficient buffers for %d reader threads!  Please reduce reader threads or increase memory\n", threads);
+
 	read_queue_set(to_deflate, threads, per_thread);
 	read_queue_set(to_process_frag, threads, per_thread);
 
