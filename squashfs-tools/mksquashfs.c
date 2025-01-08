@@ -3265,7 +3265,7 @@ again:
 		ERROR_EXIT(", creating empty file\n");
 		file = write_file_empty(dir, NULL, dup);
 	} else if(status)
-		BAD_ERROR("Unexpected status value in write_file()");
+		BAD_ERROR("Unexpected status value in write_file()\n");
 
 	return file;
 }
