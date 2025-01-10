@@ -915,10 +915,10 @@ void *initial_reader(void *arg)
 		reader[0].type = "combined";
 		file_count = read_tar_file();
 		single_thread(queue_get(to_reader));
-	} else if(reader_threads > 1)
+	} else if(!sleep_time && reader_threads > 1)
 		multi_thread(dir);
 	else {
-		create_resources(1);
+		create_resources(reader_threads = 1);
 		reader[0].type = "combined";
 
 		single_thread(dir);
