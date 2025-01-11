@@ -221,7 +221,6 @@ static inline int get_pathmax()
 	return path_max;
 }
 
-extern int sleep_time;
 extern struct cache *reader_buffer, *fragment_buffer, *reserve_cache;
 extern struct cache *bwriter_buffer, *fwriter_buffer;
 extern struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
