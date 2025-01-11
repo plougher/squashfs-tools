@@ -1404,20 +1404,29 @@ again:
 
 	/* Read major and minor for device files */
 	if(type == S_IFCHR || type == S_IFBLK) {
-		int major, minor;
+		long long res, rdev;
+		unsigned long long major, minor;
 
-		major = read_number(header.major, 8);
-		if(major == -1) {
+		res = read_number(header.major, 8);
+		if(res == -1) {
 			ERROR("Failed to read device major tar header\n");
 			goto failed;
 		}
+		major = res;
 
-		minor = read_number(header.minor, 8);
-		if(minor == -1) {
+		res = read_number(header.minor, 8);
+		if(res == -1) {
 			ERROR("Failed to read device minor from tar header\n");
 			goto failed;
 		}
-		file->buf.st_rdev = (major << 8) | (minor & 0xff) | ((minor & ~0xff) << 12);
+		minor = res;
+
+		rdev = (major << 8) | (minor & 0xff) | ((minor & ~0xff) << 12);
+		file->buf.st_rdev = rdev;
+		if(file->buf.st_rdev != rdev) {
+			ERROR("Failed to read device major/minor from tar header\n");
+			goto failed;
+		}
 	}
 
 	/* Handle symbolic links */
