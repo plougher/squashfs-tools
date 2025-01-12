@@ -55,10 +55,10 @@ struct reader {
 	struct cache	*buffer;
 };
 
-extern int reader_size;
 extern struct reader *get_readers(int *);
 extern pthread_t *get_reader_threads(int *);
 extern int set_read_frag_threads(int);
 extern int set_read_block_threads(int);
 extern void set_single_threaded();
+extern void set_reader_size(int, int);
 #endif

@@ -5360,10 +5360,11 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	 * This isn't going to overflow an int unless there exists
 	 * systems with more than 8 Petabytes of RAM!
 	 */
-	reader_size = readq << (20 - block_log);
 	fragment_size = fragq << (20 - block_log);
 	bwriter_size = bwriteq << (20 - block_log);
 	fwriter_size = fwriteq << (20 - block_log);
+
+	set_reader_size(readq << (20 - block_log), readq);
 
 	/*
 	 * setup signal handlers for the main thread, these cleanup

@@ -58,7 +58,7 @@ static struct reader *reader = NULL;
 static struct readahead **readahead_table = NULL;
 static pthread_t *reader_thread = NULL;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-int reader_size;
+static int total_blocks, total_mbytes;
 
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
 int sleep_time;
@@ -716,7 +716,7 @@ static void reader_scan(struct dir_info *dir)
 
 void create_resources(int threads)
 {
-	int i, per_thread = reader_size / threads;
+	int i, per_thread = total_blocks / threads;
 
 	if(per_thread < 4)
 		BAD_ERROR("Insufficient buffers for %d reader threads!  Please reduce reader threads or increase memory\n", threads);
@@ -987,4 +987,11 @@ int set_read_block_threads(int blocks)
 void set_single_threaded()
 {
 	reader_threads = 1;
+}
+
+
+void set_reader_size(int blocks, int mbytes)
+{
+	total_blocks = blocks;
+	total_mbytes = mbytes;
 }
