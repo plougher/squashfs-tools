@@ -34,6 +34,9 @@
 #define FRAGMENT_READER	2
 #define BLOCK_READER	3
 
+/* minimum blocks per reader thread */
+#define BLOCKS_MIN	4
+
 struct readahead {
 	long long		start;
 	int			size;

@@ -718,8 +718,16 @@ void create_resources(int threads)
 {
 	int i, per_thread = total_blocks / threads;
 
-	if(per_thread < 4)
-		BAD_ERROR("Insufficient buffers for %d reader threads!  Please reduce reader threads or increase memory\n", threads);
+	if(per_thread < BLOCKS_MIN) {
+		int blocks = BLOCKS_MIN * threads;
+		int mbytes = blocks / (total_blocks / total_mbytes) ? : 1;
+		int min_mem = mbytes * SQUASHFS_READQ_MEM;
+		int max_threads = total_blocks / BLOCKS_MIN;
+
+		BAD_ERROR("Insufficient buffers for %d reader threads!\n"
+			"Please reduce reader threads to %d or increase memory "
+			"to %d Mbytes\n", threads, max_threads, min_mem);
+	}
 
 	read_queue_set(to_deflate, threads, per_thread);
 	read_queue_set(to_process_frag, threads, per_thread);
