@@ -1349,6 +1349,10 @@ again:
 			goto failed;
 		}
 		file->buf.st_mtime = res;
+		if(file->buf.st_mtime != res) {
+			ERROR("Failed to read file mtime from tar header\n");
+			goto failed;
+		}
 	}
 
 	/* Read mode and file type */
