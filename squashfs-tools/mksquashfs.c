@@ -4482,7 +4482,7 @@ static void dir_scan6(struct dir_info *dir)
 
 
 /*
- * dir_scan6 routines...
+ * dir_scan7 routines...
  * This generates the filesystem metadata and writes it out to the destination
  */
 static void scan7_init_dir(struct directory *dir)
