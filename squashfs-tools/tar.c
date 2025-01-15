@@ -728,7 +728,7 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 	int map_entries = 0, cur_entry = 0;
 	char *name = NULL;
 
-	data = MALLOC(size);
+	data = MALLOC(size + 1);
 	res = read_bytes(STDIN_FILENO, data, size);
 	if(res < size) {
 		if(res != -1)
@@ -736,6 +736,7 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 		free(data);
 		return FALSE;
 	}
+	data[size] = '\0';
 
 	for(ptr = data, end = data + st_size; ptr < end;) {
 		/*
