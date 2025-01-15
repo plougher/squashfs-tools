@@ -425,9 +425,9 @@ static void handle_invalid_option(char *prog_name, char *opt_name, char **sectio
 	int cols = get_column_width();
 
 	autowrap_printf(stderr, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
-	fprintf(stderr, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	autowrap_printf(stderr, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	fprintf(stderr, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stderr, "\t", cols, sections, options_text);
-	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
@@ -439,9 +439,9 @@ static void print_help(char *prog_name, int error, char *syntax, char **sections
 	int cols = get_column_width();
 
 	autowrap_printf(stream, cols, syntax, prog_name);
-	autowrap_printf(stream, cols, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	autowrap_printf(stream, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stream, "\t", cols, sections, options_text);
-	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(error);
 }
@@ -452,9 +452,9 @@ static void print_option_help(char *prog_name, char *option, char **sections, ch
 	int cols = get_column_width();
 
 	autowrap_printf(stderr, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
-	autowrap_printf(stderr, cols, "Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols, sections, options_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(stderr, "\t", cols, sections, options_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
