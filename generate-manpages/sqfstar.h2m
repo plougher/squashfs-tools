@@ -48,6 +48,10 @@ Set all file and directory timestamps to "now" (current time) in the filesystem.
 sqfstar -force-uid phillip -force-gid phillip IMAGE.SQFS < archive.tar
 Make all files and directories in the filesystem owned by "phillip".
 .TP
+sqfstar -force-file-mode ugo+r,go-w IMAGE.SQFS < archive.tar
+Make all files readable by everyone, but only writable by user, all other
+permission bits are unaffected.
+.TP
 sqfstar IMAGE.SQFS file1 file2 < archive.tar
 Exclude file1 and file2 from the tar file when creating filesystem.
 .TP
