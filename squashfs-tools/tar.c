@@ -737,7 +737,7 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 	int map_entries = 0, cur_entry = 0;
 	char *name = NULL;
 
-	data = malloc(size);
+	data = malloc(size + 1);
 	if(data == NULL)
 		MEM_ERROR();
 
@@ -748,6 +748,7 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 		free(data);
 		return FALSE;
 	}
+	data[size] = '\0';
 
 	for(ptr = data, end = data + st_size; ptr < end;) {
 		/*
