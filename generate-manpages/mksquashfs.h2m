@@ -28,6 +28,12 @@ a single directory.
 mksquashfs DIRECTORY IMAGE.SQFS -b 1M -comp zstd
 Use a block size of 1 Mbyte and Zstandard compression to create the filesystem. 
 .TP
+mksquashfs DIRECTORY IMAGE.SQFS -all-time now
+Set all file and directory timestamps to "now" (current time) in the filesystem.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -force-uid phillip -force-gid phillip
+Make all files and directories in the filesystem owned by "phillip".
+.TP
 mksquashfs DIRECTORY IMAGE.SQFS -e file1 file2
 Exclude file1 and file2 from DIRECTORY when creating filesystem.  No wildcard
 matching of files.
