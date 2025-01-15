@@ -42,6 +42,12 @@ sqfstar -root-mode 0755 IMAGE.SQFS < archive.tar
 The default permissions for the root directory is 0777 (rwxrwxrwx).  The above
 command sets the permissions to 0755 (rwxr-xr-x).
 .TP
+sqfstar -all-time now IMAGE.SQFS < archive.tar
+Set all file and directory timestamps to "now" (current time) in the filesystem.
+.TP
+sqfstar -force-uid phillip -force-gid phillip IMAGE.SQFS < archive.tar
+Make all files and directories in the filesystem owned by "phillip".
+.TP
 sqfstar IMAGE.SQFS file1 file2 < archive.tar
 Exclude file1 and file2 from the tar file when creating filesystem.
 .TP
