@@ -225,7 +225,6 @@ static inline int get_pathmax()
 	return path_max;
 }
 
-extern int sleep_time;
 extern struct cache *fragment_buffer, *reserve_cache;
 extern struct cache *bwriter_buffer, *fwriter_buffer;
 extern struct queue *to_reader, *to_writer, *from_writer, *to_frag,
@@ -265,7 +264,6 @@ extern int global_uid_opt;
 extern unsigned int global_uid;
 extern int global_gid_opt;
 extern unsigned int global_gid;
-extern int sleep_time;
 
 extern int read_fs_bytes(int, long long, long long, void *);
 extern void add_file(long long, long long, long long, unsigned int *, int,

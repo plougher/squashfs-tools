@@ -6527,25 +6527,26 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
 		else if(strcmp(argv[i], "-throttle") == 0) {
-			if((++i == dest_index) || !parse_number(argv[i], &sleep_time, 2)) {
+			if((++i == dest_index) || !parse_number(argv[i], &res, 2)) {
 				ERROR("sqfstar: -throttle missing or invalid value\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
-			if(sleep_time > 99) {
+			if(res > 99) {
 				ERROR("sqfstar: -throttle value should be between 0 and 99\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
+			set_sleep_time(res);
 			readq = 4;
 		} else if(strcmp(argv[i], "-limit") == 0) {
-			if((++i == dest_index) || !parse_number(argv[i], &sleep_time, 0)) {
+			if((++i == dest_index) || !parse_number(argv[i], &res, 0)) {
 				ERROR("sqfstar: -limit missing or invalid value\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
-			if(sleep_time < 1 || sleep_time > 100) {
+			if(res < 1 || res > 100) {
 				ERROR("sqfstar: -limit value should be between 1 and 100\n");
 				sqfstar_option_help(argv[i - 1]);
 			}
-			sleep_time = 100 - sleep_time;
+			set_sleep_time(100 - res);
 			readq = 4;
 		} else if(strcmp(argv[i], "-mkfs-time") == 0 ||
 				strcmp(argv[i], "-fstime") == 0) {
@@ -7472,25 +7473,26 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-throttle") == 0) {
-			if((++i == argc) || !parse_number(argv[i], &sleep_time, 2)) {
+			if((++i == argc) || !parse_number(argv[i], &res, 2)) {
 				ERROR("mksquashfs: -throttle missing or invalid value\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
-			if(sleep_time > 99) {
+			if(res > 99) {
 				ERROR("mksquashfs: -throttle value should be between 0 and 99\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
+			set_sleep_time(res);
 			readq = 4;
 		} else if(strcmp(argv[i], "-limit") == 0) {
-			if((++i == argc) || !parse_number(argv[i], &sleep_time, 2)) {
+			if((++i == argc) || !parse_number(argv[i], &res, 2)) {
 				ERROR("mksquashfs: -limit missing or invalid value\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
-			if(sleep_time < 1 || sleep_time > 100) {
+			if(res < 1 || res > 100) {
 				ERROR("mksquashfs: -limit value should be between 1 and 100\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
-			sleep_time = 100 - sleep_time;
+			set_sleep_time(100 - res);;
 			readq = 4;
 		} else if(strcmp(argv[i], "-mkfs-time") == 0 ||
 				strcmp(argv[i], "-fstime") == 0) {

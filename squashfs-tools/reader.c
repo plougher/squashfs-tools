@@ -61,7 +61,7 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int total_blocks, total_mbytes;
 
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
-int sleep_time;
+static int sleep_time;
 
 static struct read_entry **block_array = NULL;
 static struct read_entry **fragment_array = NULL;
@@ -1002,4 +1002,10 @@ void set_reader_size(int blocks, int mbytes)
 {
 	total_blocks = blocks;
 	total_mbytes = mbytes;
+}
+
+
+void set_sleep_time(int time)
+{
+	sleep_time = time;
 }
