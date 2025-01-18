@@ -714,7 +714,7 @@ static void reader_scan(struct dir_info *dir)
 }
 
 
-void create_resources(int threads)
+static void create_resources(int threads)
 {
 	int i, per_thread = total_blocks / threads;
 
@@ -751,7 +751,7 @@ void create_resources(int threads)
 }
 
 
-void *block_reader(void *arg)
+static void *block_reader(void *arg)
 {
 	struct reader *reader = arg;
 
@@ -775,7 +775,7 @@ void *block_reader(void *arg)
 }
 
 
-void *fragment_reader(void *arg)
+static void *fragment_reader(void *arg)
 {
 	struct reader *reader = arg;
 
@@ -970,7 +970,7 @@ pthread_t *get_reader_threads(int *num)
 
 int set_read_frag_threads(int fragments)
 {
-	if(fragments <= 0 || fragments > 32)
+	if(fragments <= 0 || fragments > 64)
 		return FALSE;
 
 	fragment_threads = fragments;
@@ -982,7 +982,7 @@ int set_read_frag_threads(int fragments)
 
 int set_read_block_threads(int blocks)
 {
-	if(blocks <= 0 || blocks > 32)
+	if(blocks <= 0 || blocks > 64)
 		return FALSE;
 
 	block_threads = blocks;
