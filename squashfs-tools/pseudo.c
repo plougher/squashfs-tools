@@ -878,11 +878,11 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 	dev->buf->ino = pseudo_ino ++;
 
 	if(type == 'R') {
-		/* XXX
-		* The reader thread reader_read_data() function is currently
-		* non-reentrant (single threaded).  So set flag to make Mksquashfs
-		* explicitly set single threaded reader
-		*/
+		/*
+		 * The file's data is in a Unsquashfs generated pseudo file,
+		 * where the data for all files is in the same file.  It is
+		 * better to use single readed reader in this case
+		 */
 		force_single_threaded = TRUE;
 
 		if(*file == NULL) {
