@@ -340,7 +340,7 @@ char *recovery_file = NULL;
 char *recovery_pathname = NULL;
 int recover = TRUE;
 
-/* temporary variable to force single threaded reader mode */
+/* variable to force single threaded reader mode */
 int force_single_threaded = FALSE;
 
 /* list of options that have an argument */
@@ -7013,10 +7013,8 @@ static int sqfstar(int argc, char *argv[])
 		exit(1);
 	}
 
-	if(force_single_threaded) {
-		ERROR("Warning: using single threaded reader because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
+	if(force_single_threaded)
 		set_single_threaded();
-	}
 
 	check_source_date_epoch();
 
@@ -8105,10 +8103,8 @@ int main(int argc, char *argv[])
 			mksquashfs_invalid_option(argv[i]);
 	}
 
-	if(force_single_threaded) {
-		ERROR("Warning: using single threaded reader because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
+	if(force_single_threaded)
 		set_single_threaded();
-	}
 
 	check_source_date_epoch();
 
