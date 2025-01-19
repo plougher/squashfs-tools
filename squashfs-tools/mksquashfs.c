@@ -362,8 +362,7 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"processors", "mem", "offset", "o", "root-time", "root-uid",
 	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
 	"default-mode", "default-uid", "default-gid", "mem-percent", "pd",
-	"pseudo-dir", "help-option", "ho", "help-section", "hs",
-	"frag-reader-threads", "block-reader-threads", NULL
+	"pseudo-dir", "help-option", "ho", "help-section", "hs", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
@@ -6978,32 +6977,7 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-percentage") == 0) {
 			progressbar_percentage();
 			progress = silent = TRUE;
-
-		} else if(strcmp(argv[i], "-frag-reader-threads") == 0) {
-			if(++i == dest_index) {
-				ERROR("sqfstar: -frag-reader-threads missing thread count\n");
-				sqfstar_option_help(argv[i - 1]);
-			}
-			if(force_single_threaded)
-				ERROR("Warning: ignoring -frag-reader-threads option because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
-			else if(!parse_num(argv[i], &res) || !set_read_frag_threads(res)) {
-				ERROR("sqfstar: -frag-reader-threads invalid thread count\n");
-				sqfstar_option_help(argv[i - 1]);
-			}
-		} else if(strcmp(argv[i], "-block-reader-threads") == 0) {
-			if(++i == dest_index) {
-				ERROR("sqfstar: -block-reader-threads missing thread count\n");
-				sqfstar_option_help(argv[i - 1]);
-			}
-			if(force_single_threaded)
-				ERROR("Warning: ignoring -block-reader-threads option because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
-			else if(!parse_num(argv[i], &res) || !set_read_block_threads(res)) {
-				ERROR("sqfstar: -block-reader-threads invalid thread count\n");
-				sqfstar_option_help(argv[i - 1]);
-			}
-		} else if(strcmp(argv[i], "-single-reader-thread") == 0)
-				set_single_threaded();
-		else
+		} else
 			sqfstar_invalid_option(argv[i]);
 	}
 
@@ -7013,8 +6987,7 @@ static int sqfstar(int argc, char *argv[])
 		exit(1);
 	}
 
-	if(force_single_threaded)
-		set_single_threaded();
+	set_single_threaded();
 
 	check_source_date_epoch();
 
