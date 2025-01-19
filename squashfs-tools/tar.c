@@ -751,8 +751,11 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 		length -= bytes;
 		ptr += bytes;
 
-		/* Skip whitespace */
-		for(; length && *ptr == ' '; length--, ptr++);
+		/* Skip mandatory whitespace */
+		if(*ptr != ' ')
+			goto failed;
+		ptr++;
+		length --;
 
 		/* Store and parse keyword */
 		for(keyword = ptr; length && *ptr != '='; length--, ptr++);
