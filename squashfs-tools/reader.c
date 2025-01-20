@@ -763,8 +763,6 @@ static void *block_reader(void *arg)
 
 		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
 			reader_read_process(reader, entry);
-		else if(IS_PSEUDO_DATA(entry->dir_ent->inode))
-			reader_read_data(reader, entry);
 		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
 			reader_read_file(reader, entry, BLOCK_READER);
 		else
@@ -787,8 +785,6 @@ static void *fragment_reader(void *arg)
 
 		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
 			reader_read_process(reader, entry);
-		else if(IS_PSEUDO_DATA(entry->dir_ent->inode))
-			reader_read_data(reader, entry);
 		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
 			reader_read_file(reader, entry, FRAGMENT_READER);
 		else
