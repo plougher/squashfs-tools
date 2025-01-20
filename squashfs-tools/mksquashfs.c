@@ -1384,6 +1384,7 @@ static squashfs_inode write_dir(struct dir_info *dir_info,
 	int data_space = directory_cache_size - directory_cache_bytes;
 	unsigned int directory_block, directory_offset, i_count, index;
 	unsigned short c_byte;
+	void *cache;
 
 	if(data_space < dir_size) {
 		int realloc_size = directory_cache_size == 0 ?
@@ -1413,6 +1414,7 @@ static squashfs_inode write_dir(struct dir_info *dir_info,
 	directory_cache_bytes += dir_size;
 	i_count = 0;
 	index = SQUASHFS_METADATA_SIZE - directory_offset;
+	cache = directory_data_cache;
 
 	while(1) {
 		while(i_count < dir->i_count &&
@@ -1436,9 +1438,8 @@ static squashfs_inode write_dir(struct dir_info *dir_info,
 		}
 
 		c_byte = mangle(directory_table + directory_bytes +
-				BLOCK_OFFSET, directory_data_cache,
-				SQUASHFS_METADATA_SIZE, SQUASHFS_METADATA_SIZE,
-				noI, 0);
+				BLOCK_OFFSET, cache, SQUASHFS_METADATA_SIZE,
+				SQUASHFS_METADATA_SIZE, noI, 0);
 		TRACE("Directory block @ 0x%x, size %d\n", directory_bytes,
 			c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte,
@@ -1446,11 +1447,12 @@ static squashfs_inode write_dir(struct dir_info *dir_info,
 		directory_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) +
 			BLOCK_OFFSET;
 		total_directory_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
-		memmove(directory_data_cache, directory_data_cache +
-			SQUASHFS_METADATA_SIZE, directory_cache_bytes -
-			SQUASHFS_METADATA_SIZE);
 		directory_cache_bytes -= SQUASHFS_METADATA_SIZE;
+		cache += SQUASHFS_METADATA_SIZE;
 	}
+
+	if(directory_cache_bytes)
+		memmove(directory_data_cache, cache, directory_cache_bytes);
 
 	dir_count ++;
 
