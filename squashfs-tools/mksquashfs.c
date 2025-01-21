@@ -6232,6 +6232,33 @@ static void check_pager()
 }
 
 
+static void check_sqfs_cmdline(int argc, char *argv[])
+{
+	char *dirname = getenv("SQFS_CMDLINE"), *filename;
+	FILE *file;
+	int i, res;
+
+	if(dirname != NULL) {
+		res = asprintf(&filename, "%s/%s", dirname, "sqfs_cmdline");
+		if(res == -1)
+			BAD_ERROR("asprintf failed in check_sqfs_cmdline\n");
+
+		file = fopen(filename, "w+");
+		if(file == NULL)
+			BAD_ERROR("Failed to create SQFS_CMDLINE filename "
+				"\"%s\" because %s\n", filename,
+				strerror(errno));
+
+		for(i = 0;  i < argc; i++)
+			fprintf(file, "\"%s\" ", argv[i]);
+		fprintf(file, "\n");
+
+		fclose(file);
+		free(filename);
+	}
+}
+
+
 static void print_version(char *string)
 {
 	printf("%s version " VERSION " (" DATE ")\n", string);
@@ -7318,6 +7345,7 @@ int main(int argc, char *argv[])
 	struct file_buffer **fragment = NULL;
 	char *command;
 
+	check_sqfs_cmdline(argc, argv);
 	check_pager();
 
 	/* skip leading path components in invocation command */
