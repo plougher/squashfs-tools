@@ -6234,8 +6234,8 @@ static void check_pager()
 
 static void check_sqfs_cmdline(int argc, char *argv[])
 {
-	char *dirname = getenv("SQFS_CMDLINE"), *filename;
-	FILE *file;
+	char *dirname = getenv("SQFS_CMDLINE"), *filename, *arg;
+	int file;
 	int i, res;
 
 	if(dirname != NULL) {
@@ -6243,17 +6243,32 @@ static void check_sqfs_cmdline(int argc, char *argv[])
 		if(res == -1)
 			BAD_ERROR("asprintf failed in check_sqfs_cmdline\n");
 
-		file = fopen(filename, "w+");
-		if(file == NULL)
+		file = open(filename, O_CREAT | O_TRUNC | O_WRONLY,
+					S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+		if(file == -1)
 			BAD_ERROR("Failed to create SQFS_CMDLINE filename "
 				"\"%s\" because %s\n", filename,
 				strerror(errno));
 
-		for(i = 0;  i < argc; i++)
-			fprintf(file, "\"%s\" ", argv[i]);
-		fprintf(file, "\n");
+		for(i = 0;  i < argc; i++) {
+			res = asprintf(&arg, "\"%s\" ", argv[i]);
+			if(res == -1)
+				BAD_ERROR("asprintf failed in "
+					"check_sqfs_cmdline\n");
 
-		fclose(file);
+			res = write_bytes(file, arg, strlen(arg));
+			if(res == -1)
+				BAD_ERROR("write failed in check_sqfs_cmdline\n");
+
+			free(arg);
+		}
+
+		res = write_bytes(file, "\n", 1);
+		if(res == -1)
+			BAD_ERROR("write failed in check_sqfs_cmdline\n");
+
+		close(file);
 		free(filename);
 	}
 }
