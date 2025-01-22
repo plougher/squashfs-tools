@@ -6243,13 +6243,20 @@ static void check_sqfs_cmdline(int argc, char *argv[])
 		if(res == -1)
 			BAD_ERROR("asprintf failed in check_sqfs_cmdline\n");
 
-		file = open(filename, O_CREAT | O_TRUNC | O_WRONLY,
+		file = open(filename, O_CREAT | O_APPEND | O_NOFOLLOW | O_WRONLY,
 					S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
-		if(file == -1)
-			BAD_ERROR("Failed to create SQFS_CMDLINE filename "
-				"\"%s\" because %s\n", filename,
-				strerror(errno));
+		if(file == -1) {
+			if(errno == ELOOP)
+				BAD_ERROR("Failed to append to SQFS_CMDLINE "
+					"filename \"%s\" because it is a symbolic "
+					"link or too many symbolic links were "
+					"encountered\n", filename);
+			else
+				BAD_ERROR("Failed to append to SQFS_CMDLINE filename "
+					"\"%s\" because %s\n", filename,
+					strerror(errno));
+		}
 
 		for(i = 0;  i < argc; i++) {
 			res = asprintf(&arg, "\"%s\" ", argv[i]);
