@@ -7398,6 +7398,7 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-tar") == 0) {
 			tarfile = TRUE;
 			always_use_fragments = TRUE;
+			force_single_threaded = TRUE;
 		} else if(strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc) {
 				ERROR("mksquashfs: -pf missing filename\n");
@@ -8056,7 +8057,7 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(force_single_threaded)
-				ERROR("Warning: ignoring -frag-reader-threads option because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
+				ERROR("Warning: ignoring -frag-reader-threads option because you're reading a tar file, or using an Unsquashfs pseudo file\n");
 			else if(!parse_num(argv[i], &res) || !set_read_frag_threads(res)) {
 				ERROR("mksquashfs: -frag-reader-threads invalid thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
@@ -8067,7 +8068,7 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(force_single_threaded)
-				ERROR("Warning: ignoring -block-reader-threads option because you're using an Unsquashfs pseudo file (contains an R pseudo definition)!\n");
+				ERROR("Warning: ignoring -block-reader-threads option because you're reading a tar file, or using an Unsquashfs pseudo file\n");
 			else if(!parse_num(argv[i], &res) || !set_read_block_threads(res)) {
 				ERROR("mksquashfs: -block-reader-threads invalid thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
