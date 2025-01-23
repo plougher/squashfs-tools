@@ -6235,8 +6235,8 @@ static void check_pager()
 static void check_sqfs_cmdline(int argc, char *argv[])
 {
 	char *dirname = getenv("SQFS_CMDLINE"), *filename, *arg;
-	int file;
-	int i, res;
+	int file, i, res;
+	struct stat buf;
 
 	if(dirname != NULL) {
 		res = asprintf(&filename, "%s/%s", dirname, "sqfs_cmdline");
@@ -6257,6 +6257,15 @@ static void check_sqfs_cmdline(int argc, char *argv[])
 					"\"%s\" because %s\n", filename,
 					strerror(errno));
 		}
+
+		res = fstat(file, &buf);
+		if(res == -1)
+			BAD_ERROR("Failed to fstat SQFS_CMDLINE filename "
+				"\"%s\" because %s\n", filename, strerror(errno));
+
+		if(buf.st_nlink > 1)
+			BAD_ERROR("SQFS_CMDLINE filename \"%s\" is a hard "
+				"link, refusing to append to it\n", filename);
 
 		for(i = 0;  i < argc; i++) {
 			res = asprintf(&arg, "\"%s\" ", argv[i]);
