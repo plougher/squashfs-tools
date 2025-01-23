@@ -7457,6 +7457,7 @@ int main(int argc, char *argv[])
 			}
 			set_sleep_time(res);
 			readq = 4;
+			force_single_threaded = TRUE;
 		} else if(strcmp(argv[i], "-limit") == 0) {
 			if((++i == argc) || !parse_number(argv[i], &res, 2)) {
 				ERROR("mksquashfs: -limit missing or invalid value\n");
@@ -7468,6 +7469,7 @@ int main(int argc, char *argv[])
 			}
 			set_sleep_time(100 - res);;
 			readq = 4;
+			force_single_threaded = TRUE;
 		} else if(strcmp(argv[i], "-mkfs-time") == 0 ||
 				strcmp(argv[i], "-fstime") == 0) {
 			if((++i == argc) ||
@@ -8057,7 +8059,7 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(force_single_threaded)
-				ERROR("Warning: ignoring -frag-reader-threads option because you're reading a tar file, or using an Unsquashfs pseudo file\n");
+				ERROR("Warning: ignoring -frag-reader-threads option because you're reading a tar file, using an Unsquashfs pseudo file or throttling I/O\n");
 			else if(!parse_num(argv[i], &res) || !set_read_frag_threads(res)) {
 				ERROR("mksquashfs: -frag-reader-threads invalid thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
@@ -8068,7 +8070,7 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(force_single_threaded)
-				ERROR("Warning: ignoring -block-reader-threads option because you're reading a tar file, or using an Unsquashfs pseudo file\n");
+				ERROR("Warning: ignoring -frag-reader-threads option because you're reading a tar file, using an Unsquashfs pseudo file or throttling I/O\n");
 			else if(!parse_num(argv[i], &res) || !set_read_block_threads(res)) {
 				ERROR("mksquashfs: -block-reader-threads invalid thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
