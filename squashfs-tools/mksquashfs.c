@@ -6267,6 +6267,10 @@ static void check_sqfs_cmdline(int argc, char *argv[])
 			BAD_ERROR("SQFS_CMDLINE filename \"%s\" is a hard "
 				"link, refusing to append to it\n", filename);
 
+		if(buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
+			BAD_ERROR("SQFS_CMDLINE filename \"%s\" has execute "
+				"permissions, refusing to append to it\n", filename);
+
 		for(i = 0;  i < argc; i++) {
 			res = asprintf(&arg, "\"%s\" ", argv[i]);
 			if(res == -1)
