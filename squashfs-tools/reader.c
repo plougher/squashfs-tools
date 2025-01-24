@@ -42,7 +42,6 @@
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
-#include "caches-queues-lists.h"
 #include "progressbar.h"
 #include "mksquashfs_error.h"
 #include "pseudo.h"
@@ -50,6 +49,7 @@
 #include "tar.h"
 #include "reader.h"
 #include "atomic_swap.h"
+#include "caches-queues-lists.h"
 
 #define READER_ALLOC 1024
 

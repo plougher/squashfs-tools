@@ -35,13 +35,13 @@
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
-#include "caches-queues-lists.h"
 #include "mksquashfs_error.h"
 #include "xattr.h"
 #include "tar.h"
 #include "progressbar.h"
 #include "info.h"
 #include "reader.h"
+#include "caches-queues-lists.h"
 
 #define TRUE 1
 #define FALSE 0

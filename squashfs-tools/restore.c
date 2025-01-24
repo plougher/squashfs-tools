@@ -36,13 +36,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "caches-queues-lists.h"
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "mksquashfs_error.h"
 #include "progressbar.h"
 #include "info.h"
 #include "reader.h"
+#include "caches-queues-lists.h"
 
 #define FALSE 0
 #define TRUE 1

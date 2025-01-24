@@ -274,7 +274,8 @@ unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 /* caches used to store buffers being worked on, and queues
  * used to send buffers between threads */
 struct cache *fragment_buffer, *reserve_cache;
-struct cache *bwriter_buffer, *fwriter_buffer;
+struct cache *fwriter_buffer;
+struct write_cache *bwriter_buffer;
 struct queue *to_reader, *to_writer, *from_writer, *to_frag, *locked_fragment;
 struct read_queue *to_deflate, *to_process_frag;
 struct seq_queue *to_main;
@@ -531,7 +532,7 @@ inline void put_write_buffer_hash(struct file_buffer *buffer, int put)
 		marked_pos = get_pos();
 
 	buffer->block = get_and_inc_pos(buffer->size);
-	cache_hash(buffer, buffer->block);
+	write_cache_hash(buffer, buffer->block);
 
 	if(put)
 		queue_put(to_writer, buffer);
@@ -1615,7 +1616,7 @@ again:
 	}
 
 	cache_unlock(buffer);
-	cache_block_put(compressed_buffer);
+	gen_cache_block_put(compressed_buffer);
 
 finished:
 	pthread_cleanup_pop(0);
@@ -1662,7 +1663,7 @@ static unsigned short get_fragment_checksum(struct file_info *file)
 		pthread_mutex_unlock(&dup_mutex);
 	}
 
-	cache_block_put(frag_buffer);
+	gen_cache_block_put(frag_buffer);
 	pthread_cleanup_pop(0);
 
 	return checksum;
@@ -1945,11 +1946,11 @@ static unsigned short get_checksum_disk(long long start, long long l,
 		bytes = SQUASHFS_COMPRESSED_SIZE_BLOCK(blocks[i]);
 		if(bytes == 0) /* sparse block */
 			continue;
-		write_buffer = cache_lookup(bwriter_buffer, start);
+		write_buffer = write_cache_lookup(bwriter_buffer, start);
 		if(write_buffer) {
 			chksum = get_checksum(write_buffer->data, bytes,
 				chksum);
-			cache_block_put(write_buffer);
+			gen_cache_block_put(write_buffer);
 		} else {
 			void *data = read_from_disk(start, bytes, 0);
 			if(data == NULL) {	
@@ -2212,7 +2213,7 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, int *du
 						buffer->data +
 						dupl_ptr->fragment->offset,
 						file_size);
-					cache_block_put(buffer);
+					gen_cache_block_put(buffer);
 					if(res == 0)
 						break;
 				}
@@ -2348,7 +2349,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				 * enough to hold the entire file, in which case
 				 * the block will have been written to disk.
 				 */
-				target_buffer = cache_lookup(bwriter_buffer,
+				target_buffer = write_cache_lookup(bwriter_buffer,
 								target_start);
 				if(target_buffer)
 					target_data = target_buffer->data;
@@ -2368,7 +2369,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				 * recently), otherwise it will have to be read
 				 * back from disk
 				 */
-				dup_buffer = cache_lookup(bwriter_buffer, dup_start);
+				dup_buffer = write_cache_lookup(bwriter_buffer, dup_start);
 				if(dup_buffer)
 					dup_data = dup_buffer->data;
 				else {
@@ -2382,8 +2383,8 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				}
 
 				res = memcmp(target_data, dup_data, size);
-				cache_block_put(target_buffer);
-				cache_block_put(dup_buffer);
+				gen_cache_block_put(target_buffer);
+				gen_cache_block_put(dup_buffer);
 				if(res != 0)
 					break;
 				target_start += size;
@@ -2440,7 +2441,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					frag_buffer->data +
 					dupl_ptr->fragment->offset, frag_bytes);
 
-				cache_block_put(frag_buffer);
+				gen_cache_block_put(frag_buffer);
 
 				if(res == 0) {
 					/*
@@ -2479,7 +2480,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					frag_buffer->data +
 					dupl_ptr->fragment->offset, frag_bytes);
 
-				cache_block_put(frag_buffer);
+				gen_cache_block_put(frag_buffer);
 
 				if(res == 0) {
 					/*
@@ -2672,7 +2673,7 @@ static void *writer(void *arg)
 				block_device ? "block device" : "filesystem");
 
 		wpos += file_buffer->size;
-		cache_block_put(file_buffer);
+		gen_cache_block_put(file_buffer);
 	}
 
 	pthread_cleanup_pop(1);
@@ -2701,7 +2702,7 @@ static int all_zero(struct file_buffer *file_buffer)
 
 static void *deflator(void *arg)
 {
-	struct file_buffer *write_buffer = cache_get_nohash(bwriter_buffer);
+	struct file_buffer *write_buffer = write_cache_get_nohash(bwriter_buffer);
 	void *stream = NULL;
 	int res, tid = get_thread_id(THREAD_BLOCK);
 
@@ -2729,9 +2730,9 @@ static void *deflator(void *arg)
 				(write_buffer->c_byte);
 			write_buffer->fragment = FALSE;
 			write_buffer->error = FALSE;
-			cache_block_put(file_buffer);
+			gen_cache_block_put(file_buffer);
 			main_queue_put(to_main, write_buffer);
-			write_buffer = cache_get_nohash(bwriter_buffer);
+			write_buffer = write_cache_get_nohash(bwriter_buffer);
 		}
 	}
 }
@@ -2774,7 +2775,7 @@ static void *frag_deflator(void *arg)
 					file_buffer->block);
 				pthread_mutex_unlock(&fragment_mutex);
 		}
-		cache_block_put(file_buffer);
+		gen_cache_block_put(file_buffer);
 	}
 
 	pthread_cleanup_pop(0);
@@ -2812,7 +2813,7 @@ static void *frag_order_deflator(void *arg)
 		TRACE("Writing fragment %lld, uncompressed size %d, "
 			"compressed size %d\n", file_buffer->block,
 			file_buffer->size, SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte));
-		cache_block_put(file_buffer);
+		gen_cache_block_put(file_buffer);
 	}
 }
 
@@ -2852,7 +2853,7 @@ static struct file_info *write_file_empty(struct dir_ent *dir_ent,
 {
 	file_count ++;
 	*duplicate_file = FALSE;
-	cache_block_put(file_buffer);
+	gen_cache_block_put(file_buffer);
 	return create_non_dup(0, 0, 0, 0, NULL, 0, &empty_fragment, 0, 0,
 								FALSE, FALSE);
 }
@@ -2878,7 +2879,7 @@ static struct file_info *write_file_frag(struct dir_ent *dir_ent,
 				0, checksum, TRUE, TRUE);
 	}
 
-	cache_block_put(file_buffer);
+	gen_cache_block_put(file_buffer);
 
 	total_bytes += size;
 	file_count ++;
@@ -2931,7 +2932,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 				put_write_buffer_hash(read_buffer, TRUE);
 			} else {
 				sparse += read_buffer->size;
-				cache_block_put(read_buffer);
+				gen_cache_block_put(read_buffer);
 			}
 		}
 		inc_progress_bar();
@@ -2962,7 +2963,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 			fragment_buffer ?  fragment_buffer->checksum : 0, FALSE,
 			TRUE);
 
-	cache_block_put(fragment_buffer);
+	gen_cache_block_put(fragment_buffer);
 	file_count ++;
 	total_bytes += read_size;
 
@@ -2990,7 +2991,7 @@ read_err:
 	if(!reproducible)
 		unlock_fragments();
 	free(block_list);
-	cache_block_put(read_buffer);
+	gen_cache_block_put(read_buffer);
 	unmark_pos();
 	return NULL;
 }
@@ -3044,7 +3045,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 			} else {
 				buffer_list[block] = NULL;
 				sparse += read_buffer->size;
-				cache_block_put(read_buffer);
+				gen_cache_block_put(read_buffer);
 			}
 		}
 		inc_progress_bar();
@@ -3076,12 +3077,12 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 				queue_put(to_writer, buffer_list[block]);
 	} else {
 		for(block = thresh; block < blocks; block ++)
-			cache_block_put(buffer_list[block]);
+			gen_cache_block_put(buffer_list[block]);
 	}
 
 	if(!reproducible)
 		unlock_fragments();
-	cache_block_put(fragment_buffer);
+	gen_cache_block_put(fragment_buffer);
 	free(buffer_list);
 	file_count ++;
 	total_bytes += read_size;
@@ -3113,10 +3114,10 @@ read_err:
 	if(!reproducible)
 		unlock_fragments();
 	for(blocks = thresh; blocks < block; blocks ++)
-		cache_block_put(buffer_list[blocks]);
+		gen_cache_block_put(buffer_list[blocks]);
 	free(buffer_list);
 	free(block_list);
-	cache_block_put(read_buffer);
+	gen_cache_block_put(read_buffer);
 	unmark_pos();
 	return NULL;
 }
@@ -3164,7 +3165,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 				put_write_buffer_hash(read_buffer, TRUE);
 			} else {
 				sparse += read_buffer->size;
-				cache_block_put(read_buffer);
+				gen_cache_block_put(read_buffer);
 			}
 		}
 		inc_progress_bar();
@@ -3202,7 +3203,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 			block_list, get_marked_pos(), fragment, 0, fragment_buffer ?
 			fragment_buffer->checksum : 0, FALSE, TRUE);
 
-	cache_block_put(fragment_buffer);
+	gen_cache_block_put(fragment_buffer);
 	file_count ++;
 	total_bytes += read_size;
 
@@ -3230,7 +3231,7 @@ read_err:
 	if(!reproducible)
 		unlock_fragments();
 	free(block_list);
-	cache_block_put(read_buffer);
+	gen_cache_block_put(read_buffer);
 	unmark_pos();
 	return NULL;
 }
@@ -3247,7 +3248,7 @@ again:
 	status = read_buffer->error;
 
 	if(status)
-		cache_block_put(read_buffer);
+		gen_cache_block_put(read_buffer);
 	else if(read_buffer->file_size == -1)
 		file = write_file_process(&status, dir, read_buffer, dup);
 	else if(read_buffer->file_size == 0)
@@ -5425,7 +5426,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 		to_order = seq_queue_init();
 	else
 		locked_fragment = queue_init(fragment_size, NULL);
-	bwriter_buffer = cache_init(block_size, bwriter_size, 1, freelst);
+	bwriter_buffer = write_cache_init(block_size, bwriter_size, freelst);
 	fwriter_buffer = cache_init(block_size, fwriter_size, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_size, 1, 0);
 	reserve_cache = cache_init(block_size, processors + 1, 1, 0);

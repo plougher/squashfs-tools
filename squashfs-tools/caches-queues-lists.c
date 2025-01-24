@@ -694,6 +694,7 @@ static struct file_buffer *cache_alloc(struct cache *cache)
 
 	entry->cache = cache;
 	entry->free_prev = entry->free_next = NULL;
+	entry->cache_type = GEN_CACHE;
 	cache->count ++;
 	return entry;
 }
@@ -956,6 +957,204 @@ void cache_unlock(struct file_buffer *entry)
 		entry->wait_on_unlock = FALSE;
 		pthread_cond_broadcast(&cache->wait_for_unlock);
 	}
+
+	pthread_cleanup_pop(1);
+}
+
+
+/* Called with the cache mutex held */
+INSERT_HASH_TABLE(write_cache, struct write_cache, hash)
+
+/* Called with the cache mutex held */
+REMOVE_HASH_TABLE(write_cache, struct write_cache, hash);
+
+struct write_cache *write_cache_init(int buffer_size, int max_buffers, int first_freelist)
+{
+	struct write_cache *cache = malloc(sizeof(struct write_cache));
+
+	if(cache == NULL)
+		MEM_ERROR();
+
+	cache->max_buffers = max_buffers;
+	cache->buffer_size = buffer_size;
+	cache->count = 0;
+	cache->used = 0;
+	cache->free_list = NULL;
+
+	/*
+	 * The default use freelist before growing cache policy behaves
+	 * poorly with appending - with many duplicates the caches
+	 * do not grow due to the fact that large queues of outstanding
+	 * fragments/writer blocks do not occur, leading to small caches
+	 * and un-uncessary performance loss to frequent cache
+	 * replacement in the small caches.  Therefore with appending
+	 * change the policy to grow the caches before reusing blocks
+	 * from the freelist
+	 */
+	cache->first_freelist = first_freelist;
+
+	memset(cache->hash_table, 0, sizeof(struct file_buffer *) * HASH_SIZE);
+	pthread_mutex_init(&cache->mutex, NULL);
+	pthread_cond_init(&cache->wait_for_free, NULL);
+	pthread_cond_init(&cache->wait_for_unlock, NULL);
+
+	return cache;
+}
+
+
+struct file_buffer *write_cache_lookup(struct write_cache *cache, long long index)
+{
+	/* Lookup block in the cache, if found return with usage count
+	 * incremented, if not found return NULL */
+	int hash = CALCULATE_CACHE_HASH(index);
+	struct file_buffer *entry;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
+	pthread_mutex_lock(&cache->mutex);
+
+	for(entry = cache->hash_table[hash]; entry; entry = entry->hash_next)
+		if(entry->index == index)
+			break;
+
+	if(entry) {
+		/* found the block in the cache, increment used count and
+		 * if necessary remove from free list so it won't disappear
+		 */
+		if(entry->used == 0) {
+			remove_free_list(&cache->free_list, entry);
+			cache->used ++;
+		}
+		entry->used ++;
+	}
+
+	pthread_cleanup_pop(1);
+
+	return entry;
+}
+
+
+static struct file_buffer *write_cache_freelist(struct write_cache *cache)
+{
+	struct file_buffer *entry = cache->free_list;
+
+	remove_free_list(&cache->free_list, entry);
+
+	/* a block on the free_list is hashed */
+	remove_write_cache_hash_table(cache, entry, CALCULATE_CACHE_HASH(entry->index));
+
+	cache->used ++;
+	return entry;
+}
+
+
+static struct file_buffer *write_cache_alloc(struct write_cache *cache)
+{
+	struct file_buffer *entry = malloc(sizeof(struct file_buffer) +
+							cache->buffer_size);
+	if(entry == NULL)
+			MEM_ERROR();
+
+	entry->write_cache = cache;
+	entry->free_prev = entry->free_next = NULL;
+	entry->cache_type = WRITE_CACHE;
+	cache->count ++;
+	return entry;
+}
+
+
+struct file_buffer *write_cache_get_nohash(struct write_cache *cache)
+{
+	/* Get a free block out of the cache indexed on index. */
+	struct file_buffer *entry = NULL;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
+	pthread_mutex_lock(&cache->mutex);
+
+	while(1) {
+		/* first try to get a block from the free list */
+		if(cache->first_freelist && cache->free_list)
+			entry = write_cache_freelist(cache);
+		else if(cache->count < cache->max_buffers) {
+			entry = write_cache_alloc(cache);
+			cache->used ++;
+		} else if(!cache->first_freelist && cache->free_list)
+			entry = write_cache_freelist(cache);
+
+		if(entry)
+			break;
+
+		/* wait for a block */
+		pthread_cond_wait(&cache->wait_for_free, &cache->mutex);
+	}
+
+	/* initialise block */
+	entry->used = 1;
+	entry->locked = FALSE;
+	entry->wait_on_unlock = FALSE;
+	entry->error = FALSE;
+
+	pthread_cleanup_pop(1);
+
+	return entry;
+}
+
+
+void write_cache_hash(struct file_buffer *entry, long long index)
+{
+	struct write_cache *cache = entry->write_cache;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
+	pthread_mutex_lock(&cache->mutex);
+
+	entry->index = index;
+	insert_write_cache_hash_table(cache, entry, CALCULATE_CACHE_HASH(entry->index));
+
+	pthread_cleanup_pop(1);
+}
+
+
+void write_cache_block_put(struct file_buffer *entry)
+{
+	struct write_cache *cache;
+
+	/*
+	 * Finished with this cache entry, once the usage count reaches zero it
+	 * can be reused.
+	 *
+	 * Put the block onto the free list.  As blocks remain accessible via
+	 * the hash table they can be found getting a new lease of life before
+	 * they are reused.
+	 */
+
+	if(entry == NULL)
+		return;
+
+	cache = entry->write_cache;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
+	pthread_mutex_lock(&cache->mutex);
+
+	entry->used --;
+	if(entry->used == 0) {
+		insert_free_list(&cache->free_list, entry);
+		cache->used --;
+
+		/* One or more threads may be waiting on this block */
+		pthread_cond_signal(&cache->wait_for_free);
+	}
+
+	pthread_cleanup_pop(1);
+}
+
+
+void dump_write_cache(struct write_cache *cache)
+{
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
+	pthread_mutex_lock(&cache->mutex);
+
+	printf("\tMax buffers %d, Current size %d, Used %d,  %s\n",
+		cache->max_buffers, cache->count, cache->used,
+		cache->free_list ?  "Free buffers" : "No free buffers");
 
 	pthread_cleanup_pop(1);
 }

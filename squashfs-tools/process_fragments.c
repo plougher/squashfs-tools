@@ -38,7 +38,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "caches-queues-lists.h"
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "mksquashfs_error.h"
@@ -46,6 +45,7 @@
 #include "info.h"
 #include "compressor.h"
 #include "process_fragments.h"
+#include "caches-queues-lists.h"
 
 #define FALSE 0
 #define TRUE 1

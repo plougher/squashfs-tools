@@ -86,6 +86,9 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int 
 #define NEXT_FILE	2
 #define NEXT_VERSION	3
 
+#define WRITE_CACHE	1
+#define GEN_CACHE	2
+
 /* struct describing a cache entry passed between threads */
 struct file_buffer {
 	long long index;
@@ -95,7 +98,10 @@ struct file_buffer {
 	};
 	long long file_size;
 	long long block;
-	struct cache *cache;
+	union {
+		struct cache		*cache;
+		struct write_cache	*write_cache;
+	};
 	union {
 		struct file_info *dupl_start;
 		struct file_buffer *hash_next;
@@ -126,6 +132,7 @@ struct file_buffer {
 	char noD;
 	char duplicate;
 	char next_state;
+	char cache_type;
 	char data[0] __attribute__((aligned));
 };
 
@@ -207,6 +214,23 @@ inline int cache_maxsize(struct cache *cache)
 }
 
 
+struct write_cache {
+	int	max_buffers;
+	int	count;
+	int	buffer_size;
+	int	first_freelist;
+	union {
+		int	used;
+		int	max_count;
+	};
+	pthread_mutex_t	mutex;
+	pthread_cond_t wait_for_free;
+	pthread_cond_t wait_for_unlock;
+	struct file_buffer *free_list;
+	struct file_buffer *hash_table[HASH_SIZE];
+};
+
+
 extern struct queue *queue_init(int, pthread_mutex_t *mutex);
 extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);
@@ -240,6 +264,24 @@ extern struct file_buffer *cache_lookup_nowait(struct cache *, long long,
 	char *);
 extern void cache_wait_unlock(struct file_buffer *);
 extern void cache_unlock(struct file_buffer *);
+extern struct write_cache *write_cache_init(int, int, int);
+extern struct file_buffer *write_cache_lookup(struct write_cache *, long long);
+extern struct file_buffer *write_cache_get_nohash(struct write_cache *);
+extern void write_cache_hash(struct file_buffer *, long long);
+extern void write_cache_block_put(struct file_buffer *);
+extern void dump_write_cache(struct write_cache *);
 
 extern int first_freelist;
+
+static inline void gen_cache_block_put(struct file_buffer *entry)
+{
+	if(entry->cache_type == GEN_CACHE)
+		cache_block_put(entry);
+	else if(entry->cache_type == WRITE_CACHE)
+		write_cache_block_put(entry);
+	else
+		BAD_ERROR("Bug in block handling\n");
+}
+
+
 #endif

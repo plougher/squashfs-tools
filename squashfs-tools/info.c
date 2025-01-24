@@ -133,7 +133,7 @@ static void dump_state()
 
 	printf("block write cache (compressed blocks waiting for the writer"
 						" thread)\n");
-	dump_cache(bwriter_buffer);
+	dump_write_cache(bwriter_buffer);
 	printf("fragment write cache (compressed fragments waiting for the"
 						" writer thread)\n");
 	dump_cache(fwriter_buffer);
