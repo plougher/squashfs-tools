@@ -737,6 +737,11 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 	int map_entries = 0, cur_entry = 0;
 	char *name = NULL;
 
+	if(size > INT_MAX) {
+		ERROR("The pax header of tarfile is too large\n");
+		return FALSE;
+	}
+
 	data = malloc(size + 1);
 	if(data == NULL)
 		MEM_ERROR();
