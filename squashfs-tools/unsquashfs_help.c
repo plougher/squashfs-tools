@@ -197,6 +197,12 @@ static char *unsquashfs_text[]={
 	"\t-L\t\t\tsynonym for -follow-symlinks\n",
 	"\t-pseudo-file <file>\talternative name for -pf\n",
 	"\n", "Environment:", "\n",
+	"\tSQFS_CMDLINE \t\tIf set, this is used as the directory to write the "
+		"file sqfs_cmdline which contains the command line arguments "
+		"given to Unsquashfs.  Each command line argument is wrapped "
+	       "in quotes to ensure there is no ambiguity when arguments "
+	       "contain spaces.  If the file already exists the command "
+	       "line is appended to the file\n", "\n",
 	"\tPAGER\t\t\tIf set, this is used as the name of the program used to "
 		"display the help text.  The value can be a simple command or "
 		"a pathname.  The default is /usr/bin/pager\n",
