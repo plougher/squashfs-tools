@@ -216,7 +216,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		EXIT_UNSQUASH("File system corrupted - inode number in inode too large (inode_number: %u)\n", header.base.inode_number);
 
 	if(header.base.inode_number == 0)
-		EXIT_UNSQUASH("File system corrupted - inode number zero is invalid\n", header.base.inode_number);
+		EXIT_UNSQUASH("File system corrupted - inode number zero is invalid\n");
 
 	i.mode = lookup_type[header.base.inode_type] | header.base.mode;
 	i.type = header.base.inode_type;

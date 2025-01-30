@@ -34,6 +34,7 @@ extern void wait_to_die(pid_t process);
 extern FILE *exec_pager(pid_t *process);
 extern int get_column_width();
 extern void autowrap_print(FILE *stream, char *text, int maxl);
-extern void autowrap_printf(FILE *stream, int maxl, char *fmt, ...);
+extern void autowrap_printf(FILE *stream, int maxl, char *fmt, ...)
+	__attribute__ ((format (printf, 3, 4)));
 extern int check_and_set_pager(char *pager);
 #endif
