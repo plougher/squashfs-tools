@@ -2702,7 +2702,6 @@ static int all_zero(struct file_buffer *file_buffer)
 
 static void *deflator(void *arg)
 {
-	struct file_buffer *write_buffer = write_cache_get_nohash(bwriter_buffer);
 	void *stream = NULL;
 	int res, tid = get_thread_id(THREAD_BLOCK);
 
@@ -2711,12 +2710,14 @@ static void *deflator(void *arg)
 		BAD_ERROR("deflator:: compressor_init failed\n");
 
 	while(1) {
+		struct file_buffer *write_buffer;
 		struct file_buffer *file_buffer = read_queue_get_tid(tid, to_deflate);
 
 		if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
 			main_queue_put(to_main, file_buffer);
 		} else {
+			write_buffer = write_cache_get_nohash(bwriter_buffer, file_buffer->thread);
 			write_buffer->c_byte = mangle2(stream,
 				write_buffer->data, file_buffer->data,
 				file_buffer->size, block_size,
@@ -2732,7 +2733,6 @@ static void *deflator(void *arg)
 			write_buffer->error = FALSE;
 			gen_cache_block_put(file_buffer);
 			main_queue_put(to_main, write_buffer);
-			write_buffer = write_cache_get_nohash(bwriter_buffer);
 		}
 	}
 }
@@ -3010,7 +3010,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 	struct file_buffer *fragment_buffer = NULL;
 	struct file_info *file;
 	int block_dup;
-	int cache_size = cache_maxsize(read_buffer->cache);
+	int cache_size = cache_maxsize(read_buffer);
 
 	block_list = malloc(blocks * sizeof(unsigned int));
 	if(block_list == NULL)
@@ -5426,7 +5426,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 		to_order = seq_queue_init();
 	else
 		locked_fragment = queue_init(fragment_size, NULL);
-	bwriter_buffer = write_cache_init(block_size, bwriter_size, freelst);
+	bwriter_buffer = write_cache_init(block_size, 1, bwriter_size, freelst);
 	fwriter_buffer = cache_init(block_size, fwriter_size, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_size, 1, 0);
 	reserve_cache = cache_init(block_size, processors + 1, 1, 0);

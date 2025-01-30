@@ -131,9 +131,8 @@ static void dump_state()
 		dump_cache(reader[i].buffer);
 	}
 
-	printf("block write cache (compressed blocks waiting for the writer"
-						" thread)\n");
 	dump_write_cache(bwriter_buffer);
+
 	printf("fragment write cache (compressed fragments waiting for the"
 						" writer thread)\n");
 	dump_cache(fwriter_buffer);

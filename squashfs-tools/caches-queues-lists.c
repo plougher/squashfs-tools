@@ -968,18 +968,21 @@ INSERT_HASH_TABLE(write_cache, struct write_cache, hash)
 /* Called with the cache mutex held */
 REMOVE_HASH_TABLE(write_cache, struct write_cache, hash);
 
-struct write_cache *write_cache_init(int buffer_size, int max_buffers, int first_freelist)
+struct write_cache *write_cache_init(int buffer_size, int threads, int buffers,
+	int first_freelist)
 {
+	int i;
 	struct write_cache *cache = malloc(sizeof(struct write_cache));
 
 	if(cache == NULL)
 		MEM_ERROR();
 
-	cache->max_buffers = max_buffers;
+	cache->thread = malloc(sizeof(struct writeq_thrd) * threads);
+	if(cache->thread == NULL)
+		MEM_ERROR();
+
 	cache->buffer_size = buffer_size;
-	cache->count = 0;
-	cache->used = 0;
-	cache->free_list = NULL;
+	cache->threads = threads;
 
 	/*
 	 * The default use freelist before growing cache policy behaves
@@ -995,8 +998,15 @@ struct write_cache *write_cache_init(int buffer_size, int max_buffers, int first
 
 	memset(cache->hash_table, 0, sizeof(struct file_buffer *) * HASH_SIZE);
 	pthread_mutex_init(&cache->mutex, NULL);
-	pthread_cond_init(&cache->wait_for_free, NULL);
-	pthread_cond_init(&cache->wait_for_unlock, NULL);
+
+	for(i = 0; i < threads; i++) {
+		cache->thread[i].max_buffers = buffers;
+		cache->thread[i].count = 0;
+		cache->thread[i].used = 0;
+		cache->thread[i].waiting = FALSE;
+		cache->thread[i].free_list = NULL;
+		pthread_cond_init(&cache->thread[i].wait_for_free, NULL);
+	}
 
 	return cache;
 }
@@ -1021,8 +1031,8 @@ struct file_buffer *write_cache_lookup(struct write_cache *cache, long long inde
 		 * if necessary remove from free list so it won't disappear
 		 */
 		if(entry->used == 0) {
-			remove_free_list(&cache->free_list, entry);
-			cache->used ++;
+			remove_free_list(&cache->thread[entry->thread].free_list, entry);
+			cache->thread[entry->thread].used ++;
 		}
 		entry->used ++;
 	}
@@ -1033,58 +1043,65 @@ struct file_buffer *write_cache_lookup(struct write_cache *cache, long long inde
 }
 
 
-static struct file_buffer *write_cache_freelist(struct write_cache *cache)
+static struct file_buffer *write_cache_freelist(struct write_cache *cache,
+	struct writeq_thrd *thread)
 {
-	struct file_buffer *entry = cache->free_list;
+	struct file_buffer *entry = thread->free_list;
 
-	remove_free_list(&cache->free_list, entry);
+	remove_free_list(&thread->free_list, entry);
 
 	/* a block on the free_list is hashed */
 	remove_write_cache_hash_table(cache, entry, CALCULATE_CACHE_HASH(entry->index));
 
-	cache->used ++;
+	thread->used ++;
 	return entry;
 }
 
 
-static struct file_buffer *write_cache_alloc(struct write_cache *cache)
+static struct file_buffer *write_cache_alloc(struct write_cache *cache,
+	struct writeq_thrd *thread, int i)
 {
 	struct file_buffer *entry = malloc(sizeof(struct file_buffer) +
 							cache->buffer_size);
 	if(entry == NULL)
-			MEM_ERROR();
+		MEM_ERROR();
 
 	entry->write_cache = cache;
+	entry->thread = i;
 	entry->free_prev = entry->free_next = NULL;
 	entry->cache_type = WRITE_CACHE;
-	cache->count ++;
+	thread->count ++;
+	thread->used ++;
 	return entry;
 }
 
 
-struct file_buffer *write_cache_get_nohash(struct write_cache *cache)
+struct file_buffer *write_cache_get_nohash(struct write_cache *cache, int i)
 {
-	/* Get a free block out of the cache indexed on index. */
+	/* Get a free block out of the cache. */
 	struct file_buffer *entry = NULL;
+	struct writeq_thrd *thread = &cache->thread[i];
+
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
 	while(1) {
 		/* first try to get a block from the free list */
-		if(cache->first_freelist && cache->free_list)
-			entry = write_cache_freelist(cache);
-		else if(cache->count < cache->max_buffers) {
-			entry = write_cache_alloc(cache);
-			cache->used ++;
-		} else if(!cache->first_freelist && cache->free_list)
-			entry = write_cache_freelist(cache);
+		if(cache->first_freelist && thread->free_list)
+			entry = write_cache_freelist(cache, thread);
+		else if(thread->count < thread->max_buffers)
+			entry = write_cache_alloc(cache, thread, i);
+		else if(!cache->first_freelist && thread->free_list)
+			entry = write_cache_freelist(cache, thread);
 
 		if(entry)
 			break;
 
 		/* wait for a block */
-		pthread_cond_wait(&cache->wait_for_free, &cache->mutex);
+		thread->waiting = TRUE;
+		pthread_cond_wait(&thread->wait_for_free, &cache->mutex);
+		thread->waiting = FALSE;
 	}
 
 	/* initialise block */
@@ -1116,6 +1133,7 @@ void write_cache_hash(struct file_buffer *entry, long long index)
 void write_cache_block_put(struct file_buffer *entry)
 {
 	struct write_cache *cache;
+	struct writeq_thrd *thread;
 
 	/*
 	 * Finished with this cache entry, once the usage count reaches zero it
@@ -1130,17 +1148,19 @@ void write_cache_block_put(struct file_buffer *entry)
 		return;
 
 	cache = entry->write_cache;
+	thread = &cache->thread[entry->thread];
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
 	entry->used --;
 	if(entry->used == 0) {
-		insert_free_list(&cache->free_list, entry);
-		cache->used --;
+		insert_free_list(&thread->free_list, entry);
+		thread->used --;
 
-		/* One or more threads may be waiting on this block */
-		pthread_cond_signal(&cache->wait_for_free);
+		/* Wake up reader thread if it is waiting for a free block */
+		if(thread->waiting)
+			pthread_cond_signal(&thread->wait_for_free);
 	}
 
 	pthread_cleanup_pop(1);
@@ -1152,9 +1172,15 @@ void dump_write_cache(struct write_cache *cache)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
 	pthread_mutex_lock(&cache->mutex);
 
-	printf("\tMax buffers %d, Current size %d, Used %d,  %s\n",
-		cache->max_buffers, cache->count, cache->used,
-		cache->free_list ?  "Free buffers" : "No free buffers");
+	int i;
+
+	for(i = 0; i < cache->threads; i++) {
+		printf("block write cache %d (compressed blocks waiting for the writer thread)\n", i + 1);
+		printf("\tMax buffers %d, Current size %d, Used %d,  %s\n",
+			cache->thread[i].max_buffers, cache->thread[i].count,
+			cache->thread[i].used, cache->thread[i].free_list ?
+			"Free buffers" : "No free buffers");
+	}
 
 	pthread_cleanup_pop(1);
 }

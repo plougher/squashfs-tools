@@ -168,6 +168,7 @@ static struct file_buffer *get_buffer(struct cache *cache, struct read_entry *en
 	file_buffer->error = FALSE;
 	file_buffer->fragment = FALSE;
 	file_buffer->next_state = FALSE;
+	file_buffer->thread = 0;
 
 	return file_buffer;
 }

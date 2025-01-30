@@ -124,6 +124,7 @@ struct file_buffer {
 	int c_byte;
 	unsigned short checksum;
 	unsigned short version;
+	unsigned short thread;
 	char used;
 	char fragment;
 	char error;
@@ -208,26 +209,23 @@ struct cache {
 };
 
 
-inline int cache_maxsize(struct cache *cache)
-{
-	return cache->max_buffers;
-}
+struct writeq_thrd {
+	int			max_buffers;
+	int			count;
+	int			used;
+	int			waiting;
+	pthread_cond_t		wait_for_free;
+	struct file_buffer	*free_list;
+};
 
 
 struct write_cache {
-	int	max_buffers;
-	int	count;
-	int	buffer_size;
-	int	first_freelist;
-	union {
-		int	used;
-		int	max_count;
-	};
-	pthread_mutex_t	mutex;
-	pthread_cond_t wait_for_free;
-	pthread_cond_t wait_for_unlock;
-	struct file_buffer *free_list;
-	struct file_buffer *hash_table[HASH_SIZE];
+	int			buffer_size;
+	int			first_freelist;
+	int			threads;
+	pthread_mutex_t		mutex;
+	struct file_buffer	*hash_table[HASH_SIZE];
+	struct writeq_thrd	*thread;
 };
 
 
@@ -264,9 +262,9 @@ extern struct file_buffer *cache_lookup_nowait(struct cache *, long long,
 	char *);
 extern void cache_wait_unlock(struct file_buffer *);
 extern void cache_unlock(struct file_buffer *);
-extern struct write_cache *write_cache_init(int, int, int);
+extern struct write_cache *write_cache_init(int, int, int, int);
 extern struct file_buffer *write_cache_lookup(struct write_cache *, long long);
-extern struct file_buffer *write_cache_get_nohash(struct write_cache *);
+extern struct file_buffer *write_cache_get_nohash(struct write_cache *, int);
 extern void write_cache_hash(struct file_buffer *, long long);
 extern void write_cache_block_put(struct file_buffer *);
 extern void dump_write_cache(struct write_cache *);
@@ -275,10 +273,25 @@ extern int first_freelist;
 
 static inline void gen_cache_block_put(struct file_buffer *entry)
 {
-	if(entry->cache_type == GEN_CACHE)
+	if(entry == NULL)
+		return;
+	else if(entry->cache_type == GEN_CACHE)
 		cache_block_put(entry);
 	else if(entry->cache_type == WRITE_CACHE)
 		write_cache_block_put(entry);
+	else
+		BAD_ERROR("Bug in gen_cache_block_put\n");
+}
+
+
+inline int cache_maxsize(struct file_buffer *entry)
+{
+	if(entry == NULL)
+		BAD_ERROR("Bug in cache_maxsize\n");
+	else if(entry->cache_type == GEN_CACHE)
+		return entry->cache->max_buffers;
+	else if(entry->cache_type == WRITE_CACHE)
+		return entry->write_cache->thread[entry->thread].max_buffers;
 	else
 		BAD_ERROR("Bug in block handling\n");
 }
