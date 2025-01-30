@@ -219,7 +219,7 @@ sub-set of files matched by the exclude file(s) excluded.
 Often you want to output the filesystem where you're only interested in some
 files, which is where extract files are useful.  But equally, you often want to
 output the entire filesystem, but, with some unwanted files removed.  An example
-of this, perhaps, is where you've inadvertantly, archived binaries (.o files
+of this, perhaps, is where you've inadvertently, archived binaries (.o files
 etc.) and you're only interested in extracting the source code.
 
 In the above example, trying to remove the binaries (.o etc) when you've only
@@ -354,7 +354,7 @@ in a similar way to "cp -L".  But this is dangerous, and can cause
 Unsquashfs to produce output which does not match the input Squashfs
 filesystem, which is something Unsquashfs should never do.
 
-The reason for this is whereas "cp -L" is derefencing the *input*,
+The reason for this is whereas "cp -L" is dereferencing the *input*,
 Unsquashfs is dereferencing the *output*.  If a filesystem has a real
 filename, say
 
@@ -377,7 +377,7 @@ file, and two copies of directory "c".
 
 Superficially the output may look the same, but, it may not work the same,
 and obviously edits to the one hello_world file will not get reflected in
-the other copies.  Any option that can be accidently or maliciously used
+the other copies.  Any option that can be accidentally or maliciously used
 to produce such an output is too dangerous to be added.
 
 Unsquashfs solves the problem in an equivalent way, but which does not alter

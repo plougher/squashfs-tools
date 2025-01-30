@@ -13,7 +13,7 @@ liveCD filesystem from the Damn Small Linux liveCD (release 0.8.4).
 The Ubuntu liveCD filesystem was used to test filesystem performance
 from CDROM and hard disk for Zisofs, Cloop, Squashfs 2.0 and Squashfs2.1.
 CRAMFS filesystem performance could not be tested for this filesystem
-bacause it exceeds the maximum supported size of CRAMFS.  To test
+because it exceeds the maximum supported size of CRAMFS.  To test
 CRAMFS performance against Squashfs, the liveCD filesystem from
 Damn Small Linux was used.
 

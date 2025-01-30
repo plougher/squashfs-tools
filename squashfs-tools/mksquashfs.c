@@ -93,7 +93,7 @@ int block_log;
 int no_fragments = FALSE;
 int always_use_fragments = FALSE;
 
-/* Are duplicates detected in fileystem ? */
+/* Are duplicates detected in filesystem ? */
 int duplicate_checking = TRUE;
 
 /* Are filesystems exportable via NFS? */
@@ -322,7 +322,7 @@ int fd;
 /* Variables used for appending */
 int appending = TRUE;
 
-/* restore orignal filesystem state if appending to existing filesystem is
+/* restore original filesystem state if appending to existing filesystem is
  * cancelled */
 char *sdata_cache, *sdirectory_data_cache, *sdirectory_compressed;
 long long sbytes, stotal_bytes;
@@ -806,7 +806,7 @@ static long long write_inodes()
 	}
 
 	start_bytes = get_and_inc_pos(inode_bytes);
-	write_destination(fd, start_bytes, inode_bytes,  inode_table);
+	write_destination(fd, start_bytes, inode_bytes, inode_table);
 
 	return start_bytes;
 }
@@ -4450,7 +4450,7 @@ static void dir_scan5(struct dir_info *dir)
  *
  * Qsort and other O(n log n) algorithms work well with arrays but not
  * linked lists.  Merge sort another O(n log n) sort algorithm on the other hand
- * is not ideal for arrays (as it needs an additonal n storage locations
+ * is not ideal for arrays (as it needs an additional n storage locations
  * as sorting is not done in place), but it is ideal for linked lists because
  * it doesn't require any extra storage,
  */ 
@@ -4823,7 +4823,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		/*
 		 * Matching file.
 		 *
-		 * For tarstyle source handling (leaf directores are
+		 * For tarstyle source handling (leaf directories are
 		 * recursively descended)
 		 *
 		 * - If we're at the leaf of the source, then we either match
@@ -7183,7 +7183,7 @@ static int sqfstar(int argc, char *argv[])
 			 * the destination file as input, which
 			 * will result in an I/O loop */
 			if(stat(destination_file, &buf) == -1) {
-				/* disappered after creating? */
+				/* disappeared after creating? */
 				perror("Could not stat destination file");
 				exit(1);
 			}
@@ -7230,7 +7230,7 @@ static int sqfstar(int argc, char *argv[])
 	}
 
 	/*
-	 * process the exclude files - must be done afer destination file has
+	 * process the exclude files - must be done after destination file has
 	 * been possibly created
 	 */
 	for(i = 1; i < dest_index; i++) {
@@ -7275,7 +7275,7 @@ static int sqfstar(int argc, char *argv[])
 	/*
 	 * store any compressor specific options after the superblock,
 	 * and set the COMP_OPT flag to show that the filesystem has
-	 * compressor specfic options
+	 * compressor specific options
 	 */
 	if(comp_data) {
 		unsigned short c_byte = size | SQUASHFS_COMPRESSED_BIT;
@@ -7449,7 +7449,7 @@ int main(int argc, char *argv[])
 	 * any -X compressor specific options are passed to the
 	 * correct compressor.
 	 *
-	 * Also scan for -Xhelp and -help-comp specified on command line,
+	 * Also scan for -Xhelp specified on command line.
 	 */
 	for(j = i; j < argc; j++) {
 		struct compressor *prev_comp = comp;
@@ -7487,7 +7487,7 @@ int main(int argc, char *argv[])
 	/*
 	 * if no -comp option specified lookup default compressor.  Note the
 	 * Makefile ensures the default compressor has been built, and so we
-	 * don't need to to check for failure here
+	 * don't need to check for failure here
 	 */
 	if(comp == NULL)
 		comp = lookup_compressor(COMP_DEFAULT);
@@ -8209,7 +8209,7 @@ int main(int argc, char *argv[])
 
 	check_source_date_epoch();
 
-	/* If cpiostyle is set, then file names  will be read-in
+	/* If cpiostyle is set, then file names will be read-in
 	 * from standard in.  We do not expect to have any sources
 	 * specified on the command line */
 	if(cpiostyle && source)
@@ -8334,7 +8334,7 @@ int main(int argc, char *argv[])
 			 * the destination file as input, which
 			 * will result in an I/O loop */
 			if(stat(destination_file, &buf) == -1) {
-				/* disappered after creating? */
+				/* disappeared after creating? */
 				perror("Could not stat destination file");
 				exit(1);
 			}
@@ -8382,7 +8382,7 @@ int main(int argc, char *argv[])
 	}
 
 	/*
-	 * process the exclude files - must be done afer destination file has
+	 * process the exclude files - must be done after destination file has
 	 * been possibly created
 	 */
 	for(i = option_offset; i < argc; i++)
@@ -8409,7 +8409,7 @@ int main(int argc, char *argv[])
 				add_exclude(argv[i++]);
 	}
 
-	/* process the sort files - must be done afer the exclude files  */
+	/* process the sort files - must be done after the exclude files  */
 	for(i = option_offset; i < argc; i++)
 		if(strcmp(argv[i], "-sort") == 0) {
 			if(tarfile)
@@ -8481,7 +8481,7 @@ int main(int argc, char *argv[])
 		/*
 		 * store any compressor specific options after the superblock,
 		 * and set the COMP_OPT flag to show that the filesystem has
-		 * compressor specfic options
+		 * compressor specific options
 		 */
 		if(comp_data) {
 			unsigned short c_byte = size | SQUASHFS_COMPRESSED_BIT;
