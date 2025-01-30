@@ -53,12 +53,13 @@
 
 #define READER_ALLOC 1024
 
-static int reader_threads = 4, fragment_threads = 3, block_threads = 1;
+static int reader_threads = 6, fragment_threads = 3, block_threads = 3;
 static struct reader *reader = NULL;
 static struct readahead **readahead_table = NULL;
 static pthread_t *reader_thread = NULL;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-static int total_blocks, total_mbytes;
+static int total_rblocks, total_rmbytes;
+static int total_wblocks, total_wmbytes;
 
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
 static int sleep_time;
@@ -70,6 +71,9 @@ static struct read_entry **fragment_array = NULL;
 static unsigned int file_count = 0;
 static unsigned int block_count = 0;
 static unsigned int fragment_count = 0;
+
+extern struct write_cache *bwriter_buffer;
+extern int appending;
 
 static void sigalrm_handler(int arg)
 {
@@ -155,10 +159,10 @@ static void put_file_buffer(int id, struct file_buffer *file_buffer, int next_st
 }
 
 
-static struct file_buffer *get_buffer(struct cache *cache, struct read_entry *entry,
+static struct file_buffer *get_buffer(struct reader *reader, struct read_entry *entry,
 	long long file_size, long long block, int version)
 {
-	struct file_buffer *file_buffer = cache_get_nohash(cache);
+	struct file_buffer *file_buffer = cache_get_nohash(reader->buffer);
 
 	file_buffer->noD = entry->dir_ent->inode->noD;
 	file_buffer->file_count = entry->file_count;
@@ -168,7 +172,7 @@ static struct file_buffer *get_buffer(struct cache *cache, struct read_entry *en
 	file_buffer->error = FALSE;
 	file_buffer->fragment = FALSE;
 	file_buffer->next_state = FALSE;
-	file_buffer->thread = 0;
+	file_buffer->thread = reader->id;
 
 	return file_buffer;
 }
@@ -184,12 +188,12 @@ static void reader_read_process(struct reader *reader, struct read_entry *entry)
 
 	file = pseudo_exec_file(inode->pseudo, &child);
 	if(!file) {
-		file_buffer = get_buffer(reader->buffer, entry, 0, block, 0);
+		file_buffer = get_buffer(reader, entry, 0, block, 0);
 		goto read_err;
 	}
 
 	while(1) {
-		file_buffer = get_buffer(reader->buffer, entry, -1, block ++, 0);
+		file_buffer = get_buffer(reader, entry, -1, block ++, 0);
 
 		byte = read_bytes(file, file_buffer->data, block_size);
 		if(byte == -1)
@@ -277,12 +281,12 @@ again:
 	}
 
 	if(file == -1) {
-		file_buffer = get_buffer(reader->buffer, entry, 0, block, version);
+		file_buffer = get_buffer(reader, entry, 0, block, version);
 		goto read_err2;
 	}
 
 	do {
-		file_buffer = get_buffer(reader->buffer, entry, read_size, block ++, version);
+		file_buffer = get_buffer(reader, entry, read_size, block ++, version);
 
 		/*
 		 * Always try to read block_size bytes from the file rather
@@ -636,7 +640,7 @@ static void reader_read_data(struct reader *reader, struct read_entry *entry)
 	current = inode->pseudo->data->offset;
 
 	do {
-		file_buffer = get_buffer(reader->buffer, entry, read_size, block ++, 0);
+		file_buffer = get_buffer(reader, entry, read_size, block ++, 0);
 
 		if(blocks > 1) {
 			/* non-tail block should be exactly block_size */
@@ -715,35 +719,39 @@ static void reader_scan(struct dir_info *dir)
 }
 
 
-static void create_resources(int threads)
+static void create_resources()
 {
-	int i, per_thread = total_blocks / threads;
+	int i, per_rthread = total_rblocks / reader_threads;
+	int per_wthread = total_wblocks / block_threads;
 
-	if(per_thread < BLOCKS_MIN) {
-		int blocks = BLOCKS_MIN * threads;
-		int mbytes = blocks / (total_blocks / total_mbytes) ? : 1;
+	if(per_rthread < BLOCKS_MIN) {
+		int blocks = BLOCKS_MIN * reader_threads;
+		int mbytes = blocks / (total_rblocks / total_rmbytes) ? : 1;
 		int min_mem = mbytes * SQUASHFS_READQ_MEM;
-		int max_threads = total_blocks / BLOCKS_MIN;
+		int max_threads = total_rblocks / BLOCKS_MIN;
 
 		BAD_ERROR("Insufficient buffers for %d reader threads!\n"
 			"Please reduce reader threads to %d or increase memory "
-			"to %d Mbytes\n", threads, max_threads, min_mem);
+			"to %d Mbytes\n", reader_threads, max_threads, min_mem);
 	}
 
-	read_queue_set(to_deflate, threads, per_thread);
-	read_queue_set(to_process_frag, threads, per_thread);
+	bwriter_buffer = write_cache_init(block_size, fragment_threads, 0,
+			block_threads, per_wthread, !appending);
+
+	read_queue_set(to_deflate, reader_threads, per_rthread);
+	read_queue_set(to_process_frag, reader_threads, per_rthread);
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
 	pthread_mutex_lock(&mutex);
 
-	reader = malloc(threads * sizeof(struct reader));
+	reader = malloc(reader_threads * sizeof(struct reader));
 	if(reader == NULL)
 		MEM_ERROR();
 
-	for(i = 0; i < threads; i++) {
+	for(i = 0; i < reader_threads; i++) {
 		reader[i].id = i;
 		reader[i].type = "";
-		reader[i].buffer = cache_init(block_size, per_thread, 0, 0);
+		reader[i].buffer = cache_init(block_size, per_rthread, 0, 0);
 		reader[i].size = ALLOC_SIZE;
 		reader[i].pathname = NULL;
 	}
@@ -823,7 +831,7 @@ static void multi_thread(struct dir_info *dir)
 		block_threads = block_count;
 
 	reader_threads = fragment_threads + block_threads;
-	create_resources(reader_threads);
+	create_resources();
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
 	pthread_mutex_lock(&mutex);
@@ -916,14 +924,14 @@ void *initial_reader(void *arg)
 	}
 
 	if(tarfile) {
-		create_resources(reader_threads = 1);
+		create_resources();
 		reader[0].type = "combined";
 		file_count = read_tar_file();
 		single_thread(queue_get(to_reader));
 	} else if(!sleep_time && reader_threads > 1)
 		multi_thread(dir);
 	else {
-		create_resources(reader_threads = 1);
+		create_resources();
 		reader[0].type = "combined";
 
 		single_thread(dir);
@@ -992,13 +1000,22 @@ int set_read_block_threads(int blocks)
 void set_single_threaded()
 {
 	reader_threads = 1;
+	block_threads = 1;
+	fragment_threads = 0;
 }
 
 
 void set_reader_size(int blocks, int mbytes)
 {
-	total_blocks = blocks;
-	total_mbytes = mbytes;
+	total_rblocks = blocks;
+	total_rmbytes = mbytes;
+}
+
+
+void set_writer_size(int blocks, int mbytes)
+{
+	total_wblocks = blocks;
+	total_wmbytes = mbytes;
 }
 
 

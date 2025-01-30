@@ -262,7 +262,7 @@ extern struct file_buffer *cache_lookup_nowait(struct cache *, long long,
 	char *);
 extern void cache_wait_unlock(struct file_buffer *);
 extern void cache_unlock(struct file_buffer *);
-extern struct write_cache *write_cache_init(int, int, int, int);
+extern struct write_cache *write_cache_init(int, int, int, int, int, int);
 extern struct file_buffer *write_cache_lookup(struct write_cache *, long long);
 extern struct file_buffer *write_cache_get_nohash(struct write_cache *, int);
 extern void write_cache_hash(struct file_buffer *, long long);

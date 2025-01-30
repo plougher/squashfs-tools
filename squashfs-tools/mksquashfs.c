@@ -5367,6 +5367,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	fwriter_size = fwriteq << (20 - block_log);
 
 	set_reader_size(readq << (20 - block_log), readq);
+	set_writer_size(bwriteq << (20 - block_log), bwriteq);
 
 	/*
 	 * setup signal handlers for the main thread, these cleanup
@@ -5426,7 +5427,6 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 		to_order = seq_queue_init();
 	else
 		locked_fragment = queue_init(fragment_size, NULL);
-	bwriter_buffer = write_cache_init(block_size, 1, bwriter_size, freelst);
 	fwriter_buffer = cache_init(block_size, fwriter_size, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_size, 1, 0);
 	reserve_cache = cache_init(block_size, processors + 1, 1, 0);

@@ -968,10 +968,10 @@ INSERT_HASH_TABLE(write_cache, struct write_cache, hash)
 /* Called with the cache mutex held */
 REMOVE_HASH_TABLE(write_cache, struct write_cache, hash);
 
-struct write_cache *write_cache_init(int buffer_size, int threads, int buffers,
-	int first_freelist)
+struct write_cache *write_cache_init(int buffer_size, int fthreads, int fbuffers,
+	int bthreads, int bbuffers, int first_freelist)
 {
-	int i;
+	int i, threads = fthreads + bthreads;
 	struct write_cache *cache = malloc(sizeof(struct write_cache));
 
 	if(cache == NULL)
@@ -999,8 +999,17 @@ struct write_cache *write_cache_init(int buffer_size, int threads, int buffers,
 	memset(cache->hash_table, 0, sizeof(struct file_buffer *) * HASH_SIZE);
 	pthread_mutex_init(&cache->mutex, NULL);
 
-	for(i = 0; i < threads; i++) {
-		cache->thread[i].max_buffers = buffers;
+	for(i = 0; i < fthreads; i++) {
+		cache->thread[i].max_buffers = fbuffers;
+		cache->thread[i].count = 0;
+		cache->thread[i].used = 0;
+		cache->thread[i].waiting = FALSE;
+		cache->thread[i].free_list = NULL;
+		pthread_cond_init(&cache->thread[i].wait_for_free, NULL);
+	}
+
+	for(i = fthreads; i < threads; i++) {
+		cache->thread[i].max_buffers = bbuffers;
 		cache->thread[i].count = 0;
 		cache->thread[i].used = 0;
 		cache->thread[i].waiting = FALSE;
