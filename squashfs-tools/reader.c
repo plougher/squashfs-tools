@@ -137,6 +137,12 @@ static inline int is_fragment(struct inode_info *inode)
 }
 
 
+static inline int is_large(struct inode_info *inode)
+{
+	return inode->buf.st_size >= block_size;
+}
+
+
 static void put_file_buffer(int id, struct file_buffer *file_buffer, int next_state)
 {
 	file_buffer->next_state = next_state;
@@ -693,7 +699,7 @@ static void add_entry(struct dir_ent *dir_ent)
 {
 	if(IS_PSEUDO_PROCESS(dir_ent->inode) ||
 			IS_PSEUDO_DATA(dir_ent->inode) ||
-			!is_fragment(dir_ent->inode))
+			is_large(dir_ent->inode))
 		_add_entry(dir_ent, &block_array, &block_count);
 	else
 		_add_entry(dir_ent, &fragment_array, &fragment_count);
@@ -735,7 +741,7 @@ static void create_resources()
 			"to %d Mbytes\n", reader_threads, max_threads, min_mem);
 	}
 
-	bwriter_buffer = write_cache_init(block_size, fragment_threads, 0,
+	bwriter_buffer = write_cache_init(block_size, fragment_threads, 1,
 			block_threads, per_wthread, !appending);
 
 	read_queue_set(to_deflate, reader_threads, per_rthread);
