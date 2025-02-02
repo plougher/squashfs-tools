@@ -3010,7 +3010,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 	struct file_buffer *fragment_buffer = NULL;
 	struct file_info *file;
 	int block_dup;
-	int cache_size = cache_maxsize(read_buffer);
+	int cache_size = cache_maxsize(read_buffer) - processors;
 
 	block_list = malloc(blocks * sizeof(unsigned int));
 	if(block_list == NULL)
