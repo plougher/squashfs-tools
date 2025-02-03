@@ -5366,8 +5366,8 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	bwriter_size = bwriteq << (20 - block_log);
 	fwriter_size = fwriteq << (20 - block_log);
 
-	set_reader_size(readq << (20 - block_log), readq);
-	set_writer_size(bwriteq << (20 - block_log), bwriteq);
+	check_min_memory(readq << (20 - block_log), readq,
+			bwriteq << (20 - block_log), bwriteq);
 
 	/*
 	 * setup signal handlers for the main thread, these cleanup

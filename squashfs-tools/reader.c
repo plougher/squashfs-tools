@@ -74,6 +74,7 @@ static unsigned int fragment_count = 0;
 
 extern struct write_cache *bwriter_buffer;
 extern int appending;
+extern int processors;
 
 static void sigalrm_handler(int arg)
 {
@@ -730,17 +731,6 @@ static void create_resources()
 	int i, per_rthread = total_rblocks / reader_threads;
 	int per_wthread = total_wblocks / block_threads;
 
-	if(per_rthread < BLOCKS_MIN) {
-		int blocks = BLOCKS_MIN * reader_threads;
-		int mbytes = blocks / (total_rblocks / total_rmbytes) ? : 1;
-		int min_mem = mbytes * SQUASHFS_READQ_MEM;
-		int max_threads = total_rblocks / BLOCKS_MIN;
-
-		BAD_ERROR("Insufficient buffers for %d reader threads!\n"
-			"Please reduce reader threads to %d or increase memory "
-			"to %d Mbytes\n", reader_threads, max_threads, min_mem);
-	}
-
 	bwriter_buffer = write_cache_init(block_size, fragment_threads, 1,
 			block_threads, per_wthread, !appending);
 
@@ -1011,21 +1001,32 @@ void set_single_threaded()
 }
 
 
-void set_reader_size(int blocks, int mbytes)
-{
-	total_rblocks = blocks;
-	total_rmbytes = mbytes;
-}
-
-
-void set_writer_size(int blocks, int mbytes)
-{
-	total_wblocks = blocks;
-	total_wmbytes = mbytes;
-}
-
-
 void set_sleep_time(int time)
 {
 	sleep_time = time;
+}
+
+
+void check_min_memory(int rblocks, int rmbytes, int wblocks, int wmbytes)
+{
+	int per_rthread = rblocks / reader_threads;
+	int per_wthread = wblocks / block_threads;
+
+	if(per_wthread < (processors + 1) || per_rthread < BLOCKS_MIN) {
+		int twblocks = (processors + 1) * processors;
+		int twmbytes = twblocks / (wblocks / wmbytes) ? : 1;
+		int twmin_mem = twmbytes * SQUASHFS_BWRITEQ_MEM;
+		int trblocks = BLOCKS_MIN * reader_threads;
+		int trmbytes = trblocks / (rblocks / rmbytes) ? : 1;
+		int trmin_mem = trmbytes * SQUASHFS_READQ_MEM;
+		int min_mem = twmin_mem < trmin_mem ? trmin_mem : twmin_mem;
+
+		BAD_ERROR("Insufficient memory for specified options!  Please "
+			"increase memory to %d Mbytes (-mem option)\n", min_mem);
+	}
+
+	total_rblocks = rblocks;
+	total_rmbytes = rmbytes;
+	total_wblocks = wblocks;
+	total_wmbytes = wmbytes;
 }

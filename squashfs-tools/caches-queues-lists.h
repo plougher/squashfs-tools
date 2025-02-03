@@ -284,7 +284,7 @@ static inline void gen_cache_block_put(struct file_buffer *entry)
 }
 
 
-inline int cache_maxsize(struct file_buffer *entry)
+static inline int cache_maxsize(struct file_buffer *entry)
 {
 	if(entry == NULL)
 		BAD_ERROR("Bug in cache_maxsize\n");
