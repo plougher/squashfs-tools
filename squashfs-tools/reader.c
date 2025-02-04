@@ -351,11 +351,6 @@ again:
 	return;
 
 restat:
-	/* For now the code can't handle files which change size unless
-	 * only a single reader (COMBINED_READER) is being used. */
-	if(reader_type != COMBINED_READER)
-		BAD_ERROR("The reader code can't currently handle files that change size unless a single reader thread is used!\nUse -single-reader-thread option to specify this\n");
-
 	if(version == 1023)
 		/* File has changed size too many times.  Treat this
 		 * as an irretrievable error */
@@ -730,10 +725,11 @@ static void reader_scan(struct dir_info *dir)
 static void create_resources()
 {
 	int i, per_rthread = total_rblocks / reader_threads;
-	int per_wthread = total_wblocks / block_threads;
+	int total_fwthread = (processors + 1) * fragment_threads;
+	int per_wthread = (total_wblocks - total_fwthread) / block_threads;
 
-	bwriter_buffer = write_cache_init(block_size, fragment_threads, 1,
-			block_threads, per_wthread, !appending);
+	bwriter_buffer = write_cache_init(block_size, fragment_threads,
+			processors + 1, block_threads, per_wthread, !appending);
 
 	read_queue_set(to_deflate, reader_threads, per_rthread);
 	read_queue_set(to_process_frag, reader_threads, per_rthread);
@@ -1014,10 +1010,11 @@ void check_min_memory(int rmbytes, int wmbytes, int block_log)
 	int rblocks = rmbytes << (20 - block_log);
 	int wblocks = wmbytes << (20 - block_log);
 	int per_rthread = rblocks / reader_threads;
-	int per_wthread = wblocks / block_threads;
+	int total_fwthread = (processors + 1) * fragment_threads;
+	int per_wthread = (wblocks - total_fwthread) / block_threads;
 
 	if(per_wthread < (processors + 1) || per_rthread < BLOCKS_MIN) {
-		int twblocks = (processors + 1) * block_threads;
+		int twblocks = total_fwthread + (processors + 1) * block_threads;
 		int twmbytes = twblocks >> (20 - block_log) ? : 1;
 		int twmin_mem = twmbytes * SQUASHFS_BWRITEQ_MEM;
 		int trblocks = BLOCKS_MIN * reader_threads;
