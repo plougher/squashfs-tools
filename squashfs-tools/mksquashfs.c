@@ -6760,12 +6760,6 @@ static int sqfstar(int argc, char *argv[])
 			}
 
 			total_mem = number / 1048576;
-			if(total_mem < (SQUASHFS_LOWMEM / SQUASHFS_TAKE)) {
-				ERROR("sqfstar: -mem should be %d Mbytes or "
-					"larger\n", SQUASHFS_LOWMEM /
-					SQUASHFS_TAKE);
-				sqfstar_option_help(argv[i - 1]);
-			}
 			calculate_queue_sizes(total_mem, &readq, &fragq,
 				&bwriteq, &fwriteq);
 		} else if(strcmp(argv[i], "-mem-percent") == 0) {
@@ -7805,12 +7799,6 @@ int main(int argc, char *argv[])
 			}
 
 			total_mem = number / 1048576;
-			if(total_mem < (SQUASHFS_LOWMEM / SQUASHFS_TAKE)) {
-				ERROR("mksquashfs: -mem should be %d Mbytes or "
-					"larger\n",
-					SQUASHFS_LOWMEM / SQUASHFS_TAKE);
-				mksquashfs_option_help(argv[i - 1]);
-			}
 			calculate_queue_sizes(total_mem, &readq, &fragq,
 				&bwriteq, &fwriteq);
 		} else if(strcmp(argv[i], "-mem-percent") == 0) {
