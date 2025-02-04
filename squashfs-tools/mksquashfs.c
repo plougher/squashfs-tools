@@ -6138,9 +6138,7 @@ static int get_default_phys_mem()
 		ERROR("Warning: Defaulting to minimal use of %d Mbytes, fix "
 				"/proc to get a better value,\n", mem);
 		mem_options_disabled = TRUE;
-	} else if(mem < SQUASHFS_LOWMEM)
-                BAD_ERROR("Mksquashfs requires more physical memory than is available!\n");
-	else
+	} else
 		mem /= SQUASHFS_TAKE;
 
 	if(sizeof(void *) == 4 && mem > 640) {
