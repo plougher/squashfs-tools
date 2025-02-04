@@ -5332,6 +5332,9 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	int fwriter_size;
 	int bwriter_size;
 
+	if(processors == -1)
+		processors = get_nprocessors();
+
 	/*
 	 * Never allow the total size of the queues to be larger than
 	 * physical memory
@@ -5366,8 +5369,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	bwriter_size = bwriteq << (20 - block_log);
 	fwriter_size = fwriteq << (20 - block_log);
 
-	check_min_memory(readq << (20 - block_log), readq,
-			bwriteq << (20 - block_log), bwriteq);
+	check_min_memory(readq, bwriteq, block_log);
 
 	/*
 	 * setup signal handlers for the main thread, these cleanup
@@ -5401,9 +5403,6 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	sigaddset(&sigmask, SIGUSR1);
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) != 0)
 		BAD_ERROR("Failed to set signal mask in initialise_threads\n");
-
-	if(processors == -1)
-		processors = get_nprocessors();
 
 	if(multiply_overflow(processors, 3) ||
 			multiply_overflow(processors * 3, sizeof(pthread_t)))

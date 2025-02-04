@@ -60,6 +60,7 @@ static pthread_t *reader_thread = NULL;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int total_rblocks, total_rmbytes;
 static int total_wblocks, total_wmbytes;
+static int single_threaded = FALSE;
 
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
 static int sleep_time;
@@ -995,6 +996,7 @@ int set_read_block_threads(int blocks)
 
 void set_single_threaded()
 {
+	single_threaded = TRUE;
 	reader_threads = 1;
 	block_threads = 1;
 	fragment_threads = 0;
@@ -1007,22 +1009,65 @@ void set_sleep_time(int time)
 }
 
 
-void check_min_memory(int rblocks, int rmbytes, int wblocks, int wmbytes)
+void check_min_memory(int rmbytes, int wmbytes, int block_log)
 {
+	int rblocks = rmbytes << (20 - block_log);
+	int wblocks = wmbytes << (20 - block_log);
 	int per_rthread = rblocks / reader_threads;
 	int per_wthread = wblocks / block_threads;
 
 	if(per_wthread < (processors + 1) || per_rthread < BLOCKS_MIN) {
-		int twblocks = (processors + 1) * processors;
-		int twmbytes = twblocks / (wblocks / wmbytes) ? : 1;
+		int twblocks = (processors + 1) * block_threads;
+		int twmbytes = twblocks >> (20 - block_log) ? : 1;
 		int twmin_mem = twmbytes * SQUASHFS_BWRITEQ_MEM;
 		int trblocks = BLOCKS_MIN * reader_threads;
-		int trmbytes = trblocks / (rblocks / rmbytes) ? : 1;
+		int trmbytes = trblocks >> (20 - block_log) ? : 1;
 		int trmin_mem = trmbytes * SQUASHFS_READQ_MEM;
-		int min_mem = twmin_mem < trmin_mem ? trmin_mem : twmin_mem;
+		int reader_only = twmin_mem <= trmin_mem;
+		int min_mem = reader_only ? trmin_mem : twmin_mem;
 
-		BAD_ERROR("Insufficient memory for specified options!  Please "
-			"increase memory to %d Mbytes (-mem option)\n", min_mem);
+		ERROR("\nERROR: Insufficient memory for specified options!  "
+			"Please increase memory\nto %d Mbytes (-mem option)\n"
+			"\n", min_mem);
+
+		if(reader_only && !single_threaded) {
+			ERROR("Alternatively, you could try reducing the "
+				"number of reader threads\n"
+				"(-single-reader-thread option, and "
+				"-small-reader-threads/-block-reader-threads\n"
+				"options)\n\n");
+			ERROR("Current options:\n");
+			ERROR("\t-small-reader-threads is set to %d\n", fragment_threads);
+			ERROR("\t-block-reader-threads is set to %d\n\n", block_threads);
+		} else if(!reader_only && !single_threaded && processors > 1) {
+			ERROR("Alternatively, you could try reducing the "
+				"number of reader threads\n"
+				"(-single-reader-thread option, and "
+				"-small-reader-threads/-block-reader-threads\n"
+				"options)\n\n");
+			ERROR("Or you could reduce the number of processors "
+				"used (-processors option)\n\n");
+			ERROR("Current options:\n");
+			ERROR("\t-small-reader-threads is set to %d\n", fragment_threads);
+			ERROR("\t-block-reader-threads is set to %d\n", block_threads);
+			ERROR("\t-processors is set to %d\n\n", processors);
+		} else if(!reader_only && !single_threaded && processors == 1) {
+			ERROR("Alternatively, you could try reducing the "
+				"number of reader threads\n"
+				"(-single-reader-thread option, and "
+				"-small-reader-threads/-block-reader-threads\n"
+				"options)\n\n");
+			ERROR("Current options:\n");
+			ERROR("\t-small-reader-threads is set to %d\n", fragment_threads);
+			ERROR("\t-block-reader-threads is set to %d\n", block_threads);
+		} else if(!reader_only && single_threaded && processors > 1) {
+			ERROR("Alternatively, you could reduce the number of "
+				"processors used (-processors option)\n\n");
+			ERROR("-processors set to %d\n\n", processors);
+		}
+
+		BAD_ERROR("Insufficient memory\n");
+
 	}
 
 	total_rblocks = rblocks;
