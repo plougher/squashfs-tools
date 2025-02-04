@@ -1108,9 +1108,9 @@ struct file_buffer *write_cache_get_nohash(struct write_cache *cache, int i)
 			break;
 
 		/* wait for a block */
-		thread->waiting = TRUE;
+		thread->waiting ++;
 		pthread_cond_wait(&thread->wait_for_free, &cache->mutex);
-		thread->waiting = FALSE;
+		thread->waiting --;
 	}
 
 	/* initialise block */
