@@ -6125,17 +6125,16 @@ static int get_default_phys_mem()
 	/*
 	 * get_physical_memory() relies on /proc being mounted.
 	 * If it fails, issue a warning, and use
-	 * SQUASHFS_LOWMEM / SQUASHFS_TAKE as default,
-	 * and allow a larger value to be set with -mem.
+	 * SQUASHFS_UNKNOWN_MEM / SQUASHFS_TAKE as default.
 	 */
 	int mem = get_physical_memory();
 
 	if(mem == 0) {
-		mem = SQUASHFS_LOWMEM / SQUASHFS_TAKE;
+		mem = SQUASHFS_UNKNOWN_MEM / SQUASHFS_TAKE;
 
 		ERROR("Warning: Cannot get size of physical memory, probably "
 				"because /proc is missing.\n");
-		ERROR("Warning: Defaulting to minimal use of %d Mbytes, fix "
+		ERROR("Warning: Defaulting to use of %d Mbytes, fix "
 				"/proc to get a better value,\n", mem);
 		mem_options_disabled = TRUE;
 	} else

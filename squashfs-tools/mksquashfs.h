@@ -137,10 +137,10 @@ struct append_file {
 #define SQUASHFS_FWRITEQ_MEM 4
 
 /*
- * Lowest amount of physical memory considered viable for Mksquashfs
- * to run in Mbytes
+ * Default memory for when Mksquashfs cannot get the amount of
+ * memory in the system
  */
-#define SQUASHFS_LOWMEM 64
+#define SQUASHFS_UNKNOWN_MEM 1024
 
 /* offset of data in compressed metadata blocks (allowing room for
  * compressed size */
