@@ -834,7 +834,7 @@ static void multi_thread(struct dir_info *dir)
 		MEM_ERROR();
 
 	for(i = 0; i < fragment_threads; i++) {
-		reader[i].type = "fragment";
+		reader[i].type = "small";
 		pthread_create(&thread[i], NULL, fragment_reader, &reader[i]);
 	}
 
