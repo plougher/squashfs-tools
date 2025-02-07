@@ -190,6 +190,23 @@ b again
 s/\([^.]\)\n/\1.\n/
 }" $tmp/sqfscat.help
 
+# Concatenate the SQFS_CMDLINE text on to one line.  Indent the line by
+# two and add a full stop to the end of the line
+
+${SED} -i " /SQFS_CMDLINE/ {
+s/SQFS_CMDLINE/  SQFS_CMDLINE/
+
+:again
+N
+/\n$/b print
+s/\n */ /
+b again
+
+:print
+s/\([^.]\)\n/\1.\n/
+}" $tmp/sqfscat.help
+
+# Make Decompressors available header into a manpage section
 # Make Decompressors available header into a manpage section
 
 ${SED} -i "s/\(Decompressors available\):/*\1*/" $tmp/sqfscat.help
