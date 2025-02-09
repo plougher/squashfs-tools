@@ -86,7 +86,7 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int 
 #define NEXT_FILE	2
 #define NEXT_VERSION	3
 
-#define WRITE_CACHE	1
+#define QUEUE_CACHE	1
 #define GEN_CACHE	2
 
 /* struct describing a cache entry passed between threads */
@@ -100,7 +100,7 @@ struct file_buffer {
 	long long block;
 	union {
 		struct cache		*cache;
-		struct write_cache	*write_cache;
+		struct queue_cache	*queue_cache;
 	};
 	union {
 		struct file_info *dupl_start;
@@ -209,6 +209,12 @@ struct cache {
 };
 
 
+/*
+ * Specialised combined queue and cache for managing buffers
+ * sent from the reader threads to the block deflator threads,
+ * and which also creates writer buffers, so that reader
+ * buffers and write buffers are returned in one atomic operation.
+ */
 struct writeq_thrd {
 	int			max_buffers;
 	int			count;
@@ -219,13 +225,16 @@ struct writeq_thrd {
 };
 
 
-struct write_cache {
+struct queue_cache {
 	int			buffer_size;
 	int			first_freelist;
 	int			threads;
-	pthread_mutex_t		mutex;
+	int			count;
+	pthread_mutex_t		*mutex;
+	pthread_cond_t		empty;
 	struct file_buffer	*hash_table[HASH_SIZE];
-	struct writeq_thrd	*thread;
+	struct readq_thrd	*rthread;
+	struct writeq_thrd	*wthread;
 };
 
 
@@ -262,12 +271,17 @@ extern struct file_buffer *cache_lookup_nowait(struct cache *, long long,
 	char *);
 extern void cache_wait_unlock(struct file_buffer *);
 extern void cache_unlock(struct file_buffer *);
-extern struct write_cache *write_cache_init(int, int, int, int, int, int);
-extern struct file_buffer *write_cache_lookup(struct write_cache *, long long);
-extern struct file_buffer *write_cache_get_nohash(struct write_cache *, int);
-extern void write_cache_hash(struct file_buffer *, long long);
-extern void write_cache_block_put(struct file_buffer *);
-extern void dump_write_cache(struct write_cache *);
+extern struct queue_cache *queue_cache_init(pthread_mutex_t *, int, int);
+void queue_cache_set(struct queue_cache *, int, int, int, int, int);
+extern struct file_buffer *queue_cache_lookup(struct queue_cache *, long long);
+extern struct file_buffer *queue_cache_get_nohash(struct queue_cache *, int);
+extern void queue_cache_hash(struct file_buffer *, long long);
+extern void queue_cache_block_put(struct file_buffer *);
+extern void dump_write_cache(struct queue_cache *);
+extern void queue_cache_put(struct queue_cache *, int, struct file_buffer *);
+extern struct file_buffer *queue_cache_get_tid(int, struct queue_cache *);
+extern void queue_cache_flush(struct queue_cache *);
+extern void dump_block_read_queue(struct queue_cache *);
 
 extern int first_freelist;
 
@@ -277,8 +291,8 @@ static inline void gen_cache_block_put(struct file_buffer *entry)
 		return;
 	else if(entry->cache_type == GEN_CACHE)
 		cache_block_put(entry);
-	else if(entry->cache_type == WRITE_CACHE)
-		write_cache_block_put(entry);
+	else if(entry->cache_type == QUEUE_CACHE)
+		queue_cache_block_put(entry);
 	else
 		BAD_ERROR("Bug in gen_cache_block_put\n");
 }
@@ -290,8 +304,8 @@ static inline int cache_maxsize(struct file_buffer *entry)
 		BAD_ERROR("Bug in cache_maxsize\n");
 	else if(entry->cache_type == GEN_CACHE)
 		return entry->cache->max_buffers;
-	else if(entry->cache_type == WRITE_CACHE)
-		return entry->write_cache->thread[entry->thread].max_buffers;
+	else if(entry->cache_type == QUEUE_CACHE)
+		return entry->queue_cache->wthread[entry->thread].max_buffers;
 	else
 		BAD_ERROR("Bug in block handling\n");
 }

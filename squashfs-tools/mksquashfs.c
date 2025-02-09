@@ -275,9 +275,10 @@ unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
  * used to send buffers between threads */
 struct cache *fragment_buffer, *reserve_cache;
 struct cache *fwriter_buffer;
-struct write_cache *bwriter_buffer;
+struct queue_cache *bwriter_buffer;
 struct queue *to_reader, *to_writer, *from_writer, *to_frag, *locked_fragment;
-struct read_queue *to_deflate, *to_process_frag;
+struct queue_cache *to_deflate;
+struct read_queue *to_process_frag;
 struct seq_queue *to_main;
 
 /* pthread threads and mutexes */
@@ -532,7 +533,7 @@ inline void put_write_buffer_hash(struct file_buffer *buffer, int put)
 		marked_pos = get_pos();
 
 	buffer->block = get_and_inc_pos(buffer->size);
-	write_cache_hash(buffer, buffer->block);
+	queue_cache_hash(buffer, buffer->block);
 
 	if(put)
 		queue_put(to_writer, buffer);
@@ -1946,7 +1947,7 @@ static unsigned short get_checksum_disk(long long start, long long l,
 		bytes = SQUASHFS_COMPRESSED_SIZE_BLOCK(blocks[i]);
 		if(bytes == 0) /* sparse block */
 			continue;
-		write_buffer = write_cache_lookup(bwriter_buffer, start);
+		write_buffer = queue_cache_lookup(bwriter_buffer, start);
 		if(write_buffer) {
 			chksum = get_checksum(write_buffer->data, bytes,
 				chksum);
@@ -2349,7 +2350,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				 * enough to hold the entire file, in which case
 				 * the block will have been written to disk.
 				 */
-				target_buffer = write_cache_lookup(bwriter_buffer,
+				target_buffer = queue_cache_lookup(bwriter_buffer,
 								target_start);
 				if(target_buffer)
 					target_data = target_buffer->data;
@@ -2369,7 +2370,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				 * recently), otherwise it will have to be read
 				 * back from disk
 				 */
-				dup_buffer = write_cache_lookup(bwriter_buffer, dup_start);
+				dup_buffer = queue_cache_lookup(bwriter_buffer, dup_start);
 				if(dup_buffer)
 					dup_data = dup_buffer->data;
 				else {
@@ -2711,13 +2712,13 @@ static void *deflator(void *arg)
 
 	while(1) {
 		struct file_buffer *write_buffer;
-		struct file_buffer *file_buffer = read_queue_get_tid(tid, to_deflate);
+		struct file_buffer *file_buffer = queue_cache_get_tid(tid, to_deflate);
 
 		if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
 			main_queue_put(to_main, file_buffer);
 		} else {
-			write_buffer = write_cache_get_nohash(bwriter_buffer, file_buffer->thread);
+			write_buffer = queue_cache_get_nohash(bwriter_buffer, file_buffer->thread);
 			write_buffer->c_byte = mangle2(stream,
 				write_buffer->data, file_buffer->data,
 				file_buffer->size, block_size,
@@ -5416,7 +5417,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	frag_thread = &frag_deflator_thread[processors];
 
 	to_reader = queue_init(1, NULL);
-	to_deflate = read_queue_init(&thread_mutex);
+	bwriter_buffer = to_deflate = queue_cache_init(&thread_mutex, block_size, freelst);
 	to_process_frag = read_queue_init(NULL);
 	to_writer = queue_init(bwriter_size + fwriter_size, NULL);
 	from_writer = queue_init(1, NULL);

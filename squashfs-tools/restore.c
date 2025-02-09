@@ -50,7 +50,8 @@
 extern pthread_t reader_thread1, writer_thread, main_thread, order_thread;
 extern pthread_t *deflator_thread, *frag_deflator_thread, *frag_thread;
 extern struct queue *to_writer, *to_frag;
-extern struct read_queue *to_deflate, *to_process_frag;
+extern struct queue_cache *to_deflate;
+extern struct read_queue *to_process_frag;
 extern struct seq_queue *to_main, *to_order;
 extern void restorefs();
 extern int processors;
@@ -101,7 +102,7 @@ void *restore_thrd(void *arg)
 		 * then flush the reader to deflator thread(s) output queue.
 		 * The deflator thread(s) will idle
 		 */
-		read_queue_flush(to_deflate);
+		queue_cache_flush(to_deflate);
 
 		/* now kill the deflator thread(s) */
 		for(i = 0; i < processors; i++)

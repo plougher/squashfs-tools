@@ -73,7 +73,7 @@ static unsigned int file_count = 0;
 static unsigned int block_count = 0;
 static unsigned int fragment_count = 0;
 
-extern struct write_cache *bwriter_buffer;
+extern struct queue_cache *bwriter_buffer;
 extern int appending;
 extern int processors;
 
@@ -163,7 +163,7 @@ static void put_file_buffer(int id, struct file_buffer *file_buffer, int next_st
 	else if(file_buffer->fragment)
 		read_queue_put(to_process_frag, id, file_buffer);
 	else
-		read_queue_put(to_deflate, id, file_buffer);
+		queue_cache_put(to_deflate, id, file_buffer);
 }
 
 
@@ -728,10 +728,9 @@ static void create_resources()
 	int total_fwthread = (processors + 1) * fragment_threads;
 	int per_wthread = (total_wblocks - total_fwthread) / block_threads;
 
-	bwriter_buffer = write_cache_init(block_size, fragment_threads,
-			processors + 1, block_threads, per_wthread, !appending);
+	queue_cache_set(bwriter_buffer, fragment_threads, processors + 1,
+		block_threads, per_wthread, per_rthread);
 
-	read_queue_set(to_deflate, reader_threads, per_rthread);
 	read_queue_set(to_process_frag, reader_threads, per_rthread);
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);

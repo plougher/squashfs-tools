@@ -963,75 +963,97 @@ void cache_unlock(struct file_buffer *entry)
 
 
 /* Called with the cache mutex held */
-INSERT_HASH_TABLE(write_cache, struct write_cache, hash)
+INSERT_HASH_TABLE(queue_cache, struct queue_cache, hash)
 
 /* Called with the cache mutex held */
-REMOVE_HASH_TABLE(write_cache, struct write_cache, hash);
+REMOVE_HASH_TABLE(queue_cache, struct queue_cache, hash);
 
-struct write_cache *write_cache_init(int buffer_size, int fthreads, int fbuffers,
-	int bthreads, int bbuffers, int first_freelist)
+
+struct queue_cache *queue_cache_init(pthread_mutex_t *mutex, int buffer_size,
+	int first_freelist)
 {
-	int i, threads = fthreads + bthreads;
-	struct write_cache *cache = malloc(sizeof(struct write_cache));
+	struct queue_cache *qc = malloc(sizeof(struct queue_cache));
 
-	if(cache == NULL)
+	if(qc == NULL)
 		MEM_ERROR();
 
-	cache->thread = malloc(sizeof(struct writeq_thrd) * threads);
-	if(cache->thread == NULL)
-		MEM_ERROR();
+	qc->buffer_size = buffer_size;
+	qc->first_freelist = first_freelist;
+	qc->mutex = mutex;
+	pthread_cond_init(&qc->empty, NULL);
+	qc->threads = qc->count = 0;
+	qc->rthread = NULL;
+	qc->wthread = NULL;
+	memset(qc->hash_table, 0, sizeof(struct file_buffer *) * HASH_SIZE);
 
-	cache->buffer_size = buffer_size;
-	cache->threads = threads;
-
-	/*
-	 * The default use freelist before growing cache policy behaves
-	 * poorly with appending - with many duplicates the caches
-	 * do not grow due to the fact that large queues of outstanding
-	 * fragments/writer blocks do not occur, leading to small caches
-	 * and un-uncessary performance loss to frequent cache
-	 * replacement in the small caches.  Therefore with appending
-	 * change the policy to grow the caches before reusing blocks
-	 * from the freelist
-	 */
-	cache->first_freelist = first_freelist;
-
-	memset(cache->hash_table, 0, sizeof(struct file_buffer *) * HASH_SIZE);
-	pthread_mutex_init(&cache->mutex, NULL);
-
-	for(i = 0; i < fthreads; i++) {
-		cache->thread[i].max_buffers = fbuffers;
-		cache->thread[i].count = 0;
-		cache->thread[i].used = 0;
-		cache->thread[i].waiting = FALSE;
-		cache->thread[i].free_list = NULL;
-		pthread_cond_init(&cache->thread[i].wait_for_free, NULL);
-	}
-
-	for(i = fthreads; i < threads; i++) {
-		cache->thread[i].max_buffers = bbuffers;
-		cache->thread[i].count = 0;
-		cache->thread[i].used = 0;
-		cache->thread[i].waiting = FALSE;
-		cache->thread[i].free_list = NULL;
-		pthread_cond_init(&cache->thread[i].wait_for_free, NULL);
-	}
-
-	return cache;
+	return qc;
 }
 
 
-struct file_buffer *write_cache_lookup(struct write_cache *cache, long long index)
+void queue_cache_set(struct queue_cache *qc, int fthreads, int fbuffers,
+	int bthreads, int bbuffers, int size)
+{
+	int i, threads = fthreads + bthreads;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
+	pthread_mutex_lock(qc->mutex);
+
+	if(add_overflow(size, 1) ||
+				multiply_overflow(size + 1, sizeof(struct file_buffer *)))
+		BAD_ERROR("Size too large in queue_cache_set\n");
+
+	qc->rthread = malloc(threads * sizeof(struct readq_thrd));
+	if(qc->rthread == NULL)
+		MEM_ERROR();
+
+	qc->wthread = malloc(sizeof(struct writeq_thrd) * threads);
+	if(qc->wthread == NULL)
+		MEM_ERROR();
+
+	for(i = 0; i < threads; i++) {
+		qc->rthread[i].buffer = malloc(sizeof(struct file_buffer *) * (size + 1));
+		if(qc->rthread[i].buffer == NULL)
+			MEM_ERROR();
+		qc->rthread[i].size = size + 1;
+		qc->rthread[i].readp = qc->rthread[i].writep = 0;
+		pthread_cond_init(&qc->rthread[i].full, NULL);
+	}
+
+	for(i = 0; i < fthreads; i++) {
+		qc->wthread[i].max_buffers = fbuffers;
+		qc->wthread[i].count = 0;
+		qc->wthread[i].used = 0;
+		qc->wthread[i].waiting = FALSE;
+		qc->wthread[i].free_list = NULL;
+		pthread_cond_init(&qc->wthread[i].wait_for_free, NULL);
+	}
+
+	for(i = fthreads; i < threads; i++) {
+		qc->wthread[i].max_buffers = bbuffers;
+		qc->wthread[i].count = 0;
+		qc->wthread[i].used = 0;
+		qc->wthread[i].waiting = FALSE;
+		qc->wthread[i].free_list = NULL;
+		pthread_cond_init(&qc->wthread[i].wait_for_free, NULL);
+	}
+
+	qc->threads = threads;
+
+	pthread_cleanup_pop(1);
+}
+
+
+struct file_buffer *queue_cache_lookup(struct queue_cache *qc, long long index)
 {
 	/* Lookup block in the cache, if found return with usage count
 	 * incremented, if not found return NULL */
 	int hash = CALCULATE_CACHE_HASH(index);
 	struct file_buffer *entry;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
-	pthread_mutex_lock(&cache->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
+	pthread_mutex_lock(qc->mutex);
 
-	for(entry = cache->hash_table[hash]; entry; entry = entry->hash_next)
+	for(entry = qc->hash_table[hash]; entry; entry = entry->hash_next)
 		if(entry->index == index)
 			break;
 
@@ -1040,8 +1062,8 @@ struct file_buffer *write_cache_lookup(struct write_cache *cache, long long inde
 		 * if necessary remove from free list so it won't disappear
 		 */
 		if(entry->used == 0) {
-			remove_free_list(&cache->thread[entry->thread].free_list, entry);
-			cache->thread[entry->thread].used ++;
+			remove_free_list(&qc->wthread[entry->thread].free_list, entry);
+			qc->wthread[entry->thread].used ++;
 		}
 		entry->used ++;
 	}
@@ -1052,7 +1074,7 @@ struct file_buffer *write_cache_lookup(struct write_cache *cache, long long inde
 }
 
 
-static struct file_buffer *write_cache_freelist(struct write_cache *cache,
+static struct file_buffer *queue_cache_freelist(struct queue_cache *qc,
 	struct writeq_thrd *thread)
 {
 	struct file_buffer *entry = thread->free_list;
@@ -1060,56 +1082,56 @@ static struct file_buffer *write_cache_freelist(struct write_cache *cache,
 	remove_free_list(&thread->free_list, entry);
 
 	/* a block on the free_list is hashed */
-	remove_write_cache_hash_table(cache, entry, CALCULATE_CACHE_HASH(entry->index));
+	remove_queue_cache_hash_table(qc, entry, CALCULATE_CACHE_HASH(entry->index));
 
 	thread->used ++;
 	return entry;
 }
 
 
-static struct file_buffer *write_cache_alloc(struct write_cache *cache,
+static struct file_buffer *queue_cache_alloc(struct queue_cache *qc,
 	struct writeq_thrd *thread, int i)
 {
 	struct file_buffer *entry = malloc(sizeof(struct file_buffer) +
-							cache->buffer_size);
+							qc->buffer_size);
 	if(entry == NULL)
 		MEM_ERROR();
 
-	entry->write_cache = cache;
+	entry->queue_cache = qc;
 	entry->thread = i;
 	entry->free_prev = entry->free_next = NULL;
-	entry->cache_type = WRITE_CACHE;
+	entry->cache_type = QUEUE_CACHE;
 	thread->count ++;
 	thread->used ++;
 	return entry;
 }
 
 
-struct file_buffer *write_cache_get_nohash(struct write_cache *cache, int i)
+struct file_buffer *queue_cache_get_nohash(struct queue_cache *qc, int i)
 {
 	/* Get a free block out of the cache. */
 	struct file_buffer *entry = NULL;
-	struct writeq_thrd *thread = &cache->thread[i];
+	struct writeq_thrd *thread = &qc->wthread[i];
 
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
-	pthread_mutex_lock(&cache->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
+	pthread_mutex_lock(qc->mutex);
 
 	while(1) {
 		/* first try to get a block from the free list */
-		if(cache->first_freelist && thread->free_list)
-			entry = write_cache_freelist(cache, thread);
+		if(qc->first_freelist && thread->free_list)
+			entry = queue_cache_freelist(qc, thread);
 		else if(thread->count < thread->max_buffers)
-			entry = write_cache_alloc(cache, thread, i);
-		else if(!cache->first_freelist && thread->free_list)
-			entry = write_cache_freelist(cache, thread);
+			entry = queue_cache_alloc(qc, thread, i);
+		else if(!qc->first_freelist && thread->free_list)
+			entry = queue_cache_freelist(qc, thread);
 
 		if(entry)
 			break;
 
 		/* wait for a block */
 		thread->waiting ++;
-		pthread_cond_wait(&thread->wait_for_free, &cache->mutex);
+		pthread_cond_wait(&thread->wait_for_free, qc->mutex);
 		thread->waiting --;
 	}
 
@@ -1125,23 +1147,23 @@ struct file_buffer *write_cache_get_nohash(struct write_cache *cache, int i)
 }
 
 
-void write_cache_hash(struct file_buffer *entry, long long index)
+void queue_cache_hash(struct file_buffer *entry, long long index)
 {
-	struct write_cache *cache = entry->write_cache;
+	struct queue_cache *qc = entry->queue_cache;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
-	pthread_mutex_lock(&cache->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
+	pthread_mutex_lock(qc->mutex);
 
 	entry->index = index;
-	insert_write_cache_hash_table(cache, entry, CALCULATE_CACHE_HASH(entry->index));
+	insert_queue_cache_hash_table(qc, entry, CALCULATE_CACHE_HASH(entry->index));
 
 	pthread_cleanup_pop(1);
 }
 
 
-void write_cache_block_put(struct file_buffer *entry)
+void queue_cache_block_put(struct file_buffer *entry)
 {
-	struct write_cache *cache;
+	struct queue_cache *qc;
 	struct writeq_thrd *thread;
 
 	/*
@@ -1156,11 +1178,11 @@ void write_cache_block_put(struct file_buffer *entry)
 	if(entry == NULL)
 		return;
 
-	cache = entry->write_cache;
-	thread = &cache->thread[entry->thread];
+	qc = entry->queue_cache;
+	thread = &qc->wthread[entry->thread];
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
-	pthread_mutex_lock(&cache->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
+	pthread_mutex_lock(qc->mutex);
 
 	entry->used --;
 	if(entry->used == 0) {
@@ -1176,20 +1198,106 @@ void write_cache_block_put(struct file_buffer *entry)
 }
 
 
-void dump_write_cache(struct write_cache *cache)
+void dump_write_cache(struct queue_cache *qc)
 {
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &cache->mutex);
-	pthread_mutex_lock(&cache->mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
+	pthread_mutex_lock(qc->mutex);
 
 	int i;
 
-	for(i = 0; i < cache->threads; i++) {
+	for(i = 0; i < qc->threads; i++) {
 		printf("block write cache %d (compressed blocks waiting for the writer thread)\n", i + 1);
 		printf("\tMax buffers %d, Current size %d, Used %d,  %s\n",
-			cache->thread[i].max_buffers, cache->thread[i].count,
-			cache->thread[i].used, cache->thread[i].free_list ?
+			qc->wthread[i].max_buffers, qc->wthread[i].count,
+			qc->wthread[i].used, qc->wthread[i].free_list ?
 			"Free buffers" : "No free buffers");
 	}
+
+	pthread_cleanup_pop(1);
+}
+
+
+void queue_cache_put(struct queue_cache *qc, int id, struct file_buffer *buffer)
+{
+	struct readq_thrd *thread;
+	int nextp;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
+	pthread_mutex_lock(qc->mutex);
+
+	thread = &qc->rthread[id];
+
+	while((nextp = (thread->writep + 1) % thread->size) == thread->readp)
+		pthread_cond_wait(&thread->full, qc->mutex);
+
+	thread->buffer[thread->writep] = buffer;
+	thread->writep = nextp;
+	qc->count ++;
+	pthread_cond_signal(&qc->empty);
+	pthread_cleanup_pop(1);
+}
+
+
+struct file_buffer *queue_cache_get_tid(int tid, struct queue_cache *qc)
+{
+	struct file_buffer *buffer = NULL;
+	int i, id, empty = TRUE;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
+	pthread_mutex_lock(qc->mutex);
+
+	while(1) {
+		wait_thread_idle(tid, qc->mutex);
+
+		for(i = 0; i < qc->threads; i++) {
+			struct readq_thrd *thread = &qc->rthread[i];
+
+			if(thread->readp == thread->writep)
+				continue;
+
+			if(buffer == NULL || earlier_buffer(thread->buffer[thread->readp], buffer)) {
+				buffer = thread->buffer[thread->readp];
+				id = i;
+				empty = FALSE;
+			}
+		}
+
+		if(empty) {
+			set_thread_idle(tid);
+			pthread_cond_wait(&qc->empty, qc->mutex);
+		} else
+			break;
+	}
+
+	qc->rthread[id].readp = (qc->rthread[id].readp + 1) % qc->rthread[id].size;
+	qc->count --;
+	pthread_cond_signal(&qc->rthread[id].full);
+	pthread_cleanup_pop(1);
+
+	return buffer;
+}
+
+
+void queue_cache_flush(struct queue_cache *qc)
+{
+	int i;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
+	pthread_mutex_lock(qc->mutex);
+
+	for(i = 0; i < qc->threads; i++)
+		qc->rthread[i].readp = qc->rthread[i].writep;
+
+	pthread_cleanup_pop(1);
+}
+
+
+void dump_block_read_queue(struct queue_cache *qc)
+{
+	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
+	pthread_mutex_lock(qc->mutex);
+
+	printf("\tSize %d%s\n", qc->count, qc->count == 0 ? " (EMPTY)" : "");
 
 	pthread_cleanup_pop(1);
 }

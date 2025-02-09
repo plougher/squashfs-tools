@@ -521,7 +521,7 @@ static void put_file_buffer(struct file_buffer *file_buffer)
 	if(file_buffer->fragment)
 		read_queue_put(to_process_frag, 0, file_buffer);
 	else
-		read_queue_put(to_deflate, 0, file_buffer);
+		queue_cache_put(to_deflate, 0, file_buffer);
 }
 
 
