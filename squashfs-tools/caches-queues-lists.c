@@ -980,8 +980,8 @@ struct queue_cache *queue_cache_init(pthread_mutex_t *mutex, int buffer_size,
 	qc->buffer_size = buffer_size;
 	qc->first_freelist = first_freelist;
 	qc->mutex = mutex;
-	pthread_cond_init(&qc->empty, NULL);
-	qc->threads = qc->count = 0;
+	pthread_cond_init(&qc->wait_for_buffer, NULL);
+	qc->waiting = qc->threads = qc->count = 0;
 	qc->rthread = NULL;
 	qc->wthread = NULL;
 	memset(qc->hash_table, 0, sizeof(struct file_buffer *) * HASH_SIZE);
@@ -1017,24 +1017,11 @@ void queue_cache_set(struct queue_cache *qc, int fthreads, int fbuffers,
 		qc->rthread[i].size = size + 1;
 		qc->rthread[i].readp = qc->rthread[i].writep = 0;
 		pthread_cond_init(&qc->rthread[i].full, NULL);
-	}
 
-	for(i = 0; i < fthreads; i++) {
-		qc->wthread[i].max_buffers = fbuffers;
+		qc->wthread[i].max_buffers = i < fthreads ? fbuffers : bbuffers;
 		qc->wthread[i].count = 0;
 		qc->wthread[i].used = 0;
-		qc->wthread[i].waiting = FALSE;
 		qc->wthread[i].free_list = NULL;
-		pthread_cond_init(&qc->wthread[i].wait_for_free, NULL);
-	}
-
-	for(i = fthreads; i < threads; i++) {
-		qc->wthread[i].max_buffers = bbuffers;
-		qc->wthread[i].count = 0;
-		qc->wthread[i].used = 0;
-		qc->wthread[i].waiting = FALSE;
-		qc->wthread[i].free_list = NULL;
-		pthread_cond_init(&qc->wthread[i].wait_for_free, NULL);
 	}
 
 	qc->threads = threads;
@@ -1107,46 +1094,6 @@ static struct file_buffer *queue_cache_alloc(struct queue_cache *qc,
 }
 
 
-struct file_buffer *queue_cache_get_nohash(struct queue_cache *qc, int i)
-{
-	/* Get a free block out of the cache. */
-	struct file_buffer *entry = NULL;
-	struct writeq_thrd *thread = &qc->wthread[i];
-
-
-	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
-	pthread_mutex_lock(qc->mutex);
-
-	while(1) {
-		/* first try to get a block from the free list */
-		if(qc->first_freelist && thread->free_list)
-			entry = queue_cache_freelist(qc, thread);
-		else if(thread->count < thread->max_buffers)
-			entry = queue_cache_alloc(qc, thread, i);
-		else if(!qc->first_freelist && thread->free_list)
-			entry = queue_cache_freelist(qc, thread);
-
-		if(entry)
-			break;
-
-		/* wait for a block */
-		thread->waiting ++;
-		pthread_cond_wait(&thread->wait_for_free, qc->mutex);
-		thread->waiting --;
-	}
-
-	/* initialise block */
-	entry->used = 1;
-	entry->locked = FALSE;
-	entry->wait_on_unlock = FALSE;
-	entry->error = FALSE;
-
-	pthread_cleanup_pop(1);
-
-	return entry;
-}
-
-
 void queue_cache_hash(struct file_buffer *entry, long long index)
 {
 	struct queue_cache *qc = entry->queue_cache;
@@ -1188,10 +1135,8 @@ void queue_cache_block_put(struct file_buffer *entry)
 	if(entry->used == 0) {
 		insert_free_list(&thread->free_list, entry);
 		thread->used --;
-
-		/* Wake up reader thread if it is waiting for a free block */
-		if(thread->waiting)
-			pthread_cond_signal(&thread->wait_for_free);
+		if(qc->waiting)
+			pthread_cond_signal(&qc->wait_for_buffer);
 	}
 
 	pthread_cleanup_pop(1);
@@ -1233,15 +1178,18 @@ void queue_cache_put(struct queue_cache *qc, int id, struct file_buffer *buffer)
 	thread->buffer[thread->writep] = buffer;
 	thread->writep = nextp;
 	qc->count ++;
-	pthread_cond_signal(&qc->empty);
+	if(qc->waiting)
+		pthread_cond_signal(&qc->wait_for_buffer);
 	pthread_cleanup_pop(1);
 }
 
 
-struct file_buffer *queue_cache_get_tid(int tid, struct queue_cache *qc)
+struct file_buffer *queue_cache_get_tid(int tid, struct queue_cache *qc, struct file_buffer **wbuffer)
 {
-	struct file_buffer *buffer = NULL;
-	int i, id, empty = TRUE;
+	struct file_buffer *rbuffer = NULL;
+	struct readq_thrd *rthread;
+	struct writeq_thrd *wthread;
+	int i;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, qc->mutex);
 	pthread_mutex_lock(qc->mutex);
@@ -1250,31 +1198,57 @@ struct file_buffer *queue_cache_get_tid(int tid, struct queue_cache *qc)
 		wait_thread_idle(tid, qc->mutex);
 
 		for(i = 0; i < qc->threads; i++) {
-			struct readq_thrd *thread = &qc->rthread[i];
+			struct readq_thrd *rthrd = &qc->rthread[i];
+			struct writeq_thrd *wthrd = &qc->wthread[i];
 
-			if(thread->readp == thread->writep)
+			/* Skip if thread read queue is empty */
+			if(rthrd->readp == rthrd->writep)
 				continue;
 
-			if(buffer == NULL || earlier_buffer(thread->buffer[thread->readp], buffer)) {
-				buffer = thread->buffer[thread->readp];
-				id = i;
-				empty = FALSE;
+			/* Skip if no thread cache buffers are available */
+			if(!wthrd->free_list && wthrd->count == wthrd->max_buffers)
+				continue;
+
+			if(rbuffer == NULL || earlier_buffer(rthrd->buffer[rthrd->readp], rbuffer)) {
+				rbuffer = rthrd->buffer[rthrd->readp];
+				rthread = rthrd;
+				wthread = wthrd;
 			}
 		}
 
-		if(empty) {
+		if(rbuffer == NULL) {
 			set_thread_idle(tid);
-			pthread_cond_wait(&qc->empty, qc->mutex);
+			qc->waiting ++;
+			pthread_cond_wait(&qc->wait_for_buffer, qc->mutex);
+			qc->waiting --;
 		} else
 			break;
 	}
 
-	qc->rthread[id].readp = (qc->rthread[id].readp + 1) % qc->rthread[id].size;
+	/* Remove rbuffer from queue */
+	rthread->readp = (rthread->readp + 1) % rthread->size;
 	qc->count --;
-	pthread_cond_signal(&qc->rthread[id].full);
+	pthread_cond_signal(&rthread->full);
+
+	/* Get wbuffer from cache */
+	if(qc->first_freelist && wthread->free_list)
+		*wbuffer = queue_cache_freelist(qc, wthread);
+	else if(wthread->count < wthread->max_buffers)
+		*wbuffer = queue_cache_alloc(qc, wthread, wthread - &qc->wthread[0]);
+	else if(!qc->first_freelist && wthread->free_list)
+		*wbuffer = queue_cache_freelist(qc, wthread);
+	else
+		BAD_ERROR("Bug in queue_cache_get_tid()");
+
+	/* initialise block */
+	(*wbuffer)->used = 1;
+	(*wbuffer)->locked = FALSE;
+	(*wbuffer)->wait_on_unlock = FALSE;
+	(*wbuffer)->error = FALSE;
+
 	pthread_cleanup_pop(1);
 
-	return buffer;
+	return rbuffer;
 }
 
 

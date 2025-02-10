@@ -2712,13 +2712,13 @@ static void *deflator(void *arg)
 
 	while(1) {
 		struct file_buffer *write_buffer;
-		struct file_buffer *file_buffer = queue_cache_get_tid(tid, to_deflate);
+		struct file_buffer *file_buffer = queue_cache_get_tid(tid, to_deflate, &write_buffer);
 
 		if(sparse_files && all_zero(file_buffer)) { 
 			file_buffer->c_byte = 0;
+			gen_cache_block_put(write_buffer);
 			main_queue_put(to_main, file_buffer);
 		} else {
-			write_buffer = queue_cache_get_nohash(bwriter_buffer, file_buffer->thread);
 			write_buffer->c_byte = mangle2(stream,
 				write_buffer->data, file_buffer->data,
 				file_buffer->size, block_size,

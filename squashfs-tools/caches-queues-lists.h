@@ -219,8 +219,6 @@ struct writeq_thrd {
 	int			max_buffers;
 	int			count;
 	int			used;
-	int			waiting;
-	pthread_cond_t		wait_for_free;
 	struct file_buffer	*free_list;
 };
 
@@ -230,8 +228,9 @@ struct queue_cache {
 	int			first_freelist;
 	int			threads;
 	int			count;
+	int			waiting;
+	pthread_cond_t		wait_for_buffer;
 	pthread_mutex_t		*mutex;
-	pthread_cond_t		empty;
 	struct file_buffer	*hash_table[HASH_SIZE];
 	struct readq_thrd	*rthread;
 	struct writeq_thrd	*wthread;
@@ -274,12 +273,11 @@ extern void cache_unlock(struct file_buffer *);
 extern struct queue_cache *queue_cache_init(pthread_mutex_t *, int, int);
 void queue_cache_set(struct queue_cache *, int, int, int, int, int);
 extern struct file_buffer *queue_cache_lookup(struct queue_cache *, long long);
-extern struct file_buffer *queue_cache_get_nohash(struct queue_cache *, int);
 extern void queue_cache_hash(struct file_buffer *, long long);
 extern void queue_cache_block_put(struct file_buffer *);
 extern void dump_write_cache(struct queue_cache *);
 extern void queue_cache_put(struct queue_cache *, int, struct file_buffer *);
-extern struct file_buffer *queue_cache_get_tid(int, struct queue_cache *);
+extern struct file_buffer *queue_cache_get_tid(int, struct queue_cache *, struct file_buffer **);
 extern void queue_cache_flush(struct queue_cache *);
 extern void dump_block_read_queue(struct queue_cache *);
 

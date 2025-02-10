@@ -93,7 +93,7 @@ void wait_thread_idle(int tid, pthread_mutex_t *queue_mutex)
 		if(threads[tid].state == THREAD_IDLE)
 			active_blocks ++;
 
-		while(active_frags + active_blocks > processors) {
+		while((active_frags + active_blocks) > (processors + processors / 4)) {
 			active_blocks --;
 			threads[tid].state = THREAD_IDLE;
 			waiting_threads ++;
