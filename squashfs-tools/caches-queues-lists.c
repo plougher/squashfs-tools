@@ -1069,7 +1069,8 @@ static struct file_buffer *queue_cache_freelist(struct queue_cache *qc,
 	remove_free_list(&thread->free_list, entry);
 
 	/* a block on the free_list is hashed */
-	remove_queue_cache_hash_table(qc, entry, CALCULATE_CACHE_HASH(entry->index));
+	if(entry->hashed)
+		remove_queue_cache_hash_table(qc, entry, CALCULATE_CACHE_HASH(entry->index));
 
 	thread->used ++;
 	return entry;
@@ -1102,6 +1103,7 @@ void queue_cache_hash(struct file_buffer *entry, long long index)
 	pthread_mutex_lock(qc->mutex);
 
 	entry->index = index;
+	entry->hashed = TRUE;
 	insert_queue_cache_hash_table(qc, entry, CALCULATE_CACHE_HASH(entry->index));
 
 	pthread_cleanup_pop(1);
@@ -1245,6 +1247,7 @@ struct file_buffer *queue_cache_get_tid(int tid, struct queue_cache *qc, struct 
 	(*wbuffer)->locked = FALSE;
 	(*wbuffer)->wait_on_unlock = FALSE;
 	(*wbuffer)->error = FALSE;
+	(*wbuffer)->hashed = FALSE;
 
 	pthread_cleanup_pop(1);
 

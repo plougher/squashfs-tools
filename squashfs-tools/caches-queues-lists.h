@@ -134,6 +134,7 @@ struct file_buffer {
 	char duplicate;
 	char next_state;
 	char cache_type;
+	char hashed;
 	char data[0] __attribute__((aligned));
 };
 
