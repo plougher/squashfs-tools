@@ -282,8 +282,6 @@ extern struct file_buffer *queue_cache_get_tid(int, struct queue_cache *, struct
 extern void queue_cache_flush(struct queue_cache *);
 extern void dump_block_read_queue(struct queue_cache *);
 
-extern int first_freelist;
-
 static inline void gen_cache_block_put(struct file_buffer *entry)
 {
 	if(entry == NULL)
