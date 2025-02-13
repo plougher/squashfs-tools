@@ -967,7 +967,7 @@ pthread_t *get_reader_threads(int *num)
 
 int set_read_frag_threads(int fragments)
 {
-	if(fragments <= 0 || fragments > 64)
+	if(fragments <= 0 || fragments > 8192)
 		return FALSE;
 
 	fragment_threads = fragments;
@@ -979,7 +979,7 @@ int set_read_frag_threads(int fragments)
 
 int set_read_block_threads(int blocks)
 {
-	if(blocks <= 0 || blocks > 64)
+	if(blocks <= 0 || blocks > 8192)
 		return FALSE;
 
 	block_threads = blocks;
