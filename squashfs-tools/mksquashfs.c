@@ -5461,7 +5461,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	reserve_cache = cache_init(block_size, processors + 1, 1, 0);
 	pthread_create(&reader_thread, NULL, reader, NULL);
 	pthread_create(&writer_thread, NULL, writer, NULL);
-	init_progress_bar();
+	init_progress_bar(block_size);
 	init_info();
 
 	for(i = 0; i < processors; i++) {
@@ -7375,6 +7375,7 @@ int main(int argc, char *argv[])
 	int progress = TRUE;
 	int force_progress = FALSE;
 	int percentage = FALSE;
+	int bytes = FALSE;
 	int exclude_option = FALSE;
 	int Xhelp = FALSE;
 	struct file_buffer **fragment = NULL;
@@ -8194,6 +8195,9 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-percentage") == 0) {
 			progressbar_percentage();
 			percentage = TRUE;
+		} else if(strcmp(argv[i], "-bytes") == 0) {
+			progressbar_numbers();
+			bytes = TRUE;
 		} else if(strcmp(argv[i], "-version") == 0) {
 			print_version("mksquashfs");
 		} else if(strcmp(argv[i], "-cpiostyle") == 0 ||
@@ -8257,6 +8261,10 @@ int main(int argc, char *argv[])
 	 */
 	if(!progress && percentage)
 		BAD_ERROR("Only one of -no-progress and -percentage can be "
+			"specified.  Both causes a conflict.\n");
+
+	if(!progress && bytes)
+		BAD_ERROR("Only one of -no-progress and -bytes can be "
 			"specified.  Both causes a conflict.\n");
 
 	/*

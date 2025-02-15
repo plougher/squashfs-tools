@@ -29,7 +29,8 @@ extern void dec_progress_bar(int count);
 extern void progress_bar_size(int count);
 extern void enable_progress_bar();
 extern void disable_progress_bar();
-extern void init_progress_bar();
+extern void init_progress_bar(int bytes);
 extern void set_progressbar_state(int);
 extern void progressbar_percentage();
+extern void progressbar_numbers();
 #endif

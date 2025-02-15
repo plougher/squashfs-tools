@@ -47,6 +47,9 @@ static int temp_disabled = FALSE;
 /* flag whether to display full progress bar or just a percentage */
 static int percent = FALSE;
 
+/* flag whether to display full progress bar or just the numbers */
+static int numbers = FALSE;
+
 /* flag whether we need to output a newline before printing
  * a line - this is because progressbar printing does *not*
  * output a newline */
@@ -55,6 +58,7 @@ static int need_nl = FALSE;
 static int rotate = 0;
 static long long cur_uncompressed = 0, estimated_uncompressed = 0;
 static int columns;
+static int bytes;
 
 static pthread_t progress_thread;
 static pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -78,6 +82,12 @@ static void sigwinch_handler(int arg)
 void progressbar_percentage()
 {
 	percent = TRUE;
+}
+
+
+void progressbar_numbers()
+{
+	numbers = TRUE;
 }
 
 
@@ -169,10 +179,24 @@ static void display_percentage(long long current, long long max)
 }
 
 
+static void display_numbers(long long current, long long max)
+{
+	static int previous = -1;
+
+	if(current != previous) {
+		printf("%lld/%lld\n", current * bytes, max  * bytes);
+		fflush(stdout);
+		previous = current;
+	}
+}
+
+
 static void progress_bar(long long current, long long max, int columns)
 {
 	if(percent)
 		display_percentage(current, max);
+	else if(numbers)
+		display_numbers(current, max);
 	else
 		progressbar(current, max, columns);
 }
@@ -253,9 +277,10 @@ static void *progress_thrd(void *arg)
 }
 
 
-void init_progress_bar()
+void init_progress_bar(int size)
 {
 	pthread_create(&progress_thread, NULL, progress_thrd, NULL);
+	bytes = size;
 }
 
 

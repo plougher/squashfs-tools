@@ -278,6 +278,7 @@ static char *mksquashfs_text[]={
 	"-progress\t\tdisplay progress bar when using the -info option\n",
 	"-percentage\t\tdisplay a percentage rather than the full progress bar."
 		"  Can be used with dialog --gauge etc.\n",
+	"-bytes\t\t\tdisplay current/max bytes rather than the full progress bar."
 	"-throttle <percentage>\tthrottle the I/O input rate by the given "
 		"percentage.  This can be used to reduce the I/O and CPU "
 		"consumption of Mksquashfs\n",
