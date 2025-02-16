@@ -460,7 +460,7 @@ Use DICT\-SIZE as the XZ dictionary size.  The dictionary size can be specified 
 .SS "zstd:"
 .TP
 \fB\-Xcompression\-level\fR COMPRESSION\-LEVEL
-COMPRESSION\-LEVEL should be 1 .. 22 (default 15)
+COMPRESSION\-LEVEL should be \fB\-131072\fR .. \fB\-1\fR or 1 .. 22 (default 15) Negative compression levels correspond to the zstd \fB\-\-fast\fR option.
 .SH ENVIRONMENT
 .TP
 SQFS_CMDLINE
