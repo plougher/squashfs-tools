@@ -73,10 +73,11 @@ int concise = FALSE, quiet = FALSE, numeric = FALSE;
 int use_regex = FALSE;
 int root_process;
 int columns;
+int bytes;
 int rotate = 0;
 pthread_mutex_t	screen_mutex;
 pthread_mutex_t pos_mutex = PTHREAD_MUTEX_INITIALIZER;
-int progress = TRUE, progress_enabled = FALSE, percent = FALSE;
+int progress = TRUE, progress_enabled = FALSE, percent = FALSE, numbers = FALSE;
 unsigned int total_files = 0, total_inodes = 0;
 long long total_blocks = 0;
 long long cur_blocks = 0;
@@ -2753,7 +2754,10 @@ static void *progress_thread(void *arg)
 
 		if(progress_enabled) {
 			pthread_mutex_lock(&screen_mutex);
-			progress_bar(sym_count + dev_count + fifo_count +
+			if(numbers)
+				progress_bar(cur_blocks, total_blocks, columns);
+			else
+				progress_bar(sym_count + dev_count + fifo_count +
 				socket_count + file_count + hardlnk_count +
 				cur_blocks, total_inodes + total_blocks,
 				columns);
@@ -2917,6 +2921,7 @@ static void initialise_threads(int fragment_buffer_size, int data_buffer_size, i
 
 	pthread_create(&thread[0], NULL, reader, NULL);
 	pthread_create(&thread[2], NULL, progress_thread, NULL);
+	bytes = block_size;
 
 	if(pseudo_file) {
 		pthread_create(&thread[1], NULL, cat_writer, NULL);
@@ -2954,9 +2959,12 @@ void disable_progress_bar()
 {
 	pthread_mutex_lock(&screen_mutex);
 	if(progress_enabled) {
-		progress_bar(sym_count + dev_count + fifo_count + socket_count
-			+ file_count + hardlnk_count + cur_blocks, total_inodes
-			+ total_blocks, columns);
+		if(numbers)
+			progress_bar(cur_blocks, total_blocks, columns);
+		else
+			progress_bar(sym_count + dev_count + fifo_count + socket_count
+				+ file_count + hardlnk_count + cur_blocks, total_inodes
+				+ total_blocks, columns);
 		printf("\n");
 	}
 	progress_enabled = FALSE;
@@ -3055,10 +3063,24 @@ static void display_percentage(long long current, long long max)
 }
 
 
+static void display_numbers(long long current, long long max)
+{
+	static int previous = -1;
+
+	if(current != previous) {
+		printf("%lld/%lld\n", current * bytes, max  * bytes);
+		fflush(stdout);
+		previous = current;
+	}
+}
+
+
 static void progress_bar(long long current, long long max, int columns)
 {
 	if(percent)
 		display_percentage(current, max);
+	else if(numbers)
+		display_numbers(current, max);
 	else
 		progressbar(current, max, columns);
 }
@@ -4271,6 +4293,8 @@ static int parse_options(int argc, char *argv[])
 			progress = FALSE;
 		else if(strcmp(argv[i], "-percentage") == 0)
 			percent = progress = TRUE;
+		else if(strcmp(argv[i], "-bytes") == 0)
+			numbers = progress = TRUE;
 		else if(strcmp(argv[i], "-no-xattrs") == 0 ||
 				strcmp(argv[i], "-no") == 0)
 			no_xattrs = TRUE;
