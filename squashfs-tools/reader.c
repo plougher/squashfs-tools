@@ -74,7 +74,6 @@ static unsigned int block_count = 0;
 static unsigned int fragment_count = 0;
 
 extern struct queue_cache *bwriter_buffer;
-extern int appending;
 extern int processors;
 
 static void sigalrm_handler(int arg)
