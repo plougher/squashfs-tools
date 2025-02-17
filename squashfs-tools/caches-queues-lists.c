@@ -509,46 +509,6 @@ struct file_buffer *read_queue_get(struct read_queue *queue)
 }
 
 
-struct file_buffer *read_queue_get_tid(int tid, struct read_queue *queue)
-{
-	struct file_buffer *buffer = NULL;
-	int i, id, empty = TRUE;
-
-	pthread_cleanup_push((void *) pthread_mutex_unlock, queue->mutex);
-	pthread_mutex_lock(queue->mutex);
-
-	while(1) {
-		wait_thread_idle(tid, queue->mutex);
-
-		for(i = 0; i < queue->threads; i++) {
-			struct readq_thrd *thread = &queue->thread[i];
-
-			if(thread->readp == thread->writep)
-				continue;
-
-			if(buffer == NULL || earlier_buffer(thread->buffer[thread->readp], buffer)) {
-				buffer = thread->buffer[thread->readp];
-				id = i;
-				empty = FALSE;
-			}
-		}
-
-		if(empty) {
-			set_thread_idle(tid);
-			pthread_cond_wait(&queue->empty, queue->mutex);
-		} else
-			break;
-	}
-
-	queue->thread[id].readp = (queue->thread[id].readp + 1) % queue->thread[id].size;
-	queue->count --;
-	pthread_cond_signal(&queue->thread[id].full);
-	pthread_cleanup_pop(1);
-
-	return buffer;
-}
-
-
 void read_queue_flush(struct read_queue *queue)
 {
 	int i;

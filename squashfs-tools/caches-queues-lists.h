@@ -256,7 +256,6 @@ extern struct read_queue *read_queue_init(pthread_mutex_t *mutex);
 extern void read_queue_set(struct read_queue *, int, int);
 extern void read_queue_put(struct read_queue *, int, struct file_buffer *);
 extern struct file_buffer *read_queue_get(struct read_queue *);
-extern struct file_buffer *read_queue_get_tid(int, struct read_queue *);
 extern void read_queue_flush(struct read_queue *);
 extern void dump_read_queue(struct read_queue *);
 extern struct cache *cache_init(int, int, int, int);
