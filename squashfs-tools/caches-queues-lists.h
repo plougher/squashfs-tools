@@ -184,7 +184,7 @@ struct readq_thrd {
 struct read_queue {
 	int			threads;
 	int			count;
-	pthread_mutex_t		*mutex;
+	pthread_mutex_t		mutex;
 	pthread_cond_t		empty;
 	struct readq_thrd	*thread;
 };
@@ -252,7 +252,7 @@ extern void main_queue_put(struct seq_queue *, struct file_buffer *);
 extern void fragment_queue_put(struct seq_queue *, struct file_buffer *);
 extern struct file_buffer *main_queue_get(struct seq_queue *);
 extern struct file_buffer *fragment_queue_get(struct seq_queue *);
-extern struct read_queue *read_queue_init(pthread_mutex_t *mutex);
+extern struct read_queue *read_queue_init();
 extern void read_queue_set(struct read_queue *, int, int);
 extern void read_queue_put(struct read_queue *, int, struct file_buffer *);
 extern struct file_buffer *read_queue_get(struct read_queue *);

@@ -5418,7 +5418,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 
 	to_reader = queue_init(1, NULL);
 	bwriter_buffer = to_deflate = queue_cache_init(&thread_mutex, block_size, freelst);
-	to_process_frag = read_queue_init(NULL);
+	to_process_frag = read_queue_init();
 	to_writer = queue_init(bwriter_size + fwriter_size, NULL);
 	from_writer = queue_init(1, NULL);
 	to_frag = queue_init(fragment_size, &thread_mutex);
