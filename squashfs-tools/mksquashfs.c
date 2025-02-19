@@ -8054,9 +8054,6 @@ int main(int argc, char *argv[])
 			mksquashfs_invalid_option(argv[i]);
 	}
 
-	if(force_single_threaded)
-		set_single_threaded();
-
 	check_source_date_epoch();
 
 	/* If cpiostyle is set, then file names  will be read-in
@@ -8130,6 +8127,13 @@ int main(int argc, char *argv[])
 	 */
 	progress = FALSE;
 #endif
+
+	/*
+	 * Some options only make sense with a single reader thread and
+	 * so override the default
+	 * */
+	if(force_single_threaded)
+		set_single_threaded();
 
 	if(one_file_system && source > 1) {
 		source_dev = malloc(source * sizeof(dev_t));
