@@ -28,23 +28,28 @@
 
 int file_limit()
 {
+	static int max_files = -2;
 	struct rlimit rlim;
-	int max_files, res = getrlimit(RLIMIT_NOFILE, &rlim);
-	if (res == -1) {
-		ERROR("failed to get open file limit!  Defaulting to 1\n");
-		max_files = 1;
-	} else if (rlim.rlim_cur != RLIM_INFINITY) {
-		/*
-		 * leave OPEN_FILE_MARGIN free (rlim_cur includes fds used by
-		 * stdin, stdout, stderr and filesystem fd
-		 */
-		if (rlim.rlim_cur <= OPEN_FILE_MARGIN)
-			/* no margin, use minimum possible */
+	int res;
+
+	if(max_files == -2) {
+		res = getrlimit(RLIMIT_NOFILE, &rlim);
+		if (res == -1) {
+			ERROR("failed to get open file limit!  Defaulting to 1\n");
 			max_files = 1;
-		else
-			max_files = rlim.rlim_cur - OPEN_FILE_MARGIN;
-	} else
-		max_files = -1;
+		} else if (rlim.rlim_cur != RLIM_INFINITY) {
+			/*
+			 * leave OPEN_FILE_MARGIN free (rlim_cur includes fds used by
+			 * stdin, stdout, stderr and filesystem fd
+			 */
+			if (rlim.rlim_cur <= OPEN_FILE_MARGIN)
+				/* no margin, use minimum possible */
+				max_files = 1;
+			else
+				max_files = rlim.rlim_cur - OPEN_FILE_MARGIN;
+		} else
+			max_files = -1;
+	}
 
 	return max_files;
 }

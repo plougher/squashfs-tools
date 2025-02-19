@@ -997,6 +997,12 @@ void set_single_threaded()
 }
 
 
+int get_reader_num()
+{
+	return reader_threads;
+}
+
+
 void set_sleep_time(int time)
 {
 	sleep_time = time;

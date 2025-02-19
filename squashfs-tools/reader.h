@@ -63,6 +63,7 @@ extern pthread_t *get_reader_threads(int *);
 extern int set_read_frag_threads(int);
 extern int set_read_block_threads(int);
 extern void set_single_threaded();
+extern int get_reader_num();
 extern void set_sleep_time(int);
 extern void check_min_memory(int, int, int);
 #endif

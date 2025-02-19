@@ -78,6 +78,7 @@
 #include "print_pager.h"
 #include "thread.h"
 #include "reader.h"
+#include "limit.h"
 
 /* Compression options */
 int noF = FALSE;
@@ -8134,6 +8135,17 @@ int main(int argc, char *argv[])
 	 * */
 	if(force_single_threaded)
 		set_single_threaded();
+
+	/*
+	 * Ensure the specified (or default) number of reader threads doesn't
+	 * exceed the maximum open file limit
+	 */
+	if(file_limit() != -1 && get_reader_num() > file_limit())
+		BAD_ERROR("Reader threads exceed open file limit. Please "
+			"increase open file limit with ulimit or decrease "
+			"number of reader threads (ulimit -n must be %d "
+			"more than number of reader threads)\n",
+			OPEN_FILE_MARGIN);
 
 	if(one_file_system && source > 1) {
 		source_dev = malloc(source * sizeof(dev_t));
