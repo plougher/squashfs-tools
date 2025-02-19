@@ -37,6 +37,7 @@
 #include "memory.h"
 #include "print_pager.h"
 #include "unsquashfs_help.h"
+#include "limit.h"
 
 #ifdef __linux__
 #include <sys/sysmacros.h>
@@ -44,7 +45,6 @@
 
 #include <sys/types.h>
 #include <sys/time.h>
-#include <sys/resource.h>
 #include <limits.h>
 #include <ctype.h>
 
@@ -969,7 +969,6 @@ failure:
 static pthread_mutex_t open_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t open_empty = PTHREAD_COND_INITIALIZER;
 static int open_unlimited, open_count;
-#define OPEN_FILE_MARGIN 10
 
 
 static void open_init(int count)
@@ -2767,8 +2766,7 @@ static void *progress_thread(void *arg)
 
 static void initialise_threads(int fragment_buffer_size, int data_buffer_size, int cat_file)
 {
-	struct rlimit rlim;
-	int i, max_files, res;
+	int i, max_files;
 	sigset_t sigmask, old_mask;
 
 	if(cat_file == FALSE) {
@@ -2854,26 +2852,9 @@ static void initialise_threads(int fragment_buffer_size, int data_buffer_size, i
 	 * is data block cache size + one fragment per open file, and then
 	 * we will have a file_entry for each open file.
 	 */
-	res = getrlimit(RLIMIT_NOFILE, &rlim);
-	if (res == -1) {
-		ERROR("failed to get open file limit!  Defaulting to 1\n");
-		rlim.rlim_cur = 1;
-	}
-
-	if (rlim.rlim_cur != RLIM_INFINITY) {
-		/*
-		 * leave OPEN_FILE_MARGIN free (rlim_cur includes fds used by
-		 * stdin, stdout, stderr and filesystem fd
-		 */
-		if (rlim.rlim_cur <= OPEN_FILE_MARGIN)
-			/* no margin, use minimum possible */
-			max_files = 1;
-		else
-			max_files = rlim.rlim_cur - OPEN_FILE_MARGIN;
-	} else
-		max_files = -1;
 
 	/* set amount of available files for use by open_wait and close_wake */
+	max_files = file_limit();
 	open_init(max_files);
 
 	/*
