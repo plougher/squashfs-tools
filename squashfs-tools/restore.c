@@ -36,19 +36,22 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "caches-queues-lists.h"
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "mksquashfs_error.h"
 #include "progressbar.h"
 #include "info.h"
+#include "reader.h"
+#include "caches-queues-lists.h"
 
 #define FALSE 0
 #define TRUE 1
 
-extern pthread_t reader_thread, writer_thread, main_thread, order_thread;
+extern pthread_t reader_thread1, writer_thread, main_thread, order_thread;
 extern pthread_t *deflator_thread, *frag_deflator_thread, *frag_thread;
-extern struct queue *to_deflate, *to_writer, *to_frag, *to_process_frag;
+extern struct queue *to_writer, *to_frag;
+extern struct queue_cache *to_deflate;
+extern struct read_queue *to_process_frag;
 extern struct seq_queue *to_main, *to_order;
 extern void restorefs();
 extern int processors;
@@ -60,7 +63,8 @@ static pthread_t restore_thread;
 void *restore_thrd(void *arg)
 {
 	sigset_t sigmask, old_mask;
-	int i, sig;
+	int i, sig, reader_threads;
+	pthread_t *reader_thread;
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
@@ -83,15 +87,22 @@ void *restore_thrd(void *arg)
 		set_progressbar_state(FALSE);
 		disable_info();
 
-		/* first kill the reader thread */
-		pthread_cancel(reader_thread);
-		pthread_join(reader_thread, NULL);
+		/* first kill the initial reader thread */
+		pthread_cancel(reader_thread1);
+		pthread_join(reader_thread1, NULL);
+
+		/* then kill the worker reader threads */
+		reader_thread = get_reader_threads(&reader_threads);
+		for(i = 0; i < reader_threads; i++)
+			pthread_cancel(reader_thread[i]);
+		for(i = 0; i < reader_threads; i++)
+			pthread_join(reader_thread[i], NULL);
 
 		/*
 		 * then flush the reader to deflator thread(s) output queue.
 		 * The deflator thread(s) will idle
 		 */
-		queue_flush(to_deflate);
+		queue_cache_flush(to_deflate);
 
 		/* now kill the deflator thread(s) */
 		for(i = 0; i < processors; i++)
@@ -103,7 +114,7 @@ void *restore_thrd(void *arg)
 		 * then flush the reader to process fragment thread(s) output
 		 * queue.  The process fragment thread(s) will idle
 		 */
-		queue_flush(to_process_frag);
+		read_queue_flush(to_process_frag);
 
 		/* now kill the process fragment thread(s) */
 		for(i = 0; i < processors; i++)

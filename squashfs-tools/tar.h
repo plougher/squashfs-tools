@@ -130,7 +130,7 @@ struct tar_file {
 #define ENCODING_BASE64		0
 #define ENCODING_BINARY		1
 
-extern void read_tar_file();
+extern long long read_tar_file();
 extern squashfs_inode process_tar_file(int progress);
 extern int ignore_zeros;
 extern int default_uid_opt;

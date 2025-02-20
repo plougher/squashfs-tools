@@ -52,6 +52,7 @@
 #define MAX_LINE 16384
 
 struct pseudo *pseudo = NULL;
+extern int force_single_threaded;
 
 char *pseudo_definitions[] = {
 	"d mode uid gid",
@@ -877,6 +878,13 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 	dev->buf->ino = pseudo_ino ++;
 
 	if(type == 'R') {
+		/*
+		 * The file's data is in a Unsquashfs generated pseudo file,
+		 * where the data for all files is in the same file.  It is
+		 * better to use single readed reader in this case
+		 */
+		force_single_threaded = TRUE;
+
 		if(*file == NULL) {
 			*file = malloc(sizeof(struct pseudo_file));
 			if(*file == NULL)

@@ -47,6 +47,7 @@ struct dir_ent {
 	struct dir_info		*dir;
 	struct dir_info		*our_dir;
 	struct dir_ent		*next;
+	struct dir_ent		*reader_next;
 };
 
 struct inode_info {
@@ -60,13 +61,16 @@ struct inode_info {
 	unsigned int		nlink;
 	char			dummy_root_dir;
 	char			type;
-	char			read;
 	char			root_entry;
 	char			no_fragments;
 	char			always_use_fragments;
 	char			noD;
 	char			noF;
 	char			tarfile;
+	union {
+		char		read;
+		char		scanned;
+	};
 	char			symlink[0];
 };
 
@@ -133,10 +137,10 @@ struct append_file {
 #define SQUASHFS_FWRITEQ_MEM 4
 
 /*
- * Lowest amount of physical memory considered viable for Mksquashfs
- * to run in Mbytes
+ * Default memory for when Mksquashfs cannot get the amount of
+ * memory in the system
  */
-#define SQUASHFS_LOWMEM 64
+#define SQUASHFS_UNKNOWN_MEM 1024
 
 /* offset of data in compressed metadata blocks (allowing room for
  * compressed size */
@@ -221,10 +225,13 @@ static inline int get_pathmax()
 	return path_max;
 }
 
-extern struct cache *reader_buffer, *fragment_buffer, *reserve_cache;
-extern struct cache *bwriter_buffer, *fwriter_buffer;
-extern struct queue *to_reader, *to_deflate, *to_writer, *from_writer,
-	*to_frag, *locked_fragment, *to_process_frag;
+extern struct cache *fragment_buffer, *reserve_cache;
+extern struct cache *fwriter_buffer;
+extern struct queue_cache *bwriter_buffer;
+extern struct queue *to_reader, *to_writer, *from_writer, *to_frag,
+       *locked_fragment;
+extern struct queue_cache *to_deflate;
+extern struct read_queue *to_process_frag;
 extern struct append_file **file_mapping;
 extern struct seq_queue *to_main, *to_order;
 extern pthread_mutex_t fragment_mutex, dup_mutex;
@@ -254,13 +261,11 @@ extern int root_gid_opt;
 extern unsigned int root_gid;
 extern struct inode_info *inode_info[INODE_HASH_SIZE];
 extern int quiet;
-extern int sequence_count;
 extern int pseudo_override;
 extern int global_uid_opt;
 extern unsigned int global_uid;
 extern int global_gid_opt;
 extern unsigned int global_gid;
-extern int sleep_time;
 extern int global_dir_mode_opt;
 extern struct mode_data *global_dir_mode;
 
@@ -273,7 +278,7 @@ extern unsigned int get_guid(unsigned int);
 extern long long read_bytes(int, void *, long long);
 extern unsigned short get_checksum_mem(char *, int);
 extern int reproducible;
-extern void *reader(void *arg);
+extern void *initial_reader(void *arg);
 extern squashfs_inode create_inode(struct dir_info *dir_info,
 	struct dir_ent *dir_ent, int type, long long byte_size,
 	long long start_block, unsigned int offset, unsigned int *block_list,

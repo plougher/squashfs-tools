@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2014, 2019, 2021
+ * Copyright (c) 2013, 2014, 2019, 2021, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -54,11 +54,9 @@ void remove_##NAME##_list(TYPE **list, TYPE *entry) { \
 }
 
 
-#define INSERT_HASH_TABLE(NAME, TYPE, HASH_FUNCTION, FIELD, LINK) \
-void insert_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
+#define INSERT_HASH_TABLE(NAME, TYPE, LINK) \
+void insert_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int hash) \
 { \
-	int hash = HASH_FUNCTION(entry->FIELD); \
-\
 	entry->LINK##_next = container->hash_table[hash]; \
 	container->hash_table[hash] = entry; \
 	entry->LINK##_prev = NULL; \
@@ -67,14 +65,13 @@ void insert_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
 }
 
 
-#define REMOVE_HASH_TABLE(NAME, TYPE, HASH_FUNCTION, FIELD, LINK) \
-void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
+#define REMOVE_HASH_TABLE(NAME, TYPE, LINK) \
+void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int hash) \
 { \
 	if(entry->LINK##_prev) \
 		entry->LINK##_prev->LINK##_next = entry->LINK##_next; \
 	else \
-		container->hash_table[HASH_FUNCTION(entry->FIELD)] = \
-			entry->LINK##_next; \
+		container->hash_table[hash] = entry->LINK##_next; \
 	if(entry->LINK##_next) \
 		entry->LINK##_next->LINK##_prev = entry->LINK##_prev; \
 \
@@ -85,16 +82,26 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry) \
 #define CALCULATE_HASH(n) ((n) & 0xffff)
 
 
+#define NEXT_BLOCK	1
+#define NEXT_FILE	2
+#define NEXT_VERSION	3
+
+#define QUEUE_CACHE	1
+#define GEN_CACHE	2
+
 /* struct describing a cache entry passed between threads */
 struct file_buffer {
 	long long index;
-	long long sequence;
-	long long file_size;
 	union {
-		long long block;
-		unsigned short checksum;
+		long long sequence;
+		long long file_count;
 	};
-	struct cache *cache;
+	long long file_size;
+	long long block;
+	union {
+		struct cache		*cache;
+		struct queue_cache	*queue_cache;
+	};
 	union {
 		struct file_info *dupl_start;
 		struct file_buffer *hash_next;
@@ -115,6 +122,9 @@ struct file_buffer {
 	};
 	int size;
 	int c_byte;
+	unsigned short checksum;
+	unsigned short version;
+	unsigned short thread;
 	char used;
 	char fragment;
 	char error;
@@ -122,6 +132,9 @@ struct file_buffer {
 	char wait_on_unlock;
 	char noD;
 	char duplicate;
+	char next_state;
+	char cache_type;
+	char hashed;
 	char data[0] __attribute__((aligned));
 };
 
@@ -131,7 +144,7 @@ struct queue {
 	int			size;
 	int			readp;
 	int			writep;
-	pthread_mutex_t		mutex;
+	pthread_mutex_t		*mutex;
 	pthread_cond_t		empty;
 	pthread_cond_t		full;
 	void			**data;
@@ -139,16 +152,41 @@ struct queue {
 
 
 /*
- * struct describing seq_queues used to pass data between the read
- * thread and the deflate and main threads
+ * struct describing seq_queues used to pass data between the deflate
+ * threads/process fragment threads and the main thread
  */
 struct seq_queue {
+	unsigned short		version;
 	int			fragment_count;
 	int			block_count;
 	long long		sequence;
+	long long		file_count;
+	long long		block;
 	struct file_buffer	*hash_table[HASH_SIZE];
 	pthread_mutex_t		mutex;
 	pthread_cond_t		wait;
+};
+
+
+/*
+ * struct describing seq_queues used to pass data between the reader
+ * threads and the deflate threads/process fragment threads
+ */
+struct readq_thrd {
+	int			size;
+	struct file_buffer	**buffer;
+	int			readp;
+	int			writep;
+	pthread_cond_t		full;
+};
+
+
+struct read_queue {
+	int			threads;
+	int			count;
+	pthread_mutex_t		mutex;
+	pthread_cond_t		empty;
+	struct readq_thrd	*thread;
 };
 
 
@@ -172,17 +210,54 @@ struct cache {
 };
 
 
-extern struct queue *queue_init(int);
+/*
+ * Specialised combined queue and cache for managing buffers
+ * sent from the reader threads to the block deflator threads,
+ * and which also creates writer buffers, so that reader
+ * buffers and write buffers are returned in one atomic operation.
+ */
+struct writeq_thrd {
+	int			max_buffers;
+	int			count;
+	int			used;
+	struct file_buffer	*free_list;
+};
+
+
+struct queue_cache {
+	int			buffer_size;
+	int			first_freelist;
+	int			threads;
+	int			count;
+	int			waiting;
+	pthread_cond_t		wait_for_buffer;
+	pthread_mutex_t		*mutex;
+	struct file_buffer	*hash_table[HASH_SIZE];
+	struct readq_thrd	*rthread;
+	struct writeq_thrd	*wthread;
+};
+
+
+extern struct queue *queue_init(int, pthread_mutex_t *mutex);
 extern void queue_put(struct queue *, void *);
 extern void *queue_get(struct queue *);
 extern int queue_empty(struct queue *);
 extern void queue_flush(struct queue *);
+extern void *queue_get_tid(int tid, struct queue *);
 extern void dump_queue(struct queue *);
 extern struct seq_queue *seq_queue_init();
-extern void seq_queue_put(struct seq_queue *, struct file_buffer *);
 extern void dump_seq_queue(struct seq_queue *, int);
-extern struct file_buffer *seq_queue_get(struct seq_queue *);
 extern void seq_queue_flush(struct seq_queue *);
+extern void main_queue_put(struct seq_queue *, struct file_buffer *);
+extern void fragment_queue_put(struct seq_queue *, struct file_buffer *);
+extern struct file_buffer *main_queue_get(struct seq_queue *);
+extern struct file_buffer *fragment_queue_get(struct seq_queue *);
+extern struct read_queue *read_queue_init();
+extern void read_queue_set(struct read_queue *, int, int);
+extern void read_queue_put(struct read_queue *, int, struct file_buffer *);
+extern struct file_buffer *read_queue_get(struct read_queue *);
+extern void read_queue_flush(struct read_queue *);
+extern void dump_read_queue(struct read_queue *);
 extern struct cache *cache_init(int, int, int, int);
 extern struct file_buffer *cache_lookup(struct cache *, long long);
 extern struct file_buffer *cache_get(struct cache *, long long);
@@ -195,6 +270,41 @@ extern struct file_buffer *cache_lookup_nowait(struct cache *, long long,
 	char *);
 extern void cache_wait_unlock(struct file_buffer *);
 extern void cache_unlock(struct file_buffer *);
+extern struct queue_cache *queue_cache_init(pthread_mutex_t *, int, int);
+void queue_cache_set(struct queue_cache *, int, int, int, int, int);
+extern struct file_buffer *queue_cache_lookup(struct queue_cache *, long long);
+extern void queue_cache_hash(struct file_buffer *, long long);
+extern void queue_cache_block_put(struct file_buffer *);
+extern void dump_write_cache(struct queue_cache *);
+extern void queue_cache_put(struct queue_cache *, int, struct file_buffer *);
+extern struct file_buffer *queue_cache_get_tid(int, struct queue_cache *, struct file_buffer **);
+extern void queue_cache_flush(struct queue_cache *);
+extern void dump_block_read_queue(struct queue_cache *);
 
-extern int first_freelist;
+static inline void gen_cache_block_put(struct file_buffer *entry)
+{
+	if(entry == NULL)
+		return;
+	else if(entry->cache_type == GEN_CACHE)
+		cache_block_put(entry);
+	else if(entry->cache_type == QUEUE_CACHE)
+		queue_cache_block_put(entry);
+	else
+		BAD_ERROR("Bug in gen_cache_block_put\n");
+}
+
+
+static inline int cache_maxsize(struct file_buffer *entry)
+{
+	if(entry == NULL)
+		BAD_ERROR("Bug in cache_maxsize\n");
+	else if(entry->cache_type == GEN_CACHE)
+		return entry->cache->max_buffers;
+	else if(entry->cache_type == QUEUE_CACHE)
+		return entry->queue_cache->wthread[entry->thread].max_buffers;
+	else
+		BAD_ERROR("Bug in block handling\n");
+}
+
+
 #endif

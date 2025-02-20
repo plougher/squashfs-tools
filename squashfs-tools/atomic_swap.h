@@ -1,5 +1,6 @@
-#ifndef NPROCESSORS_COMPAT_H
-#define NPROCESSORS_COMPAT_H
+#ifndef ATOMIC_SWAP_H
+#define ATOMIC_SWAP_H
+
 /*
  * Squashfs
  *
@@ -20,8 +21,30 @@
  * along with this program; if not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- * nprocessors_compat.h
+ * atomic_swap.h
  */
 
-extern int get_nprocessors(void);
+#ifdef DONT_USE_ATOMIC_EXCHANGE_N
+static inline struct read_entry *atomic_swap(struct read_entry **entry,
+					pthread_mutex_t *mutex)
+{
+	struct read_entry *value;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, mutex);
+	pthread_mutex_lock(mutex);
+
+	value = *entry;
+	*entry = NULL;
+
+	pthread_cleanup_pop(1);
+
+	return value;
+}
+#else
+static inline struct read_entry *atomic_swap(struct read_entry **entry,
+					pthread_mutex_t *mutex)
+{
+	return __atomic_exchange_n(entry, NULL, __ATOMIC_SEQ_CST);
+}
+#endif
 #endif

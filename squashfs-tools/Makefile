@@ -168,6 +168,16 @@ INSTALL_DIR = $(INSTALL_PREFIX)/bin
 INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
 
 ###############################################
+#             __ATOMIC_EXCHANGE_N             #
+###############################################
+#
+# Mksquashfs uses a GCC builtin (also supported by Clang)
+# __atomic_exchange_n() to do lockless thread synchronisation.
+# If this is unavailable on your compiler, uncomment
+# the line below to use a (slower) Pthread mutex.
+#DONT_USE_ATOMIC_EXCHANGE_N = 1
+
+###############################################
 #              Obsolete options               #
 ###############################################
 
@@ -210,6 +220,7 @@ LZMA_XZ_SUPPORT ?= 0
 LZMA_SUPPORT ?= 0
 LZMA_DIR ?= ../../../../LZMA/lzma465
 XZ_EXTENDED_OPTIONS ?= 0
+DONT_USE_ATOMIC_EXCHANGE_N ?= 0
 endif
 
 
@@ -222,12 +233,12 @@ INCLUDEDIR = -I.
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
 	caches-queues-lists.o reader.o tar.o date.o memory.o mksquashfs_help.o \
-	print_pager.o symbolic_mode.o
+	print_pager.o symbolic_mode.o thread.o nprocessors_compat.o limit.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o unsquash-123.o unsquash-34.o unsquash-1234.o unsquash-12.o \
 	swap.o compressor.o unsquashfs_info.o date.o memory.o print_pager.o \
-	unsquashfs_help.o
+	unsquashfs_help.o nprocessors_compat.o limit.o
 
 CFLAGS ?= -O2
 CFLAGS += $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 \
@@ -344,6 +355,10 @@ endif
 
 ifeq ($(REPRODUCIBLE_DEFAULT),1)
 CFLAGS += -DREPRODUCIBLE_DEFAULT
+endif
+
+ifeq ($(DONT_USE_ATOMIC_EXCHANGE_N),1)
+CFLAGS += -DDONT_USE_ATOMIC_EXCHANGE_N
 endif
 
 #
@@ -496,8 +511,14 @@ mksquashfs_help.o: mksquashfs_help.c mksquashfs_help.h Makefile
 
 print_pager.o: print_pager.c print_pager.h
 
+thread.o: thread.c thread.h
+
+nprocessors_compat.o: nprocessors_compat.c nprocessors_compat.h
+
 unsquashfs_help.o: unsquashfs_help.c unsquashfs_help.h
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DDECOMPRESSORS="\"$(subst @(default),,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
+
+limit.o: limit.h error.h
 
 unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@

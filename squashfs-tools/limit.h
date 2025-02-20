@@ -1,9 +1,9 @@
-#ifndef NPROCESSORS_COMPAT_H
-#define NPROCESSORS_COMPAT_H
+#ifndef LIMIT_H
+#define LIMIT_H
 /*
  * Squashfs
  *
- * Copyright (c) 2024
+ * Copyright (c) 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -20,8 +20,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- * nprocessors_compat.h
+ * limit.h
  */
 
-extern int get_nprocessors(void);
+#define OPEN_FILE_MARGIN 10
+extern int file_limit();
 #endif

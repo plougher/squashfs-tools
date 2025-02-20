@@ -35,13 +35,14 @@
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
-#include "caches-queues-lists.h"
 #include "mksquashfs_error.h"
 #include "xattr.h"
 #include "tar.h"
 #include "progressbar.h"
 #include "info.h"
 #include "symbolic_mode.h"
+#include "reader.h"
+#include "caches-queues-lists.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -53,6 +54,9 @@ int default_gid_opt = FALSE;
 unsigned int default_gid;
 int default_mode_opt = FALSE;
 struct mode_data *default_mode;
+
+static long long sequence = 0;
+static struct reader *reader;
 
 static long long read_octal(char *s, int size)
 {
@@ -513,9 +517,9 @@ static void put_file_buffer(struct file_buffer *file_buffer)
 	 * - fragments go to the process fragment threads,
 	 */
 	if(file_buffer->fragment)
-		queue_put(to_process_frag, file_buffer);
+		read_queue_put(to_process_frag, 0, file_buffer);
 	else
-		queue_put(to_deflate, file_buffer);
+		queue_cache_put(to_deflate, 0, file_buffer);
 }
 
 
@@ -606,7 +610,7 @@ static void skip_file(struct tar_file *tar_file)
 	int blocks = (tar_file->buf.st_size + block_size - 1) >> block_log, i;
 
 	for(i = 0; i < blocks; i++)
-		cache_block_put(seq_queue_get(to_main));
+		cache_block_put(main_queue_get(to_main));
 
 	progress_bar_size(-blocks);
 }
@@ -623,12 +627,15 @@ static void read_tar_data(struct tar_file *tar_file)
 	blocks = (read_size + block_size - 1) >> block_log;
 
 	do {
-		file_buffer = cache_get_nohash(reader_buffer);
+		file_buffer = cache_get_nohash(reader[0].buffer);
 		file_buffer->file_size = read_size;
 		file_buffer->tar_file = tar_file;
-		file_buffer->sequence = sequence_count ++;
+		file_buffer->file_count = sequence ++;
+		file_buffer->block = 0;
+		file_buffer->version = 0;
 		file_buffer->noD = noD;
 		file_buffer->error = FALSE;
+		file_buffer->next_state = NEXT_FILE;
 
 		if((block + 1) < blocks) {
 			/* non-tail block should be exactly block_size */
@@ -1503,11 +1510,13 @@ eof:
 }
 
 
-void read_tar_file()
+long long read_tar_file()
 {
 	struct tar_file *tar_file;
 	int status, res;
        
+	reader = get_readers(&res);
+
 	while(1) {
 		struct file_buffer *file_buffer;
 
@@ -1546,8 +1555,12 @@ void read_tar_file()
 		file_buffer->cache = NULL;
 		file_buffer->fragment = FALSE;
 		file_buffer->tar_file = tar_file;
-		file_buffer->sequence = sequence_count ++;
-		seq_queue_put(to_main, file_buffer);
+		file_buffer->file_count = sequence ++;
+		file_buffer->block = 0;
+		file_buffer->version = 0;
+		file_buffer->error = FALSE;
+		file_buffer->next_state = NEXT_FILE;
+		main_queue_put(to_main, file_buffer);
 
 		if(status == TAR_EOF)
 			break;
@@ -1555,6 +1568,8 @@ void read_tar_file()
 		if(S_ISREG(tar_file->buf.st_mode))
 			read_tar_data(tar_file);
 	}
+
+	return sequence;
 }
 
 
@@ -1572,7 +1587,7 @@ squashfs_inode process_tar_file(int progress)
 	while(1) {
 		struct inode_info *link = NULL;
 
-		file_buffer = seq_queue_get(to_main);
+		file_buffer = main_queue_get(to_main);
 		if(file_buffer->tar_file == NULL)
 			break;
 
