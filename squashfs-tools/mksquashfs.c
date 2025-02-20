@@ -373,9 +373,9 @@ static void add_old_root_entry(char *name, squashfs_inode inode,
 	unsigned int inode_number, int type);
 static struct file_info *duplicate(int *dup, int *block_dup,
 	long long file_size, long long bytes, unsigned int *block_list,
-	long long start, struct dir_ent *dir_ent,
-	struct file_buffer *file_buffer, int blocks, long long sparse,
-	int bl_hash);
+	struct file_buffer **buffer_list, long long start,
+	struct dir_ent *dir_ent, struct file_buffer *file_buffer, int blocks,
+	long long sparse, int bl_hash);
 static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), unsigned int);
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
@@ -526,7 +526,7 @@ inline long long set_write_buffer(struct file_buffer *buffer, int size)
 }
 
 
-inline void put_write_buffer_hash(struct file_buffer *buffer, int put)
+inline void put_write_buffer_hash(struct file_buffer *buffer)
 {
 	if(marked_pos == 0)
 		BAD_ERROR("BUG: Saved write position should not be empty!\n");
@@ -535,6 +535,18 @@ inline void put_write_buffer_hash(struct file_buffer *buffer, int put)
 
 	buffer->block = get_and_inc_pos(buffer->size);
 	queue_cache_hash(buffer, buffer->block);
+	queue_put(to_writer, buffer);
+}
+
+
+inline void put_write_buffer(struct file_buffer *buffer, int put)
+{
+	if(marked_pos == 0)
+		BAD_ERROR("BUG: Saved write position should not be empty!\n");
+	else if(marked_pos == 1)
+		marked_pos = get_pos();
+
+	buffer->block = get_and_inc_pos(buffer->size);
 
 	if(put)
 		queue_put(to_writer, buffer);
@@ -1972,6 +1984,38 @@ static unsigned short get_checksum_disk(long long start, long long l,
 }
 
 
+static unsigned short get_checksum_buffers(long long start, long long l,
+	unsigned int *blocks, struct file_buffer **buffers)
+{
+	unsigned short chksum = 0;
+	unsigned int bytes;
+	int i;
+
+	for(i = 0; l; i++)  {
+		bytes = SQUASHFS_COMPRESSED_SIZE_BLOCK(blocks[i]);
+		if(bytes == 0) /* sparse block */
+			continue;
+		if(buffers[i])
+			chksum = get_checksum(buffers[i]->data, bytes, chksum);
+		else {
+			void *data = read_from_disk(start, bytes, 0);
+			if(data == NULL) {
+				ERROR("Failed to checksum data from output"
+					" filesystem\n");
+				BAD_ERROR("Output filesystem corrupted?\n");
+			}
+
+			chksum = get_checksum(data, bytes, chksum);
+		}
+
+		l -= bytes;
+		start += bytes;
+	}
+
+	return chksum;
+}
+
+
 unsigned short get_checksum_mem(char *buff, int bytes)
 {
 	return get_checksum(buff, bytes, 0);
@@ -2282,9 +2326,9 @@ static void reset_and_truncate(void)
 
 static struct file_info *duplicate(int *dupf, int *block_dup,
 	long long file_size, long long bytes, unsigned int *block_list,
-	long long start, struct dir_ent *dir_ent,
-	struct file_buffer *file_buffer, int blocks, long long sparse,
-	int bl_hash)
+	struct file_buffer **buffer_list, long long start,
+	struct dir_ent *dir_ent, struct file_buffer *file_buffer, int blocks,
+	long long sparse, int bl_hash)
 {
 	struct file_info *dupl_ptr, *file;
 	struct file_info *block_dupl = NULL, *frag_dupl = NULL;
@@ -2315,14 +2359,14 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 
 			/* Now get the checksums and compare */
 			if(checksum_flag == FALSE) {
-				checksum = get_checksum_disk(start, bytes, block_list);
+				checksum = get_checksum_buffers(start, bytes, block_list, buffer_list);
 				checksum_flag = TRUE;
 			}
 
 			if(!dupl_ptr->have_checksum) {
 				dupl_ptr->checksum =
 					get_checksum_disk(dupl_ptr->start,
-					dupl_ptr->bytes, dupl_ptr->block_list);
+						dupl_ptr->bytes, dupl_ptr->block_list);
 				dupl_ptr->have_checksum = TRUE;
 			}
 
@@ -2336,7 +2380,6 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 			target_start = start;
 			for(block = 0; block < blocks; block ++) {
 				int size = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[block]);
-				struct file_buffer *target_buffer = NULL;
 				struct file_buffer *dup_buffer = NULL;
 				char *target_data, *dup_data;
 				int res;
@@ -2351,10 +2394,8 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				 * enough to hold the entire file, in which case
 				 * the block will have been written to disk.
 				 */
-				target_buffer = queue_cache_lookup(bwriter_buffer,
-								target_start);
-				if(target_buffer)
-					target_data = target_buffer->data;
+				if(buffer_list[block])
+					target_data = buffer_list[block]->data;
 				else {
 					target_data = read_from_disk(target_start, size, 0);
 					if(target_data == NULL) {
@@ -2385,7 +2426,6 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				}
 
 				res = memcmp(target_data, dup_data, size);
-				gen_cache_block_put(target_buffer);
 				gen_cache_block_put(dup_buffer);
 				if(res != 0)
 					break;
@@ -2931,7 +2971,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 			block_list[block ++] = read_buffer->c_byte;
 			if(read_buffer->c_byte) {
 				file_bytes += read_buffer->size;
-				put_write_buffer_hash(read_buffer, TRUE);
+				put_write_buffer_hash(read_buffer);
 			} else {
 				sparse += read_buffer->size;
 				gen_cache_block_put(read_buffer);
@@ -3043,7 +3083,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 			if(read_buffer->c_byte) {
 				file_bytes += read_buffer->size;
 				buffer_list[block] = block >= thresh ? read_buffer : NULL;
-				put_write_buffer_hash(read_buffer, block < thresh);
+				put_write_buffer(read_buffer, block < thresh);
 			} else {
 				buffer_list[block] = NULL;
 				sparse += read_buffer->size;
@@ -3070,13 +3110,16 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 	if(sparse && (dir_ent->inode->buf.st_blocks << 9) >= read_size)
 		sparse = 0;
 
-	file = duplicate(duplicate_file, &block_dup, read_size, file_bytes, block_list,
-		get_marked_pos(), dir_ent, fragment_buffer, blocks, sparse, bl_hash);
+	file = duplicate(duplicate_file, &block_dup, read_size, file_bytes,
+		block_list, buffer_list, get_marked_pos(), dir_ent,
+		fragment_buffer, blocks, sparse, bl_hash);
 
 	if(block_dup == FALSE) {
 		for(block = thresh; block < blocks; block ++)
-			if(buffer_list[block])
+			if(buffer_list[block]) {
+				queue_cache_hash(buffer_list[block], buffer_list[block]->block);
 				queue_put(to_writer, buffer_list[block]);
+			}
 	} else {
 		for(block = thresh; block < blocks; block ++)
 			gen_cache_block_put(buffer_list[block]);
@@ -3164,7 +3207,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 			block_list[block] = read_buffer->c_byte;
 			if(read_buffer->c_byte) {
 				file_bytes += read_buffer->size;
-				put_write_buffer_hash(read_buffer, TRUE);
+				put_write_buffer_hash(read_buffer);
 			} else {
 				sparse += read_buffer->size;
 				gen_cache_block_put(read_buffer);
