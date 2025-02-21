@@ -251,23 +251,6 @@ struct guid_info {
 
 
 /*
- * Mode action specific definitions
- */
-#define ACTION_MODE_SET 0
-#define ACTION_MODE_ADD 1
-#define ACTION_MODE_REM 2
-#define ACTION_MODE_OCT 3
-
-struct mode_data {
-	struct mode_data *next;
-	int operation;
-	int mode;
-	unsigned int mask;
-	char X;
-};
-
-
-/*
  * Empty action specific definitions
  */
 #define EMPTY_ALL 0

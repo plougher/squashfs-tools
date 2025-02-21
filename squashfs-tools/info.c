@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2014, 2019, 2021, 2022, 2023
+ * Copyright (c) 2013, 2014, 2019, 2021, 2022, 2023, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -43,8 +43,9 @@
 #include "progressbar.h"
 #include "caches-queues-lists.h"
 #include "signals.h"
+#include "reader.h"
+#include "thread.h"
 
-static int silent = 0;
 static struct dir_ent *ent = NULL;
 
 static pthread_t info_thread;
@@ -78,17 +79,20 @@ static void print_filename()
 
 static void dump_state()
 {
+	int i, reader_threads;
+	struct reader *reader;
+
 	disable_progress_bar();
 
-	printf("Queue and Cache status dump\n");
+	printf("Queues, caches and threads status dump\n");
 	printf("===========================\n");
 
 	printf("file buffer queue (reader thread -> deflate thread(s))\n");
-	dump_queue(to_deflate);
+	dump_block_read_queue(to_deflate);
 
 	printf("uncompressed fragment queue (reader thread -> fragment"
 						" thread(s))\n");
-	dump_queue(to_process_frag);
+	dump_read_queue(to_process_frag);
 
 	printf("processed fragment queue (fragment thread(s) -> main"
 						" thread)\n");
@@ -120,12 +124,14 @@ static void dump_state()
 		dump_queue(to_writer);
 	}
 
-	printf("read cache (uncompressed blocks read by reader thread)\n");
-	dump_cache(reader_buffer);
+	reader = get_readers(&reader_threads);
+	for(i = 0; i < reader_threads; i++) {
+		printf("%s read cache %d (uncompressed blocks read by reader thread %d)\n", reader[i].type, i + 1, i + 1);
+		dump_cache(reader[i].buffer);
+	}
 
-	printf("block write cache (compressed blocks waiting for the writer"
-						" thread)\n");
-	dump_cache(bwriter_buffer);
+	dump_write_cache(bwriter_buffer);
+
 	printf("fragment write cache (compressed fragments waiting for the"
 						" writer thread)\n");
 	dump_cache(fwriter_buffer);
@@ -137,6 +143,8 @@ static void dump_state()
 	printf("fragment reserve cache (avoids pipeline stall if frag cache"
 						" full in dup check)\n");
 	dump_cache(reserve_cache);
+
+	dump_threads();
 
 	enable_progress_bar();
 }

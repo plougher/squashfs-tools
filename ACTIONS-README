@@ -639,9 +639,16 @@ permission bits, - means remove the bits from the existing permission
 bits, and = means set the permission bits.
 
 The permission bits (PERMS) are a combination of [rwxXst] which
-sets/adds/removes those bits for the specified ugoa combination. They
-can alternatively be u, g or o, which takes the permission bits from the
-user, group or other of the file respectively.
+sets/adds/removes those bits for the specified ugoa combination, r means
+read, w means write and x means execute for files or search for directories.
+X has a special meaning, if the file is a directory it is equivalent to x or
+search, but if it is a non-directory, it only takes effect if execute is
+already set for user, group or other.  The s flag sets user or group ID on
+execution, and the t flag on a directory sets restricted deletion, or
+historically made the file sticky if a non-directory.
+
+The permission bits can also be u, g or o, which takes the permission bits
+from the user, group or other of the file respectively.
 
 Examples:
 

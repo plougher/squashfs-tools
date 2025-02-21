@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010,
- * 2012, 2013, 2014, 2019, 2021, 2022
+ * 2012, 2013, 2014, 2019, 2021, 2022, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -43,6 +43,7 @@
 #include "mksquashfs.h"
 #include "xattr.h"
 #include "mksquashfs_error.h"
+#include "mksquashfs_help.h"
 
 int read_block(int fd, long long start, long long *next, int expected,
 								void *block)
@@ -633,7 +634,7 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 		ERROR("Filesystem on %s uses %s compression, this is "
 			"unsupported by this version\n", source, comp->name);
 		ERROR("Compressors available:\n");
-		display_compressors(stderr, "", "");
+		display_compressors();
 		goto failed_mount;
 	}
 

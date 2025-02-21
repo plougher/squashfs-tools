@@ -1,10 +1,10 @@
-#ifndef DATE_H
-#define DATE_H
+#ifndef ATOMIC_SWAP_H
+#define ATOMIC_SWAP_H
+
 /*
- * Create a squashfs filesystem.  This is a highly compressed read only
- * filesystem.
+ * Squashfs
  *
- * Copyright (c) 2023, 2024
+ * Copyright (c) 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -21,11 +21,30 @@
  * along with this program; if not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- * date.h
+ * atomic_swap.h
  */
 
-extern long long read_bytes(int, void *, long long);
+#ifdef DONT_USE_ATOMIC_EXCHANGE_N
+static inline struct read_entry *atomic_swap(struct read_entry **entry,
+					pthread_mutex_t *mutex)
+{
+	struct read_entry *value;
 
-#define TRUE 1
-#define FALSE 0
+	pthread_cleanup_push((void *) pthread_mutex_unlock, mutex);
+	pthread_mutex_lock(mutex);
+
+	value = *entry;
+	*entry = NULL;
+
+	pthread_cleanup_pop(1);
+
+	return value;
+}
+#else
+static inline struct read_entry *atomic_swap(struct read_entry **entry,
+					pthread_mutex_t *mutex)
+{
+	return __atomic_exchange_n(entry, NULL, __ATOMIC_SEQ_CST);
+}
+#endif
 #endif

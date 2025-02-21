@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2008, 2009, 2010, 2012, 2014, 2019, 2021, 2022, 2023
+ * Copyright (c) 2008, 2009, 2010, 2012, 2014, 2019, 2021, 2022, 2023, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -84,7 +84,6 @@ static int xattr_add_count = 0;
 
 /* file system globals from mksquashfs.c */
 extern int no_xattrs, noX;
-extern long long bytes;
 extern int fd;
 extern unsigned int xattr_bytes, total_xattr_bytes;
 extern regex_t *xattr_exclude_preg;
@@ -96,6 +95,7 @@ extern void write_destination(int, long long, long long, void *);
 extern long long generic_write_table(long long, void *, int, void *, int);
 extern int mangle(char *, char *, int, int, int, int);
 extern char *pathname(struct dir_ent *);
+extern long long get_and_inc_pos(long long value);
 
 /* helper functions and definitions from read_xattrs.c */
 extern unsigned int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long long *);
@@ -332,7 +332,7 @@ long long write_xattrs()
 	unsigned short c_byte;
 	int i, avail_bytes;
 	char *datap = data_cache;
-	long long start_bytes = bytes;
+	long long start_bytes;
 	struct squashfs_xattr_table header = {};
 
 	if(xattr_ids == 0)
@@ -365,8 +365,8 @@ long long write_xattrs()
 	/*
 	 * Write compressed xattr table to file system
 	 */
-	write_destination(fd, bytes, xattr_bytes, xattr_table);
-        bytes += xattr_bytes;
+	start_bytes = get_and_inc_pos(xattr_bytes);
+	write_destination(fd, start_bytes, xattr_bytes, xattr_table);
 
 	/*
 	 * Swap if necessary the xattr id table

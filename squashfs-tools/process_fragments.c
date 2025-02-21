@@ -38,7 +38,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "caches-queues-lists.h"
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "mksquashfs_error.h"
@@ -46,11 +45,12 @@
 #include "info.h"
 #include "compressor.h"
 #include "process_fragments.h"
+#include "caches-queues-lists.h"
 
 #define FALSE 0
 #define TRUE 1
 
-extern struct queue *to_process_frag;
+extern struct read_queue *to_process_frag;
 extern struct seq_queue *to_main;
 extern int sparse_files;
 extern long long start_offset;
@@ -273,7 +273,7 @@ void *frag_thrd(void *destination_file)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &dup_mutex);
 
 	while(1) {
-		struct file_buffer *file_buffer = queue_get(to_process_frag);
+		struct file_buffer *file_buffer = read_queue_get(to_process_frag);
 		struct file_buffer *buffer;
 		int sparse = checksum_sparse(file_buffer);
 		struct file_info *dupl_ptr;
@@ -304,7 +304,7 @@ void *frag_thrd(void *destination_file)
 		 * consist of only a fragment
 		 */
 		if(file_buffer->file_size != file_buffer->size) {
-			seq_queue_put(to_main, file_buffer);
+			main_queue_put(to_main, file_buffer);
 			continue;
 		}
 
@@ -365,7 +365,7 @@ void *frag_thrd(void *destination_file)
 			}
 		}
 
-		seq_queue_put(to_main, file_buffer);
+		main_queue_put(to_main, file_buffer);
 	}
 
 	pthread_cleanup_pop(0);

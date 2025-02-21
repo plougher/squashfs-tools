@@ -29,6 +29,14 @@
 #define READAHEAD_INDEX(A)		((A >> 13) & 0xfffff)
 #define READAHEAD_OFFSET(A)		(A % READAHEAD_SIZE)
 
+/* reader type */
+#define COMBINED_READER	1
+#define FRAGMENT_READER	2
+#define BLOCK_READER	3
+
+/* minimum blocks per reader thread */
+#define BLOCKS_MIN	4
+
 struct readahead {
 	long long		start;
 	int			size;
@@ -36,4 +44,26 @@ struct readahead {
 	char			*src;
 	char			data[0] __attribute__((aligned));
 };
+
+struct read_entry {
+	struct dir_ent	*dir_ent;
+	unsigned int	file_count;
+};
+
+struct reader {
+	int		id;
+	int		size;
+	char		*type;
+	char		*pathname;
+	struct cache	*buffer;
+};
+
+extern struct reader *get_readers(int *);
+extern pthread_t *get_reader_threads(int *);
+extern int set_read_frag_threads(int);
+extern int set_read_block_threads(int);
+extern void set_single_threaded();
+extern int get_reader_num();
+extern void set_sleep_time(int);
+extern void check_min_memory(int, int, int);
 #endif

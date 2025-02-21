@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2011, 2012, 2013, 2019, 2021, 2022, 2023
+ * Copyright (c) 2009, 2010, 2011, 2012, 2013, 2019, 2021, 2022, 2023, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -158,7 +158,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 		EXIT_UNSQUASH("File system corrupted - inode number in inode too large (inode_number: %u)\n", header.base.inode_number);
 
 	if(header.base.inode_number == 0)
-		EXIT_UNSQUASH("File system corrupted - inode number zero is invalid\n", header.base.inode_number);
+		EXIT_UNSQUASH("File system corrupted - inode number zero is invalid\n");
 
 	i.uid = (uid_t) id_table[header.base.uid];
 	i.gid = (uid_t) id_table[header.base.guid];
@@ -794,7 +794,7 @@ static void squashfs_stat(char *source)
 		printf("Fragments are %scompressed\n",
 			SQUASHFS_UNCOMPRESSED_FRAGMENTS(sBlk.s.flags) ?
 			"un" : "");
-		printf("Always-use-fragments option is %sspecified\n",
+		printf("Tailends are %spacked into fragments\n",
 			SQUASHFS_ALWAYS_FRAGMENTS(sBlk.s.flags) ? "" : "not ");
 	}
 

@@ -116,22 +116,17 @@ struct compressor *lookup_compressor_id(int id)
 }
 
 
-void display_compressors(FILE *stream, char *indent, char *def_comp)
+int valid_compressor(char *name)
 {
-	int i, cols = get_column_width();
-
-	for(i = 0; compressor[i]->id; i++)
-		if(compressor[i]->supported)
-			autowrap_printf(stream, cols, "%s\t%s%s\n", indent,
-				compressor[i]->name,
-				strcmp(compressor[i]->name, def_comp) == 0 ?
-				" (default)" : "");
+	return lookup_compressor(name)->supported;
 }
 
 
 void display_compressor_usage(FILE *stream, char *def_comp, int cols)
 {
 	int i;
+
+	autowrap_print(stream, "\nCompressors available and compressor specific options:\n", cols);
 
 	for(i = 0; compressor[i]->id; i++)
 		if(compressor[i]->supported) {
@@ -161,27 +156,25 @@ void print_selected_comp_options(FILE *stream, struct compressor *comp, char *pr
 }
 
 
-void print_compressor_options(char *comp_name, char *prog_name)
+void print_comp_options(FILE *stream, int cols, char *comp_name, char *prog_name)
 {
-	int i, cols = get_column_width();
+	int i;
+
+	if(strcmp(comp_name, "all") == 0) {
+		display_compressor_usage(stream, COMP_DEFAULT, cols);
+		return;
+	}
 
 	for(i = 0; compressor[i]->id; i++)
 		if(compressor[i]->supported && strcmp(compressor[i]->name, comp_name) == 0) {
 			struct compressor *comp = compressor[i];
 
-			autowrap_printf(stdout, cols, "%s: compressor \"%s\".  "
+			autowrap_printf(stream, cols, "%s: compressor \"%s\".  "
 				"Options supported: %s\n", prog_name,
 				comp->name, comp->usage ? "" : "none");
 			if(comp->usage)
-				comp->usage(stdout, cols);
+				comp->usage(stream, cols);
 
 			return;
-	}
-
-	autowrap_printf(stderr, cols, "%s: Compressor \"%s\" is not "
-		"supported!\n", prog_name, comp_name);
-	autowrap_printf(stderr, cols, "%s: Compressors available:\n",
-		prog_name);
-	display_compressors(stderr, "", COMP_DEFAULT);
-	exit(1);
+		}
 }

@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2021
+ * Copyright (c) 2021, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -24,15 +24,23 @@
  * mksquashfs_error.h
  */
 
+#include <stdio.h>
+
 #include "error.h"
 
 extern int exit_on_error;
 extern void prep_exit();
+extern int display_info;
+extern FILE *info_file;
 
 #define INFO(s, args...) \
 		do {\
-			 if(!silent)\
-				progressbar_info(s, ## args);\
+			if(display_info) { \
+				if(info_file) \
+					fprintf(info_file, s, ## args); \
+				else \
+					progressbar_info(s, ## args); \
+			} \
 		} while(0)
 
 

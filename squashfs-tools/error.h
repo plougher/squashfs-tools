@@ -24,8 +24,10 @@
  * error.h
  */
 
-extern void progressbar_error(char *fmt, ...);
-extern void progressbar_info(char *fmt, ...);
+extern void progressbar_error(char *fmt, ...)
+	__attribute__ ((format (printf, 1, 2)));
+extern void progressbar_info(char *fmt, ...)
+	__attribute__ ((format (printf, 1, 2)));
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...) \

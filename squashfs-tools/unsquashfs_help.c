@@ -35,7 +35,8 @@
 #define UNSQUASHFS_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [files to extract " \
 	"or exclude (with -excludes) or cat (with -cat )]\n\n"
 
-#define SQFSCAT_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [list of files to cat to stdout]\n\n"
+#define SQFSCAT_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [list of files to " \
+	"cat to stdout]\n\n"
 
 static char *unsquashfs_options[]={
 	"", "", "-dest", "-max-depth", "-excludes", "-exclude-list",
@@ -55,7 +56,8 @@ static char *unsquashfs_options[]={
 static char *sqfscat_options[]={ "", "", "-version", "-processors", "-mem",
 	"-mem-percent", "-offset", "-ignore-errors", "-strict-errors",
 	"-no-exit-code", "", "", "","-no-wildcards", "-regex", "", "", "",
-	"-help", "-help-option", "-help-section", "-ho", "-hs", NULL,
+	"-help", "-help-option", "-help-section", "-help-all", "-ho", "-hs",
+	"-ha", NULL,
 };
 
 static char *unsquashfs_args[]={
@@ -70,17 +72,18 @@ static char *unsquashfs_args[]={
 
 static char *sqfscat_args[]={
 	"", "", "", "<number>", "<size>", "<percent>", "<bytes>", "", "", "",
-	"", "", "", "", "", "", "", "", "", "<regex>", "<section>", "<regex>",
-	"<section>"
+	"", "", "", "", "", "", "", "", "", "<regex>", "<section>", "",
+	"<regex>", "<section>", ""
 };
 
 static char *unsquashfs_sections[]={
 	"extraction", "information", "xattrs", "runtime", "help", "misc",
-	"environment", "exit", "extra", NULL
+	"environment", "exit", "extra", "decompressors", NULL
 };
 
 static char *sqfscat_sections[]={
-	"runtime", "filter", "help", "environment", "exit", "extra", NULL
+	"runtime", "filter", "help", "environment", "exit", "extra",
+	"decompressors", NULL
 };
 
 static char *unsquashfs_text[]={
@@ -194,6 +197,12 @@ static char *unsquashfs_text[]={
 	"\t-L\t\t\tsynonym for -follow-symlinks\n",
 	"\t-pseudo-file <file>\talternative name for -pf\n",
 	"\n", "Environment:", "\n",
+	"\tSQFS_CMDLINE \t\tIf set, this is used as the directory to write the "
+		"file sqfs_cmdline which contains the command line arguments "
+		"given to Unsquashfs.  Each command line argument is wrapped "
+	       "in quotes to ensure there is no ambiguity when arguments "
+	       "contain spaces.  If the file already exists the command "
+	       "line is appended to the file\n", "\n",
 	"\tPAGER\t\t\tIf set, this is used as the name of the program used to "
 		"display the help text.  The value can be a simple command or "
 		"a pathname.  The default is /usr/bin/pager\n",
@@ -212,46 +221,71 @@ static char *unsquashfs_text[]={
 			"squashfs-tools/blob/master/README-4.6.1\n",
 	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/"
 		"plougher/squashfs-tools/blob/master/USAGE-4.6\n",
-	NULL
+	"\n", "Decompressors available:", "\n",
+	"\t" DECOMPRESSORS "\n", NULL
 };
 
 
 static char *sqfscat_text[]={
 	"Runtime options:", "\n",
 	"\t-v[ersion]\t\tprint version, licence and copyright information\n",
-	"\t-p[rocessors] <number>\tuse <number> processors.  By default will use the number of processors available\n",
-	"\t-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or G to specify Kbytes, Mbytes or Gbytes respectively.  Default 512 Mbytes\n",
+	"\t-p[rocessors] <number>\tuse <number> processors.  By default will "
+		"use the number of processors available\n",
+	"\t-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or "
+		"G to specify Kbytes, Mbytes or Gbytes respectively.  Default "
+		"512 Mbytes\n",
 	"\t-mem-percent <percent>\tuse <percent> physical memory for caches.\n",
-	"\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  Optionally a suffix of K, M or G can be given to specify Kbytes, Mbytes or Gbytes respectively (default 0 bytes).\n",
-	"\t-ig[nore-errors]\ttreat errors writing files to stdout as non-fatal\n",
+	"\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  Optionally "
+		"a suffix of K, M or G can be given to specify Kbytes, Mbytes "
+		"or Gbytes respectively (default 0 bytes).\n",
+	"\t-ig[nore-errors]\ttreat errors writing files to stdout as "
+		"non-fatal\n",
 	"\t-st[rict-errors]\ttreat all errors as fatal\n",
-	"\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on non-fatal errors\n",
+	"\t-no-exit[-code]\t\tdon't set exit code (to nonzero) on non-fatal "
+		"errors\n",
 	"\n", "Filter options:", "\n",
 	"\t-no-wild[cards]\t\tdo not use wildcard matching in filenames\n",
-	"\t-r[egex]\t\ttreat filenames as POSIX regular expressions rather than use the default shell wildcard expansion (globbing)\n",
+	"\t-r[egex]\t\ttreat filenames as POSIX regular expressions rather "
+		"than use the default shell wildcard expansion (globbing)\n",
 	"\n", "Help options:", "\n",
-	"\t-h[elp]\t\t\tprint help information for all Sqfscat options to pager (or stdout if not a terminal)\n",
+	"\t-h[elp]\t\t\tprint help summary information to stdout\n",
 	"\t-help-option <regex>\tprint the help information for Sqfscat "
 		"options matching <regex> to stdout\n",
 	"\t-help-section <section>\tprint the help information for section "
 		"<section> to pager (or stdout if not a terminal).  Use "
 		"\"sections\" or \"h\" as section name to get a list of "
 		"sections and their names\n",
+	"\t-help-all\t\tprint help information for all Sqfscat options and "
+		"sections to pager (or stdout if not a terminal)\n",
 	"\t-ho <regex>\t\tshorthand alternative to -help-option\n",
 	"\t-hs <section>\t\tshorthand alternative to -help-section\n",
+	"\t-ha\t\t\tshorthand alternative to -help-all\n",
 	"\n", "Environment:", "\n",
+	"\tSQFS_CMDLINE \t\tIf set, this is used as the directory to write the "
+		"file sqfs_cmdline which contains the command line arguments "
+		"given to Sqfscat.  Each command line argument is wrapped "
+	       "in quotes to ensure there is no ambiguity when arguments "
+	       "contain spaces.  If the file already exists the command "
+	       "line is appended to the file\n", "\n",
 	"\tPAGER\t\t\tIf set, this is used as the name of the program used to "
 		"display the help text.  The value can be a simple command or "
 		"a pathname.  The default is /usr/bin/pager\n",
 	"\n", "Exit status:", "\n",
 	"  0\tThe file or files were output to stdout OK.\n",
-	"  1\tFATAL errors occurred, e.g. filesystem corruption, I/O errors.  Sqfscat did not continue and aborted.\n",
-	"  2\tNon-fatal errors occurred, e.g. not a regular file, or failed to resolve pathname.  Sqfscat continued and did not abort.\n",
-	"\nSee -ignore-errors, -strict-errors and -no-exit-code options for how they affect the exit status.\n",
+	"  1\tFATAL errors occurred, e.g. filesystem corruption, I/O errors.  "
+		"Sqfscat did not continue and aborted.\n",
+	"  2\tNon-fatal errors occurred, e.g. not a regular file, or failed to "
+		"resolve pathname.  Sqfscat continued and did not abort.\n",
+	"\nSee -ignore-errors, -strict-errors and -no-exit-code options for "
+		"how they affect the exit status.\n",
 	"\n", "See also (extra information elsewhere):", "\n",
-	"The README for the Squashfs-tools 4.6.1 release describing the new features can be read here https://github.com/plougher/squashfs-tools/blob/master/README-4.6.1\n",
-	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/plougher/squashfs-tools/blob/master/USAGE-4.6\n",
-	NULL,
+	"The README for the Squashfs-tools 4.6.1 release describing the new "
+		"features can be read here https://github.com/plougher/"
+		"squashfs-tools/blob/master/README-4.6.1\n",
+	"\nThe Squashfs-tools USAGE guide can be read here https://github.com/"
+		"plougher/squashfs-tools/blob/master/USAGE-4.6\n",
+	"\n", "Decompressors available:", "\n",
+	"\t" DECOMPRESSORS "\n", NULL,
 };
 
 
@@ -276,10 +310,6 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 
 	for(i = 0; options_text[i] != NULL; i++)
 		autowrap_print(pager, options_text[i], cols);
-
-	autowrap_print(pager, "\nDecompressors available:\n", cols);
-
-	display_compressors(pager, "", "");
 
 	if(tty) {
 		fclose(pager);
@@ -407,23 +437,23 @@ static void handle_invalid_option(char *prog_name, char *opt_name, char **sectio
 	int cols = get_column_width();
 
 	autowrap_printf(stderr, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
-	fprintf(stderr, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	autowrap_printf(stderr, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	fprintf(stderr, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stderr, "\t", cols, sections, options_text);
-	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
 
 
-static void print_help(int error, char *prog_name, char *syntax, char **sections, char **options_text)
+static void print_help(char *prog_name, int error, char *syntax, char **sections, char **options_text)
 {
 	FILE *stream = error ? stderr : stdout;
 	int cols = get_column_width();
 
 	autowrap_printf(stream, cols, syntax, prog_name);
-	autowrap_printf(stream, cols, "Run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	autowrap_printf(stream, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stream, "\t", cols, sections, options_text);
-	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(error);
 }
@@ -434,63 +464,88 @@ static void print_option_help(char *prog_name, char *option, char **sections, ch
 	int cols = get_column_width();
 
 	autowrap_printf(stderr, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
-	autowrap_printf(stderr, cols, "Or run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols, sections, options_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(stderr, "\t", cols, sections, options_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	exit(1);
 }
 
 
-void unsquashfs_help_all(char *name)
+void unsquashfs_help_all(void)
 {
-        print_help_all(name, UNSQUASHFS_SYNTAX, unsquashfs_text);
+        print_help_all("unsquashfs", UNSQUASHFS_SYNTAX, unsquashfs_text);
 }
 
 
-void unsquashfs_section(char *prog_name, char *opt_name, char *sec_name)
+void unsquashfs_section(char *opt_name, char *sec_name)
 {
-	print_section(prog_name, opt_name, sec_name, unsquashfs_sections, unsquashfs_text);
+	print_section("unsquashfs", opt_name, sec_name, unsquashfs_sections, unsquashfs_text);
 }
 
 
-void unsquashfs_option(char *prog_name, char *opt_name, char *pattern)
+void unsquashfs_option(char *opt_name, char *pattern)
 {
-	print_option(prog_name, opt_name, pattern, unsquashfs_options, unsquashfs_args, unsquashfs_text);
+	print_option("unsquashfs", opt_name, pattern, unsquashfs_options, unsquashfs_args, unsquashfs_text);
 }
 
 
-void unsquashfs_help(int error, char *prog_name)
+void unsquashfs_help(int error)
 {
-	print_help(error, prog_name, UNSQUASHFS_SYNTAX, unsquashfs_sections, unsquashfs_text);
+	print_help("unsquashfs", error, UNSQUASHFS_SYNTAX, unsquashfs_sections, unsquashfs_text);
 }
 
 
-void unsquashfs_invalid_option(char *prog_name, char *opt_name)
+void unsquashfs_invalid_option(char *opt_name)
 {
-	handle_invalid_option(prog_name, opt_name, unsquashfs_sections, unsquashfs_text);
+	handle_invalid_option("unsquashfs", opt_name, unsquashfs_sections, unsquashfs_text);
 }
 
 
-void unsquashfs_option_help(char *prog_name, char *option)
+void unsquashfs_option_help(char *option)
 {
-	print_option_help(prog_name, option, unsquashfs_sections, unsquashfs_text);
+	print_option_help("unsquashfs", option, unsquashfs_sections, unsquashfs_text);
 }
 
 
-void sqfscat_help(char *name)
+void sqfscat_help_all(void)
 {
-	print_help_all(name, SQFSCAT_SYNTAX, sqfscat_text);
+	print_help_all("sqfscat", SQFSCAT_SYNTAX, sqfscat_text);
 }
 
 
-void sqfscat_section(char *prog_name, char *opt_name, char *sec_name)
+void sqfscat_section(char *opt_name, char *sec_name)
 {
-	print_section(prog_name, opt_name, sec_name, sqfscat_sections, sqfscat_text);
+	print_section("sqfscat", opt_name, sec_name, sqfscat_sections, sqfscat_text);
 }
 
 
-void sqfscat_option(char *prog_name, char *opt_name, char *pattern)
+void sqfscat_option(char *opt_name, char *pattern)
 {
-	print_option(prog_name, opt_name, pattern, sqfscat_options, sqfscat_args, sqfscat_text);
+	print_option("sqfscat", opt_name, pattern, sqfscat_options, sqfscat_args, sqfscat_text);
+}
+
+
+void sqfscat_help(int error)
+{
+	print_help("sqfscat", error, SQFSCAT_SYNTAX, sqfscat_sections, sqfscat_text);
+}
+
+
+void sqfscat_invalid_option(char *opt_name)
+{
+	handle_invalid_option("sqfscat", opt_name, sqfscat_sections, sqfscat_text);
+}
+
+
+void sqfscat_option_help(char *option)
+{
+	print_option_help("sqfscat", option, sqfscat_sections, sqfscat_text);
+}
+
+
+void display_compressors() {
+	int cols = get_column_width();
+
+	autowrap_print(stderr, "\t" DECOMPRESSORS "\n", cols);
 }

@@ -25,7 +25,7 @@ GZIP_SUPPORT = 1
 #
 # LZMA2 compression.
 #
-# XZ Utils liblzma (http://tukaani.org/xz/) is supported
+# XZ Utils liblzma (https://tukaani.org/xz/) is supported
 #
 # Development packages (libraries and header files) should be
 # supported by most modern distributions.  Please refer to
@@ -151,7 +151,7 @@ REPRODUCIBLE_DEFAULT = 1
 # Change next variable to "y" to use the pre-built manpages by default,
 # and not attempt to generate "custom" manpages.  This will eliminate
 # errors and warnings at install time.
-USE_PREBUILT_MANPAGES=n
+USE_PREBUILT_MANPAGES = n
 
 ###############################################
 #              INSTALL PATHS                  #
@@ -168,6 +168,16 @@ INSTALL_DIR = $(INSTALL_PREFIX)/bin
 INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
 
 ###############################################
+#             __ATOMIC_EXCHANGE_N             #
+###############################################
+#
+# Mksquashfs uses a GCC builtin (also supported by Clang)
+# __atomic_exchange_n() to do lockless thread synchronisation.
+# If this is unavailable on your compiler, uncomment
+# the line below to use a (slower) Pthread mutex.
+#DONT_USE_ATOMIC_EXCHANGE_N = 1
+
+###############################################
 #              Obsolete options               #
 ###############################################
 
@@ -178,7 +188,7 @@ INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
 # LZMA1 compression is obsolete, and the newer and better XZ (LZMA2)
 # compression should be used in preference.
 #
-# Both XZ Utils liblzma (http://tukaani.org/xz/) and LZMA SDK
+# Both XZ Utils liblzma (https://tukaani.org/xz/) and LZMA SDK
 # (http://www.7-zip.org/sdk.html) are supported
 #
 # To build using XZ Utils liblzma - install the library and uncomment
@@ -202,7 +212,7 @@ XATTR_SUPPORT ?= 1
 XATTR_OS_SUPPORT ?= 1
 XATTR_DEFAULT ?= 1
 REPRODUCIBLE_DEFAULT ?= 1
-USE_PREBUILT_MANPAGES ?= 1
+USE_PREBUILT_MANPAGES ?= n
 INSTALL_PREFIX ?= /usr/local
 INSTALL_DIR ?= $(INSTALL_PREFIX)/bin
 INSTALL_MANPAGES_DIR ?= $(INSTALL_PREFIX)/man/man1
@@ -210,6 +220,7 @@ LZMA_XZ_SUPPORT ?= 0
 LZMA_SUPPORT ?= 0
 LZMA_DIR ?= ../../../../LZMA/lzma465
 XZ_EXTENDED_OPTIONS ?= 0
+DONT_USE_ATOMIC_EXCHANGE_N ?= 0
 endif
 
 
@@ -222,12 +233,12 @@ INCLUDEDIR = -I.
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
 	caches-queues-lists.o reader.o tar.o date.o memory.o mksquashfs_help.o \
-	print_pager.o
+	print_pager.o symbolic_mode.o thread.o nprocessors_compat.o limit.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o unsquash-123.o unsquash-34.o unsquash-1234.o unsquash-12.o \
 	swap.o compressor.o unsquashfs_info.o date.o memory.o print_pager.o \
-	unsquashfs_help.o
+	unsquashfs_help.o nprocessors_compat.o limit.o
 
 CFLAGS ?= -O2
 CFLAGS += $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 \
@@ -346,6 +357,10 @@ ifeq ($(REPRODUCIBLE_DEFAULT),1)
 CFLAGS += -DREPRODUCIBLE_DEFAULT
 endif
 
+ifeq ($(DONT_USE_ATOMIC_EXCHANGE_N),1)
+CFLAGS += -DDONT_USE_ATOMIC_EXCHANGE_N
+endif
+
 #
 # If LZMA_SUPPORT is specified then LZMA_DIR must be specified too
 #
@@ -388,7 +403,7 @@ $(error "COMP_DEFAULT is set to ${COMP_DEFAULT}, which isn't selected to be \
 endif
 
 space := $(subst ,, )
-CFLAGS += -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n\t\t\t\t,$(COMPRESSORS)))\""
+#CFLAGS += -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n\t\t\t\t,$(COMPRESSORS)))\""
 
 #
 # Get VERSION and DATE for Mksquashfs/Unsquashfs version strings.
@@ -430,7 +445,7 @@ mksquashfs: $(MKSQUASHFS_OBJS)
 
 mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h squashfs_swap.h mksquashfs.h \
 	sort.h pseudo.h compressor.h xattr.h action.h mksquashfs_error.h progressbar.h \
-	info.h caches-queues-lists.h read_fs.h restore.h process_fragments.h 
+	info.h caches-queues-lists.h read_fs.h restore.h process_fragments.h
 
 reader.o: squashfs_fs.h mksquashfs.h caches-queues-lists.h progressbar.h \
 	mksquashfs_error.h pseudo.h sort.h
@@ -475,6 +490,8 @@ date.o: date.h error.h
 
 memory.o: error.h memory_compat.h memory.h
 
+symbolic_mode.o: symbolic_mode.h symbolic_mode.c
+
 gzip_wrapper.o: gzip_wrapper.c squashfs_fs.h gzip_wrapper.h compressor.h
 
 lzma_wrapper.o: lzma_wrapper.c compressor.h squashfs_fs.h
@@ -489,11 +506,19 @@ xz_wrapper.o: xz_wrapper.c squashfs_fs.h xz_wrapper.h compressor.h
 
 xz_wrapper_extended.o: xz_wrapper_extended.c squashfs_fs.h xz_wrapper.h compressor.h
 
-mksquashfs_help.o: mksquashfs_help.h Makefile
+mksquashfs_help.o: mksquashfs_help.c mksquashfs_help.h Makefile
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
 
 print_pager.o: print_pager.c print_pager.h
 
+thread.o: thread.c thread.h
+
+nprocessors_compat.o: nprocessors_compat.c nprocessors_compat.h
+
 unsquashfs_help.o: unsquashfs_help.c unsquashfs_help.h
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DDECOMPRESSORS="\"$(subst @(default),,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
+
+limit.o: limit.h error.h
 
 unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@

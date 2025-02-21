@@ -23,41 +23,5 @@
  * nprocessors_compat.h
  */
 
-#ifdef __linux__
-#include <sched.h>
-
-static inline int get_nprocessors(void)
-{
-	cpu_set_t cpu_set;
-
-	CPU_ZERO(&cpu_set);
-
-	if(sched_getaffinity(0, sizeof cpu_set, &cpu_set) == 0)
-		return CPU_COUNT(&cpu_set);
-	else
-		return sysconf(_SC_NPROCESSORS_ONLN);
-}
-#else
-#include <sys/sysctl.h>
-
-static inline int get_nprocessors(void)
-{
-	int processors, mib[2];
-	size_t len = sizeof(processors);
-
-	mib[0] = CTL_HW;
-#ifdef HW_AVAILCPU
-	mib[1] = HW_AVAILCPU;
-#else
-	mib[1] = HW_NCPU;
-#endif
-
-	if(sysctl(mib, 2, &processors, &len, NULL, 0) == -1) {
-		ERROR("Failed to get number of available processors.  Defaulting to 1\n");
-		processors = 1;
-	}
-
-	return processors;
-}
-#endif
+extern int get_nprocessors(void);
 #endif

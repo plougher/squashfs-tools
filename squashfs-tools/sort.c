@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2012,
- * 2013, 2014, 2021, 2022
+ * 2013, 2014, 2021, 2022, 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -50,7 +50,6 @@ static struct sort_info *sort_info_list[65536];
 
 struct priority_entry *priority_list[65536];
 
-extern int silent;
 extern char *pathname(struct dir_ent *dir_ent);
 extern long long hardlnk_count;
 

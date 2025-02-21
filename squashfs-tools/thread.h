@@ -1,10 +1,9 @@
-#ifndef DATE_H
-#define DATE_H
+#ifndef THREAD_H
+#define THREAD_H
 /*
- * Create a squashfs filesystem.  This is a highly compressed read only
- * filesystem.
+ * Squashfs
  *
- * Copyright (c) 2023, 2024
+ * Copyright (c) 2024
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -21,11 +20,25 @@
  * along with this program; if not, write to the Free Software
  * Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- * date.h
+ * thread.h
  */
-
-extern long long read_bytes(int, void *, long long);
 
 #define TRUE 1
 #define FALSE 0
+
+struct thread {
+	int	type;
+	int	state;
+};
+
+#define THREAD_BLOCK	1
+#define THREAD_FRAGMENT	2
+#define THREAD_ACTIVE	3
+#define THREAD_IDLE	4
+
+extern pthread_mutex_t thread_mutex;
+extern int get_thread_id(int type);
+extern void set_thread_idle(int tid);
+extern void wait_thread_idle(int tid, pthread_mutex_t *mutex);
+extern void dump_threads();
 #endif
