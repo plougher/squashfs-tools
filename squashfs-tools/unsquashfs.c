@@ -4064,7 +4064,7 @@ static int parse_cat_options(int argc, char *argv[])
 					!parse_number_percent(argv[i], &percent) ||
 					(percent < 1)) {
 				ERROR("%s: -mem-percent missing or invalid "
-					"percentage: it should be 1 - 75%\n",
+					"percentage: it should be 1 - 75%%\n",
 					 argv[0]);
 				sqfscat_option_help(argv[i - 1]);
 			}
@@ -4365,7 +4365,7 @@ static int parse_options(int argc, char *argv[])
 					!parse_number_percent(argv[i], &percent) ||
 					(percent < 1)) {
 				ERROR("unsquashfs: -mem-percent missing or invalid "
-					"percentage: it should be 1 - 75%\n");
+					"percentage: it should be 1 - 75%%\n");
 				unsquashfs_option_help("-mem-percent");
 			}
 
