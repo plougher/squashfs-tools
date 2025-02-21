@@ -7428,10 +7428,9 @@ static int sqfstar(int argc, char *argv[])
 
 	set_progressbar_state(FALSE);
 
-    if (!check_id_table_offset()) {
-        ERROR("id entry out of range after applying offset\n");
-        exit(1);
-    }
+	if(!check_id_table_offset())
+		BAD_ERROR("id entry out of range after applying -uid-gid-offset offset\n");
+
 	write_filesystem_tables(&sBlk);
 
 	if(!nopad && (i = get_pos() & (4096 - 1))) {
@@ -8828,6 +8827,10 @@ int main(int argc, char *argv[])
 	pthread_cancel(writer_thread);
 
 	set_progressbar_state(FALSE);
+
+	if(!check_id_table_offset())
+		BAD_ERROR("id entry out of range after applying -uid-gid-offset offset\n");
+
 	write_filesystem_tables(&sBlk);
 
 	if(!nopad && (i = get_pos() & (4096 - 1))) {
