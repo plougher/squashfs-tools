@@ -89,7 +89,7 @@ static char *sqfstar_options[]={
 static char *mksquashfs_args[]={
 	"", "", "<block-size>", "<comp>", "", "", "", "", "", "", "", "", "",
 	"", "", "", "", "", "", "", "<time>", "<time>", "<time>", "<mode>",
-	"<value>", "<value>", "", "<mode>", "<mode>", "<value>", "<value>", "",
+	"<value>", "<value>", "", "<mode>", "<mode>", "<value>", "<value>", "<value>", "",
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "<d mode uid gid>",
 	"<D time mode uid gid>", "<pseudo-file>", "<sort-file>",
 	"<exclude-file>", "", "", "<levels>", "", "", "", "", "", "", "",
@@ -107,7 +107,7 @@ static char *mksquashfs_args[]={
 static char *sqfstar_args[]={
 	"", "", "<block-size>", "<comp>",  "", "", "", "", "", "", "", "", "",
 	"", "", "<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
-	"", "<mode>", "<mode>", "<value>", "<value>", "<mode>", "<value>",
+	"", "<mode>", "<mode>", "<value>", "<value>", "<value>", "<mode>", "<value>",
 	"<value>", "", "", "", "", "", "", "", "", "", "",
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode u g>",
 	"<pseudo-file>", "<exclude-file>", "", "", "", "", "", "", "",
@@ -195,7 +195,7 @@ static char *mksquashfs_text[]={
 		"<value>, <value> can be either an integer uid or user name\n",
 	"-force-gid <value>\tset all file and directory gids to specified "
 		"<value>, <value> can be either an integer gid or group name\n",
-  "-uid-gid-offset <value>\toffset all uid and gids by specified <value>\n",
+	"-uid-gid-offset <value>\toffset all uid and gids by specified <value>\n",
 	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
 		"-force-uid and -force-gid options\n",
 	"-no-exports\t\tdo not make filesystem exportable via NFS (-tar "
@@ -514,7 +514,7 @@ static char *sqfstar_text[]={
 		"<value>, <value> can be either an integer uid or user name\n",
 	"-force-gid <value>\tset all file and directory gids to specified "
 		"<value>, <value> can be either an integer gid or group name\n",
-  "-uid-gid-offset <value>\toffset all uid and gids by specified <value>\n",
+	"-uid-gid-offset <value>\toffset all uid and gids by specified <value>\n",
 	"-default-mode <mode>\ttar files often do not store permissions for "
 		"intermediate directories.  This option sets the default "
 		"directory permissions to <mode>.  <Mode> can be symbolic or "
