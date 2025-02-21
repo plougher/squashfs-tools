@@ -877,16 +877,20 @@ static long long write_directories()
 
 static int check_id_table_offset()
 {
-    printf("updating id table with offset %d", uid_gid_offset);
-    int i;
+	int i;
+
+	INFO("Updating id table with -uid-gid-offset value %u", uid_gid_offset);
+
 	for(i = 0; i < id_count; i++) {
-        long long id = id_table[i]->id + uid_gid_offset;
-        if (id > (((long long) 1 << 32) - 1)) {
-            return 0;
-        }
-        id_table[i]->id = id;
-    }
-    return 1;
+		long long id = id_table[i]->id + uid_gid_offset;
+
+		if(id > (((long long) 1 << 32) - 1))
+			return FALSE;
+
+		id_table[i]->id = id;
+	}
+
+	return TRUE;
 }
 
 
