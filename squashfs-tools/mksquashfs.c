@@ -6789,19 +6789,17 @@ static int sqfstar(int argc, char *argv[])
 			root_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-uid-gid-offset") == 0) {
 			if(++i == dest_index) {
-				ERROR("%s: -uid-gid-offset missing offset\n",
-					argv[0]);
-				sqfstar_option_help(argv[0], argv[i - 1]);
+				ERROR("sqfstar: -uid-gid-offset missing offset\n");
+				sqfstar_option_help(argv[i - 1]);
 			}
 
 			res = get_uid_gid_offset_from_arg(argv[i], &uid_gid_offset);
 			if(res) {
 				if(res == -2)
-					ERROR("%s: -uid-gid-offset out of range\n",
-						argv[0]);
+					ERROR("sqfstar: -uid-gid-offset out of range\n");
 				else
-					ERROR("%s: -uid-gid-offset invalid number\n", argv[0]);
-				sqfstar_option_help(argv[0], argv[i - 1]);
+					ERROR("sqfstar: -uid-gid-offset invalid number\n");
+				sqfstar_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-root-time") == 0) {
 			if((++i == argc) ||
@@ -7761,19 +7759,17 @@ int main(int argc, char *argv[])
 			root_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-uid-gid-offset") == 0) {
 			if(++i == argc) {
-				ERROR("%s: -uid-gid-offset missing offset\n",
-					argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+				ERROR("mksquashfs: -uid-gid-offset missing offset\n");
+				mksquashfs_option_help(argv[i - 1]);
 			}
 
 			res = get_uid_gid_offset_from_arg(argv[i], &uid_gid_offset);
 			if(res) {
 				if(res == -2)
-					ERROR("%s: -uid-gid-offset out of range\n",
-						argv[0]);
+					ERROR("mksquashfs: -uid-gid-offset out of range\n");
 				else
-					ERROR("%s: -uid-gid-offset invalid number\n", argv[0]);
-				mksquashfs_option_help(argv[0], argv[i - 1]);
+					ERROR("mksquashfs: -uid-gid-offset invalid number\n");
+				mksquashfs_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-root-time") == 0) {
 			if((++i == argc) ||
