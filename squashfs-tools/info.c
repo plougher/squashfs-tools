@@ -85,7 +85,7 @@ static void dump_state()
 	disable_progress_bar();
 
 	printf("Queues, caches and threads status dump\n");
-	printf("===========================\n");
+	printf("======================================\n");
 
 	printf("file buffer queue (reader thread -> deflate thread(s))\n");
 	dump_block_read_queue(to_deflate);
