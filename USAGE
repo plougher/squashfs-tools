@@ -376,8 +376,7 @@ Compressors available and compressor specific options:
 		etc.
 	zstd
 	  -Xcompression-level <compression-level>
-		<compression-level> should be -131072 .. -1 or 1 .. 22 (default 15)
-		Negative compression levels correspond to the zstd --fast option.
+		<compression-level> should be 1 .. 22 (default 15)
 
 Source1 source2 ... are the source directories/files containing the
 files/directories that will form the squashfs filesystem.  If a single
@@ -503,8 +502,7 @@ Compressors available and compressor specific options:
 		etc.
 	zstd
 	  -Xcompression-level <compression-level>
-		<compression-level> should be -131072 .. -1 or 1 .. 22 (default 15)
-		Negative compression levels correspond to the zstd --fast option.
+		<compression-level> should be 1 .. 22 (default 15)
 
 If the compressor offers compression specific options (all the compressors now
 have compression specific options except the deprecated lzma1 compressor)
