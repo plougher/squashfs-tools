@@ -325,6 +325,9 @@ int logging=FALSE;
 /* file descriptor of the output filesystem */
 int fd;
 
+/* Current file position in output filesystem */
+off_t fd_pos = 0;
+
 /* Variables used for appending */
 int appending = TRUE;
 
@@ -738,20 +741,37 @@ bytes_read:
 
 int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 {
-	off_t off = byte;
+	off_t off = byte + start_offset;
 	int res = 1;
 
 	TRACE("read_fs_bytes: reading from position 0x%llx, bytes %lld\n",
 		byte, bytes);
 
-	if(lseek(fd, start_offset + off, SEEK_SET) == -1) {
-		ERROR("read_fs_bytes: Lseek on destination failed because %s, "
-			"offset=0x%llx\n", strerror(errno), start_offset + off);
-		res = 0;
-	} else if(read_bytes(fd, buff, bytes) < bytes) {
-		ERROR("Read on destination failed\n");
-		res = 0;
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
+	pthread_mutex_lock(&pos_mutex);
+
+	if(fd_pos != off) {
+		if(lseek(fd, off, SEEK_SET) == -1) {
+			ERROR("read_fs_bytes: Lseek on destination failed "
+				"because %s, offset=0x%llx\n", strerror(errno),
+				(long long) off);
+			fd_pos = LLONG_MAX;
+			res = FALSE;
+			goto unlock;
+		}
 	}
+
+	if(read_bytes(fd, buff, bytes) < bytes) {
+		ERROR("Read on destination failed\n");
+		fd_pos = LLONG_MAX;
+		res = FALSE;
+		goto unlock;
+	}
+
+	fd_pos = off + bytes;
+
+unlock:
+	pthread_cleanup_pop(1);
 
 	return res;
 }
@@ -782,19 +802,30 @@ static int write_bytes(int fd, void *buff, long long bytes)
 
 void write_destination(int fd, long long byte, long long bytes, void *buff)
 {
-	off_t off = byte;
+	off_t off = start_offset + byte;
 
-	if(lseek(fd, start_offset + off, SEEK_SET) == -1) {
-		ERROR("write_destination: Lseek on destination "
-			"failed because %s, offset=0x%llx\n", strerror(errno),
-			start_offset + off);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
+	pthread_mutex_lock(&pos_mutex);
+
+	if(fd_pos != off) {
+		if(lseek(fd, off, SEEK_SET) == -1) {
+			ERROR("write_destination: Lseek on destination failed "
+				"because %s, offset=0x%llx\n", strerror(errno),
+				(long long) off);
+			BAD_ERROR("Probably out of space on output %s\n",
+				block_device ? "block device" : "filesystem");
+		}
+	}
+
+	if(write_bytes(fd, buff, bytes) == -1) {
+		ERROR("Failed to write to output %s\n",
+			block_device ? "block device" : "filesystem");
 		BAD_ERROR("Probably out of space on output %s\n",
 			block_device ? "block device" : "filesystem");
 	}
 
-	if(write_bytes(fd, buff, bytes) == -1)
-		BAD_ERROR("Failed to write to output %s\n",
-			block_device ? "block device" : "filesystem");
+	fd_pos = off + bytes;
+	pthread_cleanup_pop(1);
 }
 
 
@@ -2713,23 +2744,8 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 }
 
 
-void cleanup(void *arg)
-{
-	int fd = *((int *) arg);
-
-	close(fd);
-}
-
-
 static void *writer(void *arg)
 {
-	off_t wpos = 0;
-	int fd = open(destination_file, O_WRONLY);
-	if(fd == -1)
-		BAD_ERROR("Writer failed to open destination file\n");
-
-	pthread_cleanup_push(cleanup, &fd);
-
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(to_writer);
 		off_t off;
@@ -2741,27 +2757,33 @@ static void *writer(void *arg)
 
 		off = start_offset + file_buffer->block;
 
-		if(wpos != off) {
+		pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
+		pthread_mutex_lock(&pos_mutex);
+
+		if(fd_pos != off) {
 			if(lseek(fd, off, SEEK_SET) == -1) {
-				ERROR("writer: Lseek on destination failed because "
-					"%s, offset=0x%llx\n", strerror(errno), (long long)off);
+				ERROR("writer: Lseek on destination failed "
+					"because %s, offset=0x%llx\n",
+					strerror(errno), (long long) off);
 				BAD_ERROR("Probably out of space on output "
 					"%s\n", block_device ? "block device" :
 					"filesystem");
 			}
 
-			wpos = off;
 		}
 
-		if(write_bytes(fd, file_buffer->data, file_buffer->size) == -1)
-			BAD_ERROR("Failed to write to output %s\n",
+		if(write_bytes(fd, file_buffer->data, file_buffer->size) == -1) {
+			ERROR("Failed to write to output %s\n",
 				block_device ? "block device" : "filesystem");
+			BAD_ERROR("Probably out of space on output %s\n",
+				block_device ? "block device" : "filesystem");
+		}
 
-		wpos += file_buffer->size;
+		fd_pos = off + file_buffer->size;
+		pthread_cleanup_pop(1);
+
 		gen_cache_block_put(file_buffer);
 	}
-
-	pthread_cleanup_pop(1);
 }
 
 
