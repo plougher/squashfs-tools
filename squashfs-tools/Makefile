@@ -7,6 +7,10 @@
 # the command line.
 #
 ifndef CONFIG
+###############################################
+#            Compression algorithms           #
+###############################################
+
 ############# Building gzip support ###########
 #
 # Gzip support is by default enabled, and the compression type default
