@@ -131,6 +131,30 @@ XATTR_DEFAULT = 1
 
 
 ###############################################
+#       Parallel reader thread options        #
+###############################################
+#
+# Select how many reader threads are enabled by default.  The options are:
+#
+# 1. A single reader thread, as was traditionally used in Mksquashfs.  This
+#    is the lowest performing and most conservative option.
+#
+# 2. The default number of small reader threads and block reader threads given
+#    here.  These values are intended to give a peformance boost on media
+#    that will benefit from parallel reads (e.g. modern SSD drives), but not
+#    affect performance on other media that won't benefit from parallel reads.
+#
+# 3. A custom default setting of small reader threads and block reader threads.
+#    The higher the number of threads the greater the performance boost on
+#    filesystems with lots of small files, and/or media that benefits from
+#    a high amount of parallelism such as network filesystems.
+#
+# Uncomment next line to use a single reader thread
+#SINGLE_READER_THREAD = 1
+SMALL_READER_THREADS = 8
+BLOCK_READER_THREADS = 3
+
+###############################################
 #          Reproducible Image options         #
 ###############################################
 #
@@ -225,6 +249,9 @@ LZMA_SUPPORT ?= 0
 LZMA_DIR ?= ../../../../LZMA/lzma465
 XZ_EXTENDED_OPTIONS ?= 0
 DONT_USE_ATOMIC_EXCHANGE_N ?= 0
+SINGLE_READER_THREAD ?= 0
+SMALL_READER_THREADS ?= 8
+BLOCK_READER_THREDS ?= 3
 endif
 
 
@@ -363,6 +390,12 @@ endif
 
 ifeq ($(DONT_USE_ATOMIC_EXCHANGE_N),1)
 CFLAGS += -DDONT_USE_ATOMIC_EXCHANGE_N
+endif
+
+ifeq ($(SINGLE_READER_THREAD),1)
+CFLAGS += -DSINGLE_READER_THREAD
+else
+CFLAGS += -DSMALL_READER_THREADS=$(SMALL_READER_THREADS) -DBLOCK_READER_THREADS=$(BLOCK_READER_THREADS)
 endif
 
 #

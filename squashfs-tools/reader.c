@@ -53,7 +53,14 @@
 
 #define READER_ALLOC 1024
 
-static int reader_threads = 6, fragment_threads = 3, block_threads = 3;
+#ifdef SINGLE_READER_THREAD
+static int reader_threads = 1, fragment_threads = 0, block_threads = 1;
+#else
+static int fragment_threads = SMALL_READER_THREADS;
+static int block_threads = BLOCK_READER_THREADS;
+static int reader_threads = SMALL_READER_THREADS + BLOCK_READER_THREADS;
+#endif
+
 static struct reader *reader = NULL;
 static struct readahead **readahead_table = NULL;
 static pthread_t *reader_thread = NULL;
