@@ -370,7 +370,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"xattrs-add", "default-mode", "default-uid", "default-gid",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
 	"hs", "info-file", "force-file-mode", "force-dir-mode",
-	"small-reader-threads", "block-reader-threads", "uid-gid-offset", NULL
+	"small-readers", "block-readers", "uid-gid-offset", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -8326,29 +8326,29 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-comp") == 0) {
 			/* parsed previously */
 			i++;
-		} else if(strcmp(argv[i], "-small-reader-threads") == 0) {
+		} else if(strcmp(argv[i], "-small-readers") == 0) {
 			if(++i == argc) {
-				ERROR("mksquashfs: -small-reader-threads missing thread count\n");
+				ERROR("mksquashfs: -small-readers missing thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(force_single_threaded)
-				ERROR("Warning: ignoring -small-reader-threads option because you're reading a tar file, using an Unsquashfs pseudo file or throttling I/O\n");
+				ERROR("Warning: ignoring -small-readers option because you're reading a tar file, using an Unsquashfs pseudo file or throttling I/O\n");
 			else if(!parse_num(argv[i], &res) || !set_read_frag_threads(res)) {
-				ERROR("mksquashfs: -small-reader-threads invalid thread count\n");
+				ERROR("mksquashfs: -small-readers invalid thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
-		} else if(strcmp(argv[i], "-block-reader-threads") == 0) {
+		} else if(strcmp(argv[i], "-block-readers") == 0) {
 			if(++i == argc) {
-				ERROR("mksquashfs: -block-reader-threads missing thread count\n");
+				ERROR("mksquashfs: -block-readers missing thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
 			if(force_single_threaded)
-				ERROR("Warning: ignoring -block-reader-threads option because you're reading a tar file, using an Unsquashfs pseudo file or throttling I/O\n");
+				ERROR("Warning: ignoring -block-readers option because you're reading a tar file, using an Unsquashfs pseudo file or throttling I/O\n");
 			else if(!parse_num(argv[i], &res) || !set_read_block_threads(res)) {
-				ERROR("mksquashfs: -block-reader-threads invalid thread count\n");
+				ERROR("mksquashfs: -block-readers invalid thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
 			}
-		} else if(strcmp(argv[i], "-single-reader-thread") == 0)
+		} else if(strcmp(argv[i], "-single-reader") == 0)
 			set_single_threaded();
 		else
 			mksquashfs_invalid_option(argv[i]);

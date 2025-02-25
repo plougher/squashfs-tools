@@ -292,6 +292,12 @@ static char *mksquashfs_text[]={
 	"-mem-percent <percent>\tuse <percent> physical memory for caches.  "
 		"Default 25%\n",
 	"-mem-default\t\tprint default memory usage in Mbytes\n",
+	"-single-reader\t\tuse a single thread to read files. This "
+		"reads files sequentially from the source(s)\n",
+	"-small-readers <n>\tuse <n> threads to read small files (files "
+		"less than a block size) in parallel from the source(s)\n",
+	"-block-readers <n>\tuse <n> threads to read block files (files "
+		"a block or larger in size) in parallel from the source(s)\n",
 	"\n", "Filesystem append options:", "\n",
 	"-noappend\t\tdo not append to existing filesystem\n",
 	"-root-becomes <name>\twhen appending source files/directories, make "
