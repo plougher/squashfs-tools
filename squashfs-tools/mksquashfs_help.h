@@ -56,6 +56,18 @@
 #define XOPT_STR " (unsupported)"
 #endif
 
+#ifdef SINGLE_READER_THREAD
+#define SINGLE_STR " (default)"
+#define SMALL_STR
+#define BLOCK_STR
+#else
+#define STRING(x) #x
+#define STRINGIFY(x) STRING(x)
+#define SINGLE_STR
+#define SMALL_STR  " (default " STRINGIFY(SMALL_READER_THREADS) ")"
+#define BLOCK_STR  " (default " STRINGIFY(BLOCK_READER_THREADS) ")"
+#endif
+
 #define TRUE 1
 #define FALSE 0
 
