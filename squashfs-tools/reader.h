@@ -37,6 +37,16 @@
 /* minimum blocks per reader thread */
 #define BLOCKS_MIN	4
 
+#ifdef SINGLE_READER_THREAD
+extern int readers_sane();
+#else
+#define TRUE 1
+static inline int readers_sane()
+{
+	return TRUE;
+}
+#endif
+
 struct readahead {
 	long long		start;
 	int			size;
@@ -66,5 +76,4 @@ extern void set_single_threaded();
 extern int get_reader_num();
 extern void set_sleep_time(int);
 extern void check_min_memory(int, int, int);
-extern int readers_sane();
 #endif
