@@ -55,10 +55,12 @@
 
 #ifdef SINGLE_READER_THREAD
 static int reader_threads = 1, fragment_threads = 0, block_threads = 1;
+static int single_threaded = TRUE;
 #else
 static int fragment_threads = SMALL_READER_THREADS;
 static int block_threads = BLOCK_READER_THREADS;
 static int reader_threads = SMALL_READER_THREADS + BLOCK_READER_THREADS;
+static int single_threaded = FALSE;
 #endif
 
 static struct reader *reader = NULL;
@@ -67,7 +69,8 @@ static pthread_t *reader_thread = NULL;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int total_rblocks, total_rmbytes;
 static int total_wblocks, total_wmbytes;
-static int single_threaded = FALSE;
+static int block_opt = FALSE;
+static int frag_opt = FALSE;
 
 /* if throttling I/O, time to sleep between reads (in tenths of a second) */
 static int sleep_time;
@@ -978,6 +981,7 @@ int set_read_frag_threads(int fragments)
 
 	fragment_threads = fragments;
 	reader_threads = fragment_threads + block_threads;
+	frag_opt = TRUE;
 
 	return TRUE;
 }
@@ -990,6 +994,7 @@ int set_read_block_threads(int blocks)
 
 	block_threads = blocks;
 	reader_threads = fragment_threads + block_threads;
+	block_opt = TRUE;
 
 	return TRUE;
 }
@@ -1001,6 +1006,29 @@ void set_single_threaded()
 	reader_threads = 1;
 	block_threads = 1;
 	fragment_threads = 0;
+}
+
+
+int readers_sane()
+{
+	if(!single_threaded)
+		/*
+		 * set_read_xxx_threads() don't allow incorrect values, and the
+		 * values passed by the Makefile have been checked at build time
+		 */
+		return TRUE;
+
+	/*
+	 * The mksquashfs default is a single reader.  Changing from a single
+	 * reader requires the user to specify both -small-readers and
+	 * -block-readers options.
+	 */
+	if(frag_opt && block_opt) {
+		single_threaded = FALSE;
+		return TRUE;
+	}
+
+	return !frag_opt && !block_opt;
 }
 
 

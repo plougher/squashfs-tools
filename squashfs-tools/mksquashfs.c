@@ -7497,6 +7497,8 @@ int main(int argc, char *argv[])
 	int Xhelp = FALSE;
 	struct file_buffer **fragment = NULL;
 	char *command;
+	int single_threaded = FALSE;
+
 
 	check_sqfs_cmdline(argc, argv);
 	check_pager();
@@ -8349,7 +8351,7 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[i - 1]);
 			}
 		} else if(strcmp(argv[i], "-single-reader") == 0)
-			set_single_threaded();
+			single_threaded = TRUE;
 		else
 			mksquashfs_invalid_option(argv[i]);
 	}
@@ -8445,11 +8447,15 @@ int main(int argc, char *argv[])
 		progress = FALSE;
 #endif
 
+
+		if(!readers_sane())
+			BAD_ERROR("Changing from single reader default requires both -small-readers and -block-readers options to be specified\n");
+
 		/*
 		 * Some options only make sense with a single reader thread and
 		 * so override the default
 		 * */
-		if(force_single_threaded)
+		if(single_threaded || force_single_threaded)
 			set_single_threaded();
 
 		/*

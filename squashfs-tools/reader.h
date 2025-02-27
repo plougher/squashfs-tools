@@ -66,4 +66,5 @@ extern void set_single_threaded();
 extern int get_reader_num();
 extern void set_sleep_time(int);
 extern void check_min_memory(int, int, int);
+extern int readers_sane();
 #endif
