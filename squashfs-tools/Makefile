@@ -402,10 +402,15 @@ ifeq ($(shell [ $(SMALL_READER_THREADS) -gt $(MAX_READER_THREADS) ] && echo Y),Y
 $(error SMALL_READER_THREADS is too large, it must be $(MAX_READER_THREADS) \
 	or less and not 0)
 endif
-
+ifeq ($(shell [ $(SMALL_READER_THREADS) -le 0 ] && echo Y),Y)
+$(error SMALL_READER_THREADS should not be negative or 0!)
+endif
 ifeq ($(shell [ $(BLOCK_READER_THREADS) -gt $(MAX_READER_THREADS) ] && echo Y),Y)
 $(error BLOCK_READER_THREADS is too large, it must be $(MAX_READER_THREADS) \
 	or less and not 0)
+endif
+ifeq ($(shell [ $(BLOCK_READER_THREADS) -le 0 ] && echo Y),Y)
+$(error BLOCK_READER_THREADS should not be negative or 0!)
 endif
 CFLAGS += -DSMALL_READER_THREADS=$(SMALL_READER_THREADS) -DBLOCK_READER_THREADS=$(BLOCK_READER_THREADS)
 endif
