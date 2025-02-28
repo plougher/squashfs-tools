@@ -1055,33 +1055,30 @@ void check_min_memory(int rmbytes, int wmbytes, int block_log)
 		if(reader_only && !single_threaded) {
 			ERROR("Alternatively, you could try reducing the "
 				"number of reader threads\n"
-				"(-single-reader-thread option, and "
-				"-small-reader-threads/-block-reader-threads\n"
-				"options)\n\n");
+				"(-single-reader thread option, and "
+				"-small-readers/-block-readers options)\n\n");
 			ERROR("Current options:\n");
-			ERROR("\t-small-reader-threads is set to %d\n", fragment_threads);
-			ERROR("\t-block-reader-threads is set to %d\n\n", block_threads);
+			ERROR("\t-small-readers is set to %d\n", fragment_threads);
+			ERROR("\t-block-readers is set to %d\n\n", block_threads);
 		} else if(!reader_only && !single_threaded && processors > 1) {
 			ERROR("Alternatively, you could try reducing the "
 				"number of reader threads\n"
-				"(-single-reader-thread option, and "
-				"-small-reader-threads/-block-reader-threads\n"
-				"options)\n\n");
+				"(-single-reader thread option, and "
+				"-small-readers/-block-readers options)\n\n");
 			ERROR("Or you could reduce the number of processors "
 				"used (-processors option)\n\n");
 			ERROR("Current options:\n");
-			ERROR("\t-small-reader-threads is set to %d\n", fragment_threads);
-			ERROR("\t-block-reader-threads is set to %d\n", block_threads);
+			ERROR("\t-small-readers is set to %d\n", fragment_threads);
+			ERROR("\t-block-readers is set to %d\n", block_threads);
 			ERROR("\t-processors is set to %d\n\n", processors);
 		} else if(!reader_only && !single_threaded && processors == 1) {
 			ERROR("Alternatively, you could try reducing the "
 				"number of reader threads\n"
-				"(-single-reader-thread option, and "
-				"-small-reader-threads/-block-reader-threads\n"
-				"options)\n\n");
+				"(-single-reader thread option, and "
+				"-small-readers/-block-readers options)\n\n");
 			ERROR("Current options:\n");
-			ERROR("\t-small-reader-threads is set to %d\n", fragment_threads);
-			ERROR("\t-block-reader-threads is set to %d\n", block_threads);
+			ERROR("\t-small-readers is set to %d\n", fragment_threads);
+			ERROR("\t-block-readers is set to %d\n", block_threads);
 		} else if(!reader_only && single_threaded && processors > 1) {
 			ERROR("Alternatively, you could reduce the number of "
 				"processors used (-processors option)\n\n");
