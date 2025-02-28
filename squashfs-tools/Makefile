@@ -456,7 +456,6 @@ $(error "COMP_DEFAULT is set to ${COMP_DEFAULT}, which isn't selected to be \
 endif
 
 space := $(subst ,, )
-#CFLAGS += -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n\t\t\t\t,$(COMPRESSORS)))\""
 
 #
 # Get VERSION and DATE for Mksquashfs/Unsquashfs version strings.
