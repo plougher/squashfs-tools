@@ -989,33 +989,23 @@ pthread_t *get_reader_threads(int *num)
 }
 
 
-int set_read_frag_threads(int fragments)
+void set_read_frag_threads(int fragments)
 {
-	if(fragments <= 0 || fragments > MAX_READER_THREADS)
-		return FALSE;
-
 	fragment_threads = fragments;
 	reader_threads = fragment_threads + block_threads;
 #ifdef SINGLE_READER_THREAD
 	frag_opt = TRUE;
 #endif
-
-	return TRUE;
 }
 
 
-int set_read_block_threads(int blocks)
+void set_read_block_threads(int blocks)
 {
-	if(blocks <= 0 || blocks > MAX_READER_THREADS)
-		return FALSE;
-
 	block_threads = blocks;
 	reader_threads = fragment_threads + block_threads;
 #ifdef SINGLE_READER_THREAD
 	block_opt = TRUE;
 #endif
-
-	return TRUE;
 }
 
 

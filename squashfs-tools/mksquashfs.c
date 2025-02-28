@@ -8335,10 +8335,17 @@ int main(int argc, char *argv[])
 			}
 			if(force_single_threaded)
 				ERROR("Warning: ignoring -small-readers option because you're reading a tar file, using an Unsquashfs pseudo file or throttling I/O\n");
-			else if(!parse_num(argv[i], &res) || !set_read_frag_threads(res)) {
+			else if(!parse_num(argv[i], &res) || res == 0) {
 				ERROR("mksquashfs: -small-readers invalid thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
+			} else if(res > MAX_READER_THREADS) {
+				ERROR("mksquashfs: -small-readers thread count too large, it should be between 1 and %d\n", MAX_READER_THREADS);
+				if(file_limit() != -1 && MAX_READER_THREADS * 2 > file_limit())
+					ERROR("Note total reader threads (small and block readers) above %d will exceed your open file limit (ulimit -n less margin of %d)\n",
+							file_limit(), OPEN_FILE_MARGIN);
+				exit(1);
 			}
+			set_read_frag_threads(res);
 		} else if(strcmp(argv[i], "-block-readers") == 0) {
 			if(++i == argc) {
 				ERROR("mksquashfs: -block-readers missing thread count\n");
@@ -8346,10 +8353,17 @@ int main(int argc, char *argv[])
 			}
 			if(force_single_threaded)
 				ERROR("Warning: ignoring -block-readers option because you're reading a tar file, using an Unsquashfs pseudo file or throttling I/O\n");
-			else if(!parse_num(argv[i], &res) || !set_read_block_threads(res)) {
+			else if(!parse_num(argv[i], &res) || res == 0) {
 				ERROR("mksquashfs: -block-readers invalid thread count\n");
 				mksquashfs_option_help(argv[i - 1]);
+			} else if(res > MAX_READER_THREADS) {
+				ERROR("mksquashfs: -block-readers thread count too large, it should be between 1 and %d\n", MAX_READER_THREADS);
+				if(file_limit() != -1 && MAX_READER_THREADS * 2 > file_limit())
+					ERROR("Note total reader threads (small and block readers) above %d will exceed your open file limit (ulimit -n less margin of %d)\n",
+							file_limit(), OPEN_FILE_MARGIN);
+				exit(1);
 			}
+			set_read_block_threads(res);
 		} else if(strcmp(argv[i], "-single-reader") == 0)
 			single_threaded = TRUE;
 		else
