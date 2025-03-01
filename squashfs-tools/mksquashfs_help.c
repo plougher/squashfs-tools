@@ -436,9 +436,9 @@ static char *mksquashfs_text[]={
 	"SQFS_CMDLINE \t\tIf set, this is used as the directory to write the "
 		"file sqfs_cmdline which contains the command line arguments "
 		"given to Mksquashfs.  Each command line argument is wrapped "
-	       "in quotes to ensure there is no ambiguity when arguments "
-	       "contain spaces.  If the file already exists the command "
-	       "line is appended to the file\n", "\n",
+		"in quotes to ensure there is no ambiguity when arguments "
+		"contain spaces.  If the file already exists then the command "
+		"line is appended to the file\n", "\n",
 	"SOURCE_DATE_EPOCH\tIf set, this is used as the filesystem creation "
 		"timestamp.  Also any file timestamps which are after "
 		"SOURCE_DATE_EPOCH will be clamped to SOURCE_DATE_EPOCH.  "
@@ -705,9 +705,9 @@ static char *sqfstar_text[]={
 	"SQFS_CMDLINE \t\tIf set, this is used as the directory to write the "
 		"file sqfs_cmdline which contains the command line arguments "
 		"given to Sqfstar.  Each command line argument is wrapped "
-	       "in quotes to ensure there is no ambiguity when arguments "
-	       "contain spaces.  If the file already exists the command "
-	       "line is appended to the file\n", "\n",
+		"in quotes to ensure there is no ambiguity when arguments "
+		"contain spaces.  If the file already exists then the command "
+		"line is appended to the file\n", "\n",
 	"SOURCE_DATE_EPOCH\tIf set, this is used as the filesystem creation "
 		"timestamp.  Also any file timestamps which are after "
 		"SOURCE_DATE_EPOCH will be clamped to SOURCE_DATE_EPOCH.  "
