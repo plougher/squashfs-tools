@@ -113,21 +113,35 @@ static char *sqfstar_options[]={
 };
 
 static char *mksquashfs_args[]={
+	/* compression options */
 	"", "", "<block-size>", "<comp>", "", "", "", "", "", "", "", "", "",
+	/* build options */
 	"", "", "", "", "", "", "", "<time>", "<time>", "<time>", "<mode>",
-	"<value>", "<value>", "", "<mode>", "<mode>", "<value>", "<value>", "<value>", "",
-	"", "", "", "", "", "", "", "", "", "", "", "", "", "<d mode uid gid>",
-	"<D time mode uid gid>", "<pseudo-file>", "<sort-file>",
-	"<exclude-file>", "", "", "<levels>", "", "", "", "", "", "", "",
-	"<regex>", "<regex>", "<name=val>", "", "", "", "", "", "", "",
-	"<file>", "", "", "", "<percentage>", "<percentage>", "<number>",
-	"<size>", "<percent>", "", "", "<n>", "<n>", "", "", "", "", "<name>", "",
-	"<name>", "<name>", "", "", "", "<action@expression>", "<action@expression>",
-	"<action@expression>", "<action@expression>", "<file>", "<file>",
-	"<file>", "<file>", "", "", "", "<mode>", "<value>", "<value>", "", "",
-	"", "", "", "<offset>", "<offset>", "", "", "", "", "<regex>",
-	"<section>", "<comp>", "", "", "", "<regex>", "<section>", "", "", "",
-	"", "<time>", "", "", "", "", "", "", "", ""
+	"<value>", "<value>", "", "<mode>", "<mode>", "<value>", "<value>",
+	"<value>", "", "", "", "", "", "", "", "", "", "", "", "", "",
+	/* filter options */
+	"", "<d mode uid gid>", "<D time mode uid gid>", "<pseudo-file>",
+	"<sort-file>", "<exclude-file>", "", "", "<levels>", "", "", "", "", "",
+	/* xattrs options */
+	"", "", "<regex>", "<regex>", "<name=val>", "", "", "",
+	/* runtime options */
+	"", "", "", "", "<file>", "", "", "", "<percentage>", "<percentage>",
+	"<number>", "<size>", "<percent>", "", "", "<n>", "<n>", "", "", "",
+	/* append options **/
+	"", "<name>", "", "<name>", "<name>", "", "", "",
+	/* actions options */
+	"<action@expression>", "<action@expression>", "<action@expression>",
+	"<action@expression>", "<file>", "<file>", "<file>", "<file>", "", "",
+	"",
+	/* tar options */
+	"<mode>", "<value>", "<value>", "", "", "", "",
+	/* expert options */
+	"", "<offset>", "<offset>", "", "", "",
+	/* help options */
+	"", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
+	"<section>", "", "", "", "",
+	/* misc options */
+	"<time>", "", "", "", "", "", "", "", ""
 };
 
 static char *sqfstar_args[]={
