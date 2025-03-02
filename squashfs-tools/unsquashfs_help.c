@@ -62,9 +62,13 @@ static char *unsquashfs_options[]={
 	NULL,
 };
 
-static char *sqfscat_options[]={ "", "", "-version", "-processors", "-mem",
-	"-mem-percent", "-offset", "-ignore-errors", "-strict-errors",
-	"-no-exit-code", "", "", "","-no-wildcards", "-regex", "", "", "",
+static char *sqfscat_options[]={
+	/* runtime options */
+	"", "", "-version", "-processors", "-mem", "-mem-percent", "-offset",
+	"-ignore-errors", "-strict-errors", "-no-exit-code", "", "", "",
+	/* filter options */
+	"-no-wildcards", "-regex", "", "", "",
+	/* help options */
 	"-help", "-help-option", "-help-section", "-help-all", "-ho", "-hs",
 	"-ha", NULL,
 };
