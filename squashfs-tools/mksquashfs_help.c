@@ -363,11 +363,11 @@ static char *mksquashfs_text[]={
 	"\n", "Filesystem actions options:", "\n",
 	"-action <action@expr>\tevaluate <expr> on every file and directory, "
 		"and execute <action> if it returns TRUE\n",
-	"-log-action <act@expr>\tas above, but log expression evaluation "
+	"-log-action <act@expr>\tas -action, but log expression evaluation "
 		"results and actions performed\n",
-	"-true-action <act@expr>\tas above, but only log expressions which "
+	"-true-action <act@expr>\tas -action, but only log expressions which "
 		"return TRUE\n",
-	"-false-action <act@exp>\tas above, but only log expressions which "
+	"-false-action <act@exp>\tas -action, but only log expressions which "
 		"return FALSE\n",
 	"-action-file <file>\tas action, but read actions from <file>\n",
 	"-log-action-file <file>\tas -log-action, but read actions from "
