@@ -49,9 +49,9 @@ static char *mksquashfs_options[]={
 	/* time options */
 	"-mkfs-time", "-all-time", "-root-time", "", "", "",
 	/* permissions options */
-	"-root-mode", "-root-uid", "-root-gid",
-	"-all-root", "-force-file-mode", "-force-dir-mode", "-force-uid",
-	"-force-gid", "-uid-gid-offset", "", "", "",
+	"-all-root", "-root-mode", "-root-uid", "-root-gid", "-force-file-mode",
+	"-force-dir-mode", "-force-uid", "-force-gid", "-uid-gid-offset", "",
+	"", "",
 	/* pseudo options */
 	"-p", "-pd", "-pd", "-pf", "-pseudo-override", "", "", "",
 	/* filter options */
@@ -126,7 +126,7 @@ static char *mksquashfs_args[]={
 	/* time options */
 	"<time>", "<time>", "<time>", "", "", "",
 	/* permissions options */
-	"<mode>", "<value>", "<value>", "", "<mode>", "<mode>", "<value>",
+	"", "<mode>", "<value>", "<value>", "<mode>", "<mode>", "<value>",
 	"<value>", "<value>", "", "", "",
 	/* pseudo options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode uid gid>",
@@ -252,6 +252,7 @@ static char *mksquashfs_text[]={
 		"command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
 	"\n", "Filesystem permissions options:", "\n",
+	"-all-root\t\tmake all files and directories owned by root\n",
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "
 		"can be symbolic or octal (see section Symbolic mode "
 		"specification).  Default root mode is ugo=rwx or 0777 octal\n",
@@ -259,7 +260,6 @@ static char *mksquashfs_text[]={
 		"<value> can be either an integer uid or user name\n",
 	"-root-gid <value>\tset root directory group to specified <value>, "
 		"<value> can be either an integer gid or group name\n",
-	"-all-root\t\tmake all files and directories owned by root\n",
 	"-force-file-mode <mode>\tset all file (non-directory) permissions "
 		"to <mode>.  <Mode> can be symbolic or octal (see section "
 		"Symbolic mode specification)\n",
