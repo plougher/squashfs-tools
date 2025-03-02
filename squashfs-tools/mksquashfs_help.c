@@ -43,10 +43,9 @@ static char *mksquashfs_options[]={
 	"-no-compression", "", "", "",
 	/* build options */
 	"-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
-	"-reproducible", "-not-reproducible", "-pseudo-override",
-	"-no-exports", "-exports", "-no-sparse", "-no-tailends", "-tailends",
-	"-no-fragments", "-no-duplicates", "-no-hardlinks",
-	"-keep-as-directory", "", "", "",
+	"-reproducible", "-not-reproducible", "-no-exports", "-exports",
+	"-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
+	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "",
 	/* time options */
 	"-mkfs-time", "-all-time", "-root-time", "", "", "",
 	/* permissions options */
@@ -54,7 +53,7 @@ static char *mksquashfs_options[]={
 	"-all-root", "-force-file-mode", "-force-dir-mode", "-force-uid",
 	"-force-gid", "-uid-gid-offset", "", "", "",
 	/* pseudo options */
-	"-p", "-pd", "-pd", "-pf", "", "", "",
+	"-p", "-pd", "-pd", "-pf", "-pseudo-override", "", "", "",
 	/* filter options */
 	"-sort", "-ef", "-wildcards", "-regex", "-max-depth", "-one-file-system",
 	"-one-file-system-x", "", "", "",
@@ -123,7 +122,7 @@ static char *mksquashfs_args[]={
 	"", "", "<block-size>", "<comp>", "", "", "", "", "", "", "", "", "",
 	/* build options */
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "","",
-	"", "",
+	"",
 	/* time options */
 	"<time>", "<time>", "<time>", "", "", "",
 	/* permissions options */
@@ -131,7 +130,7 @@ static char *mksquashfs_args[]={
 	"<value>", "<value>", "", "", "",
 	/* pseudo options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode uid gid>",
-	"<pseudo-file>", "", "", "",
+	"<pseudo-file>", "", "", "", "",
 	/* filter options */
 	"<sort-file>", "<exclude-file>", "", "", "<levels>", "", "", "", "", "",
 	/* xattrs options */
@@ -221,8 +220,6 @@ static char *mksquashfs_text[]={
 	"-reproducible\t\tbuild filesystems that are reproducible" REP_STR "\n",
 	"-not-reproducible\tbuild filesystems that are not reproducible"
 		NOREP_STR "\n",
-	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
-		"-force-uid and -force-gid options\n",
 	"-no-exports\t\tdo not make filesystem exportable via NFS (-tar "
 		"default)\n",
 	"-exports\t\tmake filesystem exportable via NFS (default)\n",
@@ -290,6 +287,8 @@ static char *mksquashfs_text[]={
 	"-pf <pseudo-file>\tadd list of pseudo file definitions from "
 		"<pseudo-file>, use - for stdin.  Pseudo file definitions "
 		"should not be quoted\n",
+	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
+		"-force-uid and -force-gid options\n",
 	"\n", "Filesystem filter options:", "\n",
 	"-sort <sort-file>\tsort files according to priorities in <sort-file>."
 		"  One file or dir with priority per line.  Priority -32768 "
