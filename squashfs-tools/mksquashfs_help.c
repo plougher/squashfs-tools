@@ -82,22 +82,32 @@ static char *mksquashfs_options[]={
 };
 
 static char *sqfstar_options[]={
+	/* compression options */
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
-	"-no-compression", "", "", "", "-reproducible", "-not-reproducible",
-	"-mkfs-time", "-all-time", "-root-time", "-root-mode", "-root-uid",
-	"-root-gid", "-all-root", "-force-file-mode", "-force-dir-mode",
-	"-force-uid", "-force-gid", "-uid-gid-offset", "-default-mode", "-default-uid",
-	"-default-gid", "-pseudo-override", "-exports", "-no-sparse",
-	"-no-fragments", "-no-tailends", "-no-duplicates", "-no-hardlinks", "",
-	"", "", "-p", "-pd", "-pd", "-pf", "-ef", "-regex", "-ignore-zeros",
-	"", "", "", "-no-xattrs", "-xattrs", "-xattrs-exclude",
-	"-xattrs-include", "-xattrs-add", "", "","", "-version", "-force",
-	"-exit-on-error", "-quiet", "-info", "-info-file", "-no-progress",
-	"-progress", "-percentage", "-throttle", "-limit", "-processors",
-	"-mem", "-mem-percent", "-mem-default", "", "", "", "-nopad", "-offset",
-	 "-o", "", "", "", "-help", "help-option", "-help-section",
-	"-help-comp", "-help-all", "-Xhelp", "-h", "-ho", "-hs", "-ha", "", "",
-	"", "-fstime", "-root-owned", "-noInodeCompression",
+	"-no-compression", "", "", "",
+	/* build options */
+	"-reproducible", "-not-reproducible", "-mkfs-time", "-all-time",
+	"-root-time", "-root-mode", "-root-uid", "-root-gid", "-all-root",
+	"-force-file-mode", "-force-dir-mode", "-force-uid", "-force-gid",
+	"-uid-gid-offset", "-default-mode", "-default-uid", "-default-gid",
+	"-pseudo-override", "-exports", "-no-sparse", "-no-fragments",
+	"-no-tailends", "-no-duplicates", "-no-hardlinks", "", "", "",
+	/* filter options */
+	"-p", "-pd", "-pd", "-pf", "-ef", "-regex", "-ignore-zeros", "", "", "",
+	/* xattr options */
+	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include",
+	"-xattrs-add", "", "","",
+	/* runtime options */
+	"-version", "-force", "-exit-on-error", "-quiet", "-info", "-info-file",
+	"-no-progress", "-progress", "-percentage", "-throttle", "-limit",
+	"-processors", "-mem", "-mem-percent", "-mem-default", "", "", "",
+	/* expert options */
+	"-nopad", "-offset", "-o", "", "", "",
+	 /* help options */
+	 "-help", "help-option", "-help-section", "-help-comp", "-help-all",
+	 "-Xhelp", "-h", "-ho", "-hs", "-ha", "", "", "",
+	/* misc options */
+	"-fstime", "-root-owned", "-noInodeCompression",
 	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
 	 "-noXattrCompression", NULL
 };
