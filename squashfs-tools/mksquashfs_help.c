@@ -264,7 +264,7 @@ static char *mksquashfs_text[]={
 	"\n", "Filesystem filter options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition "
 		"should be quoted.  See section \"Pseudo file definition "
-		"format\" later for format details\n",
+		"format\" for format details\n",
 	"-pd <d mode uid gid>\tspecify a default pseudo directory which will "
 		"be used in pseudo definitions if a directory in the pathname "
 		"does not exist.  This also allows pseudo definitions to be "
@@ -599,7 +599,7 @@ static char *sqfstar_text[]={
 	"\n", "Filesystem filter options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition "
 		"should be quoted.  See section \"Pseudo file definition "
-		"format\" later for format details\n",
+		"format\" for format details\n",
 	"-pd <d mode uid gid>\tspecify a default pseudo directory which will "
 		"be used in pseudo definitions if a directory in the pathname "
 		"does not exist.  This also allows pseudo definitions to be "
