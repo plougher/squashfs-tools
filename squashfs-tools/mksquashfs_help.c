@@ -126,8 +126,8 @@ static char *mksquashfs_args[]={
 	/* time options */
 	"<time>", "<time>", "<time>", "", "", "",
 	/* permissions options */
-	"", "<mode>", "<value>", "<value>", "<mode>", "<mode>", "<value>",
-	"<value>", "<value>", "", "", "",
+	"", "<mode>", "<name>", "<group>", "<mode>", "<mode>", "<name>",
+	"<group>", "<value>", "", "", "",
 	/* pseudo options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode uid gid>",
 	"<pseudo-file>", "", "", "", "",
@@ -256,20 +256,20 @@ static char *mksquashfs_text[]={
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "
 		"can be symbolic or octal (see section Symbolic mode "
 		"specification).  Default root mode is ugo=rwx or 0777 octal\n",
-	"-root-uid <value>\tset root directory owner to specified <value>, "
-		"<value> can be either an integer uid or user name\n",
-	"-root-gid <value>\tset root directory group to specified <value>, "
-		"<value> can be either an integer gid or group name\n",
+	"-root-uid <name>\tset root directory owner to specified <name>, "
+		"<name> can be either an integer uid or user name\n",
+	"-root-gid <group>\tset root directory group to specified <group>, "
+		"<group> can be either an integer gid or group name\n",
 	"-force-file-mode <mode>\tset all file (non-directory) permissions "
 		"to <mode>.  <Mode> can be symbolic or octal (see section "
 		"Symbolic mode specification)\n",
 	"-force-dir-mode <mode>\tset all directory permissions to <mode>.  "
 		"<Mode> can be symbolic or octal (see section Symbolic mode "
 		"specification)\n",
-	"-force-uid <value>\tset all file and directory uids to specified "
-		"<value>, <value> can be either an integer uid or user name\n",
-	"-force-gid <value>\tset all file and directory gids to specified "
-		"<value>, <value> can be either an integer gid or group name\n",
+	"-force-uid <name>\tset all file and directory uids to specified "
+		"<name>, <name> can be either an integer uid or user name\n",
+	"-force-gid <group>\tset all file and directory gids to specified "
+		"<group>, <group> can be either an integer gid or group name\n",
 	"-uid-gid-offset <value>\toffset all uid and gids by specified <value>\n",
 	"\n", "Filesystem pseudo options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition "
