@@ -43,12 +43,14 @@ static char *mksquashfs_options[]={
 	"-no-compression", "", "", "",
 	/* build section */
 	"-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
-	"-reproducible", "-not-reproducible", "-mkfs-time", "-all-time",
-	"-root-time", "-root-mode", "-root-uid", "-root-gid", "-all-root",
-	"-force-file-mode", "-force-dir-mode", "-force-uid", "-force-gid",
-	"-uid-gid-offset", "-pseudo-override", "-no-exports", "-exports",
-	"-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
-	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "",
+	"-reproducible", "-not-reproducible", "-pseudo-override",
+	"-no-exports", "-exports", "-no-sparse", "-no-tailends", "-tailends",
+	"-no-fragments", "-no-duplicates", "-no-hardlinks",
+	"-keep-as-directory", "", "", "",
+	/* time and permissions options */
+	"-mkfs-time", "-all-time", "-root-time", "-root-mode", "-root-uid",
+	"-root-gid", "-all-root", "-force-file-mode", "-force-dir-mode",
+	"-force-uid", "-force-gid", "-uid-gid-offset", "", "", "",
 	/* filter section */
 	"-p", "-pd", "-pd", "-pf", "-sort", "-ef", "-wildcards", "-regex",
 	"-max-depth", "-one-file-system", "-one-file-system-x", "", "", "",
@@ -116,9 +118,11 @@ static char *mksquashfs_args[]={
 	/* compression options */
 	"", "", "<block-size>", "<comp>", "", "", "", "", "", "", "", "", "",
 	/* build options */
-	"", "", "", "", "", "", "", "<time>", "<time>", "<time>", "<mode>",
-	"<value>", "<value>", "", "<mode>", "<mode>", "<value>", "<value>",
-	"<value>", "", "", "", "", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "","",
+	"", "",
+	/* time and permissions options */
+	"<time>", "<time>", "<time>", "<mode>", "<value>", "<value>", "",
+	"<mode>", "<mode>", "<value>", "<value>", "<value>", "", "", "",
 	/* filter options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode uid gid>",
 	"<pseudo-file>", "<sort-file>", "<exclude-file>", "", "", "<levels>",
@@ -170,7 +174,7 @@ static char *sqfstar_args[]={
 };
 
 static char *mksquashfs_sections[]={
-	"compression", "build", "filter", "xattrs", "runtime", "append",
+	"compression", "build", "time", "filter", "xattrs", "runtime", "append",
 	"actions", "tar", "expert", "help", "misc", "pseudo", "symbolic",
 	"environment", "exit", "extra", NULL
 };
@@ -210,24 +214,39 @@ static char *mksquashfs_text[]={
 	"-reproducible\t\tbuild filesystems that are reproducible" REP_STR "\n",
 	"-not-reproducible\tbuild filesystems that are not reproducible"
 		NOREP_STR "\n",
+	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
+		"-force-uid and -force-gid options\n",
+	"-no-exports\t\tdo not make filesystem exportable via NFS (-tar "
+		"default)\n",
+	"-exports\t\tmake filesystem exportable via NFS (default)\n",
+	"-no-sparse\t\tdo not detect sparse files\n",
+	"-no-tailends\t\tdo not pack tail ends into fragments (default)\n",
+	"-tailends\t\tpack tail ends into fragments\n",
+	"-no-fragments\t\tdo not use fragments\n",
+	"-no-duplicates\t\tdo not perform duplicate checking\n",
+	"-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n",
+	"-keep-as-directory\tif one source directory is specified, create a "
+		"root directory containing that directory, rather than the "
+		"contents of the directory\n",
+	"\n", "Time and permissions options:", "\n",
 	"-mkfs-time <time>\tset filesystem creation timestamp to <time>. "
 		"<time> can be an unsigned 32-bit int indicating seconds since "
 		"the epoch (1970-01-01) or a string value which is passed to "
 		"the \"date\" command to parse. Any string value which the "
 		"date command recognises can be used such as \"now\", \"last "
-		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
+		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
 	"-all-time <time>\tset all file and directory timestamps to <time>. "
 		"<time> can be an unsigned 32-bit int indicating seconds since "
 		"the epoch (1970-01-01) or a string value which is passed to "
 		"the \"date\" command to parse. Any string value which the "
 		"date command recognises can be used such as \"now\", \"last "
-		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
+		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
 	"-root-time <time>\tset root directory time to <time>. <time> can be "
 		"an unsigned 32-bit int indicating seconds since the epoch "
 		"(1970-01-01) or a string value which is passed to the "
 		"\"date\" command to parse. Any string value which the date "
 		"command recognises can be used such as \"now\", \"last "
-		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
+		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "
 		"can be symbolic or octal (see section Symbolic mode "
 		"specification).  Default root mode is ugo=rwx or 0777 octal\n",
@@ -247,20 +266,6 @@ static char *mksquashfs_text[]={
 	"-force-gid <value>\tset all file and directory gids to specified "
 		"<value>, <value> can be either an integer gid or group name\n",
 	"-uid-gid-offset <value>\toffset all uid and gids by specified <value>\n",
-	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
-		"-force-uid and -force-gid options\n",
-	"-no-exports\t\tdo not make filesystem exportable via NFS (-tar "
-		"default)\n",
-	"-exports\t\tmake filesystem exportable via NFS (default)\n",
-	"-no-sparse\t\tdo not detect sparse files\n",
-	"-no-tailends\t\tdo not pack tail ends into fragments (default)\n",
-	"-tailends\t\tpack tail ends into fragments\n",
-	"-no-fragments\t\tdo not use fragments\n",
-	"-no-duplicates\t\tdo not perform duplicate checking\n",
-	"-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n",
-	"-keep-as-directory\tif one source directory is specified, create a "
-		"root directory containing that directory, rather than the "
-		"contents of the directory\n",
 	"\n", "Filesystem filter options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition "
 		"should be quoted.  See section \"Pseudo file definition "
