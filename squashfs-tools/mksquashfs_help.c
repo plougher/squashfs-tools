@@ -47,10 +47,12 @@ static char *mksquashfs_options[]={
 	"-no-exports", "-exports", "-no-sparse", "-no-tailends", "-tailends",
 	"-no-fragments", "-no-duplicates", "-no-hardlinks",
 	"-keep-as-directory", "", "", "",
-	/* time and permissions options */
-	"-mkfs-time", "-all-time", "-root-time", "-root-mode", "-root-uid",
-	"-root-gid", "-all-root", "-force-file-mode", "-force-dir-mode",
-	"-force-uid", "-force-gid", "-uid-gid-offset", "", "", "",
+	/* time options */
+	"-mkfs-time", "-all-time", "-root-time", "", "", "",
+	/* permissions options */
+	"-root-mode", "-root-uid", "-root-gid",
+	"-all-root", "-force-file-mode", "-force-dir-mode", "-force-uid",
+	"-force-gid", "-uid-gid-offset", "", "", "",
 	/* filter section */
 	"-p", "-pd", "-pd", "-pf", "-sort", "-ef", "-wildcards", "-regex",
 	"-max-depth", "-one-file-system", "-one-file-system-x", "", "", "",
@@ -120,9 +122,11 @@ static char *mksquashfs_args[]={
 	/* build options */
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "","",
 	"", "",
-	/* time and permissions options */
-	"<time>", "<time>", "<time>", "<mode>", "<value>", "<value>", "",
-	"<mode>", "<mode>", "<value>", "<value>", "<value>", "", "", "",
+	/* time options */
+	"<time>", "<time>", "<time>", "", "", "",
+	/* permissions options */
+	"<mode>", "<value>", "<value>", "", "<mode>", "<mode>", "<value>",
+	"<value>", "<value>", "", "", "",
 	/* filter options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode uid gid>",
 	"<pseudo-file>", "<sort-file>", "<exclude-file>", "", "", "<levels>",
@@ -174,9 +178,9 @@ static char *sqfstar_args[]={
 };
 
 static char *mksquashfs_sections[]={
-	"compression", "build", "time", "filter", "xattrs", "runtime", "append",
-	"actions", "tar", "expert", "help", "misc", "pseudo", "symbolic",
-	"environment", "exit", "extra", NULL
+	"compression", "build", "time", "perms", "filter", "xattrs", "runtime",
+	"append", "actions", "tar", "expert", "help", "misc", "pseudo",
+	"symbolic", "environment", "exit", "extra", NULL
 };
 
 static char *sqfstar_sections[]={
@@ -228,7 +232,7 @@ static char *mksquashfs_text[]={
 	"-keep-as-directory\tif one source directory is specified, create a "
 		"root directory containing that directory, rather than the "
 		"contents of the directory\n",
-	"\n", "Time and permissions options:", "\n",
+	"\n", "Filesystem time options:", "\n",
 	"-mkfs-time <time>\tset filesystem creation timestamp to <time>. "
 		"<time> can be an unsigned 32-bit int indicating seconds since "
 		"the epoch (1970-01-01) or a string value which is passed to "
@@ -247,6 +251,7 @@ static char *mksquashfs_text[]={
 		"\"date\" command to parse. Any string value which the date "
 		"command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
+	"\n", "Filesystem permissions options:", "\n",
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "
 		"can be symbolic or octal (see section Symbolic mode "
 		"specification).  Default root mode is ugo=rwx or 0777 octal\n",
