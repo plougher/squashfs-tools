@@ -120,8 +120,9 @@ static char *mksquashfs_args[]={
 	"<value>", "<value>", "", "<mode>", "<mode>", "<value>", "<value>",
 	"<value>", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	/* filter options */
-	"", "<d mode uid gid>", "<D time mode uid gid>", "<pseudo-file>",
-	"<sort-file>", "<exclude-file>", "", "", "<levels>", "", "", "", "", "",
+	"<pseudo-definition>", "<d mode uid gid>", "<D time mode uid gid>",
+	"<pseudo-file>", "<sort-file>", "<exclude-file>", "", "", "<levels>",
+	"", "", "", "", "",
 	/* xattrs options */
 	"", "", "<regex>", "<regex>", "<name=val>", "", "", "",
 	/* runtime options */
