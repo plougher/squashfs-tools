@@ -74,13 +74,21 @@ static char *sqfscat_options[]={
 };
 
 static char *unsquashfs_args[]={
+	/* extraction options */
 	"", "", "", "", "", "", "<file>", "<file>", "", "", "", "", "",
-	"<time>", "", "", "<file>", "", "", "", "", "<levels>", "", "",
-	"", "", "", "", "", "", "", "", "", "", "", "", "", "<regex>",
-	"<regex>", "", "", "", "", "<number>", "<size>", "<percent>",
-	"", "", "", "", "", "", "", "", "", "", "<regex>", "<section>", "",
-	"<regex>", "<section>", "", "", "", "", "<bytes>", "", "<extract file>",
-	"<exclude file>", "", "<file>", "", "", "",
+	"<time>", "", "", "<file>", "", "", "",
+	/* information options */
+	"", "<levels>", "", "", "", "", "", "", "", "", "", "", "", "", "",
+	/* xattrs options */
+	"", "", "<regex>", "<regex>", "", "", "",
+	/* runtime options */
+	"", "<number>", "<size>", "<percent>", "", "", "", "", "", "", "", "",
+	"",
+	/* help options */
+	"", "<regex>", "<section>", "", "<regex>", "<section>", "", "", "", "",
+	/* misc options */
+	"<bytes>", "", "<extract file>", "<exclude file>", "", "<file>", "",
+	"", "",
 };
 
 static char *sqfscat_args[]={
