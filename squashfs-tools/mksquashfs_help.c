@@ -38,10 +38,10 @@
 #define SQFSTAR_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [list of exclude dirs/files]\n\n"
 
 static char *mksquashfs_options[]={
-	/* compression section */
+	/* compression options */
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
 	"-no-compression", "", "", "",
-	/* build section */
+	/* build options */
 	"-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
 	"-reproducible", "-not-reproducible", "-pseudo-override",
 	"-no-exports", "-exports", "-no-sparse", "-no-tailends", "-tailends",
@@ -53,13 +53,15 @@ static char *mksquashfs_options[]={
 	"-root-mode", "-root-uid", "-root-gid",
 	"-all-root", "-force-file-mode", "-force-dir-mode", "-force-uid",
 	"-force-gid", "-uid-gid-offset", "", "", "",
-	/* filter section */
-	"-p", "-pd", "-pd", "-pf", "-sort", "-ef", "-wildcards", "-regex",
-	"-max-depth", "-one-file-system", "-one-file-system-x", "", "", "",
-	/* xattrs section */
+	/* pseudo options */
+	"-p", "-pd", "-pd", "-pf", "", "", "",
+	/* filter options */
+	"-sort", "-ef", "-wildcards", "-regex", "-max-depth", "-one-file-system",
+	"-one-file-system-x", "", "", "",
+	/* xattrs options */
 	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include",
 	"-xattrs-add", "", "", "",
-	/* runtime section */
+	/* runtime options */
 	"-version", "-exit-on-error", "-quiet", "-info", "-info-file",
 	"-no-progress", "-progress", "-percentage", "-throttle", "-limit",
 	"-processors", "-mem", "-mem-percent", "-mem-default",
@@ -127,10 +129,11 @@ static char *mksquashfs_args[]={
 	/* permissions options */
 	"<mode>", "<value>", "<value>", "", "<mode>", "<mode>", "<value>",
 	"<value>", "<value>", "", "", "",
-	/* filter options */
+	/* pseudo options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode uid gid>",
-	"<pseudo-file>", "<sort-file>", "<exclude-file>", "", "", "<levels>",
-	"", "", "", "", "",
+	"<pseudo-file>", "", "", "",
+	/* filter options */
+	"<sort-file>", "<exclude-file>", "", "", "<levels>", "", "", "", "", "",
 	/* xattrs options */
 	"", "", "<regex>", "<regex>", "<name=val>", "", "", "",
 	/* runtime options */
@@ -178,9 +181,9 @@ static char *sqfstar_args[]={
 };
 
 static char *mksquashfs_sections[]={
-	"compression", "build", "time", "perms", "filter", "xattrs", "runtime",
-	"append", "actions", "tar", "expert", "help", "misc", "pseudo",
-	"symbolic", "environment", "exit", "extra", NULL
+	"compression", "build", "time", "perms", "pseudo", "filter", "xattrs",
+	"runtime", "append", "actions", "tar", "expert", "help", "misc",
+	"pseudo-defs", "symbolic", "environment", "exit", "extra", NULL
 };
 
 static char *sqfstar_sections[]={
@@ -271,7 +274,7 @@ static char *mksquashfs_text[]={
 	"-force-gid <value>\tset all file and directory gids to specified "
 		"<value>, <value> can be either an integer gid or group name\n",
 	"-uid-gid-offset <value>\toffset all uid and gids by specified <value>\n",
-	"\n", "Filesystem filter options:", "\n",
+	"\n", "Filesystem pseudo options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition "
 		"should be quoted.  See section \"Pseudo file definition "
 		"format\" for format details\n",
@@ -287,6 +290,7 @@ static char *mksquashfs_text[]={
 	"-pf <pseudo-file>\tadd list of pseudo file definitions from "
 		"<pseudo-file>, use - for stdin.  Pseudo file definitions "
 		"should not be quoted\n",
+	"\n", "Filesystem filter options:", "\n",
 	"-sort <sort-file>\tsort files according to priorities in <sort-file>."
 		"  One file or dir with priority per line.  Priority -32768 "
 		"to 32767, default priority 0\n",
