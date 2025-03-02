@@ -92,9 +92,13 @@ static char *unsquashfs_args[]={
 };
 
 static char *sqfscat_args[]={
+	/* runtime options */
 	"", "", "", "<number>", "<size>", "<percent>", "<bytes>", "", "", "",
-	"", "", "", "", "", "", "", "", "", "<regex>", "<section>", "",
-	"<regex>", "<section>", ""
+	"", "", "",
+	/* filter options */
+	"", "", "", "", "",
+	/* help options */
+	"", "<regex>", "<section>", "", "<regex>", "<section>", ""
 };
 
 static char *unsquashfs_sections[]={
