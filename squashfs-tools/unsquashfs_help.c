@@ -39,18 +39,27 @@
 	"cat to stdout]\n\n"
 
 static char *unsquashfs_options[]={
+	/* extraction options */
 	"", "", "-dest", "-max-depth", "-excludes", "-exclude-list",
 	"-extract-file", "-exclude-file", "-match", "-follow-symlinks",
 	"-missing-symlinks", "-no-wildcards", "-regex", "-all-time",
-	"-cat", "-force", "-pf", "", "", "", "-stat", "-max-depth",
-	"-info", "-linfo", "-ls", "-lls", "-llnumeric", "-lc", "-llc",
-	"-full-precision", "-UTC", "-mkfs-time", "", "", "", "-no-xattrs",
-	"-xattrs", "-xattrs-exclude", "-xattrs-include", "", "", "", "-version",
-	"-processors", "-mem", "-mem-percent", "-quiet", "-no-progress",
-	"-percentage", "-ignore-errors", "-strict-errors", "-no-exit-code",
-	"", "", "", "-help", "-help-option", "-help-section", "-help-all",
-	"-ho", "-hs", "-ha", "", "", "", "-offset", "-fstime", "-ef", "-excf",
-	"-L", "-pseudo-file", "", "", "", NULL,
+	"-cat", "-force", "-pf", "", "", "",
+	/* information options */
+	"-stat", "-max-depth", "-info", "-linfo", "-ls", "-lls", "-llnumeric",
+	"-lc", "-llc", "-full-precision", "-UTC", "-mkfs-time", "", "", "",
+	/* xattrs options */
+	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include", "", "",
+	"",
+	/* runtime options */
+	"-version", "-processors", "-mem", "-mem-percent", "-quiet",
+	"-no-progress", "-percentage", "-ignore-errors", "-strict-errors",
+	"-no-exit-code", "", "", "",
+	/* help options */
+	"-help", "-help-option", "-help-section", "-help-all", "-ho", "-hs",
+	"-ha", "", "", "",
+	/* misc options */
+	"-offset", "-fstime", "-ef", "-excf", "-L", "-pseudo-file", "", "", "",
+	NULL,
 };
 
 static char *sqfscat_options[]={ "", "", "-version", "-processors", "-mem",
