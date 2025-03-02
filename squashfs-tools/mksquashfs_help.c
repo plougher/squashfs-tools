@@ -145,17 +145,27 @@ static char *mksquashfs_args[]={
 };
 
 static char *sqfstar_args[]={
+	/* compression */
 	"", "", "<block-size>", "<comp>",  "", "", "", "", "", "", "", "", "",
+	/* build options */
 	"", "", "<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
-	"", "<mode>", "<mode>", "<value>", "<value>", "<value>", "<mode>", "<value>",
-	"<value>", "", "", "", "", "", "", "", "", "", "",
+	"", "<mode>", "<mode>", "<value>", "<value>", "<value>", "<mode>",
+	"<value>", "<value>", "", "", "", "", "", "", "", "", "", "",
+	/* filter options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode u g>",
-	"<pseudo-file>", "<exclude-file>", "", "", "", "", "", "", "",
-	"<regex>", "<regex>", "<name=val>", "", "","", "", "", "", "", "",
-	"<file>", "", "", "", "<percentage>", "<percentage>", "<number>",
-	"<size>", "<percent>", "", "", "", "", "", "<offset>", "<offset>", "",
-	"", "", "", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
-	"<section>", "" "", "", "", "<time>", "", "", "", "", "", "", ""
+	"<pseudo-file>", "<exclude-file>", "", "", "", "", "",
+	/* xattr options */
+	"", "", "<regex>", "<regex>", "<name=val>", "", "","",
+	/* runtime options */
+	"", "", "", "", "", "<file>", "", "", "", "<percentage>",
+	"<percentage>", "<number>", "<size>", "<percent>", "", "", "", "",
+	/* expert options */
+	"", "<offset>", "<offset>", "", "", "",
+	/* help options */
+	"", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
+	"<section>", "" "", "", "",
+	/* misc options */
+	"<time>", "", "", "", "", "", "", ""
 };
 
 static char *mksquashfs_sections[]={
