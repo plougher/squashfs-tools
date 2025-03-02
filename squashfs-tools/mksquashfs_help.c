@@ -38,32 +38,47 @@
 #define SQFSTAR_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [list of exclude dirs/files]\n\n"
 
 static char *mksquashfs_options[]={
+	/* compression section */
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
-	"-no-compression", "", "", "", "-tar", "-no-strip", "-tarstyle",
-	"-cpiostyle", "-cpiostyle0", "-reproducible", "-not-reproducible",
-	"-mkfs-time", "-all-time", "-root-time", "-root-mode", "-root-uid",
-	"-root-gid", "-all-root", "-force-file-mode", "-force-dir-mode",
-	"-force-uid", "-force-gid", "-uid-gid-offset", "-pseudo-override", "-no-exports",
-	"-exports", "-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
+	"-no-compression", "", "", "",
+	/* build section */
+	"-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
+	"-reproducible", "-not-reproducible", "-mkfs-time", "-all-time",
+	"-root-time", "-root-mode", "-root-uid", "-root-gid", "-all-root",
+	"-force-file-mode", "-force-dir-mode", "-force-uid", "-force-gid",
+	"-uid-gid-offset", "-pseudo-override", "-no-exports", "-exports",
+	"-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
 	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "",
+	/* filter section */
 	"-p", "-pd", "-pd", "-pf", "-sort", "-ef", "-wildcards", "-regex",
 	"-max-depth", "-one-file-system", "-one-file-system-x", "", "", "",
+	/* xattrs section */
 	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include",
-	"-xattrs-add", "", "", "", "-version", "-exit-on-error", "-quiet",
-	"-info", "-info-file", "-no-progress", "-progress", "-percentage",
-	"-throttle", "-limit", "-processors", "-mem", "-mem-percent",
-	"-mem-default", "-single-reader", "-small-readers", "-block-readers",
-	"", "", "", "-noappend", "-root-becomes",
-	"-no-recovery", "-recovery-path", "-recover", "", "", "", "-action",
-	"-log-action", "-true-action", "-false-action", "-action-file",
-	"-log-action-file", "-true-action-file", "-false-action-file", "", "",
-	"", "-default-mode", "-default-uid", "-default-gid", "-ignore-zeros",
-	"", "", "", "-nopad", "-offset", "-o", "", "", "", "-help",
-	"-help-option", "-help-section", "-help-comp", "-help-all", "-Xhelp",
-	"-h", "-ho", "-hs", "-ha", "", "", "", "-fstime",
-	"-always-use-fragments", "-root-owned", "-noInodeCompression",
-	"-noIdTableCompression", "-noDataCompression", "-noFragmentCompression",
-	 "-noXattrCompression", "-pseudo-dir", NULL,
+	"-xattrs-add", "", "", "",
+	/* runtime section */
+	"-version", "-exit-on-error", "-quiet", "-info", "-info-file",
+	"-no-progress", "-progress", "-percentage", "-throttle", "-limit",
+	"-processors", "-mem", "-mem-percent", "-mem-default",
+	"-single-reader", "-small-readers", "-block-readers", "", "", "",
+	/* append options */
+	"-noappend", "-root-becomes", "-no-recovery", "-recovery-path",
+	"-recover", "", "", "",
+	/* actions options */
+	"-action", "-log-action", "-true-action", "-false-action",
+	"-action-file", "-log-action-file", "-true-action-file",
+	"-false-action-file", "", "", "",
+	/* tar options */
+	"-default-mode", "-default-uid", "-default-gid", "-ignore-zeros", "",
+	"", "",
+	/* expert options */
+	"-nopad", "-offset", "-o", "", "", "",
+	/* help options */
+	"-help", "-help-option", "-help-section", "-help-comp", "-help-all",
+	"-Xhelp", "-h", "-ho", "-hs", "-ha", "", "", "",
+	/* misc options */
+	"-fstime", "-always-use-fragments", "-root-owned",
+	"-noInodeCompression", "-noIdTableCompression", "-noDataCompression",
+	"-noFragmentCompression", "-noXattrCompression", "-pseudo-dir", NULL,
 };
 
 static char *sqfstar_options[]={
