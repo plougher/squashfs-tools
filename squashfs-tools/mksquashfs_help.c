@@ -126,7 +126,7 @@ static char *mksquashfs_args[]={
 	/* time options */
 	"<time>", "<time>", "<time>", "", "", "",
 	/* permissions options */
-	"", "<mode>", "<name>", "<group>", "<mode>", "<mode>", "<name>",
+	"", "<mode>", "<user>", "<group>", "<mode>", "<mode>", "<user>",
 	"<group>", "<value>", "", "", "",
 	/* pseudo options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode uid gid>",
@@ -256,8 +256,8 @@ static char *mksquashfs_text[]={
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "
 		"can be symbolic or octal (see section Symbolic mode "
 		"specification).  Default root mode is ugo=rwx or 0777 octal\n",
-	"-root-uid <name>\tset root directory owner to specified <name>, "
-		"<name> can be either an integer uid or user name\n",
+	"-root-uid <user>\tset root directory owner to specified <user>, "
+		"<user> can be either an integer uid or user name\n",
 	"-root-gid <group>\tset root directory group to specified <group>, "
 		"<group> can be either an integer gid or group name\n",
 	"-force-file-mode <mode>\tset all file (non-directory) permissions "
@@ -266,8 +266,8 @@ static char *mksquashfs_text[]={
 	"-force-dir-mode <mode>\tset all directory permissions to <mode>.  "
 		"<Mode> can be symbolic or octal (see section Symbolic mode "
 		"specification)\n",
-	"-force-uid <name>\tset all file and directory uids to specified "
-		"<name>, <name> can be either an integer uid or user name\n",
+	"-force-uid <user>\tset all file and directory uids to specified "
+		"<user>, <user> can be either an integer uid or user name\n",
 	"-force-gid <group>\tset all file and directory gids to specified "
 		"<group>, <group> can be either an integer gid or group name\n",
 	"-uid-gid-offset <value>\toffset all uid and gids by specified "
