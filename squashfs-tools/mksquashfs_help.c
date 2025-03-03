@@ -271,7 +271,7 @@ static char *mksquashfs_text[]={
 	"-force-gid <group>\tset all file and directory gids to specified "
 		"<group>, <group> can be either an integer gid or group name\n",
 	"-uid-gid-offset <value>\toffset all uid and gids by specified "
-		"<value>.  <value> should a positive integer\n",
+		"<value>.  <value> should be a positive integer\n",
 	"\n", "Filesystem pseudo options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition "
 		"should be quoted.  See section \"Pseudo file definition "
