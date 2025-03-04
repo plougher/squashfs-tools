@@ -166,8 +166,8 @@ static char *sqfstar_args[]={
 	/* time options */
 	"<time>", "<time>", "<time>", "", "", "",
 	/* permissions options */
-	"", "<mode>", "<value>", "<value>", "<mode>", "<mode>", "<value>",
-	"<value>", "<value>", "<mode>", "<value>", "<value>", "", "", "",
+	"", "<mode>", "<yser>", "<group>", "<mode>", "<mode>", "<user>",
+	"<group>", "<value>", "<mode>", "<user>", "<roup>", "", "", "",
 	/* pseudo options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode u g>",
 	"<pseudo-file>", "", "", "", "",
@@ -593,20 +593,20 @@ static char *sqfstar_text[]={
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "
 		"can be symbolic or octal (see section Symbolic mode "
 		"specification).  Default root mode is ugo=rwx or 0777 octal\n",
-	"-root-uid <value>\tset root directory owner to specified <value>, "
-		"<value> can be either an integer uid or user name\n",
-	"-root-gid <value>\tset root directory group to specified <value>, "
-		"<value> can be either an integer gid or group name\n",
+	"-root-uid <user>\tset root directory owner to specified <user>, "
+		"<user> can be either an integer uid or user name\n",
+	"-root-gid <group>\tset root directory group to specified <group>, "
+		"<group> can be either an integer gid or group name\n",
 	"-force-file-mode <mode>\tset all file (non-directory) permissions "
 		"to <mode>.  <Mode> can be symbolic or octal (see section "
 		"Symbolic mode specification)\n",
 	"-force-dir-mode <mode>\tset all directory permissions to <mode>.  "
 		"<Mode> can be symbolic or octal (see section Symbolic mode "
 		"specification)\n",
-	"-force-uid <value>\tset all file and directory uids to specified "
-		"<value>, <value> can be either an integer uid or user name\n",
-	"-force-gid <value>\tset all file and directory gids to specified "
-		"<value>, <value> can be either an integer gid or group name\n",
+	"-force-uid <user>\tset all file and directory uids to specified "
+		"<user>, <user> can be either an integer uid or user name\n",
+	"-force-gid <group>\tset all file and directory gids to specified "
+		"<group>, <group> can be either an integer gid or group name\n",
 	"-uid-gid-offset <value>\toffset all uid and gids by specified <value>\n",
 	"-default-mode <mode>\ttar files often do not store permissions for "
 		"intermediate directories.  This option sets the default "
@@ -614,15 +614,15 @@ static char *sqfstar_text[]={
 		"octal (see section Symbolic mode specification).  Default "
 		"mode is u=rwx,go=rx or 0755 octal.  This also sets the root "
 		"directory mode\n",
-	"-default-uid <value>\ttar files often do not store uids for "
+	"-default-uid <user>\ttar files often do not store uids for "
 		"intermediate directories.  This option sets the default "
-		"directory owner to <value>, rather than the user running "
-		"Sqfstar.  <value> can be either an integer uid or user name.  "
+		"directory owner to <user>, rather than the user running "
+		"Sqfstar.  <user> can be either an integer uid or user name.  "
 		"This also sets the root directory uid\n",
-	"-default-gid <value>\ttar files often do not store gids for "
+	"-default-gid <group>\ttar files often do not store gids for "
 		"intermediate directories.  This option sets the default "
-		"directory group to <value>, rather than the group of the "
-		"user running Sqfstar.  <value> can be either an integer uid "
+		"directory group to <group>, rather than the group of the "
+		"user running Sqfstar.  <group> can be either an integer gid "
 		"or group name.  This also sets the root directory gid\n",
 	"\n", "Filesystem pseudo options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition "
