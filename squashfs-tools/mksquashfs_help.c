@@ -91,12 +91,16 @@ static char *sqfstar_options[]={
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
 	"-no-compression", "", "", "",
 	/* build options */
-	"-reproducible", "-not-reproducible", "-mkfs-time", "-all-time",
-	"-root-time", "-root-mode", "-root-uid", "-root-gid", "-all-root",
-	"-force-file-mode", "-force-dir-mode", "-force-uid", "-force-gid",
-	"-uid-gid-offset", "-default-mode", "-default-uid", "-default-gid",
+	"-reproducible", "-not-reproducible",
 	"-pseudo-override", "-exports", "-no-sparse", "-no-fragments",
 	"-no-tailends", "-no-duplicates", "-no-hardlinks", "", "", "",
+	/* time options */
+	"-mkfs-time", "-all-time", "-root-time", "", "", "",
+	/* permissions options */
+	"-root-mode", "-root-uid", "-root-gid", "-all-root",
+	"-force-file-mode", "-force-dir-mode", "-force-uid", "-force-gid",
+	"-uid-gid-offset", "-default-mode", "-default-uid", "-default-gid", "",
+	"", "",
 	/* filter options */
 	"-p", "-pd", "-pd", "-pf", "-ef", "-regex", "-ignore-zeros", "", "", "",
 	/* xattr options */
@@ -159,9 +163,12 @@ static char *sqfstar_args[]={
 	/* compression */
 	"", "", "<block-size>", "<comp>",  "", "", "", "", "", "", "", "", "",
 	/* build options */
-	"", "", "<time>", "<time>", "<time>", "<mode>", "<value>", "<value>",
-	"", "<mode>", "<mode>", "<value>", "<value>", "<value>", "<mode>",
-	"<value>", "<value>", "", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "", "", "",
+	/* time options */
+	"<time>", "<time>", "<time>", "", "", "",
+	/* permissions options */
+	"<mode>", "<value>", "<value>", "", "<mode>", "<mode>", "<value>",
+	"<value>", "<value>", "<mode>", "<value>", "<value>", "", "", "",
 	/* filter options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode u g>",
 	"<pseudo-file>", "<exclude-file>", "", "", "", "", "",
@@ -186,9 +193,9 @@ static char *mksquashfs_sections[]={
 };
 
 static char *sqfstar_sections[]={
-	"compression", "build", "filter", "xattrs", "runtime", "expert",
-	"help", "misc", "pseudo", "symbolic", "environment", "exit", "extra",
-	NULL
+	"compression", "build", "time", "perms", "filter", "xattrs", "runtime",
+	"expert", "help", "misc", "pseudo", "symbolic", "environment", "exit",
+	"extra", NULL
 };
 
 static char *mksquashfs_text[]={
@@ -549,6 +556,15 @@ static char *sqfstar_text[]={
 		"\n",
 	"-not-reproducible\tbuild filesystems that are not reproducible"
 		NOREP_STR "\n",
+	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
+		"-force-uid and -force-gid options\n",
+	"-exports\t\tmake the filesystem exportable via NFS\n",
+	"-no-sparse\t\tdo not detect sparse files\n",
+	"-no-fragments\t\tdo not use fragments\n",
+	"-no-tailends\t\tdo not pack tail ends into fragments\n",
+	"-no-duplicates\t\tdo not perform duplicate checking\n",
+	"-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n",
+	"\n", "Filesystem time options:", "\n",
 	"-mkfs-time <time>\tset filesystem creation timestamp to <time>. "
 		"<time> can be an unsigned 32-bit int indicating seconds since "
 		"the epoch (1970-01-01) or a string value which is passed to "
@@ -567,6 +583,7 @@ static char *sqfstar_text[]={
 		"\"date\" command to parse. Any string value which the date "
 		"command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
+	"\n", "Filesystem permissions options:", "\n",
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "
 		"can be symbolic or octal (see section Symbolic mode "
 		"specification).  Default root mode is ugo=rwx or 0777 octal\n",
@@ -602,14 +619,6 @@ static char *sqfstar_text[]={
 		"directory group to <value>, rather than the group of the "
 		"user running Sqfstar.  <value> can be either an integer uid "
 		"or group name.  This also sets the root directory gid\n",
-	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
-		"-force-uid and -force-gid options\n",
-	"-exports\t\tmake the filesystem exportable via NFS\n",
-	"-no-sparse\t\tdo not detect sparse files\n",
-	"-no-fragments\t\tdo not use fragments\n",
-	"-no-tailends\t\tdo not pack tail ends into fragments\n",
-	"-no-duplicates\t\tdo not perform duplicate checking\n",
-	"-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n",
 	"\n", "Filesystem filter options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition "
 		"should be quoted.  See section \"Pseudo file definition "
