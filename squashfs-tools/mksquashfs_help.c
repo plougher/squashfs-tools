@@ -91,10 +91,9 @@ static char *sqfstar_options[]={
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
 	"-no-compression", "", "", "",
 	/* build options */
-	"-reproducible", "-not-reproducible",
-	"-pseudo-override", "-exports", "-no-sparse", "-no-fragments",
-	"-no-tailends", "-no-duplicates", "-no-hardlinks", "-regex",
-	"-ignore-zeros", "-ef", "", "", "",
+	"-reproducible", "-not-reproducible", "-exports", "-no-sparse",
+	"-no-fragments", "-no-tailends", "-no-duplicates", "-no-hardlinks",
+	"-regex", "-ignore-zeros", "-ef", "", "", "",
 	/* time options */
 	"-mkfs-time", "-all-time", "-root-time", "", "", "",
 	/* permissions options */
@@ -102,9 +101,8 @@ static char *sqfstar_options[]={
 	"-force-file-mode", "-force-dir-mode", "-force-uid", "-force-gid",
 	"-uid-gid-offset", "-default-mode", "-default-uid", "-default-gid", "",
 	"", "",
-	/* filter options */
-	"-p", "-pd", "-pd", "-pf",
-	"", "", "",
+	/* pseudo options */
+	"-p", "-pd", "-pd", "-pf", "-pseudo-override", "", "", "",
 	/* xattr options */
 	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include",
 	"-xattrs-add", "", "","",
@@ -165,15 +163,15 @@ static char *sqfstar_args[]={
 	/* compression */
 	"", "", "<block-size>", "<comp>",  "", "", "", "", "", "", "", "", "",
 	/* build options */
-	"", "", "", "", "", "", "", "", "", "", "", "<exclude-file>", "", "", "",
+	"", "", "", "", "", "", "", "", "", "", "<exclude-file>", "", "", "",
 	/* time options */
 	"<time>", "<time>", "<time>", "", "", "",
 	/* permissions options */
 	"<mode>", "<value>", "<value>", "", "<mode>", "<mode>", "<value>",
 	"<value>", "<value>", "<mode>", "<value>", "<value>", "", "", "",
-	/* filter options */
+	/* pseudo options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode u g>",
-	"<pseudo-file>", "", "", "",
+	"<pseudo-file>", "", "", "", "",
 	/* xattr options */
 	"", "", "<regex>", "<regex>", "<name=val>", "", "","",
 	/* runtime options */
@@ -195,7 +193,7 @@ static char *mksquashfs_sections[]={
 };
 
 static char *sqfstar_sections[]={
-	"compression", "build", "time", "perms", "filter", "xattrs", "runtime",
+	"compression", "build", "time", "perms", "pseudo", "xattrs", "runtime",
 	"expert", "help", "misc", "pseudo", "symbolic", "environment", "exit",
 	"extra", NULL
 };
@@ -558,8 +556,6 @@ static char *sqfstar_text[]={
 		"\n",
 	"-not-reproducible\tbuild filesystems that are not reproducible"
 		NOREP_STR "\n",
-	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
-		"-force-uid and -force-gid options\n",
 	"-exports\t\tmake the filesystem exportable via NFS\n",
 	"-no-sparse\t\tdo not detect sparse files\n",
 	"-no-fragments\t\tdo not use fragments\n",
@@ -629,7 +625,7 @@ static char *sqfstar_text[]={
 		"directory group to <value>, rather than the group of the "
 		"user running Sqfstar.  <value> can be either an integer uid "
 		"or group name.  This also sets the root directory gid\n",
-	"\n", "Filesystem filter options:", "\n",
+	"\n", "Filesystem pseudo options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition "
 		"should be quoted.  See section \"Pseudo file definition "
 		"format\" for format details\n",
@@ -644,6 +640,8 @@ static char *sqfstar_text[]={
 		"specified in addition to mode, uid and gid\n",
 	"-pf <pseudo-file>\tadd list of pseudo file definitions.  Pseudo file "
 		"definitions in pseudo-files should not be quoted\n",
+	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
+		"-force-uid and -force-gid options\n",
 	"\n", "Filesystem extended attribute (xattrs) options:", "\n",
 	"-no-xattrs\t\tdo not store extended attributes" NOXOPT_STR "\n",
 	"-xattrs\t\t\tstore extended attributes" XOPT_STR "\n",
