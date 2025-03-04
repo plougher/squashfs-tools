@@ -607,7 +607,8 @@ static char *sqfstar_text[]={
 		"<user>, <user> can be either an integer uid or user name\n",
 	"-force-gid <group>\tset all file and directory gids to specified "
 		"<group>, <group> can be either an integer gid or group name\n",
-	"-uid-gid-offset <value>\toffset all uid and gids by specified <value>\n",
+	"-uid-gid-offset <value>\toffset all uid and gids by specified "
+		"<value>.  <value> should be a positive integer\n",
 	"-default-mode <mode>\ttar files often do not store permissions for "
 		"intermediate directories.  This option sets the default "
 		"directory permissions to <mode>.  <Mode> can be symbolic or "
