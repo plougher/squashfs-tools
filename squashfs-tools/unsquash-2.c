@@ -483,6 +483,8 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 				MEM_ERROR();
 
 			ent->name = strdup(dire->name);
+			if(ent->name == NULL)
+				MEM_ERROR();
 			ent->start_block = dirh.start_block;
 			ent->offset = dire->offset;
 			ent->type = dire->type;
