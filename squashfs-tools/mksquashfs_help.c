@@ -93,7 +93,8 @@ static char *sqfstar_options[]={
 	/* build options */
 	"-reproducible", "-not-reproducible",
 	"-pseudo-override", "-exports", "-no-sparse", "-no-fragments",
-	"-no-tailends", "-no-duplicates", "-no-hardlinks", "", "", "",
+	"-no-tailends", "-no-duplicates", "-no-hardlinks", "-regex",
+	"-ignore-zeros", "-ef", "", "", "",
 	/* time options */
 	"-mkfs-time", "-all-time", "-root-time", "", "", "",
 	/* permissions options */
@@ -102,7 +103,8 @@ static char *sqfstar_options[]={
 	"-uid-gid-offset", "-default-mode", "-default-uid", "-default-gid", "",
 	"", "",
 	/* filter options */
-	"-p", "-pd", "-pd", "-pf", "-ef", "-regex", "-ignore-zeros", "", "", "",
+	"-p", "-pd", "-pd", "-pf",
+	"", "", "",
 	/* xattr options */
 	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include",
 	"-xattrs-add", "", "","",
@@ -163,7 +165,7 @@ static char *sqfstar_args[]={
 	/* compression */
 	"", "", "<block-size>", "<comp>",  "", "", "", "", "", "", "", "", "",
 	/* build options */
-	"", "", "", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "", "", "<exclude-file>", "", "", "",
 	/* time options */
 	"<time>", "<time>", "<time>", "", "", "",
 	/* permissions options */
@@ -171,7 +173,7 @@ static char *sqfstar_args[]={
 	"<value>", "<value>", "<mode>", "<value>", "<value>", "", "", "",
 	/* filter options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode u g>",
-	"<pseudo-file>", "<exclude-file>", "", "", "", "", "",
+	"<pseudo-file>", "", "", "",
 	/* xattr options */
 	"", "", "<regex>", "<regex>", "<name=val>", "", "","",
 	/* runtime options */
@@ -564,6 +566,14 @@ static char *sqfstar_text[]={
 	"-no-tailends\t\tdo not pack tail ends into fragments\n",
 	"-no-duplicates\t\tdo not perform duplicate checking\n",
 	"-no-hardlinks\t\tdo not hardlink files, instead store duplicates\n",
+	"-regex\t\t\tallow POSIX regular expressions to be used in exclude "
+		"dirs/files\n",
+	"-ignore-zeros\t\tallow tar files to be concatenated together and fed "
+		"to Sqfstar.  Normally a tarfile has two consecutive 512 byte "
+		"blocks filled with zeros which means EOF and Sqfstar will "
+		"stop reading after the first tar file on encountering them. "
+		"This option makes Sqfstar ignore the zero filled blocks\n",
+	"-ef <exclude-file>\tlist of exclude dirs/files.  One per line\n",
 	"\n", "Filesystem time options:", "\n",
 	"-mkfs-time <time>\tset filesystem creation timestamp to <time>. "
 		"<time> can be an unsigned 32-bit int indicating seconds since "
@@ -634,14 +644,6 @@ static char *sqfstar_text[]={
 		"specified in addition to mode, uid and gid\n",
 	"-pf <pseudo-file>\tadd list of pseudo file definitions.  Pseudo file "
 		"definitions in pseudo-files should not be quoted\n",
-	"-ef <exclude-file>\tlist of exclude dirs/files.  One per line\n",
-	"-regex\t\t\tallow POSIX regular expressions to be used in exclude "
-		"dirs/files\n",
-	"-ignore-zeros\t\tallow tar files to be concatenated together and fed "
-		"to Sqfstar.  Normally a tarfile has two consecutive 512 byte "
-		"blocks filled with zeros which means EOF and Sqfstar will "
-		"stop reading after the first tar file on encountering them. "
-		"This option makes Sqfstar ignore the zero filled blocks\n",
 	"\n", "Filesystem extended attribute (xattrs) options:", "\n",
 	"-no-xattrs\t\tdo not store extended attributes" NOXOPT_STR "\n",
 	"-xattrs\t\t\tstore extended attributes" XOPT_STR "\n",
