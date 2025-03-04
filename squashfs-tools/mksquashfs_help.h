@@ -3,7 +3,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2024
+ * Copyright (c) 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or

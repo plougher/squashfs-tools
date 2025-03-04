@@ -2,7 +2,7 @@
  * Read a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2013, 2019, 2021, 2022
+ * Copyright (c) 2010, 2012, 2013, 2019, 2021, 2022, 2023
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
