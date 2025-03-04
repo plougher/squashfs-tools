@@ -71,9 +71,9 @@ static void print_filename()
 		return;
 
 	if(dir_ent->our_dir->subpath[0] != '\0')
-		INFO("%s/%s\n", dir_ent->our_dir->subpath, dir_ent->name);
+		progressbar_info("%s/%s\n", dir_ent->our_dir->subpath, dir_ent->name);
 	else
-		INFO("/%s\n", dir_ent->name);
+		progressbar_info("/%s\n", dir_ent->name);
 }
 
 
