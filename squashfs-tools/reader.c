@@ -1035,11 +1035,11 @@ void check_min_memory(int rmbytes, int wmbytes, int block_log)
 	int rblocks = rmbytes << (20 - block_log);
 	int wblocks = wmbytes << (20 - block_log);
 	int per_rthread = rblocks / reader_threads;
-	int total_fwthread = (processors + 1) * fragment_threads;
+	int total_fwthread = processors * fragment_threads;
 	int per_wthread = (wblocks - total_fwthread) / block_threads;
 
-	if(per_wthread < (processors + 1) || per_rthread < BLOCKS_MIN) {
-		int twblocks = total_fwthread + (processors + 1) * block_threads;
+	if(per_wthread < processors || per_rthread < BLOCKS_MIN) {
+		int twblocks = total_fwthread + processors * block_threads;
 		int twmbytes = twblocks >> (20 - block_log) ? : 1;
 		int twmin_mem = twmbytes * SQUASHFS_BWRITEQ_MEM;
 		int trblocks = BLOCKS_MIN * reader_threads;
