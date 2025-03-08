@@ -10,18 +10,25 @@ ifndef CONFIG
 ###############################################
 #            Compression algorithms           #
 ###############################################
-
+#
+# All of the compression algorithms (gzip, lzo, lz4, xz and zstd) are
+# by default selected to be built.
+#
+# To unselect an algorithm comment out the XXX_SUPPORT = 1 line.
+#
+# Obviously you may need to install the compression algorithm devel
+# packages, otherwise the build will fail.
+#
 ############# Building gzip support ###########
 #
-# Gzip support is by default enabled, and the compression type default
-# (COMP_DEFAULT) is gzip.
+# The compression type default (COMP_DEFAULT) is gzip.
 #
 # If you don't want/need gzip support then comment out the GZIP SUPPORT line
 # below, and change COMP_DEFAULT to one of the compression types you have
 # selected.
 #
-# Obviously, you must select at least one of the available gzip, xz, lzo,
-# lz4, zstd or lzma (deprecated) compression types.
+# Obviously at least one of the compression types must be built and selected
+# as the default compression type.
 #
 GZIP_SUPPORT = 1
 
@@ -35,10 +42,8 @@ GZIP_SUPPORT = 1
 # supported by most modern distributions.  Please refer to
 # your distribution package manager.
 #
-# To build install the library and uncomment
-# the XZ_SUPPORT line below.
-#
-#XZ_SUPPORT = 1
+# To skip building ZX support comment out the line below.
+XZ_SUPPORT = 1
 
 # Enable support for OpenWrt extended compression options by uncommenting
 # next line.  Do not do this unless you understand the implications.
@@ -53,10 +58,8 @@ GZIP_SUPPORT = 1
 # supported by most modern distributions.  Please refer to
 # your distribution package manager.
 #
-# To build install the library and uncomment
-# the LZO_SUPPORT line below.
-#
-#LZO_SUPPORT = 1
+# To skip building LZO support comment out the line below.
+LZO_SUPPORT = 1
 
 
 ########### Building LZ4 support #############
@@ -69,10 +72,8 @@ GZIP_SUPPORT = 1
 # supported by most modern distributions.  Please refer to
 # your distribution package manager.
 #
-# To build install and uncomment
-# the LZ4_SUPPORT line below.
-#
-#LZ4_SUPPORT = 1
+# To skip building LZ4 support comment out the line below.
+LZ4_SUPPORT = 1
 
 
 ########### Building ZSTD support ############
@@ -85,10 +86,8 @@ GZIP_SUPPORT = 1
 # supported by most modern distributions.  Please refer to
 # your distribution package manager.
 #
-# To build install the library and uncomment
-# the ZSTD_SUPPORT line below.
-#
-#ZSTD_SUPPORT = 1
+# To skip building ZSTD support comment out the line below.
+ZSTD_SUPPORT = 1
 
 
 ######## Specifying default compression ########
@@ -231,10 +230,10 @@ INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
 #LZMA_DIR = ../../../../LZMA/lzma465
 else
 GZIP_SUPPORT ?= 1
-XZ_SUPPORT ?= 0
-LZO_SUPPORT ?= 0
-LZ4_SUPPORT ?= 0
-ZSTD_SUPPORT ?= 0
+XZ_SUPPORT ?= 1
+LZO_SUPPORT ?= 1
+LZ4_SUPPORT ?= 1
+ZSTD_SUPPORT ?= 1
 COMP_DEFAULT ?= gzip
 XATTR_SUPPORT ?= 1
 XATTR_OS_SUPPORT ?= 1
