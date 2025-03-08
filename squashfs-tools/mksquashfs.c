@@ -399,7 +399,8 @@ static void dir_scan3(struct dir_info *dir);
 static void dir_scan4(struct dir_info *dir, int symlink);
 static void dir_scan5(struct dir_info *dir);
 static void dir_scan6(struct dir_info *dir);
-static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info);
+static void dir_scan7(struct dir_info *dir);
+static void dir_scan8(squashfs_inode *inode, struct dir_info *dir_info);
 static struct dir_ent *scan1_readdir(struct dir_info *dir);
 static struct dir_ent *scan1_single_readdir(struct dir_info *dir);
 static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir);
@@ -3439,6 +3440,7 @@ static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pse
 		memcpy(&inode->symlink, symlink, bytes);
 	memcpy(&inode->buf, buf, sizeof(struct stat));
 	inode->scanned = FALSE;
+	inode->read = FALSE;
 	inode->root_entry = FALSE;
 	inode->pseudo = pseudo;
 	inode->inode = SQUASHFS_INVALID_BLK;
@@ -3659,8 +3661,10 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 
 	if(sorted)
 		sort_files_and_write(root_dir);
+	else if(!tarfile)
+		dir_scan7(root_dir);
 
-	dir_scan7(&inode, root_dir);
+	dir_scan8(&inode, root_dir);
 	dir_ent->inode->inode = inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 
@@ -4476,9 +4480,36 @@ static void dir_scan6(struct dir_info *dir)
 
 /*
  * dir_scan7 routines...
+ * This writes out the file data to the destination
+ */
+static void dir_scan7(struct dir_info *dir)
+{
+	struct dir_ent *dir_ent;
+	int duplicate_file;
+
+	for(dir_ent = dir->list; dir_ent; dir_ent = dir_ent->next) {
+		struct inode_info *inode = dir_ent->inode;
+
+		if(inode->root_entry)
+			continue;
+		else if(S_ISREG(inode->buf.st_mode) && inode->read == FALSE) {
+			inode->file = write_file(dir_ent, &duplicate_file);
+			inode->read = TRUE;
+			INFO("file %s, uncompressed size %lld " "bytes %s\n",
+				subpathname(dir_ent), (long long)
+				inode->buf.st_size, duplicate_file ?
+				"DUPLICATE" : "");
+		} else if(S_ISDIR(inode->buf.st_mode))
+			dir_scan7(dir_ent->dir);
+	}
+}
+
+
+/*
+ * dir_scan8 routines...
  * This generates the filesystem metadata and writes it out to the destination
  */
-static void scan7_init_dir(struct directory *dir)
+static void scan8_init_dir(struct directory *dir)
 {
 	dir->buff = MALLOC(SQUASHFS_METADATA_SIZE);
 	dir->size = SQUASHFS_METADATA_SIZE;
@@ -4492,7 +4523,7 @@ static void scan7_init_dir(struct directory *dir)
 }
 
 
-static struct dir_ent *scan7_readdir(struct directory *dir, struct dir_info *dir_info,
+static struct dir_ent *scan8_readdir(struct directory *dir, struct dir_info *dir_info,
 	struct dir_ent *dir_ent)
 {
 	if (dir_ent == NULL)
@@ -4508,7 +4539,7 @@ static struct dir_ent *scan7_readdir(struct directory *dir, struct dir_info *dir
 }
 
 
-static void scan7_freedir(struct directory *dir)
+static void scan8_freedir(struct directory *dir)
 {
 	if(dir->index)
 		free(dir->index);
@@ -4516,17 +4547,16 @@ static void scan7_freedir(struct directory *dir)
 }
 
 
-static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
+static void dir_scan8(squashfs_inode *inode, struct dir_info *dir_info)
 {
 	int squashfs_type;
-	int duplicate_file;
 	struct directory dir;
 	struct dir_ent *dir_ent = NULL;
 	struct file_info *file;
 	
-	scan7_init_dir(&dir);
+	scan8_init_dir(&dir);
 	
-	while((dir_ent = scan7_readdir(&dir, dir_info, dir_ent)) != NULL) {
+	while((dir_ent = scan8_readdir(&dir, dir_info, dir_ent)) != NULL) {
 		struct stat *buf = &dir_ent->inode->buf;
 
 		update_info(dir_ent);
@@ -4534,17 +4564,10 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
 			switch(buf->st_mode & S_IFMT) {
 				case S_IFREG:
-					if(dir_ent->inode->tarfile && dir_ent->inode->tar_file->file)
+					if(dir_ent->inode->tarfile)
 						file = dir_ent->inode->tar_file->file;
-					else {
-						file = write_file(dir_ent, &duplicate_file);
-						INFO("file %s, uncompressed size %lld "
-							"bytes %s\n",
-							subpathname(dir_ent),
-							(long long) buf->st_size,
-							duplicate_file ?  "DUPLICATE" :
-							 "");
-					}
+					else
+						file = dir_ent->inode->file;
 					squashfs_type = SQUASHFS_FILE_TYPE;
 					*inode = create_inode(NULL, dir_ent,
 						squashfs_type, file->file_size,
@@ -4563,7 +4586,7 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 
 				case S_IFDIR:
 					squashfs_type = SQUASHFS_DIR_TYPE;
-					dir_scan7(inode, dir_ent->dir);
+					dir_scan8(inode, dir_ent->dir);
 					break;
 
 				case S_IFLNK:
@@ -4675,7 +4698,7 @@ static void dir_scan7(squashfs_inode *inode, struct dir_info *dir_info)
 	INFO("directory %s inode 0x%llx\n", subpathname(dir_info->dir_ent),
 		*inode);
 
-	scan7_freedir(&dir);
+	scan8_freedir(&dir);
 }
 
 

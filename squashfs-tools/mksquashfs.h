@@ -55,7 +55,10 @@ struct inode_info {
 	struct stat		buf;
 	struct inode_info	*next;
 	struct pseudo_dev	*pseudo;
-	struct tar_file		*tar_file;
+	union {
+		struct tar_file		*tar_file;
+		struct file_info	*file;
+	};
 	struct pseudo_xattr	*xattr;
 	squashfs_inode		inode;
 	unsigned int		inode_number;
@@ -68,10 +71,8 @@ struct inode_info {
 	char			noD;
 	char			noF;
 	char			tarfile;
-	union {
-		char		read;
-		char		scanned;
-	};
+	char			read;
+	char			scanned;
 	char			symlink[0];
 };
 
