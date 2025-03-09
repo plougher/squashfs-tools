@@ -3010,7 +3010,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 	long long read_size, file_bytes;
 	struct fragment *fragment;
 	unsigned int *block_list = NULL;
-	int block = 0, res;
+	int block = 0;
 	long long sparse = 0;
 	struct file_buffer *fragment_buffer = NULL;
 	struct file_info *file;
@@ -3083,18 +3083,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	res = reset_pos();
-	if(res && !block_device) {
-		int res;
-
-		queue_put(to_writer, NULL);
-		if(queue_get(from_writer) != 0)
-			EXIT_MKSQUASHFS();
-		res = ftruncate(fd, get_pos());
-		if(res != 0)
-			BAD_ERROR("Failed to truncate dest file because %s\n",
-				strerror(errno));
-	}
+	reset_and_truncate();
 	if(!reproducible)
 		unlock_fragments();
 	free(block_list);
@@ -3107,7 +3096,7 @@ read_err:
 static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_ent,
 	struct file_buffer *read_buffer, int *duplicate_file, int bl_hash)
 {
-	int block, thresh, res;
+	int block, thresh;
 	long long read_size = read_buffer->file_size;
 	long long file_bytes;
 	int blocks = (read_size + block_size - 1) >> block_log;
@@ -3209,18 +3198,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	res = reset_pos();
-	if(res && thresh && !block_device) {
-		int res;
-
-		queue_put(to_writer, NULL);
-		if(queue_get(from_writer) != 0)
-			EXIT_MKSQUASHFS();
-		res = ftruncate(fd, get_pos());
-		if(res != 0)
-			BAD_ERROR("Failed to truncate dest file because %s\n",
-				strerror(errno));
-	}
+	reset_and_truncate();
 	if(!reproducible)
 		unlock_fragments();
 	for(blocks = thresh; blocks < block; blocks ++)
@@ -3240,7 +3218,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 	long long file_bytes;
 	struct fragment *fragment;
 	unsigned int *block_list;
-	int block, res;
+	int block;
 	int blocks = (read_size + block_size - 1) >> block_log;
 	long long sparse = 0;
 	struct file_buffer *fragment_buffer = NULL;
@@ -3326,18 +3304,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	res = reset_pos();
-	if(res && !block_device) {
-		int res;
-
-		queue_put(to_writer, NULL);
-		if(queue_get(from_writer) != 0)
-			EXIT_MKSQUASHFS();
-		res = ftruncate(fd, get_pos());
-		if(res != 0)
-			BAD_ERROR("Failed to truncate dest file because %s\n",
-				strerror(errno));
-	}
+	reset_and_truncate();
 	if(!reproducible)
 		unlock_fragments();
 	free(block_list);
