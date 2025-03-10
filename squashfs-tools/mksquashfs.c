@@ -563,13 +563,6 @@ static inline long long get_marked_pos(void)
 }
 
 
-static inline long long set_write_buffer(struct file_buffer *buffer, int size)
-{
-	buffer->block = get_and_inc_pos(size);
-	return buffer->block;
-}
-
-
 static inline void put_write_buffer_hash(struct file_buffer *buffer)
 {
 	if(marked_pos == 0)
@@ -1795,7 +1788,8 @@ static void unlock_fragments()
 		write_buffer = queue_get(locked_fragment);
 		frg = write_buffer->block;	
 		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(fragment_table[frg].size);
-		fragment_table[frg].start_block = set_write_buffer(write_buffer, size);
+		write_buffer->block = get_and_inc_pos(size);
+		fragment_table[frg].start_block = write_buffer->block;
 		fragments_outstanding --;
 		queue_put(to_writer, write_buffer);
 		log_fragment(frg, fragment_table[frg].start_block);
@@ -2829,7 +2823,8 @@ static void *frag_deflator(void *arg)
 		pthread_mutex_lock(&fragment_mutex);
 		if(fragments_locked == FALSE) {
 			fragment_table[file_buffer->block].size = c_byte;
-			fragment_table[file_buffer->block].start_block = set_write_buffer(write_buffer, compressed_size);
+			write_buffer->block = get_and_inc_pos(compressed_size);
+			fragment_table[file_buffer->block].start_block = write_buffer->block;
 			fragments_outstanding --;
 			queue_put(to_writer, write_buffer);
 			log_fragment(file_buffer->block, fragment_table[file_buffer->block].start_block);
@@ -2894,7 +2889,8 @@ static void *frag_orderer(void *arg)
 		int block = write_buffer->block;
 
 		pthread_mutex_lock(&fragment_mutex);
-		fragment_table[block].start_block = set_write_buffer(write_buffer, SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
+		write_buffer->block = SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size;
+		fragment_table[block].start_block = write_buffer->block;
 		fragments_outstanding --;
 		log_fragment(block, write_buffer->block);
 		queue_put(to_writer, write_buffer);
