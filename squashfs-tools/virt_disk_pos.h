@@ -23,6 +23,13 @@
  * virt_disk_pos.h
  */
 
+/*
+ * These functions keep track of the current write position within
+ * the output filesytem.   They allow the current write position to be
+ * saved or marked, and later have the write position reset to that
+ * value if for instance the file is discovered to be unreadable or
+ * to be a duplicate.
+ */
 extern long long pos, marked_pos;
 
 static inline void set_pos(long long value)
