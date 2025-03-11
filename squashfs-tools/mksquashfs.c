@@ -81,6 +81,7 @@
 #include "reader.h"
 #include "limit.h"
 #include "alloc.h"
+#include "virt_disk_pos.h"
 
 /* Compression options */
 int noF = FALSE;
@@ -477,91 +478,6 @@ int multiply_overflowll(long long a, int multiplier)
 
 #define MKINODE(A)	((squashfs_inode)(((squashfs_inode) inode_bytes << 16) \
 			+ (((char *)A) - data_cache)))
-
-
-static inline void set_pos(long long value)
-{
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
-	pthread_mutex_lock(&pos_mutex);
-
-	pos = value;
-
-	pthread_cleanup_pop(1);
-}
-
-
-static inline long long get_pos(void)
-{
-	long long tmp;
-
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
-	pthread_mutex_lock(&pos_mutex);
-
-	tmp = pos;
-
-	pthread_cleanup_pop(1);
-
-	return tmp;
-}
-
-
-long long get_and_inc_pos(long long value)
-{
-	long long tmp;
-
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
-	pthread_mutex_lock(&pos_mutex);
-
-	tmp = pos;
-	pos += value;
-
-	pthread_cleanup_pop(1);
-
-	return tmp;
-}
-
-
-static inline int reset_pos(void)
-{
-	if(marked_pos == 0)
-		BAD_ERROR("BUG: Saved write position is empty!\n");
-	else if(marked_pos == 1)
-		return FALSE;
-	else {
-		set_pos(marked_pos);
-		return TRUE;
-	}
-}
-
-
-static inline void unmark_pos()
-{
-	if(marked_pos == 0)
-		BAD_ERROR("BUG: Saved write position should not be empty!\n");
-
-	marked_pos = 0;
-}
-
-
-static inline void mark_pos()
-{
-	if(marked_pos != 0)
-		BAD_ERROR("BUG: Saved write position should be empty!\n");
-
-	marked_pos = 1;
-}
-
-
-static inline long long get_marked_pos(void)
-{
-	if(marked_pos == 0)
-		BAD_ERROR("BUG: Saved write position is empty!\n");
-	else if(marked_pos == 1)
-		return get_pos();
-	else
-		return marked_pos;
-}
-
 
 static inline void put_write_buffer_hash(struct file_buffer *buffer)
 {
@@ -2889,7 +2805,7 @@ static void *frag_orderer(void *arg)
 		int block = write_buffer->block;
 
 		pthread_mutex_lock(&fragment_mutex);
-		write_buffer->block = SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size;
+		write_buffer->block = SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size);
 		fragment_table[block].start_block = write_buffer->block;
 		fragments_outstanding --;
 		log_fragment(block, write_buffer->block);
