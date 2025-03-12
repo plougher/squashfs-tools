@@ -2253,24 +2253,6 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, int *du
 }
 
 
-static void reset_and_truncate(void)
-{
-	int res = reset_pos();
-
-	if(res && !block_device) {
-		int res;
-
-		queue_put(to_writer, NULL);
-		if(queue_get(from_writer) != 0)
-			EXIT_MKSQUASHFS();
-		res = ftruncate(fd, get_pos());
-		if(res != 0)
-			BAD_ERROR("Failed to truncate dest file because"
-				"  %s\n", strerror(errno));
-	}
-}
-
-
 static struct file_info *duplicate(int *dupf, int *block_dup,
 	long long file_size, long long bytes, unsigned int *block_list,
 	struct file_buffer **buffer_list, long long start,
@@ -2400,7 +2382,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 			 */
 			if(!frag_bytes && !dupl_ptr->fragment->size) {
 				*dupf = *block_dup = TRUE;
-				reset_and_truncate();
+				reset_pos();
 				if(file_size == dupl_ptr->file_size)
 					return dupl_ptr;
 				else
@@ -2438,7 +2420,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					 * finished.  Return the duplicate
 					 */
 					*dupf = *block_dup = TRUE;
-					reset_and_truncate();
+					reset_pos();
 					return dupl_ptr;
 				}
 			}
@@ -2480,7 +2462,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					 */
 					if(block_dupl && block_dupl->start == dupl_ptr->start) {
 						*dupf = *block_dup = TRUE;
-						reset_and_truncate();
+						reset_pos();
 						return dupl_ptr;
 					}
 
@@ -2546,7 +2528,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		if(dup) {
 			/* Found a matching file.  Return the duplicate */
 			*dupf = *block_dup = TRUE;
-			reset_and_truncate();
+			reset_pos();
 			return dup->file;
 		}
 	}
@@ -2559,7 +2541,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		 * if the current fragment is too full, this will force a
 		 * write out of the fragment.
 		 */
-		reset_and_truncate();
+		reset_pos();
 	}
 
 	if(frag_dupl)
@@ -2607,7 +2589,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		dup->file = file;
 		dup->next = block_dupl->dup;
 		block_dupl->dup = dup;
-		reset_and_truncate();
+		reset_pos();
 	}
 
 	return file;
@@ -2953,7 +2935,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	reset_and_truncate();
+	reset_pos();
 	if(!reproducible)
 		unlock_fragments();
 	free(block_list);
@@ -3063,7 +3045,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	reset_and_truncate();
+	reset_pos();
 	if(!reproducible)
 		unlock_fragments();
 	for(blocks = thresh; blocks < block; blocks ++)
@@ -3167,7 +3149,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	reset_and_truncate();
+	reset_pos();
 	if(!reproducible)
 		unlock_fragments();
 	free(block_list);
@@ -7109,6 +7091,13 @@ static int sqfstar(int argc, char *argv[])
 
 	write_filesystem_tables(&sBlk);
 
+	if(!block_device) {
+		res = ftruncate(fd, get_pos());
+		if(res != 0)
+			BAD_ERROR("Failed to truncate dest file because %s\n",
+				strerror(errno));
+	}
+
 	if(!nopad && (i = get_pos() & (4096 - 1))) {
 		char temp[4096] = {0};
 		write_destination(fd, get_pos(), 4096 - i, temp);
@@ -8356,6 +8345,13 @@ int main(int argc, char *argv[])
 		BAD_ERROR("id entry out of range after applying -uid-gid-offset offset\n");
 
 	write_filesystem_tables(&sBlk);
+
+	if(!block_device) {
+		res = ftruncate(fd, get_pos());
+		if(res != 0)
+			BAD_ERROR("Failed to truncate dest file because %s\n",
+				strerror(errno));
+	}
 
 	if(!nopad && (i = get_pos() & (4096 - 1))) {
 		char temp[4096] = {0};
