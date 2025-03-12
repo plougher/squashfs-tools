@@ -484,9 +484,9 @@ static inline void put_write_buffer_hash(struct file_buffer *buffer)
 	if(marked_pos == 0)
 		BAD_ERROR("BUG: Saved write position should not be empty!\n");
 	else if(marked_pos == 1)
-		marked_pos = get_pos();
+		marked_pos = get_vpos();
 
-	buffer->block = get_and_inc_pos(buffer->size);
+	buffer->block = get_and_inc_vpos(buffer->size);
 	queue_cache_hash(buffer, buffer->block);
 	queue_put(to_writer, buffer);
 }
@@ -497,9 +497,9 @@ static inline void put_write_buffer(struct file_buffer *buffer, int put)
 	if(marked_pos == 0)
 		BAD_ERROR("BUG: Saved write position should not be empty!\n");
 	else if(marked_pos == 1)
-		marked_pos = get_pos();
+		marked_pos = get_vpos();
 
-	buffer->block = get_and_inc_pos(buffer->size);
+	buffer->block = get_and_inc_vpos(buffer->size);
 
 	if(put)
 		queue_put(to_writer, buffer);
@@ -512,7 +512,7 @@ void restorefs()
 
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
-	set_pos(sbytes);
+	set_dpos(sbytes);
 	memcpy(data_cache, sdata_cache, cache_bytes = scache_bytes);
 	memcpy(directory_data_cache, sdirectory_data_cache,
 		sdirectory_cache_bytes);
@@ -539,15 +539,15 @@ void restorefs()
 	write_filesystem_tables(&sBlk);
 
 	if(!block_device) {
-		int res = ftruncate(fd, get_pos());
+		int res = ftruncate(fd, get_dpos());
 		if(res != 0)
 			BAD_ERROR("Failed to truncate dest file because %s\n",
 				strerror(errno));
 	}
 
-	if(!nopad && (i = get_pos() & (4096 - 1))) {
+	if(!nopad && (i = get_dpos() & (4096 - 1))) {
 		char temp[4096] = {0};
-		write_destination(fd, get_pos(), 4096 - i, temp);
+		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
 
 	res = close(fd);
@@ -788,7 +788,7 @@ static long long write_inodes()
 		cache_bytes -= avail_bytes;
 	}
 
-	start_bytes = get_and_inc_pos(inode_bytes);
+	start_bytes = get_and_inc_dpos(inode_bytes);
 	write_destination(fd, start_bytes, inode_bytes,  inode_table);
 
 	return start_bytes;
@@ -826,7 +826,7 @@ static long long write_directories()
 		directory_cache_bytes -= avail_bytes;
 	}
 
-	start_bytes = get_and_inc_pos(directory_bytes);
+	start_bytes = get_and_inc_dpos(directory_bytes);
 	write_destination(fd, start_bytes, directory_bytes, directory_table);
 
 	return start_bytes;
@@ -1704,7 +1704,7 @@ static void unlock_fragments()
 		write_buffer = queue_get(locked_fragment);
 		frg = write_buffer->block;	
 		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(fragment_table[frg].size);
-		write_buffer->block = get_and_inc_pos(size);
+		write_buffer->block = get_and_inc_dpos(size);
 		fragment_table[frg].start_block = write_buffer->block;
 		fragments_outstanding --;
 		queue_put(to_writer, write_buffer);
@@ -1817,7 +1817,7 @@ long long generic_write_table(long long length, void *buffer, int length2,
 	char cbuffer[(SQUASHFS_METADATA_SIZE << 2) + 2];
 	
 #ifdef SQUASHFS_TRACE
-	long long obytes = get_pos();
+	long long obytes = get_dpos();
 	long long olength = length;
 #endif
 
@@ -1830,7 +1830,7 @@ long long generic_write_table(long long length, void *buffer, int length2,
 		SQUASHFS_SWAP_SHORTS(&c_byte, cbuffer, 1);
 		compressed_size = SQUASHFS_COMPRESSED_SIZE(c_byte) +
 			BLOCK_OFFSET;
-		bytes = get_and_inc_pos(compressed_size);
+		bytes = get_and_inc_dpos(compressed_size);
 		write_destination(fd, bytes, compressed_size, cbuffer);
 		list[i] = bytes;
 		total_bytes += avail_bytes;
@@ -1839,19 +1839,19 @@ long long generic_write_table(long long length, void *buffer, int length2,
 			compressed_size);
 	}
 
-	start_bytes = get_and_inc_pos(length2);
+	start_bytes = get_and_inc_dpos(length2);
 	if(length2) {
 		write_destination(fd, start_bytes, length2, buffer2);
 		total_bytes += length2;
 	}
 		
 	SQUASHFS_INSWAP_LONG_LONGS(list, meta_blocks);
-	bytes = get_and_inc_pos(list_size);
+	bytes = get_and_inc_dpos(list_size);
 	write_destination(fd, bytes, list_size, list);
 	total_bytes += list_size;
 
 	TRACE("generic_write_table: total uncompressed %lld compressed %lld\n",
-		olength, get_pos() - obytes);
+		olength, get_dpos() - obytes);
 
 	free(list);
 
@@ -1928,6 +1928,7 @@ static unsigned short get_checksum_disk(long long start, long long l,
 				chksum);
 			gen_cache_block_put(write_buffer);
 		} else {
+			// FIXME.  This will break when vpos isn't dpos.
 			void *data = read_from_disk(start, bytes, 0);
 			if(data == NULL) {	
 				ERROR("Failed to checksum data from output"
@@ -2326,6 +2327,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				if(buffer_list[block])
 					target_data = buffer_list[block]->data;
 				else {
+					// FIXME.  This will break when vpos isn't dpos.
 					target_data = read_from_disk(target_start, size, 0);
 					if(target_data == NULL) {
 						ERROR("Failed to read data from"
@@ -2345,6 +2347,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				if(dup_buffer)
 					dup_data = dup_buffer->data;
 				else {
+					// FIXME.  This will break when vpos isn't dpos.
 					dup_data = read_from_disk(dup_start, size, 1);
 					if(dup_data == NULL) {
 						ERROR("Failed to read data from"
@@ -2382,7 +2385,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 			 */
 			if(!frag_bytes && !dupl_ptr->fragment->size) {
 				*dupf = *block_dup = TRUE;
-				reset_pos();
+				reset_vpos();
 				if(file_size == dupl_ptr->file_size)
 					return dupl_ptr;
 				else
@@ -2420,7 +2423,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					 * finished.  Return the duplicate
 					 */
 					*dupf = *block_dup = TRUE;
-					reset_pos();
+					reset_vpos();
 					return dupl_ptr;
 				}
 			}
@@ -2462,7 +2465,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					 */
 					if(block_dupl && block_dupl->start == dupl_ptr->start) {
 						*dupf = *block_dup = TRUE;
-						reset_pos();
+						reset_vpos();
 						return dupl_ptr;
 					}
 
@@ -2528,7 +2531,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		if(dup) {
 			/* Found a matching file.  Return the duplicate */
 			*dupf = *block_dup = TRUE;
-			reset_pos();
+			reset_vpos();
 			return dup->file;
 		}
 	}
@@ -2541,7 +2544,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		 * if the current fragment is too full, this will force a
 		 * write out of the fragment.
 		 */
-		reset_pos();
+		reset_vpos();
 	}
 
 	if(frag_dupl)
@@ -2589,7 +2592,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		dup->file = file;
 		dup->next = block_dupl->dup;
 		block_dupl->dup = dup;
-		reset_pos();
+		reset_vpos();
 	}
 
 	return file;
@@ -2721,7 +2724,7 @@ static void *frag_deflator(void *arg)
 		pthread_mutex_lock(&fragment_mutex);
 		if(fragments_locked == FALSE) {
 			fragment_table[file_buffer->block].size = c_byte;
-			write_buffer->block = get_and_inc_pos(compressed_size);
+			write_buffer->block = get_and_inc_dpos(compressed_size);
 			fragment_table[file_buffer->block].start_block = write_buffer->block;
 			fragments_outstanding --;
 			queue_put(to_writer, write_buffer);
@@ -2877,7 +2880,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 		lock_fragments();
 
 	file_bytes = 0;
-	mark_pos();
+	mark_vpos();
 	while (1) {
 		read_size = read_buffer->file_size;
 		if(read_buffer->fragment) {
@@ -2913,12 +2916,12 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 		int bl_hash = block ? block_hash(block_list[0], block) : 0;
 
 		file = add_non_dup(read_size, file_bytes, block, sparse,
-			block_list, get_marked_pos(), fragment, 0,
+			block_list, get_marked_vpos(), fragment, 0,
 			fragment_buffer ?  fragment_buffer->checksum : 0, FALSE,
 			TRUE, FALSE, FALSE, bl_hash);
 	} else
 		file = create_non_dup(read_size, file_bytes, block, sparse,
-			block_list, get_marked_pos(), fragment, 0,
+			block_list, get_marked_vpos(), fragment, 0,
 			fragment_buffer ?  fragment_buffer->checksum : 0, FALSE,
 			TRUE);
 
@@ -2929,18 +2932,18 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 	log_file(dir_ent, file->start);
 
 	*status = 0;
-	unmark_pos();
+	unmark_vpos();
 	return file;
 
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	reset_pos();
+	reset_vpos();
 	if(!reproducible)
 		unlock_fragments();
 	free(block_list);
 	gen_cache_block_put(read_buffer);
-	unmark_pos();
+	unmark_vpos();
 	return NULL;
 }
 
@@ -2969,7 +2972,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 		lock_fragments();
 
 	file_bytes = 0;
-	mark_pos();
+	mark_vpos();
 	thresh = blocks > cache_size ? blocks - cache_size : 0;
 
 	for(block = 0; block < blocks;) {
@@ -3012,7 +3015,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 		sparse = 0;
 
 	file = duplicate(duplicate_file, &block_dup, read_size, file_bytes,
-		block_list, buffer_list, get_marked_pos(), dir_ent,
+		block_list, buffer_list, get_marked_vpos(), dir_ent,
 		fragment_buffer, blocks, sparse, bl_hash);
 
 	if(block_dup == FALSE) {
@@ -3039,13 +3042,13 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 		log_file(dir_ent, file->start);
 
 	*status = 0;
-	unmark_pos();
+	unmark_vpos();
 	return file;
 
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	reset_pos();
+	reset_vpos();
 	if(!reproducible)
 		unlock_fragments();
 	for(blocks = thresh; blocks < block; blocks ++)
@@ -3053,7 +3056,7 @@ read_err:
 	free(buffer_list);
 	free(block_list);
 	gen_cache_block_put(read_buffer);
-	unmark_pos();
+	unmark_vpos();
 	return NULL;
 }
 
@@ -3085,7 +3088,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 		lock_fragments();
 
 	file_bytes = 0;
-	mark_pos();
+	mark_vpos();
 	for(block = 0; block < blocks;) {
 		if(read_buffer->fragment) {
 			block_list[block] = 0;
@@ -3128,12 +3131,12 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 
 	if(duplicate_checking)
 		file = add_non_dup(read_size, file_bytes, blocks, sparse,
-			block_list, get_marked_pos(), fragment, 0, fragment_buffer ?
+			block_list, get_marked_vpos(), fragment, 0, fragment_buffer ?
 			fragment_buffer->checksum : 0, FALSE, TRUE, FALSE,
 			FALSE, bl_hash);
 	else
 		file = create_non_dup(read_size, file_bytes, blocks, sparse,
-			block_list, get_marked_pos(), fragment, 0, fragment_buffer ?
+			block_list, get_marked_vpos(), fragment, 0, fragment_buffer ?
 			fragment_buffer->checksum : 0, FALSE, TRUE);
 
 	gen_cache_block_put(fragment_buffer);
@@ -3143,18 +3146,18 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 	log_file(dir_ent, file->start);
 
 	*status = 0;
-	unmark_pos();
+	unmark_vpos();
 	return file;
 
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	reset_pos();
+	reset_vpos();
 	if(!reproducible)
 		unlock_fragments();
 	free(block_list);
 	gen_cache_block_put(read_buffer);
-	unmark_pos();
+	unmark_vpos();
 	return NULL;
 }
 
@@ -5837,7 +5840,7 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk)
 		TRACE("sBlk->lookup_table_start 0x%llx\n",
 			sBlk->lookup_table_start);
 
-	sBlk->bytes_used = get_pos();
+	sBlk->bytes_used = get_dpos();
 
 	sBlk->compression = comp->id;
 
@@ -6179,10 +6182,10 @@ static void print_summary()
 		"compressed", noI || noId ? "uncompressed" : "compressed");
 	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
 		"not ");
-	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", get_pos() / 1024.0,
-		get_pos() / (1024.0 * 1024.0));
+	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", get_dpos() / 1024.0,
+		get_dpos() / (1024.0 * 1024.0));
 	printf("\t%.2f%% of uncompressed filesystem size (%.2f Kbytes)\n",
-		((float) get_pos() / total_bytes) * 100.0, total_bytes / 1024.0);
+		((float) get_dpos() / total_bytes) * 100.0, total_bytes / 1024.0);
 	printf("Inode table size %lld bytes (%.2f Kbytes)\n",
 		inode_bytes, inode_bytes / 1024.0);
 	printf("\t%.2f%% of uncompressed inode table size (%lld bytes)\n",
@@ -7035,10 +7038,10 @@ static int sqfstar(int argc, char *argv[])
 			sizeof(c_byte), &c_byte);
 		write_destination(fd, sizeof(struct squashfs_super_block) +
 			sizeof(c_byte), size, comp_data);
-		set_pos(sizeof(struct squashfs_super_block) + sizeof(c_byte) + size);
+		set_dpos(sizeof(struct squashfs_super_block) + sizeof(c_byte) + size);
 		comp_opts = TRUE;
 	} else
-		set_pos(sizeof(struct squashfs_super_block));
+		set_dpos(sizeof(struct squashfs_super_block));
 
 	if(path)
 		paths = add_subdir(paths, path);
@@ -7092,15 +7095,15 @@ static int sqfstar(int argc, char *argv[])
 	write_filesystem_tables(&sBlk);
 
 	if(!block_device) {
-		res = ftruncate(fd, get_pos());
+		res = ftruncate(fd, get_dpos());
 		if(res != 0)
 			BAD_ERROR("Failed to truncate dest file because %s\n",
 				strerror(errno));
 	}
 
-	if(!nopad && (i = get_pos() & (4096 - 1))) {
+	if(!nopad && (i = get_dpos() & (4096 - 1))) {
 		char temp[4096] = {0};
-		write_destination(fd, get_pos(), 4096 - i, temp);
+		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
 
 	res = close(fd);
@@ -8157,10 +8160,10 @@ int main(int argc, char *argv[])
 					sizeof(c_byte), &c_byte);
 				write_destination(fd, sizeof(struct squashfs_super_block) +
 					sizeof(c_byte), size, comp_data);
-				set_pos(sizeof(struct squashfs_super_block) + sizeof(c_byte) + size);
+				set_dpos(sizeof(struct squashfs_super_block) + sizeof(c_byte) + size);
 				comp_opts = TRUE;
 			} else			
-				set_pos(sizeof(struct squashfs_super_block));
+				set_dpos(sizeof(struct squashfs_super_block));
 		} else {
 			unsigned int last_directory_block, inode_dir_file_size,
 				root_inode_size, inode_dir_start_block,
@@ -8191,7 +8194,7 @@ int main(int argc, char *argv[])
 				EXIT_MKSQUASHFS();
 			}
 
-			set_pos(bytes);
+			set_dpos(bytes);
 
 			if((fragments = sBlk.fragments))
 				fragment_table = REALLOC((char *) fragment_table,
@@ -8347,15 +8350,15 @@ int main(int argc, char *argv[])
 	write_filesystem_tables(&sBlk);
 
 	if(!block_device) {
-		res = ftruncate(fd, get_pos());
+		res = ftruncate(fd, get_dpos());
 		if(res != 0)
 			BAD_ERROR("Failed to truncate dest file because %s\n",
 				strerror(errno));
 	}
 
-	if(!nopad && (i = get_pos() & (4096 - 1))) {
+	if(!nopad && (i = get_dpos() & (4096 - 1))) {
 		char temp[4096] = {0};
-		write_destination(fd, get_pos(), 4096 - i, temp);
+		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
 
 	res = close(fd);

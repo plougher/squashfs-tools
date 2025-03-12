@@ -51,6 +51,7 @@
 #include "action.h"
 #include "merge_sort.h"
 #include "alloc.h"
+#include "virt_disk_pos.h"
 
 /* compressed xattr table */
 static char *xattr_table = NULL;
@@ -97,7 +98,6 @@ extern void write_destination(int, long long, long long, void *);
 extern long long generic_write_table(long long, void *, int, void *, int);
 extern int mangle(char *, char *, int, int, int, int);
 extern char *pathname(struct dir_ent *);
-extern long long get_and_inc_pos(long long value);
 
 /* helper functions and definitions from read_xattrs.c */
 extern unsigned int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long long *);
@@ -357,7 +357,7 @@ long long write_xattrs()
 	/*
 	 * Write compressed xattr table to file system
 	 */
-	start_bytes = get_and_inc_pos(xattr_bytes);
+	start_bytes = get_and_inc_dpos(xattr_bytes);
 	write_destination(fd, start_bytes, xattr_bytes, xattr_table);
 
 	/*

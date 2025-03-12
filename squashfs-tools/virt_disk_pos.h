@@ -24,27 +24,24 @@
  */
 
 /*
- * These functions keep track of the current write position within
- * the output filesytem.   They allow the current write position to be
- * saved or marked, and later have the write position reset to that
- * value if for instance the file is discovered to be unreadable or
- * to be a duplicate.
+ * These functions keep track of the current write position within the output
+ * filesystem.
  */
-extern long long pos, marked_pos;
+extern long long pos;
 
-static inline void set_pos(long long value)
+static inline void set_dpos(long long value)
 {
 	pos = value;
 }
 
 
-static inline long long get_pos(void)
+static inline long long get_dpos(void)
 {
 	return pos;
 }
 
 
-long long get_and_inc_pos(long long value)
+static inline long long get_and_inc_dpos(long long value)
 {
 	long long tmp = pos;
 
@@ -53,20 +50,51 @@ long long get_and_inc_pos(long long value)
 }
 
 
-static inline int reset_pos(void)
+/*
+ * These functions keep track of the current VIRTUAL write position within the
+ * output filesystem.   They allow the current write position to be saved or
+ * marked, and later have the write position reset to that value if for instance
+ * the file is discovered to be unreadable or to be a duplicate.
+ *
+ * Currently the real and virtual write positions are the same.
+ */
+extern long long marked_pos;
+
+static inline void set_vpos(long long value)
+{
+	pos = value;
+}
+
+
+static inline long long get_vpos(void)
+{
+	return pos;
+}
+
+
+static inline long long get_and_inc_vpos(long long value)
+{
+	long long tmp = pos;
+
+	pos += value;
+	return tmp;
+}
+
+
+static inline int reset_vpos(void)
 {
 	if(marked_pos == 0)
 		BAD_ERROR("BUG: Saved write position is empty!\n");
 	else if(marked_pos == 1)
 		return FALSE;
 	else {
-		set_pos(marked_pos);
+		set_vpos(marked_pos);
 		return TRUE;
 	}
 }
 
 
-static inline void unmark_pos()
+static inline void unmark_vpos()
 {
 	if(marked_pos == 0)
 		BAD_ERROR("BUG: Saved write position should not be empty!\n");
@@ -75,7 +103,7 @@ static inline void unmark_pos()
 }
 
 
-static inline void mark_pos()
+static inline void mark_vpos()
 {
 	if(marked_pos != 0)
 		BAD_ERROR("BUG: Saved write position should be empty!\n");
@@ -84,12 +112,12 @@ static inline void mark_pos()
 }
 
 
-static inline long long get_marked_pos(void)
+static inline long long get_marked_vpos(void)
 {
 	if(marked_pos == 0)
 		BAD_ERROR("BUG: Saved write position is empty!\n");
 	else if(marked_pos == 1)
-		return get_pos();
+		return get_vpos();
 	else
 		return marked_pos;
 }
