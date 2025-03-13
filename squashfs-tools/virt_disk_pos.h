@@ -121,4 +121,16 @@ static inline long long get_marked_vpos(void)
 	else
 		return marked_pos;
 }
+
+#define VIRT_DISK_HASH_SIZE 1048576
+#define VIRT_DISK_HASH(hash) (hash & 1048575)
+
+struct virt_disk {
+	long long		virt;
+	long long		disk;
+	struct virt_disk	*next;
+};
+
+extern void add_virt_disk(long long virt, long long disk);
+extern long long get_virt_disk(long long virt);
 #endif
