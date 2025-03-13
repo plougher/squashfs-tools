@@ -2790,7 +2790,7 @@ static void *frag_orderer(void *arg)
 		int block = write_buffer->block;
 
 		pthread_mutex_lock(&fragment_mutex);
-		write_buffer->block = SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size);
+		write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
 		fragment_table[block].start_block = write_buffer->block;
 		fragments_outstanding --;
 		log_fragment(block, write_buffer->block);
