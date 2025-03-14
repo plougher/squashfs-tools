@@ -296,8 +296,9 @@ pthread_t reader_thread1, writer_thread, main_thread;
 pthread_t *deflator_thread, *frag_deflator_thread, *frag_thread;
 pthread_t *restore_thread = NULL;
 pthread_mutex_t	fragment_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t	pos_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t	lseek_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t	dup_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t	pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* reproducible image queues and threads */
 struct seq_queue *to_order;
@@ -472,21 +473,42 @@ int multiply_overflowll(long long a, int multiplier)
 
 static inline void set_pos(long long value)
 {
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
+	pthread_mutex_lock(&pos_mutex);
+
 	pos = value;
+
+	pthread_cleanup_pop(1);
 }
 
 
 static inline long long get_pos(void)
 {
-	return pos;
+	long long tmp;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
+	pthread_mutex_lock(&pos_mutex);
+
+	tmp = pos;
+
+	pthread_cleanup_pop(1);
+
+	return tmp;
 }
 
 
 long long get_and_inc_pos(long long value)
 {
-	long long tmp = pos;
+	long long tmp;
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
+	pthread_mutex_lock(&pos_mutex);
+
+	tmp = pos;
 	pos += value;
+
+	pthread_cleanup_pop(1);
+
 	return tmp;
 }
 
@@ -747,8 +769,8 @@ int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 	TRACE("read_fs_bytes: reading from position 0x%llx, bytes %lld\n",
 		byte, bytes);
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
-	pthread_mutex_lock(&pos_mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &lseek_mutex);
+	pthread_mutex_lock(&lseek_mutex);
 
 	if(fd_pos != off) {
 		if(lseek(fd, off, SEEK_SET) == -1) {
@@ -804,8 +826,8 @@ void write_destination(int fd, long long byte, long long bytes, void *buff)
 {
 	off_t off = start_offset + byte;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
-	pthread_mutex_lock(&pos_mutex);
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &lseek_mutex);
+	pthread_mutex_lock(&lseek_mutex);
 
 	if(fd_pos != off) {
 		if(lseek(fd, off, SEEK_SET) == -1) {
@@ -2757,8 +2779,8 @@ static void *writer(void *arg)
 
 		off = start_offset + file_buffer->block;
 
-		pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
-		pthread_mutex_lock(&pos_mutex);
+		pthread_cleanup_push((void *) pthread_mutex_unlock, &lseek_mutex);
+		pthread_mutex_lock(&lseek_mutex);
 
 		if(fd_pos != off) {
 			if(lseek(fd, off, SEEK_SET) == -1) {
