@@ -25,6 +25,7 @@
  *
  */
 #include <pthread.h>
+#include <unistd.h>
 
 struct dir_info {
 	char			*pathname;
