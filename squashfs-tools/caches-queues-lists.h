@@ -297,13 +297,13 @@ static inline void gen_cache_block_put(struct file_buffer *entry)
 static inline int cache_maxsize(struct file_buffer *entry)
 {
 	if(entry == NULL)
-		BAD_ERROR("Bug in cache_maxsize\n");
+		BAD_ERROR("Bug in cache_maxsize, entry == NULL\n");
 	else if(entry->cache_type == GEN_CACHE)
 		return entry->cache->max_buffers;
 	else if(entry->cache_type == QUEUE_CACHE)
 		return entry->queue_cache->wthread[entry->thread].max_buffers;
 	else
-		BAD_ERROR("Bug in block handling\n");
+		BAD_ERROR("Bug in cache max_size, unexepcted cache_type\n");
 }
 
 
