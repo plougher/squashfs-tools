@@ -250,10 +250,12 @@ static int zstd_uncompress(void *dest, void *src, int size, int outsize,
 
 static void zstd_usage(FILE *stream, int cols)
 {
-	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n", cols);
-	autowrap_printf(stream, cols, "\t\t<compression-level> should be %d .. -1 or 1 .. %d (default %d)\n"
-			        "Negative compression levels correspond to the zstd --fast option.\n",
-				ZSTD_minCLevel(), ZSTD_maxCLevel(), ZSTD_DEFAULT_COMPRESSION_LEVEL);
+	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n",
+		cols);
+	autowrap_printf(stream, cols, "\t\t<compression-level> should be %d .. "
+		"-1 or 1 .. %d (default %d).  Negative compression levels "
+		"correspond to the zstd --fast option.\n", ZSTD_minCLevel(),
+		ZSTD_maxCLevel(), ZSTD_DEFAULT_COMPRESSION_LEVEL);
 }
 
 
