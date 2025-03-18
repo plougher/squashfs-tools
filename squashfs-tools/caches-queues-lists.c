@@ -311,16 +311,16 @@ struct file_buffer *main_queue_get(struct seq_queue *queue)
 /* define fragment seq queue hash function */
 #define CALCULATE_FRAG_HASH(N) CALCULATE_HASH(N)
 
-void fragment_queue_put(struct seq_queue *queue, struct file_buffer *entry)
+void order_queue_put(struct seq_queue *queue, struct file_buffer *entry)
 {
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
 	pthread_mutex_lock(&queue->mutex);
 
 	insert_seq_hash_table(queue, entry, CALCULATE_FRAG_HASH(entry->sequence));
 
-	if(entry->fragment)
+	if(entry->cache_type == GEN_CACHE)
 		queue->fragment_count ++;
-	else
+	else if(entry->cache_type == QUEUE_CACHE)
 		queue->block_count ++;
 
 	if(entry->sequence == queue->sequence)
@@ -330,7 +330,7 @@ void fragment_queue_put(struct seq_queue *queue, struct file_buffer *entry)
 }
 
 
-struct file_buffer *fragment_queue_get(struct seq_queue *queue)
+struct file_buffer *order_queue_get(struct seq_queue *queue)
 {
 	/*
 	 * Return next buffer from queue in sequence order (queue->sequence).  If
@@ -353,9 +353,9 @@ struct file_buffer *fragment_queue_get(struct seq_queue *queue)
 			 * found the buffer in the queue, decrement the
 			 * appropriate count, and remove from hash list
 			 */
-			if(entry->fragment)
+			if(entry->cache_type == GEN_CACHE)
 				queue->fragment_count --;
-			else
+			else if(entry->cache_type == QUEUE_CACHE)
 				queue->block_count --;
 
 			remove_seq_hash_table(queue, entry, hash);

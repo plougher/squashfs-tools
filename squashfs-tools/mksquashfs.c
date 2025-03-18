@@ -211,9 +211,8 @@ long long hardlnk_count = 0;
 /* superblock attributes */
 struct squashfs_super_block sBlk;
 
-/* write position within data section */
-long long pos = 0, total_bytes = 0;
-long long marked_pos = 0;
+/* count of the uncompressed size of the filesystem */
+long long total_bytes = 0;
 
 /* in memory directory table - possibly compressed */
 char *directory_table = NULL;
@@ -288,7 +287,7 @@ unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 struct cache *fragment_buffer, *reserve_cache;
 struct cache *fwriter_buffer;
 struct queue_cache *bwriter_buffer;
-struct queue *to_reader, *to_writer, *from_writer, *to_frag, *locked_fragment;
+struct queue *to_reader, *to_writer, *from_writer, *to_frag, *locked_fragment, *from_order;
 struct queue_cache *to_deflate;
 struct read_queue *to_process_frag;
 struct seq_queue *to_main;
@@ -479,30 +478,79 @@ int multiply_overflowll(long long a, int multiplier)
 #define MKINODE(A)	((squashfs_inode)(((squashfs_inode) inode_bytes << 16) \
 			+ (((char *)A) - data_cache)))
 
-static inline void put_write_buffer_hash(struct file_buffer *buffer)
-{
-	if(marked_pos == 0)
-		BAD_ERROR("BUG: Saved write position should not be empty!\n");
-	else if(marked_pos == 1)
-		marked_pos = get_vpos();
 
-	buffer->block = get_and_inc_vpos(buffer->size);
-	queue_cache_hash(buffer, buffer->block);
-	queue_put(to_writer, buffer);
+static long long get_sequence()
+{
+	static long long sequence = 0;
+
+	return sequence ++;
 }
 
 
-static inline void put_write_buffer(struct file_buffer *buffer, int put)
+static inline void send_orderer_reset(long long vpos)
 {
-	if(marked_pos == 0)
-		BAD_ERROR("BUG: Saved write position should not be empty!\n");
-	else if(marked_pos == 1)
-		marked_pos = get_vpos();
+	struct file_buffer *buffer = malloc(sizeof(struct file_buffer));
 
+	if(buffer == NULL)
+		MEM_ERROR();
+
+	buffer->cache = NULL;
+	buffer->sequence = get_sequence();
+	buffer->cache_type = RESET_CMD;
+	buffer->block = vpos;
+
+	order_queue_put(to_order, buffer);
+}
+
+
+static inline void  sync_writer_thread()
+{
+	struct file_buffer *buffer = malloc(sizeof(struct file_buffer));
+
+	if(buffer == NULL)
+		MEM_ERROR();
+
+	buffer->cache = NULL;
+	buffer->sequence = get_sequence();
+	buffer->cache_type = WSYNC_CMD;
+
+	order_queue_put(to_order, buffer);
+	if(queue_get(from_writer) != 0)
+		BAD_ERROR("Got unexpecteed response in sync_writer_thread\n");
+}
+
+
+static inline void  sync_orderer_thread()
+{
+	struct file_buffer *buffer = malloc(sizeof(struct file_buffer));
+
+	if(buffer == NULL)
+		MEM_ERROR();
+
+	buffer->cache = NULL;
+	buffer->sequence = get_sequence();
+	buffer->cache_type = OSYNC_CMD;
+
+	order_queue_put(to_order, buffer);
+	if(queue_get(from_order) != 0)
+		BAD_ERROR("Got unexpecteed response in sync_orderer_thread\n");
+}
+
+
+static inline void put_write_buffer_hash(struct file_buffer *buffer)
+{
 	buffer->block = get_and_inc_vpos(buffer->size);
+	buffer->sequence = get_sequence();
+	queue_cache_hash(buffer, buffer->block);
+	order_queue_put(to_order, buffer);
+}
 
-	if(put)
-		queue_put(to_writer, buffer);
+
+static inline void put_write_buffer(struct file_buffer *buffer)
+{
+	buffer->block = get_and_inc_vpos(buffer->size);
+	buffer->sequence = get_sequence();
+	order_queue_put(to_order, buffer);
 }
 
 
@@ -1729,15 +1777,13 @@ static void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
 
 static void write_fragment(struct file_buffer *fragment)
 {
-	static long long sequence = 0;
-
 	if(fragment == NULL)
 		return;
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 	pthread_mutex_lock(&fragment_mutex);
 	fragment_table[fragment->block].unused = 0;
-	fragment->sequence = sequence ++;
+	fragment->sequence = get_sequence();
 	fragments_outstanding ++;
 	queue_put(to_frag, fragment);
 	pthread_cleanup_pop(1);
@@ -1928,8 +1974,8 @@ static unsigned short get_checksum_disk(long long start, long long l,
 				chksum);
 			gen_cache_block_put(write_buffer);
 		} else {
-			// FIXME.  This will break when vpos isn't dpos.
-			void *data = read_from_disk(start, bytes, 0);
+			long long dpos = get_virt_disk(start);
+			void *data = read_from_disk(dpos, bytes, 0);
 			if(data == NULL) {	
 				ERROR("Failed to checksum data from output"
 					" filesystem\n");
@@ -2254,6 +2300,15 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, int *du
 }
 
 
+static void reset_and_truncate(void)
+{
+	int res = reset_vpos();
+
+	if(res)
+		send_orderer_reset(get_marked_vpos());
+}
+
+
 static struct file_info *duplicate(int *dupf, int *block_dup,
 	long long file_size, long long bytes, unsigned int *block_list,
 	struct file_buffer **buffer_list, long long start,
@@ -2327,8 +2382,8 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				if(buffer_list[block])
 					target_data = buffer_list[block]->data;
 				else {
-					// FIXME.  This will break when vpos isn't dpos.
-					target_data = read_from_disk(target_start, size, 0);
+					long long dpos = get_virt_disk(target_start);
+					target_data = read_from_disk(dpos, size, 0);
 					if(target_data == NULL) {
 						ERROR("Failed to read data from"
 							" output filesystem\n");
@@ -2347,8 +2402,8 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				if(dup_buffer)
 					dup_data = dup_buffer->data;
 				else {
-					// FIXME.  This will break when vpos isn't dpos.
-					dup_data = read_from_disk(dup_start, size, 1);
+					long long dpos = get_virt_disk(dup_start);
+					dup_data = read_from_disk(dpos, size, 1);
 					if(dup_data == NULL) {
 						ERROR("Failed to read data from"
 							" output filesystem\n");
@@ -2385,7 +2440,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 			 */
 			if(!frag_bytes && !dupl_ptr->fragment->size) {
 				*dupf = *block_dup = TRUE;
-				reset_vpos();
+				reset_and_truncate();
 				if(file_size == dupl_ptr->file_size)
 					return dupl_ptr;
 				else
@@ -2423,7 +2478,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					 * finished.  Return the duplicate
 					 */
 					*dupf = *block_dup = TRUE;
-					reset_vpos();
+					reset_and_truncate();
 					return dupl_ptr;
 				}
 			}
@@ -2465,7 +2520,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					 */
 					if(block_dupl && block_dupl->start == dupl_ptr->start) {
 						*dupf = *block_dup = TRUE;
-						reset_vpos();
+						reset_and_truncate();
 						return dupl_ptr;
 					}
 
@@ -2531,7 +2586,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		if(dup) {
 			/* Found a matching file.  Return the duplicate */
 			*dupf = *block_dup = TRUE;
-			reset_vpos();
+			reset_and_truncate();
 			return dup->file;
 		}
 	}
@@ -2544,7 +2599,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		 * if the current fragment is too full, this will force a
 		 * write out of the fragment.
 		 */
-		reset_vpos();
+		reset_and_truncate();
 	}
 
 	if(frag_dupl)
@@ -2592,7 +2647,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 		dup->file = file;
 		dup->next = block_dupl->dup;
 		block_dupl->dup = dup;
-		reset_vpos();
+		reset_and_truncate();
 	}
 
 	return file;
@@ -2772,7 +2827,7 @@ static void *frag_order_deflator(void *arg)
 		pthread_mutex_lock(&fragment_mutex);
 		fragment_table[file_buffer->block].size = c_byte;
 		pthread_cleanup_pop(1);
-		fragment_queue_put(to_order, write_buffer);
+		order_queue_put(to_order, write_buffer);
 		TRACE("Writing fragment %lld, uncompressed size %d, "
 			"compressed size %d\n", file_buffer->block,
 			file_buffer->size, SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte));
@@ -2781,22 +2836,39 @@ static void *frag_order_deflator(void *arg)
 }
 
 
-static void *frag_orderer(void *arg)
+static void *orderer(void *arg)
 {
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 
 	while(1) {
-		struct file_buffer *write_buffer = fragment_queue_get(to_order);
-		int block = write_buffer->block;
+		struct file_buffer *write_buffer = order_queue_get(to_order);
+		long long block = write_buffer->block;
 
-		pthread_mutex_lock(&fragment_mutex);
-		write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
-		fragment_table[block].start_block = write_buffer->block;
-		fragments_outstanding --;
-		log_fragment(block, write_buffer->block);
-		queue_put(to_writer, write_buffer);
-		pthread_cond_signal(&fragment_waiting);
-		pthread_mutex_unlock(&fragment_mutex);
+		if(write_buffer->cache_type == GEN_CACHE) {
+			pthread_mutex_lock(&fragment_mutex);
+			write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
+			fragment_table[block].start_block = write_buffer->block;
+			fragments_outstanding --;
+			log_fragment(block, write_buffer->block);
+			queue_put(to_writer, write_buffer);
+			pthread_cond_signal(&fragment_waiting);
+			pthread_mutex_unlock(&fragment_mutex);
+		} else if(write_buffer->cache_type == QUEUE_CACHE) {
+			write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
+			add_virt_disk(block, write_buffer->block);
+			queue_put(to_writer, write_buffer);
+		} else if(write_buffer->cache_type == WSYNC_CMD) {
+			free(write_buffer);
+			queue_put(to_writer, NULL);
+		} else if(write_buffer->cache_type == OSYNC_CMD) {
+			free(write_buffer);
+			queue_put(from_order, NULL);
+		} else if(write_buffer->cache_type == RESET_CMD) {
+			set_dpos(get_virt_disk(write_buffer->block));
+			free(write_buffer);
+		} else
+
+			BAD_ERROR("Bug in orderer\n");
 	}
 
 	pthread_cleanup_pop(0);
@@ -2874,9 +2946,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 
 	*duplicate_file = FALSE;
 
-	if(reproducible)
-		ensure_fragments_flushed();
-	else
+	if(!reproducible)
 		lock_fragments();
 
 	file_bytes = 0;
@@ -2938,7 +3008,7 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	reset_vpos();
+	reset_and_truncate();
 	if(!reproducible)
 		unlock_fragments();
 	free(block_list);
@@ -2966,9 +3036,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 	block_list = MALLOC(blocks * sizeof(unsigned int));
 	buffer_list = MALLOC(blocks * sizeof(struct file_buffer *));
 
-	if(reproducible)
-		ensure_fragments_flushed();
-	else
+	if(!reproducible)
 		lock_fragments();
 
 	file_bytes = 0;
@@ -2986,8 +3054,11 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 
 			if(read_buffer->c_byte) {
 				file_bytes += read_buffer->size;
-				buffer_list[block] = block >= thresh ? read_buffer : NULL;
-				put_write_buffer(read_buffer, block < thresh);
+				if(block < thresh) {
+					buffer_list[block] = NULL;
+					put_write_buffer(read_buffer);
+				} else
+					buffer_list[block] = read_buffer;
 			} else {
 				buffer_list[block] = NULL;
 				sparse += read_buffer->size;
@@ -3020,10 +3091,8 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 
 	if(block_dup == FALSE) {
 		for(block = thresh; block < blocks; block ++)
-			if(buffer_list[block]) {
-				queue_cache_hash(buffer_list[block], buffer_list[block]->block);
-				queue_put(to_writer, buffer_list[block]);
-			}
+			if(buffer_list[block])
+				put_write_buffer_hash(buffer_list[block]);
 	} else {
 		for(block = thresh; block < blocks; block ++)
 			gen_cache_block_put(buffer_list[block]);
@@ -3048,7 +3117,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	reset_vpos();
+	reset_and_truncate();
 	if(!reproducible)
 		unlock_fragments();
 	for(blocks = thresh; blocks < block; blocks ++)
@@ -3082,9 +3151,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 
 	block_list = MALLOC(blocks * sizeof(unsigned int));
 
-	if(reproducible)
-		ensure_fragments_flushed();
-	else
+	if(!reproducible)
 		lock_fragments();
 
 	file_bytes = 0;
@@ -3152,7 +3219,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
-	reset_vpos();
+	reset_and_truncate();
 	if(!reproducible)
 		unlock_fragments();
 	free(block_list);
@@ -3560,6 +3627,8 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 		sort_files_and_write(root_dir);
 	else if(!tarfile)
 		dir_scan7(root_dir);
+
+	sync_orderer_thread();
 
 	dir_scan8(&inode, root_dir);
 	dir_ent->inode->inode = inode;
@@ -4468,8 +4537,8 @@ static void dir_scan8(squashfs_inode *inode, struct dir_info *dir_info)
 					squashfs_type = SQUASHFS_FILE_TYPE;
 					*inode = create_inode(NULL, dir_ent,
 						squashfs_type, file->file_size,
-						file->start, file->blocks,
-						file->block_list,
+						get_virt_disk(file->start),
+						file->blocks, file->block_list,
 						file->fragment, NULL,
 						file->sparse);
 					if((duplicate_checking == FALSE &&
@@ -5339,6 +5408,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	to_process_frag = read_queue_init();
 	to_writer = queue_init(bwriter_size + fwriter_size, NULL);
 	from_writer = queue_init(1, NULL);
+	from_order = queue_init(1, NULL);
 	to_frag = queue_init(fragment_size, &thread_mutex);
 	to_main = seq_queue_init();
 	if(reproducible)
@@ -5367,7 +5437,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	main_thread = pthread_self();
 
 	if(reproducible)
-		pthread_create(&order_thread, NULL, frag_orderer, NULL);
+		pthread_create(&order_thread, NULL, orderer, NULL);
 
 	if(!quiet)
 		printf("Parallel mksquashfs: Using %d processor%s\n", processors,
@@ -7038,10 +7108,10 @@ static int sqfstar(int argc, char *argv[])
 			sizeof(c_byte), &c_byte);
 		write_destination(fd, sizeof(struct squashfs_super_block) +
 			sizeof(c_byte), size, comp_data);
-		set_dpos(sizeof(struct squashfs_super_block) + sizeof(c_byte) + size);
+		set_pos(sizeof(struct squashfs_super_block) + sizeof(c_byte) + size);
 		comp_opts = TRUE;
 	} else
-		set_dpos(sizeof(struct squashfs_super_block));
+		set_pos(sizeof(struct squashfs_super_block));
 
 	if(path)
 		paths = add_subdir(paths, path);
@@ -7081,10 +7151,7 @@ static int sqfstar(int argc, char *argv[])
 	}
 	pthread_cleanup_pop(1);
 
-	queue_put(to_writer, NULL);
-	if(queue_get(from_writer) != 0)
-		EXIT_MKSQUASHFS();
-
+	sync_writer_thread();
 	pthread_cancel(writer_thread);
 
 	set_progressbar_state(FALSE);
@@ -8160,10 +8227,10 @@ int main(int argc, char *argv[])
 					sizeof(c_byte), &c_byte);
 				write_destination(fd, sizeof(struct squashfs_super_block) +
 					sizeof(c_byte), size, comp_data);
-				set_dpos(sizeof(struct squashfs_super_block) + sizeof(c_byte) + size);
+				set_pos(sizeof(struct squashfs_super_block) + sizeof(c_byte) + size);
 				comp_opts = TRUE;
 			} else			
-				set_dpos(sizeof(struct squashfs_super_block));
+				set_pos(sizeof(struct squashfs_super_block));
 		} else {
 			unsigned int last_directory_block, inode_dir_file_size,
 				root_inode_size, inode_dir_start_block,
@@ -8194,7 +8261,7 @@ int main(int argc, char *argv[])
 				EXIT_MKSQUASHFS();
 			}
 
-			set_dpos(bytes);
+			set_pos(bytes);
 
 			if((fragments = sBlk.fragments))
 				fragment_table = REALLOC((char *) fragment_table,
@@ -8336,10 +8403,7 @@ int main(int argc, char *argv[])
 	}
 	pthread_cleanup_pop(1);
 
-	queue_put(to_writer, NULL);
-	if(queue_get(from_writer) != 0)
-		EXIT_MKSQUASHFS();
-
+	sync_writer_thread();
 	pthread_cancel(writer_thread);
 
 	set_progressbar_state(FALSE);

@@ -27,25 +27,25 @@
  * These functions keep track of the current write position within the output
  * filesystem.
  */
-extern long long pos;
+extern long long dpos;
 
 static inline void set_dpos(long long value)
 {
-	pos = value;
+	dpos = value;
 }
 
 
 static inline long long get_dpos(void)
 {
-	return pos;
+	return dpos;
 }
 
 
 static inline long long get_and_inc_dpos(long long value)
 {
-	long long tmp = pos;
+	long long tmp = dpos;
 
-	pos += value;
+	dpos += value;
 	return tmp;
 }
 
@@ -58,37 +58,42 @@ static inline long long get_and_inc_dpos(long long value)
  *
  * Currently the real and virtual write positions are the same.
  */
-extern long long marked_pos;
+extern long long vpos, marked_vpos;
 
 static inline void set_vpos(long long value)
 {
-	pos = value;
+	vpos = value;
 }
 
 
 static inline long long get_vpos(void)
 {
-	return pos;
+	return vpos;
 }
 
 
 static inline long long get_and_inc_vpos(long long value)
 {
-	long long tmp = pos;
+	long long tmp = vpos;
 
-	pos += value;
+	if(marked_vpos == 0)
+		BAD_ERROR("BUG: Saved write position is empty!\n");
+	else if(marked_vpos == 1)
+		marked_vpos = vpos;
+
+	vpos += value;
 	return tmp;
 }
 
 
 static inline int reset_vpos(void)
 {
-	if(marked_pos == 0)
+	if(marked_vpos == 0)
 		BAD_ERROR("BUG: Saved write position is empty!\n");
-	else if(marked_pos == 1)
+	else if(marked_vpos == 1)
 		return FALSE;
 	else {
-		set_vpos(marked_pos);
+		set_vpos(marked_vpos);
 		return TRUE;
 	}
 }
@@ -96,31 +101,39 @@ static inline int reset_vpos(void)
 
 static inline void unmark_vpos()
 {
-	if(marked_pos == 0)
+	if(marked_vpos == 0)
 		BAD_ERROR("BUG: Saved write position should not be empty!\n");
 
-	marked_pos = 0;
+	marked_vpos = 0;
 }
 
 
 static inline void mark_vpos()
 {
-	if(marked_pos != 0)
+	if(marked_vpos != 0)
 		BAD_ERROR("BUG: Saved write position should be empty!\n");
 
-	marked_pos = 1;
+	marked_vpos = 1;
 }
 
 
 static inline long long get_marked_vpos(void)
 {
-	if(marked_pos == 0)
+	if(marked_vpos == 0)
 		BAD_ERROR("BUG: Saved write position is empty!\n");
-	else if(marked_pos == 1)
+	else if(marked_vpos == 1)
 		return get_vpos();
 	else
-		return marked_pos;
+		return marked_vpos;
 }
+
+
+static inline void set_pos(long long value)
+{
+	set_vpos(value);
+	set_dpos(value);
+}
+
 
 #define VIRT_DISK_HASH_SIZE 1048576
 #define VIRT_DISK_HASH(hash) (hash & 1048575)

@@ -34,6 +34,8 @@ static pthread_mutex_t virt_disk_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static struct virt_disk *vd_hashtable[VIRT_DISK_HASH_SIZE];
 
+long long vpos = 0, dpos = 0, marked_vpos = 0;
+
 void add_virt_disk(long long virt, long long disk)
 {
 	int hash = VIRT_DISK_HASH(virt);
@@ -60,6 +62,9 @@ long long get_virt_disk(long long virt)
 	int hash = VIRT_DISK_HASH(virt);
 	struct virt_disk *head;
 
+	if(virt == 0)
+		return 0;
+
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &virt_disk_mutex);
 	pthread_mutex_lock(&virt_disk_mutex);
 
@@ -72,5 +77,5 @@ long long get_virt_disk(long long virt)
 			return head->disk;
 	}
 
-	BAD_ERROR("BUG in get_virt_disk\n");
+	BAD_ERROR("BUG in get_virt_disk, %lld not found\n", virt);
 }

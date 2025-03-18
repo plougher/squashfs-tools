@@ -88,6 +88,9 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int 
 
 #define QUEUE_CACHE	1
 #define GEN_CACHE	2
+#define WSYNC_CMD	3
+#define OSYNC_CMD	4
+#define RESET_CMD	5
 
 /* struct describing a cache entry passed between threads */
 struct file_buffer {
@@ -249,9 +252,9 @@ extern struct seq_queue *seq_queue_init();
 extern void dump_seq_queue(struct seq_queue *, int);
 extern void seq_queue_flush(struct seq_queue *);
 extern void main_queue_put(struct seq_queue *, struct file_buffer *);
-extern void fragment_queue_put(struct seq_queue *, struct file_buffer *);
+extern void order_queue_put(struct seq_queue *, struct file_buffer *);
 extern struct file_buffer *main_queue_get(struct seq_queue *);
-extern struct file_buffer *fragment_queue_get(struct seq_queue *);
+extern struct file_buffer *order_queue_get(struct seq_queue *);
 extern struct read_queue *read_queue_init();
 extern void read_queue_set(struct read_queue *, int, int);
 extern void read_queue_put(struct read_queue *, int, struct file_buffer *);
