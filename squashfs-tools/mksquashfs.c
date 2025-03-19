@@ -304,7 +304,6 @@ pthread_mutex_t	pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* reproducible image queues and threads */
 struct seq_queue *to_order;
 pthread_t order_thread;
-pthread_cond_t fragment_waiting = PTHREAD_COND_INITIALIZER;
 int reproducible = REP_DEF;
 
 /* user options that control parallelisation */
@@ -1706,18 +1705,6 @@ static unsigned short get_fragment_checksum(struct file_info *file)
 }
 
 
-static void ensure_fragments_flushed()
-{
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
-	pthread_mutex_lock(&fragment_mutex);
-
-	while(fragments_outstanding)
-		pthread_cond_wait(&fragment_waiting, &fragment_mutex);
-
-	pthread_cleanup_pop(1);
-}
-
-
 static void lock_fragments()
 {
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
@@ -2851,7 +2838,6 @@ static void *orderer(void *arg)
 			fragments_outstanding --;
 			log_fragment(block, write_buffer->block);
 			queue_put(to_writer, write_buffer);
-			pthread_cond_signal(&fragment_waiting);
 			pthread_mutex_unlock(&fragment_mutex);
 		} else if(write_buffer->buffer_type == QUEUE_CACHE) {
 			write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
