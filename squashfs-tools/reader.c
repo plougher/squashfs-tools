@@ -750,7 +750,7 @@ static void create_resources()
 {
 	int i, per_rthread = total_rblocks / reader_threads;
 	int total_fwthread = (processors + 1) * fragment_threads;
-	int per_wthread = (total_wblocks - total_fwthread) / block_threads;
+	int per_wthread = (total_wblocks - total_fwthread) / (block_threads ? block_threads : 1);
 
 	queue_cache_set(bwriter_buffer, fragment_threads, processors + 1,
 		block_threads, per_wthread, per_rthread);
