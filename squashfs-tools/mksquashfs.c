@@ -496,7 +496,7 @@ static inline void send_orderer_reset(long long vpos)
 
 	buffer->cache = NULL;
 	buffer->sequence = get_sequence();
-	buffer->cache_type = RESET_CMD;
+	buffer->buffer_type = RESET_CMD;
 	buffer->block = vpos;
 
 	order_queue_put(to_order, buffer);
@@ -512,7 +512,7 @@ static inline void  sync_writer_thread()
 
 	buffer->cache = NULL;
 	buffer->sequence = get_sequence();
-	buffer->cache_type = WSYNC_CMD;
+	buffer->buffer_type = WSYNC_CMD;
 
 	order_queue_put(to_order, buffer);
 	if(queue_get(from_writer) != 0)
@@ -529,7 +529,7 @@ static inline void  sync_orderer_thread()
 
 	buffer->cache = NULL;
 	buffer->sequence = get_sequence();
-	buffer->cache_type = OSYNC_CMD;
+	buffer->buffer_type = OSYNC_CMD;
 
 	order_queue_put(to_order, buffer);
 	if(queue_get(from_order) != 0)
@@ -2844,7 +2844,7 @@ static void *orderer(void *arg)
 		struct file_buffer *write_buffer = order_queue_get(to_order);
 		long long block = write_buffer->block;
 
-		if(write_buffer->cache_type == GEN_CACHE) {
+		if(write_buffer->buffer_type == GEN_CACHE) {
 			pthread_mutex_lock(&fragment_mutex);
 			write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
 			fragment_table[block].start_block = write_buffer->block;
@@ -2853,17 +2853,17 @@ static void *orderer(void *arg)
 			queue_put(to_writer, write_buffer);
 			pthread_cond_signal(&fragment_waiting);
 			pthread_mutex_unlock(&fragment_mutex);
-		} else if(write_buffer->cache_type == QUEUE_CACHE) {
+		} else if(write_buffer->buffer_type == QUEUE_CACHE) {
 			write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
 			add_virt_disk(block, write_buffer->block);
 			queue_put(to_writer, write_buffer);
-		} else if(write_buffer->cache_type == WSYNC_CMD) {
+		} else if(write_buffer->buffer_type == WSYNC_CMD) {
 			free(write_buffer);
 			queue_put(to_writer, NULL);
-		} else if(write_buffer->cache_type == OSYNC_CMD) {
+		} else if(write_buffer->buffer_type == OSYNC_CMD) {
 			free(write_buffer);
 			queue_put(from_order, NULL);
-		} else if(write_buffer->cache_type == RESET_CMD) {
+		} else if(write_buffer->buffer_type == RESET_CMD) {
 			set_dpos(get_virt_disk(write_buffer->block));
 			free(write_buffer);
 		} else

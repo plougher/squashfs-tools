@@ -318,9 +318,9 @@ void order_queue_put(struct seq_queue *queue, struct file_buffer *entry)
 
 	insert_seq_hash_table(queue, entry, CALCULATE_FRAG_HASH(entry->sequence));
 
-	if(entry->cache_type == GEN_CACHE)
+	if(entry->buffer_type == GEN_CACHE)
 		queue->fragment_count ++;
-	else if(entry->cache_type == QUEUE_CACHE)
+	else if(entry->buffer_type == QUEUE_CACHE)
 		queue->block_count ++;
 
 	if(entry->sequence == queue->sequence)
@@ -353,9 +353,9 @@ struct file_buffer *order_queue_get(struct seq_queue *queue)
 			 * found the buffer in the queue, decrement the
 			 * appropriate count, and remove from hash list
 			 */
-			if(entry->cache_type == GEN_CACHE)
+			if(entry->buffer_type == GEN_CACHE)
 				queue->fragment_count --;
-			else if(entry->cache_type == QUEUE_CACHE)
+			else if(entry->buffer_type == QUEUE_CACHE)
 				queue->block_count --;
 
 			remove_seq_hash_table(queue, entry, hash);
@@ -623,7 +623,7 @@ static struct file_buffer *cache_alloc(struct cache *cache)
 
 	entry->cache = cache;
 	entry->free_prev = entry->free_next = NULL;
-	entry->cache_type = GEN_CACHE;
+	entry->buffer_type = GEN_CACHE;
 	cache->count ++;
 	return entry;
 }
@@ -1004,7 +1004,7 @@ static struct file_buffer *queue_cache_alloc(struct queue_cache *qc,
 	entry->queue_cache = qc;
 	entry->thread = i;
 	entry->free_prev = entry->free_next = NULL;
-	entry->cache_type = QUEUE_CACHE;
+	entry->buffer_type = QUEUE_CACHE;
 	thread->count ++;
 	thread->used ++;
 	return entry;

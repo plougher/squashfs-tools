@@ -136,7 +136,7 @@ struct file_buffer {
 	char noD;
 	char duplicate;
 	char next_state;
-	char cache_type;
+	char buffer_type;
 	char hashed;
 	char data[0] __attribute__((aligned));
 };
@@ -288,9 +288,9 @@ static inline void gen_cache_block_put(struct file_buffer *entry)
 {
 	if(entry == NULL)
 		return;
-	else if(entry->cache_type == GEN_CACHE)
+	else if(entry->buffer_type == GEN_CACHE)
 		cache_block_put(entry);
-	else if(entry->cache_type == QUEUE_CACHE)
+	else if(entry->buffer_type == QUEUE_CACHE)
 		queue_cache_block_put(entry);
 	else
 		BAD_ERROR("Bug in gen_cache_block_put\n");
@@ -301,12 +301,12 @@ static inline int cache_maxsize(struct file_buffer *entry)
 {
 	if(entry == NULL)
 		BAD_ERROR("Bug in cache_maxsize, entry == NULL\n");
-	else if(entry->cache_type == GEN_CACHE)
+	else if(entry->buffer_type == GEN_CACHE)
 		return entry->cache->max_buffers;
-	else if(entry->cache_type == QUEUE_CACHE)
+	else if(entry->buffer_type == QUEUE_CACHE)
 		return entry->queue_cache->wthread[entry->thread].max_buffers;
 	else
-		BAD_ERROR("Bug in cache max_size, unexepcted cache_type\n");
+		BAD_ERROR("Bug in cache max_size, unexepcted buffer_type\n");
 }
 
 
