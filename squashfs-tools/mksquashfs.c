@@ -255,7 +255,6 @@ struct pathname *stickypath = NULL;
 unsigned int fragments = 0;
 
 struct squashfs_fragment_entry *fragment_table = NULL;
-int fragments_outstanding = 0;
 
 int fragments_locked = FALSE;
 
@@ -1741,7 +1740,6 @@ static void unlock_fragments()
 		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(fragment_table[frg].size);
 		write_buffer->block = get_and_inc_dpos(size);
 		fragment_table[frg].start_block = write_buffer->block;
-		fragments_outstanding --;
 		queue_put(to_writer, write_buffer);
 		log_fragment(frg, fragment_table[frg].start_block);
 		TRACE("fragment_locked writing fragment %d, compressed size %d"
@@ -1771,7 +1769,6 @@ static void write_fragment(struct file_buffer *fragment)
 	pthread_mutex_lock(&fragment_mutex);
 	fragment_table[fragment->block].unused = 0;
 	fragment->sequence = get_sequence();
-	fragments_outstanding ++;
 	queue_put(to_frag, fragment);
 	pthread_cleanup_pop(1);
 }
@@ -2768,7 +2765,6 @@ static void *frag_deflator(void *arg)
 			fragment_table[file_buffer->block].size = c_byte;
 			write_buffer->block = get_and_inc_dpos(compressed_size);
 			fragment_table[file_buffer->block].start_block = write_buffer->block;
-			fragments_outstanding --;
 			queue_put(to_writer, write_buffer);
 			log_fragment(file_buffer->block, fragment_table[file_buffer->block].start_block);
 			pthread_mutex_unlock(&fragment_mutex);
@@ -2835,7 +2831,6 @@ static void *orderer(void *arg)
 			pthread_mutex_lock(&fragment_mutex);
 			write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
 			fragment_table[block].start_block = write_buffer->block;
-			fragments_outstanding --;
 			log_fragment(block, write_buffer->block);
 			queue_put(to_writer, write_buffer);
 			pthread_mutex_unlock(&fragment_mutex);
@@ -7127,15 +7122,6 @@ static int sqfstar(int argc, char *argv[])
 		write_fragment(*fragment);
 	if(!reproducible)
 		unlock_fragments();
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
-	pthread_mutex_lock(&fragment_mutex);
-	while(fragments_outstanding) {
-		pthread_mutex_unlock(&fragment_mutex);
-		pthread_testcancel();
-		sched_yield();
-		pthread_mutex_lock(&fragment_mutex);
-	}
-	pthread_cleanup_pop(1);
 
 	sync_writer_thread();
 	pthread_cancel(writer_thread);
@@ -8375,19 +8361,10 @@ int main(int argc, char *argv[])
 
 		disable_info();
 
-		while((fragment = get_frag_action(fragment)))
-			write_fragment(*fragment);
-		if(!reproducible)
-			unlock_fragments();
-		pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
-		pthread_mutex_lock(&fragment_mutex);
-	while(fragments_outstanding) {
-		pthread_mutex_unlock(&fragment_mutex);
-		pthread_testcancel();
-		sched_yield();
-		pthread_mutex_lock(&fragment_mutex);
-	}
-	pthread_cleanup_pop(1);
+	while((fragment = get_frag_action(fragment)))
+		write_fragment(*fragment);
+	if(!reproducible)
+		unlock_fragments();
 
 	sync_writer_thread();
 	pthread_cancel(writer_thread);
