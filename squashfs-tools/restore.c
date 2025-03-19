@@ -55,7 +55,6 @@ extern struct read_queue *to_process_frag;
 extern struct seq_queue *to_main, *to_order;
 extern void restorefs();
 extern int processors;
-extern int reproducible;
 
 static int interrupted = 0;
 static pthread_t restore_thread;
@@ -143,17 +142,12 @@ void *restore_thrd(void *arg)
 		for(i = 0; i < processors; i++)
 			pthread_join(frag_deflator_thread[i], NULL);
 
-		if(reproducible) {
-			/* then flush the fragment deflator_threads(s)
-			 * to frag orderer thread.  The frag orderer
-			 * thread will idle
-			 */
-			seq_queue_flush(to_order);
+		/* then flush the to_order queue.  The orderer thread will idle */
+		seq_queue_flush(to_order);
 
-			/* now kill the frag orderer thread */
-			pthread_cancel(order_thread);
-			pthread_join(order_thread, NULL);
-		}
+		/* now kill the orderer thread */
+		pthread_cancel(order_thread);
+		pthread_join(order_thread, NULL);
 
 		/*
 		 * then flush the main thread/fragment deflator thread(s)

@@ -286,7 +286,7 @@ unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 struct cache *fragment_buffer, *reserve_cache;
 struct cache *fwriter_buffer;
 struct queue_cache *bwriter_buffer;
-struct queue *to_reader, *to_writer, *from_writer, *to_frag, *locked_fragment, *from_order;
+struct queue *to_reader, *to_writer, *from_writer, *to_frag, *from_order;
 struct queue_cache *to_deflate;
 struct read_queue *to_process_frag;
 struct seq_queue *to_main;
@@ -303,7 +303,6 @@ pthread_mutex_t	pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* reproducible image queues and threads */
 struct seq_queue *to_order;
 pthread_t order_thread;
-int reproducible = REP_DEF;
 
 /* user options that control parallelisation */
 int processors = -1;
@@ -1704,59 +1703,10 @@ static unsigned short get_fragment_checksum(struct file_info *file)
 }
 
 
-static void lock_fragments()
-{
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
-	pthread_mutex_lock(&fragment_mutex);
-	fragments_locked = TRUE;
-	pthread_cleanup_pop(1);
-}
-
-
 static void log_fragment(unsigned int fragment, long long start)
 {
 	if(logging)
 		fprintf(log_fd, "Fragment %u, %lld\n", fragment, start);
-}
-
-
-static void unlock_fragments()
-{
-	int frg, size;
-	struct file_buffer *write_buffer;
-
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
-	pthread_mutex_lock(&fragment_mutex);
-
-	/*
-	 * Note queue_empty() is inherently racy with respect to concurrent
-	 * queue get and pushes.  We avoid this because we're holding the
-	 * fragment_mutex which ensures no other threads can be using the
-	 * queue at this time.
-	 */
-	while(!queue_empty(locked_fragment)) {
-		write_buffer = queue_get(locked_fragment);
-		frg = write_buffer->block;	
-		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(fragment_table[frg].size);
-		write_buffer->block = get_and_inc_dpos(size);
-		fragment_table[frg].start_block = write_buffer->block;
-		queue_put(to_writer, write_buffer);
-		log_fragment(frg, fragment_table[frg].start_block);
-		TRACE("fragment_locked writing fragment %d, compressed size %d"
-			"\n", frg, size);
-	}
-	fragments_locked = FALSE;
-	pthread_cleanup_pop(1);
-}
-
-/* Called with the fragment_mutex locked */
-static void add_pending_fragment(struct file_buffer *write_buffer, int c_byte,
-	int fragment)
-{
-	fragment_table[fragment].size = c_byte;
-	write_buffer->block = fragment;
-
-	queue_put(locked_fragment, write_buffer);
 }
 
 
@@ -2739,52 +2689,6 @@ static void *deflator(void *arg)
 }
 
 
-static void *frag_deflator(void *arg)
-{
-	void *stream = NULL;
-	int res, tid = get_thread_id(THREAD_FRAGMENT);
-
-	res = compressor_init(comp, &stream, block_size, 1);
-	if(res)
-		BAD_ERROR("frag_deflator:: compressor_init failed\n");
-
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
-
-	while(1) {
-		int c_byte, compressed_size;
-		struct file_buffer *file_buffer = queue_get_tid(tid, to_frag);
-		struct file_buffer *write_buffer =
-			cache_get(fwriter_buffer, file_buffer->block);
-
-		c_byte = mangle2(stream, write_buffer->data, file_buffer->data,
-			file_buffer->size, block_size, noF, 1);
-		compressed_size = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
-		write_buffer->size = compressed_size;
-		pthread_mutex_lock(&fragment_mutex);
-		if(fragments_locked == FALSE) {
-			fragment_table[file_buffer->block].size = c_byte;
-			write_buffer->block = get_and_inc_dpos(compressed_size);
-			fragment_table[file_buffer->block].start_block = write_buffer->block;
-			queue_put(to_writer, write_buffer);
-			log_fragment(file_buffer->block, fragment_table[file_buffer->block].start_block);
-			pthread_mutex_unlock(&fragment_mutex);
-			TRACE("Writing fragment %lld, uncompressed size %d, "
-				"compressed size %d\n", file_buffer->block,
-				file_buffer->size, compressed_size);
-		} else {
-				add_pending_fragment(write_buffer, c_byte,
-					file_buffer->block);
-				pthread_mutex_unlock(&fragment_mutex);
-		}
-		gen_cache_block_put(file_buffer);
-	}
-
-	pthread_cleanup_pop(0);
-	return NULL;
-
-}
-
-
 static void *frag_order_deflator(void *arg)
 {
 	void *stream = NULL;
@@ -2927,9 +2831,6 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 
 	*duplicate_file = FALSE;
 
-	if(!reproducible)
-		lock_fragments();
-
 	file_bytes = 0;
 	mark_vpos();
 	while (1) {
@@ -2957,9 +2858,6 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 		if(read_buffer->error)
 			goto read_err;
 	}
-
-	if(!reproducible)
-		unlock_fragments();
 
 	fragment = get_and_fill_fragment(fragment_buffer, dir_ent, block != 0);
 
@@ -2990,8 +2888,6 @@ read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
 	reset_and_truncate();
-	if(!reproducible)
-		unlock_fragments();
 	free(block_list);
 	gen_cache_block_put(read_buffer);
 	unmark_vpos();
@@ -3016,9 +2912,6 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 
 	block_list = MALLOC(blocks * sizeof(unsigned int));
 	buffer_list = MALLOC(blocks * sizeof(struct file_buffer *));
-
-	if(!reproducible)
-		lock_fragments();
 
 	file_bytes = 0;
 	mark_vpos();
@@ -3079,8 +2972,6 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 			gen_cache_block_put(buffer_list[block]);
 	}
 
-	if(!reproducible)
-		unlock_fragments();
 	gen_cache_block_put(fragment_buffer);
 	free(buffer_list);
 	file_count ++;
@@ -3099,8 +2990,6 @@ read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
 	reset_and_truncate();
-	if(!reproducible)
-		unlock_fragments();
 	for(blocks = thresh; blocks < block; blocks ++)
 		gen_cache_block_put(buffer_list[blocks]);
 	free(buffer_list);
@@ -3131,9 +3020,6 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 	*dup = FALSE;
 
 	block_list = MALLOC(blocks * sizeof(unsigned int));
-
-	if(!reproducible)
-		lock_fragments();
 
 	file_bytes = 0;
 	mark_vpos();
@@ -3172,9 +3058,6 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 	if(sparse && (dir_ent->inode->buf.st_blocks << 9) >= read_size)
 		sparse = 0;
 
-	if(!reproducible)
-		unlock_fragments();
-
 	fragment = get_and_fill_fragment(fragment_buffer, dir_ent, TRUE);
 
 	if(duplicate_checking)
@@ -3201,8 +3084,6 @@ read_err:
 	dec_progress_bar(block);
 	*status = read_buffer->error;
 	reset_and_truncate();
-	if(!reproducible)
-		unlock_fragments();
 	free(block_list);
 	gen_cache_block_put(read_buffer);
 	unmark_vpos();
@@ -5392,10 +5273,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	from_order = queue_init(1, NULL);
 	to_frag = queue_init(fragment_size, &thread_mutex);
 	to_main = seq_queue_init();
-	if(reproducible)
-		to_order = seq_queue_init();
-	else
-		locked_fragment = queue_init(fragment_size, NULL);
+	to_order = seq_queue_init();
 	fwriter_buffer = cache_init(block_size, fwriter_size, 1, freelst);
 	fragment_buffer = cache_init(block_size, fragment_size, 1, 0);
 	reserve_cache = cache_init(block_size, processors + 1, 1, 0);
@@ -5407,8 +5285,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	for(i = 0; i < processors; i++) {
 		if(pthread_create(&deflator_thread[i], NULL, deflator, NULL))
 			BAD_ERROR("Failed to create thread\n");
-		if(pthread_create(&frag_deflator_thread[i], NULL, reproducible ?
-				frag_order_deflator : frag_deflator, NULL) != 0)
+		if(pthread_create(&frag_deflator_thread[i], NULL, frag_order_deflator, NULL) != 0)
 			BAD_ERROR("Failed to create thread\n");
 		if(pthread_create(&frag_thread[i], NULL, frag_thrd,
 				(void *) destination_file) != 0)
@@ -5417,8 +5294,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 
 	main_thread = pthread_self();
 
-	if(reproducible)
-		pthread_create(&order_thread, NULL, orderer, NULL);
+	pthread_create(&order_thread, NULL, orderer, NULL);
 
 	if(!quiet)
 		printf("Parallel mksquashfs: Using %d processor%s\n", processors,
@@ -6562,10 +6438,12 @@ static int sqfstar(int argc, char *argv[])
 				sqfstar_option_help(argv[i - 1], "sqfstar: -all-time missing or invalid time value\n");
 			all_time_opt = TRUE;
 			clamping = FALSE;
-		} else if(strcmp(argv[i], "-reproducible") == 0)
-			reproducible = TRUE;
-		else if(strcmp(argv[i], "-not-reproducible") == 0)
-			reproducible = FALSE;
+		} else if(strcmp(argv[i], "-reproducible") == 0);
+			/* obsolete option, ignored and retained for backwards
+			 * compatibility */
+		else if(strcmp(argv[i], "-not-reproducible") == 0);
+			/* obsolete option, ignored and retained for backwards
+			 * compatibility */
 		else if(strcmp(argv[i], "-root-mode") == 0) {
 			if((++i == dest_index) || !parse_mode(argv[i], &root_mode))
 				sqfstar_option_help(argv[i - 1], "sqfstar: -root-mode missing or invalid mode, symbolic mode or octal number expected\n");
@@ -7120,8 +6998,6 @@ static int sqfstar(int argc, char *argv[])
 
 	while((fragment = get_frag_action(fragment)))
 		write_fragment(*fragment);
-	if(!reproducible)
-		unlock_fragments();
 
 	sync_writer_thread();
 	pthread_cancel(writer_thread);
@@ -7394,10 +7270,12 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -all-time missing or invalid time value\n");
 			all_time_opt = TRUE;
 			clamping = FALSE;
-		} else if(strcmp(argv[i], "-reproducible") == 0)
-			reproducible = TRUE;
-		else if(strcmp(argv[i], "-not-reproducible") == 0)
-			reproducible = FALSE;
+		} else if(strcmp(argv[i], "-reproducible") == 0);
+			/* obsolete option, ignored and retained for backwards
+			 * compatibility */
+		else if(strcmp(argv[i], "-not-reproducible") == 0);
+			/* obsolete option, ignored and retained for backwards
+			 * compatibility */
 		else if(strcmp(argv[i], "-root-mode") == 0) {
 			if((++i == argc) || !parse_mode(argv[i], &root_mode))
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -root-mode missing or invalid mode, symbolic mode or octal number expected\n");
@@ -8363,8 +8241,6 @@ int main(int argc, char *argv[])
 
 	while((fragment = get_frag_action(fragment)))
 		write_fragment(*fragment);
-	if(!reproducible)
-		unlock_fragments();
 
 	sync_writer_thread();
 	pthread_cancel(writer_thread);

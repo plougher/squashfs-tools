@@ -105,24 +105,14 @@ static void dump_state()
 						" deflate thread(s))\n");
 	dump_queue(to_frag);
 
-	if(!reproducible) {
-		printf("locked frag queue (compressed frags waiting while multi-block"
-							" file is written)\n");
-		dump_queue(locked_fragment);
+	printf("compressed fragment queue (fragment deflate threads(s) ->"
+					"fragment order thread)\n");
 
-		printf("compressed block queue (main & fragment deflate threads(s) ->"
-						" writer thread)\n");
-		dump_queue(to_writer);
-	} else {
-		printf("compressed fragment queue (fragment deflate threads(s) ->"
-						"fragment order thread)\n");
+	dump_seq_queue(to_order, 0);
 
-		dump_seq_queue(to_order, 0);
-
-		printf("compressed block queue (main & fragment order threads ->"
-						" writer thread)\n");
-		dump_queue(to_writer);
-	}
+	printf("compressed block queue (main & fragment order threads ->"
+					" writer thread)\n");
+	dump_queue(to_writer);
 
 	reader = get_readers(&reader_threads);
 	for(i = 0; i < reader_threads; i++) {
