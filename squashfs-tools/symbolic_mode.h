@@ -26,6 +26,8 @@
 #define SYNTAX_ERR(S, ARGS...) { \
 	if(source) { \
 		char *src = strdup(source); \
+		if(src == NULL) \
+			MEM_ERROR(); \
 		src[cur_ptr - source] = '\0'; \
 		fprintf(stderr, "Failed to parse action \"%s\"\n", source); \
 		fprintf(stderr, "Syntax error: "S, ##ARGS); \
