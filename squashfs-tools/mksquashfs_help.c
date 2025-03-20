@@ -44,9 +44,9 @@ static char *mksquashfs_options[]={
 	"-no-compression", "", "", "",
 	/* build options */
 	"-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
-	"-reproducible", "-not-reproducible", "-no-exports", "-exports",
-	"-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
-	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "",
+	"-no-exports", "-exports", "-no-sparse", "-no-tailends", "-tailends",
+	"-no-fragments", "-no-duplicates", "-no-hardlinks",
+	"-keep-as-directory", "", "", "",
 	/* time options */
 	"-mkfs-time", "-all-time", "-root-time", "", "", "",
 	/* permissions options */
@@ -125,8 +125,7 @@ static char *mksquashfs_args[]={
 	/* compression options */
 	"", "", "<block-size>", "<comp>", "", "", "", "", "", "", "", "", "",
 	/* build options */
-	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "","",
-	"",
+	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "","", "",
 	/* time options */
 	"<time>", "<time>", "<time>", "", "", "",
 	/* permissions options */
@@ -224,9 +223,6 @@ static char *mksquashfs_text[]={
 		"(stdin)\n",
 	"-cpiostyle0\t\tlike -cpiostyle, but filenames are null terminated.  "
 		"Can be used with find -print0 action\n",
-	"-reproducible\t\tbuild filesystems that are reproducible" REP_STR "\n",
-	"-not-reproducible\tbuild filesystems that are not reproducible"
-		NOREP_STR "\n",
 	"-no-exports\t\tdo not make filesystem exportable via NFS (-tar "
 		"default)\n",
 	"-exports\t\tmake filesystem exportable via NFS (default)\n",
