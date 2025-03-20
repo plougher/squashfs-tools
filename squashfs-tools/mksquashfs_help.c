@@ -92,9 +92,9 @@ static char *sqfstar_options[]={
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
 	"-no-compression", "", "", "",
 	/* build options */
-	"-reproducible", "-not-reproducible", "-exports", "-no-sparse",
-	"-no-fragments", "-no-tailends", "-no-duplicates", "-no-hardlinks",
-	"-regex", "-ignore-zeros", "-ef", "", "", "",
+	"-exports", "-no-sparse", "-no-fragments", "-no-tailends",
+	"-no-duplicates", "-no-hardlinks", "-regex", "-ignore-zeros", "-ef", "",
+	"", "",
 	/* time options */
 	"-mkfs-time", "-all-time", "-root-time", "", "", "",
 	/* permissions options */
@@ -162,7 +162,7 @@ static char *sqfstar_args[]={
 	/* compression */
 	"", "", "<block-size>", "<comp>",  "", "", "", "", "", "", "", "", "",
 	/* build options */
-	"", "", "", "", "", "", "", "", "", "", "<exclude-file>", "", "", "",
+	"", "", "", "", "", "", "", "", "<exclude-file>", "", "", "",
 	/* time options */
 	"<time>", "<time>", "<time>", "", "", "",
 	/* permissions options */
@@ -550,10 +550,6 @@ static char *sqfstar_text[]={
 	"-no-compression\t\tdo not compress any of the data or metadata.  This "
 		"is equivalent to specifying -noI -noD -noF and -noX\n",
 	"\n", "Filesystem build options:", "\n",
-	"-reproducible\t\tbuild filesystems that are reproducible" REP_STR
-		"\n",
-	"-not-reproducible\tbuild filesystems that are not reproducible"
-		NOREP_STR "\n",
 	"-exports\t\tmake the filesystem exportable via NFS\n",
 	"-no-sparse\t\tdo not detect sparse files\n",
 	"-no-fragments\t\tdo not use fragments\n",
