@@ -23,16 +23,6 @@
  * mksquashfs_help.h
  */
 
-#ifdef REPRODUCIBLE_DEFAULT
-#define NOREP_STR
-#define REP_STR " (default)"
-#define REP_DEF 1
-#else
-#define NOREP_STR " (default)"
-#define REP_STR
-#define REP_DEF 0
-#endif
-
 #ifdef XATTR_SUPPORT
 #ifdef XATTR_OS_SUPPORT
 #ifdef XATTR_DEFAULT

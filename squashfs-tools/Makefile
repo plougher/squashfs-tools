@@ -154,16 +154,6 @@ SMALL_READER_THREADS = 8
 BLOCK_READER_THREADS = 3
 
 ###############################################
-#          Reproducible Image options         #
-###############################################
-#
-# Select whether you wish reproducible builds by default.  If selected users
-# can disable reproducible builds using the not-reproducible option.
-# If not selected, users can enable reproducible builds using the
-# -reproducible option
-REPRODUCIBLE_DEFAULT = 1
-
-###############################################
 #               Manpage generation            #
 ###############################################
 #
@@ -238,7 +228,6 @@ COMP_DEFAULT ?= gzip
 XATTR_SUPPORT ?= 1
 XATTR_OS_SUPPORT ?= 1
 XATTR_DEFAULT ?= 1
-REPRODUCIBLE_DEFAULT ?= 1
 USE_PREBUILT_MANPAGES ?= n
 INSTALL_PREFIX ?= /usr/local
 INSTALL_DIR ?= $(INSTALL_PREFIX)/bin
@@ -382,10 +371,6 @@ else
 MKSQUASHFS_OBJS += xattr.o read_xattrs.o tar_xattr.o pseudo_xattr.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
 endif
-endif
-
-ifeq ($(REPRODUCIBLE_DEFAULT),1)
-CFLAGS += -DREPRODUCIBLE_DEFAULT
 endif
 
 ifeq ($(DONT_USE_ATOMIC_EXCHANGE_N),1)
