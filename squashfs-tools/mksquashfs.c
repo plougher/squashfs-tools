@@ -2689,7 +2689,7 @@ static void *deflator(void *arg)
 }
 
 
-static void *frag_order_deflator(void *arg)
+static void *frag_deflator(void *arg)
 {
 	void *stream = NULL;
 	int res, tid = get_thread_id(THREAD_FRAGMENT);
@@ -5285,7 +5285,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	for(i = 0; i < processors; i++) {
 		if(pthread_create(&deflator_thread[i], NULL, deflator, NULL))
 			BAD_ERROR("Failed to create thread\n");
-		if(pthread_create(&frag_deflator_thread[i], NULL, frag_order_deflator, NULL) != 0)
+		if(pthread_create(&frag_deflator_thread[i], NULL, frag_deflator, NULL) != 0)
 			BAD_ERROR("Failed to create thread\n");
 		if(pthread_create(&frag_thread[i], NULL, frag_thrd,
 				(void *) destination_file) != 0)
