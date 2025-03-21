@@ -2733,9 +2733,9 @@ static void *orderer(void *arg)
 			write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
 			fragment_table[block].start_block = write_buffer->block;
 			fragment_table[block].size = write_buffer->c_byte;
+			pthread_mutex_unlock(&fragment_mutex);
 			log_fragment(block, write_buffer->block);
 			queue_put(to_writer, write_buffer);
-			pthread_mutex_unlock(&fragment_mutex);
 		} else if(write_buffer->buffer_type == QUEUE_CACHE) {
 			write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
 			add_virt_disk(block, write_buffer->block);
