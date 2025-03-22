@@ -44,6 +44,7 @@
 #include "xattr.h"
 #include "mksquashfs_error.h"
 #include "mksquashfs_help.h"
+#include "alloc.h"
 
 int read_block(int fd, long long start, long long *next, int expected,
 								void *block)
@@ -239,9 +240,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 	get_guid(id_table[dir_inode->base.guid]);
 
 	/* allocate fragment to file mapping table */
-	file_mapping = calloc(sBlk->fragments, sizeof(struct append_file *));
-	if(file_mapping == NULL)
-		MEM_ERROR();
+	file_mapping = CALLOC(sBlk->fragments, sizeof(struct append_file *));
 
 	for(cur_ptr = inode_table; cur_ptr < inode_table + bytes; files ++) {
 		/*
