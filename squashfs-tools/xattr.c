@@ -1001,7 +1001,7 @@ struct xattr_add *xattr_parse(char *str, char *pre, char *option)
 	}
 
 	entry = MALLOC(sizeof(struct xattr_add));
-	entry->name = strndup(str, value++ - str);
+	entry->name = STRNDUP(str, value++ - str);
 	entry->type = xattr_get_type(entry->name);
 
 	if(entry->type == -1) {

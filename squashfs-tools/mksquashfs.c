@@ -4751,10 +4751,10 @@ static char *walk_source(char *source, char **pathname, char **name)
 	while(*source != '/' && *source != '\0')
 		source ++;
 
-	*name = strndup(start, source - start);
+	*name = STRNDUP(start, source - start);
 
 	if(*pathname == NULL)
-		*pathname = strndup(path, source - path);
+		*pathname = STRNDUP(path, source - path);
 	else {
 		char *orig = *pathname;
 		int size = strlen(orig) + (source - path) + 2;
@@ -5568,7 +5568,7 @@ static char *get_component(char *target, char **targname)
 	while(*target != '/' && *target != '\0')
 		target ++;
 
-	*targname = strndup(start, target - start);
+	*targname = STRNDUP(start, target - start);
 
 	while(*target == '/')
 		target ++;

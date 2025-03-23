@@ -87,7 +87,7 @@ char *get_element(char *target, char **targname, char **subpathend)
 	while(*target != '/' && *target != '\0')
 		target ++;
 
-	*targname = strndup(start, target - start);
+	*targname = STRNDUP(start, target - start);
 	*subpathend = target;
 
 	while(*target == '/')
@@ -114,7 +114,7 @@ struct pseudo_entry *pseudo_search(struct pseudo *pseudo, char *targname,
 
 	ent = MALLOC(sizeof(struct pseudo_entry));
 	ent->name = targname;
-	ent->pathname = strndup(alltarget, subpathend - alltarget);
+	ent->pathname = STRNDUP(alltarget, subpathend - alltarget);
 	ent->dev = NULL;
 	ent->pseudo = NULL;
 	ent->xattr = NULL;

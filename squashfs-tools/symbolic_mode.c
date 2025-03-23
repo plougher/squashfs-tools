@@ -257,7 +257,7 @@ int parse_mode(char *source, struct mode_data **data)
 
 			argv = new;
 
-			argv[args ++] = strndup(first, cur_ptr - first);
+			argv[args ++] = STRNDUP(first, cur_ptr - first);
 		}
 
 		if(*cur_ptr == ',')

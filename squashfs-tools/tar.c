@@ -229,7 +229,7 @@ static char *get_component(char *target, char **targname)
 	while(*target != '/' && *target != '\0')
 		target ++;
 
-	*targname = strndup(start, target - start);
+	*targname = STRNDUP(start, target - start);
 
 	while(*target == '/')
 		target ++;
@@ -1307,7 +1307,7 @@ again:
 		file->pathname[length1 + length2 + 1] = '\0';
 	} else if (file->pathname == NULL) {
 		filename = skip_components(header.name, 100, &size);
-		file->pathname = strndup(filename, size);
+		file->pathname = STRNDUP(filename, size);
 	}
 
 	/* Ignore empty filenames */
@@ -1352,7 +1352,7 @@ again:
 	if(file->uname)
 		user = file->uname;
 	else
-		user = strndup(header.user, 32);
+		user = STRNDUP(header.user, 32);
 
 	if(strlen(user)) {
 		struct passwd *pwuid = getpwnam(user);
@@ -1383,7 +1383,7 @@ again:
 	if(file->gname)
 		group = file->gname;
 	else
-		group = strndup(header.group, 32);
+		group = STRNDUP(header.group, 32);
 
 	if(strlen(group)) {
 		struct group *grgid = getgrnam(group);
@@ -1429,7 +1429,7 @@ again:
 		file->buf.st_mode = 0777 | S_IFLNK;
 
 		if(file->link == FALSE)
-			file->link = strndup(header.link, 100);
+			file->link = STRNDUP(header.link, 100);
 	}
 
 	/* Handle hard links */
@@ -1445,7 +1445,7 @@ again:
 			}
 		} else {
 			filename = skip_components(header.link, 100, &size);
-			file->link = strndup(filename, size);
+			file->link = STRNDUP(filename, size);
 		}
 	}
 

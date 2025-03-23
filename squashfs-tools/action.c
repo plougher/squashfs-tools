@@ -1481,7 +1481,7 @@ static char *get_comp(char **pathname)
 		path ++;
 
 	*pathname = path;
-	return strndup(start, path - start);
+	return STRNDUP(start, path - start);
 }
 
 
