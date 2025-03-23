@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2019, 2021
+ * Copyright (c) 2019, 2021, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -26,6 +26,7 @@
 
 #include "unsquashfs.h"
 #include "squashfs_compat.h"
+#include "alloc.h"
 
 int read_ids(int ids, long long start, long long end, unsigned int **id_table)
 {
@@ -47,15 +48,10 @@ int read_ids(int ids, long long start, long long end, unsigned int **id_table)
 
 	TRACE("read_ids: no_ids %d\n", ids);
 
-	*id_table = malloc(length);
-	if(*id_table == NULL)
-		MEM_ERROR();
+	*id_table = MALLOC(length);
 
 	if(swap) {
-		unsigned int *sid_table = malloc(length);
-
-		if(sid_table == NULL)
-			MEM_ERROR();
+		unsigned int *sid_table = MALLOC(length);
 
 		res = read_fs_bytes(fd, start, length, sid_table);
 		if(res == FALSE) {

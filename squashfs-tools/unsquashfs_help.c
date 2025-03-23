@@ -31,6 +31,7 @@
 #include "unsquashfs_error.h"
 #include "print_pager.h"
 #include "compressor.h"
+#include "alloc.h"
 
 #define UNSQUASHFS_SYNTAX "SYNTAX: %s [OPTIONS] FILESYSTEM [files to extract " \
 	"or exclude (with -excludes) or cat (with -cat )]\n\n"
@@ -349,11 +350,8 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 					char **options_args, char **options_text)
 {
 	int i, res, matched = FALSE;
-	regex_t *preg = malloc(sizeof(regex_t));
+	regex_t *preg = MALLOC(sizeof(regex_t));
 	int cols = get_column_width();
-
-	if(preg == NULL)
-		MEM_ERROR();
 
 	res = regcomp(preg, pattern, REG_EXTENDED|REG_NOSUB);
 

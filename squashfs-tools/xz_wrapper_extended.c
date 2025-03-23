@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, 2011, 2012, 2013, 2021, 2022, 2023, 2024
+ * Copyright (c) 2010, 2011, 2012, 2013, 2021, 2022, 2023, 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -33,6 +33,7 @@
 #include "xz_wrapper.h"
 #include "compressor.h"
 #include "print_pager.h"
+#include "alloc.h"
 
 /*
  * ARM64 filter was added in liblzma 5.4.0. Keep the build working with
@@ -496,16 +497,10 @@ failed:
 static int xz_init(void **strm, int block_size, int datablock)
 {
 	int i, j, filters = datablock ? filter_count : 1;
-	struct filter *filter = malloc(filters * sizeof(struct filter));
+	struct filter *filter = MALLOC(filters * sizeof(struct filter));
 	struct xz_stream *stream;
 
-	if(filter == NULL)
-		goto failed;
-
-	stream = *strm = malloc(sizeof(struct xz_stream));
-	if(stream == NULL)
-		goto failed2;
-
+	stream = *strm = MALLOC(sizeof(struct xz_stream));
 	stream->filter = filter;
 	stream->filters = filters;
 
@@ -520,9 +515,7 @@ static int xz_init(void **strm, int block_size, int datablock)
 
 	for(i = 0, j = 1; datablock && bcj[i].name; i++) {
 		if(bcj[i].selected) {
-			filter[j].buffer = malloc(block_size);
-			if(filter[j].buffer == NULL)
-				goto failed3;
+			filter[j].buffer = MALLOC(block_size);
 			filter[j].filter[0].id = bcj[i].id;
 			filter[j].filter[1].id = LZMA_FILTER_LZMA2;
 			filter[j].filter[1].options = &stream->opt;
@@ -532,17 +525,6 @@ static int xz_init(void **strm, int block_size, int datablock)
 	}
 
 	return 0;
-
-failed3:
-	for(i = 1; i < filters; i++)
-		free(filter[i].buffer);
-	free(stream);
-
-failed2:
-	free(filter);
-
-failed:
-	return -1;
 }
 
 

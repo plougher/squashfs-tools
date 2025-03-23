@@ -2,7 +2,7 @@
  * Read a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2013, 2019, 2021, 2022, 2023
+ * Copyright (c) 2010, 2012, 2013, 2019, 2021, 2022, 2023, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -36,6 +36,7 @@
 #include "squashfs_swap.h"
 #include "xattr.h"
 #include "error.h"
+#include "alloc.h"
 
 #include <stdlib.h>
 
@@ -70,13 +71,10 @@ struct prefix prefix_table[] = {
  */
 static int save_xattr_block(long long start, long long offset)
 {
-	struct hash_entry *hash_entry = malloc(sizeof(*hash_entry));
+	struct hash_entry *hash_entry = MALLOC(sizeof(*hash_entry));
 	int hash = start & 0xffff;
 
 	TRACE("save_xattr_block: start %lld, offset %d\n", start, offset);
-
-	if(hash_entry == NULL)
-		return FALSE;
 
 	hash_entry->start = start;
 	hash_entry->offset = offset;
@@ -126,12 +124,7 @@ static int read_xattr_entry(struct xattr_list *xattr,
 	}
 
 	len = strlen(prefix_table[i].prefix);
-	xattr->full_name = malloc(len + entry->size + 1);
-	if(xattr->full_name == NULL) {
-		ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
-		return -1;
-	}
-
+	xattr->full_name = MALLOC(len + entry->size + 1);
 	memcpy(xattr->full_name, prefix_table[i].prefix, len);
 	memcpy(xattr->full_name + len, name, entry->size);
 	xattr->full_name[len + entry->size] = '\0';
@@ -218,12 +211,7 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	 * Allocate and read the index to the xattr id table metadata
 	 * blocks
 	 */
-	index = malloc(index_bytes);
-	if(index == NULL) {
-		ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
-		goto failed;
-	}
-
+	index = MALLOC(index_bytes);
 	res = read_fs_bytes(fd, sBlk->xattr_id_table_start + sizeof(id_table),
 		index_bytes, index);
 	if(res ==0)
@@ -236,11 +224,7 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	 * read and decompress it
 	 */
 	bytes = SQUASHFS_XATTR_BYTES(ids);
-	xattr_ids = malloc(bytes);
-	if(xattr_ids == NULL) {
-		ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
-		goto failed1;
-	}
+	xattr_ids = MALLOC(bytes);
 
 	for(i = 0; i < indexes; i++) {
 		int expected = (i + 1) != indexes ? SQUASHFS_METADATA_SIZE :

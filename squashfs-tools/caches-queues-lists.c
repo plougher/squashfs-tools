@@ -30,6 +30,7 @@
 #include "mksquashfs_error.h"
 #include "caches-queues-lists.h"
 #include "thread.h"
+#include "alloc.h"
 
 extern int add_overflow(int, int);
 extern int multiply_overflow(int, int);
@@ -39,29 +40,20 @@ extern int multiply_overflow(int, int);
 
 struct queue *queue_init(int size, pthread_mutex_t *mutex)
 {
-	struct queue *queue = malloc(sizeof(struct queue));
-
-	if(queue == NULL)
-		MEM_ERROR();
+	struct queue *queue = MALLOC(sizeof(struct queue));
 
 	if(add_overflow(size, 1) ||
 				multiply_overflow(size + 1, sizeof(void *)))
 		BAD_ERROR("Size too large in queue_init\n");
 
-	queue->data = malloc(sizeof(void *) * (size + 1));
-	if(queue->data == NULL)
-		MEM_ERROR();
-
+	queue->data = MALLOC(sizeof(void *) * (size + 1));
 	queue->size = size + 1;
 	queue->readp = queue->writep = 0;
 
 	if(mutex)
 		queue->mutex = mutex;
 	else {
-		queue->mutex = malloc(sizeof(pthread_mutex_t));
-		if(queue->mutex == NULL)
-			MEM_ERROR();
-
+		queue->mutex = MALLOC(sizeof(pthread_mutex_t));
 		pthread_mutex_init(queue->mutex, NULL);
 	}
 
@@ -185,9 +177,7 @@ REMOVE_HASH_TABLE(seq, struct seq_queue, seq);
 
 struct seq_queue *seq_queue_init()
 {
-	struct seq_queue *queue = malloc(sizeof(struct seq_queue));
-	if(queue == NULL)
-		MEM_ERROR();
+	struct seq_queue *queue = MALLOC(sizeof(struct seq_queue));
 
 	memset(queue, 0, sizeof(struct seq_queue));
 
@@ -398,10 +388,7 @@ int earlier_buffer(struct file_buffer *new, struct file_buffer *old) {
 
 struct read_queue *read_queue_init()
 {
-	struct read_queue *queue = malloc(sizeof(struct read_queue));
-
-	if(queue == NULL)
-		MEM_ERROR();
+	struct read_queue *queue = MALLOC(sizeof(struct read_queue));
 
 	queue->threads = queue->count = 0;
 
@@ -425,14 +412,10 @@ void read_queue_set(struct read_queue *queue, int threads, int size)
 
 	queue->threads = threads;
 
-	queue->thread = malloc(threads * sizeof(struct readq_thrd));
-	if(queue->thread == NULL)
-		MEM_ERROR();
+	queue->thread = MALLOC(threads * sizeof(struct readq_thrd));
 
 	for(i = 0; i < threads; i++) {
-		queue->thread[i].buffer = malloc(sizeof(struct file_buffer *) * (size + 1));
-		if(queue->thread[i].buffer == NULL)
-			MEM_ERROR();
+		queue->thread[i].buffer = MALLOC(sizeof(struct file_buffer *) * (size + 1));
 		queue->thread[i].size = size + 1;
 		queue->thread[i].readp = queue->thread[i].writep = 0;
 		pthread_cond_init(&queue->thread[i].full, NULL);
@@ -546,10 +529,7 @@ REMOVE_LIST(free, struct file_buffer)
 struct cache *cache_init(int buffer_size, int max_buffers, int noshrink_lookup,
 	int first_freelist)
 {
-	struct cache *cache = malloc(sizeof(struct cache));
-
-	if(cache == NULL)
-		MEM_ERROR();
+	struct cache *cache = MALLOC(sizeof(struct cache));
 
 	cache->max_buffers = max_buffers;
 	cache->buffer_size = buffer_size;
@@ -638,10 +618,8 @@ static struct file_buffer *cache_freelist(struct cache *cache)
 
 static struct file_buffer *cache_alloc(struct cache *cache)
 {
-	struct file_buffer *entry = malloc(sizeof(struct file_buffer) +
+	struct file_buffer *entry = MALLOC(sizeof(struct file_buffer) +
 							cache->buffer_size);
-	if(entry == NULL)
-			MEM_ERROR();
 
 	entry->cache = cache;
 	entry->free_prev = entry->free_next = NULL;
@@ -923,10 +901,7 @@ REMOVE_HASH_TABLE(queue_cache, struct queue_cache, hash);
 struct queue_cache *queue_cache_init(pthread_mutex_t *mutex, int buffer_size,
 	int first_freelist)
 {
-	struct queue_cache *qc = malloc(sizeof(struct queue_cache));
-
-	if(qc == NULL)
-		MEM_ERROR();
+	struct queue_cache *qc = MALLOC(sizeof(struct queue_cache));
 
 	qc->buffer_size = buffer_size;
 	qc->first_freelist = first_freelist;
@@ -953,18 +928,11 @@ void queue_cache_set(struct queue_cache *qc, int fthreads, int fbuffers,
 				multiply_overflow(size + 1, sizeof(struct file_buffer *)))
 		BAD_ERROR("Size too large in queue_cache_set\n");
 
-	qc->rthread = malloc(threads * sizeof(struct readq_thrd));
-	if(qc->rthread == NULL)
-		MEM_ERROR();
-
-	qc->wthread = malloc(sizeof(struct writeq_thrd) * threads);
-	if(qc->wthread == NULL)
-		MEM_ERROR();
+	qc->rthread = MALLOC(threads * sizeof(struct readq_thrd));
+	qc->wthread = MALLOC(sizeof(struct writeq_thrd) * threads);
 
 	for(i = 0; i < threads; i++) {
-		qc->rthread[i].buffer = malloc(sizeof(struct file_buffer *) * (size + 1));
-		if(qc->rthread[i].buffer == NULL)
-			MEM_ERROR();
+		qc->rthread[i].buffer = MALLOC(sizeof(struct file_buffer *) * (size + 1));
 		qc->rthread[i].size = size + 1;
 		qc->rthread[i].readp = qc->rthread[i].writep = 0;
 		pthread_cond_init(&qc->rthread[i].full, NULL);
@@ -1031,11 +999,8 @@ static struct file_buffer *queue_cache_freelist(struct queue_cache *qc,
 static struct file_buffer *queue_cache_alloc(struct queue_cache *qc,
 	struct writeq_thrd *thread, int i)
 {
-	struct file_buffer *entry = malloc(sizeof(struct file_buffer) +
+	struct file_buffer *entry = MALLOC(sizeof(struct file_buffer) +
 							qc->buffer_size);
-	if(entry == NULL)
-		MEM_ERROR();
-
 	entry->queue_cache = qc;
 	entry->thread = i;
 	entry->free_prev = entry->free_next = NULL;

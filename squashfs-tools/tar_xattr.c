@@ -1,7 +1,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2021, 2022, 2023
+ * Copyright (c) 2021, 2022, 2023, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -33,6 +33,7 @@
 #include "mksquashfs_error.h"
 #include "tar.h"
 #include "xattr.h"
+#include "alloc.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -75,9 +76,7 @@ void read_tar_xattr(char *name, char *value, int size, int encoding, struct tar_
 			return;
 		}
 	} else {
-		data = malloc(size);
-		if(data == NULL)
-			MEM_ERROR();
+		data = MALLOC(size);
 		memcpy(data, value, size);
 	}
 

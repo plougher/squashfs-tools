@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2019, 2021, 2022, 2023
+ * Copyright (c) 2010, 2012, 2019, 2021, 2022, 2023, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -24,6 +24,7 @@
 
 #include "unsquashfs.h"
 #include "xattr.h"
+#include "alloc.h"
 
 extern int strict_errors;
 extern regex_t *xattr_exclude_preg;
@@ -55,9 +56,7 @@ static void print_xattr_name_value(struct xattr_list *xattr, int writer_fd)
 	}
 
 	if(!printable) {
-		unsigned char *new = malloc(count + 2), *dest;
-		if(new == NULL)
-			MEM_ERROR();
+		unsigned char *new = MALLOC(count + 2), *dest;
 
 		memcpy(new, "0t", 2);
 		count += 2;
@@ -141,10 +140,7 @@ void print_xattr(char *pathname, unsigned int xattr, int writer_fd)
 regex_t *xattr_regex(char *pattern, char *option)
 {
 	int error;
-	regex_t *preg = malloc(sizeof(regex_t));
-
-	if(preg == NULL)
-		MEM_ERROR();
+	regex_t *preg = MALLOC(sizeof(regex_t));
 
 	error = regcomp(preg, pattern, REG_EXTENDED|REG_NOSUB);
 

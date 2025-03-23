@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2012, 2013, 2019, 2021, 2022, 2023
+ * Copyright (c) 2009, 2010, 2012, 2013, 2019, 2021, 2022, 2023, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@
 #include "unsquashfs.h"
 #include "squashfs_compat.h"
 #include "compressor.h"
+#include "alloc.h"
 
 static squashfs_fragment_entry_2 *fragment_table;
 static unsigned int *uid_table, *guid_table;
@@ -40,9 +41,7 @@ static void read_block_list(unsigned int *block_list, long long start,
 	TRACE("read_block_list: blocks %d\n", blocks);
 
 	if(swap) {
-		char *block_ptr = malloc(blocks * sizeof(unsigned int));
-		if(block_ptr == NULL)
-			MEM_ERROR();
+		char *block_ptr = MALLOC(blocks * sizeof(unsigned int));
 		res = read_inode_data(block_ptr, &start, &offset, blocks * sizeof(unsigned int));
 		if(res == FALSE)
 			EXIT_UNSQUASH("read_block_list: failed to read "
@@ -86,19 +85,11 @@ static int read_fragment_table(long long *table_start)
 		"from 0x%llx\n", sBlk.s.fragments, indexes,
 		sBlk.s.fragment_table_start);
 
-	fragment_table_index = malloc(length);
-	if(fragment_table_index  == NULL)
-		MEM_ERROR();
-
-	fragment_table = malloc(bytes);
-	if(fragment_table == NULL)
-		MEM_ERROR();
+	fragment_table_index = MALLOC(length);
+	fragment_table = MALLOC(bytes);
 
 	if(swap) {
-		 unsigned int *sfragment_table_index = malloc(length);
-
-		if(sfragment_table_index == NULL)
-			MEM_ERROR();
+		 unsigned int *sfragment_table_index = MALLOC(length);
 
 		 res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
 			length, sfragment_table_index);
@@ -314,10 +305,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode %lld:%d\n", start, offset);
 
-			i.symlink = malloc(inodep->symlink_size + 1);
-			if(i.symlink == NULL)
-				MEM_ERROR();
-
+			i.symlink = MALLOC(inodep->symlink_size + 1);
 			res = read_inode_data(i.symlink, &start, &offset, inodep->symlink_size);
 			if(res == FALSE)
 				EXIT_UNSQUASH("read_inode: failed to read "
@@ -389,10 +377,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 
 	*i = read_inode(block_start, offset);
 
-	dir = malloc(sizeof(struct dir));
-	if(dir == NULL)
-		MEM_ERROR();
-
+	dir = MALLOC(sizeof(struct dir));
 	dir->dir_count = 0;
 	dir->cur_entry = NULL;
 	dir->mode = (*i)->mode;
@@ -478,10 +463,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 				"%d:%d, type %d\n", dire->name,
 				dirh.start_block, dire->offset, dire->type);
 
-			ent = malloc(sizeof(struct dir_ent));
-			if(ent == NULL)
-				MEM_ERROR();
-
+			ent = MALLOC(sizeof(struct dir_ent));
 			ent->name = strdup(dire->name);
 			ent->start_block = dirh.start_block;
 			ent->offset = dire->offset;

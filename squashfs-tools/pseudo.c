@@ -47,6 +47,7 @@
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "xattr.h"
+#include "alloc.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -111,10 +112,7 @@ struct pseudo_entry *pseudo_search(struct pseudo *pseudo, char *targname,
 			break;
 	}
 
-	ent = malloc(sizeof(struct pseudo_entry));
-	if(ent == NULL)
-		MEM_ERROR();
-
+	ent = MALLOC(sizeof(struct pseudo_entry));
 	ent->name = targname;
 	ent->pathname = strndup(alltarget, subpathend - alltarget);
 	ent->dev = NULL;
@@ -149,10 +147,7 @@ static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseud
 	target = get_element(target, &targname, &subpathend);
 
 	if(pseudo == NULL) {
-		pseudo = malloc(sizeof(struct pseudo));
-		if(pseudo == NULL)
-			MEM_ERROR();
-
+		pseudo = MALLOC(sizeof(struct pseudo));
 		pseudo->names = 0;
 		pseudo->current = NULL;
 		pseudo->head = NULL;
@@ -252,16 +247,11 @@ static struct pseudo *add_pseudo_definition(struct pseudo *pseudo, struct pseudo
 			pseudo->head->dev = pseudo_dev;
 			return pseudo;
 		} else {
-			struct pseudo *new = malloc(sizeof(struct pseudo));
-			if(new == NULL)
-				MEM_ERROR();
+			struct pseudo *new = MALLOC(sizeof(struct pseudo));
 
 			new->names = 1;
 			new->current = NULL;
-			new->head = malloc(sizeof(struct pseudo_entry));
-			if(new->head == NULL)
-				MEM_ERROR();
-
+			new->head = MALLOC(sizeof(struct pseudo_entry));
 			new->head->name = "/";
 			new->head->pseudo = pseudo;
 			new->head->pathname = "/";
@@ -417,9 +407,7 @@ static struct pseudo_dev *read_pseudo_def_pseudo_link(char *orig_def, char *def)
 	 * Filenames with spaces should either escape (backslash) the
 	 * space or use double quotes.
 	 */
-	linkname = malloc(strlen(def) + 1);
-	if(linkname == NULL)
-		MEM_ERROR();
+	linkname = MALLOC(strlen(def) + 1);
 
 	for(link = linkname; (quoted || !isspace(*def)) && *def != '\0';) {
 		if(*def == '"') {
@@ -486,10 +474,7 @@ static struct pseudo_dev *read_pseudo_def_link(char *orig_def, char *def, char *
 	 * file will not exist).
 	 */
 	if(dest_buf == NULL) {
-		dest_buf = malloc(sizeof(struct stat));
-		if(dest_buf == NULL)
-			MEM_ERROR();
-
+		dest_buf = MALLOC(sizeof(struct stat));
 		memset(dest_buf, 0, sizeof(struct stat));
 		lstat(destination, dest_buf);
 	}
@@ -502,9 +487,7 @@ static struct pseudo_dev *read_pseudo_def_link(char *orig_def, char *def, char *
 	 * Filenames with spaces should either escape (backslash) the
 	 * space or use double quotes.
 	 */
-	linkname = malloc(strlen(def) + 1);
-	if(linkname == NULL)
-		MEM_ERROR();
+	linkname = MALLOC(strlen(def) + 1);
 
 	for(link = linkname; (quoted || !isspace(*def)) && *def != '\0';) {
 		if(*def == '"') {
@@ -540,15 +523,9 @@ static struct pseudo_dev *read_pseudo_def_link(char *orig_def, char *def, char *
 		linkname = resolved_linkname;
 	}
 
-	dev = malloc(sizeof(struct pseudo_dev));
-	if(dev == NULL)
-		MEM_ERROR();
-
+	dev = MALLOC(sizeof(struct pseudo_dev));
 	memset(dev, 0, sizeof(struct pseudo_dev));
-
-	dev->linkbuf = malloc(sizeof(struct stat));
-	if(dev->linkbuf == NULL)
-		MEM_ERROR();
+	dev->linkbuf = MALLOC(sizeof(struct stat));
 
 	if(lstat(linkname, dev->linkbuf) == -1) {
 		ERROR("Cannot stat pseudo link file %s because %s\n",
@@ -621,9 +598,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		 * Strings with spaces should either escape (backslash) the
 		 * space or use double quotes.
 		 */
-		string = malloc(strlen(def) + 1);
-		if(string == NULL)
-			MEM_ERROR();
+		string = MALLOC(strlen(def) + 1);
 
 		for(str = string; (quoted || !isspace(*def)) && *def != '\0';) {
 			if(*def == '"') {
@@ -861,14 +836,8 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		break;
 	}
 
-	dev = malloc(sizeof(struct pseudo_dev));
-	if(dev == NULL)
-		MEM_ERROR();
-
-	dev->buf = malloc(sizeof(struct pseudo_stat));
-	if(dev->buf == NULL)
-		MEM_ERROR();
-
+	dev = MALLOC(sizeof(struct pseudo_dev));
+	dev->buf = MALLOC(sizeof(struct pseudo_stat));
 	dev->type = type == 'M' ? 'M' : tolower(type);
 	dev->buf->mode = mode;
 	dev->buf->uid = uid;
@@ -887,18 +856,12 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		force_single_threaded = TRUE;
 
 		if(*file == NULL) {
-			*file = malloc(sizeof(struct pseudo_file));
-			if(*file == NULL)
-				MEM_ERROR();
-
+			*file = MALLOC(sizeof(struct pseudo_file));
 			(*file)->filename = strdup(pseudo_file);
 			(*file)->fd = -1;
 		}
 
-		dev->data = malloc(sizeof(struct pseudo_data));
-		if(dev->data == NULL)
-			MEM_ERROR();
-
+		dev->data = MALLOC(sizeof(struct pseudo_data));
 		dev->pseudo_type = PSEUDO_FILE_DATA;
 		dev->data->file = *file;
 		dev->data->length = file_length;
@@ -1094,14 +1057,8 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 		break;
 	}
 
-	dev = malloc(sizeof(struct pseudo_dev));
-	if(dev == NULL)
-		MEM_ERROR();
-
-	dev->buf = malloc(sizeof(struct pseudo_stat));
-	if(dev->buf == NULL)
-		MEM_ERROR();
-
+	dev = MALLOC(sizeof(struct pseudo_dev));
+	dev->buf = MALLOC(sizeof(struct pseudo_stat));
 	dev->type = type;
 	dev->buf->mode = mode;
 	dev->buf->uid = uid;
@@ -1167,9 +1124,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	 * Filenames with spaces should either escape (backslash) the
 	 * space or use double quotes.
 	 */
-	filename = malloc(strlen(def) + 1);
-	if(filename == NULL)
-		MEM_ERROR();
+	filename = MALLOC(strlen(def) + 1);
 
 	for(name = filename; (quoted || !isspace(*def)) && *def != '\0';) {
 		if(*def == '"') {

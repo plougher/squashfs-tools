@@ -46,6 +46,7 @@
 #include "compressor.h"
 #include "process_fragments.h"
 #include "caches-queues-lists.h"
+#include "alloc.h"
 
 #define FALSE 0
 #define TRUE 1
@@ -266,9 +267,7 @@ void *frag_thrd(void *destination_file)
 	if(fd == -1)
 		BAD_ERROR("frag_thrd: can't open destination for reading\n");
 
-	data_buffer = malloc(SQUASHFS_FILE_MAX_SIZE);
-	if(data_buffer == NULL)
-		MEM_ERROR();
+	data_buffer = MALLOC(SQUASHFS_FILE_MAX_SIZE);
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &dup_mutex);
 
@@ -352,9 +351,7 @@ void *frag_thrd(void *destination_file)
 				dupl_ptr->fragment->offset, file_size);
 			cache_block_put(buffer);
 			if(res == 0) {
-				struct file_buffer *dup = malloc(sizeof(*dup));
-				if(dup == NULL)
-					MEM_ERROR();
+				struct file_buffer *dup = MALLOC(sizeof(*dup));
 				memcpy(dup, file_buffer, sizeof(*dup));
 				cache_block_put(file_buffer);
 				dup->dupl_start = dupl_ptr;

@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2012,
- * 2013, 2014, 2019, 2021, 2022, 2023, 2024
+ * 2013, 2014, 2019, 2021, 2022, 2023, 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -305,10 +305,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 				/* corrupted filesystem */
 				goto corrupted;
 
-			block_list = malloc(blocks * sizeof(unsigned int));
-			if(block_list == NULL)
-				MEM_ERROR();
-
+			block_list = MALLOC(blocks * sizeof(unsigned int));
 			SQUASHFS_SWAP_INTS(cur_ptr, block_list, blocks);
 
 			*uncompressed_file += inode.file_size;
@@ -366,10 +363,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 				/* corrupted filesystem */
 				goto corrupted;
 
-			block_list = malloc(blocks * sizeof(unsigned int));
-			if(block_list == NULL)
-				MEM_ERROR();
-
+			block_list = MALLOC(blocks * sizeof(unsigned int));
 			SQUASHFS_SWAP_INTS(cur_ptr, block_list, blocks);
 
 			*uncompressed_file += inode.file_size;
@@ -729,10 +723,8 @@ static unsigned char *squashfs_readdir(int fd, int root_entries,
 	long long last_start_block = start, size = dir_size, bytes = 0;
 
 	size += offset;
-	directory_table = malloc((size + SQUASHFS_METADATA_SIZE * 2 - 1) &
+	directory_table = MALLOC((size + SQUASHFS_METADATA_SIZE * 2 - 1) &
 		~(SQUASHFS_METADATA_SIZE - 1));
-	if(directory_table == NULL)
-		MEM_ERROR();
 
 	for(; size - bytes >= SQUASHFS_METADATA_SIZE; bytes += SQUASHFS_METADATA_SIZE) {
 		TRACE("squashfs_readdir: reading block 0x%llx, bytes read so "
@@ -815,12 +807,8 @@ static unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 	int indexes = SQUASHFS_ID_BLOCKS(sBlk->no_ids);
 	long long index[indexes];
 	int bytes = SQUASHFS_ID_BYTES(sBlk->no_ids);
-	unsigned int *id_table;
+	unsigned int *id_table = MALLOC(bytes);
 	int res, i;
-
-	id_table = malloc(bytes);
-	if(id_table == NULL)
-		MEM_ERROR();
 
 	res = read_fs_bytes(fd, sBlk->id_table_start,
 		SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), index);
@@ -868,15 +856,11 @@ static struct squashfs_fragment_entry *read_fragment_table(int fd, struct squash
 	long long bytes = SQUASHFS_FRAGMENT_BYTES(sBlk->fragments);
 	int indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk->fragments);
 	long long fragment_table_index[indexes];
-	struct squashfs_fragment_entry *fragment_table;
+	struct squashfs_fragment_entry *fragment_table = MALLOC(bytes);
 
 	TRACE("read_fragment_table: %u fragments, reading %d fragment indexes "
 		"from 0x%llx\n", sBlk->fragments, indexes,
 		sBlk->fragment_table_start);
-
-	fragment_table = malloc(bytes);
-	if(fragment_table == NULL)
-		MEM_ERROR();
 
 	res = read_fs_bytes(fd, sBlk->fragment_table_start,
 		SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments),
@@ -921,11 +905,7 @@ static squashfs_inode *read_inode_lookup_table(int fd, struct squashfs_super_blo
 	int indexes = SQUASHFS_LOOKUP_BLOCKS(sBlk->inodes);
 	long long index[indexes];
 	int res, i;
-	squashfs_inode *inode_lookup_table;
-
-	inode_lookup_table = malloc(lookup_bytes);
-	if(inode_lookup_table == NULL)
-		MEM_ERROR();
+	squashfs_inode *inode_lookup_table = MALLOC(lookup_bytes);
 
 	res = read_fs_bytes(fd, sBlk->lookup_table_start,
 		SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), index);
@@ -1044,10 +1024,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 			goto error;
 
 		root_inode_start -= start;
-		*cinode_table = malloc(root_inode_start);
-		if(*cinode_table == NULL)
-			MEM_ERROR();
-
+		*cinode_table = MALLOC(root_inode_start);
 	       	res = read_fs_bytes(fd, start, root_inode_start, *cinode_table);
 		if(res == 0) {
 			ERROR("Failed to read inode table\n");
@@ -1055,10 +1032,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 			goto error;
 		}
 
-		*cdirectory_table = malloc(*last_directory_block);
-		if(*cdirectory_table == NULL)
-			MEM_ERROR();
-
+		*cdirectory_table = MALLOC(*last_directory_block);
 		res = read_fs_bytes(fd, sBlk->directory_table_start,
 			*last_directory_block, *cdirectory_table);
 		if(res == 0) {
@@ -1067,18 +1041,12 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 			goto error;
 		}
 
-		*data_cache = malloc(root_inode_offset + *root_inode_size);
-		if(*data_cache == NULL)
-			MEM_ERROR();
-
+		*data_cache = MALLOC(root_inode_offset + *root_inode_size);
 		memcpy(*data_cache, inode_table + root_inode_block,
 			root_inode_offset + *root_inode_size);
 
-		*directory_data_cache = malloc(*inode_dir_offset +
+		*directory_data_cache = MALLOC(*inode_dir_offset +
 			*inode_dir_file_size);
-		if(*directory_data_cache == NULL)
-			MEM_ERROR();
-
 		memcpy(*directory_data_cache, directory_table,
 			*inode_dir_offset + *inode_dir_file_size);
 

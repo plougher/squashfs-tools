@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2019, 2021, 2022, 2023
+ * Copyright (c) 2019, 2021, 2022, 2023, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@
  */
 
 #include "unsquashfs.h"
+#include "alloc.h"
 
 static unsigned int **inumber_table = NULL;
 static char ***lookup_table = NULL;
@@ -62,9 +63,7 @@ static void create_inumber_table()
 {
 	int indexes = INUMBER_INDEXES(sBlk.s.inodes);
 
-	inumber_table = malloc(indexes * sizeof(unsigned int *));
-	if(inumber_table == NULL)
-		MEM_ERROR();
+	inumber_table = MALLOC(indexes * sizeof(unsigned int *));
 	memset(inumber_table, 0, indexes * sizeof(unsigned int *));
 }
 
@@ -83,9 +82,7 @@ int inumber_lookup(unsigned int number)
 		return TRUE;
 
 	if(inumber_table[index] == NULL) {
-		inumber_table[index] = malloc(INUMBER_BYTES);
-		if(inumber_table[index] == NULL)
-			MEM_ERROR();
+		inumber_table[index] = MALLOC(INUMBER_BYTES);
 		memset(inumber_table[index], 0, INUMBER_BYTES);
 	}
 
@@ -119,9 +116,7 @@ static void create_lookup_table()
 {
 	int indexes = LOOKUP_INDEXES(sBlk.s.inodes);
 
-	lookup_table = malloc(indexes * sizeof(char *));
-	if(lookup_table == NULL)
-		MEM_ERROR();
+	lookup_table = MALLOC(indexes * sizeof(char *));
 	memset(lookup_table, 0, indexes * sizeof(char *));
 }
 
@@ -151,9 +146,7 @@ void insert_lookup(unsigned int number, char *pathname)
 		create_lookup_table();
 
 	if(lookup_table[index] == NULL) {
-		lookup_table[index] = malloc(LOOKUP_BYTES);
-		if(lookup_table[index] == NULL)
-			MEM_ERROR();
+		lookup_table[index] = MALLOC(LOOKUP_BYTES);
 		memset(lookup_table[index], 0, LOOKUP_BYTES);
 	}
 

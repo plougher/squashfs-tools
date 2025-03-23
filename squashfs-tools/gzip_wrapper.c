@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2010, 2012, 2013, 2014, 2021, 2022, 2024
+ * Copyright (c) 2009, 2010, 2012, 2013, 2014, 2021, 2022, 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -30,6 +30,7 @@
 #include "gzip_wrapper.h"
 #include "compressor.h"
 #include "print_pager.h"
+#include "alloc.h"
 
 static struct strategy strategy[] = {
 	{ "default", Z_DEFAULT_STRATEGY, 0 },
@@ -342,18 +343,12 @@ static int gzip_init(void **strm, int block_size, int datablock)
 	struct gzip_stream *stream;
 
 	if(!datablock || !strategy_count) {
-		stream = malloc(sizeof(*stream) + sizeof(struct gzip_strategy));
-		if(stream == NULL)
-			goto failed;
-
+		stream = MALLOC(sizeof(*stream) + sizeof(struct gzip_strategy));
 		stream->strategies = 1;
 		stream->strategy[0].strategy = Z_DEFAULT_STRATEGY;
 	} else {
-		stream = malloc(sizeof(*stream) +
+		stream = MALLOC(sizeof(*stream) +
 			sizeof(struct gzip_strategy) * strategy_count);
-		if(stream == NULL)
-			goto failed;
-
 		memset(stream->strategy, 0, sizeof(struct gzip_strategy) *
 			strategy_count);
 
@@ -364,11 +359,8 @@ static int gzip_init(void **strm, int block_size, int datablock)
 				continue;
 
 			stream->strategy[j].strategy = strategy[i].strategy;
-			if(j) {
-				stream->strategy[j].buffer = malloc(block_size);
-				if(stream->strategy[j].buffer == NULL)
-					goto failed2;
-			}
+			if(j)
+				stream->strategy[j].buffer = MALLOC(block_size);
 			j++;
 		}
 	}
@@ -379,17 +371,14 @@ static int gzip_init(void **strm, int block_size, int datablock)
 
 	res = deflateInit2(&stream->stream, compression_level, Z_DEFLATED,
 		window_size, 8, stream->strategy[0].strategy);
-	if(res != Z_OK)
-		goto failed2;
+	if(res == Z_OK) {
+		*strm = stream;
+		return 0;
+	}
 
-	*strm = stream;
-	return 0;
-
-failed2:
 	for(i = 1; i < stream->strategies; i++)
 		free(stream->strategy[i].buffer);
 	free(stream);
-failed:
 	return -1;
 }
 

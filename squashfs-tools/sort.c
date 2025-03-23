@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2012,
- * 2013, 2014, 2021, 2022, 2024
+ * 2013, 2014, 2021, 2022, 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -43,6 +43,7 @@
 #include "sort.h"
 #include "mksquashfs_error.h"
 #include "progressbar.h"
+#include "alloc.h"
 
 static int mkisofs_style = -1;
 
@@ -58,11 +59,8 @@ static void add_priority_list(struct dir_ent *dir, int priority)
 	struct priority_entry *new_priority_entry;
 
 	priority += 32768;
-	new_priority_entry = malloc(sizeof(struct priority_entry));
-	if(new_priority_entry == NULL)
-		MEM_ERROR();
-
-	new_priority_entry->dir = dir;;
+	new_priority_entry = MALLOC(sizeof(struct priority_entry));
+	new_priority_entry->dir = dir;
 	new_priority_entry->next = priority_list[priority];
 	priority_list[priority] = new_priority_entry;
 }
@@ -86,9 +84,7 @@ static int get_priority(char *filename, struct stat *buf, int priority)
 
 #define ADD_ENTRY(buf, priority) {\
 	int hash = buf.st_ino & 0xffff;\
-	struct sort_info *s;\
-	if((s = malloc(sizeof(struct sort_info))) == NULL) \
-		MEM_ERROR(); \
+	struct sort_info *s = MALLOC(sizeof(struct sort_info)); \
 	s->st_dev = buf.st_dev;\
 	s->st_ino = buf.st_ino;\
 	s->priority = priority;\

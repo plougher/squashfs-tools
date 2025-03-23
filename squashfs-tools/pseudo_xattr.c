@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2022, 2023, 2024
+ * Copyright (c) 2022, 2023, 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -32,6 +32,7 @@
 #include "mksquashfs_error.h"
 #include "squashfs_fs.h"
 #include "xattr.h"
+#include "alloc.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -39,10 +40,7 @@
 static void add_xattr(struct pseudo_xattr **xattr, struct xattr_add *entry)
 {
 	if(*xattr == NULL) {
-		*xattr = malloc(sizeof(struct pseudo_xattr));
-		if(*xattr == NULL)
-			MEM_ERROR();
-
+		*xattr = MALLOC(sizeof(struct pseudo_xattr));
 		(*xattr)->xattr = entry;
 		entry->next = NULL;
 		(*xattr)->count = 1;
@@ -67,10 +65,7 @@ static struct pseudo *add_pseudo_xattr(struct pseudo *pseudo, struct xattr_add *
 	target = get_element(target, &targname, &subpathend);
 
 	if(pseudo == NULL) {
-		pseudo = malloc(sizeof(struct pseudo));
-		if(pseudo == NULL)
-			MEM_ERROR();
-
+		pseudo = MALLOC(sizeof(struct pseudo));
 		pseudo->names = 0;
 		pseudo->current = NULL;
 		pseudo->head = NULL;
@@ -115,16 +110,11 @@ struct pseudo *add_pseudo_xattr_definition(struct pseudo *pseudo,
 			add_xattr(&pseudo->head->xattr, xattr);
 			return pseudo;
 		} else {
-			struct pseudo *new = malloc(sizeof(struct pseudo));
-			if(new == NULL)
-				MEM_ERROR();
+			struct pseudo *new = MALLOC(sizeof(struct pseudo));
 
 			new->names = 1;
 			new->current = NULL;
-			new->head = malloc(sizeof(struct pseudo_entry));
-			if(new->head == NULL)
-				MEM_ERROR();
-
+			new->head = MALLOC(sizeof(struct pseudo_entry));
 			new->head->name = "/";
 			new->head->pseudo = pseudo;
 			new->head->pathname = "/";

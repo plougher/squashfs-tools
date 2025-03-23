@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2013, 2014, 2021, 2022, 2024
+ * Copyright (c) 2012, 2013, 2014, 2021, 2022, 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -31,6 +31,7 @@
 #include "lzo_wrapper.h"
 #include "compressor.h"
 #include "print_pager.h"
+#include "alloc.h"
 
 static struct lzo_algorithm lzo[] = {
 	{ "lzo1x_1", LZO1X_1_MEM_COMPRESS, lzo1x_1_compress },
@@ -318,23 +319,10 @@ static int squashfs_lzo_init(void **strm, int block_size, int datablock)
 {
 	struct lzo_stream *stream;
 
-	stream = *strm = malloc(sizeof(struct lzo_stream));
-	if(stream == NULL)
-		goto failed;
-
-	stream->workspace = malloc(lzo[algorithm].size);
-	if(stream->workspace == NULL)
-		goto failed2;
-
-	stream->buffer = malloc(LZO_MAX_EXPANSION(block_size));
-	if(stream->buffer != NULL)
-		return 0;
-
-	free(stream->workspace);
-failed2:
-	free(stream);
-failed:
-	return -1;
+	stream = *strm = MALLOC(sizeof(struct lzo_stream));
+	stream->workspace = MALLOC(lzo[algorithm].size);
+	stream->buffer = MALLOC(LZO_MAX_EXPANSION(block_size));
+	return 0;
 }
 
 

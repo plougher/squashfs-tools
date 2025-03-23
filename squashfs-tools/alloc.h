@@ -22,7 +22,6 @@
  *
  * alloc.h
  */
-
 #include <stdlib.h>
 
 #include "error.h"
@@ -40,5 +39,17 @@ static inline void *_calloc(size_t num, size_t size, const char *func)
 	return mem;
 }
 
+
+static inline void *_malloc(size_t size, const char *func)
+{
+	void *mem = malloc(size);
+
+	if(mem == NULL)
+		MEMERROR(func);
+
+	return mem;
+}
+
 #define CALLOC(num, size) _calloc(num, size, __func__)
+#define MALLOC(size) _malloc(size, __func__)
 #endif

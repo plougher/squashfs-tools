@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (C) 2023, 2024
+ * Copyright (C) 2023, 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -40,6 +40,7 @@
 #include "tar.h"
 #include "action.h"
 #include "xattr_compat.h"
+#include "alloc.h"
 
 extern regex_t *xattr_exclude_preg;
 extern regex_t *xattr_include_preg;
@@ -66,10 +67,7 @@ int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 			return 0;
 		}
 
-		xattr_names = malloc(size);
-		if(xattr_names == NULL)
-			MEM_ERROR();
-
+		xattr_names = MALLOC(size);
 		size = llistxattr(filename, xattr_names, size);
 		if(size < 0) {
 			free(xattr_names);
@@ -150,10 +148,7 @@ int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 				goto failed;
 			}
 
-			xattr_list[i].value = malloc(vsize);
-			if(xattr_list[i].value == NULL)
-				MEM_ERROR();
-
+			xattr_list[i].value = MALLOC(vsize);
 			vsize = lgetxattr(filename, xattr_list[i].full_name,
 						xattr_list[i].value, vsize);
 			if(vsize < 0) {

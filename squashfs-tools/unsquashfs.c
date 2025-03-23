@@ -38,6 +38,7 @@
 #include "print_pager.h"
 #include "unsquashfs_help.h"
 #include "limit.h"
+#include "alloc.h"
 
 #ifdef __linux__
 #include <sys/sysmacros.h>
@@ -205,18 +206,13 @@ static int multiply_overflow(int a, int multiplier)
 
 static struct queue *queue_init(int size)
 {
-	struct queue *queue = malloc(sizeof(struct queue));
-	if(queue == NULL)
-		MEM_ERROR();
+	struct queue *queue = MALLOC(sizeof(struct queue));
 
 	if(add_overflow(size, 1) ||
 				multiply_overflow(size + 1, sizeof(void *)))
 		EXIT_UNSQUASH("Size too large in queue_init\n");
 
-	queue->data = malloc(sizeof(void *) * (size + 1));
-	if(queue->data == NULL)
-		MEM_ERROR();
-
+	queue->data = MALLOC(sizeof(void *) * (size + 1));
 	queue->size = size + 1;
 	queue->readp = queue->writep = 0;
 	pthread_mutex_init(&queue->mutex, NULL);
@@ -341,9 +337,7 @@ static void remove_free_list(struct cache *cache, struct cache_entry *entry)
 
 static struct cache *cache_init(int buffer_size, int max_buffers)
 {
-	struct cache *cache = malloc(sizeof(struct cache));
-	if(cache == NULL)
-		MEM_ERROR();
+	struct cache *cache = MALLOC(sizeof(struct cache));
 
 	cache->max_buffers = max_buffers;
 	cache->buffer_size = buffer_size;
@@ -398,14 +392,8 @@ static struct cache_entry *cache_get(struct cache *cache, long long block, int s
 		 * first try to allocate new block
 		 */
 		if(cache->count < cache->max_buffers) {
-			entry = malloc(sizeof(struct cache_entry));
-			if(entry == NULL)
-				MEM_ERROR();
-
-			entry->data = malloc(cache->buffer_size);
-			if(entry->data == NULL)
-				MEM_ERROR();
-
+			entry = MALLOC(sizeof(struct cache_entry));
+			entry->data = MALLOC(cache->buffer_size);
 			entry->cache = cache;
 			entry->free_prev = entry->free_next = NULL;
 			cache->count ++;
@@ -726,11 +714,8 @@ int read_block(int fd, long long start, long long *next, int expected,
 	if(compressed) {
 		int error;
 
-		if(buffer == NULL) {
-			buffer = malloc(SQUASHFS_METADATA_SIZE);
-			if(buffer == NULL)
-				MEM_ERROR();
-		}
+		if(buffer == NULL)
+			buffer = MALLOC(SQUASHFS_METADATA_SIZE);
 
 		res = read_fs_bytes(fd, start + offset, c_byte, buffer);
 		if(res == FALSE)
@@ -781,10 +766,7 @@ static struct hash_table_entry *get_metadata(struct hash_table_entry *hash_table
 		if(entry->start == start)
 			return entry;
 
-	buffer = malloc(SQUASHFS_METADATA_SIZE);
-	if(buffer == NULL)
-		MEM_ERROR();
-
+	buffer = MALLOC(SQUASHFS_METADATA_SIZE);
 	res = read_block(fd, start, &next, 0, buffer);
 	if(res == 0) {
 		ERROR("get_metadata: failed to read block\n");
@@ -792,10 +774,7 @@ static struct hash_table_entry *get_metadata(struct hash_table_entry *hash_table
 		return NULL;
 	}
 
-	entry = malloc(sizeof(struct hash_table_entry));
-	if(entry == NULL)
-		MEM_ERROR();
-
+	entry = MALLOC(sizeof(struct hash_table_entry));
 	entry->start = start;
 	entry->length = res;
 	entry->buffer = buffer;
@@ -943,9 +922,7 @@ static int write_block(int file_fd, char *buffer, int size, long long hole, int 
 		}
 
 		if((sparse == FALSE || lseek_broken) && zero_data == NULL) {
-			zero_data = malloc(block_size);
-			if(zero_data == NULL)
-				MEM_ERROR();
+			zero_data = MALLOC(block_size);
 			memset(zero_data, 0, block_size);
 		}
 
@@ -1013,9 +990,7 @@ static void close_wake(int fd)
 
 static void queue_file(char *pathname, int file_fd, struct inode *inode)
 {
-	struct squashfs_file *file = malloc(sizeof(struct squashfs_file));
-	if(file == NULL)
-		MEM_ERROR();
+	struct squashfs_file *file = MALLOC(sizeof(struct squashfs_file));
 
 	file->fd = file_fd;
 	file->file_size = inode->data;
@@ -1033,9 +1008,7 @@ static void queue_file(char *pathname, int file_fd, struct inode *inode)
 
 static void queue_dir(char *pathname, struct dir *dir)
 {
-	struct squashfs_file *file = malloc(sizeof(struct squashfs_file));
-	if(file == NULL)
-		MEM_ERROR();
+	struct squashfs_file *file = MALLOC(sizeof(struct squashfs_file));
 
 	file->fd = -1;
 	file->mode = dir->mode;
@@ -1109,10 +1082,7 @@ static int write_file(struct inode *inode, char *pathname)
 	}
 
 	if(inode->blocks) {
-		block_list = malloc(inode->blocks * sizeof(unsigned int));
-		if(block_list == NULL)
-			MEM_ERROR();
-
+		block_list = MALLOC(inode->blocks * sizeof(unsigned int));
 		s_ops->read_block_list(block_list, inode->block_start,
 					inode->block_offset, inode->blocks);
 	}
@@ -1126,10 +1096,7 @@ static int write_file(struct inode *inode, char *pathname)
 
 	for(i = 0; i < inode->blocks; i++) {
 		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
-		struct file_entry *block = malloc(sizeof(struct file_entry));
-
-		if(block == NULL)
-			MEM_ERROR();
+		struct file_entry *block = MALLOC(sizeof(struct file_entry));
 
 		block->offset = 0;
 		block->size = i == file_end ? inode->data & (block_size - 1) :
@@ -1147,10 +1114,7 @@ static int write_file(struct inode *inode, char *pathname)
 	if(inode->frag_bytes) {
 		int size;
 		long long start;
-		struct file_entry *block = malloc(sizeof(struct file_entry));
-
-		if(block == NULL)
-			MEM_ERROR();
+		struct file_entry *block = MALLOC(sizeof(struct file_entry));
 
 		s_ops->read_fragment(inode->fragment, &start, &size);
 		block->buffer = cache_get(fragment_cache, start, size);
@@ -1174,10 +1138,7 @@ static int cat_file(struct inode *inode, char *pathname)
 	TRACE("cat_file: regular file, blocks %d\n", inode->blocks);
 
 	if(inode->blocks) {
-		block_list = malloc(inode->blocks * sizeof(unsigned int));
-		if(block_list == NULL)
-			MEM_ERROR();
-
+		block_list = MALLOC(inode->blocks * sizeof(unsigned int));
 		s_ops->read_block_list(block_list, inode->block_start,
 					inode->block_offset, inode->blocks);
 	}
@@ -1191,10 +1152,7 @@ static int cat_file(struct inode *inode, char *pathname)
 
 	for(i = 0; i < inode->blocks; i++) {
 		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
-		struct file_entry *block = malloc(sizeof(struct file_entry));
-
-		if(block == NULL)
-			MEM_ERROR();
+		struct file_entry *block = MALLOC(sizeof(struct file_entry));
 
 		block->offset = 0;
 		block->size = i == file_end ? inode->data & (block_size - 1) :
@@ -1212,10 +1170,7 @@ static int cat_file(struct inode *inode, char *pathname)
 	if(inode->frag_bytes) {
 		int size;
 		long long start;
-		struct file_entry *block = malloc(sizeof(struct file_entry));
-
-		if(block == NULL)
-			MEM_ERROR();
+		struct file_entry *block = MALLOC(sizeof(struct file_entry));
 
 		s_ops->read_fragment(inode->fragment, &start, &size);
 		block->buffer = cache_get(fragment_cache, start, size);
@@ -1503,10 +1458,7 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 	}
 
 	if(paths == NULL) {
-		paths = malloc(sizeof(struct pathname));
-		if(paths == NULL)
-			MEM_ERROR();
-
+		paths = MALLOC(sizeof(struct pathname));
 		paths->names = 0;
 		paths->name = NULL;
 	}
@@ -1528,9 +1480,7 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 		paths->name[i].name = targname;
 		paths->name[i].paths = NULL;
 		if(use_regex) {
-			paths->name[i].preg = malloc(sizeof(regex_t));
-			if(paths->name[i].preg == NULL)
-				MEM_ERROR();
+			paths->name[i].preg = MALLOC(sizeof(regex_t));
 			error = regcomp(paths->name[i].preg, targname,
 				REG_EXTENDED|REG_NOSUB);
 			if(error) {
@@ -1615,9 +1565,7 @@ static void add_exclude(char *str)
 
 static struct pathnames *init_subdir()
 {
-	struct pathnames *new = malloc(sizeof(struct pathnames));
-	if(new == NULL)
-		MEM_ERROR();
+	struct pathnames *new = MALLOC(sizeof(struct pathnames));
 
 	new->count = 0;
 	return new;
@@ -1796,9 +1744,7 @@ static int exclude_matches(struct pathnames *paths, char *name, struct pathnames
 
 static struct directory_stack *create_stack()
 {
-	struct directory_stack *stack = malloc(sizeof(struct directory_stack));
-	if(stack == NULL)
-		MEM_ERROR();
+	struct directory_stack *stack = MALLOC(sizeof(struct directory_stack));
 
 	stack->size = 0;
 	stack->stack = NULL;
@@ -1840,13 +1786,9 @@ static void add_stack(struct directory_stack *stack, unsigned int start_block,
 static struct directory_stack *clone_stack(struct directory_stack *stack)
 {
 	int i;
-	struct directory_stack *new = malloc(sizeof(struct directory_stack));
-	if(stack == NULL)
-		MEM_ERROR();
+	struct directory_stack *new = MALLOC(sizeof(struct directory_stack));
 
-	new->stack = malloc(stack->size * sizeof(struct directory_level));
-	if(new->stack == NULL)
-		MEM_ERROR();
+	new->stack = MALLOC(stack->size * sizeof(struct directory_level));
 
 	for(i = 0; i < stack->size; i++) {
 		new->stack[i].start_block = stack->stack[i].start_block;
@@ -1902,10 +1844,7 @@ static char *stack_pathname(struct directory_stack *stack, char *name)
 	/* add room for leaf name, slashes and '\0' terminator */
 	size += strlen(name) + stack->size;
 
-	pathname = malloc(size);
-	if (pathname == NULL)
-		MEM_ERROR();
-
+	pathname = MALLOC(size);
 	pathname[0] = '\0';
 
 	/* concatenate */
@@ -1922,9 +1861,7 @@ static char *stack_pathname(struct directory_stack *stack, char *name)
 
 static void add_symlink(struct directory_stack *stack, char *name)
 {
-	struct symlink *symlink = malloc(sizeof(struct symlink));
-	if(symlink == NULL)
-		MEM_ERROR();
+	struct symlink *symlink = MALLOC(sizeof(struct symlink));
 
 	symlink->pathname = stack_pathname(stack, name);
 	symlink->next = stack->symlink;
@@ -2695,9 +2632,7 @@ static void *cat_writer(void *arg)
  */
 static void *inflator(void *arg)
 {
-	char *tmp = malloc(block_size);
-	if(tmp == NULL)
-		MEM_ERROR();
+	char *tmp = MALLOC(block_size);
 
 	while(1) {
 		struct cache_entry *entry = queue_get(to_inflate);
@@ -2813,10 +2748,7 @@ static void initialise_threads(int fragment_buffer_size, int data_buffer_size, i
 			multiply_overflow(processors + 3, sizeof(pthread_t)))
 		EXIT_UNSQUASH("Processors too large\n");
 
-	thread = malloc((3 + processors) * sizeof(pthread_t));
-	if(thread == NULL)
-		MEM_ERROR();
-
+	thread = MALLOC((3 + processors) * sizeof(pthread_t));
 	inflator_thread = &thread[3];
 
 	/*
@@ -3254,17 +3186,11 @@ static char *new_pathname(char *path, char *name)
 	char *newpath;
 
 	if(strcmp(path, "/") == 0) {
-		newpath = malloc(strlen(name) + 2);
-		if(newpath == NULL)
-			MEM_ERROR();
-
+		newpath = MALLOC(strlen(name) + 2);
 		strcpy(newpath, "/");
 		strcat(newpath, name);
 	} else {
-		newpath = malloc(strlen(path) + strlen(name) + 2);
-		if(newpath == NULL)
-			MEM_ERROR();
-
+		newpath = MALLOC(strlen(path) + strlen(name) + 2);
 		strcpy(newpath, path);
 		strcat(newpath, "/");
 		strcat(newpath, name);

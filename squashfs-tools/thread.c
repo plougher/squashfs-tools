@@ -27,6 +27,7 @@
 
 #include "mksquashfs_error.h"
 #include "thread.h"
+#include "alloc.h"
 
 extern int processors;
 pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -45,11 +46,8 @@ int get_thread_id(int type)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &thread_mutex);
 	pthread_mutex_lock(&thread_mutex);
 
-	if(threads == NULL) {
-		threads = malloc(processors * 2 * sizeof(struct thread));
-		if(threads == NULL)
-			MEM_ERROR();
-	}
+	if(threads == NULL)
+		threads = MALLOC(processors * 2 * sizeof(struct thread));
 
 	threads[cur].type = type;
 	threads[cur].state = THREAD_ACTIVE;

@@ -50,6 +50,7 @@
 #include "reader.h"
 #include "atomic_swap.h"
 #include "caches-queues-lists.h"
+#include "alloc.h"
 
 #define READER_ALLOC 1024
 
@@ -117,11 +118,8 @@ static char *pathname(struct reader *reader, struct dir_ent *dir_ent)
 	if (dir_ent->nonstandard_pathname)
 		return dir_ent->nonstandard_pathname;
 
-	if(reader->pathname == NULL) {
-		reader->pathname = malloc(ALLOC_SIZE);
-		if(reader->pathname == NULL)
-			MEM_ERROR();
-	}
+	if(reader->pathname == NULL)
+		reader->pathname = MALLOC(ALLOC_SIZE);
 
 	for(;;) {
 		int res = snprintf(reader->pathname, reader->size, "%s/%s",
@@ -494,12 +492,8 @@ static int get_readahead(struct pseudo_file *file, long long current,
 					memcpy(dest, buffer->src + offset - buffer_offset, size);
 
 					/* Split buffer into two */
-					left = malloc(sizeof(struct readahead) + left_size);
-					right = malloc(sizeof(struct readahead) + right_size);
-
-					if(left == NULL || right == NULL)
-						MEM_ERROR();
-
+					left = MALLOC(sizeof(struct readahead) + left_size);
+					right = MALLOC(sizeof(struct readahead) + right_size);
 					left->start = buffer->start;
 					left->size = left_size;
 					left->src = left->data;
@@ -536,20 +530,14 @@ static int do_readahead(struct pseudo_file *file, long long current,
 	long long readahead = current - file->current;
 
 	if(readahead_table == NULL) {
-		readahead_table = malloc(READAHEAD_ALLOC);
-		if(readahead_table == NULL)
-			MEM_ERROR();
-
+		readahead_table = MALLOC(READAHEAD_ALLOC);
 		memset(readahead_table, 0, READAHEAD_ALLOC);
 	}
 
 	while(readahead) {
 		int offset = READAHEAD_OFFSET(file->current);
 		int bytes = READAHEAD_SIZE - offset < readahead ? READAHEAD_SIZE - offset : readahead;
-		struct readahead *buffer = malloc(sizeof(struct readahead) + bytes);
-
-		if(buffer == NULL)
-			MEM_ERROR();
+		struct readahead *buffer = MALLOC(sizeof(struct readahead) + bytes);
 
 		res = get_bytes(buffer->data, bytes);
 
@@ -707,10 +695,7 @@ static void _add_entry(struct dir_ent *entry, struct read_entry ***array, unsign
 		*array = tmp;
 	}
 
-	(*array)[*count] = malloc(sizeof(struct read_entry));
-	if((*array)[*count] == NULL)
-		MEM_ERROR();
-
+	(*array)[*count] = MALLOC(sizeof(struct read_entry));
 	(*array)[*count]->dir_ent = entry;
 	(*array)[(*count) ++]->file_count = file_count ++;
 }
@@ -760,9 +745,7 @@ static void create_resources()
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
 	pthread_mutex_lock(&mutex);
 
-	reader = malloc(reader_threads * sizeof(struct reader));
-	if(reader == NULL)
-		MEM_ERROR();
+	reader = MALLOC(reader_threads * sizeof(struct reader));
 
 	for(i = 0; i < reader_threads; i++) {
 		reader[i].id = i;
@@ -852,9 +835,7 @@ static void multi_thread(struct dir_info *dir)
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
 	pthread_mutex_lock(&mutex);
 
-	thread = malloc(reader_threads * sizeof(pthread_t));
-	if(thread == NULL)
-		MEM_ERROR();
+	thread = MALLOC(reader_threads * sizeof(pthread_t));
 
 	for(i = 0; i < fragment_threads; i++) {
 		reader[i].type = "small";

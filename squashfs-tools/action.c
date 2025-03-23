@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2011, 2012, 2013, 2014, 2021, 2022, 2023, 2024
+ * Copyright (c) 2011, 2012, 2013, 2014, 2021, 2022, 2023, 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -46,6 +46,7 @@
 #include "fnmatch_compat.h"
 #include "xattr.h"
 #include "symbolic_mode.h"
+#include "alloc.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -248,9 +249,7 @@ static int get_token(char **string)
 
 	/* string */
 	if(str == NULL) {
-		str = malloc(STR_SIZE);
-		if(str == NULL)
-			MEM_ERROR();
+		str = MALLOC(STR_SIZE);
 		size = STR_SIZE;
 	}
 
@@ -355,10 +354,7 @@ static struct expr *create_expr(struct expr *lhs, int op, struct expr *rhs)
 		return NULL;
 	}
 
-	expr = malloc(sizeof(*expr));
-	if (expr == NULL)
-		MEM_ERROR();
-
+	expr = MALLOC(sizeof(*expr));
 	expr->type = OP_TYPE;
 	expr->expr_op.lhs = lhs;
 	expr->expr_op.rhs = rhs;
@@ -375,10 +371,7 @@ static struct expr *create_unary_op(struct expr *lhs, int op)
 	if (lhs == NULL)
 		return NULL;
 
-	expr = malloc(sizeof(*expr));
-	if (expr == NULL)
-		MEM_ERROR();
-
+	expr = MALLOC(sizeof(*expr));
 	expr->type = UNARY_TYPE;
 	expr->unary_op.expr = lhs;
 	expr->unary_op.op = op;
@@ -414,10 +407,7 @@ static struct expr *parse_test(char *name)
 		return NULL;
 	}
 
-	expr = malloc(sizeof(*expr));
-	if (expr == NULL)
-		MEM_ERROR();
-
+	expr = MALLOC(sizeof(*expr));
 	expr->type = ATOM_TYPE;
 
 	expr->atom.test = test;
@@ -753,7 +743,7 @@ static char *_expr_log(char *string, int cmnd)
 
 	switch(cmnd) {
 	case LOG_ENABLE:
-		expr_msg = malloc(ALLOC_SZ);
+		expr_msg = MALLOC(ALLOC_SZ);
 		alloc_size = ALLOC_SZ;
 		cur_size = 0;
 		return expr_msg;
@@ -1250,10 +1240,7 @@ static int parse_uid_args(struct action_entry *action, int args, char **argv,
 	if (uid == -1)
 		return 0;
 
-	uid_info = malloc(sizeof(struct uid_info));
-	if (uid_info == NULL)
-		MEM_ERROR();
-
+	uid_info = MALLOC(sizeof(struct uid_info));
 	uid_info->uid = uid;
 	*data = uid_info;
 
@@ -1271,10 +1258,7 @@ static int parse_gid_args(struct action_entry *action, int args, char **argv,
 	if (gid == -1)
 		return 0;
 
-	gid_info = malloc(sizeof(struct gid_info));
-	if (gid_info == NULL)
-		MEM_ERROR();
-
+	gid_info = MALLOC(sizeof(struct gid_info));
 	gid_info->gid = gid;
 	*data = gid_info;
 
@@ -1296,10 +1280,7 @@ static int parse_guid_args(struct action_entry *action, int args, char **argv,
 	if (gid == -1)
 		return 0;
 
-	guid_info = malloc(sizeof(struct guid_info));
-	if (guid_info == NULL)
-		MEM_ERROR();
-
+	guid_info = MALLOC(sizeof(struct guid_info));
 	guid_info->uid = uid;
 	guid_info->gid = gid;
 	*data = guid_info;
@@ -1390,10 +1371,7 @@ static int parse_empty_args(struct action_entry *action, int args,
 		return 0;
 	}
 
-	empty_data = malloc(sizeof(*empty_data));
-	if (empty_data == NULL)
-		MEM_ERROR();
-
+	empty_data = MALLOC(sizeof(*empty_data));
 	empty_data->val = val;
 	*data = empty_data;
 
@@ -1681,10 +1659,7 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 
 		if(match) {
 			if(move == NULL) {
-				move = malloc(sizeof(*move));
-				if(move == NULL)
-					MEM_ERROR();
-
+				move = MALLOC(sizeof(*move));
 				move->ops = 0;
 				move->dir_ent = dir_ent;
 			}
@@ -1909,9 +1884,7 @@ static int parse_xattr_args(struct action_entry *action, int args,
 	struct xattr_data *xattr_data;
 	int error;
 
-	xattr_data = malloc(sizeof(*xattr_data));
-	if (xattr_data == NULL)
-		MEM_ERROR();
+	xattr_data = MALLOC(sizeof(*xattr_data));
 
 	error = regcomp(&xattr_data->preg, argv[0], REG_EXTENDED|REG_NOSUB);
 	if(error) {
@@ -2179,10 +2152,7 @@ static int parse_number_arg(struct test_entry *test, struct atom *atom)
 		return 0;
 	}
 
-	number = malloc(sizeof(*number));
-	if (number == NULL)
-		MEM_ERROR();
-
+	number = MALLOC(sizeof(*number));
 	number->range = range;
 	number->size = size;
 
@@ -2224,10 +2194,7 @@ static int parse_range_args(struct test_entry *test, struct atom *atom)
 		return 0;
 	}
  
-	range = malloc(sizeof(*range));
-	if (range == NULL)
-		MEM_ERROR();
-
+	range = MALLOC(sizeof(*range));
 	range->start = start;
 	range->end = end;
 
@@ -2448,10 +2415,7 @@ static int parse_user_arg(struct test_entry *test, struct atom *atom)
 		return 0;
 	}
 
-	number = malloc(sizeof(*number));
-	if(number == NULL)
-		MEM_ERROR();
-
+	number = MALLOC(sizeof(*number));
 	number->range = NUM_EQ;
 	number->size = size;
 
@@ -2479,10 +2443,7 @@ static int parse_group_arg(struct test_entry *test, struct atom *atom)
 		return 0;
 	}
 
-	number = malloc(sizeof(*number));
-	if(number == NULL)
-		MEM_ERROR();
-
+	number = MALLOC(sizeof(*number));
 	number->range = NUM_EQ;
 	number->size= size;
 
@@ -2562,10 +2523,7 @@ static int false_fn(struct atom *atom, struct action_data *action_data)
 static int parse_file_arg(struct test_entry *test, struct atom *atom)
 {
 	int res;
-	regex_t *preg = malloc(sizeof(regex_t));
-
-	if (preg == NULL)
-		MEM_ERROR();
+	regex_t *preg = MALLOC(sizeof(regex_t));
 
 	res = regcomp(preg, atom->argv[0], REG_EXTENDED);
 	if (res) {
@@ -3151,10 +3109,7 @@ static int parse_perm_args(struct test_entry *test, struct atom *atom)
 	 */
 	mode = mode_execute(head, 0);
 
-	perm_data = malloc(sizeof(struct perm_data));
-	if (perm_data == NULL)
-		MEM_ERROR();
-
+	perm_data = MALLOC(sizeof(struct perm_data));
 	perm_data->op = op;
 	perm_data->mode = mode;
 
