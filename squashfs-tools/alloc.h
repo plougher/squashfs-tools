@@ -23,6 +23,7 @@
  * alloc.h
  */
 #include <stdlib.h>
+#include <string.h>
 
 #include "error.h"
 
@@ -50,6 +51,17 @@ static inline void *_malloc(size_t size, const char *func)
 	return mem;
 }
 
+static inline char *_strdup(const char *s, const char *func)
+{
+	char *str = strdup(s);
+
+	if(str == NULL)
+		MEMERROR(func);
+
+	return str;
+}
+
 #define CALLOC(num, size) _calloc(num, size, __func__)
 #define MALLOC(size) _malloc(size, __func__)
+#define STRDUP(s) _strdup(s, __func__)
 #endif

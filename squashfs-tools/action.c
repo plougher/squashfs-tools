@@ -444,7 +444,7 @@ static struct expr *parse_test(char *name)
 		if (argv == NULL)
 			MEM_ERROR();
 
-		argv[args ++ ] = strdup(string);
+		argv[args ++ ] = STRDUP(string);
 
 		token = get_token(&string);
 
@@ -615,7 +615,7 @@ int parse_action(char *s, int verbose)
 		if (argv == NULL)
 			MEM_ERROR();
 
-		argv[args ++] = strdup(string);
+		argv[args ++] = STRDUP(string);
 
 		token = get_token(&string);
 
@@ -1014,8 +1014,8 @@ void eval_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	int st_mode = dir_ent->inode->buf.st_mode;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = strdup(pathname(dir_ent));
-	action_data.subpath = strdup(subpathname(dir_ent));
+	action_data.pathname = STRDUP(pathname(dir_ent));
+	action_data.subpath = STRDUP(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -1048,8 +1048,8 @@ void *eval_frag_actions(struct dir_info *root, struct dir_ent *dir_ent, int tail
 	struct action_data action_data;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = strdup(pathname(dir_ent));
-	action_data.subpath = strdup(subpathname(dir_ent));
+	action_data.pathname = STRDUP(pathname(dir_ent));
+	action_data.subpath = STRDUP(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -1393,8 +1393,8 @@ int eval_empty_actions(struct dir_info *root, struct dir_ent *dir_ent)
 		return 0;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = strdup(pathname(dir_ent));
-	action_data.subpath = strdup(subpathname(dir_ent));
+	action_data.pathname = STRDUP(pathname(dir_ent));
+	action_data.subpath = STRDUP(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -1637,8 +1637,8 @@ void eval_move_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	struct move_ent *move = NULL;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = strdup(pathname(dir_ent));
-	action_data.subpath = strdup(subpathname(dir_ent));
+	action_data.pathname = STRDUP(pathname(dir_ent));
+	action_data.subpath = STRDUP(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -1727,7 +1727,7 @@ static void move_dir(struct dir_ent *dir_ent)
 
 	/* update our directory's subpath name */
 	free(dir->subpath);
-	dir->subpath = strdup(subpathname(dir_ent));
+	dir->subpath = STRDUP(subpathname(dir_ent));
 
 	/* recursively update the subpaths of any sub-directories */
 	for(comp_ent = dir->list; comp_ent; comp_ent = comp_ent->next)
@@ -1786,7 +1786,7 @@ static void move_file(struct move_ent *move_ent)
 		 * parent directory's pathname to calculate the pathname
 		 */
 		if(dir_ent->nonstandard_pathname == NULL) {
-			dir_ent->nonstandard_pathname = strdup(filename);
+			dir_ent->nonstandard_pathname = STRDUP(filename);
 			if(dir_ent->source_name) {
 				free(dir_ent->source_name);
 				dir_ent->source_name = NULL;
@@ -1858,8 +1858,8 @@ int eval_prune_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	struct action_data action_data;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = strdup(pathname(dir_ent));
-	action_data.subpath = strdup(subpathname(dir_ent));
+	action_data.pathname = STRDUP(pathname(dir_ent));
+	action_data.subpath = STRDUP(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -1913,8 +1913,8 @@ static struct xattr_data *eval_xattr_actions (struct action *spec,
 		return NULL;
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = strdup(pathname(dir_ent));
-	action_data.subpath = strdup(subpathname(dir_ent));
+	action_data.pathname = STRDUP(pathname(dir_ent));
+	action_data.subpath = STRDUP(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -2017,8 +2017,8 @@ struct xattr_add *eval_xattr_add_actions(struct dir_info *root,
 	}
 
 	action_data.name = dir_ent->name;
-	action_data.pathname = strdup(pathname(dir_ent));
-	action_data.subpath = strdup(subpathname(dir_ent));
+	action_data.pathname = STRDUP(pathname(dir_ent));
+	action_data.subpath = STRDUP(subpathname(dir_ent));
 	action_data.buf = &dir_ent->inode->buf;
 	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
@@ -2325,7 +2325,7 @@ static char *get_start(char *s, int n)
 
 static int subpathname_fn(struct atom *atom, struct action_data *data)
 {
-	char *s = get_start(strdup(data->subpath), count_components(atom->argv[0]));
+	char *s = get_start(STRDUP(data->subpath), count_components(atom->argv[0]));
 	int res = fnmatch(atom->argv[0], s, FNM_PATHNAME|FNM_EXTMATCH);
 
 	free(s);
@@ -2937,8 +2937,8 @@ static int readlink_fn(struct atom *atom, struct action_data *action_data)
 		goto finish;
 
 	eval_action.name = dir_ent->name;
-	eval_action.pathname = strdup(pathname(dir_ent));
-	eval_action.subpath = strdup(subpathname(dir_ent));
+	eval_action.pathname = STRDUP(pathname(dir_ent));
+	eval_action.subpath = STRDUP(subpathname(dir_ent));
 	eval_action.buf = &dir_ent->inode->buf;
 	eval_action.depth = dir_ent->our_dir->depth;
 	eval_action.dir_ent = dir_ent;
@@ -3039,8 +3039,8 @@ static int eval_fn(struct atom *atom, struct action_data *action_data)
 	}
 
 	eval_action.name = dir_ent->name;
-	eval_action.pathname = strdup(pathname(dir_ent));
-	eval_action.subpath = strdup(subpathname(dir_ent));
+	eval_action.pathname = STRDUP(pathname(dir_ent));
+	eval_action.subpath = STRDUP(subpathname(dir_ent));
 	eval_action.buf = &dir_ent->inode->buf;
 	eval_action.depth = dir_ent->our_dir->depth;
 	eval_action.dir_ent = dir_ent;

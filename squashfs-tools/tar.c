@@ -803,13 +803,13 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 			file->buf.st_mtime = number;
 			file->have_mtime = TRUE;
 		} else if(strcmp(keyword, "uname") == 0)
-			file->uname = strdup(value);
+			file->uname = STRDUP(value);
 		else if(strcmp(keyword, "gname") == 0)
-			file->gname = strdup(value);
+			file->gname = STRDUP(value);
 		else if(strcmp(keyword, "path") == 0)
-			file->pathname = strdup(skip_components(value, vsize, NULL));
+			file->pathname = STRDUP(skip_components(value, vsize, NULL));
 		else if(strcmp(keyword, "linkpath") == 0)
-			file->link = strdup(value);
+			file->link = STRDUP(value);
 		else if(strcmp(keyword, "GNU.sparse.major") == 0) {
 			res = sscanf(value, "%lld %n", &number, &bytes);
 			if(res < 1 || value[bytes] != '\0')
@@ -826,7 +826,7 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 				goto failed;
 			realsize = number;
 		} else if(strcmp(keyword, "GNU.sparse.name") == 0)
-			name = strdup(value);
+			name = STRDUP(value);
 		else if(strcmp(keyword, "GNU.sparse.size") == 0) {
 			res = sscanf(value, "%lld %n", &number, &bytes);
 			if(res < 1 || value[bytes] != '\0')
@@ -1130,13 +1130,13 @@ static void copy_tar_header(struct tar_file *dest, struct tar_file *source)
 {
 	memcpy(dest, source, sizeof(struct tar_file));
 	if(source->pathname)
-		dest->pathname = strdup(source->pathname);
+		dest->pathname = STRDUP(source->pathname);
 	if(source->link)
-		dest->link = strdup(source->link);
+		dest->link = STRDUP(source->link);
 	if(source->uname)
-		dest->uname = strdup(source->uname);
+		dest->uname = STRDUP(source->uname);
 	if(source->gname)
-		dest->gname = strdup(source->gname);
+		dest->gname = STRDUP(source->gname);
 }
 
 
@@ -1440,7 +1440,7 @@ again:
 			if(link != file->link) {
 				char *old = file->link;
 
-				file->link = strdup(link);
+				file->link = STRDUP(link);
 				free(old);
 			}
 		} else {

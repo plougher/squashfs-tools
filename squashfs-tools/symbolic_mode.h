@@ -23,9 +23,11 @@
  * symbolic_mode.h
  */
 
+#include "alloc.h"
+
 #define SYNTAX_ERR(S, ARGS...) { \
 	if(source) { \
-		char *src = strdup(source); \
+		char *src = STRDUP(source); \
 		src[cur_ptr - source] = '\0'; \
 		fprintf(stderr, "Failed to parse action \"%s\"\n", source); \
 		fprintf(stderr, "Syntax error: "S, ##ARGS); \

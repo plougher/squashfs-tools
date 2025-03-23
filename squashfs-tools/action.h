@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2011, 2012, 2013, 2014, 2021, 2022, 2024
+ * Copyright (c) 2011, 2012, 2013, 2014, 2021, 2022, 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -23,6 +23,8 @@
  *
  * action.h
  */
+
+#include "alloc.h"
 
 /*
  * Lexical analyser definitions
@@ -69,7 +71,7 @@ struct token_entry {
 #define UNARY_TYPE		2
 
 #define SYNTAX_ERROR(S, ARGS...) { \
-	char *src = strdup(source); \
+	char *src = STRDUP(source); \
 	src[cur_ptr - source] = '\0'; \
 	fprintf(stderr, "Failed to parse action \"%s\"\n", source); \
 	fprintf(stderr, "Syntax error: "S, ##ARGS); \
@@ -78,7 +80,7 @@ struct token_entry {
 }
 
 #define TEST_SYNTAX_ERROR(TEST, ARG, S, ARGS...) { \
-	char *src = strdup(source); \
+	char *src = STRDUP(source); \
 	src[cur_ptr - source] = '\0'; \
 	fprintf(stderr, "Failed to parse action \"%s\"\n", source); \
 	fprintf(stderr, "Syntax error in \"%s()\", arg %d: "S, TEST->name, \

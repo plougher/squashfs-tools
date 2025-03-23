@@ -554,7 +554,7 @@ static struct pseudo_dev *read_pseudo_def_link(char *orig_def, char *def, char *
 
 	dev->type = 'l';
 	dev->pseudo_type = PSEUDO_FILE_OTHER;
-	dev->linkname = strdup(linkname);
+	dev->linkname = STRDUP(linkname);
 
 	free(linkname);
 	return dev;
@@ -857,7 +857,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 
 		if(*file == NULL) {
 			*file = MALLOC(sizeof(struct pseudo_file));
-			(*file)->filename = strdup(pseudo_file);
+			(*file)->filename = STRDUP(pseudo_file);
 			(*file)->fd = -1;
 		}
 
@@ -869,12 +869,12 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		dev->data->sparse = sparse;
 	} else if(type == 'F') {
 		dev->pseudo_type = PSEUDO_FILE_PROCESS;
-		dev->command = strdup(command);
+		dev->command = STRDUP(command);
 	} else
 		dev->pseudo_type = PSEUDO_FILE_OTHER;
 
 	if(type == 'S')
-		dev->symlink = strdup(symlink);
+		dev->symlink = STRDUP(symlink);
 
 	return dev;
 }
@@ -1070,12 +1070,12 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 
 	if(type == 'f') {
 		dev->pseudo_type = PSEUDO_FILE_PROCESS;
-		dev->command = strdup(command);
+		dev->command = STRDUP(command);
 	} else
 		dev->pseudo_type = PSEUDO_FILE_OTHER;
 
 	if(type == 's')
-		dev->symlink = strdup(symlink);
+		dev->symlink = STRDUP(symlink);
 
 	return dev;
 }

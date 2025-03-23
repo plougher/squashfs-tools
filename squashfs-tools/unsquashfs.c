@@ -998,7 +998,7 @@ static void queue_file(char *pathname, int file_fd, struct inode *inode)
 	file->gid = inode->gid;
 	file->uid = inode->uid;
 	file->time = inode->time;
-	file->pathname = strdup(pathname);
+	file->pathname = STRDUP(pathname);
 	file->blocks = inode->blocks + (inode->frag_bytes > 0);
 	file->sparse = inode->sparse;
 	file->xattr = inode->xattr;
@@ -1015,7 +1015,7 @@ static void queue_dir(char *pathname, struct dir *dir)
 	file->gid = dir->guid;
 	file->uid = dir->uid;
 	file->time = dir->mtime;
-	file->pathname = strdup(pathname);
+	file->pathname = STRDUP(pathname);
 	file->xattr = dir->xattr;
 	queue_put(to_writer, file);
 }
@@ -1355,7 +1355,7 @@ static int create_inode(char *pathname, struct inode *i)
 			return FALSE;
 	}
 
-	insert_lookup(i->inode_number, strdup(pathname));
+	insert_lookup(i->inode_number, STRDUP(pathname));
 
 	return TRUE;
 
@@ -1370,7 +1370,7 @@ failed:
 	 * If we've had some transitory errors, this may produce files
 	 * in various states, which should be hard-linked, but are not.
 	 */
-	insert_lookup(i->inode_number, strdup(pathname));
+	insert_lookup(i->inode_number, STRDUP(pathname));
 
 	return FALSE;
 }
@@ -1768,7 +1768,7 @@ static void add_stack(struct directory_stack *stack, unsigned int start_block,
 
 		stack->stack[depth - 1].start_block = start_block;
 		stack->stack[depth - 1].offset = offset;
-		stack->stack[depth - 1].name = strdup(name);
+		stack->stack[depth - 1].name = STRDUP(name);
 	} else if((depth + 1) == stack->size)
 			/* Stack shrinking a level */
 			free(stack->stack[depth].name);
@@ -1793,7 +1793,7 @@ static struct directory_stack *clone_stack(struct directory_stack *stack)
 	for(i = 0; i < stack->size; i++) {
 		new->stack[i].start_block = stack->stack[i].start_block;
 		new->stack[i].offset = stack->stack[i].offset;
-		new->stack[i].name = strdup(stack->stack[i].name);
+		new->stack[i].name = STRDUP(stack->stack[i].name);
 	}
 
 	new->size = stack->size;
@@ -1998,7 +1998,7 @@ static int follow_path(char *path, char *name, unsigned int start_block,
 				/* if at end of path, traversed OK */
 				if(path[0] == '\0') {
 					traversed = TRUE;
-					stack->name = strdup(name);
+					stack->name = STRDUP(name);
 					stack->type = type;
 					stack->start_block = entry_start;
 					stack->offset = entry_offset;
@@ -2012,7 +2012,7 @@ static int follow_path(char *path, char *name, unsigned int start_block,
 				 * and so path must not continue */
 				if(path[0] == '\0') {
 					traversed = TRUE;
-					stack->name = strdup(name);
+					stack->name = STRDUP(name);
 					stack->type = type;
 					stack->start_block = entry_start;
 					stack->offset = entry_offset;
@@ -3521,7 +3521,7 @@ static void pseudo_print(char *pathname, struct inode *inode, char *link, long l
 	int res;
 
 	if(link) {
-		char *name = strdup(filename);
+		char *name = STRDUP(filename);
 		char *linkname = process_filename(link);
 		res = dprintf(writer_fd, "%s L %s\n", name, linkname);
 		if(res == -1)
@@ -3641,7 +3641,7 @@ static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned in
 					byte_offset += i->data;
 					total_blocks += (i->data + (block_size - 1)) >> block_log;
 				}
-				insert_lookup(i->inode_number, strdup(pathname));
+				insert_lookup(i->inode_number, STRDUP(pathname));
 			} else
 				pseudo_print(pathname, i, link, 0);
 
@@ -3721,7 +3721,7 @@ static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned in
 						return FALSE;
 					}
 
-					insert_lookup(i->inode_number, strdup(pathname));
+					insert_lookup(i->inode_number, STRDUP(pathname));
 				} else
 					free(pathname);
 			} else

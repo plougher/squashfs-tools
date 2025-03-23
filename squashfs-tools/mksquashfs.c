@@ -3530,8 +3530,8 @@ struct dir_info *create_dir(char *pathname, char *subpath, unsigned int depth)
 {
 	struct dir_info *dir = MALLOC(sizeof(struct dir_info));
 
-	dir->pathname = strdup(pathname);
-	dir->subpath = strdup(subpath);
+	dir->pathname = STRDUP(pathname);
+	dir->subpath = STRDUP(subpath);
 	dir->count = 0;
 	dir->directory_count = 0;
 	dir->dir_is_ldir = TRUE;
@@ -3840,8 +3840,8 @@ struct dir_info *scan1_opendir(char *pathname, char *subpath, unsigned int depth
 		}
 	}
 
-	dir->pathname = strdup(pathname);
-	dir->subpath = strdup(subpath);
+	dir->pathname = STRDUP(pathname);
+	dir->subpath = STRDUP(subpath);
 	dir->count = 0;
 	dir->directory_count = 0;
 	dir->dir_is_ldir = TRUE;
@@ -3880,7 +3880,7 @@ static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 			index ++;
 			continue;
 		}
-		dir_name = strdup(dir_name);
+		dir_name = STRDUP(dir_name);
 		for(;;) {
 			struct dir_ent *dir_ent = dir->list;
 
@@ -3905,7 +3905,7 @@ static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 			cur_dev = source_dev[index];
 
 		return create_dir_entry(dir_name, basename,
-			strdup(source_path[index ++]), dir);
+			STRDUP(source_path[index ++]), dir);
 	}
 	return NULL;
 }
@@ -3927,7 +3927,7 @@ static struct dir_ent *scan1_single_readdir(struct dir_info *dir)
 
 	if((d_name = readdir(dir->linuxdir)) != NULL) {
 		char *basename = NULL;
-		char *dir_name = strdup(d_name->d_name);
+		char *dir_name = STRDUP(d_name->d_name);
 		int pass = 1, res;
 
 		for(;;) {
@@ -3961,7 +3961,7 @@ static struct dir_ent *scan1_readdir(struct dir_info *dir)
 	struct dirent *d_name = readdir(dir->linuxdir);
 
 	return d_name ?
-		create_dir_entry(strdup(d_name->d_name), NULL, NULL, dir) :
+		create_dir_entry(STRDUP(d_name->d_name), NULL, NULL, dir) :
 		NULL;
 }
 
@@ -4733,7 +4733,7 @@ static void handle_root_entries(struct dir_info *dir)
 		for(i = 0; i < old_root_entries; i++) {
 			if(old_root_entry[i].inode.type == SQUASHFS_DIR_TYPE)
 				dir->directory_count ++;
-			add_dir_entry2(strdup(old_root_entry[i].name), NULL,
+			add_dir_entry2(STRDUP(old_root_entry[i].name), NULL,
 				NULL, NULL, &old_root_entry[i].inode, dir);
 		}
 	}
@@ -4791,7 +4791,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		dir = create_dir("", subpath, depth);
 
 	if(depth == 1)
-		*prefix = source[0] == '/' ? strdup("/") : strdup(".");
+		*prefix = source[0] == '/' ? STRDUP("/") : STRDUP(".");
 
 	if(appending && file == NULL)
 		handle_root_entries(dir);
@@ -5139,7 +5139,7 @@ static squashfs_inode process_source(int progress)
 						prefix, strerror(errno));
 				first = FALSE;
 				same = TRUE;
-				pathname = strdup(prefix);
+				pathname = STRDUP(prefix);
 			} else if(same) {
 				res = lstat(prefix, &buf2);
 				if (res == -1)
@@ -5372,7 +5372,7 @@ static void add_old_root_entry(char *name, squashfs_inode inode,
 	if(old_root_entry == NULL)
 		MEM_ERROR();
 
-	old_root_entry[old_root_entries].name = strdup(name);
+	old_root_entry[old_root_entries].name = STRDUP(name);
 	old_root_entry[old_root_entries].inode.inode = inode;
 	old_root_entry[old_root_entries].inode.inode_number = inode_number;
 	old_root_entry[old_root_entries].inode.type = type;

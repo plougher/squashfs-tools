@@ -374,7 +374,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 				dirh.start_block, dire->offset, dire->type);
 
 			ent = MALLOC(sizeof(struct dir_ent));
-			ent->name = strdup(dire->name);
+			ent->name = STRDUP(dire->name);
 			ent->start_block = dirh.start_block;
 			ent->offset = dire->offset;
 			ent->type = dire->type;
