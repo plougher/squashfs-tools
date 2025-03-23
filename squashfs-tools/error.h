@@ -28,6 +28,7 @@ extern void progressbar_error(char *fmt, ...)
 	__attribute__ ((format (printf, 1, 2)));
 extern void progressbar_info(char *fmt, ...)
 	__attribute__ ((format (printf, 1, 2)));
+extern void exit_squashfs();
 
 #ifdef SQUASHFS_TRACE
 #define TRACE(s, args...) \
@@ -43,3 +44,10 @@ extern void progressbar_info(char *fmt, ...)
 			progressbar_error(s, ## args); \
 		} while(0)
 #endif
+
+#define MEMERROR(func) \
+	do {\
+		progressbar_error("FATAL ERROR: Out of memory (%s)\n", \
+								func); \
+		exit_squashfs();\
+	} while(0)

@@ -79,11 +79,4 @@ extern FILE *info_file;
 								__func__); \
 		EXIT_MKSQUASHFS();\
 	} while(0)
-
-#define MEMERROR(func) \
-	do {\
-		progressbar_error("FATAL ERROR: Out of memory (%s)\n", \
-								func); \
-		EXIT_MKSQUASHFS();\
-	} while(0)
 #endif

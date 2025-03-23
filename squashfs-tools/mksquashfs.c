@@ -443,6 +443,13 @@ void prep_exit()
 }
 
 
+void exit_squashfs()
+{
+	prep_exit();
+	exit(1);
+}
+
+
 int add_overflow(int a, int b)
 {
 	return (INT_MAX - a) < b;

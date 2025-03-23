@@ -159,6 +159,12 @@ static void progress_bar(long long current, long long max, int columns);
 
 #define MAX_LINE 16384
 
+void exit_squashfs()
+{
+	exit(1);
+}
+
+
 static void sigwinch_handler(int arg)
 {
 	struct winsize winsize;
