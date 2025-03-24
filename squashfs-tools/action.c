@@ -129,11 +129,8 @@ static int read_file(char *filename, char *type, int (parse_line)(char *))
 		while(1) {
 			int len;
 
-			if(total + (MAX_LINE + 1) > size) {
-				line = realloc(line, size += (MAX_LINE + 1));
-				if(line == NULL)
-					MEM_ERROR();
-			}
+			if(total + (MAX_LINE + 1) > size)
+				line = REALLOC(line, size += (MAX_LINE + 1));
 
 			err = fgets(line + total, MAX_LINE + 1, fd);
 			if(err == NULL)
@@ -288,17 +285,11 @@ static int get_token(char **string)
 		}
 
 		if(cur_size + 2 > size) {
-			char *tmp;
 			int offset = str_ptr - str;
 
 			size = (cur_size + 1  + STR_SIZE) & ~(STR_SIZE - 1);
-
-			tmp = realloc(str, size);
-			if(tmp == NULL)
-				MEM_ERROR();
-
-			str_ptr = tmp + offset;
-			str = tmp;
+			str = REALLOC(str, size);
+			str_ptr = str + offset;
 		}
 
 		*str_ptr ++ = *cur_ptr ++;
@@ -440,10 +431,7 @@ static struct expr *parse_test(char *name)
 			goto failed;
 		}
 
-		argv = realloc(argv, (args + 1) * sizeof(char *));
-		if (argv == NULL)
-			MEM_ERROR();
-
+		argv = REALLOC(argv, (args + 1) * sizeof(char *));
 		argv[args ++ ] = STRDUP(string);
 
 		token = get_token(&string);
@@ -611,10 +599,7 @@ int parse_action(char *s, int verbose)
 			goto failed;
 		}
 
-		argv = realloc(argv, (args + 1) * sizeof(char *));
-		if (argv == NULL)
-			MEM_ERROR();
-
+		argv = REALLOC(argv, (args + 1) * sizeof(char *));
 		argv[args ++] = STRDUP(string);
 
 		token = get_token(&string);
@@ -703,10 +688,8 @@ skip_args:
 		spec_list = &other_spec;
 	}
 	
-	*spec_list = realloc(*spec_list, (spec_count + 1) *
+	*spec_list = REALLOC(*spec_list, (spec_count + 1) *
 					sizeof(struct action));
-	if (*spec_list == NULL)
-		MEM_ERROR();
 
 	(*spec_list)[spec_count].type = action->type;
 	(*spec_list)[spec_count].action = action;
@@ -766,9 +749,7 @@ static char *_expr_log(char *string, int cmnd)
 		/* buffer too small, expand */
 		alloc_size = (cur_size + size + ALLOC_SZ - 1) & ~(ALLOC_SZ - 1);
 
-		expr_msg = realloc(expr_msg, alloc_size);
-		if(expr_msg == NULL)
-			MEM_ERROR();
+		expr_msg = REALLOC(expr_msg, alloc_size);
 	}
 
 	memcpy(expr_msg + cur_size, string, size);
@@ -2578,10 +2559,7 @@ static int file_fn(struct atom *atom, struct action_data *action_data)
 	close(pipefd[1]);
 
 	do {
-		buffer = realloc(buffer, size + 512);
-		if (buffer == NULL)
-			MEM_ERROR();
-
+		buffer = REALLOC(buffer, size + 512);
 		res = read_bytes(pipefd[0], buffer + size, 512);
 
 		if (res == -1)

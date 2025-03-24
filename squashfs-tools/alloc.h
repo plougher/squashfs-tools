@@ -40,7 +40,6 @@ static inline void *_calloc(size_t num, size_t size, const char *func)
 	return mem;
 }
 
-
 static inline void *_malloc(size_t size, const char *func)
 {
 	void *mem = malloc(size);
@@ -49,6 +48,16 @@ static inline void *_malloc(size_t size, const char *func)
 		MEMERROR(func);
 
 	return mem;
+}
+
+static inline void *_realloc(void *ptr, size_t size, const char *func)
+{
+	void *new = realloc(ptr, size);
+
+	if(new == NULL)
+		MEMERROR(func);
+
+	return new;
 }
 
 static inline char *_strdup(const char *s, const char *func)
@@ -70,8 +79,10 @@ static inline char *_strndup(const char *s, size_t n, const char *func)
 
 	return str;
 }
+
 #define CALLOC(num, size) _calloc(num, size, __func__)
 #define MALLOC(size) _malloc(size, __func__)
+#define REALLOC(ptr, size) _realloc(ptr, size, __func__)
 #define STRDUP(s) _strdup(s, __func__)
 #define STRNDUP(s, n) _strndup(s, n, __func__)
 #endif

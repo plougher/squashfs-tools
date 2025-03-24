@@ -80,11 +80,8 @@ void read_tar_xattr(char *name, char *value, int size, int encoding, struct tar_
 		memcpy(data, value, size);
 	}
 
-	file->xattr_list = realloc(file->xattr_list, (file->xattrs + 1) *
+	file->xattr_list = REALLOC(file->xattr_list, (file->xattrs + 1) *
 						sizeof(struct xattr_list));
-	if(file->xattr_list == NULL)
-		MEM_ERROR();
-
 	xattr = &file->xattr_list[file->xattrs];
 
 	xattr->type = xattr_get_prefix(xattr, name);

@@ -163,10 +163,8 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 	while(cache_bytes >= SQUASHFS_METADATA_SIZE) {
 		if((xattr_size - xattr_bytes) <
 				((SQUASHFS_METADATA_SIZE << 1)) + 2) {
-			xattr_table = realloc(xattr_table, xattr_size +
+			xattr_table = REALLOC(xattr_table, xattr_size +
 				(SQUASHFS_METADATA_SIZE << 1) + 2);
-			if(xattr_table == NULL)
-				MEM_ERROR();
 			xattr_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 
@@ -187,10 +185,8 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 	data_space = cache_size - cache_bytes;
 	if(data_space < req_size) {
 			int realloc_size = req_size - data_space;
-			data_cache = realloc(data_cache, cache_size +
+			data_cache = REALLOC(data_cache, cache_size +
 				realloc_size);
-			if(data_cache == NULL)
-				MEM_ERROR();
 			cache_size += realloc_size;
 	}
 
@@ -301,10 +297,8 @@ static int get_xattr_id(int xattrs, struct xattr_list *xattr_list,
 	int i, size = 0;
 	struct squashfs_xattr_id *xattr_id;
 
-	xattr_id_table = realloc(xattr_id_table, (xattr_ids + 1) *
+	xattr_id_table = REALLOC(xattr_id_table, (xattr_ids + 1) *
 		sizeof(struct squashfs_xattr_id));
-	if(xattr_id_table == NULL)
-		MEM_ERROR();
 
 	/* get total uncompressed size of xattr data, needed for stat */
 	for(i = 0; i < xattrs; i++)
@@ -344,10 +338,8 @@ long long write_xattrs()
 	while(cache_bytes) {
 		if((xattr_size - xattr_bytes) <
 				((SQUASHFS_METADATA_SIZE << 1)) + 2) {
-			xattr_table = realloc(xattr_table, xattr_size +
+			xattr_table = REALLOC(xattr_table, xattr_size +
 				(SQUASHFS_METADATA_SIZE << 1) + 2);
-			if(xattr_table == NULL)
-				MEM_ERROR();
 			xattr_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 
@@ -586,7 +578,6 @@ int read_xattrs(void *d, int type)
 	}
 
 	while(l1 || l2 || l3) {
-		struct xattr_list *x;
 		struct xattr_add *entry;
 
 		if(l1 && l2 && l3) {
@@ -651,11 +642,7 @@ int read_xattrs(void *d, int type)
 				 type != SQUASHFS_DIR_TYPE))
 			continue;
 
-		x = realloc(xattr_list, (i + 1) * sizeof(struct xattr_list));
-		if(x == NULL)
-			MEM_ERROR();
-		xattr_list = x;
-
+		xattr_list = REALLOC(xattr_list, (i + 1) * sizeof(struct xattr_list));
 		xattr_list[i].type = entry->type;
 		xattr_copy_prefix(&xattr_list[i], entry->type, entry->name);
 

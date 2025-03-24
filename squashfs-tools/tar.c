@@ -168,9 +168,7 @@ static char *read_long_string(int size, int skip)
 			}
 
 			memmove(name, filename, length + 1);
-			name = realloc(name, length + 1);
-			if(name == NULL)
-				MEM_ERROR();
+			name = REALLOC(name, length + 1);
 		}
 	}
 
@@ -990,9 +988,7 @@ static struct file_map *read_sparse_headers(struct tar_file *file, struct short_
 			goto failed;
 		}
 
-		map = realloc(map, (map_entries + 21) * sizeof(struct file_map));
-		if(map == NULL)
-			MEM_ERROR();
+		map = REALLOC(map, (map_entries + 21) * sizeof(struct file_map));
 
 		/* There may be up to 21 sparse entries in this long header.
 		 * An offset of 0 means unused */
@@ -1104,11 +1100,8 @@ static struct file_map *read_sparse_map(struct tar_file *file, int *entries)
 		else {
 			number = res;
 
-			if(i % 50 == 0) {
-				map = realloc(map, (i + 50) * sizeof(struct file_map));
-				if(map == NULL)
-					MEM_ERROR();
-			}
+			if(i % 50 == 0)
+				map = REALLOC(map, (i + 50) * sizeof(struct file_map));
 
 			map[i].offset = offset;
 			map[i++].number = number;

@@ -244,19 +244,14 @@ int parse_mode_args(char *source, char *cur_ptr, int args, char **argv,
 int parse_mode(char *source, struct mode_data **data)
 {
 	int args = 0, res = 0;
-	char **argv = NULL, *cur_ptr = source, *first = source, **new;
+	char **argv = NULL, *cur_ptr = source, *first = source;
 
 	while(*cur_ptr != '\0') {
 		while(*cur_ptr != ',' && *cur_ptr != '\0')
 			cur_ptr ++;
 
 		if(cur_ptr != first) {
-			new = realloc(argv, (args + 1) * sizeof(char *));
-			if(new == NULL)
-				MEM_ERROR();
-
-			argv = new;
-
+			argv = REALLOC(argv, (args + 1) * sizeof(char *));
 			argv[args ++] = STRNDUP(first, cur_ptr - first);
 		}
 

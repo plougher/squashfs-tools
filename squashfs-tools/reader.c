@@ -134,9 +134,7 @@ static char *pathname(struct reader *reader, struct dir_ent *dir_ent)
 			 * increase it and try again
 			 */
 			reader->size = (res + ALLOC_SIZE) & ~(ALLOC_SIZE - 1);
-			reader->pathname = realloc(reader->pathname, reader->size);
-			if(reader->pathname == NULL)
-				MEM_ERROR();
+			reader->pathname = REALLOC(reader->pathname, reader->size);
 		} else
 			break;
 	}
@@ -686,14 +684,8 @@ static void reader_read_data(struct reader *reader, struct read_entry *entry)
 
 static void _add_entry(struct dir_ent *entry, struct read_entry ***array, unsigned int *count)
 {
-	if(*array == NULL || *count % READER_ALLOC == 0) {
-		struct read_entry **tmp = realloc(*array, (*count + READER_ALLOC) * sizeof(struct read_entry *));
-
-		if(tmp == NULL)
-			MEM_ERROR();
-
-		*array = tmp;
-	}
+	if(*array == NULL || *count % READER_ALLOC == 0)
+		*array = REALLOC(*array, (*count + READER_ALLOC) * sizeof(struct read_entry *));
 
 	(*array)[*count] = MALLOC(sizeof(struct read_entry));
 	(*array)[*count]->dir_ent = entry;

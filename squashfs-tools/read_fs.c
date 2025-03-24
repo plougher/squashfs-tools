@@ -151,11 +151,8 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 				"containing root inode\n", start);
 			*root_inode_block = bytes;
 		}
-		if(size - bytes < SQUASHFS_METADATA_SIZE) {
-			inode_table = realloc(inode_table, size += alloc_size);
-			if(inode_table == NULL)
-				MEM_ERROR();
-		}
+		if(size - bytes < SQUASHFS_METADATA_SIZE)
+			inode_table = REALLOC(inode_table, size += alloc_size);
 		TRACE("scan_inode_table: reading block 0x%llx\n", start);
 		byte = read_block(fd, start, &start, 0, inode_table + bytes);
 		if(byte == 0)

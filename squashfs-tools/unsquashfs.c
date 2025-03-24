@@ -1472,10 +1472,8 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 		 * allocate new name entry
 		 */
 		paths->names ++;
-		paths->name = realloc(paths->name, (i + 1) *
+		paths->name = REALLOC(paths->name, (i + 1) *
 			sizeof(struct path_entry));
-		if(paths->name == NULL)
-			MEM_ERROR();
 
 		paths->name[i].name = targname;
 		paths->name[i].paths = NULL;
@@ -1574,13 +1572,10 @@ static struct pathnames *init_subdir()
 
 static struct pathnames *add_subdir(struct pathnames *paths, struct pathname *path)
 {
-	if(paths->count % PATHS_ALLOC_SIZE == 0) {
-		paths = realloc(paths, sizeof(struct pathnames *) +
+	if(paths->count % PATHS_ALLOC_SIZE == 0)
+		paths = REALLOC(paths, sizeof(struct pathnames *) +
 			(paths->count + PATHS_ALLOC_SIZE) *
 			sizeof(struct pathname *));
-		if(paths == NULL)
-			MEM_ERROR();
-	}
 
 	paths->path[paths->count++] = path;
 	return paths;
@@ -1760,11 +1755,8 @@ static void add_stack(struct directory_stack *stack, unsigned int start_block,
 {
 	if((depth - 1) == stack->size) {
 		/* Stack growing an extra level */
-		stack->stack = realloc(stack->stack, depth *
+		stack->stack = REALLOC(stack->stack, depth *
 					sizeof(struct directory_level));
-
-		if(stack->stack == NULL)
-			MEM_ERROR();
 
 		stack->stack[depth - 1].start_block = start_block;
 		stack->stack[depth - 1].offset = offset;
@@ -3203,16 +3195,10 @@ static char *new_pathname(char *path, char *name)
 static char *add_pathname(char *path, char *name)
 {
 	if(strcmp(path, "/") == 0) {
-		path = realloc(path, strlen(name) + 2);
-		if(path == NULL)
-			MEM_ERROR();
-
+		path = REALLOC(path, strlen(name) + 2);
 		strcat(path, name);
 	} else {
-		path = realloc(path, strlen(path) + strlen(name) + 2);
-		if(path == NULL)
-			MEM_ERROR();
-
+		path = REALLOC(path, strlen(path) + strlen(name) + 2);
 		strcat(path, "/");
 		strcat(path, name);
 	}
@@ -3495,9 +3481,7 @@ static char *process_filename(char *filename)
 	if(count == 0)
 		return filename;
 
-	saved = realloc(saved, strlen(filename) + count + 1);
-	if(saved == NULL)
-		MEM_ERROR();
+	saved = REALLOC(saved, strlen(filename) + count + 1);
 
 	for(ptr = saved; *filename != '\0'; ptr ++, filename ++) {
 		if(*filename == '\"' || *filename == '\\' || isspace(*filename))

@@ -253,11 +253,8 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	end = index[0];
 	for(i = 0; start < end; i++) {
 		int length, res;
-		xattrs = realloc(xattrs, (i + 1) * SQUASHFS_METADATA_SIZE);
-		if(xattrs == NULL) {
-			ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
-			goto failed3;
-		}
+
+		xattrs = REALLOC(xattrs, (i + 1) * SQUASHFS_METADATA_SIZE);
 
 		/* store mapping from location of compressed block in fs ->
 		 * location of uncompressed block in memory */
@@ -381,15 +378,9 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 		struct squashfs_xattr_entry entry;
 		struct squashfs_xattr_val val;
 
-		if(res != 0) {
-			xattr_list = realloc(xattr_list, (j + 1) *
+		if(res != 0)
+			xattr_list = REALLOC(xattr_list, (j + 1) *
 						sizeof(struct xattr_list));
-			if(xattr_list == NULL) {
-				ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
-				*failed = FALSE;
-				return NULL;
-			}
-		}
 
 		if((xptr - xattrs + sizeof(entry)) > xattr_table_length)
 			goto corrupted;
@@ -417,10 +408,6 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 			xptr += val.vsize;
 			*failed = TRUE;
 			continue;
-		} else if(res == -1) {
-			ERROR("FATAL ERROR: Out of memory (%s)\n", __func__);
-			*failed = FALSE;
-			return NULL;
 		}
 
 		xptr += entry.size;

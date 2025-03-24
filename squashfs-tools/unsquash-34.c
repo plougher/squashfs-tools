@@ -37,12 +37,11 @@ long long *alloc_index_table(int indexes)
 	int length = indexes * sizeof(long long);
 
 	if(alloc_size < length || length == 0) {
-		long long *table = realloc(alloc_table, length);
-
-		if(table == NULL && length !=0)
-			MEM_ERROR();
-
-		alloc_table = table;
+		if(length == 0) {
+			free(alloc_table);
+			alloc_table = NULL;
+		} else
+			alloc_table = REALLOC(alloc_table, length);
 		alloc_size = length;
 	}
 

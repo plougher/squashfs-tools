@@ -90,7 +90,6 @@ int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 	xattr_inc_list = eval_xattr_inc_actions(root_dir, dir_ent);
 
 	for(p = xattr_names; p < xattr_names + size;) {
-		struct xattr_list *x;
 		int res;
 
 		res = match_xattr_exc_actions(xattr_exc_list, p);
@@ -121,11 +120,7 @@ int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 			}
 		}
 
-		x = realloc(xattr_list, (i + 1) * sizeof(struct xattr_list));
-		if(x == NULL)
-			MEM_ERROR();
-		xattr_list = x;
-
+		xattr_list = REALLOC(xattr_list, (i + 1) * sizeof(struct xattr_list));
 		xattr_list[i].type = xattr_get_prefix(&xattr_list[i], p);
 
 		if(xattr_list[i].type == -1) {
