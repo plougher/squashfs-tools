@@ -80,9 +80,19 @@ static inline char *_strndup(const char *s, size_t n, const char *func)
 	return str;
 }
 
+static inline void _vasprintf(char **restrict strp, const char *restrict fmt, va_list ap, const char *func)
+{
+	int res = vasprintf(strp, fmt, ap);
+
+	if(res == -1)
+		MEMERROR(func);
+}
+
+
 #define CALLOC(num, size) _calloc(num, size, __func__)
 #define MALLOC(size) _malloc(size, __func__)
 #define REALLOC(ptr, size) _realloc(ptr, size, __func__)
 #define STRDUP(s) _strdup(s, __func__)
 #define STRNDUP(s, n) _strndup(s, n, __func__)
+#define VASPRINTF(strp, fmt, ap) _vasprintf(strp, fmt, ap, __func__)
 #endif

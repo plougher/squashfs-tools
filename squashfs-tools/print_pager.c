@@ -1,7 +1,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2024
+ * Copyright (c) 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -34,6 +34,7 @@
 
 #include "error.h"
 #include "print_pager.h"
+#include "alloc.h"
 
 extern long long read_bytes(int, void *, long long);
 
@@ -357,16 +358,10 @@ void autowrap_printf(FILE *stream, int maxl, char *fmt, ...)
 {
 	va_list ap;
 	char *text;
-	int res;
 
 	va_start(ap, fmt);
-	res = vasprintf(&text, fmt, ap);
+	VASPRINTF(&text, fmt, ap);
 	va_end(ap);
-
-	if(res == -1) {
-		ERROR("Vasprintf failed in autowrap_printf\n");
-		exit(1);
-	}
 
 	autowrap_print(stream, text, maxl);
 	free(text);
