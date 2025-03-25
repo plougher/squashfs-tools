@@ -3832,7 +3832,7 @@ static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 	while(index < source) {
 		char *basename = NULL;
 		char *dir_name = getbase(source_path[index]);
-		int pass = 1, res;
+		int pass = 1;
 
 		if(dir_name == NULL) {
 			ERROR_START("Bad source directory %s",
@@ -3855,10 +3855,7 @@ static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir)
 				basename = dir_name;
 			else
 				free(dir_name);
-			res = asprintf(&dir_name, "%s_%d", basename, pass++);
-			if(res == -1)
-				BAD_ERROR("asprintf failed in "
-					"scan1_encomp_readdir\n");
+			ASPRINTF(&dir_name, "%s_%d", basename, pass++);
 			ERROR("%s\n", dir_name);
 		}
 
@@ -3889,7 +3886,7 @@ static struct dir_ent *scan1_single_readdir(struct dir_info *dir)
 	if((d_name = readdir(dir->linuxdir)) != NULL) {
 		char *basename = NULL;
 		char *dir_name = STRDUP(d_name->d_name);
-		int pass = 1, res;
+		int pass = 1;
 
 		for(;;) {
 			struct dir_ent *dir_ent = dir->list;
@@ -3904,10 +3901,7 @@ static struct dir_ent *scan1_single_readdir(struct dir_info *dir)
 				basename = dir_name;
 			else
 				free(dir_name);
-			res = asprintf(&dir_name, "%s_%d", d_name->d_name, pass++);
-			if(res == -1)
-				BAD_ERROR("asprintf failed in "
-					"scan1_single_readdir\n");
+			ASPRINTF(&dir_name, "%s_%d", d_name->d_name, pass++);
 			ERROR("%s\n", dir_name);
 		}
 		return create_dir_entry(dir_name, basename, NULL, dir);
@@ -5300,9 +5294,7 @@ static int old_add_exclude(char *path)
 	}
 
 	for(i = 0; i < source; i++) {
-		int res = asprintf(&filename, "%s/%s", source_path[i], path);
-		if(res == -1)
-			BAD_ERROR("asprintf failed in old_add_exclude\n");
+		ASPRINTF(&filename, "%s/%s", source_path[i], path);
 		if(lstat(filename, &buf) == -1) {
 			if(!(errno == ENOENT || errno == ENOTDIR)) {
 				ERROR_START("Cannot stat exclude dir/file %s "
@@ -5783,11 +5775,8 @@ static void write_recovery_data(struct squashfs_super_block *sBlk)
 			BAD_ERROR("Could not read $HOME, use -recovery-path or -no-recovery options\n");
 	}
 
-	res = asprintf(&recovery_file, "%s/squashfs_recovery_%s_%d", recovery_pathname,
+	ASPRINTF(&recovery_file, "%s/squashfs_recovery_%s_%d", recovery_pathname,
 		getbase(destination_file), pid);
-	if(res == -1)
-		MEM_ERROR();
-
 	metadata = MALLOC(bytes);
 	res = read_fs_bytes(fd, sBlk->inode_table_start, bytes, metadata);
 	if(res == 0) {
@@ -6194,10 +6183,7 @@ static void check_sqfs_cmdline(int argc, char *argv[])
 	struct stat buf;
 
 	if(dirname != NULL) {
-		res = asprintf(&filename, "%s/%s", dirname, "sqfs_cmdline");
-		if(res == -1)
-			BAD_ERROR("asprintf failed in check_sqfs_cmdline\n");
-
+		ASPRINTF(&filename, "%s/%s", dirname, "sqfs_cmdline");
 		file = open(filename, O_CREAT | O_APPEND | O_NOFOLLOW | O_WRONLY,
 					S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
@@ -6227,11 +6213,7 @@ static void check_sqfs_cmdline(int argc, char *argv[])
 				"permissions, refusing to append to it\n", filename);
 
 		for(i = 0;  i < argc; i++) {
-			res = asprintf(&arg, "\"%s\" ", argv[i]);
-			if(res == -1)
-				BAD_ERROR("asprintf failed in "
-					"check_sqfs_cmdline\n");
-
+			ASPRINTF(&arg, "\"%s\" ", argv[i]);
 			res = write_bytes(file, arg, strlen(arg));
 			if(res == -1)
 				BAD_ERROR("write failed in check_sqfs_cmdline\n");

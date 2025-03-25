@@ -24,6 +24,7 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "error.h"
 
@@ -88,11 +89,25 @@ static inline void _vasprintf(char **restrict strp, const char *restrict fmt, va
 		MEMERROR(func);
 }
 
+static inline void _asprintf(char **restrict strp, const char *func, const char *restrict fmt, ...)
+{
+	va_list ap;
+	int res;
 
+	va_start(ap, fmt);
+	res = vasprintf(strp, fmt, ap);
+	va_end(ap);
+
+	if(res == -1)
+		MEMERROR(func);
+}
+
+#define CALLOC(num, size) _calloc(num, size, __func__)
 #define CALLOC(num, size) _calloc(num, size, __func__)
 #define MALLOC(size) _malloc(size, __func__)
 #define REALLOC(ptr, size) _realloc(ptr, size, __func__)
 #define STRDUP(s) _strdup(s, __func__)
 #define STRNDUP(s, n) _strndup(s, n, __func__)
 #define VASPRINTF(strp, fmt, ap) _vasprintf(strp, fmt, ap, __func__)
+#define ASPRINTF(strp, fmt, args...) _asprintf(strp, __func__, fmt, ## args)
 #endif

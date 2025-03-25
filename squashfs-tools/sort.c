@@ -115,9 +115,9 @@ re_read:
 
 	for(i = 0, n = 0; i < source; i++) {
 		char *filename;
-		int res = asprintf(&filename, "%s/%s", source_path[i], path);
-		if(res == -1)
-			BAD_ERROR("asprintf failed in add_sort_list\n");
+		int res;
+
+		ASPRINTF(&filename, "%s/%s", source_path[i], path);
 		res = lstat(filename, &buf);
 		free(filename);
 		if(res == -1) {

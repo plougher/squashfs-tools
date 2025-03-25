@@ -1373,16 +1373,13 @@ struct pseudo *get_pseudo()
 #ifdef SQUASHFS_TRACE
 static void dump_pseudo(struct pseudo *pseudo, char *string)
 {
-	int res;
 	char *path;
 	struct pseudo_entry *entry;
 
 	for(entry = pseudo->head; entry; entry = entry->next) {
-		if(string) {
-			res = asprintf(&path, "%s/%s", string, entry->name);
-			if(res == -1)
-				BAD_ERROR("asprintf failed in dump_pseudo\n");
-		} else
+		if(string)
+			ASPRINTF(&path, "%s/%s", string, entry->name);
+		else
 			path = entry->name;
 		if(entry->dev)
 			ERROR("%s %c 0%o %d %d %d %d\n", path, entry->dev->type,

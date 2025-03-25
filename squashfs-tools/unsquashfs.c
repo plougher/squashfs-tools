@@ -2044,7 +2044,6 @@ static int pre_scan(char *parent_name, unsigned int start_block, unsigned int of
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
 		struct inode *i;
 		char *pathname;
-		int res;
 
 		TRACE("pre_scan: name %s, start_block %d, offset %d, type %d\n",
 			name, start_block, offset, type);
@@ -2057,12 +2056,10 @@ static int pre_scan(char *parent_name, unsigned int start_block, unsigned int of
 			continue;
 		}
 
-		res = asprintf(&pathname, "%s/%s", parent_name, name);
-		if(res == -1)
-			MEM_ERROR();
+		ASPRINTF(&pathname, "%s/%s", parent_name, name);
 
 		if(type == SQUASHFS_DIR_TYPE) {
-			res = pre_scan(parent_name, start_block, offset, newt,
+			int res = pre_scan(parent_name, start_block, offset, newt,
 							newc, depth + 1);
 			if(res == FALSE)
 				scan_res = FALSE;
@@ -2153,7 +2150,6 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 		while(squashfs_readdir(dir, &name, &start_block, &offset,
 								&type)) {
 			char *pathname;
-			int res;
 
 			TRACE("dir_scan: name %s, start_block %d, offset %d,"
 				" type %d\n", name, start_block, offset, type);
@@ -2167,12 +2163,10 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 				continue;
 			}
 
-			res = asprintf(&pathname, "%s/%s", parent_name, name);
-			if(res == -1)
-				MEM_ERROR();
+			ASPRINTF(&pathname, "%s/%s", parent_name, name);
 
 			if(type == SQUASHFS_DIR_TYPE) {
-				res = dir_scan(pathname, start_block, offset,
+				int res = dir_scan(pathname, start_block, offset,
 							newt, newc, depth + 1);
 				if(res == FALSE)
 					scan_res = FALSE;
@@ -2186,7 +2180,7 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 					print_filename(pathname, i);
 
 				if(!lsonly) {
-					res = create_inode(pathname, i);
+					int res = create_inode(pathname, i);
 					if(res == FALSE)
 						scan_res = FALSE;
 				}
@@ -3587,7 +3581,6 @@ static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned in
 	while(squashfs_readdir(dir, &name, &start_block, &offset, &type)) {
 		struct inode *i;
 		char *pathname;
-		int res;
 
 		TRACE("pseudo_scan1: name %s, start_block %d, offset %d, type %d\n",
 			name, start_block, offset, type);
@@ -3600,12 +3593,10 @@ static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned in
 			continue;
 		}
 
-		res = asprintf(&pathname, "%s/%s", parent_name, name);
-		if(res == -1)
-			MEM_ERROR();
+		ASPRINTF(&pathname, "%s/%s", parent_name, name);
 
 		if(type == SQUASHFS_DIR_TYPE) {
-			res = pseudo_scan1(pathname, start_block, offset, newt,
+			int res = pseudo_scan1(pathname, start_block, offset, newt,
 							newc, depth + 1);
 			if(res == FALSE) {
 				free_subdir(newt);
@@ -3679,9 +3670,7 @@ static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned in
 				continue;
 			}
 
-			res = asprintf(&pathname, "%s/%s", parent_name, name);
-			if(res == -1)
-				MEM_ERROR();
+			ASPRINTF(&pathname, "%s/%s", parent_name, name);
 
 			if(type == SQUASHFS_DIR_TYPE) {
 				res = pseudo_scan2(pathname, start_block, offset,
@@ -3812,10 +3801,7 @@ static void check_sqfs_cmdline(int argc, char *argv[])
 	struct stat buf;
 
 	if(dirname != NULL) {
-		res = asprintf(&filename, "%s/%s", dirname, "sqfs_cmdline");
-		if(res == -1)
-			BAD_ERROR("asprintf failed in check_sqfs_cmdline\n");
-
+		ASPRINTF(&filename, "%s/%s", dirname, "sqfs_cmdline");
 		file = open(filename, O_CREAT | O_APPEND | O_NOFOLLOW | O_WRONLY,
 					S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
@@ -3845,11 +3831,7 @@ static void check_sqfs_cmdline(int argc, char *argv[])
 				"permissions, refusing to append to it\n", filename);
 
 		for(i = 0;  i < argc; i++) {
-			res = asprintf(&arg, "\"%s\" ", argv[i]);
-			if(res == -1)
-				BAD_ERROR("asprintf failed in "
-					"check_sqfs_cmdline\n");
-
+			ASPRINTF(&arg, "\"%s\" ", argv[i]);
 			res = write_bytes(file, arg, strlen(arg));
 			if(res == -1)
 				BAD_ERROR("write failed in check_sqfs_cmdline\n");

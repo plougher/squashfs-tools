@@ -1428,7 +1428,6 @@ static char *move_pathname(struct move_ent *move)
 {
 	struct dir_info *dest;
 	char *name, *pathname;
-	int res;
 
 	dest = (move->ops & ACTION_MOVE_MOVE) ?
 		move->dest : move->dir_ent->our_dir;
@@ -1436,12 +1435,9 @@ static char *move_pathname(struct move_ent *move)
 		move->name : move->dir_ent->name;
 
 	if(dest->subpath[0] != '\0')
-		res = asprintf(&pathname, "%s/%s", dest->subpath, name);
+		ASPRINTF(&pathname, "%s/%s", dest->subpath, name);
 	else
-		res = asprintf(&pathname, "/%s", name);
-
-	if(res == -1)
-		BAD_ERROR("asprintf failed in move_pathname\n");
+		ASPRINTF(&pathname, "/%s", name);
 
 	return pathname;
 }
@@ -2243,14 +2239,10 @@ static int NAME##_fn(struct atom *atom, struct action_data *action_data) \
  */
 static int check_pathname(struct test_entry *test, struct atom *atom)
 {
-	int res;
 	char *name;
 
 	if(atom->argv[0][0] != '/') {
-		res = asprintf(&name, "/%s", atom->argv[0]);
-		if(res == -1)
-			BAD_ERROR("asprintf failed in check_pathname\n");
-
+		ASPRINTF(&name, "/%s", atom->argv[0]);
 		free(atom->argv[0]);
 		atom->argv[0] = name;
 	}
