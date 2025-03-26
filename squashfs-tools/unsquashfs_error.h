@@ -54,11 +54,4 @@
 		else \
 			BAD_ERROR(s, ##args); \
 	} while(0)
-
-#define MEM_ERROR() \
-	do {\
-		progressbar_error("FATAL ERROR: Out of memory (%s)\n", \
-								__func__); \
-		exit(1); \
-	} while(0)
 #endif
