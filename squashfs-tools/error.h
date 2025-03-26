@@ -45,7 +45,7 @@ extern void exit_squashfs();
 		} while(0)
 #endif
 
-#define MEMERROR(func) \
+#define MEM_ERROR(func) \
 	do {\
 		progressbar_error("FATAL ERROR: Out of memory (%s)\n", \
 								func); \

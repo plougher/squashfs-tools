@@ -36,7 +36,7 @@ static inline void *_calloc(size_t num, size_t size, const char *func)
 	void *mem = calloc(num, size);
 
 	if(mem == NULL)
-		MEMERROR(func);
+		MEM_ERROR(func);
 
 	return mem;
 }
@@ -46,7 +46,7 @@ static inline void *_malloc(size_t size, const char *func)
 	void *mem = malloc(size);
 
 	if(mem == NULL)
-		MEMERROR(func);
+		MEM_ERROR(func);
 
 	return mem;
 }
@@ -56,7 +56,7 @@ static inline void *_realloc(void *ptr, size_t size, const char *func)
 	void *new = realloc(ptr, size);
 
 	if(new == NULL)
-		MEMERROR(func);
+		MEM_ERROR(func);
 
 	return new;
 }
@@ -66,7 +66,7 @@ static inline char *_strdup(const char *s, const char *func)
 	char *str = strdup(s);
 
 	if(str == NULL)
-		MEMERROR(func);
+		MEM_ERROR(func);
 
 	return str;
 }
@@ -76,7 +76,7 @@ static inline char *_strndup(const char *s, size_t n, const char *func)
 	char *str = strndup(s, n);
 
 	if(str == NULL)
-		MEMERROR(func);
+		MEM_ERROR(func);
 
 	return str;
 }
@@ -86,7 +86,7 @@ static inline void _vasprintf(char **restrict strp, const char *restrict fmt, va
 	int res = vasprintf(strp, fmt, ap);
 
 	if(res == -1)
-		MEMERROR(func);
+		MEM_ERROR(func);
 }
 
 static inline void _asprintf(char **restrict strp, const char *func, const char *restrict fmt, ...)
@@ -99,7 +99,7 @@ static inline void _asprintf(char **restrict strp, const char *func, const char 
 	va_end(ap);
 
 	if(res == -1)
-		MEMERROR(func);
+		MEM_ERROR(func);
 }
 
 #define CALLOC(num, size) _calloc(num, size, __func__)
