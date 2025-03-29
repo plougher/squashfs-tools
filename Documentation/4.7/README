@@ -13,7 +13,7 @@ improved for Mksquashfs/Unsquashfs/Sqfstar/Sqfscat.
 Please see the top-level INSTALL file for instructions on installing the tools,
 and the USAGE files in this directory for information on how to use the tools.
 
-This README will describe the improvements, and has the following sections:
+This README describes the improvements, and has the following sections:
 
 1. Summary of changes
 2. Parallel file reading and options
@@ -39,9 +39,9 @@ This README will describe the improvements, and has the following sections:
 
    2.1. Help text now uses the full width of the terminal (rather than being
         pre-formatted to 80 columns).
-   2.2. The output is now automatically paged (by defaut uses less).
-   2.3. The tools now print a summary on failure to parse the command line or
-        encountering other errors that prevent the tool from running, rather
+   2.2. The help text is now automatically paged (by default less is used).
+   2.3. The tools now print a summary on failure to parse the command line (or
+        encountering other errors that prevent the tool from running), rather
         than displaying the help text.
    2.4. The help text can be displayed in full, by section, or by option using
         regex matching.
@@ -63,12 +63,12 @@ This README will describe the improvements, and has the following sections:
         a file rather than stdout.  Allows -info-file to be used in conjunction
         with the progress bar.
    3.5. New -pseudo-dir (or -pd) option which supplies a default directory
-        if any directories in a pseudo definition pathname don't exist.
+        if any directories in a pseudo file definition pathname doesn't exist.
    3.6. New pseudo file 'h' definition which creates a hard link to a file,
         and follows symbolic links.
    3.7. Previously if a directory was missing (or not a directory) in a
-        Pseudo definition pathname, the pseudo definition would be ignored.
-        This has been hardened to a fatal error.
+        Pseudo file definition pathname, the pseudo file definition would be
+        ignored.  This has been hardened to a fatal error.
 
 4. Other improvements for Unsquashfs/Sqfscat
 
