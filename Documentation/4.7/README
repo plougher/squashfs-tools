@@ -6,7 +6,7 @@
 
 Welcome to Squashfs-Tools 4.7.  The last release was two years ago, and there
 are substantial improvements to the tools in this release, in particular
-Mksquashfs can be 20% to more than six times faster (dependant on source
+Mksquashfs can now be 20% to more than six times faster (dependant on source
 media and files).  The help system has also been completely rewritten and
 improved for Mksquashfs/Unsquashfs/Sqfstar/Sqfscat.
 
