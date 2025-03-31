@@ -349,9 +349,11 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 static void print_option(char *prog_name, char *opt_name, char *pattern, char **options,
 					char **options_args, char **options_text)
 {
-	int i, res, matched = FALSE;
+	int i, res, tty, matched = FALSE;
 	regex_t *preg = MALLOC(sizeof(regex_t));
 	int cols = get_column_width();
+	pid_t pager_pid;
+	FILE *pager;
 
 	res = regcomp(preg, pattern, REG_EXTENDED|REG_NOSUB);
 
@@ -363,14 +365,29 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 		exit(1);
 	}
 
+	tty = isatty(STDOUT_FILENO);
+	if(tty) {
+		pager = exec_pager(&pager_pid);
+		if(pager == NULL)
+			exit(1);
+	} else {
+		cols = 80;
+		pager = stdout;
+	}
+
 	for(i = 0; options[i] != NULL; i++) {
 		res = regexec(preg, options[i], (size_t) 0, NULL, 0);
 		if(res)
 			res = regexec(preg, options_args[i], (size_t) 0, NULL, 0);
 		if(!res) {
 			matched = TRUE;
-			autowrap_print(stdout, options_text[i], cols);
+			autowrap_print(pager, options_text[i], cols);
 		}
+	}
+
+	if(tty) {
+		fclose(pager);
+		wait_to_die(pager_pid);
 	}
 
 	if(!matched) {
