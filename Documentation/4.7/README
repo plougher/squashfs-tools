@@ -39,7 +39,8 @@ This README describes the improvements, and has the following sections:
 
    2.1. Help text now uses the full width of the terminal (rather than being
         pre-formatted to 80 columns).
-   2.2. The help text is now automatically paged (by default less is used).
+   2.2. The help text is now automatically paged (by default /usr/bin/pager is
+        used).
    2.3. The tools now print a summary on failure to parse the command line (or
         encountering other errors that prevent the tool from running), rather
         than displaying the help text.
@@ -90,6 +91,143 @@ This README describes the improvements, and has the following sections:
 
 3. Help system and options
 --------------------------
+
+The help system has been rewritten to remove the annoyances and limitations
+of the previous system.  The previous system printed the entire help text
+when a command line parse error occurred (or some other reason that prevented
+the tool from running).  This behaviour may have been useful when the tools
+had much less options, but when for example Mksquashfs now has 236 options,
+the full help text is just too much, and it is multiple pages in size.  What
+effectively happens is the actual error message scrolls off the screen and is
+lost, and the user is left with a large help text display, most of which has
+also scrolled off the screen, and the remaining part is of no interest
+whatsoever.
+
+The help system was first rewritten to avoid this annoyance.  Now, rather than
+the full help being displayed on an error occurring, only a summary of the help
+options available is displayed, where the user is directed to use the most
+appropriate help option for their situation.
+
+The second aspect of the rewrite was to move away from help text pre-formatted
+to 80 columns, and to use the full width of the terminal, which is typically
+much wider than 80 columns.  The effect of this, obviously, is to fit more
+help text onto the screen.  Also the help text is now paged (by default to
+/usr/bin/pager), and so if the output is larger than a screen, no information
+will be lost.
+
+For example, now if the user correctly spells an option, but, makes a mistake
+with the argument, the user will firstly be prompted to look up the help text
+for that option, and afterwards the list of other help options will be given,
+e.g. (output uses 80 columns because this README is formatted to 80 columns)
+
+*************************************************************************
+% mksquasfs dir image.sqfs -b 66
+mksquashfs: -b block size not power of two or not between 4096 and 1Mbyte
+
+Run
+  "mksquashfs -help-option -b$" to get help on -b option
+
+Or run
+  "mksquashfs -help-option <regex>" to get help on all options matching <regex>
+
+Or run
+  "mksquashfs -help-section <section-name>" to get help on these sections
+        SECTION NAME            SECTION
+        compression             Filesystem compression options:
+        build                   Filesystem build options:
+        time                    Filesystem time options:
+        perms                   Filesystem permissions options:
+        pseudo                  Filesystem pseudo options:
+        filter                  Filesystem filter options:
+        xattrs                  Filesystem extended attribute (xattrs) options:
+        runtime                 Mksquashfs runtime options:
+        append                  Filesystem append options:
+        actions                 Filesystem actions options:
+        tar                     Tar file only options:
+        expert                  Expert options (these may make the filesystem
+                                unmountable):
+        help                    Help options:
+        misc                    Miscellaneous options:
+        pseudo-defs             Pseudo file definition format:
+        symbolic                Symbolic mode specification:
+        environment             Environment:
+        exit                    Exit status:
+        extra                   See also (extra information elsewhere):
+
+Or run
+  "mksquashfs -help-all" to get help on all the sections
+*************************************************************************
+
+The above ensures the error message is not lost, and the user is not swamped by
+irrelevant information.
+
+In doing so, this has introduced two new help options:
+
+	1. -help-option <regex> (or -ho <regex> for short),
+        2. -help-section <section-name> (or -hs <section-name> for short)
+
+3.1 -help-option <regex>
+------------------------
+
+The -help-option displays all the options that match the <regex> regular
+expression, where matching is done on the option itself and the arguments,
+e.g.
+
+*************************************************************************
+% mksquashfs -ho "regex"
+-regex                  allow POSIX regular expressions to be used in exclude
+                        dirs/files
+-xattrs-exclude <regex> exclude any xattr names matching <regex>.  <regex> is a
+                        POSIX regular expression, e.g. -xattrs-exclude '^user.'
+                        excludes xattrs from the user namespace
+-xattrs-include <regex> include any xattr names matching <regex>.  <regex> is a
+                        POSIX regular expression, e.g. -xattrs-include '^user.'
+                        includes xattrs from the user namespace
+-help-option <regex>    print the help information for Mksquashfs options
+                        matching <regex> to stdout
+-ho <regex>             shorthand alternative to -help-option
+*************************************************************************
+
+Displays all the options that contain regex in their name or
+argument.
+
+Using a regular expression, multiple things can be matched, e.g.
+if you wanted to return all the options that operate on uids and gids,
+you could do
+
+*************************************************************************
+% mksquashfs -ho "uid|gid"
+-root-uid <user>        set root directory owner to specified <user>, <user> can
+                        be either an integer uid or user name
+-root-gid <group>       set root directory group to specified <group>, <group>
+                        can be either an integer gid or group name
+-force-uid <user>       set all file and directory uids to specified <user>,
+                        <user> can be either an integer uid or user name
+-force-gid <group>      set all file and directory gids to specified <group>,
+                        <group> can be either an integer gid or group name
+-uid-gid-offset <value> offset all uid and gids by specified <value>.  <value>
+                        should be a positive integer
+-pd <d mode uid gid>    specify a default pseudo directory which will be used in
+                        pseudo definitions if a directory in the pathname does
+                        not exist.  This also allows pseudo definitions to be
+                        specified without specifying all the directories in the
+                        pathname.  The definition should be quoted
+-pd <D time mode u g>   specify a default pseudo directory which will be used in
+                        pseudo definitions if a directory in the pathname does
+                        not exist.  The D type also allows a timestamp to be
+                        specified in addition to mode, uid and gid
+-default-uid <value>    tar files often do not store uids for intermediate
+                        directories.  This option sets the default directory
+                        owner to <value>, rather than the user running
+                        Mksquashfs.  <value> can be either an integer uid or
+                        user name.  This also sets the root directory uid
+-default-gid <value>    tar files often do not store gids for intermediate
+                        directories.  This option sets the default directory
+                        group to <value>, rather than the group of the user
+                        running Mksquashfs.  <value> can be either an integer
+                        uid or group name.  This also sets the root directory
+                        gid
+*************************************************************************
 
 4. AUTHOR INFO
 --------------
