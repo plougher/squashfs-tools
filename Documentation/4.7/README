@@ -161,15 +161,16 @@ Or run
 The above ensures the error message is not lost, and the user is not swamped by
 irrelevant information.
 
-In doing so, this has introduced two new help options:
+In doing so, this has introduced three new help options:
 
 	1. -help-option <regex> (or -ho <regex> for short),
-        2. -help-section <section-name> (or -hs <section-name> for short)
+	2. -help-section <section-name> (or -hs <section-name> for short)
+	3. -help-all (or -ha for short)
 
 3.1 -help-option <regex>
 ------------------------
 
-The -help-option displays all the options that match the <regex> regular
+The -help-option option displays all the options that match the <regex> regular
 expression, where matching is done on the option itself and the arguments,
 e.g.
 
@@ -228,6 +229,95 @@ you could do
                         uid or group name.  This also sets the root directory
                         gid
 *************************************************************************
+
+3.2 -help-section <section>
+---------------------------
+
+The -help-section option displays the section that matches the <section> name.
+If <section> does not exactly match a section name, it is treated as a regular
+expression, and all section names that match are displayed.  Finally, if
+<section> is "sections" or "h", a list of sections and their names is displayed.
+
+For example:
+
+*************************************************************************
+% mksquashfs -help-section compression
+Filesystem compression options:
+-b <block-size>         set data block to <block-size>.  Default 128 Kbytes.
+                        Optionally a suffix of K, KB, Kbytes or M, MB, Mbytes
+                        can be given to specify Kbytes or Mbytes respectively
+-comp <comp>            select <comp> compression.  Run -help-comp <comp> to get
+                        compressor options for <comp>, or <all> for all the
+                        compressors.
+                        Compressors available:
+                                gzip (default)
+                                lzo
+                                lz4
+                                xz
+                                zstd
+-noI                    do not compress inode table
+-noId                   do not compress the uid/gid table (implied by -noI)
+-noD                    do not compress data blocks
+-noF                    do not compress fragment blocks
+-noX                    do not compress extended attributes
+-no-compression         do not compress any of the data or metadata.  This is
+                        equivalent to specifying -noI -noD -noF and -noX
+*************************************************************************
+
+Will display the compression options section.
+
+Using regular expression matching section names can be abbreviated, for example
+"comp" will also display the compression options section.  But, it also means
+multiple sections can be displayed, for example:
+
+*************************************************************************
+% mksquashfs -help-section "comp|build"
+Filesystem compression options:
+-b <block-size>         set data block to <block-size>.  Default 128 Kbytes.
+                        Optionally a suffix of K, KB, Kbytes or M, MB, Mbytes
+                        can be given to specify Kbytes or Mbytes respectively
+-comp <comp>            select <comp> compression.  Run -help-comp <comp> to get
+                        compressor options for <comp>, or <all> for all the
+                        compressors.
+                        Compressors available:
+                                gzip (default)
+                                lzo
+                                lz4
+                                xz
+                                zstd
+-noI                    do not compress inode table
+-noId                   do not compress the uid/gid table (implied by -noI)
+-noD                    do not compress data blocks
+-noF                    do not compress fragment blocks
+-noX                    do not compress extended attributes
+-no-compression         do not compress any of the data or metadata.  This is
+                        equivalent to specifying -noI -noD -noF and -noX
+
+Filesystem build options:
+-tar                    read uncompressed tar file from standard in (stdin)
+-no-strip               act like tar, and do not strip leading directories from
+                        source files
+-tarstyle               alternative name for -no-strip
+-cpiostyle              act like cpio, and read file pathnames from standard in
+                        (stdin)
+-cpiostyle0             like -cpiostyle, but filenames are null terminated.  Can
+                        be used with find -print0 action
+-reproducible           build filesystems that are reproducible (default)
+-not-reproducible       build filesystems that are not reproducible
+-no-exports             do not make filesystem exportable via NFS (-tar default)
+-exports                make filesystem exportable via NFS (default)
+-no-sparse              do not detect sparse files
+-no-tailends            do not pack tail ends into fragments (default)
+-tailends               pack tail ends into fragments
+-no-fragments           do not use fragments
+-no-duplicates          do not perform duplicate checking
+-no-hardlinks           do not hardlink files, instead store duplicates
+-keep-as-directory      if one source directory is specified, create a root
+                        directory containing that directory, rather than the
+                        contents of the directory
+*************************************************************************
+
+Will display the compression options and build options sections.
 
 4. AUTHOR INFO
 --------------
