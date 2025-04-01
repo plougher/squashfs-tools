@@ -516,17 +516,37 @@ static void handle_invalid_option(char *prog_name, char *opt_name, char **sectio
 }
 
 
-static void print_help(char *prog_name, int error, char *syntax, char **sections, char **options_text)
+static void print_help(char *prog_name, char*message, char *syntax, char **sections, char **options_text)
 {
-	FILE *stream = error ? stderr : stdout;
-	int cols = get_column_width();
+	int cols, tty = isatty(STDOUT_FILENO);
+	pid_t pager_pid;
+	FILE *pager;
 
-	autowrap_printf(stream, cols, syntax, prog_name);
-	autowrap_printf(stream, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stream, "\t", cols, sections, options_text);
-	autowrap_printf(stream, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
-	exit(error);
+	if(tty) {
+		cols = get_column_width();
+
+		pager = exec_pager(&pager_pid);
+		if(pager == NULL)
+			exit(1);
+	} else {
+		cols = 80;
+		pager = stdout;
+	}
+
+	if(message)
+		autowrap_print(pager, message, cols);
+	autowrap_printf(pager, cols, syntax, prog_name);
+	autowrap_printf(pager, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(pager, "\t", cols, sections, options_text);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+
+	if(tty) {
+		fclose(pager);
+		wait_to_die(pager_pid);
+	}
+
+	exit(message == NULL ? 0 : 1);
 }
 
 
@@ -561,9 +581,9 @@ void unsquashfs_option(char *opt_name, char *pattern)
 }
 
 
-void unsquashfs_help(int error)
+void unsquashfs_help(char *message)
 {
-	print_help("unsquashfs", error, UNSQUASHFS_SYNTAX, unsquashfs_sections, unsquashfs_text);
+	print_help("unsquashfs", message, UNSQUASHFS_SYNTAX, unsquashfs_sections, unsquashfs_text);
 }
 
 
@@ -597,9 +617,9 @@ void sqfscat_option(char *opt_name, char *pattern)
 }
 
 
-void sqfscat_help(int error)
+void sqfscat_help(char *message)
 {
-	print_help("sqfscat", error, SQFSCAT_SYNTAX, sqfscat_sections, sqfscat_text);
+	print_help("sqfscat", message, SQFSCAT_SYNTAX, sqfscat_sections, sqfscat_text);
 }
 
 

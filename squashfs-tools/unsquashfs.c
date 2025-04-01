@@ -3875,7 +3875,7 @@ static int parse_cat_options(int argc, char *argv[])
 		if(*argv[i] != '-')
 			break;
 		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
-			sqfscat_help(FALSE);
+			sqfscat_help(NULL);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
 			sqfscat_help_all();
 		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
@@ -4046,15 +4046,12 @@ static int parse_cat_options(int argc, char *argv[])
 		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be "
 								"set\n");
 	if(i == argc) {
-		if(!version) {
-			ERROR("%s: fatal error: no input filesystem specified on command line\n\n", argv[0]);
-			sqfscat_help(TRUE);
-		} else
+		if(!version)
+			sqfscat_help("sqfscat: fatal error: no input filesystem specified on command line\n\n");
+		else
 			exit(1);
-	} else if(i + 1 == argc) {
-		ERROR("%s: fatal error: no files specified on command line\n\n", argv[0]);
-		sqfscat_help(TRUE);
-	}
+	} else if(i + 1 == argc)
+		sqfscat_help("sqfscat: fatal error: no files specified on command line\n\n");
 
 	return i;
 }
@@ -4068,7 +4065,7 @@ static int parse_options(int argc, char *argv[])
 		if(*argv[i] != '-')
 			break;
 		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
-			unsquashfs_help(FALSE);
+			unsquashfs_help(NULL);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
 			unsquashfs_help_all();
 		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
@@ -4435,10 +4432,9 @@ static int parse_options(int argc, char *argv[])
 #endif
 
 	if(i == argc) {
-		if(!version) {
-			ERROR("unsquashfs: fatal error: no input filesystem specified on command line\n\n");
-			unsquashfs_help(TRUE);
-		} else
+		if(!version)
+			unsquashfs_help("unsquashfs: fatal error: no input filesystem specified on command line\n\n");
+		else
 			exit(1);
 	}
 
