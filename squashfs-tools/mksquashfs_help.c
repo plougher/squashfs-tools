@@ -915,7 +915,7 @@ static void print_section(char *prog_name, char *opt_name, char *sec_name, char 
 	int i, j, secs, cols, res, tty = isatty(STDOUT_FILENO), matched = FALSE;
 	pid_t pager_pid;
 	FILE *pager;
-	regex_t *preg = MALLOC(sizeof(regex_t));
+	regex_t *preg;
 
 	if(tty) {
 		cols = get_column_width();
