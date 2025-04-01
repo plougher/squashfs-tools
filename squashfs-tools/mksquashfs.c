@@ -6458,7 +6458,7 @@ static int sqfstar(int argc, char *argv[])
 			print_version("sqfstar");
 			exit(0);
 		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
-			sqfstar_help(FALSE);
+			sqfstar_help(NULL);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
 			sqfstar_help_all();
 		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
@@ -7056,11 +7056,8 @@ static int sqfstar(int argc, char *argv[])
 			sqfstar_invalid_option(argv[i]);
 	}
 
-	if(i == argc) {
-		ERROR("sqfstar: fatal error: no output filesystem specified on command line\n\n");
-		sqfstar_help(TRUE);
-		exit(1);
-	}
+	if(i == argc)
+		sqfstar_help("sqfstar: fatal error: no output filesystem specified on command line\n\n");
 
 	set_single_threaded();
 
@@ -7370,7 +7367,7 @@ int main(int argc, char *argv[])
 	/* Scan the command line for options that will immediately quit afterwards */
 	for(j = i; j < argc; j++) {
 		if(strcmp(argv[j], "-help") == 0 || strcmp(argv[j], "-h") == 0)
-			mksquashfs_help(FALSE);
+			mksquashfs_help(NULL);
 		else if(strcmp(argv[j], "-help-all") == 0 || strcmp(argv[j], "-ha") == 0)
 			mksquashfs_help_all();
 		else if(strcmp(argv[j], "-help-option") == 0 || strcmp(argv[j], "-ho") == 0) {
@@ -7459,10 +7456,9 @@ int main(int argc, char *argv[])
 
 	if(i < 3) {
 		if(i == 1)
-			ERROR("mksquashfs: fatal error: no source or output filesystem specified on command line\n\n");
+			mksquashfs_help("mksquashfs: fatal error: no source or output filesystem specified on command line\n\n");
 		else
-			ERROR("mksquashfs: fatal error: no output filesystem specified on command line\n\n");
-		mksquashfs_help(TRUE);
+			mksquashfs_help("mksquashfs: fatal error: no output filesystem specified on command line\n\n");
 	}
 
 	option_offset = i;
