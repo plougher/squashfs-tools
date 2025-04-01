@@ -422,9 +422,10 @@ static void print_section_names(FILE *out, char *string, int cols, char **sectio
 
 static void print_section(char *prog_name, char *opt_name, char *sec_name, char **sections, char **options_text)
 {
-	int i, j, secs, cols, tty = isatty(STDOUT_FILENO);
+	int i, j, secs, cols, res, tty = isatty(STDOUT_FILENO), matched = FALSE;
 	pid_t pager_pid;
 	FILE *pager;
+	regex_t *preg;
 
 	if(tty) {
 		cols = get_column_width();
@@ -445,14 +446,44 @@ static void print_section(char *prog_name, char *opt_name, char *sec_name, char 
 
 	for(i = 0; sections[i] != NULL; i++)
 		if(strcmp(sections[i], sec_name) == 0)
-			break;
+			goto exact_match;
 
-	if(sections[i] == NULL) {
-		autowrap_printf(pager, cols, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
-		print_section_names(pager, "", cols, sections, options_text);
-		goto finish;
+	/* match sec_name as a regex */
+	preg = MALLOC(sizeof(regex_t));
+	res = regcomp(preg, sec_name, REG_EXTENDED|REG_NOSUB);
+	if(res) {
+		char str[1024]; /* overflow safe */
+
+		if(tty) {
+			fclose(pager);
+			wait_to_die(pager_pid);
+		}
+
+		regerror(res, preg, str, 1024);
+		autowrap_printf(stderr, cols, "%s: %s invalid regex %s because %s\n", prog_name, opt_name, sec_name, str);
+		exit(1);
 	}
 
+	for(i = j = 0; sections[i] != NULL; i++) {
+		res = regexec(preg, sections[i], (size_t) 0, NULL, 0);
+		if(!res) {
+			autowrap_print(pager, options_text[j], cols);
+			matched = TRUE;
+		}
+
+		while(options_text[++ j] != NULL && !is_header(j, options_text))
+			if(!res)
+				autowrap_print(pager, options_text[j], cols);
+	}
+
+	if(!matched) {
+		autowrap_printf(pager, cols, "%s: %s %s does not match any section name\n", prog_name, opt_name, sec_name);
+		print_section_names(pager, "", cols, sections, options_text);
+	}
+
+	goto finish;
+
+exact_match:
 	i++;
 
 	for(j = 0, secs = 0; options_text[j] != NULL && secs <= i; j ++) {
