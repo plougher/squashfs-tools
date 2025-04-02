@@ -256,8 +256,11 @@ FILE *exec_pager(pid_t *process)
 			execlp(pager_command, pager_name,  (char *) NULL);
 
 		if(pager_from_env_var == FALSE) {
+			execlp("less", "less", "--quit-if-one-screen", (char *) NULL);
 			execl("/usr/bin/less", "less", "--quit-if-one-screen", (char *) NULL);
+			execlp("more", "more", "--exit-on-eof", (char *) NULL);
 			execl("/usr/bin/more", "more", "--exit-on-eof", (char *) NULL);
+			execlp("cat", "cat", (char *) NULL);
 			execl("/usr/bin/cat", "cat", (char *) NULL);
 		}
 
