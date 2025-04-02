@@ -132,18 +132,12 @@ static int determine_pager(void)
 	char buffer[1024];
 
 	res = pipe(pipefd);
-	if(res == -1) {
-		ERROR("Error determining pager, pipe failed\n");
-		return UNKNOWN_PAGER;
-	}
+	if(res == -1)
+		BAD_ERROR("Error determining pager, pipe failed\n");
 
 	child = fork();
-	if(child == -1) {
-		ERROR("Error determining pager, fork failed\n");
-		close(pipefd[0]);
-		close(pipefd[1]);
-		return UNKNOWN_PAGER;
-	}
+	if(child == -1)
+		BAD_ERROR("Error determining pager, fork failed\n");
 
 	if(child == 0) { /* child */
 		close(pipefd[0]);
@@ -162,27 +156,18 @@ static int determine_pager(void)
 
 	bytes = read_bytes(pipefd[0], buffer, 1024);
 
-	if(bytes == -1) {
-		ERROR("Error determining pager\n");
-		close(pipefd[0]);
-		return UNKNOWN_PAGER;
-	}
+	if(bytes == -1)
+		BAD_ERROR("Error determining pager, read failed\n");
 
-	if(res == 1024) {
-		ERROR("Pager returned unexpectedly large amount of data for --version\n");
-		close(pipefd[0]);
-		return UNKNOWN_PAGER;
-	}
+	if(res == 1024)
+		BAD_ERROR("Pager (%s) returned unexpectedly large amount of data for --version\n", pager_command);
 
 	while(1) {
 		res = waitpid(child, &status, 0);
 		if(res != -1)
 			break;
-		else if(errno != EINTR) {
-			ERROR("Error determining pager, waitpid failed\n");
-			close(pipefd[0]);
-			return UNKNOWN_PAGER;
-		}
+		else if(errno != EINTR)
+			BAD_ERROR("Error determining pager, waitpid failed\n");
 	}
 
 	close(pipefd[0]);
