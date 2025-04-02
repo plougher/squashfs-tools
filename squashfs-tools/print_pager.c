@@ -213,18 +213,12 @@ FILE *exec_pager(pid_t *process)
 	pid_t child;
 
 	res = pipe(pipefd);
-	if(res == -1) {
-		ERROR("Error executing pager, pipe failed\n");
-		return NULL;
-	}
+	if(res == -1)
+		BAD_ERROR("Error executing pager, pipe failed\n");
 
 	child = fork();
-	if(child == -1) {
-		ERROR("Error executing pager, fork failed\n");
-		close(pipefd[0]);
-		close(pipefd[1]);
-		return NULL;
-	}
+	if(child == -1)
+		BAD_ERROR("Error executing pager, fork failed\n");
 
 	if(child == 0) { /* child */
 		close(pipefd[1]);
@@ -257,20 +251,11 @@ FILE *exec_pager(pid_t *process)
 	close(pipefd[0]);
 
 	file = fdopen(pipefd[1], "w");
-	if(file == NULL) {
-		ERROR("Error executing pager, fdopen failed\n");
-		goto failed;
-	}
+	if(file == NULL)
+		BAD_ERROR("Error executing pager, fdopen failed\n");
 
 	*process = child;
 	return file;
-
-failed:
-	res = kill(child, SIGKILL);
-	if(res == -1)
-	ERROR("Error executing pager, kill failed\n");
-	close(pipefd[1]);
-	return NULL;
 }
 
 
