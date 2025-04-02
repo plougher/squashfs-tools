@@ -189,12 +189,10 @@ e.g.
 -ho <regex>             shorthand alternative to -help-option
 *************************************************************************
 
-Displays all the options that contain regex in their name or
-argument.
+Displays all the options that contain regex in their name or argument.
 
-Using a regular expression, multiple things can be matched, e.g.
-if you wanted to return all the options that operate on uids and gids,
-you could do
+Using a regular expression, multiple things can be matched, for example, if you
+wanted to return all the options that operate on uids and gids, you could do
 
 *************************************************************************
 % mksquashfs -ho "uid|gid"
@@ -322,9 +320,9 @@ Will display the compression options and build options sections.
 3.3 -help-all
 -------------
 
-The -help-all option displays all the help text, and is similar to the
+The -help-all option displays all the help text, and it is similar to the
 behaviour of -help in previous Squashfs tools versions, except that the
-output is to a pager, and not stdout.
+output is to a pager and not stdout.
 
 3.4. PAGER environment variable
 -------------------------------
@@ -333,10 +331,9 @@ By default the tools use /usr/bin/pager as the pager to output the help text.
 If that isn't available, the tools will try less, /usr/bin/less, more,
 /usr/bin/more, cat and /usr/bin/cat in that order.
 
-The default pager used can be over-ridden using the PAGER environment
-variable.  If the filename given by PAGER doesn't contain slashes, the
-PATH envrionment variable will be used to locate it, otherwise it will
-be treated as a pathname.
+The default pager used can be over-ridden using the PAGER environment variable.
+If the filename given by PAGER doesn't contain slashes, the PATH environment
+variable will be used to locate it, otherwise it will be treated as a pathname.
 
 4. AUTHOR INFO
 --------------
