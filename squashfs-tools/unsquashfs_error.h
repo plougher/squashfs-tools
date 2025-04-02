@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2021
+ * Copyright (c) 2021, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -29,12 +29,6 @@
 #define INFO(s, args...) \
 		do {\
 			progressbar_info(s, ## args);\
-		} while(0)
-
-#define BAD_ERROR(s, args...) \
-		do {\
-			progressbar_error("FATAL ERROR: " s, ##args); \
-			exit(1); \
 		} while(0)
 
 #define EXIT_UNSQUASH(s, args...) BAD_ERROR(s, ##args)
