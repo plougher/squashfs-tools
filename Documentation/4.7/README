@@ -39,8 +39,7 @@ This README describes the improvements, and has the following sections:
 
    2.1. Help text now uses the full width of the terminal (rather than being
         pre-formatted to 80 columns).
-   2.2. The help text is now automatically paged (by default /usr/bin/pager is
-        used).
+   2.2. The help text is now automatically paged (using pager/less/more).
    2.3. The tools now print a summary on failure to parse the command line (or
         encountering other errors that prevent the tool from running), rather
         than displaying the help text.
@@ -111,9 +110,8 @@ appropriate help option for their situation.
 The second aspect of the rewrite was to move away from help text pre-formatted
 to 80 columns, and to use the full width of the terminal, which is typically
 much wider than 80 columns.  The effect of this, obviously, is to fit more
-help text onto the screen.  Also the help text is now paged (by default to
-/usr/bin/pager), and so if the output is larger than a screen, no information
-will be lost.
+help text onto the screen.  Also the help text is now paged, and so if the
+output is larger than a screen, no information will be lost.
 
 For example, now if the user correctly spells an option, but, makes a mistake
 with the argument, the user will firstly be prompted to look up the help text
@@ -327,13 +325,12 @@ output is to a pager and not stdout.
 3.4. PAGER environment variable
 -------------------------------
 
-By default the tools use /usr/bin/pager as the pager to output the help text.
-If that isn't available, the tools will try less, /usr/bin/less, more,
-/usr/bin/more, cat and /usr/bin/cat in that order.
+By default the tools try pager, less, /usr/bin/less, more, /usr/bin/more, cat
+and /usr/bin/cat in that order.
 
-The default pager used can be over-ridden using the PAGER environment variable.
-If the filename given by PAGER doesn't contain slashes, the PATH environment
-variable will be used to locate it, otherwise it will be treated as a pathname.
+The pager used can be over-ridden using the PAGER environment variable.  If the
+filename given by PAGER doesn't contain slashes, the PATH environment variable
+will be used to locate it, otherwise it will be treated as a pathname.
 
 4. AUTHOR INFO
 --------------
