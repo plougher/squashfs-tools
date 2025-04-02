@@ -444,10 +444,9 @@ void prep_exit()
 }
 
 
-void exit_squashfs()
+void pre_exit_squashfs()
 {
 	prep_exit();
-	exit(1);
 }
 
 

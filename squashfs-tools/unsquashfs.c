@@ -160,9 +160,8 @@ static void progress_bar(long long current, long long max, int columns);
 
 #define MAX_LINE 16384
 
-void exit_squashfs()
+void pre_exit_squashfs()
 {
-	exit(1);
 }
 
 
