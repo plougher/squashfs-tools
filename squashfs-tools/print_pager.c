@@ -38,7 +38,7 @@
 
 extern long long read_bytes(int, void *, long long);
 
-static char *pager_command = "/usr/bin/pager";
+static char *pager_command = "pager";
 static char *pager_name = "pager";
 static int pager_from_env_var = FALSE;
 
