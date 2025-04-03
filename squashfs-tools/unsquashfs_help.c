@@ -323,10 +323,7 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 
 	if(tty) {
 		cols = get_column_width();
-
 		pager = exec_pager(&pager_pid);
-		if(pager == NULL)
-			exit(1);
 	} else {
 		cols = 80;
 		pager = stdout;
@@ -366,11 +363,9 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 	}
 
 	tty = isatty(STDOUT_FILENO);
-	if(tty) {
+	if(tty)
 		pager = exec_pager(&pager_pid);
-		if(pager == NULL)
-			exit(1);
-	} else {
+	else {
 		cols = 80;
 		pager = stdout;
 	}
@@ -429,10 +424,7 @@ static void print_section(char *prog_name, char *opt_name, char *sec_name, char 
 
 	if(tty) {
 		cols = get_column_width();
-
 		pager = exec_pager(&pager_pid);
-		if(pager == NULL)
-			exit(1);
 	} else {
 		cols = 80;
 		pager = stdout;
@@ -524,10 +516,7 @@ static void print_help(char *prog_name, char*message, char *syntax, char **secti
 
 	if(tty) {
 		cols = get_column_width();
-
 		pager = exec_pager(&pager_pid);
-		if(pager == NULL)
-			exit(1);
 	} else {
 		cols = 80;
 		pager = stdout;
