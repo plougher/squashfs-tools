@@ -496,13 +496,29 @@ finish:
 
 static void handle_invalid_option(char *prog_name, char *opt_name, char **sections, char **options_text)
 {
-	int cols = get_column_width();
+	int cols;
+	pid_t pager_pid;
+	FILE *pager;
 
-	autowrap_printf(stderr, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
-	autowrap_printf(stderr, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	fprintf(stderr, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols, sections, options_text);
-	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	if(isatty(STDOUT_FILENO)) {
+		cols = get_column_width();
+		pager = exec_pager(&pager_pid);
+	} else {
+		cols = 80;
+		pager = stdout;
+	}
+
+	autowrap_printf(pager, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
+	autowrap_printf(pager, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	fprintf(pager, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(pager, "\t", cols, sections, options_text);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+
+	if(pager != stdout) {
+		fclose(pager);
+		wait_to_die(pager_pid);
+	}
+
 	exit(1);
 }
 
