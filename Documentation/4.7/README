@@ -325,8 +325,8 @@ output is to a pager and not stdout.
 3.4. PAGER environment variable
 -------------------------------
 
-By default the tools try pager, less, /usr/bin/less, more, /usr/bin/more, cat
-and /usr/bin/cat in that order.
+By default the tools try pager, /usr/bin/pager, less, /usr/bin/less, more,
+/usr/bin/more, cat and /usr/bin/cat in that order.
 
 The pager used can be over-ridden using the PAGER environment variable.  If the
 filename given by PAGER doesn't contain slashes, the PATH environment variable

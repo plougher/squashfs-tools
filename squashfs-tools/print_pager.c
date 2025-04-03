@@ -38,8 +38,8 @@
 
 extern long long read_bytes(int, void *, long long);
 
-static char *pager_command = "pager";
-static char *pager_name = "pager";
+static char *pager_command = NULL;
+static char *pager_name = NULL;
 static int pager_from_env_var = FALSE;
 
 static char *get_base(char *pathname)
@@ -146,7 +146,12 @@ static int determine_pager(void)
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-		execlp(pager_command, pager_name, "--version", (char *) NULL);
+		if(pager_from_env_var)
+			execlp(pager_command, pager_name, "--version", (char *) NULL);
+		else {
+			execlp("pager", "pager", "--version", (char *) NULL);
+			execl("/usr/bin/pager", "pager", "--version", (char *) NULL);
+		}
 		close(pipefd[1]);
 		exit(EXIT_FAILURE);
 	}
@@ -227,12 +232,25 @@ FILE *exec_pager(pid_t *process)
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-		if(pager == LESS_PAGER)
-			execlp(pager_command, pager_name, "--quit-if-one-screen", (char *) NULL);
-		else if(pager == MORE_PAGER)
-			execlp(pager_command, pager_name, "--exit-on-eof", (char *) NULL);
-		else
-			execlp(pager_command, pager_name,  (char *) NULL);
+		if(pager_from_env_var) {
+			if(pager == LESS_PAGER)
+				execlp(pager_command, pager_name, "--quit-if-one-screen", (char *) NULL);
+			else if(pager == MORE_PAGER)
+				execlp(pager_command, pager_name, "--exit-on-eof", (char *) NULL);
+			else
+				execlp(pager_command, pager_name, (char *) NULL);
+		} else {
+			if(pager == LESS_PAGER) {
+				execlp("pager", "pager", "--quit-if-one-screen", (char *) NULL);
+				execl("/usr/bin/pager", "pager", "--quit-if-one-screen", (char *) NULL);
+			} else if(pager == MORE_PAGER) {
+				execlp("pager", "pager", "--exit-on-eof", (char *) NULL);
+				execl("/usr/bin/pager", "pager", "--exit-on-eof", (char *) NULL);
+			} else {
+				execlp("pager", "pager", (char *) NULL);
+				execl("/usr/bin/pager", "pager", (char *) NULL);
+			}
+		}
 
 		if(pager_from_env_var == FALSE) {
 			execlp("less", "less", "--quit-if-one-screen", (char *) NULL);
