@@ -76,13 +76,13 @@ extern void mksquashfs_option(char *opt_name, char *pattern);
 extern void mksquashfs_section(char *opt_name, char *sec_name);
 extern void mksquashfs_invalid_option(char *opt_name);
 extern void mksquashfs_help(char *message);
-extern void mksquashfs_option_help(char *option);
+extern void mksquashfs_option_help(char *option, const char *restrict fmt, ...);
 extern void sqfstar_help_all(void);
 extern void sqfstar_option(char *opt_name, char *pattern);
 extern void sqfstar_section(char *opt_name, char *sec_name);
 extern void sqfstar_invalid_option(char *opt_name);
 extern void sqfstar_help(char *message);
-extern void sqfstar_option_help(char *option);
+extern void sqfstar_option_help(char *option, const char *restrict fmt, ...);
 extern void display_compressors(void);
 extern void print_compressor_options(char *comp_name, char *prog_name);
 #endif

@@ -1043,15 +1043,19 @@ static void print_help(char *prog_name, char *message, char *syntax, char **sect
 }
 
 
-static void print_option_help(char *prog_name, char *option, char **sections, char **options_text)
+static void print_option_help(char *prog_name, char *option, char **sections, char **options_text, const char *restrict fmt, va_list ap)
 {
 	int cols = get_column_width();
+	char *string;
 
+	VASPRINTF(&string, fmt, ap);
+	autowrap_print(stderr, string, cols);
 	autowrap_printf(stderr, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
 	print_section_names(stderr, "\t", cols, sections, options_text);
 	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	free(string);
 	exit(1);
 }
 
@@ -1109,14 +1113,22 @@ void sqfstar_invalid_option(char *opt_name)
 	handle_invalid_option("sqfstar", opt_name, sqfstar_sections, sqfstar_text);
 }
 
-void mksquashfs_option_help(char *option)
+void mksquashfs_option_help(char *option, const char *restrict fmt, ...)
 {
-	print_option_help("mksquashfs", option, mksquashfs_sections, mksquashfs_text);
+	va_list ap;
+
+	va_start(ap, fmt);
+	print_option_help("mksquashfs", option, mksquashfs_sections, mksquashfs_text, fmt, ap);
+	va_end(ap);
 }
 
-void sqfstar_option_help(char *option)
+void sqfstar_option_help(char *option, const char *restrict fmt, ...)
 {
-	print_option_help("sqfstar", option, sqfstar_sections, sqfstar_text);
+	va_list ap;
+
+	va_start(ap, fmt);
+	print_option_help("sqfstar", option, sqfstar_sections, sqfstar_text, fmt, ap);
+	va_end(ap);
 }
 
 void display_compressors() {
