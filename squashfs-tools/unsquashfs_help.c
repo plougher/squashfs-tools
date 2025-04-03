@@ -317,11 +317,11 @@ static char *sqfscat_text[]={
 
 static void print_help_all(char *name, char *syntax, char **options_text)
 {
-	int i, cols, tty = isatty(STDOUT_FILENO);
+	int i, cols;
 	pid_t pager_pid;
 	FILE *pager;
 
-	if(tty) {
+	if(isatty(STDOUT_FILENO)) {
 		cols = get_column_width();
 		pager = exec_pager(&pager_pid);
 	} else {
@@ -334,7 +334,7 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 	for(i = 0; options_text[i] != NULL; i++)
 		autowrap_print(pager, options_text[i], cols);
 
-	if(tty) {
+	if(pager != stdout) {
 		fclose(pager);
 		wait_to_die(pager_pid);
 	}
@@ -346,7 +346,7 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 static void print_option(char *prog_name, char *opt_name, char *pattern, char **options,
 					char **options_args, char **options_text)
 {
-	int i, res, tty, matched = FALSE;
+	int i, res, matched = FALSE;
 	regex_t *preg = MALLOC(sizeof(regex_t));
 	int cols = get_column_width();
 	pid_t pager_pid;
@@ -362,8 +362,7 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 		exit(1);
 	}
 
-	tty = isatty(STDOUT_FILENO);
-	if(tty)
+	if(isatty(STDOUT_FILENO))
 		pager = exec_pager(&pager_pid);
 	else {
 		cols = 80;
@@ -380,7 +379,7 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 		}
 	}
 
-	if(tty) {
+	if(pager != stdout) {
 		fclose(pager);
 		wait_to_die(pager_pid);
 	}
@@ -417,12 +416,12 @@ static void print_section_names(FILE *out, char *string, int cols, char **sectio
 
 static void print_section(char *prog_name, char *opt_name, char *sec_name, char **sections, char **options_text)
 {
-	int i, j, secs, cols, res, tty = isatty(STDOUT_FILENO), matched = FALSE;
+	int i, j, secs, cols, res, matched = FALSE;
 	pid_t pager_pid;
 	FILE *pager;
 	regex_t *preg;
 
-	if(tty) {
+	if(isatty(STDOUT_FILENO)) {
 		cols = get_column_width();
 		pager = exec_pager(&pager_pid);
 	} else {
@@ -446,7 +445,7 @@ static void print_section(char *prog_name, char *opt_name, char *sec_name, char 
 	if(res) {
 		char str[1024]; /* overflow safe */
 
-		if(tty) {
+		if(pager != stdout) {
 			fclose(pager);
 			wait_to_die(pager_pid);
 		}
@@ -486,7 +485,7 @@ exact_match:
 	}
 
 finish:
-	if(tty) {
+	if(pager != stdout) {
 		fclose(pager);
 		wait_to_die(pager_pid);
 	}
@@ -510,11 +509,11 @@ static void handle_invalid_option(char *prog_name, char *opt_name, char **sectio
 
 static void print_help(char *prog_name, char*message, char *syntax, char **sections, char **options_text)
 {
-	int cols, tty = isatty(STDOUT_FILENO);
+	int cols;
 	pid_t pager_pid;
 	FILE *pager;
 
-	if(tty) {
+	if(isatty(STDOUT_FILENO)) {
 		cols = get_column_width();
 		pager = exec_pager(&pager_pid);
 	} else {
@@ -530,7 +529,7 @@ static void print_help(char *prog_name, char*message, char *syntax, char **secti
 	print_section_names(pager, "\t", cols, sections, options_text);
 	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 
-	if(tty) {
+	if(pager != stdout) {
 		fclose(pager);
 		wait_to_die(pager_pid);
 	}
