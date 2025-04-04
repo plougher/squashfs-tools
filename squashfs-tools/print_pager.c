@@ -252,14 +252,12 @@ FILE *exec_pager(pid_t *process)
 			}
 		}
 
-		if(pager_from_env_var == FALSE) {
-			execlp("less", "less", "--quit-if-one-screen", (char *) NULL);
-			execl("/usr/bin/less", "less", "--quit-if-one-screen", (char *) NULL);
-			execlp("more", "more", "--exit-on-eof", (char *) NULL);
-			execl("/usr/bin/more", "more", "--exit-on-eof", (char *) NULL);
-			execlp("cat", "cat", (char *) NULL);
-			execl("/usr/bin/cat", "cat", (char *) NULL);
-		}
+		execlp("less", "less", "--quit-if-one-screen", (char *) NULL);
+		execl("/usr/bin/less", "less", "--quit-if-one-screen", (char *) NULL);
+		execlp("more", "more", "--exit-on-eof", (char *) NULL);
+		execl("/usr/bin/more", "more", "--exit-on-eof", (char *) NULL);
+		execlp("cat", "cat", (char *) NULL);
+		execl("/usr/bin/cat", "cat", (char *) NULL);
 
 		close(pipefd[0]);
 		exit(EXIT_FAILURE);
