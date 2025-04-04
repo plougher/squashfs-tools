@@ -95,12 +95,12 @@ The help system has been rewritten to remove the annoyances and limitations
 of the previous system.  The previous system printed the entire help text
 when a command line parse error occurred (or some other reason that prevented
 the tool from running).  This behaviour may have been useful when the tools
-had much less options, but when for example Mksquashfs now has 236 options,
-the full help text is just too much, and it is multiple pages in size.  What
-effectively happens is the actual error message scrolls off the screen and is
-lost, and the user is left with a large help text display, most of which has
-also scrolled off the screen, and the remaining part is of no interest
-whatsoever.
+had much less options, but when for example the full Mksquashfs help text is
+now 389 lines (formatted to 80 columns), the full help text is just too much,
+and it is multiple pages in size.  What effectively happens is the actual error
+message scrolls off the screen and is lost, and the user is left with a large
+help text display, most of which has also scrolled off the screen, and the
+remaining part is of no interest whatsoever.
 
 The help system was first rewritten to avoid this annoyance.  Now, rather than
 the full help being displayed on an error occurring, only a summary of the help
