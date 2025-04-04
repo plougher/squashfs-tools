@@ -1025,7 +1025,6 @@ static void print_help(char *prog_name, char *message, char *syntax, char **sect
 		pager = stdout;
 	}
 
-
 	if(message)
 		autowrap_print(pager, message, cols);
 	autowrap_printf(pager, cols, syntax, prog_name);
@@ -1045,17 +1044,33 @@ static void print_help(char *prog_name, char *message, char *syntax, char **sect
 
 static void print_option_help(char *prog_name, char *option, char **sections, char **options_text, const char *restrict fmt, va_list ap)
 {
-	int cols = get_column_width();
+	int cols;
 	char *string;
+	pid_t pager_pid;
+	FILE *pager;
+
+	if(isatty(STDOUT_FILENO)) {
+		cols = get_column_width();
+		pager = exec_pager(&pager_pid);
+	} else {
+		cols = 80;
+		pager = stdout;
+	}
 
 	VASPRINTF(&string, fmt, ap);
-	autowrap_print(stderr, string, cols);
-	autowrap_printf(stderr, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
-	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
-	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
-	print_section_names(stderr, "\t", cols, sections, options_text);
-	autowrap_printf(stderr, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
+	autowrap_print(pager, string, cols);
+	autowrap_printf(pager, cols, "\nRun\n  \"%s -help-option %s$\" to get help on %s option\n", prog_name, option, option);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-section <section-name>\" to get help on these sections\n", prog_name);
+	print_section_names(pager, "\t", cols, sections, options_text);
+	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	free(string);
+
+	if(pager != stdout) {
+		fclose(pager);
+		wait_to_die(pager_pid);
+	}
+
 	exit(1);
 }
 
