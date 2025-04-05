@@ -125,7 +125,7 @@ failed:
 }
 
 
-static int determine_pager(void)
+static int determine_pager(char *name, char *path1, char *path2)
 {
 	int bytes, status, res, pipefd[2];
 	pid_t child;
@@ -146,12 +146,9 @@ static int determine_pager(void)
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-		if(pager_from_env_var)
-			execlp(pager_command, pager_name, "--version", (char *) NULL);
-		else {
-			execlp("pager", "pager", "--version", (char *) NULL);
-			execl("/usr/bin/pager", "pager", "--version", (char *) NULL);
-		}
+		execlp(path1, name, "--version", (char *) NULL);
+		if(path2)
+			execl(path2, name, "--version", (char *) NULL);
 		close(pipefd[1]);
 		exit(EXIT_FAILURE);
 	}
@@ -214,7 +211,7 @@ void wait_to_die(pid_t process)
 FILE *exec_pager(pid_t *process)
 {
 	FILE *file;
-	int res, pipefd[2], pager = determine_pager();
+	int res, pipefd[2];
 	pid_t child;
 
 	res = pipe(pipefd);
@@ -233,6 +230,7 @@ FILE *exec_pager(pid_t *process)
 			exit(EXIT_FAILURE);
 
 		if(pager_from_env_var) {
+			int pager = determine_pager(pager_name, pager_command, NULL);
 			if(pager == LESS_PAGER)
 				execlp(pager_command, pager_name, "--quit-if-one-screen", (char *) NULL);
 			else if(pager == MORE_PAGER)
@@ -240,6 +238,7 @@ FILE *exec_pager(pid_t *process)
 			else
 				execlp(pager_command, pager_name, (char *) NULL);
 		} else {
+			int pager = determine_pager("pager", "pager", "/usr/bin/pager");
 			if(pager == LESS_PAGER) {
 				execlp("pager", "pager", "--quit-if-one-screen", (char *) NULL);
 				execl("/usr/bin/pager", "pager", "--quit-if-one-screen", (char *) NULL);
