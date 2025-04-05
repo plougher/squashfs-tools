@@ -208,6 +208,26 @@ void wait_to_die(pid_t process)
 }
 
 
+static void run_cmd(char *name, char *path1, char*path2, int no_arg)
+{
+	int pager = determine_pager(name, path1, path2);
+
+	if(pager == LESS_PAGER) {
+		execlp(path1, name, "--quit-if-one-screen", (char *) NULL);
+		if(path2)
+			execl(path2, name, "--quit-if-one-screen", (char *) NULL);
+	} else if(pager == MORE_PAGER) {
+		execlp(path1, name, "--exit-on-eof", (char *) NULL);
+		if(path2)
+			execl(path2, name, "--exit-on-eof", (char *) NULL);
+	} else if(no_arg) {
+		execlp(path1, name, (char *) NULL);
+		if(path2)
+			execl(path2, name, (char *) NULL);
+	}
+}
+
+
 FILE *exec_pager(pid_t *process)
 {
 	FILE *file;
@@ -229,32 +249,17 @@ FILE *exec_pager(pid_t *process)
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-		if(pager_from_env_var) {
-			int pager = determine_pager(pager_name, pager_command, NULL);
-			if(pager == LESS_PAGER)
-				execlp(pager_command, pager_name, "--quit-if-one-screen", (char *) NULL);
-			else if(pager == MORE_PAGER)
-				execlp(pager_command, pager_name, "--exit-on-eof", (char *) NULL);
-			else
-				execlp(pager_command, pager_name, (char *) NULL);
-		} else {
-			int pager = determine_pager("pager", "pager", "/usr/bin/pager");
-			if(pager == LESS_PAGER) {
-				execlp("pager", "pager", "--quit-if-one-screen", (char *) NULL);
-				execl("/usr/bin/pager", "pager", "--quit-if-one-screen", (char *) NULL);
-			} else if(pager == MORE_PAGER) {
-				execlp("pager", "pager", "--exit-on-eof", (char *) NULL);
-				execl("/usr/bin/pager", "pager", "--exit-on-eof", (char *) NULL);
-			} else {
-				execlp("pager", "pager", (char *) NULL);
-				execl("/usr/bin/pager", "pager", (char *) NULL);
-			}
-		}
+		if(pager_from_env_var)
+			run_cmd(pager_name, pager_command, NULL, TRUE);
+		else
+			run_cmd("pager", "pager", "/usr/bin/pager", TRUE);
 
-		execlp("less", "less", "--quit-if-one-screen", (char *) NULL);
-		execl("/usr/bin/less", "less", "--quit-if-one-screen", (char *) NULL);
-		execlp("more", "more", "--exit-on-eof", (char *) NULL);
-		execl("/usr/bin/more", "more", "--exit-on-eof", (char *) NULL);
+		run_cmd("less", "less", "/usr/bin/less", FALSE);
+		run_cmd("more", "less", "/usr/bin/more", FALSE);
+		execlp("less", "less",  (char *) NULL);
+		execl("/usr/bin/less", "less", (char *) NULL);
+		execlp("more", "more",  (char *) NULL);
+		execl("/usr/bin/more", "more", (char *) NULL);
 		execlp("cat", "cat", (char *) NULL);
 		execl("/usr/bin/cat", "cat", (char *) NULL);
 
