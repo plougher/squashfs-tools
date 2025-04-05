@@ -255,7 +255,7 @@ FILE *exec_pager(pid_t *process)
 			run_cmd("pager", "pager", "/usr/bin/pager", TRUE);
 
 		run_cmd("less", "less", "/usr/bin/less", FALSE);
-		run_cmd("more", "less", "/usr/bin/more", FALSE);
+		run_cmd("more", "more", "/usr/bin/more", FALSE);
 		execlp("less", "less",  (char *) NULL);
 		execl("/usr/bin/less", "less", (char *) NULL);
 		execlp("more", "more",  (char *) NULL);
