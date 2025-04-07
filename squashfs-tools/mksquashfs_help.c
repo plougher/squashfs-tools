@@ -427,8 +427,8 @@ static char *mksquashfs_text[]={
 	"-o <offset>\t\tsynonym for -offset\n",
 	"\n", "Help options:", "\n",
 	"-help\t\t\tprint help summary information to stdout\n",
-	"-help-option <regex>\tprint the help information for Mksquashfs "
-		"options matching <regex> to stdout\n",
+	"-help-option <regex>\tprint the help information for options matching "
+		"<regex> to pager (or stdout if not a terminal)\n",
 	"-help-section <section>\tprint the help information for section "
 		"<section> to pager (or stdout if not a terminal).  Use "
 		"\"sections\" or \"h\" as section name to get a list of "
@@ -701,8 +701,8 @@ static char *sqfstar_text[]={
 	"-o <offset>\t\tsynonym for -offset\n",
 	"\n", "Help options:", "\n",
 	"-help\t\t\tprint help summary information to stdout\n",
-	"-help-option <regex>\tprint the help information for Sqfstar "
-		"options matching <regex> to stdout\n",
+	"-help-option <regex>\tprint the help information for options matching "
+		"<regex> to pager (or stdout if not a terminal)\n",
 	"-help-section <section>\tprint the help information for section "
 		"<section> to pager (or stdout if not a terminal).  Use "
 		"\"sections\" or \"h\" as section name to get a list of "
