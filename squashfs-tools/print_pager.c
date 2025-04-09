@@ -228,6 +228,15 @@ static void run_cmd(char *name, char *path1, char*path2, int no_arg)
 }
 
 
+void simple_cat()
+{
+	int c;
+
+	while((c = getchar()) != EOF)
+		putchar(c);
+}
+
+
 FILE *exec_pager(pid_t *process)
 {
 	FILE *file;
@@ -262,9 +271,10 @@ FILE *exec_pager(pid_t *process)
 		execl("/usr/bin/more", "more", (char *) NULL);
 		execlp("cat", "cat", (char *) NULL);
 		execl("/usr/bin/cat", "cat", (char *) NULL);
+		simple_cat();
 
 		close(pipefd[0]);
-		exit(EXIT_FAILURE);
+		exit(0);
 	}
 
 	/* parent */
