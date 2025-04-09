@@ -430,9 +430,11 @@ static char *mksquashfs_text[]={
 	"-help-option <regex>\tprint the help information for options matching "
 		"<regex> to pager (or stdout if not a terminal)\n",
 	"-help-section <section>\tprint the help information for section "
-		"<section> to pager (or stdout if not a terminal).  Use "
-		"\"sections\" or \"h\" as section name to get a list of "
-		"sections and their names\n",
+		"<section> to pager (or stdout if not a terminal).  If "
+		"<section> does not exactly match a section name, it is "
+		"treated as a regular expression, and all section names that "
+		"match are displayed.  Use \"sections\" or \"h\" as section "
+		"name to get a list of sections and their names\n",
 	"-help-comp <comp>\tprint compressor options for compressor <comp>.  "
 		"Use <all> to get compressor options for all the compressors\n",
 	"-help-all\t\tprint help information for all Mksquashfs options and "
@@ -704,9 +706,11 @@ static char *sqfstar_text[]={
 	"-help-option <regex>\tprint the help information for options matching "
 		"<regex> to pager (or stdout if not a terminal)\n",
 	"-help-section <section>\tprint the help information for section "
-		"<section> to pager (or stdout if not a terminal).  Use "
-		"\"sections\" or \"h\" as section name to get a list of "
-		"sections and their names\n",
+		"<section> to pager (or stdout if not a terminal).  If "
+		"<section> does not exactly match a section name, it is "
+		"treated as a regular expression, and all section names that "
+		"match are displayed.  Use \"sections\" or \"h\" as section "
+		"name to get a list of sections and their names\n",
 	"-help-comp <comp>\tprint compressor options for compressor <comp>.  "
 		"Use <all> to get compressor options for all the compressors\n",
 	"-help-all\t\tprint help information for all Sqfstar options and "
