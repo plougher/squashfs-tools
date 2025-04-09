@@ -205,9 +205,11 @@ static char *unsquashfs_text[]={
 	"\t-help-option <regex>\tprint the help information for options "
 		"matching <regex> to pager (or stdout if not a terminal)\n",
 	"\t-help-section <section>\tprint the help information for section "
-		"<section> to pager (or stdout if not a terminal).  Use "
-		"\"sections\" or \"h\" as section name to get a list of "
-		"sections and their names\n",
+		"<section> to pager (or stdout if not a terminal).  If "
+		"<section> does not exactly match a section name, it is "
+		"treated as a regular expression, and all section names that "
+		"match are displayed.  Use \"sections\" or \"h\" as section "
+		"name to get a list of sections and their names\n",
 	"\t-help-all\t\tprint help information for all Unsquashfs options and "
 		"sections to pager (or stdout if not a terminal)\n",
 	"\t-ho <regex>\t\tshorthand alternative to -help-option\n",
@@ -278,9 +280,11 @@ static char *sqfscat_text[]={
 	"\t-help-option <regex>\tprint the help information for options "
 		"matching <regex> to pager (or stdout if not a terminal)\n",
 	"\t-help-section <section>\tprint the help information for section "
-		"<section> to pager (or stdout if not a terminal).  Use "
-		"\"sections\" or \"h\" as section name to get a list of "
-		"sections and their names\n",
+		"<section> to pager (or stdout if not a terminal).  If "
+		"<section> does not exactly match a section name, it is "
+		"treated as a regular expression, and all section names that "
+		"match are displayed.  Use \"sections\" or \"h\" as section "
+		"name to get a list of sections and their names\n",
 	"\t-help-all\t\tprint help information for all Sqfscat options and "
 		"sections to pager (or stdout if not a terminal)\n",
 	"\t-ho <regex>\t\tshorthand alternative to -help-option\n",
