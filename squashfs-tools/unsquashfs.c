@@ -3879,11 +3879,11 @@ static int parse_cat_options(int argc, char *argv[])
 			sqfscat_help_all();
 		else if(strcmp(argv[i], "-help-option") == 0 || strcmp(argv[i], "-ho") == 0) {
 			if(++i == argc)
-				sqfscat_option_help(argv[i - 1], "%s: %s missing regex\n", argv[0], argv[i - 1]);
+				sqfscat_option_help(argv[i - 1], "sqfscat: %s missing regex\n", argv[i - 1]);
 			sqfscat_option(argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-help-section") == 0 || strcmp(argv[i], "-hs") == 0) {
 			if(++i == argc)
-				sqfscat_option_help(argv[i - 1], "%s: %s missing section\n", argv[0], argv[i - 1]);
+				sqfscat_option_help(argv[i - 1], "sqfscat %s missing section\n", argv[i - 1]);
 			sqfscat_section(argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-no-exit-code") == 0 ||
 				strcmp(argv[i], "-no-exit") == 0)
@@ -3906,10 +3906,9 @@ static int parse_cat_options(int argc, char *argv[])
 			if((++i == argc) ||
 					!parse_number(argv[i],
 						&processors))
-				sqfscat_option_help(argv[i - 1], "%s: -processors missing or invalid processor number\n", argv[0]);
+				sqfscat_option_help(argv[i - 1], "sqfscat: -processors missing or invalid processor number\n");
 			if(processors < 1) {
-				ERROR("%s: -processors should be 1 or larger\n",
-					argv[0]);
+				ERROR("sqfscat: -processors should be 1 or larger\n");
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-mem") == 0) {
@@ -3917,21 +3916,20 @@ static int parse_cat_options(int argc, char *argv[])
 
 			if((++i == argc) ||
 					!parse_numberll(argv[i], &number, 1))
-				sqfscat_option_help(argv[i - 1], "%s: -mem missing or invalid mem size\n", argv[0]);
+				sqfscat_option_help(argv[i - 1], "sqfscat: -mem missing or invalid mem size\n");
 
 			/*
 			 * convert from bytes to Mbytes, ensuring the value
 			 * does not overflow a signed int
 			 */
 			if(number >= (1LL << 51)) {
-				ERROR("%s: -mem invalid mem size\n", argv[0]);
+				ERROR("sqfscat: -mem invalid mem size\n");
 				exit(1);
 			}
 
 			number = number / 1048576;
 			if(number < 2) {
-				ERROR("%s: -mem should be 2 Mbytes or "
-					"larger\n", argv[0]);
+				ERROR("sqfscat: -mem should be 2 Mbytes or larger\n");
 				exit(1);
 			}
 			data_buffer_size = number / 2;
@@ -3947,27 +3945,24 @@ static int parse_cat_options(int argc, char *argv[])
 			if((++i == argc) ||
 					!parse_number_percent(argv[i], &percent) ||
 					(percent < 1))
-				sqfscat_option_help(argv[i - 1], "%s: -mem-percent missing or invalid percentage: it should be 1 - 75%%\n", argv[0]);
+				sqfscat_option_help(argv[i - 1], "sqfscat: -mem-percent missing or invalid percentage: it should be 1 - 75%%\n");
 
 			phys_mem = get_physical_memory();
 
 			if(phys_mem == 0) {
-				ERROR("%s: -mem-percent unable to get physical "
-					"memory\n", argv[0]);
+				ERROR("sqfacat: -mem-percent unable to get physical memory\n");
 				exit(1);
 			}
 
 			if(multiply_overflow(phys_mem, percent)) {
-				ERROR("%s: -mem-percent requested phys mem too "
-					"large\n", argv[0]);
+				ERROR("sqfscat: -mem-percent requested phys mem too large\n");
 				exit(1);
 			}
 
 			phys_mem = phys_mem * percent / 100;
 
 			if(phys_mem < 2) {
-				ERROR("%s: -mem-percent mem too small, should "
-					"be 2 Mbytes or larger\n", argv[0]);
+				ERROR("sqfscat: -mem-percent mem too small, should be 2 Mbytes or larger\n");
 				exit(1);
 			}
 
@@ -3978,13 +3973,11 @@ static int parse_cat_options(int argc, char *argv[])
 			if((++i == argc) ||
 					!parse_number(argv[i],
 						&data_buffer_size)) {
-				ERROR("%s: -data-queue missing or invalid "
-					"queue size\n", argv[0]);
+				ERROR("sqfscat: -data-queue missing or invalid queue size\n");
 				exit(1);
 			}
 			if(data_buffer_size < 1) {
-				ERROR("%s: -data-queue should be 1 Mbyte or "
-					"larger\n", argv[0]);
+				ERROR("sqfscat: -data-queue should be 1 Mbyte or larger\n");
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-frag-queue") == 0 ||
@@ -3992,13 +3985,11 @@ static int parse_cat_options(int argc, char *argv[])
 			if((++i == argc) ||
 					!parse_number(argv[i],
 						&fragment_buffer_size)) {
-				ERROR("%s: -frag-queue missing or invalid "
-					"queue size\n", argv[0]);
+				ERROR("sqfscat: -frag-queue missing or invalid queue size\n");
 				exit(1);
 			}
 			if(fragment_buffer_size < 1) {
-				ERROR("%s: -frag-queue should be 1 Mbyte or "
-					"larger\n", argv[0]);
+				ERROR("sqfscat: -frag-queue should be 1 Mbyte or larger\n");
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-regex") == 0 ||
@@ -4009,7 +4000,7 @@ static int parse_cat_options(int argc, char *argv[])
 			if((++i == argc) ||
 					!parse_numberll(argv[i], &start_offset,
 									1))
-				sqfscat_option_help(argv[i - 1], "%s: %s missing or invalid offset size\n", argv[0], argv[i - 1]);
+				sqfscat_option_help(argv[i - 1], "sqfscat: %s missing or invalid offset size\n", argv[i - 1]);
 		} else
 			sqfscat_invalid_option(argv[i]);
 	}
