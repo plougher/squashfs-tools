@@ -28,6 +28,9 @@ This README describes the improvements, and has the following sections:
    1.1. This can significantly increase I/O when reading lots of small files,
         and/or the input benefits from parallel reading e.g. modern SSD drives,
         or network filesystems etc.
+   1.2  In cases where speed of I/O is the bottleneck in Mksquashfs performance,
+        this can make Mksquashfs run significantly faster, in ideal cases
+        Mksquashfs can be more than six times faster.
    1.2. New -small-readers option to specify number of parallel small file
         reader threads (files less than a block size).  Default 8 threads.
    1.3. New -block-readers option to specify number of parallel block reader
@@ -87,6 +90,45 @@ This README describes the improvements, and has the following sections:
 
 2. Parallel file reading and options
 ------------------------------------
+
+Modern computers can have 16 cores/32 threads or more, and systems with 8
+cores/16 threads are becoming standard.   What this increase in computational
+power means is Mksquashfs is increasingly I/O bound rather than CPU bound.
+
+Whether the speed of input I/O has become the bottleneck is essentially entirely
+dependant on the nature of the input files, the media they're stored on, the
+number of CPUs/threads you have, and the cost of compression.  So it is
+difficult to give hard and fast rules, but the following facts can be given.
+
+1. The more CPUs/threads you have the faster the input I/O needs to be to
+   occupy all cores/threads.
+2. The faster the compression algorithm (i.e. requires less CPU) the faster
+   input I/O needs to be to keep up with compression.
+3. Small files in general are much slower to read than large files.  So the more
+   small files you have the slower I/O will be, and the more difficult it will
+   be to occupy all the cores/threads.
+
+Traditionally Mksquashfs used a single reader thread to read input files.  The
+reason for that is because up until about 5 or so years ago, mechanical hard
+disks were still commonplace, and parallel reading of files from a mechanical
+hard disk is very expensive, and much slower than sequential reading.  So
+parallel file reading from a mechanical hard disk is completely self defeating.
+
+Mechanical drives are now largely obsolete, and so Mksquashfs has now moved to
+reading files in parallel by default.  This can speed up input I/O.
+
+Mksquashfs by default uses XXX small file reader threads and XXX block file
+reader threads.  A small file reader thread only reads files which are smaller
+than a block in size, and a block file reader thread only reads files which
+are a block or larger in size (see section XYZ for an explanation of why there
+are specialised reader threads).
+
+Three new options have been added which allow the number of reader threads to
+be changed:
+
+	1. -small-readers <n>
+	2. -block-readers <n>
+	3. -single-reader
 
 3. Help system and options
 --------------------------
