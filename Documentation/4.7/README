@@ -91,7 +91,7 @@ This README describes the improvements, and has the following sections:
 2. Parallel file reading and options
 ------------------------------------
 
-Modern computers can have 16 cores/32 threads or more, and systems with 8
+Modern computers can have 16 cores/32 threads or more [*], and systems with 8
 cores/16 threads are becoming standard.   What this increase in computational
 power means is Mksquashfs is increasingly I/O bound rather than CPU bound.
 
@@ -129,6 +129,12 @@ be changed:
 	1. -small-readers <n>
 	2. -block-readers <n>
 	3. -single-reader
+
+[*] By this I obviously mean consumer-grade hardware.  There has been 16+ core
+    Unix machines around since the early 1990s (such as the Sequent Symmetry),
+    but these were multi-user systems typically supporting 50 or more users.
+    In those days the sysadmin took a dim view of any process taking most of
+    a single CPU, let alone the whole lot.
 
 3. Help system and options
 --------------------------
