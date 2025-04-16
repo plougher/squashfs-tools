@@ -65,9 +65,189 @@ behaviour), you can specify the -no-strip option.
 % mksquashfs /home/phillip/test image.sqfs -no-strip
 
 This will generate a filesystem with home, home/phillip and home/phillip/test
-directories, see section 5 for more details.
+directories, see section 6 for more details.
 
-2. CHANGING COMPRESSION ALGORITHM AND COMPRESSION SPECIFIC OPTIONS
+2. GETTING HELP AND DISPLAYING MKSQUASHFS OPTIONS
+-------------------------------------------------
+
+Mksquashfs has fairly detailed built-in help information describing the
+available options.  Running:
+
+% mksquashfs -help
+
+Will display the following summary of the help options and information
+available:
+
+*******************************************************************
+SYNTAX: mksquashfs source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of exclude dirs/files]
+
+Run
+  "mksquashfs -help-option <regex>" to get help on all options matching <regex>
+
+Or run
+  "mksquashfs -help-section <section-name>" to get help on these sections
+        SECTION NAME            SECTION
+        compression             Filesystem compression options:
+        build                   Filesystem build options:
+        time                    Filesystem time options:
+        perms                   Filesystem permissions options:
+        pseudo                  Filesystem pseudo options:
+        filter                  Filesystem filter options:
+        xattrs                  Filesystem extended attribute (xattrs) options:
+        runtime                 Mksquashfs runtime options:
+        append                  Filesystem append options:
+        actions                 Filesystem actions options:
+        tar                     Tar file only options:
+        expert                  Expert options (these may make the filesystem unmountable):
+        help                    Help options:
+        misc                    Miscellaneous options:
+        pseudo-defs             Pseudo file definition format:
+        symbolic                Symbolic mode specification:
+        environment             Environment:
+        exit                    Exit status:
+        extra                   See also (extra information elsewhere):
+
+Or run
+  "mksquashfs -help-all" to get help on all the sections
+*******************************************************************
+
+For example to get a list of all the options that operate on uids and gids, you
+could do
+
+*************************************************************************
+% mksquashfs -help-option "uid|gid"
+-root-uid <user>        set root directory owner to specified <user>, <user> can
+                        be either an integer uid or user name
+-root-gid <group>       set root directory group to specified <group>, <group>
+                        can be either an integer gid or group name
+-force-uid <user>       set all file and directory uids to specified <user>,
+                        <user> can be either an integer uid or user name
+-force-gid <group>      set all file and directory gids to specified <group>,
+                        <group> can be either an integer gid or group name
+-uid-gid-offset <value> offset all uid and gids by specified <value>.  <value>
+                        should be a positive integer
+-pd <d mode uid gid>    specify a default pseudo directory which will be used in
+                        pseudo definitions if a directory in the pathname does
+                        not exist.  This also allows pseudo definitions to be
+                        specified without specifying all the directories in the
+                        pathname.  The definition should be quoted
+-pd <D time mode u g>   specify a default pseudo directory which will be used in
+                        pseudo definitions if a directory in the pathname does
+                        not exist.  The D type also allows a timestamp to be
+                        specified in addition to mode, uid and gid
+-default-uid <value>    tar files often do not store uids for intermediate
+                        directories.  This option sets the default directory
+                        owner to <value>, rather than the user running
+                        Mksquashfs.  <value> can be either an integer uid or
+                        user name.  This also sets the root directory uid
+-default-gid <value>    tar files often do not store gids for intermediate
+                        directories.  This option sets the default directory
+                        group to <value>, rather than the group of the user
+                        running Mksquashfs.  <value> can be either an integer
+                        uid or group name.  This also sets the root directory
+                        gid
+*************************************************************************
+
+2.1 -help-section <section>
+---------------------------
+
+The -help-section option displays the section that matches the <section> name.
+If <section> does not exactly match a section name, it is treated as a regular
+expression, and all section names that match are displayed.  Finally, if
+<section> is "sections" or "h", a list of sections and their names is displayed.
+
+For example:
+
+*************************************************************************
+% mksquashfs -help-section compression
+Filesystem compression options:
+-b <block-size>         set data block to <block-size>.  Default 128 Kbytes.
+                        Optionally a suffix of K, KB, Kbytes or M, MB, Mbytes
+                        can be given to specify Kbytes or Mbytes respectively
+-comp <comp>            select <comp> compression.  Run -help-comp <comp> to get
+                        compressor options for <comp>, or <all> for all the
+                        compressors.
+                        Compressors available:
+                                gzip (default)
+                                lzo
+                                lz4
+                                xz
+                                zstd
+-noI                    do not compress inode table
+-noId                   do not compress the uid/gid table (implied by -noI)
+-noD                    do not compress data blocks
+-noF                    do not compress fragment blocks
+-noX                    do not compress extended attributes
+-no-compression         do not compress any of the data or metadata.  This is
+                        equivalent to specifying -noI -noD -noF and -noX
+*************************************************************************
+
+Will display the compression options section.
+
+Using regular expression matching section names can be abbreviated, for example
+"comp" will also display the compression options section.  But, it also means
+multiple sections can be displayed, for example:
+
+*************************************************************************
+% mksquashfs -help-section "comp|build"
+Filesystem compression options:
+-b <block-size>         set data block to <block-size>.  Default 128 Kbytes.
+                        Optionally a suffix of K, KB, Kbytes or M, MB, Mbytes
+                        can be given to specify Kbytes or Mbytes respectively
+-comp <comp>            select <comp> compression.  Run -help-comp <comp> to get
+                        compressor options for <comp>, or <all> for all the
+                        compressors.
+                        Compressors available:
+                                gzip (default)
+                                lzo
+                                lz4
+                                xz
+                                zstd
+-noI                    do not compress inode table
+-noId                   do not compress the uid/gid table (implied by -noI)
+-noD                    do not compress data blocks
+-noF                    do not compress fragment blocks
+-noX                    do not compress extended attributes
+-no-compression         do not compress any of the data or metadata.  This is
+                        equivalent to specifying -noI -noD -noF and -noX
+
+Filesystem build options:
+-tar                    read uncompressed tar file from standard in (stdin)
+-no-strip               act like tar, and do not strip leading directories from
+                        source files
+-tarstyle               alternative name for -no-strip
+-cpiostyle              act like cpio, and read file pathnames from standard in
+                        (stdin)
+-cpiostyle0             like -cpiostyle, but filenames are null terminated.  Can
+                        be used with find -print0 action
+-reproducible           build filesystems that are reproducible (default)
+-not-reproducible       build filesystems that are not reproducible
+-no-exports             do not make filesystem exportable via NFS (-tar default)
+-exports                make filesystem exportable via NFS (default)
+-no-sparse              do not detect sparse files
+-no-tailends            do not pack tail ends into fragments (default)
+-tailends               pack tail ends into fragments
+-no-fragments           do not use fragments
+-no-duplicates          do not perform duplicate checking
+-no-hardlinks           do not hardlink files, instead store duplicates
+-keep-as-directory      if one source directory is specified, create a root
+                        directory containing that directory, rather than the
+                        contents of the directory
+*************************************************************************
+
+Will display the compression options and build options sections.
+
+2.2. PAGER environment variable
+-------------------------------
+
+By default the tools try pager, /usr/bin/pager, less, /usr/bin/less, more,
+/usr/bin/more, cat and /usr/bin/cat in that order.
+
+The pager used can be over-ridden using the PAGER environment variable.  If the
+filename given by PAGER doesn't contain slashes, the PATH environment variable
+will be used to locate it, otherwise it will be treated as a pathname.
+
+3. CHANGING COMPRESSION ALGORITHM AND COMPRESSION SPECIFIC OPTIONS
 ------------------------------------------------------------------
 
 By default Mksquashfs will compress using the GZIP compression algorithm.  This
@@ -145,7 +325,7 @@ a tradeoff between compression and (de)-compression overhead (LZO/LZ4 by
 definition are intended for weaker processors).
 
 
-3. REDUCING CPU AND I/O USAGE
+4. REDUCING CPU AND I/O USAGE
 -----------------------------
 
 By default Mksquashfs will use all the CPUs available to compress and create the
@@ -176,7 +356,7 @@ with -processors set to the minimum of 1.  In this case you can use -throttle
 in addition to -processors or on its own.
 
 
-4. CHANGING GLOBAL COMPRESSION DEFAULTS USED IN MKSQUASHFS
+5. CHANGING GLOBAL COMPRESSION DEFAULTS USED IN MKSQUASHFS
 ----------------------------------------------------------
 
 There are a large number of options that can be used to control the
@@ -220,7 +400,7 @@ generation although obviously compression will suffer badly if there is a lot
 of duplicates.
 
 
-5. TAR STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
+6. TAR STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
 -------------------------------------------------------
 
 Mksquashfs has always stripped the leading directories of any source pathnames
@@ -246,7 +426,7 @@ tar archive would contain the pathnames "dir-a/dir-b/dir-c/file1" and
 Mksquashfs will act like tar if given the option -no-strip, or -tarstyle.
 
 
-6. CPIO STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
+7. CPIO STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
 --------------------------------------------------------
 
 Mksquashfs allows you to pipe the set of files to be added to the filesystem to
@@ -271,7 +451,7 @@ The following will add just the files ending in .c, .h and .o.
 % find /home/phillip/squashfs-tools -name "*.[cho]" | mksquashfs - img.sqfs -cpiostyle
 
 
-7. SPECIFYING THE UIDs/GIDs USED IN THE FILESYSTEM
+8. SPECIFYING THE UIDs/GIDs USED IN THE FILESYSTEM
 --------------------------------------------------
 
 By default files in the generated filesystem inherit the UID and GID ownership
@@ -291,7 +471,7 @@ filesystem to be group owned by the specified gid.  The gid can be specified
 either by name (i.e. "root") or by number.
 
 
-8. EXCLUDING FILES FROM THE FILESYSTEM
+9. EXCLUDING FILES FROM THE FILESYSTEM
 --------------------------------------
 
 The -e and -ef options allow files/directories to be specified which are
@@ -305,7 +485,7 @@ extended wildcard matching.  Basic exclude matching is a legacy feature
 retained for backwards compatibility with earlier versions of Mksquashfs.
 Extended wildcard matching should be used in preference.
 
-8.1 BASIC EXCLUDE MATCHING
+9.1 BASIC EXCLUDE MATCHING
 --------------------------
 
 Each exclude file is treated as an exact match of a file/directory in
@@ -319,7 +499,7 @@ the sources in turn, i.e.
 Will generate exclude files /tmp/source1/ex2, /tmp/source1/ex1, source2/ex1,
 /tmp/source1/out/ex3 and source2/out/ex3.
 
-8.2 EXTENDED EXCLUDE FILE HANDLING
+9.2 EXTENDED EXCLUDE FILE HANDLING
 ----------------------------------
 
 Extended exclude file matching treats each exclude file as a wildcard or
@@ -384,7 +564,7 @@ Non-anchored excludes
      except those with "data" in the name.
 
 
-9. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
+10. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
 ----------------------------------------------------
 
 Mksquashfs has a number of options which allow extended attributes (xattrs) to
@@ -439,7 +619,7 @@ mksquashfs dir image.sqfs -xattrs-add "user.comment=0thello\000world"
 mksquashfs dir image.sqfs -xattrs-add "user.comment=0saGVsbG8Ad29ybGQ="
 mksquashfs dir image.sqfs -xattrs-add "user.comment=0x68656c6c6f00776f726c64"
 
-10. PSEUDO FILE SUPPORT
+11. PSEUDO FILE SUPPORT
 -----------------------
 
 Mksquashfs supports pseudo files, these allow files, directories, character
@@ -459,7 +639,7 @@ Two Mksquashfs options are supported, -p allows one pseudo file to be specified
 on the command line, and -pf allows a pseudo file to be specified containing a
 list of pseduo definitions, one per line.
 
-10.1 CREATING A DYNAMIC FILE
+11.1 CREATING A DYNAMIC FILE
 ----------------------------
 
 Pseudo definition
@@ -515,7 +695,7 @@ given a device, fifo, or named socket will place that special file within the
 Squashfs filesystem, the above allows input from these special files to be
 captured and placed in the Squashfs filesystem.
 
-10.2 CREATING A BLOCK OR CHARACTER DEVICE
+11.2 CREATING A BLOCK OR CHARACTER DEVICE
 -----------------------------------------
 
 Pseudo definition
@@ -539,7 +719,7 @@ creates a character device "/dev/chr_dev" with major:minor 100:1 and a block
 device "/dev/blk_dev" with major:minor 200:200, both with root uid/gid and a
 mode of rw-rw-rw.
 
-10.3 CREATING A DIRECTORY
+11.3 CREATING A DIRECTORY
 --------------------------
 
 Pseudo definition
@@ -556,7 +736,7 @@ For example:
 
 creates a directory "/pseudo_dir" with root uid/gid and mode of rw-rw-rw.
 
-10.4 CREATING A SYMBOLIC LINK
+11.4 CREATING A SYMBOLIC LINK
 ------------------------------
 
 Pseudo definition
@@ -573,7 +753,7 @@ symlink s 0 root root example
 
 8reates a symlink "symlink" to file "example" with root uid/gid.
 
-10.5 CREATING HARD LINKS (FILE REFERENCES)
+11.5 CREATING HARD LINKS (FILE REFERENCES)
 ------------------------------------------
 
 The "f" Pseudo definition allows a regular file to be created from the output of
@@ -618,7 +798,7 @@ link L char-dev
 Will create a Hard Link named "link" to the character device called "char-dev"
 created by the previous Pseudo definition.
 
-10.6 CREATING SOCKETS/FIFOS
+11.6 CREATING SOCKETS/FIFOS
 ----------------------------
 
 Pseudo definition
@@ -633,7 +813,7 @@ and to create a FIFO, 'f' should be used, i.e.
 
 filename i 0777 root root f
 
-10.7 ADDING EXTENDED ATTRIBUTES TO FILES
+11.7 ADDING EXTENDED ATTRIBUTES TO FILES
 ----------------------------------------
 
 Pseudo definition
@@ -643,7 +823,7 @@ filename x name=val
 Will add the extended attribute <name> to <filename> with <val> contents.  See
 Section 7 for a description of the <val> formats supported.
 
-10.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
+11.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
 ---------------------------------------------
 
 Pseudo definition
@@ -662,7 +842,7 @@ Changes the attributes of the file "dmesg" in the filesystem to have root
 uid/gid and a mode of rw-rw-rw, overriding the attributes obtained from the
 source filesystem.
 
-11. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
+12. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
 ----------------------------------------------------
 
 The Pseudo file definitions described above do not allow the timestamp of the
@@ -698,7 +878,7 @@ Obviously anything "date" accepts as a valid string can be used, such as
 "yesterday", "last week" etc.
 
 
-12. APPENDING TO SQUASHFS FILESYSTEMS
+13. APPENDING TO SQUASHFS FILESYSTEMS
 -------------------------------------
 
 Running Mksquashfs with the destination directory containing an existing
@@ -740,7 +920,7 @@ with for example the linux-2.4.19 source.  Appending the linux-2.4.20 source
 will create a filesystem with the two source trees, but only the changed files
 will take extra room, the unchanged files will be detected as duplicates.
 
-13. APPENDING RECOVERY FILE FEATURE
+14. APPENDING RECOVERY FILE FEATURE
 -----------------------------------
 
 Recovery files are created when appending to existing Squashfs filesystems.
@@ -762,7 +942,7 @@ The writing of the recovery file can be disabled by specifying the
 "-no-recovery" option.
 
 
-14. MKSQUASHFS ACTIONS INTRODUCTION
+15. MKSQUASHFS ACTIONS INTRODUCTION
 -----------------------------------
 
 The Mksquashfs Actions code allows an "action" to be executed on a file if one
@@ -808,7 +988,7 @@ operators && (and), || (or) and ! (not), and can be bracketed.
 Please see the ACTIONS-README file for syntax and extra information.
 
 
-15. MISCELLANEOUS OPTIONS
+16. MISCELLANEOUS OPTIONS
 ------------------------
 
 The -info option displays the files/directories as they are compressed and
