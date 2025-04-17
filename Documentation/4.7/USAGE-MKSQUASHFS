@@ -1,5 +1,24 @@
 	MKSQUASHFS - a tool to create Squashfs filesystems
 
+This file describes how to use Mksquashfs, and it has the following sections:
+
+1. Introduction and basic usage
+2. Getting help and displaying Mksquashfs options
+3. Changing compression algorithm and compression specific options
+4. Reducing CPU and I/O usage
+5. Changing global compression defaults used in Mksquashfs
+6. Tar style handling of source pathnames in Mksquashfs
+7. CPIO style handling of source pathname in Mksquashfs
+8. Specifying the UID/GIDs used in the filesystem
+9. Excluding files from the filesystem
+10. Filtering and adding extended attributes (xattrs)
+11. Pseudo file support
+12. Extended pseudo file definitions with timestamps
+13. Appending to Squashfs filesystems
+14. Appending recovery file feature
+15. Mksquashfs Actions introduction
+16. Miscellaneous options
+
 1. INTRODUCTION AND BASIC USAGE
 -------------------------------
 
