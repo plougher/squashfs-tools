@@ -486,10 +486,7 @@ static long long get_sequence()
 
 static inline void send_orderer_reset(long long vpos)
 {
-	struct file_buffer *buffer = malloc(sizeof(struct file_buffer));
-
-	if(buffer == NULL)
-		MEM_ERROR();
+	struct file_buffer *buffer = MALLOC(sizeof(struct file_buffer));
 
 	buffer->cache = NULL;
 	buffer->sequence = get_sequence();
@@ -502,10 +499,7 @@ static inline void send_orderer_reset(long long vpos)
 
 static inline void  sync_writer_thread()
 {
-	struct file_buffer *buffer = malloc(sizeof(struct file_buffer));
-
-	if(buffer == NULL)
-		MEM_ERROR();
+	struct file_buffer *buffer = MALLOC(sizeof(struct file_buffer));
 
 	buffer->cache = NULL;
 	buffer->sequence = get_sequence();
@@ -519,10 +513,7 @@ static inline void  sync_writer_thread()
 
 static inline void  sync_orderer_thread()
 {
-	struct file_buffer *buffer = malloc(sizeof(struct file_buffer));
-
-	if(buffer == NULL)
-		MEM_ERROR();
+	struct file_buffer *buffer = MALLOC(sizeof(struct file_buffer));
 
 	buffer->cache = NULL;
 	buffer->sequence = get_sequence();

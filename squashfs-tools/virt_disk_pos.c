@@ -29,6 +29,7 @@
 
 #include "mksquashfs_error.h"
 #include "virt_disk_pos.h"
+#include "alloc.h"
 
 static pthread_mutex_t virt_disk_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -39,10 +40,7 @@ long long vpos = 0, dpos = 0, marked_vpos = 0;
 void add_virt_disk(long long virt, long long disk)
 {
 	int hash = VIRT_DISK_HASH(virt);
-	struct virt_disk *new = malloc(sizeof(struct virt_disk));
-
-	if(new == NULL)
-		MEM_ERROR();
+	struct virt_disk *new = MALLOC(sizeof(struct virt_disk));
 
 	new->virt = virt;
 	new->disk = disk;
