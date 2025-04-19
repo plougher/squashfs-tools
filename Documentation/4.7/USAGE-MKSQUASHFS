@@ -30,9 +30,11 @@ Mksquashfs uses the following arguments
 
 mksquashfs source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of exclude files]
 
-Where source1 source2 are the directories or files you want to be put into
-the filesystem, and FILESYSTEM is the name of the output filesystem.  This
-can be a file or a block device.
+Where source1 source2 are the directories or files you want to be put into the
+filesystem, and FILESYSTEM is the name of the output filesystem.  This can be a
+file or a block device.  If the file already exists or it is a block device
+Mksquashfs will try append to it (see section 14) unless the -noappend option is
+given.
 
 Most simple usage is a single source directory:
 
@@ -1027,11 +1029,11 @@ Obviously anything "date" accepts as a valid string can be used, such as
 14. APPENDING TO SQUASHFS FILESYSTEMS
 -------------------------------------
 
-Running Mksquashfs with the destination directory containing an existing
+Running Mksquashfs with the output file containing an existing Squashfs
 filesystem will add the source items to the existing filesystem.  By default,
 the source items are added to the existing root directory.
 
-To make this clear... An existing filesystem "image" contains root entries
+To make this clear... An existing filesystem image contains root entries
 "old1", and "old2".  Source directory "/home/phillip/test" contains  "file1",
 "file2" and "dir1".
 
@@ -1039,24 +1041,23 @@ example 1:
 
 % mksquashfs /home/phillip/test image
 
-Will create a new "image" with root entries "old1", "old2", "file1", "file2" and
+Will create a new image with root entries "old1", "old2", "file1", "file2" and
 "dir1"
 
 example 2:
 
 % mksquashfs /home/phillip/test image -keep-as-directory
 
-Will create a new "image" with root entries "old1", "old2", and "test".  As
-shown in the previous section, for single source directories
-'-keep-as-directory' adds the source directory rather than the contents of the
-directory.
+Will create a new image with root entries "old1", "old2", and "test".  As shown
+in section 1, for single source directories '-keep-as-directory' adds the source
+directory rather than the contents of the directory.
 
 example 3:
 
 % mksquashfs /home/phillip/test image -keep-as-directory -root-becomes
 original-root
 
-Will create a new "image" with root entries "original-root", and "test".  The
+Will create a new image with root entries "original-root", and "test".  The
 '-root-becomes' option specifies that the original root becomes a subdirectory
 in the new root, with the specified name.
 
