@@ -349,6 +349,7 @@ void sort_files_and_write(struct dir_info *dir)
 					(long long)
 					entry->dir->inode->buf.st_size,
 					duplicate_file ? "DUPLICATE" : "");
+				inc_progress_bar();
 				entry->dir->inode->inode = inode;
 				entry->dir->inode->type = SQUASHFS_FILE_TYPE;
 				hardlnk_count --;
