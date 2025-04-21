@@ -3488,6 +3488,7 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	sync_orderer_thread();
 
 	dir_scan8(&inode, root_dir);
+	inc_progress_bar();
 	dir_ent->inode->inode = inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 
