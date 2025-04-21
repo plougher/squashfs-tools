@@ -261,6 +261,7 @@ int fragments_locked = FALSE;
 /* current inode number for directories and non directories */
 unsigned int inode_no = 1;
 unsigned int root_inode_number = 0;
+unsigned int inode_start_no = 1;
 
 /* list of source dirs/files */
 int source = 0;
@@ -3457,7 +3458,7 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	 * means the progress bar will continue to show progress after
 	 * all the file data blocks have been processed
 	 */
-	progress_bar_size(inode_no - sinode_count - 1);
+	progress_bar_size(inode_no - inode_start_no);
 
 	eval_actions(root_dir, dir_ent);
 
@@ -8176,6 +8177,7 @@ int main(int argc, char *argv[])
 				sdirectory_compressed_bytes = 0;
 				root_inode_number = inode_dir_parent_inode;
 				inode_no = sBlk.inodes + 2;
+				inode_start_no = sBlk.inodes + 1;
 				directory_bytes = last_directory_block;
 				directory_cache_bytes = uncompressed_data;
 				memmove(directory_data_cache, directory_data_cache +
@@ -8196,6 +8198,7 @@ int main(int argc, char *argv[])
 				sdirectory_bytes = inode_dir_start_block;
 				root_inode_number = inode_dir_inode_number;
 				inode_no = sBlk.inodes + 1;
+				inode_start_no = sBlk.inodes;
 				directory_bytes = inode_dir_start_block;
 				directory_cache_bytes = inode_dir_offset;
 				cache_bytes = root_inode_offset;
