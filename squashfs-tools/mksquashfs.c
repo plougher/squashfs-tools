@@ -1885,6 +1885,7 @@ unsigned short get_checksum(char *buff, int bytes, unsigned short chksum)
 static unsigned short get_checksum_disk(long long start, long long l,
 	unsigned int *blocks)
 {
+	long long dpos = -1;
 	unsigned short chksum = 0;
 	unsigned int bytes;
 	struct file_buffer *write_buffer;
@@ -1900,8 +1901,12 @@ static unsigned short get_checksum_disk(long long start, long long l,
 				chksum);
 			gen_cache_block_put(write_buffer);
 		} else {
-			long long dpos = get_virt_disk(start);
-			void *data = read_from_disk(dpos, bytes, 0);
+			void *data;
+
+			if(dpos == -1)
+				dpos = get_virt_disk(start);
+
+			data = read_from_disk(dpos, bytes, 0);
 			if(data == NULL) {	
 				ERROR("Failed to checksum data from output"
 					" filesystem\n");
@@ -1913,6 +1918,8 @@ static unsigned short get_checksum_disk(long long start, long long l,
 
 		l -= bytes;
 		start += bytes;
+		if(dpos != -1)
+			dpos += bytes;
 	}
 
 	return chksum;
