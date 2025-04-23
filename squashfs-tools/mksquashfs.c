@@ -2257,13 +2257,14 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 	unsigned short checksum = 0;
 	char checksum_flag = FALSE;
 	struct fragment *fragment;
-	long long dupl_start;
+	long long dupl_start, cached_target = -1;
 
 	/* Look for a possible duplicate set of blocks */
 	for(dupl_ptr = dupl_block[bl_hash]; dupl_ptr;
 					dupl_ptr = dupl_ptr->block_next) {
 		if(bytes == dupl_ptr->bytes && blocks == dupl_ptr->blocks) {
-			long long target_start, dup_start = dupl_ptr->start;
+			long long target_start = start, dup_start = dupl_ptr->start;
+			long long dtarget_start = -1, ddup_start = -1;
 			int block;
 
 			/*
@@ -2295,7 +2296,6 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 			 * Checksums match, so now we need to do a byte by byte
 			 * comparison
 			 */
-			target_start = start;
 			for(block = 0; block < blocks; block ++) {
 				int size = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[block]);
 				struct file_buffer *dup_buffer = NULL;
@@ -2315,8 +2315,12 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				if(buffer_list[block])
 					target_data = buffer_list[block]->data;
 				else {
-					long long dpos = get_virt_disk(target_start);
-					target_data = read_from_disk(dpos, size, 0);
+					if(dtarget_start == -1) {
+						if(cached_target == -1)
+							cached_target = get_virt_disk(target_start);
+						dtarget_start = cached_target;
+					}
+					target_data = read_from_disk(dtarget_start, size, 0);
 					if(target_data == NULL) {
 						ERROR("Failed to read data from"
 							" output filesystem\n");
@@ -2335,8 +2339,9 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				if(dup_buffer)
 					dup_data = dup_buffer->data;
 				else {
-					long long dpos = get_virt_disk(dup_start);
-					dup_data = read_from_disk(dpos, size, 1);
+					if(ddup_start == -1)
+						ddup_start  = get_virt_disk(dup_start);
+					dup_data = read_from_disk(ddup_start, size, 1);
 					if(dup_data == NULL) {
 						ERROR("Failed to read data from"
 							" output filesystem\n");
@@ -2351,6 +2356,10 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					break;
 				target_start += size;
 				dup_start += size;
+				if(dtarget_start)
+					dtarget_start += size;
+				if(ddup_start != -1)
+					ddup_start += size;
 			}
 
 			if(block != blocks)
