@@ -122,7 +122,7 @@ static inline long long get_marked_vpos(void)
 	if(marked_vpos == 0)
 		BAD_ERROR("BUG: Saved write position is empty!\n");
 	else if(marked_vpos == 1)
-		return 0;
+		return get_vpos();
 	else
 		return marked_vpos;
 }
