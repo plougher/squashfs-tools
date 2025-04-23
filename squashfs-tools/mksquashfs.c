@@ -526,6 +526,20 @@ static inline void  sync_orderer_thread()
 }
 
 
+static inline void send_orderer_create_map(long long vpos)
+{
+	struct file_buffer *buffer = MALLOC(sizeof(struct file_buffer));
+
+	buffer->cache = NULL;
+	buffer->sequence = get_sequence();
+	buffer->buffer_type = MAP_CMD;
+	buffer->block = vpos;
+
+	order_queue_put(to_order, buffer);
+}
+
+
+
 static inline void put_write_buffer_hash(struct file_buffer *buffer)
 {
 	buffer->block = get_and_inc_vpos(buffer->size);
@@ -2757,6 +2771,9 @@ static void *orderer(void *arg)
 		} else if(write_buffer->buffer_type == RESET_CMD) {
 			set_dpos(get_virt_disk(write_buffer->block));
 			free(write_buffer);
+		} else if(write_buffer->buffer_type == MAP_CMD) {
+			add_virt_disk(block, get_dpos());
+			free(write_buffer);
 		} else
 
 			BAD_ERROR("Bug in orderer\n");
@@ -2880,6 +2897,9 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 			fragment_buffer ?  fragment_buffer->checksum : 0, FALSE,
 			TRUE);
 
+	if(!is_vpos_marked())
+		send_orderer_create_map(get_marked_vpos());
+
 	gen_cache_block_put(fragment_buffer);
 	file_count ++;
 	total_bytes += read_size;
@@ -2973,6 +2993,9 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 		for(block = thresh; block < blocks; block ++)
 			if(buffer_list[block])
 				put_write_buffer_hash(buffer_list[block]);
+
+		if(!is_vpos_marked())
+			send_orderer_create_map(get_marked_vpos());
 	} else {
 		for(block = thresh; block < blocks; block ++)
 			gen_cache_block_put(buffer_list[block]);
@@ -3075,6 +3098,9 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 		file = create_non_dup(read_size, file_bytes, blocks, sparse,
 			block_list, get_marked_vpos(), fragment, 0, fragment_buffer ?
 			fragment_buffer->checksum : 0, FALSE, TRUE);
+
+	if(!is_vpos_marked())
+		send_orderer_create_map(get_marked_vpos());
 
 	gen_cache_block_put(fragment_buffer);
 	file_count ++;

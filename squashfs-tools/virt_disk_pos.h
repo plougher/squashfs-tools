@@ -135,6 +135,15 @@ static inline void set_pos(long long value)
 }
 
 
+static inline int is_vpos_marked(void)
+{
+	if(marked_vpos == 0)
+		BAD_ERROR("BUG: Saved write position is empty!\n");
+	else
+		return marked_vpos != 1;
+}
+
+
 #define VIRT_DISK_HASH_SIZE 1048576
 #define VIRT_DISK_HASH(hash) (hash & 1048575)
 
