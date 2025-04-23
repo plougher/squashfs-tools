@@ -45,6 +45,7 @@
 #include "mksquashfs_error.h"
 #include "mksquashfs_help.h"
 #include "alloc.h"
+#include "virt_disk_pos.h"
 
 int read_block(int fd, long long start, long long *next, int expected,
 								void *block)
@@ -319,6 +320,8 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 				goto corrupted;
 			}
 
+			add_virt_disk(start, start);
+
 			add_file(start, inode.file_size, file_bytes,
 				block_list, blocks, inode.fragment,
 				inode.offset, frag_bytes);
@@ -376,6 +379,8 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 				free(block_list);
 				goto corrupted;
 			}
+
+			add_virt_disk(start, start);
 
 			add_file(start, inode.file_size, file_bytes,
 				block_list, blocks, inode.fragment,
