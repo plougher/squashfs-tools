@@ -50,7 +50,7 @@
 		3.4. New -info-file option, which prints files written to the
 		     filesystem to a file rather than stdout.  Allows -info-file
 		     to be used in conjunction with the progress bar.
-		3.5. New -pseudo-dir (or -pd) option which supplies a defaul
+		3.5. New -pseudo-dir (or -pd) option which supplies a default
 		     directory if any directories in a pseudo file definition
 		     pathname doesn't exist.
 		3.6. New pseudo file 'h' definition which creates a hard link to

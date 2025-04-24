@@ -990,6 +990,34 @@ Changes the attributes of the file "dmesg" in the filesystem to have root
 uid/gid and a mode of rw-rw-rw, overriding the attributes obtained from the
 source filesystem.
 
+12.9 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION
+-----------------------------------------------------
+
+The option
+
+-pd <d mode uid gid>
+
+Specifies a default pseudo directory which will be used in pseudo definitions if
+a directory in the pathname does not exist.  This also allows pseudo definitions
+to be specified without specifying all the directories in the pathname.  The
+definition should be quoted.
+
+For example this provides an alternative way of specifying any leading
+directories in a pseudo file definition.  We could create a pseudo file
+/dir1/dir2/file on the command line using no other sources like this:
+
+% mksquashfs - image.sqfs -p "/ d 0777 0 0" -p "/dir1 d 0777 0 0"
+  -p "/dir1/dir2 d 0777 0 0" -p "/dir1/dir2/file f 0777 0 0 echo hello_world"
+
+Here we have to create each directory explicitly including the root directory.
+
+The new -pd option allows us to specify a default pseudo directory and then
+just specify the pseudo definition for the file, leaving Mksquashfs to
+automatically create the leading directories:
+
+% mksquashfs - image.sqfs -pd "d 0777 0 0" -p "/dir1/dir2/file f 0777 0 0 echo hello world"
+
+
 13. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
 ----------------------------------------------------
 
