@@ -1053,6 +1053,20 @@ shell by backslashes, i.e.
 Obviously anything "date" accepts as a valid string can be used, such as
 "yesterday", "last week" etc.
 
+13.1 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION WITH TIMESTAMP
+--------------------------------------------------------------------
+
+The option
+
+-pd <D time mode uid gid>
+
+Specifies a default pseudo directory which will be used in pseudo definitions if
+a directory in the pathname does not exist.
+
+The upper-case D indicates this is an extended pseudo definition which takes
+a <time> timestamp.  <time> can be either an unsigned decimal integer or a
+"date string" which is parsed and converted into an integer by calling the
+"date" command.
 
 14. APPENDING TO SQUASHFS FILESYSTEMS
 -------------------------------------
