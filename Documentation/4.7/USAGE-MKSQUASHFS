@@ -910,25 +910,36 @@ directories by executing "cat", e.g.
 
 README f 0555 0 0 cat /home/phillip/latest-version/README
 
-Because this is a quite frequent use of the definition, an alternative faster
-"File reference" or Hard Link Pseudo definition exists:
+Because this is a quite frequent use of the definition, alternative faster
+"File reference" or Hard Link Pseudo definitions exist:
 
-README l /home/phillip/latest-version/README
+README l pathname
 
-Will create a reference to "/home/phillip/latest-version/README",
-and obviously the timestamp/mode and owership will be used.
+and
 
-The definition also be used to create additional references to
-files within the source directories.  For instance if "phillip/latest/README"
-was a file being added to the filesystem, then
+README h pathname
+
+If pathname was "/home/phillip/latest-version/README", then both will create a
+reference to "/home/phillip/latest-version/README", and obviously the
+timestamp/mode and owership will be used.
+
+The difference between the 'l' and 'h' definitions is in the handling of
+symbolic links, if the pathname points to a symbolic link, the 'l' definition
+won't follow it, and so you'll get a reference to the symbolic link, whereas
+the 'h' definition will follow it, and you'll get a reference to whatever
+the symbolic link points to.
+
+The definitions can also be used to create additional references to files within
+the source directories.  For instance if "phillip/latest/README" was a file
+being added to the filesystem, then
 
 README l phillip/latest/README
 
 Will create a Hard Link (and increment the nlink count on the inode).
 
-In both cases, the path to the file being referenced is the system
-filesystem path, and can be absolute (prefixed with /), or relative
-to the current working directory.
+In both cases, the path to the file being referenced is the system filesystem
+path, and can be absolute (prefixed with /), or relative to the current working
+directory.
 
 There is an additional 'L' Pseudo definition, which closes a loophole in the
 above 'l' definition.  The 'l' Pseudo definition cannot create references or
