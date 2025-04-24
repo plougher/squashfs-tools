@@ -5194,7 +5194,7 @@ static squashfs_inode no_sources(int progress)
 {
 	struct stat buf;
 	struct dir_ent *dir_ent;
-	struct pseudo_entry *pseudo_ent;
+	struct pseudo_dev *pseudo_dev;
 	struct pseudo *pseudo = get_pseudo();
 
 	if(pseudo == NULL || pseudo->names != 1 || strcmp(pseudo->head->name, "/") != 0) {
@@ -5203,7 +5203,7 @@ static squashfs_inode no_sources(int progress)
 		EXIT_MKSQUASHFS();
 	}
 
-	pseudo_ent = pseudo->head;
+	pseudo_dev = pseudo->head->dev;
 
 	/* create root directory */
 	root_dir = scan1_opendir("", "", 1);
@@ -5217,27 +5217,27 @@ static squashfs_inode no_sources(int progress)
 
 	memset(&buf, 0, sizeof(buf));
 
-	buf.st_mode = pseudo_ent->dev->buf->mode;
+	buf.st_mode = pseudo_dev->buf->mode;
 	if(root_mode_opt && !global_dir_mode_opt)
 		buf.st_mode = mode_execute(root_mode, buf.st_mode);
 	if(root_uid_opt)
 		buf.st_uid = root_uid;
 	else
-		buf.st_uid = pseudo_ent->dev->buf->uid;
+		buf.st_uid = pseudo_dev->buf->uid;
 
 	if(root_gid_opt)
 		buf.st_gid = root_gid;
 	else
-		buf.st_gid = pseudo_ent->dev->buf->gid;
+		buf.st_gid = pseudo_dev->buf->gid;
 
 	if(root_time_opt)
 		buf.st_mtime = root_time;
 	else
-		buf.st_mtime = pseudo_ent->dev->buf->mtime;
+		buf.st_mtime = pseudo_dev->buf->mtime;
 
-	buf.st_ino = pseudo_ent->dev->buf->ino;
+	buf.st_ino = pseudo_dev->buf->ino;
 
-	dir_ent->inode = lookup_inode2(&buf, pseudo_ent->dev);
+	dir_ent->inode = lookup_inode2(&buf, pseudo_dev);
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
 
