@@ -9,16 +9,17 @@ This file describes how to use Mksquashfs, and it has the following sections:
 5. Tar style handling of source pathnames in Mksquashfs
 6. CPIO style handling of source pathname in Mksquashfs
 7. Specifying the UID/GIDs used in the filesystem
-8. Excluding files from the filesystem
-9. Parallel file reading and options
-10. Reducing CPU and I/O usage
-11. Filtering and adding extended attributes (xattrs)
-12. Pseudo file support
-13. Extended pseudo file definitions with timestamps
-14. Appending to Squashfs filesystems
-15. Appending recovery file feature
-16. Mksquashfs Actions introduction
-17. Miscellaneous options
+8. Specifying the file permissions used in the filesystem
+9. Excluding files from the filesystem
+10. Parallel file reading and options
+11. Reducing CPU and I/O usage
+12. Filtering and adding extended attributes (xattrs)
+13. Pseudo file support
+14. Extended pseudo file definitions with timestamps
+15. Appending to Squashfs filesystems
+16. Appending recovery file feature
+17. Mksquashfs Actions introduction
+18. Miscellaneous options
 
 1. INTRODUCTION AND BASIC USAGE
 -------------------------------
@@ -453,16 +454,97 @@ The -all-root option forces all file uids/gids in the generated Squashfs
 filesystem to be root.  This allows root owned filesystems to be built without
 root access on the host machine.
 
-The "-force-uid uid"  option forces all files in the generated Squashfs
-filesystem to be owned by the specified uid.  The uid can be specified either by
-name (i.e. "root") or by number.
+The "-force-uid <uid>"  option forces all files in the generated Squashfs
+filesystem to be owned by the specified <uid>.  The uid can be specified either
+by name (i.e. "root") or by number.
 
-The "-force-gid gid" option forces all files in the generated Squashfs
-filesystem to be group owned by the specified gid.  The gid can be specified
+The "-force-gid <gid>" option forces all files in the generated Squashfs
+filesystem to be group owned by the specified <gid>.  The gid can be specified
 either by name (i.e. "root") or by number.
 
+For example:
 
-8. EXCLUDING FILES FROM THE FILESYSTEM
+% mksquashfs source image.sqfs -force-uid phillip -force-gid phillip
+
+Will set all file and directory ownership and group ownership to phillip.
+
+If you only want to set the uid and gid ownership on a subset of files rather
+than globally, the Actions system allows you to do that (see section 17).
+
+8. SPECIFYING THE FILE PERMISSIONS USED IN THE FILESYSTEM
+---------------------------------------------------------
+
+By default files and directories in the generated filesystem inherit the
+permissions of the original files and directories.  However, Mksquashfs provides
+a number of options which can be used to override the permissions.
+
+The "-force-file-mode <mode>" option sets all the file (non directories)
+permissions to <mode>.  <Mode> can be symbolic or octal (see the next subsection
+for the Symbolic mode specification).  The octal mode sets the permissions to
+that value, and the symbolic mode specification can either set the permissions,
+or add or subtract permissions from the existing file permissions.
+
+The "-force-dir-mode <mode>" option sets all the directory permissions to
+<mode>.  <Mode> can be symbolic or octal (see the next subsection for the
+Symbolic mode specification).  The octal mode sets the permissions to that
+value, and the symbolic mode specification can either set the permissions, or
+add or subtract permissions from the existing directory permissions.
+
+The reason why the options are split into two, one that acts on files and one
+that acts on directories, is because the permission bits have different
+semantics for files and directories.  For example the 'x' bit means execute for
+files and search for directories.  Hence you might want to ensure the 'x'
+bit is set for directories for user/group/other but not want to make all files
+executable.
+
+Some examples:
+
+% mksquashfs source image.sqfs -force-dir-mode 0700
+
+Will set all directory permissions to drwx------, or read, write and search
+for owner, and nothing for everyone else.
+
+% mksquashfs source image.sqfs -force-file-mode 0666
+
+Will set all file permissions to -rw-rw-rw-, or read and write by everyone,
+but executable by no-one.
+
+% mksquashfs source image.sqfs -force-file-mode go-w,u+rw
+
+Will modify each file's permissions, by removing write ('w') for group and
+other, but also ensure the owner can read and write to the files by adding 'r'
+and 'w'.
+
+If you only want to set the permissions on a subset of files rather than
+globally, the Actions system allows you to do that (see section 17).
+
+8.1 SYMBOLIC MODE SPECIFICATION
+-------------------------------
+
+The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+.  PERMS = [rwxXst]+ or
+[ugo], and the sequence can be repeated separated with commas.
+
+A combination of the letters ugoa specify which permission bits will be
+affected, u means user, g means group, o means other, and a means all or ugo.
+
+The next letter is +, - or =.  The letter + means add to the existing permission
+bits, - means remove the bits from the existing permission bits, and = means set
+the permission bits.
+
+The permission bits (PERMS) are a combination of [rwxXst] which
+sets/adds/removes those bits for the specified ugoa combination, r means read, w
+means write and x means execute for files or search for directories.  X has a
+special meaning, if the file is a directory it is equivalent to x or search, but
+if it is a non-directory, it only takes effect if execute is already set for
+user, group or other.  The s flag sets user or group ID on execution, and the t
+flag on a directory sets restricted deletion, or historically made the file
+sticky if a non-directory.
+
+The permission bits can also be u, g or o, which takes the permission bits from
+the user, group or other of the file respectively.
+
+
+9. EXCLUDING FILES FROM THE FILESYSTEM
 --------------------------------------
 
 The -e and -ef options allow files/directories to be specified which are
@@ -476,7 +558,7 @@ extended wildcard matching.  Basic exclude matching is a legacy feature
 retained for backwards compatibility with earlier versions of Mksquashfs.
 Extended wildcard matching should be used in preference.
 
-8.1 BASIC EXCLUDE MATCHING
+9.1 BASIC EXCLUDE MATCHING
 --------------------------
 
 Each exclude file is treated as an exact match of a file/directory in
@@ -490,7 +572,7 @@ the sources in turn, i.e.
 Will generate exclude files /tmp/source1/ex2, /tmp/source1/ex1, source2/ex1,
 /tmp/source1/out/ex3 and source2/out/ex3.
 
-8.2 EXTENDED EXCLUDE FILE HANDLING
+9.2 EXTENDED EXCLUDE FILE HANDLING
 ----------------------------------
 
 Extended exclude file matching treats each exclude file as a wildcard or
@@ -555,8 +637,8 @@ Non-anchored excludes
      except those with "data" in the name.
 
 
-9. PARALLEL FILE READING AND OPTIONS
-------------------------------------
+10. PARALLEL FILE READING AND OPTIONS
+-------------------------------------
 
 Modern computers can have 16 cores/32 threads or more [*], and systems with 8
 cores/16 threads are becoming standard.   What this increase in computational
@@ -681,8 +763,8 @@ increase performance.
     but these were multi-user systems typically supporting 50 or more users.
 
 
-10. REDUCING CPU AND I/O USAGE
------------------------------
+11. REDUCING CPU AND I/O USAGE
+------------------------------
 
 By default Mksquashfs will use all the CPUs available to compress and create the
 filesystem, and will read from the source files and write to the output
@@ -712,8 +794,8 @@ with -processors set to the minimum of 1.  In this case you can use -throttle
 in addition to -processors or on its own.
 
 
-11. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
-----------------------------------------------------
+12. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
+-----------------------------------------------------
 
 Mksquashfs has a number of options which allow extended attributes (xattrs) to
 be filtered from the source files or added to the created Squashfs filesystem.
@@ -767,7 +849,7 @@ mksquashfs dir image.sqfs -xattrs-add "user.comment=0thello\000world"
 mksquashfs dir image.sqfs -xattrs-add "user.comment=0saGVsbG8Ad29ybGQ="
 mksquashfs dir image.sqfs -xattrs-add "user.comment=0x68656c6c6f00776f726c64"
 
-12. PSEUDO FILE SUPPORT
+13. PSEUDO FILE SUPPORT
 -----------------------
 
 Mksquashfs supports pseudo files, these allow files, directories, character
@@ -787,7 +869,7 @@ Two Mksquashfs options are supported, -p allows one pseudo file to be specified
 on the command line, and -pf allows a pseudo file to be specified containing a
 list of pseduo definitions, one per line.
 
-12.1 CREATING A DYNAMIC FILE
+13.1 CREATING A DYNAMIC FILE
 ----------------------------
 
 Pseudo definition
@@ -843,7 +925,7 @@ given a device, fifo, or named socket will place that special file within the
 Squashfs filesystem, the above allows input from these special files to be
 captured and placed in the Squashfs filesystem.
 
-12.2 CREATING A BLOCK OR CHARACTER DEVICE
+13.2 CREATING A BLOCK OR CHARACTER DEVICE
 -----------------------------------------
 
 Pseudo definition
@@ -867,7 +949,7 @@ creates a character device "/dev/chr_dev" with major:minor 100:1 and a block
 device "/dev/blk_dev" with major:minor 200:200, both with root uid/gid and a
 mode of rw-rw-rw.
 
-12.3 CREATING A DIRECTORY
+13.3 CREATING A DIRECTORY
 --------------------------
 
 Pseudo definition
@@ -884,7 +966,7 @@ For example:
 
 creates a directory "/pseudo_dir" with root uid/gid and mode of rw-rw-rw.
 
-12.4 CREATING A SYMBOLIC LINK
+13.4 CREATING A SYMBOLIC LINK
 ------------------------------
 
 Pseudo definition
@@ -901,7 +983,7 @@ symlink s 0 root root example
 
 8reates a symlink "symlink" to file "example" with root uid/gid.
 
-12.5 CREATING HARD LINKS (FILE REFERENCES)
+13.5 CREATING HARD LINKS (FILE REFERENCES)
 ------------------------------------------
 
 The "f" Pseudo definition allows a regular file to be created from the output of
@@ -957,7 +1039,7 @@ link L char-dev
 Will create a Hard Link named "link" to the character device called "char-dev"
 created by the previous Pseudo definition.
 
-12.6 CREATING SOCKETS/FIFOS
+13.6 CREATING SOCKETS/FIFOS
 ----------------------------
 
 Pseudo definition
@@ -972,7 +1054,7 @@ and to create a FIFO, 'f' should be used, i.e.
 
 filename i 0777 root root f
 
-12.7 ADDING EXTENDED ATTRIBUTES TO FILES
+13.7 ADDING EXTENDED ATTRIBUTES TO FILES
 ----------------------------------------
 
 Pseudo definition
@@ -982,7 +1064,7 @@ filename x name=val
 Will add the extended attribute <name> to <filename> with <val> contents.  See
 Section 7 for a description of the <val> formats supported.
 
-12.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
+13.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
 ---------------------------------------------
 
 Pseudo definition
@@ -1001,7 +1083,7 @@ Changes the attributes of the file "dmesg" in the filesystem to have root
 uid/gid and a mode of rw-rw-rw, overriding the attributes obtained from the
 source filesystem.
 
-12.9 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION
+13.9 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION
 -----------------------------------------------------
 
 The option
@@ -1029,7 +1111,7 @@ automatically create the leading directories:
 % mksquashfs - image.sqfs -pd "d 0777 0 0" -p "/dir1/dir2/file f 0777 0 0 echo hello world"
 
 
-13. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
+14. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
 ----------------------------------------------------
 
 The Pseudo file definitions described above do not allow the timestamp of the
@@ -1064,7 +1146,7 @@ shell by backslashes, i.e.
 Obviously anything "date" accepts as a valid string can be used, such as
 "yesterday", "last week" etc.
 
-13.1 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION WITH TIMESTAMP
+14.1 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION WITH TIMESTAMP
 --------------------------------------------------------------------
 
 The option
@@ -1079,7 +1161,7 @@ a <time> timestamp.  <time> can be either an unsigned decimal integer or a
 "date string" which is parsed and converted into an integer by calling the
 "date" command.
 
-14. APPENDING TO SQUASHFS FILESYSTEMS
+15. APPENDING TO SQUASHFS FILESYSTEMS
 -------------------------------------
 
 Running Mksquashfs with the output file containing an existing Squashfs
@@ -1120,7 +1202,7 @@ with for example the linux-2.4.19 source.  Appending the linux-2.4.20 source
 will create a filesystem with the two source trees, but only the changed files
 will take extra room, the unchanged files will be detected as duplicates.
 
-15. APPENDING RECOVERY FILE FEATURE
+16. APPENDING RECOVERY FILE FEATURE
 -----------------------------------
 
 Recovery files are created when appending to existing Squashfs filesystems.
@@ -1142,7 +1224,7 @@ The writing of the recovery file can be disabled by specifying the
 "-no-recovery" option.
 
 
-16. MKSQUASHFS ACTIONS INTRODUCTION
+17. MKSQUASHFS ACTIONS INTRODUCTION
 -----------------------------------
 
 The Mksquashfs Actions code allows an "action" to be executed on a file if one
@@ -1188,7 +1270,7 @@ operators && (and), || (or) and ! (not), and can be bracketed.
 Please see the ACTIONS-README file for syntax and extra information.
 
 
-17. MISCELLANEOUS OPTIONS
+18. MISCELLANEOUS OPTIONS
 ------------------------
 
 The -info option displays the files/directories as they are compressed and
