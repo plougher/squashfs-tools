@@ -433,7 +433,7 @@ static char *mksquashfs_text[]={
 		"<section> to pager (or stdout if not a terminal).  If "
 		"<section> does not exactly match a section name, it is "
 		"treated as a regular expression, and all section names that "
-		"match are displayed.  Use \"sections\" or \"h\" as section "
+		"match are displayed.  Use \"x\" or \"h\" as section "
 		"name to get a list of sections and their names\n",
 	"-help-comp <comp>\tprint compressor options for compressor <comp>.  "
 		"Use <all> to get compressor options for all the compressors\n",
@@ -709,7 +709,7 @@ static char *sqfstar_text[]={
 		"<section> to pager (or stdout if not a terminal).  If "
 		"<section> does not exactly match a section name, it is "
 		"treated as a regular expression, and all section names that "
-		"match are displayed.  Use \"sections\" or \"h\" as section "
+		"match are displayed.  Use \"x\" or \"h\" as section "
 		"name to get a list of sections and their names\n",
 	"-help-comp <comp>\tprint compressor options for compressor <comp>.  "
 		"Use <all> to get compressor options for all the compressors\n",
@@ -921,7 +921,7 @@ static void print_section(char *prog_name, char *opt_name, char *sec_name, char 
 		pager = stdout;
 	}
 
-	if(strcmp(sec_name, "sections") == 0 || strcmp(sec_name, "h") == 0) {
+	if(strcmp(sec_name, "x") == 0 || strcmp(sec_name, "h") == 0) {
 		autowrap_printf(pager, cols, "\nUse following section name to print %s help information for that section\n\n", prog_name);
 		print_section_names(pager , "", cols, sections, options_text);
 		goto finish;
