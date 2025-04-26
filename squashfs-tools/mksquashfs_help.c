@@ -194,8 +194,8 @@ static char *mksquashfs_sections[]={
 
 static char *sqfstar_sections[]={
 	"compression", "build", "time", "perms", "pseudo", "xattrs", "runtime",
-	"expert", "help", "misc", "pseudo", "symbolic", "environment", "exit",
-	"extra", NULL
+	"expert", "help", "misc", "pseudo-defs", "symbolic", "environment",
+	"exit", "extra", NULL
 };
 
 static char *mksquashfs_text[]={

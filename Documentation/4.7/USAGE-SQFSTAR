@@ -121,7 +121,7 @@ Or run
         expert                  Expert options (these may make the filesystem unmountable):
         help                    Help options:
         misc                    Miscellaneous options:
-        pseudo                  Pseudo file definition format:
+        pseudo-defs             Pseudo file definition format:
         symbolic                Symbolic mode specification:
         environment             Environment:
         exit                    Exit status:
