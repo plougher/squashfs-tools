@@ -436,7 +436,8 @@ static char *mksquashfs_text[]={
 		"match are displayed.  Use \"x\" or \"h\" as section "
 		"name to get a list of sections and their names\n",
 	"-help-comp <comp>\tprint compressor options for compressor <comp>.  "
-		"Use <all> to get compressor options for all the compressors\n",
+		"Use \"x\" to get a list of available compressors, and \"all\""
+		"to get the compressor options for all the compressors\n",
 	"-help-all\t\tprint help information for all Mksquashfs options and "
 		"sections to pager (or stdout if not a terminal)\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
@@ -712,7 +713,8 @@ static char *sqfstar_text[]={
 		"match are displayed.  Use \"x\" or \"h\" as section "
 		"name to get a list of sections and their names\n",
 	"-help-comp <comp>\tprint compressor options for compressor <comp>.  "
-		"Use <all> to get compressor options for all the compressors\n",
+		"Use \"x\" to get a list of available compressors, and \"all\""
+		"to get the compressor options for all the compressors\n",
 	"-help-all\t\tprint help information for all Sqfstar options and "
 		"sections to pager (or stdout if not a terminal)\n",
 	"-Xhelp\t\t\tprint compressor options for selected compressor\n",
@@ -1165,7 +1167,7 @@ void print_compressor_options(char *comp_name, char *prog_name)
 	if(strcmp(comp_name, "ALL") == 0 || strcmp(comp_name, "<all>") == 0)
 		comp_name = "all";
 
-	if(strcmp(comp_name, "all") && !valid_compressor(comp_name)) {
+	if(strcmp(comp_name, "x") && strcmp(comp_name, "all") && !valid_compressor(comp_name)) {
 		cols = get_column_width();
 		autowrap_printf(stderr, cols, "%s: Compressor \"%s\" is not "
 			"supported!\n", prog_name, comp_name);
@@ -1183,7 +1185,10 @@ void print_compressor_options(char *comp_name, char *prog_name)
 		pager = stdout;
 	}
 
-	print_comp_options(pager, cols, comp_name, prog_name);
+	if(strcmp(comp_name, "x") == 0)
+		autowrap_print(pager, "\t" COMPRESSORS "\n", cols);
+	else
+		print_comp_options(pager, cols, comp_name, prog_name);
 
 	if(pager != stdout) {
 		fclose(pager);
