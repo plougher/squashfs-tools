@@ -287,65 +287,47 @@ you.
 
 If you're not building the squashfs-tools and kernel from source, then the tools
 and kernel may or may not have been built with support for LZ4, LZO, XZ or ZSTD
-compression.  The compression algorithms supported by the build of Mksquashfs
-can be found by typing mksquashfs -help.
+compression.
 
-The full list of compressors available and their compression specific options
-are:
+The compression algorithms supported by the build of Mksquashfs can be found
+by typing:
 
-Compressors available and compressor specific options:
-	gzip (default)
-	  -Xcompression-level <compression-level>
-		<compression-level> should be 1 .. 9 (default 9)
-	  -Xwindow-size <window-size>
-		<window-size> should be 8 .. 15 (default 15)
-	  -Xstrategy strategy1,strategy2,...,strategyN
-		Compress using strategy1,strategy2,...,strategyN in turn
-		and choose the best compression.
-		Available strategies: default, filtered, huffman_only,
-		run_length_encoded and fixed
-	lzo
-	  -Xalgorithm <algorithm>
-		Where <algorithm> is one of:
-			lzo1x_1
-			lzo1x_1_11
-			lzo1x_1_12
-			lzo1x_1_15
-			lzo1x_999 (default)
-	  -Xcompression-level <compression-level>
-		<compression-level> should be 1 .. 9 (default 8)
-		Only applies to lzo1x_999 algorithm
-	lz4
-	  -Xhc
-		Compress using LZ4 High Compression
-	xz
-	  -Xbcj filter1,filter2,...,filterN
-		Compress using filter1,filter2,...,filterN in turn
-		(in addition to no filter), and choose the best compression.
-		Available filters: x86, arm, armthumb, powerpc, sparc, ia64
-	  -Xdict-size <dict-size>
-		Use <dict-size> as the XZ dictionary size.  The dictionary size
-		can be specified as a percentage of the block size, or as an
-		absolute value.  The dictionary size must be less than or equal
-		to the block size and 8192 bytes or larger.  It must also be
-		storable in the xz header as either 2^n or as 2^n+2^(n+1).
-		Example dict-sizes are 75%, 50%, 37.5%, 25%, or 32K, 16K, 8K
-		etc.
-	zstd
-	  -Xcompression-level <compression-level>
-		<compression-level> should be 1 .. 22 (default 15)
+% mksquashfs -help-comp x
+        gzip (default)
+        lzo
+        lz4
+        xz
+        zstd
 
-If the compressor offers compression specific options (all the compressors now
-have compression specific options except the deprecated lzma1 compressor) then
-these options are also displayed (.i.e. in the above XZ is shown with two
-compression specific options).  The compression specific options are, obviously,
-specific to the compressor in question, and the compressor documentation and
-web sites should be consulted to understand their behaviour.  In general the
-Mksquashfs compression defaults for each compressor are optimised to give the
-best performance for each compressor, where what constitutes best depends on the
-compressor.  For GZIP/XZ best means highest compression, for LZO/LZ4 best means
-a tradeoff between compression and (de)-compression overhead (LZO/LZ4 by
-definition are intended for weaker processors).
+The list of compressor specific options for a compressor can be found by typing
+mksquashfs -help-comp <compressor>, for example:
+
+% mksquashfs -help-comp xz
+mksquashfs: compressor "xz".  Options supported:
+          -Xbcj filter1,filter2,...,filterN
+                Compress using filter1,filter2,...,filterN in turn (in addition
+                to no filter), and choose the best compression.  Available
+                filters: x86, arm, armthumb, arm64, powerpc, sparc, ia64, riscv
+          -Xdict-size <dict-size>
+                Use <dict-size> as the XZ dictionary size.  The dictionary size
+                can be specified as a percentage of the block size, or as an
+                absolute value.  The dictionary size must be less than or equal
+                to the block size and 8192 bytes or larger.  It must also be
+                storable in the xz header as either 2^n or as 2^n+2^(n+1).
+                Example dict-sizes are 75%, 50%, 37.5%, 25%, or 32K, 16K, 8K
+                etc.
+
+The compression specific options for all compressors can be found by typing
+mksquashfs -help-comp all
+
+The compression specific options are, obviously, specific to the compressor in
+question, and the compressor documentation and web sites should be consulted to
+understand their behaviour.  In general the Mksquashfs compression defaults for
+each compressor are optimised to give the best performance for each compressor,
+where what constitutes best depends on the compressor.  For GZIP/XZ best means
+highest compression, for LZO/LZ4 best means a tradeoff between compression and
+(de)-compression overhead (LZO/LZ4 by definition are intended for weaker
+processors).
 
 
 4. CHANGING GLOBAL COMPRESSION DEFAULTS USED IN MKSQUASHFS
