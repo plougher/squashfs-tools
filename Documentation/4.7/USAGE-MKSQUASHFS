@@ -177,7 +177,7 @@ could do
 The -help-section option displays the section that matches the <section> name.
 If <section> does not exactly match a section name, it is treated as a regular
 expression, and all section names that match are displayed.  Finally, if
-<section> is "sections" or "h", a list of sections and their names is displayed.
+<section> is "list", a list of sections and their names is displayed.
 
 For example:
 
@@ -292,7 +292,7 @@ compression.
 The compression algorithms supported by the build of Mksquashfs can be found
 by typing:
 
-% mksquashfs -help-comp x
+% mksquashfs -help-comp list
         gzip (default)
         lzo
         lz4
