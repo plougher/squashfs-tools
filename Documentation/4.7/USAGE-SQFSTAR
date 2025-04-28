@@ -5,10 +5,10 @@ This file describes how to use Sqfstar, and it has the following sections:
 1. Introduction and basic usage
 2. Getting help and displaying Sqfstar options
 3. Changing compression algorithm and compression specific options
-4. Reducing CPU and I/O usage
-5. Changing global compression defaults used in sqfstar
-6. Specifying the UIDs/GIDs used in the filesystem
-7. Excluding files from the filesystem
+4. Changing global compression defaults used in sqfstar
+5. Specifying the UIDs/GIDs used in the filesystem
+6. Excluding files from the filesystem
+7. Reducing CPU and I/O usage
 8. Filtering and adding extended attributes (xattrs)
 9. Pseudo file support
 10. Extended pseudo file definitions with timestamps
@@ -316,37 +316,7 @@ highest compression, for LZO/LZ4 best means a tradeoff between compression and
 (de)-compression overhead (LZO/LZ4 by definition are intended for weaker
 processors).
 
-4. REDUCING CPU AND I/O USAGE
------------------------------
-
-By default Sqfstar will use all the CPUs available to compress and create the
-filesystem, and will read from the TAR archive and write to the output
-filesystem as fast as possible.  This maximises both CPU usage and I/O.
-
-Sometimes you don't want Sqfstar to use all CPU and I/O bandwidth.  For those
-cases Sqfstar supports two complementary options, -processors and -throttle.
-
-The -processors option can be used to reduce the number of parallel compression
-threads used by Sqfstar.  Reducing this to 1 will create the minimum number of
-threads, and this will reduce CPU usage, and that in turn will reduce I/O
-(because CPUs are normally the bottleneck).
-
-The -throttle option reduces the speed Sqfstar reads from the TAR archive.
-The value is a percentage (obviously from 1 - 100), and 50 will reduce the
-read rate by half (the read thread will spend half its time idling), and 75
-by three quarters.  Reducing the speed of I/O will also reduce the CPU
-usage as there is insufficient data rate to use all cores.
-
-Which option should you use?  Both will effectively reduce CPU and I/O in
-normal cases where intensive use is being made of both I/O and CPUs.  But
-in edge cases there can be an imbalance where reducing one has no effect, or
-it can't be reduced any further.  For instance when there is only 1 or 2 cores
-available, setting -processors to the minimum of 1 may still use too much
-CPU.  Additionally if your input source is slow Sqfstar may still max it out
-with -processors set to the minimum of 1.  In this case you can use -throttle
-in addition to -processors or on its own.
-
-5. CHANGING GLOBAL COMPRESSION DEFAULTS USED IN SQFSTAR
+4. CHANGING GLOBAL COMPRESSION DEFAULTS USED IN SQFSTAR
 -------------------------------------------------------
 
 There are a large number of options that can be used to control the compression
@@ -387,7 +357,7 @@ the filesystem for duplicates.  This can result in quicker filesystem generation
 although obviously compression will suffer badly if there is a lot of duplicate
 files.
 
-6. SPECIFYING THE UIDs/GIDs USED IN THE FILESYSTEM
+5. SPECIFYING THE UIDs/GIDs USED IN THE FILESYSTEM
 --------------------------------------------------
 
 By default files in the generated filesystem use the ownership of the file
@@ -411,7 +381,7 @@ The "-force-gid value" option forces all files in the generated Squashfs
 filesystem to be group owned by value, where value can be either a group name or
 a numeric GID.
 
-7. EXCLUDING FILES FROM THE FILESYSTEM
+6. EXCLUDING FILES FROM THE FILESYSTEM
 --------------------------------------
 
 Sqfstar can exclude files from the TAR archive, so that they don't appear in
@@ -480,6 +450,36 @@ Non-anchored excludes
      Exclude all files matching "*.gz" anywhere in the source directories,
      except those with "data" in the name.
 
+
+7. REDUCING CPU AND I/O USAGE
+-----------------------------
+
+By default Sqfstar will use all the CPUs available to compress and create the
+filesystem, and will read from the TAR archive and write to the output
+filesystem as fast as possible.  This maximises both CPU usage and I/O.
+
+Sometimes you don't want Sqfstar to use all CPU and I/O bandwidth.  For those
+cases Sqfstar supports two complementary options, -processors and -throttle.
+
+The -processors option can be used to reduce the number of parallel compression
+threads used by Sqfstar.  Reducing this to 1 will create the minimum number of
+threads, and this will reduce CPU usage, and that in turn will reduce I/O
+(because CPUs are normally the bottleneck).
+
+The -throttle option reduces the speed Sqfstar reads from the TAR archive.
+The value is a percentage (obviously from 1 - 100), and 50 will reduce the
+read rate by half (the read thread will spend half its time idling), and 75
+by three quarters.  Reducing the speed of I/O will also reduce the CPU
+usage as there is insufficient data rate to use all cores.
+
+Which option should you use?  Both will effectively reduce CPU and I/O in
+normal cases where intensive use is being made of both I/O and CPUs.  But
+in edge cases there can be an imbalance where reducing one has no effect, or
+it can't be reduced any further.  For instance when there is only 1 or 2 cores
+available, setting -processors to the minimum of 1 may still use too much
+CPU.  Additionally if your input source is slow Sqfstar may still max it out
+with -processors set to the minimum of 1.  In this case you can use -throttle
+in addition to -processors or on its own.
 
 8. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
 ----------------------------------------------------
