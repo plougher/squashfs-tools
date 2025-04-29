@@ -4366,7 +4366,10 @@ static void dir_scan7(struct dir_info *dir)
 				subpathname(dir_ent), (long long)
 				inode->buf.st_size, duplicate_file ?
 				"DUPLICATE" : "");
-		} else if(S_ISDIR(inode->buf.st_mode))
+		} else if(S_ISREG(inode->buf.st_mode) && inode->read)
+			INFO("file %s, uncompressed size %lld bytes LINK\n",
+				subpathname(dir_ent), (long long) inode->buf.st_size);
+		else if(S_ISDIR(inode->buf.st_mode))
 			dir_scan7(dir_ent->dir);
 	}
 }
@@ -4521,15 +4524,6 @@ static void dir_scan8(squashfs_inode *inode, struct dir_info *dir_info)
 			*inode = dir_ent->inode->inode;
 			squashfs_type = dir_ent->inode->type;
 			switch(squashfs_type) {
-				case SQUASHFS_FILE_TYPE:
-					if(!sorted)
-						INFO("file %s, uncompressed "
-							"size %lld bytes LINK"
-							"\n",
-							subpathname(dir_ent),
-							(long long)
-							buf->st_size);
-					break;
 				case SQUASHFS_SYMLINK_TYPE:
 					INFO("symbolic link %s inode 0x%llx "
 						"LINK\n", subpathname(dir_ent),
