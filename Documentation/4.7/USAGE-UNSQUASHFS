@@ -3,11 +3,12 @@
 This file describes how to use Unsquashfs, and it has the following sections:
 
 1. Introduction and basic usage
-2. Using "extract" files
-3. Using "exclude" files in addition to "extract" files
-4. Following symbolic links in extract files
-5. Dealing with errors
-6. Unsquashfs pseudo file output
+2. Getting help and displaying Unsquashfs options
+3. Using "extract" files
+4. Using "exclude" files in addition to "extract" files
+5. Following symbolic links in extract files
+6. Dealing with errors
+7. Unsquashfs pseudo file output
 
 1. INTRODUCTION AND BASIC USAGE
 -------------------------------
@@ -89,7 +90,121 @@ the -max-depth option, or -max for short
 
 % unsquashfs -max 2 image.sqfs
 
-2. USING "EXTRACT" FILES
+2. GETTING HELP AND DISPLAYING UNSQUASHFS OPTIONS
+-------------------------------------------------
+
+Unsquashfs has fairly detailed built-in help information describing the
+available options.  Running:
+
+% unsquashfs -help
+
+Will display the following summary of the helpo options and information
+available:
+
+*******************************************************************
+SYNTAX: unsquashfs [OPTIONS] FILESYSTEM [files to extract or exclude (with
+-excludes) or cat (with -cat )]
+
+Run
+  "unsquashfs -help-option <regex>" to get help on all options matching <regex>
+
+Or run
+  "unsquashfs -help-section <section-name>" to get help on these sections
+        SECTION NAME            SECTION
+        extraction              Filesystem extraction (filtering) options:
+        information             Filesystem information and listing options:
+        xattrs                  Filesystem extended attribute (xattrs) options:
+        runtime                 Unsquashfs runtime options:
+        help                    Help options:
+        misc                    Miscellaneous options:
+        environment             Environment:
+        exit                    Exit status:
+        extra                   See also (extra information elsewhere):
+        decompressors           Decompressors available:
+
+Or run
+  "unsquashfs -help-all" to get help on all the sections
+*******************************************************************
+
+For example to get a list of all the options that take a file argument, you
+could do
+
+******************************************************************
+% unsquashfs -help-option file
+  -extract-file <file>    list of directories or files to extract.  One per line
+  -exclude-file <file>    list of directories or files to exclude.  One per line
+  -pf <file>              output a pseudo file equivalent of the input Squashfs
+                          filesystem, use - for stdout
+  -e[f] <extract file>    synonym for -extract-file
+  -exc[f] <exclude file>  synonym for -exclude-file
+  -pseudo-file <file>     alternative name for -pf
+
+2.1 -help-section <section>
+---------------------------
+
+The -help-section option displays the section that matches the <section> name.
+If <section> does not exactly match a section name, it is treated as a regiular
+expression, and all section names that match are displayed.  Finally, if
+<section> is "list", a list of sections and their names is displayed.
+
+For example:
+
+******************************************************************
+% unsquashfs -help-section runtime
+Unsquashfs runtime options:
+  -v[ersion]              print version, licence and copyright information
+  -p[rocessors] <number>  use <number> processors.  By default will use the
+                          number of processors available
+  -mem <size>             use <size> physical memory for caches.  Use K, M or G
+                          to specify Kbytes, Mbytes or Gbytes
+                          respectively.  Default 512 Mbytes
+  -mem-percent <percent>  use <percent> physical memory for caches.
+  -q[uiet]                no verbose output
+  -n[o-progress]          do not display the progress bar
+  -percentage             display a percentage rather than the full progress
+                          bar.  Can be used with dialog --gauge etc.
+  -ig[nore-errors]        treat errors writing files to output as non-fatal
+  -st[rict-errors]        treat all errors as fatal
+  -no-exit[-code]         do not set exit code (to nonzero) on non-fatal errors
+******************************************************************
+
+Will display the runtime options section.
+
+Using regular expression matching section names can be abbreviated, for example
+"run" will also display the runtime options section.  But, it also means
+multiple sections can be displayed, for example:
+
+******************************************************************
+% unsquasfs -help-section "misc|decomp"
+Miscellaneous options:
+  -o[ffset] <bytes>       skip <bytes> at start of FILESYSTEM.  Optionally a
+                          suffix of K, M or G can be given to specify Kbytes,
+                          Mbytes or Gbytes respectively (default 0 bytes).
+ -fstime                 synonym for -mkfs-time
+ -e[f] <extract file>    synonym for -extract-file
+ -exc[f] <exclude file>  synonym for -exclude-file
+ -L                      synonym for -follow-symlinks
+ -pseudo-file <file>     alternative name for -pf
+
+Decompressors available:
+  gzip
+  lzo
+  lz4
+  xz
+  zstd
+******************************************************************
+
+2.2. PAGER environment variable
+-------------------------------
+
+By default the tools try pager, /usr/bin/pager, less, /usr/bin/less, more,
+/usr/bin/more, cat and /usr/bin/cat in that order.
+
+The pager used can be over-ridden using the PAGER environment variable.  If the
+filename given by PAGER doesn't contain slashes, the PATH environment variable
+will be used to locate it, otherwise it will be treated as a pathname.
+
+3. USING "EXTRACT" FILES
 ------------------------
 
 To extract a subset of the filesystem, the filenames or directory
@@ -123,7 +238,7 @@ Examples:
      except those with "data" in the name.
 
 
-3. USING "EXCLUDE" FILES IN ADDITION TO "EXTRACT" FILES
+4. USING "EXCLUDE" FILES IN ADDITION TO "EXTRACT" FILES
 -------------------------------------------------------
 
 Unsquashfs allows exclude files to be specified, either on their own, or in
@@ -251,7 +366,7 @@ Non-anchored excludes
      except those with "data" in the name.
 
 
-4. FOLLOWING SYMBOLIC LINKS IN EXTRACT FILES
+5. FOLLOWING SYMBOLIC LINKS IN EXTRACT FILES
 --------------------------------------------
 
 Unsquashfs walks the extract file paths as it recursively descends
@@ -314,7 +429,7 @@ Note: as a side effect of the canonicalisation, with the above options
 enabled extract filenames can also now have ".", ".." elements within
 the pathnames.
 
-5. DEALING WITH ERRORS
+6. DEALING WITH ERRORS
 ----------------------
 
 Unsquashfs splits errors into two categories: fatal errors and non-fatal
@@ -349,7 +464,7 @@ This makes Unsquashfs treat every error as fatal, and it will abort
 instantly.
 
 
-6. UNSQUASHFS PSEUDO FILE OUTPUT
+7. UNSQUASHFS PSEUDO FILE OUTPUT
 --------------------------------
 
 If the Pseudo file (-pf) option is given, Unsquashfs will output a Pseudo file
