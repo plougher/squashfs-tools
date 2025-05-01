@@ -3496,11 +3496,11 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 
 	alloc_inode_no(dir_ent->inode, root_inode_number);
 
-	/* Increase the progress bar by the number of inodes. This
-	 * means the progress bar will continue to show progress after
-	 * all the file data blocks have been processed
+	/* Increase the progress bar by 5%, and map the inode count to
+	 * that 5%.  This means the progress bar will continue to show
+	 * progress after all the file data blocks have been processed
 	 */
-	progress_bar_size(inode_no - inode_start_no);
+	progress_bar_metadata(inode_no - inode_start_no);
 
 	eval_actions(root_dir, dir_ent);
 
@@ -3531,7 +3531,7 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	sync_orderer_thread();
 
 	dir_scan8(&inode, root_dir);
-	inc_progress_bar();
+	inc_meta_progress_bar();
 	dir_ent->inode->inode = inode;
 	dir_ent->inode->type = SQUASHFS_DIR_TYPE;
 
@@ -4519,7 +4519,7 @@ static void dir_scan8(squashfs_inode *inode, struct dir_info *dir_info)
 			}
 			dir_ent->inode->inode = *inode;
 			dir_ent->inode->type = squashfs_type;
-			inc_progress_bar();
+			inc_meta_progress_bar();
 		 } else {
 			*inode = dir_ent->inode->inode;
 			squashfs_type = dir_ent->inode->type;
