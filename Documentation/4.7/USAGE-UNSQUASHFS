@@ -28,7 +28,7 @@ unsquashfs [OPTIONS] FILESYSTEM [files to extract or exclude ]
 Where FILESYSTEM is the name of the input Squashfs filesystem.  This can be a
 file or a block device.
 
-Most simple usage is to just give a filesystem on the command line
+The most simple usage is to just give a filesystem on the command line
 
 % unsquashfs image.sqfs
 
