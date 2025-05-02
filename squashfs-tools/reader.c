@@ -725,7 +725,7 @@ static void reader_scan(struct dir_info *dir)
 
 static void create_resources()
 {
-	int i, per_rthread = total_rblocks / reader_threads;
+	int i, per_rthread = total_rblocks / (reader_threads ? reader_threads : 1);
 	int total_fwthread = (processors + 1) * fragment_threads;
 	int per_wthread = (total_wblocks - total_fwthread) / (block_threads ? block_threads : 1);
 
