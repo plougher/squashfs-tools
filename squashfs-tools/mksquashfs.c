@@ -7041,7 +7041,7 @@ static int sqfstar(int argc, char *argv[])
 
 	write_filesystem_tables(&sBlk);
 
-	set_progressbar_state(FALSE);
+	progressbar_finish();
 
 	if(!block_device) {
 		res = ftruncate(fd, get_dpos());
@@ -8286,7 +8286,7 @@ int main(int argc, char *argv[])
 
 	write_filesystem_tables(&sBlk);
 
-	set_progressbar_state(FALSE);
+	progressbar_finish();
 
 	if(!block_device) {
 		res = ftruncate(fd, get_dpos());

@@ -34,4 +34,5 @@ extern void set_progressbar_state(int);
 extern void progressbar_percentage();
 extern void progress_bar_metadata(int inodes);
 extern void inc_meta_progress_bar();
+extern void progressbar_finish();
 #endif
