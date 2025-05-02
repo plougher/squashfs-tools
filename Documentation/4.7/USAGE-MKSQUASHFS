@@ -34,7 +34,7 @@ mksquashfs source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of exclude files]
 Where source1 source2 are the directories or files you want to be put into the
 filesystem, and FILESYSTEM is the name of the output filesystem.  This can be a
 file or a block device.  If the file already exists or it is a block device
-Mksquashfs will try append to it (see section 14) unless the -noappend option is
+Mksquashfs will try append to it (see section 15) unless the -noappend option is
 given.
 
 Most simple usage is a single source directory:
@@ -88,7 +88,7 @@ behaviour), you can specify the -no-strip option.
 % mksquashfs /home/phillip/test image.sqfs -no-strip
 
 This will generate a filesystem with home, home/phillip and home/phillip/test
-directories, see section 6 for more details.
+directories, see section 5 for more details.
 
 2. GETTING HELP AND DISPLAYING MKSQUASHFS OPTIONS
 -------------------------------------------------
@@ -333,9 +333,9 @@ processors).
 4. CHANGING GLOBAL COMPRESSION DEFAULTS USED IN MKSQUASHFS
 ----------------------------------------------------------
 
-There are a large number of options that can be used to control the
-compression in Mksquashfs.  By and large the defaults are the most
-optimum settings and should rarely need to be changed.
+There are a large number of options that can be used to control the compression
+in Mksquashfs.  By and large the defaults are the most optimum settings and
+should rarely need to be changed.
 
 Note, this does not apply to the block size, increasing the block size from the
 default of 128 Kbytes will increase compression (especially for the XZ and ZSTD
@@ -350,8 +350,9 @@ are supported, this can be either 4K, 8K, 16K, 32K, 64K, 128K, 256K, 512K or
 1M bytes.
 
 The -noI, -noD, -noF and -noX options can be used to force Mksquashfs to not
-compress inodes/directories, data, fragments and extended attributes
-respectively.  Giving all options generates an uncompressed filesystem.
+compress inodes (metadata), data, fragments and extended attributes
+respectively.  The -no-compression option generates an uncompressed filesystem,
+and it is equivalent to specifying all of the -noI, -noD, -noF and -noX options.
 
 The -no-fragments option tells Mksquashfs to not generate fragment blocks.  A
 fragment block consists of multiple small files (all smaller than the block

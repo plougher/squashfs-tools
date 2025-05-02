@@ -336,9 +336,10 @@ The -b option allows the block size to be selected, both "K" and "M" postfixes
 are supported, this can be either 4K, 8K, 16K, 32K, 64K, 128K, 256K, 512K or
 1M bytes.
 
-The -noI, -noD, -noF and -noX options can be used to force Sqfstar to not
-compress inodes/directories, data, fragments and extended attributes
-respectively.  Giving all options generates an uncompressed filesystem.
+The -noI, -noD, -noF and -noX options can be used to force Mksquashfs to not
+compress inodes (metadata), data, fragments and extended attributes
+respectively.  The -no-compression option generates an uncompressed filesystem,
+and it is equivalent to specifying all of the -noI, -noD, -noF and -noX options.
 
 The -no-fragments option tells Sqfstar to not generate fragment blocks.  A
 fragment block consists of multiple small files (all smaller than the block
@@ -608,7 +609,7 @@ sqfstar -xattrs-add "user.comment=0saGVsbG8Ad29ybGQ=" image.sqfs
 sqfstar -xattrs-add "user.comment=0x68656c6c6f00776f726c64" image.sqsh
 
 10. PSEUDO FILE SUPPORT
-----------------------
+-----------------------
 
 Sqfstar supports pseudo files, these allow files, directories, character
 devices, block devices, fifos, symbolic links, hard links and extended
@@ -627,7 +628,7 @@ on the command line, and -pf allows a pseudo file to be specified containing a
 list of pseduo definitions, one per line.
 
 10.1 CREATING A DYNAMIC FILE
----------------------------
+----------------------------
 
 Pseudo definition
 
@@ -684,7 +685,7 @@ Squashfs filesystem, the above allows input from these special files to be
 captured and placed in the Squashfs filesystem.
 
 10.2 CREATING A BLOCK OR CHARACTER DEVICE
-----------------------------------------
+-----------------------------------------
 
 Pseudo definition
 
@@ -708,7 +709,7 @@ a block device "/dev/blk_dev" with major:minor 200:200, both with root
 uid/gid and a mode of rw-rw-rw.
 
 10.3 CREATING A DIRECTORY
-------------------------
+-------------------------
 
 Pseudo definition
 
@@ -725,7 +726,7 @@ For example:
 creates a directory "/pseudo_dir" with root uid/gid and mode of rw-rw-rw.
 
 10.4 CREATING A SYMBOLIC LINK
-----------------------------
+-----------------------------
 
 Pseudo definition
 
@@ -742,7 +743,7 @@ symlink s 0 root root example
 Creates a symlink "symlink" to file "example" with root uid/gid.
 
 10.5 CREATING HARD LINKS (FILE REFERENCES)
------------------------------------------
+------------------------------------------
 
 The "f" Pseudo definition allows a regular file to be created from the output of
 a command (or shell).  Often this is used to reference a file outside the source
@@ -798,7 +799,7 @@ Will create a Hard Link named "link" to the character device called "char-dev"
 created by the previous Pseudo definition.
 
 10.6 CREATING SOCKETS/FIFOS
---------------------------
+---------------------------
 
 Pseudo definition
 
@@ -813,7 +814,7 @@ and to create a FIFO, 'f' should be used, i.e.
 filename i 0777 root root f
 
 10.7 ADDING EXTENDED ATTRIBUTES TO FILES
----------------------------------------
+----------------------------------------
 
 Pseudo definition
 
@@ -823,7 +824,7 @@ Will add the extended attribute <name> to <filename> with <val > contents.  See
 Section 7 for a description of the <val> formats supported.
 
 10.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
---------------------------------------------
+---------------------------------------------
 
 Pseudo definition
 
@@ -871,7 +872,7 @@ automatically create the leading directories:
 
 
 11. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
----------------------------------------------------
+----------------------------------------------------
 
 The Pseudo file definitions described above do not allow the timestamp
 of the created file to be specified, and the files will be timestamped
@@ -924,7 +925,7 @@ a <time> timestamp.  <time> can be either an unsigned decimal integer or a
 
 
 12. MISCELLANEOUS OPTIONS
-------------------------
+-------------------------
 
 The -info option displays the files/directories as they are compressed and
 added to the filesystem.  The original uncompressed size of each file is

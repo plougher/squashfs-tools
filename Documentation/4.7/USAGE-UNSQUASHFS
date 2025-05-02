@@ -98,7 +98,7 @@ available options.  Running:
 
 % unsquashfs -help
 
-Will display the following summary of the helpo options and information
+Will display the following summary of the help options and information
 available:
 
 *******************************************************************
@@ -156,8 +156,8 @@ Unsquashfs runtime options:
   -p[rocessors] <number>  use <number> processors.  By default will use the
                           number of processors available
   -mem <size>             use <size> physical memory for caches.  Use K, M or G
-                          to specify Kbytes, Mbytes or Gbytes
-                          respectively.  Default 512 Mbytes
+                          to specify Kbytes, Mbytes or Gbytes respectively.
+                          Default 512 Mbytes
   -mem-percent <percent>  use <percent> physical memory for caches.
   -q[uiet]                no verbose output
   -n[o-progress]          do not display the progress bar
