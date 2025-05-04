@@ -150,8 +150,8 @@ XATTR_DEFAULT = 1
 #
 # Uncomment next line to use a single reader thread
 #SINGLE_READER_THREAD = 1
-SMALL_READER_THREADS = 8
-BLOCK_READER_THREADS = 3
+SMALL_READER_THREADS = 4
+BLOCK_READER_THREADS = 4
 
 ###############################################
 #          Reproducible Image options         #
