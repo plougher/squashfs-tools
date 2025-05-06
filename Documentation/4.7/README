@@ -209,6 +209,34 @@ between different input files/media and performance.  If you think Mksquashfs
 is I/O bound then you should experiment with larger reader threads which may
 increase performance.
 
+2.1 SPECIALISED SMALL READER AND BLOCK READER THREADS
+------------------------------------------------------
+
+The amount of reader threads you need to maximise I/O when reading small files,
+is often different to the amount of reader threads you need when reading larger
+files.  For instance file input to Mksquashfs often consists of a large sequence
+of small files (less than a block size), and then one or more large files, and
+this sequence of small files and large files repeats.
+
+For example, imagine you had a sequence of 256 1Kbyte files, followed by eight
+large 4Mbyte files, and this sequence repeats.  To maximise I/O reading the
+small files you might want sixteen or more reader threads to read them in
+parallel, but, you don't really want or need to have sixteen reader threads to
+read the 4Mbyte files in parallel, and often doing so will thrash the
+filesystem/media resulting in lower performance.
+
+If you only had reader threads that read both small and large files, it would be
+difficult to choose an amount of reader threads that worked well for the above
+input.  But, with separate small and large file reader threads, it is easy to
+ask Mksquashfs to create sixteen small reader threads, and only one block
+reader thread.
+
+There is another advantage to splitting reader threads into those that read
+small files, and those that read large files, and that is in doing so, you read
+small files in parallel with large files, and that should optimise I/O.  Using
+the above example again, the block reader thread will work ahead and read the
+4Mbyte files in parallel with the small reader threads.
+
 [*] By this I obviously mean consumer-grade hardware.  There has been 16+ core
     Unix machines around since the early 1990s (such as the Sequent Symmetry),
     but these were multi-user systems typically supporting 50 or more users.
