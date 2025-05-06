@@ -56,7 +56,7 @@ static void print_xattr_name_value(struct xattr_list *xattr, int writer_fd)
 	}
 
 	if(!printable) {
-		unsigned char *new = MALLOC(count + 2), *dest;
+		unsigned char *new = MALLOC(count + 3), *dest;
 
 		memcpy(new, "0t", 2);
 		count += 2;
