@@ -48,7 +48,7 @@ static char *mksquashfs_options[]={
 	"-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
 	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "",
 	/* time options */
-	"-mkfs-time", "-all-time", "-root-time", "", "", "",
+	"-mkfs-time", "-inode-time", "-root-time", "", "", "",
 	/* permissions options */
 	"-all-root", "-root-mode", "-root-uid", "-root-gid", "-force-file-mode",
 	"-force-dir-mode", "-force-uid", "-force-gid", "-uid-gid-offset", "",
@@ -96,7 +96,7 @@ static char *sqfstar_options[]={
 	"-no-fragments", "-no-tailends", "-no-duplicates", "-no-hardlinks",
 	"-regex", "-ignore-zeros", "-ef", "", "", "",
 	/* time options */
-	"-mkfs-time", "-all-time", "-root-time", "", "", "",
+	"-mkfs-time", "-inode-time", "-root-time", "", "", "",
 	/* permissions options */
 	"-all-root", "-root-mode", "-root-uid", "-root-gid", "-force-file-mode",
 	"-force-dir-mode", "-force-uid", "-force-gid", "-uid-gid-offset",
@@ -246,7 +246,7 @@ static char *mksquashfs_text[]={
 		"the \"date\" command to parse. Any string value which the "
 		"date command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
-	"-all-time <time>\tset all file and directory timestamps to <time>. "
+	"-inode-time <time>\tset all file and directory timestamps to <time>. "
 		"<time> can be an unsigned 32-bit int indicating seconds since "
 		"the epoch (1970-01-01) or a string value which is passed to "
 		"the \"date\" command to parse. Any string value which the "
@@ -581,7 +581,7 @@ static char *sqfstar_text[]={
 		"the \"date\" command to parse. Any string value which the "
 		"date command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
-	"-all-time <time>\tset all file and directory timestamps to <time>. "
+	"-inode-time <time>\tset all file and directory timestamps to <time>. "
 		"<time> can be an unsigned 32-bit int indicating seconds since "
 		"the epoch (1970-01-01) or a string value which is passed to "
 		"the \"date\" command to parse. Any string value which the "
