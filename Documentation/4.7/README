@@ -13,7 +13,9 @@ improved for Mksquashfs/Unsquashfs/Sqfstar/Sqfscat.
 Please see the top-level INSTALL file for instructions on installing the tools,
 and the USAGE files in this directory for information on how to use the tools.
 
-This README describes the improvements, and has the following sections:
+The top-level CHANGES file describes all the improvements in this release.
+This README describes the most significant improvements, and has the following
+sections:
 
 1. Summary of changes
 2. Parallel file reading and options
