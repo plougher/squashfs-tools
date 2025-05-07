@@ -21,8 +21,10 @@
  * tar.c
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
@@ -83,8 +85,11 @@ static long long read_binary(char *src, int size)
 	unsigned char *s = (unsigned char *) src;
 	long long res = 0;
 
-	for(; size; s++, size --)
+	for(; size; s++, size --) {
+		if (res > LLONG_MAX >> 8)
+			return -1;
 		res = (res << 8) + *s;
+	}
 
 	return res;
 }
@@ -98,6 +103,20 @@ static long long read_number(char *s, int size)
 		return read_octal(s, size);
 }
 
+static long long read_pax_number(char *s, int *bytes)
+{
+	long long res = 0;
+
+	*bytes = 0;
+	for(; *s >= '0' && *s <= '9'; s++) {
+		int digit = *s - '0';
+		if(res > LLONG_MAX / 10 || res * 10 > LLONG_MAX - digit)
+			return -1;
+		res = (res * 10) + digit;
+		*bytes += 1;
+	}
+	return res;
+}
 
 static long long read_decimal(char *s, int maxsize, int *bytes)
 {
@@ -682,20 +701,20 @@ static char *skip_components(char *filename, int size, int *sizep)
 
 static int read_sparse_value(struct tar_file *file, char *value, int map_entries)
 {
-	int bytes, res, i = 0;
+	int bytes, i = 0;
 	long long number;
 
 	while(1) {
-		res = sscanf(value, "%lld %n", &number, &bytes);
-		if(res < 1 || value[bytes] != ',')
+		number = read_pax_number(value, &bytes);
+		if(number == -1 || value[bytes] != ',')
 			goto failed;
 
 		file->map[i].offset = number;
 
 		value += bytes + 1;
 
-		res = sscanf(value, "%lld %n", &number, &bytes);
-		if(res < 1 || (value[bytes] != ',' && value[bytes] != '\0'))
+		number = read_pax_number(value, &bytes);
+		if(number == -1 || (value[bytes] != ',' && value[bytes] != '\0'))
 			goto failed;
 
 		file->map[i++].number = number;
@@ -717,14 +736,19 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 {
 	long long size = (st_size + 511) & ~511;
 	char *data, *ptr, *end, *keyword, *value;
-	int res, length, bytes, vsize;
-	long long number;
+	int res, bytes, vsize;
+	long long length, number;
 	long long major = -1, minor = -1, realsize = -1;
 	int old_gnu_pax = FALSE, old_gnu_ver = -1;
 	int map_entries = 0, cur_entry = 0;
 	char *name = NULL;
 
-	data = MALLOC(size);
+	if(size > INT_MAX) {
+		ERROR("The pax header of tarfile is too large\n");
+		return FALSE;
+	}
+
+	data = MALLOC(size + 1);
 	res = read_bytes(STDIN_FILENO, data, size);
 	if(res < size) {
 		if(res != -1)
@@ -732,6 +756,7 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 		free(data);
 		return FALSE;
 	}
+	data[size] = '\0';
 
 	for(ptr = data, end = data + st_size; ptr < end;) {
 		/*
@@ -739,15 +764,18 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 		 * where <length> is the full length, including the
 		 * <length> field and newline
 		 */
-		res = sscanf(ptr, "%d%n", &length, &bytes);
-		if(res < 1 || length <= bytes || length > st_size)
+		length = read_pax_number(ptr, &bytes);
+		if(length == -1 || length <= bytes || length > st_size)
 			goto failed;
 
 		length -= bytes;
 		ptr += bytes;
 
-		/* Skip whitespace */
-		for(; length && *ptr == ' '; length--, ptr++);
+		/* Skip mandatory whitespace */
+		if(*ptr != ' ')
+			goto failed;
+		ptr++;
+		length --;
 
 		/* Store and parse keyword */
 		for(keyword = ptr; length && *ptr != '='; length--, ptr++);
@@ -777,28 +805,34 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 
 		/* Evaluate keyword */
 		if(strcmp(keyword, "size") == 0) {
-			res = sscanf(value, "%lld %n", &number, &bytes);
-			if(res < 1 || value[bytes] != '\0')
+			number = read_pax_number(value, &bytes);
+			if(number == -1 || value[bytes] != '\0')
 				goto failed;
 			file->buf.st_size = number;
 			file->have_size = TRUE;
 		} else if(strcmp(keyword, "uid") == 0) {
-			res = sscanf(value, "%lld %n", &number, &bytes);
-			if(res < 1 || value[bytes] != '\0')
+			number = read_pax_number(value, &bytes);
+			if(number == -1 || value[bytes] != '\0')
 				goto failed;
 			file->buf.st_uid = number;
+			if(file->buf.st_uid != number)
+				goto failed;
 			file->have_uid = TRUE;
 		} else if(strcmp(keyword, "gid") == 0) {
-			res = sscanf(value, "%lld %n", &number, &bytes);
-			if(res < 1 || value[bytes] != '\0')
+			number = read_pax_number(value, &bytes);
+			if(number == -1 || value[bytes] != '\0')
 				goto failed;
 			file->buf.st_gid = number;
+			if(file->buf.st_gid != number)
+				goto failed;
 			file->have_gid = TRUE;
 		} else if(strcmp(keyword, "mtime") == 0) {
-			res = sscanf(value, "%lld %n", &number, &bytes);
-			if(res < 1 || value[bytes] != '.')
+			number = read_pax_number(value, &bytes);
+			if(number == -1 || value[bytes] != '.')
 				goto failed;
 			file->buf.st_mtime = number;
+			if(file->buf.st_mtime != number)
+				goto failed;
 			file->have_mtime = TRUE;
 		} else if(strcmp(keyword, "uname") == 0)
 			file->uname = STRDUP(value);
@@ -809,46 +843,46 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 		else if(strcmp(keyword, "linkpath") == 0)
 			file->link = STRDUP(value);
 		else if(strcmp(keyword, "GNU.sparse.major") == 0) {
-			res = sscanf(value, "%lld %n", &number, &bytes);
-			if(res < 1 || value[bytes] != '\0')
+			number = read_pax_number(value, &bytes);
+			if(number == -1 || value[bytes] != '\0')
 				goto failed;
 			major = number;
 		} else if(strcmp(keyword, "GNU.sparse.minor") == 0) {
-			res = sscanf(value, "%lld %n", &number, &bytes);
-			if(res < 1 || value[bytes] != '\0')
+			number = read_pax_number(value, &bytes);
+			if(number == -1 || value[bytes] != '\0')
 				goto failed;
 			minor = number;
 		} else if(strcmp(keyword, "GNU.sparse.realsize") == 0) {
-			res = sscanf(value, "%lld %n", &number, &bytes);
-			if(res < 1 || value[bytes] != '\0')
+			number = read_pax_number(value, &bytes);
+			if(number == -1 || value[bytes] != '\0')
 				goto failed;
 			realsize = number;
 		} else if(strcmp(keyword, "GNU.sparse.name") == 0)
 			name = STRDUP(value);
 		else if(strcmp(keyword, "GNU.sparse.size") == 0) {
-			res = sscanf(value, "%lld %n", &number, &bytes);
-			if(res < 1 || value[bytes] != '\0')
+			number = read_pax_number(value, &bytes);
+			if(number == -1 || value[bytes] != '\0')
 				goto failed;
 			realsize = number;
 			old_gnu_pax = 1;
 		} else if(strcmp(keyword, "GNU.sparse.numblocks") == 0 && old_gnu_pax == 1) {
-			res = sscanf(value, "%lld %n", &number, &bytes);
-			if(res < 1 || value[bytes] != '\0')
+			number = read_pax_number(value, &bytes);
+			if(number == -1 || value[bytes] != '\0' || number > SIZE_MAX / sizeof(struct file_map))
 				goto failed;
 			file->map = MALLOC(number * sizeof(struct file_map));
 			map_entries = number;
 			cur_entry = 0;
 			old_gnu_pax = 2;
 		} else if(strcmp(keyword, "GNU.sparse.offset") == 0 && old_gnu_pax == 2 && old_gnu_ver != 1) {
-			res = sscanf(value, "%lld %n", &number, &bytes);
-			if(res < 1 || value[bytes] != '\0')
+			number = read_pax_number(value, &bytes);
+			if(number == -1 || value[bytes] != '\0')
 				goto failed;
 			if(cur_entry < map_entries)
 				file->map[cur_entry].offset = number;
 			old_gnu_ver = 0;
 		} else if(strcmp(keyword, "GNU.sparse.numbytes") == 0 && old_gnu_pax == 2 && old_gnu_ver != 1) {
 			res = sscanf(value, "%lld %n", &number, &bytes);
-			if(res < 1 || value[bytes] != '\0')
+			if(number == -1 || value[bytes] != '\0')
 				goto failed;
 			if(cur_entry < map_entries)
 				file->map[cur_entry++].number = number;
@@ -972,7 +1006,7 @@ static struct file_map *read_sparse_headers(struct tar_file *file, struct short_
 
 	/* If we've read two or less entries, then we expect the isextended
 	 * entry to be FALSE */
-	isextended = read_number(&short_header->isextended, 1);
+	isextended = short_header->isextended;
 	if(i < 3 && isextended) {
 		ERROR("Invalid sparse header\n");
 		goto failed;
@@ -1011,7 +1045,7 @@ static struct file_map *read_sparse_headers(struct tar_file *file, struct short_
 
 		/* If we've read less than 21 entries, then we expect the isextended
 		 * entry to be FALSE */
-		isextended = read_number(&long_header.isextended, 1);
+		isextended = long_header.isextended;
 		if(i < (map_entries + 21) && isextended) {
 			ERROR("Invalid sparse header\n");
 			goto failed;
@@ -1317,6 +1351,10 @@ again:
 			goto failed;
 		}
 		file->buf.st_mtime = res;
+		if(file->buf.st_mtime != res) {
+			ERROR("Failed to read file mtime from tar header\n");
+			goto failed;
+		}
 	}
 
 	/* Read mode and file type */
@@ -1400,20 +1438,29 @@ again:
 
 	/* Read major and minor for device files */
 	if(type == S_IFCHR || type == S_IFBLK) {
-		int major, minor;
+		long long res, rdev;
+		unsigned long long major, minor;
 
-		major = read_number(header.major, 8);
-		if(major == -1) {
+		res = read_number(header.major, 8);
+		if(res == -1) {
 			ERROR("Failed to read device major tar header\n");
 			goto failed;
 		}
+		major = res;
 
-		minor = read_number(header.minor, 8);
-		if(minor == -1) {
+		res = read_number(header.minor, 8);
+		if(res == -1) {
 			ERROR("Failed to read device minor from tar header\n");
 			goto failed;
 		}
-		file->buf.st_rdev = (major << 8) | (minor & 0xff) | ((minor & ~0xff) << 12);
+		minor = res;
+
+		rdev = (major << 8) | (minor & 0xff) | ((minor & ~0xff) << 12);
+		file->buf.st_rdev = rdev;
+		if(file->buf.st_rdev != rdev) {
+			ERROR("Failed to read device major/minor from tar header\n");
+			goto failed;
+		}
 	}
 
 	/* Handle symbolic links */
