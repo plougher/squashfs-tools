@@ -241,11 +241,12 @@ static char *mksquashfs_text[]={
 		"contents of the directory\n",
 	"\n", "Filesystem time options:", "\n",
 	"-mkfs-time <time>\tset filesystem creation timestamp to <time>. "
-		"<time> can be an unsigned 32-bit int indicating seconds since "
+		"<time> can be \"inode\", which means use the latest inode "
+		"timestamp, an unsigned 32-bit int indicating seconds since "
 		"the epoch (1970-01-01) or a string value which is passed to "
 		"the \"date\" command to parse. Any string value which the "
 		"date command recognises can be used such as \"now\", \"last "
-		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
+		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
 	"-inode-time <time>\tset all file and directory timestamps to <time>. "
 		"<time> can be an unsigned 32-bit int indicating seconds since "
 		"the epoch (1970-01-01) or a string value which is passed to "
@@ -577,7 +578,8 @@ static char *sqfstar_text[]={
 	"-ef <exclude-file>\tlist of exclude dirs/files.  One per line\n",
 	"\n", "Filesystem time options:", "\n",
 	"-mkfs-time <time>\tset filesystem creation timestamp to <time>. "
-		"<time> can be an unsigned 32-bit int indicating seconds since "
+		"<time> can be \"inode\", which means use the latest inode "
+		"timestamp, an unsigned 32-bit int indicating seconds since "
 		"the epoch (1970-01-01) or a string value which is passed to "
 		"the \"date\" command to parse. Any string value which the "
 		"date command recognises can be used such as \"now\", \"last "
