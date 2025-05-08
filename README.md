@@ -2,33 +2,23 @@
 
 This is the official Squashfs-tools repository.
 
-To build and install the tools please read the **INSTALL** file.
+To build and install the tools please read the **Documents/4.7/INSTALL** file.
 
-To find out how use the latest release please start by reading **README-4.6.1**.
+To find out how use the latest release please start by reading **Documents/4.7/README**.
 
 Thanks
 
 ## Contents of the repository
 
-The top-level directory contains the following information files:
+The top-level directory contains the following files and directories:
 
-* **README-4.6.1** - description of the changes in the latest Squashfs-tools release.
-* **USAGE-4.6** - general description of the four tools Mksquashfs, Unsquashfs, Sqfstar and Sqfscat.
-* **USAGE-MKSQUASHFS-4.6** - how to use the Mksquashfs program to create Squashfs images.
-* **USAGE-UNSQUASHFS-4.6** - how to use the Unsquashfs program to extract and list Squashfs images.
-* **USAGE-SQFSTAR-4.6** - how to use the Sqfstar program to convert tarfiles to Squashfs images.
-* **USAGE-SQFSCAT-4.6** - how to use the Sqfscat program to cat (print) one or more files to stdout from Squashfs images.
-* **INSTALL** - installation instructions.
+* **ACKNOWLEDGEMENTS** - This contains some historical acknowlegements, this file has mostly been replaced by the Github issues tracker.
 * **CHANGES** - a reverse chronological list of changes from the latest release to the earliest release.
-* **ACTION-README** - instructions on how to use the Actions feature of Mksquashfs.
-* **TECHNICAL-INFO** - some technical information on Reproducible builds, Extended Attributes and the filesystem layout.
+* **INSTALL** - where to get the INSTALL file for your version of squashfs-tools.
+* **README** - where to get the README for you version of squashfs-tools.
+* **USAGE** - where to get the USAGE files for your version of squashfs-tools.
 
 The top-level directory has the following directories:
 
+* **Documentation** - this directory contains documentation for various versions of squashfs-tools, and it split into subdirectories for versions 4.5, 4.5.1, 4.6, 4.6.1 and the latest version 4.7.  It also has a directory containing prebuilt manpages for latest version of squashfs-tools.
 * **squashfs-tools** - the source code directory, enter this directory and type `make` to build, or `make install` to install.  Edit the Makefile to change the compressors built and other defaults.
-* **manpages** - pre-generated manpages, these can be viewed using `man -l`.
-* **generate-manpages** - shell scripts etc used to generate the manpages.
-* **examples** - an old example file on how to use pseudo-file definitions.
-* **RELEASE-READMEs** - README files from previous releases.
-* **kernel** - directory containing Squashfs kernel source code.  This directory has been unused since mainlining Squashfs into the kernel in 2009.  The files are obsolete and not updated and are preserved for historical reasons.
-
