@@ -4,7 +4,7 @@
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs-tools.  Please read the CHANGES and README-4.6 files for the
+Welcome to Squashfs-tools.  Please read the CHANGES and README files for the
 added features and improvements.
 
 Squashfs is a highly compressed read-only filesystem for Linux.

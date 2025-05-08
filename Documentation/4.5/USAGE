@@ -4,10 +4,9 @@
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs-tools.  Please read the CHANGES and README-4.5 or
-README-4.5.1 files for the added features and improvements.  This guide has not
-been updated to include these new features, and so that should be read instead
-for these.
+Welcome to Squashfs-tools.  Please read the CHANGES and README files for the
+added features and improvements.  This guide has not been updated to include
+these new features, and so those should be read instead for these.
 
 Squashfs is a highly compressed read-only filesystem for Linux.
 It uses either gzip/xz/lzo/lz4/zstd compression to compress both files, inodes
