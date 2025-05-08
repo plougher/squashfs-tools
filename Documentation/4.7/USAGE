@@ -1,0 +1,94 @@
+	SQUASHFS - A squashed read-only filesystem for Linux
+
+	Copyright 2002-2025 Phillip Lougher <phillip@squashfs.org.uk>
+
+	Released under the GPL licence (version 2 or later).
+
+Welcome to Squashfs-tools.  Please read the CHANGES and README files for the
+added features and improvements.
+
+Squashfs is a highly compressed read-only filesystem for Linux.
+It uses either gzip/xz/lzo/lz4/zstd compression to compress both files, inodes
+and directories.  Inodes in the system are very small and all blocks are
+packed to minimise data overhead. Block sizes greater than 4K are supported
+up to a maximum of 1Mbytes (default block size 128K).
+
+Squashfs is intended for general read-only filesystem use, for archival
+use (i.e. in cases where a .tar.gz file may be used), and in constrained
+block device/memory systems (e.g. embedded systems) where low overhead is
+needed.
+
+1. SQUASHFS AND TOOLS OVERVIEW
+------------------------------
+
+1. Data, inodes and directories can be compressed.
+
+2. Squashfs stores full uid/gids (32 bits), and file creation time.
+
+3. In theory files up to 2^64 bytes are supported.  In theory filesystems can
+   be up to 2^64 bytes.
+
+4. Inode and directory data are highly compacted, and packed on byte
+   boundaries.  Each compressed inode is on average 8 bytes in length
+   (the exact length varies on file type, i.e. regular file, directory,
+   symbolic link, and block/char device inodes have different sizes).
+
+5. Squashfs can use block sizes up to 1Mbyte (the default size is 128K).
+   Using 128K blocks achieves greater compression ratios than the normal
+   4K block size.
+
+6. File duplicates are detected and removed.
+
+7. Filesystems can be compressed with gzip, xz (lzma2), lzo, lz4
+   or zstd compression algorithms.
+
+8. Pseudo files are supported by Mksquashfs/Sqfstar which allow files which
+   don't exist in the source filesystem to be created on-demand.
+
+9. Creation of Squashfs filesystems from TAR archives is supported using
+   Sqfstar or the -tar option of Mksquashfs.
+
+10. External attributes are supported, and there are a full range of options
+   to filter attributes on filesystem creation and extraction, and additional
+   external attributes can be created which don't exist in the source
+   filesystem.
+
+
+2. SQUASHFS TOOLS AVAILABLE
+---------------------------
+
+The Squashfs-tools consists of 4 programs.
+
+1. MKSQUASHFS
+
+This tool creates Squashfs filesystems from a set of source files and
+directories.  The file USAGE-MKSQUASHFS describes how to use this program.  The
+(once installed) mksquashfs manpage contains more brief information and a lot of
+usage examples.
+
+2. UNSQUASHFS
+
+This tool allows you to extract and list the contents of Squashfs
+filesystems without mounting.  The file USAGE-UNSQUASHFS describes how to use
+this program.  The (once installed) unsquashfs manpage contains more brief
+information and a lot of usage examples.
+
+3. SQFSTAR
+
+This tool creates Squashfs filesystems from a TAR archive.  The file
+USAGE-SQFSTAR describes how to use this program.  The (once installed) sqfstar
+manpage contains more brief information and a lot of usage examples.
+
+4. SQFSCAT
+
+This program allows you to "cat" files to STDOUT from a Squashfs filesystem.
+USAGE-SQFSCAT describes how to use this program.  The (once installed) sqfscat
+manpage contains more brief information and a lot of usage examples.
+
+3. SUMMARY OF USAGE FILES
+-------------------------
+
+For MKSQUASHFS see USAGE-MKSQUASHFS
+For UNSQUASHFS see USAGE-UNSQUASHFS
+For SQFSTAR see USAGE-SQFSTAR
+For SQFSCAT see USAGE-SQFSCAT
