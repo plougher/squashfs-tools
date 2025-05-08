@@ -37,7 +37,7 @@ cd $1/squashfs-tools/generate-manpages
 # Use the pre-built manpages if we've been told to use them ($3 = y), or
 # if help2man doesn't exist, or the manpage generation fails.
 
-source=../../manpages
+source=../../Documentation/manpages
 
 if [ $3 = "y" ]; then
 	print "$0: Using pre-built manpages"
