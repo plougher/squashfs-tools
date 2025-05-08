@@ -88,7 +88,7 @@ sqfscat manpage contains more brief information and a lot of usage examples.
 3. SUMMARY OF USAGE FILES
 -------------------------
 
-For MKSQUASHFS see Documentation/4.6/USAGE-MKSQUASHFS
-For UNSQUASHFS see Documentation/4.6/USAGE-UNSQUASHFS
-For SQFSTAR see Documentation/4.6/USAGE-SQFSTAR
-For SQFSCAT see Documentation/4.6/USAGE-SQFSCAT
+For MKSQUASHFS see USAGE-MKSQUASHFS
+For UNSQUASHFS see USAGE-UNSQUASHFS
+For SQFSTAR see USAGE-SQFSTAR
+For SQFSCAT see USAGE-SQFSCAT
