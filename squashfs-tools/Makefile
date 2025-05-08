@@ -610,4 +610,4 @@ install: mksquashfs unsquashfs
 	cp unsquashfs $(INSTALL_DIR)
 	ln -fs unsquashfs $(INSTALL_DIR)/sqfscat
 	ln -fs mksquashfs $(INSTALL_DIR)/sqfstar
-	../generate-manpages/install-manpages.sh $(shell pwd)/.. "$(INSTALL_MANPAGES_DIR)" "$(USE_PREBUILT_MANPAGES)"
+	generate-manpages/install-manpages.sh $(shell pwd)/.. "$(INSTALL_MANPAGES_DIR)" "$(USE_PREBUILT_MANPAGES)"
