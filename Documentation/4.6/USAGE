@@ -62,28 +62,28 @@ The Squashfs-tools consists of 4 programs.
 1. MKSQUASHFS
 
 This tool creates Squashfs filesystems from a set of source files and
-directories.  The file USAGE-MKSQUASHFS-4.6 describes how to use this
-program.  The (once installed) mksquashfs manpage contains more brief
-information and a lot of usage examples.
+directories.  The file USAGE-MKSQUASHFS describes how to use this program.  The
+(once installed) mksquashfs manpage contains more brief information and a lot of
+usage examples.
 
 2. UNSQUASHFS
 
 This tool allows you to extract and list the contents of Squashfs
-filesystems without mounting.  The file USAGE-UNSQUASHFS-4.6 describes
-how to use this program.  The (once installed) unsquashfs manpage contains
-more brief information and a lot of usage examples.
+filesystems without mounting.  The file USAGE-UNSQUASHFS describes how to use
+this program.  The (once installed) unsquashfs manpage contains more brief
+information and a lot of usage examples.
 
 3. SQFSTAR
 
 This tool creates Squashfs filesystems from a TAR archive.  The file
-USAGE-SQFSTAR-4.6 describes how to use this program.  The (once installed)
-sqfstar manpage contains more brief information and a lot of usage examples.
+USAGE-SQFSTAR describes how to use this program.  The (once installed) sqfstar
+manpage contains more brief information and a lot of usage examples.
 
 4. SQFSCAT
 
 This program allows you to "cat" files to STDOUT from a Squashfs filesystem.
-USAGE-SQFSCAT-4.6 describes how to use this program.  The (once installed)
-sqfscat manpage contains more brief information and a lot of usage examples.
+USAGE-SQFSCAT describes how to use this program.  The (once installed) sqfscat
+manpage contains more brief information and a lot of usage examples.
 
 3. SUMMARY OF USAGE FILES
 -------------------------
