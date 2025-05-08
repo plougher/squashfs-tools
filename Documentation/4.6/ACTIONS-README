@@ -1,0 +1,774 @@
+                           MKSQUASHFS ACTIONS
+                           ==================
+
+The new Mksquashfs Actions code allows an "action" to be executed
+on a file if one or more "tests" succeed.  If you're familiar
+with the "find" command, then an action is similar to "-print",
+and a test is similar to say "-name" or "-type".
+
+Actions add greater flexibility when building images from sources.
+They can be used to optimise compression, I/O performance, and they
+also allow more control on the exclusion of files from the source, and
+allow uid/gid and mode to be changed on a file basis.
+
+1. Specification
+================
+
+Actions can be specified on the command line with the -action option.
+They can also be put into a file, and added  with the -action-file
+option.  If put into a file, there is one action per line.  But, lines
+can be extended over many lines with continuation (\).
+
+If you want to get a log of what actions were performed, and the values
+returned by the tests for each file, you can use the -log-action option
+for the command line and -log-action-file for action files.
+
+Similarly there are -true-action (-true-action-file) and -false-action
+(-false-action-file) options which log if the tests evaluated to TRUE,
+and vice-versa:
+
+2. Syntax
+=========
+
+An action consists of two parts, separated by an "@".  The action to
+be executed is placed before the @, and one or more tests are
+placed afer the @.  If the action or tests has an argument, it is
+given in brackets.  Brackets are optional if no argument is needed,
+e.g.
+
+compressed()@name("filename")
+
+compressed@name("filename")
+
+do exactly the same thing.
+
+Arguments can be either numeric or string, depending on the
+action and test.
+
+String arguments can be enclosed in double-quotes ("), to prevent the
+parser from treating characters within it specially.  Within double-quotes
+only '\' is treatedly specially, and only at the end of a line.  Special
+characters can also be backslashed (\) to prevent interpretation by the
+parser, e.g. the following is equivalent:
+
+compressed@name(file\ name\ with\ \&&\ and\ spaces)
+
+compressed@name("file name with && and spaces")
+
+Numeric arguments are of the form [range]number[size], where
+[range] is either
+
+	'<' or '-', match on less than number
+	'>' or '+', match on greater than number
+	"" (nothing), match on exactly number
+
+[size] is either:
+	"" (nothing), number
+	'k' or 'K',  number * 2^10
+	'm' or 'M', number * 2^20
+	'g' or 'G', number * 2^30
+
+e.g. the following is equivalent:
+
+compressed@filesize(-81920)
+compressed@filesize(<80K)
+
+Both will match on files less than 80K in size.
+
+Characters which are treated specially by the parser are * ( ) && ||
+! , @.  Plus whitespace (spaces and tabs).
+
+Note: if the action is typed on the command line, then many special
+characters will be evaluated by the shell, and you should always
+check what is actually being passed to Mksquashfs.  If in doubt use
+-action-file where the additional complexities of shell evaluation is
+avoided.
+
+For example this action line will work in an action file
+
+compressed()@name("file name")
+
+But, if typed on the command line, it will need to be:
+
+% mksquashfs source image -action "compressed()@name(\"file name\")"
+
+
+3. Logical operators
+====================
+
+Tests can be combined with the logical operators && (and), || (or) and
+can be negated with the unary ! (not).  Expressions thus formed can also
+be bracketed with "(" and ")", to create nested expressions.
+
+Operators do not have precedence and are evaluated strictly left to
+right.  To enforce precedence use brackets, e.g.
+
+test1 && test2 || test3
+
+will be evaluated as
+
+(test1 && test2) || test3
+
+&& and || are short-circuit operators, where the rhs (right hand side)
+is only evaluated if the lhs (left hand side) has been insufficient
+to determine the value.  For example in the above, test3 will only be
+evaluated if (test1 && test2) evaluates to FALSE.
+
+4. Test operators
+=================
+
+The following test operators are supported:
+
+4.1 name(pattern)
+
+Returns TRUE if the filename (basename without leading directory components)
+matches pattern.  Pattern can have wildcards.
+
+4.2 pathname(pattern)
+---------------------
+
+Returns TRUE if the full pathname of the file matches pattern.
+Pattern can have wildcards.
+
+4.3 subpathname(pattern)
+------------------------
+
+Returns TRUE if the <n> directory components of pattern match the first <n>
+directory components of the pathname.
+
+For example, if pattern has one component:
+
+subpathname(dir1) will match "dir1/somefile", "dir1/dir2/somefile" etc.
+
+If pattern had two components:
+
+subpathname(dir1/dir2) will match ""dir1/dir2/somefile" etc.
+
+Pattern can have wildcards.
+
+4.4 filesize(value)
+-------------------
+
+Return TRUE if the size of the file is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.  Returns FALSE
+on anything not a file.
+
+4.5 dirsize(value)
+------------------
+
+Return TRUE if the size of the directory is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.  Returns FALSE
+on anything not a directory.
+
+4.6 size(value)
+---------------
+
+Return TRUE if the size of the file is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.  Works on any
+file type.
+
+4.7 inode(value)
+----------------
+
+Return TRUE if the inode number is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.
+
+4.8 nlink(value)
+----------------
+
+Return TRUE if the nlink count is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.
+
+4.9 fileblocks(value)
+---------------------
+
+Return TRUE if the size of the file in blocks (512 bytes) is less than, equal
+to, or larger than <value>, where <value> can be [<-]number, number, [>+]number.
+Returns FALSE on anything not a file.
+
+4.10 dirblocks(value)
+---------------------
+
+Return TRUE if the size of the directory in blocks (512 bytes) is less than,
+equal to, or larger than <value>, where <value> can be [<-]number, number,
+[>+]number.  Returns FALSE on anything not a directory.
+
+4.11 blocks(value)
+------------------
+
+Return TRUE if the size of the file in blocks (512 bytes) is less than, equal
+to, or larger than <value>, where <value> can be [<-]number, number, [>+]number.
+Works on any file type.
+
+4.12 uid(value)
+---------------
+Return TRUE if the uid value is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.
+
+4.13 gid(value)
+---------------
+
+Return TRUE if the gid value is less than, equal to, or larger than
+<value>, where <value> can be [<-]number, number, [>+]number.
+
+4.14 user(string)
+-----------------
+
+Return TRUE if the file owner matches <string>.
+
+4.15 group(string)
+------------------
+
+Return TRUE if the file group matches <string>.
+
+4.16 depth(value)
+-----------------
+
+Return TRUE if file is at depth less than, equal to, or larger than <value>,
+where <value> can be [<-]number, number, [>+]number.  Top level directory is
+depth 1.
+
+4.17 dircount(value)
+--------------------
+
+Return TRUE if the number of files in the directory is less than, equal to, or
+larger than <value>, where <value> can be [<-]number, number, [>+]number.
+Returns FALSE on anything not a directory.
+
+4.18 filesize_range(minimum, maximum)
+-------------------------------------
+
+Return TRUE if the size of the file is within the range [<minimum>, <maximum>]
+inclusive.  Returns FALSE on anything not a file.
+
+4.19 dirsize_range(minimum, maximum)
+------------------------------------
+
+Return TRUE if the size of the directory is within the rang
+[<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a directory.
+
+4.20 size_range(minimum, maximum)
+---------------------------------
+
+Return TRUE if the size of the file is within the range [<minimum>, <maximum>]
+inclusive.  Works on any file type.
+
+4.21 inode_range(minimum, maximum)
+----------------------------------
+
+Return TRUE if the inode number is within the range [<minimum>, <maximum>]
+inclusive.
+
+4.22 fileblocks_range(minimum, maximum)
+---------------------------------------
+
+Return TRUE if the size of the file in blocks (512 bytes) is within the range
+[<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a file.
+
+4.23 dirblocks_range(minimum, maximum)
+--------------------------------------
+
+Return TRUE if the size of the directory in blocks (512 bytes) is within the
+range [<minimum>, <maximum>] inclusive.  Returns FALSE on anything not a
+directory.
+
+4.24 blocks_range(minimum, maximum)
+-----------------------------------
+
+Return TRUE if the size of the file in blocks (512 bytes) is within the range
+[<minimum>, <maximum>] inclusive.  Works on any file type.
+
+4.25 uid_range(minimum, maximum)
+--------------------------------
+
+Return TRUE if the file uid is within the range [<minimum>, <maximum>]
+inclusive.
+
+4.26 gid_range(minimum, maximum)
+--------------------------------
+
+Return TRUE if the file gid is within the range [<minimum>, <maximum>]
+inclusive.
+
+4.27 depth_range(minimum, maximum)
+----------------------------------
+
+Return TRUE if file is at depth within the range [<minimum>, <maximum>].
+Top level directory is depth 1.
+
+4.28 dircount_range(minimum, maximum)
+-------------------------------------
+
+Returns TRUE is the number of files in the directory is within the range
+[<minimum>, <maximum>].  Returns FALSE on anything not a directory.
+
+4.29 type(c)
+------------
+
+Returns TRUE if the file matches type <c>.  <c> can be
+	f - regular file
+	d - directory
+	l - symbolic link
+	c - character device
+	b - block device
+	p - Named Pipe / FIFO
+	s - socket
+
+
+4.30 perm(mode)
+---------------
+
+Return TRUE if file permissions match <mode>.  <Mode> is the same as
+find's -perm option:
+
+	perm(mode) - TRUE if file's permission bits are exactly <mode>.
+		   <mode> can be octal or symbolic.
+
+	perm(-mode) - TRUE if all <mode> permission bits are set for this file.
+		    <mode> can be octal or symbolic.
+
+	perm(/mode) - TRUE if any <mode> permission bits are set for this file.
+		    <mode> can be octal or symbolic.
+
+	The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+
+		PERMS = [rwxXst]+ or [ugo]
+		and can be repeated separated with commas.
+
+Examples:
+
+perm(0644) match on a file with permissions exactly rw-r--r--.
+perm(u=rw,go=r) as above, but expressed symbolically.
+
+perm(/222) match on a file which is writable for any of user, group, other,
+perm(/u=w,g=w,o=w) as above but expressed symbolically,
+perm(/ugo=w) as above but specified more concisely.
+
+4.31 file(string)
+-----------------
+
+Execute "file command" on file, and return TRUE if the output
+matches the substring <string>, for example
+
+file(ASCII text) will return TRUE if the file is ASCII text.
+
+Note, this is an expensive test, and should only be run if the file
+has matched a number of other short-circuit tests.
+
+4.32 exists()
+-------------
+
+Test if the file pointed to by the symbolic link exists within the
+output filesystem, that is, whether the symbolic link has a relative
+path and the relative path can be resolved to an entry within the
+output filesystem.
+
+If the file isn't a symbolic link then the test always returns TRUE.
+
+4.33 absolute()
+---------------
+
+Test if the symbolic link is absolute, which by definition means
+it points outside of the output filesystem (unless it is to be mounted
+as root).  If the file isn't a symbolic link then the test always returns
+FALSE.
+
+4.34 readlink(expression)
+-------------------------
+
+Follow or dereference the symbolic link, and evaluate <expression> in
+the context of the file pointed to by the symbolic link.  All inode
+attributes, pathname, name and depth all refer to the dereferenced
+file.
+
+If the symbolic link cannot be dereferenced because it points to something
+not in the output filesystem (see exists() function above), then FALSE is
+returned.  If the file is not a symbolic link, the result is the same as
+<expression>, i.e. readlink(<expression>) == <expression>.
+
+Examples:
+
+readlink("name(*.[ch])") returns TRUE if the file referenced by the symbolic
+link matches *.[ch].
+
+Obviously, expressions created with && || etc. can be specified.
+
+readlink("depth(1) && filesize(<20K)") returns TRUE if the file referenced
+by the symbolic link is a regular file less than 20K in size and in the
+top level directory.
+
+Note: in the above tests the embedded expression to be evaluated is enclosed
+in double-quotes ("), this is to prevent the special characters being
+evaluated by the parser when parsed at the top-level.  Readlink causes
+re-evaluation of the embedded string.
+
+4.36 eval(path, expression)
+---------------------------
+
+Follow <path> (arg1), and evaluate the <expression> (arg2) in the
+context of the file discovered by following <path>.  All inode attributes,
+pathname, name and depth all refer to the file discovered by following
+<path>.
+
+This test operation allows you to add additional context to the evaluation
+of the file being scanned, such as "if the current file is XXX, test if the
+parent is YYY, and then do ...".  Often times you need or want to test
+a combination of file status.
+
+The <path> can be absolute (in which case it is from the root directory of the
+output filesystem), or it can be relative to the current file.  Obviously
+relative paths are more useful.
+
+If the file referenced by <path> does not exist in the output filesystem,
+then FALSE is returned.
+
+Examples of usage:
+
+1. If a directory matches pattern, check that it contains a ".git" directory.
+   This allows you to exclude git repositories, with a double check that it is
+   a git repository by checking for the .git subdirectory.
+
+   prune@name(*linux*) && type(d) && eval(.git, "type(d)")
+
+   This action will match on any directory named *linux*, and exclude it if
+   it contains a .git subdirectory.
+
+
+2. If a file matches a pattern, check that the parent directory matches
+   another pattern.  This allows you to delete files if and only if they
+   are in a particular directory.
+
+   prune@name(*.[ch]) && eval(.., "name(*linux*)")
+
+   This action will delete *.[ch] files, but, only if they are in a directory
+   matching *linux*.
+
+4.37 false
+----------
+
+Always returns FALSE.
+
+4.38 true
+---------
+
+Always returns TRUE.
+
+5. Actions
+==========
+
+An action is something which is done (or applied) to a file if the expression
+(made up of the above test operators) returns TRUE.
+
+Different actions are applied in separate phases or gated, rather than being
+applied all at once.  This is to ensure that you know what the overall
+state of the filesystem is when an action is applied.  Or to put it another
+way, if you have an action that depends on another action having already been
+processed (for the entire filesystem), you'll want to know that is how
+they will be applied.
+
+5.1 Actions applied at source filesystem reading (stage 1)
+----------------------------------------------------------
+
+5.1.1 exclude()
+---------------
+
+This action excludes all files and directories where the expression
+returns TRUE.
+
+Obviously this action allows much greater control over which files are
+excluded than the current name/pathname matching.
+
+Examples:
+
+1. Exclude any files/directories belonging to user phillip
+
+exclude@user(phillip)
+
+2. Exclude any regular files larger than 1M
+
+exclude@filesize(>1M)
+
+3. Only archive files/directories to a depth of 3
+
+exclude@depth(>3)
+
+4. As above but also exclude directories at the depth of 3
+   (which will be empty due to the above exclusion)
+
+exclude@depth(>3) || (depth(3) && type(d))
+
+Which obviously reduces to
+
+exclude@depth(3) && type(d)
+
+Note: the following tests do not work in stage 1, and so they can't be
+used in the exclude() action (see prune() action for explanation and
+alternative).
+
+	dircount()
+	dircount_range()
+	exists()
+	absolute()
+	readlink()
+	eval()
+
+5.2 Actions applied at directory scanning (stage 2)
+---------------------------------------------------
+
+5.2.1 fragment(name)
+--------------------
+
+Place all files matching the expression into a specialised fragment
+named <name>.  This can increase compression and/or improve
+I/O by placing similar fragments together.
+
+Examples:
+
+1. fragment(cfiles)@name(*.[ch])
+
+Place all C files into special fragments reserved for them.
+
+2. fragment(phillip)@user(phillip)
+
+Place all files owned by user Phillip into special fragments.
+
+5.2.2 fragments()
+-----------------
+
+Tell Mksquashfs to use fragment packing for the files matching the
+expression.
+
+For obvious reasons this should be used in conjunction with the global
+Mksquashfs option -no-fragments.  By default all files are packed into
+fragments if they're less than the block size.
+
+5.2.3 no-fragments()
+--------------------
+
+Tell Mksquashfs to not pack the files matching the expression into
+fragments.
+
+This can be used where you want to optimise I/O latency by not packing
+certain files into fragments.
+
+5.2.4 tailend()
+---------------
+
+Tell Mksquashfs to use tail-end packing for the files matching the
+expression.  Normally Mksquashfs does not pack tail-ends into fragments,
+as it may affect I/O performance because it may produce more disk head
+seeking.
+
+But tail-end packing can increase compression.  Additionally with modern
+solid state media, seeking is not such a major issue anymore.
+
+5.2.5. no-tailend()
+-------------------
+
+Tell Mksquashfs not to use tail-end packing for the files matching the
+exppression.
+
+For obvious reasons this should be used in conjuction with the global
+Mksquashfs option -always-use-fragments.  By default tail-ends are not
+packed into fragments.
+
+5.2.6 compressed()
+------------------
+
+Tell Mksquashfs to compress the fies matching the expression.
+
+For obvious reasons this should be used in conjunction with the global
+Mksquashfs options -noD and -noF.  File are by default compressed.
+
+5.2.7 uncompressed()
+--------------------
+
+Tell Mksquashfs to not compress the files matching the expression.
+
+This action obviously can be used to avoid compressing already compressed
+files (XZ, GZIP etc.).
+
+5.2.8 uid(uid or user)
+----------------------
+
+Set the ownership of the files matching the expression to uid (if arg1
+is a number) or user (if arg1 is a string).
+
+5.2.9 gid(gid or group)
+-----------------------
+
+Set the group of the files matching the expression to gid (if arg1
+is a number) or group (if arg1 is a string).
+
+5.2.10 guid(uid/user, gid/group)
+--------------------------------
+
+Set the uid/user and gid/group of the files matching the expression.
+
+5.2.11 chmod(mode)
+------------------
+
+Mode can be octal, or symbolic.
+
+If Mode is Octal, the permission bits are set to the octal value.
+
+If Mode is Symbolic, permissions can be Set, Added or Removed.
+
+The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+
+	PERMS = [rwxXst]+ or [ugo]
+	and the above sequence can be repeated separated with commas.
+
+A combination of the letters ugoa, specify which permission bits will
+be affected, u means user, g means group, o means other, and a
+means all or ugo.
+
+The next letter is +, - or =.  The letter + means add to the existing
+permission bits, - means remove the bits from the existing permission
+bits, and = means set the permission bits.
+
+The permission bits (PERMS) are a combination of [rwxXst] which
+sets/adds/removes those bits for the specified ugoa combination. They
+can alternatively be u, g or o, which takes the permission bits from the
+user, group or other of the file respectively.
+
+Examples:
+
+1. chmod(u+r)
+
+Adds the read permission to user.
+
+2. chmod(ug+rw)
+
+Adds the read and write permissions to both user and group.
+
+3. chmod(u=rw,go=r)
+
+Sets the permissions to rw-r--r--, which is eqivalent to
+
+4. chmod(644)
+
+5. cgmod(ug=o)
+
+Sets the user and group permissions to the permissions for other.
+
+5.3 Actions applied at second directory scan (stage 3)
+------------------------------------------------------
+
+5.3.1 prune()
+
+The prune() action deletes the file or directory (and everything
+underneath it) that matches the expression.  In that respect it is
+identical to the exclude() action, except that it takes place in the
+third stage, rather than the first stage.  There are a number of
+reasons to have a prune() action in addition to an exclude()
+action.
+
+1. In the first stage Mksquashfs is building an in-memory representation
+   of the filesystem to be compressed.  At that point some of the tests
+   don't work because they rely on an in-memory representation having been
+   built.
+
+   So the following tests don't work in stage 1, and so they can't be
+   used in the exclude() action.
+
+	dircount()
+	dircount_range()
+	exists()
+	absolute()
+	readlink()
+	eval()
+
+   If you want to use these tests, you have to use the prune() action.
+
+2. Many exclusion/pruning operations may only be easily applied after
+   transformation actions have been applied in stages 1 & 2.
+
+   For example, you may change the ownership and permissions of
+   matching files in stage 2, and then want to delete files based on
+   some criteria which relies on this having taken place.
+
+5.4. Actions applied at third directory scan (stage 4)
+------------------------------------------------------
+
+5.4.1 empty(reason)
+
+The empty() action deletes any directory which matches the expression,
+and which is also empty for <reason>.  <reason> is one of "excluded",
+"source" and "all".  If no argument is given, empty() defaults to "all".
+
+The reason "excluded" means the directory has become empty due to
+the exclude() or prune() actions or by exclusion on the command line.
+The reason "source" means the directory was empty in the source filesystem.
+The reason "all" means it is empty for either one of the above two reasons.
+
+This action is often useful when exclusion has produced an empty
+directory, or a hierarchy of directories which are empty but for a
+sub-directory which is empty but for a sub-directory until an
+empty directory is reached.
+
+Example
+
+1. Exclude any file which isn't a directory, and then clean-up
+   any directories which are empty as a result.
+
+	exclude@!type(d)
+	empty(excluded)@true
+
+This will produce an empty filesystem, unless there were some
+directories that were originally empty.
+
+Changing the empty action to
+
+	exclude@!type(d)
+	empty@true
+
+Will produce an empty filesystem.
+
+5.5 Actions performed at filesystem creation (stage 6)
+------------------------------------------------------
+
+5.5.1 xattrs-exclude(regex)
+
+The xattrs-exclude action excludes any xattr names matching <regex>.  <regex> is
+a POSIX regular expression, e.g. xattrs-exclude("^user.")  excludes xattrs from
+the user namespace.
+
+5.5.2 xattrs-include(regex)
+
+The xattrs-include action includes any xattr names matching <regex>.  <regex> is
+a POSIX regular expression, e.g. -xattrs-include("^user.") includes xattrs from
+the user namespace.
+
+5.5.3 xattrs-add(name=val)
+
+The xattrs-add action adds the xattr <name> with contents <val>.  If an user
+xattr it can be added to regular files and directories (see man 7 xattr).
+Otherwise it can be added to all files.
+
+The extended attribute value by default will be treated as binary (i.e. an
+uninterpreted byte sequence), but it can be prefixed with 0s, where it will be
+treated as base64 encoded, or prefixed with 0x, where it will be treated as
+hexidecimal.
+
+Obviously using base64 or hexidecimal allows values to be used that cannot be
+entered on the command line such as non-printable characters etc.  But it
+renders the string non-human readable.  To keep readability and to allow
+non-printable characters to be entered, the 0t prefix is supported.  This
+encoding is similar to binary encoding, except backslashes are specially
+treated, and a backslash followed by three octal digits can be used to encode
+any ASCII character, which obviously can be used to encode non-printable values.
+
+The following four actions are equivalent
+
+-xattrs-add("user.comment=hello world")
+-xattrs-add("user.comment=0saGVsbG8gd29ybGQ=")
+-xattrs-add("user.comment=0x68656c6c6f20776f726c64")
+-xattrs-add("user.comment=0thello world")
+
+Obviously in the above example there are no non-printable characters and so
+the 0t prefixed string is identical to the first line.  The following three
+actions are identical, but where the space has been replaced by the
+non-printable NUL '\0' (null character).
+
+-xattrs-add("user.comment=0thello\000world")
+-xattrs-add("user.comment=0saGVsbG8Ad29ybGQ=")
+-xattrs-add("user.comment=0x68656c6c6f00776f726c64")
