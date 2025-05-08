@@ -1,1 +1,74 @@
-../4.6/USAGE-SQFSCAT
+	SQFSCAT - A tool to output files to stdout
+
+Sqfscat allows you to "cat" files to STDOUT from a Squashfs filesystem
+without mounting it.  It can read all official Squashfs filesystems.
+
+The Sqfscat usage info is:
+
+SYNTAX: sqfscat [OPTIONS] FILESYSTEM [list of files to cat to stdout]
+	-v[ersion]		print version, licence and copyright information
+	-p[rocessors] <number>	use <number> processors.  By default will use
+				the number of processors available
+	-o[ffset] <bytes>	skip <bytes> at start of FILESYSTEM.
+				Optionally a suffix of K, M or G can be given to
+				specify Kbytes, Mbytes or Gbytes respectively
+				(default 0 bytes).
+	-ig[nore-errors]	treat errors writing files to stdout as
+				non-fatal
+	-st[rict-errors]	treat all errors as fatal
+	-no-exit[-code]		don't set exit code (to nonzero) on non-fatal
+				errors
+	-da[ta-queue] <size>	set data queue to <size> Mbytes.  Default 256
+				Mbytes
+	-fr[ag-queue] <size>	set fragment queue to <size> Mbytes.  Default
+				256 Mbytes
+	-no-wild[cards]		do not use wildcard matching in filenames
+	-r[egex]		treat filenames as POSIX regular expressions
+				rather than use the default shell wildcard
+				expansion (globbing)
+	-h[elp]			output options text to stdout
+
+
+The pathnames of the files to be output, like cat, can contain symbolic links,
+and "." and ".." elements.
+
+Sqfscat is a short-cut to using the equivalent Unsquashfs -cat option, i.e.
+the following will behave the same:
+
+% sqfscat image.sqfs file
+
+% unsquashfs -cat image.sqfs file
+
+If any of the files given on the command line does not result in a regular file,
+Sqfscat will throw an error, but will continue to output the remaining
+files on the command line.  This follows the behaviour of "cat", for example:
+
+phillip@phoenix:/tmp$ sqfscat image.sqfs dir Hello_World
+cat: /dir is a directory
+Hello World!
+
+phillip@phoenix:/tmp$ cat dir Hello_World
+cat: dir: Is a directory
+Hello World!
+
+Sqfscat supports wildcards and it will output the contents of any file that
+matches, e.g.
+
+% sqfscat image.sqfs "*.[ch]"
+
+Will output the contents of all the files in the root directory that match the
+wildcard *.[ch], to stdout, for example hello.c, hello.h, world.c, world.h.
+
+Note: when passing wildcarded names to Sqfscat, they should be quoted (as in
+the above example), to ensure that they are not processed by the shell.
+
+ERRORS and EXIT CODE
+--------------------
+
+If Sqfscat encounters fatal errors such as I/O error, filesystem corruption,
+it will abort immediately, and return an exit code of 1.
+
+If it skipped a file because it wasn't a regular file, or it wasn't in the
+filesystem, it will return an exit code of 2.
+
+Otherwise a success exit code of 0 will be returned.
