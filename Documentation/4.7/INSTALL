@@ -25,15 +25,23 @@ and Unsquashfs programs.  These can be compiled by typing "make".  This
 will also create symbolic links sqfstar and sqfscat.
 
 They can be installed, along with the symbolic links sqfstar and sqfscat,
-to /usr/local/bin by typing "sudo make install".
+to /usr/local/bin by typing "sudo make install".  The default install
+location can be changed by editing the Makefile (INSTALL_PREFIX and
+INSTALL_DIR).
 
-2.1 Compressors supported
+2.1 Compressors built by default
 
 By default the Makefile is configured to build Mksquashfs and Unsquashfs
-with GZIP suppport.  Read the Makefile in squashfs-tools for instructions on
-building LZO, LZ4, XZ and ZSTD compression support.
+with support for all the compressors, which is GZIP, LZO, LZ4, XZ and ZSTD.
+If you don't need some of these you can disable them by editing the Makefile.
 
-2.2 Extended attribute support (XATTRs)
+2.2 Default parallel reader threads
+
+The Makefile is configured to build Mksquashfs to use four small reader threads
+and four block reader threads by default.  The number of default reader threads
+can be changed by editing the Makefile.
+
+2.3 Extended attribute support (XATTRs)
 
 By default the Makefile is configured to build Mksquashfs and Unsquashfs
 with extended attribute support.  Read the Makefile in squashfs-tools for
