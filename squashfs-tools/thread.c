@@ -38,6 +38,13 @@ static int cur = 0;
 static int active_frags = 0;
 static int active_blocks = 0;
 static int waiting_threads = 0;
+static int overcommit;
+
+void set_overcommit(int percent)
+{
+	overcommit = (processors * percent) / 100;
+}
+
 
 int get_thread_id(int type)
 {
@@ -91,7 +98,7 @@ void wait_thread_idle(int tid, pthread_mutex_t *queue_mutex)
 		if(threads[tid].state == THREAD_IDLE)
 			active_frags ++;
 
-		while((active_frags + active_blocks) > (processors + processors / 4)) {
+		while((active_frags + active_blocks) > (processors + overcommit)) {
 			active_frags --;
 			threads[tid].state = THREAD_IDLE;
 			waiting_threads ++;

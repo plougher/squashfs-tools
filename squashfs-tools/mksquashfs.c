@@ -370,7 +370,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"xattrs-add", "default-mode", "default-uid", "default-gid",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
 	"hs", "info-file", "force-file-mode", "force-dir-mode",
-	"small-readers", "block-readers", "uid-gid-offset", NULL
+	"small-readers", "block-readers", "uid-gid-offset", "overcommit", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
@@ -379,7 +379,7 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
 	"default-mode", "default-uid", "default-gid", "mem-percent", "pd",
 	"pseudo-dir", "help-option", "ho", "help-section", "hs", "info-file",
-	"force-file-mode", "force-dir-mode", "uid-gid-offset", NULL
+	"force-file-mode", "force-dir-mode", "uid-gid-offset", "ovecommit", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
@@ -5210,7 +5210,7 @@ static void add_old_root_entry(char *name, squashfs_inode inode,
 
 
 static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
-	int freelst, char *destination_file, char *command)
+	int freelst, char *destination_file, char *command, int overcommit)
 {
 	int i, res;
 	sigset_t sigmask, old_mask;
@@ -5221,6 +5221,8 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 
 	if(processors == -1)
 		processors = get_nprocessors();
+
+	set_overcommit(overcommit);
 
 	/*
 	 * Never allow the total size of the queues to be larger than
@@ -6331,6 +6333,7 @@ static int sqfstar(int argc, char *argv[])
 	struct file_buffer **fragment = NULL;
 	int size;
 	void *comp_data;
+	int overcommit = OVERCOMMIT_DEFAULT;
 
 	/* Scan the command line for options that will immediately quit afterwards */
 	for(i = 1; i < argc; i++) {
@@ -6817,6 +6820,11 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-percentage") == 0) {
 			progressbar_percentage();
 			percentage = TRUE;
+		} else if(strcmp(argv[i], "-overcommit") == 0) {
+			if((++i == dest_index) ||
+					!parse_number(argv[i], &overcommit, 2) ||
+					(overcommit > 100))
+				sqfstar_option_help(argv[i - 1], "sqfstar: -overcommit missing or invalid percentage: it should be 0 - 100%%\n");
 		} else
 			sqfstar_invalid_option(argv[i]);
 	}
@@ -6970,7 +6978,7 @@ static int sqfstar(int argc, char *argv[])
 		add_exclude(argv[i]);
 
 	initialise_threads(readq, fragq, bwriteq, fwriteq, !appending,
-		destination_file, "Sqfstar");
+		destination_file, "Sqfstar", overcommit);
 
 	res = compressor_init(comp, &stream, SQUASHFS_METADATA_SIZE, 0);
 	if(res)
@@ -7093,6 +7101,7 @@ int main(int argc, char *argv[])
 	struct file_buffer **fragment = NULL;
 	char *command;
 	int single_threaded = FALSE;
+	int overcommit = OVERCOMMIT_DEFAULT;
 
 
 	check_sqfs_cmdline(argc, argv);
@@ -7810,7 +7819,12 @@ int main(int argc, char *argv[])
 			set_read_block_threads(res);
 		} else if(strcmp(argv[i], "-single-reader") == 0)
 			single_threaded = TRUE;
-		else
+		else if(strcmp(argv[i], "-overcommit") == 0) {
+			if((++i == argc) ||
+					!parse_number(argv[i], &overcommit, 2) ||
+					(overcommit > 100))
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -overcommit missing or invalid percentage: it should be 0 - 100%%\n");
+		} else
 			mksquashfs_invalid_option(argv[i]);
 	}
 
@@ -8077,7 +8091,7 @@ int main(int argc, char *argv[])
 		}
 
 		initialise_threads(readq, fragq, bwriteq, fwriteq, !appending,
-			destination_file, "Mksquashfs");
+			destination_file, "Mksquashfs", overcommit);
 
 		res = compressor_init(comp, &stream, SQUASHFS_METADATA_SIZE, 0);
 		if(res)
