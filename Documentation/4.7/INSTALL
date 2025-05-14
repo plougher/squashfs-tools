@@ -1,23 +1,6 @@
 			INSTALLING SQUASHFS-TOOLS
 
-1. Kernel support
------------------
-
-This release is for 2.6.29 and newer kernels.  Kernel patching is not necessary.
-
-Extended attribute support requires 2.6.35 or newer kernels.  But
-file systems with extended attributes can be mounted on 2.6.29 and
-newer kernels (the extended attributes will be ignored with a warning).
-
-LZO compression support requires 2.6.36 or newer kernels.
-
-XZ compression support requires 2.6.38 or newer kernels.
-
-LZ4 compression support requires 3.11 or newer kernels.
-
-ZSTD compression support requires 4.14 or newer kernels.
-
-2. Building squashfs tools
+1. Building squashfs tools
 --------------------------
 
 The squashfs-tools directory contains the source code for the Mksquashfs,
@@ -53,3 +36,20 @@ if not supported by your system, or completely disable them if it is not needed.
 By default the Makefile is configured to build Mksquashfs with reproducible
 output as default.  Read the Makefile in squashfs-tools for instructions
 on how to disable reproducible output as default if desired.
+
+2. Kernel support
+-----------------
+
+This release is for 2.6.29 and newer kernels.  Kernel patching is not necessary.
+
+Extended attribute support requires 2.6.35 or newer kernels.  But
+file systems with extended attributes can be mounted on 2.6.29 and
+newer kernels (the extended attributes will be ignored with a warning).
+
+LZO compression support requires 2.6.36 or newer kernels.
+
+XZ compression support requires 2.6.38 or newer kernels.
+
+LZ4 compression support requires 3.11 or newer kernels.
+
+ZSTD compression support requires 4.14 or newer kernels.
