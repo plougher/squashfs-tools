@@ -379,7 +379,7 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime", "all-time",
 	"root-gid", "xattrs-exclude", "xattrs-include", "xattrs-add", "p", "pf",
 	"default-mode", "default-uid", "default-gid", "mem-percent", "pd",
 	"pseudo-dir", "help-option", "ho", "help-section", "hs", "info-file",
-	"force-file-mode", "force-dir-mode", "uid-gid-offset", "ovecommit", NULL
+	"force-file-mode", "force-dir-mode", "uid-gid-offset", "overcommit", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
