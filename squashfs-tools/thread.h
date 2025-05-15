@@ -37,6 +37,8 @@ struct thread {
 #define THREAD_IDLE	4
 
 #define OVERCOMMIT_DEFAULT	0
+#define STR(S)			#S"%"
+#define OVERCOMMIT_STR(S)	STR(S)
 
 extern pthread_mutex_t thread_mutex;
 extern int get_thread_id(int type);
