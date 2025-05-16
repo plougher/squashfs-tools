@@ -66,7 +66,8 @@ static char *mksquashfs_options[]={
 	"-version", "-exit-on-error", "-quiet", "-info", "-info-file",
 	"-no-progress", "-progress", "-percentage", "-throttle", "-limit",
 	"-processors", "-mem", "-mem-percent", "-mem-default",
-	"-single-reader", "-small-readers", "-block-readers", "", "", "",
+	"-single-reader", "-small-readers", "-block-readers", "-overcommit", "",
+	"", "",
 	/* append options */
 	"-noappend", "-root-becomes", "-no-recovery", "-recovery-path",
 	"-recover", "", "", "",
@@ -110,7 +111,8 @@ static char *sqfstar_options[]={
 	/* runtime options */
 	"-version", "-force", "-exit-on-error", "-quiet", "-info", "-info-file",
 	"-no-progress", "-progress", "-percentage", "-throttle", "-limit",
-	"-processors", "-mem", "-mem-percent", "-mem-default", "", "", "",
+	"-processors", "-mem", "-mem-percent", "-mem-default", "-overcommit",
+	"", "", "",
 	/* expert options */
 	"-nopad", "-offset", "-o", "", "", "",
 	 /* help options */
@@ -141,7 +143,8 @@ static char *mksquashfs_args[]={
 	"", "", "<regex>", "<regex>", "<name=val>", "", "", "",
 	/* runtime options */
 	"", "", "", "", "<file>", "", "", "", "<percentage>", "<percentage>",
-	"<number>", "<size>", "<percent>", "", "", "<n>", "<n>", "", "", "",
+	"<number>", "<size>", "<percent>", "", "", "<n>", "<n>", "<percentage>",
+	"", "", "",
 	/* append options **/
 	"", "<name>", "", "<name>", "<name>", "", "", "",
 	/* actions options */
@@ -176,7 +179,8 @@ static char *sqfstar_args[]={
 	"", "", "<regex>", "<regex>", "<name=val>", "", "","",
 	/* runtime options */
 	"", "", "", "", "", "<file>", "", "", "", "<percentage>",
-	"<percentage>", "<number>", "<size>", "<percent>", "", "", "", "",
+	"<percentage>", "<number>", "<size>", "<percent>", "", "<percentage>",
+	"", "", "",
 	/* expert options */
 	"", "<offset>", "<offset>", "", "", "",
 	/* help options */
@@ -371,7 +375,7 @@ static char *mksquashfs_text[]={
 	       " than available processors.  Doing this may increase CPU "
 	       "utilisation.  Default is " OVERCOMMIT_STR(OVERCOMMIT_DEFAULT)
 		", because normally overcommiting reduces performance due to "
-		"trashing.\n"
+		"trashing.\n",
 	"\n", "Filesystem append options:", "\n",
 	"-noappend\t\tdo not append to existing filesystem\n",
 	"-root-becomes <name>\twhen appending source files/directories, make "
@@ -696,7 +700,7 @@ static char *sqfstar_text[]={
 	       " than available processors.  Doing this may increase CPU "
 	       "utilisation.  Default is " OVERCOMMIT_STR(OVERCOMMIT_DEFAULT)
 		", because normally overcommiting reduces performance due to "
-		"trashing.\n"
+		"trashing.\n",
 	"\n", "Expert options (these may make the filesystem unmountable):", "\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
 	"-offset <offset>\tskip <offset> bytes at the beginning of "
