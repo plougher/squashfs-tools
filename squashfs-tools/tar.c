@@ -881,7 +881,7 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 				file->map[cur_entry].offset = number;
 			old_gnu_ver = 0;
 		} else if(strcmp(keyword, "GNU.sparse.numbytes") == 0 && old_gnu_pax == 2 && old_gnu_ver != 1) {
-			res = sscanf(value, "%lld %n", &number, &bytes);
+			number = read_pax_number(value, &bytes);
 			if(number == -1 || value[bytes] != '\0')
 				goto failed;
 			if(cur_entry < map_entries)
