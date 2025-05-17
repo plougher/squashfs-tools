@@ -49,6 +49,8 @@ static int compression_level = GZIP_DEFAULT_COMPRESSION_LEVEL;
 /* default window size */
 static int window_size = GZIP_DEFAULT_WINDOW_SIZE;
 
+static int rsyncable = 0;
+
 /*
  * This function is called by the options parsing code in mksquashfs.c
  * to parse any -X compressor option.
@@ -132,6 +134,14 @@ static int gzip_options(char *argv[], int argc)
 		}
 	
 		return 1;
+	} else if(strcmp(argv[0], "-Xrsyncable") == 0) {
+#ifdef Z_RSYNCABLE
+		rsyncable = 1;
+		return 0;
+#else
+		fprintf(stderr, "gzip: -Xrsyncable requires rsyncable support\n");
+		goto failed;
+#endif
 	}
 
 	return -1;
@@ -180,13 +190,14 @@ static void *gzip_dump_options(int block_size, int *size)
 	 * If default compression options of:
 	 * compression-level: 8 and
 	 * window-size: 15 and
-	 * strategy_count == 0 then
+	 * strategy_count == 0 and
+	 * rsyncable == 0 then
 	 * don't store a compression options structure (this is compatible
 	 * with the legacy implementation of GZIP for Squashfs)
 	 */
 	if(compression_level == GZIP_DEFAULT_COMPRESSION_LEVEL &&
 				window_size == GZIP_DEFAULT_WINDOW_SIZE &&
-				strategy_count == 0)
+				strategy_count == 0 && rsyncable == 0)
 		return NULL;
 
 	for(i = 0; strategy[i].name; i++)
@@ -195,6 +206,7 @@ static void *gzip_dump_options(int block_size, int *size)
 	comp_opts.compression_level = compression_level;
 	comp_opts.window_size = window_size;
 	comp_opts.strategy = strategies;
+	comp_opts.rsyncable = rsyncable;
 
 	SQUASHFS_INSWAP_COMP_OPTS(&comp_opts);
 
@@ -267,6 +279,8 @@ static int gzip_extract_options(int block_size, void *buffer, int size)
 		} else
 			strategy[i].selected = 0;
 	}
+
+	rsyncable = comp_opts->rsyncable;
 	
 	return 0;
 
@@ -368,6 +382,11 @@ static int gzip_init(void **strm, int block_size, int datablock)
 	stream->stream.zalloc = Z_NULL;
 	stream->stream.zfree = Z_NULL;
 	stream->stream.opaque = 0;
+
+#ifdef Z_RSYNCABLE
+	if(rsyncable)
+		stream->strategy[0].strategy |= Z_RSYNCABLE;
+#endif
 
 	res = deflateInit2(&stream->stream, compression_level, Z_DEFLATED,
 		window_size, 8, stream->strategy[0].strategy);
@@ -473,6 +492,8 @@ static void gzip_usage(FILE *stream, int cols)
 		"strategyN in turn and choose the best compression.  Available "
 		"strategies: default, filtered, huffman_only, "
 		"run_length_encoded and fixed\n", cols);
+	autowrap_print(stream, "\t  -Xrsyncable\n", cols);
+	autowrap_print(stream, "\t\tCompress rsync-friendly\n", cols);
 }
 
 
@@ -480,7 +501,8 @@ static int option_args(char *option)
 {
 	if(strcmp(option, "-Xcompression-level") == 0 ||
 				strcmp(option, "-Xwindow-size") == 0 ||
-				strcmp(option, "-Xstrategy") == 0)
+				strcmp(option, "-Xstrategy") == 0 ||
+				strcmp(option, "-Xrsyncable") == 0)
 		return 1;
 
 	return 0;
