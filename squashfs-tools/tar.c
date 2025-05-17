@@ -768,6 +768,7 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 		if(length == -1 || length <= bytes || length > st_size)
 			goto failed;
 
+		st_size -= length;
 		length -= bytes;
 		ptr += bytes;
 
