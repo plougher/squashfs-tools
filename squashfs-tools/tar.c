@@ -735,7 +735,7 @@ failed:
 static int read_pax_header(struct tar_file *file, long long st_size)
 {
 	long long size = (st_size + 511) & ~511;
-	char *data, *ptr, *end, *keyword, *value;
+	char *data, *ptr, *keyword, *value;
 	int res, bytes, vsize;
 	long long length, number;
 	long long major = -1, minor = -1, realsize = -1;
@@ -758,7 +758,7 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 	}
 	data[size] = '\0';
 
-	for(ptr = data, end = data + st_size; ptr < end;) {
+	for(ptr = data; st_size;) {
 		/*
 		 * What follows should be <length> <keyword>=<value>,
 		 * where <length> is the full length, including the
