@@ -154,16 +154,6 @@ SMALL_READER_THREADS = 4
 BLOCK_READER_THREADS = 4
 
 ###############################################
-#          Reproducible Image options         #
-###############################################
-#
-# Select whether you wish reproducible builds by default.  If selected users
-# can disable reproducible builds using the not-reproducible option.
-# If not selected, users can enable reproducible builds using the
-# -reproducible option
-REPRODUCIBLE_DEFAULT = 1
-
-###############################################
 #               Manpage generation            #
 ###############################################
 #
@@ -238,7 +228,6 @@ COMP_DEFAULT ?= gzip
 XATTR_SUPPORT ?= 1
 XATTR_OS_SUPPORT ?= 1
 XATTR_DEFAULT ?= 1
-REPRODUCIBLE_DEFAULT ?= 1
 USE_PREBUILT_MANPAGES ?= n
 INSTALL_PREFIX ?= /usr/local
 INSTALL_DIR ?= $(INSTALL_PREFIX)/bin
@@ -263,7 +252,8 @@ INCLUDEDIR = -I.
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
 	caches-queues-lists.o reader.o tar.o date.o memory.o mksquashfs_help.o \
-	print_pager.o symbolic_mode.o thread.o nprocessors_compat.o limit.o
+	print_pager.o symbolic_mode.o thread.o nprocessors_compat.o limit.o \
+	virt_disk_pos.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o unsquash-123.o unsquash-34.o unsquash-1234.o unsquash-12.o \
@@ -381,10 +371,6 @@ else
 MKSQUASHFS_OBJS += xattr.o read_xattrs.o tar_xattr.o pseudo_xattr.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
 endif
-endif
-
-ifeq ($(REPRODUCIBLE_DEFAULT),1)
-CFLAGS += -DREPRODUCIBLE_DEFAULT
 endif
 
 ifeq ($(DONT_USE_ATOMIC_EXCHANGE_N),1)
@@ -565,6 +551,8 @@ print_pager.o: print_pager.c print_pager.h
 thread.o: thread.c thread.h
 
 nprocessors_compat.o: nprocessors_compat.c nprocessors_compat.h
+
+virt_disk_pos.o: virt_disk_pos.c virt_disk_pos.h
 
 unsquashfs_help.o: unsquashfs_help.c unsquashfs_help.h
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DDECOMPRESSORS="\"$(subst @(default),,$(subst $(space),\n,$(COMPRESSORS)))\"" $<

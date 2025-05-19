@@ -38,6 +38,13 @@ static int cur = 0;
 static int active_frags = 0;
 static int active_blocks = 0;
 static int waiting_threads = 0;
+static int overcommit;
+
+void set_overcommit(int percent)
+{
+	overcommit = (processors * percent) / 100;
+}
+
 
 int get_thread_id(int type)
 {
@@ -69,12 +76,12 @@ int get_thread_id(int type)
  */
 void set_thread_idle(int tid)
 {
-	if(threads[tid].type == THREAD_FRAGMENT) {
-		active_frags --;
+	if(threads[tid].type == THREAD_BLOCK) {
+		active_blocks --;
 		if(waiting_threads)
 			pthread_cond_signal(&idle);
 	} else
-		active_blocks --;
+		active_frags --;
 
 	threads[tid].state = THREAD_IDLE;
 }
@@ -85,19 +92,19 @@ void set_thread_idle(int tid)
  */
 void wait_thread_idle(int tid, pthread_mutex_t *queue_mutex)
 {
-	if(threads[tid].type == THREAD_FRAGMENT && threads[tid].state == THREAD_IDLE)
-		active_frags ++;
-	else if(threads[tid].type == THREAD_BLOCK) {
+	if(threads[tid].type == THREAD_BLOCK && threads[tid].state == THREAD_IDLE)
+		active_blocks ++;
+	else if(threads[tid].type == THREAD_FRAGMENT) {
 		if(threads[tid].state == THREAD_IDLE)
-			active_blocks ++;
+			active_frags ++;
 
-		while((active_frags + active_blocks) > (processors + processors / 4)) {
-			active_blocks --;
+		while((active_frags + active_blocks) > (processors + overcommit)) {
+			active_frags --;
 			threads[tid].state = THREAD_IDLE;
 			waiting_threads ++;
 			pthread_cond_wait(&idle, queue_mutex);
 			waiting_threads --;
-			active_blocks ++;
+			active_frags ++;
 		}
 	}
 

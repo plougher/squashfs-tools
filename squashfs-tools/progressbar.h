@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2012, 2013, 2014, 2022
+ * Copyright (c) 2012, 2013, 2014, 2022, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -32,4 +32,7 @@ extern void disable_progress_bar();
 extern void init_progress_bar();
 extern void set_progressbar_state(int);
 extern void progressbar_percentage();
+extern void progress_bar_metadata(int inodes);
+extern void inc_meta_progress_bar();
+extern void progressbar_finish();
 #endif

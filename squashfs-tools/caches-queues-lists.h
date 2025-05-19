@@ -88,6 +88,10 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int 
 
 #define QUEUE_CACHE	1
 #define GEN_CACHE	2
+#define WSYNC_CMD	3
+#define OSYNC_CMD	4
+#define RESET_CMD	5
+#define MAP_CMD		6
 
 /* struct describing a cache entry passed between threads */
 struct file_buffer {
@@ -133,7 +137,7 @@ struct file_buffer {
 	char noD;
 	char duplicate;
 	char next_state;
-	char cache_type;
+	char buffer_type;
 	char hashed;
 	char data[0] __attribute__((aligned));
 };
@@ -249,9 +253,9 @@ extern struct seq_queue *seq_queue_init();
 extern void dump_seq_queue(struct seq_queue *, int);
 extern void seq_queue_flush(struct seq_queue *);
 extern void main_queue_put(struct seq_queue *, struct file_buffer *);
-extern void fragment_queue_put(struct seq_queue *, struct file_buffer *);
+extern void order_queue_put(struct seq_queue *, struct file_buffer *);
 extern struct file_buffer *main_queue_get(struct seq_queue *);
-extern struct file_buffer *fragment_queue_get(struct seq_queue *);
+extern struct file_buffer *order_queue_get(struct seq_queue *);
 extern struct read_queue *read_queue_init();
 extern void read_queue_set(struct read_queue *, int, int);
 extern void read_queue_put(struct read_queue *, int, struct file_buffer *);
@@ -285,9 +289,9 @@ static inline void gen_cache_block_put(struct file_buffer *entry)
 {
 	if(entry == NULL)
 		return;
-	else if(entry->cache_type == GEN_CACHE)
+	else if(entry->buffer_type == GEN_CACHE)
 		cache_block_put(entry);
-	else if(entry->cache_type == QUEUE_CACHE)
+	else if(entry->buffer_type == QUEUE_CACHE)
 		queue_cache_block_put(entry);
 	else
 		BAD_ERROR("Bug in gen_cache_block_put\n");
@@ -297,13 +301,13 @@ static inline void gen_cache_block_put(struct file_buffer *entry)
 static inline int cache_maxsize(struct file_buffer *entry)
 {
 	if(entry == NULL)
-		BAD_ERROR("Bug in cache_maxsize\n");
-	else if(entry->cache_type == GEN_CACHE)
+		BAD_ERROR("Bug in cache_maxsize, entry == NULL\n");
+	else if(entry->buffer_type == GEN_CACHE)
 		return entry->cache->max_buffers;
-	else if(entry->cache_type == QUEUE_CACHE)
+	else if(entry->buffer_type == QUEUE_CACHE)
 		return entry->queue_cache->wthread[entry->thread].max_buffers;
 	else
-		BAD_ERROR("Bug in block handling\n");
+		BAD_ERROR("Bug in cache max_size, unexepcted buffer_type\n");
 }
 
 

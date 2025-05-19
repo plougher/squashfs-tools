@@ -325,33 +325,19 @@ void sort_files_and_write(struct dir_info *dir)
 {
 	int i;
 	struct priority_entry *entry;
-	squashfs_inode inode;
 	int duplicate_file;
-	struct file_info *file;
 
 	for(i = 65535; i >= 0; i--)
 		for(entry = priority_list[i]; entry; entry = entry->next) {
 			TRACE("%d: %s\n", i - 32768, pathname(entry->dir));
-			if(entry->dir->inode->inode == SQUASHFS_INVALID_BLK) {
-				file = write_file(entry->dir, &duplicate_file);
-				inode = create_inode(NULL, entry->dir,
-					SQUASHFS_FILE_TYPE, file->file_size,
-					file->start, file->blocks,
-					file->block_list,
-					file->fragment, NULL,
-					file->sparse);
-				if(duplicate_checking == FALSE) {
-					free_fragment(file->fragment);
-					free(file->block_list);
-				}
+			if(entry->dir->inode->read == FALSE) {
+				entry->dir->inode->file = write_file(entry->dir, &duplicate_file);
+				entry->dir->inode->read = TRUE;
 				INFO("file %s, uncompressed size %lld bytes %s"
 					"\n", pathname(entry->dir),
 					(long long)
 					entry->dir->inode->buf.st_size,
 					duplicate_file ? "DUPLICATE" : "");
-				entry->dir->inode->inode = inode;
-				entry->dir->inode->type = SQUASHFS_FILE_TYPE;
-				hardlnk_count --;
 			} else
 				INFO("file %s, uncompressed size %lld bytes "
 					"LINK\n", pathname(entry->dir),

@@ -55,6 +55,7 @@ static int need_nl = FALSE;
 static int rotate = 0;
 static long long cur_uncompressed = 0, estimated_uncompressed = 0;
 static int columns;
+static double inc, base;
 
 static pthread_t progress_thread;
 static pthread_mutex_t progress_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -99,6 +100,28 @@ void progress_bar_size(int count)
 	pthread_mutex_lock(&size_mutex);
 	estimated_uncompressed += count;
 	pthread_cleanup_pop(1);
+}
+
+
+void progress_bar_metadata(int inodes)
+{
+	int extra = estimated_uncompressed / 19;
+
+	inc = (double) extra / inodes;
+	base = estimated_uncompressed;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &size_mutex);
+	pthread_mutex_lock(&size_mutex);
+	estimated_uncompressed += extra;
+	pthread_cleanup_pop(1);
+}
+
+
+void inc_meta_progress_bar()
+{
+	base += inc;
+	if(cur_uncompressed != ((long long) base))
+		cur_uncompressed = (long long) base;
 }
 
 
@@ -217,6 +240,19 @@ void set_progressbar_state(int state)
 		}
 		display_progress_bar = state;
 	}
+	pthread_cleanup_pop(1);
+}
+
+
+void progressbar_finish()
+{
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &progress_mutex);
+	pthread_mutex_lock(&progress_mutex);
+	if(display_progress_bar && !temp_disabled) {
+		progress_bar(estimated_uncompressed, estimated_uncompressed, columns);
+		printf("\n");
+	}
+	display_progress_bar = FALSE;
 	pthread_cleanup_pop(1);
 }
 

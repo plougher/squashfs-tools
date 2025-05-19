@@ -32,6 +32,7 @@
 #include "print_pager.h"
 #include "compressor.h"
 #include "alloc.h"
+#include "thread.h"
 
 #define MKSQUASHFS_SYNTAX "SYNTAX: %s source1 source2 ...  FILESYSTEM " \
 	"[OPTIONS] [-e list of exclude dirs/files]\n\n"
@@ -44,9 +45,9 @@ static char *mksquashfs_options[]={
 	"-no-compression", "", "", "",
 	/* build options */
 	"-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
-	"-reproducible", "-not-reproducible", "-no-exports", "-exports",
-	"-no-sparse", "-no-tailends", "-tailends", "-no-fragments",
-	"-no-duplicates", "-no-hardlinks", "-keep-as-directory", "", "", "",
+	"-no-exports", "-exports", "-no-sparse", "-no-tailends", "-tailends",
+	"-no-fragments", "-no-duplicates", "-no-hardlinks",
+	"-keep-as-directory", "", "", "",
 	/* time options */
 	"-mkfs-time", "-inode-time", "-root-time", "", "", "",
 	/* permissions options */
@@ -65,7 +66,8 @@ static char *mksquashfs_options[]={
 	"-version", "-exit-on-error", "-quiet", "-info", "-info-file",
 	"-no-progress", "-progress", "-percentage", "-throttle", "-limit",
 	"-processors", "-mem", "-mem-percent", "-mem-default",
-	"-single-reader", "-small-readers", "-block-readers", "", "", "",
+	"-single-reader", "-small-readers", "-block-readers", "-overcommit", "",
+	"", "",
 	/* append options */
 	"-noappend", "-root-becomes", "-no-recovery", "-recovery-path",
 	"-recover", "", "", "",
@@ -92,9 +94,9 @@ static char *sqfstar_options[]={
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
 	"-no-compression", "", "", "",
 	/* build options */
-	"-reproducible", "-not-reproducible", "-exports", "-no-sparse",
-	"-no-fragments", "-no-tailends", "-no-duplicates", "-no-hardlinks",
-	"-regex", "-ignore-zeros", "-ef", "", "", "",
+	"-exports", "-no-sparse", "-no-fragments", "-no-tailends",
+	"-no-duplicates", "-no-hardlinks", "-regex", "-ignore-zeros", "-ef", "",
+	"", "",
 	/* time options */
 	"-mkfs-time", "-inode-time", "-root-time", "", "", "",
 	/* permissions options */
@@ -109,7 +111,8 @@ static char *sqfstar_options[]={
 	/* runtime options */
 	"-version", "-force", "-exit-on-error", "-quiet", "-info", "-info-file",
 	"-no-progress", "-progress", "-percentage", "-throttle", "-limit",
-	"-processors", "-mem", "-mem-percent", "-mem-default", "", "", "",
+	"-processors", "-mem", "-mem-percent", "-mem-default", "-overcommit",
+	"", "", "",
 	/* expert options */
 	"-nopad", "-offset", "-o", "", "", "",
 	 /* help options */
@@ -125,8 +128,7 @@ static char *mksquashfs_args[]={
 	/* compression options */
 	"", "", "<block-size>", "<comp>", "", "", "", "", "", "", "", "", "",
 	/* build options */
-	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "","",
-	"",
+	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "","", "",
 	/* time options */
 	"<time>", "<time>", "<time>", "", "", "",
 	/* permissions options */
@@ -141,7 +143,8 @@ static char *mksquashfs_args[]={
 	"", "", "<regex>", "<regex>", "<name=val>", "", "", "",
 	/* runtime options */
 	"", "", "", "", "<file>", "", "", "", "<percentage>", "<percentage>",
-	"<number>", "<size>", "<percent>", "", "", "<n>", "<n>", "", "", "",
+	"<number>", "<size>", "<percent>", "", "", "<n>", "<n>", "<percentage>",
+	"", "", "",
 	/* append options **/
 	"", "<name>", "", "<name>", "<name>", "", "", "",
 	/* actions options */
@@ -163,7 +166,7 @@ static char *sqfstar_args[]={
 	/* compression */
 	"", "", "<block-size>", "<comp>",  "", "", "", "", "", "", "", "", "",
 	/* build options */
-	"", "", "", "", "", "", "", "", "", "", "<exclude-file>", "", "", "",
+	"", "", "", "", "", "", "", "", "<exclude-file>", "", "", "",
 	/* time options */
 	"<time>", "<time>", "<time>", "", "", "",
 	/* permissions options */
@@ -176,7 +179,8 @@ static char *sqfstar_args[]={
 	"", "", "<regex>", "<regex>", "<name=val>", "", "","",
 	/* runtime options */
 	"", "", "", "", "", "<file>", "", "", "", "<percentage>",
-	"<percentage>", "<number>", "<size>", "<percent>", "", "", "", "",
+	"<percentage>", "<number>", "<size>", "<percent>", "", "<percentage>",
+	"", "", "",
 	/* expert options */
 	"", "<offset>", "<offset>", "", "", "",
 	/* help options */
@@ -224,9 +228,6 @@ static char *mksquashfs_text[]={
 		"(stdin)\n",
 	"-cpiostyle0\t\tlike -cpiostyle, but filenames are null terminated.  "
 		"Can be used with find -print0 action\n",
-	"-reproducible\t\tbuild filesystems that are reproducible" REP_STR "\n",
-	"-not-reproducible\tbuild filesystems that are not reproducible"
-		NOREP_STR "\n",
 	"-no-exports\t\tdo not make filesystem exportable via NFS (-tar "
 		"default)\n",
 	"-exports\t\tmake filesystem exportable via NFS (default)\n",
@@ -372,6 +373,11 @@ static char *mksquashfs_text[]={
 		"less than a block size) in parallel from the source(s)" SMALL_STR "\n",
 	"-block-readers <n>\tuse <n> threads to read block files (files "
 		"a block or larger in size) in parallel from the source(s)" BLOCK_STR" \n",
+	"-overcommit <percent>\tAllow <percent> more threads to run in parallel"
+	       " than available processors.  Doing this may increase CPU "
+	       "utilisation.  Default is " OVERCOMMIT_STR(OVERCOMMIT_DEFAULT)
+		", because normally overcommiting reduces performance due to "
+		"trashing.\n",
 	"\n", "Filesystem append options:", "\n",
 	"-noappend\t\tdo not append to existing filesystem\n",
 	"-root-becomes <name>\twhen appending source files/directories, make "
@@ -556,10 +562,6 @@ static char *sqfstar_text[]={
 	"-no-compression\t\tdo not compress any of the data or metadata.  This "
 		"is equivalent to specifying -noI -noD -noF and -noX\n",
 	"\n", "Filesystem build options:", "\n",
-	"-reproducible\t\tbuild filesystems that are reproducible" REP_STR
-		"\n",
-	"-not-reproducible\tbuild filesystems that are not reproducible"
-		NOREP_STR "\n",
 	"-exports\t\tmake the filesystem exportable via NFS\n",
 	"-no-sparse\t\tdo not detect sparse files\n",
 	"-no-fragments\t\tdo not use fragments\n",
@@ -698,6 +700,11 @@ static char *sqfstar_text[]={
 	"-mem-percent <percent>\tuse <percent> physical memory for caches.  "
 		"Default 25%\n",
 	"-mem-default\t\tprint default memory usage in Mbytes\n",
+	"-overcommit <percent>\tAllow <percent> more threads to run in parallel"
+	       " than available processors.  Doing this may increase CPU "
+	       "utilisation.  Default is " OVERCOMMIT_STR(OVERCOMMIT_DEFAULT)
+		", because normally overcommiting reduces performance due to "
+		"trashing.\n",
 	"\n", "Expert options (these may make the filesystem unmountable):", "\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
 	"-offset <offset>\tskip <offset> bytes at the beginning of "

@@ -36,9 +36,14 @@ struct thread {
 #define THREAD_ACTIVE	3
 #define THREAD_IDLE	4
 
+#define OVERCOMMIT_DEFAULT	0
+#define STR(S)			#S"%"
+#define OVERCOMMIT_STR(S)	STR(S)
+
 extern pthread_mutex_t thread_mutex;
 extern int get_thread_id(int type);
 extern void set_thread_idle(int tid);
 extern void wait_thread_idle(int tid, pthread_mutex_t *mutex);
 extern void dump_threads();
+extern void set_overcommit(int percent);
 #endif
