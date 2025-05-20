@@ -31,12 +31,6 @@ with extended attribute support.  Read the Makefile in squashfs-tools for
 instructions on how to disable operating system support for extended attributes
 if not supported by your system, or completely disable them if it is not needed.
 
-2.3 Reproducible builds
-
-By default the Makefile is configured to build Mksquashfs with reproducible
-output as default.  Read the Makefile in squashfs-tools for instructions
-on how to disable reproducible output as default if desired.
-
 2. Kernel support
 -----------------
 
