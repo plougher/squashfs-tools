@@ -256,7 +256,8 @@ static char *mksquashfs_text[]={
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\".  This option "
 		"sets and overrides the -root-time option\n",
 	"-root-time <time>\tset root directory time to <time>. <time> can be "
-		"an unsigned 32-bit int indicating seconds since the epoch "
+		"\"inode\", which means use the latest inode timestamp, an "
+		"unsigned 32-bit int indicating seconds since the epoch "
 		"(1970-01-01) or a string value which is passed to the "
 		"\"date\" command to parse. Any string value which the date "
 		"command recognises can be used such as \"now\", \"last "
@@ -594,12 +595,13 @@ static char *sqfstar_text[]={
 		"date command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\".  This option "
 		"sets and overrides the -root-time option\n",
-	"-root-time <time>\tset root directory time to " "<time>. <time> can "
-		"be an unsigned 32-bit int indicating seconds since the epoch "
+	"-root-time <time>\tset root directory time to <time>. <time> can be "
+		"\"inode\", which means use the latest inode timestamp, an "
+		"unsigned 32-bit int indicating seconds since the epoch "
 		"(1970-01-01) or a string value which is passed to the "
 		"\"date\" command to parse. Any string value which the date "
 		"command recognises can be used such as \"now\", \"last "
-		"week\", or \"Wed Feb 15 21:02:39 GMT 2023\"\n",
+		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
 	"\n", "Filesystem permissions options:", "\n",
 	"-all-root\t\tmake all files and directories owned by root\n",
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "

@@ -3501,8 +3501,11 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	 */
 	dir_scan6(root_dir);
 
-	if(mkfs_inode_opt)
+	if(mkfs_inode_opt || root_inode_opt)
 		inode_time_latest = get_time(inode_time_latest);
+
+	if(root_inode_opt)
+		dir_ent->inode->buf.st_mtime = inode_time_latest;
 
 	alloc_inode_no(dir_ent->inode, root_inode_number);
 
@@ -4344,7 +4347,7 @@ static void dir_scan6(struct dir_info *dir)
 		if(dir_ent->inode->root_entry)
 			continue;
 
-		if(mkfs_inode_opt && inode_time_latest < dir_ent->inode->buf.st_mtime)
+		if((mkfs_inode_opt || root_inode_opt) && inode_time_latest < dir_ent->inode->buf.st_mtime)
 			inode_time_latest = dir_ent->inode->buf.st_mtime;
 
 		alloc_inode_no(dir_ent->inode, 0);
@@ -6543,11 +6546,15 @@ static int sqfstar(int argc, char *argv[])
 					sqfstar_option_help(argv[i - 1], "sqfstar: -uid-gid-offset invalid number\n");
 			}
 		} else if(strcmp(argv[i], "-root-time") == 0) {
-			if((++i == dest_index) ||
-					(!parse_num_unsigned(argv[i], &root_time) &&
-					!exec_date(argv[i], &root_time)))
-				sqfstar_option_help(argv[i - 1], "sqfstar: -root-time missing or invalid time\n");
-			root_time_opt = TRUE;
+			if(++i == dest_index)
+				sqfstar_option_help(argv[i - 1], "sqfstar: -root-time missing time value\n");
+			else if(strcmp(argv[i], "inode") == 0)
+				root_inode_opt = TRUE;
+			else if(!parse_num_unsigned(argv[i], &root_time) &&
+					!exec_date(argv[i], &root_time))
+				sqfstar_option_help(argv[i - 1], "sqfstar: -root-time time value\n");
+			else
+				root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
 			if((++i == dest_index) || !parse_mode(argv[i], &default_mode))
 				sqfstar_option_help(argv[i - 1], "sqfstar: -default-mode missing or invalid mode, symbolic mode or octal number expected\n");
@@ -7394,11 +7401,15 @@ int main(int argc, char *argv[])
 					mksquashfs_option_help(argv[i - 1], "mksquashfs: -uid-gid-offset invalid number\n");
 			}
 		} else if(strcmp(argv[i], "-root-time") == 0) {
-			if((++i == argc) ||
-					(!parse_num_unsigned(argv[i], &root_time) &&
-					!exec_date(argv[i], &root_time)))
-				mksquashfs_option_help(argv[i - 1], "mksquashfs: -root-time missing or invalid time\n");
-			root_time_opt = TRUE;
+			if(++i == argc)
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -root-time missing time value\n");
+			else if(strcmp(argv[i], "inode") == 0)
+				root_inode_opt = TRUE;
+			else if(!parse_num_unsigned(argv[i], &root_time) &&
+					!exec_date(argv[i], &root_time))
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -root-time invalid time value\n");
+			else
+				root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
 			if((++i == argc) || !parse_mode(argv[i], &default_mode))
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -default-mode missing or invalid mode, symbolic mode or octal number expected\n");
