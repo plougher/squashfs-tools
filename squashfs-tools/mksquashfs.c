@@ -141,6 +141,7 @@ int inode_time_opt = FALSE;
 int clamping = TRUE;
 unsigned int inode_time_latest = 0;
 int mkfs_inode_opt = FALSE;
+int root_inode_opt = FALSE;
 
 /* Is max depth option in effect, and max depth to descend into directories */
 int max_depth_opt = FALSE;
@@ -6542,7 +6543,7 @@ static int sqfstar(int argc, char *argv[])
 					sqfstar_option_help(argv[i - 1], "sqfstar: -uid-gid-offset invalid number\n");
 			}
 		} else if(strcmp(argv[i], "-root-time") == 0) {
-			if((++i == argc) ||
+			if((++i == dest_index) ||
 					(!parse_num_unsigned(argv[i], &root_time) &&
 					!exec_date(argv[i], &root_time)))
 				sqfstar_option_help(argv[i - 1], "sqfstar: -root-time missing or invalid time\n");
