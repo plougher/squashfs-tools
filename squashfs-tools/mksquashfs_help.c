@@ -373,11 +373,14 @@ static char *mksquashfs_text[]={
 		"less than a block size) in parallel from the source(s)" SMALL_STR "\n",
 	"-block-readers <n>\tuse <n> threads to read block files (files "
 		"a block or larger in size) in parallel from the source(s)" BLOCK_STR" \n",
-	"-overcommit <percent>\tAllow <percent> more threads to run in parallel"
+	"-overcommit <percent>\tallow <percent> more threads to run in parallel"
 	       " than available processors.  Doing this may increase CPU "
 	       "utilisation.  Default is " OVERCOMMIT_STR(OVERCOMMIT_DEFAULT)
 		", because normally overcommiting reduces performance due to "
-		"trashing.\n",
+		"trashing.  The percentage value is at the granularity of "
+		"the number of processors, e.g. 4 processors have a percentage "
+		"granularity of 25%, and 20 processors have a percentage "
+		"granularity of 5%\n",
 	"\n", "Filesystem append options:", "\n",
 	"-noappend\t\tdo not append to existing filesystem\n",
 	"-root-becomes <name>\twhen appending source files/directories, make "
@@ -700,11 +703,14 @@ static char *sqfstar_text[]={
 	"-mem-percent <percent>\tuse <percent> physical memory for caches.  "
 		"Default 25%\n",
 	"-mem-default\t\tprint default memory usage in Mbytes\n",
-	"-overcommit <percent>\tAllow <percent> more threads to run in parallel"
+	"-overcommit <percent>\tallow <percent> more threads to run in parallel"
 	       " than available processors.  Doing this may increase CPU "
 	       "utilisation.  Default is " OVERCOMMIT_STR(OVERCOMMIT_DEFAULT)
 		", because normally overcommiting reduces performance due to "
-		"trashing.\n",
+		"trashing.  The percentage value is at the granularity of "
+		"the number of processors, e.g. 4 processors have a percentage "
+		"granularity of 25%, and 20 processors have a percentage "
+		"granularity of 5%\n",
 	"\n", "Expert options (these may make the filesystem unmountable):", "\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
 	"-offset <offset>\tskip <offset> bytes at the beginning of "
