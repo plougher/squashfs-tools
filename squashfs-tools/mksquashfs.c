@@ -1078,9 +1078,6 @@ static inline unsigned int get_time(time_t orig)
 			time = inode_time;
 	}
 
-	if(mkfs_time_inode && mkfs_time_latest < time)
-		mkfs_time_latest = time;
-
 	return time;
 }
 
@@ -3503,6 +3500,9 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	 */
 	dir_scan6(root_dir);
 
+	if(mkfs_time_inode)
+		mkfs_time_latest = get_time(mkfs_time_latest);
+
 	alloc_inode_no(dir_ent->inode, root_inode_number);
 
 	/* Increase the progress bar by 5%, and map the inode count to
@@ -4342,6 +4342,9 @@ static void dir_scan6(struct dir_info *dir)
 
 		if(dir_ent->inode->root_entry)
 			continue;
+
+		if(mkfs_time_inode && mkfs_time_latest < dir_ent->inode->buf.st_mtime)
+			mkfs_time_latest = dir_ent->inode->buf.st_mtime;
 
 		alloc_inode_no(dir_ent->inode, 0);
 
