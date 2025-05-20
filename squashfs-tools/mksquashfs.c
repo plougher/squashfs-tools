@@ -114,8 +114,6 @@ int root_uid_opt = FALSE;
 unsigned int root_uid;
 int root_gid_opt = FALSE;
 unsigned int root_gid;
-unsigned int root_time;
-int root_time_opt = FALSE;
 
 /* Options which override inode settings for all files and directories */
 int global_file_mode_opt = FALSE;
@@ -136,6 +134,8 @@ int pseudo_override = FALSE;
 /* Time value over-ride options */
 unsigned int mkfs_time;
 int mkfs_time_opt = FALSE;
+unsigned int root_time;
+int root_time_opt = FALSE;
 unsigned int inode_time;
 int inode_time_opt = FALSE;
 int clamping = TRUE;
