@@ -140,7 +140,7 @@ unsigned int inode_time;
 int inode_time_opt = FALSE;
 int clamping = TRUE;
 unsigned int inode_time_latest = 0;
-int mkfs_time_inode = FALSE;
+int mkfs_inode_opt = FALSE;
 
 /* Is max depth option in effect, and max depth to descend into directories */
 int max_depth_opt = FALSE;
@@ -3500,7 +3500,7 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	 */
 	dir_scan6(root_dir);
 
-	if(mkfs_time_inode)
+	if(mkfs_inode_opt)
 		inode_time_latest = get_time(inode_time_latest);
 
 	alloc_inode_no(dir_ent->inode, root_inode_number);
@@ -4343,7 +4343,7 @@ static void dir_scan6(struct dir_info *dir)
 		if(dir_ent->inode->root_entry)
 			continue;
 
-		if(mkfs_time_inode && inode_time_latest < dir_ent->inode->buf.st_mtime)
+		if(mkfs_inode_opt && inode_time_latest < dir_ent->inode->buf.st_mtime)
 			inode_time_latest = dir_ent->inode->buf.st_mtime;
 
 		alloc_inode_no(dir_ent->inode, 0);
@@ -6480,7 +6480,7 @@ static int sqfstar(int argc, char *argv[])
 			if(++i == dest_index)
 				sqfstar_option_help(argv[i - 1], "sqfstar: %s missing time value\n", argv[i - 1]);
 			else if(strcmp(argv[i], "inode") == 0)
-				mkfs_time_inode = TRUE;
+				mkfs_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &mkfs_time) &&
 					!exec_date(argv[i], &mkfs_time))
 				sqfstar_option_help(argv[i - 1], "sqfstar: %s invalid time value\n", argv[i - 1]);
@@ -7059,7 +7059,7 @@ static int sqfstar(int argc, char *argv[])
 		always_use_fragments, duplicate_checking, exportable,
 		no_xattrs, comp_opts);
 	if(mkfs_time_opt)
-		sBlk.mkfs_time = mkfs_time_inode ? inode_time_latest : mkfs_time;
+		sBlk.mkfs_time = mkfs_inode_opt ? inode_time_latest : mkfs_time;
 	else
 		sBlk.mkfs_time = time(NULL);
 
@@ -7331,7 +7331,7 @@ int main(int argc, char *argv[])
 			if(++i == argc)
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s missing time value\n", argv[i - 1]);
 			else if(strcmp(argv[i], "inode") == 0)
-				mkfs_time_inode = TRUE;
+				mkfs_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &mkfs_time) &&
 					!exec_date(argv[i], &mkfs_time))
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s invalid time value\n", argv[i - 1]);
@@ -8323,7 +8323,7 @@ int main(int argc, char *argv[])
 			always_use_fragments, duplicate_checking, exportable,
 			no_xattrs, comp_opts);
 		if(mkfs_time_opt)
-			sBlk.mkfs_time = mkfs_time_inode ? inode_time_latest : mkfs_time;
+			sBlk.mkfs_time = mkfs_inode_opt ? inode_time_latest : mkfs_time;
 		else
 			sBlk.mkfs_time = time(NULL);
 
