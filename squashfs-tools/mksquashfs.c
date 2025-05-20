@@ -139,7 +139,7 @@ int mkfs_time_opt = FALSE;
 unsigned int inode_time;
 int inode_time_opt = FALSE;
 int clamping = TRUE;
-unsigned int mkfs_time_latest = 0;
+unsigned int inode_time_latest = 0;
 int mkfs_time_inode = FALSE;
 
 /* Is max depth option in effect, and max depth to descend into directories */
@@ -3501,7 +3501,7 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	dir_scan6(root_dir);
 
 	if(mkfs_time_inode)
-		mkfs_time_latest = get_time(mkfs_time_latest);
+		inode_time_latest = get_time(inode_time_latest);
 
 	alloc_inode_no(dir_ent->inode, root_inode_number);
 
@@ -4343,8 +4343,8 @@ static void dir_scan6(struct dir_info *dir)
 		if(dir_ent->inode->root_entry)
 			continue;
 
-		if(mkfs_time_inode && mkfs_time_latest < dir_ent->inode->buf.st_mtime)
-			mkfs_time_latest = dir_ent->inode->buf.st_mtime;
+		if(mkfs_time_inode && inode_time_latest < dir_ent->inode->buf.st_mtime)
+			inode_time_latest = dir_ent->inode->buf.st_mtime;
 
 		alloc_inode_no(dir_ent->inode, 0);
 
@@ -7059,7 +7059,7 @@ static int sqfstar(int argc, char *argv[])
 		always_use_fragments, duplicate_checking, exportable,
 		no_xattrs, comp_opts);
 	if(mkfs_time_opt)
-		sBlk.mkfs_time = mkfs_time_inode ? mkfs_time_latest : mkfs_time;
+		sBlk.mkfs_time = mkfs_time_inode ? inode_time_latest : mkfs_time;
 	else
 		sBlk.mkfs_time = time(NULL);
 
@@ -8323,7 +8323,7 @@ int main(int argc, char *argv[])
 			always_use_fragments, duplicate_checking, exportable,
 			no_xattrs, comp_opts);
 		if(mkfs_time_opt)
-			sBlk.mkfs_time = mkfs_time_inode ? mkfs_time_latest : mkfs_time;
+			sBlk.mkfs_time = mkfs_time_inode ? inode_time_latest : mkfs_time;
 		else
 			sBlk.mkfs_time = time(NULL);
 
