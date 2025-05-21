@@ -6505,7 +6505,8 @@ static int sqfstar(int argc, char *argv[])
 			else if(!parse_num_unsigned(argv[i], &mkfs_time) &&
 					!exec_date(argv[i], &mkfs_time))
 				sqfstar_option_help(argv[i - 1], "sqfstar: %s invalid time value\n", argv[i - 1]);
-			mkfs_time_opt = TRUE;
+			else
+				mkfs_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-all-time") == 0) {
 			if((++i == dest_index) ||
 					(!parse_num_unsigned(argv[i], &inode_time) &&
@@ -7084,7 +7085,9 @@ static int sqfstar(int argc, char *argv[])
 		always_use_fragments, duplicate_checking, exportable,
 		no_xattrs, comp_opts);
 	if(mkfs_time_opt)
-		sBlk.mkfs_time = mkfs_inode_opt ? inode_time_latest : mkfs_time;
+		sBlk.mkfs_time = mkfs_time;
+	else if(mkfs_inode_opt)
+		sBlk.mkfs_time = inode_time_latest;
 	else
 		sBlk.mkfs_time = time(NULL);
 
@@ -7360,7 +7363,8 @@ int main(int argc, char *argv[])
 			else if(!parse_num_unsigned(argv[i], &mkfs_time) &&
 					!exec_date(argv[i], &mkfs_time))
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s invalid time value\n", argv[i - 1]);
-			mkfs_time_opt = TRUE;
+			else
+				mkfs_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-all-time") == 0) {
 			if((++i == argc) ||
 					(!parse_num_unsigned(argv[i], &inode_time) &&
@@ -8352,7 +8356,9 @@ int main(int argc, char *argv[])
 			always_use_fragments, duplicate_checking, exportable,
 			no_xattrs, comp_opts);
 		if(mkfs_time_opt)
-			sBlk.mkfs_time = mkfs_inode_opt ? inode_time_latest : mkfs_time;
+			sBlk.mkfs_time = mkfs_time;
+		else if(mkfs_inode_opt)
+			sBlk.mkfs_time = inode_time_latest;
 		else
 			sBlk.mkfs_time = time(NULL);
 
