@@ -3277,8 +3277,25 @@ static inline void dec_nlink_inode(struct dir_ent *dir_ent)
 static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pseudo,
 	char *symlink, int bytes)
 {
+	static char warned = FALSE;
 	int ino_hash = INODE_HASH(buf->st_dev, buf->st_ino);
 	struct inode_info *inode;
+
+	if(buf->st_mtime < 0) {
+		/* Squashfs cannot store timestamps before the epoch
+		 * (1970-01-01), and so round up to zero.  But warn
+		 * the first time this happens
+		 */
+		if(!warned) {
+			ERROR("WARNING: File has timestamp before the epoch of "
+				"1970-01-01, this cannot be\nstored in "
+				"Squashfs.  Rounding to 1970-01-01.\nFurther "
+				"messages are supressed.\n");
+			warned = TRUE;
+		}
+
+		buf->st_mtime = 0;
+	}
 
 	/*
 	 * Look-up inode in hash table, if it already exists we have a
