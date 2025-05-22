@@ -328,10 +328,9 @@ static void fixup_tree(struct dir_info *dir)
 				buf.st_gid = default_gid;
 			else
 				buf.st_gid = getgid();
-			buf.st_mtime = time(NULL);
 			buf.st_dev = 0;
 			buf.st_ino = 0;
-			entry->inode = lookup_inode(&buf);
+			entry->inode = lookup_inode_flag(&buf, FALSE);
 			entry->inode->tar_file = NULL;
 			entry->inode->tarfile = TRUE;
 		}
@@ -1696,8 +1695,6 @@ squashfs_inode process_tar_file(int progress)
 		buf.st_gid = getgid();
 	if(root_time_opt)
 		buf.st_mtime = root_time;
-	else
-		buf.st_mtime = time(NULL);
 	if(pseudo_override && global_uid_opt)
 		buf.st_uid = global_uid;
 
@@ -1705,7 +1702,7 @@ squashfs_inode process_tar_file(int progress)
 		buf.st_gid = global_gid;
 	buf.st_dev = 0;
 	buf.st_ino = 0;
-	dir_ent->inode = lookup_inode(&buf);
+	dir_ent->inode = lookup_inode_flag(&buf, root_time_opt);
 	dir_ent->inode->dummy_root_dir = TRUE;
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;

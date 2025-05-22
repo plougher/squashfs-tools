@@ -1070,16 +1070,23 @@ static inline unsigned int get_parent_no(struct dir_info *dir)
 	
 static inline unsigned int get_time(time_t orig)
 {
-	unsigned int time = orig;
+	unsigned int ts;
+
+	if(orig != -1)
+		ts = orig;
+	else if(mkfs_inode_opt || root_inode_opt)
+		ts = inode_time_latest;
+	else
+		ts = time(NULL);
 
 	if(inode_time_opt) {
 		if(clamping)
-			time = time > inode_time ? inode_time : time;
+			ts = ts > inode_time ? inode_time : ts;
 		else
-			time = inode_time;
+			ts = inode_time;
 	}
 
-	return time;
+	return ts;
 }
 
 
@@ -3274,14 +3281,14 @@ static inline void dec_nlink_inode(struct dir_ent *dir_ent)
 }
 
 
-static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pseudo,
-	char *symlink, int bytes)
+static struct inode_info *lookup_inode4(struct stat *buf, struct pseudo_dev *pseudo,
+	char *symlink, int bytes, int have_time)
 {
 	static char warned = FALSE;
 	int ino_hash = INODE_HASH(buf->st_dev, buf->st_ino);
 	struct inode_info *inode;
 
-	if(buf->st_mtime < 0) {
+	if(have_time && buf->st_mtime < 0) {
 		/* Squashfs cannot store timestamps before the epoch
 		 * (1970-01-01), and so round up to zero.  But warn
 		 * the first time this happens
@@ -3295,7 +3302,11 @@ static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pse
 		}
 
 		buf->st_mtime = 0;
-	}
+	} else if(!have_time)
+		/* Frabicated inode with no time defined.  Set to -1 to avoid
+		 * being the latest inode timestamp
+		 */
+		buf->st_mtime = -1;
 
 	/*
 	 * Look-up inode in hash table, if it already exists we have a
@@ -3350,6 +3361,11 @@ static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pse
 }
 
 
+static struct inode_info *lookup_inode3(struct stat *buf, struct pseudo_dev *pseudo, char *symlink, int bytes) {
+	return lookup_inode4(buf, pseudo, symlink, bytes, TRUE);
+}
+
+
 static struct inode_info *lookup_inode2(struct stat *buf, struct pseudo_dev *pseudo)
 {
 	return lookup_inode3(buf, pseudo, NULL, 0);
@@ -3359,6 +3375,12 @@ static struct inode_info *lookup_inode2(struct stat *buf, struct pseudo_dev *pse
 struct inode_info *lookup_inode(struct stat *buf)
 {
 	return lookup_inode2(buf, NULL);
+}
+
+
+struct inode_info *lookup_inode_flag(struct stat *buf, int have_time)
+{
+	return lookup_inode4(buf, NULL, NULL, 0, have_time);
 }
 
 
@@ -3653,8 +3675,6 @@ static squashfs_inode scan_encomp(int progress)
 		buf.st_gid = getgid();
 	if(root_time_opt)
 		buf.st_mtime = root_time;
-	else
-		buf.st_mtime = time(NULL);
 	if(pseudo_override && global_uid_opt)
 		buf.st_uid = global_uid;
 
@@ -3663,7 +3683,7 @@ static squashfs_inode scan_encomp(int progress)
 
 	buf.st_dev = 0;
 	buf.st_ino = 0;
-	dir_ent->inode = lookup_inode(&buf);
+	dir_ent->inode = lookup_inode_flag(&buf, root_time_opt);
 	dir_ent->inode->dummy_root_dir = TRUE;
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
@@ -5060,15 +5080,13 @@ static squashfs_inode process_source(int progress)
 			buf.st_gid = getgid();
 		if(root_time_opt)
 			buf.st_mtime = root_time;
-		else
-			buf.st_mtime = time(NULL);
 		if(pseudo_override && global_uid_opt)
 			buf.st_uid = global_uid;
 		if(pseudo_override && global_gid_opt)
 			buf.st_gid = global_gid;
 
 		entry = create_dir_entry("", NULL, "", new);
-		entry->inode = lookup_inode(&buf);
+		entry->inode = lookup_inode_flag(&buf, root_time_opt);
 		entry->inode->dummy_root_dir = TRUE;
 	} else {
 		if(global_dir_mode_opt) {
