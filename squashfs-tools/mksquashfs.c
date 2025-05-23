@@ -3540,6 +3540,9 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	 */
 	dir_scan6(root_dir);
 
+	if((mkfs_inode_opt || root_inode_opt) && inode_time_latest < root_dir->dir_ent->inode->buf.st_mtime)
+		inode_time_latest = root_dir->dir_ent->inode->buf.st_mtime;
+
 	if(mkfs_inode_opt || root_inode_opt)
 		inode_time_latest = get_time(inode_time_latest);
 
