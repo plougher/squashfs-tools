@@ -1065,7 +1065,7 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 	dev->buf->gid = gid;
 	dev->buf->major = major;
 	dev->buf->minor = minor;
-	dev->buf->mtime = time(NULL);
+	dev->buf->mtime = -1;
 	dev->buf->ino = pseudo_ino ++;
 
 	if(type == 'f') {

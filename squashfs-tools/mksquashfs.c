@@ -3378,9 +3378,15 @@ struct inode_info *lookup_inode(struct stat *buf)
 }
 
 
+struct inode_info *lookup_inode_flag2(struct stat *buf, struct pseudo_dev *pseudo, int have_time)
+{
+	return lookup_inode4(buf, pseudo, NULL, 0, have_time);
+}
+
+
 struct inode_info *lookup_inode_flag(struct stat *buf, int have_time)
 {
-	return lookup_inode4(buf, NULL, NULL, 0, have_time);
+	return lookup_inode_flag2(buf, NULL, have_time);
 }
 
 
@@ -4077,7 +4083,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 				dir_scan2(sub_dir, pseudo_ent->pseudo);
 				dir->directory_count ++;
-				add_dir_entry(dir_ent, sub_dir, lookup_inode2(&buf, pseudo_dir));
+				add_dir_entry(dir_ent, sub_dir, lookup_inode_flag2(&buf, pseudo_dir, buf.st_mtime != -1));
 				continue;
 			} else if(dir_ent == NULL && pseudo_ent->pseudo)
 				BAD_ERROR("Pathname \"%s\" does not exist in "
@@ -4147,13 +4153,14 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			dir_scan2(sub_dir, pseudo_ent->pseudo);
 			dir->directory_count ++;
 			add_dir_entry(dir_ent, sub_dir,
-				lookup_inode2(&buf, pseudo_ent->dev));
+				lookup_inode_flag2(&buf, pseudo_ent->dev, buf.st_mtime != -1));
 		} else if(pseudo_ent->dev->type == 's') {
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,
-				lookup_inode3(&buf, pseudo_ent->dev,
+				lookup_inode4(&buf, pseudo_ent->dev,
 				pseudo_ent->dev->symlink,
-				strlen(pseudo_ent->dev->symlink) + 1), dir);
+				strlen(pseudo_ent->dev->symlink) + 1,
+				buf.st_mtime != -1), dir);
 		} else if(pseudo_ent->dev->type == 'l') {
 			if(S_ISLNK(pseudo_ent->dev->linkbuf->st_mode)) {
 				int byte;
@@ -4179,7 +4186,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 		} else {
 			add_dir_entry2(pseudo_ent->name, NULL,
 				pseudo_ent->pathname, NULL,
-				lookup_inode2(&buf, pseudo_ent->dev), dir);
+				lookup_inode_flag2(&buf, pseudo_ent->dev, buf.st_mtime != -1), dir);
 		}
 	}
 
@@ -5178,7 +5185,7 @@ static squashfs_inode no_sources(int progress)
 
 	buf.st_ino = pseudo_dev->buf->ino;
 
-	dir_ent->inode = lookup_inode2(&buf, pseudo_dev);
+	dir_ent->inode = lookup_inode_flag2(&buf, pseudo_dev, buf.st_mtime != -1);
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
 
