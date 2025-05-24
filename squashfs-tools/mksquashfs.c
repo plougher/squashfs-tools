@@ -142,6 +142,7 @@ int clamping = TRUE;
 unsigned int inode_time_latest = 0;
 int mkfs_inode_opt = FALSE;
 int root_inode_opt = FALSE;
+int inode_inode_opt = FALSE;
 
 /* Is max depth option in effect, and max depth to descend into directories */
 int max_depth_opt = FALSE;
@@ -1074,10 +1075,13 @@ static inline unsigned int get_time(time_t orig)
 
 	if(orig != -1)
 		ts = orig;
-	else if(mkfs_inode_opt || root_inode_opt)
+	else if(mkfs_inode_opt || root_inode_opt || inode_inode_opt)
 		ts = inode_time_latest;
 	else
 		ts = time(NULL);
+
+	if(inode_inode_opt)
+		ts = inode_time_latest;
 
 	if(inode_time_opt) {
 		if(clamping)
@@ -3546,10 +3550,10 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	 */
 	dir_scan6(root_dir);
 
-	if((mkfs_inode_opt || root_inode_opt) && inode_time_latest < root_dir->dir_ent->inode->buf.st_mtime)
+	if((mkfs_inode_opt || root_inode_opt || inode_inode_opt) && inode_time_latest < root_dir->dir_ent->inode->buf.st_mtime)
 		inode_time_latest = root_dir->dir_ent->inode->buf.st_mtime;
 
-	if(mkfs_inode_opt || root_inode_opt)
+	if(mkfs_inode_opt || root_inode_opt || inode_inode_opt)
 		inode_time_latest = get_time(inode_time_latest);
 
 	if(root_inode_opt)
@@ -4394,7 +4398,7 @@ static void dir_scan6(struct dir_info *dir)
 		if(dir_ent->inode->root_entry)
 			continue;
 
-		if((mkfs_inode_opt || root_inode_opt) && inode_time_latest < dir_ent->inode->buf.st_mtime)
+		if((mkfs_inode_opt || root_inode_opt || inode_inode_opt) && inode_time_latest < dir_ent->inode->buf.st_mtime)
 			inode_time_latest = dir_ent->inode->buf.st_mtime;
 
 		alloc_inode_no(dir_ent->inode, 0);
@@ -6532,16 +6536,21 @@ static int sqfstar(int argc, char *argv[])
 				mkfs_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &mkfs_time) &&
 					!exec_date(argv[i], &mkfs_time))
-				sqfstar_option_help(argv[i - 1], "sqfstar: %s invalid time value\n", argv[i - 1]);
+				sqfstar_option_help(argv[i - 1], "sqfstar: %s missing time value\n", argv[i - 1]);
 			else
 				mkfs_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-all-time") == 0 || strcmp(argv[i], "-inode-time") == 0) {
-			if((++i == dest_index) ||
-					(!parse_num_unsigned(argv[i], &inode_time) &&
-					!exec_date(argv[i], &inode_time)))
-				sqfstar_option_help(argv[i - 1], "sqfstar: %s missing or invalid time value\n", argv[i - 1]);
-			inode_time_opt = TRUE;
-			clamping = FALSE;
+			if(++i == dest_index)
+				sqfstar_option_help(argv[i - 1], "sqfstar: %s invalid time value\n", argv[i - 1]);
+			else if(strcmp(argv[i], "inode") == 0)
+				inode_inode_opt = TRUE;
+			else if(!parse_num_unsigned(argv[i], &inode_time) &&
+					!exec_date(argv[i], &inode_time))
+				sqfstar_option_help(argv[i - 1], "sqfstar: %s invalid time value\n", argv[i - 1]);
+			else {
+				inode_time_opt = TRUE;
+				clamping = FALSE;
+			}
 		} else if(strcmp(argv[i], "-reproducible") == 0);
 			/* obsolete option, ignored and retained for backwards
 			 * compatibility */
@@ -7387,12 +7396,17 @@ int main(int argc, char *argv[])
 			else
 				mkfs_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-all-time") == 0 || strcmp(argv[i], "-inode-time") == 0) {
-			if((++i == argc) ||
-					(!parse_num_unsigned(argv[i], &inode_time) &&
-					!exec_date(argv[i], &inode_time)))
-				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s missing or invalid time value\n", argv[i - 1]);
-			inode_time_opt = TRUE;
-			clamping = FALSE;
+			if(++i == argc)
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s missing time value\n", argv[i - 1]);
+			else if(strcmp(argv[i], "inode") == 0)
+				inode_inode_opt = TRUE;
+			else if(!parse_num_unsigned(argv[i], &inode_time) &&
+					!exec_date(argv[i], &inode_time))
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s invalid time value\n", argv[i - 1]);
+			else {
+				inode_time_opt = TRUE;
+				clamping = FALSE;
+			}
 		} else if(strcmp(argv[i], "-reproducible") == 0);
 			/* obsolete option, ignored and retained for backwards
 			 * compatibility */
