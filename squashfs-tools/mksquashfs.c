@@ -6535,18 +6535,11 @@ static int sqfstar(int argc, char *argv[])
 				sqfstar_option_help(argv[i - 1], "sqfstar: %s invalid time value\n", argv[i - 1]);
 			else
 				mkfs_time_opt = TRUE;
-		} else if(strcmp(argv[i], "-all-time") == 0) {
+		} else if(strcmp(argv[i], "-all-time") == 0 || strcmp(argv[i], "-inode-time") == 0) {
 			if((++i == dest_index) ||
 					(!parse_num_unsigned(argv[i], &inode_time) &&
 					!exec_date(argv[i], &inode_time)))
-				sqfstar_option_help(argv[i - 1], "sqfstar: -all-time missing or invalid time value\n");
-			inode_time_opt = TRUE;
-			clamping = FALSE;
-		} else if(strcmp(argv[i], "-inode-time") == 0) {
-			if((++i == dest_index) ||
-					(!parse_num_unsigned(argv[i], &inode_time) &&
-					!exec_date(argv[i], &inode_time)))
-				sqfstar_option_help(argv[i - 1], "sqfstar: -inode-time missing or invalid time value\n");
+				sqfstar_option_help(argv[i - 1], "sqfstar: %s missing or invalid time value\n", argv[i - 1]);
 			inode_time_opt = TRUE;
 			clamping = FALSE;
 		} else if(strcmp(argv[i], "-reproducible") == 0);
@@ -7393,18 +7386,11 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s invalid time value\n", argv[i - 1]);
 			else
 				mkfs_time_opt = TRUE;
-		} else if(strcmp(argv[i], "-all-time") == 0) {
+		} else if(strcmp(argv[i], "-all-time") == 0 || strcmp(argv[i], "-inode-time") == 0) {
 			if((++i == argc) ||
 					(!parse_num_unsigned(argv[i], &inode_time) &&
 					!exec_date(argv[i], &inode_time)))
-				mksquashfs_option_help(argv[i - 1], "mksquashfs: -all-time missing or invalid time value\n");
-			inode_time_opt = TRUE;
-			clamping = FALSE;
-		} else if(strcmp(argv[i], "-inode-time") == 0) {
-			if((++i == argc) ||
-					(!parse_num_unsigned(argv[i], &inode_time) &&
-					!exec_date(argv[i], &inode_time)))
-				mksquashfs_option_help(argv[i - 1], "mksquashfs: -inode-time missing or invalid time value\n");
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s missing or invalid time value\n", argv[i - 1]);
 			inode_time_opt = TRUE;
 			clamping = FALSE;
 		} else if(strcmp(argv[i], "-reproducible") == 0);
