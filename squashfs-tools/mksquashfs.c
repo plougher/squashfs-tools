@@ -6091,10 +6091,18 @@ static void check_source_date_epoch()
 		/*
 		 * We cannot have both command-line options and environment
 		 * variable trying to set the timestamp(s) at the same
-		 * time.  Semantically both are FORCE options which cannot be
-		 * over-ridden elsewhere (otherwise they can't be relied on).
+		 * time.  Obviously both are mutually exclusive if they have
+		 * different values, but they're mutually exclusive with the
+		 * same value, because one sets to that value, and one clamps
+		 * to that value.
 		 *
 		 * So refuse to continue if both are set.
+		 *
+		 * But, we can have the environment variable and the new
+		 * "use latest inode time" variants set at the same time, as
+		 * they're not mutually exclusive.  The latest inode time is
+		 * whatever is left after clamping may or may not happened,
+		 * or in otherwords it is relative and not absolute.
 		 */
 		if(mkfs_time_opt || inode_time_opt)
 			BAD_ERROR("SOURCE_DATE_EPOCH and command line options "
