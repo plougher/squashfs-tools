@@ -6091,10 +6091,12 @@ static void check_source_date_epoch()
 		/*
 		 * We cannot have both command-line options and environment
 		 * variable trying to set the timestamp(s) at the same
-		 * time.  Obviously both are mutually exclusive if they have
-		 * different values, but they're mutually exclusive with the
-		 * same value, because one sets to that value, and one clamps
-		 * to that value.
+		 * time.  These options are mutually exclusive because both
+		 * want to be master, and Mksquashfs can't serve two masters
+		 * at the same time [*].  Obviously both are mutually exclusive
+		 * if they have different values, but they're mutually exclusive
+		 * with the same value, because one sets to that value, and the
+		 * other one clamps to that value.
 		 *
 		 * So refuse to continue if both are set.
 		 *
@@ -6103,6 +6105,14 @@ static void check_source_date_epoch()
 		 * they're not mutually exclusive.  The latest inode time is
 		 * whatever is left after clamping may or may not happened,
 		 * or in otherwords it is relative and not absolute.
+		 *
+		 * [*] If both command line timestamp options and the
+		 * environment variable were allowed, then it would be possible
+		 * to subvert a build system by defining the environment
+		 * variable and over-riding the command line options.  In
+		 * general anything that could lead to unexpected behaviour
+		 * could become an exploit vector, and it is better to disallow
+		 * it.
 		 */
 		if(mkfs_time_opt || inode_time_opt)
 			BAD_ERROR("SOURCE_DATE_EPOCH and command line options "
