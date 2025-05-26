@@ -6925,6 +6925,13 @@ static int sqfstar(int argc, char *argv[])
 	check_source_date_epoch();
 
 	/*
+	 * Both mkfs-time <timestamp> and mkfs-time <inode> cannot have both
+	 * been specified.
+	 */
+	if(mkfs_time_opt && mkfs_inode_opt)
+		BAD_ERROR("Cannot specify both mkfs-time <timestamp> and mkfs-time <inode>\n");
+
+	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset noId
 	 * if both have been specified
 	 */
@@ -7935,6 +7942,13 @@ int main(int argc, char *argv[])
 	}
 
 	check_source_date_epoch();
+
+	/*
+	 * Both mkfs-time <timestamp> and mkfs-time <inode> cannot have both
+	 * been specified.
+	 */
+	if(mkfs_time_opt && mkfs_inode_opt)
+		BAD_ERROR("Cannot specify both mkfs-time <timestamp> and mkfs-time <inode>\n");
 
 	/* If cpiostyle is set, then file names  will be read-in
 	 * from standard in.  We do not expect to have any sources
