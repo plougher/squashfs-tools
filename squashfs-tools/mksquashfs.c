@@ -6942,6 +6942,13 @@ static int sqfstar(int argc, char *argv[])
 		BAD_ERROR("Cannot specify both mkfs-time <timestamp> and mkfs-time <inode>\n");
 
 	/*
+	 * Both inode-time <timestamp> and inode-time <inode> cannot have both
+	 * been specified.
+	 */
+	if(inode_time_opt && inode_inode_opt)
+		BAD_ERROR("Cannot specify both inode-time <timestamp> and inode-time <inode>\n");
+
+	/*
 	 * Both root-time <timestamp> and root-time <inode> cannot have both
 	 * been specified.
 	 */
@@ -7966,6 +7973,13 @@ int main(int argc, char *argv[])
 	 */
 	if(mkfs_time_opt && mkfs_inode_opt)
 		BAD_ERROR("Cannot specify both mkfs-time <timestamp> and mkfs-time <inode>\n");
+
+	/*
+	 * Both inode-time <timestamp> and inode-time <inode> cannot have both
+	 * been specified.
+	 */
+	if(inode_time_opt && inode_inode_opt)
+		BAD_ERROR("Cannot specify both inode-time <timestamp> and inode-time <inode>\n");
 
 	/*
 	 * Both root-time <timestamp> and root-time <inode> cannot have both
