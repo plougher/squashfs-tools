@@ -6936,16 +6936,20 @@ static int sqfstar(int argc, char *argv[])
 
 	/*
 	 * Both mkfs-time <timestamp> and mkfs-time <inode> cannot have both
-	 * been specified.
+	 * been specified.  Note the extra check for !clamping is to distinquish
+	 * between the environment variable SOURCE_DATE_EPOCH which sets
+	 * mkfs_time_opt and clamping.
 	 */
-	if(mkfs_time_opt && mkfs_inode_opt)
+	if(mkfs_time_opt && mkfs_inode_opt && !clamping)
 		BAD_ERROR("Cannot specify both mkfs-time <timestamp> and mkfs-time <inode>\n");
 
 	/*
 	 * Both inode-time <timestamp> and inode-time <inode> cannot have both
-	 * been specified.
+	 * been specified.  Note the extra check for !clamping is to distinquish
+	 * between the environment variable SOURCE_DATE_EPOCH which sets
+	 * inode_time_opt and clamping.
 	 */
-	if(inode_time_opt && inode_inode_opt)
+	if(inode_time_opt && inode_inode_opt && !clamping)
 		BAD_ERROR("Cannot specify both inode-time <timestamp> and inode-time <inode>\n");
 
 	/*
@@ -7969,16 +7973,20 @@ int main(int argc, char *argv[])
 
 	/*
 	 * Both mkfs-time <timestamp> and mkfs-time <inode> cannot have both
-	 * been specified.
+	 * been specified.  Note the extra check for !clamping is to distinquish
+	 * between the environment variable SOURCE_DATE_EPOCH which sets
+	 * mkfs_time_opt and clamping.
 	 */
-	if(mkfs_time_opt && mkfs_inode_opt)
+	if(mkfs_time_opt && mkfs_inode_opt && !clamping)
 		BAD_ERROR("Cannot specify both mkfs-time <timestamp> and mkfs-time <inode>\n");
 
 	/*
 	 * Both inode-time <timestamp> and inode-time <inode> cannot have both
-	 * been specified.
+	 * been specified.  Note the extra check for !clamping is to distinquish
+	 * between the environment variable SOURCE_DATE_EPOCH which sets
+	 * inode_time_opt and clamping.
 	 */
-	if(inode_time_opt && inode_inode_opt)
+	if(inode_time_opt && inode_inode_opt && !clamping)
 		BAD_ERROR("Cannot specify both inode-time <timestamp> and inode-time <inode>\n");
 
 	/*
