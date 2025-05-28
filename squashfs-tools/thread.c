@@ -76,12 +76,13 @@ int get_thread_id(int type)
  */
 void set_thread_idle(int tid)
 {
-	if(threads[tid].type == THREAD_BLOCK) {
+	if(threads[tid].type == THREAD_BLOCK)
 		active_blocks --;
-		if(waiting_threads)
-			pthread_cond_signal(&idle);
-	} else
+	else
 		active_frags --;
+
+	if(waiting_threads)
+		pthread_cond_signal(&idle);
 
 	threads[tid].state = THREAD_IDLE;
 }
