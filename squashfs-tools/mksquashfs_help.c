@@ -263,6 +263,11 @@ static char *mksquashfs_text[]={
 		"\"date\" command to parse. Any string value which the date "
 		"command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
+	"-repro\t\t\tbuild a reproducible filesystem image.  This is shorthand "
+		"for -mkfs-time inode, which achieves reproducibility by "
+		"setting the filesystem build time to the latest inode "
+		"timestamp.  Obviously the image won't be reproducible if the "
+		"timestamps or content changes.\n",
 	"\n", "Filesystem permissions options:", "\n",
 	"-all-root\t\tmake all files and directories owned by root\n",
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "
@@ -604,6 +609,11 @@ static char *sqfstar_text[]={
 		"\"date\" command to parse. Any string value which the date "
 		"command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
+	"-repro\t\t\tbuild a reproducible filesystem image.  This is shorthand "
+		"for -mkfs-time inode, which achieves reproducibility by "
+		"setting the filesystem build time to the latest inode "
+		"timestamp.  Obviously the image won't be reproducible if the "
+		"timestamps or content changes.\n",
 	"\n", "Filesystem permissions options:", "\n",
 	"-all-root\t\tmake all files and directories owned by root\n",
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "

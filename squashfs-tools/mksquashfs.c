@@ -6419,6 +6419,7 @@ static int sqfstar(int argc, char *argv[])
 	int size;
 	void *comp_data;
 	int overcommit = OVERCOMMIT_DEFAULT;
+	int repro_opt = FALSE;
 
 	/* Scan the command line for options that will immediately quit afterwards */
 	for(i = 1; i < argc; i++) {
@@ -6575,6 +6576,8 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-not-reproducible") == 0);
 			/* obsolete option, ignored and retained for backwards
 			 * compatibility */
+		else if(strcmp(argv[i], "-repro") == 0)
+			repro_opt = TRUE;
 		else if(strcmp(argv[i], "-root-mode") == 0) {
 			if((++i == dest_index) || !parse_mode(argv[i], &root_mode))
 				sqfstar_option_help(argv[i - 1], "sqfstar: -root-mode missing or invalid mode, symbolic mode or octal number expected\n");
@@ -6960,6 +6963,19 @@ static int sqfstar(int argc, char *argv[])
 		BAD_ERROR("Cannot specify both root-time <timestamp> and root-time <inode>\n");
 
 	/*
+	 * Both mkfs-time <timestamp> and -repro cannot have both been
+	 * specified.  Note the extra check for !clamping is to distinquish
+	 * between the environment variable SOURCE_DATE_EPOCH which sets
+	 * mkfs_time_opt and clamping.
+	 */
+	if(repro_opt) {
+		if(mkfs_time_opt && !clamping)
+			BAD_ERROR("Cannot specify both -repro and mkfs-time <timestamp>\n");
+		else
+			mkfs_inode_opt = TRUE;
+	}
+
+	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset noId
 	 * if both have been specified
 	 */
@@ -7230,6 +7246,7 @@ int main(int argc, char *argv[])
 	char *command;
 	int single_threaded = FALSE;
 	int overcommit = OVERCOMMIT_DEFAULT;
+	int repro_opt = FALSE;
 
 
 	check_sqfs_cmdline(argc, argv);
@@ -7456,6 +7473,8 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-not-reproducible") == 0);
 			/* obsolete option, ignored and retained for backwards
 			 * compatibility */
+		else if(strcmp(argv[i], "-repro") == 0)
+			repro_opt = TRUE;
 		else if(strcmp(argv[i], "-root-mode") == 0) {
 			if((++i == argc) || !parse_mode(argv[i], &root_mode))
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -root-mode missing or invalid mode, symbolic mode or octal number expected\n");
@@ -7995,6 +8014,19 @@ int main(int argc, char *argv[])
 	 */
 	if(root_time_opt && root_inode_opt)
 		BAD_ERROR("Cannot specify both root-time <timestamp> and root-time <inode>\n");
+
+	/*
+	 * Both mkfs-time <timestamp> and -repro cannot have both been
+	 * specified.  Note the extra check for !clamping is to distinquish
+	 * between the environment variable SOURCE_DATE_EPOCH which sets
+	 * mkfs_time_opt and clamping.
+	 */
+	if(repro_opt) {
+		if(mkfs_time_opt && !clamping)
+			BAD_ERROR("Cannot specify both -repro and mkfs-time <timestamp>\n");
+		else
+			mkfs_inode_opt = TRUE;
+	}
 
 	/* If cpiostyle is set, then file names  will be read-in
 	 * from standard in.  We do not expect to have any sources
