@@ -49,7 +49,7 @@ static char *mksquashfs_options[]={
 	"-no-fragments", "-no-duplicates", "-no-hardlinks",
 	"-keep-as-directory", "", "", "",
 	/* time options */
-	"-mkfs-time", "-inode-time", "-root-time", "", "", "",
+	"-mkfs-time", "-inode-time", "-root-time", "-repro", "", "", "",
 	/* permissions options */
 	"-all-root", "-root-mode", "-root-uid", "-root-gid", "-force-file-mode",
 	"-force-dir-mode", "-force-uid", "-force-gid", "-uid-gid-offset", "",
@@ -98,7 +98,7 @@ static char *sqfstar_options[]={
 	"-no-duplicates", "-no-hardlinks", "-regex", "-ignore-zeros", "-ef", "",
 	"", "",
 	/* time options */
-	"-mkfs-time", "-inode-time", "-root-time", "", "", "",
+	"-mkfs-time", "-inode-time", "-root-time", "-repro", "", "", "",
 	/* permissions options */
 	"-all-root", "-root-mode", "-root-uid", "-root-gid", "-force-file-mode",
 	"-force-dir-mode", "-force-uid", "-force-gid", "-uid-gid-offset",
@@ -130,7 +130,7 @@ static char *mksquashfs_args[]={
 	/* build options */
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "","", "",
 	/* time options */
-	"<time>", "<time>", "<time>", "", "", "",
+	"<time>", "<time>", "<time>", "", "", "", "",
 	/* permissions options */
 	"", "<mode>", "<user>", "<group>", "<mode>", "<mode>", "<user>",
 	"<group>", "<value>", "", "", "",
@@ -168,9 +168,9 @@ static char *sqfstar_args[]={
 	/* build options */
 	"", "", "", "", "", "", "", "", "<exclude-file>", "", "", "",
 	/* time options */
-	"<time>", "<time>", "<time>", "", "", "",
+	"<time>", "<time>", "<time>", "", "", "", "",
 	/* permissions options */
-	"", "<mode>", "<yser>", "<group>", "<mode>", "<mode>", "<user>",
+	"", "<mode>", "<user>", "<group>", "<mode>", "<mode>", "<user>",
 	"<group>", "<value>", "<mode>", "<user>", "<roup>", "", "", "",
 	/* pseudo options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode u g>",
