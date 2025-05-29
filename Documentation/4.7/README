@@ -54,7 +54,22 @@ This README has the following sections:
    2.8. New -help-comp option to display compressor options for given
         compressor.
 
-3. Other improvements for Mksquashfs/Sqfstar
+3. Elimination of "fragment block stall" and -(not-)reproducible options
+
+  A technical issue called "the fragment block stall" has been eliminated in
+  this release in a way that generates a reproducible ordering of files in the
+  filesystem image.  This can increase performance by 20% or more, in addition
+  to the parallel reader performance improvements.
+
+  This "fragment block stall" was introduced in release 4.4 (2019) to produce
+  a reproducible ordering of files in the filesystem image by default, but which
+  led to a reduction in parallelisation and performance.  Due to this reduction,
+  the previous behaviour was retained and enabled using the -not-reproducible
+  option.  As the "fragment block stall" has now been removed by default, the
+  options -not-reproducible and -reproducible now do nothing, but are still
+  recognised for backwards compatibility.
+
+4. Other improvements for Mksquashfs/Sqfstar
 
    3.1. New -force-file-mode option, which sets all file (non-directory)
         permissions to the given mode.
@@ -73,7 +88,7 @@ This README has the following sections:
         Pseudo file definition pathname, the pseudo file definition would be
         ignored.  This has been hardened to a fatal error.
 
-4. Other improvements for Unsquashfs/Sqfscat
+5. Other improvements for Unsquashfs/Sqfscat
 
    4.1. New -mem option, which sets the amount of memory to be used,
         K, M and G can be used to specify Kbytes, Mbytes and Gbytes.
@@ -81,7 +96,7 @@ This README has the following sections:
         used as percentage of available physical memory.
    4.3. Memory specified is limited to 75% of physical memory or less.
 
-5. New environment variable SQFS_CMDLINE (Mksquashfs/Unsquashfs/Sqfstar/Sqfscat)
+6. New environment variable SQFS_CMDLINE (Mksquashfs/Unsquashfs/Sqfstar/Sqfscat)
 
    If set, this is used as the directory to write the file sqfs_cmdline
    which contains the command line arguments given to Mksquashfs etc.  Intended
