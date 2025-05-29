@@ -62,12 +62,12 @@ This README has the following sections:
   to the parallel reader performance improvements.
 
   This "fragment block stall" was introduced in release 4.4 (2019) to produce
-  a reproducible ordering of files in the filesystem image by default, but which
-  led to a reduction in parallelisation and performance.  Due to this reduction,
-  the previous behaviour was retained and enabled using the -not-reproducible
-  option.  As the "fragment block stall" has now been removed by default, the
-  options -not-reproducible and -reproducible now do nothing, but are still
-  recognised for backwards compatibility.
+  a reproducible ordering of files in the filesystem image, but which led to a
+  reduction in parallelisation and performance.  Due to this reduction, the
+  previous behaviour was retained and enabled using the -not-reproducible option.
+  As the "fragment block stall" has now been removed, the options
+  -not-reproducible and -reproducible now do nothing, but are still recognised
+  for backwards compatibility.
 
 4. Other improvements for Mksquashfs/Sqfstar
 
