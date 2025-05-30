@@ -3912,7 +3912,7 @@ static int parse_cat_options(int argc, char *argv[])
 				exit(1);
 			}
 		} else if(strcmp(argv[i], "-mem") == 0) {
-			long long number;
+			long long number = 0;
 
 			if((++i == argc) ||
 					!parse_numberll(argv[i], &number, 1))
@@ -4172,7 +4172,7 @@ static int parse_options(int argc, char *argv[])
 						&max_depth))
 				unsquashfs_option_help("-max-depth", "unsquashfs: -max-depth missing or invalid levels\n");
 		} else if(strcmp(argv[i], "-mem") == 0) {
-			long long number;
+			long long number = 0;
 
 			if((++i == argc) ||
 					!parse_numberll(argv[i], &number, 1))
