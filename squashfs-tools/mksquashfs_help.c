@@ -49,7 +49,8 @@ static char *mksquashfs_options[]={
 	"-no-fragments", "-no-duplicates", "-no-hardlinks",
 	"-keep-as-directory", "", "", "",
 	/* time options */
-	"-mkfs-time", "-inode-time", "-root-time", "-repro", "", "", "",
+	"-mkfs-time", "-inode-time", "-root-time", "-repro", "-repro-time", "",
+	"", "",
 	/* permissions options */
 	"-all-root", "-root-mode", "-root-uid", "-root-gid", "-force-file-mode",
 	"-force-dir-mode", "-force-uid", "-force-gid", "-uid-gid-offset", "",
@@ -98,7 +99,8 @@ static char *sqfstar_options[]={
 	"-no-duplicates", "-no-hardlinks", "-regex", "-ignore-zeros", "-ef", "",
 	"", "",
 	/* time options */
-	"-mkfs-time", "-inode-time", "-root-time", "-repro", "", "", "",
+	"-mkfs-time", "-inode-time", "-root-time", "-repro", "-repro-time", "",
+	"", "",
 	/* permissions options */
 	"-all-root", "-root-mode", "-root-uid", "-root-gid", "-force-file-mode",
 	"-force-dir-mode", "-force-uid", "-force-gid", "-uid-gid-offset",
@@ -130,7 +132,7 @@ static char *mksquashfs_args[]={
 	/* build options */
 	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "","", "",
 	/* time options */
-	"<time>", "<time>", "<time>", "", "", "", "",
+	"<time>", "<time>", "<time>", "", "<time>", "", "", "",
 	/* permissions options */
 	"", "<mode>", "<user>", "<group>", "<mode>", "<mode>", "<user>",
 	"<group>", "<value>", "", "", "",
@@ -168,7 +170,7 @@ static char *sqfstar_args[]={
 	/* build options */
 	"", "", "", "", "", "", "", "", "<exclude-file>", "", "", "",
 	/* time options */
-	"<time>", "<time>", "<time>", "", "", "", "",
+	"<time>", "<time>", "<time>", "", "<time>", "", "", "",
 	/* permissions options */
 	"", "<mode>", "<user>", "<group>", "<mode>", "<mode>", "<user>",
 	"<group>", "<value>", "<mode>", "<user>", "<roup>", "", "", "",
@@ -263,11 +265,17 @@ static char *mksquashfs_text[]={
 		"\"date\" command to parse. Any string value which the date "
 		"command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
-	"-repro\t\t\tbuild a reproducible filesystem image.  This is shorthand "
-		"for -mkfs-time inode, which achieves reproducibility by "
-		"setting the filesystem build time to the latest inode "
-		"timestamp.  Obviously the image won't be reproducible if the "
-		"timestamps or content changes.\n",
+	"-repro\t\t\tbuild a reproducible filesystem image.  This is "
+		"equivalent to -mkfs-time inode, which achieves "
+		"reproducibility by setting the filesystem build time to the "
+		"latest inode timestamp.  Obviously the image won't be "
+		"reproducible if the timestamps or content changes.\n",
+	"-repro-time <time>\tbuild a reproducible filesystem image.  This is "
+		"equivalent to specifying -mkfs-time <time> and -inode-time "
+		"<time>, which achieves reproducibility by setting all "
+		"timestamps to <time>.  This option can be used in cases where "
+		"timestamps may change, and where -repro cannot be used for "
+		"this reason\n",
 	"\n", "Filesystem permissions options:", "\n",
 	"-all-root\t\tmake all files and directories owned by root\n",
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "
@@ -609,11 +617,17 @@ static char *sqfstar_text[]={
 		"\"date\" command to parse. Any string value which the date "
 		"command recognises can be used such as \"now\", \"last "
 		"week\", or \"Wed Feb 15 21:02:39 GMT 2025\"\n",
-	"-repro\t\t\tbuild a reproducible filesystem image.  This is shorthand "
-		"for -mkfs-time inode, which achieves reproducibility by "
-		"setting the filesystem build time to the latest inode "
-		"timestamp.  Obviously the image won't be reproducible if the "
-		"timestamps or content changes.\n",
+	"-repro\t\t\tbuild a reproducible filesystem image.  This is "
+		"equivalent to -mkfs-time inode, which achieves "
+		"reproducibility by setting the filesystem build time to the "
+		"latest inode timestamp.  Obviously the image won't be "
+		"reproducible if the timestamps or content changes.\n",
+	"-repro-time <time>\tbuild a reproducible filesystem image.  This is "
+		"equivalent to specifying -mkfs-time <time> and -inode-time "
+		"<time>, which achieves reproducibility by setting all "
+		"timestamps to <time>.  This option can be used in cases where "
+		"timestamps may change, and where -repro cannot be used for "
+		"this reason\n",
 	"\n", "Filesystem permissions options:", "\n",
 	"-all-root\t\tmake all files and directories owned by root\n",
 	"-root-mode <mode>\tset root directory permissions to <mode>.  <Mode> "

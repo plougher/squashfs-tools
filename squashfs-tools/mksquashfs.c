@@ -375,7 +375,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "inode-time",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
 	"hs", "info-file", "force-file-mode", "force-dir-mode",
 	"small-readers", "block-readers", "uid-gid-offset", "all-time",
-	"overcommit", NULL
+	"overcommit", "repro-time", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime",
@@ -385,7 +385,7 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime",
 	"default-mode", "default-uid", "default-gid", "mem-percent", "pd",
 	"pseudo-dir", "help-option", "ho", "help-section", "hs", "info-file",
 	"force-file-mode", "force-dir-mode", "uid-gid-offset", "all-time",
-	"overcommit", NULL
+	"overcommit", "repro-time", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
@@ -6420,6 +6420,8 @@ static int sqfstar(int argc, char *argv[])
 	void *comp_data;
 	int overcommit = OVERCOMMIT_DEFAULT;
 	int repro_opt = FALSE;
+	int repro_time_opt = FALSE;
+	unsigned int repro_time;
 
 	/* Scan the command line for options that will immediately quit afterwards */
 	for(i = 1; i < argc; i++) {
@@ -6556,8 +6558,10 @@ static int sqfstar(int argc, char *argv[])
 			else if(!parse_num_unsigned(argv[i], &mkfs_time) &&
 					!exec_date(argv[i], &mkfs_time))
 				sqfstar_option_help(argv[i - 1], "sqfstar: %s missing time value\n", argv[i - 1]);
-			else
+			else {
 				mkfs_time_opt = TRUE;
+				clamping = FALSE;
+			}
 		} else if(strcmp(argv[i], "-all-time") == 0 || strcmp(argv[i], "-inode-time") == 0) {
 			if(++i == dest_index)
 				sqfstar_option_help(argv[i - 1], "sqfstar: %s invalid time value\n", argv[i - 1]);
@@ -6578,7 +6582,15 @@ static int sqfstar(int argc, char *argv[])
 			 * compatibility */
 		else if(strcmp(argv[i], "-repro") == 0)
 			repro_opt = TRUE;
-		else if(strcmp(argv[i], "-root-mode") == 0) {
+		else if(strcmp(argv[i], "-repro-time") == 0) {
+			if(++i == dest_index)
+				sqfstar_option_help(argv[i - 1], "sqfstar: -repro-time missing time value\n");
+			else if(!parse_num_unsigned(argv[i], &repro_time) &&
+					!exec_date(argv[i], &repro_time))
+				sqfstar_option_help(argv[i - 1], "sqfstar: -repro-time invalid time value\n", argv[i - 1]);
+			else
+				repro_time_opt = TRUE;
+		} else if(strcmp(argv[i], "-root-mode") == 0) {
 			if((++i == dest_index) || !parse_mode(argv[i], &root_mode))
 				sqfstar_option_help(argv[i - 1], "sqfstar: -root-mode missing or invalid mode, symbolic mode or octal number expected\n");
 			root_mode_opt = TRUE;
@@ -6975,6 +6987,32 @@ static int sqfstar(int argc, char *argv[])
 			mkfs_inode_opt = TRUE;
 	}
 
+	/* -repro-time and -repro cannot have both been specified */
+	if(repro_time_opt && repro_opt)
+		BAD_ERROR("Cannot specify both -repro and -repro-time <timestamp>\n");
+
+	/* -repro-time cannot have been specified with -mkfs-time inode,
+	 * -inode-time inode or SOURCE_DATE_EPOCH */
+	if(repro_time_opt) {
+		if(mkfs_inode_opt)
+			BAD_ERROR("Cannot specify both -repro-time <timestamp> and -mkfs-time inode\n");
+
+		if(inode_inode_opt)
+			BAD_ERROR("Cannot specify both -repro-time <timestamp> and -inode-time inode\n");
+
+		if(mkfs_time_opt && clamping)
+			BAD_ERROR("Cannot specify both -repro-time <timestamp> and SOURCE_DATE_EPOCH\n");
+
+		if(mkfs_time_opt && mkfs_time != repro_time)
+			BAD_ERROR("Cannot specify different timestamp with -repro-time <timestamp> and mkfs-time <timestamp>\n");
+
+		if(inode_time_opt && inode_time != repro_time)
+			BAD_ERROR("Cannot specify different timestamp with -repro-time <timestamp> and inode-time <timestamp>\n");
+
+		mkfs_time_opt = inode_time_opt = TRUE;
+		mkfs_time = inode_time = repro_time;
+	}
+
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset noId
 	 * if both have been specified
@@ -7247,7 +7285,8 @@ int main(int argc, char *argv[])
 	int single_threaded = FALSE;
 	int overcommit = OVERCOMMIT_DEFAULT;
 	int repro_opt = FALSE;
-
+	int repro_time_opt = FALSE;
+	unsigned int repro_time;
 
 	check_sqfs_cmdline(argc, argv);
 	check_pager();
@@ -7453,8 +7492,10 @@ int main(int argc, char *argv[])
 			else if(!parse_num_unsigned(argv[i], &mkfs_time) &&
 					!exec_date(argv[i], &mkfs_time))
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s invalid time value\n", argv[i - 1]);
-			else
+			else {
 				mkfs_time_opt = TRUE;
+				clamping = FALSE;
+			}
 		} else if(strcmp(argv[i], "-all-time") == 0 || strcmp(argv[i], "-inode-time") == 0) {
 			if(++i == argc)
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s missing time value\n", argv[i - 1]);
@@ -7475,7 +7516,15 @@ int main(int argc, char *argv[])
 			 * compatibility */
 		else if(strcmp(argv[i], "-repro") == 0)
 			repro_opt = TRUE;
-		else if(strcmp(argv[i], "-root-mode") == 0) {
+		else if(strcmp(argv[i], "-repro-time") == 0) {
+			if(++i == argc)
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -repro-time missing time value\n");
+			else if(!parse_num_unsigned(argv[i], &repro_time) &&
+					!exec_date(argv[i], &repro_time))
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -repro-time invalid time value\n");
+			else
+				repro_time_opt = TRUE;
+		} else if(strcmp(argv[i], "-root-mode") == 0) {
 			if((++i == argc) || !parse_mode(argv[i], &root_mode))
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -root-mode missing or invalid mode, symbolic mode or octal number expected\n");
 			root_mode_opt = TRUE;
@@ -8026,6 +8075,32 @@ int main(int argc, char *argv[])
 			BAD_ERROR("Cannot specify both -repro and mkfs-time <timestamp>\n");
 		else
 			mkfs_inode_opt = TRUE;
+	}
+
+	/* -repro-time and -repro cannot have both been specified */
+	if(repro_time_opt && repro_opt)
+		BAD_ERROR("Cannot specify both -repro and -repro-time <timestamp>\n");
+
+	/* -repro-time cannot have been specified with -mkfs-time inode,
+	 * -inode-time inode or SOURCE_DATE_EPOCH */
+	if(repro_time_opt) {
+		if(mkfs_inode_opt)
+			BAD_ERROR("Cannot specify both -repro-time <timestamp> and -mkfs-time inode\n");
+
+		if(inode_inode_opt)
+			BAD_ERROR("Cannot specify both -repro-time <timestamp> and -inode-time inode\n");
+
+		if(mkfs_time_opt && clamping)
+			BAD_ERROR("Cannot specify both -repro-time <timestamp> and SOURCE_DATE_EPOCH\n");
+
+		if(mkfs_time_opt && mkfs_time != repro_time)
+			BAD_ERROR("Cannot specify different timestamp with -repro-time <timestamp> and mkfs-time <timestamp>\n");
+
+		if(inode_time_opt && inode_time != repro_time)
+			BAD_ERROR("Cannot specify different timestamp with -repro-time <timestamp> and inode-time <timestamp>\n");
+
+		mkfs_time_opt = inode_time_opt = TRUE;
+		mkfs_time = inode_time = repro_time;
 	}
 
 	/* If cpiostyle is set, then file names  will be read-in
