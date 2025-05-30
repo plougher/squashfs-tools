@@ -114,7 +114,8 @@ ${SED} -i "s/^ *-X/  -X/" $tmp/sqfstar.help
 
 ${SED} -i -e "s/regex> exclude/regex>  exclude/" \
 	-e "s/regex> include/regex>  include/" -e "s/mode> set/mode>  set/" \
-	-e "s/value> offset/value>  offset/" $tmp/sqfstar.help
+	-e "s/value> offset/value>  offset/" \
+	-e "s/section> print/section>  print/" $tmp/sqfstar.help
 
 # Uppercase the options operands (between < and > ) to make it conform
 # more to man page standards

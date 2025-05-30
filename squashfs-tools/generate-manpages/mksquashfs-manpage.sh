@@ -113,7 +113,8 @@ ${SED} -i "s/^ *-X/  -X/" $tmp/mksquashfs.help
 ${SED} -i -e "s/expr> as/expr>  as/" -e "s/exp> as/exp>  as/" \
 	-e "s/file> as/file>  as/" -e "s/regex> exclude/regex>  exclude/" \
 	-e "s/regex> include/regex>  include/" -e "s/mode> set/mode>  set/" \
-	-e "s/value> offset/value>  offset/" $tmp/mksquashfs.help
+	-e "s/value> offset/value>  offset/" \
+	-e "s/section> print/section>  print/" $tmp/mksquashfs.help
 
 # Expand certain operands truncated in help text due to lack of space
 
