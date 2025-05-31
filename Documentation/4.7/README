@@ -54,7 +54,22 @@ This README has the following sections:
    2.8. New -help-comp option to display compressor options for given
         compressor.
 
-3. Elimination of "fragment block stall" and -(not-)reproducible options
+3. New options for building reproducible filesystems (Mksquash/Sqfstar)
+
+  3.1 Low level timestamp setting options extended
+     -mkfs-time inode	set filesystem creation time to the latest inode
+			timestamp
+     -inode-time inode	set all inode timestamps to the latest inode timestamp
+     -root-time inode	set the root directory timestamp to the latest inode
+			timestamp
+
+  3.2 New easier to remember shorthand options
+     -repro		build a reproducible filesystem image, this is
+			equivalent to -mkfs-time inode.
+     -repro-time <time>	build a reproducible image, this is equivalent to
+			specifying -mkfs-time <time> and -inode-time <time>.
+
+4. Elimination of "fragment block stall" and -(not-)reproducible options
 
   A technical issue called "the fragment block stall" has been eliminated in
   this release in a way that generates a reproducible ordering of files in the
@@ -69,7 +84,7 @@ This README has the following sections:
   -not-reproducible and -reproducible now do nothing, but are still recognised
   for backwards compatibility.
 
-4. Other improvements for Mksquashfs/Sqfstar
+5. Other improvements for Mksquashfs/Sqfstar
 
    3.1. New -force-file-mode option, which sets all file (non-directory)
         permissions to the given mode.
@@ -88,7 +103,7 @@ This README has the following sections:
         Pseudo file definition pathname, the pseudo file definition would be
         ignored.  This has been hardened to a fatal error.
 
-5. Other improvements for Unsquashfs/Sqfscat
+6. Other improvements for Unsquashfs/Sqfscat
 
    4.1. New -mem option, which sets the amount of memory to be used,
         K, M and G can be used to specify Kbytes, Mbytes and Gbytes.
@@ -96,7 +111,7 @@ This README has the following sections:
         used as percentage of available physical memory.
    4.3. Memory specified is limited to 75% of physical memory or less.
 
-6. New environment variable SQFS_CMDLINE (Mksquashfs/Unsquashfs/Sqfstar/Sqfscat)
+7. New environment variable SQFS_CMDLINE (Mksquashfs/Unsquashfs/Sqfstar/Sqfscat)
 
    If set, this is used as the directory to write the file sqfs_cmdline
    which contains the command line arguments given to Mksquashfs etc.  Intended
