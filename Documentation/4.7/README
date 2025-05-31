@@ -26,7 +26,8 @@ This README has the following sections:
 1. Mksquashfs now reads files in parallel from the input directories
 
    1.1. This can significantly increase I/O when reading lots of small files,
-        and/or the input benefits from parallel reading e.g. modern SSD drives,
+        and/or the input media benefits from parallel reading e.g. modern SSD
+        drives,
         or network filesystems etc.
    1.2  In cases where speed of I/O is the bottleneck in Mksquashfs, this can
         make Mksquashfs run significantly faster, in some cases Mksquashfs can
