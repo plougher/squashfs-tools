@@ -27,15 +27,14 @@ This README has the following sections:
 
    1.1. This can significantly increase I/O when reading lots of small files,
         and/or the input media benefits from parallel reading e.g. modern SSD
-        drives,
-        or network filesystems etc.
+        drives, or network filesystems etc.
    1.2  In cases where speed of I/O is the bottleneck in Mksquashfs, this can
         make Mksquashfs run significantly faster, in some cases Mksquashfs can
         be more than ten times faster.
    1.3. New -small-readers option to specify number of parallel small file
-        reader threads (files less than a block size).  Default XXX threads.
+        reader threads (files less than a block size).  Default 4 threads.
    1.4. New -block-readers option to specify number of parallel block reader
-        threads (files one block or larger).  Default XXX threads.
+        threads (files one block or larger).  Default 4 threads.
    1.5. New -single-reader option to specify a single reader thread, similar to
         previous Mksquashfs versions.
 
