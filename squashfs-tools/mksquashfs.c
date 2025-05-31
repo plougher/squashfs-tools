@@ -6557,14 +6557,14 @@ static int sqfstar(int argc, char *argv[])
 				mkfs_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &mkfs_time) &&
 					!exec_date(argv[i], &mkfs_time))
-				sqfstar_option_help(argv[i - 1], "sqfstar: %s missing time value\n", argv[i - 1]);
+				sqfstar_option_help(argv[i - 1], "sqfstar: %s invalid time value\n", argv[i - 1]);
 			else {
 				mkfs_time_opt = TRUE;
 				clamping = FALSE;
 			}
 		} else if(strcmp(argv[i], "-all-time") == 0 || strcmp(argv[i], "-inode-time") == 0) {
 			if(++i == dest_index)
-				sqfstar_option_help(argv[i - 1], "sqfstar: %s invalid time value\n", argv[i - 1]);
+				sqfstar_option_help(argv[i - 1], "sqfstar: %s missing time value\n", argv[i - 1]);
 			else if(strcmp(argv[i], "inode") == 0)
 				inode_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &inode_time) &&
@@ -6633,7 +6633,7 @@ static int sqfstar(int argc, char *argv[])
 				root_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &root_time) &&
 					!exec_date(argv[i], &root_time))
-				sqfstar_option_help(argv[i - 1], "sqfstar: -root-time time value\n");
+				sqfstar_option_help(argv[i - 1], "sqfstar: -root-time invalid time value\n");
 			else
 				root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
@@ -6956,7 +6956,7 @@ static int sqfstar(int argc, char *argv[])
 	 * mkfs_time_opt and clamping.
 	 */
 	if(mkfs_time_opt && mkfs_inode_opt && !clamping)
-		BAD_ERROR("Cannot specify both mkfs-time <timestamp> and mkfs-time <inode>\n");
+		BAD_ERROR("Cannot specify both mkfs-time <timestamp> and mkfs-time inode\n");
 
 	/*
 	 * Both inode-time <timestamp> and inode-time <inode> cannot have both
@@ -6965,14 +6965,14 @@ static int sqfstar(int argc, char *argv[])
 	 * inode_time_opt and clamping.
 	 */
 	if(inode_time_opt && inode_inode_opt && !clamping)
-		BAD_ERROR("Cannot specify both inode-time <timestamp> and inode-time <inode>\n");
+		BAD_ERROR("Cannot specify both inode-time <timestamp> and inode-time inode\n");
 
 	/*
 	 * Both root-time <timestamp> and root-time <inode> cannot have both
 	 * been specified.
 	 */
 	if(root_time_opt && root_inode_opt)
-		BAD_ERROR("Cannot specify both root-time <timestamp> and root-time <inode>\n");
+		BAD_ERROR("Cannot specify both root-time <timestamp> and root-time inode\n");
 
 	/*
 	 * Both mkfs-time <timestamp> and -repro cannot have both been
@@ -8046,7 +8046,7 @@ int main(int argc, char *argv[])
 	 * mkfs_time_opt and clamping.
 	 */
 	if(mkfs_time_opt && mkfs_inode_opt && !clamping)
-		BAD_ERROR("Cannot specify both mkfs-time <timestamp> and mkfs-time <inode>\n");
+		BAD_ERROR("Cannot specify both mkfs-time <timestamp> and mkfs-time inode\n");
 
 	/*
 	 * Both inode-time <timestamp> and inode-time <inode> cannot have both
@@ -8055,14 +8055,14 @@ int main(int argc, char *argv[])
 	 * inode_time_opt and clamping.
 	 */
 	if(inode_time_opt && inode_inode_opt && !clamping)
-		BAD_ERROR("Cannot specify both inode-time <timestamp> and inode-time <inode>\n");
+		BAD_ERROR("Cannot specify both inode-time <timestamp> and inode-time inode\n");
 
 	/*
 	 * Both root-time <timestamp> and root-time <inode> cannot have both
 	 * been specified.
 	 */
 	if(root_time_opt && root_inode_opt)
-		BAD_ERROR("Cannot specify both root-time <timestamp> and root-time <inode>\n");
+		BAD_ERROR("Cannot specify both root-time <timestamp> and root-time inode\n");
 
 	/*
 	 * Both mkfs-time <timestamp> and -repro cannot have both been
