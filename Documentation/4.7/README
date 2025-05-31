@@ -57,17 +57,14 @@ This README has the following sections:
 3. New options for building reproducible filesystems (Mksquash/Sqfstar)
 
   3.1 Low level timestamp setting options extended
-     -mkfs-time inode	set filesystem creation time to the latest inode
-			timestamp
-     -inode-time inode	set all inode timestamps to the latest inode timestamp
-     -root-time inode	set the root directory timestamp to the latest inode
-			timestamp
+     -mkfs-time inode sets the fs creation time to the latest inode timestamp
+     -inode-time inode sets all inode timestamps to the latest inode timestamp
+     -root-time inode sets the root dir timestamp to the latest inode timestamp
 
   3.2 New easier to remember shorthand options
-     -repro		build a reproducible filesystem image, this is
-			equivalent to -mkfs-time inode.
-     -repro-time <time>	build a reproducible image, this is equivalent to
-			specifying -mkfs-time <time> and -inode-time <time>.
+     -repro builds a reproducible fs image, it is shorthand for -mkfs-time inode
+     -repro-time <time> builds a reproducible fs image, it is shorthand for
+      specifying -mkfs-time <time> and -inode-time <time>.
 
 4. Elimination of "fragment block stall" and -(not-)reproducible options
 
