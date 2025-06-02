@@ -18,9 +18,11 @@ This README has the following sections:
 1. Summary of changes
 2. Parallel file reading and options
 3. Help system and options
-4. Author info
+4. Reproducible filesystem images and new options
+5. Author info
 
-1. Summary of changes
+
+1. SUMMARY OF CHANGES
 ---------------------
 
 1. Mksquashfs now reads files in parallel from the input directories
@@ -115,7 +117,7 @@ This README has the following sections:
    to be used to debug scripts/discover what is being passed to Mksquashfs.
 
 
-2. Parallel file reading and options
+2. PARALLEL FILE READING AND OPTIONS
 ------------------------------------
 
 Modern computers can have 16 cores/32 threads or more [*], and systems with 8
@@ -236,8 +238,8 @@ between different input files/media and performance.  If you think Mksquashfs
 is I/O bound then you should experiment with larger reader threads which may
 increase performance.
 
-2.1 SPECIALISED SMALL READER AND BLOCK READER THREADS
-------------------------------------------------------
+2.1 Specialised small reader and block reader threads
+-----------------------------------------------------
 
 The amount of reader threads you need to maximise I/O when reading small files,
 is often different to the amount of reader threads you need when reading larger
@@ -268,7 +270,8 @@ the above example again, the block reader thread will work ahead and read the
     Unix machines around since the early 1990s (such as the Sequent Symmetry),
     but these were multi-user systems typically supporting 50 or more users.
 
-3. Help system and options
+
+3. HELP SYSTEM AND OPTIONS
 --------------------------
 
 The help system has been rewritten to remove the annoyances and limitations
@@ -512,7 +515,99 @@ The pager used can be over-ridden using the PAGER environment variable.  If the
 filename given by PAGER doesn't contain slashes, the PATH environment variable
 will be used to locate it, otherwise it will be treated as a pathname.
 
-4. AUTHOR INFO
+
+4. REPRODUCIBLE FILESYSTEM IMAGES AND NEW OPTIONS
+-------------------------------------------------
+
+If you want Mksquashfs to generate an identical (byte for byte) filesystem on
+every run, then the following conditions have to be true:
+
+1. The filesystem source data has to be the same,
+2. The timestamps (and other metadata such as permissions), must be the same,
+3. The root directory timestamp (and other metadata), must be the same,
+4. The filesystem make time (stored in the super-block) must be the same.
+
+Due to point 4, every time you run Mksquashfs, the filesystem will be different,
+even if everything else is the same.  But less obviously, if Mksquashfs has to
+fabricate a root directory (because the source doesn't supply one, for example
+where multiple files are specified on the command line), the timestamp of the
+root directory will also change on every run.
+
+To avoid the above, previous versions introduced the -mkfs-time <time>, and
+-root-time <time> options:
+
+% mksquashfs source(s) image.sqfs -mkfs-time 0 -root-time 0
+
+Will generate a filesystem image where the timestamps (that can change) have
+been set to 0 (the start of the epoch 1970-01-01).
+
+But a problem with this (for many people) is that it ensures reproducibility by
+losing information and functionality, akin to using a sledgehammer to crack a
+nut.  With a filesystem make time of 0, it is no longer possible to discover the
+difference between one filesystem and another without looking at the content, or
+know how old the filesystem is without looking at the content either.
+
+Due to this, this release introduces new variants of -mkfs-time, and -root-time.
+It also introduces a new variant of -all-time, while also renaming it to
+-inode-time.  Lastly, there are some new easy to remember shorthand options
+added.
+
+4.1 New -mkfs-time, -root-time and -inode-time variants
+-------------------------------------------------------
+
+4.1.1 -mkfs-time inode
+
+This sets the filesystem make time to the latest inode timestamp in the
+source(s).  Because this is a relative value (rather than absolute), it ensures
+the filesystem is identical on multiple runs of Mksquashfs if the content
+doesn't change, it also allows filesystems with newer content to be
+distinquished using the filesystem make time, and if the timestamps are updated
+(due to changed content) this will produce a newer filesystem make time.
+
+In effect this is a more nuanced way of producing reproducibility than an
+absolute value.  Also the latest inode timestamp is taken from the source(s),
+ignoring any fabricated timestamps (e.g. root directory), and all fabricated
+timestamps are set to the latest inode value too.  This means the -root-time
+option is no longer necessary if the -mkfs-time inode is used.
+
+4.1.2 -root-time inode
+
+This sets the root directory timestamp to the latest inode timestamp in the
+source(s).  If -mkfs-time inode is specified this option is no longer
+necessary.
+
+4.1.3 -inode-time inode
+
+This option has been renamed from -all-time [*] in previous versions because
+all-time was a misnomer (it sets all the inode timestamps, but not also the
+filesystem make time as the name suggests).
+
+This sets all the inode timestamps to the latest inode timestamp in the
+source(s).  I doubt there are many use-cases for this, but it keeps the
+functionality matching between options.
+
+[*] the name -all-time is still recognised for backwards compatibility.
+
+4.2 New easier to remember shorthand options
+--------------------------------------------
+
+4.2.1 -repro
+
+This option makes Mksquashfs build a reproducible filesystem image.  This is
+equivalent to -mkfs-time inode, which achieves reproducibility by setting the
+filesystem build time to the latest inode timestamp.  Obviously the image won't
+be reproducible if the timestamps or content changes.
+
+4.2.2 -repro-time <time>
+
+This option makes Mksquashfs build a reproducible filesystem image.  This is
+equivalent to specifying -mkfs-time <time> and -inode-time <time>, which
+achieves reproducibility by setting all timestamps to <time>.  This option can
+be used in cases where timestamps may change, and where -repro cannot be used
+for this reason.
+
+
+5. AUTHOR INFO
 --------------
 
 Squashfs was written by Phillip Lougher, email phillip@squashfs.org.uk,
