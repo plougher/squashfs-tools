@@ -6,14 +6,15 @@ This file describes how to use Sqfstar, and it has the following sections:
 2. Getting help and displaying Sqfstar options
 3. Changing compression algorithm and compression specific options
 4. Changing global compression defaults used in sqfstar
-5. Specifying the UIDs/GIDs used in the filesystem
-6. Specifying the file permissions used in the filesystem
-7. Excluding files from the filesystem
-8. Reducing CPU and I/O usage
-9. Filtering and adding extended attributes (xattrs)
-10. Pseudo file support
-11. Extended pseudo file definitions with timestamps
-12. Miscellaneous options
+5. Building reproducible filesystem images
+6. Specifying the UIDs/GIDs used in the filesystem
+7. Specifying the file permissions used in the filesystem
+8. Excluding files from the filesystem
+9. Reducing CPU and I/O usage
+10. Filtering and adding extended attributes (xattrs)
+11. Pseudo file support
+12. Extended pseudo file definitions with timestamps
+13. Miscellaneous options
 
 1. INTRODUCTION AND BASIC USAGE
 -------------------------------
@@ -258,6 +259,7 @@ The pager used can be over-ridden using the PAGER environment variable.  If the
 filename given by PAGER doesn't contain slashes, the PATH environment variable
 will be used to locate it, otherwise it will be treated as a pathname.
 
+
 3. CHANGING COMPRESSION ALGORITHM AND COMPRESSION SPECIFIC OPTIONS
 ------------------------------------------------------------------
 
@@ -317,6 +319,7 @@ highest compression, for LZO/LZ4 best means a tradeoff between compression and
 (de)-compression overhead (LZO/LZ4 by definition are intended for weaker
 processors).
 
+
 4. CHANGING GLOBAL COMPRESSION DEFAULTS USED IN SQFSTAR
 -------------------------------------------------------
 
@@ -359,7 +362,132 @@ the filesystem for duplicates.  This can result in quicker filesystem generation
 although obviously compression will suffer badly if there is a lot of duplicate
 files.
 
-5. SPECIFYING THE UIDs/GIDs USED IN THE FILESYSTEM
+
+5. BUILDING REPRODUCIBLE FILESYSTEM IMAGES
+------------------------------------------
+
+If you want Sqfstar to generate an identical (byte for byte) filesystem on
+every run, then the following conditions have to be true:
+
+1. The filesystem source data has to be the same,
+2. The timestamps (and other metadata such as permissions), must be the same,
+3. The root directory timestamp (and other metadata), must be the same,
+4. The filesystem make time (stored in the super-block) must be the same.
+
+Due to point 4, every time you run Sqfstar, the filesystem will be different,
+even if everything else is the same.  But less obviously, Sqfstar has to
+fabricate a root directory because tar files do not contain one, and so the
+timestamp of the root directory will also change on every run.
+
+To avoid the above, previous versions introduced the -mkfs-time <time>, and
+-root-time <time> options:
+
+% sqfstar -mkfs-time 0 -root-time 0 image.sqfs < tarfile
+
+Will generate a filesystem image where the timestamps (that will change) have
+been set to 0 (the start of the epoch 1970-01-01).
+
+But a problem with this (for many people) is that it ensures reproducibility by
+losing information and functionality, akin to using a sledgehammer to crack a
+nut.  With a filesystem make time of 0, it is no longer possible to discover the
+difference between one filesystem and another without looking at the content, or
+know how old the filesystem is without looking at the content either.
+
+Due to this, this release introduces new variants of -mkfs-time, and -root-time.
+It also introduces a new variant of -all-time, while also renaming it to
+-inode-time.  Lastly, there are some new easy to remember shorthand options
+added.
+
+5.1 -mkfs-time, -root-time and -inode-time options with a timestamp
+-------------------------------------------------------------------
+
+5.1.1 -mkfs-time <time>
+
+Set mkfs time to <time>.  Time can be an integer which is the seconds since
+the epoch of 1970-01-01 00:00:00 UTC), or a date string as recognised by the
+"date" command.
+
+5.1.2 -root-time <time>
+
+Set root directory timestamp to <time>.  Time can be an integer which is the
+seconds since the epoch of 1970-01-01 00:00:00 UTC), or a date string as
+recognised by the "date" command.
+
+5.1.3 -inode-time <time>
+
+This option has been renamed from -all-time [*] in previous versions because
+all-time was a misnomer (it sets all the inode timestamps, but not also the
+filesystem make time as the name suggests).
+
+Set all file timestamps to <time>.  Time can be an integer which is the seconds
+since the epoch of 1970-01-01 00:00:00 UTC), or a date string as recognised by
+the "date" command.
+
+[*] the name -all-time is still recognised for backwards compatibility.
+
+5.2 New -mkfs-time, -root-time and -inode-time variants
+-------------------------------------------------------
+
+5.2.1 -mkfs-time inode
+
+This sets the filesystem make time to the latest inode timestamp in the
+tar file.  Because this is a relative value (rather than absolute), it ensures
+the filesystem is identical on multiple runs of Sqfstar if the content
+doesn't change, it also allows filesystems with newer content to be
+distinquished using the filesystem make time, and if the timestamps are updated
+(due to changed content) this will produce a newer filesystem make time.
+
+In effect this is a more nuanced way of producing reproducibility than an
+absolute value.  Also the latest inode timestamp is taken from the tar file,
+ignoring any fabricated timestamps (e.g. root directory), and all fabricated
+timestamps are set to the latest inode value too.  This means the -root-time
+option is no longer necessary if the -mkfs-time inode option is used.
+
+5.2.2 -root-time inode
+
+This sets the root directory timestamp to the latest inode timestamp in the
+tar file.  If -mkfs-time inode is specified this option is no longer
+necessary.
+
+5.2.3 -inode-time inode
+
+This sets all the inode timestamps to the latest inode timestamp in the
+tar file.  I doubt there are many use-cases for this, but it keeps the
+functionality matching between options.
+
+
+5.3 New easier to remember shorthand options
+--------------------------------------------
+
+5.3.1 -repro
+
+This option makes Sqfstar build a reproducible filesystem image.  This is
+equivalent to -mkfs-time inode, which achieves reproducibility by setting the
+filesystem build time to the latest inode timestamp.  Obviously the image won't
+be reproducible if the timestamps or content changes.
+
+5.3.2 -repro-time <time>
+
+This option makes Sqfstar build a reproducible filesystem image.  This is
+equivalent to specifying -mkfs-time <time> and -inode-time <time>, which
+achieves reproducibility by setting all timestamps to <time>.  This option can
+be used in cases where timestamps may change, and where -repro cannot be used
+for this reason.
+
+5.4 the environment variable SOURCE_DATE_EPOCH
+----------------------------------------------
+
+As an alternative to the above command line options, you can set the environment
+variable SOURCE_DATE_EPOCH to a time value.
+
+This value will be used to set the mkfs time.  Also any file timestamps which
+are after SOURCE_DATE_EPOCH will be clamped to SOURCE_DATE_EPOCH.
+
+See https://reproducible-builds.org/docs/source-date-epoch/ for more
+information.
+
+
+6. SPECIFYING THE UIDs/GIDs USED IN THE FILESYSTEM
 --------------------------------------------------
 
 By default files in the generated filesystem use the ownership of the file
@@ -383,7 +511,8 @@ The "-force-gid value" option forces all files in the generated Squashfs
 filesystem to be group owned by value, where value can be either a group name or
 a numeric GID.
 
-6. SPECIFYING THE FILE PERMISSIONS USED IN THE FILESYSTEM
+
+7. SPECIFYING THE FILE PERMISSIONS USED IN THE FILESYSTEM
 ---------------------------------------------------------
 
 By default files and directories in the generated filesystem inherit the
@@ -427,7 +556,7 @@ Will modify each file's permissions, by removing write ('w') for group and
 other, but also ensure the owner can read and write to the files by adding 'r'
 and 'w'.
 
-6.1 SYMBOLIC MODE SPECIFICATION
+7.1 SYMBOLIC MODE SPECIFICATION
 -------------------------------
 
 The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+.  PERMS = [rwxXst]+ or
@@ -452,7 +581,8 @@ sticky if a non-directory.
 The permission bits can also be u, g or o, which takes the permission bits from
 the user, group or other of the file respectively.
 
-7. EXCLUDING FILES FROM THE FILESYSTEM
+
+8. EXCLUDING FILES FROM THE FILESYSTEM
 --------------------------------------
 
 Sqfstar can exclude files from the TAR archive, so that they don't appear in
@@ -522,7 +652,7 @@ Non-anchored excludes
      except those with "data" in the name.
 
 
-8. REDUCING CPU AND I/O USAGE
+9. REDUCING CPU AND I/O USAGE
 -----------------------------
 
 By default Sqfstar will use all the CPUs available to compress and create the
@@ -552,8 +682,9 @@ CPU.  Additionally if your input source is slow Sqfstar may still max it out
 with -processors set to the minimum of 1.  In this case you can use -throttle
 in addition to -processors or on its own.
 
-9. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
-----------------------------------------------------
+
+10. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
+-----------------------------------------------------
 
 Sqfstar has a number of options which allow extended attributes (xattrs) to be
 filtered from the TAR archive or added to the created Squashfs filesystem.
@@ -608,7 +739,8 @@ sqfstar -xattrs-add "user.comment=0thello\000world" image.sqfs
 sqfstar -xattrs-add "user.comment=0saGVsbG8Ad29ybGQ=" image.sqfs
 sqfstar -xattrs-add "user.comment=0x68656c6c6f00776f726c64" image.sqsh
 
-10. PSEUDO FILE SUPPORT
+
+11. PSEUDO FILE SUPPORT
 -----------------------
 
 Sqfstar supports pseudo files, these allow files, directories, character
@@ -627,7 +759,7 @@ Two Sqfstar options are supported, -p allows one pseudo file to be specified
 on the command line, and -pf allows a pseudo file to be specified containing a
 list of pseduo definitions, one per line.
 
-10.1 CREATING A DYNAMIC FILE
+11.1 CREATING A DYNAMIC FILE
 ----------------------------
 
 Pseudo definition
@@ -684,7 +816,7 @@ given a device, fifo, or named socket will place that special file within the
 Squashfs filesystem, the above allows input from these special files to be
 captured and placed in the Squashfs filesystem.
 
-10.2 CREATING A BLOCK OR CHARACTER DEVICE
+11.2 CREATING A BLOCK OR CHARACTER DEVICE
 -----------------------------------------
 
 Pseudo definition
@@ -708,7 +840,7 @@ creates a character device "/dev/chr_dev" with major:minor 100:1 and
 a block device "/dev/blk_dev" with major:minor 200:200, both with root
 uid/gid and a mode of rw-rw-rw.
 
-10.3 CREATING A DIRECTORY
+11.3 CREATING A DIRECTORY
 -------------------------
 
 Pseudo definition
@@ -725,7 +857,7 @@ For example:
 
 creates a directory "/pseudo_dir" with root uid/gid and mode of rw-rw-rw.
 
-10.4 CREATING A SYMBOLIC LINK
+11.4 CREATING A SYMBOLIC LINK
 -----------------------------
 
 Pseudo definition
@@ -742,7 +874,7 @@ symlink s 0 root root example
 
 Creates a symlink "symlink" to file "example" with root uid/gid.
 
-10.5 CREATING HARD LINKS (FILE REFERENCES)
+11.5 CREATING HARD LINKS (FILE REFERENCES)
 ------------------------------------------
 
 The "f" Pseudo definition allows a regular file to be created from the output of
@@ -798,7 +930,7 @@ link L char-dev
 Will create a Hard Link named "link" to the character device called "char-dev"
 created by the previous Pseudo definition.
 
-10.6 CREATING SOCKETS/FIFOS
+11.6 CREATING SOCKETS/FIFOS
 ---------------------------
 
 Pseudo definition
@@ -813,7 +945,7 @@ and to create a FIFO, 'f' should be used, i.e.
 
 filename i 0777 root root f
 
-10.7 ADDING EXTENDED ATTRIBUTES TO FILES
+11.7 ADDING EXTENDED ATTRIBUTES TO FILES
 ----------------------------------------
 
 Pseudo definition
@@ -823,7 +955,7 @@ filename x name=val
 Will add the extended attribute <name> to <filename> with <val > contents.  See
 Section 7 for a description of the <val> formats supported.
 
-10.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
+11.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
 ---------------------------------------------
 
 Pseudo definition
@@ -843,7 +975,7 @@ root uid/gid and a mode of rw-rw-rw, overriding the attributes obtained
 from the TAR archive.
 
 
-10.9 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION
+11.9 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION
 -----------------------------------------------------
 
 The option
@@ -871,7 +1003,7 @@ automatically create the leading directories:
 % sqfstar -pd "d 0777 0 0" -p "/dir1/dir2/file f 0777 0 0 echo hello world" < archive.tar
 
 
-11. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
+12. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
 ----------------------------------------------------
 
 The Pseudo file definitions described above do not allow the timestamp
@@ -908,7 +1040,7 @@ shell by backslashes, i.e.
 Obviously anything "date" accepts as a valid string can be used, such as
 "yesterday", "last week" etc.
 
-11.1 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION WITH TIMESTAMP
+12.1 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION WITH TIMESTAMP
 --------------------------------------------------------------------
 
 The option
@@ -924,7 +1056,7 @@ a <time> timestamp.  <time> can be either an unsigned decimal integer or a
 "date" command.
 
 
-12. MISCELLANEOUS OPTIONS
+13. MISCELLANEOUS OPTIONS
 -------------------------
 
 The -info option displays the files/directories as they are compressed and
