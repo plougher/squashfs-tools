@@ -1,6 +1,8 @@
 			SQUASHFS CHANGE LOG
 
-4.7	XXX APR 2025
+4.7	03 JUNE 2025	Parallel file reading, new help system, new
+			reproducible filesystem image options, removal
+			of "fragment block stall"
 
 	1. Mksquashfs now reads files in parallel from the input directories
 

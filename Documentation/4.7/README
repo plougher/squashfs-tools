@@ -4,11 +4,13 @@
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs-Tools 4.7.  The last release was two years ago, and there
-are substantial improvements to the tools in this release, in particular
-Mksquashfs can now be 20% to more than ten times faster (dependant on source
-media and input files).  The help system has also been completely rewritten and
-improved for Mksquashfs/Unsquashfs/Sqfstar/Sqfscat.
+Welcome to Squashfs-Tools 4.7.  The last release was more than two years ago,
+and there are substantial improvements to the tools in this release, in
+particular Mksquashfs can now be 20% to more than ten times faster (dependant on
+source media and input files).  The help system has also been completely
+rewritten and improved for Mksquashfs/Unsquashfs/Sqfstar/Sqfscat.  There are
+also new options for building reproducible images, and a lot of other
+improvements.
 
 Please see the INSTALL file for instructions on installing the tools, and the
 USAGE files for information on how to use the tools.
@@ -106,7 +108,7 @@ This README has the following sections:
 
    4.1. New -mem option, which sets the amount of memory to be used,
         K, M and G can be used to specify Kbytes, Mbytes and Gbytes.
-   4.2. New -mem-percent option, which sets the anount of memory to be
+   4.2. New -mem-percent option, which sets the amount of memory to be
         used as percentage of available physical memory.
    4.3. Memory specified is limited to 75% of physical memory or less.
 
@@ -122,7 +124,7 @@ This README has the following sections:
 
 Modern computers can have 16 cores/32 threads or more [*], and systems with 8
 cores/16 threads are becoming standard.   What this increase in computational
-power means is Mksquashfs is increasingly I/O bound rather than CPU bound.
+power means is Mksquashfs was increasingly I/O bound rather than CPU bound.
 
 Whether the speed of input I/O has become the bottleneck is essentially entirely
 dependant on the nature of the input files, the media they're stored on, the
@@ -179,6 +181,8 @@ connected via USB 3, formatted with ext4.
 
 All Mksquashfs tests were performed with a cold cache to ensure speed of
 filesystem I/O is measured, rather than speed of memory reading from the cache.
+
+The times are in minutes:seconds.
 
 	1	2	4	8	12	16	20	30	40	50	64	128	256
 128	56:39.7	30:35.5	19:30.8	10:30.5	9:34.88	9:04.61	9:07.28	9:07.10	8:25.15	7:59.32	7:35.56	7:01.38	6:21.16
@@ -568,7 +572,7 @@ In effect this is a more nuanced way of producing reproducibility than an
 absolute value.  Also the latest inode timestamp is taken from the source(s),
 ignoring any fabricated timestamps (e.g. root directory), and all fabricated
 timestamps are set to the latest inode value too.  This means the -root-time
-option is no longer necessary if the -mkfs-time inode is used.
+option is no longer necessary if the -mkfs-time inode option is used.
 
 4.1.2 -root-time inode
 
