@@ -6,20 +6,21 @@ This file describes how to use Mksquashfs, and it has the following sections:
 2. Getting help and displaying Mksquashfs options
 3. Changing compression algorithm and compression specific options
 4. Changing global compression defaults used in Mksquashfs
-5. Tar style handling of source pathnames in Mksquashfs
-6. CPIO style handling of source pathname in Mksquashfs
-7. Specifying the UID/GIDs used in the filesystem
-8. Specifying the file permissions used in the filesystem
-9. Excluding files from the filesystem
-10. Parallel file reading and options
-11. Reducing CPU and I/O usage
-12. Filtering and adding extended attributes (xattrs)
-13. Pseudo file support
-14. Extended pseudo file definitions with timestamps
-15. Appending to Squashfs filesystems
-16. Appending recovery file feature
-17. Mksquashfs Actions introduction
-18. Miscellaneous options
+5. Building reproducible filesystem images
+6. Tar style handling of source pathnames in Mksquashfs
+7. CPIO style handling of source pathnames in Mksquashfs
+8. Specifying the UID/GIDs used in the filesystem
+9. Specifying the file permissions used in the filesystem
+10. Excluding files from the filesystem
+11. Parallel file reading and options
+12. Reducing CPU and I/O usage
+13. Filtering and adding extended attributes (xattrs)
+14. Pseudo file support
+15. Extended pseudo file definitions with timestamps
+16. Appending to Squashfs filesystems
+17. Appending recovery file feature
+18. Mksquashfs Actions introduction
+19. Miscellaneous options
 
 1. INTRODUCTION AND BASIC USAGE
 -------------------------------
@@ -34,7 +35,7 @@ mksquashfs source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of exclude files]
 Where source1 source2 are the directories or files you want to be put into the
 filesystem, and FILESYSTEM is the name of the output filesystem.  This can be a
 file or a block device.  If the file already exists or it is a block device
-Mksquashfs will try append to it (see section 15) unless the -noappend option is
+Mksquashfs will try append to it (see section 16) unless the -noappend option is
 given.
 
 Most simple usage is a single source directory:
@@ -88,7 +89,8 @@ behaviour), you can specify the -no-strip option.
 % mksquashfs /home/phillip/test image.sqfs -no-strip
 
 This will generate a filesystem with home, home/phillip and home/phillip/test
-directories, see section 5 for more details.
+directories, see section 6 for more details.
+
 
 2. GETTING HELP AND DISPLAYING MKSQUASHFS OPTIONS
 -------------------------------------------------
@@ -270,6 +272,7 @@ The pager used can be over-ridden using the PAGER environment variable.  If the
 filename given by PAGER doesn't contain slashes, the PATH environment variable
 will be used to locate it, otherwise it will be treated as a pathname.
 
+
 3. CHANGING COMPRESSION ALGORITHM AND COMPRESSION SPECIFIC OPTIONS
 ------------------------------------------------------------------
 
@@ -375,7 +378,132 @@ generation although obviously compression will suffer badly if there is a lot
 of duplicates.
 
 
-5. TAR STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
+5. BUILDING REPRODUCIBLE FILESYSTEM IMAGES
+------------------------------------------
+
+If you want Mksquashfs to generate an identical (byte for byte) filesystem on
+every run, then the following conditions have to be true:
+
+1. The filesystem source data has to be the same,
+2. The timestamps (and other metadata such as permissions), must be the same,
+3. The root directory timestamp (and other metadata), must be the same,
+4. The filesystem make time (stored in the super-block) must be the same.
+
+Due to point 4, every time you run Mksquashfs, the filesystem will be different,
+even if everything else is the same.  But less obviously, if Mksquashfs has to
+fabricate a root directory (because the source doesn't supply one, for example
+where multiple files are specified on the command line), the timestamp of the
+root directory will also change on every run.
+
+To avoid the above, previous versions introduced the -mkfs-time <time>, and
+-root-time <time> options:
+
+% mksquashfs source(s) image.sqfs -mkfs-time 0 -root-time 0
+
+Will generate a filesystem image where the timestamps (that can change) have
+been set to 0 (the start of the epoch 1970-01-01).
+
+But a problem with this (for many people) is that it ensures reproducibility by
+losing information and functionality, akin to using a sledgehammer to crack a
+nut.  With a filesystem make time of 0, it is no longer possible to discover the
+difference between one filesystem and another without looking at the content, or
+know how old the filesystem is without looking at the content either.
+
+Due to this, this release introduces new variants of -mkfs-time, and -root-time.
+It also introduces a new variant of -all-time, while also renaming it to
+-inode-time.  Lastly, there are some new easy to remember shorthand options
+added.
+
+5.1 -mkfs-time, -root-time and -inode-time options with a timestamp
+-------------------------------------------------------------------
+
+5.1.1 -mkfs-time <time>
+
+Set mkfs time to <time>.  Time can be an integer which is the seconds since
+the epoch of 1970-01-01 00:00:00 UTC), or a date string as recognised by the
+"date" command.
+
+5.1.2 -root-time <time>
+
+Set root directory timestamp to <time>.  Time can be an integer which is the
+seconds since the epoch of 1970-01-01 00:00:00 UTC), or a date string as
+recognised by the "date" command.
+
+5.1.3 -inode-time <time>
+
+This option has been renamed from -all-time [*] in previous versions because
+all-time was a misnomer (it sets all the inode timestamps, but not also the
+filesystem make time as the name suggests).
+
+Set all file timestamps to <time>.  Time can be an integer which is the seconds
+since the epoch of 1970-01-01 00:00:00 UTC), or a date string as recognised by
+the "date" command.
+
+[*] the name -all-time is still recognised for backwards compatibility.
+
+5.2 New -mkfs-time, -root-time and -inode-time variants
+-------------------------------------------------------
+
+5.2.1 -mkfs-time inode
+
+This sets the filesystem make time to the latest inode timestamp in the
+source(s).  Because this is a relative value (rather than absolute), it ensures
+the filesystem is identical on multiple runs of Mksquashfs if the content
+doesn't change, it also allows filesystems with newer content to be
+distinquished using the filesystem make time, and if the timestamps are updated
+(due to changed content) this will produce a newer filesystem make time.
+
+In effect this is a more nuanced way of producing reproducibility than an
+absolute value.  Also the latest inode timestamp is taken from the source(s),
+ignoring any fabricated timestamps (e.g. root directory), and all fabricated
+timestamps are set to the latest inode value too.  This means the -root-time
+option is no longer necessary if the -mkfs-time inode option is used.
+
+5.2.2 -root-time inode
+
+This sets the root directory timestamp to the latest inode timestamp in the
+source(s).  If -mkfs-time inode is specified this option is no longer
+necessary.
+
+5.2.3 -inode-time inode
+
+This sets all the inode timestamps to the latest inode timestamp in the
+source(s).  I doubt there are many use-cases for this, but it keeps the
+functionality matching between options.
+
+
+5.3 New easier to remember shorthand options
+--------------------------------------------
+
+5.3.1 -repro
+
+This option makes Mksquashfs build a reproducible filesystem image.  This is
+equivalent to -mkfs-time inode, which achieves reproducibility by setting the
+filesystem build time to the latest inode timestamp.  Obviously the image won't
+be reproducible if the timestamps or content changes.
+
+5.3.2 -repro-time <time>
+
+This option makes Mksquashfs build a reproducible filesystem image.  This is
+equivalent to specifying -mkfs-time <time> and -inode-time <time>, which
+achieves reproducibility by setting all timestamps to <time>.  This option can
+be used in cases where timestamps may change, and where -repro cannot be used
+for this reason.
+
+5.4 the environment variable SOURCE_DATE_EPOCH
+----------------------------------------------
+
+As an alternative to the above command line options, you can set the environment
+variable SOURCE_DATE_EPOCH to a time value.
+
+This value will be used to set the mkfs time.  Also any file timestamps which
+are after SOURCE_DATE_EPOCH will be clamped to SOURCE_DATE_EPOCH.
+
+See https://reproducible-builds.org/docs/source-date-epoch/ for more
+information.
+
+
+6. TAR STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
 -------------------------------------------------------
 
 Mksquashfs has always stripped the leading directories of any source pathnames
@@ -401,7 +529,7 @@ tar archive would contain the pathnames "dir-a/dir-b/dir-c/file1" and
 Mksquashfs will act like tar if given the option -no-strip, or -tarstyle.
 
 
-6. CPIO STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
+7. CPIO STYLE HANDLING OF SOURCE PATHNAMES IN MKSQUASHFS
 --------------------------------------------------------
 
 Mksquashfs allows you to pipe the set of files to be added to the filesystem to
@@ -426,7 +554,7 @@ The following will add just the files ending in .c, .h and .o.
 % find /home/phillip/squashfs-tools -name "*.[cho]" | mksquashfs - img.sqfs -cpiostyle
 
 
-7. SPECIFYING THE UIDs/GIDs USED IN THE FILESYSTEM
+8. SPECIFYING THE UIDs/GIDs USED IN THE FILESYSTEM
 --------------------------------------------------
 
 By default files in the generated filesystem inherit the UID and GID ownership
@@ -452,9 +580,10 @@ For example:
 Will set all file and directory ownership and group ownership to phillip.
 
 If you only want to set the uid and gid ownership on a subset of files rather
-than globally, the Actions system allows you to do that (see section 17).
+than globally, the Actions system allows you to do that (see section 18).
 
-8. SPECIFYING THE FILE PERMISSIONS USED IN THE FILESYSTEM
+
+9. SPECIFYING THE FILE PERMISSIONS USED IN THE FILESYSTEM
 ---------------------------------------------------------
 
 By default files and directories in the generated filesystem inherit the
@@ -499,9 +628,9 @@ other, but also ensure the owner can read and write to the files by adding 'r'
 and 'w'.
 
 If you only want to set the permissions on a subset of files rather than
-globally, the Actions system allows you to do that (see section 17).
+globally, the Actions system allows you to do that (see section 18).
 
-8.1 SYMBOLIC MODE SPECIFICATION
+9.1 SYMBOLIC MODE SPECIFICATION
 -------------------------------
 
 The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+.  PERMS = [rwxXst]+ or
@@ -527,8 +656,8 @@ The permission bits can also be u, g or o, which takes the permission bits from
 the user, group or other of the file respectively.
 
 
-9. EXCLUDING FILES FROM THE FILESYSTEM
---------------------------------------
+10. EXCLUDING FILES FROM THE FILESYSTEM
+---------------------------------------
 
 The -e and -ef options allow files/directories to be specified which are
 excluded from the output filesystem.  The -e option takes the exclude
@@ -541,8 +670,8 @@ extended wildcard matching.  Basic exclude matching is a legacy feature
 retained for backwards compatibility with earlier versions of Mksquashfs.
 Extended wildcard matching should be used in preference.
 
-9.1 BASIC EXCLUDE MATCHING
---------------------------
+10.1 BASIC EXCLUDE MATCHING
+---------------------------
 
 Each exclude file is treated as an exact match of a file/directory in
 the source directories.  If an exclude file/directory is absolute (i.e.
@@ -555,8 +684,8 @@ the sources in turn, i.e.
 Will generate exclude files /tmp/source1/ex2, /tmp/source1/ex1, source2/ex1,
 /tmp/source1/out/ex3 and source2/out/ex3.
 
-9.2 EXTENDED EXCLUDE FILE HANDLING
-----------------------------------
+10.2 EXTENDED EXCLUDE FILE HANDLING
+-----------------------------------
 
 Extended exclude file matching treats each exclude file as a wildcard or
 regex expression.  To enable wildcard matching specify the -wildcards
@@ -620,7 +749,7 @@ Non-anchored excludes
      except those with "data" in the name.
 
 
-10. PARALLEL FILE READING AND OPTIONS
+11. PARALLEL FILE READING AND OPTIONS
 -------------------------------------
 
 Modern computers can have 16 cores/32 threads or more [*], and systems with 8
@@ -652,7 +781,7 @@ reading files in parallel by default.  This can significantly speed up input I/O
 Mksquashfs by default uses four small file reader threads and four block file
 reader threads.  A small file reader thread only reads files which are smaller
 than a block in size, and a block file reader thread only reads files which
-are a block or larger in size (see section 10.1 for an explanation of why there
+are a block or larger in size (see section 11.1 for an explanation of why there
 are specialised reader threads).
 
 Three new options have been added which allow the number of reader threads to
@@ -741,7 +870,7 @@ between different input files/media and performance.  If you think Mksquashfs
 is I/O bound then you should experiment with larger reader threads which may
 increase performance.
 
-10.1 SPECIALISED SMALL READER AND BLOCK READER THREADS
+11.1 SPECIALISED SMALL READER AND BLOCK READER THREADS
 ------------------------------------------------------
 
 The amount of reader threads you need to maximise I/O when reading small files,
@@ -773,7 +902,8 @@ the above example again, the block reader thread will work ahead and read the
     Unix machines around since the early 1990s (such as the Sequent Symmetry),
     but these were multi-user systems typically supporting 50 or more users.
 
-11. REDUCING CPU AND I/O USAGE
+
+12. REDUCING CPU AND I/O USAGE
 ------------------------------
 
 By default Mksquashfs will use all the CPUs available to compress and create the
@@ -804,7 +934,7 @@ with -processors set to the minimum of 1.  In this case you can use -throttle
 in addition to -processors or on its own.
 
 
-12. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
+13. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
 -----------------------------------------------------
 
 Mksquashfs has a number of options which allow extended attributes (xattrs) to
@@ -859,7 +989,8 @@ mksquashfs dir image.sqfs -xattrs-add "user.comment=0thello\000world"
 mksquashfs dir image.sqfs -xattrs-add "user.comment=0saGVsbG8Ad29ybGQ="
 mksquashfs dir image.sqfs -xattrs-add "user.comment=0x68656c6c6f00776f726c64"
 
-13. PSEUDO FILE SUPPORT
+
+14. PSEUDO FILE SUPPORT
 -----------------------
 
 Mksquashfs supports pseudo files, these allow files, directories, character
@@ -879,7 +1010,7 @@ Two Mksquashfs options are supported, -p allows one pseudo file to be specified
 on the command line, and -pf allows a pseudo file to be specified containing a
 list of pseduo definitions, one per line.
 
-13.1 CREATING A DYNAMIC FILE
+14.1 CREATING A DYNAMIC FILE
 ----------------------------
 
 Pseudo definition
@@ -935,7 +1066,7 @@ given a device, fifo, or named socket will place that special file within the
 Squashfs filesystem, the above allows input from these special files to be
 captured and placed in the Squashfs filesystem.
 
-13.2 CREATING A BLOCK OR CHARACTER DEVICE
+14.2 CREATING A BLOCK OR CHARACTER DEVICE
 -----------------------------------------
 
 Pseudo definition
@@ -959,7 +1090,7 @@ creates a character device "/dev/chr_dev" with major:minor 100:1 and a block
 device "/dev/blk_dev" with major:minor 200:200, both with root uid/gid and a
 mode of rw-rw-rw.
 
-13.3 CREATING A DIRECTORY
+14.3 CREATING A DIRECTORY
 --------------------------
 
 Pseudo definition
@@ -976,7 +1107,7 @@ For example:
 
 creates a directory "/pseudo_dir" with root uid/gid and mode of rw-rw-rw.
 
-13.4 CREATING A SYMBOLIC LINK
+14.4 CREATING A SYMBOLIC LINK
 ------------------------------
 
 Pseudo definition
@@ -993,7 +1124,7 @@ symlink s 0 root root example
 
 8reates a symlink "symlink" to file "example" with root uid/gid.
 
-13.5 CREATING HARD LINKS (FILE REFERENCES)
+14.5 CREATING HARD LINKS (FILE REFERENCES)
 ------------------------------------------
 
 The "f" Pseudo definition allows a regular file to be created from the output of
@@ -1049,7 +1180,7 @@ link L char-dev
 Will create a Hard Link named "link" to the character device called "char-dev"
 created by the previous Pseudo definition.
 
-13.6 CREATING SOCKETS/FIFOS
+14.6 CREATING SOCKETS/FIFOS
 ----------------------------
 
 Pseudo definition
@@ -1064,7 +1195,7 @@ and to create a FIFO, 'f' should be used, i.e.
 
 filename i 0777 root root f
 
-13.7 ADDING EXTENDED ATTRIBUTES TO FILES
+14.7 ADDING EXTENDED ATTRIBUTES TO FILES
 ----------------------------------------
 
 Pseudo definition
@@ -1074,7 +1205,7 @@ filename x name=val
 Will add the extended attribute <name> to <filename> with <val> contents.  See
 Section 7 for a description of the <val> formats supported.
 
-13.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
+14.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
 ---------------------------------------------
 
 Pseudo definition
@@ -1093,7 +1224,7 @@ Changes the attributes of the file "dmesg" in the filesystem to have root
 uid/gid and a mode of rw-rw-rw, overriding the attributes obtained from the
 source filesystem.
 
-13.9 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION
+14.9 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION
 -----------------------------------------------------
 
 The option
@@ -1121,7 +1252,7 @@ automatically create the leading directories:
 % mksquashfs - image.sqfs -pd "d 0777 0 0" -p "/dir1/dir2/file f 0777 0 0 echo hello world"
 
 
-14. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
+15. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
 ----------------------------------------------------
 
 The Pseudo file definitions described above do not allow the timestamp of the
@@ -1156,7 +1287,7 @@ shell by backslashes, i.e.
 Obviously anything "date" accepts as a valid string can be used, such as
 "yesterday", "last week" etc.
 
-14.1 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION WITH TIMESTAMP
+15.1 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION WITH TIMESTAMP
 --------------------------------------------------------------------
 
 The option
@@ -1171,7 +1302,8 @@ a <time> timestamp.  <time> can be either an unsigned decimal integer or a
 "date string" which is parsed and converted into an integer by calling the
 "date" command.
 
-15. APPENDING TO SQUASHFS FILESYSTEMS
+
+16. APPENDING TO SQUASHFS FILESYSTEMS
 -------------------------------------
 
 Running Mksquashfs with the output file containing an existing Squashfs
@@ -1212,7 +1344,8 @@ with for example the linux-2.4.19 source.  Appending the linux-2.4.20 source
 will create a filesystem with the two source trees, but only the changed files
 will take extra room, the unchanged files will be detected as duplicates.
 
-16. APPENDING RECOVERY FILE FEATURE
+
+17. APPENDING RECOVERY FILE FEATURE
 -----------------------------------
 
 Recovery files are created when appending to existing Squashfs filesystems.
@@ -1234,7 +1367,7 @@ The writing of the recovery file can be disabled by specifying the
 "-no-recovery" option.
 
 
-17. MKSQUASHFS ACTIONS INTRODUCTION
+18. MKSQUASHFS ACTIONS INTRODUCTION
 -----------------------------------
 
 The Mksquashfs Actions code allows an "action" to be executed on a file if one
@@ -1280,7 +1413,7 @@ operators && (and), || (or) and ! (not), and can be bracketed.
 Please see the ACTIONS-README file for syntax and extra information.
 
 
-18. MISCELLANEOUS OPTIONS
+19. MISCELLANEOUS OPTIONS
 ------------------------
 
 The -info option displays the files/directories as they are compressed and
