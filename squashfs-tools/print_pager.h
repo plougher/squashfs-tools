@@ -30,6 +30,9 @@
 #define MORE_PAGER 2
 #define UNKNOWN_PAGER 3
 
+#include <stdio.h>
+#include <sys/types.h>
+
 extern void wait_to_die(pid_t process);
 extern FILE *exec_pager(pid_t *process);
 extern int get_column_width();
