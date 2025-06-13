@@ -85,23 +85,38 @@ static long long read_binary(char *src, int size)
 	unsigned char *s = (unsigned char *) src;
 	long long res = 0;
 
-	for(; size; s++, size --) {
-		if (res > LLONG_MAX >> 8)
-			return -1;
+	for(; size; s++, size --)
 		res = (res << 8) + *s;
-	}
 
 	return res;
 }
 
 
+static long long read_binary11(char *src, int size)
+{
+
+	if(src[0] == 0 && src[1] == 0 && src[2] == 0) {
+		long long res = read_binary(src + 3, 8);
+
+		if(res >= 0)
+			return res;
+	}
+
+	return -1;
+}
+
+
 static long long read_number(char *s, int size)
 {
-	if(*((signed char *) s) == -128)
-		return read_binary(s + 1, size - 1);
-	else
+	if(*((signed char *) s) == -128) {
+		if(size == 8)
+			return read_binary(s + 1, size - 1);
+		else
+			return read_binary11(s + 1, size - 1);
+	} else
 		return read_octal(s, size);
 }
+
 
 static long long read_pax_number(char *s, int *bytes)
 {
