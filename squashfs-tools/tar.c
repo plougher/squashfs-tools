@@ -106,6 +106,34 @@ static long long read_binary11(char *src, int size)
 }
 
 
+static int read_binary_neg(char *src, int size, long long *res)
+{
+	unsigned char *s = (unsigned char *) src;
+
+	if(s[0] == 255 && s[1] == 255 && s[2] == 255) {
+		*res = read_binary(src + 3, 8);
+		return *res < 0;
+	} else
+		return FALSE;
+}
+
+
+static int read_number_neg(char *s, int size, long long *res)
+{
+	if(*((unsigned char *) s) == 255)
+		return read_binary_neg(s + 1, size - 1, res);
+	else if(*((signed char *) s) == -128) {
+		if(size == 8)
+			*res = read_binary(s + 1, size - 1);
+		else
+			*res = read_binary11(s + 1, size - 1);
+	} else
+		*res = read_octal(s, size);
+
+	return *res != -1;
+}
+
+
 static long long read_number(char *s, int size)
 {
 	if(*((signed char *) s) == -128) {
@@ -272,6 +300,7 @@ static char *get_component(char *target, char **targname)
 
 static struct inode_info *new_inode(struct tar_file *tar_file)
 {
+	static int warned = FALSE;
 	struct inode_info *inode;
 	int bytes = tar_file->link ? strlen(tar_file->link) + 1 : 0;
 
@@ -279,6 +308,23 @@ static struct inode_info *new_inode(struct tar_file *tar_file)
 
 	if(bytes)
 		memcpy(&inode->symlink, tar_file->link, bytes);
+
+	if(tar_file->buf.st_mtime < 0) {
+		/* Squashfs cannot store timestamps before the epoch
+		 * (1970-01-01), and so round up to zero.  But warn
+		 * the first time this happens
+		 */
+		if(!warned) {
+			ERROR("\nWARNING: File has timestamp before the epoch of "
+				"1970-01-01, this cannot be\nstored in "
+				"Squashfs.  Rounding to 1970-01-01.\nFurther "
+				"messages are supressed.\n\n");
+			warned = TRUE;
+		}
+
+		tar_file->buf.st_mtime = 0;
+	}
+
 	memcpy(&inode->buf, &tar_file->buf, sizeof(struct stat));
 	inode->read = FALSE;
 	inode->root_entry = FALSE;
@@ -1360,8 +1406,8 @@ again:
 
 	/* Read mtime */
 	if(file->have_mtime == FALSE) {
-		res = read_number(header.mtime, 12);
-		if(res == -1) {
+		int ok = read_number_neg(header.mtime, 12, &res);
+		if(!ok) {
 			ERROR("Failed to read file mtime from tar header\n");
 			goto failed;
 		}
