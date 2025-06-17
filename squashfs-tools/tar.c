@@ -80,7 +80,7 @@ static long long read_octal(char *s, int size)
 }
 
 
-static long long read_binary(char *src, int size)
+static inline long long read_binary(char *src, int size)
 {
 	unsigned char *s = (unsigned char *) src;
 	long long res = 0;
@@ -92,7 +92,7 @@ static long long read_binary(char *src, int size)
 }
 
 
-static long long read_binary11(char *src, int size)
+static long long read_binary11(char *src)
 {
 
 	if(src[0] == 0 && src[1] == 0 && src[2] == 0) {
@@ -106,7 +106,7 @@ static long long read_binary11(char *src, int size)
 }
 
 
-static int read_binary_neg(char *src, int size, long long *res)
+static int read_binary_neg(char *src, long long *res)
 {
 	unsigned char *s = (unsigned char *) src;
 
@@ -118,17 +118,14 @@ static int read_binary_neg(char *src, int size, long long *res)
 }
 
 
-static int read_number_neg(char *s, int size, long long *res)
+static int read_number_neg(char *s, long long *res)
 {
 	if(*((unsigned char *) s) == 255)
-		return read_binary_neg(s + 1, size - 1, res);
-	else if(*((signed char *) s) == -128) {
-		if(size == 8)
-			*res = read_binary(s + 1, size - 1);
-		else
-			*res = read_binary11(s + 1, size - 1);
-	} else
-		*res = read_octal(s, size);
+		return read_binary_neg(s + 1, res);
+	else if(*((signed char *) s) == -128)
+		*res = read_binary11(s + 1);
+	else
+		*res = read_octal(s, 12);
 
 	return *res != -1;
 }
@@ -138,9 +135,9 @@ static long long read_number(char *s, int size)
 {
 	if(*((signed char *) s) == -128) {
 		if(size == 8)
-			return read_binary(s + 1, size - 1);
+			return read_binary(s + 1, 7);
 		else
-			return read_binary11(s + 1, size - 1);
+			return read_binary11(s + 1);
 	} else
 		return read_octal(s, size);
 }
@@ -1406,7 +1403,7 @@ again:
 
 	/* Read mtime */
 	if(file->have_mtime == FALSE) {
-		int ok = read_number_neg(header.mtime, 12, &res);
+		int ok = read_number_neg(header.mtime, &res);
 		if(!ok) {
 			ERROR("Failed to read file mtime from tar header\n");
 			goto failed;
