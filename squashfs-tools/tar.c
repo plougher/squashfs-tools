@@ -143,7 +143,27 @@ static long long read_number(char *s, int size)
 }
 
 
-static long long read_pax_number(char *s, int *bytes)
+static long long read_pax_number(char **src, char expected)
+{
+	char *s = *src;
+	long long res = 0;
+
+	for(; *s >= '0' && *s <= '9'; s++) {
+		int digit = *s - '0';
+		if(res > LLONG_MAX / 10 || res * 10 > LLONG_MAX - digit)
+			return -1;
+		res = (res * 10) + digit;
+	}
+
+	if(*s != expected)
+		return -1;
+
+	*src = s + 1;
+	return res;
+}
+
+
+static long long read_pax_number_ext(char *s, int *bytes)
 {
 	long long res = 0;
 
@@ -762,15 +782,13 @@ static int read_sparse_value(struct tar_file *file, char *value, int map_entries
 	long long number;
 
 	while(1) {
-		number = read_pax_number(value, &bytes);
-		if(number == -1 || value[bytes] != ',')
+		number = read_pax_number(&value, ',');
+		if(number == -1)
 			goto failed;
 
 		file->map[i].offset = number;
 
-		value += bytes + 1;
-
-		number = read_pax_number(value, &bytes);
+		number = read_pax_number_ext(value, &bytes);
 		if(number == -1 || (value[bytes] != ',' && value[bytes] != '\0'))
 			goto failed;
 
@@ -821,7 +839,7 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 		 * where <length> is the full length, including the
 		 * <length> field and newline
 		 */
-		length = read_pax_number(ptr, &bytes);
+		length = read_pax_number_ext(ptr, &bytes);
 		if(length == -1 || length <= bytes || length > st_size)
 			goto failed;
 
@@ -863,30 +881,30 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 
 		/* Evaluate keyword */
 		if(strcmp(keyword, "size") == 0) {
-			number = read_pax_number(value, &bytes);
-			if(number == -1 || value[bytes] != '\0')
+			number = read_pax_number(&value, '\0');
+			if(number == -1)
 				goto failed;
 			file->buf.st_size = number;
 			file->have_size = TRUE;
 		} else if(strcmp(keyword, "uid") == 0) {
-			number = read_pax_number(value, &bytes);
-			if(number == -1 || value[bytes] != '\0')
+			number = read_pax_number(&value, '\0');
+			if(number == -1)
 				goto failed;
 			file->buf.st_uid = number;
 			if(file->buf.st_uid != number)
 				goto failed;
 			file->have_uid = TRUE;
 		} else if(strcmp(keyword, "gid") == 0) {
-			number = read_pax_number(value, &bytes);
-			if(number == -1 || value[bytes] != '\0')
+			number = read_pax_number(&value, '\0');
+			if(number == -1)
 				goto failed;
 			file->buf.st_gid = number;
 			if(file->buf.st_gid != number)
 				goto failed;
 			file->have_gid = TRUE;
 		} else if(strcmp(keyword, "mtime") == 0) {
-			number = read_pax_number(value, &bytes);
-			if(number == -1 || value[bytes] != '.')
+			number = read_pax_number(&value, '.');
+			if(number == -1)
 				goto failed;
 			file->buf.st_mtime = number;
 			if(file->buf.st_mtime != number)
@@ -901,46 +919,46 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 		else if(strcmp(keyword, "linkpath") == 0)
 			file->link = STRDUP(value);
 		else if(strcmp(keyword, "GNU.sparse.major") == 0) {
-			number = read_pax_number(value, &bytes);
-			if(number == -1 || value[bytes] != '\0')
+			number = read_pax_number(&value, '\0');
+			if(number == -1)
 				goto failed;
 			major = number;
 		} else if(strcmp(keyword, "GNU.sparse.minor") == 0) {
-			number = read_pax_number(value, &bytes);
-			if(number == -1 || value[bytes] != '\0')
+			number = read_pax_number(&value, '\0');
+			if(number == -1)
 				goto failed;
 			minor = number;
 		} else if(strcmp(keyword, "GNU.sparse.realsize") == 0) {
-			number = read_pax_number(value, &bytes);
-			if(number == -1 || value[bytes] != '\0')
+			number = read_pax_number(&value, '\0');
+			if(number == -1)
 				goto failed;
 			realsize = number;
 		} else if(strcmp(keyword, "GNU.sparse.name") == 0)
 			name = STRDUP(value);
 		else if(strcmp(keyword, "GNU.sparse.size") == 0) {
-			number = read_pax_number(value, &bytes);
-			if(number == -1 || value[bytes] != '\0')
+			number = read_pax_number(&value, '\0');
+			if(number == -1)
 				goto failed;
 			realsize = number;
 			old_gnu_pax = 1;
 		} else if(strcmp(keyword, "GNU.sparse.numblocks") == 0 && old_gnu_pax == 1) {
-			number = read_pax_number(value, &bytes);
-			if(number == -1 || value[bytes] != '\0' || number > SIZE_MAX / sizeof(struct file_map))
+			number = read_pax_number(&value, '\0');
+			if(number == -1 || number > SIZE_MAX / sizeof(struct file_map))
 				goto failed;
 			file->map = MALLOC(number * sizeof(struct file_map));
 			map_entries = number;
 			cur_entry = 0;
 			old_gnu_pax = 2;
 		} else if(strcmp(keyword, "GNU.sparse.offset") == 0 && old_gnu_pax == 2 && old_gnu_ver != 1) {
-			number = read_pax_number(value, &bytes);
-			if(number == -1 || value[bytes] != '\0')
+			number = read_pax_number(&value, '\0');
+			if(number == -1)
 				goto failed;
 			if(cur_entry < map_entries)
 				file->map[cur_entry].offset = number;
 			old_gnu_ver = 0;
 		} else if(strcmp(keyword, "GNU.sparse.numbytes") == 0 && old_gnu_pax == 2 && old_gnu_ver != 1) {
-			number = read_pax_number(value, &bytes);
-			if(number == -1 || value[bytes] != '\0')
+			number = read_pax_number(&value, '\0');
+			if(number == -1)
 				goto failed;
 			if(cur_entry < map_entries)
 				file->map[cur_entry++].number = number;
