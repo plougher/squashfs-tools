@@ -178,6 +178,28 @@ static long long read_pax_number_ext(char *s, int *bytes)
 	return res;
 }
 
+
+static int read_pax_number_neg(char *s, int *bytes, long long *res)
+{
+
+	if(*s != '-') {
+		*res = read_pax_number_ext(s, bytes);
+		return *res != -1;
+	} else {
+		*res = 0;
+		*bytes = 1;
+		for(s++; *s >= '0' && *s <= '9'; s++) {
+			int digit = *s - '0';
+			if(*res < LLONG_MIN / 10 || *res * 10 < LLONG_MIN + digit)
+				return FALSE;
+			*res = (*res * 10) - digit;
+			*bytes += 1;
+		}
+		return TRUE;
+	}
+}
+
+
 static long long read_decimal(char *s, int maxsize, int *bytes)
 {
 	long long res = 0;
@@ -903,8 +925,8 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 				goto failed;
 			file->have_gid = TRUE;
 		} else if(strcmp(keyword, "mtime") == 0) {
-			number = read_pax_number(&value, '.');
-			if(number == -1)
+			int ok = read_pax_number_neg(value, &bytes, &number);
+			if(!ok || (value[bytes] != '.' && value[bytes] != '\0'))
 				goto failed;
 			file->buf.st_mtime = number;
 			if(file->buf.st_mtime != number)
