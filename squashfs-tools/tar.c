@@ -719,7 +719,7 @@ static void skip_file(struct tar_file *tar_file)
 	int blocks = (tar_file->buf.st_size + block_size - 1) >> block_log, i;
 
 	for(i = 0; i < blocks; i++)
-		cache_block_put(main_queue_get(to_main));
+		gen_cache_block_put(main_queue_get(to_main));
 
 	progress_bar_size(-blocks);
 }
