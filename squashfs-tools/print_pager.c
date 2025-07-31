@@ -38,8 +38,8 @@
 
 extern long long read_bytes(int, void *, long long);
 
+static char **pager_argv = NULL;
 static char *pager_command = NULL;
-static char *pager_name = NULL;
 static int pager_from_env_var = FALSE;
 
 static char *get_base(char *pathname)
@@ -77,45 +77,63 @@ static char *get_base(char *pathname)
 
 int check_and_set_pager(char *pager)
 {
-	int i, length = strlen(pager);
-	char *base;
+	int i, args = 0;
+	char *cur, *sow;
 
-	/* Check string :-
-	 * 1. Isn't empty,
-	 * 2. Doesn't contain spaces, tabs, pipes, command separators or file
-	 *    redirects.
+	/* Check string doesn't contain pipes, command separators or file
+	 * redirects.
 	 *
 	 * Note: this isn't an exhaustive check of what can't be in the
 	 *	 pager name, as the execlp() will do this.  It is more
 	 *	 intended to check for common shell metacharacters and
 	 *	 warn users this isn't supported in a friendlier way.
 	 */
-	if(length == 0) {
-		ERROR("PAGER environment variable is empty!\n");
-		return FALSE;
-	}
-
-	base = get_base(pager);
-	if(base == NULL) {
-		ERROR("PAGER doesn't have a name in it or has trailing '/', '.' or '..' characters!\n");
-		return FALSE;
-	}
-
-	for(i = 0; i < length; i ++) {
-		if(pager[i] == ' ' || pager[i] == '\t') {
-			ERROR("PAGER cannot have spaces or tabs!\n");
-			goto failed;
-		} else if(pager[i] == '|' || pager[i] == ';') {
+	for(cur = pager; *cur != '\0'; cur++) {
+		if(*cur == '|' || *cur == ';') {
 			ERROR("PAGER cannot have pipes or command separators!\n");
 			goto failed;
-		} else if(pager[i] == '<' || pager[i] == '>' || pager[i] == '&') {
+		} else if(*cur == '<' || *cur == '>' || *cur == '&') {
 			ERROR("PAGER cannot have file redirections!\n");
 			goto failed;
 		}
 	}
 
-	pager_command = pager;
-	pager_name = base;
+	/* tokenise PAGER splitting into arguments */
+	cur = pager;
+	while(*cur != '\0') {
+		/* skip whitespace */
+		while(*cur == '\t' || *cur == ' ')
+			cur++;
+
+		sow = cur;
+
+		while(*cur != '\0' && *cur != '\t' && *cur != ' ')
+			cur++;
+
+		if(cur - sow) {
+			pager_argv = REALLOC(pager_argv, (args + 2) * sizeof(char *));
+
+			pager_argv[args++] = strndup(sow, cur - sow);
+		}
+	}
+
+	if(args == 0) {
+		ERROR("PAGER is empty or only contains whitespace!\n");
+		return FALSE;
+	}
+
+	pager_argv[args] = NULL;
+	pager_command = pager_argv[0];
+	pager_argv[0] = get_base(pager_command);
+	if(pager_argv[0] == NULL) {
+		ERROR("PAGER doesn't have a command name in it or it has trailing '/', '.' or '..' characters!\n");
+		for(i = 1; i < args; i++)
+			free(pager_argv[i]);
+		free(pager_argv);
+		free(pager_command);
+		return FALSE;
+	}
+
 	pager_from_env_var = TRUE;
 	return TRUE;
 
@@ -258,9 +276,14 @@ FILE *exec_pager(pid_t *process)
 		if(res == -1)
 			exit(EXIT_FAILURE);
 
-		if(pager_from_env_var)
-			run_cmd(pager_name, pager_command, NULL, TRUE);
-		else
+		if(pager_from_env_var) {
+			if(pager_argv[1] == NULL)
+				run_cmd(pager_argv[0], pager_command, NULL, TRUE);
+			else {
+				execvp(pager_command, pager_argv);
+				execv(pager_command, pager_argv);
+			}
+		} else
 			run_cmd("pager", "pager", "/usr/bin/pager", TRUE);
 
 		run_cmd("less", "less", "/usr/bin/less", FALSE);
