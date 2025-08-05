@@ -75,45 +75,127 @@ static char *get_base(char *pathname)
 }
 
 
-int check_and_set_pager(char *pager)
+int next_arg_count(char *cur)
 {
-	int i, args = 0;
-	char *cur, *sow;
+	int count = 0;
+	char sq = FALSE, dq = FALSE;
 
-	/* Check string doesn't contain pipes, command separators or file
-	 * redirects.
-	 *
-	 * Note: this isn't an exhaustive check of what can't be in the
-	 *	 pager name, as the execlp() will do this.  It is more
-	 *	 intended to check for common shell metacharacters and
-	 *	 warn users this isn't supported in a friendlier way.
-	 */
-	for(cur = pager; *cur != '\0'; cur++) {
-		if(*cur == '|' || *cur == ';') {
-			ERROR("PAGER cannot have pipes or command separators!\n");
-			goto failed;
-		} else if(*cur == '<' || *cur == '>' || *cur == '&') {
-			ERROR("PAGER cannot have file redirections!\n");
-			goto failed;
+	/* skip whitespace */
+	while(*cur == '\t' || *cur == ' ')
+		cur ++;
+
+	if(*cur == '\0')
+		return -1;
+
+	for(; *cur != '\0'; cur ++) {
+		if(!sq && !dq) {
+			/* Check string doesn't contain pipes, command separators or file
+			 * redirects.
+			 *
+			 * Note: this isn't an exhaustive check of what can't be in the
+			 *	 pager name, as the execlp() will do this.  It is more
+			 *	 intended to check for common shell metacharacters and
+			 *	 warn users this isn't supported in a friendlier way.
+			 */
+			if(*cur == '|' || *cur == ';')
+				return -2;
+			else if(*cur == '<' || *cur == '>' || *cur == '&')
+				return -3;
+			else if(*cur == '\'')
+				sq = TRUE;
+			else if(*cur == '"')
+				dq = TRUE;
+			else if(*cur == '\t' || *cur == ' ')
+			       break;
+			else
+				count ++;
+		} else if(!sq && dq) {
+			if(*cur == '"')
+				dq = FALSE;
+			else
+				count ++;
+		} else if(sq && !dq) {
+			if(*cur == '\'')
+				sq = FALSE;
+			else
+				count ++;
 		}
 	}
 
-	/* tokenise PAGER splitting into arguments */
-	cur = pager;
+	return (sq || dq) ? -4 : count;
+}
+
+
+char *next_arg_copy(char **pos, int count)
+{
+	char sq = FALSE, dq = FALSE;
+	char *arg = MALLOC(count + 1), *copy = arg;
+	char *cur = *pos;
+
+	/* skip whitespace */
+	while(*cur == '\t' || *cur == ' ')
+		cur ++;
+
+	for(; *cur != '\0'; cur ++) {
+		if(!sq && !dq) {
+			if(*cur == '\'')
+				sq = TRUE;
+			else if(*cur == '"')
+				dq = TRUE;
+			else if(*cur == '\t' || *cur == ' ')
+			       break;
+			else
+				*copy ++ = *cur;
+		} else if(!sq && dq) {
+			if(*cur == '"')
+				dq = FALSE;
+			else
+				*copy ++ = *cur;
+		} else if(sq && !dq) {
+			if(*cur == '\'')
+				sq = FALSE;
+			else
+				*copy ++ = *cur;
+		}
+	}
+
+	*copy = '\0';
+	*pos = cur;
+	return arg;
+}
+
+
+char *next_arg(char **pos, int *result)
+{
+	*result = next_arg_count(*pos);
+
+	return (*result < 0) ? NULL : next_arg_copy(pos, *result);
+}
+
+
+int check_and_set_pager(char *pager)
+{
+	int args = 0, result;
+	char *base, *cur = pager;
+
+	 /* tokenise PAGER splitting into arguments */
 	while(*cur != '\0') {
-		/* skip whitespace */
-		while(*cur == '\t' || *cur == ' ')
-			cur++;
+		char *arg = next_arg(&cur, &result);
 
-		sow = cur;
-
-		while(*cur != '\0' && *cur != '\t' && *cur != ' ')
-			cur++;
-
-		if(cur - sow) {
+		if(result == -1)
+			break;
+		else if(result == -2) {
+			ERROR("PAGER cannot have pipes or command separators!\n");
+			goto failed;
+		} else if(result == -3) {
+			ERROR("PAGER cannot have file redirections!\n");
+			goto failed;
+		} else if(result == -4) {
+			ERROR("PAGER has unterminated single or double quote\n");
+			goto failed2;
+		} else {
 			pager_argv = REALLOC(pager_argv, (args + 2) * sizeof(char *));
-
-			pager_argv[args++] = strndup(sow, cur - sow);
+			pager_argv[args++] = arg;
 		}
 	}
 
@@ -122,23 +204,23 @@ int check_and_set_pager(char *pager)
 		return FALSE;
 	}
 
-	pager_argv[args] = NULL;
-	pager_command = pager_argv[0];
-	pager_argv[0] = get_base(pager_command);
-	if(pager_argv[0] == NULL) {
+	base = get_base(pager_argv[0]);
+	if(base == NULL) {
 		ERROR("PAGER doesn't have a command name in it or it has trailing '/', '.' or '..' characters!\n");
-		for(i = 1; i < args; i++)
-			free(pager_argv[i]);
-		free(pager_argv);
-		free(pager_command);
-		return FALSE;
+		goto failed;
 	}
 
+	pager_command = pager_argv[0];
+	pager_argv[0] = base;
 	pager_from_env_var = TRUE;
 	return TRUE;
 
 failed:
 	ERROR("If you want to do this, please use a wrapper script!\n");
+failed2:
+	for(int i = 0; i < args; i++)
+		free(pager_argv[i]);
+	free(pager_argv);
 	return FALSE;
 }
 
