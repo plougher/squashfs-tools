@@ -890,7 +890,7 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 {
 	int i, res, matched = FALSE;
 	regex_t *preg = MALLOC(sizeof(regex_t));
-	int cols = get_column_width();
+	int cols;
 	pid_t pager_pid;
 	FILE *pager;
 
@@ -899,14 +899,18 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 		char str[1024]; /* overflow safe */
 
 		regerror(res, preg, str, 1024);
+		cols = get_column_width();
 		autowrap_printf(stderr, cols, "%s: %s invalid regex %s because %s\n", prog_name, opt_name, pattern, str);
 		exit(1);
 	}
 
-	if(isatty(STDOUT_FILENO))
+	if(isatty(STDOUT_FILENO)) {
+		cols = get_column_width();
 		pager = exec_pager(&pager_pid);
-	else
+	} else {
+		cols = 80;
 		pager = stdout;
+	}
 
 	for(i = 0; options[i] != NULL; i++) {
 		res = regexec(preg, options[i], (size_t) 0, NULL, 0);
