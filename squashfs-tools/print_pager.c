@@ -126,7 +126,7 @@ int next_arg_count(char *cur)
 				cur ++;
 			} else
 				count ++;
-		} else if(!sq && dq) {
+		} else if(dq) {
 			if(*cur == '"')
 				dq = FALSE;
 			else if(*cur == '\\' && quoted_bs_char(*(cur + 1))) {
@@ -134,7 +134,7 @@ int next_arg_count(char *cur)
 				cur ++;
 			} else
 				count ++;
-		} else if(sq && !dq) {
+		} else if(sq) {
 			if(*cur == '\'')
 				sq = FALSE;
 			else
@@ -168,14 +168,14 @@ char *next_arg_copy(char **pos, int count)
 				*copy ++ = *++ cur;
 			else
 				*copy ++ = *cur;
-		} else if(!sq && dq) {
+		} else if(dq) {
 			if(*cur == '"')
 				dq = FALSE;
 			else if(*cur == '\\' && quoted_bs_char(*(cur + 1)))
 				*copy ++ = *++ cur;
 			else
 				*copy ++ = *cur;
-		} else if(sq && !dq) {
+		} else if(sq) {
 			if(*cur == '\'')
 				sq = FALSE;
 			else
