@@ -202,21 +202,21 @@ int check_and_set_pager(char *pager)
 	int args = 0, result;
 	char *base, *cur = pager;
 
-	 /* tokenise PAGER splitting into arguments */
+	 /* split PAGER into arguments */
 	while(*cur != '\0') {
 		char *arg = next_arg(&cur, &result);
 
 		if(result == -1)
 			break;
 		else if(result == -2) {
-			ERROR("PAGER cannot have pipes or command separators!\n");
+			ERROR("PAGER cannot have shell special characters '|' or ';'!  Quote or backslash them to pass to pager command\n");
 			goto failed;
 		} else if(result == -3) {
-			ERROR("PAGER cannot have file redirections!\n");
+			ERROR("PAGER cannot have shell special characters '<', '>' or '&'!  Quote or backslash them to pass to pager command\n");
 			goto failed;
 		} else if(result == -4) {
-			ERROR("PAGER has unterminated single or double quote\n");
-			goto failed2;
+			ERROR("PAGER has unterminated single or double quoted string\n");
+			goto failed;
 		} else {
 			pager_argv = REALLOC(pager_argv, (args + 2) * sizeof(char *));
 			pager_argv[args++] = arg;
@@ -240,8 +240,6 @@ int check_and_set_pager(char *pager)
 	return TRUE;
 
 failed:
-	ERROR("If you want to do this, please use a wrapper script!\n");
-failed2:
 	for(int i = 0; i < args; i++)
 		free(pager_argv[i]);
 	free(pager_argv);
