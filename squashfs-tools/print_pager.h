@@ -33,8 +33,8 @@
 #include <stdio.h>
 #include <sys/types.h>
 
-extern void wait_to_die(pid_t process);
 extern FILE *launch_pager(pid_t *process, int *cols);
+extern void delete_pager(FILE *pager, pid_t process);
 extern int get_column_width();
 extern void autowrap_print(FILE *stream, char *text, int maxl);
 extern void autowrap_printf(FILE *stream, int maxl, char *fmt, ...)

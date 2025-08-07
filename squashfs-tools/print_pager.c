@@ -311,7 +311,7 @@ static int determine_pager(char *name, char *path1, char *path2)
 }
 
 
-void wait_to_die(pid_t process)
+static void wait_to_die(pid_t process)
 {
 	int res, status;
 
@@ -425,6 +425,15 @@ FILE *launch_pager(pid_t *process, int *cols)
 		*cols = 80;
 		*process = 0;
 		return stdout;
+	}
+}
+
+
+void delete_pager(FILE *pager, pid_t process)
+{
+	if(pager != stdout) {
+		fclose(pager);
+		wait_to_die(process);
 	}
 }
 

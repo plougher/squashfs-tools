@@ -332,11 +332,7 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 	for(i = 0; options_text[i] != NULL; i++)
 		autowrap_print(pager, options_text[i], cols);
 
-	if(pager != stdout) {
-		fclose(pager);
-		wait_to_die(pager_pid);
-	}
-
+	delete_pager(pager, pager_pid);
 	exit(0);
 }
 
@@ -373,10 +369,7 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 		}
 	}
 
-	if(pager != stdout) {
-		fclose(pager);
-		wait_to_die(pager_pid);
-	}
+	delete_pager(pager, pager_pid);
 
 	if(!matched) {
 		autowrap_printf(stderr, cols, "%s: %s %s does not match any %s option\n", prog_name, opt_name, pattern, prog_name);
@@ -431,10 +424,7 @@ static void print_section(char *prog_name, char *opt_name, char *sec_name, char 
 	if(res) {
 		char str[1024]; /* overflow safe */
 
-		if(pager != stdout) {
-			fclose(pager);
-			wait_to_die(pager_pid);
-		}
+		delete_pager(pager, pager_pid);
 
 		regerror(res, preg, str, 1024);
 		autowrap_printf(stderr, cols, "%s: %s invalid regex %s because %s\n", prog_name, opt_name, sec_name, str);
@@ -471,11 +461,7 @@ exact_match:
 	}
 
 finish:
-	if(pager != stdout) {
-		fclose(pager);
-		wait_to_die(pager_pid);
-	}
-
+	delete_pager(pager, pager_pid);
 	exit(0);
 }
 
@@ -492,11 +478,7 @@ static void handle_invalid_option(char *prog_name, char *opt_name, char **sectio
 	print_section_names(pager, "\t", cols, sections, options_text);
 	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 
-	if(pager != stdout) {
-		fclose(pager);
-		wait_to_die(pager_pid);
-	}
-
+	delete_pager(pager, pager_pid);
 	exit(1);
 }
 
@@ -515,11 +497,7 @@ static void print_help(char *prog_name, char*message, char *syntax, char **secti
 	print_section_names(pager, "\t", cols, sections, options_text);
 	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 
-	if(pager != stdout) {
-		fclose(pager);
-		wait_to_die(pager_pid);
-	}
-
+	delete_pager(pager, pager_pid);
 	exit(message == NULL ? 0 : 1);
 }
 
@@ -540,11 +518,7 @@ static void print_option_help(char *prog_name, char *option, char **sections, ch
 	autowrap_printf(pager, cols, "\nOr run\n  \"%s -help-all\" to get help on all the sections\n", prog_name);
 	free(string);
 
-	if(pager != stdout) {
-		fclose(pager);
-		wait_to_die(pager_pid);
-	}
-
+	delete_pager(pager, pager_pid);
 	exit(1);
 }
 
