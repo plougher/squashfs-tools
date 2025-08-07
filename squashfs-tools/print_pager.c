@@ -75,6 +75,20 @@ static char *get_base(char *pathname)
 }
 
 
+inline int quoted_bs_char(char cur)
+{
+	/*
+	 * Within double quoted strings Bash allows the characters ‘$’, ‘`’,
+	 * ‘"’, ‘\’, and newline to be backslashed.  Backslashes that are
+	 * followed by one of those characters are removed.  Backslashes
+	 * preceeding other characters are left unmodified.
+	 *
+	 * Following the principle of least surprise copy this behaviour.
+	 */
+	return cur == '$' || cur == '`' || cur == '"' || cur == '\\' || cur == '\n';
+}
+
+
 int next_arg_count(char *cur)
 {
 	int count = 0;
@@ -107,12 +121,18 @@ int next_arg_count(char *cur)
 				dq = TRUE;
 			else if(*cur == '\t' || *cur == ' ')
 			       break;
-			else
+			else if(*cur == '\\' && *(cur + 1) != '\0') {
+				count ++;
+				cur ++;
+			} else
 				count ++;
 		} else if(!sq && dq) {
 			if(*cur == '"')
 				dq = FALSE;
-			else
+			else if(*cur == '\\' && quoted_bs_char(*(cur + 1))) {
+				count ++;
+				cur ++;
+			} else
 				count ++;
 		} else if(sq && !dq) {
 			if(*cur == '\'')
@@ -144,11 +164,15 @@ char *next_arg_copy(char **pos, int count)
 				dq = TRUE;
 			else if(*cur == '\t' || *cur == ' ')
 			       break;
+			else if(*cur == '\\' && *(cur + 1) != '\0')
+				*copy ++ = *++ cur;
 			else
 				*copy ++ = *cur;
 		} else if(!sq && dq) {
 			if(*cur == '"')
 				dq = FALSE;
+			else if(*cur == '\\' && quoted_bs_char(*(cur + 1)))
+				*copy ++ = *++ cur;
 			else
 				*copy ++ = *cur;
 		} else if(sq && !dq) {
