@@ -359,7 +359,7 @@ void simple_cat()
 }
 
 
-FILE *exec_pager(pid_t *process)
+static FILE *exec_pager(pid_t *process)
 {
 	FILE *file;
 	int res, pipefd[2];
@@ -413,6 +413,19 @@ FILE *exec_pager(pid_t *process)
 
 	*process = child;
 	return file;
+}
+
+
+FILE *launch_pager(pid_t *process, int *cols)
+{
+	if(isatty(STDOUT_FILENO)) {
+		*cols = get_column_width();
+		return exec_pager(process);
+	} else {
+		*cols = 80;
+		*process = 0;
+		return stdout;
+	}
 }
 
 

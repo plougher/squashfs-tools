@@ -859,15 +859,7 @@ static void print_help_all(char *name, char *syntax, char **options_text)
 {
 	int i, cols;
 	pid_t pager_pid;
-	FILE *pager;
-
-	if(isatty(STDOUT_FILENO)) {
-		cols = get_column_width();
-		pager = exec_pager(&pager_pid);
-	} else {
-		cols = 80;
-		pager = stdout;
-	}
+	FILE *pager = launch_pager(&pager_pid, &cols);
 
 	autowrap_printf(pager, cols, syntax, name);
 
@@ -904,13 +896,7 @@ static void print_option(char *prog_name, char *opt_name, char *pattern, char **
 		exit(1);
 	}
 
-	if(isatty(STDOUT_FILENO)) {
-		cols = get_column_width();
-		pager = exec_pager(&pager_pid);
-	} else {
-		cols = 80;
-		pager = stdout;
-	}
+	pager = launch_pager(&pager_pid, &cols);
 
 	for(i = 0; options[i] != NULL; i++) {
 		res = regexec(preg, options[i], (size_t) 0, NULL, 0);
@@ -962,16 +948,8 @@ static void print_section(char *prog_name, char *opt_name, char *sec_name, char 
 {
 	int i, j, secs, cols, res, matched = FALSE;
 	pid_t pager_pid;
-	FILE *pager;
 	regex_t *preg;
-
-	if(isatty(STDOUT_FILENO)) {
-		cols = get_column_width();
-		pager = exec_pager(&pager_pid);
-	} else {
-		cols = 80;
-		pager = stdout;
-	}
+	FILE *pager = launch_pager(&pager_pid, &cols);
 
 	if(strcmp(sec_name, "list") == 0) {
 		autowrap_printf(pager, cols, "\nUse following section name to print %s help information for that section\n\n", prog_name);
@@ -1042,15 +1020,7 @@ static void handle_invalid_option(char *prog_name, char *opt_name, char **sectio
 {
 	int cols;
 	pid_t pager_pid;
-	FILE *pager;
-
-	if(isatty(STDOUT_FILENO)) {
-		cols = get_column_width();
-		pager = exec_pager(&pager_pid);
-	} else {
-		cols = 80;
-		pager = stdout;
-	}
+	FILE *pager = launch_pager(&pager_pid, &cols);
 
 	autowrap_printf(pager, cols, "%s: %s is an invalid option\n\n", prog_name, opt_name);
 	autowrap_printf(pager, cols, "Run\n  \"%s -help-option <regex>\" to get help on all options matching <regex>\n", prog_name);
@@ -1071,15 +1041,7 @@ static void print_help(char *prog_name, char *message, char *syntax, char **sect
 {
 	int cols;
 	pid_t pager_pid;
-	FILE *pager;
-
-	if(isatty(STDOUT_FILENO)) {
-		cols = get_column_width();
-		pager = exec_pager(&pager_pid);
-	} else {
-		cols = 80;
-		pager = stdout;
-	}
+	FILE *pager = launch_pager(&pager_pid, &cols);
 
 	if(message)
 		autowrap_print(pager, message, cols);
@@ -1103,15 +1065,7 @@ static void print_option_help(char *prog_name, char *option, char **sections, ch
 	int cols;
 	char *string;
 	pid_t pager_pid;
-	FILE *pager;
-
-	if(isatty(STDOUT_FILENO)) {
-		cols = get_column_width();
-		pager = exec_pager(&pager_pid);
-	} else {
-		cols = 80;
-		pager = stdout;
-	}
+	FILE *pager = launch_pager(&pager_pid, &cols);
 
 	VASPRINTF(&string, fmt, ap);
 	autowrap_print(pager, string, cols);
@@ -1227,13 +1181,7 @@ void print_compressor_options(char *comp_name, char *prog_name)
 		exit(1);
 	}
 
-	if(isatty(STDOUT_FILENO)) {
-		cols = get_column_width();
-		pager = exec_pager(&pager_pid);
-	} else {
-		cols = 80;
-		pager = stdout;
-	}
+	pager = launch_pager(&pager_pid, &cols);
 
 	if(strcmp(comp_name, "list") == 0)
 		autowrap_print(pager, "\t" COMPRESSORS "\n", cols);
