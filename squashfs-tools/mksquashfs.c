@@ -6438,7 +6438,7 @@ static int sqfstar(int argc, char *argv[])
 
 	/* Scan the command line for options that will immediately quit afterwards */
 	for(i = 1; i < argc; i++) {
-		if(strcmp(argv[i], "-version") == 0) {
+		if(strcmp(argv[i], "-version") == 0 || strcmp(argv[i], "--version") == 0) {
 			print_version("sqfstar");
 			exit(0);
 		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
