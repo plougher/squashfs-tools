@@ -326,8 +326,10 @@ static void wait_to_die(pid_t process)
 		}
 	}
 
-	if(!WIFEXITED(status) || WEXITSTATUS(status) != 0)
+	if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
 		ERROR("Pager failed to run or failed with an error status\n");
+		ERROR("Set PAGER to empty or use -no-pager to not use a pager\n");
+	}
 }
 
 
