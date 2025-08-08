@@ -156,6 +156,14 @@ static struct test table[] = {
 	{ 0, 0, 0, 0}
 };
 
+/* list of options that have an argument */
+static char *option_table[] = { "d", "dest", "max", "max-depth", "extract-file",
+	"exclude_file", "all", "all-time", "pf", "xattrs-exclude",
+	"xattrs-include", "p", "processors", "mem", "mem-percent", "h", "help",
+	"help-option", "help-section", "ho", "hs", "o", "offset", "e", "ef",
+	"exc", "excf", "pseudo-file", NULL
+};
+
 static void progress_bar(long long current, long long max, int columns);
 
 #define MAX_LINE 16384
@@ -3846,6 +3854,8 @@ static void check_sqfs_cmdline(int argc, char *argv[])
 		free(filename);
 	}
 }
+
+
 static void print_version(char *string)
 {
 	printf("%s version " VERSION " (" DATE ")\n", string);
@@ -3861,6 +3871,21 @@ static void print_version(char *string)
 	printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");
 	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");
 	printf("GNU General Public License for more details.\n");
+}
+
+
+static int option_with_arg(char *string, char *table[])
+{
+	int i;
+
+	if(*string != '-')
+		return FALSE;
+
+	for(i = 0; table[i] != NULL; i++)
+		if(strcmp(string + 1, table[i]) == 0)
+			break;
+
+	return table[i] != NULL;
 }
 
 
@@ -4031,10 +4056,21 @@ static int parse_options(int argc, char *argv[])
 {
 	int i, res;
 
-	for(i = 1; i < argc; i++) {
-		if(*argv[i] != '-')
+	/* Scan the command line for any -no-pager option.  This needs to be
+	 * parsed before any help options or help output on error which will by
+	 * default go to the pager */
+	for(i = 1; i < argc && *argv[i] == '-'; i++) {
+		if(strcmp(argv[i], "-no-pager") == 0) {
+			no_pager = TRUE;
 			break;
-		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
+		} else if(option_with_arg(argv[i], option_table))
+			i++;
+	}
+
+	for(i = 1; i < argc && *argv[i] == '-'; i++) {
+		if(strcmp(argv[i], "-no-pager") == 0)
+			; /* ingore, already parsed */
+		else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			unsquashfs_help(NULL);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
 			unsquashfs_help_all();
