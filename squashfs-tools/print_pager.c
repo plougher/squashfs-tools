@@ -41,7 +41,7 @@ extern long long read_bytes(int, void *, long long);
 static char **pager_argv = NULL;
 static char *pager_command = NULL;
 static int pager_from_env_var = FALSE;
-static int no_pager = FALSE;
+int no_pager = FALSE;
 
 static char *get_base(char *pathname)
 {

@@ -83,7 +83,7 @@ static char *mksquashfs_options[]={
 	"-nopad", "-offset", "-o", "", "", "",
 	/* help options */
 	"-help", "-help-option", "-help-section", "-help-comp", "-help-all",
-	"-Xhelp", "-h", "-ho", "-hs", "-ha", "", "", "",
+	"-Xhelp", "-h", "-ho", "-hs", "-ha", "-no-pager", "", "", "",
 	/* misc options */
 	"-fstime", "-always-use-fragments", "-root-owned",
 	"-noInodeCompression", "-noIdTableCompression", "-noDataCompression",
@@ -159,7 +159,7 @@ static char *mksquashfs_args[]={
 	"", "<offset>", "<offset>", "", "", "",
 	/* help options */
 	"", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
-	"<section>", "", "", "", "",
+	"<section>", "", "", "", "", "",
 	/* misc options */
 	"<time>", "", "", "", "", "", "", "", ""
 };
@@ -472,6 +472,7 @@ static char *mksquashfs_text[]={
 	"-ho <regex>\t\tshorthand alternative to -help-option\n",
 	"-hs <section>\t\tshorthand alternative to -help-section\n",
 	"-ha\t\t\tshorthand alternative to -help-all\n",
+	"-no-pager\t\tdo not use a pager to output help information\n",
 	"\n", "Miscellaneous options:", "\n",
 	"-fstime <time>\t\talternative name for -mkfs-time\n",
 	"-always-use-fragments\talternative name for -tailends\n",

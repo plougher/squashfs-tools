@@ -7315,6 +7315,16 @@ int main(int argc, char *argv[])
         for(i = 1; i < argc && (argv[i][0] != '-' || strcmp(argv[i], "-") == 0);
 									i++);
 
+	/* Scan the command line for any -no-pager option.  This needs to be
+	 * parsed before any help options or help output on error which will by
+	 * default go to the pager */
+	for(j = i; j < argc; j++) {
+		if(strcmp(argv[j], "-no-pager") == 0)
+			no_pager = TRUE;
+		else if(option_with_arg(argv[j], option_table))
+			j++;
+	}
+
 	/* Scan the command line for options that will immediately quit afterwards */
 	for(j = i; j < argc; j++) {
 		if(strcmp(argv[j], "-help") == 0 || strcmp(argv[j], "-h") == 0)
