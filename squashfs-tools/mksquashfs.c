@@ -7303,9 +7303,6 @@ int main(int argc, char *argv[])
 	if(strcmp(command, "sqfstar") == 0)
 		return sqfstar(argc, argv);
 
-	block_log = slog(block_size);
-	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
-
 	/* Find the first option */
         for(i = 1; i < argc && (argv[i][0] != '-' || strcmp(argv[i], "-") == 0);
 									i++);
@@ -7388,6 +7385,9 @@ int main(int argc, char *argv[])
 		else if(option_with_arg(argv[j], option_table))
 			j++;
 	}
+
+	block_log = slog(block_size);
+	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
 
 	/*
 	 * if no -comp option specified lookup default compressor.  Note the
