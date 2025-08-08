@@ -187,7 +187,7 @@ static char *sqfstar_args[]={
 	"", "<offset>", "<offset>", "", "", "",
 	/* help options */
 	"", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
-	"<section>", "" "", "", "",
+	"<section>", "", "", "", "",
 	/* misc options */
 	"<time>", "", "", "", "", "", "", ""
 };
