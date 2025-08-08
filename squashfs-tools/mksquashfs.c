@@ -7311,9 +7311,10 @@ int main(int argc, char *argv[])
 	 * parsed before any help options or help output on error which will by
 	 * default go to the pager */
 	for(j = i; j < argc; j++) {
-		if(strcmp(argv[j], "-no-pager") == 0)
+		if(strcmp(argv[j], "-no-pager") == 0) {
 			no_pager = TRUE;
-		else if(option_with_arg(argv[j], option_table))
+			break;
+		} else if(option_with_arg(argv[j], option_table))
 			j++;
 	}
 
