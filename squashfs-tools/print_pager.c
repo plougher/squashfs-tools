@@ -41,6 +41,7 @@ extern long long read_bytes(int, void *, long long);
 static char **pager_argv = NULL;
 static char *pager_command = NULL;
 static int pager_from_env_var = FALSE;
+static int no_pager = FALSE;
 
 static char *get_base(char *pathname)
 {
@@ -224,8 +225,8 @@ int check_and_set_pager(char *pager)
 	}
 
 	if(args == 0) {
-		ERROR("PAGER is empty or only contains whitespace!\n");
-		return FALSE;
+		no_pager = TRUE;
+		return TRUE;
 	}
 
 	base = get_base(pager_argv[0]);
@@ -418,7 +419,11 @@ static FILE *exec_pager(pid_t *process)
 
 FILE *launch_pager(pid_t *process, int *cols)
 {
-	if(isatty(STDOUT_FILENO)) {
+	if(no_pager) {
+		*cols = get_column_width();
+		*process = 0;
+		return stdout;
+	} else if(isatty(STDOUT_FILENO)) {
 		*cols = get_column_width();
 		return exec_pager(process);
 	} else {
