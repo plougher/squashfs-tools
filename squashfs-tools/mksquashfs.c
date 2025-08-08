@@ -7303,11 +7303,6 @@ int main(int argc, char *argv[])
 	if(strcmp(command, "sqfstar") == 0)
 		return sqfstar(argc, argv);
 
-	if(argc > 1 && strcmp(argv[1], "-version") == 0) {
-		print_version("mksquashfs");
-		exit(0);
-	}
-
 	block_log = slog(block_size);
 	calculate_queue_sizes(total_mem, &readq, &fragq, &bwriteq, &fwriteq);
 
@@ -7346,6 +7341,9 @@ int main(int argc, char *argv[])
 			exit(0);
 		} else if(strcmp(argv[j], "-mem-default") == 0) {
 			printf("%d\n", total_mem);
+			exit(0);
+		} else if(strcmp(argv[j], "-version") == 0 || strcmp(argv[j], "--version") == 0) {
+			print_version("mksquashfs");
 			exit(0);
 		} else if(strcmp(argv[j], "-e") == 0)
 			break;
