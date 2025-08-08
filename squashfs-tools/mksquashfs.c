@@ -6423,6 +6423,19 @@ static int sqfstar(int argc, char *argv[])
 	int repro_time_opt = FALSE;
 	unsigned int repro_time;
 
+	/* Scan the command line for any -no-pager option.  This needs to be
+	 * parsed before any help options or help output on error which will by
+	 * default go to the pager */
+	for(i = 1; i < argc; i++) {
+		if(strcmp(argv[i], "-no-pager") == 0) {
+			no_pager = TRUE;
+			break;
+		} else if(argv[i][0] != '-')
+			break;
+		else if(option_with_arg(argv[i], sqfstar_option_table))
+			i++;
+	}
+
 	/* Scan the command line for options that will immediately quit afterwards */
 	for(i = 1; i < argc; i++) {
 		if(strcmp(argv[i], "-version") == 0) {
@@ -6531,7 +6544,9 @@ static int sqfstar(int argc, char *argv[])
 	always_use_fragments = TRUE;
 
 	for(i = 1; i < dest_index; i++) {
-		if(strcmp(argv[i], "-ignore-zeros") == 0)
+		if(strcmp(argv[i], "-no-pager") == 0)
+			; /* ignore, already parsed */
+		else if(strcmp(argv[i], "-ignore-zeros") == 0)
 			ignore_zeros = TRUE;
 		else if(strcmp(argv[i], "-no-hardlinks") == 0)
 			no_hardlinks = TRUE;
