@@ -7458,7 +7458,9 @@ int main(int argc, char *argv[])
 				"reading from stdin can be specified\n");
 
 	for(i = option_offset; i < argc; i++) {
-		if(strcmp(argv[i], "-ignore-zeros") == 0)
+		if(strcmp(argv[i], "-no-pager") == 0)
+			; /* ignore, already parsed */
+		else if(strcmp(argv[i], "-ignore-zeros") == 0)
 			ignore_zeros = TRUE;
 		else if(strcmp(argv[i], "-one-file-system") == 0)
 			one_file_system = TRUE;
