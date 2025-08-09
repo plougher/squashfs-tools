@@ -452,7 +452,8 @@ static char *mksquashfs_text[]={
 		"Kbytes, Mbytes or Gbytes respectively.  Default 0 bytes\n",
 	"-o <offset>\t\tsynonym for -offset\n",
 	"\n", "Help options:", "\n",
-	"-help\t\t\tprint help summary information to stdout\n",
+	"-help\t\t\tprint help summary information to pager (or stdout if not "
+		"a terminal)\n",
 	"-help-option <regex>\tprint the help information for options matching "
 		"<regex> to pager (or stdout if not a terminal)\n",
 	"-help-section <section>\tprint the help information for section "
