@@ -4125,7 +4125,8 @@ static int parse_options(int argc, char *argv[])
 				strcmp(argv[i], "-q") == 0)
 			quiet = TRUE;
 		else if(strcmp(argv[i], "-version") == 0 ||
-				strcmp(argv[i], "-v") == 0) {
+				strcmp(argv[i], "-v") == 0 ||
+				strcmp(argv[i], "--version") == 0) {
 			print_version("unsquashfs");
 			version = TRUE;
 		} else if(strcmp(argv[i], "-info") == 0 ||
