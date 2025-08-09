@@ -202,7 +202,8 @@ static char *unsquashfs_text[]={
 	"\t-no-exit[-code]\t\tdo not set exit code (to nonzero) on non-fatal "
 		"errors\n",
 	"\n", "Help options:", "\n",
-	"\t-h[elp]\t\t\tprint help summary information to stdout\n",
+	"\t-h[elp]\t\t\tprint help summary information to pager (or stdout if "
+		"not a terminal)\n",
 	"\t-help-option <regex>\tprint the help information for options "
 		"matching <regex> to pager (or stdout if not a terminal)\n",
 	"\t-help-section <section>\tprint the help information for section "
