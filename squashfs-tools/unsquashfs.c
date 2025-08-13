@@ -3938,7 +3938,8 @@ static int parse_cat_options(int argc, char *argv[])
 				strcmp(argv[i], "-ig") == 0)
 			ignore_errors = TRUE;
 		else if(strcmp(argv[i], "-version") == 0 ||
-				strcmp(argv[i], "-v") == 0) {
+				strcmp(argv[i], "-v") == 0 ||
+				strcmp(argv[i], "--version") == 0) {
 			print_version("sqfscat");
 			version = TRUE;
 		} else if(strcmp(argv[i], "-processors") == 0 ||
