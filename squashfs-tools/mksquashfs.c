@@ -7249,7 +7249,7 @@ static int sqfstar(int argc, char *argv[])
 	progressbar_finish();
 
 	if(!block_device) {
-		res = ftruncate(fd, get_dpos());
+		res = ftruncate(fd, start_offset + get_dpos());
 		if(res != 0)
 			BAD_ERROR("Failed to truncate dest file because %s\n",
 				strerror(errno));
