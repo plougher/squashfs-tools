@@ -164,6 +164,10 @@ static char *option_table[] = { "d", "dest", "max", "max-depth", "extract-file",
 	"exc", "excf", "pseudo-file", NULL
 };
 
+static char *sqfscat_option_table[] = { "p", "processors", "mem", "mem-percent",
+	"o", "offset", "help-option", "help-section", "ho", "hs", NULL
+};
+
 static void progress_bar(long long current, long long max, int columns);
 
 #define MAX_LINE 16384
@@ -3895,10 +3899,21 @@ static int parse_cat_options(int argc, char *argv[])
 
 	cat_files = TRUE;
 
-	for(i = 1; i < argc; i++) {
-		if(*argv[i] != '-')
+	/* Scan the command line for any -no-pager option.  This needs to be
+	 * parsed before any help options or help output on error which will by
+	 * default go to the pager */
+	for(i = 1; i < argc && *argv[i] == '-'; i++) {
+		if(strcmp(argv[i], "-no-pager") == 0) {
+			no_pager = TRUE;
 			break;
-		if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
+		} else if(option_with_arg(argv[i], sqfscat_option_table))
+			i++;
+	}
+
+	for(i = 1; i < argc && *argv[i] == '-'; i++) {
+		if(strcmp(argv[i], "-no-pager") == 0)
+			; /* ingore, already parsed */
+		else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			sqfscat_help(NULL);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
 			sqfscat_help_all();
