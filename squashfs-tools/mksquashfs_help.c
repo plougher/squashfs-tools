@@ -555,12 +555,12 @@ static char *mksquashfs_text[]={
 	"  1\tFatal errors occurred, Mksquashfs aborted and did not generate a "
 		"filesystem (or update if appending).\n",
 	"\n","See also (extra information elsewhere):", "\n",
-	"The README for the Squashfs-tools 4.7 release, describing the new "
+	"The README for the Squashfs-tools 4.7.1 release, describing the new "
 		"features can be read here https://github.com/plougher/"
-		"squashfs-tools/blob/master/Documentation/4.7/README\n",
+		"squashfs-tools/blob/master/Documentation/4.7.1/README\n",
 	"\nThe Squashfs-tools USAGE guides and other documentation can be read "
 		"here https://github.com/plougher/squashfs-tools/blob/master/"
-		"Documentation/4.7\n",
+		"Documentation/4.7.1\n",
 	NULL
 };
 
@@ -850,12 +850,12 @@ static char *sqfstar_text[]={
 	"  1\tFatal errors occurred, Sqfstar aborted and did not generate a "
 		"filesystem.\n",
 	"\n","See also (extra information elsewhere):", "\n",
-	"The README for the Squashfs-tools 4.7 release, describing the new "
+	"The README for the Squashfs-tools 4.7.1 release, describing the new "
 		"features can be read here https://github.com/plougher/"
-		"squashfs-tools/blob/master/Documentation/4.7/README\n",
+		"squashfs-tools/blob/master/Documentation/4.7.1/README\n",
 	"\nThe Squashfs-tools USAGE guides and other documentation can be read "
 		"here https://github.com/plougher/squashfs-tools/blob/master/"
-		"Documentation/4.7\n",
+		"Documentation/4.7.1\n",
 	NULL
 };
 
