@@ -2,10 +2,11 @@
 
 4.7.1	15 AUG 2025	Minor improvements and bug fix release
 
-	1. Fix regresson in -offset (-o) where it stopped working in Mksquashfs
+	1. Fix regression in -offset (-o) where it stopped working in Mksquashfs
 	   and Sqfstar.
 	2. Allow arguments (spaces) in the PAGER environment variable, rather
-	   than just a command name.
+	   than just a command name.  Also support quoted strings, string
+	   concatenation and backslashes.
 	3. Don't use a pager if PAGER environment variable is empty.
 	4. Add new -no-pager option in Mksquashfs/Unsquashfs/Sqfstar and Sqfscat
 	   which if specified won't use a pager.
