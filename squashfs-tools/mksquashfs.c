@@ -375,7 +375,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "inode-time",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
 	"hs", "info-file", "force-file-mode", "force-dir-mode",
 	"small-readers", "block-readers", "uid-gid-offset", "all-time",
-	"overcommit", "repro-time", NULL
+	"overcommit", "repro-time", "cols", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime",
@@ -7326,9 +7326,13 @@ int main(int argc, char *argv[])
 	 * parsed before any help options or help output on error which will by
 	 * default go to the pager */
 	for(j = i; j < argc; j++) {
-		if(strcmp(argv[j], "-no-pager") == 0) {
+		if(strcmp(argv[j], "-no-pager") == 0)
 			no_pager = TRUE;
-			break;
+		else if(strcmp(argv[j], "-cols") == 0) {
+			if((++j == argc) || !parse_num(argv[j], &user_cols))
+				mksquashfs_option_help(argv[j - 1], "mksquashfs: -cols missing or invalid column width\n");
+			if(user_cols < 1)
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -cols should be 1 or larger\n");
 		} else if(option_with_arg(argv[j], option_table))
 			j++;
 	}
@@ -7473,7 +7477,8 @@ int main(int argc, char *argv[])
 				"reading from stdin can be specified\n");
 
 	for(i = option_offset; i < argc; i++) {
-		if(strcmp(argv[i], "-no-pager") == 0)
+		if(strcmp(argv[i], "-no-pager") == 0 ||
+				strcmp(argv[i], "-cols") == 0)
 			; /* ignore, already parsed */
 		else if(strcmp(argv[i], "-ignore-zeros") == 0)
 			ignore_zeros = TRUE;

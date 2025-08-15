@@ -34,6 +34,7 @@
 #include <sys/types.h>
 
 extern int no_pager;
+extern int user_cols;
 extern FILE *launch_pager(pid_t *process, int *cols);
 extern void delete_pager(FILE *pager, pid_t process);
 extern int get_column_width();

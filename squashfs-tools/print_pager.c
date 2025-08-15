@@ -42,6 +42,7 @@ static char **pager_argv = NULL;
 static char *pager_command = NULL;
 static int pager_from_env_var = FALSE;
 int no_pager = FALSE;
+int user_cols = FALSE;
 
 static char *get_base(char *pathname)
 {
@@ -429,7 +430,7 @@ FILE *launch_pager(pid_t *process, int *cols)
 		*cols = get_column_width();
 		return exec_pager(process);
 	} else {
-		*cols = 80;
+		*cols = user_cols ? user_cols : 80;
 		*process = 0;
 		return stdout;
 	}
@@ -449,7 +450,9 @@ int get_column_width()
 {
 	struct winsize winsize;
 
-	if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
+	if(user_cols)
+		return user_cols;
+	else if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
 		if(isatty(STDOUT_FILENO))
 			ERROR("TIOCGWINSZ ioctl failed, defaulting to 80 "
 				"columns\n");
