@@ -1,5 +1,24 @@
 			SQUASHFS CHANGE LOG
 
+4.7.1	15 AUG 2025	Minor improvements and bug fix release
+
+	1. Fix regresson in -offset (-o) where it stopped working in Mksquashfs
+	   and Sqfstar.
+	2. Allow arguments (spaces) in the PAGER environment variable, rather
+	   than just a command name.
+	3. Don't use a pager if PAGER environment variable is empty.
+	4. Add new -no-pager option in Mksquashfs/Unsquashfs/Sqfstar and Sqfscat
+	   which if specified won't use a pager.
+	5. Fix regression in tar file reading, where file exclusion would leak
+	   cache (memory) leading in some cases to Sqfstar hanging.
+	6. Handle negative dates in tar files (before the start of the epoch of
+	   1970-01-01), and round to the start of the epoch.
+	7. Add --version spelling in addition to -version, as this appears to be
+	   a common mistake.
+	8. Add missing include files in print_pager.c (Ros Burton).
+	9. Add missing include file in thread.c (Shiji Yang).
+	10. Fix BLOCK_READER_THREADS typo in Makefile (Alexandru Ardelean).
+
 4.7	03 JUNE 2025	Parallel file reading, new help system, new
 			reproducible filesystem image options, removal
 			of "fragment block stall"
