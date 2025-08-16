@@ -165,7 +165,7 @@ static char *option_table[] = { "d", "dest", "max", "max-depth", "extract-file",
 };
 
 static char *sqfscat_option_table[] = { "p", "processors", "mem", "mem-percent",
-	"o", "offset", "help-option", "help-section", "ho", "hs", NULL
+	"o", "offset", "help-option", "help-section", "ho", "hs", "cols", NULL
 };
 
 static void progress_bar(long long current, long long max, int columns);
@@ -3903,16 +3903,22 @@ static int parse_cat_options(int argc, char *argv[])
 	 * parsed before any help options or help output on error which will by
 	 * default go to the pager */
 	for(i = 1; i < argc && *argv[i] == '-'; i++) {
-		if(strcmp(argv[i], "-no-pager") == 0) {
+		if(strcmp(argv[i], "-no-pager") == 0)
 			no_pager = TRUE;
-			break;
+		else if(strcmp(argv[i], "-cols") == 0) {
+			if((++i == argc) || !parse_number(argv[i], &user_cols))
+				sqfscat_option_help("-cols", "sqfscat: -cols missing or invalid column width\n");
+			if(user_cols < 1)
+				sqfscat_option_help("-cols", "sqfscat: -cols should be 1 or larger\n");
 		} else if(option_with_arg(argv[i], sqfscat_option_table))
 			i++;
 	}
 
 	for(i = 1; i < argc && *argv[i] == '-'; i++) {
 		if(strcmp(argv[i], "-no-pager") == 0)
-			; /* ingore, already parsed */
+			; /* ignore, already parsed */
+		else if(strcmp(argv[i], "-cols") == 0)
+			i++; /* already parsed */
 		else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			sqfscat_help(NULL);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)

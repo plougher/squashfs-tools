@@ -71,7 +71,7 @@ static char *sqfscat_options[]={
 	"-no-wildcards", "-regex", "", "", "",
 	/* help options */
 	"-help", "-help-option", "-help-section", "-help-all", "-ho", "-hs",
-	"-ha", "-no-pager", NULL,
+	"-ha", "-no-pager", "-cols", NULL,
 };
 
 static char *unsquashfs_args[]={
@@ -100,7 +100,8 @@ static char *sqfscat_args[]={
 	/* filter options */
 	"", "", "", "", "",
 	/* help options */
-	"", "<regex>", "<section>", "", "<regex>", "<section>", "", ""
+	"", "<regex>", "<section>", "", "<regex>", "<section>", "", "",
+	"<width>"
 };
 
 static char *unsquashfs_sections[]={
@@ -298,6 +299,8 @@ static char *sqfscat_text[]={
 	"\t-hs <section>\t\tshorthand alternative to -help-section\n",
 	"\t-ha\t\t\tshorthand alternative to -help-all\n",
 	"\t-no-pager\t\tdo not use a pager to output help information\n",
+	"\t-cols <width>\t\tuse <width> columns to output help information.  "
+		"Useful if output is not to a terminal\n",
 	"\n", "Environment:", "\n",
 	"\tSQFS_CMDLINE \t\tIf set, this is used as the directory to write the "
 		"file sqfs_cmdline which contains the command line arguments "
