@@ -161,7 +161,7 @@ static char *option_table[] = { "d", "dest", "max", "max-depth", "extract-file",
 	"exclude_file", "all", "all-time", "pf", "xattrs-exclude",
 	"xattrs-include", "p", "processors", "mem", "mem-percent", "h", "help",
 	"help-option", "help-section", "ho", "hs", "o", "offset", "e", "ef",
-	"exc", "excf", "pseudo-file", NULL
+	"exc", "excf", "pseudo-file", "cols", NULL
 };
 
 static char *sqfscat_option_table[] = { "p", "processors", "mem", "mem-percent",
@@ -4076,16 +4076,22 @@ static int parse_options(int argc, char *argv[])
 	 * parsed before any help options or help output on error which will by
 	 * default go to the pager */
 	for(i = 1; i < argc && *argv[i] == '-'; i++) {
-		if(strcmp(argv[i], "-no-pager") == 0) {
+		if(strcmp(argv[i], "-no-pager") == 0)
 			no_pager = TRUE;
-			break;
+		else if(strcmp(argv[i], "-cols") == 0) {
+			if((++i == argc) || !parse_number(argv[i], &user_cols))
+				unsquashfs_option_help("-cols", "unsquashfs: -cols missing or invalid column width\n");
+			if(user_cols < 1)
+				unsquashfs_option_help("-cols", "unsquashfs: -cols should be 1 or larger\n");
 		} else if(option_with_arg(argv[i], option_table))
 			i++;
 	}
 
 	for(i = 1; i < argc && *argv[i] == '-'; i++) {
 		if(strcmp(argv[i], "-no-pager") == 0)
-			; /* ingore, already parsed */
+			; /* ignore, already parsed */
+		else if(strcmp(argv[i], "-cols") == 0)
+			i++; /* already parsed */
 		else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			unsquashfs_help(NULL);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)

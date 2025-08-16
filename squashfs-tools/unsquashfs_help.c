@@ -57,7 +57,7 @@ static char *unsquashfs_options[]={
 	"-no-exit-code", "", "", "",
 	/* help options */
 	"-help", "-help-option", "-help-section", "-help-all", "-ho", "-hs",
-	"-ha", "-no-pager", "", "", "",
+	"-ha", "-no-pager", "-cols", "", "", "",
 	/* misc options */
 	"-offset", "-fstime", "-ef", "-excf", "-L", "-pseudo-file", "", "", "",
 	NULL,
@@ -86,8 +86,8 @@ static char *unsquashfs_args[]={
 	"", "<number>", "<size>", "<percent>", "", "", "", "", "", "", "", "",
 	"",
 	/* help options */
-	"", "<regex>", "<section>", "", "<regex>", "<section>", "", "", "", "",
-	"",
+	"", "<regex>", "<section>", "", "<regex>", "<section>", "", "",
+	"<width>", "", "", "",
 	/* misc options */
 	"<bytes>", "", "<extract file>", "<exclude file>", "", "<file>", "",
 	"", "",
@@ -218,6 +218,8 @@ static char *unsquashfs_text[]={
 	"\t-hs <section>\t\tshorthand alternative to -help-section\n",
 	"\t-ha\t\t\tshorthand alternative to -help-all\n",
 	"\t-no-pager\t\tdo not use a pager to output help information\n",
+	"\t-cols <width>\t\tuse <width> columns to output help information.  "
+		"Useful if output is not to a terminal\n",
 	"\n", "Miscellaneous options:", "\n",
 	"\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  Optionally "
 		"a suffix of K, M or G can be given to specify Kbytes, Mbytes "
