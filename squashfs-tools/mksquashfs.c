@@ -385,7 +385,7 @@ char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime",
 	"default-mode", "default-uid", "default-gid", "mem-percent", "pd",
 	"pseudo-dir", "help-option", "ho", "help-section", "hs", "info-file",
 	"force-file-mode", "force-dir-mode", "uid-gid-offset", "all-time",
-	"overcommit", "repro-time", NULL
+	"overcommit", "repro-time", "cols", NULL
 };
 
 static char *read_from_disk(long long start, unsigned int avail_bytes, int buff);
@@ -6427,9 +6427,13 @@ static int sqfstar(int argc, char *argv[])
 	 * parsed before any help options or help output on error which will by
 	 * default go to the pager */
 	for(i = 1; i < argc; i++) {
-		if(strcmp(argv[i], "-no-pager") == 0) {
+		if(strcmp(argv[i], "-no-pager") == 0)
 			no_pager = TRUE;
-			break;
+		else if(strcmp(argv[i], "-cols") == 0) {
+			if((++i == argc) || !parse_num(argv[i], &user_cols))
+				sqfstar_option_help(argv[i - 1], "sqfstar: -cols  missing or invalid column width\n");
+			if(user_cols  < 1)
+				sqfstar_option_help(argv[i - 1], "sqfstar: -cols should be 1 or larger\n");
 		} else if(argv[i][0] != '-')
 			break;
 		else if(option_with_arg(argv[i], sqfstar_option_table))
@@ -6546,6 +6550,8 @@ static int sqfstar(int argc, char *argv[])
 	for(i = 1; i < dest_index; i++) {
 		if(strcmp(argv[i], "-no-pager") == 0)
 			; /* ignore, already parsed */
+		else if(strcmp(argv[i], "-cols") == 0)
+			i++; /* already parsed */
 		else if(strcmp(argv[i], "-ignore-zeros") == 0)
 			ignore_zeros = TRUE;
 		else if(strcmp(argv[i], "-no-hardlinks") == 0)
@@ -7332,7 +7338,7 @@ int main(int argc, char *argv[])
 			if((++j == argc) || !parse_num(argv[j], &user_cols))
 				mksquashfs_option_help(argv[j - 1], "mksquashfs: -cols missing or invalid column width\n");
 			if(user_cols < 1)
-				mksquashfs_option_help(argv[i - 1], "mksquashfs: -cols should be 1 or larger\n");
+				mksquashfs_option_help(argv[j - 1], "mksquashfs: -cols should be 1 or larger\n");
 		} else if(option_with_arg(argv[j], option_table))
 			j++;
 	}
@@ -7477,9 +7483,10 @@ int main(int argc, char *argv[])
 				"reading from stdin can be specified\n");
 
 	for(i = option_offset; i < argc; i++) {
-		if(strcmp(argv[i], "-no-pager") == 0 ||
-				strcmp(argv[i], "-cols") == 0)
+		if(strcmp(argv[i], "-no-pager") == 0)
 			; /* ignore, already parsed */
+		else if(strcmp(argv[i], "-cols") == 0)
+			i++; /* already parsed */
 		else if(strcmp(argv[i], "-ignore-zeros") == 0)
 			ignore_zeros = TRUE;
 		else if(strcmp(argv[i], "-one-file-system") == 0)
