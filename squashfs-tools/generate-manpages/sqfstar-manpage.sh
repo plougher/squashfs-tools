@@ -137,25 +137,25 @@ ${SED} -i -e "s/<//g" -e "s/>//g" $tmp/sqfstar.help
 # So concatenate them onto one line with commas
 
 ${SED} -i "/^  -comp/ {
+: again
 N
 s/\n */ /
-N
-s/\n */ /
-N
-s/\n */ /
-s/:/: /
+/:/b list
+b again
 
+: list
+s/:/: /
 N
 s/\n *\([^ ]*$\)/\1/
 s/\n *\([^ ]* (default)$\)/\1/
 
-: again
+: again2
 N
 /\n  -noI/b
 
 s/\n *\([^ ]*$\)/, \1/
 s/\n *\([^ ]* (default)$\)/, \1/
-b again
+b again2
 }" $tmp/sqfstar.help
 
 # help2man doesn't deal well with the list of lzo1* algorithms.
