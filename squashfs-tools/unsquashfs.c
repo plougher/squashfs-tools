@@ -3908,8 +3908,8 @@ static int parse_cat_options(int argc, char *argv[])
 		else if(strcmp(argv[i], "-cols") == 0) {
 			if((++i == argc) || !parse_number(argv[i], &user_cols))
 				sqfscat_option_help("-cols", "sqfscat: -cols missing or invalid column width\n");
-			if(user_cols < 1)
-				sqfscat_option_help("-cols", "sqfscat: -cols should be 1 or larger\n");
+			if(user_cols < 0)
+				sqfscat_option_help("-cols", "sqfscat: -cols should be 0 or larger\n");
 		} else if(option_with_arg(argv[i], sqfscat_option_table))
 			i++;
 	}
@@ -4087,8 +4087,8 @@ static int parse_options(int argc, char *argv[])
 		else if(strcmp(argv[i], "-cols") == 0) {
 			if((++i == argc) || !parse_number(argv[i], &user_cols))
 				unsquashfs_option_help("-cols", "unsquashfs: -cols missing or invalid column width\n");
-			if(user_cols < 1)
-				unsquashfs_option_help("-cols", "unsquashfs: -cols should be 1 or larger\n");
+			if(user_cols < 0)
+				unsquashfs_option_help("-cols", "unsquashfs: -cols should be 0 or larger\n");
 		} else if(option_with_arg(argv[i], option_table))
 			i++;
 	}

@@ -42,7 +42,7 @@ static char **pager_argv = NULL;
 static char *pager_command = NULL;
 static int pager_from_env_var = FALSE;
 int no_pager = FALSE;
-int user_cols = FALSE;
+int user_cols = -1;
 
 static char *get_base(char *pathname)
 {
@@ -430,7 +430,7 @@ FILE *launch_pager(pid_t *process, int *cols)
 		*cols = get_column_width();
 		return exec_pager(process);
 	} else {
-		*cols = user_cols ? user_cols : 80;
+		*cols = user_cols != -1 ? user_cols : 80;
 		*process = 0;
 		return stdout;
 	}
@@ -450,7 +450,7 @@ int get_column_width()
 {
 	struct winsize winsize;
 
-	if(user_cols)
+	if(user_cols != -1)
 		return user_cols;
 	else if(ioctl(1, TIOCGWINSZ, &winsize) == -1) {
 		if(isatty(STDOUT_FILENO))
@@ -474,7 +474,7 @@ void autowrap_print(FILE *stream, char *text, int maxl)
 		for(length = 0; length < tab_out; length += 8)
 			fputc('\t', stream);
 
-		while(length <= maxl && *cur != '\n' && *cur != '\0') {
+		while((!maxl || length <= maxl) && *cur != '\n' && *cur != '\0') {
 			if(*cur == '\t')
 				tab_out = length = (length + 8) & ~7;
 			else
@@ -485,7 +485,7 @@ void autowrap_print(FILE *stream, char *text, int maxl)
 			else
 				lw = cur;
 
-			if(length <= maxl)
+			if(!maxl || length <= maxl)
 				cur ++;
 		}
 
@@ -497,7 +497,7 @@ void autowrap_print(FILE *stream, char *text, int maxl)
 			else if(cur - sol == 0)
 				cur ++;
 
-			if(tab_out >= maxl)
+			if(maxl && tab_out >= maxl)
 				tab_out = 0;
 
 			wrapped = TRUE;

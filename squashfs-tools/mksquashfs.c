@@ -6432,8 +6432,8 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-cols") == 0) {
 			if((++i == argc) || !parse_num(argv[i], &user_cols))
 				sqfstar_option_help(argv[i - 1], "sqfstar: -cols  missing or invalid column width\n");
-			if(user_cols  < 1)
-				sqfstar_option_help(argv[i - 1], "sqfstar: -cols should be 1 or larger\n");
+			if(user_cols  < 0)
+				sqfstar_option_help(argv[i - 1], "sqfstar: -cols should be 0 or larger\n");
 		} else if(argv[i][0] != '-')
 			break;
 		else if(option_with_arg(argv[i], sqfstar_option_table))
@@ -7337,8 +7337,8 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[j], "-cols") == 0) {
 			if((++j == argc) || !parse_num(argv[j], &user_cols))
 				mksquashfs_option_help(argv[j - 1], "mksquashfs: -cols missing or invalid column width\n");
-			if(user_cols < 1)
-				mksquashfs_option_help(argv[j - 1], "mksquashfs: -cols should be 1 or larger\n");
+			if(user_cols < 0)
+				mksquashfs_option_help(argv[j - 1], "mksquashfs: -cols should be 0 or larger\n");
 		} else if(option_with_arg(argv[j], option_table))
 			j++;
 	}
