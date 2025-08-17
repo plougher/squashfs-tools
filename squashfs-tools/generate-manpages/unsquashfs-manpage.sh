@@ -41,7 +41,7 @@ tmp=$(mktemp -d)
 # $tmp/unsquashfs.help.  This is to allow it to be modified before
 # passing to help2man.
 
-if ! $1/unsquashfs -help-all > $tmp/unsquashfs.help; then
+if ! $1/unsquashfs -help-all -cols 0 > $tmp/unsquashfs.help; then
 	error "$0: Running Unsquashfs failed.  Cross-compiled or incompatible binary?"
 	exit 1
 fi
