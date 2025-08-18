@@ -2,9 +2,9 @@
 
 This is the official Squashfs-tools repository.
 
-To build and install the tools please read the [Documentation/4.7/INSTALL file](Documentation/4.7.1/INSTALL)
+To build and install the tools please read the [Documentation/4.7.1/INSTALL file](Documentation/4.7.1/INSTALL)
 
-To find out how use the latest release please start by reading [Documentation/4.7/README](Documentation/4.7.1/README)
+To find out how use the latest release please start by reading [Documentation/4.7.1/README](Documentation/4.7.1/README)
 
 Thanks
 
