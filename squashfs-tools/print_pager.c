@@ -77,7 +77,7 @@ static char *get_base(char *pathname)
 }
 
 
-inline int quoted_bs_char(char cur)
+int quoted_bs_char(char cur)
 {
 	/*
 	 * Within double quoted strings Bash allows the characters ‘$’, ‘`’,
