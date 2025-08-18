@@ -1,5 +1,10 @@
 			SQUASHFS CHANGE LOG
 
+4.7.2	18 AUG 2025	Fix build with non-static include
+
+	1. print_pager: make inline quoted_bs_char() static.
+
+
 4.7.1	18 AUG 2025	Minor improvements and bug fix release
 
 	1. Fix regression in -offset (-o) where it stopped working in Mksquashfs
@@ -23,6 +28,7 @@
 	9. Add missing include files in print_pager.c (Ros Burton).
 	10. Add missing include file in thread.c (Shiji Yang).
 	11. Fix BLOCK_READER_THREADS typo in Makefile (Alexandru Ardelean).
+
 
 4.7	03 JUNE 2025	Parallel file reading, new help system, new
 			reproducible filesystem image options, removal
