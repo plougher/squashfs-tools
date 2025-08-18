@@ -1,9 +1,1 @@
-The latest Squashfs-tools release is 4.7
-
-The USAGE files are in Documentation/<version>
-
-Where <version> is the version of the Squashfs tools that you
-are using.  This can be discovered by running the tool with
-the -version option, for example
-
-% mksquashfs -version
+The USAGE files are in Documentation/4.7.1
