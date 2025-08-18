@@ -1,6 +1,6 @@
 			SQUASHFS CHANGE LOG
 
-4.7.1	15 AUG 2025	Minor improvements and bug fix release
+4.7.1	18 AUG 2025	Minor improvements and bug fix release
 
 	1. Fix regression in -offset (-o) where it stopped working in Mksquashfs
 	   and Sqfstar.
