@@ -7429,9 +7429,12 @@ int main(int argc, char *argv[])
 	}
 
 	if(i < 3) {
-		if(i == 1)
-			mksquashfs_help("mksquashfs: fatal error: no source or output filesystem specified on command line\n\n");
-		else
+		if(i == 1) {
+			if(argc == 1)
+				mksquashfs_help("mksquashfs: fatal error: no source or output filesystem specified on command line\n\n");
+			else
+				mksquashfs_help("mksquashfs: fatal error: options (e.g. -comp) should be specified after source and output filesystem\n\n");
+		} else
 			mksquashfs_help("mksquashfs: fatal error: no output filesystem specified on command line\n\n");
 	}
 
