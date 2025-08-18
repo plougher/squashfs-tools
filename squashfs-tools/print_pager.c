@@ -80,10 +80,10 @@ static char *get_base(char *pathname)
 inline int quoted_bs_char(char cur)
 {
 	/*
-	 * Within double quoted strings Bash allows the characters ‘$’, ‘`’,
-	 * ‘"’, ‘\’, and newline to be backslashed.  Backslashes that are
-	 * followed by one of those characters are removed.  Backslashes
-	 * preceeding other characters are left unmodified.
+	 * Within double quoted strings Bash allows the characters $, `, ",\ and
+	 * newline to be backslashed.  Backslashes that are followed by one of
+	 * those characters are removed.  Backslashes preceeding other
+	 * characters are left unmodified.
 	 *
 	 * Following the principle of least surprise copy this behaviour.
 	 */
