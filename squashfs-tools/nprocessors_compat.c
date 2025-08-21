@@ -42,6 +42,7 @@ int get_nprocessors(void)
 		return processors = sysconf(_SC_NPROCESSORS_ONLN);
 }
 #else
+#include <stdlib.h>
 #include <sys/sysctl.h>
 #include "error.h"
 
