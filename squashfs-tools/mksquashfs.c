@@ -1511,8 +1511,8 @@ static squashfs_inode write_dir(struct dir_info *dir_info,
 		cache += SQUASHFS_METADATA_SIZE;
 	}
 
-	if(directory_cache_bytes)
-		memmove(directory_data_cache, cache, directory_cache_bytes);
+	if(directory_cache_bytes && cache != directory_data_cache)
+		memcpy(directory_data_cache, cache, directory_cache_bytes);
 
 	dir_count ++;
 
