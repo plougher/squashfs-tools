@@ -4427,6 +4427,7 @@ static void dir_scan7(struct dir_info *dir)
 		if(inode->root_entry)
 			continue;
 		else if(S_ISREG(inode->buf.st_mode) && inode->read == FALSE) {
+			update_info(dir_ent);
 			inode->file = write_file(dir_ent, &duplicate_file);
 			inode->read = TRUE;
 			INFO("file %s, uncompressed size %lld " "bytes %s\n",
@@ -4495,8 +4496,6 @@ static void dir_scan8(squashfs_inode *inode, struct dir_info *dir_info)
 	
 	while((dir_ent = scan8_readdir(&dir, dir_info, dir_ent)) != NULL) {
 		struct stat *buf = &dir_ent->inode->buf;
-
-		update_info(dir_ent);
 
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
 			switch(buf->st_mode & S_IFMT) {
