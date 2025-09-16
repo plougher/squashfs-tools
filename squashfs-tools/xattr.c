@@ -156,6 +156,7 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 {
 	int data_space;
 	unsigned short c_byte;
+	char *cur = data_cache;
 
 	/*
 	 * Move and compress cached uncompressed data into xattr table.
@@ -168,16 +169,17 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 			xattr_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 
-		c_byte = mangle(xattr_table + xattr_bytes + BLOCK_OFFSET,
-			data_cache, SQUASHFS_METADATA_SIZE,
-			SQUASHFS_METADATA_SIZE, noX, 0);
+		c_byte = mangle(xattr_table + xattr_bytes + BLOCK_OFFSET, cur,
+			SQUASHFS_METADATA_SIZE, SQUASHFS_METADATA_SIZE, noX, 0);
 		TRACE("Xattr block @ 0x%x, size %d\n", xattr_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, xattr_table + xattr_bytes, 1);
 		xattr_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
-		memmove(data_cache, data_cache + SQUASHFS_METADATA_SIZE,
-			cache_bytes - SQUASHFS_METADATA_SIZE);
+		cur += SQUASHFS_METADATA_SIZE;
 		cache_bytes -= SQUASHFS_METADATA_SIZE;
 	}
+
+	if(cache_bytes && cur != data_cache)
+		memcpy(data_cache, cur, cache_bytes);
 
 	/*
 	 * Ensure there's enough space in the uncompressed data cache
