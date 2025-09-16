@@ -664,6 +664,7 @@ static void *get_inode(int req_size)
 {
 	int data_space;
 	unsigned short c_byte;
+	char *cur = data_cache;
 
 	while(cache_bytes >= SQUASHFS_METADATA_SIZE) {
 		if((inode_size - inode_bytes) <
@@ -673,17 +674,18 @@ static void *get_inode(int req_size)
 			inode_size += (SQUASHFS_METADATA_SIZE << 1) + 2;
 		}
 
-		c_byte = mangle(inode_table + inode_bytes + BLOCK_OFFSET,
-			data_cache, SQUASHFS_METADATA_SIZE,
-			SQUASHFS_METADATA_SIZE, noI, 0);
+		c_byte = mangle(inode_table + inode_bytes + BLOCK_OFFSET, cur,
+			SQUASHFS_METADATA_SIZE, SQUASHFS_METADATA_SIZE, noI, 0);
 		TRACE("Inode block @ 0x%x, size %d\n", inode_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, inode_table + inode_bytes, 1);
 		inode_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
 		total_inode_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
-		memmove(data_cache, data_cache + SQUASHFS_METADATA_SIZE,
-			cache_bytes - SQUASHFS_METADATA_SIZE);
+		cur += SQUASHFS_METADATA_SIZE;
 		cache_bytes -= SQUASHFS_METADATA_SIZE;
 	}
+
+	if(cache_bytes && cur != data_cache)
+		memcpy(data_cache, cur, cache_bytes);
 
 	data_space = (cache_size - cache_bytes);
 	if(data_space < req_size) {
