@@ -514,7 +514,7 @@ static inline void  sync_writer_thread()
 
 	order_queue_put(to_order, buffer);
 	if(queue_get(from_writer) != 0)
-		BAD_ERROR("Got unexpecteed response in sync_writer_thread\n");
+		BAD_ERROR("Got unexpected response in sync_writer_thread\n");
 }
 
 
@@ -528,7 +528,7 @@ static inline void  sync_orderer_thread()
 
 	order_queue_put(to_order, buffer);
 	if(queue_get(from_order) != 0)
-		BAD_ERROR("Got unexpecteed response in sync_orderer_thread\n");
+		BAD_ERROR("Got unexpected response in sync_orderer_thread\n");
 }
 
 
