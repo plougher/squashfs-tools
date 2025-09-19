@@ -3595,8 +3595,6 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 	else if(!tarfile)
 		dir_scan7(root_dir);
 
-	sync_orderer_thread();
-
 	dir_scan8(&inode, root_dir);
 	inc_meta_progress_bar();
 	dir_ent->inode->inode = inode;
@@ -4509,7 +4507,7 @@ static void dir_scan8(squashfs_inode *inode, struct dir_info *dir_info)
 					squashfs_type = SQUASHFS_FILE_TYPE;
 					*inode = create_inode(NULL, dir_ent,
 						squashfs_type, file->file_size,
-						get_virt_disk(file->start),
+						get_virt_disk_wait(file->start),
 						file->blocks, file->block_list,
 						file->fragment, NULL,
 						file->sparse);

@@ -32,6 +32,8 @@
 #include "alloc.h"
 
 static pthread_mutex_t virt_disk_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t virt_disk_wait = PTHREAD_COND_INITIALIZER;
+static long long virt_waiting = FALSE;
 
 static struct virt_disk *vd_hashtable[VIRT_DISK_HASH_SIZE];
 
@@ -50,6 +52,9 @@ void add_virt_disk(long long virt, long long disk)
 
 	new->next = vd_hashtable[hash];
 	vd_hashtable[hash] = new;
+
+	if(virt_waiting && virt_waiting == virt)
+		pthread_cond_signal(&virt_disk_wait);
 
 	pthread_cleanup_pop(1);
 }
@@ -76,4 +81,37 @@ long long get_virt_disk(long long virt)
 	}
 
 	BAD_ERROR("BUG in get_virt_disk, %lld not found\n", virt);
+}
+
+
+long long get_virt_disk_wait(long long virt)
+{
+	int hash = VIRT_DISK_HASH(virt);
+	struct virt_disk *head;
+
+	if(virt == 0)
+		return 0;
+
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &virt_disk_mutex);
+	pthread_mutex_lock(&virt_disk_mutex);
+
+	while(1) {
+		head = vd_hashtable[hash];
+
+		for(; head; head = head->next) {
+			if(head->virt == virt)
+				break;
+		}
+
+		if(head == NULL) {
+			virt_waiting = virt;
+			pthread_cond_wait(&virt_disk_wait, &virt_disk_mutex);
+			virt_waiting = FALSE;
+		} else
+			break;
+	}
+
+	pthread_cleanup_pop(1);
+
+	return head->disk;
 }

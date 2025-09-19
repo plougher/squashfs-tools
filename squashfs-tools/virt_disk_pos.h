@@ -155,4 +155,5 @@ struct virt_disk {
 
 extern void add_virt_disk(long long virt, long long disk);
 extern long long get_virt_disk(long long virt);
+extern long long get_virt_disk_wait(long long virt);
 #endif
