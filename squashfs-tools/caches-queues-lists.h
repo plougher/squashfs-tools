@@ -89,9 +89,8 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int 
 #define QUEUE_CACHE	1
 #define GEN_CACHE	2
 #define WSYNC_CMD	3
-#define OSYNC_CMD	4
-#define RESET_CMD	5
-#define MAP_CMD		6
+#define RESET_CMD	4
+#define MAP_CMD		5
 
 /* struct describing a cache entry passed between threads */
 struct file_buffer {

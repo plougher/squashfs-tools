@@ -518,19 +518,6 @@ static inline void  sync_writer_thread()
 }
 
 
-static inline void  sync_orderer_thread()
-{
-	struct file_buffer *buffer = MALLOC(sizeof(struct file_buffer));
-
-	buffer->cache = NULL;
-	buffer->sequence = get_sequence();
-	buffer->buffer_type = OSYNC_CMD;
-
-	order_queue_put(to_order, buffer);
-	if(queue_get(from_order) != 0)
-		BAD_ERROR("Got unexpected response in sync_orderer_thread\n");
-}
-
 
 static inline void send_orderer_create_map(long long vpos)
 {
@@ -2785,9 +2772,6 @@ static void *orderer(void *arg)
 		} else if(write_buffer->buffer_type == WSYNC_CMD) {
 			free(write_buffer);
 			queue_put(to_writer, NULL);
-		} else if(write_buffer->buffer_type == OSYNC_CMD) {
-			free(write_buffer);
-			queue_put(from_order, NULL);
 		} else if(write_buffer->buffer_type == RESET_CMD) {
 			set_dpos(get_virt_disk(write_buffer->block));
 			free(write_buffer);
