@@ -65,9 +65,6 @@ long long get_virt_disk(long long virt)
 	int hash = VIRT_DISK_HASH(virt);
 	struct virt_disk *head;
 
-	if(virt == 0)
-		return 0;
-
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &virt_disk_mutex);
 	pthread_mutex_lock(&virt_disk_mutex);
 
