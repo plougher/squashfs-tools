@@ -851,7 +851,13 @@ static void single_reader_scan(struct dir_info *dir)
 	struct read_entry entry;
 
 	for(; dir_ent; dir_ent = dir_ent->next) {
-		if(dir_ent->inode->root_entry || IS_TARFILE(dir_ent->inode) || dir_ent->inode->scanned)
+		if(dir_ent->inode->root_entry || dir_ent->inode->scanned)
+			continue;
+		if(S_ISDIR(dir_ent->inode->buf.st_mode)) {
+			single_reader_scan(dir_ent->dir);
+			continue;
+		}
+		if(IS_TARFILE(dir_ent->inode))
 			continue;
 
 		if(IS_PSEUDO_PROCESS(dir_ent->inode) ||
@@ -868,8 +874,6 @@ static void single_reader_scan(struct dir_info *dir)
 			reader_read_data(&reader[0], &entry);
 		else if(S_ISREG(dir_ent->inode->buf.st_mode))
 			reader_read_file(&reader[0], &entry, COMBINED_READER);
-		else if(S_ISDIR(dir_ent->inode->buf.st_mode))
-			single_reader_scan(dir_ent->dir);
 	}
 }
 
