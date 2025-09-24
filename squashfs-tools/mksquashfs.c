@@ -3576,7 +3576,7 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 
 	if(sorted)
 		sort_files_and_write(root_dir);
-	else if(!tarfile)
+	else
 		dir_scan7(root_dir);
 
 	dir_scan8(&inode, root_dir);
