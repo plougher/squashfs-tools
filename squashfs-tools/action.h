@@ -127,6 +127,8 @@ struct expr {
 #define NUM_EQ		1
 #define NUM_LESS	2
 #define NUM_GREATER	3
+#define NUM_GREATER_EQ	4
+#define NUM_LESS_EQ	5
 
 struct test_number_arg {
 	long long size;

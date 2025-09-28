@@ -2055,7 +2055,13 @@ static int parse_number(char *start, long long *size, int *range, char **error)
 	char *end;
 	long long number;
 
-	if (*start == '>' || *start == '+') {
+	if (*start == '>' && *(start + 1) == '=') {
+		*range = NUM_GREATER_EQ;
+		start += 2;
+	} else if (*start == '<' && *(start + 1) == '=') {
+		*range = NUM_LESS_EQ;
+		start += 2;
+	} else if (*start == '>' || *start == '+') {
 		*range = NUM_GREATER;
 		start ++;
 	} else if (*start == '<' || *start == '-') {
@@ -2211,6 +2217,12 @@ static int NAME##_fn(struct atom *atom, struct action_data *action_data) \
 		break; \
 	case NUM_GREATER: \
 		match = VAR > number->size; \
+		break; \
+	case NUM_GREATER_EQ: \
+		match = VAR >= number->size; \
+		break; \
+	case NUM_LESS_EQ: \
+		match = VAR <= number->size; \
 		break; \
 	} \
 	\
