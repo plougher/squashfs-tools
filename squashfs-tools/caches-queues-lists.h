@@ -138,6 +138,7 @@ struct file_buffer {
 	char next_state;
 	char buffer_type;
 	char hashed;
+	char alignment;
 	char data[0] __attribute__((aligned));
 };
 

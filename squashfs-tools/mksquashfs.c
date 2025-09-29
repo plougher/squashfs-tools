@@ -2711,6 +2711,10 @@ static void *deflator(void *arg)
 				(write_buffer->c_byte);
 			write_buffer->fragment = FALSE;
 			write_buffer->error = FALSE;
+			if(write_buffer->block == 0)
+				write_buffer->alignment = file_buffer->alignment;
+			else
+				write_buffer->alignment = 0;
 			gen_cache_block_put(file_buffer);
 			main_queue_put(to_main, write_buffer);
 		}
@@ -2766,7 +2770,7 @@ static void *orderer(void *arg)
 			log_fragment(block, write_buffer->block);
 			queue_put(to_writer, write_buffer);
 		} else if(write_buffer->buffer_type == QUEUE_CACHE) {
-			write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
+			write_buffer->block = get_and_inc_dpos_aligned(write_buffer);
 			add_virt_disk(block, write_buffer->block);
 			queue_put(to_writer, write_buffer);
 		} else if(write_buffer->buffer_type == WSYNC_CMD) {

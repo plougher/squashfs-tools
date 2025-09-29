@@ -201,6 +201,7 @@ static struct file_buffer *get_buffer(struct reader *reader, struct read_entry *
 	file_buffer->fragment = FALSE;
 	file_buffer->next_state = FALSE;
 	file_buffer->thread = reader->id;
+	file_buffer->alignment = 0;
 
 	return file_buffer;
 }

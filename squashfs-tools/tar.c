@@ -745,6 +745,7 @@ static void read_tar_data(struct tar_file *tar_file)
 		file_buffer->noD = noD;
 		file_buffer->error = FALSE;
 		file_buffer->next_state = NEXT_FILE;
+		file_buffer->alignment = 0;
 
 		if((block + 1) < blocks) {
 			/* non-tail block should be exactly block_size */

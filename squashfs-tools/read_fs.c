@@ -45,6 +45,7 @@
 #include "mksquashfs_error.h"
 #include "mksquashfs_help.h"
 #include "alloc.h"
+#include "caches-queues-lists.h"
 #include "virt_disk_pos.h"
 
 int read_block(int fd, long long start, long long *next, int expected,

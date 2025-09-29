@@ -27,7 +27,9 @@
 #include <pthread.h>
 #include <stdlib.h>
 
+#include "squashfs_fs.h"
 #include "mksquashfs_error.h"
+#include "caches-queues-lists.h"
 #include "virt_disk_pos.h"
 #include "alloc.h"
 

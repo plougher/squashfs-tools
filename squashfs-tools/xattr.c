@@ -51,6 +51,7 @@
 #include "action.h"
 #include "merge_sort.h"
 #include "alloc.h"
+#include "caches-queues-lists.h"
 #include "virt_disk_pos.h"
 
 /* compressed xattr table */

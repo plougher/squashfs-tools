@@ -50,6 +50,16 @@ static inline long long get_and_inc_dpos(long long value)
 }
 
 
+static inline long long get_and_inc_dpos_aligned(struct file_buffer *buffer)
+{
+	long long bytes = 1 << buffer->alignment;
+	long long tmp = (dpos + bytes - 1) & ~(bytes - 1);
+
+	dpos = tmp + SQUASHFS_COMPRESSED_SIZE_BLOCK(buffer->size);
+	return tmp;
+}
+
+
 /*
  * These functions keep track of the current VIRTUAL write position within the
  * output filesystem.   They allow the current write position to be saved or
