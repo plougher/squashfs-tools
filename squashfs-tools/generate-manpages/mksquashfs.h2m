@@ -128,10 +128,10 @@ with a trailing newline character (012 octal).
 
 .SS Using Actions to not compress, change attributes etc.
 .TP
-mksquashfs DIRECTORY IMAGE.SQFS -action "uncompressed @ (name(*.jpg) || name(*.mpg) ) || (name(*.img) && filesize(+1G))"
+mksquashfs DIRECTORY IMAGE.SQFS -action "uncompressed @ (name(*.jpg) || name(*.mpg) ) || (name(*.img) && filesize(>=1G))"
 Specify that any files matching the wildcards "*.jpg" and "*.mpg" should not be
 compressed.  Additionally, it also specifies any files matching the wildcard
-"*.img" and are larger than 1 Gigabyte should be uncompressed too.  This shows
+"*.img" and are 1 Gigabyte or larger should be uncompressed too.  This shows
 test operators can be combined with logical expressions.
 .TP
 mksquashfs DIRECTORY IMAGE.SQFS -action "chmod(o+r)@! perm(o+r)"
