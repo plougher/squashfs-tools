@@ -38,6 +38,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <ctype.h>
+#include <strings.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
@@ -99,6 +100,8 @@ static struct test_entry test_table[];
 static struct action_entry action_table[];
 
 static struct expr *parse_expr(int subexp);
+
+static int parse_number(char *start, long long *size, int *range, char **error);
 
 extern char *pathname(struct dir_ent *);
 
@@ -2025,6 +2028,58 @@ int xattr_add_actions()
 	return xattr_add_count;
 }
 
+/*
+ * Align specific action code
+ */
+static int parse_align_arg(struct action_entry *action, int args, char **argv, void **data)
+{
+	struct align_data *align_data;
+	int bit, range;
+	char *error;
+	long long number, res = parse_number(argv[0], &number, &range, &error);
+
+	if(!res) {
+		SYNTAX_ERROR("Invalid alignment value because %s\n", error);
+		return 0;
+	}
+
+	if(range != NUM_EQ) {
+		SYNTAX_ERROR("Unexpected integer comparison operator in alignment value\n");
+		return 0;
+	}
+
+	if(number == 0) {
+		SYNTAX_ERROR("Alignment value cannot be zero\n");
+		return 0;
+	}
+
+	if(number > MAX_ALIGN) {
+		SYNTAX_ERROR("Alignment value too large\n");
+		return 0;
+	}
+
+	bit = ffs(number) - 1;
+	if(number & ~(1 << bit)) {
+		SYNTAX_ERROR("Alignment value not a pure power of 2\n");
+		return 0;
+	}
+
+	align_data = MALLOC(sizeof(struct align_data));
+	align_data->alignment = bit;
+	*data = align_data;
+
+	return 1;
+}
+
+
+static void align_action(struct action *action, struct dir_ent *dir_ent)
+{
+	struct inode_info *inode = dir_ent->inode;
+	struct align_data *data = action->data;
+
+	inode->alignment = data->alignment;
+}
+
 
 /*
  * Noop specific action code
@@ -3268,6 +3323,7 @@ static struct action_entry action_table[] = {
 	{ "xattrs-exclude", XATTR_EXC_ACTION, 1, ACTION_ALL, parse_xattr_args, NULL},
 	{ "xattrs-include", XATTR_INC_ACTION, 1, ACTION_ALL, parse_xattr_args, NULL},
 	{ "xattrs-add", XATTR_ADD_ACTION, 1, ACTION_ALL, parse_xattr_add_args, NULL},
+	{ "align", ALIGN_ACTION, 1, ACTION_REG, parse_align_arg, align_action },
 	{ "noop", NOOP_ACTION, 0, ACTION_ALL, NULL, noop_action },
 	{ "", 0, -1, 0, NULL, NULL}
 };

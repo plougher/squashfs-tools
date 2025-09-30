@@ -3336,6 +3336,7 @@ static struct inode_info *lookup_inode4(struct stat *buf, struct pseudo_dev *pse
 	inode->dummy_root_dir = FALSE;
 	inode->xattr = NULL;
 	inode->tarfile = FALSE;
+	inode->alignment = 0;
 
 	/*
 	 * Copy filesystem wide defaults into inode, these filesystem

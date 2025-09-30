@@ -150,8 +150,10 @@ static inline int is_fragment(struct inode_info *inode)
 	/*
 	 * If this block is to be compressed differently to the
 	 * fragment compression then it cannot be a fragment
+	 *
+	 * Also if the file has an alignment it cannot be a fragment
 	 */
-	if(inode->noF != noF)
+	if(inode->noF != noF || inode->alignment)
 		return FALSE;
 
 	return !inode->no_fragments && file_size && (file_size < block_size ||
@@ -193,6 +195,7 @@ static struct file_buffer *get_buffer(struct reader *reader, struct read_entry *
 	struct file_buffer *file_buffer = cache_get_nohash(reader->buffer);
 
 	file_buffer->noD = entry->dir_ent->inode->noD;
+	file_buffer->alignment = entry->dir_ent->inode->alignment;
 	file_buffer->file_count = entry->file_count;
 	file_buffer->file_size = file_size;
 	file_buffer->version = version;
@@ -201,7 +204,6 @@ static struct file_buffer *get_buffer(struct reader *reader, struct read_entry *
 	file_buffer->fragment = FALSE;
 	file_buffer->next_state = FALSE;
 	file_buffer->thread = reader->id;
-	file_buffer->alignment = 0;
 
 	return file_buffer;
 }

@@ -73,6 +73,7 @@ struct inode_info {
 	char			tarfile;
 	char			read;
 	char			scanned;
+	char			alignment;
 	char			symlink[0];
 };
 

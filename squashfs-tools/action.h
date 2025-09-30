@@ -184,6 +184,7 @@ struct type_entry {
 #define XATTR_EXC_ACTION	16
 #define XATTR_INC_ACTION	17
 #define XATTR_ADD_ACTION	18
+#define ALIGN_ACTION		19
 
 /*
  * Define what file types each action operates over
@@ -289,7 +290,15 @@ struct xattr_data {
 	struct xattr_data	*next;
 };
 
+/*
+ * Align action specfic definitions
+ */
+struct align_data {
+	char alignment;
+};
 
+/* allow alignment up to 64 Megabytes */
+#define MAX_ALIGN 67108864
 /*
  * Perm test function specific definitions
  */
