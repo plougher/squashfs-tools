@@ -311,6 +311,9 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode %lld:%d\n", start, offset);
 
+			if(inode->file_size < 0)
+				EXIT_UNSQUASH("File system corrupted - negative file size in inode\n");
+
 			i.data = inode->file_size;
 			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG
 				?  0 : inode->file_size % sBlk.s.block_size;
