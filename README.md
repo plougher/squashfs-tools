@@ -1,5 +1,9 @@
 # Welcome to Squashfs-tools!
 
+<a href="https://repology.org/project/squashfs-tools/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/squashfs-tools.svg" alt="Packaging status" align="right">
+</a>
+
 This is the official Squashfs-tools repository.
 
 To build and install the tools please read the [Documentation/4.7.2/INSTALL file](Documentation/4.7.2/INSTALL)
