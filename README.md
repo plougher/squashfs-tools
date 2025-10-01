@@ -1,18 +1,20 @@
 # Welcome to Squashfs-tools!
 
-<a href="https://repology.org/project/squashfs-tools/versions">
-    <img src="https://repology.org/badge/vertical-allrepos/squashfs-tools.svg" alt="Packaging status" align="right">
-</a>
-
 This is the official Squashfs-tools repository.
 
 To build and install the tools please read the [Documentation/4.7.2/INSTALL file](Documentation/4.7.2/INSTALL)
 
 To find out how use the latest release please start by reading [Documentation/4.7.2/README](Documentation/4.7.2/README)
 
+The latest **4.7.2** release may have already been packaged for you distribution, please see "Packaging status" to the below right.
+
 Thanks
 
 ## Contents of the repository
+
+<a href="https://repology.org/project/squashfs-tools/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/squashfs-tools.svg" alt="Packaging status" align="right">
+</a>
 
 The top-level directory contains the following files:
 
