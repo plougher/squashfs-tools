@@ -346,6 +346,11 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 
 			SQUASHFS_SWAP_LREG_INODE_HEADER(cur_ptr, &inode);
 
+			if(inode.file_size < 0) {
+				ERROR("File system corrupted - negative file size in inode\n");
+				goto corrupted2;
+			}
+
 			frag_bytes = inode.fragment == SQUASHFS_INVALID_FRAG ?
 				0 : inode.file_size % sBlk->block_size;
 			blocks = inode.fragment == SQUASHFS_INVALID_FRAG ?
