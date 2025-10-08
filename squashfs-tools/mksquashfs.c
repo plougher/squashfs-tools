@@ -6407,6 +6407,51 @@ FILE *open_info_file(char *filename)
 }
 
 
+static void fix_file(char *filename)
+{
+	struct squashfs_super_block sblk;
+	long long res, offset;
+	int fd = open(filename, O_RDWR);
+
+	if(fd == -1)
+		BAD_ERROR("Failed to open file \"%s\" because %s\n", filename, strerror(errno));
+
+	res = read_bytes(fd, &sblk, sizeof(struct squashfs_super_block));
+	if(res < sizeof(struct squashfs_super_block))
+		BAD_ERROR("Failed to read file \"%s\"\n", filename);
+
+	SQUASHFS_INSWAP_SUPER_BLOCK(&sblk);
+
+	if(sblk.s_magic != SQUASHFS_MAGIC_STREAMED)
+		BAD_ERROR("File \"%s\" is not a streamed Squashfs file, incorrect magic found!\n", filename);
+
+	offset = lseek(fd, -sizeof(struct squashfs_super_block), SEEK_END);
+	if(offset == -1)
+		BAD_ERROR("Failed to lseek to end of file \"%s\"\n", filename);
+
+	res = read_bytes(fd, &sblk, sizeof(struct squashfs_super_block));
+	if(res < sizeof(struct squashfs_super_block))
+		BAD_ERROR("Failed to read file \"%s\"\n", filename);
+
+	SQUASHFS_INSWAP_SUPER_BLOCK(&sblk);
+
+	if(sblk.s_magic != SQUASHFS_MAGIC)
+		BAD_ERROR("File \"%s\" is not a streamed Squashfs file, incorrect magic found!\n", filename);
+
+	res = lseek(fd, SQUASHFS_START, SEEK_SET);
+	if(res == -1)
+		BAD_ERROR("Failed to lseek to start of file \"%s\"\n", filename);
+
+	res = write_bytes(fd, &sblk, sizeof(struct squashfs_super_block));
+	if(res == -1)
+		BAD_ERROR("Failed to write file \"%s\"\n", filename);
+
+	res = ftruncate(fd, offset);
+	if(res == -1)
+		BAD_ERROR("Failed to truncate file \"%s\" because %s\n", filename, strerror(errno));
+}
+
+
 static int sqfstar(int argc, char *argv[])
 {
 	struct stat buf;
@@ -7371,6 +7416,11 @@ int main(int argc, char *argv[])
 			exit(0);
 		} else if(strcmp(argv[j], "-mem-default") == 0) {
 			printf("%d\n", total_mem);
+			exit(0);
+		} else if(strcmp(argv[j], "-fix") == 0) {
+			if(++j == argc)
+				mksquashfs_option_help(argv[j - 1], "mksquashfs: -fix missing filename\n");
+			fix_file(argv[j]);
 			exit(0);
 		} else if(strcmp(argv[j], "-version") == 0 || strcmp(argv[j], "--version") == 0) {
 			print_version("mksquashfs");
