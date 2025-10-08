@@ -693,7 +693,7 @@ int read_super_4(squashfs_operations **s_ops)
 		}
 
 		res = read_bytes(fd, &sBlk_4, sizeof(struct squashfs_super_block));
-		if(res != -1 && res < sizeof(struct squashfs_super_block)) {
+		if(res < sizeof(struct squashfs_super_block)) {
 			ERROR("Read on filesystem failed\n");
 			return FALSE;
 		}
