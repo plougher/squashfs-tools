@@ -207,6 +207,9 @@ int mem_options_disabled = FALSE;
 /* Is filesystem stored at an offset from the start of the block device/file? */
 long long start_offset = 0;
 
+/* Is Mksquashfs streaming the output filesystem to stdout? */
+int streaming = FALSE;
+
 /* File count statistics used to print summary and fill in superblock */
 unsigned int file_count = 0, sym_count = 0, dev_count = 0, dir_count = 0,
 fifo_count = 0, sock_count = 0, id_count = 0;
@@ -442,7 +445,7 @@ void prep_exit()
 			pthread_exit(NULL);
 		}
 	} else if(!appending) {
-		if(destination_file && !block_device)
+		if(destination_file && !block_device && !streaming)
 			unlink(destination_file);
 	} else if(recovery_file)
 		unlink(recovery_file);
@@ -787,6 +790,15 @@ void write_destination(int fd, long long byte, long long bytes, void *buff)
 	pthread_mutex_lock(&lseek_mutex);
 
 	if(fd_pos != off) {
+		if(streaming)
+			/*
+			 * We cannot seek on the output filesystem, and this
+			 * situation is a bug - with no duplicate checking,
+			 * no seeking on the output filesystem should be
+			 * necessary.
+			 */
+			BAD_ERROR("BUG: trying to seek on stdout when streaming!\n");
+
 		if(lseek(fd, off, SEEK_SET) == -1) {
 			ERROR("write_destination: Lseek on destination failed "
 				"because %s, offset=0x%llx\n", strerror(errno),
@@ -5862,11 +5874,18 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk)
 
 	sBlk->compression = comp->id;
 
-	SQUASHFS_INSWAP_SUPER_BLOCK(sBlk); 
-	write_destination(fd, SQUASHFS_START, sizeof(*sBlk), sBlk);
-
 	total_bytes += total_inode_bytes + total_directory_bytes +
 		sizeof(struct squashfs_super_block) + total_xattr_bytes;
+}
+
+
+static void write_superblock(struct squashfs_super_block *sBlk)
+{
+	long long block = streaming ? get_dpos() : SQUASHFS_START;
+
+	SQUASHFS_INSWAP_SUPER_BLOCK(sBlk);
+
+	write_destination(fd, block, sizeof(*sBlk), sBlk);
 }
 
 
@@ -7476,6 +7495,8 @@ int main(int argc, char *argv[])
 	for(i = option_offset; i < argc; i++) {
 		if(strcmp(argv[i], "-no-pager") == 0)
 			; /* ignore, already parsed */
+		else if(strcmp(argv[i], "-stream") == 0)
+			streaming = TRUE;
 		else if(strcmp(argv[i], "-cols") == 0)
 			i++; /* already parsed */
 		else if(strcmp(argv[i], "-ignore-zeros") == 0)
@@ -8175,6 +8196,36 @@ int main(int argc, char *argv[])
 		EXIT_MKSQUASHFS();
 
 	/*
+	 * Streaming is incompatible with the progress bar, percentage output,
+	 * info output to stdout, and summary output
+	 *
+	 * Complain if -force-progress or -percentage have been used, as they
+	 * produce a conflict
+	 */
+	if(streaming) {
+		if(force_progress)
+			BAD_ERROR("-stream cannot be used with -force-progress\n");
+
+		if(percentage)
+			BAD_ERROR("-stream cannot be used wih -percentage\n");
+
+		/* -info cannot be used, unless it is to a file */
+		if(display_info && !info_file)
+			BAD_ERROR("-stream cannot be used with -info, use "
+				"-info-file instead\n");
+
+		/*
+		 * When streaming Mksquashfs cannot do duplicate checking as it
+		 * cannot read back the output filesystem.
+		 *
+		 * The progress bar and the summary output has to also be
+		 * disabled, as it is to stdout.
+		 */
+		duplicate_checking = FALSE;
+		quiet = TRUE;
+	}
+
+	/*
 	 * Selecting both -no-progress and -percentage produces a conflict,
 	 * and so reject such command lines
 	 */
@@ -8262,7 +8313,10 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if(stat(destination_file, &buf) == -1) {
+		if(streaming) {
+			appending = FALSE;
+			fd = STDOUT_FILENO;
+		} else if(stat(destination_file, &buf) == -1) {
 			if(errno == ENOENT) { /* Does not exist */
 				appending = FALSE;
 				fd = open(destination_file, O_CREAT | O_TRUNC | O_RDWR,
@@ -8413,6 +8467,17 @@ int main(int argc, char *argv[])
 				printf("Creating %d.%d filesystem on %s, block size %d.\n",
 					SQUASHFS_MAJOR, SQUASHFS_MINOR,
 					destination_file, block_size);
+
+
+			if(streaming) {
+				struct squashfs_super_block sblk;
+
+				memset(&sblk, 0, sizeof(struct squashfs_super_block));
+				sblk.s_magic = SQUASHFS_MAGIC_STREAMED;
+				SQUASHFS_INSWAP_SUPER_BLOCK(sblk);
+				write_destination(fd, SQUASHFS_START,
+					sizeof(struct squashfs_super_block), &sblk);
+			}
 
 			/*
 			 * store any compressor specific options after the superblock,
@@ -8609,7 +8674,7 @@ int main(int argc, char *argv[])
 
 	progressbar_finish();
 
-	if(!block_device) {
+	if(!block_device && !streaming) {
 		res = ftruncate(fd, start_offset + get_dpos());
 		if(res != 0)
 			BAD_ERROR("Failed to truncate dest file because %s\n",
@@ -8617,9 +8682,12 @@ int main(int argc, char *argv[])
 	}
 
 	if(!nopad && (i = get_dpos() & (4096 - 1))) {
+		long long block = get_and_inc_dpos(4096 - i);
 		char temp[4096] = {0};
-		write_destination(fd, get_dpos(), 4096 - i, temp);
+		write_destination(fd, block, 4096 - i, temp);
 	}
+
+	write_superblock(&sBlk);
 
 	res = close(fd);
 

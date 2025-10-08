@@ -263,11 +263,13 @@ void *frag_thrd(void *destination_file)
 	sigaddset(&sigmask, SIGUSR1);
 	pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask);
 
-	fd = open(destination_file, O_RDONLY);
-	if(fd == -1)
-		BAD_ERROR("frag_thrd: can't open destination for reading\n");
+	if(duplicate_checking) {
+		fd = open(destination_file, O_RDONLY);
+		if(fd == -1)
+			BAD_ERROR("frag_thrd: can't open destination for reading\n");
 
-	data_buffer = MALLOC(SQUASHFS_FILE_MAX_SIZE);
+		data_buffer = MALLOC(SQUASHFS_FILE_MAX_SIZE);
+	}
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &dup_mutex);
 
@@ -302,7 +304,7 @@ void *frag_thrd(void *destination_file)
 		 * interested in the "low hanging fruit" of files which
 		 * consist of only a fragment
 		 */
-		if(file_buffer->file_size != file_buffer->size) {
+		if(!duplicate_checking || file_buffer->file_size != file_buffer->size) {
 			main_queue_put(to_main, file_buffer);
 			continue;
 		}
