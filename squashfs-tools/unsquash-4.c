@@ -684,6 +684,21 @@ int read_super_4(squashfs_operations **s_ops)
 	if(res == FALSE)
 		return res;
 
+	if(sBlk_4.s_magic == SQUASHFS_MAGIC_STREAMED || sBlk_4.s_magic == SQUASHFS_MAGIC_STREAMED_SWAPPED) {
+		long long res = lseek(fd, - sizeof(struct squashfs_super_block), SEEK_END);
+
+		if(res == -1) {
+			ERROR("Lseek failed because %s\n", strerror(errno));
+			return FALSE;
+		}
+
+		res = read_bytes(fd, &sBlk_4, sizeof(struct squashfs_super_block));
+		if(res != -1 && res < sizeof(struct squashfs_super_block)) {
+			ERROR("Read on filesystem failed\n");
+			return FALSE;
+		}
+	}
+
 	swap = sBlk_4.s_magic != SQUASHFS_MAGIC;
 	SQUASHFS_INSWAP_SUPER_BLOCK(&sBlk_4);
 
