@@ -8272,6 +8272,7 @@ int main(int argc, char *argv[])
 		 * disabled, as it is to stdout.
 		 */
 		duplicate_checking = FALSE;
+		progress = FALSE;
 		quiet = TRUE;
 	}
 
