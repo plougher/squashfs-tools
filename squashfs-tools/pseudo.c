@@ -55,6 +55,7 @@
 
 struct pseudo *pseudo = NULL;
 extern int force_single_threaded;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 char *pseudo_definitions[] = {
 	"d mode uid gid",
@@ -309,16 +310,23 @@ int pseudo_exec_file(struct pseudo_dev *dev, int *child)
 {
 	int res, pipefd[2];
 
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &mutex);
+	pthread_mutex_lock(&mutex);
+
 	res = pipe(pipefd);
 	if(res == -1) {
 		ERROR("Executing dynamic pseudo file, pipe failed\n");
-		return 0;
+		res = 0;
+		goto finished;
 	}
 
 	*child = fork();
 	if(*child == -1) {
 		ERROR("Executing dynamic pseudo file, fork failed\n");
-		goto failed;
+		close(pipefd[0]);
+		close(pipefd[1]);
+		res = 0;
+		goto finished;
 	}
 
 	if(*child == 0) {
@@ -333,12 +341,12 @@ int pseudo_exec_file(struct pseudo_dev *dev, int *child)
 	}
 
 	close(pipefd[1]);
-	return pipefd[0];
+	res = pipefd[0];
 
-failed:
-	close(pipefd[0]);
-	close(pipefd[1]);
-	return 0;
+finished:
+	pthread_cleanup_pop(1);
+
+	return res;
 }
 
 
