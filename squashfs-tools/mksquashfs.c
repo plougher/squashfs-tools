@@ -6514,7 +6514,7 @@ static int sqfstar(int argc, char *argv[])
 				sqfstar_option_help(argv[i - 1], "sqfstar: -help-comp missing compressor name\n");
 			print_compressor_options(argv[i], "sqfstar");
 			exit(0);
-		} else if(strcmp(argv[1], "-mem-default") == 0) {
+		} else if(strcmp(argv[i], "-mem-default") == 0) {
 			printf("%d\n", total_mem);
 			exit(0);
 		} else if(strcmp(argv[i], "-fix") == 0) {
