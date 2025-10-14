@@ -28,7 +28,12 @@
 
 #ifdef MIMALLOC_SUPPORT
 #include <mimalloc.h>
-/* Use mimalloc functions instead of standard allocator */
+/*
+ * Use mimalloc functions instead of standard allocator.
+ * By overriding these macros, all memory allocations throughout the codebase
+ * will use mimalloc, including indirect calls through functions like vasprintf()
+ * which internally call malloc().
+ */
 #define malloc(size) mi_malloc(size)
 #define calloc(num, size) mi_calloc(num, size)
 #define realloc(ptr, size) mi_realloc(ptr, size)
