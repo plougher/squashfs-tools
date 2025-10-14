@@ -6600,7 +6600,9 @@ static int sqfstar(int argc, char *argv[])
 	always_use_fragments = TRUE;
 
 	for(i = 1; i < dest_index; i++) {
-		if(strcmp(argv[i], "-no-pager") == 0)
+		if(strcmp(argv[i], "-stream") == 0)
+			streaming = TRUE;
+		else if(strcmp(argv[i], "-no-pager") == 0)
 			; /* ignore, already parsed */
 		else if(strcmp(argv[i], "-cols") == 0)
 			i++; /* already parsed */
@@ -7015,7 +7017,7 @@ static int sqfstar(int argc, char *argv[])
 			sqfstar_invalid_option(argv[i]);
 	}
 
-	if(i == argc)
+	if(i == argc && !streaming)
 		sqfstar_help("sqfstar: fatal error: no output filesystem specified on command line\n\n");
 
 	set_single_threaded();
@@ -7102,6 +7104,37 @@ static int sqfstar(int argc, char *argv[])
 		EXIT_MKSQUASHFS();
 
 	/*
+	 * Streaming is incompatible with the progress bar, percentage output,
+	 * info output to stdout, and summary output
+	 *
+	 * Complain if -force-progress or -percentage have been used, as they
+	 * produce a conflict
+	 */
+	if(streaming) {
+		if(force_progress)
+			BAD_ERROR("-stream cannot be used with -force-progress\n");
+
+		if(percentage)
+			BAD_ERROR("-stream cannot be used wih -percentage\n");
+
+		/* -info cannot be used, unless it is to a file */
+		if(display_info && !info_file)
+			BAD_ERROR("-stream cannot be used with -info, use "
+				"-info-file instead\n");
+
+		/*
+		 * When streaming Mksquashfs cannot do duplicate checking as it
+		 * cannot read back the output filesystem.
+		 *
+		 * The progress bar and the summary output has to also be
+		 * disabled, as it is to stdout.
+		 */
+		duplicate_checking = FALSE;
+		progress = FALSE;
+		quiet = TRUE;
+	}
+
+	/*
 	 * Selecting both -no-progress and -percentage produces a conflict,
 	 * and so reject such command lines
 	 */
@@ -7148,8 +7181,11 @@ static int sqfstar(int argc, char *argv[])
 	progress = FALSE;
 #endif
 
-	destination_file =  argv[dest_index];
-	if(stat(destination_file, &buf) == -1) {
+	destination_file = !streaming ? argv[dest_index] : NULL;
+	if(streaming) {
+		appending = FALSE;
+		fd = STDOUT_FILENO;
+	} else if(stat(destination_file, &buf) == -1) {
 		if(errno == ENOENT) { /* Does not exist */
 			appending = FALSE;
 			fd = open(destination_file, O_CREAT | O_TRUNC | O_RDWR,
@@ -7246,6 +7282,16 @@ static int sqfstar(int argc, char *argv[])
 			SQUASHFS_MAJOR, SQUASHFS_MINOR,
 			destination_file, block_size);
 
+	if(streaming) {
+		struct squashfs_super_block sblk;
+
+		memset(&sblk, 0, sizeof(struct squashfs_super_block));
+		sblk.s_magic = SQUASHFS_MAGIC_STREAMED;
+		SQUASHFS_INSWAP_SUPER_BLOCK(sblk);
+		write_destination(fd, SQUASHFS_START,
+			sizeof(struct squashfs_super_block), &sblk);
+	}
+
 	/*
 	 * store any compressor specific options after the superblock,
 	 * and set the COMP_OPT flag to show that the filesystem has
@@ -7306,7 +7352,7 @@ static int sqfstar(int argc, char *argv[])
 
 	progressbar_finish();
 
-	if(!block_device) {
+	if(!block_device && !streaming) {
 		res = ftruncate(fd, start_offset + get_dpos());
 		if(res != 0)
 			BAD_ERROR("Failed to truncate dest file because %s\n",
@@ -7314,9 +7360,12 @@ static int sqfstar(int argc, char *argv[])
 	}
 
 	if(!nopad && (i = get_dpos() & (4096 - 1))) {
+		long long block = get_and_inc_dpos(4096 - i);
 		char temp[4096] = {0};
-		write_destination(fd, get_dpos(), 4096 - i, temp);
+		write_destination(fd, block, 4096 - i, temp);
 	}
+
+	write_superblock(&sBlk);
 
 	res = close(fd);
 
