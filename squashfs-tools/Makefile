@@ -280,16 +280,33 @@ UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	swap.o compressor.o unsquashfs_info.o date.o memory.o print_pager.o \
 	unsquashfs_help.o nprocessors_compat.o limit.o
 
+# Source files (for single-pass compilation)
+MKSQUASHFS_SRCS = mksquashfs.c read_fs.c action.c swap.c pseudo.c compressor.c \
+	sort.c progressbar.c info.c restore.c process_fragments.c \
+	caches-queues-lists.c reader.c tar.c date.c memory.c mksquashfs_help.c \
+	print_pager.c symbolic_mode.c thread.c nprocessors_compat.c limit.c \
+	virt_disk_pos.c
+
+UNSQUASHFS_SRCS = unsquashfs.c unsquash-1.c unsquash-2.c unsquash-3.c \
+	unsquash-4.c unsquash-123.c unsquash-34.c unsquash-1234.c unsquash-12.c \
+	swap.c compressor.c unsquashfs_info.c date.c memory.c print_pager.c \
+	unsquashfs_help.c nprocessors_compat.c limit.c
+
 CFLAGS ?= -O2
 CFLAGS += $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 \
 	-D_LARGEFILE_SOURCE -D_GNU_SOURCE -DCOMP_DEFAULT=\"$(COMP_DEFAULT)\" \
-	-Wall
+	-Wall -malign-data=cacheline -pipe
+
+LDFLAGS ?=
+LDFLAGS += -Wl,-z,relro,-z,now -Wl,--as-needed -Wl,--hash-style=gnu
 
 LIBS = -lpthread -lm
 ifeq ($(GZIP_SUPPORT),1)
 CFLAGS += -DGZIP_SUPPORT
 MKSQUASHFS_OBJS += gzip_wrapper.o
 UNSQUASHFS_OBJS += gzip_wrapper.o
+MKSQUASHFS_SRCS += gzip_wrapper.c
+UNSQUASHFS_SRCS += gzip_wrapper.c
 LIBS += -lz
 ifeq ($(COMP_DEFAULT),gzip)
 COMPRESSORS += gzip@(default)
@@ -302,6 +319,8 @@ ifeq ($(LZO_SUPPORT),1)
 CFLAGS += -DLZO_SUPPORT
 MKSQUASHFS_OBJS += lzo_wrapper.o
 UNSQUASHFS_OBJS += lzo_wrapper.o
+MKSQUASHFS_SRCS += lzo_wrapper.c
+UNSQUASHFS_SRCS += lzo_wrapper.c
 LIBS += -llzo2
 ifeq ($(COMP_DEFAULT),lzo)
 COMPRESSORS += lzo@(default)
@@ -314,6 +333,8 @@ ifeq ($(LZ4_SUPPORT),1)
 CFLAGS += -DLZ4_SUPPORT
 MKSQUASHFS_OBJS += lz4_wrapper.o
 UNSQUASHFS_OBJS += lz4_wrapper.o
+MKSQUASHFS_SRCS += lz4_wrapper.c
+UNSQUASHFS_SRCS += lz4_wrapper.c
 LIBS += -llz4
 ifeq ($(COMP_DEFAULT),lz4)
 COMPRESSORS += lz4@(default)
@@ -327,9 +348,13 @@ CFLAGS += -DXZ_SUPPORT
 ifeq ($(XZ_EXTENDED_OPTIONS),1)
 MKSQUASHFS_OBJS += xz_wrapper_extended.o
 UNSQUASHFS_OBJS += xz_wrapper_extended.o
+MKSQUASHFS_SRCS += xz_wrapper_extended.c
+UNSQUASHFS_SRCS += xz_wrapper_extended.c
 else
 MKSQUASHFS_OBJS += xz_wrapper.o
 UNSQUASHFS_OBJS += xz_wrapper.o
+MKSQUASHFS_SRCS += xz_wrapper.c
+UNSQUASHFS_SRCS += xz_wrapper.c
 endif
 LIBS += -llzma
 ifeq ($(COMP_DEFAULT),xz)
@@ -343,6 +368,8 @@ ifeq ($(ZSTD_SUPPORT),1)
 CFLAGS += -DZSTD_SUPPORT
 MKSQUASHFS_OBJS += zstd_wrapper.o
 UNSQUASHFS_OBJS += zstd_wrapper.o
+MKSQUASHFS_SRCS += zstd_wrapper.c
+UNSQUASHFS_SRCS += zstd_wrapper.c
 LIBS += -lzstd
 ifeq ($(COMP_DEFAULT),zstd)
 COMPRESSORS += zstd@(default)
@@ -354,10 +381,14 @@ endif
 ifeq ($(LZMA_SUPPORT),1)
 LZMA_OBJS = $(LZMA_DIR)/C/Alloc.o $(LZMA_DIR)/C/LzFind.o \
 	$(LZMA_DIR)/C/LzmaDec.o $(LZMA_DIR)/C/LzmaEnc.o $(LZMA_DIR)/C/LzmaLib.o
+LZMA_SRCS = $(LZMA_DIR)/C/Alloc.c $(LZMA_DIR)/C/LzFind.c \
+	$(LZMA_DIR)/C/LzmaDec.c $(LZMA_DIR)/C/LzmaEnc.c $(LZMA_DIR)/C/LzmaLib.c
 INCLUDEDIR += -I$(LZMA_DIR)/C
 CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
 UNSQUASHFS_OBJS += lzma_wrapper.o $(LZMA_OBJS)
+MKSQUASHFS_SRCS += lzma_wrapper.c $(LZMA_SRCS)
+UNSQUASHFS_SRCS += lzma_wrapper.c $(LZMA_SRCS)
 ifeq ($(COMP_DEFAULT),lzma)
 COMPRESSORS += lzma@(default)
 else
@@ -369,6 +400,8 @@ ifeq ($(LZMA_XZ_SUPPORT),1)
 CFLAGS += -DLZMA_SUPPORT
 MKSQUASHFS_OBJS += lzma_xz_wrapper.o
 UNSQUASHFS_OBJS += lzma_xz_wrapper.o
+MKSQUASHFS_SRCS += lzma_xz_wrapper.c
+UNSQUASHFS_SRCS += lzma_xz_wrapper.c
 LIBS += -llzma
 ifeq ($(COMP_DEFAULT),lzma)
 COMPRESSORS += lzma@(default)
@@ -387,9 +420,13 @@ ifeq ($(XATTR_OS_SUPPORT),1)
 CFLAGS += -DXATTR_OS_SUPPORT
 MKSQUASHFS_OBJS += xattr.o read_xattrs.o tar_xattr.o pseudo_xattr.o xattr_system.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o unsquashfs_xattr_system.o
+MKSQUASHFS_SRCS += xattr.c read_xattrs.c tar_xattr.c pseudo_xattr.c xattr_system.c
+UNSQUASHFS_SRCS += read_xattrs.c unsquashfs_xattr.c unsquashfs_xattr_system.c
 else
 MKSQUASHFS_OBJS += xattr.o read_xattrs.o tar_xattr.o pseudo_xattr.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
+MKSQUASHFS_SRCS += xattr.c read_xattrs.c tar_xattr.c pseudo_xattr.c
+UNSQUASHFS_SRCS += read_xattrs.c unsquashfs_xattr.c
 endif
 endif
 
@@ -501,8 +538,9 @@ CFLAGS += -DVERSION=\"$(VERSION)\" -DDATE=\"$(DATE)\" -DYEAR=\"$(YEAR)\"
 .PHONY: all
 all: mksquashfs unsquashfs
 
-mksquashfs: $(MKSQUASHFS_OBJS)
-	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(MKSQUASHFS_OBJS) $(LIBS) -o $@
+# Single-pass compilation: compile and link all source files at once
+mksquashfs: $(MKSQUASHFS_SRCS) Makefile
+	$(CC) $(CFLAGS) $(CPPFLAGS) -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n,$(COMPRESSORS)))\"" $(LDFLAGS) $(EXTRA_LDFLAGS) $(MKSQUASHFS_SRCS) $(LIBS) -o $@
 	ln -sf mksquashfs sqfstar
 
 mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h squashfs_swap.h mksquashfs.h \
@@ -584,8 +622,9 @@ unsquashfs_help.o: unsquashfs_help.c unsquashfs_help.h
 
 limit.o: limit.h error.h
 
-unsquashfs: $(UNSQUASHFS_OBJS)
-	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@
+# Single-pass compilation: compile and link all source files at once
+unsquashfs: $(UNSQUASHFS_SRCS) Makefile
+	$(CC) $(CFLAGS) $(CPPFLAGS) -DDECOMPRESSORS="\"$(subst @(default),,$(subst $(space),\n,$(COMPRESSORS)))\"" $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_SRCS) $(LIBS) -o $@
 	ln -sf unsquashfs sqfscat
 
 unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h \
