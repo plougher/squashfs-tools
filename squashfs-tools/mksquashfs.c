@@ -6517,6 +6517,11 @@ static int sqfstar(int argc, char *argv[])
 		} else if(strcmp(argv[1], "-mem-default") == 0) {
 			printf("%d\n", total_mem);
 			exit(0);
+		} else if(strcmp(argv[i], "-fix") == 0) {
+			if(++i == argc)
+				sqfstar_option_help(argv[i - 1], "sqfstar: -fix missing filename\n");
+			fix_file(argv[i]);
+			exit(0);
 		} else if(argv[i][0] != '-')
 			break;
 		else if(option_with_arg(argv[i], sqfstar_option_table))
