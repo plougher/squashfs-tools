@@ -130,6 +130,25 @@ XATTR_DEFAULT = 1
 
 
 ###############################################
+#          Memory allocator options           #
+###############################################
+#
+# Building with mimalloc support
+#
+# mimalloc is a high-performance memory allocator from Microsoft
+# (https://github.com/microsoft/mimalloc) that can provide better
+# performance and memory efficiency compared to the default allocator.
+#
+# To enable mimalloc support, uncomment the next line.
+# You will need to have the mimalloc development package installed.
+# On most distributions, this is available as "libmimalloc-dev" or similar.
+#
+# When enabled, all memory allocations will use mimalloc instead of
+# the system's default allocator (malloc, calloc, realloc, free).
+#
+#MIMALLOC_SUPPORT = 1
+
+###############################################
 #       Parallel reader thread options        #
 ###############################################
 #
@@ -237,6 +256,7 @@ LZMA_SUPPORT ?= 0
 LZMA_DIR ?= ../../../../LZMA/lzma465
 XZ_EXTENDED_OPTIONS ?= 0
 DONT_USE_ATOMIC_EXCHANGE_N ?= 0
+MIMALLOC_SUPPORT ?= 0
 SINGLE_READER_THREAD ?= 0
 SMALL_READER_THREADS ?= 8
 BLOCK_READER_THREADS ?= 3
@@ -371,6 +391,11 @@ else
 MKSQUASHFS_OBJS += xattr.o read_xattrs.o tar_xattr.o pseudo_xattr.o
 UNSQUASHFS_OBJS += read_xattrs.o unsquashfs_xattr.o
 endif
+endif
+
+ifeq ($(MIMALLOC_SUPPORT),1)
+CFLAGS += -DMIMALLOC_SUPPORT
+LIBS += -lmimalloc
 endif
 
 ifeq ($(DONT_USE_ATOMIC_EXCHANGE_N),1)
