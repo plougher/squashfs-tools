@@ -567,9 +567,57 @@ while(safe_fgets(buffer, MAX_LINE + 1, fd, "input file") == 1) {
 }
 ```
 
-## 6. Build System Improvements
+## 6. Memory Allocator Enhancements
 
-### Fix 6.1: Add sanitizer support
+### Fix 6.1: Optional mimalloc support
+
+**Priority:** 🟢 LOW  
+**Effort:** Very Low (already implemented)  
+**Impact:** Medium (performance and security improvements)
+
+**File:** `squashfs-tools/Makefile`, `squashfs-tools/alloc.h`
+
+mimalloc is a high-performance memory allocator from Microsoft that provides both performance and security benefits:
+
+**Security Benefits:**
+- Secure mode with additional checks
+- Heap isolation per thread
+- Free list randomization (makes exploitation harder)
+- Double-free detection
+- Overflow detection with guard pages
+- Constant-time free (prevents timing attacks)
+
+**Usage:**
+
+Enable mimalloc in the build:
+```bash
+make MIMALLOC_SUPPORT=1
+```
+
+Or uncomment in Makefile:
+```makefile
+MIMALLOC_SUPPORT = 1
+```
+
+**Prerequisites:**
+```bash
+# Debian/Ubuntu
+sudo apt-get install libmimalloc-dev
+
+# Fedora/RHEL
+sudo dnf install mimalloc-devel
+
+# Arch Linux
+sudo pacman -S mimalloc
+```
+
+See `MIMALLOC.md` for detailed documentation.
+
+**Status:** ✅ IMPLEMENTED - Available as optional build flag
+
+## 7. Build System Improvements
+
+### Fix 7.1: Add sanitizer support
 
 **File:** `squashfs-tools/Makefile`
 
@@ -611,7 +659,7 @@ make UBSAN=1
 make ASAN=1 UBSAN=1
 ```
 
-### Fix 6.2: Add static analysis
+### Fix 7.2: Add static analysis
 
 Create `.github/workflows/security-analysis.yml`:
 ```yaml
@@ -643,9 +691,9 @@ jobs:
           clang-tidy squashfs-tools/*.c -- -I. -D_GNU_SOURCE
 ```
 
-## 7. Testing Recommendations
+## 8. Testing Recommendations
 
-### Test 7.1: Fuzzing setup
+### Test 8.1: Fuzzing setup
 
 Create fuzzing harness:
 
@@ -738,6 +786,7 @@ afl-fuzz -i fuzz_in -o fuzz_out -- ./unsquashfs -d /tmp/out @@
 2. ✅ Regular static analysis runs
 3. ✅ Keep dependencies updated
 4. ✅ Security patch reviews
+5. ✅ Optional: Use mimalloc for enhanced memory safety and performance
 
 ## Success Metrics
 
