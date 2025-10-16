@@ -2706,7 +2706,7 @@ static void *deflator(void *arg)
 		struct file_buffer *file_buffer = queue_cache_get_tid(tid, to_deflate, &write_buffer);
 
 		if(sparse_files && all_zero(file_buffer)) { 
-			file_buffer->c_byte = 0;
+			file_buffer->c_byte = FALSE;
 			gen_cache_block_put(write_buffer);
 			main_queue_put(to_main, file_buffer);
 		} else {

@@ -74,6 +74,7 @@ static unsigned int fragment_count = 0;
 
 extern struct queue_cache *bwriter_buffer;
 extern int processors;
+extern int sparse_files;
 
 #ifdef SINGLE_READER_THREAD
 static int reader_threads = 1, fragment_threads = 0, block_threads = 1;
@@ -177,7 +178,9 @@ static void put_file_buffer(int id, struct file_buffer *file_buffer, int next_st
 	 * - fragments go to the process fragment threads,
 	 * - all others go directly to the main thread
 	 */
-	if(file_buffer->error) {
+	if(!file_buffer->c_byte)
+		main_queue_put(to_main, file_buffer);
+	else if(file_buffer->error) {
 		file_buffer->fragment = 0;
 		main_queue_put(to_main, file_buffer);
 	} else if (file_buffer->file_size == 0)
@@ -202,6 +205,7 @@ static struct file_buffer *get_buffer(struct reader *reader, struct read_entry *
 	file_buffer->block = block;
 	file_buffer->error = FALSE;
 	file_buffer->fragment = FALSE;
+	file_buffer->c_byte = TRUE;
 	file_buffer->next_state = FALSE;
 	file_buffer->thread = reader->id;
 
@@ -296,14 +300,15 @@ static void reader_read_file(struct reader *reader, struct read_entry *entry, in
 {
 	struct stat *buf = &entry->dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
-	int blocks, file, res;
-	long long bytes = 0, block = 0, read_size;
+	int blocks, file, res, sparse;
+	long long bytes = 0, block = 0, read_size, data_pos = -1;
 	struct inode_info *inode = entry->dir_ent->inode;
 	unsigned short version = 0;
 
 again:
 	read_size = buf->st_size;
 	blocks = (read_size + block_size - 1) >> block_log;
+	sparse = sparse_files && ((long long) buf->st_blocks * 512) < read_size;
 
 	while(1) {
 		file = open(pathname(reader, entry->dir_ent), O_RDONLY);
@@ -319,6 +324,23 @@ again:
 	do {
 		file_buffer = get_buffer(reader, entry, read_size, block ++, version);
 
+		if(sparse && data_pos < bytes) {
+			data_pos = lseek(file, bytes, SEEK_DATA);
+			if(data_pos == -1) {
+				if(errno == ENXIO)
+					data_pos = read_size;
+				else
+					goto read_err;
+			}
+
+			if(data_pos > bytes) {
+				long long offset = lseek(file, data_pos, SEEK_SET);
+
+				if(offset != data_pos)
+					goto read_err;
+			}
+		}
+
 		/*
 		 * Always try to read block_size bytes from the file rather
 		 * than expected bytes (which will be less than the block_size
@@ -328,18 +350,41 @@ again:
 		 * case where the file is an exact multiple of the block_size
 		 * is dealt with later.
 		 */
-		file_buffer->size = read_bytes(file, file_buffer->data,
-			block_size);
-		if(file_buffer->size == -1)
-			goto read_err;
+		if(sparse && (data_pos - bytes) >= block_size) {
+			file_buffer->size = block_size;
+			file_buffer->c_byte = FALSE;
+			bytes += block_size;
+		} else if(sparse && (data_pos - bytes)) {
+			int count = data_pos - bytes;
 
-		bytes += file_buffer->size;
+			memset(file_buffer->data, 0, count);
+			file_buffer->size = read_bytes(file, file_buffer->data + count, block_size - count);
+			if(file_buffer->size == -1)
+				goto read_err;
+
+			file_buffer->size += count;
+			bytes += file_buffer->size;
+
+			if(blocks > 1) {
+				/* non-tail block should be exactly block_size */
+				if(file_buffer->size < block_size)
+					goto restat;
+			}
+		} else {
+			file_buffer->size = read_bytes(file, file_buffer->data, block_size);
+			if(file_buffer->size == -1)
+				goto read_err;
+
+			bytes += file_buffer->size;
+
+			if(blocks > 1) {
+				/* non-tail block should be exactly block_size */
+				if(file_buffer->size < block_size)
+					goto restat;
+			}
+		}
 
 		if(blocks > 1) {
-			/* non-tail block should be exactly block_size */
-			if(file_buffer->size < block_size)
-				goto restat;
-
 			file_buffer->fragment = FALSE;
 			put_file_buffer(reader->id, file_buffer, NEXT_BLOCK);
 		}
