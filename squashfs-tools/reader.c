@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stddef.h>
+#include <limits.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
@@ -178,7 +179,7 @@ static void put_file_buffer(int id, struct file_buffer *file_buffer, int next_st
 	 * - fragments go to the process fragment threads,
 	 * - all others go directly to the main thread
 	 */
-	if(!file_buffer->c_byte)
+	if(is_sparse(file_buffer))
 		main_queue_put(to_main, file_buffer);
 	else if(file_buffer->error) {
 		file_buffer->fragment = 0;
@@ -205,7 +206,7 @@ static struct file_buffer *get_buffer(struct reader *reader, struct read_entry *
 	file_buffer->block = block;
 	file_buffer->error = FALSE;
 	file_buffer->fragment = FALSE;
-	file_buffer->c_byte = TRUE;
+	file_buffer->c_byte = 0;
 	file_buffer->next_state = FALSE;
 	file_buffer->thread = reader->id;
 
@@ -351,9 +352,15 @@ again:
 		 * is dealt with later.
 		 */
 		if(sparse && (data_pos - bytes) >= block_size) {
+			long long count = (data_pos - bytes) / block_size;
+			int res = set_sparse(file_buffer, count);
+
+			if(res == FALSE)
+				BAD_ERROR("Unexpectedly large sparse region in file\n");
+
 			file_buffer->size = block_size;
-			file_buffer->c_byte = FALSE;
-			bytes += block_size;
+			bytes += count * block_size;
+			blocks -= count;
 		} else if(sparse && (data_pos - bytes)) {
 			int count = data_pos - bytes;
 
@@ -365,7 +372,7 @@ again:
 			file_buffer->size += count;
 			bytes += file_buffer->size;
 
-			if(blocks > 1) {
+			if(blocks -- > 1) {
 				/* non-tail block should be exactly block_size */
 				if(file_buffer->size < block_size)
 					goto restat;
@@ -377,18 +384,18 @@ again:
 
 			bytes += file_buffer->size;
 
-			if(blocks > 1) {
+			if(blocks -- > 1) {
 				/* non-tail block should be exactly block_size */
 				if(file_buffer->size < block_size)
 					goto restat;
 			}
 		}
 
-		if(blocks > 1) {
+		if(blocks) {
 			file_buffer->fragment = FALSE;
 			put_file_buffer(reader->id, file_buffer, NEXT_BLOCK);
 		}
-	} while(-- blocks > 0);
+	} while(blocks > 0);
 
 	/* Overall size including tail should match */
 	if(read_size != bytes)

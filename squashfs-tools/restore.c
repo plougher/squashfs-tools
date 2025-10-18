@@ -35,6 +35,7 @@
 #include <dirent.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <limits.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"

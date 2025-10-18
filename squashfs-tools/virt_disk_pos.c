@@ -26,6 +26,7 @@
 
 #include <pthread.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs_error.h"

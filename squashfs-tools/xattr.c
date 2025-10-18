@@ -38,6 +38,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <regex.h>
+#include <limits.h>
 
 #include "squashfs_fs.h"
 #include "squashfs_swap.h"

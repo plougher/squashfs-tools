@@ -2706,7 +2706,7 @@ static void *deflator(void *arg)
 		struct file_buffer *file_buffer = queue_cache_get_tid(tid, to_deflate, &write_buffer);
 
 		if(sparse_files && all_zero(file_buffer)) { 
-			file_buffer->c_byte = FALSE;
+			set_sparse(file_buffer, 1);
 			gen_cache_block_put(write_buffer);
 			main_queue_put(to_main, file_buffer);
 		} else {
@@ -2884,7 +2884,9 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 			block_list = REALLOC(block_list, (block + 1) *
 				sizeof(unsigned int));
 			block_list[block ++] = read_buffer->c_byte;
-			if(read_buffer->c_byte) {
+			if(!is_sparse(read_buffer)) {
+				if(sparse_count(read_buffer) > 1)
+					BAD_ERROR("Sparse block too large in write file process\n");
 				file_bytes += read_buffer->size;
 				put_write_buffer_hash(read_buffer);
 			} else {
@@ -2966,28 +2968,35 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 	for(block = 0; block < blocks;) {
 		if(read_buffer->fragment) {
 			block_list[block] = 0;
-			buffer_list[block] = NULL;
+			buffer_list[block++] = NULL;
 			fragment_buffer = read_buffer;
 			blocks = read_size >> block_log;
+			inc_progress_bar();
 		} else {
-			block_list[block] = read_buffer->c_byte;
-
-			if(read_buffer->c_byte) {
+			if(!is_sparse(read_buffer)) {
+				block_list[block] = read_buffer->c_byte;
 				file_bytes += read_buffer->size;
 				if(block < thresh) {
-					buffer_list[block] = NULL;
+					buffer_list[block++] = NULL;
 					put_write_buffer(read_buffer);
 				} else
-					buffer_list[block] = read_buffer;
+					buffer_list[block++] = read_buffer;
+				inc_progress_bar();
 			} else {
-				buffer_list[block] = NULL;
-				sparse += read_buffer->size;
+				int i;
+				long long count = sparse_count(read_buffer);
+
+				for(i = 0; i < count; i++) {
+					block_list[block] = 0;
+					buffer_list[block++] = NULL;
+					inc_progress_bar();
+				}
+				sparse += count * read_buffer->size;
 				gen_cache_block_put(read_buffer);
 			}
 		}
-		inc_progress_bar();
 
-		if(++block < blocks) {
+		if(block < blocks) {
 			read_buffer = get_file_buffer();
 			if(read_buffer->error)
 				goto read_err;
@@ -3074,22 +3083,30 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 	mark_vpos();
 	for(block = 0; block < blocks;) {
 		if(read_buffer->fragment) {
-			block_list[block] = 0;
+			block_list[block++] = 0;
 			fragment_buffer = read_buffer;
 			blocks = read_size >> block_log;
+			inc_progress_bar();
 		} else {
-			block_list[block] = read_buffer->c_byte;
-			if(read_buffer->c_byte) {
+			if(!is_sparse(read_buffer)) {
+				block_list[block++] = read_buffer->c_byte;
 				file_bytes += read_buffer->size;
 				put_write_buffer_hash(read_buffer);
+				inc_progress_bar();
 			} else {
-				sparse += read_buffer->size;
+				int i;
+				long long count = sparse_count(read_buffer);
+
+				for(i = 0; i < count; i++) {
+					block_list[block++] = 0;
+					inc_progress_bar();
+				}
+				sparse += count * read_buffer->size;
 				gen_cache_block_put(read_buffer);
 			}
 		}
-		inc_progress_bar();
 
-		if(++block < blocks) {
+		if(block < blocks) {
 			read_buffer = get_file_buffer();
 			if(read_buffer->error)
 				goto read_err;

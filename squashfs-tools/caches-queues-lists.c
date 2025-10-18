@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 
 #include "mksquashfs_error.h"
 #include "caches-queues-lists.h"

@@ -81,6 +81,8 @@ void remove_##NAME##_hash_table(TYPE *container, struct file_buffer *entry, int 
 #define HASH_SIZE 65536
 #define CALCULATE_HASH(n) ((n) & 0xffff)
 
+#define FALSE 0
+#define TRUE 1
 
 #define NEXT_BLOCK	1
 #define NEXT_FILE	2
@@ -311,4 +313,24 @@ static inline int cache_maxsize(struct file_buffer *entry)
 }
 
 
+static inline int is_sparse(struct file_buffer *entry)
+{
+	return entry->c_byte < 0;
+}
+
+
+static inline int set_sparse(struct file_buffer *entry, long long sparse)
+{
+	if(sparse > INT_MAX)
+		return FALSE;
+
+	entry->c_byte = -sparse;
+	return TRUE;
+}
+
+
+static inline int sparse_count(struct file_buffer *entry)
+{
+	return -entry->c_byte;
+}
 #endif
