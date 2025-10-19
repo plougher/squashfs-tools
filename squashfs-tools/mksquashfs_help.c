@@ -80,7 +80,7 @@ static char *mksquashfs_options[]={
 	"-default-mode", "-default-uid", "-default-gid", "-ignore-zeros", "",
 	"", "",
 	/* expert options */
-	"-stream", "-nopad", "-offset", "-o", "", "", "",
+	"-stream", "-fix", "-nopad", "-offset", "-o", "", "", "",
 	/* help options */
 	"-help", "-help-option", "-help-section", "-help-comp", "-help-all",
 	"-Xhelp", "-h", "-ho", "-hs", "-ha", "-no-pager", "-cols", "", "", "",
@@ -156,7 +156,7 @@ static char *mksquashfs_args[]={
 	/* tar options */
 	"<mode>", "<value>", "<value>", "", "", "", "",
 	/* expert options */
-	"", "", "<offset>", "<offset>", "", "", "",
+	"", "<filesystem>", "", "<offset>", "<offset>", "", "", "",
 	/* help options */
 	"", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
 	"<section>", "", "", "<width>", "", "", "",
@@ -455,6 +455,8 @@ static char *mksquashfs_text[]={
 		"development Unsquashfs can read streamed unfixed up "
 		"filesystems directly.  Use - for the ignored output "
 		"FILESYSTEM on the command line\n",
+	"-fix <filesystem>\tfix <filesystem> generated using the -stream "
+		"option\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
 	"-offset <offset>\tskip <offset> bytes at the beginning of FILESYSTEM."
 		"  Optionally a suffix of K, M or G can be given to specify "
