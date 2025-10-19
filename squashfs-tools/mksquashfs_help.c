@@ -80,7 +80,7 @@ static char *mksquashfs_options[]={
 	"-default-mode", "-default-uid", "-default-gid", "-ignore-zeros", "",
 	"", "",
 	/* expert options */
-	"-nopad", "-offset", "-o", "", "", "",
+	"-stream", "-nopad", "-offset", "-o", "", "", "",
 	/* help options */
 	"-help", "-help-option", "-help-section", "-help-comp", "-help-all",
 	"-Xhelp", "-h", "-ho", "-hs", "-ha", "-no-pager", "-cols", "", "", "",
@@ -156,7 +156,7 @@ static char *mksquashfs_args[]={
 	/* tar options */
 	"<mode>", "<value>", "<value>", "", "", "", "",
 	/* expert options */
-	"", "<offset>", "<offset>", "", "", "",
+	"", "", "<offset>", "<offset>", "", "", "",
 	/* help options */
 	"", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
 	"<section>", "", "", "<width>", "", "", "",
@@ -446,6 +446,15 @@ static char *mksquashfs_text[]={
 		"blocks\n",
 	"\n", "Expert options (these may make the filesystem unmountable):",
 	"\n",
+	"-stream\t\t\toutput the filesystem to STDOUT rather than to a file."
+		"  This allows the output to be piped to another program or "
+		"elsewhere with ssh.  The resultant streamed Squashfs "
+		"filesystem will not be a normal Squashfs filesystem because "
+		"the super block will be at the end of the filesystem.  But "
+		"it can be fixed up afterwards with the -fix option and the "
+		"development Unsquashfs can read streamed unfixed up "
+		"filesystems directly.  Use - for the ignored output "
+		"FILESYSTEM on the command line\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
 	"-offset <offset>\tskip <offset> bytes at the beginning of FILESYSTEM."
 		"  Optionally a suffix of K, M or G can be given to specify "
