@@ -6,7 +6,7 @@ To build and install the tools please read the [Documentation/4.7.2/INSTALL file
 
 To find out how use the latest release please start by reading [Documentation/4.7.2/README](Documentation/4.7.2/README)
 
-The latest **4.7.2** release may have already been packaged for you distribution, please see "Packaging status" to the below right.
+The latest **4.7.2** release may have already been packaged for your distribution, please see "Packaging status" below.
 
 Thanks
 
