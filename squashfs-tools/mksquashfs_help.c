@@ -116,7 +116,7 @@ static char *sqfstar_options[]={
 	"-processors", "-mem", "-mem-percent", "-mem-default", "-overcommit",
 	"", "", "",
 	/* expert options */
-	"-nopad", "-offset", "-o", "", "", "",
+	"-stream", "-nopad", "-offset", "-o", "", "", "",
 	 /* help options */
 	 "-help", "help-option", "-help-section", "-help-comp", "-help-all",
 	 "-Xhelp", "-h", "-ho", "-hs", "-ha", "-no-pager", "-cols", "", "", "",
@@ -184,7 +184,7 @@ static char *sqfstar_args[]={
 	"<percentage>", "<number>", "<size>", "<percent>", "", "<percentage>",
 	"", "", "",
 	/* expert options */
-	"", "<offset>", "<offset>", "", "", "",
+	"", "", "<offset>", "<offset>", "", "", "",
 	/* help options */
 	"", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
 	"<section>", "", "", "<width>", "", "", "",
@@ -755,6 +755,14 @@ static char *sqfstar_text[]={
 		"granularity of 25%, and 20 processors have a percentage "
 		"granularity of 5%\n",
 	"\n", "Expert options (these may make the filesystem unmountable):", "\n",
+	"-stream\t\t\toutput the filesystem to STDOUT rather than to a file."
+		"  This allows the output to be piped to another program or "
+		"elsewhere with ssh.  The resultant streamed Squashfs "
+		"filesystem will not be a normal Squashfs filesystem because "
+		"the super block will be at the end of the filesystem.  But "
+		"it can be fixed up afterwards with the -fix option and the "
+		"development Unsquashfs can read streamed unfixed up "
+		"filesystems directly\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
 	"-offset <offset>\tskip <offset> bytes at the beginning of "
 		"FILESYSTEM.  Optionally a suffix of K, M or G can be given to "
