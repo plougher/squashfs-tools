@@ -116,7 +116,7 @@ static char *sqfstar_options[]={
 	"-processors", "-mem", "-mem-percent", "-mem-default", "-overcommit",
 	"", "", "",
 	/* expert options */
-	"-stream", "-nopad", "-offset", "-o", "", "", "",
+	"-stream", "-fix", "-nopad", "-offset", "-o", "", "", "",
 	 /* help options */
 	 "-help", "help-option", "-help-section", "-help-comp", "-help-all",
 	 "-Xhelp", "-h", "-ho", "-hs", "-ha", "-no-pager", "-cols", "", "", "",
@@ -184,7 +184,7 @@ static char *sqfstar_args[]={
 	"<percentage>", "<number>", "<size>", "<percent>", "", "<percentage>",
 	"", "", "",
 	/* expert options */
-	"", "", "<offset>", "<offset>", "", "", "",
+	"", "<filesystem>", "", "<offset>", "<offset>", "", "", "",
 	/* help options */
 	"", "<regex>", "<section>", "<comp>", "", "", "", "<regex>",
 	"<section>", "", "", "<width>", "", "", "",
@@ -763,6 +763,8 @@ static char *sqfstar_text[]={
 		"it can be fixed up afterwards with the -fix option and the "
 		"development Unsquashfs can read streamed unfixed up "
 		"filesystems directly\n",
+	"-fix <filesystem>\tfix <filesystem> generated using the -stream "
+		"option\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
 	"-offset <offset>\tskip <offset> bytes at the beginning of "
 		"FILESYSTEM.  Optionally a suffix of K, M or G can be given to "
