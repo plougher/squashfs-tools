@@ -680,6 +680,23 @@ Sets the permissions to rw-r--r--, which is eqivalent to
 
 Sets the user and group permissions to the permissions for other.
 
+5.2.12 align(value)
+-------------------
+
+Align files to <value> boundary in output filesystem.  Value should be a power
+of two, and can be specified in bytes, Kbytes or Mbytes, with a maximum value of
+64 Mbytes.
+
+Examples:
+
+1. align(4K)@true
+
+Align all files to a 4K boundary.
+
+2. align(32K)@filesize(>=32K)
+
+Align all files which are 32K or larger to a 32K boundary.
+
 5.3 Actions applied at second directory scan (stage 3)
 ------------------------------------------------------
 
