@@ -453,8 +453,9 @@ static char *mksquashfs_text[]={
 		"the super block will be at the end of the filesystem.  But "
 		"it can be fixed up afterwards with the -fix option and the "
 		"development Unsquashfs can read streamed unfixed up "
-		"filesystems directly.  Use - for the ignored output "
-		"FILESYSTEM on the command line\n",
+		"filesystems directly.  Use - for the output FILESYSTEM on "
+		"the command line.  Duplicate detection is disabled using the "
+		"-stream option\n",
 	"-fix <filesystem>\tfix <filesystem> generated using the -stream "
 		"option\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
@@ -762,7 +763,8 @@ static char *sqfstar_text[]={
 		"the super block will be at the end of the filesystem.  But "
 		"it can be fixed up afterwards with the -fix option and the "
 		"development Unsquashfs can read streamed unfixed up "
-		"filesystems directly\n",
+		"filesystems directly.  Duplicate detection is disabled "
+		"using the -stream option\n",
 	"-fix <filesystem>\tfix <filesystem> generated using the -stream "
 		"option\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",

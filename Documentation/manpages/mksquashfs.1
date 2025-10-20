@@ -295,7 +295,7 @@ allow tar files to be concatenated together and fed to Mksquashfs.  Normally a t
 .SS "Expert options (these may make the filesystem unmountable):"
 .TP
 \fB\-stream\fR
-output the filesystem to STDOUT rather than to a file.  This allows the output to be piped to another program or elsewhere with ssh.  The resultant streamed Squashfs filesystem will not be a normal Squashfs filesystem because the super block will be at the end of the filesystem.  But it can be fixed up afterwards with the \fB\-fix\fR option and the development Unsquashfs can read streamed unfixed up filesystems directly.  Use \- for the ignored output FILESYSTEM on the command line.
+output the filesystem to STDOUT rather than to a file.  This allows the output to be piped to another program or elsewhere with ssh.  The resultant streamed Squashfs filesystem will not be a normal Squashfs filesystem because the super block will be at the end of the filesystem.  But it can be fixed up afterwards with the \fB\-fix\fR option and the development Unsquashfs can read streamed unfixed up filesystems directly.  Use \- for the output FILESYSTEM on the command line.  Duplicate detection is disabled using the \fB\-stream\fR option.
 .TP
 \fB\-fix\fR FILESYSTEM
 fix FILESYSTEM generated using the \fB\-stream\fR option.
