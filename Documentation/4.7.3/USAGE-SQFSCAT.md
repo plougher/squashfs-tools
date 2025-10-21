@@ -2,11 +2,11 @@
 
 This file describes how to use Sqfscat, and it has the following sections:
 
-- Introduction and basic usage
-- Getting help and displaying Sqfscat options
-- Errors and exit code
+1. Introduction and basic usage
+2. Getting help and displaying Sqfscat options
+3. Errors and exit code
 
-## INTRODUCTION AND BASIC USAGE
+## 1. INTRODUCTION AND BASIC USAGE
 
 Sqfscat allows you to "cat" files to STDOUT from a Squashfs filesystem
 without mounting it.  It can read all official Squashfs filesystems.
@@ -20,7 +20,7 @@ sqfscat [OPTIONS] FILESYSTEM [list of files to cat to stdout]
 Where FILESYSTEM is the name of the input Squashfs filesystem.  This can be a
 file or a block device.
 
-The most simple usage is to give a filesystem and file to cat on the command
+The most simple usage is to give a filesystem and a file to cat on the command
 line:
 
 ```
@@ -31,8 +31,8 @@ This will cat the contents of file "/dir/file" to stdout.
 
 example 2:
 
-Multiple files can be specified on command line, and they will be
-output in turn to stdout.
+Multiple files can be specified on the command line, and they will be output in
+turn to stdout.
 
 ```
 % sqfscat image.sqfs file1 file2
@@ -58,17 +58,20 @@ matches, e.g.
 ```
 
 Will output the contents of all the files in the root directory that match the
-wildcard *.[ch], to stdout, for example hello.c, hello.h, world.c, world.h.
+wildcard pattern *.[ch], to stdout, for example hello.c, hello.h, world.c,
+world.h.
 
 Note: when passing wildcarded names to Sqfscat, they should be quoted (as in
 the above example), to ensure that they are not processed by the shell.
 
-## GETTING HELP AND DISPLAYING SQFSCAT OPTIONS
+## 2. GETTING HELP AND DISPLAYING SQFSCAT OPTIONS
 
 Sfscat has fairly detailed built-in help information describing the
 available options.  Running:
 
+```
 % sqfscat -help
+```
 
 Will display the following summary of the help options and information
 available:
@@ -94,7 +97,7 @@ Or run
   "sqfscat -help-all" to get help on all the sections
 ```
 
-### PAGER environment variable
+### 2.1. PAGER environment variable
 
 By default the tools try pager, /usr/bin/pager, less, /usr/bin/less, more,
 /usr/bin/more, cat and /usr/bin/cat in that order.
@@ -103,9 +106,9 @@ The pager used can be over-ridden using the PAGER environment variable.  If the
 filename given by PAGER doesn't contain slashes, the PATH environment variable
 will be used to locate it, otherwise it will be treated as a pathname.
 
-## ERRORS and EXIT CODE
+## 3. ERRORS and EXIT CODE
 
-If Sqfscat encounters fatal errors such as I/O error, filesystem corruption,
+If Sqfscat encounters fatal errors such as I/O error or filesystem corruption,
 it will abort immediately, and return an exit code of 1.
 
 If it skipped a file because it wasn't a regular file, or it wasn't in the
