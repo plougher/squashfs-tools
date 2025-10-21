@@ -93,7 +93,7 @@ means not anchored to a particular directory)
 This creates a Squashfs image with all files matching "*.[ch]" excluded.
 
 
-2. GETTING HELP AND DISPLAYING sQFSTAR OPTIONS
+2. GETTING HELP AND DISPLAYING SQFSTAR OPTIONS
 ----------------------------------------------
 
 Sqfstar has fairly detailed built-in help information describing the available
@@ -1064,7 +1064,7 @@ added to the filesystem.  The original uncompressed size of each file is
 printed, along with DUPLICATE if the file is a duplicate of a file in the
 filesystem.
 
-The info-file option does the same except that the output is to a file rather
+The -info-file option does the same except that the output is to a file rather
 than to stdout.  This allows the -info-file option to be used together with the
 progressbar.
 
