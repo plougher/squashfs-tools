@@ -108,7 +108,7 @@ means not anchored to a particular directory)
 This creates a Squashfs image with all files matching "*.[ch]" excluded.
 
 
-## 2. GETTING HELP AND DISPLAYING sQFSTAR OPTIONS
+## 2. GETTING HELP AND DISPLAYING SQFSTAR OPTIONS
 
 Sqfstar has fairly detailed built-in help information describing the available
 options:  Running:
@@ -327,7 +327,7 @@ sqfstar: compressor "xz".  Options supported:
 ```
 
 The compression specific options for all compressors can be found by typing
-sqfstar -help-comp all
+```sqfstar -help-comp all```.
 
 The compression specific options are, obviously, specific to the compressor in
 question, and the compressor documentation and web sites should be consulted to
@@ -514,15 +514,15 @@ present and are recognised by the system (i.e. can be mapped to a UID and GID),
 their UID and GID is used.  If a user name or group name is not recognised
 by the system, the numeric UID or GID is used.
 
-The -all-root option forces all file UIDs/GIDs in the generated Squashfs
+The ```-all-root``` option forces all file UIDs/GIDs in the generated Squashfs
 filesystem to be root.  This allows root owned filesystems to be built without
 root access on the host machine.
 
-The "-force-uid value" option forces all files in the generated Squashfs
+The ```-force-uid value``` option forces all files in the generated Squashfs
 filesystem to be owned by value, where value can either be a user name or a
 numeric UID.
 
-The "-force-gid value" option forces all files in the generated Squashfs
+The ```-force-gid value``` option forces all files in the generated Squashfs
 filesystem to be group owned by value, where value can be either a group name or
 a numeric GID.
 
@@ -687,14 +687,14 @@ filesystem, and will read from the TAR archive and write to the output
 filesystem as fast as possible.  This maximises both CPU usage and I/O.
 
 Sometimes you don't want Sqfstar to use all CPU and I/O bandwidth.  For those
-cases Sqfstar supports two complementary options, -processors and -throttle.
+cases Sqfstar supports two complementary options, ```-processors``` and ```-throttle```.
 
-The -processors option can be used to reduce the number of parallel compression
+The ```-processors``` option can be used to reduce the number of parallel compression
 threads used by Sqfstar.  Reducing this to 1 will create the minimum number of
 threads, and this will reduce CPU usage, and that in turn will reduce I/O
 (because CPUs are normally the bottleneck).
 
-The -throttle option reduces the speed Sqfstar reads from the TAR archive.
+The ```-throttle``` option reduces the speed Sqfstar reads from the TAR archive.
 The value is a percentage (obviously from 1 - 100), and 50 will reduce the
 read rate by half (the read thread will spend half its time idling), and 75
 by three quarters.  Reducing the speed of I/O will also reduce the CPU
@@ -783,15 +783,17 @@ is run, their contents being the result of running a command or piece of
 shell script.  The modifiy operation allows the mode/uid/gid of an existing
 file in the source filesystem to be modified.
 
-Two Sqfstar options are supported, -p allows one pseudo file to be specified
-on the command line, and -pf allows a pseudo file to be specified containing a
+Two Sqfstar options are supported, ```-p``` allows one pseudo file to be specified
+on the command line, and ```-pf``` allows a pseudo file to be specified containing a
 list of pseduo definitions, one per line.
 
 ### 11.1 CREATING A DYNAMIC FILE
 
 Pseudo definition
 
+```
 Filename f mode uid gid command
+```
 
 mode is the octal mode specifier, similar to that expected by chmod.
 
@@ -1123,16 +1125,16 @@ a <time\> timestamp.  <time\> can be either an unsigned decimal integer or a
 
 ## 13. MISCELLANEOUS OPTIONS
 
-The -info option displays the files/directories as they are compressed and
+The ```-info``` option displays the files/directories as they are compressed and
 added to the filesystem.  The original uncompressed size of each file is
 printed, along with DUPLICATE if the file is a duplicate of a file in the
 filesystem.
 
-The info-file option does the same except that the output is to a file rather
+The ```-info-file``` option does the same except that the output is to a file rather
 than to stdout.  This allows the -info-file option to be used together with the
 progressbar.
 
-The -nopad option informs Sqfstar to not pad the filesystem to a 4K multiple.
+The ```-nopad``` option informs Sqfstar to not pad the filesystem to a 4K multiple.
 This is performed by default to enable the output filesystem file to be mounted
 by loopback, which requires files to be a 4K multiple.  If the filesystem is
 being written to a block device, or is to be stored in a bootimage, the extra
