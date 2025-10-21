@@ -182,12 +182,12 @@ could do
 
 ```
 
-## 2.1 -help-section <section>
+## 2.1 -help-section <section\>
 
-The -help-section option displays the section that matches the <section> name.
-If <section> does not exactly match a section name, it is treated as a regular
+The -help-section option displays the section that matches the <section\> name.
+If <section\> does not exactly match a section name, it is treated as a regular
 expression, and all section names that match are displayed.  Finally, if
-<section> is "list", a list of sections and their names is displayed.
+<section\> is "list", a list of sections and their names is displayed.
 
 For example:
 
@@ -307,7 +307,7 @@ typing:
 ```
 
 The list of compressor specific options for a compressor can be found by typing
-sqfstar -help-comp <compressor>, for example:
+```sqfstar -help-comp <compressor>```, for example:
 
 ```
 % sqfstar -help-comp xz
@@ -396,8 +396,8 @@ even if everything else is the same.  But less obviously, Sqfstar has to
 fabricate a root directory because tar files do not contain one, and so the
 timestamp of the root directory will also change on every run.
 
-To avoid the above, previous versions introduced the -mkfs-time <time>, and
--root-time <time> options:
+To avoid the above, previous versions introduced the -mkfs-time <time\>, and
+-root-time <time\> options:
 
 ```
 % sqfstar -mkfs-time 0 -root-time 0 image.sqfs < tarfile
@@ -420,25 +420,25 @@ added.
 ### 5.1 -mkfs-time, -root-time and -inode-time options with a timestamp
 -------------------------------------------------------------------
 
-#### 5.1.1 -mkfs-time <time>
+#### 5.1.1 -mkfs-time <time\>
 
-Set mkfs time to <time>.  Time can be an integer which is the seconds since
+Set mkfs time to <time\>.  Time can be an integer which is the seconds since
 the epoch of 1970-01-01 00:00:00 UTC), or a date string as recognised by the
 "date" command.
 
-#### 5.1.2 -root-time <time>
+#### 5.1.2 -root-time <time\>
 
-Set root directory timestamp to <time>.  Time can be an integer which is the
+Set root directory timestamp to <time\>.  Time can be an integer which is the
 seconds since the epoch of 1970-01-01 00:00:00 UTC), or a date string as
 recognised by the "date" command.
 
-#### 5.1.3 -inode-time <time>
+#### 5.1.3 -inode-time <time\>
 
 This option has been renamed from -all-time [^1] in previous versions because
 all-time was a misnomer (it sets all the inode timestamps, but not also the
 filesystem make time as the name suggests).
 
-Set all file timestamps to <time>.  Time can be an integer which is the seconds
+Set all file timestamps to <time\>.  Time can be an integer which is the seconds
 since the epoch of 1970-01-01 00:00:00 UTC), or a date string as recognised by
 the "date" command.
 
@@ -483,11 +483,11 @@ equivalent to -mkfs-time inode, which achieves reproducibility by setting the
 filesystem build time to the latest inode timestamp.  Obviously the image won't
 be reproducible if the timestamps or content changes.
 
-#### 5.3.2 -repro-time <time>
+#### 5.3.2 -repro-time <time\>
 
 This option makes Sqfstar build a reproducible filesystem image.  This is
-equivalent to specifying -mkfs-time <time> and -inode-time <time>, which
-achieves reproducibility by setting all timestamps to <time>.  This option can
+equivalent to specifying -mkfs-time <time\> and -inode-time <time\>, which
+achieves reproducibility by setting all timestamps to <time\>.  This option can
 be used in cases where timestamps may change, and where -repro cannot be used
 for this reason.
 
@@ -533,14 +533,14 @@ By default files and directories in the generated filesystem inherit the
 permissions of the files and directories in the TAR archive.  However, Sqfstar
 provides a number of options which can be used to override the permissions.
 
-The "-force-file-mode <mode>" option sets all the file (non directories)
-permissions to <mode>.  <Mode> can be symbolic or octal (see the next subsection
+The ```-force-file-mode <mode>``` option sets all the file (non directories)
+permissions to <mode\>.  <Mode\> can be symbolic or octal (see the next subsection
 for the Symbolic mode specification).  The octal mode sets the permissions to
 that value, and the symbolic mode specification can either set the permissions,
 or add or subtract permissions from the existing file permissions.
 
-The "-force-dir-mode <mode>" option sets all the directory permissions to
-<mode>.  <Mode> can be symbolic or octal (see the next subsection for the
+The ```-force-dir-mode <mode>``` option sets all the directory permissions to
+<mode\>.  <Mode\> can be symbolic or octal (see the next subsection for the
 Symbolic mode specification).  The octal mode sets the permissions to that
 value, and the symbolic mode specification can either set the permissions, or
 add or subtract permissions from the existing directory permissions.
@@ -1006,8 +1006,8 @@ Pseudo definition
 filename x name=val
 ```
 
-Will add the extended attribute <name> to <filename> with <val > contents.  See
-Section 7 for a description of the <val> formats supported.
+Will add the extended attribute <name\> to <filename\> with <val\> contents.  See
+Section 7 for a description of the <val\> formats supported.
 
 ### 11.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
 
@@ -1071,9 +1071,9 @@ of the created file to be specified, and the files will be timestamped
 with the current time.
 
 Extended versions of the Pseudo file definitions are supported which
-take a <time> timestamp.  These are distinquished from the previous
+take a <time\> timestamp.  These are distinquished from the previous
 definitions by using an upper-case type character.  For example the "D"
-definition is identical to the "d" definition, but it takes a <time>
+definition is identical to the "d" definition, but it takes a <time\>
 timestamp.
 
 The list of extended definitions are:
@@ -1088,7 +1088,7 @@ filename I time mode uid gid [s|f]
 filename M time mode uid gid
 ```
 
-<time> can be either an unsigned decimal integer (which represents the
+<time\> can be either an unsigned decimal integer (which represents the
 seconds since the epoch of 1970-01-01 00:00 UTC), or a "date string"
 which is parsed and converted into an integer since the epoch, by calling
 the "date" command.
@@ -1116,7 +1116,7 @@ Specifies a default pseudo directory which will be used in pseudo definitions if
 a directory in the pathname does not exist.
 
 The upper-case D indicates this is an extended pseudo definition which takes
-a <time> timestamp.  <time> can be either an unsigned decimal integer or a
+a <time\> timestamp.  <time\> can be either an unsigned decimal integer or a
 "date string" which is parsed and converted into an integer by calling the
 "date" command.
 
