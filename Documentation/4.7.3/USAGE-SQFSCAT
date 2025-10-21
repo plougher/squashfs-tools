@@ -19,7 +19,7 @@ sqfscat [OPTIONS] FILESYSTEM [list of files to cat to stdout]
 Where FILESYSTEM is the name of the input Squashfs filesystem.  This can be a
 file or a block device.
 
-The most simple usage is to give a filesystem and file to cat on the command
+The most simple usage is to give a filesystem and a file to cat on the command
 line:
 
 % sqfscat image.sqfs dir/file
@@ -28,10 +28,12 @@ This will cat the contents of file "/dir/file" to stdout.
 
 example 2:
 
-Multiple files can be specified on command line, and they will be
+Multiple files can be specified on the command line, and they will be
 output in turn to stdout.
 
+```
 % sqfscat image.sqfs file1 file2
+```
 
 If any of the files given on the command line does not result in a regular file,
 Sqfscat will throw an error, but will continue to output the remaining
@@ -49,7 +51,7 @@ matches, e.g.
 % sqfscat image.sqfs "*.[ch]"
 
 Will output the contents of all the files in the root directory that match the
-wildcard *.[ch], to stdout, for example hello.c, hello.h, world.c, world.h.
+wildcard pattern *.[ch], to stdout, for example hello.c, hello.h, world.c, world.h.
 
 Note: when passing wildcarded names to Sqfscat, they should be quoted (as in
 the above example), to ensure that they are not processed by the shell.
@@ -99,7 +101,7 @@ will be used to locate it, otherwise it will be treated as a pathname.
 3. ERRORS and EXIT CODE
 -----------------------
 
-If Sqfscat encounters fatal errors such as I/O error, filesystem corruption,
+If Sqfscat encounters fatal errors such as I/O error or filesystem corruption,
 it will abort immediately, and return an exit code of 1.
 
 If it skipped a file because it wasn't a regular file, or it wasn't in the
