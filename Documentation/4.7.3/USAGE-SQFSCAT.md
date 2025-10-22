@@ -2,9 +2,9 @@
 
 This file describes how to use Sqfscat, and it has the following sections:
 
-1. Introduction and basic usage
-2. Getting help and displaying Sqfscat options
-3. Errors and exit code
+1. [Introduction and basic usage](#1-introduction-and-basic-usage)
+2. [Getting help and displaying Sqfscat options](#2-getting-help-and-displaying-sqfscat-options)
+3. [Errors and exit code](#3-errors-and-exit-code)
 
 ## 1. INTRODUCTION AND BASIC USAGE
 
