@@ -66,7 +66,7 @@ the above example), to ensure that they are not processed by the shell.
 
 ## 2. GETTING HELP AND DISPLAYING SQFSCAT OPTIONS
 
-Sfscat has fairly detailed built-in help information describing the
+Sqfscat has fairly detailed built-in help information describing the
 available options.  Running:
 
 ```
