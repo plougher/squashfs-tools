@@ -2,19 +2,19 @@
 
 This file describes how to use Sqfstar, and it has the following sections:
 
-[1. Introduction and basic usage](#1-introduction-and-basic-usage)
-[2. Getting help and displaying Sqfstar options](#2-getting-help-and-displaying-sqfstar-options)
-[3. Changing compression algorithm and compression specific options](#3-changing-compression-algorithm-and-compression-specific-options)
-[4. Changing global compression defaults used in sqfstar](#4-changing-global-compression-defaults-used-in-sqfstar)
-[5. Building reproducible filesystem images](#5-building-reproducible-filesystem-images)
-[6. Specifying the UIDs/GIDs used in the filesystem](#6-specifying-the-uidsgids-used-in-the-filesystem)
-[7. Specifying the file permissions used in the filesystem](#7-specifying-the-file-permissions-used-in-the-filesystem)
-[8. Excluding files from the filesystem](#8-excluding-files-from-the-filesystem)
-[9. Reducing CPU and I/O usage](#9-reducing-cpu-and-io-usage)
-[10. Filtering and adding extended attributes (xattrs)](#10-filtering-and-adding-extended-attributes-xattrs)
-[11. Pseudo file support](#11-pseudo-file-support)
-[12. Extended pseudo file definitions with timestamps](#12-extended-pseudo-file-definitions-with-timestamps)
-[13. Miscellaneous options](#13-miscellaneous-options)
+1. [Introduction and basic usage](#1-introduction-and-basic-usage)
+2. [Getting help and displaying Sqfstar options](#2-getting-help-and-displaying-sqfstar-options)
+3. [Changing compression algorithm and compression specific options](#3-changing-compression-algorithm-and-compression-specific-options)
+4. [Changing global compression defaults used in sqfstar](#4-changing-global-compression-defaults-used-in-sqfstar)
+5. [Building reproducible filesystem images](#5-building-reproducible-filesystem-images)
+6. [Specifying the UIDs/GIDs used in the filesystem](#6-specifying-the-uidsgids-used-in-the-filesystem)
+7. [Specifying the file permissions used in the filesystem](#7-specifying-the-file-permissions-used-in-the-filesystem)
+8. [Excluding files from the filesystem](#8-excluding-files-from-the-filesystem)
+9. [Reducing CPU and I/O usage](#9-reducing-cpu-and-io-usage)
+10. [Filtering and adding extended attributes (xattrs)](#10-filtering-and-adding-extended-attributes-xattrs)
+11. [Pseudo file support](#11-pseudo-file-support)
+12. [Extended pseudo file definitions with timestamps](#12-extended-pseudo-file-definitions-with-timestamps)
+13. [Miscellaneous options](#13-miscellaneous-options)
 
 ## 1. INTRODUCTION AND BASIC USAGE
 
