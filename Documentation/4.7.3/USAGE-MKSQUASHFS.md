@@ -817,8 +817,8 @@ are specialised reader threads).
 Three new options have been added which allow the number of reader threads to
 be changed:
 
-1. -small-readers <n>
-2. -block-readers <n>
+1. -small-readers <n\>
+2. -block-readers <n\>
 3. -single-reader
 
 The maximum number of small and block reader threads are 1024 each.  But, the
