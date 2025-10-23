@@ -425,6 +425,7 @@ unsigned short get_checksum_mem(char *buff, int bytes);
 static void print_summary();
 void write_destination(int fd, long long byte, long long bytes, void *buff);
 static int old_excluded(char *filename, struct stat *buf);
+static void write_superblock(struct squashfs_super_block *sBlk);
 
 
 void prep_exit()
@@ -596,6 +597,8 @@ void restorefs()
 		char temp[4096] = {0};
 		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
+
+	write_superblock(&sBlk);
 
 	res = close(fd);
 
