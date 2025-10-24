@@ -2,25 +2,25 @@
 
 This file describes how to use Mksquashfs, and it has the following sections:
 
-1. Introduction and basic usage
-2. Getting help and displaying Mksquashfs options
-3. Changing compression algorithm and compression specific options
-4. Changing global compression defaults used in Mksquashfs
-5. Building reproducible filesystem images
-6. Tar style handling of source pathnames in Mksquashfs
-7. CPIO style handling of source pathnames in Mksquashfs
-8. Specifying the UID/GIDs used in the filesystem
-9. Specifying the file permissions used in the filesystem
-10. Excluding files from the filesystem
-11. Parallel file reading and options
-12. Reducing CPU and I/O usage
-13. Filtering and adding extended attributes (xattrs)
-14. Pseudo file support
-15. Extended pseudo file definitions with timestamps
-16. Appending to Squashfs filesystems
-17. Appending recovery file feature
-18. Mksquashfs Actions introduction
-19. Miscellaneous options
+1. [Introduction and basic usage](#1-introduction-and-basic-usage)
+2. [Getting help and displaying Mksquashfs options](#2-getting-help-and-displaying-mksquashfs-options)
+3. [Changing compression algorithm and compression specific options](#3-changing-compression-algorithm-and-compression-specific-options)
+4. [Changing global compression defaults used in Mksquashfs](#4-changing-global-compression-defaults-used-in-mksquashfs)
+5. [Building reproducible filesystem images](#5-building-reproducible-filesystem-images)
+6. [Tar style handling of source pathnames in Mksquashfs](#6-tar-style-handling-of-source-pathnames-in-mksquashfs)
+7. [CPIO style handling of source pathnames in Mksquashfs](#7-cpio-style-handling-of-source-pathnames-in-mksquashfs)
+8. [Specifying the UID/GIDs used in the filesystem](#8-specifying-the-uidgids-used-in-the-filesystem)
+9. [Specifying the file permissions used in the filesystem](#9-specifying-the-file-permissions-used-in-the-filesystem)
+10. [Excluding files from the filesystem](#10-excluding-files-from-the-filesystem)
+11. [Parallel file reading and options](#11-parallel-file-reading-and-options)
+12. [Reducing CPU and I/O usage](#12-reducing-cpu-and-io-usage)
+13. [Filtering and adding extended attributes (xattrs)](#13-filtering-and-adding-extended-attributes-(xattrs))
+14. [Pseudo file support](#14-pseudo-file-support)
+15. [Extended pseudo file definitions with timestamps](#15-extended-pseudo-file-definitions-with-timestamps)
+16. [Appending to Squashfs filesystems](#16-appending-to-squashfs-filesystems)
+17. [Appending recovery file feature](#17-appending-recovery-file-feature)
+18. [Mksquashfs Actions introduction](#18-mksquashfs-actions-introduction)
+19. [Miscellaneous options](#19-miscellaneous-options)
 
 ## 1. INTRODUCTION AND BASIC USAGE
 
