@@ -391,7 +391,7 @@ again:
 			}
 		}
 
-		if(blocks) {
+		if(blocks > 0) {
 			file_buffer->fragment = FALSE;
 			put_file_buffer(reader->id, file_buffer, NEXT_BLOCK);
 		}
