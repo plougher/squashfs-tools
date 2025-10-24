@@ -2,13 +2,13 @@
 
 This file describes how to use Unsquashfs, and it has the following sections:
 
-1. [Introduction and basic usage](#introduction-and-basic-usage)
-2. [Getting help and displaying Unsquashfs options](#getting-help-and-displaying-unsquashfs-options)
-3. [Using "extract" files](#using-extract-files)
-4. [Using "exclude" files in addition to "extract" files](#using-exclude-files-in-addition-to-extract-files)
-5. [Following symbolic links in extract files](#following-symbolic-links-in-extract-files)
-6. [Dealing with errors](#dealing-with-errors)
-7. [Unsquashfs pseudo file output](#unsquashfs-pseudo-file-output)
+1. [Introduction and basic usage](#1-introduction-and-basic-usage)
+2. [Getting help and displaying Unsquashfs options](#2-getting-help-and-displaying-unsquashfs-options)
+3. [Using "extract" files](#3-using-extract-files)
+4. [Using "exclude" files in addition to "extract" files](#4-using-exclude-files-in-addition-to-extract-files)
+5. [Following symbolic links in extract files](#5-following-symbolic-links-in-extract-files)
+6. [Dealing with errors](#6-dealing-with-errors)
+7. [Unsquashfs pseudo file output](#7-unsquashfs-pseudo-file-output)
 
 ## 1. INTRODUCTION AND BASIC USAGE
 
