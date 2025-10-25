@@ -39,25 +39,25 @@ needed.
 
 The Squashfs-tools consists of 4 programs.
 
-### MKSQUASHFS
+### [MKSQUASHFS](USAGE-MKSQUASHFS.md)
 
 This tool creates Squashfs filesystems from a set of source files and directories.  The file USAGE-MKSQUASHFS describes how to use this program.  The (once installed) mksquashfs manpage contains more brief information and a lot of usage examples.
 
-### UNSQUASHFS
+### [UNSQUASHFS](USAGE-UNSQUASHFS.md)
 
 This tool allows you to extract and list the contents of Squashfs filesystems without mounting.  The file USAGE-UNSQUASHFS describes how to use this program.  The (once installed) unsquashfs manpage contains more brief information and a lot of usage examples.
 
-### SQFSTAR
+### [SQFSTAR](USAGE-SQFSTAR.md)
 
 This tool creates Squashfs filesystems from a TAR archive.  The file USAGE-SQFSTAR describes how to use this program.  The (once installed) sqfstar manpage contains more brief information and a lot of usage examples.
 
-### SQFSCAT
+### [SQFSCAT](USAGE-SQFSCAT.md)
 
 This program allows you to "cat" files to STDOUT from a Squashfs filesystem.  USAGE-SQFSCAT describes how to use this program.  The (once installed) sqfscat manpage contains more brief information and a lot of usage examples.
 
 ## SUMMARY OF USAGE FILES
 
-- For MKSQUASHFS see USAGE-MKSQUASHFS
-- For UNSQUASHFS see USAGE-UNSQUASHFS
-- For SQFSTAR see USAGE-SQFSTAR
-- For SQFSCAT see USAGE-SQFSCAT
+- For MKSQUASHFS see [USAGE-MKSQUASHFS.md](USAGE-MKSQUASHFS.md)
+- For UNSQUASHFS see [USAGE-UNSQUASHFS.md](USAGE-UNSQUASHFS.md)
+- For SQFSTAR see [USAGE=SQFSTAR.md](USAGE-SQFSTAR.md)
+- For SQFSCAT see [USAGE-SQFSCAT.md](USAGE-SQFSCAT.md)
