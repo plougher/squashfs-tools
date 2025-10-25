@@ -812,7 +812,8 @@ connected via USB 3, formatted with ext4.
 All Mksquashfs tests were performed with a cold cache to ensure speed of
 filesystem I/O is measured, rather than speed of memory reading from the cache.
 
-The times are in minutes:seconds.
+The times are in minutes:seconds. The percentage is overall CPU usage (out of
+2000%).  The X-axis is number of reader threads, and the Y-axis is file size.
 
 	1	2	4	8	12	16	20	30	40	50	64	128	256
 128	56:39.7	30:35.5	19:30.8	10:30.5	9:34.88	9:04.61	9:07.28	9:07.10	8:25.15	7:59.32	7:35.56	7:01.38	6:21.16
