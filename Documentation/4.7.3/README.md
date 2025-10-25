@@ -18,9 +18,9 @@ USAGE files for information on how to use the tools.
 
 This README has the following sections:
 
-1. [Improvements and bug fixes in 4.7.1 & 4.7.2](#improvements-and-bug-fixes-in-471--472)
-2. [Summary of changes in 4.7](#summary-of-changes-in-47)
-3. [Parallel file reading and options](#3-parallel-file-reading-options)
+1. [Improvements and bug fixes in 4.7.1 & 4.7.2](#1-improvements-and-bug-fixes-in-471--472)
+2. [Summary of changes in 4.7](#2-summary-of-changes-in-47)
+3. [Parallel file reading and options](#3-parallel-file-reading-and-options)
 4. [Help system and options](#4-help-system-and-options)
 5. [Reproducible filesystem images and new options](#5-reproducible-filesystem-images-and-new-options)
 6. [Author info](#6-author-info)
