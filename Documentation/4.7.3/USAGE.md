@@ -59,5 +59,5 @@ This program allows you to "cat" files to STDOUT from a Squashfs filesystem.  US
 
 - For MKSQUASHFS see [USAGE-MKSQUASHFS.md](USAGE-MKSQUASHFS.md)
 - For UNSQUASHFS see [USAGE-UNSQUASHFS.md](USAGE-UNSQUASHFS.md)
-- For SQFSTAR see [USAGE=SQFSTAR.md](USAGE-SQFSTAR.md)
+- For SQFSTAR see [USAGE-SQFSTAR.md](USAGE-SQFSTAR.md)
 - For SQFSCAT see [USAGE-SQFSCAT.md](USAGE-SQFSCAT.md)
