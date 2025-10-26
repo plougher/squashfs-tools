@@ -583,7 +583,7 @@ The ```-force-uid <user>```  option forces all files in the generated Squashfs
 filesystem to be owned by the specified ```user```.  The ```user``` can be specified either
 by name (i.e. "root") or by number.
 
-The ```-force-gid <group``` option forces all files in the generated Squashfs
+The ```-force-gid <group>``` option forces all files in the generated Squashfs
 filesystem to be group owned by the specified ```group```.  The ```group``` can be specified
 either by name (i.e. "root") or by number.
 
