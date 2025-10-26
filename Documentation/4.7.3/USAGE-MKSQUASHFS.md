@@ -36,7 +36,7 @@ mksquashfs source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of exclude files]
 Where source1 source2 are the directories or files you want to be put into the
 filesystem, and FILESYSTEM is the name of the output filesystem.  This can be a
 file or a block device.  If the file already exists or it is a block device
-Mksquashfs will try append to it (see section 16) unless the -noappend option is
+Mksquashfs will try append to it (see [section 16](#16-appending-to-squashfs-filesystems) unless the -noappend option is
 given.
 
 Most simple usage is a single source directory:
@@ -316,7 +316,7 @@ by typing:
 ```
 
 The list of compressor specific options for a compressor can be found by typing
-mksquashfs -help-comp <compressor\>, for example:
+```mksquashfs -help-comp <compressor>```, for example:
 
 ```
 % mksquashfs -help-comp xz
@@ -336,7 +336,7 @@ mksquashfs: compressor "xz".  Options supported:
 ```
 
 The compression specific options for all compressors can be found by typing
-mksquashfs -help-comp all
+```mksquashfs -help-comp all```.
 
 The compression specific options are, obviously, specific to the compressor in
 question, and the compressor documentation and web sites should be consulted to
@@ -362,23 +362,23 @@ filesystem contains lots of fragments, and no locality of reference is
 observed).  For this reason the block size default is configured to the less
 optimal 128 Kbytes.  Users should experiment with 256 Kbyte sizes or above.
 
-The -b option allows the block size to be selected, both "K" and "M" postfixes
+The ```-b``` option allows the block size to be selected, both "K" and "M" postfixes
 are supported, this can be either 4K, 8K, 16K, 32K, 64K, 128K, 256K, 512K or
 1M bytes.
 
-The -noI, -noD, -noF and -noX options can be used to force Mksquashfs to not
+The ```-noI```, ```-noD```, ```-noF``` and ```-noX``` options can be used to force Mksquashfs to not
 compress inodes (metadata), data, fragments and extended attributes
-respectively.  The -no-compression option generates an uncompressed filesystem,
+respectively.  The ```-no-compression``` option generates an uncompressed filesystem,
 and it is equivalent to specifying all of the -noI, -noD, -noF and -noX options.
 
-The -no-fragments option tells Mksquashfs to not generate fragment blocks.  A
+The ```-no-fragments``` option tells Mksquashfs to not generate fragment blocks.  A
 fragment block consists of multiple small files (all smaller than the block
 size) packed and compressed together.  This produces much better compression
 than storing and compressing these files separately.  It also typically
 improves I/O as multiple files in the same directory are read at the same time.
 You don't want to enable this option unless you fully understand the effects.
 
-The -tailends option tells Mksquashfs to always generate fragments for files
+The ```-tailends``` option tells Mksquashfs to always generate fragments for files
 irrespective of the file length.  By default only small files less than the data
 block size are packed into fragment blocks.  The tail ends of files which do not
 fit fully into a block, are NOT by default packed into fragments.  This is a
@@ -386,7 +386,7 @@ legacy setting when hard disks were mechanical, and had slow seek times.  In
 general setting this option will gain a little more compression, without
 affecting I/O performance.
 
-The -no-duplicates option tells Mksquashfs to not check the files being added to
+The ```-no-duplicates``` option tells Mksquashfs to not check the files being added to
 the filesystem for duplicates.  This can result in quicker filesystem
 generation although obviously compression will suffer badly if there is a lot
 of duplicates.
@@ -408,8 +408,8 @@ fabricate a root directory (because the source doesn't supply one, for example
 where multiple files are specified on the command line), the timestamp of the
 root directory will also change on every run.
 
-To avoid the above, previous versions introduced the -mkfs-time <time\>, and
--root-time <time\> options:
+To avoid the above, previous versions introduced the ```-mkfs-time <time>```, and
+```-root-time <time>``` options:
 
 ```
 % mksquashfs source(s) image.sqfs -mkfs-time 0 -root-time 0
@@ -596,7 +596,7 @@ For example:
 Will set all file and directory ownership and group ownership to phillip.
 
 If you only want to set the uid and gid ownership on a subset of files rather
-than globally, the Actions system allows you to do that (see section 18).
+than globally, the Actions system allows you to do that (see [section 18](#18-mksquashfs-actions-introduction)).
 
 
 ## 9. SPECIFYING THE FILE PERMISSIONS USED IN THE FILESYSTEM
@@ -606,13 +606,13 @@ permissions of the original files and directories.  However, Mksquashfs provides
 a number of options which can be used to override the permissions.
 
 The ```-force-file-mode <mode>``` option sets all the file (non directories)
-permissions to <mode>.  <Mode> can be symbolic or octal (see the next subsection
+permissions to ```<mode>```.  ```<Mode>``` can be symbolic or octal (see the [next subsection](#91-symbolic-mode-specification)
 for the Symbolic mode specification).  The octal mode sets the permissions to
 that value, and the symbolic mode specification can either set the permissions,
 or add or subtract permissions from the existing file permissions.
 
 The ```-force-dir-mode <mode>``` option sets all the directory permissions to
-<mode>.  <Mode> can be symbolic or octal (see the next subsection for the
+```<mode>```.  ```<Mode>``` can be symbolic or octal (see the next subsection for the
 Symbolic mode specification).  The octal mode sets the permissions to that
 value, and the symbolic mode specification can either set the permissions, or
 add or subtract permissions from the existing directory permissions.
@@ -649,30 +649,30 @@ other, but also ensure the owner can read and write to the files by adding 'r'
 and 'w'.
 
 If you only want to set the permissions on a subset of files rather than
-globally, the Actions system allows you to do that (see section 18).
+globally, the Actions system allows you to do that (see [section 18](#18-mksquashfs-actions-introduction)).
 
 ### 9.1 SYMBOLIC MODE SPECIFICATION
 
-The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+.  PERMS = [rwxXst]+ or
-[ugo], and the sequence can be repeated separated with commas.
+The symbolic mode is of the format ```[ugoa]*[[+-=]PERMS]+```.  PERMS = ```[rwxXst]+``` or
+```[ugo]```, and the sequence can be repeated separated with commas.
 
-A combination of the letters ugoa specify which permission bits will be
-affected, u means user, g means group, o means other, and a means all or ugo.
+A combination of the letters ```ugoa``` specify which permission bits will be
+affected, ```u``` means user, ```g``` means group, ```o``` means other, and ```a``` means all or ugo.
 
-The next letter is +, - or =.  The letter + means add to the existing permission
-bits, - means remove the bits from the existing permission bits, and = means set
+The next letter is ```+```, ```-``` or ```=```.  The letter ```+``` means add to the existing permission
+bits, ```-``` means remove the bits from the existing permission bits, and ```=``` means set
 the permission bits.
 
-The permission bits (PERMS) are a combination of [rwxXst] which
-sets/adds/removes those bits for the specified ugoa combination, r means read, w
-means write and x means execute for files or search for directories.  X has a
-special meaning, if the file is a directory it is equivalent to x or search, but
+The permission bits (PERMS) are a combination of ```[rwxXst]``` which
+sets/adds/removes those bits for the specified ugoa combination, ```r``` means read, ```w```
+means write and ```x``` means execute for files or search for directories.  ```X``` has a
+special meaning, if the file is a directory it is equivalent to ```x``` or search, but
 if it is a non-directory, it only takes effect if execute is already set for
-user, group or other.  The s flag sets user or group ID on execution, and the t
+user, group or other.  The ```s``` flag sets user or group ID on execution, and the ```t```
 flag on a directory sets restricted deletion, or historically made the file
 sticky if a non-directory.
 
-The permission bits can also be u, g or o, which takes the permission bits from
+The permission bits can also be ```u```, ```g``` or ```o```, which takes the permission bits from
 the user, group or other of the file respectively.
 
 
@@ -751,7 +751,7 @@ those with "data" in the name.
 By default excludes match from the top level directory, but it is often useful
 to exclude a file matching anywhere in the source directories.  For this
 non-anchored excludes can be used, specified by pre-fixing the exclude with
-"...".
+```...```.
 
 Examples:
 
@@ -970,21 +970,21 @@ in addition to -processors or on its own.
 Mksquashfs has a number of options which allow extended attributes (xattrs) to
 be filtered from the source files or added to the created Squashfs filesystem.
 
-The -no-xattrs option removes any extended attributes which may exist in the
+The ```-no-xattrs``` option removes any extended attributes which may exist in the
 source files, and creates a filesystem without any extended attributes.
 
-The -xattrs-exclude option specifies a regular expression (regex), which removes
+The ```-xattrs-exclude``` option specifies a regular expression (regex), which removes
 any extended attribute that matches the regular expression from all files.
-For example the regex '^user.' will remove all User extended attributes.
+For example the regex ```^user.``` will remove all User extended attributes.
 
-The -xattrs-include option instead specifies a regular expression (regex) which
+The ```-xattrs-include``` option instead specifies a regular expression (regex) which
 includes any extended attribute that matches, and removes anything that does't
-match.  For example the regex '^user.' will only keep User extended attributes
+match.  For example the regex ```^user.``` will only keep User extended attributes
 and anything else will be removed.
 
 Mksquashfs also allows you to add extended attributes to files in the Squashfs
-filesystem using the -xattrs-add option.  This option takes an xattr name and
-value pair separated by the '=' character.
+filesystem using the ```-xattrs-add``` option.  This option takes an xattr name and
+value pair separated by the ```=``` character.
 
 The extended attribute name can be any valid name and can be in the namespaces
 security, system, trusted, or user.  User extended attributes are added to files
@@ -992,14 +992,14 @@ and directories (see man 7 xattr for explanation), and the others are added to
 all files.
 
 The extended attribute value by default will be treated as binary (i.e. an
-uninterpreted byte sequence), but it can be prefixed with 0s, where it will be
-treated as base64 encoded, or prefixed with 0x, where it will be treated as
+uninterpreted byte sequence), but it can be prefixed with ```0s```, where it will be
+treated as base64 encoded, or prefixed with ```0x```, where it will be treated as
 hexidecimal.
 
 Obviously using base64 or hexidecimal allows values to be used that cannot be
 entered on the command line such as non-printable characters etc.  But it
 renders the string non-human readable.  To keep readability and to allow
-non-printable characters to be entered, the 0t prefix is supported.  This
+non-printable characters to be entered, the ```0t``` prefix is supported.  This
 encoding is similar to binary encoding, except backslashes are specially
 treated, and a backslash followed by three octal digits can be used to encode
 any ASCII character, which obviously can be used to encode non-printable values.
