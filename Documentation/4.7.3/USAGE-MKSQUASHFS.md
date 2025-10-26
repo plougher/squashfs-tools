@@ -36,7 +36,7 @@ mksquashfs source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of exclude files]
 Where source1 source2 are the directories or files you want to be put into the
 filesystem, and FILESYSTEM is the name of the output filesystem.  This can be a
 file or a block device.  If the file already exists or it is a block device
-Mksquashfs will try append to it (see [section 16](#16-appending-to-squashfs-filesystems) unless the -noappend option is
+Mksquashfs will try append to it (see [section 16](#16-appending-to-squashfs-filesystems)) unless the -noappend option is
 given.
 
 Most simple usage is a single source directory:
@@ -502,7 +502,7 @@ achieves reproducibility by setting all timestamps to <time\>.  This option can
 be used in cases where timestamps may change, and where -repro cannot be used
 for this reason.
 
-#### 5.4 the environment variable SOURCE_DATE_EPOCH
+### 5.4 the environment variable SOURCE_DATE_EPOCH
 
 As an alternative to the above command line options, you can set the environment
 variable SOURCE_DATE_EPOCH to a time value.
@@ -579,12 +579,12 @@ The ```-all-root``` option forces all file uids/gids in the generated Squashfs
 filesystem to be root.  This allows root owned filesystems to be built without
 root access on the host machine.
 
-The ```-force-uid <uid>```  option forces all files in the generated Squashfs
-filesystem to be owned by the specified <uid>.  The uid can be specified either
+The ```-force-uid <user>```  option forces all files in the generated Squashfs
+filesystem to be owned by the specified ```user```.  The ```user``` can be specified either
 by name (i.e. "root") or by number.
 
-The ```-force-gid <gid>``` option forces all files in the generated Squashfs
-filesystem to be group owned by the specified <gid>.  The gid can be specified
+The ```-force-gid <group``` option forces all files in the generated Squashfs
+filesystem to be group owned by the specified ```group```.  The ```group``` can be specified
 either by name (i.e. "root") or by number.
 
 For example:
@@ -593,7 +593,7 @@ For example:
 % mksquashfs source image.sqfs -force-uid phillip -force-gid phillip
 ```
 
-Will set all file and directory ownership and group ownership to phillip.
+Will set all file and directory ownership and group ownership to ```phillip```.
 
 If you only want to set the uid and gid ownership on a subset of files rather
 than globally, the Actions system allows you to do that (see [section 18](#18-mksquashfs-actions-introduction)).
@@ -1263,7 +1263,7 @@ filename x name=val
 ```
 
 Will add the extended attribute <name\> to <filename\> with <val\> contents.  See
-Section 7 for a description of the <val\> formats supported.
+[Section 13](#13-filtering-and-adding-extended-attributes-xattrs) for a description of the <val\> formats supported.
 
 ### 14.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
 
