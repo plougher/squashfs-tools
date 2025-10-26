@@ -565,13 +565,13 @@ The -all-root option forces all file uids/gids in the generated Squashfs
 filesystem to be root.  This allows root owned filesystems to be built without
 root access on the host machine.
 
-The "-force-uid <uid>"  option forces all files in the generated Squashfs
-filesystem to be owned by the specified <uid>.  The uid can be specified either
-by name (i.e. "root") or by number.
-
-The "-force-gid <gid>" option forces all files in the generated Squashfs
-filesystem to be group owned by the specified <gid>.  The gid can be specified
+The "-force-uid <user>"  option forces all files in the generated Squashfs
+filesystem to be owned by the specified <user>.  The user can be specified
 either by name (i.e. "root") or by number.
+
+The "-force-gid <group>" option forces all files in the generated Squashfs
+filesystem to be group owned by the specified <group>.  The group can be
+specified either by name (i.e. "root") or by number.
 
 For example:
 
@@ -1125,7 +1125,7 @@ For example:
 
 symlink s 0 root root example
 
-8reates a symlink "symlink" to file "example" with root uid/gid.
+Creates a symlink "symlink" to file "example" with root uid/gid.
 
 14.5 CREATING HARD LINKS (FILE REFERENCES)
 ------------------------------------------
@@ -1206,7 +1206,7 @@ Pseudo definition
 filename x name=val
 
 Will add the extended attribute <name> to <filename> with <val> contents.  See
-Section 7 for a description of the <val> formats supported.
+Section 13 for a description of the <val> formats supported.
 
 14.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
 ---------------------------------------------
