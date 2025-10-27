@@ -353,29 +353,29 @@ filesystem contains lots of fragments, and no locality of reference is
 observed).  For this reason the block size default is configured to the less
 optimal 128 Kbytes.  Users should experiment with 256 Kbyte sizes or above.
 
-The -b option allows the block size to be selected, both "K" and "M" postfixes
+The ```-b``` option allows the block size to be selected, both "K" and "M" postfixes
 are supported, this can be either 4K, 8K, 16K, 32K, 64K, 128K, 256K, 512K or
 1M bytes.
 
-The -noI, -noD, -noF and -noX options can be used to force Mksquashfs to not
+The ```-noI```, ```-noD```, ```-noF``` and ```-noX``` options can be used to force Mksquashfs to not
 compress inodes (metadata), data, fragments and extended attributes
-respectively.  The -no-compression option generates an uncompressed filesystem,
+respectively.  The ```-no-compression``` option generates an uncompressed filesystem,
 and it is equivalent to specifying all of the -noI, -noD, -noF and -noX options.
 
-The -no-fragments option tells Sqfstar to not generate fragment blocks.  A
+The ```-no-fragments``` option tells Sqfstar to not generate fragment blocks.  A
 fragment block consists of multiple small files (all smaller than the block
 size) packed and compressed together.  This produces much better compression
 than storing and compressing these files separately.  It also typically
 improves I/O as multiple files in the same directory are read at the same time.
 You don't want to enable this option unless you fully understand the effects.
 
-The -no-tailends option tells Sqfstar to not pack file tailends into fragment
+The ```-no-tailends``` option tells Sqfstar to not pack file tailends into fragment
 blocks.  Normally a file will not be a multiple of the block size, and so
 there were always be a tail which doesn't fit fully into a data block.  This
 tailend is by default packed into fragment blocks.  Enabling this option will
 reduce compression.
 
-The -no-duplicates option tells Sqfstar to not check the files being added to
+The ```-no-duplicates``` option tells Sqfstar to not check the files being added to
 the filesystem for duplicates.  This can result in quicker filesystem generation
 although obviously compression will suffer badly if there is a lot of duplicate
 files.
@@ -518,14 +518,19 @@ The ```-all-root``` option forces all file UIDs/GIDs in the generated Squashfs
 filesystem to be root.  This allows root owned filesystems to be built without
 root access on the host machine.
 
-The ```-force-uid value``` option forces all files in the generated Squashfs
-filesystem to be owned by value, where value can either be a user name or a
-numeric UID.
+The ```-force-uid <user>``` option forces all files in the generated Squashfs
+filesystem to be owned by the specified ```user```.   The ```user``` can be specified either by name (i.e. "root") or by numeric UID.
 
-The ```-force-gid value``` option forces all files in the generated Squashfs
-filesystem to be group owned by value, where value can be either a group name or
-a numeric GID.
+The ```-force-gid <group>``` option forces all files in the generated Squashfs
+filesystem to be group owned by the specified ```group```.  The group can be specified either by name (i.e "root") or by numeric GID.
 
+For example:
+
+```
+% sqfstar -force-uid phillip -force-gid phillip image.sqfs < tarfile
+```
+
+Will set all file and directory ownership and group ownership to ```phillip```.
 
 ## 7. SPECIFYING THE FILE PERMISSIONS USED IN THE FILESYSTEM
 
@@ -534,7 +539,7 @@ permissions of the files and directories in the TAR archive.  However, Sqfstar
 provides a number of options which can be used to override the permissions.
 
 The ```-force-file-mode <mode>``` option sets all the file (non directories)
-permissions to <mode\>.  <Mode\> can be symbolic or octal (see the next subsection
+permissions to <mode\>.  <Mode\> can be symbolic or octal (see the [next subsection](#71-symbolic-mode-specification)
 for the Symbolic mode specification).  The octal mode sets the permissions to
 that value, and the symbolic mode specification can either set the permissions,
 or add or subtract permissions from the existing file permissions.
@@ -578,26 +583,26 @@ and 'w'.
 
 ### 7.1 SYMBOLIC MODE SPECIFICATION
 
-The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+.  PERMS = [rwxXst]+ or
-[ugo], and the sequence can be repeated separated with commas.
+The symbolic mode is of the format ```[ugoa]*[[+-=]PERMS]+```.  PERMS = ```[rwxXst]+``` or
+```[ugo]```, and the sequence can be repeated separated with commas.
 
 A combination of the letters ugoa specify which permission bits will be
-affected, u means user, g means group, o means other, and a means all or ugo.
+affected, ```u``` means user, ```g``` means group, ```o``` means other, and ```a``` means all or ugo.
 
-The next letter is +, - or =.  The letter + means add to the existing permission
-bits, - means remove the bits from the existing permission bits, and = means set
+The next letter is ```+```, ```-``` or ```=```.  The letter ```+``` means add to the existing permission
+bits, ```-``` means remove the bits from the existing permission bits, and ```=``` means set
 the permission bits.
 
-The permission bits (PERMS) are a combination of [rwxXst] which
-sets/adds/removes those bits for the specified ugoa combination, r means read, w
-means write and x means execute for files or search for directories.  X has a
-special meaning, if the file is a directory it is equivalent to x or search, but
+The permission bits (PERMS) are a combination of ```[rwxXst]``` which
+sets/adds/removes those bits for the specified ugoa combination, ```r``` means read, ```w```
+means write and ```x``` means execute for files or search for directories.  ```X``` has a
+special meaning, if the file is a directory it is equivalent to ```x``` or search, but
 if it is a non-directory, it only takes effect if execute is already set for
-user, group or other.  The s flag sets user or group ID on execution, and the t
+user, group or other.  The ```s``` flag sets user or group ID on execution, and the ```t```
 flag on a directory sets restricted deletion, or historically made the file
 sticky if a non-directory.
 
-The permission bits can also be u, g or o, which takes the permission bits from
+The permission bits can also be ```u```, ```g``` or ```o```, which takes the permission bits from
 the user, group or other of the file respectively.
 
 
@@ -605,12 +610,12 @@ the user, group or other of the file respectively.
 
 Sqfstar can exclude files from the TAR archive, so that they don't appear in
 the Squashfs filesystem.  Exclude files can be directly specified on
-the command line (immediately after the FILESYSTEM argument), or the -ef
+the command line (immediately after the FILESYSTEM argument), or the ```-ef```
 option can be used to specify an exclude file, with one exclude file per line.
 
 Exclude files by default use wildcard matching (globbing) and can match on
 more than one file (if wildcards are used).  Regular expression matching
-can be used instead by specifying the -regex option.  In most cases wildcards
+can be used instead by specifying the ```-regex``` option.  In most cases wildcards
 should be used rather than regular expressions because wildcard matching
 behaviour is significantly easier to understand!
 
@@ -651,7 +656,7 @@ This excludes all files matching "*.gz" in top level directory "test", except th
 By default excludes match from the top level directory, but it is
 often useful to exclude a file matching anywhere in the source directories.
 For this non-anchored excludes can be used, specified by pre-fixing the
-exclude with "...".
+exclude with ```...```.
 
 Examples:
 
@@ -715,21 +720,21 @@ in addition to -processors or on its own.
 Sqfstar has a number of options which allow extended attributes (xattrs) to be
 filtered from the TAR archive or added to the created Squashfs filesystem.
 
-The -no-xattrs option removes any extended attributes which may exist in the
+The ```-no-xattrs``` option removes any extended attributes which may exist in the
 TAR archive, and creates a filesystem without any extended attributes.
 
-The -xattrs-exclude option specifies a regular expression (regex), which
+The ```-xattrs-exclude``` option specifies a regular expression (regex), which
 removes any extended attribute that matches the regular expression from all
 files.  For example the regex '^user.' will remove all User extended attributes.
 
-The -xattrs-include option instead specifies a regular expression (regex)
+The ```-xattrs-include``` option instead specifies a regular expression (regex)
 which includes any extended attribute that matches, and removes anything
-that does't match.  For example the regex '^user.' will only keep User
+that does't match.  For example the regex ```^user.``` will only keep User
 extended attributes and anything else will be removed.
 
 Sqfstar also allows you to add extended attributes to files in the Squashfs
-filesystem using the -xattrs-add option.  This option takes an xattr name and
-value pair separated by the '=' character.
+filesystem using the ```-xattrs-add``` option.  This option takes an xattr name and
+value pair separated by the ```=``` character.
 
 The extended attribute name can be any valid name and can be in the namespaces
 security, system, trusted, or user.  User extended attributes are added to files
@@ -737,14 +742,14 @@ and directories (see man 7 xattr for explanation), and the others are added to
 all files.
 
 The extended attribute value by default will be treated as binary (i.e. an
-uninterpreted byte sequence), but it can be prefixed with 0s, where it will be
-treated as base64 encoded, or prefixed with 0x, where it will be treated as
+uninterpreted byte sequence), but it can be prefixed with ```0s```, where it will be
+treated as base64 encoded, or prefixed with ```0x```, where it will be treated as
 hexidecimal.
 
 Obviously using base64 or hexidecimal allows values to be used that cannot be
 entered on the command line such as non-printable characters etc.  But it
 renders the string non-human readable.  To keep readability and to allow
-non-printable characters to be entered, the 0t prefix is supported.  This
+non-printable characters to be entered, the ```0t``` prefix is supported.  This
 encoding is similar to binary encoding, except backslashes are specially
 treated, and a backslash followed by three octal digits can be used to encode
 any ASCII character, which obviously can be used to encode non-printable values.
@@ -759,7 +764,7 @@ The following four command lines are equivalent
 ```
 
 Obviously in the above example there are no non-printable characters and so
-the 0t prefixed string is identical to the first line.  The following three
+the ```0t``` prefixed string is identical to the first line.  The following three
 command lines are identical, but where the space has been replaced by the
 non-printable NUL '\0' (null character).
 
@@ -1009,7 +1014,7 @@ filename x name=val
 ```
 
 Will add the extended attribute <name\> to <filename\> with <val\> contents.  See
-Section 7 for a description of the <val\> formats supported.
+[Section 10](#10-filtering-and-adding-extended-attributes-xattrs) for a description of the <val\> formats supported.
 
 ### 11.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
 
