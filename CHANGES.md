@@ -608,4 +608,10 @@ Fixed readpage deadlock bug.  This was a rare deadlock bug that happened when pu
 
 Fixed bugs with initrds and device nodes
 
+## 1.0b (30 OCT 2002): Increase compression and metadata cache size
+
+1. Increase zlib compression level from Z_DEFAULT_COMPRESSION (6) to max (9).
+2. Increase kernel metadata cache from 3 entries to 8 entries.
+
+
 ## 1.0 (23 OCT 2002): Initial release
