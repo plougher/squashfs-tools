@@ -1,6 +1,6 @@
 # SQUASHFS CHANGE LOG
 
-## 4.7.2 (18 AUG 2025):	Fix build with non-static include
+## 4.7.2 (18 AUG 2025):	Fix build with non-static inline
 
 1. print_pager: make inline quoted_bs_char() static.
 
@@ -50,7 +50,7 @@
 
 	2. New easier to remember shorthand options
 		1. -repro builds a reproducible filesystem image, it is shorthand for -mkfs-time inode.
-		2. -repro-time <time> builds a reproducible image, it is shorthand for specifying -mkfs-time <time> and -inode-time <time>.
+		2. -repro-time <time\> builds a reproducible image, it is shorthand for specifying -mkfs-time <time\> and -inode-time <time\>.
 
 4. Elimination of "fragment block stall" and -(not-)reproducible options
 
@@ -124,7 +124,7 @@
 
 5. Unsquashfs minor improvements
 
-	1. New -all-time option which sets all file timestamps to <time>, rather than the time stored in the filesystem inode.  <time> can be an integer indicating seconds since the epoch (1970-01-01) or a human string value such as "now", "last week", or "Wed Feb 15 21:02:39 GMT 2023".
+	1. New -all-time option which sets all file timestamps to <time\>, rather than the time stored in the filesystem inode.  <time\> can be an integer indicating seconds since the epoch (1970-01-01) or a human string value such as "now", "last week", or "Wed Feb 15 21:02:39 GMT 2023".
 	2. New -full-precision option which uses full precision when displaying times including seconds.  Use with -linfo, -lls, -lln and -llc options.
 	3. New -match option where Unsquashfs will abort if any extract file does not match on anything, and can not be resolved.
 	4. New -percentage option added which rather than generating the full progress-bar instead outputs a percentage.  This can be used with dialog --gauge etc.
@@ -220,7 +220,7 @@
 	8. -no-exit-code option added to Unsquashfs which makes it not output an error exit code.
 	9. Exit code in Unsquashfs changed to distinguish between non-fatal errors (exit 2), and fatal errors (exit 1).
 	10. Mksquashfs when appending, now writes the recovery file to the home directory, rather than the current directory.
-	11. New -recovery-path <name> option.
+	11. New -recovery-path <name\> option.
 	12. Xattr id count added in Unsquashfs "-stat" output.
 	13. Unsquashfs "write outside directory" exploit fixed.
 	14. Error handling in Unsquashfs writer thread fixed.
@@ -272,94 +272,44 @@
 
 ## 4.3 (12 MAY 2014): New compressor options, new Mksquashfs/Unsquashfs functionality, duplicate checking optimisations, stability improvements (option/file parsing, buffer/memory overflow checks, filesystem hardening on corrupted filesystems), CVE fixes.
 
-Too many changes to do the traditional custom changelog.  But, this is now unnecessary, so instead list most significant 15% of commits from git changelog in chronological order.
+1. Stability improvements.  Better checking of user input for out of
+   range/invalid values.  Better handling of corrupted Squashfs filesystems
+   (Mksquashfs append mode, and Unsquashfs).  Better handling of buffer
+   overflow/underflow.
 
-- unsquashfs: add checks for corrupted data in opendir functions
-- unsquashfs: completely empty filesystems incorrectly generate an error
-- unsquashfs: fix open file limit
-- mksquashfs: Use linked list to store directory entries rather
-- mksquashfs: Remove qsort and add a bottom up linked list merge sort
-- mksquashfs: optimise lookup_inode2() for dirs
-- pseudo: fix handling of modify pseudo files
-- pseudo: fix handling of directory pseudo files
-- xattr: Fix ERROR() so that it is synchronised with the progress bar
-- mksquashfs/sort: Fix INFO() so that it is synced with the progress bar
-- mksquashfs: Add -progress to force progress bar when using -info
-- error.h: consolidate the various error macros into one header file
-- mksquashfs: fix stack overflow in write_fragment_table()
-- mksquashfs: move list allocation from off the stack
-- unsquashfs: fix oversight in directory permission setting
-- mksquashfs: dynamically allocate recovery_file
-- mksquashfs: dynamically allocate buffer in subpathname()
-- mksquashfs: dynamically allocate buffer in pathname()
-- unsquashfs: fix CVE-2012-4024
-- unsquashfs: fix CVE-2012-4025
-- mksquashfs: fix potential stack overflow in get_component()
-- mksquashfs: add parse_number() helper for numeric command line options
-- mksquasfs: check return value of fstat() in reader_read_file()
-- mksquashfs: dynamically allocate filename in old_add_exclude()
-- unsquashfs: dynamically allocate pathname in dir_scan()
-- unsquashfs: dynamically allocate pathname in pre_scan()
-- sort: dynamically allocate filename in add_sort_list()
-- mksquashfs: fix dir_scan() exit if lstat of source directory fails
-- pseudo: fix memory leak in read_pseudo_def() if exec_file() fails
-- pseudo: dynamically allocate path in dump_pseudo()
-- mksquashfs: dynamically allocate path in display_path2()
-- mksquashfs: dynamically allocate b_buffer in getbase()
-- pseudo: fix potential stack overflow in get_component()
-- pseudo: avoid buffer overflow in read_pseudo_def() using sscanf()
-- pseudo: dynamically allocate filename in exec_file()
-- pseudo: avoid buffer overflow in read_sort_file() using fscanf()
-- sort: tighten up sort file parsing
-- unsquashfs: fix name under-allocation in process_extract_files()
-- unsquashfs: avoid buffer overflow in print_filename() using sprintf()
-- Fix some limits in the file parsing routines
-- pseudo: Rewrite pseudo file processing
-- read_fs: fix small memory leaks in read_filesystem()
-- mksquashfs: fix fclose leak in reader_read_file() on I/O error
-- mksquashfs: fix frag struct leak in write_file_{process|blocks|frag}
-- unsquashfs_xattr: fix memory leak in write_xattr()
-- read_xattrs: fix xattr free in get_xattr() in error path
-- unsquashfs: add -user-xattrs option to only extract user.xxx xattrs
-- unsquashfs: add code to only print "not superuser" error message once
-- unsquashfs: check for integer overflow in user input
-- mksquashfs: check for integer overflow in user input
-- mksquashfs: fix "new" variable leak in dir_scan1()
-- read_fs: prevent buffer {over|under}flow in read_block() with corrupted filesystems
-- read_fs: check metadata blocks are expected size in scan_inode_table()
-- read_fs: check the root inode block is found in scan_inode_table()
-- read_fs: Further harden scan_inode_table() against corrupted filesystems
-- unsquashfs: prevent buffer {over|under}flow in read_block() with corrupted filesystems
-- read_xattrs: harden xattr data reading against corrupted filesystems
-- unsquash-[23]: harden frag table reading against corrupted filesystems
-- unsquash-4.c: harden uid/gid & frag table reading against corruption
-- unsquashfs: harden inode/directory table reading against corruption
-- mksquashfs: improve out of space in output filesystem handling
-- mksquashfs: flag lseek error in writer as probable out of space
-- mksquashfs: flag lseek error in write_destination as probable out of space
-- mksquashfs: print file being squashed when ^\ (SIGQUIT) typed
-- mksquashfs: make EXIT_MKSQUASHFS() etc restore via new restore thread
-- mksquashfs: fix recursive restore failure check
-- info: dump queue and cache status if ^\ hit twice within one second
-- mksquashfs: fix rare race condition in "locked fragment" queueing
-- lz4: add experimental support for lz4 compression
-- lz4: add support for lz4 "high compression"
-- lzo_wrapper: new implementation with compression options
-- gzip_wrapper: add compression options
-- mksquashfs: redo -comp <compressor> parsing
-- mksquashfs: display compressor options when -X option isn't recognised
-- mksquashfs: add -Xhelp option
-- mksquashfs/unsquashfs: fix mtime signedness
-- Mksquashfs: optimise duplicate checking when appending
-- Mksquashfs: introduce additional per CPU fragment process threads
-- Mksquashfs: significantly optimise fragment duplicate checking
-- read_fs: scan_inode_table(), fix memory leak on filesystem corruption
-- pseudo: add_pseudo(), fix use of freed variable
-- mksquashfs/unsquashfs: exclude/extract/pseudo files, fix handling of leaf name
-- mksquashfs: rewrite default queue size so it's based on physical mem
-- mksquashfs: add a new -mem <mbytes> option
-- mksquashfs: fix limit on the number of dynamic pseudo files
-- mksquashfs: make -mem take a normal byte value, optionally with a K, M or G 
+2. GZIP compressor now supports compression options, allowing different
+   compression levels to be used.
+
+3. Rewritten LZO compressor with compression options, allowing different
+   LZO algorithms and different compression levels to be used.
+
+4. New LZ4 compressor (note not yet in mainline kernel)
+
+5. Better default memory usage for Mksquashfs.  Mksquashfs by default now
+   uses 25% of physical memory.
+
+6. Duplicate checking in Mksquashfs further optimised.  With certain
+   "problem filesystems" greater than 2x performance improvement.
+   Filesystems with a lot of duplicates should see at least 10-20% speed
+   improvement.
+
+7. The -stat option in Unsquashfs now displays the compression options
+   used to generate the original filesystem.  Previously -stat only displayed
+   the compression algorithm used.
+
+8. The file being compressed/uncompressed in Mksquashfs/Unsquashfs is now
+   displayed if CTRL-\ (SIGQUIT from keyboard) typed.
+
+9. The status of the internal queues/caches in Mksquashfs/Unsquashfs is
+   now displayed if CTRL-\ (SIGQUIT from keyboard) is typed twice within
+   one second.  Normally only useful for "power users", but it can be
+   used to discover if there's any bottlenecks affecting performance
+   (the bottleneck will normally be the compressors/fragment compressors).
+
+10. Miscellaneous new options for Mksquashfs/Unsquashfs to fine tune behaviour.
+
+11. Fixes for CVE-2012-4024 and CVE-2012-4025.
+
 
 ## 4.2 (28 FEB 2011): XZ compression, and compression options support
 
