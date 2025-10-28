@@ -307,23 +307,27 @@ The perhaps obvious problem with this, is it allows you to choose between
 
 To get around this problem Unsquashfs supports another way of specifying exclude
 files.  That is to use the option -exclude-list.  This option allows a list of
-exclude files to specified, terminated by a ";".  The necessity of using ";" to
+exclude files to specified, terminated by a ```;```.  The necessity of using ```;``` to
 terminate the list is because this is a normal option, without it, any further
 entries on the command line would be interpreted as being part of the list.
 
 For example, the following are equivalent:
 
+```
 % unsquashfs -excludes img file1 file2 file3
 
 % unsquashfs -exclude-list file1 file2 file3 \; img
+```
 
-Note the black-slashing of ";" to prevent it from being interpreted by the shell
+Note the black-slashing of ```;``` to prevent it from being interpreted by the shell
 as a special character.
 
-Obviously, where the -exclude-list option comes into its own is when it is mixed
+Obviously, where the ```-exclude-list``` option comes into its own is when it is mixed
 with extract files, for example:
 
+```
 % unsquashfs -exclude-list dir1/file1 dir2/file2 \; img dir1 dir2
+```
 
 This tells Unsquashfs to extract directories "dir1" and "dir2", and then to
 exclude the files "dir1/file1" and "dir2/file2".
@@ -456,13 +460,13 @@ to produce such an output is too dangerous to be added.
 Unsquashfs solves the problem in an equivalent way, but which does not alter
 the output, and so it is a completely safe option.
 
-If the -follow-symlinks option is specified, Unsquashfs will canonicalise
+If the ```-follow-symlinks``` option is specified, Unsquashfs will canonicalise
 the extract files to produce the canonical pathname (that is the
 "real" pathname without any symbolic links).  It will then add all
 the symbolic links necessary to ensure that the extract file can be
 resolved.
 
-The -missing-symlinks option is similar to -follow-symlinks except it
+The ```-missing-symlinks``` option is similar to -follow-symlinks except it
 will cause Unsquashfs to abort if any symbolic link cannot be resolved.
 
 Note: as a side effect of the canonicalisation, with the above options
@@ -492,12 +496,14 @@ and would prefer Unsquashfs to ignore then without aborting.
 In the past Unsquashfs was much more tolerant of errors, now a significant
 number of errors that were non-fatal have been hardened to fatal.
 
--ignore-errors
+There are two options which control how Unsquashfs deals with error situations:
+
+#### -ignore-errors
 
 This makes Unsquashfs behave like previous versions, and treats more
 errors as non-fatal.
 
--strict-errors
+#### -strict-errors
 
 This makes Unsquashfs treat every error as fatal, and it will abort
 instantly.
