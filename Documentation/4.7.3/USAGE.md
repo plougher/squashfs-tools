@@ -1,10 +1,6 @@
 # SQUASHFS - A squashed read-only filesystem for Linux
 
-Copyright 2002-2025 Phillip Lougher <phillip@squashfs.org.uk>
-
-Released under the GPL licence (version 2 or later).
-
-Welcome to Squashfs-tools 4.7.3.  Please read the CHANGES and README files for the added features and improvements.
+Welcome to Squashfs-tools 4.7.3.  Please read the [CHANGES](../../CHANGES.md) and [README](README.md) files for the added features and improvements.
 
 Squashfs is a highly compressed read-only filesystem for Linux.  It uses either gzip/xz/lzo/lz4/zstd compression to compress both files, inodes and directories.  Inodes in the system are very small and all blocks are packed to minimise data overhead. Block sizes greater than 4K are supported up to a maximum of 1Mbytes (default block size 128K).
 
