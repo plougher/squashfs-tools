@@ -2,31 +2,31 @@
 
 ## Building squashfs tools
 
-The squashfs-tools directory contains the source code for the Mksquashfs,
-and Unsquashfs programs.  These can be compiled by typing "make".  This
+The ```squashfs-tools``` directory contains the source code for the ```mksquashfs```,
+and ```unsquashfs``` programs.  These can be compiled by typing ```make```.  This
 will also create symbolic links sqfstar and sqfscat.
 
 They can be installed, along with the symbolic links sqfstar and sqfscat,
-to /usr/local/bin by typing "sudo make install".  The default install
+to /usr/local/bin by typing ```sudo make install```.  The default install
 location can be changed by editing the Makefile (INSTALL_PREFIX and
 INSTALL_DIR).
 
 ### Compressors built by default
 
-By default the Makefile is configured to build Mksquashfs and Unsquashfs
+By default the ```Makefile``` is configured to build Mksquashfs and Unsquashfs
 with support for all the compressors, which is GZIP, LZO, LZ4, XZ and ZSTD.
-If you don't need some of these you can disable them by editing the Makefile.
+If you don't need some of these you can disable them by editing the ```Makefile```.
 
 ### Default parallel reader threads
 
-The Makefile is configured to build Mksquashfs to use four small reader threads
+The ```Makefile``` is configured to build Mksquashfs to use four small reader threads
 and four block reader threads by default.  The number of default reader threads
-can be changed by editing the Makefile.
+can be changed by editing the ```Makefile```.
 
 ### Extended attribute support (XATTRs)
 
-By default the Makefile is configured to build Mksquashfs and Unsquashfs
-with extended attribute support.  Read the Makefile in squashfs-tools for
+By default the ```Makefile``` is configured to build Mksquashfs and Unsquashfs
+with extended attribute support.  Read the ```Makefile``` in squashfs-tools for
 instructions on how to disable operating system support for extended attributes
 if not supported by your system, or completely disable them if it is not needed.
 
