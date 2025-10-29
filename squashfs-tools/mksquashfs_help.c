@@ -575,6 +575,9 @@ static char *mksquashfs_text[]={
 	"\nThe MKSQUASHFS usage guide can be read here https://github.com/"
 		"plougher/squashfs-tools/blob/master/Documentation/4.7.3/"
 		"USAGE-MKSQUASHFS.md\n",
+	"\nThe CHANGELOG for Squashfs tools can be read here "
+		"https://github.com/plougher/squashfs-tools/blob/master/"
+		"CHANGES.md\n",
 	NULL
 };
 
@@ -883,6 +886,9 @@ static char *sqfstar_text[]={
 	"\nThe Sqfstar usage guide can be read here https://github.com/"
 		"plougher/squashfs-tools/blob/master/Documentation/4.7.3/"
 		"USAGE-SQFSTAR.md\n",
+	"\nThe CHANGELOG for Squashfs tools can be read here "
+		"https://github.com/plougher/squashfs-tools/blob/master/"
+		"CHANGES.md\n",
 	NULL
 };
 
