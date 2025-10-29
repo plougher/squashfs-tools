@@ -256,6 +256,9 @@ static char *unsquashfs_text[]={
 	"\nThe Unsquashfs usage guide can be read here https://github.com/"
 		"plougher/squashfs-tools/blob/master/Documentation/4.7.3/"
 		"USAGE-UNSQUASHFS.md\n",
+	"\nThe CHANGELOG for Squashfs tools can be read here "
+		"https://github.com/plougher/squashfs-tools/blob/master/"
+		"CHANGES.md\n",
 	"\n", "Decompressors available:", "\n",
 	"\t" DECOMPRESSORS "\n", NULL
 };
@@ -326,6 +329,9 @@ static char *sqfscat_text[]={
 	"\nThe Sqfscat usage guide can be read here https://github.com/"
 		"plougher/squashfs-tools/blob/master/Documentation/4.7.3/"
 		"USAGE-SQFSCAT.md\n",
+	"\nThe CHANGELOG for Squashfs tools can be read here "
+		"https://github.com/plougher/squashfs-tools/blob/master/"
+		"CHANGES.md\n",
 	"\n", "Decompressors available:", "\n",
 	"\t" DECOMPRESSORS "\n", NULL,
 };
