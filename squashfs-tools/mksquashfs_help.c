@@ -47,7 +47,7 @@ static char *mksquashfs_options[]={
 	"-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
 	"-no-exports", "-exports", "-no-sparse", "-no-tailends", "-tailends",
 	"-no-fragments", "-no-duplicates", "-no-hardlinks",
-	"-keep-as-directory", "", "", "",
+	"-keep-as-directory", "-min-sparse-copy", "", "",
 	/* time options */
 	"-mkfs-time", "-inode-time", "-root-time", "-repro", "-repro-time", "",
 	"", "",
@@ -130,7 +130,7 @@ static char *mksquashfs_args[]={
 	/* compression options */
 	"", "", "<block-size>", "<comp>", "", "", "", "", "", "", "", "", "",
 	/* build options */
-	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "","", "",
+	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "<bytes>","", "",
 	/* time options */
 	"<time>", "<time>", "<time>", "", "<time>", "", "", "",
 	/* permissions options */
@@ -234,6 +234,8 @@ static char *mksquashfs_text[]={
 		"default)\n",
 	"-exports\t\tmake filesystem exportable via NFS (default)\n",
 	"-no-sparse\t\tdo not detect sparse files\n",
+	"-min-sparse-copy <size>\tfor regular files with size >= <size>, do not copy contents;\n",
+	"\t\t\tstore as a sparse file with original logical size in the image\n",
 	"-no-tailends\t\tdo not pack tail ends into fragments (default)\n",
 	"-tailends\t\tpack tail ends into fragments\n",
 	"-no-fragments\t\tdo not use fragments\n",

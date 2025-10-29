@@ -322,6 +322,9 @@ struct compressor *comp = NULL;
 int compressor_opt_parsed = FALSE;
 void *stream = NULL;
 
+/* minimum size threshold to store large files as sparse placeholders */
+long long min_sparse_copy = 0;
+
 /* root of the in-core directory structure */
 struct dir_info *root_dir;
 
@@ -378,7 +381,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "inode-time",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
 	"hs", "info-file", "force-file-mode", "force-dir-mode",
 	"small-readers", "block-readers", "uid-gid-offset", "all-time",
-	"overcommit", "repro-time", "cols", NULL
+	"overcommit", "repro-time", "cols", "min-sparse-copy", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime",
@@ -7882,6 +7885,15 @@ int main(int argc, char *argv[])
 			use_regex = TRUE;
 		} else if(strcmp(argv[i], "-no-sparse") == 0)
 			sparse_files = FALSE;
+		else if(strncmp(argv[i], "--min-sparse-copy=", 19) == 0) {
+			long long number = 0;
+			if(!parse_numberll(argv[i] + 19, &number, 1))
+				mksquashfs_option_help(argv[i], "mksquashfs: --min-sparse-copy missing or invalid size\n");
+			min_sparse_copy = number;
+		} else if(strcmp(argv[i], "-min-sparse-copy") == 0) {
+			if((++i == argc) || !parse_numberll(argv[i], &min_sparse_copy, 1))
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -min-sparse-copy missing or invalid size\n");
+		}
 		else if(strcmp(argv[i], "-no-progress") == 0)
 			progress = FALSE;
 		else if(strcmp(argv[i], "-progress") == 0)
