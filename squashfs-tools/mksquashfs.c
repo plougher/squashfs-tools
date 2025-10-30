@@ -2102,6 +2102,7 @@ static int pre_duplicate(long long file_size, struct inode_info *inode,
 	struct file_info *dupl_ptr;
 	long long fragment_size;
 	int blocks;
+	int c_byte = is_sparse(buffer) ? 0 : buffer->c_byte;
 
 	if(inode->no_fragments || (!inode->always_use_fragments && file_size >=
 								block_size)) {
@@ -2116,7 +2117,7 @@ static int pre_duplicate(long long file_size, struct inode_info *inode,
 	if(blocks) {
 		*bl_hash = block_hash(buffer->size, blocks);
 		for(dupl_ptr = dupl_block[*bl_hash]; dupl_ptr;dupl_ptr = dupl_ptr->block_next)
-			if(dupl_ptr->blocks == blocks && dupl_ptr->block_list[0] == buffer->c_byte)
+			if(dupl_ptr->blocks == blocks && dupl_ptr->block_list[0] == c_byte)
 				return TRUE;
 	}
 
