@@ -13,9 +13,9 @@
 	1. If the filesystem supports the SEEK_DATA lseek operation, this is used to skip holes when reading sparse files.  This can produce a 240 times speed improvement.
 	2. Holes which are multiple Squashfs data blocks in size are now handled as large multi-block sparse regions, which further speed up sparse file handling.  This can produce a six times speed improvement (in total 1500 times).
 
-3. New Align(value) action, which will align file to <value>
+3. New Align(value) action, which will align file to <value\>
 
-	1. Any file which matches test operator(s) will be aligned to <value> byte boundary, where <value> is a pure power of two and 64 Megabytes or less.
+	1. Any file which matches test operator(s) will be aligned to <value\> byte boundary, where <value\> is a pure power of two and 64 Megabytes or less.
 	2. Any file which has an alignment applied will be separately compressed and not packed into a fragment block.
 
 4. Squashfs tools documentation has been formatted in GitHub markdown
