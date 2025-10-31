@@ -1,5 +1,29 @@
 # SQUASHFS CHANGE LOG
 
+### 4.7.3 (xx XXX 2005): Mksquashfs streaming output, optimised reading of Sparse files using SEEK_DATA, new aligned action
+
+1. Mksquashfs/Sqfstar can now stream output filesystem to STDOUT.
+
+    1. New -stream option which directs filesystem to STDOUT.  This can be used to send the output of Mksquashfs to another computer via ssh, where there isn't enough disk space on the host computer.
+	2. New -fix option to fix-up the streamed filesystem.  The streamed filesystem will have the super-block written to the end of the filesystem.  The -fix option writes the super-block to the usual start of the filesystem.
+	3. Unsquashfs has been extended to recognise a streamed filesystem with the super-block at the end.
+
+2. Reading of sparse files has been optimised
+
+	1. If the filesystem supports the SEEK_DATA lseek operation, this is used to skip holes when reading sparse files.  This can produce a 240 times speed improvement.
+	2. Holes which are multiple Squashfs data blocks in size are now handled as large multi-block sparse regions, which further speed up sparse file handling.  This can produce a six times speed improvement (in total 1500 times).
+
+3. New Align(value) action, which will align file to <value>
+
+	1. Any file which matches test operator(s) will be aligned to <value> byte boundary, where <value> is a pure power of two and 64 Megabytes or less.
+	2. Any file which has an alignment applied will be separately compressed and not packed into a fragment block.
+
+4. Squashfs tools documentation has been formatted in GitHub markdown
+
+	1. New CHANGES.md changelog file
+	2. New 4.7.3 README.md
+	3. New USAGE.md, USAGE-MKSQUASHFS.md, USAGE-UNSQUASHFS.md, USAGE-SQFSTAR.md and USAGE-SQFSCAT.md
+
 ## 4.7.2 (18 AUG 2025):	Fix build with non-static inline
 
 1. print_pager: make inline quoted_bs_char() static.
