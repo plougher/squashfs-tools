@@ -1,31 +1,75 @@
 	SQUASHFS-TOOLS 4.7.3 - A squashed read-only filesystem for Linux
 
-	Copyright 2002-2025 Phillip Lougher <phillip@squashfs.org.uk>
+Welcome to Squashfs-Tools 4.7.3.   This is the third update to the 4.7 release,
+and it has some nice improvements in addition to the improvements in the major
+4.7 release earlier this year.
 
-	Released under the GPL licence (version 2 or later).
+Filesystems can now be streamed to STDOUT, sparse file reading has been
+optimised, there is a new Align() action and the documentation is now formatted
+in Github markdown which makes it easier to read and navigate.
 
-Welcome to Squashfs-Tools 4.7.3.  [XXX add some more words here].
+The 4.7 release brought substantial improvements to the tools, in particular
+Mksquashfs can now be 20% to more than ten times faster (dependant on source
+media and input files).  The help system has also been completely rewritten and
+improved for Mksquashfs, Unsquashfs, Sqfstar and Sqfscat.  There are also new
+options for building reproducible images, and a lot of other improvements.
 
-The Squashfs-tools 4.6.1 release was more than two years ago, and there are
-substantial improvements to the tools, in particular Mksquashfs can now be 20%
-to more than ten times faster (dependant on source media and input files).
-The help system has also been completely rewritten and improved for Mksquashfs/
-Unsquashfs/Sqfstar/Sqfscat.  There are also new options for building
-reproducible images, and a lot of other improvements.
-
-Please see the INSTALL file for instructions on installing the tools, and the
-USAGE files for information on how to use the tools.
+Please see the INSTALL file for instructions on installing the tools, the
+USAGE file for an introduction to the various tools, and the usage files for
+Mksquashfs (USAGE-MKSQUASHFS), Unsquashfs (USAGE-UNSQUASHFS), Sqfstar
+(USAGE-SQFSTAR) and Sqfscat (USAGE-SQFSCAT).
 
 This README has the following sections:
 
-1. Improvements and bug fixes in 4.7.1 & 4.7.2
-2. Summary of changes in 4.7
-3. Parallel file reading and options
-4. Help system and options
-5. Reproducible filesystem images and new options
-6. Author info
+1. Improvements in 4.7.3
+2. Improvements and bug fixes in 4.7.1 & 4.7.2
+3. Improvements in 4.7
+4. Parallel file reading and options
+5. Help system and options
+6. Reproducible filesystem images and new options
+7. Author info
 
-1. IMPROVEMENTS AND BUG FIXES IN 4.7.1 & 4.7.2
+
+1. IMPROVEMENTS IN 4.7.3
+------------------------
+
+1. Mksquashfs/Sqfstar can now stream output filesystem to STDOUT.
+
+   1.1. New -stream option which directs filesystem to STDOUT.  This can be used
+	to send the output of Mksquashfs to another computer via ssh, where
+	there isn't enough disk space on the host computer.
+   1.2. New -fix option to fix-up the streamed filesystem.  The streamed
+	filesystem will have the super-block written to the end of the
+	filesystem.  The -fix option writes the super-block to the usual start
+	of the filesystem.
+   1.3. Unsquashfs has been extended to recognise a streamed filesystem with the
+	super-block at the end.
+
+2. Reading of sparse files has been optimised
+
+   2.1. If the filesystem supports the SEEK_DATA lseek operation, this is used
+	to skip holes when reading sparse files.  This can produce a 240 times
+	speed improvement.
+   2.2. Holes which are multiple Squashfs data blocks in size are now handled
+	as large multi-block sparse regions, which further speed up sparse file
+	handling.  This can produce a six times speed improvement (in total 1500
+	times).
+
+3. New Align(value) action, which will align file to <value>
+
+   3.1. Any file which matches test operator(s) will be aligned to <value> byte
+	boundary, where <value> is a pure power of two and 64 Megabytes or less.
+   3.2. Any file which has an alignment applied will be separately compressed
+	and not packed into a fragment block.
+
+4. Squashfs tools documentation has been formatted in GitHub markdown
+
+   4.1. New CHANGES.md changelog file
+   4.2. New 4.7.3 README.md
+   4.3. New USAGE.md, USAGE-MKSQUASHFS.md, USAGE-UNSQUASHFS.md, USAGE-SQFSTAR.md
+	and USAGE-SQFSCAT.md
+
+2. IMPROVEMENTS AND BUG FIXES IN 4.7.1 & 4.7.2
 ----------------------------------------------
 
 1. Fix regression in -offset (-o) where it stopped working in Mksquashfs and
@@ -50,34 +94,34 @@ This README has the following sections:
 11. Fix BLOCK_READER_THREADS typo in Makefile (Alexandru Ardelean).
 12. print_pager: make inline quoted_bs_char() static.
 
-2. SUMMARY OF CHANGES in 4.7
-----------------------------
+3. IMPROVEMENTS IN 4.7
+----------------------
 
 1. Mksquashfs now reads files in parallel from the input directories
 
    1.1. This can significantly increase I/O when reading lots of small files,
-        and/or the input media benefits from parallel reading e.g. modern SSD
-        drives, or network filesystems etc.
-   1.2  In cases where speed of I/O is the bottleneck in Mksquashfs, this can
-        make Mksquashfs run significantly faster, in some cases Mksquashfs can
-        be more than ten times faster.
+	and/or the input media benefits from parallel reading e.g. modern SSD
+	drives, or network filesystems etc.
+   1.2. In cases where speed of I/O is the bottleneck in Mksquashfs, this can
+	make Mksquashfs run significantly faster, in some cases Mksquashfs can
+	be more than ten times faster.
    1.3. New -small-readers option to specify number of parallel small file
-        reader threads (files less than a block size).  Default 4 threads.
+	reader threads (files less than a block size).  Default 4 threads.
    1.4. New -block-readers option to specify number of parallel block reader
-        threads (files one block or larger).  Default 4 threads.
+	threads (files one block or larger).  Default 4 threads.
    1.5. New -single-reader option to specify a single reader thread, similar to
-        previous Mksquashfs versions.
+	previous Mksquashfs versions.
 
 2. Rewritten and improved help system (Mksquashfs/Unsquashfs/Sqfstar/Sqfscat)
 
    2.1. Help text now uses the full width of the terminal (rather than being
-        pre-formatted to 80 columns).
+	pre-formatted to 80 columns).
    2.2. The help text is now automatically paged (using pager, less or more).
    2.3. The tools now print a summary on failure to parse the command line (or
-        encountering other errors that prevent the tool from running), rather
-        than displaying the help text.
+	encountering other errors that prevent the tool from running), rather
+	than displaying the help text.
    2.4. The help text can be displayed in full, by section, or by option using
-        regex matching.
+	regex matching.
    2.5. New -help-all option to display all help text
    2.6. New -help-section option to display help for a particular section
    2.7. New -help-option to display all options matching regex.
@@ -86,15 +130,15 @@ This README has the following sections:
 
 3. New options for building reproducible filesystems (Mksquash/Sqfstar)
 
-  3.1 Low level timestamp setting options extended
-     -mkfs-time inode sets the fs creation time to the latest inode timestamp
-     -inode-time inode sets all inode timestamps to the latest inode timestamp
-     -root-time inode sets the root dir timestamp to the latest inode timestamp
+   3.1. Low level timestamp setting options extended
+	-mkfs-time inode sets the fs creation time to the latest inode timestamp
+	-inode-time inode sets all inode timestamps to the latest inode timestamp
+	-root-time inode sets the root dir timestamp to the latest inode timestamp
 
-  3.2 New easier to remember shorthand options
-     -repro builds a reproducible fs image, it is shorthand for -mkfs-time inode
-     -repro-time <time> builds a reproducible fs image, it is shorthand for
-      specifying -mkfs-time <time> and -inode-time <time>.
+   3.2. New easier to remember shorthand options
+	-repro builds a reproducible fs image, it is shorthand for -mkfs-time inode
+	-repro-time <time> builds a reproducible fs image, it is shorthand for
+	specifying -mkfs-time <time> and -inode-time <time>.
 
 4. Elimination of "fragment block stall" and -(not-)reproducible options
 
