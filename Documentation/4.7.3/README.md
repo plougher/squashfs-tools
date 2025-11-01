@@ -1,31 +1,58 @@
 # SQUASHFS-TOOLS 4.7.3 - A squashed read-only filesystem for Linux
 
-Copyright 2002-2025 Phillip Lougher <phillip@squashfs.org.uk>
+Welcome to Squashfs-Tools 4.7.3.   This is the third update to the 4.7 release,
+and it has some nice improvements in addition to the improvements in the major
+4.7 release earlier this year.
 
-Released under the GPL licence (version 2 or later).
+Filesystems can now be streamed to STDOUT, sparse file reading has been
+optimised, there is a new Align() action and the documentation is now formatted
+in Github markdown which makes it easier to read and navigate.
 
-Welcome to Squashfs-Tools 4.7.3.  [XXX add some more words here].
+The 4.7 release brought substantial improvements to the tools, in particular
+Mksquashfs can now be 20% to more than ten times faster (dependant on source
+media and input files).  The help system has also been completely rewritten and
+improved for Mksquashfs, Unsquashfs, Sqfstar and Sqfscat.  There are also new
+options for building reproducible images, and a lot of other improvements.
 
-The Squashfs-tools 4.6.1 release was more than two years ago, and there are
-substantial improvements to the tools, in particular Mksquashfs can now be 20%
-to more than ten times faster (dependant on source media and input files).
-The help system has also been completely rewritten and improved for Mksquashfs/
-Unsquashfs/Sqfstar/Sqfscat.  There are also new options for building
-reproducible images, and a lot of other improvements.
-
-Please see the INSTALL file for instructions on installing the tools, and the
-USAGE files for information on how to use the tools.
+Please see the [INSTALL.md](INSTALL.md) file for instructions on installing the tools, and the
+[USAGE.md](USAGE.md) file for an introduction to the various tools, and the
+usage files for [Mksquashfs](USAGE-MKSQUASHFS.md), [Unsquashfs](USAGE-UNSQUASHFS.md), [Sqfstar](USAGE-SQFSTAR.md) and [Sqfscat](USAGE-SQFSCAT.md).
 
 This README has the following sections:
 
-1. [Improvements and bug fixes in 4.7.1 & 4.7.2](#1-improvements-and-bug-fixes-in-471--472)
-2. [Summary of changes in 4.7](#2-summary-of-changes-in-47)
-3. [Parallel file reading and options](#3-parallel-file-reading-and-options)
-4. [Help system and options](#4-help-system-and-options)
-5. [Reproducible filesystem images and new options](#5-reproducible-filesystem-images-and-new-options)
-6. [Author info](#6-author-info)
+1. [Improvements in 4.7.3](#1-improvements-in-473)
+2. [Improvements and bug fixes in 4.7.1 & 4.7.2](#2-improvements-and-bug-fixes-in-471--472)
+3. [Improvements in 4.7](#3-improvements-in-47)
+4. [Parallel file reading and options](#4-parallel-file-reading-and-options)
+5. [Help system and options](#5-help-system-and-options)
+6. [Reproducible filesystem images and new options](#6-reproducible-filesystem-images-and-new-options)
+7. [Author info](#7-author-info)
 
-## 1. IMPROVEMENTS AND BUG FIXES IN 4.7.1 & 4.7.2
+## 1. IMPROVEMENTS IN 4.7.3
+
+1. Mksquashfs/Sqfstar can now stream output filesystem to STDOUT.
+
+    1. New -stream option which directs filesystem to STDOUT.  This can be used to send the output of Mksquashfs to another computer via ssh, where there isn't enough disk space on the host computer.
+	2. New -fix option to fix-up the streamed filesystem.  The streamed filesystem will have the super-block written to the end of the filesystem.  The -fix option writes the super-block to the usual start of the filesystem.
+	3. Unsquashfs has been extended to recognise a streamed filesystem with the super-block at the end.
+
+2. Reading of sparse files has been optimised
+
+	1. If the filesystem supports the SEEK_DATA lseek operation, this is used to skip holes when reading sparse files.  This can produce a 240 times speed improvement.
+	2. Holes which are multiple Squashfs data blocks in size are now handled as large multi-block sparse regions, which further speed up sparse file handling.  This can produce a six times speed improvement (in total 1500 times).
+
+3. New Align(value) action, which will align file to <value\>
+
+	1. Any file which matches test operator(s) will be aligned to <value\> byte boundary, where <value\> is a pure power of two and 64 Megabytes or less.
+	2. Any file which has an alignment applied will be separately compressed and not packed into a fragment block.
+
+4. Squashfs tools documentation has been formatted in GitHub markdown
+
+	1. New CHANGES.md changelog file
+	2. New 4.7.3 README.md
+	3. New USAGE.md, USAGE-MKSQUASHFS.md, USAGE-UNSQUASHFS.md, USAGE-SQFSTAR.md and USAGE-SQFSCAT.md
+
+## 2. IMPROVEMENTS AND BUG FIXES IN 4.7.1 & 4.7.2
 
 1. Fix regression in -offset (-o) where it stopped working in Mksquashfs and
    Sqfstar.
@@ -49,7 +76,7 @@ This README has the following sections:
 11. Fix BLOCK_READER_THREADS typo in Makefile (Alexandru Ardelean).
 12. print_pager: make inline quoted_bs_char() static.
 
-## 2. SUMMARY OF CHANGES in 4.7
+## 3. IMPROVEMENTS IN 4.7
 
 1. Mksquashfs now reads files in parallel from the input directories
 
@@ -107,7 +134,7 @@ This README has the following sections:
 
 	If set, this is used as the directory to write the file sqfs_cmdline which contains the command line arguments given to Mksquashfs etc.  Intended to be used to debug scripts/discover what is being passed to Mksquashfs.
 
-## 3. PARALLEL FILE READING AND OPTIONS
+## 4. PARALLEL FILE READING AND OPTIONS
 
 Modern computers can have 16 cores/32 threads or more [^1], and systems with 8
 cores/16 threads are becoming standard.   What this increase in computational
@@ -230,7 +257,7 @@ between different input files/media and performance.  If you think Mksquashfs
 is I/O bound then you should experiment with larger reader threads which may
 increase performance.
 
-### 3.1 Specialised small reader and block reader threads
+### 4.1 Specialised small reader and block reader threads
 
 The amount of reader threads you need to maximise I/O when reading small files,
 is often different to the amount of reader threads you need when reading larger
@@ -260,7 +287,7 @@ the above example again, the block reader thread will work ahead and read the
 [^1]: By this I obviously mean consumer-grade hardware.  There has been 16+ core Unix machines around since the early 1990s (such as the Sequent Symmetry), but these were multi-user systems typically supporting 50 or more users.
 
 
-## 4. HELP SYSTEM AND OPTIONS
+## 5. HELP SYSTEM AND OPTIONS
 
 The help system has been rewritten to remove the annoyances and limitations
 of the previous system.  The previous system printed the entire help text
@@ -336,7 +363,7 @@ In doing so, this has introduced three new help options:
 2. ```-help-section <section-name>``` (or ```-hs <section-name>``` for short)
 3. ``` -help-all``` (or ```-ha``` for short)
 
-### 4.1 -help-option <regex\>
+### 5.1 -help-option <regex\>
 ------------------------
 
 The -help-option option displays all the options that match the <regex> regular
@@ -397,7 +424,7 @@ wanted to return all the options that operate on uids and gids, you could do
                         gid
 ```
 
-### 4.2 -help-section <section\>
+### 5.2 -help-section <section\>
 
 The ```-help-section``` option displays the section that matches the <section> name.
 If <section> does not exactly match a section name, it is treated as a regular
@@ -485,13 +512,13 @@ Filesystem build options:
 
 Will display the compression options and build options sections.
 
-### 4.3 -help-all
+### 5.3 -help-all
 
 The -help-all option displays all the help text, and it is similar to the
 behaviour of -help in previous Squashfs tools versions, except that the
 output is to a pager and not stdout.
 
-### 4.4. PAGER environment variable
+### 5.4. PAGER environment variable
 
 By default the tools try pager, /usr/bin/pager, less, /usr/bin/less, more,
 /usr/bin/more, cat and /usr/bin/cat in that order.
@@ -501,7 +528,7 @@ filename given by PAGER doesn't contain slashes, the PATH environment variable
 will be used to locate it, otherwise it will be treated as a pathname.
 
 
-## 5. REPRODUCIBLE FILESYSTEM IMAGES AND NEW OPTIONS
+## 6. REPRODUCIBLE FILESYSTEM IMAGES AND NEW OPTIONS
 
 If you want Mksquashfs to generate an identical (byte for byte) filesystem on
 every run, then the following conditions have to be true:
@@ -538,9 +565,9 @@ It also introduces a new variant of -all-time, while also renaming it to
 -inode-time.  Lastly, there are some new easy to remember shorthand options
 added.
 
-### 5.1 New -mkfs-time, -root-time and -inode-time variants
+### 6.1 New -mkfs-time, -root-time and -inode-time variants
 
-#### 5.1.1 -mkfs-time inode
+#### 6.1.1 -mkfs-time inode
 
 This sets the filesystem make time to the latest inode timestamp in the
 source(s).  Because this is a relative value (rather than absolute), it ensures
@@ -555,13 +582,13 @@ ignoring any fabricated timestamps (e.g. root directory), and all fabricated
 timestamps are set to the latest inode value too.  This means the -root-time
 option is no longer necessary if the -mkfs-time inode option is used.
 
-#### 5.1.2 -root-time inode
+#### 6.1.2 -root-time inode
 
 This sets the root directory timestamp to the latest inode timestamp in the
 source(s).  If -mkfs-time inode is specified this option is no longer
 necessary.
 
-#### 5.1.3 -inode-time inode
+#### 6.1.3 -inode-time inode
 
 This option has been renamed from -all-time [^2] in previous versions because
 all-time was a misnomer (it sets all the inode timestamps, but not also the
@@ -573,16 +600,16 @@ functionality matching between options.
 
 [^2]: the name -all-time is still recognised for backwards compatibility.
 
-### 5.2 New easier to remember shorthand options
+### 6.2 New easier to remember shorthand options
 
-#### 5.2.1 -repro
+#### 6.2.1 -repro
 
 This option makes Mksquashfs build a reproducible filesystem image.  This is
 equivalent to -mkfs-time inode, which achieves reproducibility by setting the
 filesystem build time to the latest inode timestamp.  Obviously the image won't
 be reproducible if the timestamps or content changes.
 
-#### 5.2.2 -repro-time <time>
+#### 6.2.2 -repro-time <time>
 
 This option makes Mksquashfs build a reproducible filesystem image.  This is
 equivalent to specifying -mkfs-time <time> and -inode-time <time>, which
@@ -591,7 +618,7 @@ be used in cases where timestamps may change, and where -repro cannot be used
 for this reason.
 
 
-### 6. AUTHOR INFO
+### 7. AUTHOR INFO
 
 Squashfs was written by Phillip Lougher, email phillip@squashfs.org.uk,
 in Chepstow, Wales, UK.   If you like the program, or have any problems,
