@@ -1,6 +1,6 @@
 # SQUASHFS CHANGE LOG
 
-### 4.7.3 (xx XXX 2005): Mksquashfs streaming output, optimised reading of Sparse files using SEEK_DATA, new aligned action
+### 4.7.3 (xx XXX 2005): Mksquashfs streaming output, optimised reading of Sparse files using SEEK_DATA, new aligned action, documentation formatted in markdown.
 
 1. Mksquashfs/Sqfstar can now stream output filesystem to STDOUT.
 
