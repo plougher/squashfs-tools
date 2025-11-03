@@ -24,10 +24,12 @@ This README has the following sections:
 1. Improvements in 4.7.3
 2. Improvements and bug fixes in 4.7.1 & 4.7.2
 3. Improvements in 4.7
-4. Parallel file reading and options
-5. Help system and options
-6. Reproducible filesystem images and new options
-7. Author info
+4. Streaming filesystem to STDOUT
+5. Align(value) action
+6. Parallel file reading and options
+7. Help system and options
+8. Reproducible filesystem images and new options
+9. Author info
 
 
 1. IMPROVEMENTS IN 4.7.3
@@ -189,7 +191,13 @@ This README has the following sections:
    to be used to debug scripts/discover what is being passed to Mksquashfs.
 
 
-3. PARALLEL FILE READING AND OPTIONS
+4. STREAMING FILESYSTEM TO STDOUT
+---------------------------------
+
+5. ALIGN(VALUE) ACTION
+----------------------
+
+6. PARALLEL FILE READING AND OPTIONS
 ------------------------------------
 
 Modern computers can have 16 cores/32 threads or more [*], and systems with 8
@@ -313,7 +321,7 @@ between different input files/media and performance.  If you think Mksquashfs
 is I/O bound then you should experiment with larger reader threads which may
 increase performance.
 
-3.1 Specialised small reader and block reader threads
+6.1 Specialised small reader and block reader threads
 -----------------------------------------------------
 
 The amount of reader threads you need to maximise I/O when reading small files,
@@ -346,7 +354,7 @@ the above example again, the block reader thread will work ahead and read the
     but these were multi-user systems typically supporting 50 or more users.
 
 
-4. HELP SYSTEM AND OPTIONS
+7. HELP SYSTEM AND OPTIONS
 --------------------------
 
 The help system has been rewritten to remove the annoyances and limitations
@@ -423,7 +431,7 @@ In doing so, this has introduced three new help options:
 	2. -help-section <section-name> (or -hs <section-name> for short)
 	3. -help-all (or -ha for short)
 
-4.1 -help-option <regex>
+7.1 -help-option <regex>
 ------------------------
 
 The -help-option option displays all the options that match the <regex> regular
@@ -484,7 +492,7 @@ wanted to return all the options that operate on uids and gids, you could do
                         gid
 *************************************************************************
 
-4.2 -help-section <section>
+7.2 -help-section <section>
 ---------------------------
 
 The -help-section option displays the section that matches the <section> name.
@@ -573,14 +581,14 @@ Filesystem build options:
 
 Will display the compression options and build options sections.
 
-4.3 -help-all
+7.3 -help-all
 -------------
 
 The -help-all option displays all the help text, and it is similar to the
 behaviour of -help in previous Squashfs tools versions, except that the
 output is to a pager and not stdout.
 
-4.4. PAGER environment variable
+7.4. PAGER environment variable
 -------------------------------
 
 By default the tools try pager, /usr/bin/pager, less, /usr/bin/less, more,
@@ -591,7 +599,7 @@ filename given by PAGER doesn't contain slashes, the PATH environment variable
 will be used to locate it, otherwise it will be treated as a pathname.
 
 
-5. REPRODUCIBLE FILESYSTEM IMAGES AND NEW OPTIONS
+8. REPRODUCIBLE FILESYSTEM IMAGES AND NEW OPTIONS
 -------------------------------------------------
 
 If you want Mksquashfs to generate an identical (byte for byte) filesystem on
@@ -627,10 +635,10 @@ It also introduces a new variant of -all-time, while also renaming it to
 -inode-time.  Lastly, there are some new easy to remember shorthand options
 added.
 
-5.1 New -mkfs-time, -root-time and -inode-time variants
+8.1 New -mkfs-time, -root-time and -inode-time variants
 -------------------------------------------------------
 
-5.1.1 -mkfs-time inode
+8.1.1 -mkfs-time inode
 
 This sets the filesystem make time to the latest inode timestamp in the
 source(s).  Because this is a relative value (rather than absolute), it ensures
@@ -645,13 +653,13 @@ ignoring any fabricated timestamps (e.g. root directory), and all fabricated
 timestamps are set to the latest inode value too.  This means the -root-time
 option is no longer necessary if the -mkfs-time inode option is used.
 
-5.1.2 -root-time inode
+8.1.2 -root-time inode
 
 This sets the root directory timestamp to the latest inode timestamp in the
 source(s).  If -mkfs-time inode is specified this option is no longer
 necessary.
 
-5.1.3 -inode-time inode
+8.1.3 -inode-time inode
 
 This option has been renamed from -all-time [*] in previous versions because
 all-time was a misnomer (it sets all the inode timestamps, but not also the
@@ -663,17 +671,17 @@ functionality matching between options.
 
 [*] the name -all-time is still recognised for backwards compatibility.
 
-5.2 New easier to remember shorthand options
+8.2 New easier to remember shorthand options
 --------------------------------------------
 
-5.2.1 -repro
+8.2.1 -repro
 
 This option makes Mksquashfs build a reproducible filesystem image.  This is
 equivalent to -mkfs-time inode, which achieves reproducibility by setting the
 filesystem build time to the latest inode timestamp.  Obviously the image won't
 be reproducible if the timestamps or content changes.
 
-5.2.2 -repro-time <time>
+8.2.2 -repro-time <time>
 
 This option makes Mksquashfs build a reproducible filesystem image.  This is
 equivalent to specifying -mkfs-time <time> and -inode-time <time>, which
@@ -682,7 +690,7 @@ be used in cases where timestamps may change, and where -repro cannot be used
 for this reason.
 
 
-6. AUTHOR INFO
+9. AUTHOR INFO
 --------------
 
 Squashfs was written by Phillip Lougher, email phillip@squashfs.org.uk,
