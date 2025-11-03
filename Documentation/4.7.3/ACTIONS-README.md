@@ -557,7 +557,7 @@ seeking.
 But tail-end packing can increase compression.  Additionally with modern
 solid state media, seeking is not such a major issue anymore.
 
-#### 5.2.5. no-tailend()
+#### 5.2.5 no-tailend()
 
 Tell Mksquashfs not to use tail-end packing for the files matching the
 exppression.
