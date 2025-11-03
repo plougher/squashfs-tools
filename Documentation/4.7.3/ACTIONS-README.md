@@ -85,14 +85,14 @@ allow uid/gid and mode to be changed on a file basis.
 Actions can be specified on the command line with the ```-action``` option.
 They can also be put into a file, and added  with the ```-action-file```
 option.  If put into a file, there is one action per line.  But, lines
-can be extended over many lines with continuation (\).
+can be extended over many lines with continuation (```\```).
 
 If you want to get a log of what actions were performed, and the values
 returned by the tests for each file, you can use the ```-log-action``` option
 for the command line and ```-log-action-file``` for action files.
 
 Similarly there are ```-true-action``` (```-true-action-file``` for files) and ```-false-action```
-(```-false-action-file``` for files) options which log if the tests evaluated to TRUE,
+(```-false-action-file``` for files) options which log only if the tests evaluated to TRUE,
 and vice-versa.
 
 ## 2. Syntax
@@ -100,7 +100,7 @@ and vice-versa.
 An action consists of two parts, separated by an ```@```.  The action to
 be executed is placed before the ```@```, and one or more tests are
 placed afer the ```@```.  If the action or tests has an argument, it is
-given in brackets.  Brackets are optional if no argument is needed,
+given in brackets.  Brackets are optional if no arguments are needed,
 e.g.
 
 ```
@@ -200,8 +200,8 @@ will be evaluated as
 
 ```&&``` and ```||``` are short-circuit operators, where the rhs (right hand side)
 is only evaluated if the lhs (left hand side) has been insufficient
-to determine the value.  For example in the above, test3 will only be
-evaluated if (test1 && test2) evaluates to FALSE.
+to determine the value.  For example in the above, ```test3``` will only be
+evaluated if ```(test1 && test2)``` evaluates to FALSE.
 
 ## 4. Test operators
 
@@ -224,11 +224,11 @@ directory components of the pathname.
 
 For example, if pattern has one component:
 
-subpathname(dir1) will match "dir1/somefile", "dir1/dir2/somefile" etc.
+```subpathname(dir1)``` will match "dir1/somefile", "dir1/dir2/somefile" etc.
 
 If pattern had two components:
 
-subpathname(dir1/dir2) will match ""dir1/dir2/somefile" etc.
+```subpathname(dir1/dir2)``` will match ""dir1/dir2/somefile" etc.
 
 Pattern can have wildcards.
 
@@ -408,11 +408,11 @@ The symbolic mode is of the format ```[ugoa]*[[+-=]PERMS]+```. PERMS = ```[rwxXs
 Examples:
 
 ```perm(0644)``` match on a file with permissions exactly rw-r--r--.
-```perm(u=rw,go=r)``` as above, but expressed symbolically.
+```perm(u=rw,go=r)``` does the same, but it is expressed symbolically.
 
-```perm(/222)``` match on a file which is writable for any of user, group, other,
-```perm(/u=w,g=w,o=w)``` as above but expressed symbolically,
-```perm(/ugo=w)``` as above but specified more concisely.
+```perm(/222)``` match on a file which is writable for any of user, group, other.
+```perm(/u=w,g=w,o=w)``` does the same, but it is expressed symbolically.  This can be specified more concisely as
+```perm(/ugo=w)```.
 
 ### 4.33 file(string)
 
@@ -493,7 +493,7 @@ Examples of usage:
 prune@name(*linux*) && type(d) && eval(.git, "type(d)")
 ```
 
-This action will match on any directory named *linux*, and exclude it if
+This action will match on any directory named \*linux\*, and exclude it if
 it contains a .git subdirectory.
 
 ```
@@ -501,7 +501,7 @@ prune@name(*.[ch]) && eval(.., "name(*linux*)")
 ```
 
 This action will delete *.[ch] files, but, only if they are in a directory
-matching *linux*.
+matching \*linux\*.
 
 ### 4.38 false
 
@@ -583,7 +583,7 @@ alternative).
 #### 5.2.1 fragment(name)
 
 Place all files matching the expression into a specialised fragment
-named <name>.  This can increase compression and/or improve
+named ```<name>```.  This can increase compression and/or improve
 I/O by placing similar fragments together.
 
 Examples:
@@ -633,7 +633,7 @@ Tell Mksquashfs not to use tail-end packing for the files matching the
 exppression.
 
 For obvious reasons this should be used in conjuction with the global
-Mksquashfs option -always-use-fragments.  By default tail-ends are not
+Mksquashfs option ```-tailends```.  By default tail-ends are not
 packed into fragments.
 
 #### 5.2.6 compressed()
@@ -692,8 +692,8 @@ already set for user, group or other.  The s flag sets user or group ID on
 execution, and the t flag on a directory sets restricted deletion, or
 historically made the file sticky if a non-directory.
 
-The permission bits can also be ```u``, ```g``` or ```o```, which takes the permission bits
-from the user, group or other of the file respectively.
+The permission bits can also be ```u```, ```g``` or ```o```, which takes the permission bits
+from the user, group ors other of the file respectively.
 
 Examples:
 
@@ -715,7 +715,6 @@ chmod(u=rw,go=r)
 
 Sets the permissions to rw-r--r--, which is eqivalent to ``` chmod(644) ```
 
-```
 cgmod(ug=o)
 ```
 
@@ -723,7 +722,7 @@ Sets the user and group permissions to the permissions for other.
 
 #### 5.2.12 align(value)
 
-Align files to <value> boundary in output filesystem.  Value should be a power
+Align files to ```<value>``` byte boundary in output filesystem.  Value should be a power
 of two, and can be specified in bytes, Kbytes or Mbytes, with a maximum value of
 64 Mbytes.
 
