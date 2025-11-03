@@ -127,7 +127,7 @@ This README has the following sections:
 6. Other improvements for Unsquashfs/Sqfscat
 
 	1. New ```-mem``` option, which sets the amount of memory to be used, K, M and G can be used to specify Kbytes, Mbytes and Gbytes.
-	2. New ```-mem-percent``` option, which sets the anount of memory to be used as percentage of available physical memory.
+	2. New ```-mem-percent``` option, which sets the amount of memory to be used as percentage of available physical memory.
 	3. Memory specified is limited to 75% of physical memory or less.
 
 7. New environment variable SQFS_CMDLINE (Mksquashfs/Unsquashfs)
