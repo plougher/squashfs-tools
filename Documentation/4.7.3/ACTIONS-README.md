@@ -715,6 +715,7 @@ chmod(u=rw,go=r)
 
 Sets the permissions to rw-r--r--, which is eqivalent to ``` chmod(644) ```
 
+```
 cgmod(ug=o)
 ```
 
