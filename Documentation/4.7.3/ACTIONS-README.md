@@ -453,9 +453,9 @@ way, if you have an action that depends on another action having already been
 processed (for the entire filesystem), you'll want to know that is how
 they will be applied.
 
-## 5.1 Actions applied at source filesystem reading (stage 1)
+### 5.1 Actions applied at source filesystem reading (stage 1)
 
-### 5.1.1 exclude()
+#### 5.1.1 exclude()
 
 This action excludes all files and directories where the expression
 returns TRUE.
@@ -508,9 +508,9 @@ alternative).
 - readlink()
 - eval()
 
-## 5.2 Actions applied at directory scanning (stage 2)
+### 5.2 Actions applied at directory scanning (stage 2)
 
-### 5.2.1 fragment(name)
+#### 5.2.1 fragment(name)
 
 Place all files matching the expression into a specialised fragment
 named <name>.  This can increase compression and/or improve
@@ -530,7 +530,7 @@ fragment(phillip)@user(phillip)
 
 Place all files owned by user Phillip into special fragments.
 
-### 5.2.2 fragments()
+#### 5.2.2 fragments()
 
 Tell Mksquashfs to use fragment packing for the files matching the
 expression.
@@ -539,7 +539,7 @@ For obvious reasons this should be used in conjunction with the global
 Mksquashfs option -no-fragments.  By default all files are packed into
 fragments if they're less than the block size.
 
-### 5.2.3 no-fragments()
+#### 5.2.3 no-fragments()
 
 Tell Mksquashfs to not pack the files matching the expression into
 fragments.
@@ -547,7 +547,7 @@ fragments.
 This can be used where you want to optimise I/O latency by not packing
 certain files into fragments.
 
-### 5.2.4 tailend()
+#### 5.2.4 tailend()
 
 Tell Mksquashfs to use tail-end packing for the files matching the
 expression.  Normally Mksquashfs does not pack tail-ends into fragments,
@@ -557,7 +557,7 @@ seeking.
 But tail-end packing can increase compression.  Additionally with modern
 solid state media, seeking is not such a major issue anymore.
 
-### 5.2.5. no-tailend()
+#### 5.2.5. no-tailend()
 
 Tell Mksquashfs not to use tail-end packing for the files matching the
 exppression.
@@ -566,35 +566,35 @@ For obvious reasons this should be used in conjuction with the global
 Mksquashfs option -always-use-fragments.  By default tail-ends are not
 packed into fragments.
 
-### 5.2.6 compressed()
+#### 5.2.6 compressed()
 
 Tell Mksquashfs to compress the fies matching the expression.
 
 For obvious reasons this should be used in conjunction with the global
 Mksquashfs options -noD and -noF.  File are by default compressed.
 
-### 5.2.7 uncompressed()
+#### 5.2.7 uncompressed()
 
 Tell Mksquashfs to not compress the files matching the expression.
 
 This action obviously can be used to avoid compressing already compressed
 files (XZ, GZIP etc.).
 
-### 5.2.8 uid(uid or user)
+#### 5.2.8 uid(uid or user)
 
 Set the ownership of the files matching the expression to uid (if arg1
 is a number) or user (if arg1 is a string).
 
-### 5.2.9 gid(gid or group)
+#### 5.2.9 gid(gid or group)
 
 Set the group of the files matching the expression to gid (if arg1
 is a number) or group (if arg1 is a string).
 
-### 5.2.10 guid(uid/user, gid/group)
+#### 5.2.10 guid(uid/user, gid/group)
 
 Set the uid/user and gid/group of the files matching the expression.
 
-### 5.2.11 chmod(mode)
+#### 5.2.11 chmod(mode)
 
 ```<Mode>``` can be octal, or symbolic.
 
@@ -651,7 +651,7 @@ cgmod(ug=o)
 
 Sets the user and group permissions to the permissions for other.
 
-### 5.2.12 align(value)
+#### 5.2.12 align(value)
 
 Align files to <value> boundary in output filesystem.  Value should be a power
 of two, and can be specified in bytes, Kbytes or Mbytes, with a maximum value of
@@ -671,9 +671,9 @@ align(32K)@filesize(>=32K)
 
 Align all files which are 32K or larger to a 32K boundary.
 
-## 5.3 Actions applied at second directory scan (stage 3)
+### 5.3 Actions applied at second directory scan (stage 3)
 
-### 5.3.1 prune()
+#### 5.3.1 prune()
 
 The prune() action deletes the file or directory (and everything
 underneath it) that matches the expression.  In that respect it is
@@ -706,9 +706,9 @@ For example, you may change the ownership and permissions of
 matching files in stage 2, and then want to delete files based on
 some criteria which relies on this having taken place.
 
-## 5.4. Actions applied at third directory scan (stage 4)
+### 5.4. Actions applied at third directory scan (stage 4)
 
-### 5.4.1 empty(reason)
+#### 5.4.1 empty(reason)
 
 The empty() action deletes any directory which matches the expression,
 and which is also empty for ```<reason>```.  ```<reason>``` is one of ```excluded```,
@@ -746,21 +746,21 @@ empty@true
 
 Will produce an empty filesystem.
 
-## 5.5 Actions performed at filesystem creation (stage 6)
+### 5.5 Actions performed at filesystem creation (stage 6)
 
-### 5.5.1 xattrs-exclude(regex)
+#### 5.5.1 xattrs-exclude(regex)
 
 The xattrs-exclude action excludes any xattr names matching ```<regex>```.  ```<regex>``` is
 a POSIX regular expression, e.g. ```xattrs-exclude("^user.")```  excludes xattrs from
 the user namespace.
 
-### 5.5.2 xattrs-include(regex)
+#### 5.5.2 xattrs-include(regex)
 
 The xattrs-include action includes any xattr names matching ```<regex```>.  ```<regex```> is
 a POSIX regular expression, e.g. ```-xattrs-include("^user.")``` includes xattrs from
 the user namespace.
 
-### 5.5.3 xattrs-add(name=val)
+#### 5.5.3 xattrs-add(name=val)
 
 The xattrs-add action adds the xattr ```<name>``` with contents ```<val>``` If an user
 xattr it can be added to regular files and directories (see man 7 xattr).
