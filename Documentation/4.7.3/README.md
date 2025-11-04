@@ -138,6 +138,64 @@ This README has the following sections:
 
 ## 4. STREAMING FILESYSTEM TO STDOUT
 
+Mksquashfs and Sqfstar has always written the output filesystem to either a
+file, or to a block device.  But people have often asked if they can write
+the filesystem to STDOUT, where it can then be piped to another program or to
+another computer via ```ssh``` or something similar.
+
+But there are two reasons why Mksquashfs and Sqfstar has never been able to
+write to STDOUT:
+
+1. To do duplicate checking Mksquashfs/Sqfstar has to be able to read back the
+   filesystem output.
+2. The Squashfs filesystem super-block is stored at the front of the filesystem
+   and its contents is only known after the filesystem has been generated.
+
+Both of these reasons mean the output filesystem must be **seekable**, and STDOUT
+isn't seekable, for instance you can't rewind STDOUT back to the start of the
+filesystem to write the super-block.
+
+But if you can live without duplicate checking, the super-block problem can be
+solved by writing the super-block to the end of the filesystem.
+
+This won't produce a normal Squashfs filesystem which can be mounted by the
+kernel, but, the streamed filesystem can be fixed up later using the new
+Mksquashfs option ```-fix```.   In addition Unsquashfs in this release can directly
+read a streamed Squashfs filesystem without needing it to be fixed-up.
+
+To tell Mksquashfs (or Sqfstar) to output to STDOUT, you use the new ```-stream```
+option, e.g.
+
+```
+% mksquashfs directory - -stream | ssh phillip@192.168.178.1 dd of=image.sqfs
+```
+
+Will pipe the filesystem via ssh to another computer.  Note the dummy ```-```
+output filesystem, this is ignored but it is required by the parser.
+
+The progress bar and all the other information that Mksquashfs normally outputs
+to STDOUT is disabled, because it will otherwise conflict with the filesystem
+being output to STDOUT.
+
+Using Sqfstar is similar:
+
+```
+tar cf - directory | sqfstar -stream | ssh phillip@192.168.178.1 dd of=image.sqfs
+```
+
+The resultant filesystem can be directly read by the Unsquashfs in this release:
+
+```
+% unsquashfs -lls image.sqfs
+```
+
+But, to enable it to be mounted by the kernel (or read by an earlier
+Unsquashfs), it can be fixed-up using the Mksquashfs (or Sqfstar) option ```-fix```.
+
+```
+% mksquashfs -fix image.sqfs
+```
+
 ## 5. ALIGN(VALUE) ACTION
 
 ## 6. PARALLEL FILE READING AND OPTIONS
