@@ -2835,16 +2835,16 @@ static struct file_info *write_file_frag(struct dir_ent *dir_ent,
 	unsigned short checksum = file_buffer->checksum;
 	struct file_info *file;
 
-	file = frag_duplicate(file_buffer, duplicate_file);
-	if(!file) {
-		fragment = get_and_fill_fragment(file_buffer, dir_ent, FALSE);
+	if(duplicate_checking) {
+		file = frag_duplicate(file_buffer, duplicate_file);
 
-		if(duplicate_checking)
-			file = add_non_dup(size, 0, 0, 0, NULL, 0, fragment, 0,
-				checksum, TRUE, TRUE, FALSE, FALSE, 0);
-		else
-			file = create_non_dup(size, 0, 0, 0, NULL, 0, fragment,
-				0, checksum, TRUE, TRUE);
+		if(!file) {
+			fragment = get_and_fill_fragment(file_buffer, dir_ent, FALSE);
+			file = add_non_dup(size, 0, 0, 0, NULL, 0, fragment, 0, checksum, TRUE, TRUE, FALSE, FALSE, 0);
+		}
+	} else {
+		fragment = get_and_fill_fragment(file_buffer, dir_ent, FALSE);
+		file = create_non_dup(size, 0, 0, 0, NULL, 0, fragment, 0, checksum, TRUE, TRUE);
 	}
 
 	gen_cache_block_put(file_buffer);
