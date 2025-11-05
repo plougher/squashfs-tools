@@ -451,11 +451,11 @@ static char *mksquashfs_text[]={
 		"elsewhere with ssh.  The resultant streamed Squashfs "
 		"filesystem will not be a normal Squashfs filesystem because "
 		"the super block will be at the end of the filesystem.  But "
-		"it can be fixed up afterwards with the -fix option and the "
-		"development Unsquashfs can read streamed unfixed up "
-		"filesystems directly.  Use - for the output FILESYSTEM on "
-		"the command line.  Duplicate detection is disabled using the "
-		"-stream option\n",
+		"it can be fixed up afterwards with the -fix option and "
+		"Unsquashfs 4.7.3 can read streamed unfixed up filesystems "
+		"directly.  Use - for the output FILESYSTEM on the command "
+		"line.  Duplicate detection is disabled using the -stream "
+		"option\n",
 	"-fix <filesystem>\tfix <filesystem> generated using the -stream "
 		"option\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
@@ -764,10 +764,10 @@ static char *sqfstar_text[]={
 		"elsewhere with ssh.  The resultant streamed Squashfs "
 		"filesystem will not be a normal Squashfs filesystem because "
 		"the super block will be at the end of the filesystem.  But "
-		"it can be fixed up afterwards with the -fix option and the "
-		"development Unsquashfs can read streamed unfixed up "
-		"filesystems directly.  Duplicate detection is disabled "
-		"using the -stream option\n",
+		"it can be fixed up afterwards with the -fix option and "
+		"Unsquashfs 4.7.3 can read streamed unfixed up filesystems "
+		"directly.  Duplicate detection is disabled using the -stream "
+		"option\n",
 	"-fix <filesystem>\tfix <filesystem> generated using the -stream "
 		"option\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
