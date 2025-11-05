@@ -235,7 +235,7 @@ If you can live with a loss of compression, then you could make Mksquashfs not
 pack files together into fragments, and align every file to a block boundary.
 
 This is what the new ```Align(<value>)``` action does.  If you are new to actions
-then you can read the [ACTIONS-README](https://github.com/plougher/squashfs-tools/blob/master/Documentation/4.7.3/ACTIONS-README)
+then you can read the [ACTIONS-README](https://github.com/plougher/squashfs-tools/blob/master/Documentation/4.7.3/ACTIONS-README.md)
 
 Basically you can tell Mksquashfs to align any file to a specific ```<value>```
 byte boundary if it matches certain criteria which can include things like
