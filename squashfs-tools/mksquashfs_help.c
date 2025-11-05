@@ -578,6 +578,9 @@ static char *mksquashfs_text[]={
 	"\nThe CHANGELOG for Squashfs tools can be read here "
 		"https://github.com/plougher/squashfs-tools/blob/master/"
 		"CHANGES.md\n",
+	"\nThe ACTIONS-README for the actions subsystem can be read here "
+		"https://github.com/plougher/squashfs-tools/blob/master/"
+		"Documentation/4.7.3/ACTIONS-README.md\n",
 	NULL
 };
 
