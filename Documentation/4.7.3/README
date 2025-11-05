@@ -249,6 +249,73 @@ Unsquashfs), it can be fixedup using the Mksquashfs (or Sqfstar) option -fix.
 5. ALIGN(VALUE) ACTION
 ----------------------
 
+Recently someone opened an issue on GitHub
+
+https://github.com/plougher/squashfs-tools/issues/331
+
+Where they compared two Squashfs filesystems, but to their surprise found very
+few duplicate blocks, even though the content of the images were mostly the
+same.
+
+There are two reasons for this lack of duplicate blocks, and both have to do
+with how Squashfs maximises compression:
+
+	1. Squashfs by default packs files smaller than the block size into
+	   a fragment block together and compresses them together.  This is
+	   because large blocks compress better than small blocks.
+	2. Squashfs does not align blocks on a block boundary (e.g. 512 byte
+	   block boundary), and instead packs blocks together with no alignment.
+
+It may be obvious why the above produces less duplicate blocks than you might
+expect from the content, but, if it isn't then the following will explain why.
+
+	1. If you have three files A, B and C, and only A changes between two
+	   Squashfs filesystems you may expect files B and C to be identical in
+	   the filesystems.  But, consider if files A, B and C are packed into
+	   the same fragment block and are compressed together.  Because of how
+	   compression algorithms work, the differences in file A will produce
+	   knock-on changes in the files B and C.  In effect if file A changes
+	   all the files in the fragment will be different too.
+	2. Many algorithms which look for identical blocks rely on the blocks
+	   having the same alignment.  That is if one filesystem has a block
+	   aligned to 512 bytes, which is identical to a block in another
+	   filesystem which isn't aligned to 512 bytes, then it will not be
+	   considered identical.
+
+If you can live with a loss of compression, then you could make Mksquashfs not
+pack files together into fragments, and align every file to a block boundary.
+
+This is what the new Align(<value>) action does.  If you are new to actions
+then you can read the ACTIONS-README here:
+
+https://github.com/plougher/squashfs-tools/blob/master/Documentation/4.7.3/ACTIONS-README
+
+Basically you can tell Mksquashfs to align any file to a specific <value>
+byte boundary if it matches certain criteria which can include things like
+file size, name, pathname, ownership etc.  The full list of tests can be found
+in the above ACTIONS-README.
+
+Some examples:
+
+% mksquashfs directory image.sqfs -action "align(512)@true"
+
+That aligns every file to a 512 byte boundary, because the test "true" is
+always true for every regular file.
+
+Because aligning files and not packing into fragments can cause a loss of
+compression, you can use the action tests to be more restrictive and only
+align certain files.
+
+% mksquashfs directory image.sqfs -action "align(4K)@filesize(>=128K)"
+
+That will only align files which are 128 Kbytes or larger in size.
+
+% mksquashfs directory image.sqfs -action "align(4K)@user(root) && type(f) && perm(/ugo=x)"
+
+That is a more complex set of tests which only aligns executable files which
+are owned by root.
+
+
 6. PARALLEL FILE READING AND OPTIONS
 ------------------------------------
 
