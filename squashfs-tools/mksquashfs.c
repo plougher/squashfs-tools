@@ -2104,7 +2104,7 @@ static int pre_duplicate(long long file_size, struct inode_info *inode,
 	int blocks;
 	int c_byte = is_sparse(buffer) ? 0 : buffer->c_byte;
 
-	if(inode->no_fragments || (!inode->always_use_fragments && file_size >=
+	if(inode->no_fragments || inode->alignment || (!inode->always_use_fragments && file_size >=
 								block_size)) {
 		blocks = (file_size + block_size - 1) >> block_log;
 		fragment_size = 0;
