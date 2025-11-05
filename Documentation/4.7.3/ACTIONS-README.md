@@ -1,6 +1,6 @@
 # MKSQUASHFS ACTIONS
 
-This file describes how to use the Actions sub-system, and it has the following sections:
+This file describes how to use the Actions subsystem, and it has the following sections:
 
 1. [Specification](#1-specification)
 2. [Syntax](#2-syntax)
