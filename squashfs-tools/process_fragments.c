@@ -285,7 +285,7 @@ void *frag_thrd(void *destination_file)
 		int res;
 
 		if(sparse_files && sparse) {
-			file_buffer->c_byte = 0;
+			set_sparse(file_buffer, 1);
 			file_buffer->fragment = FALSE;
 		} else
 			file_buffer->c_byte = file_buffer->size;
