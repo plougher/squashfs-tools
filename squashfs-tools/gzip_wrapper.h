@@ -27,7 +27,7 @@
 #include "endian_compat.h"
 
 #if __BYTE_ORDER == __BIG_ENDIAN
-extern unsigned int inswap_le16(unsigned short);
+extern unsigned short inswap_le16(unsigned short);
 extern unsigned int inswap_le32(unsigned int);
 
 #define SQUASHFS_INSWAP_COMP_OPTS(s) { \

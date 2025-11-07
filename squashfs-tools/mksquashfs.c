@@ -7313,7 +7313,7 @@ static int sqfstar(int argc, char *argv[])
 
 		memset(&sblk, 0, sizeof(struct squashfs_super_block));
 		sblk.s_magic = SQUASHFS_MAGIC_STREAMED;
-		SQUASHFS_INSWAP_SUPER_BLOCK(sblk);
+		SQUASHFS_INSWAP_SUPER_BLOCK(&sblk);
 		write_destination(fd, SQUASHFS_START,
 			sizeof(struct squashfs_super_block), &sblk);
 	}
@@ -8600,7 +8600,7 @@ int main(int argc, char *argv[])
 
 				memset(&sblk, 0, sizeof(struct squashfs_super_block));
 				sblk.s_magic = SQUASHFS_MAGIC_STREAMED;
-				SQUASHFS_INSWAP_SUPER_BLOCK(sblk);
+				SQUASHFS_INSWAP_SUPER_BLOCK(&sblk);
 				write_destination(fd, SQUASHFS_START,
 					sizeof(struct squashfs_super_block), &sblk);
 			}
