@@ -1,6 +1,6 @@
 # SQUASHFS-TOOLS 4.7.4 - A squashed read-only filesystem for Linux
 
-Welcome to Squashfs-Tools 4.7.4.   This is the third update to the 4.7 release,
+Welcome to Squashfs-Tools 4.7.4.   This is the fourth update to the 4.7 release,
 and it has some nice improvements in addition to the improvements in the major
 4.7 release earlier this year.
 
@@ -20,8 +20,8 @@ usage files for [Mksquashfs](USAGE-MKSQUASHFS.md), [Unsquashfs](USAGE-UNSQUASHFS
 
 This README has the following sections:
 
-1. [Improvements in 4.7.3](#1-improvements-in-473)
-2. [Improvements and bug fixes in 4.7.1 & 4.7.2](#2-improvements-and-bug-fixes-in-471--472)
+1. [Improvements and bug fixes in 4.7.3 and 4.7.4](#1-improvements-and-bug-fixes-in-473-and-474)
+2. [Improvements and bug fixes in 4.7.1 and 4.7.2](#2-improvements-and-bug-fixes-in-471-and-472)
 3. [Improvements in 4.7](#3-improvements-in-47)
 4. [Streaming filesystem to STDOUT](#4-streaming-filesystem-to-stdout)
 5. [Align(value) action](#5-alignvalue-action)
@@ -30,7 +30,7 @@ This README has the following sections:
 8. [Reproducible filesystem images and new options](#8-reproducible-filesystem-images-and-new-options)
 9. [Author info](#9-author-info)
 
-## 1. IMPROVEMENTS IN 4.7.3
+## 1. IMPROVEMENTS AND BUG FIXES IN 4.7.3 AND 4.7.4
 
 1. Mksquashfs/Sqfstar can now stream output filesystem to STDOUT.
 
@@ -54,7 +54,13 @@ This README has the following sections:
 	2. New 4.7.3 README.md
 	3. New USAGE.md, USAGE-MKSQUASHFS.md, USAGE-UNSQUASHFS.md, USAGE-SQFSTAR.md and USAGE-SQFSCAT.md
 
-## 2. IMPROVEMENTS AND BUG FIXES IN 4.7.1 & 4.7.2
+5. Bug fixes in 4.7.4
+
+	1. Fix regression introduced by SEEK_DATA optimisation
+	2. Fix regression introduced by -stream option
+	3. Fix build on big-endian machines (Daniel Néri)
+
+## 2. IMPROVEMENTS AND BUG FIXES IN 4.7.1 AND 4.7.2
 
 1. Fix regression in -offset (-o) where it stopped working in Mksquashfs and
    Sqfstar.
