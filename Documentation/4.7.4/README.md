@@ -1,0 +1,759 @@
+# SQUASHFS-TOOLS 4.7.4 - A squashed read-only filesystem for Linux
+
+Welcome to Squashfs-Tools 4.7.4.   This is the third update to the 4.7 release,
+and it has some nice improvements in addition to the improvements in the major
+4.7 release earlier this year.
+
+Filesystems can now be streamed to STDOUT, sparse file reading has been
+optimised, there is a new Align() action and the documentation is now formatted
+in Github markdown which makes it easier to read and navigate.
+
+The 4.7 release brought substantial improvements to the tools, in particular
+Mksquashfs can now be 20% to more than ten times faster (dependant on source
+media and input files).  The help system has also been completely rewritten and
+improved for Mksquashfs, Unsquashfs, Sqfstar and Sqfscat.  There are also new
+options for building reproducible images, and a lot of other improvements.
+
+Please see the [INSTALL.md](INSTALL.md) file for instructions on installing the tools, and the
+[USAGE.md](USAGE.md) file for an introduction to the various tools, and the
+usage files for [Mksquashfs](USAGE-MKSQUASHFS.md), [Unsquashfs](USAGE-UNSQUASHFS.md), [Sqfstar](USAGE-SQFSTAR.md) and [Sqfscat](USAGE-SQFSCAT.md).
+
+This README has the following sections:
+
+1. [Improvements in 4.7.3](#1-improvements-in-473)
+2. [Improvements and bug fixes in 4.7.1 & 4.7.2](#2-improvements-and-bug-fixes-in-471--472)
+3. [Improvements in 4.7](#3-improvements-in-47)
+4. [Streaming filesystem to STDOUT](#4-streaming-filesystem-to-stdout)
+5. [Align(value) action](#5-alignvalue-action)
+6. [Parallel file reading and options](#6-parallel-file-reading-and-options)
+7. [Help system and options](#7-help-system-and-options)
+8. [Reproducible filesystem images and new options](#8-reproducible-filesystem-images-and-new-options)
+9. [Author info](#9-author-info)
+
+## 1. IMPROVEMENTS IN 4.7.3
+
+1. Mksquashfs/Sqfstar can now stream output filesystem to STDOUT.
+
+    1. New -stream option which directs filesystem to STDOUT.  This can be used to send the output of Mksquashfs to another computer via ssh, where there isn't enough disk space on the host computer.
+	2. New -fix option to fix-up the streamed filesystem.  The streamed filesystem will have the super-block written to the end of the filesystem.  The -fix option writes the super-block to the usual start of the filesystem.
+	3. Unsquashfs has been extended to recognise a streamed filesystem with the super-block at the end.
+
+2. Reading of sparse files has been optimised
+
+	1. If the filesystem supports the SEEK_DATA lseek operation, this is used to skip holes when reading sparse files.  This can produce a 240 times speed improvement.
+	2. Holes which are multiple Squashfs data blocks in size are now handled as large multi-block sparse regions, which further speed up sparse file handling.  This can produce a six times speed improvement (in total 1500 times).
+
+3. New Align(value) action, which will align file to <value\>
+
+	1. Any file which matches test operator(s) will be aligned to <value\> byte boundary, where <value\> is a pure power of two and 64 Megabytes or less.
+	2. Any file which has an alignment applied will be separately compressed and not packed into a fragment block.
+
+4. Squashfs tools documentation has been formatted in GitHub markdown
+
+	1. New CHANGES.md changelog file
+	2. New 4.7.3 README.md
+	3. New USAGE.md, USAGE-MKSQUASHFS.md, USAGE-UNSQUASHFS.md, USAGE-SQFSTAR.md and USAGE-SQFSCAT.md
+
+## 2. IMPROVEMENTS AND BUG FIXES IN 4.7.1 & 4.7.2
+
+1. Fix regression in -offset (-o) where it stopped working in Mksquashfs and
+   Sqfstar.
+2. Allow arguments (spaces) in the PAGER environment variable, rather than just
+   a command name.  Also support quoted strings, string concatenation and
+   backslashes.
+3. Don't use a pager to display the help text if the PAGER environment variable
+   is empty.
+4. Add -no-pager option which if specified means a pager won't be used to
+   display the help text.
+5. Add -cols option which specifies the number of columns used to display the
+   help text.  This is useful if output is not to a terminal.
+6. Fix regression in tar file reading, where file exclusion would leak cache
+   (memory) leading in some cases to Sqfstar hanging.
+7. Handle negative dates in tar files (before the start of the epoch of
+   1970-01-01), and round them up to the start of the epoch.
+8. Add --version spelling in addition to -version, as this appears to be a
+   common mistake.
+9. Add missing include files in print_pager.c (Ros Burton).
+10. Add missing include file in thread.c (Shiji Yang).
+11. Fix BLOCK_READER_THREADS typo in Makefile (Alexandru Ardelean).
+12. print_pager: make inline quoted_bs_char() static.
+
+## 3. IMPROVEMENTS IN 4.7
+
+1. Mksquashfs now reads files in parallel from the input directories
+
+    1. This can significantly increase I/O when reading lots of small files, and/or the input media benefits from parallel reading e.g. modern SSD drives, or network filesystems etc.
+    2. In cases where speed of I/O is the bottleneck in Mksquashfs, this can make Mksquashfs run significantly faster, in some cases Mksquashfs can be more than ten times faster.
+	3. New ```-small-readers``` option to specify number of parallel small file reader threads (files less than a block size).  Default 4 threads.
+	4. New ```-block-readers``` option to specify number of parallel block reader threads (files one block or larger).  Default 4 threads.
+	5. New ```-single-reader``` option to specify a single reader thread, similar to previous Mksquashfs versions.
+
+2. Rewritten and improved help system (Mksquashfs/Unsquashfs)
+
+	1. Help text now uses the full width of the terminal (rather than being pre-formatted to 80 columns).
+	2. The help text is now automatically paged (using pager, less or more).
+	3. The tools now print a summary on failure to parse the command line (or encountering other errors that prevent the tool from running), rather than displaying the help text.
+	4. The help text can be displayed in full, by section, or by option using regex matching.
+	5. New ```-help-all``` option to display all help text
+	6. New ```-help-section``` option to display help for a particular section
+	7. New ```-help-option``` to display all options matching regex.
+	8. New ```-help-comp``` option to display compressor options for given compressor.
+
+3. New options for building reproducible filesystems (Mksquash/Sqfstar)
+
+	1. Low level timestamp setting options extended:
+		1.  ```-mkfs-time inode``` sets filesystem creation time to the latest inode timestamp
+		2. ```-inode-time inode``` sets all inode timestamps to the latest inode timestamp
+		3. ```-root-time inode``` sets the root directory timestamp to the latest inode timestamp
+
+	2. New easier to remember shorthand options
+		1. ```-repro``` builds a reproducible filesystem image, it is shorthand for ```-mkfs-time inode```.
+		2. ```-repro-time <time>``` builds a reproducible image, it is shorthand for specifying ```-mkfs-time <time>``` and ```-inode-time <time>```.
+
+4. Elimination of "fragment block stall" and -(not-)reproducible options
+
+    A technical issue called "the fragment block stall" has been eliminated in this release in a way that generates a reproducible ordering of files in the filesystem image.  This can increase performance by 20% or more, in addition to the parallel reader performance improvements.
+
+    This "fragment block stall" was introduced in release 4.4 (2019) to produce a reproducible ordering of files in the filesystem, but which led to a reduction in parallelisation and performance.  Due to this reduction, the previous behaviour was retained and enabled using the -not-reproducible option.  As the "fragment block stall" has now been removed, the options -not-reproducible and -reproducible now do nothing, but are still recognised for backwards compatibility.
+
+5. Other improvements for Mksquashfs/Sqfstar
+
+	1. New ```-force-file-mode``` option, which sets all file (non-directory) permissions to the given mode.
+	2. New ```-force-dir-mode``` option, which sets all directory permissions to the given mode.
+	3. ```-root-mode``` and above new ```-force-file-mode```/```-force-dir-mode``` options now take a symbolic mode in addition to an octal mode.
+	4. New ```-info-file``` option, which prints files written to the filesystem to a file rather than stdout.  Allows ```-info-file``` to be used in conjunction with the progress bar.
+	5. New ```-pseudo-dir``` (or ```-pd```) option which supplies a default directory if any directories in a pseudo file definition pathname doesn't exist.
+	6. New pseudo file ```h``` definition which creates a hard link to a file, and follows symbolic links.
+	7. Previously if a directory was missing (or not a directory) in a Pseudo file definition pathname, the pseudo file definition would be ignored.  This has been hardened to a fatal error.
+
+6. Other improvements for Unsquashfs/Sqfscat
+
+	1. New ```-mem``` option, which sets the amount of memory to be used, K, M and G can be used to specify Kbytes, Mbytes and Gbytes.
+	2. New ```-mem-percent``` option, which sets the amount of memory to be used as percentage of available physical memory.
+	3. Memory specified is limited to 75% of physical memory or less.
+
+7. New environment variable SQFS_CMDLINE (Mksquashfs/Unsquashfs)
+
+	If set, this is used as the directory to write the file sqfs_cmdline which contains the command line arguments given to Mksquashfs etc.  Intended to be used to debug scripts/discover what is being passed to Mksquashfs.
+
+## 4. STREAMING FILESYSTEM TO STDOUT
+
+Mksquashfs and Sqfstar has always written the output filesystem to either a
+file, or to a block device.  But people have often asked if they can write
+the filesystem to STDOUT, where it can then be piped to another program or to
+another computer via ```ssh``` or something similar.
+
+But there are two reasons why Mksquashfs and Sqfstar has never been able to
+write to STDOUT:
+
+1. To do duplicate checking Mksquashfs/Sqfstar has to be able to read back the
+   filesystem output.
+2. The Squashfs filesystem super-block is stored at the front of the filesystem
+   and its contents is only known after the filesystem has been generated.
+
+Both of these reasons mean the output filesystem must be **seekable**, and STDOUT
+isn't seekable, for instance you can't rewind STDOUT back to the start of the
+filesystem to write the super-block.
+
+But if you can live without duplicate checking, the super-block problem can be
+solved by writing the super-block to the end of the filesystem.
+
+This won't produce a normal Squashfs filesystem which can be mounted by the
+kernel, but, the streamed filesystem can be fixed up later using the new
+Mksquashfs option ```-fix```.   In addition Unsquashfs in this release can directly
+read a streamed Squashfs filesystem without needing it to be fixed-up.
+
+To tell Mksquashfs (or Sqfstar) to output to STDOUT, you use the new ```-stream```
+option, e.g.
+
+```
+% mksquashfs directory - -stream | ssh phillip@192.168.178.1 dd of=image.sqfs
+```
+
+Will pipe the filesystem via ssh to another computer.  Note the dummy ```-```
+output filesystem, this is ignored but it is required by the parser.
+
+The progress bar and all the other information that Mksquashfs normally outputs
+to STDOUT is disabled, because it will otherwise conflict with the filesystem
+being output to STDOUT.
+
+Using Sqfstar is similar:
+
+```
+tar cf - directory | sqfstar -stream | ssh phillip@192.168.178.1 dd of=image.sqfs
+```
+
+The resultant filesystem can be directly read by the Unsquashfs in this release:
+
+```
+% unsquashfs -lls image.sqfs
+```
+
+But, to enable it to be mounted by the kernel (or read by an earlier
+Unsquashfs), it can be fixed-up using the Mksquashfs (or Sqfstar) option ```-fix```.
+
+```
+% mksquashfs -fix image.sqfs
+```
+
+## 5. ALIGN(VALUE) ACTION
+
+Recently someone opened an issue on GitHub
+
+https://github.com/plougher/squashfs-tools/issues/331
+
+Where they compared two Squashfs filesystems, but to their surprise found very
+few duplicate blocks, even though the content of the images were mostly the
+same.
+
+There are two reasons for this lack of duplicate blocks, and both have to do
+with how Squashfs maximises compression:
+
+1. Squashfs by default packs files smaller than the block size into
+    a fragment block together and compresses them together.  This is
+    because large blocks compress better than small blocks.
+2. Squashfs does not align blocks on a block boundary (e.g. 512 byte
+    block boundary), and instead packs blocks together with no alignment.
+
+It may be obvious why the above produces less duplicate blocks than you might
+expect from the content, but, if it isn't then the following will explain why.
+
+1. If you have three files A, B and C, and only A changes between two
+    Squashfs filesystems you may expect files B and C to be identical in
+    the filesystems.  But, consider if files A, B and C are packed into
+    the same fragment block and are compressed together.  Because of how
+    compression algorithms work, the differences in file A will produce
+    knock-on changes in the files B and C.  In effect if file A changes
+    all the files in the fragment will be different too.
+2. Many algorithms which look for identical blocks rely on the blocks
+    having the same alignment.  That is if one filesystem has a block
+    aligned to 512 bytes, which is identical to a block in another
+    filesystem which isn't aligned to 512 bytes, then it will not be
+    considered identical.
+
+If you can live with a loss of compression, then you could make Mksquashfs not
+pack files together into fragments, and align every file to a block boundary.
+
+This is what the new ```Align(<value>)``` action does.  If you are new to actions
+then you can read the [ACTIONS-README](https://github.com/plougher/squashfs-tools/blob/master/Documentation/4.7.3/ACTIONS-README.md)
+
+Basically you can tell Mksquashfs to align any file to a specific ```<value>```
+byte boundary if it matches certain criteria which can include things like
+``file size``, ```name```, ```pathname```, ```ownership``` etc.  The full list of tests can be found
+in the above ACTIONS-README.
+
+Some examples:
+
+```
+% mksquashfs directory image.sqfs -action "align(512)@true"
+```
+
+That aligns every file to a 512 byte boundary, because the test ```true``` is
+always true for every regular file.
+
+Because aligning files and not packing into fragments can cause a loss of
+compression, you can use the action tests to be more restrictive and only
+align certain files.
+
+```
+% mksquashfs directory image.sqfs -action "align(4K)@filesize(>=128K)"
+```
+
+That will only align files which are 128 Kbytes or larger in size.
+
+```
+% mksquashfs directory image.sqfs -action "align(4K)@user(root) && type(f) && perm(/ugo=x)"
+```
+
+That is a more complex set of tests which only aligns executable files which
+are owned by root.
+
+## 6. PARALLEL FILE READING AND OPTIONS
+
+Modern computers can have 16 cores/32 threads or more [^1], and systems with 8
+cores/16 threads are becoming standard.   What this increase in computational
+power means is Mksquashfs was increasingly I/O bound rather than CPU bound.
+
+Whether the speed of input I/O has become the bottleneck is essentially entirely
+dependant on the nature of the input files, the media they're stored on, the
+number of CPUs/threads you have, and the cost of compression.  So it is
+difficult to give hard and fast rules, but the following facts can be given.
+
+1. The more CPUs/threads you have the faster the input I/O needs to be to
+   occupy all cores/threads.
+2. The faster the compression algorithm (i.e. requires less CPU) the faster
+   input I/O needs to be to keep up with compression.
+3. Small files in general are much slower to read than large files.  So the more
+   small files you have the slower I/O will be, and the more difficult it will
+   be to occupy all the cores/threads.
+
+Traditionally Mksquashfs used a single reader thread to read input files.  The
+reason for that is because up until about 5 or so years ago, mechanical hard
+disks were still commonplace, and parallel reading of files from a mechanical
+hard disk is very expensive, and much slower than sequential reading.  So
+parallel file reading from a mechanical hard disk is completely self defeating.
+
+Mechanical drives are now largely obsolete, and so Mksquashfs has now moved to
+reading files in parallel by default.  This can significantly speed up input I/O.
+
+Mksquashfs by default uses four small file reader threads and four block file
+reader threads.  A small file reader thread only reads files which are smaller
+than a block in size, and a block file reader thread only reads files which
+are a block or larger in size (see section 2.1 for an explanation of why there
+are specialised reader threads).
+
+Three new options have been added which allow the number of reader threads to
+be changed:
+
+1. -small-readers <n\>
+2. -block-readers <n\>
+3. -single-reader
+
+The maximum number of small and block reader threads are 1024 each.  But, the
+total number of reader threads cannot exceed the open file limit (usually 1024)
+less a margin of 10.  Also the more reader threads, the more memory that
+Mksquashfs will need.
+
+The ```-single-reader``` option makes Mksquashfs behave similarly to previous versions
+and files are read sequentially.
+
+The following test matrix was generated by running Mksquashfs over source
+directories containing the same amount of data (1.5GB uncompressed Linux
+6.12.8 tarball), but with the tarball split into 128 byte files, then 256
+byte files, and so on up to 1Mbyte files.  For each directory, Mksquashfs was
+run with single-threads, 2 small reader threads, 4 small reader threads, and so
+on up to 256 small reader threads.  The compression block size was 1Mbyte (and
+hence no block reader threads), and the compression algorithm was Gzip.  The
+machine has 14 cores/20 threads, and the media was a SanDisk Extreme 55AE SSD
+connected via USB 3, formatted with ext4.
+
+All Mksquashfs tests were performed with a cold cache to ensure speed of
+filesystem I/O is measured, rather than speed of memory reading from the cache.
+
+The times are in minutes:seconds. The percentage is overall CPU usage (out of 2000%).  The X-axis is number of reader threads, and the Y-axis is file size.
+
+| | 1 | 2 | 4 | 8 | 16 | 20 | 30 | 40 | 64 | 128 | 256 |
+|----|----|----|----|----|----|----|----|----|----|----|----|
+| **128** | 56:39.7 | 30:35.5 | 19:30.8 | 10:30.5 | 9:04.61 | 9:07.28 | 9:07.10 | 8:25.15 | 7:35.56 | 7:01.38 | 6:21.16 |
+| | 32% | 61% | 97% | 97% | 103% | 104% | 103% | 101% | 115% | 141% | 178% |
+| **256** | 27:47.1 | 14:42.2 | 8:43.47 | 4:47.70 | 4:00.11 | 3:59.21 | 3:58.96 | 3:38.11 | 3:11.48 | 2:52.45 | 2:38.46 |
+| | 31% | 60% | 99% | 100% | 110% | 113% | 111% | 112% | 131% | 162% | 196% |
+| **512** | 13:46.3 | 7:13.71 | 4:07.39 | 2:17.42 | 1:52.89 | 1:52.62 | 1:52.26 | 1:41.60 | 1:29.02 | 1:18.17 | 1:12.30 |
+| | 34% | 65% | 106% | 121% | 138% | 142% | 140% | 145% | 171% | 214% | 256% |
+| **1K** | 6:48.55 | 3:34.53 | 1:55.55 | 1:06.17 | 0:53.98 | 0:53.87 | 0:53.39 | 0:48.31 | 0:42.41 | 0:36.53 | 0:33.43 |
+| | 41% | 76% | 118% | 166% | 196% | 198% | 195% | 211% | 254% | 324% | 385% |
+| **2K** | 3:24.05 | 1:46.84 | 0:56.85 | 0:35.42 | 0:26.61 | 0:26.67 | 0:26.60 | 0:24.11 | 0:20.88 | 0:18.21 | 0:17.00 |
+| | 55% | 92% | 155% | 244% | 330% | 333% | 327% | 360% | 438% | 555% | 647% |
+| **4K** | 1:42.84 | 0:53.50 | 0:29.48 | 0:16.50 | 0:13.65 | 0:13.55 | 0:13.56 | 0:12.44 | 0:11.25 | 0:09.91 | 0:09.91 |
+| | 78% | 125% | 249% | 495% | 631% | 639% | 640% | 706% | 820% | 1021% | 1064% |
+| **8K** | 0:51.50 | 0:28.11 | 0:15.36 | 0:10.70 | 0:10.35 | 0:08.84 | 0:09.44 | 0:08.26 | 0:07.67 | 0:07.88 | 0:08.31 |
+| | 115% | 217% | 467% | 774% | 839% | 985% | 923% | 1061% | 1193% | 1384% | 1353% |
+| **16K** | 0:26.65 | 0:14.50 | 0:11.83 | 0:06.95 | 0:06.86 | 0:07.31 | 0:07.67 | 0:08.77 | 0:07.57 | 0:07.02 | 0:07.18 |
+| | 200% | 452% | 635% | 1246% | 1278% | 1374% | 1312% | 1192% | 1406% | 1507% | 1504% |
+| **32K** | 0:15.09 | 0:10.55 | 0:06.48 | 0:07.64 | 0:07.48 | 0:07.77 | 0:06.18 | 0:06.68 | 0:06.73 | 0:06.58 | 0:06.64 |
+| | 384% | 672% | 1304% | 1289% | 1288% | 1390% | 1524% | 1635% | 1639% | 1610% | 1590% |
+| **64K** | 0:13.45 | 0:07.15 | 0:06.92 | 0:06.09 | 0:07.09 | 0:06.60 | 0:06.13 | 0:06.29 | 0:05.88 | 0:06.54 | 0:06.50 |
+| | 433% | 1103% | 1538% | 1660% | 1475% | 1507% | 1651% | 1671% | 1795% | 1664% | 1608% |
+| **128K** | 0:07.62 | 0:05.52 | 0:08.00 | 0:05.46 | 0:06.50 | 0:06.83 | 0:07.61 | 0:05.61 | 0:06.32 | 0:06.24 | 0:06.83 |
+| | 955% | 1565% | 1325% | 1697% | 1622% | 1508% | 1325% | 1685% | 1724% | 1689% | 1495% |
+| **256K** | 0:06.34 | 0:05.49 | 0:06.08 | 0:06.35 | 0:06.06 | 0:06.09 | 0:06.06 | 0:05.80 | 0:06.08 | 0:06.51 | 0:08.25 |
+| | 1251% | 1719% | 1738% | 1662% | 1743% | 1728% | 1732% | 1809% | 1727% | 1584% | 1080% |
+| **512K** | 0:05.80 | 0:05.76 | 0:07.07 | 0:05.62 | 0:06.04 | 0:06.09 | 0:06.06 | 0:06.79 | 0:05.89 | 0:08.30 | 0:08.28 |
+| | 1404% | 1738% | 1478% | 1717% | 1750% | 1742% | 1741% | 1530% | 1613% | 1101% | 1106% |
+| **1M** | 0:05.29 | 0:06.10 | 0:07.00 | 0:05.18 | 0:05.93 | 0:07.02 | 0:05.28 | 0:05.86 | 0:05.95 | 0:05.83 | 0:05.85 |
+| | 1517% | 1667% | 1415% | 1749% | 1748% | 1438% | 1728% | 1718% | 1749% | 1728% | 1730% |
+
+I think the figures largely speak for themselves, but the following points can
+be made:
+
+1. Small files are very slow to read and reading in parallel can significantly
+   speed up Mksquashfs.  The greatest speed-up seen is reading 1Kbyte files with
+   256 small reader threads, which is 12.22 times faster than a single reader
+   thread (33.43 seconds vs 6 minutes 48.55 seconds).
+
+2. Obviously the larger the files are, the less performance increase is seen
+   reading files in parallel.  But even reading 128Kbyte files in parallel can
+   achieve a 1.4 times speed increase over a single reader thread.
+
+3. On this SSD drive (and ext4) there doesn't seem to be any performace gain
+   reading files in parallel where the files are 512Kbytes or larger.
+
+4. On this SSD drive (and ext4), with 16Kbyte or larger files, performance
+   peaks at about 8 small reader threads.
+
+5. On this SSD drive (and ext4) files 8Kbytes or smaller can benefit from a
+   large number of reader threads, but, the increase in performance starts
+   to tail off after about 12 small reader threads.
+
+Due to the above, and other performance tests, the default number of small
+reader threads and block reader threads is set to four, which is a compromise
+between different input files/media and performance.  If you think Mksquashfs
+is I/O bound then you should experiment with larger reader threads which may
+increase performance.
+
+### 6.1 Specialised small reader and block reader threads
+
+The amount of reader threads you need to maximise I/O when reading small files,
+is often different to the amount of reader threads you need when reading larger
+files.  For instance file input to Mksquashfs often consists of a large sequence
+of small files (less than a block size), and then one or more large files, and
+this sequence of small files and large files repeats.
+
+For example, imagine you had a sequence of 256 1Kbyte files, followed by eight
+large 4Mbyte files, and this sequence repeats.  To maximise I/O reading the
+small files you might want sixteen or more reader threads to read them in
+parallel, but, you don't really want or need to have sixteen reader threads to
+read the 4Mbyte files in parallel, and often doing so will thrash the
+filesystem/media resulting in lower performance.
+
+If you only had reader threads that read both small and large files, it would be
+difficult to choose an amount of reader threads that worked well for the above
+input.  But, with separate small and large file reader threads, it is easy to
+ask Mksquashfs to create sixteen small reader threads, and only one block
+reader thread.
+
+There is another advantage to splitting reader threads into those that read
+small files, and those that read large files, and that is in doing so, you read
+small files in parallel with large files, and that should optimise I/O.  Using
+the above example again, the block reader thread will work ahead and read the
+4Mbyte files in parallel with the small reader threads.
+
+[^1]: By this I obviously mean consumer-grade hardware.  There has been 16+ core Unix machines around since the early 1990s (such as the Sequent Symmetry), but these were multi-user systems typically supporting 50 or more users.
+
+
+## 7. HELP SYSTEM AND OPTIONS
+
+The help system has been rewritten to remove the annoyances and limitations
+of the previous system.  The previous system printed the entire help text
+when a command line parse error occurred (or some other reason that prevented
+the tool from running).  This behaviour may have been useful when the tools
+had much less options, but when for example the full Mksquashfs help text is
+now 389 lines (formatted to 80 columns), the full help text is just too much,
+and it is multiple pages in size.  What effectively happens is the actual error
+message scrolls off the screen and is lost, and the user is left with a large
+help text display, most of which has also scrolled off the screen, and the
+remaining part is of no interest whatsoever.
+
+The help system was first rewritten to avoid this annoyance.  Now, rather than
+the full help being displayed on an error occurring, only a summary of the help
+options available is displayed, where the user is directed to use the most
+appropriate help option for their situation.
+
+The second aspect of the rewrite was to move away from help text pre-formatted
+to 80 columns, and to use the full width of the terminal, which is typically
+much wider than 80 columns.  The effect of this, obviously, is to fit more
+help text onto the screen.  Also the help text is now paged, and so if the
+output is larger than a screen, no information will be lost.
+
+For example, now if the user correctly spells an option, but, makes a mistake
+with the argument, the user will firstly be prompted to look up the help text
+for that option, and afterwards the list of other help options will be given,
+e.g. (output uses 80 columns because this README is formatted to 80 columns)
+
+```
+% mksquasfs dir image.sqfs -b 66
+mksquashfs: -b block size not power of two or not between 4096 and 1Mbyte
+
+Run
+  "mksquashfs -help-option -b$" to get help on -b option
+
+Or run
+  "mksquashfs -help-option <regex>" to get help on all options matching <regex>
+
+Or run
+  "mksquashfs -help-section <section-name>" to get help on these sections
+        SECTION NAME            SECTION
+        compression             Filesystem compression options:
+        build                   Filesystem build options:
+        time                    Filesystem time options:
+        perms                   Filesystem permissions options:
+        pseudo                  Filesystem pseudo options:
+        filter                  Filesystem filter options:
+        xattrs                  Filesystem extended attribute (xattrs) options:
+        runtime                 Mksquashfs runtime options:
+        append                  Filesystem append options:
+        actions                 Filesystem actions options:
+        tar                     Tar file only options:
+        expert                  Expert options (these may make the filesystem
+                                unmountable):
+        help                    Help options:
+        misc                    Miscellaneous options:
+        pseudo-defs             Pseudo file definition format:
+        symbolic                Symbolic mode specification:
+        environment             Environment:
+        exit                    Exit status:
+        extra                   See also (extra information elsewhere):
+
+Or run
+  "mksquashfs -help-all" to get help on all the sections
+```
+
+The above ensures the error message is not lost, and the user is not swamped by
+irrelevant information.
+
+In doing so, this has introduced three new help options:
+
+1. ```-help-option <regex>``` (or ```-ho <regex>``` for short),
+2. ```-help-section <section-name>``` (or ```-hs <section-name>``` for short)
+3. ``` -help-all``` (or ```-ha``` for short)
+
+### 7.1 -help-option <regex\>
+------------------------
+
+The -help-option option displays all the options that match the <regex> regular
+expression, where matching is done on the option itself and the arguments,
+e.g.
+
+```
+% mksquashfs -ho "regex"
+-regex                  allow POSIX regular expressions to be used in exclude
+                        dirs/files
+-xattrs-exclude <regex> exclude any xattr names matching <regex>.  <regex> is a
+                        POSIX regular expression, e.g. -xattrs-exclude '^user.'
+                        excludes xattrs from the user namespace
+-xattrs-include <regex> include any xattr names matching <regex>.  <regex> is a
+                        POSIX regular expression, e.g. -xattrs-include '^user.'
+                        includes xattrs from the user namespace
+-help-option <regex>    print the help information for Mksquashfs options
+                        matching <regex> to stdout
+-ho <regex>             shorthand alternative to -help-option
+```
+
+Displays all the options that contain regex in their name or argument.
+
+Using a regular expression, multiple things can be matched, for example, if you
+wanted to return all the options that operate on uids and gids, you could do
+
+```
+% mksquashfs -ho "uid|gid"
+-root-uid <user>        set root directory owner to specified <user>, <user> can
+                        be either an integer uid or user name
+-root-gid <group>       set root directory group to specified <group>, <group>
+                        can be either an integer gid or group name
+-force-uid <user>       set all file and directory uids to specified <user>,
+                        <user> can be either an integer uid or user name
+-force-gid <group>      set all file and directory gids to specified <group>,
+                        <group> can be either an integer gid or group name
+-uid-gid-offset <value> offset all uid and gids by specified <value>.  <value>
+                        should be a positive integer
+-pd <d mode uid gid>    specify a default pseudo directory which will be used in
+                        pseudo definitions if a directory in the pathname does
+                        not exist.  This also allows pseudo definitions to be
+                        specified without specifying all the directories in the
+                        pathname.  The definition should be quoted
+-pd <D time mode u g>   specify a default pseudo directory which will be used in
+                        pseudo definitions if a directory in the pathname does
+                        not exist.  The D type also allows a timestamp to be
+                        specified in addition to mode, uid and gid
+-default-uid <value>    tar files often do not store uids for intermediate
+                        directories.  This option sets the default directory
+                        owner to <value>, rather than the user running
+                        Mksquashfs.  <value> can be either an integer uid or
+                        user name.  This also sets the root directory uid
+-default-gid <value>    tar files often do not store gids for intermediate
+                        directories.  This option sets the default directory
+                        group to <value>, rather than the group of the user
+                        running Mksquashfs.  <value> can be either an integer
+                        uid or group name.  This also sets the root directory
+                        gid
+```
+
+### 7.2 -help-section <section\>
+
+The ```-help-section``` option displays the section that matches the <section> name.
+If <section> does not exactly match a section name, it is treated as a regular
+expression, and all section names that match are displayed.  Finally, if
+<section> is "list", a list of sections and their names is displayed.
+
+For example:
+
+```
+% mksquashfs -help-section compression
+Filesystem compression options:
+-b <block-size>         set data block to <block-size>.  Default 128 Kbytes.
+                        Optionally a suffix of K, KB, Kbytes or M, MB, Mbytes
+                        can be given to specify Kbytes or Mbytes respectively
+-comp <comp>            select <comp> compression.  Run -help-comp <comp> to get
+                        compressor options for <comp>, or <all> for all the
+                        compressors.
+                        Compressors available:
+                                gzip (default)
+                                lzo
+                                lz4
+                                xz
+                                zstd
+-noI                    do not compress inode table
+-noId                   do not compress the uid/gid table (implied by -noI)
+-noD                    do not compress data blocks
+-noF                    do not compress fragment blocks
+-noX                    do not compress extended attributes
+-no-compression         do not compress any of the data or metadata.  This is
+                        equivalent to specifying -noI -noD -noF and -noX
+```
+
+Will display the compression options section.
+
+Using regular expression matching section names can be abbreviated, for example
+"comp" will also display the compression options section.  But, it also means
+multiple sections can be displayed, for example:
+
+```
+% mksquashfs -help-section "comp|build"
+Filesystem compression options:
+-b <block-size>         set data block to <block-size>.  Default 128 Kbytes.
+                        Optionally a suffix of K, KB, Kbytes or M, MB, Mbytes
+                        can be given to specify Kbytes or Mbytes respectively
+-comp <comp>            select <comp> compression.  Run -help-comp <comp> to get
+                        compressor options for <comp>, or <all> for all the
+                        compressors.
+                        Compressors available:
+                                gzip (default)
+                                lzo
+                                lz4
+                                xz
+                                zstd
+-noI                    do not compress inode table
+-noId                   do not compress the uid/gid table (implied by -noI)
+-noD                    do not compress data blocks
+-noF                    do not compress fragment blocks
+-noX                    do not compress extended attributes
+-no-compression         do not compress any of the data or metadata.  This is
+                        equivalent to specifying -noI -noD -noF and -noX
+
+Filesystem build options:
+-tar                    read uncompressed tar file from standard in (stdin)
+-no-strip               act like tar, and do not strip leading directories from
+                        source files
+-tarstyle               alternative name for -no-strip
+-cpiostyle              act like cpio, and read file pathnames from standard in
+                        (stdin)
+-cpiostyle0             like -cpiostyle, but filenames are null terminated.  Can
+                        be used with find -print0 action
+-reproducible           build filesystems that are reproducible (default)
+-not-reproducible       build filesystems that are not reproducible
+-no-exports             do not make filesystem exportable via NFS (-tar default)
+-exports                make filesystem exportable via NFS (default)
+-no-sparse              do not detect sparse files
+-no-tailends            do not pack tail ends into fragments (default)
+-tailends               pack tail ends into fragments
+-no-fragments           do not use fragments
+-no-duplicates          do not perform duplicate checking
+-no-hardlinks           do not hardlink files, instead store duplicates
+-keep-as-directory      if one source directory is specified, create a root
+                        directory containing that directory, rather than the
+                        contents of the directory
+```
+
+Will display the compression options and build options sections.
+
+### 7.3 -help-all
+
+The -help-all option displays all the help text, and it is similar to the
+behaviour of -help in previous Squashfs tools versions, except that the
+output is to a pager and not stdout.
+
+### 7.4. PAGER environment variable
+
+By default the tools try pager, /usr/bin/pager, less, /usr/bin/less, more,
+/usr/bin/more, cat and /usr/bin/cat in that order.
+
+The pager used can be over-ridden using the PAGER environment variable.  If the
+filename given by PAGER doesn't contain slashes, the PATH environment variable
+will be used to locate it, otherwise it will be treated as a pathname.
+
+
+## 8. REPRODUCIBLE FILESYSTEM IMAGES AND NEW OPTIONS
+
+If you want Mksquashfs to generate an identical (byte for byte) filesystem on
+every run, then the following conditions have to be true:
+
+1. The filesystem source data has to be the same,
+2. The timestamps (and other metadata such as permissions), must be the same,
+3. The root directory timestamp (and other metadata), must be the same,
+4. The filesystem make time (stored in the super-block) must be the same.
+
+Due to point 4, every time you run Mksquashfs, the filesystem will be different,
+even if everything else is the same.  But less obviously, if Mksquashfs has to
+fabricate a root directory (because the source doesn't supply one, for example
+where multiple files are specified on the command line), the timestamp of the
+root directory will also change on every run.
+
+To avoid the above, previous versions introduced the ```-mkfs-time <time>```, and
+```-root-time <time> options```:
+
+```
+% mksquashfs source(s) image.sqfs -mkfs-time 0 -root-time 0
+```
+
+Will generate a filesystem image where the timestamps (that can change) have
+been set to 0 (the start of the epoch 1970-01-01).
+
+But a problem with this (for many people) is that it ensures reproducibility by
+losing information and functionality, akin to using a sledgehammer to crack a
+nut.  With a filesystem make time of 0, it is no longer possible to discover the
+difference between one filesystem and another without looking at the content, or
+know how old the filesystem is without looking at the content either.
+
+Due to this, this release introduces new variants of -mkfs-time, and -root-time.
+It also introduces a new variant of -all-time, while also renaming it to
+-inode-time.  Lastly, there are some new easy to remember shorthand options
+added.
+
+### 8.1 New -mkfs-time, -root-time and -inode-time variants
+
+#### 8.1.1 -mkfs-time inode
+
+This sets the filesystem make time to the latest inode timestamp in the
+source(s).  Because this is a relative value (rather than absolute), it ensures
+the filesystem is identical on multiple runs of Mksquashfs if the content
+doesn't change, it also allows filesystems with newer content to be
+distinquished using the filesystem make time, and if the timestamps are updated
+(due to changed content) this will produce a newer filesystem make time.
+
+In effect this is a more nuanced way of producing reproducibility than an
+absolute value.  Also the latest inode timestamp is taken from the source(s),
+ignoring any fabricated timestamps (e.g. root directory), and all fabricated
+timestamps are set to the latest inode value too.  This means the -root-time
+option is no longer necessary if the -mkfs-time inode option is used.
+
+#### 8.1.2 -root-time inode
+
+This sets the root directory timestamp to the latest inode timestamp in the
+source(s).  If -mkfs-time inode is specified this option is no longer
+necessary.
+
+#### 8.1.3 -inode-time inode
+
+This option has been renamed from -all-time [^2] in previous versions because
+all-time was a misnomer (it sets all the inode timestamps, but not also the
+filesystem make time as the name suggests).
+
+This sets all the inode timestamps to the latest inode timestamp in the
+source(s).  I doubt there are many use-cases for this, but it keeps the
+functionality matching between options.
+
+[^2]: the name -all-time is still recognised for backwards compatibility.
+
+### 8.2 New easier to remember shorthand options
+
+#### 8.2.1 -repro
+
+This option makes Mksquashfs build a reproducible filesystem image.  This is
+equivalent to -mkfs-time inode, which achieves reproducibility by setting the
+filesystem build time to the latest inode timestamp.  Obviously the image won't
+be reproducible if the timestamps or content changes.
+
+#### 8.2.2 -repro-time <time>
+
+This option makes Mksquashfs build a reproducible filesystem image.  This is
+equivalent to specifying -mkfs-time <time> and -inode-time <time>, which
+achieves reproducibility by setting all timestamps to <time>.  This option can
+be used in cases where timestamps may change, and where -repro cannot be used
+for this reason.
+
+
+### 9. AUTHOR INFO
+
+Squashfs was written by Phillip Lougher, email phillip@squashfs.org.uk,
+in Chepstow, Wales, UK.   If you like the program, or have any problems,
+then please email me, as it's nice to get feedback!

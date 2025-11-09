@@ -1,0 +1,1075 @@
+SQFSTAR 4.7.4 - A tool to create a Squashfs filesystem from a TAR archive
+
+This file describes how to use Sqfstar, and it has the following sections:
+
+1. Introduction and basic usage
+2. Getting help and displaying Sqfstar options
+3. Changing compression algorithm and compression specific options
+4. Changing global compression defaults used in sqfstar
+5. Building reproducible filesystem images
+6. Specifying the UIDs/GIDs used in the filesystem
+7. Specifying the file permissions used in the filesystem
+8. Excluding files from the filesystem
+9. Reducing CPU and I/O usage
+10. Filtering and adding extended attributes (xattrs)
+11. Pseudo file support
+12. Extended pseudo file definitions with timestamps
+13. Miscellaneous options
+
+1. INTRODUCTION AND BASIC USAGE
+-------------------------------
+
+Sqfstar will read an uncompressed TAR archive from standard in, and it will
+create a Squashfs filesystem from it.  If a TAR archive is compressed it
+should be piped through a decompressor utility and then input into Sqfstar.
+
+Sqfstar supports V7, ustar, bsdtar (libarchive), GNU tar and PAX extensions.
+Sparse file extensions are supported, including the "old GNU format, type S",
+and PAX formats, Versions 0.0, 0.1 and the current 1.0.
+
+Sqfstar supports extended attributes, and recognises the SCHILY xattr
+PAX extension (used by GNU tar), and the LIBARCHIVE xattr PAX extension
+(used by bsdtar).
+
+Sqfstar uses the following arguments
+
+sqfstar [OPTIONS] FILESYSTEM [list of exclude dirs/files]
+
+Where FILESYSTEM is the name of the output filesystem.  This can be a file or a
+block device.  If the file already exists or it is a block device Sqfstar will
+refuse to write to it, unless the -force option is specified.
+
+Most simple usage is to read an uncompressed tar file from stdin.
+
+% sqfstar image.sqfs < archive.tar
+
+This will create a Squashfs image from archive.tar, using defaults (gzip
+compression, 128K blocks).
+
+example 2:
+
+As previous example, but use XZ compression and 1Mbyte block sizes.
+
+% sqfstar -comp xz -b 1M image.sqfs < archive.tar
+
+example 3:
+
+Uncompress a tar archive to stdout, and pipe the result to Sqfstar.
+
+% zcat archive.tgz | sqfstar image.sqfs
+
+example 4:
+
+Tar files do not supply a definition for the root directory, and the default is
+to make the directory owned/group owned by the user running Sqfstar.  This
+example explicitly sets the ownership/group ownership to root.
+
+% sqfstar -root-uid 0 -root-gid 0 image.sqfs < archive.tar
+
+example 5:
+
+The default permissions for the root directory is 0777 (rwxrwxrwx).  This
+example sets the permissions to 0755 (rwxr-xr-x).
+
+% sqfstar -root-mode 0755 image.sqfs < archive.tar
+
+example 6:
+
+Files can be excluded from the Squashfs filesystem by putting them at the
+end of the command line.
+
+% sqfstar image.sqsh dir1/file1 dir2/file2 < archive.tar
+
+This creates a Squashfs image but excludes the files "dir1/file1" and
+"dir2/file2".
+
+example 7:
+
+Files anywhere in the filesystem can be excluded by prefixing with ... (which
+means not anchored to a particular directory)
+
+% sqfstar image.sqsh "... *.[ch]" < archive.tar
+
+This creates a Squashfs image with all files matching "*.[ch]" excluded.
+
+
+2. GETTING HELP AND DISPLAYING SQFSTAR OPTIONS
+----------------------------------------------
+
+Sqfstar has fairly detailed built-in help information describing the available
+options:  Running:
+
+% sqfstar help
+
+Will displaythe following summary of the help options and information
+available:
+
+*************************************************************************
+SYNTAX: sqfstar [OPTIONS] FILESYSTEM [list of exclude dirs/files]
+
+Run
+  "sqfstar -help-option <regex>" to get help on all options matching <regex>
+
+Or run
+  "sqfstar -help-section <section-name>" to get help on these sections
+        SECTION NAME            SECTION
+        compression             Filesystem compression options:
+        build                   Filesystem build options:
+        time                    Filesystem time options:
+        perms                   Filesystem permissions options:
+        pseudo                  Filesystem pseudo options:
+        xattrs                  Filesystem extended attribute (xattrs) options:
+        runtime                 Sqfstar runtime options:
+        expert                  Expert options (these may make the filesystem unmountable):
+        help                    Help options:
+        misc                    Miscellaneous options:
+        pseudo-defs             Pseudo file definition format:
+        symbolic                Symbolic mode specification:
+        environment             Environment:
+        exit                    Exit status:
+        extra                   See also (extra information elsewhere):
+
+Or run
+  "sqfstar -help-all" to get help on all the sections
+*************************************************************************
+
+For example to get a list of all the options that operate on uids and gids, you
+could do
+
+% sqfstar -help-option "uid|gid"
+-root-uid <user>        set root directory owner to specified <user>, <user> can
+                        be either an integer uid or user name
+-root-gid <group>       set root directory group to specified <group>, <group>
+                        can be either an integer gid or group name
+-force-uid <user>       set all file and directory uids to specified <user>,
+                        <user> can be either an integer uid or user name
+-force-gid <group>      set all file and directory gids to specified <group>,
+                        <group> can be either an integer gid or group name
+-uid-gid-offset <value> offset all uid and gids by specified <value>.  <value>
+                        should be a positive integer
+-default-uid <user>     tar files often do not store uids for intermediate
+                        directories.  This option sets the default directory
+                        owner to <user>, rather than the user running Sqfstar.
+                        <user> can be either an integer uid or user name.  This
+                        also sets the root directory uid
+-default-gid <group>    tar files often do not store gids for intermediate
+                        directories.  This option sets the default directory
+                        group to <group>, rather than the group of the user
+                        running Sqfstar.  <group> can be either an integer gid
+                        or group name.  This also sets the root directory gid
+-pd <d mode uid gid>    specify a default pseudo directory which will be used in
+                        pseudo definitions if a directory in the pathname does
+                        not exist.  This also allows pseudo definitions to be
+                        specified without specifying all the directories in the
+                        pathname.  The definition should be quoted
+*************************************************************************
+
+2.1 -help-section <section>
+----------------------------
+
+The -help-section option displays the section that matches the <section> name.
+If <section> does not exactly match a section name, it is treated as a regular
+expression, and all section names that match are displayed.  Finally, if
+<section> is "list", a list of sections and their names is displayed.
+
+For example:
+
+*************************************************************************
+% sqfstar -help-section compression
+Filesystem compression options:
+-b <block-size>         set data block to <block-size>.  Default 128 Kbytes.
+                        Optionally a suffix of K, KB, Kbytes or M, MB, Mbytes
+                        can be given to specify Kbytes or Mbytes respectively
+-comp <comp>            select <comp> compression.  Run -help-comp <comp> to get
+                        compressor options for <comp>, or <all> for all the
+                        compressors.
+                        Compressors available:
+                                gzip (default)
+                                lzo
+                                lz4
+                                xz
+                                zstd
+-noI                    do not compress inode table
+-noId                   do not compress the uid/gid table (implied by -noI)
+-noD                    do not compress data blocks
+-noF                    do not compress fragment blocks
+-noX                    do not compress extended attributes
+-no-compression         do not compress any of the data or metadata.  This is
+                        equivalent to specifying -noI -noD -noF and -noX
+*************************************************************************
+
+Will display the compression options section.
+
+Using regular expression matching section names can be abbreviated, for example
+"comp" will also display the compression options section.  But, it also means
+multiple sections can be displayed, for example:
+
+*************************************************************************
+% sqfstar -help-section "comp|build"
+Filesystem compression options:
+-b <block-size>         set data block to <block-size>.  Default 128 Kbytes.
+                        Optionally a suffix of K, KB, Kbytes or M, MB, Mbytes
+                        can be given to specify Kbytes or Mbytes respectively
+-comp <comp>            select <comp> compression.  Run -help-comp <comp> to get
+                        compressor options for <comp>, or <all> for all the
+                        compressors.
+                        Compressors available:
+                                gzip (default)
+                                lzo
+                                lz4
+                                xz
+                                zstd
+-noI                    do not compress inode table
+-noId                   do not compress the uid/gid table (implied by -noI)
+-noD                    do not compress data blocks
+-noF                    do not compress fragment blocks
+-noX                    do not compress extended attributes
+-no-compression         do not compress any of the data or metadata.  This is
+                        equivalent to specifying -noI -noD -noF and -noX
+
+Filesystem build options:
+-reproducible           build filesystems that are reproducible (default)
+-not-reproducible       build filesystems that are not reproducible
+-exports                make the filesystem exportable via NFS
+-no-sparse              do not detect sparse files
+-no-fragments           do not use fragments
+-no-tailends            do not pack tail ends into fragments
+-no-duplicates          do not perform duplicate checking
+-no-hardlinks           do not hardlink files, instead store duplicates
+-regex                  allow POSIX regular expressions to be used in exclude
+                        dirs/files
+-ignore-zeros           allow tar files to be concatenated together and fed to
+                        Sqfstar.  Normally a tarfile has two consecutive 512
+                        byte blocks filled with zeros which means EOF and
+                        Sqfstar will stop reading after the first tar file on
+                        encountering them. This option makes Sqfstar ignore the
+                        zero filled blocks
+-ef <exclude-file>      list of exclude dirs/files.  One per line
+*************************************************************************
+
+Will display the compression options and build options sections.
+
+2.2. PAGER environment variable
+-------------------------------
+
+By default the tools try pager, /usr/bin/pager, less, /usr/bin/less, more,
+/usr/bin/more, cat and /usr/bin/cat in that order.
+
+The pager used can be over-ridden using the PAGER environment variable.  If the
+filename given by PAGER doesn't contain slashes, the PATH environment variable
+will be used to locate it, otherwise it will be treated as a pathname.
+
+
+3. CHANGING COMPRESSION ALGORITHM AND COMPRESSION SPECIFIC OPTIONS
+------------------------------------------------------------------
+
+By default Sqfstar will compress using the GZIP compression algorithm.  This
+algorithm offers a good trade-off between compression ratio, and memory and time
+taken to decompress.
+
+Squashfs also supports LZ4, LZO, XZ and ZSTD compression.  LZO offers worse
+compression ratio than GZIP, but is faster to decompress.  XZ offers better
+compression ratio than GZIP, but at the expense of greater memory and time
+to decompress (and significantly more time to compress).  LZ4 is similar
+to LZO.  ZSTD has been developed by Facebook, and aims to compress well and
+be fast to decompress.  You should experiment with the compressors to
+see which is best for you.
+
+If you're not building the squashfs-tools and kernel from source, then the tools
+and kernel may or may not have been built with support for LZ4, LZO, XZ or ZSTD
+compression.
+
+The compression algorithms supported by the build of Sqfstar can be found by
+typing:
+
+% sqfstar -help-comp list
+        gzip (default)
+        lzo
+        lz4
+        xz
+        zstd
+
+The list of compressor specific options for a compressor can be found by typing
+sqfstar -help-comp <compressor>, for example:
+
+% sqfstar -help-comp xz
+sqfstar: compressor "xz".  Options supported:
+          -Xbcj filter1,filter2,...,filterN
+                Compress using filter1,filter2,...,filterN in turn (in addition
+                to no filter), and choose the best compression.  Available
+                filters: x86, arm, armthumb, arm64, powerpc, sparc, ia64, riscv
+          -Xdict-size <dict-size>
+                Use <dict-size> as the XZ dictionary size.  The dictionary size
+                can be specified as a percentage of the block size, or as an
+                absolute value.  The dictionary size must be less than or equal
+                to the block size and 8192 bytes or larger.  It must also be
+                storable in the xz header as either 2^n or as 2^n+2^(n+1).
+                Example dict-sizes are 75%, 50%, 37.5%, 25%, or 32K, 16K, 8K
+                etc.
+
+The compression specific options for all compressors can be found by typing
+sqfstar -help-comp all
+
+The compression specific options are, obviously, specific to the compressor in
+question, and the compressor documentation and web sites should be consulted to
+understand their behaviour.  In general the Sqfstar compression defaults for
+each compressor are optimised to give the best performance for each compressor,
+where what constitutes best depends on the compressor.  For GZIP/XZ best means
+highest compression, for LZO/LZ4 best means a tradeoff between compression and
+(de)-compression overhead (LZO/LZ4 by definition are intended for weaker
+processors).
+
+
+4. CHANGING GLOBAL COMPRESSION DEFAULTS USED IN SQFSTAR
+-------------------------------------------------------
+
+There are a large number of options that can be used to control the compression
+in Sqfstar.  By and large the defaults are the most optimum settings and should
+rarely need to be changed.
+
+Note, this does not apply to the block size, increasing the block size from
+the default of 128 Kbytes will increase compression (especially for the XZ and
+ZSTD compressors) and should increase I/O performance too.  However, a block
+size of greater than 128 Kbytes may increase latency in certain cases (where the
+filesystem contains lots of fragments, and no locality of reference is
+observed).  For this reason the block size default is configured to the less
+optimal 128 Kbytes.  Users should experiment with 256 Kbyte sizes or above.
+
+The -b option allows the block size to be selected, both "K" and "M" postfixes
+are supported, this can be either 4K, 8K, 16K, 32K, 64K, 128K, 256K, 512K or
+1M bytes.
+
+The -noI, -noD, -noF and -noX options can be used to force Mksquashfs to not
+compress inodes (metadata), data, fragments and extended attributes
+respectively.  The -no-compression option generates an uncompressed filesystem,
+and it is equivalent to specifying all of the -noI, -noD, -noF and -noX options.
+
+The -no-fragments option tells Sqfstar to not generate fragment blocks.  A
+fragment block consists of multiple small files (all smaller than the block
+size) packed and compressed together.  This produces much better compression
+than storing and compressing these files separately.  It also typically
+improves I/O as multiple files in the same directory are read at the same time.
+You don't want to enable this option unless you fully understand the effects.
+
+The -no-tailends option tells Sqfstar to not pack file tailends into fragment
+blocks.  Normally a file will not be a multiple of the block size, and so
+there were always be a tail which doesn't fit fully into a data block.  This
+tailend is by default packed into fragment blocks.  Enabling this option will
+reduce compression.
+
+The -no-duplicates option tells Sqfstar to not check the files being added to
+the filesystem for duplicates.  This can result in quicker filesystem generation
+although obviously compression will suffer badly if there is a lot of duplicate
+files.
+
+
+5. BUILDING REPRODUCIBLE FILESYSTEM IMAGES
+------------------------------------------
+
+If you want Sqfstar to generate an identical (byte for byte) filesystem on
+every run, then the following conditions have to be true:
+
+1. The filesystem source data has to be the same,
+2. The timestamps (and other metadata such as permissions), must be the same,
+3. The root directory timestamp (and other metadata), must be the same,
+4. The filesystem make time (stored in the super-block) must be the same.
+
+Due to point 4, every time you run Sqfstar, the filesystem will be different,
+even if everything else is the same.  But less obviously, Sqfstar has to
+fabricate a root directory because tar files do not contain one, and so the
+timestamp of the root directory will also change on every run.
+
+To avoid the above, previous versions introduced the -mkfs-time <time>, and
+-root-time <time> options:
+
+% sqfstar -mkfs-time 0 -root-time 0 image.sqfs < tarfile
+
+Will generate a filesystem image where the timestamps (that will change) have
+been set to 0 (the start of the epoch 1970-01-01).
+
+But a problem with this (for many people) is that it ensures reproducibility by
+losing information and functionality, akin to using a sledgehammer to crack a
+nut.  With a filesystem make time of 0, it is no longer possible to discover the
+difference between one filesystem and another without looking at the content, or
+know how old the filesystem is without looking at the content either.
+
+Due to this, this release introduces new variants of -mkfs-time, and -root-time.
+It also introduces a new variant of -all-time, while also renaming it to
+-inode-time.  Lastly, there are some new easy to remember shorthand options
+added.
+
+5.1 -mkfs-time, -root-time and -inode-time options with a timestamp
+-------------------------------------------------------------------
+
+5.1.1 -mkfs-time <time>
+
+Set mkfs time to <time>.  Time can be an integer which is the seconds since
+the epoch of 1970-01-01 00:00:00 UTC), or a date string as recognised by the
+"date" command.
+
+5.1.2 -root-time <time>
+
+Set root directory timestamp to <time>.  Time can be an integer which is the
+seconds since the epoch of 1970-01-01 00:00:00 UTC), or a date string as
+recognised by the "date" command.
+
+5.1.3 -inode-time <time>
+
+This option has been renamed from -all-time [*] in previous versions because
+all-time was a misnomer (it sets all the inode timestamps, but not also the
+filesystem make time as the name suggests).
+
+Set all file timestamps to <time>.  Time can be an integer which is the seconds
+since the epoch of 1970-01-01 00:00:00 UTC), or a date string as recognised by
+the "date" command.
+
+[*] the name -all-time is still recognised for backwards compatibility.
+
+5.2 New -mkfs-time, -root-time and -inode-time variants
+-------------------------------------------------------
+
+5.2.1 -mkfs-time inode
+
+This sets the filesystem make time to the latest inode timestamp in the
+tar file.  Because this is a relative value (rather than absolute), it ensures
+the filesystem is identical on multiple runs of Sqfstar if the content
+doesn't change, it also allows filesystems with newer content to be
+distinquished using the filesystem make time, and if the timestamps are updated
+(due to changed content) this will produce a newer filesystem make time.
+
+In effect this is a more nuanced way of producing reproducibility than an
+absolute value.  Also the latest inode timestamp is taken from the tar file,
+ignoring any fabricated timestamps (e.g. root directory), and all fabricated
+timestamps are set to the latest inode value too.  This means the -root-time
+option is no longer necessary if the -mkfs-time inode option is used.
+
+5.2.2 -root-time inode
+
+This sets the root directory timestamp to the latest inode timestamp in the
+tar file.  If -mkfs-time inode is specified this option is no longer
+necessary.
+
+5.2.3 -inode-time inode
+
+This sets all the inode timestamps to the latest inode timestamp in the
+tar file.  I doubt there are many use-cases for this, but it keeps the
+functionality matching between options.
+
+
+5.3 New easier to remember shorthand options
+--------------------------------------------
+
+5.3.1 -repro
+
+This option makes Sqfstar build a reproducible filesystem image.  This is
+equivalent to -mkfs-time inode, which achieves reproducibility by setting the
+filesystem build time to the latest inode timestamp.  Obviously the image won't
+be reproducible if the timestamps or content changes.
+
+5.3.2 -repro-time <time>
+
+This option makes Sqfstar build a reproducible filesystem image.  This is
+equivalent to specifying -mkfs-time <time> and -inode-time <time>, which
+achieves reproducibility by setting all timestamps to <time>.  This option can
+be used in cases where timestamps may change, and where -repro cannot be used
+for this reason.
+
+5.4 the environment variable SOURCE_DATE_EPOCH
+----------------------------------------------
+
+As an alternative to the above command line options, you can set the environment
+variable SOURCE_DATE_EPOCH to a time value.
+
+This value will be used to set the mkfs time.  Also any file timestamps which
+are after SOURCE_DATE_EPOCH will be clamped to SOURCE_DATE_EPOCH.
+
+See https://reproducible-builds.org/docs/source-date-epoch/ for more
+information.
+
+
+6. SPECIFYING THE UIDs/GIDs USED IN THE FILESYSTEM
+--------------------------------------------------
+
+By default files in the generated filesystem use the ownership of the file
+stored in the TAR archive.  TAR archives depending on the TAR format stores
+ownership in two ways.  The early V7 format only stored a numeric UID and GID.
+If Sqfstar is reading a V7 archive these are used.  Later ustar and PAX
+archives can also store a string user name and group name.  If these are
+present and are recognised by the system (i.e. can be mapped to a UID and GID),
+their UID and GID is used.  If a user name or group name is not recognised
+by the system, the numeric UID or GID is used.
+
+The -all-root option forces all file UIDs/GIDs in the generated Squashfs
+filesystem to be root.  This allows root owned filesystems to be built without
+root access on the host machine.
+
+The "-force-uid value" option forces all files in the generated Squashfs
+filesystem to be owned by value, where value can either be a user name or a
+numeric UID.
+
+The "-force-gid value" option forces all files in the generated Squashfs
+filesystem to be group owned by value, where value can be either a group name or
+a numeric GID.
+
+
+7. SPECIFYING THE FILE PERMISSIONS USED IN THE FILESYSTEM
+---------------------------------------------------------
+
+By default files and directories in the generated filesystem inherit the
+permissions of the files and directories in the TAR archive.  However, Sqfstar
+provides a number of options which can be used to override the permissions.
+
+The "-force-file-mode <mode>" option sets all the file (non directories)
+permissions to <mode>.  <Mode> can be symbolic or octal (see the next subsection
+for the Symbolic mode specification).  The octal mode sets the permissions to
+that value, and the symbolic mode specification can either set the permissions,
+or add or subtract permissions from the existing file permissions.
+
+The "-force-dir-mode <mode>" option sets all the directory permissions to
+<mode>.  <Mode> can be symbolic or octal (see the next subsection for the
+Symbolic mode specification).  The octal mode sets the permissions to that
+value, and the symbolic mode specification can either set the permissions, or
+add or subtract permissions from the existing directory permissions.
+
+The reason why the options are split into two, one that acts on files and one
+that acts on directories, is because the permission bits have different
+semantics for files and directories.  For example the 'x' bit means execute for
+files and search for directories.  Hence you might want to ensure the 'x'
+bit is set for directories for user/group/other but not want to make all files
+executable.
+
+Some examples:
+
+% sqfstar -force-dir-mode 0700 image.sqfs < archive.tar
+
+Will set all directory permissions to drwx------, or read, write and search
+for owner, and nothing for everyone else.
+
+% sqfstar -force-file-mode 0666 image.sqfs < archive.tar
+
+Will set all file permissions to -rw-rw-rw-, or read and write by everyone,
+but executable by no-one.
+
+% sqfstar -force-file-mode go-w,u+rw image.sqfs < archive.tar
+
+Will modify each file's permissions, by removing write ('w') for group and
+other, but also ensure the owner can read and write to the files by adding 'r'
+and 'w'.
+
+7.1 SYMBOLIC MODE SPECIFICATION
+-------------------------------
+
+The symbolic mode is of the format [ugoa]*[[+-=]PERMS]+.  PERMS = [rwxXst]+ or
+[ugo], and the sequence can be repeated separated with commas.
+
+A combination of the letters ugoa specify which permission bits will be
+affected, u means user, g means group, o means other, and a means all or ugo.
+
+The next letter is +, - or =.  The letter + means add to the existing permission
+bits, - means remove the bits from the existing permission bits, and = means set
+the permission bits.
+
+The permission bits (PERMS) are a combination of [rwxXst] which
+sets/adds/removes those bits for the specified ugoa combination, r means read, w
+means write and x means execute for files or search for directories.  X has a
+special meaning, if the file is a directory it is equivalent to x or search, but
+if it is a non-directory, it only takes effect if execute is already set for
+user, group or other.  The s flag sets user or group ID on execution, and the t
+flag on a directory sets restricted deletion, or historically made the file
+sticky if a non-directory.
+
+The permission bits can also be u, g or o, which takes the permission bits from
+the user, group or other of the file respectively.
+
+
+8. EXCLUDING FILES FROM THE FILESYSTEM
+--------------------------------------
+
+Sqfstar can exclude files from the TAR archive, so that they don't appear in
+the Squashfs filesystem.  Exclude files can be directly specified on
+the command line (immediately after the FILESYSTEM argument), or the -ef
+option can be used to specify an exclude file, with one exclude file per line.
+
+Exclude files by default use wildcard matching (globbing) and can match on
+more than one file (if wildcards are used).  Regular expression matching
+can be used instead by specifying the -regex option.  In most cases wildcards
+should be used rather than regular expressions because wildcard matching
+behaviour is significantly easier to understand!
+
+In addition to wildcards/regex expressions, exclude files can be "anchored" or
+"non-anchored".  An anchored exclude is one which matches from the root of the
+directory and nowhere else, a non-anchored exclude matches anywhere.  For
+example given the directory hierarchy "a/b/c/a/b", the anchored exclude "a/b"
+will match "a/b" at the root of the directory hierarchy, but it will not match
+the "/a/b" sub-directory within directory "c", whereas a non-anchored exclude
+would.
+
+A couple of examples should make this clearer.
+
+Anchored excludes
+
+  1. sqfstar image.sqsh 'test/*.gz' < archive.tar
+
+     Exclude all files matching "*.gz" in the top level directory "test".
+
+  2. sqfstar image.sqsh '*/[Tt]est/example*' < archive.tar
+
+     Exclude all files beginning with "example" inside directories called
+     "Test" or "test", that occur inside any top level directory.
+
+  Using extended wildcards, negative matching is also possible.
+
+  3. sqfstar image.sqsh 'test/!(*data*).gz' < archive.tar
+
+     Exclude all files matching "*.gz" in top level directory "test",
+     except those with "data" in the name.
+
+Non-anchored excludes
+
+  By default excludes match from the top level directory, but it is
+  often useful to exclude a file matching anywhere in the source directories.
+  For this non-anchored excludes can be used, specified by pre-fixing the
+  exclude with "...".
+
+  Examples:
+
+  1. sqfstar image.sqsh '... *.gz' < archive.tar
+
+     Exclude files matching "*.gz" anywhere in the source directories.
+     For example this will match "example.gz", "test/example.gz", and
+     "test/test/example.gz".
+
+  2. sqfstar image.sqsh '... [Tt]est/*.gz' < archive.tar
+
+     Exclude files matching "*.gz" inside directories called "Test" or
+     "test" that occur anywhere in the source directories.
+
+  Again, using extended wildcards, negative matching is also possible.
+
+  3. sqfstar image.sqsh '... !(*data*).gz' < archive.tar
+
+     Exclude all files matching "*.gz" anywhere in the source directories,
+     except those with "data" in the name.
+
+
+9. REDUCING CPU AND I/O USAGE
+-----------------------------
+
+By default Sqfstar will use all the CPUs available to compress and create the
+filesystem, and will read from the TAR archive and write to the output
+filesystem as fast as possible.  This maximises both CPU usage and I/O.
+
+Sometimes you don't want Sqfstar to use all CPU and I/O bandwidth.  For those
+cases Sqfstar supports two complementary options, -processors and -throttle.
+
+The -processors option can be used to reduce the number of parallel compression
+threads used by Sqfstar.  Reducing this to 1 will create the minimum number of
+threads, and this will reduce CPU usage, and that in turn will reduce I/O
+(because CPUs are normally the bottleneck).
+
+The -throttle option reduces the speed Sqfstar reads from the TAR archive.
+The value is a percentage (obviously from 1 - 100), and 50 will reduce the
+read rate by half (the read thread will spend half its time idling), and 75
+by three quarters.  Reducing the speed of I/O will also reduce the CPU
+usage as there is insufficient data rate to use all cores.
+
+Which option should you use?  Both will effectively reduce CPU and I/O in
+normal cases where intensive use is being made of both I/O and CPUs.  But
+in edge cases there can be an imbalance where reducing one has no effect, or
+it can't be reduced any further.  For instance when there is only 1 or 2 cores
+available, setting -processors to the minimum of 1 may still use too much
+CPU.  Additionally if your input source is slow Sqfstar may still max it out
+with -processors set to the minimum of 1.  In this case you can use -throttle
+in addition to -processors or on its own.
+
+
+10. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
+-----------------------------------------------------
+
+Sqfstar has a number of options which allow extended attributes (xattrs) to be
+filtered from the TAR archive or added to the created Squashfs filesystem.
+
+The -no-xattrs option removes any extended attributes which may exist in the
+TAR archive, and creates a filesystem without any extended attributes.
+
+The -xattrs-exclude option specifies a regular expression (regex), which
+removes any extended attribute that matches the regular expression from all
+files.  For example the regex '^user.' will remove all User extended attributes.
+
+The -xattrs-include option instead specifies a regular expression (regex)
+which includes any extended attribute that matches, and removes anything
+that does't match.  For example the regex '^user.' will only keep User
+extended attributes and anything else will be removed.
+
+Sqfstar also allows you to add extended attributes to files in the Squashfs
+filesystem using the -xattrs-add option.  This option takes an xattr name and
+value pair separated by the '=' character.
+
+The extended attribute name can be any valid name and can be in the namespaces
+security, system, trusted, or user.  User extended attributes are added to files
+and directories (see man 7 xattr for explanation), and the others are added to
+all files.
+
+The extended attribute value by default will be treated as binary (i.e. an
+uninterpreted byte sequence), but it can be prefixed with 0s, where it will be
+treated as base64 encoded, or prefixed with 0x, where it will be treated as
+hexidecimal.
+
+Obviously using base64 or hexidecimal allows values to be used that cannot be
+entered on the command line such as non-printable characters etc.  But it
+renders the string non-human readable.  To keep readability and to allow
+non-printable characters to be entered, the 0t prefix is supported.  This
+encoding is similar to binary encoding, except backslashes are specially
+treated, and a backslash followed by three octal digits can be used to encode
+any ASCII character, which obviously can be used to encode non-printable values.
+
+The following four command lines are equivalent
+
+sqfstar -xattrs-add "user.comment=hello world" image.sqfs
+sqfstar -xattrs-add "user.comment=0saGVsbG8gd29ybGQ=" image.sqfs
+sqfstar -xattrs-add "user.comment=0x68656c6c6f20776f726c64"
+sqfstar -xattrs-add "user.comment=0thello world" image.sqfs
+
+Obviously in the above example there are no non-printable characters and so
+the 0t prefixed string is identical to the first line.  The following three
+command lines are identical, but where the space has been replaced by the
+non-printable NUL '\0' (null character).
+
+sqfstar -xattrs-add "user.comment=0thello\000world" image.sqfs
+sqfstar -xattrs-add "user.comment=0saGVsbG8Ad29ybGQ=" image.sqfs
+sqfstar -xattrs-add "user.comment=0x68656c6c6f00776f726c64" image.sqsh
+
+
+11. PSEUDO FILE SUPPORT
+-----------------------
+
+Sqfstar supports pseudo files, these allow files, directories, character
+devices, block devices, fifos, symbolic links, hard links and extended
+attributes to be specified and added to the Squashfs filesystem being built,
+rather than requiring them to be present in the TAR archive.  This, for example,
+allows device nodes to be added to the filesystem without requiring root access.
+
+Pseudo files also support "dynamic pseudo files" and a modify operation.
+Dynamic pseudo files allow files to be dynamically created when Sqfstar
+is run, their contents being the result of running a command or piece of
+shell script.  The modifiy operation allows the mode/uid/gid of an existing
+file in the source filesystem to be modified.
+
+Two Sqfstar options are supported, -p allows one pseudo file to be specified
+on the command line, and -pf allows a pseudo file to be specified containing a
+list of pseduo definitions, one per line.
+
+11.1 CREATING A DYNAMIC FILE
+----------------------------
+
+Pseudo definition
+
+Filename f mode uid gid command
+
+mode is the octal mode specifier, similar to that expected by chmod.
+
+uid and gid can be either specified as a decimal number, or by name.
+
+command can be an executable or a piece of shell script, and it is executed
+by running "/bin/sh -c command".   The stdout becomes the contents of
+"Filename".
+
+Examples:
+
+Running a basic command
+-----------------------
+
+/somedir/dmesg f 444 root root dmesg
+
+creates a file "/somedir/dmesg" containing the output from dmesg.
+
+Executing shell script
+----------------------
+
+RELEASE f 444 root root \
+		if [ ! -e /tmp/ver ]; then \
+			echo 0 > /tmp/ver; \
+		fi; \
+                ver=`cat /tmp/ver`; \
+                ver=$((ver +1)); \
+                echo $ver > /tmp/ver; \
+                echo -n `cat /tmp/release`; \
+                echo "-dev #"$ver `date` "Build host" `hostname`
+
+Creates a file RELEASE containing the release name, date, build host, and
+an incrementing version number.  The incrementing version is a side-effect
+of executing the shell script, and ensures every time Sqfstar is run a
+new version number is used without requiring any other shell scripting.
+
+The above example also shows that commands can be split across multiple lines
+using "\".  Obviously as the script will be presented to the shell as a single
+line, a semicolon is need to separate individual shell commands within the
+shell script.
+
+Reading from a device (or fifo/named socket)
+--------------------------------------------
+
+input f 444 root root dd if=/dev/sda1 bs=1024 count=10
+
+Copies 10K from the device /dev/sda1 into the file input.  Ordinarily Sqfstar
+given a device, fifo, or named socket will place that special file within the
+Squashfs filesystem, the above allows input from these special files to be
+captured and placed in the Squashfs filesystem.
+
+11.2 CREATING A BLOCK OR CHARACTER DEVICE
+-----------------------------------------
+
+Pseudo definition
+
+Filename type mode uid gid major minor
+
+Where type is either
+	b - for block devices, and
+	c - for character devices
+
+mode is the octal mode specifier, similar to that expected by chmod.
+
+uid and gid can be either specified as a decimal number, or by name.
+
+For example:
+
+/dev/chr_dev c 666 root root 100 1
+/dev/blk_dev b 666 0 0 200 200
+
+creates a character device "/dev/chr_dev" with major:minor 100:1 and
+a block device "/dev/blk_dev" with major:minor 200:200, both with root
+uid/gid and a mode of rw-rw-rw.
+
+11.3 CREATING A DIRECTORY
+-------------------------
+
+Pseudo definition
+
+Filename d mode uid gid
+
+mode is the octal mode specifier, similar to that expected by chmod.
+
+uid and gid can be either specified as a decimal number, or by name.
+
+For example:
+
+/pseudo_dir d 666 root root
+
+creates a directory "/pseudo_dir" with root uid/gid and mode of rw-rw-rw.
+
+11.4 CREATING A SYMBOLIC LINK
+-----------------------------
+
+Pseudo definition
+
+Filename s mode uid gid symlink
+
+uid and gid can be either specified as a decimal number, or by name.
+
+Note mode is ignored, as symlinks always have "rwxrwxrwx" permissions.
+
+For example:
+
+symlink s 0 root root example
+
+Creates a symlink "symlink" to file "example" with root uid/gid.
+
+11.5 CREATING HARD LINKS (FILE REFERENCES)
+------------------------------------------
+
+The "f" Pseudo definition allows a regular file to be created from the output of
+a command (or shell).  Often this is used to reference a file outside the source
+directories by executing "cat", e.g.
+
+README f 0555 0 0 cat /home/phillip/latest-version/README
+
+Because this is a quite frequent use of the definition, alternative faster
+"File reference" or Hard Link Pseudo definitions exist:
+
+README l pathname
+
+and
+
+README h pathname
+
+If pathname was "/home/phillip/latest-version/README", then both will create a
+reference to "/home/phillip/latest-version/README", and obviously the
+timestamp/mode and owership will be used.
+
+The difference between the 'l' and 'h' definitions is in the handling of
+symbolic links, if the pathname points to a symbolic link, the 'l' definition
+won't follow it, and so you'll get a reference to the symbolic link, whereas
+the 'h' definition will follow it, and you'll get a reference to whatever
+the symbolic link points to.
+
+The definition also can be used to create additional references to files within
+the source directories.  For instance if "phillip/latest/README" was a file
+being added to the filesystem, then
+
+README l phillip/latest/README
+
+Will create a Hard Link (and increment the nlink count on the inode).
+
+In both cases, the path to the file being referenced is the system
+filesystem path, and can be absolute (prefixed with /), or relative
+to the current working directory.
+
+There is an additional 'L' Pseudo definition, which closes a loophole in
+the above 'l' definition.  The 'l' Pseudo definition cannot create references
+or Hard Links to files created by Pseudo definitions, because by
+definition they do not exist in the system filesystem.
+
+with 'L' the referenced file is expected to be a Pseudo file, and in this case
+the path is taken to be from the root of the Squashfs filesystem being created,
+e.g.
+
+char-dev c 0555 0 0 1 2
+
+link L char-dev
+
+Will create a Hard Link named "link" to the character device called "char-dev"
+created by the previous Pseudo definition.
+
+11.6 CREATING SOCKETS/FIFOS
+---------------------------
+
+Pseudo definition
+
+filename i mode uid gid [s|f]
+
+To create a Unix domain socket, 's' should be used, i.e.
+
+filename i 0777 root root s
+
+and to create a FIFO, 'f' should be used, i.e.
+
+filename i 0777 root root f
+
+11.7 ADDING EXTENDED ATTRIBUTES TO FILES
+----------------------------------------
+
+Pseudo definition
+
+filename x name=val
+
+Will add the extended attribute <name> to <filename> with <val > contents.  See
+Section 7 for a description of the <val> formats supported.
+
+11.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
+---------------------------------------------
+
+Pseudo definition
+
+Filename m mode uid gid
+
+mode is the octal mode specifier, similar to that expected by chmod.
+
+uid and gid can be either specified as a decimal number, or by name.
+
+For example:
+
+dmesg m 666 root root
+
+Changes the attributes of the file "dmesg" in the filesystem to have
+root uid/gid and a mode of rw-rw-rw, overriding the attributes obtained
+from the TAR archive.
+
+
+11.9 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION
+-----------------------------------------------------
+
+The option
+
+-pd <d mode uid gid>
+
+Specifies a default pseudo directory which will be used in pseudo definitions if
+a directory in the pathname does not exist.  This also allows pseudo definitions
+to be specified without specifying all the directories in the pathname.  The
+definition should be quoted.
+
+For example this provides an alternative way of specifying any leading
+directories in a pseudo file definition.  We could create a pseudo file
+/dir1/dir2/file on the command line this:
+
+% sqfstar -p "/dir1 d 0777 0 0" -p "/dir1/dir2 d 0777 0 0"
+  -p "/dir1/dir2/file f 0777 0 0 echo hello_world" image.sqfs < archive.tar
+
+Here we have to create each directory explicitly.
+
+The new -pd option allows us to specify a default pseudo directory and then
+just specify the pseudo definition for the file, leaving Sqfstar to
+automatically create the leading directories:
+
+% sqfstar -pd "d 0777 0 0" -p "/dir1/dir2/file f 0777 0 0 echo hello world" < archive.tar
+
+
+12. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
+----------------------------------------------------
+
+The Pseudo file definitions described above do not allow the timestamp
+of the created file to be specified, and the files will be timestamped
+with the current time.
+
+Extended versions of the Pseudo file definitions are supported which
+take a <time> timestamp.  These are distinquished from the previous
+definitions by using an upper-case type character.  For example the "D"
+definition is identical to the "d" definition, but it takes a <time>
+timestamp.
+
+The list of extended definitions are:
+
+	filename F time mode uid gid command
+	filename D time mode uid gid
+	filename B time mode uid gid major minor
+	filename C time mode uid gid major minor
+	filename S time mode uid gid symlink
+	filename I time mode uid gid [s|f]
+	filename M time mode uid gid
+
+<time> can be either an unsigned decimal integer (which represents the
+seconds since the epoch of 1970-01-01 00:00 UTC), or a "date string"
+which is parsed and converted into an integer since the epoch, by calling
+the "date" command.
+
+Because most date strings have spaces, they will need to be quoted, and if
+entered on the command line, these quotes will need to be protected from the
+shell by backslashes, i.e.
+
+% sqfstar img.sqfs -p "file D \"1 jan 1980\" 0777 phillip phillip" < archive.tar
+
+Obviously anything "date" accepts as a valid string can be used, such as
+"yesterday", "last week" etc.
+
+12.1 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION WITH TIMESTAMP
+--------------------------------------------------------------------
+
+The option
+
+-pd <D time mode uid gid>
+
+Specifies a default pseudo directory which will be used in pseudo definitions if
+a directory in the pathname does not exist.
+
+The upper-case D indicates this is an extended pseudo definition which takes
+a <time> timestamp.  <time> can be either an unsigned decimal integer or a
+"date string" which is parsed and converted into an integer by calling the
+"date" command.
+
+
+13. MISCELLANEOUS OPTIONS
+-------------------------
+
+The -info option displays the files/directories as they are compressed and
+added to the filesystem.  The original uncompressed size of each file is
+printed, along with DUPLICATE if the file is a duplicate of a file in the
+filesystem.
+
+The -info-file option does the same except that the output is to a file rather
+than to stdout.  This allows the -info-file option to be used together with the
+progressbar.
+
+The -nopad option informs Sqfstar to not pad the filesystem to a 4K multiple.
+This is performed by default to enable the output filesystem file to be mounted
+by loopback, which requires files to be a 4K multiple.  If the filesystem is
+being written to a block device, or is to be stored in a bootimage, the extra
+pad bytes are not needed.
