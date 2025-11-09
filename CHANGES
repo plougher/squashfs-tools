@@ -1,5 +1,11 @@
 			SQUASHFS CHANGE LOG
 
+4.7.4	09 NOV 2025	Bug fix release
+
+	1. Fix regression introduced by SEEK_DATA optimisation
+	2. Fix regression introduced by -stream option
+	3. Fix build on big-endian machines (Daniel Néri)
+
 4.7.3	05 NOV 2025	Mksquashfs streaming output, optimised reading of Sparse
 			files using SEEK_DATA, new aligned action, documentation
 			formatted in markdown.
