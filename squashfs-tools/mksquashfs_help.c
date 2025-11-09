@@ -452,10 +452,10 @@ static char *mksquashfs_text[]={
 		"filesystem will not be a normal Squashfs filesystem because "
 		"the super block will be at the end of the filesystem.  But "
 		"it can be fixed up afterwards with the -fix option and "
-		"Unsquashfs 4.7.3 can read streamed unfixed up filesystems "
-		"directly.  Use - for the output FILESYSTEM on the command "
-		"line.  Duplicate detection is disabled using the -stream "
-		"option\n",
+		"Unsquashfs 4.7.3 and later can read streamed unfixed up "
+		"filesystems directly.  Use - for the output FILESYSTEM on the "
+		"command line.  Duplicate detection is disabled using the "
+		"-stream " "option\n",
 	"-fix <filesystem>\tfix <filesystem> generated using the -stream "
 		"option\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
@@ -569,18 +569,18 @@ static char *mksquashfs_text[]={
 	"  1\tFatal errors occurred, Mksquashfs aborted and did not generate a "
 		"filesystem (or update if appending).\n",
 	"\n","See also (extra information elsewhere):", "\n",
-	"The README for the Squashfs-tools 4.7.3 release, describing the "
+	"The README for the Squashfs-tools 4.7.4 release, describing the "
 		"new features can be read here https://github.com/plougher/"
-		"squashfs-tools/blob/master/Documentation/4.7.3/README.md\n",
+		"squashfs-tools/blob/master/Documentation/4.7.4/README.md\n",
 	"\nThe MKSQUASHFS usage guide can be read here https://github.com/"
-		"plougher/squashfs-tools/blob/master/Documentation/4.7.3/"
+		"plougher/squashfs-tools/blob/master/Documentation/4.7.4/"
 		"USAGE-MKSQUASHFS.md\n",
 	"\nThe CHANGELOG for Squashfs tools can be read here "
 		"https://github.com/plougher/squashfs-tools/blob/master/"
 		"CHANGES.md\n",
 	"\nThe ACTIONS-README for the actions subsystem can be read here "
 		"https://github.com/plougher/squashfs-tools/blob/master/"
-		"Documentation/4.7.3/ACTIONS-README.md\n",
+		"Documentation/4.7.4/ACTIONS-README.md\n",
 	NULL
 };
 
@@ -768,9 +768,9 @@ static char *sqfstar_text[]={
 		"filesystem will not be a normal Squashfs filesystem because "
 		"the super block will be at the end of the filesystem.  But "
 		"it can be fixed up afterwards with the -fix option and "
-		"Unsquashfs 4.7.3 can read streamed unfixed up filesystems "
-		"directly.  Duplicate detection is disabled using the -stream "
-		"option\n",
+		"Unsquashfs 4.7.3 and later can read streamed unfixed up "
+		"filesystems directly.  Duplicate detection is disabled using "
+		"the -stream option\n",
 	"-fix <filesystem>\tfix <filesystem> generated using the -stream "
 		"option\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
@@ -883,11 +883,11 @@ static char *sqfstar_text[]={
 	"  1\tFatal errors occurred, Sqfstar aborted and did not generate a "
 		"filesystem.\n",
 	"\n","See also (extra information elsewhere):", "\n",
-	"The README for the Squashfs-tools 4.7.3 release, describing the "
+	"The README for the Squashfs-tools 4.7.4 release, describing the "
 		"new features can be read here https://github.com/plougher/"
-		"squashfs-tools/blob/master/Documentation/4.7.3/README.md\n",
+		"squashfs-tools/blob/master/Documentation/4.7.4/README.md\n",
 	"\nThe Sqfstar usage guide can be read here https://github.com/"
-		"plougher/squashfs-tools/blob/master/Documentation/4.7.3/"
+		"plougher/squashfs-tools/blob/master/Documentation/4.7.4/"
 		"USAGE-SQFSTAR.md\n",
 	"\nThe CHANGELOG for Squashfs tools can be read here "
 		"https://github.com/plougher/squashfs-tools/blob/master/"
