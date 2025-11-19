@@ -327,7 +327,8 @@ again:
 				file_buffer->fragment = FALSE;
 				put_file_buffer(reader->id, file_buffer, NEXT_BLOCK);
 			} else {
-				file_buffer->fragment = is_fragment(inode);
+				/* For synthetic sparse placeholders, never treat tail as fragment */
+				file_buffer->fragment = FALSE;
 				put_file_buffer(reader->id, file_buffer, NEXT_FILE);
 			}
 		}

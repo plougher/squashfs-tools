@@ -3182,7 +3182,7 @@ again:
 		file = write_file_process(&status, dir, read_buffer, dup);
 	else if(read_buffer->file_size == 0)
 		file = write_file_empty(dir, read_buffer, dup);
-	else if(read_buffer->fragment && read_buffer->c_byte)
+	else if(read_buffer->fragment && read_buffer->c_byte > 0)
 		file = write_file_frag(dir, read_buffer, dup);
 	else
 		file = write_file_blocks(&status, dir, read_buffer, dup);
