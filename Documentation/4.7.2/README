@@ -178,7 +178,7 @@ reading files in parallel by default.  This can significantly speed up input I/O
 Mksquashfs by default uses four small file reader threads and four block file
 reader threads.  A small file reader thread only reads files which are smaller
 than a block in size, and a block file reader thread only reads files which
-are a block or larger in size (see section 2.1 for an explanation of why there
+are a block or larger in size (see section 3.1 for an explanation of why there
 are specialised reader threads).
 
 Three new options have been added which allow the number of reader threads to
