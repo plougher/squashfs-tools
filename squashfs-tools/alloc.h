@@ -103,7 +103,6 @@ static inline void _asprintf(char **restrict strp, const char *func, const char 
 }
 
 #define CALLOC(num, size) _calloc(num, size, __func__)
-#define CALLOC(num, size) _calloc(num, size, __func__)
 #define MALLOC(size) _malloc(size, __func__)
 #define REALLOC(ptr, size) _realloc(ptr, size, __func__)
 #define STRDUP(s) _strdup(s, __func__)
