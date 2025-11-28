@@ -311,6 +311,31 @@ again:
 	blocks = (read_size + block_size - 1) >> block_log;
 	sparse = sparse_files && ((long long) buf->st_blocks * 512) < read_size;
 
+	/* If configured, store large files as sparse placeholders, preserving original size */
+	if(min_sparse_copy && read_size >= min_sparse_copy) {
+		long long remaining = read_size;
+		long long bidx = 0;
+
+		while(remaining > 0) {
+			file_buffer = get_buffer(reader, entry, read_size, bidx ++, version);
+			/* mark one sparse block per buffer */
+			set_sparse(file_buffer, 1);
+			int this_size = remaining >= block_size ? block_size : (int) remaining;
+			file_buffer->size = this_size;
+			remaining -= this_size;
+			if(remaining > 0) {
+				file_buffer->fragment = FALSE;
+				put_file_buffer(reader->id, file_buffer, NEXT_BLOCK);
+			} else {
+				/* For synthetic sparse placeholders, never treat tail as fragment */
+				file_buffer->fragment = FALSE;
+				put_file_buffer(reader->id, file_buffer, NEXT_FILE);
+			}
+		}
+
+		return;
+	}
+
 	while(1) {
 		file = open(pathname(reader, entry->dir_ent), O_RDONLY);
 		if(file != -1 || errno != EINTR)
