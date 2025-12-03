@@ -6626,7 +6626,9 @@ static int sqfstar(int argc, char *argv[])
 	always_use_fragments = TRUE;
 
 	for(i = 1; i < dest_index; i++) {
-		if(strcmp(argv[i], "-stream") == 0)
+		if(strcmp(argv[i], "-numeric-owner") == 0)
+			numeric_owner = TRUE;
+		else if(strcmp(argv[i], "-stream") == 0)
 			streaming = TRUE;
 		else if(strcmp(argv[i], "-no-pager") == 0)
 			; /* ignore, already parsed */

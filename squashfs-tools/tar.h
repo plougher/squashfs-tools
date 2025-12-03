@@ -139,6 +139,7 @@ extern int default_gid_opt;
 extern unsigned int default_gid;
 extern int default_mode_opt;
 extern struct mode_data *default_mode;
+extern int numeric_owner;
 
 #ifdef XATTR_SUPPORT
 extern int xattr_get_prefix(struct xattr_list *, char *);
