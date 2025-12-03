@@ -1482,9 +1482,10 @@ again:
 	res = -1;
 
 	if(!numeric_owner) {
-		if(file->uname)
+		if(file->uname) {
 			user = file->uname;
-		else
+			file->uname = NULL;
+		} else
 			user = STRNDUP(header.user, 32);
 
 		if(strlen(user)) {
@@ -1516,9 +1517,10 @@ again:
 	res = -1;
 
 	if(!numeric_owner) {
-		if(file->gname)
+		if(file->gname) {
 			group = file->gname;
-		else
+			file->gname = NULL;
+		} else
 			group = STRNDUP(header.group, 32);
 
 		if(strlen(group)) {
