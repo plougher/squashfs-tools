@@ -104,7 +104,8 @@ static char *sqfstar_options[]={
 	/* permissions options */
 	"-all-root", "-root-mode", "-root-uid", "-root-gid", "-force-file-mode",
 	"-force-dir-mode", "-force-uid", "-force-gid", "-uid-gid-offset",
-	"-default-mode", "-default-uid", "-default-gid", "", "", "",
+	"-default-mode", "-default-uid", "-default-gid", "-numeric-owner", "",
+	"", "",
 	/* pseudo options */
 	"-p", "-pd", "-pd", "-pf", "-pseudo-override", "", "", "",
 	/* xattr options */
@@ -173,7 +174,7 @@ static char *sqfstar_args[]={
 	"<time>", "<time>", "<time>", "", "<time>", "", "", "",
 	/* permissions options */
 	"", "<mode>", "<user>", "<group>", "<mode>", "<mode>", "<user>",
-	"<group>", "<value>", "<mode>", "<user>", "<roup>", "", "", "",
+	"<group>", "<value>", "<mode>", "<user>", "<roup>", "", "", "", "",
 	/* pseudo options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode u g>",
 	"<pseudo-file>", "", "", "", "",
@@ -687,6 +688,11 @@ static char *sqfstar_text[]={
 		"directory group to <group>, rather than the group of the "
 		"user running Sqfstar.  <group> can be either an integer gid "
 		"or group name.  This also sets the root directory gid\n",
+	"-numeric-owner\t\tUse the numeric uid and gid in the tarfile rather "
+		"than the user name or group name.  This is useful where the "
+		"user name or group name maps to a different uid or gid on the "
+		"system where Sqfstar is being run, and this remapping "
+		"behaviour is not wanted\n",
 	"\n", "Filesystem pseudo options:", "\n",
 	"-p <pseudo-definition>\tadd pseudo file definition.  The definition "
 		"should be quoted.  See section \"Pseudo file definition "
