@@ -174,7 +174,7 @@ static char *sqfstar_args[]={
 	"<time>", "<time>", "<time>", "", "<time>", "", "", "",
 	/* permissions options */
 	"", "<mode>", "<user>", "<group>", "<mode>", "<mode>", "<user>",
-	"<group>", "<value>", "<mode>", "<user>", "<roup>", "", "", "", "",
+	"<group>", "<value>", "<mode>", "<user>", "<group>", "", "", "", "",
 	/* pseudo options */
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode u g>",
 	"<pseudo-file>", "", "", "", "",
