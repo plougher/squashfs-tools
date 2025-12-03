@@ -7622,6 +7622,8 @@ int main(int argc, char *argv[])
 	for(i = option_offset; i < argc; i++) {
 		if(strcmp(argv[i], "-no-pager") == 0)
 			; /* ignore, already parsed */
+		else if(strcmp(argv[i], "-numeric-owner") == 0)
+			numeric_owner = TRUE;
 		else if(strcmp(argv[i], "-stream") == 0)
 			streaming = TRUE;
 		else if(strcmp(argv[i], "-cols") == 0)
