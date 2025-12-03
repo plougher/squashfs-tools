@@ -77,8 +77,8 @@ static char *mksquashfs_options[]={
 	"-action-file", "-log-action-file", "-true-action-file",
 	"-false-action-file", "", "", "",
 	/* tar options */
-	"-default-mode", "-default-uid", "-default-gid", "-ignore-zeros", "",
-	"", "",
+	"-default-mode", "-default-uid", "-default-gid", "-ignore-zeros",
+	"-numeric-owner", "", "", "",
 	/* expert options */
 	"-stream", "-fix", "-nopad", "-offset", "-o", "", "", "",
 	/* help options */
@@ -155,7 +155,7 @@ static char *mksquashfs_args[]={
 	"<action@expression>", "<file>", "<file>", "<file>", "<file>", "", "",
 	"",
 	/* tar options */
-	"<mode>", "<value>", "<value>", "", "", "", "",
+	"<mode>", "<value>", "<value>", "", "", "", "", "",
 	/* expert options */
 	"", "<filesystem>", "", "<offset>", "<offset>", "", "", "",
 	/* help options */
@@ -445,6 +445,11 @@ static char *mksquashfs_text[]={
 		"will stop reading after the first tar file on encountering "
 		"them. This option makes Mksquashfs ignore the zero filled "
 		"blocks\n",
+	"-numeric-owner\t\tUse the numeric uid and gid in the tarfile rather "
+		"than the user name or group name.  This is useful where the "
+		"user name or group name maps to a different uid or gid on the "
+		"system where Mksquashfs is being run, and this remapping "
+		"behaviour is not wanted\n",
 	"\n", "Expert options (these may make the filesystem unmountable):",
 	"\n",
 	"-stream\t\t\toutput the filesystem to STDOUT rather than to a file."
