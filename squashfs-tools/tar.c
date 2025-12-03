@@ -934,11 +934,13 @@ static int read_pax_header(struct tar_file *file, long long st_size)
 			if(file->buf.st_mtime != number)
 				goto failed;
 			file->have_mtime = TRUE;
-		} else if(strcmp(keyword, "uname") == 0)
-			file->uname = STRDUP(value);
-		else if(strcmp(keyword, "gname") == 0)
-			file->gname = STRDUP(value);
-		else if(strcmp(keyword, "path") == 0)
+		} else if(strcmp(keyword, "uname") == 0) {
+			if(!numeric_owner)
+				file->uname = STRDUP(value);
+		} else if(strcmp(keyword, "gname") == 0) {
+			if(!numeric_owner)
+				file->gname = STRDUP(value);
+		} else if(strcmp(keyword, "path") == 0)
 			file->pathname = STRDUP(skip_components(value, vsize, NULL));
 		else if(strcmp(keyword, "linkpath") == 0)
 			file->link = STRDUP(value);
