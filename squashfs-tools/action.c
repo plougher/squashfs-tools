@@ -2451,13 +2451,18 @@ static int parse_user_arg(struct test_entry *test, struct atom *atom)
 {
 	struct test_number_arg *number;
 	long long size;
-	struct passwd *uid = getpwnam(atom->argv[0]);
+	struct passwd *uid;
 
-	if(uid)
-		size = uid->pw_uid;
-	else {
-		TEST_SYNTAX_ERROR(test, 1, "Unknown user\n");
-		return 0;
+	for(;;) {
+		errno = 0;
+		uid = getpwnam(atom->argv[0]);
+		if(uid) {
+			size = uid->pw_uid;
+			break;
+		} else if(errno != EINTR) {
+			TEST_SYNTAX_ERROR(test, 1, "Unknown user\n");
+			return 0;
+		}
 	}
 
 	number = MALLOC(sizeof(*number));
