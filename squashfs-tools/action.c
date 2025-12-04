@@ -1176,13 +1176,18 @@ static long long parse_uid(char *arg) {
 			return -1;
 		}
 	} else {
-		struct passwd *passwd = getpwnam(arg);
+		struct passwd *passwd;
 
-		if (passwd)
-			uid = passwd->pw_uid;
-		else {
-			SYNTAX_ERROR("Invalid uid or unknown user\n");
-			return -1;
+		for(;;) {
+			errno = 0;
+			passwd = getpwnam(arg);
+			if(passwd) {
+				uid = passwd->pw_uid;
+				break;
+			} else if(errno != EINTR) {
+				SYNTAX_ERROR("Invalid uid or unknown user\n");
+				return -1;
+			}
 		}
 	}
 
