@@ -1205,13 +1205,18 @@ static long long parse_gid(char *arg) {
 			return -1;
 		}
 	} else {
-		struct group *group = getgrnam(arg);
+		struct group *group;
 
-		if (group)
-			gid = group->gr_gid;
-		else {
-			SYNTAX_ERROR("Invalid gid or unknown group\n");
-			return -1;
+		for(;;) {
+			errno = 0;
+			group = getgrnam(arg);
+			if (group) {
+				gid = group->gr_gid;
+				break;
+			} else if(errno != EINTR) {
+				SYNTAX_ERROR("Invalid gid or unknown group\n");
+				return -1;
+			}
 		}
 	}
 
