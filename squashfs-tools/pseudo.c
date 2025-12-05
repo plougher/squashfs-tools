@@ -793,12 +793,18 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 			return NULL;
 		}
 	} else {
-		struct passwd *pwuid = getpwnam(suid);
-		if(pwuid)
-			uid = pwuid->pw_uid;
-		else {
-			ERROR("%s is an invalid uid or unknown user in pseudo file definition \"%s\"\n", suid, orig_def);
-			return NULL;
+		struct passwd *pwuid;
+
+		for(;;) {
+			errno = 0;
+			pwuid = getpwnam(suid);
+			if(pwuid) {
+				uid = pwuid->pw_uid;
+				break;
+			} else if(errno != EINTR) {
+				ERROR("%s is an invalid uid or unknown user in pseudo file definition \"%s\"\n", suid, orig_def);
+				return NULL;
+			}
 		}
 	}
 
@@ -1015,12 +1021,18 @@ static struct pseudo_dev *read_pseudo_def_original(char type, char *orig_def, ch
 			return NULL;
 		}
 	} else {
-		struct passwd *pwuid = getpwnam(suid);
-		if(pwuid)
-			uid = pwuid->pw_uid;
-		else {
-			ERROR("%s is an invalid uid or unknown user in pseudo file definition \"%s\"\n", suid, orig_def);
-			return NULL;
+		struct passwd *pwuid;
+
+		for(;;) {
+			errno = 0;
+			pwuid = getpwnam(suid);
+			if(pwuid) {
+				uid = pwuid->pw_uid;
+				break;
+			} else if(errno != EINTR) {
+				ERROR("%s is an invalid uid or unknown user in pseudo file definition \"%s\"\n", suid, orig_def);
+				return NULL;
+			}
 		}
 	}
 		
