@@ -6352,11 +6352,16 @@ static int get_uid_from_arg(char *arg, unsigned int *uid)
 		*uid = res;
 		return 0;
 	} else {
-		struct passwd *id = getpwnam(arg);
+		struct passwd *id;
 
-		if(id) {
-			*uid = id->pw_uid;
-			return 0;
+		for(;;) {
+			errno = 0;
+			id = getpwnam(arg);
+			if(id) {
+				*uid = id->pw_uid;
+				return 0;
+			} else if(errno != EINTR)
+				break;
 		}
 	}
 
