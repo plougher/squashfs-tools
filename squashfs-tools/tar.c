@@ -34,6 +34,7 @@
 #include <grp.h>
 #include <time.h>
 #include <regex.h>
+#include <errno.h>
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
@@ -1491,9 +1492,17 @@ again:
 			user = STRNDUP(header.user, 32);
 
 		if(strlen(user)) {
-			struct passwd *pwuid = getpwnam(user);
-			if(pwuid)
-				res = pwuid->pw_uid;
+			struct passwd *pwuid;
+
+			for(;;) {
+				errno = 0;
+				pwuid = getpwnam(user);
+				if(pwuid) {
+					res = pwuid->pw_uid;
+					break;
+				} else if(errno != EINTR)
+					break;
+			}
 		}
 	}
 		
