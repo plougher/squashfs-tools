@@ -2489,13 +2489,18 @@ static int parse_group_arg(struct test_entry *test, struct atom *atom)
 {
 	struct test_number_arg *number;
 	long long size;
-	struct group *gid = getgrnam(atom->argv[0]);
+	struct group *gid;
 
-	if(gid)
-		size = gid->gr_gid;
-	else {
-		TEST_SYNTAX_ERROR(test, 1, "Unknown group\n");
-		return 0;
+	for(;;) {
+		errno = 0;
+		gid = getgrnam(atom->argv[0]);
+		if(gid) {
+			size = gid->gr_gid;
+			break;
+		} else if(errno != EINTR) {
+			TEST_SYNTAX_ERROR(test, 1, "Unknown group\n");
+			return 0;
+		}
 	}
 
 	number = MALLOC(sizeof(*number));
