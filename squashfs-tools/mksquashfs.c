@@ -6382,11 +6382,16 @@ static int get_gid_from_arg(char *arg, unsigned int *gid)
 		*gid = res;
 		return 0;
 	} else {
-		struct group *id = getgrnam(arg);
+		struct group *id;
 
-		if(id) {
-			*gid = id->gr_gid;
-			return 0;
+		for(;;) {
+			errno = 0;
+			id = getgrnam(arg);
+			if(id) {
+				*gid = id->gr_gid;
+				return 0;
+			} else if(errno != EINTR)
+				break;
 		}
 	}
 
