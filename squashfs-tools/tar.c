@@ -1535,9 +1535,17 @@ again:
 			group = STRNDUP(header.group, 32);
 
 		if(strlen(group)) {
-			struct group *grgid = getgrnam(group);
-			if(grgid)
-				res = grgid->gr_gid;
+			struct group *grgid;
+
+			for(;;) {
+				errno = 0;
+				grgid = getgrnam(group);
+				if(grgid) {
+					res = grgid->gr_gid;
+					break;
+				} else if(errno != EINTR)
+					break;
+			}
 		}
 	}
 		
