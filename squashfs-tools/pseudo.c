@@ -815,12 +815,18 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 			return NULL;
 		}
 	} else {
-		struct group *grgid = getgrnam(sgid);
-		if(grgid)
-			gid = grgid->gr_gid;
-		else {
-			ERROR("%s is an invalid gid or unknown group in pseudo file definition \"%s\"\n", sgid, orig_def);
-			return NULL;
+		struct group *grgid;
+
+		for(;;) {
+			errno = 0;
+			grgid = getgrnam(sgid);
+			if(grgid) {
+				gid = grgid->gr_gid;
+				break;
+			} else if(errno != EINTR) {
+				ERROR("%s is an invalid gid or unknown group in pseudo file definition \"%s\"\n", sgid, orig_def);
+				return NULL;
+			}
 		}
 	}
 
