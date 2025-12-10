@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2023
+ * Copyright (c) 2023, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -31,8 +31,9 @@
 
 #include "date.h"
 #include "error.h"
+#include "alloc.h"
 
-int exec_date(char *string, unsigned int *mtime)
+int exec_date2(char *string, unsigned int *mtime, char **error)
 {
 	int res, pipefd[2], child, status;
 	int bytes = 0;
@@ -41,13 +42,13 @@ int exec_date(char *string, unsigned int *mtime)
 
 	res = pipe(pipefd);
 	if(res == -1) {
-		ERROR("Error executing date, pipe failed\n");
+		ASPRINTF(error, "Error executing date, pipe failed\n");
 		return FALSE;
 	}
 
 	child = fork();
 	if(child == -1) {
-		ERROR("Error executing date, fork failed\n");
+		ASPRINTF(error, "Error executing date, fork failed\n");
 		goto failed;
 	}
 
@@ -67,7 +68,7 @@ int exec_date(char *string, unsigned int *mtime)
 	while(1) {
 		res = read_bytes(pipefd[0], buffer, 11);
 		if(res == -1) {
-			ERROR("Error executing date\n");
+			ASPRINTF(error, "Error executing date\n");
 			goto failed2;
 		} else if(res == 0)
 			break;
@@ -80,7 +81,7 @@ int exec_date(char *string, unsigned int *mtime)
 		if(res != -1)
 			break;
 		else if(errno != EINTR) {
-			ERROR("Error executing data, waitpid failed\n");
+			ASPRINTF(error, "Error executing data, waitpid failed\n");
 			goto failed2;
 		}
 	}
@@ -88,12 +89,12 @@ int exec_date(char *string, unsigned int *mtime)
 	close(pipefd[0]);
 
 	if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-		ERROR("Error executing date, failed to parse date string\n");
+		ASPRINTF(error, "Error executing date, failed to parse date string\n");
 		return FALSE;
 	}
 
 	if(bytes == 0 || bytes > 11) {
-		ERROR("Error executing date, unexpected result\n");
+		ASPRINTF(error, "Error executing date, unexpected result\n");
 		return FALSE;
 	}
 
@@ -103,17 +104,17 @@ int exec_date(char *string, unsigned int *mtime)
 	res = sscanf(buffer, "%lld", &time);
 
 	if(res < 1) {
-		ERROR("Error, unexpected result from date\n");
+		ASPRINTF(error, "Error, unexpected result from date\n");
 		return FALSE;
 	}
 
 	if(time < 0) {
-		ERROR("Error, negative number returned from date, dates should be on or after the epoch of 1970-01-01 00:00 UTC\n");
+		ASPRINTF(error, "Error, negative number returned from date, dates should be on or after the epoch of 1970-01-01 00:00 UTC\n");
 		return FALSE;
 	}
 
 	if(time > UINT_MAX) {
-		ERROR("Error, number returned from date >= 2^32, dates should be before 2106-02-07 06:28:16 UTC\n");
+		ASPRINTF(error, "Error, number returned from date >= 2^32, dates should be before 2106-02-07 06:28:16 UTC\n");
 		return FALSE;
 	}
 
@@ -126,4 +127,18 @@ failed:
 failed2:
 	close(pipefd[0]);
 	return FALSE;
+}
+
+
+int exec_date(char *string, unsigned int *mtime)
+{
+	char *error;
+	int res = exec_date2(string, mtime, &error);
+
+	if(!res) {
+		ERROR("%s", error);
+		free(error);
+	}
+
+	return res;
 }
