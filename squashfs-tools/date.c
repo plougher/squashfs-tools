@@ -55,6 +55,10 @@ int exec_date2(char *string, unsigned int *mtime, char **error)
 	if(child == 0) {
 		close(pipefd[0]);
 		close(STDOUT_FILENO);
+		close(STDERR_FILENO);
+		res = dup(pipefd[1]);
+		if(res == -1)
+			exit(EXIT_FAILURE);
 		res = dup(pipefd[1]);
 		if(res == -1)
 			exit(EXIT_FAILURE);
