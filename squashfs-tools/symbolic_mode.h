@@ -59,4 +59,5 @@ extern int parse_sym_mode_arg2(char *source, char *cur_ptr, char *arg, struct mo
 extern int parse_mode_args2(char *source, char *cur_ptr, int args, char **argv, void **data, char **error);
 extern int mode_execute(struct mode_data *mode_data, int st_mode);
 extern int parse_mode(char *source, struct mode_data **data);
+extern int parse_mode2(char *source, struct mode_data **data, char **error);
 #endif
