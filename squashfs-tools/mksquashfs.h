@@ -302,5 +302,5 @@ extern struct dir_info *scan1_opendir(char *pathname, char *subpath, unsigned in
 extern squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress);
 extern struct inode_info *lookup_inode(struct stat *buf);
 extern struct inode_info *lookup_inode_flag(struct stat *buf, int have_time);
-extern int exec_date2(char *, unsigned int *, char **);
+extern int exec_date(char *, unsigned int *, char **);
 #endif

@@ -33,7 +33,7 @@
 #include "error.h"
 #include "alloc.h"
 
-int exec_date2(char *string, unsigned int *mtime, char **error)
+int exec_date(char *string, unsigned int *mtime, char **error)
 {
 	int res, pipefd[2], child, status;
 	int bytes = 0;

@@ -4378,7 +4378,7 @@ static int parse_options(int argc, char *argv[])
 
 			if((++i == argc) ||
 					(!parse_number_unsigned(argv[i], &timeval)
-					&& !exec_date2(argv[i], &timeval, &error)))
+					&& !exec_date(argv[i], &timeval, &error)))
 				unsquashfs_option_help("%s-all-time", "unsquashfs: %s missing or invalid time value\n", error, argv[i - 1]);
 			time_opt = TRUE;
 		} else if(strcmp(argv[i], "-full-precision") == 0 ||

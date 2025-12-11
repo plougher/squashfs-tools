@@ -6671,7 +6671,7 @@ static int sqfstar(int argc, char *argv[])
 			else if(strcmp(argv[i], "inode") == 0)
 				mkfs_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &mkfs_time) &&
-					!exec_date2(argv[i], &mkfs_time, &error))
+					!exec_date(argv[i], &mkfs_time, &error))
 				sqfstar_option_help(argv[i - 1], "%ssqfstar: %s invalid time value\n", error, argv[i - 1]);
 			else {
 				mkfs_time_opt = TRUE;
@@ -6685,7 +6685,7 @@ static int sqfstar(int argc, char *argv[])
 			else if(strcmp(argv[i], "inode") == 0)
 				inode_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &inode_time) &&
-					!exec_date2(argv[i], &inode_time, &error))
+					!exec_date(argv[i], &inode_time, &error))
 				sqfstar_option_help(argv[i - 1], "%ssqfstar: %s invalid time value\n", error, argv[i - 1]);
 			else {
 				inode_time_opt = TRUE;
@@ -6705,7 +6705,7 @@ static int sqfstar(int argc, char *argv[])
 			if(++i == dest_index)
 				sqfstar_option_help(argv[i - 1], "sqfstar: -repro-time missing time value\n");
 			else if(!parse_num_unsigned(argv[i], &repro_time) &&
-					!exec_date2(argv[i], &repro_time, &error))
+					!exec_date(argv[i], &repro_time, &error))
 				sqfstar_option_help(argv[i - 1], "%ssqfstar: -repro-time invalid time value\n", error);
 			else
 				repro_time_opt = TRUE;
@@ -6753,7 +6753,7 @@ static int sqfstar(int argc, char *argv[])
 			else if(strcmp(argv[i], "inode") == 0)
 				root_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &root_time) &&
-					!exec_date2(argv[i], &root_time, &error))
+					!exec_date(argv[i], &root_time, &error))
 				sqfstar_option_help(argv[i - 1], "%ssqfstar: -root-time invalid time value\n", error);
 			else
 				root_time_opt = TRUE;
@@ -7689,7 +7689,7 @@ int main(int argc, char *argv[])
 			else if(strcmp(argv[i], "inode") == 0)
 				mkfs_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &mkfs_time) &&
-					!exec_date2(argv[i], &mkfs_time, &error))
+					!exec_date(argv[i], &mkfs_time, &error))
 				mksquashfs_option_help(argv[i - 1], "%smksquashfs: %s invalid time value\n", argv[i - 1], error);
 			else {
 				mkfs_time_opt = TRUE;
@@ -7703,7 +7703,7 @@ int main(int argc, char *argv[])
 			else if(strcmp(argv[i], "inode") == 0)
 				inode_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &inode_time) &&
-					!exec_date2(argv[i], &inode_time, &error))
+					!exec_date(argv[i], &inode_time, &error))
 				mksquashfs_option_help(argv[i - 1], "%smksquashfs: %s invalid time value\n", error, argv[i - 1]);
 			else {
 				inode_time_opt = TRUE;
@@ -7723,7 +7723,7 @@ int main(int argc, char *argv[])
 			if(++i == argc)
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -repro-time missing time value\n");
 			else if(!parse_num_unsigned(argv[i], &repro_time) &&
-					!exec_date2(argv[i], &repro_time, &error))
+					!exec_date(argv[i], &repro_time, &error))
 				mksquashfs_option_help(argv[i - 1], "%smksquashfs: -repro-time invalid time value\n", error);
 			else
 				repro_time_opt = TRUE;
@@ -7771,7 +7771,7 @@ int main(int argc, char *argv[])
 			else if(strcmp(argv[i], "inode") == 0)
 				root_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &root_time) &&
-					!exec_date2(argv[i], &root_time, &error))
+					!exec_date(argv[i], &root_time, &error))
 				mksquashfs_option_help(argv[i - 1], "%smksquashfs: -root-time invalid time value\n", error);
 			else
 				root_time_opt = TRUE;

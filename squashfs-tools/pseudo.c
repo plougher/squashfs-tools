@@ -631,7 +631,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 			return NULL;
 		}
 
-		n = exec_date2(string, &mtime, &error);
+		n = exec_date(string, &mtime, &error);
 		if(n == FALSE) {
 				ERROR("%sCouldn't parse time, date string or "
 					"unsigned decimal integer "
