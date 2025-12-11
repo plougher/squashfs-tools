@@ -93,7 +93,7 @@ int exec_date2(char *string, unsigned int *mtime, char **error)
 	close(pipefd[0]);
 
 	if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-		ASPRINTF(error, "Error executing date, failed to parse date string\n");
+		ASPRINTF(error, "Error date command failed to parse date string\n");
 		return FALSE;
 	}
 
