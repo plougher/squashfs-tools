@@ -344,4 +344,5 @@ extern void sort_directory(struct dir_ent **, int);
 
 /* date.c */
 extern int exec_date(char *, unsigned int *);
+extern int exec_date2(char *, unsigned int *, char **);
 #endif

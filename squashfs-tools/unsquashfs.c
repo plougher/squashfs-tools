@@ -4374,10 +4374,12 @@ static int parse_options(int argc, char *argv[])
 				unsquashfs_option_help("-offset", "unsquashfs: %s missing or invalid offset size\n", argv[i - 1]);
 		} else if(strcmp(argv[i], "-all-time") == 0 ||
 				strcmp(argv[i], "-all") == 0) {
+			char *error;
+
 			if((++i == argc) ||
 					(!parse_number_unsigned(argv[i], &timeval)
-					&& !exec_date(argv[i], &timeval)))
-				unsquashfs_option_help("-all-time", "unsquashfs: %s missing or invalid time value\n", argv[i - 1]);
+					&& !exec_date2(argv[i], &timeval, &error)))
+				unsquashfs_option_help("%s-all-time", "unsquashfs: %s missing or invalid time value\n", error, argv[i - 1]);
 			time_opt = TRUE;
 		} else if(strcmp(argv[i], "-full-precision") == 0 ||
 				strcmp(argv[i], "-full") == 0)
