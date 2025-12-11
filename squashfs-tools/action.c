@@ -3126,7 +3126,7 @@ static int eval_fn(struct atom *atom, struct action_data *action_data)
 static int parse_perm_args(struct test_entry *test, struct atom *atom)
 {
 	int res = 1, mode, op, i;
-	char *arg;
+	char *arg, *error;
 	struct mode_data *head = NULL, *cur = NULL;
 	struct perm_data *perm_data;
 
@@ -3151,15 +3151,18 @@ static int parse_perm_args(struct test_entry *test, struct atom *atom)
 	}
 
 	/* try to parse as an octal number */
-	res = parse_octal_mode_args(source, cur_ptr, atom->args, atom->argv, (void **) &head);
+	res = parse_octal_mode_args2(source, cur_ptr, atom->args, atom->argv, (void **) &head, &error);
 	if(res == -1) {
 		/* parse as sym mode argument */
 		for(i = 0; i < atom->args && res; i++, arg = atom->argv[i])
-			res = parse_sym_mode_arg(source, cur_ptr, arg, &head, &cur);
+			res = parse_sym_mode_arg2(source, cur_ptr, arg, &head, &cur, &error);
 	}
 
-	if (res == 0)
+	if (res == 0) {
+		fprintf(stderr, "%s", error);
+		free(error);
 		goto finish;
+	}
 
 	/*
 	 * Evaluate the symbolic mode against a permission of 0000 octal
