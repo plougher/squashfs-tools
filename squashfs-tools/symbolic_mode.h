@@ -3,7 +3,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2024
+ * Copyright (c) 2024, 2025
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -27,14 +27,14 @@
 
 #define SYNTAX_ERR(S, ARGS...) { \
 	if(source) { \
-		char *src = STRDUP(source); \
+		char *s, *src = STRDUP(source); \
 		src[cur_ptr - source] = '\0'; \
-		fprintf(stderr, "Failed to parse action \"%s\"\n", source); \
-		fprintf(stderr, "Syntax error: "S, ##ARGS); \
-		fprintf(stderr, "Got here \"%s\"\n", src); \
+		ASPRINTF(&s, "Syntax error: "S, ##ARGS); \
+		ASPRINTF(error, "Failed to parse action \"%s\"\n%sGot here \"%s\"\n", source, s, src); \
+		free(s); \
 		free(src); \
 	} else \
-		fprintf(stderr, "Syntax error: "S, ##ARGS); \
+		ASPRINTF(error, "Syntax error: "S, ##ARGS); \
 }
 
 /*
