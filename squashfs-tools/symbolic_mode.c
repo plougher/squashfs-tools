@@ -72,21 +72,6 @@ int parse_octal_mode_args2(char *source, char *cur_ptr, int args, char **argv,
 }
 
 
-int parse_octal_mode_args(char *source, char *cur_ptr, int args, char **argv,
-						void **data)
-{
-	char *error;
-	int res = parse_octal_mode_args2(source, cur_ptr, args, argv, data, &error);
-
-	if(!res) {
-		fprintf(stderr, "%s", error);
-		free(error);
-	}
-
-	return res;
-}
-
-
 /*
  * Parse symbolic mode of format [ugoa]*[[+-=]PERMS]+
  * PERMS = [rwxXst]+ or [ugo]
@@ -225,21 +210,6 @@ perms_parsed:
 
 failed:
 	return 0;
-}
-
-
-int parse_sym_mode_arg(char *source, char *cur_ptr, char *arg,
-	struct mode_data **head, struct mode_data **cur)
-{
-	char *error;
-	int res = parse_sym_mode_arg2(source, cur_ptr, arg, head, cur, &error);
-
-	if(!res) {
-		fprintf(stderr, "%s", error);
-		free(error);
-	}
-
-	return res;
 }
 
 
