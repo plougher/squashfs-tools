@@ -7674,13 +7674,15 @@ int main(int argc, char *argv[])
 			force_single_threaded = TRUE;
 		} else if(strcmp(argv[i], "-mkfs-time") == 0 ||
 				strcmp(argv[i], "-fstime") == 0) {
+			char *error;
+
 			if(++i == argc)
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s missing time value\n", argv[i - 1]);
 			else if(strcmp(argv[i], "inode") == 0)
 				mkfs_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &mkfs_time) &&
-					!exec_date(argv[i], &mkfs_time))
-				mksquashfs_option_help(argv[i - 1], "mksquashfs: %s invalid time value\n", argv[i - 1]);
+					!exec_date2(argv[i], &mkfs_time, &error))
+				mksquashfs_option_help(argv[i - 1], "%smksquashfs: %s invalid time value\n", argv[i - 1], error);
 			else {
 				mkfs_time_opt = TRUE;
 				clamping = FALSE;
