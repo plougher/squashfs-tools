@@ -132,17 +132,3 @@ failed2:
 	close(pipefd[0]);
 	return FALSE;
 }
-
-
-int exec_date(char *string, unsigned int *mtime)
-{
-	char *error;
-	int res = exec_date2(string, mtime, &error);
-
-	if(!res) {
-		ERROR("%s", error);
-		free(error);
-	}
-
-	return res;
-}
