@@ -7780,8 +7780,12 @@ int main(int argc, char *argv[])
 			else
 				root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
-			if((++i == argc) || !parse_mode(argv[i], &default_mode))
-				mksquashfs_option_help(argv[i - 1], "mksquashfs: -default-mode missing or invalid mode, symbolic mode or octal number expected\n");
+			char *error;
+
+			if(++i == argc)
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -default-mode invalid mode, symbolic mode or octal number expected\n");
+			else if(!parse_mode2(argv[i], &default_mode, &error))
+				mksquashfs_option_help(argv[i - 1], "%smksquashfs: -default-mode invalid mode, symbolic mode or octal number expected\n", error);
 			root_mode = default_mode;
 			default_mode_opt = root_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-uid") == 0) {
