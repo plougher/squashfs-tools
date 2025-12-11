@@ -57,6 +57,7 @@ struct mode_data {
 extern int parse_octal_mode_args2(char *source, char *cur_ptr, int args, char **argv, void **data, char **error);
 extern int parse_sym_mode_arg2(char *source, char *cur_ptr, char *arg, struct mode_data **head, struct mode_data **cur, char **error);
 extern int parse_mode_args(char *source, char *cur_ptr, int args, char **argv, void **data);
+extern int parse_mode_args2(char *source, char *cur_ptr, int args, char **argv, void **data, char **error);
 extern int mode_execute(struct mode_data *mode_data, int st_mode);
 extern int parse_mode(char *source, struct mode_data **data);
 #endif

@@ -1316,12 +1316,21 @@ static void guid_action(struct action *action, struct dir_ent *dir_ent)
 static int action_parse_mode(struct action_entry *action, int args,
 					char **argv, void **data)
 {
+	char *error;
+	int res;
+
 	if (args == 0) {
 		SYNTAX_ERROR("Mode action expects one or more arguments\n");
 		return 0;
 	}
 
-	return parse_mode_args(source, cur_ptr, args, argv, data);
+	res = parse_mode_args2(source, cur_ptr, args, argv, data, &error);
+	if(!res) {
+		fprintf(stderr, "%s", error);
+		free(error);
+	}
+
+	return res;
 }
 
 
