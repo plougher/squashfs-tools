@@ -6678,13 +6678,15 @@ static int sqfstar(int argc, char *argv[])
 				clamping = FALSE;
 			}
 		} else if(strcmp(argv[i], "-all-time") == 0 || strcmp(argv[i], "-inode-time") == 0) {
+			char *error;
+
 			if(++i == dest_index)
 				sqfstar_option_help(argv[i - 1], "sqfstar: %s missing time value\n", argv[i - 1]);
 			else if(strcmp(argv[i], "inode") == 0)
 				inode_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &inode_time) &&
-					!exec_date(argv[i], &inode_time))
-				sqfstar_option_help(argv[i - 1], "sqfstar: %s invalid time value\n", argv[i - 1]);
+					!exec_date2(argv[i], &inode_time, &error))
+				sqfstar_option_help(argv[i - 1], "%ssqfstar: %s invalid time value\n", error, argv[i - 1]);
 			else {
 				inode_time_opt = TRUE;
 				clamping = FALSE;
