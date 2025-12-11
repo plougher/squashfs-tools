@@ -8070,8 +8070,12 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[i - 1], "%smksquashfs: -force-file-mode invalid mode, symbolic mode or octal number expected\n", error);
 			global_file_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-dir-mode") == 0) {
-			if((++i == argc) || !parse_mode(argv[i], &global_dir_mode))
-				mksquashfs_option_help(argv[i - 1], "mksquashfs: -force-dir-mode missing or invalid mode, symbolic mode or octal number expected\n");
+			char *error;
+
+			if(++i == argc)
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -force-dir-mode missing mode, symbolic mode or octal number expected\n");
+			else if(!parse_mode2(argv[i], &global_dir_mode, &error))
+				mksquashfs_option_help(argv[i - 1], "%smksquashfs: -force-dir-mode invalid mode, symbolic mode or octal number expected\n", error);
 			global_dir_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-force-uid") == 0) {
 			if(++i == argc)
