@@ -7756,13 +7756,15 @@ int main(int argc, char *argv[])
 					mksquashfs_option_help(argv[i - 1], "mksquashfs: -uid-gid-offset invalid number\n");
 			}
 		} else if(strcmp(argv[i], "-root-time") == 0) {
+			char *error;
+
 			if(++i == argc)
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -root-time missing time value\n");
 			else if(strcmp(argv[i], "inode") == 0)
 				root_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &root_time) &&
-					!exec_date(argv[i], &root_time))
-				mksquashfs_option_help(argv[i - 1], "mksquashfs: -root-time invalid time value\n");
+					!exec_date2(argv[i], &root_time, &error))
+				mksquashfs_option_help(argv[i - 1], "%smksquashfs: -root-time invalid time value\n", error);
 			else
 				root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
