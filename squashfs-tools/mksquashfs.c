@@ -6746,13 +6746,15 @@ static int sqfstar(int argc, char *argv[])
 					sqfstar_option_help(argv[i - 1], "sqfstar: -uid-gid-offset invalid number\n");
 			}
 		} else if(strcmp(argv[i], "-root-time") == 0) {
+			char *error;
+
 			if(++i == dest_index)
 				sqfstar_option_help(argv[i - 1], "sqfstar: -root-time missing time value\n");
 			else if(strcmp(argv[i], "inode") == 0)
 				root_inode_opt = TRUE;
 			else if(!parse_num_unsigned(argv[i], &root_time) &&
-					!exec_date(argv[i], &root_time))
-				sqfstar_option_help(argv[i - 1], "sqfstar: -root-time invalid time value\n");
+					!exec_date2(argv[i], &root_time, &error))
+				sqfstar_option_help(argv[i - 1], "%ssqfstar: -root-time invalid time value\n", error);
 			else
 				root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
