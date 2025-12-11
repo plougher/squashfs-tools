@@ -6700,11 +6700,13 @@ static int sqfstar(int argc, char *argv[])
 		else if(strcmp(argv[i], "-repro") == 0)
 			repro_opt = TRUE;
 		else if(strcmp(argv[i], "-repro-time") == 0) {
+			char *error;
+
 			if(++i == dest_index)
 				sqfstar_option_help(argv[i - 1], "sqfstar: -repro-time missing time value\n");
 			else if(!parse_num_unsigned(argv[i], &repro_time) &&
-					!exec_date(argv[i], &repro_time))
-				sqfstar_option_help(argv[i - 1], "sqfstar: -repro-time invalid time value\n", argv[i - 1]);
+					!exec_date2(argv[i], &repro_time, &error))
+				sqfstar_option_help(argv[i - 1], "%ssqfstar: -repro-time invalid time value\n", error);
 			else
 				repro_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-mode") == 0) {
