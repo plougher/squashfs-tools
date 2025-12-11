@@ -582,7 +582,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 	int n, bytes;
 	int quoted = FALSE;
 	unsigned int major = 0, minor = 0, mode, mtime;
-	char *ptr, *str, *string, *command = NULL, *symlink = NULL;
+	char *ptr, *str, *error, *string, *command = NULL, *symlink = NULL;
 	char suid[100], sgid[100]; /* overflow safe */
 	char ipc_type;
 	long long uid, gid;
@@ -631,11 +631,11 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 			return NULL;
 		}
 
-		n = exec_date(string, &mtime);
+		n = exec_date2(string, &mtime, &error);
 		if(n == FALSE) {
-				ERROR("Couldn't parse time, date string or "
+				ERROR("%sCouldn't parse time, date string or "
 					"unsigned decimal integer "
-					"expected\n");
+					"expected\n", error);
 			free(string);
 			return NULL;
 		}
