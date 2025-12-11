@@ -85,7 +85,7 @@ int exec_date2(char *string, unsigned int *mtime, char **error)
 		if(res != -1)
 			break;
 		else if(errno != EINTR) {
-			ASPRINTF(error, "Error executing data, waitpid failed\n");
+			ASPRINTF(error, "Error executing date, waitpid failed\n");
 			goto failed2;
 		}
 	}
