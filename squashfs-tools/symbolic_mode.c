@@ -241,7 +241,7 @@ int parse_mode_args(char *source, char *cur_ptr, int args, char **argv,
 }
 
 
-int parse_mode2(char *source, struct mode_data **data, char **error)
+int parse_mode(char *source, struct mode_data **data, char **error)
 {
 	int args = 0, res = 0;
 	char **argv = NULL, *cur_ptr = source, *first = source;
