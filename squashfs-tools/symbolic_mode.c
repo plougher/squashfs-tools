@@ -76,7 +76,7 @@ int parse_octal_mode_args(char *source, char *cur_ptr, int args, char **argv,
  * Parse symbolic mode of format [ugoa]*[[+-=]PERMS]+
  * PERMS = [rwxXst]+ or [ugo]
  */
-int parse_sym_mode_arg2(char *source, char *cur_ptr, char *arg,
+int parse_sym_mode_arg(char *source, char *cur_ptr, char *arg,
 	struct mode_data **head, struct mode_data **cur, char **error)
 {
 	struct mode_data *mode_data;
@@ -220,7 +220,7 @@ static int parse_sym_mode_args(char *source, char *cur_ptr, int args,
 	struct mode_data *head = NULL, *cur = NULL;
 
 	for (i = 0; i < args && res; i++)
-		res = parse_sym_mode_arg2(source, cur_ptr, argv[i], &head, &cur, error);
+		res = parse_sym_mode_arg(source, cur_ptr, argv[i], &head, &cur, error);
 
 	*data = head;
 

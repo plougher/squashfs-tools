@@ -3164,7 +3164,7 @@ static int parse_perm_args(struct test_entry *test, struct atom *atom)
 	if(res == -1) {
 		/* parse as sym mode argument */
 		for(i = 0; i < atom->args && res; i++, arg = atom->argv[i])
-			res = parse_sym_mode_arg2(source, cur_ptr, arg, &head, &cur, &error);
+			res = parse_sym_mode_arg(source, cur_ptr, arg, &head, &cur, &error);
 	}
 
 	if (res == 0) {
