@@ -272,19 +272,6 @@ int parse_mode2(char *source, struct mode_data **data, char **error)
 }
 
 
-int parse_mode(char *source, struct mode_data **data)
-{
-	char *error;
-	int res = parse_mode2(source, data, &error);
-
-	if(!res) {
-		fprintf(stderr, "%s", error);
-		free(error);
-	}
-
-	return res;
-}
-
 int mode_execute(struct mode_data *mode_data, int st_mode)
 {
 	int mode = 0;
