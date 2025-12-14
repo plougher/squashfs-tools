@@ -6710,8 +6710,12 @@ static int sqfstar(int argc, char *argv[])
 			else
 				repro_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-mode") == 0) {
-			if((++i == dest_index) || !parse_mode(argv[i], &root_mode))
-				sqfstar_option_help(argv[i - 1], "sqfstar: -root-mode missing or invalid mode, symbolic mode or octal number expected\n");
+			char *error;
+
+			if(++i == dest_index)
+				sqfstar_option_help(argv[i - 1], "sqfstar: -root-mode missing mode, symbolic mode or octal number expected\n");
+			else if(!parse_mode2(argv[i], &root_mode, &error))
+				sqfstar_option_help(argv[i - 1], "%ssqfstar: -root-mode invalid mode, symbolic mode or octal number expected\n", error);
 			root_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-root-uid") == 0) {
 			if(++i == dest_index)
