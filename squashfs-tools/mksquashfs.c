@@ -6762,8 +6762,12 @@ static int sqfstar(int argc, char *argv[])
 			else
 				root_time_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-mode") == 0) {
-			if((++i == dest_index) || !parse_mode(argv[i], &default_mode))
-				sqfstar_option_help(argv[i - 1], "sqfstar: -default-mode missing or invalid mode, symbolic mode or octal number expected\n");
+			char *error;
+
+			if(++i == dest_index)
+				sqfstar_option_help(argv[i - 1], "sqfstar: -default-mode missing mode, symbolic mode or octal number expected\n");
+			else if(!parse_mode2(argv[i], &default_mode, &error))
+				sqfstar_option_help(argv[i - 1], "%ssqfstar: -default-mode invalid mode, symbolic mode or octal number expected\n", error);
 			root_mode = default_mode;
 			default_mode_opt = root_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-default-uid") == 0) {
