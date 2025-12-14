@@ -228,7 +228,7 @@ static int parse_sym_mode_args(char *source, char *cur_ptr, int args,
 }
 
 
-int parse_mode_args2(char *source, char *cur_ptr, int args, char **argv,
+int parse_mode_args(char *source, char *cur_ptr, int args, char **argv,
 						void **data, char **error)
 {
 	int res = parse_octal_mode_args(source, cur_ptr, args, argv, data, error);
@@ -260,7 +260,7 @@ int parse_mode2(char *source, struct mode_data **data, char **error)
 	}
 
 	if(args) {
-		res = parse_mode_args2(NULL, NULL, args, argv, (void **) data, error);
+		res = parse_mode_args(NULL, NULL, args, argv, (void **) data, error);
 
 		free(argv);
 	} else {

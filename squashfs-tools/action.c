@@ -1324,7 +1324,7 @@ static int action_parse_mode(struct action_entry *action, int args,
 		return 0;
 	}
 
-	res = parse_mode_args2(source, cur_ptr, args, argv, data, &error);
+	res = parse_mode_args(source, cur_ptr, args, argv, data, &error);
 	if(!res) {
 		fprintf(stderr, "%s", error);
 		free(error);
