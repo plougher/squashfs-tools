@@ -3160,7 +3160,7 @@ static int parse_perm_args(struct test_entry *test, struct atom *atom)
 	}
 
 	/* try to parse as an octal number */
-	res = parse_octal_mode_args2(source, cur_ptr, atom->args, atom->argv, (void **) &head, &error);
+	res = parse_octal_mode_args(source, cur_ptr, atom->args, atom->argv, (void **) &head, &error);
 	if(res == -1) {
 		/* parse as sym mode argument */
 		for(i = 0; i < atom->args && res; i++, arg = atom->argv[i])

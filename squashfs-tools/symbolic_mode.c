@@ -29,7 +29,7 @@
 #include "symbolic_mode.h"
 #include "alloc.h"
 
-int parse_octal_mode_args2(char *source, char *cur_ptr, int args, char **argv,
+int parse_octal_mode_args(char *source, char *cur_ptr, int args, char **argv,
 						void **data, char **error)
 {
 	int n, bytes;
@@ -231,7 +231,7 @@ static int parse_sym_mode_args(char *source, char *cur_ptr, int args,
 int parse_mode_args2(char *source, char *cur_ptr, int args, char **argv,
 						void **data, char **error)
 {
-	int res = parse_octal_mode_args2(source, cur_ptr, args, argv, data, error);
+	int res = parse_octal_mode_args(source, cur_ptr, args, argv, data, error);
 
 	if(res >= 0)
 		/* Got an octal mode argument */
