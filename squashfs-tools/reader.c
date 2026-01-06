@@ -52,6 +52,7 @@
 #include "atomic_swap.h"
 #include "caches-queues-lists.h"
 #include "alloc.h"
+#include "lseek.h"
 
 #define READER_ALLOC 1024
 
