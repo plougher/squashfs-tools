@@ -2923,8 +2923,10 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 			fragment_buffer ?  fragment_buffer->checksum : 0, FALSE,
 			TRUE);
 
-	if(!is_vpos_marked())
+	if(!is_vpos_marked()) {
 		send_orderer_create_map(get_marked_vpos());
+		inc_vpos();
+	}
 
 	gen_cache_block_put(fragment_buffer);
 	file_count ++;
@@ -3027,8 +3029,10 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 			if(buffer_list[block])
 				put_write_buffer_hash(buffer_list[block]);
 
-		if(!is_vpos_marked())
+		if(!is_vpos_marked()) {
 			send_orderer_create_map(get_marked_vpos());
+			inc_vpos();
+		}
 	} else {
 		for(block = thresh; block < blocks; block ++)
 			gen_cache_block_put(buffer_list[block]);
@@ -3140,8 +3144,10 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 			block_list, get_marked_vpos(), fragment, 0, fragment_buffer ?
 			fragment_buffer->checksum : 0, FALSE, TRUE);
 
-	if(!is_vpos_marked())
+	if(!is_vpos_marked()) {
 		send_orderer_create_map(get_marked_vpos());
+		inc_vpos();
+	}
 
 	gen_cache_block_put(fragment_buffer);
 	file_count ++;

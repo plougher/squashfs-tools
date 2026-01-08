@@ -96,6 +96,15 @@ static inline long long get_and_inc_vpos(long long value)
 }
 
 
+static inline void inc_vpos()
+{
+	if(marked_vpos == 0)
+		BAD_ERROR("BUG: Saved write position is empty!\n");
+
+	vpos ++;
+}
+
+
 static inline int reset_vpos(void)
 {
 	if(marked_vpos == 0)
