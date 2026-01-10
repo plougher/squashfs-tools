@@ -2393,7 +2393,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 					break;
 				target_start += size;
 				dup_start += size;
-				if(dtarget_start)
+				if(dtarget_start != -1)
 					dtarget_start += size;
 				if(ddup_start != -1)
 					ddup_start += size;
