@@ -22,6 +22,7 @@ The top-level directory contains the following files:
 * **CHANGES** - a reverse chronological list of changes from the latest release to the earliest release.
 * **CHANGES.md** - the above file in markdown format.
 * **INSTALL** - where to get the INSTALL file for your version of squashfs-tools.
+* **MIMALLOC.md** - documentation on using the optional mimalloc high-performance memory allocator.
 * **README** - where to get the README for you version of squashfs-tools.
 * **USAGE** - where to get the USAGE files for your version of squashfs-tools.
 
