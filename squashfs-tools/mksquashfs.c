@@ -2887,13 +2887,14 @@ static struct file_info *write_file_process(int *status, struct dir_ent *dir_ent
 		} else {
 			block_list = REALLOC(block_list, (block + 1) *
 				sizeof(unsigned int));
-			block_list[block ++] = read_buffer->c_byte;
 			if(!is_sparse(read_buffer)) {
+				block_list[block ++] = read_buffer->c_byte;
 				file_bytes += read_buffer->size;
 				put_write_buffer_hash(read_buffer);
 			} else {
 				if(sparse_count(read_buffer) > 1)
 					BAD_ERROR("Sparse block too large in write file process\n");
+				block_list[block ++] = 0;
 				sparse += read_buffer->size;
 				gen_cache_block_put(read_buffer);
 			}
