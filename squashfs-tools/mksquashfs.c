@@ -2280,9 +2280,7 @@ static struct file_info *frag_duplicate(struct file_buffer *file_buffer, int *du
 
 static void reset_and_truncate(void)
 {
-	int res = reset_vpos();
-
-	if(res)
+	if(is_vpos_marked())
 		send_orderer_reset(get_marked_vpos());
 }
 
