@@ -752,8 +752,8 @@ be reproducible if the timestamps or content changes.
 #### 8.2.2 -repro-time <time\>
 
 This option makes Mksquashfs build a reproducible filesystem image.  This is
-equivalent to specifying -mkfs-time <time> and -inode-time <time>, which
-achieves reproducibility by setting all timestamps to <time>.  This option can
+equivalent to specifying -mkfs-time <time\> and -inode-time <time\>, which
+achieves reproducibility by setting all timestamps to <time\>.  This option can
 be used in cases where timestamps may change, and where -repro cannot be used
 for this reason.
 
