@@ -506,7 +506,7 @@ In doing so, this has introduced three new help options:
 ### 7.1 -help-option <regex\>
 ------------------------
 
-The -help-option option displays all the options that match the <regex> regular
+The -help-option option displays all the options that match the <regex\> regular
 expression, where matching is done on the option itself and the arguments,
 e.g.
 
@@ -566,10 +566,10 @@ wanted to return all the options that operate on uids and gids, you could do
 
 ### 7.2 -help-section <section\>
 
-The ```-help-section``` option displays the section that matches the <section> name.
-If <section> does not exactly match a section name, it is treated as a regular
+The ```-help-section``` option displays the section that matches the <section\> name.
+If <section\> does not exactly match a section name, it is treated as a regular
 expression, and all section names that match are displayed.  Finally, if
-<section> is "list", a list of sections and their names is displayed.
+<section\> is "list", a list of sections and their names is displayed.
 
 For example:
 
@@ -749,7 +749,7 @@ equivalent to -mkfs-time inode, which achieves reproducibility by setting the
 filesystem build time to the latest inode timestamp.  Obviously the image won't
 be reproducible if the timestamps or content changes.
 
-#### 8.2.2 -repro-time <time>
+#### 8.2.2 -repro-time <time\>
 
 This option makes Mksquashfs build a reproducible filesystem image.  This is
 equivalent to specifying -mkfs-time <time> and -inode-time <time>, which
