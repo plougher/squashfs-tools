@@ -105,19 +105,6 @@ static inline void inc_vpos()
 }
 
 
-static inline int reset_vpos(void)
-{
-	if(marked_vpos == 0)
-		BAD_ERROR("BUG: Saved write position is empty!\n");
-	else if(marked_vpos == 1)
-		return FALSE;
-	else {
-		set_vpos(marked_vpos);
-		return TRUE;
-	}
-}
-
-
 static inline void unmark_vpos()
 {
 	if(marked_vpos == 0)
