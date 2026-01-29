@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2017, 2019, 2020, 2021, 2022, 2023, 2024, 2025
+ * 2012, 2013, 2014, 2017, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -4376,11 +4376,13 @@ static int parse_options(int argc, char *argv[])
 				strcmp(argv[i], "-all") == 0) {
 			char *error;
 
-			if((++i == argc) ||
-					(!parse_number_unsigned(argv[i], &timeval)
-					&& !exec_date(argv[i], &timeval, &error)))
-				unsquashfs_option_help("%s-all-time", "unsquashfs: %s missing or invalid time value\n", error, argv[i - 1]);
-			time_opt = TRUE;
+			if(++i == argc)
+				unsquashfs_option_help("-all-time", "unsquashfs: %s missing time value\n", argv[i - 1]);
+			else if(!parse_number_unsigned(argv[i], &timeval)
+					&& !exec_date(argv[i], &timeval, &error))
+				unsquashfs_option_help("-all-time", "%sunsquashfs: %s invalid time value\n", error, argv[i - 1]);
+			else
+				time_opt = TRUE;
 		} else if(strcmp(argv[i], "-full-precision") == 0 ||
 				strcmp(argv[i], "-full") == 0)
 			full_precision = TRUE;
