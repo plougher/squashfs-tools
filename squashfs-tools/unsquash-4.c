@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2009, 2010, 2011, 2012, 2013, 2019, 2021, 2022, 2023, 2024,
- * 2025
+ * 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -685,8 +685,17 @@ int read_super_4(squashfs_operations **s_ops)
 		return res;
 
 	if(sBlk_4.s_magic == SQUASHFS_MAGIC_STREAMED || sBlk_4.s_magic == SQUASHFS_MAGIC_STREAMED_SWAPPED) {
-		long long res = lseek(fd, - sizeof(struct squashfs_super_block), SEEK_END);
+		long long res = lseek(fd, 0, SEEK_END);
 
+		if(res == -1) {
+			ERROR("Lseek failed because %s\n", strerror(errno));
+			return FALSE;
+		}
+
+		if(res < sizeof(struct squashfs_super_block))
+			ERROR("read_super_4: filesystem too small, less than super block in size!\n");
+
+		res = lseek(fd, res - sizeof(struct squashfs_super_block), SEEK_SET);
 		if(res == -1) {
 			ERROR("Lseek failed because %s\n", strerror(errno));
 			return FALSE;
