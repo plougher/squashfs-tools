@@ -422,7 +422,7 @@ struct dir_info *scan1_opendir(char *pathname, char *subpath,
 							unsigned int depth);
 static void write_filesystem_tables(struct squashfs_super_block *sBlk);
 unsigned short get_checksum_mem(char *buff, int bytes);
-static void print_summary(struct squashfs_super_block *sBlk);
+static void print_summary();
 void write_destination(int fd, long long byte, long long bytes, void *buff);
 static int old_excluded(char *filename, struct stat *buf);
 static void write_superblock(struct squashfs_super_block *sBlk);
@@ -610,7 +610,7 @@ void restorefs()
 		unlink(recovery_file);
 
 	if(!quiet)
-		print_summary(&sBlk);
+		print_summary();
 
 	exit(1);
 }
@@ -6257,7 +6257,7 @@ static void print_version(char *string)
 }
 
 
-static void print_summary(struct squashfs_super_block *sBlk)
+static void print_summary()
 {
 	int i;
 
@@ -6271,10 +6271,10 @@ static void print_summary(struct squashfs_super_block *sBlk)
 		"compressed", noI || noId ? "uncompressed" : "compressed");
 	printf("\tduplicates are %sremoved\n", duplicate_checking ? "" :
 		"not ");
-	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", sBlk->bytes_used / 1024.0,
-		sBlk->bytes_used / (1024.0 * 1024.0));
+	printf("Filesystem size %.2f Kbytes (%.2f Mbytes)\n", get_dpos() / 1024.0,
+		get_dpos() / (1024.0 * 1024.0));
 	printf("\t%.2f%% of uncompressed filesystem size (%.2f Kbytes)\n",
-		((float) sBlk->bytes_used / total_bytes) * 100.0, total_bytes / 1024.0);
+		((float) get_dpos() / total_bytes) * 100.0, total_bytes / 1024.0);
 	printf("Inode table size %lld bytes (%.2f Kbytes)\n",
 		inode_bytes, inode_bytes / 1024.0);
 	printf("\t%.2f%% of uncompressed inode table size (%lld bytes)\n",
@@ -7452,7 +7452,7 @@ static int sqfstar(int argc, char *argv[])
 		unlink(recovery_file);
 
 	if(!quiet)
-		print_summary(&sBlk);
+		print_summary();
 
 	if(logging)
 		fclose(log_fd);
@@ -8900,7 +8900,7 @@ int main(int argc, char *argv[])
 		unlink(recovery_file);
 
 	if(!quiet)
-		print_summary(&sBlk);
+		print_summary();
 
 	if(logging)
 		fclose(log_fd);
