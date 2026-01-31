@@ -1,7 +1,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2024, 2025
+ * Copyright (c) 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -201,7 +201,7 @@ char *next_arg(char **pos, int *result)
 
 int check_and_set_pager(char *pager)
 {
-	int args = 0, result;
+	int args = 0, result, i;
 	char *base, *cur = pager;
 
 	 /* split PAGER into arguments */
@@ -242,7 +242,7 @@ int check_and_set_pager(char *pager)
 	return TRUE;
 
 failed:
-	for(int i = 0; i < args; i++)
+	for(i = 0; i < args; i++)
 		free(pager_argv[i]);
 	free(pager_argv);
 	return FALSE;

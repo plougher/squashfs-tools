@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2021, 2022, 2024, 2025
+ * Copyright (c) 2021, 2022, 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -810,8 +810,9 @@ static void create_resources()
 static void *block_reader(void *arg)
 {
 	struct reader *reader = arg;
+	int n;
 
-	for(int n = 0; n < block_count; n ++) {
+	for(n = 0; n < block_count; n ++) {
 		struct read_entry *entry = atomic_swap(&block_array[n], &mutex);
 
 		if(entry == NULL)
@@ -832,8 +833,9 @@ static void *block_reader(void *arg)
 static void *fragment_reader(void *arg)
 {
 	struct reader *reader = arg;
+	int n;
 
-	for(int n = 0; n < fragment_count; n ++) {
+	for(n = 0; n < fragment_count; n ++) {
 		struct read_entry *entry = atomic_swap(&fragment_array[n], &mutex);
 
 		if(entry == NULL)
