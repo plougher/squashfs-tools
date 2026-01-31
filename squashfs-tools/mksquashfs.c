@@ -6474,7 +6474,14 @@ static void fix_file(char *filename)
 	if(sblk.s_magic != SQUASHFS_MAGIC_STREAMED)
 		BAD_ERROR("File \"%s\" is not a streamed Squashfs file, incorrect magic found!\n", filename);
 
-	offset = lseek(fd, -sizeof(struct squashfs_super_block), SEEK_END);
+	offset = lseek(fd, 0, SEEK_END);
+	if(offset == -1)
+		BAD_ERROR("Failed to lseek to end of file \"%s\"\n", filename);
+
+	if(offset < sizeof(struct squashfs_super_block))
+		BAD_ERROR("Filesystem too small, less than super block in size!\n");
+
+	offset = lseek(fd, offset - sizeof(struct squashfs_super_block), SEEK_SET);
 	if(offset == -1)
 		BAD_ERROR("Failed to lseek to end of file \"%s\"\n", filename);
 
