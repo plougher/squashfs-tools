@@ -688,7 +688,7 @@ int read_super_4(squashfs_operations **s_ops)
 		long long res = lseek(fd, 0, SEEK_END);
 
 		if(res == -1) {
-			ERROR("Lseek failed because %s\n", strerror(errno));
+			ERROR("read_super_4: Lseek failed because %s\n", strerror(errno));
 			return FALSE;
 		}
 
@@ -697,13 +697,13 @@ int read_super_4(squashfs_operations **s_ops)
 
 		res = lseek(fd, res - sizeof(struct squashfs_super_block), SEEK_SET);
 		if(res == -1) {
-			ERROR("Lseek failed because %s\n", strerror(errno));
+			ERROR("read_super_4: Lseek failed because %s\n", strerror(errno));
 			return FALSE;
 		}
 
 		res = read_bytes(fd, &sBlk_4, sizeof(struct squashfs_super_block));
 		if(res < sizeof(struct squashfs_super_block)) {
-			ERROR("Read on filesystem failed\n");
+			ERROR("read_super_4: Read on filesystem failed\n");
 			return FALSE;
 		}
 	}
