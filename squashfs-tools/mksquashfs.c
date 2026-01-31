@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2017, 2019, 2020, 2021, 2022, 2023, 2024, 2025
+ * 2012, 2013, 2014, 2017, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -5915,7 +5915,12 @@ static void write_filesystem_tables(struct squashfs_super_block *sBlk)
 
 static void write_superblock(struct squashfs_super_block *sBlk)
 {
-	long long block = streaming ? get_dpos() : SQUASHFS_START;
+	long long block;
+
+	if(streaming)
+		block = nopad ? get_dpos() : (get_dpos() + 4095) & ~4095;
+	else
+		block = SQUASHFS_START;
 
 	SQUASHFS_INSWAP_SUPER_BLOCK(sBlk);
 
@@ -7435,9 +7440,8 @@ static int sqfstar(int argc, char *argv[])
 	}
 
 	if(!nopad && (i = get_dpos() & (4096 - 1))) {
-		long long block = get_and_inc_dpos(4096 - i);
 		char temp[4096] = {0};
-		write_destination(fd, block, 4096 - i, temp);
+		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
 
 	write_superblock(&sBlk);
@@ -8883,9 +8887,8 @@ int main(int argc, char *argv[])
 	}
 
 	if(!nopad && (i = get_dpos() & (4096 - 1))) {
-		long long block = get_and_inc_dpos(4096 - i);
 		char temp[4096] = {0};
-		write_destination(fd, block, 4096 - i, temp);
+		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
 
 	write_superblock(&sBlk);
