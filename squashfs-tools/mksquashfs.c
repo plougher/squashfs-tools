@@ -6469,9 +6469,7 @@ static void fix_file(char *filename)
 	if(res < sizeof(struct squashfs_super_block))
 		BAD_ERROR("Failed to read file \"%s\"\n", filename);
 
-	SQUASHFS_INSWAP_SUPER_BLOCK(&sblk);
-
-	if(sblk.s_magic != SQUASHFS_MAGIC_STREAMED)
+	if(sblk.s_magic != SQUASHFS_MAGIC_STREAMED && sblk.s_magic != SQUASHFS_MAGIC_STREAMED_SWAPPED)
 		BAD_ERROR("File \"%s\" is not a streamed Squashfs file, incorrect magic found!\n", filename);
 
 	offset = lseek(fd, 0, SEEK_END);
@@ -6489,9 +6487,7 @@ static void fix_file(char *filename)
 	if(res < sizeof(struct squashfs_super_block))
 		BAD_ERROR("Failed to read file \"%s\"\n", filename);
 
-	SQUASHFS_INSWAP_SUPER_BLOCK(&sblk);
-
-	if(sblk.s_magic != SQUASHFS_MAGIC)
+	if(sblk.s_magic != SQUASHFS_MAGIC && sblk.s_magic != SQUASHFS_MAGIC_SWAP)
 		BAD_ERROR("File \"%s\" is not a streamed Squashfs file, incorrect magic found!\n", filename);
 
 	res = lseek(fd, SQUASHFS_START, SEEK_SET);
