@@ -3355,6 +3355,26 @@ static struct inode_info *lookup_inode4(struct stat *buf, struct pseudo_dev *pse
 	 * allow hard-links to directories.
 	 */
 	if ((buf->st_mode & S_IFMT) != S_IFDIR && !no_hardlinks) {
+		/*
+		 * When comparing stat information to find hard linked files,
+		 * don't compare the access time, because that will produce a
+		 * false negative if the file is either:
+		 *
+		 * - a symbolic link and the filesystem is mounted strictatime,
+		 *   lazyatime, or relatime and the symbolic link has been
+		 *   created or modified since the last access.
+		 *
+		 * - any other non-directory file and another process accesses
+		 *   the file and the filesystem is mounted strictatime,
+		 *   lazytime or relatime and the file has been created or
+		 *   modified since the last access.
+		 */
+#ifdef st_atime
+		memset(&buf->st_atim, 0, sizeof(buf->st_atim));
+#else
+		memset(&buf->st_atime, 0, sizeof(buf->st_atime));
+#endif
+
 		for(inode = inode_info[ino_hash]; inode; inode = inode->next) {
 			if(memcmp(buf, &inode->buf, sizeof(struct stat)) == 0) {
 				inode->nlink ++;
