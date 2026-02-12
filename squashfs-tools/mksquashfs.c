@@ -7720,6 +7720,7 @@ int main(int argc, char *argv[])
 		else if(strcmp(argv[i], "-max-depth") == 0) {
 			if((++i == argc) || !parse_num_unsigned(argv[i], &max_depth))
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -max-depth missing or invalid value\n");
+			max_depth_opt = TRUE;
 		} else if(strcmp(argv[i], "-throttle") == 0) {
 			if((++i == argc) || !parse_number(argv[i], &res, 2))
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -throttle missing or invalid value\n");
