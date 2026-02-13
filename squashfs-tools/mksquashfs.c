@@ -3929,12 +3929,6 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 		return NULL;
 	}
 
-	if(max_depth_opt && depth > max_depth) {
-		add_excluded(dir);
-		scan1_freedir(dir);
-		return dir;
-	}
-
 	while((dir_ent = _readdir(dir))) {
 		struct dir_info *sub_dir;
 		struct stat buf;
@@ -3947,6 +3941,13 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 		if(strcmp(dir_name, ".") == 0 || strcmp(dir_name, "..") == 0) {
 			free_dir_entry(dir_ent);
 			continue;
+		}
+
+		if(max_depth_opt && depth > max_depth) {
+			free_dir_entry(dir_ent);
+			add_excluded(dir);
+			scan1_freedir(dir);
+			return dir;
 		}
 
 		if(lstat(filename, &buf) == -1) {
