@@ -1127,8 +1127,8 @@ symlink s 0 root root example
 
 Creates a symlink "symlink" to file "example" with root uid/gid.
 
-14.5 CREATING HARD LINKS (FILE REFERENCES)
-------------------------------------------
+14.5 CREATING REFERENCES TO FILES
+---------------------------------
 
 The "f" Pseudo definition allows a regular file to be created from the output of
 a command (or shell).  Often this is used to reference a file outside the source
