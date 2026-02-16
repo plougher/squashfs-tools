@@ -176,12 +176,13 @@ static struct pseudo *add_pseudo(struct pseudo *pseudo, struct pseudo_dev *pseud
 			 */
 			if(target[0] != '\0') {
 				/*
-				 * entry must exist as either a 'd' type or
-				 * 'm' type pseudo file, or not exist at all
+				 * entry must exist as a 'd', 'm' or 'M' type
+				 * pseudo file, or not exist at all
 				 */
 				if(ent->dev == NULL ||
 					ent->dev->type == 'd' ||
-					ent->dev->type == 'm')
+					ent->dev->type == 'm' ||
+					ent->dev->type == 'M')
 					/* recurse adding child components */
 					ent->pseudo = add_pseudo(NULL,
 						pseudo_dev, target, alltarget);
