@@ -4148,12 +4148,13 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 			} else if(dir_ent == NULL && pseudo_ent->pseudo)
 				BAD_ERROR("Pathname \"%s\" does not exist in "
 					"filesystem.  Some pseudo definitions "
-					"will not be created.\n",
-					pseudo_ent->pathname);
+					"will not be created (or evaluated if "
+					"m or M).\n", pseudo_ent->pathname);
 			else if(dir_ent && !S_ISDIR(dir_ent->inode->buf.st_mode) &&
 								pseudo_ent->pseudo)
-				BAD_ERROR("Pathname \"%s\" is not a directory.  Some "
-					"pseudo definitions will not be created.\n",
+				BAD_ERROR("Pathname \"%s\" is not a directory. "
+					" Some pseudo definitions will not be "
+					"created (or evaluated if m or M).\n",
 					pseudo_ent->pathname);
 			else
 				continue;
