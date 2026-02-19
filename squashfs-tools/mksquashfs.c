@@ -4162,13 +4162,24 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 
 		if(pseudo_ent->dev->type == 'm' || pseudo_ent->dev->type == 'M') {
 			struct stat *buf;
-			if(dir_ent == NULL) {
+			if(dir_ent == NULL && pseudo_ent->pseudo == NULL) {
 				ERROR_START("Pseudo modify file \"%s\" does "
 					"not exist in source filesystem.",
 					pseudo_ent->pathname);
 				ERROR_EXIT("  Ignoring.\n");
 				continue;
-			}
+			} else if(dir_ent == NULL)
+				BAD_ERROR("Pseudo modify pathname \"%s\" does "
+					"not exist in filesystem.  Some pseudo "
+					"definitions will not be created (or "
+					"evaluated if m or M).\n",
+					pseudo_ent->pathname);
+			else if(dir_ent && !S_ISDIR(dir_ent->inode->buf.st_mode) &&
+								pseudo_ent->pseudo)
+				BAD_ERROR("Pathname \"%s\" is not a directory. "
+					" Some pseudo definitions will not be "
+					"created (or evaluated if m or M).\n",
+					pseudo_ent->pathname);
 			buf = &dir_ent->inode->buf;
 			buf->st_mode = (buf->st_mode & S_IFMT) |
 				pseudo_ent->dev->buf->mode;
