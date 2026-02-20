@@ -249,6 +249,15 @@ endif
 #
 INCLUDEDIR = -I.
 
+# Homebrew support for macOS
+ifeq ($(shell uname -s),Darwin)
+BREW_PREFIX := $(shell brew --prefix 2>/dev/null)
+ifneq ($(BREW_PREFIX),)
+INCLUDEDIR += -I$(BREW_PREFIX)/include
+EXTRA_LDFLAGS += -L$(BREW_PREFIX)/lib
+endif
+endif
+
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
 	caches-queues-lists.o reader.o tar.o date.o memory.o mksquashfs_help.o \
