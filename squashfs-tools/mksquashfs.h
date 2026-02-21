@@ -282,6 +282,7 @@ extern long long read_bytes(int, void *, long long);
 extern unsigned short get_checksum_mem(char *, int);
 extern int reproducible;
 extern void *initial_reader(void *arg);
+extern long long min_sparse_copy;
 extern squashfs_inode create_inode(struct dir_info *dir_info,
 	struct dir_ent *dir_ent, int type, long long byte_size,
 	long long start_block, unsigned int offset, unsigned int *block_list,
