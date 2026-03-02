@@ -3372,7 +3372,9 @@ static struct inode_info *lookup_inode4(struct stat *buf, struct pseudo_dev *pse
 		 *   lazytime or relatime and the file has been created or
 		 *   modified since the last access.
 		 */
-#ifdef st_atime
+#ifdef __APPLE__
+		memset(&buf->st_atimespec, 0, sizeof(buf->st_atimespec));
+#elif defined(st_atime)
 		memset(&buf->st_atim, 0, sizeof(buf->st_atim));
 #else
 		memset(&buf->st_atime, 0, sizeof(buf->st_atime));
