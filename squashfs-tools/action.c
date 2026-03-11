@@ -40,6 +40,12 @@
 #include <ctype.h>
 #include <strings.h>
 
+#if defined(__CYGWIN__)
+#define SQUASHFS_ISSPACE(c) isspace((unsigned char) (c))
+#else
+#define SQUASHFS_ISSPACE(c) isspace(c)
+#endif
+
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "action.h"
@@ -192,7 +198,7 @@ static int read_file(char *filename, char *type, int (parse_line)(char *))
 		}
 
 		/* Skip any leading whitespace */
-		for(def = line; isspace(*def); def ++);
+		for(def = line; SQUASHFS_ISSPACE(*def); def ++);
 
 		/* if line is now empty after skipping characters, skip it */
 		if(*def == '\0')

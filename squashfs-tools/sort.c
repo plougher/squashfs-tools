@@ -38,6 +38,12 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#if defined(__CYGWIN__)
+#define SQUASHFS_ISSPACE(c) isspace((unsigned char) (c))
+#else
+#define SQUASHFS_ISSPACE(c) isspace(c)
+#endif
+
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
 #include "sort.h"
@@ -233,7 +239,7 @@ int read_sort_file(char *filename, int source, char *source_path[])
 			line[len - 1] = '\0';
 
 		/* Skip any leading whitespace */
-		while(isspace(*line))
+		while(SQUASHFS_ISSPACE(*line))
 			line ++;
 
 		/* if comment line, skip */
@@ -244,7 +250,7 @@ int read_sort_file(char *filename, int source, char *source_path[])
 		 * Scan for filename, don't use sscanf() and "%s" because
 		 * that can't handle filenames with spaces
 		 */
-		for(name = sort_filename; !isspace(*line) && *line != '\0';) {
+		for(name = sort_filename; !SQUASHFS_ISSPACE(*line) && *line != '\0';) {
 			if(*line == '\\') {
 				line ++;
 				if (*line == '\0')
@@ -290,7 +296,7 @@ int read_sort_file(char *filename, int source, char *source_path[])
 
 		/* Skip any trailing whitespace */
 		line += n;
-		while(isspace(*line))
+		while(SQUASHFS_ISSPACE(*line))
 			line ++;
 
 		if(*line != '\0') {

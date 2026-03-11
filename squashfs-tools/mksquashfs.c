@@ -49,6 +49,12 @@
 #include <limits.h>
 #include <ctype.h>
 
+#if defined(__CYGWIN__)
+#define SQUASHFS_ISSPACE(c) isspace((unsigned char) (c))
+#else
+#define SQUASHFS_ISSPACE(c) isspace(c)
+#endif
+
 #if defined(__linux__) || defined(__CYGWIN__)
 #include <sys/sysmacros.h>
 #endif
@@ -5745,7 +5751,7 @@ static void process_exclude_file(char *argv)
 			filename[len - 1] = '\0';
 
 		/* Skip any leading whitespace */
-		while(isspace(*filename))
+		while(SQUASHFS_ISSPACE(*filename))
 			filename ++;
 
 		/* if comment line, skip */

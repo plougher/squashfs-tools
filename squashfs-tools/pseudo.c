@@ -41,6 +41,12 @@
 #include <dirent.h>
 #include <sys/types.h>
 
+#if defined(__CYGWIN__)
+#define SQUASHFS_ISSPACE(c) isspace((unsigned char) (c))
+#else
+#define SQUASHFS_ISSPACE(c) isspace(c)
+#endif
+
 #include "pseudo.h"
 #include "mksquashfs_error.h"
 #include "progressbar.h"
@@ -418,7 +424,7 @@ static struct pseudo_dev *read_pseudo_def_pseudo_link(char *orig_def, char *def)
 	 */
 	linkname = MALLOC(strlen(def) + 1);
 
-	for(link = linkname; (quoted || !isspace(*def)) && *def != '\0';) {
+	for(link = linkname; (quoted || !SQUASHFS_ISSPACE(*def)) && *def != '\0';) {
 		if(*def == '"') {
 			quoted = !quoted;
 			def ++;
@@ -498,7 +504,7 @@ static struct pseudo_dev *read_pseudo_def_link(char *orig_def, char *def, char *
 	 */
 	linkname = MALLOC(strlen(def) + 1);
 
-	for(link = linkname; (quoted || !isspace(*def)) && *def != '\0';) {
+	for(link = linkname; (quoted || !SQUASHFS_ISSPACE(*def)) && *def != '\0';) {
 		if(*def == '"') {
 			quoted = !quoted;
 			def ++;
@@ -609,7 +615,7 @@ static struct pseudo_dev *read_pseudo_def_extended(char type, char *orig_def,
 		 */
 		string = MALLOC(strlen(def) + 1);
 
-		for(str = string; (quoted || !isspace(*def)) && *def != '\0';) {
+		for(str = string; (quoted || !SQUASHFS_ISSPACE(*def)) && *def != '\0';) {
 			if(*def == '"') {
 				quoted = !quoted;
 				def ++;
@@ -1153,7 +1159,7 @@ static int read_pseudo_def(char *def, char *destination, char *pseudo_file, stru
 	 */
 	filename = MALLOC(strlen(def) + 1);
 
-	for(name = filename; (quoted || !isspace(*def)) && *def != '\0';) {
+	for(name = filename; (quoted || !SQUASHFS_ISSPACE(*def)) && *def != '\0';) {
 		if(*def == '"') {
 			quoted = !quoted;
 			def ++;
@@ -1342,7 +1348,7 @@ int read_pseudo_file(char *filename, char *destination)
 		}
 
 		/* Skip any leading whitespace */
-		for(def = line; isspace(*def); def ++);
+		for(def = line; SQUASHFS_ISSPACE(*def); def ++);
 
 		/* if line is now empty after skipping characters, skip it */
 		if(*def == '\0')

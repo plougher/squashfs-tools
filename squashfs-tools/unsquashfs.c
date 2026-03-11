@@ -49,6 +49,12 @@
 #include <limits.h>
 #include <ctype.h>
 
+#if defined(__CYGWIN__)
+#define SQUASHFS_ISSPACE(c) isspace((unsigned char) (c))
+#else
+#define SQUASHFS_ISSPACE(c) isspace(c)
+#endif
+
 struct cache *fragment_cache, *data_cache;
 struct queue *to_reader, *to_inflate, *to_writer, *from_writer;
 pthread_t *thread, *inflator_thread;
@@ -2311,7 +2317,7 @@ static void process_extract_files(char *filename)
 			name[len - 1] = '\0';
 
 		/* Skip any leading whitespace */
-		while(isspace(*name))
+		while(SQUASHFS_ISSPACE(*name))
 			name ++;
 
 		/* if comment line, skip */
@@ -2367,7 +2373,7 @@ static void process_exclude_files(char *filename)
 			name[len - 1] = '\0';
 
 		/* Skip any leading whitespace */
-		while(isspace(*name))
+		while(SQUASHFS_ISSPACE(*name))
 			name ++;
 
 		/* if comment line, skip */
@@ -3478,7 +3484,7 @@ static char *process_filename(char *filename)
 	filename = ptr;
 
 	while(*ptr != '\0') {
-		if(*ptr == '\"' || *ptr == '\\' || isspace(*ptr))
+		if(*ptr == '\"' || *ptr == '\\' || SQUASHFS_ISSPACE(*ptr))
 			count ++;
 		ptr ++;
 	}
@@ -3489,7 +3495,7 @@ static char *process_filename(char *filename)
 	saved = REALLOC(saved, strlen(filename) + count + 1);
 
 	for(ptr = saved; *filename != '\0'; ptr ++, filename ++) {
-		if(*filename == '\"' || *filename == '\\' || isspace(*filename))
+		if(*filename == '\"' || *filename == '\\' || SQUASHFS_ISSPACE(*filename))
 			*ptr ++ = '\\';
 
 		*ptr = *filename;
