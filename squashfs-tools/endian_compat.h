@@ -23,13 +23,13 @@
  *
  * endian_compat.h
  */
-#ifndef linux
+#if defined(linux) || defined(__CYGWIN__)
+#include <endian.h>
+#else
 #include <sys/types.h>
 #define __BYTE_ORDER BYTE_ORDER
 #define __BIG_ENDIAN BIG_ENDIAN
 #define __LITTLE_ENDIAN LITTLE_ENDIAN
-#else
-#include <endian.h>
 #endif
 
 #endif

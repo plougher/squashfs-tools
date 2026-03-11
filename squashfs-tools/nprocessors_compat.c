@@ -23,7 +23,7 @@
 
 static int processors = -1;
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__CYGWIN__)	
 #include <sched.h>
 #include <unistd.h>
 

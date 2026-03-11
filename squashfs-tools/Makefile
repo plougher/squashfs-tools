@@ -592,7 +592,7 @@ unsquashfs_info.o: unsquashfs.h squashfs_fs.h unsquashfs_error.h
 
 .PHONY: clean
 clean:
-	-rm -f *.o mksquashfs unsquashfs sqfstar sqfscat *.1
+	-rm -f *.o mksquashfs unsquashfs sqfstar sqfscat *.1 *squashfs.exe
 
 .PHONY: install
 install: mksquashfs unsquashfs

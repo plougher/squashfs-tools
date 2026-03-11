@@ -40,7 +40,7 @@
 #include "limit.h"
 #include "alloc.h"
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__CYGWIN__)
 #include <sys/sysmacros.h>
 #endif
 
