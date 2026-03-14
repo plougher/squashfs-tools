@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2009, 2010, 2012, 2013, 2014, 2017, 2019, 2021, 2022, 2023,
- * 2024, 2025
+ * 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
