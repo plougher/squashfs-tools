@@ -3,14 +3,14 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2013, 2021
+ * Copyright (c) 2013, 2021, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2,
  * or (at your option) any later version.
- *
+*
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -29,12 +29,19 @@
 #if __BYTE_ORDER == __BIG_ENDIAN
 extern unsigned int inswap_le32(unsigned int);
 
-#define SQUASHFS_INSWAP_COMP_OPTS(s) { \
+#define SQUASHFS_INSWAP_COMP_OPTS_V1(s) { \
 	(s)->version = inswap_le32((s)->version); \
 	(s)->flags = inswap_le32((s)->flags); \
 }
+
+#define SQUASHFS_INSWAP_COMP_OPTS_V2(s) { \
+	(s)->version = inswap_le32((s)->version); \
+	(s)->flags = inswap_le32((s)->flags); \
+	(s)->data = inswap_le32((s)->data); \
+}
 #else
-#define SQUASHFS_INSWAP_COMP_OPTS(s)
+#define SQUASHFS_INSWAP_COMP_OPTS_V1(s)
+#define SQUASHFS_INSWAP_COMP_OPTS_V2(s)
 #endif
 
 /*
@@ -42,14 +49,28 @@ extern unsigned int inswap_le32(unsigned int);
  * Currently omly legacy stream format is supported by the
  * kernel
  */
-#define LZ4_LEGACY	1
-#define LZ4_FLAGS_MASK	1
+#define LZ4_LEGACY		1
 
 /* Define the compression flags recognised. */
-#define LZ4_HC		1
+#define LZ4_HC			1
+#define LZ4_NON_DEFAULT		2
+#define LZ4_FLAGS_MASK		3
 
-struct lz4_comp_opts {
+/* Default acceleration and compression */
+#define LZ4_ACC_DEFAULT		1
+#define LZ4_COMP_DEFAULT	12
+
+struct lz4_comp_opts_v1 {
 	int version;
 	int flags;
 };
+
+struct lz4_comp_opts_v2 {
+	int version;
+	int flags;
+	int data;
+};
+
+#define COMPRESS(src, dest, size, max)		 LZ4_compress_fast(src, dest, size, max, acceleration)
+#define COMPRESS_HC(src, dest, size, max)	 LZ4_compress_HC(src, dest, size, max, compression)
 #endif

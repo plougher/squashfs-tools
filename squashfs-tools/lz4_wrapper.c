@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2019, 2021, 2024
+ * Copyright (c) 2013, 2019, 2021, 2024, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -32,31 +32,11 @@
 #include "compressor.h"
 #include "print_pager.h"
 
-/* LZ4 1.7.0 introduced new functions, and since r131,
- * the older functions produce deprecated warnings.
- *
- * There are still too many distros using older versions
- * to switch to the newer functions, but, the deprecated
- * functions may completely disappear.  This is a mess.
- *
- * Support both by checking the library version and
- * using shadow definitions
- */
-
-/* Earlier (but > 1.7.0) versions don't define this */
-#ifndef LZ4HC_CLEVEL_MAX
-#define LZ4HC_CLEVEL_MAX 12
-#endif
-
-#if LZ4_VERSION_NUMBER >= 10700
-#define COMPRESS(src, dest, size, max)		 LZ4_compress_default(src, dest, size, max)
-#define COMPRESS_HC(src, dest, size, max)	 LZ4_compress_HC(src, dest, size, max, LZ4HC_CLEVEL_MAX)
-#else
-#define COMPRESS(src, dest, size, max)		 LZ4_compress_limitedOutput(src, dest, size, max)
-#define COMPRESS_HC(src, dest, size, max)	 LZ4_compressHC_limitedOutput(src, dest, size, max)
-#endif
-
 static int hc = 0;
+static int acceleration = LZ4_ACC_DEFAULT; /* LZ4_compress_default */
+static int compression = LZ4_COMP_DEFAULT; /* LZ4_compress_HC_default */
+static int acceleration_opt = FALSE;
+static int compression_opt = FALSE;
 
 /*
  * This function is called by the options parsing code in mksquashfs.c
@@ -78,9 +58,72 @@ static int lz4_options(char *argv[], int argc)
 	if(strcmp(argv[0], "-Xhc") == 0) {
 		hc = 1;
 		return 0;
+	} else if(strcmp( argv[0], "-Xacceleration") == 0) {
+		if(argc < 2) {
+			fprintf(stderr, "lz4: -Xacceleration missing "
+				"acceleration value\n");
+			fprintf(stderr, "lz4: it should be 1 >= n <= 65537\n");
+			goto failed;
+		}
+
+		acceleration = atoi(argv[1]);
+		if(acceleration < 1 || acceleration > 65537) {
+			fprintf(stderr, "lz4: -Xacceleration value invalid, it "
+				"should be 1 >= n <= 65537\n");
+			goto failed;
+		}
+
+		acceleration_opt = TRUE;
+
+		return 1;
+	} else if(strcmp( argv[0], "-Xcompression-level") == 0) {
+		if(argc < 2) {
+			fprintf(stderr, "lz4: -Xcompression-level missing "
+				"compression value\n");
+			fprintf(stderr, "lz4: it should be between 1 >= n <= "
+				"12\n");
+			goto failed;
+		}
+
+		compression = atoi(argv[1]);
+		if(compression < 1 || compression > 12) {
+			fprintf(stderr, "lz4: -Xcompression-level invalid, it "
+				"should be 1 >= n <= 12\n");
+			goto failed;
+		}
+
+		compression_opt = TRUE;
+		return 1;
 	}
 
 	return -1;
+
+failed:
+	return -2;
+}
+
+
+/*
+ * This function is called after all options have been parsed.
+ * It is used to do post-processing on the compressor options using
+ * values that were not expected to be known at option parse time.
+ *
+ * This function returns 0 on successful post processing, or
+ *			-1 on error
+ */
+static int lz4_options_post(int block_size)
+{
+	if(acceleration_opt && hc) {
+		fprintf(stderr, "lz4: -Xacceleration can't be used with "
+			"-Xhc\n");
+		return -1;
+	} else if(compression_opt && !hc) {
+		fprintf(stderr, "lz4: -Xcompression-level can't be used "
+			"without -Xhc option\n");
+		return -1;
+	}
+
+	return 0;
 }
 
 
@@ -101,14 +144,29 @@ static int lz4_options(char *argv[], int argc)
  */
 static void *lz4_dump_options(int block_size, int *size)
 {
-	static struct lz4_comp_opts comp_opts;
+	if(acceleration != LZ4_ACC_DEFAULT || compression != LZ4_COMP_DEFAULT) {
+		static struct lz4_comp_opts_v2 comp_opts;
 
-	comp_opts.version = LZ4_LEGACY;
-	comp_opts.flags = hc ? LZ4_HC : 0;
-	SQUASHFS_INSWAP_COMP_OPTS(&comp_opts);
+		comp_opts.version = LZ4_LEGACY;
+		if(hc) {
+			comp_opts.flags = LZ4_HC | LZ4_NON_DEFAULT;
+			comp_opts.data = compression;
+		} else {
+			comp_opts.flags = LZ4_NON_DEFAULT;
+			comp_opts.data = acceleration;
+		}
+		SQUASHFS_INSWAP_COMP_OPTS_V2(&comp_opts);
+		*size = sizeof(comp_opts);
+		return &comp_opts;
+	} else {
+		static struct lz4_comp_opts_v1 comp_opts;
 
-	*size = sizeof(comp_opts);
-	return &comp_opts;
+		comp_opts.version = LZ4_LEGACY;
+		comp_opts.flags = hc ? LZ4_HC : 0;
+		SQUASHFS_INSWAP_COMP_OPTS_V1(&comp_opts);
+		*size = sizeof(comp_opts);
+		return &comp_opts;
+	}
 }
 
 
@@ -134,32 +192,61 @@ static void *lz4_dump_options(int block_size, int *size)
  */
 static int lz4_extract_options(int block_size, void *buffer, int size)
 {
-	struct lz4_comp_opts *comp_opts = buffer;
-
 	/* we expect a comp_opts structure to be present */
-	if(size < sizeof(*comp_opts))
-		goto failed;
+	if(size == sizeof(struct lz4_comp_opts_v1)) {
+		struct lz4_comp_opts_v1 *comp_opts = buffer;
 
-	SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
+		SQUASHFS_INSWAP_COMP_OPTS_V1(comp_opts);
 
-	/* we expect the stream format to be LZ4_LEGACY */
-	if(comp_opts->version != LZ4_LEGACY) {
-		fprintf(stderr, "lz4: unknown LZ4 version\n");
-		goto failed;
+		/* we expect the stream format to be LZ4_LEGACY */
+		if(comp_opts->version != LZ4_LEGACY) {
+			fprintf(stderr, "lz4: unknown LZ4 version\n");
+			goto failed;
+		}
+
+		/*
+		 * Check compression flags, only LZ4_HC ("high compression")
+		 * can be set.
+		 */
+		if(comp_opts->flags & ~LZ4_HC) {
+			fprintf(stderr, "lz4: unknown LZ4 flags\n");
+			goto failed;
+		} else if(comp_opts->flags == LZ4_HC)
+			hc = 1;
+
+		acceleration = LZ4_ACC_DEFAULT; /* LZ4_compress_default */
+		compression = LZ4_COMP_DEFAULT; /* LZ4_compress_HC_default */
+		return 0;
+	} else if(size == sizeof(struct lz4_comp_opts_v2)) {
+		struct lz4_comp_opts_v2 *comp_opts = buffer;
+
+		SQUASHFS_INSWAP_COMP_OPTS_V2(comp_opts);
+
+		/* we expect the stream format to be LZ4_LEGACY */
+		if(comp_opts->version != LZ4_LEGACY) {
+			fprintf(stderr, "lz4: unknown LZ4 version\n");
+			goto failed;
+		}
+
+		/* LZ4_NON_DEFAULT should be set */
+		if((comp_opts->flags & LZ4_NON_DEFAULT) == 0) {
+			fprintf(stderr, "lz4: corrupt flags field in compression options structure\n");
+			goto failed;
+		}
+
+		if(comp_opts->flags & ~LZ4_FLAGS_MASK) {
+			fprintf(stderr, "lz4: unknown LZ4 flags\n");
+			goto failed;
+		}
+
+		if(comp_opts->flags & LZ4_HC) {
+			compression = comp_opts->data;
+			hc = TRUE;
+		} else
+			acceleration = comp_opts->data;
+
+		return 0;
 	}
-
-	/*
-	 * Check compression flags, currently only LZ4_HC ("high compression")
-	 * can be set.
-	 */
-	if(comp_opts->flags == LZ4_HC)
-		hc = 1;
-	else if(comp_opts->flags != 0) {
-		fprintf(stderr, "lz4: unknown LZ4 flags\n");
-		goto failed;
-	}
-
-	return 0;
 
 failed:
 	fprintf(stderr, "lz4: error reading stored compressor options from "
@@ -186,13 +273,13 @@ failed:
  */
 static int lz4_check_options(int block_size, void *buffer, int size)
 {
-	struct lz4_comp_opts *comp_opts = buffer;
+	struct lz4_comp_opts_v1 *comp_opts = buffer;
 
 	/* we expect a comp_opts structure to be present */
 	if(size < sizeof(*comp_opts))
 		goto failed;
 
-	SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
+	SQUASHFS_INSWAP_COMP_OPTS_V1(comp_opts);
 
 	/* we expect the stream format to be LZ4_LEGACY */
 	if(comp_opts->version != LZ4_LEGACY) {
@@ -211,31 +298,70 @@ failed:
 
 static void lz4_display_options(void *buffer, int size)
 {
-	struct lz4_comp_opts *comp_opts = buffer;
+	int display_hc = FALSE;
+	int display_acceleration;
+	int display_compression;
 
-	/* check passed comp opts struct is of the correct length */
-	if(size < sizeof(*comp_opts))
+	/* we expect a comp_opts structure to be present */
+	if(size == sizeof(struct lz4_comp_opts_v1)) {
+		struct lz4_comp_opts_v1 *comp_opts = buffer;
+
+		SQUASHFS_INSWAP_COMP_OPTS_V1(comp_opts);
+
+		/* we expect the stream format to be LZ4_LEGACY */
+		if(comp_opts->version != LZ4_LEGACY) {
+			fprintf(stderr, "lz4: unknown LZ4 version\n");
+			goto failed;
+		}
+
+		/*
+		 * Check compression flags, only LZ4_HC ("high compression")
+		 * can be set.
+		 */
+		if(comp_opts->flags & ~LZ4_HC) {
+			fprintf(stderr, "lz4: unknown LZ4 flags\n");
+			goto failed;
+		} else if(comp_opts->flags == LZ4_HC) {
+			display_hc = TRUE;
+			display_compression = LZ4_COMP_DEFAULT; /* LZ4_compress_HC_default */
+		} else
+			display_acceleration = LZ4_ACC_DEFAULT; /* LZ4_compress_default */
+	} else if(size == sizeof(struct lz4_comp_opts_v2)) {
+		struct lz4_comp_opts_v2 *comp_opts = buffer;
+
+		SQUASHFS_INSWAP_COMP_OPTS_V2(comp_opts);
+
+		/* we expect the stream format to be LZ4_LEGACY */
+		if(comp_opts->version != LZ4_LEGACY) {
+			fprintf(stderr, "lz4: unknown LZ4 version\n");
+			goto failed;
+		}
+
+		/* LZ4_NON_DEFAULT should be set */
+		if((comp_opts->flags & LZ4_NON_DEFAULT) == 0) {
+			fprintf(stderr, "lz4: corrupt flags field in compression options structure\n");
+			goto failed;
+		}
+
+		if(comp_opts->flags & ~LZ4_FLAGS_MASK) {
+			fprintf(stderr, "lz4: unknown LZ4 flags\n");
+			goto failed;
+		}
+
+		if(comp_opts->flags & LZ4_HC) {
+			display_compression = comp_opts->data;
+			display_hc = TRUE;
+		} else
+			display_acceleration = comp_opts->data;
+	} else
 		goto failed;
 
-	SQUASHFS_INSWAP_COMP_OPTS(comp_opts);
 
-	/* we expect the stream format to be LZ4_LEGACY */
-	if(comp_opts->version != LZ4_LEGACY) {
-		fprintf(stderr, "lz4: unknown LZ4 version\n");
-		goto failed;
-	}
-
-	/*
-	 * Check compression flags, currently only LZ4_HC ("high compression")
-	 * can be set.
-	 */
-	if(comp_opts->flags & ~LZ4_FLAGS_MASK) {
-		fprintf(stderr, "lz4: unknown LZ4 flags\n");
-		goto failed;
-	}
-
-	if(comp_opts->flags & LZ4_HC)
+	if(display_hc) {
 		printf("\tHigh Compression option specified (-Xhc)\n");
+		printf("\tCompression-level %d%s\n", display_compression, display_compression == LZ4_COMP_DEFAULT ? " (default)" : "");
+	} else
+		printf("\tAcceleration %d%s\n", display_acceleration, display_acceleration == LZ4_ACC_DEFAULT ? " (default)" : "");
 
 	return;
 
@@ -290,6 +416,13 @@ static void lz4_usage(FILE *stream, int cols)
 {
 	autowrap_print(stream, "\t  -Xhc\n", cols);
 	autowrap_print(stream, "\t\tCompress using LZ4 High Compression\n", cols);
+	autowrap_print(stream, "\t  -Xaccelerate <acceleration>\n\tAccelerate "
+		"compresssion by <acceleration>.  <acceleration> should be "
+		"between 1 .. 65537 (default 1).  Option doesn't apply to LZ4 "
+		"High Compression\n", cols);
+	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n"
+		"\t<compression-level> should be 1 .. 12 (default 12).  Option "
+		"only applies to LZ4 High Compression\n", cols);
 }
 
 
@@ -297,6 +430,7 @@ struct compressor lz4_comp_ops = {
 	.compress = lz4_compress,
 	.uncompress = lz4_uncompress,
 	.options = lz4_options,
+	.options_post = lz4_options_post,
 	.dump_options = lz4_dump_options,
 	.extract_options = lz4_extract_options,
 	.check_options = lz4_check_options,
