@@ -123,6 +123,8 @@ static int lz4_options_post(int block_size)
 		return -1;
 	}
 
+	OLD_LIBRARY_OPTION;
+
 	return 0;
 }
 
@@ -244,6 +246,8 @@ static int lz4_extract_options(int block_size, void *buffer, int size)
 			hc = TRUE;
 		} else
 			acceleration = comp_opts->data;
+
+		OLD_LIBRARY_EXTRACT;
 
 		return 0;
 	}
