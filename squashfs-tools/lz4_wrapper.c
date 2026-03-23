@@ -424,9 +424,10 @@ static void lz4_usage(FILE *stream, int cols)
 		"compresssion by <acceleration>.  <acceleration> should be "
 		"between 1 .. 65537 (default 1).  Option doesn't apply to LZ4 "
 		"High Compression\n", cols);
-	autowrap_print(stream, "\t  -Xcompression-level <compression-level>\n"
-		"\t<compression-level> should be 1 .. 12 (default 12).  Option "
-		"only applies to LZ4 High Compression\n", cols);
+	autowrap_printf(stream, cols, "\t  -Xcompression-level "
+		"<compression-level>\n\t<compression-level> should be 1 .. 12 "
+		"(default %d).  Option only applies to LZ4 High Compression\n",
+		LZ4_COMP_DEFAULT);
 }
 
 
