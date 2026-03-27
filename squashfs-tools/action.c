@@ -1128,21 +1128,24 @@ int dereference_actions()
 }
 
 
-int eval_dereference_actions(char *name, char *pathname, char *subpath,
-	struct stat *buf, unsigned int depth, struct dir_ent *dir_ent)
+int eval_dereference_actions(struct dir_info *root, struct dir_ent *dir_ent)
 {
 	int i, match = 0;
 	struct action_data action_data;
 
-	action_data.name = name;
-	action_data.pathname = pathname;
-	action_data.subpath = subpath;
-	action_data.buf = buf;
-	action_data.depth = depth;
+	action_data.name = dir_ent->name;
+	action_data.pathname = STRDUP(pathname(dir_ent));
+	action_data.subpath = STRDUP(subpathname(dir_ent));
+	action_data.buf = &dir_ent->inode->buf;
+	action_data.depth = dir_ent->our_dir->depth;
 	action_data.dir_ent = dir_ent;
+	action_data.root = root;
 
 	for (i = 0; i < dereference_count && !match; i++)
 		match = eval_expr_top(&dereference_spec[i], &action_data);
+
+	free(action_data.pathname);
+	free(action_data.subpath);
 
 	return match;
 }

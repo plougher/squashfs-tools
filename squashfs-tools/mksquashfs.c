@@ -401,6 +401,7 @@ static struct file_info *duplicate(int *dup, int *block_dup,
 	long long sparse, int bl_hash);
 static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), int, unsigned int);
+static void dir_scan_deref(struct dir_info *dir);
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
 static void dir_scan3(struct dir_info *dir);
 static void dir_scan4(struct dir_info *dir, int symlink);
@@ -3664,15 +3665,15 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 }
 
 
-static squashfs_inode scan_single(char *pathname, int progress)
+static squashfs_inode scan_single(char *pathname, int progress, int follow)
 {
 	struct stat buf;
 	struct dir_ent *dir_ent;
 
 	if(appending)
-		root_dir = dir_scan1(pathname, "", paths, scan1_single_readdir, FALSE, 1);
+		root_dir = dir_scan1(pathname, "", paths, scan1_single_readdir, follow, 1);
 	else
-		root_dir = dir_scan1(pathname, "", paths, scan1_readdir, FALSE, 1);
+		root_dir = dir_scan1(pathname, "", paths, scan1_readdir, follow, 1);
 
 	if(root_dir == NULL)
 		BAD_ERROR("Failed to scan source directory\n");
@@ -3710,16 +3711,19 @@ static squashfs_inode scan_single(char *pathname, int progress)
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
 
+	if(!follow && dereference_actions())
+		dir_scan_deref(root_dir);
+
 	return do_directory_scans(dir_ent, progress);
 }
 
 
-static squashfs_inode scan_encomp(int progress)
+static squashfs_inode scan_encomp(int progress, int follow)
 {
 	struct stat buf;
 	struct dir_ent *dir_ent;
 
-	root_dir = dir_scan1("", "", paths, scan1_encomp_readdir, FALSE, 1);
+	root_dir = dir_scan1("", "", paths, scan1_encomp_readdir, follow, 1);
 	if(root_dir == NULL)
 		BAD_ERROR("Failed to scan source\n");
 
@@ -3761,18 +3765,21 @@ static squashfs_inode scan_encomp(int progress)
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
 
+	if(!follow && dereference_actions())
+		dir_scan_deref(root_dir);
+
 	return do_directory_scans(dir_ent, progress);
 }
 
 
-static squashfs_inode dir_scan(int directory, int progress)
+static squashfs_inode dir_scan(int directory, int progress, int follow)
 {
 	int single = !keep_as_directory && source == 1;
 
 	if(single && directory)
-		return scan_single(source_path[0], progress);
+		return scan_single(source_path[0], progress, follow);
 	else
-		return scan_encomp(progress);
+		return scan_encomp(progress, follow);
 }
 
 
@@ -4015,21 +4022,6 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 			}
 		}
 
-		if(!follow && dereference_actions() && S_ISLNK(buf.st_mode)) {
-			/*
-			 * If symlink has not automatically been followed
-			 * (because we're using actions to be selective),
-			 * then evaluate the dereference action against this
-			 * symbolic link
-			 */
-			int res = eval_dereference_actions(dir_name, filename,
-					subpath, &buf, depth, dir_ent);
-
-			if(res) {
-				ERROR("Will dereference symlink %s\n", filename);
-			}
-		}
-
 		switch(buf.st_mode & S_IFMT) {
 		case S_IFDIR:
 			if(subpath == NULL)
@@ -4083,11 +4075,7 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 }
 
 
-/*
- * dir_scan2 routines...
- * This processes most actions and any pseudo files
- */
-static struct dir_ent *scan2_readdir(struct dir_info *dir, struct dir_ent *dir_ent)
+static struct dir_ent *scan_readdir(struct dir_info *dir, struct dir_ent *dir_ent)
 {
 	if (dir_ent == NULL)
 		dir_ent = dir->list;
@@ -4100,6 +4088,35 @@ static struct dir_ent *scan2_readdir(struct dir_info *dir, struct dir_ent *dir_e
 }
 
 
+static void dir_scan_deref(struct dir_info *dir)
+{
+	struct dir_ent *dir_ent = NULL;
+
+	while((dir_ent = scan_readdir(dir, dir_ent)) != NULL) {
+		struct stat *buf = &dir_ent->inode->buf;
+
+		/*
+		 * If symlink has not automatically been followed
+		 * (because we're using actions to be selective),
+		 * then evaluate the dereference action against this
+		 * symbolic link
+		 */
+		if(S_ISLNK(buf->st_mode)) {
+			int res = eval_dereference_actions(root_dir, dir_ent);
+
+			if(res) {
+				ERROR("Will dereference symlink %s\n", pathname(dir_ent));
+			}
+		} else if(S_ISDIR(buf->st_mode))
+			dir_scan_deref(dir_ent->dir);
+	}
+}
+
+
+/*
+ * dir_scan2 routines...
+ * This processes most actions and any pseudo files
+ */
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 {
 	struct dir_ent *dirent = NULL;
@@ -4107,7 +4124,7 @@ static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo)
 	struct stat buf;
 	int empty = dir->count == 0;
 	
-	while((dirent = scan2_readdir(dir, dirent)) != NULL) {
+	while((dirent = scan_readdir(dir, dirent)) != NULL) {
 		struct inode_info *inode_info = dirent->inode;
 		struct stat *buf = &inode_info->buf;
 		char *name = dirent->name;
@@ -4315,7 +4332,7 @@ static void dir_scan3(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = NULL;
 
-	while((dir_ent = scan2_readdir(dir, dir_ent)) != NULL) {
+	while((dir_ent = scan_readdir(dir, dir_ent)) != NULL) {
 
 		eval_move_actions(root_dir, dir_ent);
 
@@ -8922,7 +8939,7 @@ int main(int argc, char *argv[])
 		else if(!source)
 			inode = no_sources(progress);
 		else
-			inode = dir_scan(S_ISDIR(source_buf.st_mode), progress);
+			inode = dir_scan(S_ISDIR(source_buf.st_mode), progress, FALSE);
 
 		sBlk.root_inode = inode;
 		sBlk.inodes = inode_count;

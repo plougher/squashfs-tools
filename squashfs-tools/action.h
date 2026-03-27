@@ -322,8 +322,7 @@ extern void *eval_frag_actions(struct dir_info *, struct dir_ent *, int);
 extern void *get_frag_action(void *);
 extern int eval_exclude_actions(char *, char *, char *, struct stat *,
 					unsigned int, struct dir_ent *);
-extern int eval_dereference_actions(char *, char *, char *, struct stat *,
-					unsigned int, struct dir_ent *);
+extern int eval_dereference_actions(struct dir_info *, struct dir_ent *dir_ent);
 extern void eval_actions(struct dir_info *, struct dir_ent *);
 extern int eval_empty_actions(struct dir_info *, struct dir_ent *dir_ent);
 extern void eval_move_actions(struct dir_info *, struct dir_ent *);
