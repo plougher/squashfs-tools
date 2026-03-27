@@ -3318,6 +3318,8 @@ static inline void dec_nlink_inode(struct dir_ent *dir_ent)
 			progress_bar_size(-((buf->st_size + block_size - 1)
 								 >> block_log));
 
+		if(dir_ent->inode->symlink)
+			free(dir_ent->inode->symlink);
 		free(dir_ent->inode);
 		dir_ent->inode = NULL;
 	} else
@@ -3393,10 +3395,13 @@ static struct inode_info *lookup_inode4(struct stat *buf, struct pseudo_dev *pse
 		progress_bar_size((buf->st_size + block_size - 1)
 							 >> block_log);
 
-	inode = MALLOC(sizeof(struct inode_info) + bytes);
+	inode = MALLOC(sizeof(struct inode_info));
 
-	if(bytes)
-		memcpy(&inode->symlink, symlink, bytes);
+	if(bytes) {
+		inode->symlink = MALLOC(bytes);
+		memcpy(inode->symlink, symlink, bytes);
+	} else
+		inode->symlink = NULL;
 	memcpy(&inode->buf, buf, sizeof(struct stat));
 	inode->scanned = FALSE;
 	inode->read = FALSE;

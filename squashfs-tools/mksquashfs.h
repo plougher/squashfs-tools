@@ -74,7 +74,7 @@ struct inode_info {
 	char			read;
 	char			scanned;
 	char			alignment;
-	char			symlink[0];
+	char			*symlink;
 };
 
 
