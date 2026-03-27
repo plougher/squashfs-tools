@@ -400,7 +400,7 @@ static struct file_info *duplicate(int *dup, int *block_dup,
 	struct dir_ent *dir_ent, struct file_buffer *file_buffer, int blocks,
 	long long sparse, int bl_hash);
 static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
-	struct dir_ent *(_readdir)(struct dir_info *), unsigned int);
+	struct dir_ent *(_readdir)(struct dir_info *), int, unsigned int);
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
 static void dir_scan3(struct dir_info *dir);
 static void dir_scan4(struct dir_info *dir, int symlink);
@@ -3670,9 +3670,9 @@ static squashfs_inode scan_single(char *pathname, int progress)
 	struct dir_ent *dir_ent;
 
 	if(appending)
-		root_dir = dir_scan1(pathname, "", paths, scan1_single_readdir, 1);
+		root_dir = dir_scan1(pathname, "", paths, scan1_single_readdir, FALSE, 1);
 	else
-		root_dir = dir_scan1(pathname, "", paths, scan1_readdir, 1);
+		root_dir = dir_scan1(pathname, "", paths, scan1_readdir, FALSE, 1);
 
 	if(root_dir == NULL)
 		BAD_ERROR("Failed to scan source directory\n");
@@ -3719,7 +3719,7 @@ static squashfs_inode scan_encomp(int progress)
 	struct stat buf;
 	struct dir_ent *dir_ent;
 
-	root_dir = dir_scan1("", "", paths, scan1_encomp_readdir, 1);
+	root_dir = dir_scan1("", "", paths, scan1_encomp_readdir, FALSE, 1);
 	if(root_dir == NULL)
 		BAD_ERROR("Failed to scan source\n");
 
@@ -3923,7 +3923,7 @@ static void scan1_freedir(struct dir_info *dir)
 
 static struct dir_info *dir_scan1(char *filename, char *subpath,
 	struct pathnames *paths,
-	struct dir_ent *(_readdir)(struct dir_info *), unsigned int depth)
+	struct dir_ent *(_readdir)(struct dir_info *), int follow, unsigned int depth)
 {
 	struct dir_info *dir = scan1_opendir(filename, subpath, depth);
 	struct dir_ent *dir_ent;
@@ -3942,6 +3942,7 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 		char *subpath = NULL;
 		char *dir_name = dir_ent->name;
 		int create_empty_directory = FALSE;
+		int res;
 
 		if(strcmp(dir_name, ".") == 0 || strcmp(dir_name, "..") == 0) {
 			free_dir_entry(dir_ent);
@@ -3955,7 +3956,9 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 			return dir;
 		}
 
-		if(lstat(filename, &buf) == -1) {
+		res = follow ? stat(filename, &buf) : lstat(filename, &buf);
+
+		if(res == -1) {
 			ERROR_START("Cannot stat dir/file %s because %s",
 				filename, strerror(errno));
 			ERROR_EXIT(", ignoring\n");
@@ -4022,7 +4025,7 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 				sub_dir = create_dir(filename, subpath, depth + 1);
 			} else
 				sub_dir = dir_scan1(filename, subpath, new,
-						scan1_readdir, depth + 1);
+						scan1_readdir, FALSE, depth + 1);
 			if(sub_dir) {
 				dir->directory_count ++;
 				add_dir_entry(dir_ent, sub_dir,
@@ -4994,7 +4997,7 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 				cur_dev = entry->inode->buf.st_dev;
 				new = dir_scan1(pathname(entry),
 					subpathname(entry), newp, scan1_readdir,
-					dir->depth + 1);
+					FALSE, dir->depth + 1);
 				if(new == NULL)
 					return NULL;
 
