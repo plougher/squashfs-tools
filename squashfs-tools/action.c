@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2011, 2012, 2013, 2014, 2021, 2022, 2023, 2024, 2025
+ * Copyright (c) 2011, 2012, 2013, 2014, 2021, 2022, 2023, 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -60,6 +60,7 @@
 static char *cur_ptr, *source;
 static struct action *fragment_spec = NULL;
 static struct action *exclude_spec = NULL;
+static struct action *dereference_spec = NULL;
 static struct action *empty_spec = NULL;
 static struct action *move_spec = NULL;
 static struct action *prune_spec = NULL;
@@ -69,6 +70,7 @@ static struct action *xattr_add_spec = NULL;
 static struct action *other_spec = NULL;
 static int fragment_count = 0;
 static int exclude_count = 0;
+static int dereference_count = 0;
 static int empty_count = 0;
 static int move_count = 0;
 static int prune_count = 0;
@@ -662,6 +664,10 @@ skip_args:
 		spec_count = exclude_count ++;
 		spec_list = &exclude_spec;
 		break;
+	case DEREFERENCE_ACTION:
+		spec_count = dereference_count ++;
+		spec_list = &dereference_spec;
+		break;
 	case EMPTY_ACTION:
 		spec_count = empty_count ++;
 		spec_list = &empty_spec;
@@ -980,8 +986,8 @@ static int file_type_match(int st_mode, int type)
  */
 int any_actions()
 {
-	return fragment_count + exclude_count + empty_count +
-		move_count + prune_count + other_count;
+	return fragment_count + exclude_count + dereference_count +
+		empty_count + move_count + prune_count + other_count;
 }
 
 
@@ -1108,6 +1114,35 @@ int eval_exclude_actions(char *name, char *pathname, char *subpath,
 
 	for (i = 0; i < exclude_count && !match; i++)
 		match = eval_expr_top(&exclude_spec[i], &action_data);
+
+	return match;
+}
+
+
+/*
+ * Dereference specific action code
+ */
+int dereference_actions()
+{
+	return dereference_count;
+}
+
+
+int eval_dereference_actions(char *name, char *pathname, char *subpath,
+	struct stat *buf, unsigned int depth, struct dir_ent *dir_ent)
+{
+	int i, match = 0;
+	struct action_data action_data;
+
+	action_data.name = name;
+	action_data.pathname = pathname;
+	action_data.subpath = subpath;
+	action_data.buf = buf;
+	action_data.depth = depth;
+	action_data.dir_ent = dir_ent;
+
+	for (i = 0; i < dereference_count && !match; i++)
+		match = eval_expr_top(&dereference_spec[i], &action_data);
 
 	return match;
 }
@@ -3336,6 +3371,7 @@ static struct test_entry test_table[] = {
 static struct action_entry action_table[] = {
 	{ "fragment", FRAGMENT_ACTION, 1, ACTION_REG, NULL, NULL},
 	{ "exclude", EXCLUDE_ACTION, 0, ACTION_ALL_LNK, NULL, NULL},
+	{ "dereference", DEREFERENCE_ACTION, 0, ACTION_LNK, NULL, NULL },
 	{ "fragments", FRAGMENTS_ACTION, 0, ACTION_REG, NULL, frag_action},
 	{ "no-fragments", NO_FRAGMENTS_ACTION, 0, ACTION_REG, NULL, no_frag_action},
 	{ "always-use-fragments", ALWAYS_FRAGS_ACTION, 0, ACTION_REG, NULL, always_frag_action},

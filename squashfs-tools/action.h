@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2011, 2012, 2013, 2014, 2021, 2022, 2024, 2025
+ * Copyright (c) 2011, 2012, 2013, 2014, 2021, 2022, 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -185,6 +185,7 @@ struct type_entry {
 #define XATTR_INC_ACTION	17
 #define XATTR_ADD_ACTION	18
 #define ALIGN_ACTION		19
+#define DEREFERENCE_ACTION	20
 
 /*
  * Define what file types each action operates over
@@ -321,6 +322,8 @@ extern void *eval_frag_actions(struct dir_info *, struct dir_ent *, int);
 extern void *get_frag_action(void *);
 extern int eval_exclude_actions(char *, char *, char *, struct stat *,
 					unsigned int, struct dir_ent *);
+extern int eval_dereference_actions(char *, char *, char *, struct stat *,
+					unsigned int, struct dir_ent *);
 extern void eval_actions(struct dir_info *, struct dir_ent *);
 extern int eval_empty_actions(struct dir_info *, struct dir_ent *dir_ent);
 extern void eval_move_actions(struct dir_info *, struct dir_ent *);
@@ -341,6 +344,7 @@ extern int move_actions();
 extern int empty_actions();
 extern int read_action_file(char *, int);
 extern int exclude_actions();
+extern int dereference_actions();
 extern int prune_actions();
 extern int xattr_exc_actions();
 extern int xattr_add_actions();

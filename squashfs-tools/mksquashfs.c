@@ -4015,6 +4015,21 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 			}
 		}
 
+		if(!follow && dereference_actions() && S_ISLNK(buf.st_mode)) {
+			/*
+			 * If symlink has not automatically been followed
+			 * (because we're using actions to be selective),
+			 * then evaluate the dereference action against this
+			 * symbolic link
+			 */
+			int res = eval_dereference_actions(dir_name, filename,
+					subpath, &buf, depth, dir_ent);
+
+			if(res) {
+				ERROR("Will dereference symlink %s\n", filename);
+			}
+		}
+
 		switch(buf.st_mode & S_IFMT) {
 		case S_IFDIR:
 			if(subpath == NULL)
