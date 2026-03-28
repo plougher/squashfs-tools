@@ -60,6 +60,7 @@ struct inode_info {
 		struct file_info	*file;
 	};
 	struct pseudo_xattr	*xattr;
+	char			*symlink;
 	squashfs_inode		inode;
 	unsigned int		inode_number;
 	unsigned int		nlink;
@@ -74,7 +75,7 @@ struct inode_info {
 	char			read;
 	char			scanned;
 	char			alignment;
-	char			*symlink;
+	char			deref;
 };
 
 

@@ -401,7 +401,8 @@ static struct file_info *duplicate(int *dup, int *block_dup,
 	long long sparse, int bl_hash);
 static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
 	struct dir_ent *(_readdir)(struct dir_info *), int, unsigned int);
-static void dir_scan_deref(struct dir_info *dir);
+static int dir_scan_deref(struct dir_info *dir);
+static void dir_deref(struct dir_info *dir);
 static void dir_scan2(struct dir_info *dir, struct pseudo *pseudo);
 static void dir_scan3(struct dir_info *dir);
 static void dir_scan4(struct dir_info *dir, int symlink);
@@ -3414,6 +3415,7 @@ static struct inode_info *lookup_inode4(struct stat *buf, struct pseudo_dev *pse
 	inode->xattr = NULL;
 	inode->tarfile = FALSE;
 	inode->alignment = 0;
+	inode->deref = FALSE;
 
 	/*
 	 * Copy filesystem wide defaults into inode, these filesystem
@@ -3716,8 +3718,12 @@ static squashfs_inode scan_single(char *pathname, int progress, int follow)
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
 
-	if(!follow && dereference_actions())
-		dir_scan_deref(root_dir);
+	if(!follow && dereference_actions()) {
+		int res = dir_scan_deref(root_dir);
+
+		if(res)
+			dir_deref(root_dir);
+	}
 
 	return do_directory_scans(dir_ent, progress);
 }
@@ -3770,8 +3776,12 @@ static squashfs_inode scan_encomp(int progress, int follow)
 	dir_ent->dir = root_dir;
 	root_dir->dir_ent = dir_ent;
 
-	if(!follow && dereference_actions())
-		dir_scan_deref(root_dir);
+	if(!follow && dereference_actions()) {
+		int res = dir_scan_deref(root_dir);
+
+		if(res)
+			dir_deref(root_dir);
+	}
 
 	return do_directory_scans(dir_ent, progress);
 }
@@ -4093,9 +4103,19 @@ static struct dir_ent *scan_readdir(struct dir_info *dir, struct dir_ent *dir_en
 }
 
 
-static void dir_scan_deref(struct dir_info *dir)
+/*
+ * This function scans the in-memory directory hierarchy evaluating any
+ * symbolic link dereference actions.
+ *
+ * The directory hierarchy is not altered (mutated) when a symbolic link is
+ * to be dereferenced, it is instead marked to be done later.  This is to
+ * preserve the action tests invariant, otherwise dereferencing due to ordering
+ * can produce different results.
+ */
+static int dir_scan_deref(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = NULL;
+	int deref = FALSE;
 
 	while((dir_ent = scan_readdir(dir, dir_ent)) != NULL) {
 		struct stat *buf = &dir_ent->inode->buf;
@@ -4110,13 +4130,66 @@ static void dir_scan_deref(struct dir_info *dir)
 			int res = eval_dereference_actions(root_dir, dir_ent);
 
 			if(res) {
-				ERROR("Will dereference symlink %s\n", pathname(dir_ent));
+				dir_ent->inode->deref = TRUE;
+				deref = TRUE;
 			}
-		} else if(S_ISDIR(buf->st_mode))
-			dir_scan_deref(dir_ent->dir);
+		} else if(S_ISDIR(buf->st_mode)) {
+			int res = dir_scan_deref(dir_ent->dir);
+
+			if(res)
+				deref = TRUE;
+		}
 	}
+
+	return deref;
 }
 
+
+/*
+ * Scan directory hierarchy and dereference any marked symbolic links
+ */
+static void dir_deref(struct dir_info *dir)
+{
+	struct dir_ent *dir_ent = NULL;
+	struct stat buf;
+	char *filename;
+	int res;
+
+	while((dir_ent = scan_readdir(dir, dir_ent)) != NULL) {
+		if(dir_ent->inode->deref) {
+			filename = pathname(dir_ent);
+			res = stat(filename, &buf);
+			if(res == -1) {
+				ERROR("Cannot dereference %s, ignoring\n", filename);
+				dir_ent->inode->deref = FALSE;
+				continue;
+			}
+
+			if(!S_ISDIR(buf.st_mode)) {
+				/*
+				 * Symbolic links which don't resolve to a
+				 * directory can simply be updated as a
+				 * non-directory can have multiple hard links
+				 */
+				free(dir_ent->inode->symlink);
+				dir_ent->inode->symlink = NULL;
+				memcpy(&dir_ent->inode->buf, &buf, sizeof(struct stat));
+				dir_ent->inode->deref = FALSE;
+			} else {
+				/*
+				 * Symbolic links which resolve to a directory,
+				 * need to do a directory scan to add it to the
+				 * dir_entry, and that has to be done for every
+				 * hard link, as directories can't be hard
+				 * linked
+				 */
+				ERROR("Can't (yet) dereference symbolic link resolving to a directory (%s), ignoring\n", filename);
+				dir_ent->inode->deref = FALSE;
+			}
+		} else if(S_ISDIR(dir_ent->inode->buf.st_mode))
+			dir_deref(dir_ent->dir);
+	}
+}
 
 /*
  * dir_scan2 routines...
