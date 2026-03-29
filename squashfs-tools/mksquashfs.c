@@ -5621,7 +5621,7 @@ static long long write_inode_lookup_table()
 			/* The empty action will produce orphaned inode
 			 * entries in the inode_info[] table.  These
 			 * entries because they are orphaned will not be
-			 * allocated an inode number in dir_scan5(), so
+			 * allocated an inode number in dir_scan6(), so
 			 * skip any entries with the default dummy inode
 			 * number of 0 */
 			if(inode_number == 0)
