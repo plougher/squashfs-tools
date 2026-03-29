@@ -3350,7 +3350,7 @@ static struct inode_info *lookup_inode4(struct stat *buf, struct pseudo_dev *pse
 
 		buf->st_mtime = 0;
 	} else if(!have_time)
-		/* Frabicated inode with no time defined.  Set to -1 to avoid
+		/* Fabricated inode with no time defined.  Set to -1 to avoid
 		 * being the latest inode timestamp
 		 */
 		buf->st_mtime = -1;
