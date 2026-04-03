@@ -523,9 +523,60 @@ Which obviously reduces to
 
 exclude@depth(3) && type(d)
 
-Note: the following tests do not work in stage 1, and so they can't be
-used in the exclude() action (see prune() action for explanation and
-alternative).
+Note: the following tests can't be used in the exclude() action (see prune()
+action for explanation and alternative).
+
+	dircount()
+	dircount_range()
+	exists()
+	absolute()
+	readlink()
+	eval()
+
+5.1.2 dereference()
+-------------------
+
+This action dereferences symbolic links where the expression returns TRUE.
+
+If this action is applied to a symbolic link, rather than the symbolic link
+being stored in the filesystem, the file or directory hierarchy that the
+symbolic link points to is stored.  All symbolic links in the directory
+hierarchy are also dereferenced.
+
+If the symbolic link has multiple hard links and the symbolic link points
+to a non-directory file, then the dereferenced file will have the same amount of
+hard links.  But, if the symbolic link points to a directory, then the directory
+hierarchy is cloned for each hard link.  This is because Unix/Linux forbids hard
+linking to a directory.  But, all files in the cloned directory hierarchies will
+be hard linked.
+
+This action can be used to dereference symbolic links which point outside of the
+filesystem being stored.
+
+Examples:
+
+1. Dereference all symbolic links
+
+dereference@true
+
+2. Dereference a specific symbolic link
+
+dereference@pathname(path/to/symbolic/link)
+
+Will dereference the symbolic link "path/to/symbolic/link".
+
+3. Dereference symbolic links which point outside of the filesystem being stored
+
+dereference@ ! exists
+
+This uses the exists() test (see section 4.32) to test if the symbolic link is
+resolvable in the output filesystem, and if it isn't, it will tell Mksquashfs to
+dereference it at filesystem build time.
+
+Note: the following tests when used in the dereference() action refer to the
+output filesystem before any symbolic link dereferencing takes place.  This
+preserves the invariant that the filesystem doesn't mutate (or doesn't change)
+while the dereference() actions are being evaluated.
 
 	dircount()
 	dircount_range()
