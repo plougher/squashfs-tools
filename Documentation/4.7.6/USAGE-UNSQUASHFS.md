@@ -1,0 +1,579 @@
+# UNSQUASHFS 4.7.4 - a tool to extract and list Squashfs filesystems
+
+This file describes how to use Unsquashfs, and it has the following sections:
+
+1. [Introduction and basic usage](#1-introduction-and-basic-usage)
+2. [Getting help and displaying Unsquashfs options](#2-getting-help-and-displaying-unsquashfs-options)
+3. [Using "extract" files](#3-using-extract-files)
+4. [Using "exclude" files in addition to "extract" files](#4-using-exclude-files-in-addition-to-extract-files)
+5. [Following symbolic links in extract files](#5-following-symbolic-links-in-extract-files)
+6. [Dealing with errors](#6-dealing-with-errors)
+7. [Unsquashfs pseudo file output](#7-unsquashfs-pseudo-file-output)
+
+## 1. INTRODUCTION AND BASIC USAGE
+
+Unsquashfs allows you to decompress and extract a Squashfs filesystem without
+mounting it.  It can extract the entire filesystem, or a specific file or
+directory.  It can also give a file listing of the contents of a Squashfs
+filesystem without extracting it.
+
+Unsquashfs can decompress all official Squashfs filesystem versions (versions
+1.x, 2.x, 3.x and 4.0).
+
+Unsquashfs uses the following arguments
+
+```
+unsquashfs [OPTIONS] FILESYSTEM [files to extract or exclude ]
+```
+
+Where FILESYSTEM is the name of the input Squashfs filesystem.  This can be a
+file or a block device.
+
+The most simple usage is to just give a filesystem on the command line
+
+```
+% unsquashfs image.sqfs
+```
+
+This will extract the Squashfs filesystem into a directory named "squashfs-root"
+in the current working directory.  If the directory already exists, Unsquashfs
+will add extra files and directories to it, but, it will refuse to over-write
+existing files or directories in it.
+
+example 2:
+
+If you want Unsquashfs to extract to a different directory, you can use the
+-dest option or -d for short.
+
+```
+% unsquashfs -d /tmp/output-directory image.sqfs
+```
+
+example 3:
+
+If you want Unsquashfs to extract to the current working directory, you can give
+"." as the destination directory
+
+```
+% unsquashfs -d . image.sqfs
+```
+
+example 4:
+
+If you Unsquashfs to over-write existing files, or extract to existing
+directories, you can use the -force option or -f for short.
+
+```
+% unsquashfs -d output-directory -f image.sqfs
+```
+
+example 5:
+
+If you just want to see what the filesystem contains, rather than extracting it,
+you can use the -ls or -lls options.  -ls gives an output like ls, and -lls
+gives an output like ls -l.  For example if the filesystem contained files 1, 2,
+3 and 4.
+
+```
+% unsquashfs -lls image.sqfs
+
+drwxrwxrwx phillip/phillip          51 2025-04-30 00:19 squashfs-root
+-rw-r--r-- phillip/phillip           4 2025-04-30 00:18 squashfs-root/1
+-rw-r--r-- phillip/phillip           4 2025-04-30 00:18 squashfs-root/2
+-rw-r--r-- phillip/phillip           6 2025-04-30 00:19 squashfs-root/3
+-rw-r--r-- phillip/phillip           5 2025-04-30 00:19 squashfs-root/4
+```
+
+To remove the leading squashfs-root, you can use -d ""
+
+```
+% unsquashfs -d "" -lls image.sqfs
+
+idrwxrwxrwx phillip/phillip          51 2025-04-30 00:19
+-rw-r--r-- phillip/phillip           4 2025-04-30 00:18 /1
+-rw-r--r-- phillip/phillip           4 2025-04-30 00:18 /2
+-rw-r--r-- phillip/phillip           6 2025-04-30 00:19 /3
+-rw-r--r-- phillip/phillip           5 2025-04-30 00:19 /4
+```
+
+example 6:
+
+If you only want to extract the upper two levels of directories, you can use
+the -max-depth option, or -max for short
+
+```
+% unsquashfs -max 2 image.sqfs
+```
+
+## 2. GETTING HELP AND DISPLAYING UNSQUASHFS OPTIONS
+
+Unsquashfs has fairly detailed built-in help information describing the
+available options.  Running:
+
+```
+% unsquashfs -help
+```
+
+Will display the following summary of the help options and information
+available:
+
+```
+SYNTAX: unsquashfs [OPTIONS] FILESYSTEM [files to extract or exclude (with
+-excludes) or cat (with -cat )]
+
+Run
+  "unsquashfs -help-option <regex>" to get help on all options matching <regex>
+
+Or run
+  "unsquashfs -help-section <section-name>" to get help on these sections
+        SECTION NAME            SECTION
+        extraction              Filesystem extraction (filtering) options:
+        information             Filesystem information and listing options:
+        xattrs                  Filesystem extended attribute (xattrs) options:
+        runtime                 Unsquashfs runtime options:
+        help                    Help options:
+        misc                    Miscellaneous options:
+        environment             Environment:
+        exit                    Exit status:
+        extra                   See also (extra information elsewhere):
+        decompressors           Decompressors available:
+
+Or run
+  "unsquashfs -help-all" to get help on all the sections
+```
+
+For example to get a list of all the options that take a file argument, you
+could do
+
+```
+% unsquashfs -help-option file
+  -extract-file <file>    list of directories or files to extract.  One per line
+  -exclude-file <file>    list of directories or files to exclude.  One per line
+  -pf <file>              output a pseudo file equivalent of the input Squashfs
+                          filesystem, use - for stdout
+  -e[f] <extract file>    synonym for -extract-file
+  -exc[f] <exclude file>  synonym for -exclude-file
+  -pseudo-file <file>     alternative name for -pf
+```
+
+### 2.1 -help-section <section\>
+
+The -help-section option displays the section that matches the <section\> name.
+If <section\> does not exactly match a section name, it is treated as a regular
+expression, and all section names that match are displayed.  Finally, if
+<section\> is "list", a list of sections and their names is displayed.
+
+For example:
+
+```
+% unsquashfs -help-section runtime
+Unsquashfs runtime options:
+  -v[ersion]              print version, licence and copyright information
+  -p[rocessors] <number>  use <number> processors.  By default will use the
+                          number of processors available
+  -mem <size>             use <size> physical memory for caches.  Use K, M or G
+                          to specify Kbytes, Mbytes or Gbytes respectively.
+                          Default 512 Mbytes
+  -mem-percent <percent>  use <percent> physical memory for caches.
+  -q[uiet]                no verbose output
+  -n[o-progress]          do not display the progress bar
+  -percentage             display a percentage rather than the full progress
+                          bar.  Can be used with dialog --gauge etc.
+  -ig[nore-errors]        treat errors writing files to output as non-fatal
+  -st[rict-errors]        treat all errors as fatal
+  -no-exit[-code]         do not set exit code (to nonzero) on non-fatal errors
+```
+
+Will display the runtime options section.
+
+Using regular expression matching section names can be abbreviated, for example
+"run" will also display the runtime options section.  But, it also means
+multiple sections can be displayed, for example:
+
+```
+% unsquasfs -help-section "misc|decomp"
+Miscellaneous options:
+  -o[ffset] <bytes>       skip <bytes> at start of FILESYSTEM.  Optionally a
+                          suffix of K, M or G can be given to specify Kbytes,
+                          Mbytes or Gbytes respectively (default 0 bytes).
+ -fstime                 synonym for -mkfs-time
+ -e[f] <extract file>    synonym for -extract-file
+ -exc[f] <exclude file>  synonym for -exclude-file
+ -L                      synonym for -follow-symlinks
+ -pseudo-file <file>     alternative name for -pf
+
+Decompressors available:
+  gzip
+  lzo
+  lz4
+  xz
+  zstd
+```
+
+### 2.2. PAGER environment variable
+
+By default the tools try pager, /usr/bin/pager, less, /usr/bin/less, more,
+/usr/bin/more, cat and /usr/bin/cat in that order.
+
+The pager used can be over-ridden using the PAGER environment variable.  If the
+filename given by PAGER doesn't contain slashes, the PATH environment variable
+will be used to locate it, otherwise it will be treated as a pathname.
+
+## 3. USING "EXTRACT" FILES
+
+To extract a subset of the filesystem, the filenames or directory
+trees that are to be extracted can be specified on the command line.  The
+files/directories should be specified using the full path to the
+files/directories as they appear within the Squashfs filesystem.  The
+files/directories will also be extracted to those positions within the
+specified destination directory.
+
+The extract files can also be given in a file using the "-e[f]" option.
+
+Similarly to Mksquashfs, wildcard matching is performed on the extract
+files.  Wildcard matching is enabled by default.
+
+Examples:
+
+```
+% unsquashfs image.sqsh 'test/*.gz'
+```
+
+Extract all files matching "*.gz" in the top level directory "test".
+
+```
+% unsquashfs image.sqsh '[Tt]est/example*'
+```
+
+Extract all files beginning with "example" inside top level directories
+called "Test" or "test".
+
+Using extended wildcards, negative matching is also possible.
+
+```
+% unsquashfs image.sqsh 'test/!(*data*).gz'
+```
+
+Extract all files matching "*.gz" in top level directory "test",
+except those with "data" in the name.
+
+
+## 4. USING "EXCLUDE" FILES IN ADDITION TO "EXTRACT" FILES
+
+Unsquashfs allows exclude files to be specified, either on their own, or in
+addition to extract files.
+
+An exclude file is, obviously, the opposite of an extract file.  Whereas an
+extract file limits the output of Unsquashfs to the files/directories matched by
+the extract file(s), exclude file(s) output the entire filesystem, with the
+sub-set of files matched by the exclude file(s) excluded.
+
+Often you want to output the filesystem where you're only interested in some
+files, which is where extract files are useful.  But equally, you often want to
+output the entire filesystem, but, with some unwanted files removed.  An example
+of this, perhaps, is where you've inadvertantly, archived binaries (.o files
+etc.) and you're only interested in extracting the source code.
+
+In the above example, trying to remove the binaries (.o etc) when you've only
+got "extract" files capability becomes extremely messy.  It is a lot easier to
+do that with "exclude" files.
+
+Unsquashfs supports two ways of specifying exclude files, and it supports
+"anchored" and "non-anchored" excludes.  The two ways of specifying exclude
+files is described first.
+
+The most straightforward way is to tell Unsquashfs to treat extract files as
+exclude files.  That is extract files are specified on the command line as a
+list of files after the options and filesystem image.  Giving the -excludes
+option tells Unsquashfs to treat them as exclude files.
+
+To make this clearer,
+
+```
+% unsquashfs img file1 file2 file3
+```
+
+Tells Unsquashfs to extract file1, file2 and file3.  But,
+
+```
+% unsquashfs -excludes img file1 file2 file3
+```
+
+Tells Unsquashfs to exclude file1, file2, and file3.
+
+The perhaps obvious problem with this, is it allows you to choose between
+"extract" files or "exclude" files.  But, it doesn't allow you to have both
+"extract" files and "exclude" files on the command line.
+
+To get around this problem Unsquashfs supports another way of specifying exclude
+files.  That is to use the option -exclude-list.  This option allows a list of
+exclude files to specified, terminated by a ```;```.  The necessity of using ```;``` to
+terminate the list is because this is a normal option, without it, any further
+entries on the command line would be interpreted as being part of the list.
+
+For example, the following are equivalent:
+
+```
+% unsquashfs -excludes img file1 file2 file3
+
+% unsquashfs -exclude-list file1 file2 file3 \; img
+```
+
+Note the black-slashing of ```;``` to prevent it from being interpreted by the shell
+as a special character.
+
+Obviously, where the ```-exclude-list``` option comes into its own is when it is mixed
+with extract files, for example:
+
+```
+% unsquashfs -exclude-list dir1/file1 dir2/file2 \; img dir1 dir2
+```
+
+This tells Unsquashfs to extract directories "dir1" and "dir2", and then to
+exclude the files "dir1/file1" and "dir2/file2".
+
+From this it should be clear that the precedence is extract files and then
+exclude files, because it doesn't make any sense otherwise.  Extract files
+define the set of directories/files to be extracted, and exclude files remove
+directories/files from that sub-set.
+
+Now the concepts of "anchored" and "non-anchored" exclude files can be
+explained.  An anchored exclude is one which matches from the root of the
+directory and nowhere else, a non-anchored exclude matches anywhere.  For
+example given the directory hierarchy "a/b/c/a/b", the anchored exclude
+"a/b" will match "a/b" at the root of the directory hierarchy, but
+it will not match the "/a/b" sub-directory within directory "c", whereas a
+non-anchored exclude would.
+
+A couple of examples should make this clearer.
+
+#### Anchored excludes
+
+```
+unsquashfs -excludes image.sqsh 'test/*.gz'
+```
+
+Exclude all files matching "*.gz" in the top level directory "test".
+
+```
+unsquashfs -excludes image.sqsh '*/[Tt]est/example*'
+```
+
+Exclude all files beginning with "example" inside directories called
+"Test" or "test", that occur inside any top level directory.
+
+Using extended wildcards, negative matching is also possible.
+
+```
+unsquashfs -excludes image.sqsh 'test/!(*data*).gz'
+```
+
+Exclude all files matching "*.gz" in top level directory "test",
+except those with "data" in the name.
+
+#### Non-anchored excludes
+
+By default excludes match from the top level directory, but it is
+often useful to exclude a file matching anywhere in the Squashfs filesystem.
+For this non-anchored excludes can be used, specified by pre-fixing the
+exclude with "...".
+
+Examples:
+
+```
+unsquashfs -excludes image.sqsh '... *.gz'
+```
+
+Exclude files matching "*.gz" anywhere in the Squashfs filesystem.
+For example this will match "example.gz", "test/example.gz", and
+"test/test/example.gz".
+
+```
+unsquashfs -excludes image.sqsh '... [Tt]est/*.gz'
+```
+
+Exclude files matching "*.gz" inside directories called "Test" or
+"test" that occur anywhere in the Squashfs filesystem.
+
+Again, using extended wildcards, negative matching is also possible.
+
+```
+unsquashfs -excludes image.sqsh '... !(*data*).gz'
+```
+
+Exclude all files matching "*.gz" anywhere in the Squashfs filesystem,
+except those with "data" in the name.
+
+
+## 5. FOLLOWING SYMBOLIC LINKS IN EXTRACT FILES
+
+Unsquashfs walks the extract file paths as it recursively descends
+the Squashfs filesystem from top to bottom.  During that recursive
+extraction symbolic links are obviously not followed (see below).
+
+The consequence of this is if an extract file ends in a symbolic link
+(leaf component) it is extracted and left as a dangling symlink,
+unless the real file it links to has also specified as an extract file.
+
+Additionally, if the extract file pathname traverses symbolic links
+while walking the pathname (i.e. the extract file pathname has
+embedded symbolic links), the extraction will stop at that point.
+
+One way of solving this problem is by following (or dereferencing) the
+symbolic link(s), and replacing them with what they actually link to,
+in a similar way to "cp -L".  But this is dangerous, and can cause
+Unsquashfs to produce output which does not match the input Squashfs
+filesystem, which is something Unsquashfs should never do.
+
+The reason for this is whereas "cp -L" is derefencing the *input*,
+Unsquashfs is dereferencing the *output*.  If a filesystem has a real
+filename, say
+
+```
+a/b/c/hello_world
+```
+
+and two symlinks
+
+```
+a/symlink1 ---> b/c/hello_world
+a/symlink2 ---> b/c
+```
+
+There are multiple different ways (or paths) to the *single* hello_world file.
+
+```
+a/b/c/hello_world
+a/symlink1
+a/symlink2/hello_world
+```
+
+If Unsquashfs was given all three paths as extract files, and Unsquashfs
+dereferenced them on output, you will get *three* copies of the hello_world
+file, and two copies of directory "c".
+
+Superficially the output may look the same, but, it may not work the same,
+and obviously edits to the one hello_world file will not get reflected in
+the other copies.  Any option that can be accidently or maliciously used
+to produce such an output is too dangerous to be added.
+
+Unsquashfs solves the problem in an equivalent way, but which does not alter
+the output, and so it is a completely safe option.
+
+If the ```-follow-symlinks``` option is specified, Unsquashfs will canonicalise
+the extract files to produce the canonical pathname (that is the
+"real" pathname without any symbolic links).  It will then add all
+the symbolic links necessary to ensure that the extract file can be
+resolved.
+
+The ```-missing-symlinks``` option is similar to -follow-symlinks except it
+will cause Unsquashfs to abort if any symbolic link cannot be resolved.
+
+Note: as a side effect of the canonicalisation, with the above options
+enabled extract filenames can also now have ".", ".." elements within
+the pathnames.
+
+## 6. DEALING WITH ERRORS
+
+Unsquashfs splits errors into two categories: fatal errors and non-fatal
+errors.
+
+Fatal errors are those which cause Unsquashfs to abort instantly.
+These are generally due to failure to read the filesystem (corruption),
+and/or failure to write files to the output filesystem, due to I/O error
+or out of space.  Generally anything which is unexpected is a fatal error.
+
+Non-fatal errors are generally where support is lacking in the
+output filesystem, and it can be considered to be an expected failure.
+This includes the inability to write extended attributes (xattrs) to
+a filesystem that doesn't support them, the inability to create files on
+filesystem that doesn't support them (i.e. symbolic links on VFAT), and the
+inability to execute privileged operations as a user-process.
+
+The user may well know the filesystem cannot support certain operations
+and would prefer Unsquashfs to ignore then without aborting.
+
+In the past Unsquashfs was much more tolerant of errors, now a significant
+number of errors that were non-fatal have been hardened to fatal.
+
+There are two options which control how Unsquashfs deals with error situations:
+
+#### -ignore-errors
+
+This makes Unsquashfs behave like previous versions, and treats more
+errors as non-fatal.
+
+#### -strict-errors
+
+This makes Unsquashfs treat every error as fatal, and it will abort
+instantly.
+
+
+## 7. UNSQUASHFS PSEUDO FILE OUTPUT
+
+If the Pseudo file (-pf) option is given, Unsquashfs will output a Pseudo file
+representation of the input filesystem.  This pseudo file can be used as input
+to Mksquashfs to reproduce the Squashfs filesystem without having to unpack the
+input filesystem image.
+
+The Pseudo file output is designed to be editable, and the pseudo file entries
+can be altered (name, date, ownership etc.) or added/deleted before any new file
+system is rebuilt.
+
+The format of the pseudo file, is obviously, the same as the pseudo file
+definitions supported by Msquashfs.
+
+Regular files (with data) are supported with the "R" pseudo definition, which is
+
+filename R time mode uid gid length offset sparse
+
+<length\> specifies the size of the file, and <offset\> is a byte offset into the
+pseudo file where the data is stored.  This offset is taken from the start of
+the data section (see below), rather than from the start of the file (this is to
+allow the pseudo file entries to be edited without altering the data offsets).
+Data is deliberately stored out of line (i.e. unlike tar), to make the file more
+easily editable manually.
+
+<sparse\> is a special boolean parameter.  It controls whether the file is
+presented to user-space as a "sparse" file when the filesystem is mounted,
+or is extracted as a "sparse" file by Unsquashfs.  This flag is important
+because Mksquashfs will always convert a file to a "sparse" file in the
+filesystem if it has block size sequences of zeros.  These zeros will not be
+stored and replaced with a hole.  But Mksquashfs is careful to preserve
+the semantics of the files it stores, if is was originally non-sparse it
+will flag that, so it doesn't appear as sparse to user-space or get
+copied as sparse by Unsquashfs.
+
+An example pseudo file output for a filesystem consisting of a directory, two
+regular files, and a symbolic link might be
+
+```
+/ D 1625536033 1777 0 0
+test D 1625536969 755 1000 100
+test/hello_world R 1625535696 644 1000 100 12 0 0
+test/regfile R 1625536928 644 1000 100 37 12 0
+test/symlink S 1625535712 777 1000 100 hello_world
+#
+# START OF DATA - DO NOT MODIFY
+#
+Hello World
+This is the data contents of regfile
+```
+
+Here you should be able to see the most important aspects of the layout, the
+pseudo file entries appear at the start of the file, and the data is stored at
+the end.  The two sections are separated by 3 special marker lines, containing
+the words "START OF DATA - DO NOT MODIFY".
+
+The following is a small example of how someone might edit and rebuild a
+Squashfs image.
+
+```
+$ unsquashfs -pf pseudo test.sqsh
+$ sed -i "0,/# START OF DATA/s/\([^ ]* . [0-9]* [0-7]* \)[0-9]*/\11234/g" pseudo
+$ sed -i "0,/# START OF DATA/s/hello_world/hello/g" pseudo
+$ mksquashfs - test2.sqsh -pf pseudo
+```
+
+This will change the ownership to uid 1234, and change the name of "hello_word"
+to "hello".
