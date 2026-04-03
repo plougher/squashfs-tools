@@ -4,7 +4,7 @@
  * Squashfs
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011,
- * 2012, 2013, 2014, 2019, 2021, 2022, 2023, 2024, 2025
+ * 2012, 2013, 2014, 2019, 2021, 2022, 2023, 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -60,7 +60,10 @@ struct inode_info {
 		struct file_info	*file;
 	};
 	struct pseudo_xattr	*xattr;
-	char			*symlink;
+	union {
+		char			*symlink;
+		struct dir_info		*clone_dir;
+	};
 	squashfs_inode		inode;
 	unsigned int		inode_number;
 	unsigned int		nlink;
@@ -228,6 +231,11 @@ static inline int get_pathmax()
 
 	return path_max;
 }
+
+/* Keep track of dereferencing symbolic link where it resolves to a directory */
+#define DEREF_FIRST	1
+#define DEREF_MULTIPLE	2
+#define DEREF_BAD	3
 
 extern struct cache *fragment_buffer, *reserve_cache;
 extern struct cache *fwriter_buffer;
