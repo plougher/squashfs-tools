@@ -48,6 +48,7 @@ This file describes how to use the Actions subsystem, and it has the following s
 5. [Actions](#5-actions)
 	1. [Actions applied at source filesystem reading (stage 1)](#51-actions-applied-at-source-filesystem-reading-stage-1)
 		1. [exclude()](#511-exclude)
+		2. [dereference()](#512-dereference)
 	2. [Actions applied at directory scanning (stage 2)](#52-actions-applied-at-directory-scanning-stage-2)
 		1. [fragment(name)](#521-fragmentname)
 		2. [fragments()](#522-fragments)
@@ -567,9 +568,8 @@ This can obviously be simplified to
 exclude@depth(3) && type(d)
 ```
 
-Note: the following tests do not work in stage 1, and so they can't be
-used in the exclude() action (see prune() action for explanation and
-alternative).
+Note: the following tests can't be used in the exclude() action (see prune()
+action for explanation and alternative).
 
 - dircount()
 - dircount_range()
@@ -577,6 +577,62 @@ alternative).
 - absolute()
 - readlink()
 - eval()
+
+#### 5.1.2 dereference()
+
+This action dereferences symbolic links where the expression returns TRUE.
+
+If this action is applied to a symbolic link, rather than the symbolic link
+being stored in the filesystem, the file or directory hierarchy that the
+symbolic link points to is stored.  All symbolic links in the directory
+hierarchy are also dereferenced.
+
+If the symbolic link has multiple hard links and the symbolic link points
+to a non-directory file, then the dereferenced file will have the same amount of
+hard links.  But, if the symbolic link points to a directory, then the directory
+hierarchy is cloned for each hard link.  This is because Unix/Linux forbids hard
+linking to a directory.  But, all files in the cloned directory hierarchies will
+be hard linked.
+
+This action can be used to dereference symbolic links which point outside of the
+filesystem being stored.
+
+Examples:
+
+```
+dereference@true
+```
+
+Dereference all symbolic links.
+
+```
+dereference@pathname(path/to/symbolic/link)
+```
+
+This will dereference the specific symbolic link "path/to/symbolic/link".
+
+
+```
+dereference@ ! exists
+```
+
+This will dereference symbolic links which point outside of the filesystem being stored.
+
+This uses the exists() test (see section 4.34) to test if the symbolic link is
+resolvable in the output filesystem, and if it isn't, it will tell Mksquashfs to
+dereference it at filesystem build time.
+
+Note: the following tests when used in the dereference() action refer to the
+output filesystem before any symbolic link dereferencing takes place.  This
+preserves the invariant that the filesystem doesn't mutate (or doesn't change)
+while the dereference() actions are being evaluated.
+
+	dircount()
+	dircount_range()
+	exists()
+	absolute()
+	readlink()
+	eval()
 
 ### 5.2 Actions applied at directory scanning (stage 2)
 
