@@ -48,7 +48,7 @@ This file describes how to use the Actions subsystem, and it has the following s
 5. [Actions](#5-actions)
 	1. [Actions applied at source filesystem reading (stage 1)](#51-actions-applied-at-source-filesystem-reading-stage-1)
 		1. [exclude()](#511-exclude)
-		2. [dereference()](#512-dereference)
+		2. [dereference(response)](#512-dereferenceresponse)
 	2. [Actions applied at directory scanning (stage 2)](#52-actions-applied-at-directory-scanning-stage-2)
 		1. [fragment(name)](#521-fragmentname)
 		2. [fragments()](#522-fragments)
@@ -578,7 +578,7 @@ action for explanation and alternative).
 - readlink()
 - eval()
 
-#### 5.1.2 dereference()
+#### 5.1.2 dereference(response)
 
 This action dereferences symbolic links where the expression returns TRUE.
 
@@ -597,6 +597,11 @@ be hard linked.
 This action can be used to dereference symbolic links which point outside of the
 filesystem being stored.
 
+Response determines what the action should do if a symbolic link cannot be
+dereferenced, this can be either ```keep``` or ```delete```.  Keep means the symbolic
+link is kept on failure to resolve, and delete means the symbolic link is
+deleted.  If no parameter is given, the action defaults to ```keep```.
+
 Examples:
 
 ```
@@ -606,7 +611,7 @@ dereference@true
 Dereference all symbolic links.
 
 ```
-dereference@pathname(path/to/symbolic/link)
+dereference(delete)@pathname(path/to/symbolic/link)
 ```
 
 This will dereference the specific symbolic link "path/to/symbolic/link".
