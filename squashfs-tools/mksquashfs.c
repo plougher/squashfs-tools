@@ -400,7 +400,7 @@ static struct file_info *duplicate(int *dup, int *block_dup,
 	struct dir_ent *dir_ent, struct file_buffer *file_buffer, int blocks,
 	long long sparse, int bl_hash);
 static struct dir_info *dir_scan1(char *, char *, struct pathnames *,
-	struct dir_ent *(_readdir)(struct dir_info *), int, int, int,
+	struct dir_ent *(_readdir)(struct dir_info *), int, int, int, int,
 	unsigned int);
 static int dir_scan_deref(struct dir_info *dir);
 static void dir_deref(struct dir_info *dir, unsigned int depth);
@@ -3673,15 +3673,15 @@ squashfs_inode do_directory_scans(struct dir_ent *dir_ent, int progress)
 }
 
 
-static squashfs_inode scan_single(char *pathname, int progress, int follow)
+static squashfs_inode scan_single(char *pathname, int progress, int follow, int keep)
 {
 	struct stat buf;
 	struct dir_ent *dir_ent;
 
 	if(appending)
-		root_dir = dir_scan1(pathname, "", paths, scan1_single_readdir, follow, TRUE, TRUE, 1);
+		root_dir = dir_scan1(pathname, "", paths, scan1_single_readdir, follow, keep, TRUE, TRUE, 1);
 	else
-		root_dir = dir_scan1(pathname, "", paths, scan1_readdir, follow, TRUE, TRUE, 1);
+		root_dir = dir_scan1(pathname, "", paths, scan1_readdir, follow, keep, TRUE, TRUE, 1);
 
 	if(root_dir == NULL)
 		BAD_ERROR("Failed to scan source directory\n");
@@ -3730,12 +3730,12 @@ static squashfs_inode scan_single(char *pathname, int progress, int follow)
 }
 
 
-static squashfs_inode scan_encomp(int progress, int follow)
+static squashfs_inode scan_encomp(int progress, int follow, int keep)
 {
 	struct stat buf;
 	struct dir_ent *dir_ent;
 
-	root_dir = dir_scan1("", "", paths, scan1_encomp_readdir, follow, TRUE, TRUE, 1);
+	root_dir = dir_scan1("", "", paths, scan1_encomp_readdir, follow, keep, TRUE, TRUE, 1);
 	if(root_dir == NULL)
 		BAD_ERROR("Failed to scan source\n");
 
@@ -3788,14 +3788,14 @@ static squashfs_inode scan_encomp(int progress, int follow)
 }
 
 
-static squashfs_inode dir_scan(int directory, int progress, int follow)
+static squashfs_inode dir_scan(int directory, int progress, int follow, int keep)
 {
 	int single = !keep_as_directory && source == 1;
 
 	if(single && directory)
-		return scan_single(source_path[0], progress, follow);
+		return scan_single(source_path[0], progress, follow, keep);
 	else
-		return scan_encomp(progress, follow);
+		return scan_encomp(progress, follow, keep);
 }
 
 
@@ -3946,8 +3946,8 @@ static void scan1_freedir(struct dir_info *dir)
 
 static struct dir_info *dir_scan1(char *filename, char *subpath,
 	struct pathnames *paths,
-	struct dir_ent *(_readdir)(struct dir_info *), int follow, int excludes,
-	int actions, unsigned int depth)
+	struct dir_ent *(_readdir)(struct dir_info *), int follow, int keep,
+	int excludes, int actions, unsigned int depth)
 {
 	struct dir_info *dir = scan1_opendir(filename, subpath, depth);
 	struct dir_ent *dir_ent;
@@ -3980,14 +3980,41 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 			return dir;
 		}
 
-		res = follow ? stat(filename, &buf) : lstat(filename, &buf);
+		if(follow) {
+			res = stat(filename, &buf);
 
-		if(res == -1) {
-			ERROR_START("Cannot stat dir/file %s because %s",
-				filename, strerror(errno));
-			ERROR_EXIT(", ignoring\n");
-			free_dir_entry(dir_ent);
-			continue;
+			if(res == -1) {
+				int saved_errno = errno;
+
+				/* is this a symbolic link? */
+				res = lstat(filename, &buf);
+
+				if(res != -1 && S_ISLNK(buf.st_mode)) {
+					if(keep)
+						ERROR("Cannot dereference %s, keeping as symbolic link\n", filename);
+					else {
+						ERROR("Cannot dereference %s, ignoring\n", filename);
+						free_dir_entry(dir_ent);
+						continue;
+					}
+				} else {
+					ERROR_START("Cannot stat dir/file %s because %s",
+						filename, strerror(saved_errno));
+					ERROR_EXIT(", ignoring\n");
+					free_dir_entry(dir_ent);
+					continue;
+				}
+			}
+		} else {
+			res = lstat(filename, &buf);
+
+			if(res == -1) {
+				ERROR_START("Cannot stat dir/file %s because %s",
+					filename, strerror(errno));
+				ERROR_EXIT(", ignoring\n");
+				free_dir_entry(dir_ent);
+				continue;
+			}
 		}
 
 		if(one_file_system) {
@@ -4053,8 +4080,8 @@ static struct dir_info *dir_scan1(char *filename, char *subpath,
 				sub_dir = create_dir(filename, subpath, depth + 1);
 			} else
 				sub_dir = dir_scan1(filename, subpath, new,
-						scan1_readdir, follow, excludes,
-						actions, depth + 1);
+						scan1_readdir, follow, keep,
+						excludes, actions, depth + 1);
 			if(sub_dir) {
 				dir->directory_count ++;
 				add_dir_entry(dir_ent, sub_dir,
@@ -4122,7 +4149,7 @@ static struct dir_ent *scan_readdir(struct dir_info *dir, struct dir_ent *dir_en
 static int dir_scan_deref(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = NULL;
-	int deref = FALSE;
+	int deref = FALSE, keep;
 
 	while((dir_ent = scan_readdir(dir, dir_ent)) != NULL) {
 		struct stat *buf = &dir_ent->inode->buf;
@@ -4134,10 +4161,11 @@ static int dir_scan_deref(struct dir_info *dir)
 		 * symbolic link
 		 */
 		if(S_ISLNK(buf->st_mode)) {
-			int res = eval_dereference_actions(root_dir, dir_ent);
+			int res = eval_dereference_actions(root_dir, dir_ent, &keep);
 
 			if(res) {
 				dir_ent->inode->deref = TRUE;
+				dir_ent->inode->keep = keep;
 				deref = TRUE;
 			}
 		} else if(S_ISDIR(buf->st_mode)) {
@@ -4192,23 +4220,50 @@ struct dir_info *dir_clone(char *filename, char *subpath, struct dir_info *dir, 
 }
 
 
+static struct dir_ent *delete_file(struct dir_info *dir, struct dir_ent *dir_ent, struct dir_ent *prev)
+{
+	struct dir_ent *next_ent = dir_ent->next;
+
+	dir->count --;
+	if(prev)
+		prev->next = next_ent;
+	else
+		dir->list = next_ent;
+
+	free_dir_entry(dir_ent);
+
+	return next_ent;
+}
+
+
 /*
  * Scan directory hierarchy and dereference any marked symbolic links
  */
 static void dir_deref(struct dir_info *dir, unsigned int depth)
 {
-	struct dir_ent *dir_ent = NULL;
+	struct dir_ent *dir_ent = dir->list, *prev = NULL;
 	struct stat buf;
 	char *filename, *subpath;
 	int res;
 
-	while((dir_ent = scan_readdir(dir, dir_ent)) != NULL) {
+	while(dir_ent) {
 		if(dir_ent->inode->deref) {
 			filename = pathname(dir_ent);
-			res = stat(filename, &buf);
+			if(dir_ent->inode->deref == DEREF_BAD)
+				res = -1;
+			else
+				res = stat(filename, &buf);
 			if(res == -1) {
-				ERROR("Cannot dereference %s, ignoring\n", filename);
-				dir_ent->inode->deref = FALSE;
+				dir_ent->inode->deref = DEREF_BAD;
+				if(dir_ent->inode->keep) {
+					ERROR("Cannot dereference %s, keeping as symbolic link\n", filename);
+					prev = dir_ent;
+					dir_ent = dir_ent->next;
+				} else {
+					ERROR("Cannot dereference %s, deleting\n", filename);
+					dir_ent = delete_file(dir, dir_ent, prev);
+				}
+
 				continue;
 			}
 
@@ -4233,10 +4288,18 @@ static void dir_deref(struct dir_info *dir, unsigned int depth)
 
 				if(dir_ent->inode->deref == DEREF_FIRST) {
 					dir_ent->dir = dir_scan1(filename, subpath, NULL, scan1_readdir,
-								TRUE, FALSE, FALSE, depth + 1);
+								TRUE, dir_ent->inode->keep, FALSE, FALSE, depth + 1);
 					if(dir_ent->dir == NULL) {
-						ERROR("Cannot dereference %s, ignoring\n", pathname(dir_ent));
 						dir_ent->inode->deref = DEREF_BAD;
+						if(dir_ent->inode->keep) {
+							ERROR("Cannot dereference %s, keeping as symbolic link\n", filename);
+							prev = dir_ent;
+							dir_ent = dir_ent->next;
+						} else {
+							ERROR("Cannot dereference %s, deleting\n", filename);
+							dir_ent = delete_file(dir, dir_ent, prev);
+						}
+
 						continue;
 					}
 
@@ -4244,12 +4307,9 @@ static void dir_deref(struct dir_info *dir, unsigned int depth)
 					dir_ent->inode->clone_dir = dir_ent->dir;
 					memcpy(&dir_ent->inode->buf, &buf, sizeof(struct stat));
 					dir_ent->inode->deref = DEREF_MULTIPLE;
-				} else if(dir_ent->inode->deref == DEREF_MULTIPLE) {
+				} else {
 					dir_ent->dir = dir_clone(filename, subpath, dir_ent->inode->clone_dir, depth + 1);
 					dir_ent->inode = lookup_inode(&dir_ent->inode->buf);
-				} else {
-					ERROR("Cannot dereference %s, ignoring\n", filename);
-					continue;
 				}
 
 				dir_ent->dir->dir_ent = dir_ent;
@@ -4257,6 +4317,9 @@ static void dir_deref(struct dir_info *dir, unsigned int depth)
 			}
 		} else if(S_ISDIR(dir_ent->inode->buf.st_mode))
 			dir_deref(dir_ent->dir, depth + 1);
+
+		prev = dir_ent;
+		dir_ent = dir_ent->next;
 	}
 }
 
@@ -5177,7 +5240,7 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 				cur_dev = entry->inode->buf.st_dev;
 				new = dir_scan1(pathname(entry),
 					subpathname(entry), newp, scan1_readdir,
-					FALSE, TRUE, TRUE, dir->depth + 1);
+					FALSE, FALSE, TRUE, TRUE, dir->depth + 1);
 				if(new == NULL)
 					return NULL;
 
@@ -9087,7 +9150,7 @@ int main(int argc, char *argv[])
 		else if(!source)
 			inode = no_sources(progress);
 		else
-			inode = dir_scan(S_ISDIR(source_buf.st_mode), progress, FALSE);
+			inode = dir_scan(S_ISDIR(source_buf.st_mode), progress, FALSE, FALSE);
 
 		sBlk.root_inode = inode;
 		sBlk.inodes = inode_count;

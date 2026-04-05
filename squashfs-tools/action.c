@@ -1128,7 +1128,36 @@ int dereference_actions()
 }
 
 
-int eval_dereference_actions(struct dir_info *root, struct dir_ent *dir_ent)
+static int parse_dereference_args(struct action_entry *action, int args,
+					char **argv, void **data)
+{
+	struct deref_data *deref_data;
+	int val;
+
+	if (args >= 2) {
+		SYNTAX_ERROR("Dereference action expects zero or one argument\n");
+		return 0;
+	}
+
+	if (args == 0 || strcmp(argv[0], "keep") == 0)
+		val = TRUE;
+	else if (strcmp(argv[0], "delete") == 0)
+		val = FALSE;
+	else {
+		SYNTAX_ERROR("Dereference action expects zero arguments, or one "
+			"argument containing \"keep\" or \"delete\"\n");
+		return 0;
+	}
+
+	deref_data = MALLOC(sizeof(*deref_data));
+	deref_data->keep = val;
+	*data = deref_data;
+
+	return 1;
+}
+
+
+int eval_dereference_actions(struct dir_info *root, struct dir_ent *dir_ent, int *keep)
 {
 	int i, match = 0;
 	struct action_data action_data;
@@ -1141,8 +1170,15 @@ int eval_dereference_actions(struct dir_info *root, struct dir_ent *dir_ent)
 	action_data.dir_ent = dir_ent;
 	action_data.root = root;
 
-	for (i = 0; i < dereference_count && !match; i++)
+	for (i = 0; i < dereference_count; i++) {
 		match = eval_expr_top(&dereference_spec[i], &action_data);
+		if(match) {
+			struct deref_data *data = dereference_spec[i].data;
+
+			*keep = data->keep;
+			break;
+		}
+	}
 
 	free(action_data.pathname);
 	free(action_data.subpath);
@@ -3374,7 +3410,7 @@ static struct test_entry test_table[] = {
 static struct action_entry action_table[] = {
 	{ "fragment", FRAGMENT_ACTION, 1, ACTION_REG, NULL, NULL},
 	{ "exclude", EXCLUDE_ACTION, 0, ACTION_ALL_LNK, NULL, NULL},
-	{ "dereference", DEREFERENCE_ACTION, 0, ACTION_LNK, NULL, NULL },
+	{ "dereference", DEREFERENCE_ACTION, -2, ACTION_LNK, parse_dereference_args, NULL },
 	{ "fragments", FRAGMENTS_ACTION, 0, ACTION_REG, NULL, frag_action},
 	{ "no-fragments", NO_FRAGMENTS_ACTION, 0, ACTION_REG, NULL, no_frag_action},
 	{ "always-use-fragments", ALWAYS_FRAGS_ACTION, 0, ACTION_REG, NULL, always_frag_action},

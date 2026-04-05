@@ -79,6 +79,7 @@ struct inode_info {
 	char			scanned;
 	char			alignment;
 	char			deref;
+	char			keep;
 };
 
 
