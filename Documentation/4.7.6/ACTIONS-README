@@ -533,8 +533,8 @@ action for explanation and alternative).
 	readlink()
 	eval()
 
-5.1.2 dereference()
--------------------
+5.1.2 dereference(response)
+---------------------------
 
 This action dereferences symbolic links where the expression returns TRUE.
 
@@ -553,6 +553,11 @@ be hard linked.
 This action can be used to dereference symbolic links which point outside of the
 filesystem being stored.
 
+Response determines what the action should do if a symbolic link cannot be
+dereferenced, this can be either "keep" or "delete".  Keep means the symbolic
+link is kept on failure to resolve, and delete means the symbolic link is
+deleted.  If no parameter is given, the action defaults to "keep".
+ 
 Examples:
 
 1. Dereference all symbolic links
@@ -561,7 +566,7 @@ dereference@true
 
 2. Dereference a specific symbolic link
 
-dereference@pathname(path/to/symbolic/link)
+dereference(delete)@pathname(path/to/symbolic/link)
 
 Will dereference the symbolic link "path/to/symbolic/link".
 
