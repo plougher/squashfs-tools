@@ -627,12 +627,12 @@ output filesystem before any symbolic link dereferencing takes place.  This
 preserves the invariant that the filesystem doesn't mutate (or doesn't change)
 while the dereference() actions are being evaluated.
 
-	dircount()
-	dircount_range()
-	exists()
-	absolute()
-	readlink()
-	eval()
+- dircount()
+- dircount_range()
+- exists()
+- absolute()
+- readlink()
+- eval()
 
 ### 5.2 Actions applied at directory scanning (stage 2)
 
