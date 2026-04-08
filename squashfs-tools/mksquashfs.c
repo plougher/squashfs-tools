@@ -3677,6 +3677,7 @@ static squashfs_inode scan_single(char *pathname, int progress, int follow, int 
 {
 	struct stat buf;
 	struct dir_ent *dir_ent;
+	int res;
 
 	if(appending)
 		root_dir = dir_scan1(pathname, "", paths, scan1_single_readdir, follow, keep, TRUE, TRUE, 1);
@@ -3690,7 +3691,8 @@ static squashfs_inode scan_single(char *pathname, int progress, int follow, int 
 	 * it to the root directory dir_info structure */
 	dir_ent = create_dir_entry("", NULL, pathname, scan1_opendir("", "", 0));
 
-	if(lstat(pathname, &buf) == -1)
+	res = follow ? stat(pathname, &buf) : lstat(pathname, &buf);
+	if(res == -1)
 		/* source directory has disappeared? */
 		BAD_ERROR("Cannot stat source directory %s because %s\n",
 						pathname, strerror(errno));
@@ -5551,15 +5553,16 @@ static int old_excluded(char *filename, struct stat *buf)
 			* sizeof(struct exclude_info)); \
 	exclude_paths[exclude].st_dev = buf.st_dev; \
 	exclude_paths[exclude++].st_ino = buf.st_ino;
-static int old_add_exclude(char *path)
+static int old_add_exclude(char *path, int follow)
 {
-	int i;
+	int i, res;
 	char *filename;
 	struct stat buf;
 
 	if(path[0] == '/' || strncmp(path, "./", 2) == 0 ||
 			strncmp(path, "../", 3) == 0) {
-		if(lstat(path, &buf) == -1) {
+		res = follow ? stat(path, &buf) : lstat(path, &buf);
+		if(res == -1) {
 			ERROR_START("Cannot stat exclude dir/file %s because "
 				"%s", path, strerror(errno));
 			ERROR_EXIT(", ignoring\n");
@@ -5571,7 +5574,8 @@ static int old_add_exclude(char *path)
 
 	for(i = 0; i < source; i++) {
 		ASPRINTF(&filename, "%s/%s", source_path[i], path);
-		if(lstat(filename, &buf) == -1) {
+		res = follow ? stat(path, &buf) : lstat(path, &buf);
+		if(res == -1) {
 			if(!(errno == ENOENT || errno == ENOTDIR)) {
 				ERROR_START("Cannot stat exclude dir/file %s "
 					"because %s", filename, strerror(errno));
@@ -5963,7 +5967,7 @@ int excluded(char *name, struct pathnames *paths, struct pathnames **new)
 }
 
 
-static void process_exclude_file(char *argv)
+static void process_exclude_file(char *argv, int follow)
 {
 	FILE *fd;
 	char buffer[MAX_LINE + 1]; /* overflow safe */
@@ -6010,7 +6014,7 @@ static void process_exclude_file(char *argv)
 			continue;
 
 		if(old_exclude)
-			old_add_exclude(filename);
+			old_add_exclude(filename, FALSE);
 		else
 			add_exclude(filename);
 	}
@@ -7632,7 +7636,7 @@ static int sqfstar(int argc, char *argv[])
 			 * Note presence of filename arg has already
 			 * been checked
 			 */
-			process_exclude_file(argv[++i]);
+			process_exclude_file(argv[++i], FALSE);
 		else if(option_with_arg(argv[i], sqfstar_option_table))
 			i++;
 	}
@@ -7785,6 +7789,11 @@ int main(int argc, char *argv[])
 	int repro_opt = FALSE;
 	int repro_time_opt = FALSE;
 	unsigned int repro_time;
+
+	/* Is Mksquashfs dereferencing symbolic links?  What happens to symbolic links
+	 * that can not be deferenced? */
+	int deref = FALSE;
+	int deref_keep = FALSE;
 
 	check_sqfs_cmdline(argc, argv);
 	check_pager();
@@ -8585,6 +8594,19 @@ int main(int argc, char *argv[])
 					!parse_number(argv[i], &overcommit, 2) ||
 					(overcommit > 100))
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -overcommit missing or invalid percentage: it should be 0 - 100%%\n");
+		} else if(strcmp(argv[i], "-dereference") == 0) {
+			deref = TRUE;
+			deref_keep = FALSE;
+		} else if(strcmp(argv[i], "-deref") == 0) {
+			if(++i == argc)
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -deref missing response parameter\n");
+			else if(strcmp(argv[i], "keep") == 0)
+				deref_keep = TRUE;
+			else if(strcmp(argv[i], "delete") == 0)
+				deref_keep = FALSE;
+			else
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -deref parameter should be either \"keep\" or \"delete\"\n");
+			deref = TRUE;
 		} else
 			mksquashfs_invalid_option(argv[i]);
 	}
@@ -8808,7 +8830,8 @@ int main(int argc, char *argv[])
 			source_dev = MALLOC(source * sizeof(dev_t));
 
 		for(i = 0; i < source; i++) {
-			if(lstat(source_path[i], &source_buf) == -1) {
+			res = deref ?  stat(source_path[i], &source_buf) : lstat(source_path[i], &source_buf);
+			if(res == -1) {
 				fprintf(stderr, "Cannot stat source directory \"%s\" "
 					"because %s\n", source_path[i],
 					strerror(errno));
@@ -8897,7 +8920,7 @@ int main(int argc, char *argv[])
 				 * Note presence of filename arg has already
 				 * been checked
 				 */
-				process_exclude_file(argv[++i]);
+				process_exclude_file(argv[++i], deref);
 			else if(strcmp(argv[i], "-e") == 0)
 				break;
 			else if(option_with_arg(argv[i], option_table))
@@ -8910,7 +8933,7 @@ int main(int argc, char *argv[])
 			}
 			while(i < argc)
 				if(old_exclude)
-					old_add_exclude(argv[i++]);
+					old_add_exclude(argv[i++], deref);
 				else
 					add_exclude(argv[i++]);
 		}
@@ -9150,7 +9173,7 @@ int main(int argc, char *argv[])
 		else if(!source)
 			inode = no_sources(progress);
 		else
-			inode = dir_scan(S_ISDIR(source_buf.st_mode), progress, FALSE, FALSE);
+			inode = dir_scan(S_ISDIR(source_buf.st_mode), progress, deref, deref_keep);
 
 		sBlk.root_inode = inode;
 		sBlk.inodes = inode_count;
