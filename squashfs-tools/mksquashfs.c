@@ -378,7 +378,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "inode-time",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
 	"hs", "info-file", "force-file-mode", "force-dir-mode",
 	"small-readers", "block-readers", "uid-gid-offset", "all-time",
-	"overcommit", "repro-time", "cols", "deref", NULL
+	"overcommit", "repro-time", "cols", "deref", "deref-path", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime",
@@ -6799,6 +6799,19 @@ static void fix_file(char *filename)
 }
 
 
+int convert_to_action(char *action, char *test, char *parameter)
+{
+	char *str;
+	int res;
+
+	ASPRINTF(&str, "%s@%s(\"%s\")", action, test, parameter);
+	res = parse_action(str, ACTION_LOG_NONE);
+	free(str);
+
+	return res;
+}
+
+
 static int sqfstar(int argc, char *argv[])
 {
 	struct stat buf;
@@ -8607,6 +8620,12 @@ int main(int argc, char *argv[])
 			else
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -deref parameter should be either \"keep\" or \"delete\"\n");
 			deref = TRUE;
+		} else if(strcmp(argv[i], "-deref-path") == 0) {
+			if(++i == argc)
+				mksquashfs_option_help(argv[i - 1], "mksquashfs: -deref-path missing pathname parameter\n");
+			res = convert_to_action("dereference", "pathname", argv[i]);
+			if(!res)
+				BAD_ERROR("Bug in -deref-path!\n");
 		} else
 			mksquashfs_invalid_option(argv[i]);
 	}
