@@ -378,7 +378,7 @@ char *option_table[] = { "comp", "b", "mkfs-time", "fstime", "inode-time",
 	"mem-percent", "-pd", "-pseudo-dir", "help-option", "ho", "help-section",
 	"hs", "info-file", "force-file-mode", "force-dir-mode",
 	"small-readers", "block-readers", "uid-gid-offset", "all-time",
-	"overcommit", "repro-time", "cols", NULL
+	"overcommit", "repro-time", "cols", "deref", NULL
 };
 
 char *sqfstar_option_table[] = { "comp", "b", "mkfs-time", "fstime",
