@@ -6799,12 +6799,12 @@ static void fix_file(char *filename)
 }
 
 
-int convert_to_action(char *action, char *test, char *parameter)
+int convert_to_action(char *action, char *action_parm, char *test, char *parameter)
 {
 	char *str;
 	int res;
 
-	ASPRINTF(&str, "%s@%s(\"%s\")", action, test, parameter);
+	ASPRINTF(&str, "%s(%s)@%s(\"%s\")", action, action_parm, test, parameter);
 	res = parse_action(str, ACTION_LOG_NONE);
 	free(str);
 
@@ -8623,7 +8623,7 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-deref-path") == 0) {
 			if(++i == argc)
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -deref-path missing pathname parameter\n");
-			res = convert_to_action("dereference", "pathname", argv[i]);
+			res = convert_to_action("dereference", "delete", "pathname", argv[i]);
 			if(!res)
 				BAD_ERROR("Bug in -deref-path!\n");
 		} else
