@@ -1642,14 +1642,18 @@ again:
 	pthread_mutex_unlock(&dup_mutex);
 
 	compressed_buffer = cache_lookup(fwriter_buffer, index);
-
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
-	pthread_mutex_lock(&fragment_mutex);
-	disk_fragment = &fragment_table[index];
-	size = SQUASHFS_COMPRESSED_SIZE_BLOCK(disk_fragment->size);
-	compressed = SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size);
-	start_block = disk_fragment->start_block;
-	pthread_cleanup_pop(1);
+	if(compressed_buffer) {
+		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(compressed_buffer->c_byte);
+		compressed = SQUASHFS_COMPRESSED_BLOCK(compressed_buffer->c_byte);
+	} else {
+		pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
+		pthread_mutex_lock(&fragment_mutex);
+		disk_fragment = &fragment_table[index];
+		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(disk_fragment->size);
+		compressed = SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size);
+		start_block = disk_fragment->start_block;
+		pthread_cleanup_pop(1);
+	}
 
 	if(compressed) {
 		int error;
