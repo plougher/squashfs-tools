@@ -1987,19 +1987,26 @@ static unsigned short get_checksum_buffers(long long start, long long l,
 		if(buffers[i])
 			chksum = get_checksum(buffers[i]->data, bytes, chksum);
 		else {
-			void *data;
+			struct file_buffer *write_buffer = queue_cache_lookup(bwriter_buffer, start);
 
-			if(dpos == -1)
-				dpos = get_virt_disk(start);
+			if(write_buffer) {
+				chksum = get_checksum(write_buffer->data, bytes, chksum);
+				gen_cache_block_put(write_buffer);
+			} else {
+				void *data;
 
-			data = read_from_disk(dpos, bytes, 0);
-			if(data == NULL) {
-				ERROR("Failed to checksum data from output"
-					" filesystem\n");
-				BAD_ERROR("Output filesystem corrupted?\n");
+				if(dpos == -1)
+					dpos = get_virt_disk(start);
+
+				data = read_from_disk(dpos, bytes, 0);
+				if(data == NULL) {
+					ERROR("Failed to checksum data from output"
+						" filesystem\n");
+					BAD_ERROR("Output filesystem corrupted?\n");
+				}
+
+				chksum = get_checksum(data, bytes, chksum);
 			}
-
-			chksum = get_checksum(data, bytes, chksum);
 		}
 
 		l -= bytes;
@@ -2310,7 +2317,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 	unsigned short checksum = 0;
 	char checksum_flag = FALSE;
 	struct fragment *fragment;
-	long long dupl_start, cached_target = -1;
+	long long dupl_start;
 
 	/* Look for a possible duplicate set of blocks */
 	for(dupl_ptr = dupl_block[bl_hash]; dupl_ptr;
@@ -2351,7 +2358,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 			 */
 			for(block = 0; block < blocks; block ++) {
 				int size = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[block]);
-				struct file_buffer *dup_buffer = NULL;
+				struct file_buffer *dup_buffer = NULL, *target_buffer = NULL;
 				char *target_data, *dup_data;
 				int res;
 
@@ -2368,17 +2375,19 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				if(buffer_list[block])
 					target_data = buffer_list[block]->data;
 				else {
-					if(dtarget_start == -1) {
-						if(cached_target == -1)
-							cached_target = get_virt_disk(target_start);
-						dtarget_start = cached_target;
-					}
-					target_data = read_from_disk(dtarget_start, size, 0);
-					if(target_data == NULL) {
-						ERROR("Failed to read data from"
-							" output filesystem\n");
-						BAD_ERROR("Output filesystem"
-							" corrupted?\n");
+					target_buffer = queue_cache_lookup(bwriter_buffer, target_start);
+					if(target_buffer)
+						target_data = target_buffer->data;
+					else {
+						if(dtarget_start == -1)
+							dtarget_start = get_virt_disk(target_start);
+						target_data = read_from_disk(dtarget_start, size, 0);
+						if(target_data == NULL) {
+							ERROR("Failed to read data from"
+								" output filesystem\n");
+							BAD_ERROR("Output filesystem"
+								" corrupted?\n");
+						}
 					}
 				}
 
@@ -2404,6 +2413,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 				}
 
 				res = memcmp(target_data, dup_data, size);
+				gen_cache_block_put(target_buffer);
 				gen_cache_block_put(dup_buffer);
 				if(res != 0)
 					break;
@@ -3001,7 +3011,7 @@ static struct file_info *write_file_blocks_dup(int *status, struct dir_ent *dir_
 				file_bytes += read_buffer->size;
 				if(block < thresh) {
 					buffer_list[block++] = NULL;
-					put_write_buffer(read_buffer);
+					put_write_buffer_hash(read_buffer);
 				} else
 					buffer_list[block++] = read_buffer;
 				inc_progress_bar();
