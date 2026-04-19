@@ -58,7 +58,7 @@ static char *mksquashfs_options[]={
 	/* pseudo options */
 	"-p", "-pd", "-pd", "-pf", "-pseudo-override", "", "", "",
 	/* filter options */
-	"-dereference", "-ef", "-wildcards", "-regex", "-max-depth",
+	"-dereference", "-deref", "-ef", "-wildcards", "-regex", "-max-depth",
 	"-one-file-system", "-one-file-system-x", "-sort", "", "", "",
 	/* xattrs options */
 	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include",
@@ -141,8 +141,8 @@ static char *mksquashfs_args[]={
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode uid gid>",
 	"<pseudo-file>", "", "", "", "",
 	/* filter options */
-	"", "<exclude-file>", "", "", "<levels>", "", "", "<sort-file>", "",
-	"", "",
+	"", "<response>", "<exclude-file>", "", "", "<levels>", "", "", 
+	"<sort-file>", "", "", "",
 	/* xattrs options */
 	"", "", "<regex>", "<regex>", "<name=val>", "", "", "",
 	/* runtime options */
@@ -322,6 +322,10 @@ static char *mksquashfs_text[]={
 		"they point to rather than the symbolic link.  If a "
 		"symbolic link cannot be dereferenced then delete it "
 		"(see -deref for an alternative)\n",
+	"-deref <response>\tfollow symbolic links like the -dereference "
+		"option, but where <response> determines what Mksquashfs does "
+		"if it cannot dereference the symbolic link.  <keep> keeps the "
+		"symbolic link, and <delete> deletes the symbolic link\n",
 	"-ef <exclude-file>\tlist of exclude dirs/files.  One per line\n",
 	"-wildcards\t\tallow extended shell wildcards (globbing) to be used "
 		"in exclude dirs/files\n",
