@@ -58,8 +58,8 @@ static char *mksquashfs_options[]={
 	/* pseudo options */
 	"-p", "-pd", "-pd", "-pf", "-pseudo-override", "", "", "",
 	/* filter options */
-	"-ef", "-wildcards", "-regex", "-max-depth", "-one-file-system",
-	"-one-file-system-x", "-sort", "", "", "",
+	"-dereference", "-ef", "-wildcards", "-regex", "-max-depth",
+	"-one-file-system", "-one-file-system-x", "-sort", "", "", "",
 	/* xattrs options */
 	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include",
 	"-xattrs-add", "", "", "",
@@ -141,7 +141,8 @@ static char *mksquashfs_args[]={
 	"<pseudo-definition>", "<d mode uid gid>", "<D time mode uid gid>",
 	"<pseudo-file>", "", "", "", "",
 	/* filter options */
-	"<exclude-file>", "", "", "<levels>", "", "", "<sort-file>", "", "", "",
+	"", "<exclude-file>", "", "", "<levels>", "", "", "<sort-file>", "",
+	"", "",
 	/* xattrs options */
 	"", "", "<regex>", "<regex>", "<name=val>", "", "", "",
 	/* runtime options */
@@ -317,6 +318,10 @@ static char *mksquashfs_text[]={
 	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
 		"-force-uid and -force-gid options\n",
 	"\n", "Filesystem filter and selection options:", "\n",
+	"-dereference\t\tfollow symbolic links, and store the files "
+		"they point to rather than the symbolic link.  If a "
+		"symbolic link cannot be dereferenced then delete it "
+		"(see -deref for an alternative)\n",
 	"-ef <exclude-file>\tlist of exclude dirs/files.  One per line\n",
 	"-wildcards\t\tallow extended shell wildcards (globbing) to be used "
 		"in exclude dirs/files\n",
