@@ -8624,11 +8624,15 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-dereference") == 0) {
 			if(tarfile)
 				BAD_ERROR("-dereference does not make sense reading tar files\n");
+			else if(cpiostyle)
+				BAD_ERROR("-dereference does not make sense with -cpiostyle options\n");
 			deref = TRUE;
 			deref_keep = FALSE;
 		} else if(strcmp(argv[i], "-deref") == 0) {
 			if(tarfile)
 				BAD_ERROR("-deref does not make sense reading tar files\n");
+			else if(cpiostyle)
+				BAD_ERROR("-deref does not make sense with -cpiostyle options\n");
 			else if(++i == argc)
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -deref missing response parameter\n");
 			else if(strcmp(argv[i], "keep") == 0)
@@ -8641,6 +8645,8 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-deref-path") == 0) {
 			if(tarfile)
 				BAD_ERROR("-deref-path does not make sense reading tar files\n");
+			else if(cpiostyle)
+				BAD_ERROR("-deref-path does not make sense with -cpiostyle options\n");
 			else if(++i == argc)
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -deref-path missing pathname parameter\n");
 			res = convert_to_action("dereference", "delete", "pathname", argv[i]);
