@@ -316,7 +316,7 @@ static char *mksquashfs_text[]={
 		"should not be quoted\n",
 	"-pseudo-override\tmake pseudo file uids and gids override -all-root, "
 		"-force-uid and -force-gid options\n",
-	"\n", "Filesystem filter options:", "\n",
+	"\n", "Filesystem filter and selection options:", "\n",
 	"-sort <sort-file>\tsort files according to priorities in <sort-file>."
 		"  One file or dir with priority per line.  Priority -32768 "
 		"to 32767, default priority 0\n",
