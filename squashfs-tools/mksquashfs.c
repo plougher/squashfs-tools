@@ -8622,10 +8622,14 @@ int main(int argc, char *argv[])
 					(overcommit > 100))
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -overcommit missing or invalid percentage: it should be 0 - 100%%\n");
 		} else if(strcmp(argv[i], "-dereference") == 0) {
+			if(tarfile)
+				BAD_ERROR("-dereference does not make sense reading tar files\n");
 			deref = TRUE;
 			deref_keep = FALSE;
 		} else if(strcmp(argv[i], "-deref") == 0) {
-			if(++i == argc)
+			if(tarfile)
+				BAD_ERROR("-deref does not make sense reading tar files\n");
+			else if(++i == argc)
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -deref missing response parameter\n");
 			else if(strcmp(argv[i], "keep") == 0)
 				deref_keep = TRUE;
@@ -8635,7 +8639,9 @@ int main(int argc, char *argv[])
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -deref parameter should be either \"keep\" or \"delete\"\n");
 			deref = TRUE;
 		} else if(strcmp(argv[i], "-deref-path") == 0) {
-			if(++i == argc)
+			if(tarfile)
+				BAD_ERROR("-deref-path does not make sense reading tar files\n");
+			else if(++i == argc)
 				mksquashfs_option_help(argv[i - 1], "mksquashfs: -deref-path missing pathname parameter\n");
 			res = convert_to_action("dereference", "delete", "pathname", argv[i]);
 			if(!res)
