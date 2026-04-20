@@ -28,5 +28,5 @@ The top-level directory contains the following files:
 
 The top-level directory has the following directories:
 
-* **Documentation** - this directory contains documentation for various versions of squashfs-tools, and it is split into subdirectories for versions 4.5 through to 4.7.5, the latest version is 4.7.5.  It also has a directory containing prebuilt manpages for latest version of squashfs-tools.
+* **Documentation** - this directory contains documentation for various versions of squashfs-tools, and it is split into subdirectories for versions 4.5 through to 4.7.6, the latest released version is 4.7.5, and the development version will become 4.7.6.  It also has a directory containing prebuilt manpages for the latest development version of squashfs-tools.
 * **squashfs-tools** - the source code directory, enter this directory and type `make` to build, or `sudo make install` to install.  Edit the Makefile to change the compression algorithms built and other defaults including install PATH, XATTR support, and number of parallel reader threads.
