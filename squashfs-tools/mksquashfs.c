@@ -5014,7 +5014,7 @@ static char *walk_source(char *source, char **pathname, char **name)
 
 static struct dir_info *add_source(struct dir_info *sdir, char *source,
 		char *subpath, char *file, char **prefix,
-		struct pathnames *paths, unsigned int depth)
+		struct pathnames *paths, unsigned int depth, int follow)
 {
 	struct dir_info *sub;
 	struct dir_ent *entry;
@@ -5072,7 +5072,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0)
 		BAD_ERROR("Source path can't have '.' or '..' embedded in it with -tarstyle/-cpiostyle[0]\n");
 
-	res = lstat(file, &buf);
+	res = follow ? stat(file, &buf) : lstat(file, &buf);
 	if (res == -1)
 		BAD_ERROR("Can't stat %s because %s\n", file, strerror(errno));
 
@@ -5139,7 +5139,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 				excluded(entry->name, paths, &new);
 				subpath = subpathname(entry);
 				sub = add_source(entry->dir, source, subpath,
-						file, prefix, new, depth + 1);
+					file, prefix, new, depth + 1, follow);
 				if(sub == NULL)
 					goto failed_match;
 				entry->dir = sub;
@@ -5199,7 +5199,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 			if(newsubpath == NULL)
 				newsubpath = subpathname(entry);
 			sub = add_source(NULL, source, newsubpath, file, prefix,
-								new, depth + 1);
+							new, depth + 1, follow);
 			if(sub == NULL)
 				goto failed_entry;
 			add_dir_entry(entry, sub, lookup_inode(&buf));
@@ -5234,7 +5234,8 @@ failed_match:
 }
 
 
-static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *paths)
+static struct dir_info *populate_tree(struct dir_info *dir,
+	struct pathnames *paths, int follow, int keep)
 {
 	struct dir_ent *entry;
 	struct dir_info *new;
@@ -5256,14 +5257,14 @@ static struct dir_info *populate_tree(struct dir_info *dir, struct pathnames *pa
 				cur_dev = entry->inode->buf.st_dev;
 				new = dir_scan1(pathname(entry),
 					subpathname(entry), newp, scan1_readdir,
-					FALSE, FALSE, TRUE, TRUE, dir->depth + 1);
+					follow, keep, TRUE, TRUE, dir->depth + 1);
 				if(new == NULL)
 					return NULL;
 
 				entry->dir = new;
 				new->dir_ent = entry;
 			} else {
-				new = populate_tree(entry->dir, newp);
+				new = populate_tree(entry->dir, newp, follow, keep);
 				if(new == NULL)
 					return NULL;
 			}
@@ -5356,7 +5357,7 @@ static char *get_next_filename()
 }
 
 
-static squashfs_inode process_source(int progress)
+static squashfs_inode process_source(int progress, int follow, int keep)
 {
 	int res, first = TRUE, same = FALSE;
 	char *filename, *prefix, *pathname;
@@ -5365,7 +5366,7 @@ static squashfs_inode process_source(int progress)
 	struct dir_info *new;
 
 	while((filename = get_next_filename())) {
-		new = add_source(root_dir, filename, "", NULL, &prefix, paths, 1);
+		new = add_source(root_dir, filename, "", NULL, &prefix, paths, 1, follow);
 
 		if(new) {
 			/* does argv[i] start from the same directory? */
@@ -5461,7 +5462,7 @@ static squashfs_inode process_source(int progress)
 	entry->dir = root_dir;
 	root_dir->dir_ent = entry;
 
-	root_dir = populate_tree(root_dir, paths);
+	root_dir = populate_tree(root_dir, paths, follow, keep);
 	if(root_dir == NULL)
 		BAD_ERROR("Failed to read directory hierarchy\n");
 
@@ -9214,7 +9215,7 @@ int main(int argc, char *argv[])
 		if(tarfile)
 			inode = process_tar_file(progress);
 		else if(tarstyle || cpiostyle)
-			inode = process_source(progress);
+			inode = process_source(progress, deref, deref_keep);
 		else if(!source)
 			inode = no_sources(progress);
 		else
