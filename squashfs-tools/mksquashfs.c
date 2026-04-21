@@ -5072,7 +5072,7 @@ static struct dir_info *add_source(struct dir_info *sdir, char *source,
 	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0)
 		BAD_ERROR("Source path can't have '.' or '..' embedded in it with -tarstyle/-cpiostyle[0]\n");
 
-	res = follow ? stat(file, &buf) : lstat(file, &buf);
+	res = follow || source[0] != '\0' ? stat(file, &buf) : lstat(file, &buf);
 	if (res == -1)
 		BAD_ERROR("Can't stat %s because %s\n", file, strerror(errno));
 
