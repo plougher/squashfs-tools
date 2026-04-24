@@ -345,10 +345,13 @@ static struct inode_info *new_inode(struct tar_file *tar_file)
 	struct inode_info *inode;
 	int bytes = tar_file->link ? strlen(tar_file->link) + 1 : 0;
 
-	inode = MALLOC(sizeof(struct inode_info) + bytes);
+	inode = MALLOC(sizeof(struct inode_info));
 
-	if(bytes)
-		memcpy(&inode->symlink, tar_file->link, bytes);
+	if(bytes) {
+		inode->symlink = MALLOC(bytes);
+		memcpy(inode->symlink, tar_file->link, bytes);
+	} else
+		inode->symlink = NULL;
 
 	if(tar_file->buf.st_mtime < 0) {
 		/* Squashfs cannot store timestamps before the epoch
