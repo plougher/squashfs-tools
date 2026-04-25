@@ -4538,15 +4538,15 @@ int main(int argc, char *argv[])
 	 * In doing so, check that the user supplied values do not
 	 * overflow a signed int
 	 */
-	if(shift_overflow(fragment_buffer_size, 20 - block_log))
+	if(shift_overflow(fragment_buffer_size, SQUASHFS_FILE_MAX_LOG - block_log))
 		EXIT_UNSQUASH("Fragment queue size is too large\n");
 	else
-		fragment_buffer_size <<= 20 - block_log;
+		fragment_buffer_size <<= SQUASHFS_FILE_MAX_LOG - block_log;
 
-	if(shift_overflow(data_buffer_size, 20 - block_log))
+	if(shift_overflow(data_buffer_size, SQUASHFS_FILE_MAX_LOG - block_log))
 		EXIT_UNSQUASH("Data queue size is too large\n");
 	else
-		data_buffer_size <<= 20 - block_log;
+		data_buffer_size <<= SQUASHFS_FILE_MAX_LOG - block_log;
 
 	if(!lsonly)
 		initialise_threads(fragment_buffer_size, data_buffer_size, cat_files);
