@@ -30,17 +30,20 @@ done
 
 cd $1/squashfs-tools/generate-manpages
 
-# We must have help2man to generate "custom" manpages for the
-# built squashfs-tools, incorporating build choices (the
-# compressors built, default compressors, XATTR support etc).
+# We must have GNU sed and help2man to generate "custom" manpages for the built
+# squashfs-tools, incorporating build choices (the compressors built, default
+# compressors, XATTR support etc).
 #
-# Use the pre-built manpages if we've been told to use them ($3 = y), or
-# if help2man doesn't exist, or the manpage generation fails.
+# Use the pre-built manpages if we've been told to use them ($3 = y), or if GNU
+# sed or help2man doesn't exist, or the manpage generation fails.
 
 source=../../Documentation/manpages
 
 if [ $3 = "y" ]; then
 	print "$0: Using pre-built manpages"
+elif ! set_sed; then
+	print "$0: GNU sed is needed to generate the manpages"
+	failed="y"
 elif which help2man > /dev/null 2>&1; then
 	for i in mksquashfs unsquashfs sqfstar sqfscat; do
 		if ! ./$i-manpage.sh ../ ../$i.1; then

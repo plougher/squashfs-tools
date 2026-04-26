@@ -12,6 +12,11 @@ fi
 
 . ./functions.sh
 
+if ! set_sed; then
+	error "$0: This script needs GNU sed to run correctly"
+	exit 1
+fi
+
 if [ $# -lt 2 ]; then
 	error "$0: Insufficient arguments"
 	error "$0: <path to sqfstar> <output file>"
