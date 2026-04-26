@@ -182,7 +182,7 @@ USE_PREBUILT_MANPAGES = n
 #
 INSTALL_PREFIX = /usr/local
 INSTALL_DIR = $(INSTALL_PREFIX)/bin
-INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/man/man1
+INSTALL_MANPAGES_DIR = $(INSTALL_PREFIX)/share/man/man1
 
 ###############################################
 #             __ATOMIC_EXCHANGE_N             #
