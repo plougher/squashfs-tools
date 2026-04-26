@@ -593,9 +593,9 @@ clean:
 
 .PHONY: install
 install: mksquashfs unsquashfs
-	mkdir -p $(INSTALL_DIR)
-	cp mksquashfs $(INSTALL_DIR)
-	cp unsquashfs $(INSTALL_DIR)
-	ln -fs unsquashfs $(INSTALL_DIR)/sqfscat
-	ln -fs mksquashfs $(INSTALL_DIR)/sqfstar
-	generate-manpages/install-manpages.sh $(shell pwd)/.. "$(INSTALL_MANPAGES_DIR)" "$(USE_PREBUILT_MANPAGES)"
+	mkdir -p $(DESTDIR)$(INSTALL_DIR)
+	cp mksquashfs $(DESTDIR)$(INSTALL_DIR)
+	cp unsquashfs $(DESTDIR)$(INSTALL_DIR)
+	ln -fs unsquashfs $(DESTDIR)$(INSTALL_DIR)/sqfscat
+	ln -fs mksquashfs $(DESTDIR)$(INSTALL_DIR)/sqfstar
+	generate-manpages/install-manpages.sh $(shell pwd)/.. "$(DESTDIR)$(INSTALL_MANPAGES_DIR)" "$(USE_PREBUILT_MANPAGES)"
