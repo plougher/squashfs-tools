@@ -2079,6 +2079,8 @@ static int follow_symlink(char *path, int symlinks, struct directory_stack *stac
 				} else
 					traversed = FALSE;
 			}
+
+			break;
 		}
 	}
 
