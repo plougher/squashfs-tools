@@ -212,6 +212,7 @@ struct path_entry {
 	int		match_type;
 	regex_t		*preg;
 	struct pathname	*paths;
+	struct path_entry *next;
 };
 
 struct pathname {

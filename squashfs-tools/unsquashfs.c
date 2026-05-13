@@ -1432,16 +1432,18 @@ static char *get_component(char *target, char **targname)
 
 static void free_path(struct pathname *paths)
 {
-	int i;
+	struct path_entry *entry;
 
-	for(i = 0; i < paths->names; i++) {
-		if(paths->name[i].paths)
-			free_path(paths->name[i].paths);
-		free(paths->name[i].name);
-		if(paths->name[i].preg) {
-			regfree(paths->name[i].preg);
-			free(paths->name[i].preg);
+	for(entry = paths->name; entry; entry = paths->name) {
+		if(entry->paths)
+			free_path(entry->paths);
+		free(entry->name);
+		if(entry->preg) {
+			regfree(entry->preg);
+			free(entry->preg);
 		}
+		paths->name = entry->next;
+		free(entry);
 	}
 
 	free(paths);
@@ -1452,7 +1454,8 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 						char *alltarget, int match_type)
 {
 	char *targname;
-	int i, error;
+	int error;
+	struct path_entry *entry;
 
 	if(type == PATH_TYPE_EXTRACT)
 		TRACE("add_path: adding \"%s\" extract file\n", target);
@@ -1474,30 +1477,28 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 		paths->name = NULL;
 	}
 
-	for(i = 0; i < paths->names; i++)
-		if(strcmp(paths->name[i].name, targname) == 0 &&
-				match_type == paths->name[i].match_type)
+	for(entry = paths->name; entry; entry = entry->next)
+		if(strcmp(entry->name, targname) == 0 &&
+				match_type == entry->match_type)
 			break;
 
-	if(i == paths->names) {
+	if(!entry) {
 		/*
 		 * allocate new name entry
 		 */
 		paths->names ++;
-		paths->name = REALLOC(paths->name, (i + 1) *
-			sizeof(struct path_entry));
+		entry = MALLOC(sizeof(struct path_entry));
 
-		paths->name[i].name = targname;
-		paths->name[i].match_type = match_type;
-		paths->name[i].paths = NULL;
+		entry->name = targname;
+		entry->match_type = match_type;
 		if(match_type == MATCH_REGEX) {
-			paths->name[i].preg = MALLOC(sizeof(regex_t));
-			error = regcomp(paths->name[i].preg, targname,
+			entry->preg = MALLOC(sizeof(regex_t));
+			error = regcomp(entry->preg, targname,
 				REG_EXTENDED|REG_NOSUB);
 			if(error) {
 				char str[1024]; /* overflow safe */
 
-				regerror(error, paths->name[i].preg, str, 1024);
+				regerror(error, entry->preg, str, 1024);
 				if(type == PATH_TYPE_EXTRACT)
 					EXIT_UNSQUASH("invalid regex %s in extract %s, "
 						"because %s\n", targname, alltarget,
@@ -1508,29 +1509,32 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 						str);
 			}
 		} else
-			paths->name[i].preg = NULL;
+			entry->preg = NULL;
 
 		if(target[0] == '\0') {
 			/*
 			 * at leaf pathname component
 			 */
-			paths->name[i].paths = NULL;
-			paths->name[i].type = type;
+			entry->paths = NULL;
+			entry->type = type;
 		} else {
 			/*
 			 * recurse adding child components
 			 */
-			paths->name[i].type = PATH_TYPE_LINK;
-			paths->name[i].paths = add_path(NULL, type, target,
+			entry->type = PATH_TYPE_LINK;
+			entry->paths = add_path(NULL, type, target,
 							alltarget, match_type);
 		}
+
+		entry->next = paths->name;
+		paths->name = entry;
 	} else {
 		/*
 		 * existing matching entry
 		 */
 		free(targname);
 
-		if(paths->name[i].type != PATH_TYPE_LINK) {
+		if(entry->type != PATH_TYPE_LINK) {
 			/*
 			 * This is the leaf component of a pre-existing
 			 * extract/exclude which is either the same as the one
@@ -1545,14 +1549,14 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 			 * specific extracts/excludes.  Delete as they're
 			 * encompassed by this
 			 */
-			free_path(paths->name[i].paths);
-			paths->name[i].paths = NULL;
-			paths->name[i].type = type;
+			free_path(entry->paths);
+			entry->paths = NULL;
+			entry->type = type;
 		} else
 			/*
 			 * recurse adding child components
 			 */
-			add_path(paths->name[i].paths, type, target, alltarget, match_type);
+			add_path(entry->paths, type, target, alltarget, match_type);
 	}
 
 	return paths;
@@ -1627,7 +1631,8 @@ static void free_subdir(struct pathnames *paths)
 
 static int extract_matches(struct pathnames *paths, char *name, struct pathnames **new)
 {
-	int i, n;
+	int n;
+	struct path_entry *entry;
 
 	/* nothing to match, extract */
 	if(paths == NULL) {
@@ -1639,20 +1644,20 @@ static int extract_matches(struct pathnames *paths, char *name, struct pathnames
 
 	for(n = 0; n < paths->count; n++) {
 		struct pathname *path = paths->path[n];
-		for(i = 0; i < path->names; i++) {
+		for(entry = path->name; entry; entry = entry->next) {
 			int match;
 
-			if(path->name[i].match_type == MATCH_EXACT)
-				match = strcmp(path->name[i].name, name) == 0;
-			else if(path->name[i].match_type == MATCH_REGEX)
-				match = regexec(path->name[i].preg, name,
+			if(entry->match_type == MATCH_EXACT)
+				match = strcmp(entry->name, name) == 0;
+			else if(entry->match_type == MATCH_REGEX)
+				match = regexec(entry->preg, name,
 					(size_t) 0, NULL, 0) == 0;
 			else
-				match = fnmatch(path->name[i].name,
+				match = fnmatch(entry->name,
 					name, FNM_PATHNAME|FNM_PERIOD|
 					FNM_EXTMATCH) == 0;
 
-			if(match && path->name[i].type == PATH_TYPE_EXTRACT)
+			if(match && entry->type == PATH_TYPE_EXTRACT)
 				/*
 				 * match on a leaf component, any subdirectories
 				 * will implicitly match, therefore return an
@@ -1666,7 +1671,7 @@ static int extract_matches(struct pathnames *paths, char *name, struct pathnames
 				 * subdirectories to the new set of
 				 * subdirectories to scan for this name
 				 */
-				*new = add_subdir(*new, path->name[i].paths);
+				*new = add_subdir(*new, entry->paths);
 		}
 	}
 
@@ -1698,19 +1703,20 @@ empty_set:
 
 static int exclude_match(struct pathname *path, char *name, struct pathnames **new)
 {
-	int i, match;
+	int match;
+	struct path_entry *entry;
 
-	for(i = 0; i < path->names; i++) {
-		if(path->name[i].match_type == MATCH_EXACT)
-			match = strcmp(path->name[i].name, name) == 0;
-		else if(path->name[i].match_type == MATCH_REGEX)
-			match = regexec(path->name[i].preg, name,
+	for(entry = path->name; entry; entry = entry->next) {
+		if(entry->match_type == MATCH_EXACT)
+			match = strcmp(entry->name, name) == 0;
+		else if(entry->match_type == MATCH_REGEX)
+			match = regexec(entry->preg, name,
 				(size_t) 0, NULL, 0) == 0;
 		else
-			match = fnmatch(path->name[i].name, name,
+			match = fnmatch(entry->name, name,
 				FNM_PATHNAME|FNM_PERIOD| FNM_EXTMATCH) == 0;
 
-		if(match && path->name[i].type == PATH_TYPE_EXCLUDE) {
+		if(match && entry->type == PATH_TYPE_EXCLUDE) {
 			/*
 			 * match on a leaf component, any subdirectories
 			 * will implicitly match, therefore return an
@@ -1727,7 +1733,7 @@ static int exclude_match(struct pathname *path, char *name, struct pathnames **n
 			 * subdirectories to the new set of
 			 * subdirectories to scan for this name
 			 */
-			*new = add_subdir(*new, path->name[i].paths);
+			*new = add_subdir(*new, entry->paths);
 	}
 
 	return FALSE;
