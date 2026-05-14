@@ -2102,7 +2102,7 @@ static void add_to_extracts(struct directory_stack *stack, char *name)
 	struct directory_path *path;
 	char *pathname = stack_pathname(stack, name);
 
-	add_extract(pathname);
+	add_extract_exact(pathname);
 	free(pathname);
 
 	for(path = stack->path; path; path = path->next)
@@ -2115,7 +2115,7 @@ static void add_to_stack_extracts(struct directory_stack *stack)
 	struct directory_path *path;
 	char *pathname = stack_path(stack);
 
-	add_extract(pathname);
+	add_extract_exact(pathname);
 	free(pathname);
 
 	for(path = stack->path; path; path = path->next)
