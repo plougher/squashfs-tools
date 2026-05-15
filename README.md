@@ -23,6 +23,7 @@ The top-level directory contains the following files:
 * **CHANGES.md** - the above file in markdown format.
 * **COPYING** - GNU general public license file.
 * **INSTALL** - where to get the INSTALL file for your version of squashfs-tools.
+* **MIMALLOC.md** - documentation on using the optional mimalloc high-performance memory allocator.
 * **README** - where to get the README for you version of squashfs-tools.
 * **USAGE** - where to get the USAGE files for your version of squashfs-tools.
 
