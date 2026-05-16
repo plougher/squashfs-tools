@@ -87,7 +87,6 @@ int ignore_errors = FALSE;
 int strict_errors = FALSE;
 int use_localtime = TRUE;
 int max_depth = -1; /* unlimited */
-int follow_symlinks = FALSE;
 int missing_symlinks = FALSE;
 int no_wildcards = FALSE;
 int set_exit_code = TRUE;
@@ -3520,16 +3519,17 @@ static int parse_number_unsigned(char *start, unsigned int *res)
 }
 
 
-static void resolve_symlinks(int argc, char *argv[])
+static void walk_paths(int argc, char *argv[])
 {
 	int n, found;
 	struct directory_stack *stack;
 
 	for(n = 0; n < argc; n++) {
 		/*
-		 * Try to follow the extract file pathname, and
-		 * return the canonicalised pathname, and all
-		 * symlinks necessary to resolve it.
+		 * Try to follow the extract file pathname and return all
+		 * matches.  If symbolic links encountered then walk the
+		 * symbolic links, and return the canonicalised pathnames, and
+		 * all symbolic links necessary to resolve them.
 		 */
 		stack = create_stack();
 
@@ -4462,7 +4462,7 @@ static int parse_options(int argc, char *argv[])
 		else if(strcmp(argv[i], "-follow-symlinks") == 0 ||
 				strcmp(argv[i], "-follow") == 0 ||
 				strcmp(argv[i], "-L") == 0) {
-			follow_symlinks = TRUE;
+			; // now default, option retained for backwards compatibility
 		} else if(strcmp(argv[i], "missing-symlinks") == 0 ||
 				strcmp(argv[i], "-missing") == 0 ||
 				strcmp(argv[i], "-match") == 0)
@@ -4740,9 +4740,6 @@ static int parse_options(int argc, char *argv[])
 		EXIT_UNSQUASH("Both -strict-errors and -no-exit-code should "
 			"not be set.  All errors are fatal\n");
 
-	if(missing_symlinks && !follow_symlinks)
-		follow_symlinks = TRUE;
-
 	if(no_wildcards && use_regex)
 		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be "
 								"set\n");
@@ -4887,11 +4884,8 @@ int main(int argc, char *argv[])
 	else if(treat_as_excludes)
 		for(n = i + 1; n < argc; n++)
 			add_exclude(argv[n]);
-	else if(follow_symlinks)
-		resolve_symlinks(argc - i - 1, argv + i + 1);
 	else
-		for(n = i + 1; n < argc; n++)
-			add_extract(argv[n]);
+		walk_paths(argc - i - 1, argv + i + 1);
 
 	if(extract) {
 		extracts = init_subdir();
