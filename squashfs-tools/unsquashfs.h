@@ -213,11 +213,14 @@ struct path_entry {
 	regex_t		*preg;
 	struct pathname	*paths;
 	struct path_entry *next;
+	struct path_entry *hash_next;
 };
 
 struct pathname {
 	int			names;
+	int			hash_power;
 	struct path_entry	*name;
+	struct path_entry	**hash_table;
 };
 
 struct pathnames {
@@ -233,6 +236,11 @@ struct pathnames {
 #define MATCH_EXACT	1
 #define MATCH_WILDCARD	2
 #define MATCH_REGEX	3
+
+#define HASH_START_POWER	6
+#define HASH_END_POWER		16
+
+#define HASH_VALUE(VALUE, POWER)	(VALUE & ((1 << POWER) - 1))
 
 struct directory_level {
 	unsigned int	start_block;

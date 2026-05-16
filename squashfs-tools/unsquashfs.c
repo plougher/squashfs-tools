@@ -39,6 +39,7 @@
 #include "unsquashfs_help.h"
 #include "limit.h"
 #include "alloc.h"
+#include "crc16.h"
 
 #ifdef __linux__
 #include <sys/sysmacros.h>
@@ -1450,6 +1451,71 @@ static void free_path(struct pathname *paths)
 }
 
 
+static void rehash_table(struct pathname *paths)
+{
+	struct path_entry *entry;
+
+	paths->hash_power ++;
+	free(paths->hash_table);
+	paths->hash_table = MALLOC(sizeof(struct pathname *) * (1 << paths->hash_power));
+	memset(paths->hash_table, 0, sizeof(struct pathname *) * (1 << paths->hash_power));
+
+	for(entry = paths->name; entry; entry = entry->next) {
+		int hash = HASH_VALUE(get_checksum(entry->name, strlen(entry->name), 0), paths->hash_power);
+
+		entry->hash_next = paths->hash_table[hash];
+		paths->hash_table[hash] = entry;
+	}
+}
+
+
+static struct pathname *create_path()
+{
+	struct pathname *paths = MALLOC(sizeof(struct pathname));
+
+	paths->names = 0;
+	paths->name = NULL;
+	paths->hash_power = HASH_START_POWER;
+	paths->hash_table = MALLOC(sizeof(struct pathname *) * (1 << HASH_START_POWER));
+	memset(paths->hash_table, 0, sizeof(struct pathname *) * (1 << HASH_START_POWER));
+
+	return paths;
+}
+
+
+static struct path_entry *lookup_path_name(struct pathname *paths, char *name, int match_type)
+{
+	struct path_entry *entry;
+	int hash = HASH_VALUE(get_checksum(name, strlen(name), 0), paths->hash_power);
+	int count = 0;
+
+	for(entry = paths->hash_table[hash]; entry; entry = entry->hash_next) {
+		count ++;
+		if(strcmp(entry->name, name) == 0 &&
+				match_type == entry->match_type)
+			break;
+	}
+
+	return entry;
+}
+
+
+static void add_path_name(struct pathname *paths, struct path_entry *entry)
+{
+	int hash;
+
+	if(paths->hash_power < HASH_END_POWER && paths->names > ((1 << paths->hash_power) / 2))
+		rehash_table(paths);
+
+	hash = HASH_VALUE(get_checksum(entry->name, strlen(entry->name), 0), paths->hash_power);
+	entry->hash_next = paths->hash_table[hash];
+	paths->hash_table[hash] = entry;
+	entry->next = paths->name;
+	paths->name = entry;
+	paths->names ++;
+}
+
+
 static struct pathname *add_path(struct pathname *paths, int type, char *target,
 						char *alltarget, int match_type)
 {
@@ -1471,22 +1537,14 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 			EXIT_UNSQUASH("Invalid exclude file %s\n", alltarget);
 	}
 
-	if(paths == NULL) {
-		paths = MALLOC(sizeof(struct pathname));
-		paths->names = 0;
-		paths->name = NULL;
-	}
+	if(paths == NULL)
+		paths = create_path();
 
-	for(entry = paths->name; entry; entry = entry->next)
-		if(strcmp(entry->name, targname) == 0 &&
-				match_type == entry->match_type)
-			break;
-
+	entry = lookup_path_name(paths, targname, match_type);
 	if(!entry) {
 		/*
 		 * allocate new name entry
 		 */
-		paths->names ++;
 		entry = MALLOC(sizeof(struct path_entry));
 
 		entry->name = targname;
@@ -1511,6 +1569,8 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 		} else
 			entry->preg = NULL;
 
+		add_path_name(paths, entry);
+
 		if(target[0] == '\0') {
 			/*
 			 * at leaf pathname component
@@ -1525,9 +1585,6 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 			entry->paths = add_path(NULL, type, target,
 							alltarget, match_type);
 		}
-
-		entry->next = paths->name;
-		paths->name = entry;
 	} else {
 		/*
 		 * existing matching entry
