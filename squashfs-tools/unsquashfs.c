@@ -40,6 +40,7 @@
 #include "limit.h"
 #include "alloc.h"
 #include "crc16.h"
+#include "merge_sort.h"
 
 #ifdef __linux__
 #include <sys/sysmacros.h>
@@ -1447,6 +1448,21 @@ static void free_path(struct pathname *paths)
 	}
 
 	free(paths);
+}
+
+
+SORT(sort_names, path_entry, name, next);
+
+void sort_paths(struct pathname *paths)
+{
+	struct path_entry *entry;
+
+	for(entry = paths->name; entry; entry = entry->next) {
+		if(entry->paths)
+			sort_paths(entry->paths);
+	}
+
+	sort_names(&(paths->name), paths->names);
 }
 
 
@@ -3510,6 +3526,9 @@ static void walk_paths(int argc, char *argv[])
 
 		free_stack(stack);
 	}
+
+	if(extract)
+		sort_paths(extract);
 }
 
 
