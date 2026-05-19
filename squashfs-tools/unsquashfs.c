@@ -1531,6 +1531,12 @@ static void add_path_name(struct pathname *paths, struct path_entry *entry)
 }
 
 
+static inline int no_more_extracts(struct pathname *extracts, struct path_entry *entry)
+{
+	return extracts && !entry;
+}
+
+
 static struct pathname *add_path(struct pathname *paths, int type, char *target,
 						char *alltarget, int match_type)
 {
@@ -1701,7 +1707,7 @@ static void free_subdir(struct pathnames *paths)
 }
 
 
-static int extract_matches(struct pathname *path, char *name, struct pathname **new)
+static int extract_matches(struct pathname *path, struct path_entry **ent, char *name, struct pathname **new)
 {
 	struct path_entry *entry;
 
@@ -1711,10 +1717,17 @@ static int extract_matches(struct pathname *path, char *name, struct pathname **
 		return TRUE;
 	}
 
-	for(entry = path->name; entry; entry = entry->next) {
-		int match = strcmp(entry->name, name) == 0;
+	if(*ent == NULL)
+		*ent = path->name;
 
-		if(match) {
+	while((entry = *ent)) {
+		int res = strcmp(name, entry->name);
+
+		if(res < 0)
+			/* no extract name, return FALSE */
+			return FALSE;
+		else if(res == 0) {
+			/* extract name, return TRUE */
 			if(entry->type == PATH_TYPE_EXTRACT)
 				/*
 				 * match on a leaf component, any subdirectories
@@ -1728,12 +1741,17 @@ static int extract_matches(struct pathname *path, char *name, struct pathname **
 				 * subdirectory to scan for this name
 				 */
 				*new = entry->paths;
+			*ent = entry->next;
 			return TRUE;
-		}
+		} else if(strcmp(entry->name, ".") == 0) {
+			*ent = entry->next;
+			continue;
+		} else
+			EXIT_UNSQUASH("Bug in extract_matches()\n");
+
 	}
 
-	/* no matching names found, return FALSE */
-	*new = NULL;
+	/* no extract name, return FALSE */
 	return FALSE;
 }
 
@@ -2407,6 +2425,7 @@ static int pre_scan(char *parent_name, unsigned int start_block, unsigned int of
 	char *name;
 	struct pathname *newt;
 	struct pathnames *newc = NULL;
+	struct path_entry *entry = NULL;
 	struct inode *i;
 	struct dir *dir;
 
@@ -2427,8 +2446,8 @@ static int pre_scan(char *parent_name, unsigned int start_block, unsigned int of
 		TRACE("pre_scan: name %s, start_block %d, offset %d, type %d\n",
 			name, start_block, offset, type);
 
-		if(!extract_matches(extract, name, &newt))
-			continue;
+		if(!extract_matches(extract, &entry, name, &newt))
+			goto no_match;
 
 		if(exclude_matches(excludes, name, &newc))
 			continue;
@@ -2455,6 +2474,9 @@ static int pre_scan(char *parent_name, unsigned int start_block, unsigned int of
 
 		free_subdir(newc);
 		free(pathname);
+no_match:
+		if(no_more_extracts(extract, entry)) /* end of list */
+			break;
 	}
 
 	squashfs_closedir(dir);
@@ -2471,6 +2493,7 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 	char *name;
 	struct pathname *newt;
 	struct pathnames *newc = NULL;
+	struct path_entry *entry = NULL;
 	struct inode *i;
 	struct dir *dir = s_ops->opendir(start_block, offset, &i);
 
@@ -2531,9 +2554,8 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 			TRACE("dir_scan: name %s, start_block %d, offset %d,"
 				" type %d\n", name, start_block, offset, type);
 
-
-			if(!extract_matches(extract, name, &newt))
-				continue;
+			if(!extract_matches(extract, &entry, name, &newt))
+				goto no_match;
 
 			if(exclude_matches(excludes, name, &newc))
 				continue;
@@ -2572,6 +2594,9 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 			}
 
 			free_subdir(newc);
+no_match:
+			if(no_more_extracts(extract, entry)) /* end of list */
+				break;
 		}
 	}
 
@@ -3882,6 +3907,7 @@ static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned in
 	char *name;
 	struct pathname *newt;
 	struct pathnames *newc = NULL;
+	struct path_entry *entry = NULL;
 	struct inode *i;
 	struct dir *dir;
 	static long long byte_offset = 0;
@@ -3907,8 +3933,8 @@ static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned in
 		TRACE("pseudo_scan1: name %s, start_block %d, offset %d, type %d\n",
 			name, start_block, offset, type);
 
-		if(!extract_matches(extract, name, &newt))
-			continue;
+		if(!extract_matches(extract, &entry, name, &newt))
+			goto no_match;
 
 		if(exclude_matches(excludes, name, &newc))
 			continue;
@@ -3946,6 +3972,9 @@ static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned in
 
 		free_subdir(newc);
 		free(pathname);
+no_match:
+		if(no_more_extracts(extract, entry)) /* end of list */
+			break;
 	}
 
 	squashfs_closedir(dir);
@@ -3961,6 +3990,7 @@ static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned in
 	char *name;
 	struct pathname *newt;
 	struct pathnames *newc = NULL;
+	struct path_entry *entry = NULL;
 	struct inode *i;
 	struct dir *dir = s_ops->opendir(start_block, offset, &i);
 
@@ -3980,9 +4010,8 @@ static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned in
 			TRACE("pseudo_scan2: name %s, start_block %d, offset %d,"
 				" type %d\n", name, start_block, offset, type);
 
-
-			if(!extract_matches(extract, name, &newt))
-				continue;
+			if(!extract_matches(extract, &entry, name, &newt))
+				goto no_match;
 
 			if(exclude_matches(excludes, name, &newc))
 				continue;
@@ -4016,6 +4045,9 @@ static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned in
 				free(pathname);
 
 			free_subdir(newc);
+no_match:
+			if(no_more_extracts(extract, entry)) /* end of list */
+				break;
 		}
 	}
 
