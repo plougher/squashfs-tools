@@ -2026,7 +2026,8 @@ static void add_stack_path(struct directory_stack *stack)
 }
 
 
-static int follow_symlink(char *path, int symlinks, struct directory_stack *stack)
+static int follow_symlink(char *path, int symlinks, int store_paths,
+	struct directory_stack *stack)
 {
 	char *name;
 	unsigned int start_block = stack_start_block(stack);
@@ -2050,8 +2051,9 @@ static int follow_symlink(char *path, int symlinks, struct directory_stack *stac
 
 	if(strcmp(target, "..") == 0) {
 		if(stack_depth(stack) > 1) {
-			add_stack_path(stack);
-			traversed = follow_symlink(path, symlinks, pop_stack(stack));
+			if(store_paths)
+				add_stack_path(stack);
+			traversed = follow_symlink(path, symlinks, store_paths, pop_stack(stack));
 		}
 
 		free(target);
@@ -2092,9 +2094,10 @@ static int follow_symlink(char *path, int symlinks, struct directory_stack *stac
 
 				/* Add symlink to list of symlinks found
 				 * traversing the pathname */
-				add_stack_symlink(stack, name);
+				if(store_paths)
+					add_stack_symlink(stack, name);
 
-				traversed = follow_symlink(symlink, symlinks + 1, stack);
+				traversed = follow_symlink(symlink, symlinks + 1, store_paths, stack);
 
 				free(symlink);
 
@@ -2114,7 +2117,7 @@ static int follow_symlink(char *path, int symlinks, struct directory_stack *stac
 						}
 
 						/* continue following path */
-						traversed = follow_symlink(path, symlinks, stack);
+						traversed = follow_symlink(path, symlinks, store_paths, stack);
 					}
 				}
 
@@ -2125,7 +2128,7 @@ static int follow_symlink(char *path, int symlinks, struct directory_stack *stac
 					traversed = TRUE;
 					push_stack(stack, entry_start, entry_offset, name, type);
 				} else /* follow the path */
-					traversed = follow_symlink(path, symlinks,
+					traversed = follow_symlink(path, symlinks, store_paths,
 						push_stack(stack, entry_start, entry_offset, name, type));
 				break;
 			default:
@@ -2327,7 +2330,7 @@ static int follow_path(char *path, char *newpath, int symlinks,
 				 * traversing the pathname */
 				add_stack_symlink(new, name);
 
-				res = follow_symlink(symlink, symlinks + 1, new);
+				res = follow_symlink(symlink, symlinks + 1, TRUE, new);
 
 				free(symlink);
 
@@ -3683,7 +3686,7 @@ static int cat_scan(char *path, char *newpath, struct directory_stack *stack)
 				new = clone_stack(stack);
 
 				/* follow the symlink */
-				res = follow_symlink(symlink, 1, new);
+				res = follow_symlink(symlink, 1, FALSE, new);
 
 				free(symlink);
 
