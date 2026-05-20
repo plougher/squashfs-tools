@@ -3539,7 +3539,7 @@ static void walk_extract_paths(int argc, char *argv[])
 
 		if(!found) {
 			if(missing_symlinks)
-				EXIT_UNSQUASH("Some matches in filename %s could not be resolved or followed\n", argv[n]);
+				EXIT_UNSQUASH("Some matches in extract pathname %s could not be resolved or followed\n", argv[n]);
 
 			add_extract_exact(".");
 			free_stack(stack);
