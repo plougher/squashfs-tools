@@ -3518,7 +3518,7 @@ static int parse_number_unsigned(char *start, unsigned int *res)
 }
 
 
-static void walk_paths(int argc, char *argv[])
+static void walk_extract_paths(int argc, char *argv[])
 {
 	int n, found;
 	struct directory_stack *stack;
@@ -4887,7 +4887,7 @@ int main(int argc, char *argv[])
 		for(n = i + 1; n < argc; n++)
 			add_exclude(argv[n]);
 	else
-		walk_paths(argc - i - 1, argv + i + 1);
+		walk_extract_paths(argc - i - 1, argv + i + 1);
 
 	if(exclude) {
 		excludes = init_subdir();
