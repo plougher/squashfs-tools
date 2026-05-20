@@ -1502,14 +1502,11 @@ static struct path_entry *lookup_path_name(struct pathname *paths, char *name, i
 {
 	struct path_entry *entry;
 	int hash = HASH_VALUE(get_checksum(name, strlen(name), 0), paths->hash_power);
-	int count = 0;
 
-	for(entry = paths->hash_table[hash]; entry; entry = entry->hash_next) {
-		count ++;
+	for(entry = paths->hash_table[hash]; entry; entry = entry->hash_next)
 		if(strcmp(entry->name, name) == 0 &&
 				match_type == entry->match_type)
 			break;
-	}
 
 	return entry;
 }
