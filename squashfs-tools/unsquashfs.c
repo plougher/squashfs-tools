@@ -2211,19 +2211,17 @@ static char *add_pathname(char *path, char *name)
 
 /*
  * Walk the supplied pathname.   If any symlinks are encountered whilst walking
- * the pathname, then recursively walk those, to obtain the fully
- * dereferenced canonicalised pathname.  Return that and the pathnames
- * of all symlinks found during the walk.
+ * the pathname, then recursively walk those, to obtain the fully dereferenced
+ * canonicalised pathnames.  Add all the necessary paths to the extract tree by
+ * calling add_to_extracts().
  *
- * follow_path (-follow-symlinks option) implies no wildcard matching,
- * due to the fact that with wildcards there is no single canonical pathname
- * to be found.  Many pathnames may match or none at all.
- *
- * If follow_path fails to walk a pathname either because a component
- * doesn't exist, it is a non directory component when a directory
- * component is expected, a symlink with an absolute path is encountered,
- * or a symlink is encountered which cannot be recursively walked due to
- * the above failures, then return FALSE.
+ * If follow_path fails to walk a pathname either because a component doesn't
+ * exist, it is a non directory component when a directory component is
+ * expected, a symlink with an absolute path is encountered, or a symlink is
+ * encountered which cannot be recursively walked due to the above failures,
+ * then an error is printed, and follow_path() will continue walking other paths
+ * (wildcard expansion can create many different paths), but follow_path()
+ * will return FALSE indicating one or paths could not be resolved or followed.
  */
 static int follow_path(char *path, char *newpath, int symlinks,
 		struct directory_stack *stack)
