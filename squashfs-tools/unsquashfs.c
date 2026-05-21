@@ -2415,6 +2415,47 @@ static int follow_extract_paths(char *path, char *newpath, int symlinks,
 }
 
 
+static void walk_extract_path(char *path)
+{
+	int found;
+	struct directory_stack *stack;
+
+	/*
+	 * Try to follow the extract file pathname and return all
+	 * matches.  If symbolic links encountered then walk the
+	 * symbolic links, and return the canonicalised pathnames, and
+	 * all symbolic links necessary to resolve them.
+	 */
+	stack = create_stack();
+
+	found = follow_extract_paths(path, new_pathname("/", ""), 0, push_stack(stack,
+		SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
+		"", SQUASHFS_DIR_TYPE));
+
+	if(!found) {
+		if(missing_symlinks)
+			EXIT_UNSQUASH("Some matches in extract pathname %s could not be resolved or followed\n", path);
+
+		add_extract_exact(".");
+	}
+
+	free_stack(stack);
+}
+
+
+static void walk_extract_paths(int argc, char *argv[])
+{
+	int n;
+
+	for(n = 0; n < argc; n++)
+		walk_extract_path(argv[n]);
+
+	if(extract)
+		sort_paths(extract);
+}
+
+
 static int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
 	struct pathname *extract, struct pathnames *excludes, int depth)
 {
@@ -2714,7 +2755,7 @@ static void process_extract_files(char *filename)
 		if(*name == '\0')
 			continue;
 
-		add_extract(name);
+		walk_extract_path(name);
 	}
 
 	if(ferror(fd))
@@ -3516,42 +3557,6 @@ static int parse_number_unsigned(char *start, unsigned int *res)
 
 	*res = (unsigned int) number;
 	return 1;
-}
-
-
-static void walk_extract_paths(int argc, char *argv[])
-{
-	int n, found;
-	struct directory_stack *stack;
-
-	for(n = 0; n < argc; n++) {
-		/*
-		 * Try to follow the extract file pathname and return all
-		 * matches.  If symbolic links encountered then walk the
-		 * symbolic links, and return the canonicalised pathnames, and
-		 * all symbolic links necessary to resolve them.
-		 */
-		stack = create_stack();
-
-		found = follow_extract_paths(argv[n], new_pathname("/", ""), 0, push_stack(stack,
-			SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
-			"", SQUASHFS_DIR_TYPE));
-
-		if(!found) {
-			if(missing_symlinks)
-				EXIT_UNSQUASH("Some matches in extract pathname %s could not be resolved or followed\n", argv[n]);
-
-			add_extract_exact(".");
-			free_stack(stack);
-			continue;
-		}
-
-		free_stack(stack);
-	}
-
-	if(extract)
-		sort_paths(extract);
 }
 
 
@@ -4688,7 +4693,6 @@ static int parse_options(int argc, char *argv[])
 				strcmp(argv[i], "-e") == 0) {
 			if(++i == argc)
 				unsquashfs_option_help("-extract-file", "unsquashfs: -extract-file missing filename\n");
-			process_extract_files(argv[i]);
 		} else if(strcmp(argv[i], "-exclude-file") == 0 ||
 				strcmp(argv[i], "-excf") == 0 ||
 				strcmp(argv[i], "-exc") == 0) {
@@ -4769,6 +4773,25 @@ static int parse_options(int argc, char *argv[])
 	}
 
 	return i;
+}
+
+
+static void parse_exclude_options(int argc, char *argv[])
+{
+	int i;
+
+	/* Scan the command line for any -extract-file option.  This needs to be
+	 * parsed after the filesystem tables have been read and the threads
+	 * created and initialised.
+	 */
+	for(i = 1; i < argc && *argv[i] == '-'; i++) {
+		if(strcmp(argv[i], "-extract-file") == 0 ||
+				strcmp(argv[i], "-ef") == 0 ||
+				strcmp(argv[i], "-e") == 0)
+			process_extract_files(argv[++i]);
+		else if(option_with_arg(argv[i], option_table))
+			i++;
+	}
 }
 
 
@@ -4884,7 +4907,10 @@ int main(int argc, char *argv[])
 
 	if(cat_files)
 		return cat_path(argc - i - 1, argv + i + 1);
-	else if(treat_as_excludes)
+
+	parse_exclude_options(argc, argv);
+
+	if(treat_as_excludes)
 		for(n = i + 1; n < argc; n++)
 			add_exclude(argv[n]);
 	else
