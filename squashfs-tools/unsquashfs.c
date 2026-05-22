@@ -2250,8 +2250,10 @@ static int follow_extract_paths(char *path, char *newpath, int symlinks,
 		free(target);
 	}
 
-	if(path == NULL)
+	if(path == NULL) {
+		add_to_stack_extracts(stack);
 		return TRUE;
+	}
 
 	if(strcmp(target, "..") == 0) {
 		if(stack_depth(stack) > 1) {
