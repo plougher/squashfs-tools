@@ -1665,21 +1665,6 @@ static struct pathname *extract_add_path(struct pathname *paths, int type, char 
 }
 
 
-static void add_extract(char *target)
-{
-	int type;
-
-	if(no_wildcards)
-		type = MATCH_EXACT;
-	else if(use_regex)
-		type = MATCH_REGEX;
-	else
-		type = MATCH_WILDCARD;
-
-	extract = extract_add_path(extract, PATH_TYPE_EXTRACT, target, type);
-}
-
-
 static void add_extract_exact(char *target)
 {
 	extract = extract_add_path(extract, PATH_TYPE_EXTRACT, target, MATCH_EXACT);
