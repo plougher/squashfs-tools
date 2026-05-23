@@ -1665,7 +1665,7 @@ static struct pathname *extract_add_path(struct pathname *paths, int type, char 
 }
 
 
-static void add_extract_exact(char *target)
+static void add_extract(char *target)
 {
 	extract = extract_add_path(extract, PATH_TYPE_EXTRACT, target, MATCH_EXACT);
 }
@@ -2169,11 +2169,11 @@ static void add_to_extracts(struct directory_stack *stack, char *name)
 	struct directory_path *path;
 	char *pathname = stack_pathname(stack, name);
 
-	add_extract_exact(pathname);
+	add_extract(pathname);
 	free(pathname);
 
 	for(path = stack->path; path; path = path->next)
-		add_extract_exact(path->pathname);
+		add_extract(path->pathname);
 }
 
 
@@ -2182,11 +2182,11 @@ static void add_to_stack_extracts(struct directory_stack *stack)
 	struct directory_path *path;
 	char *pathname = stack_path(stack);
 
-	add_extract_exact(pathname);
+	add_extract(pathname);
 	free(pathname);
 
 	for(path = stack->path; path; path = path->next)
-		add_extract_exact(path->pathname);
+		add_extract(path->pathname);
 }
 
 
@@ -2451,7 +2451,7 @@ static void walk_extract_path(char *path)
 		if(missing_symlinks)
 			EXIT_UNSQUASH("Some matches in extract pathname %s could not be resolved or followed\n", path);
 
-		add_extract_exact(".");
+		add_extract(".");
 	}
 
 	free_stack(stack);
