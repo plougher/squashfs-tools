@@ -1450,6 +1450,7 @@ static void free_path(struct pathname *paths)
 		free(entry);
 	}
 
+	free(paths->hash_table);
 	free(paths);
 }
 
