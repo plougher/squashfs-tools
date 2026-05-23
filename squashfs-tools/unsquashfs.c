@@ -1435,6 +1435,9 @@ static void free_path(struct pathname *paths)
 {
 	struct path_entry *entry;
 
+	if(!paths)
+		return;
+
 	for(entry = paths->name; entry; entry = paths->name) {
 		if(entry->paths)
 			free_path(entry->paths);
@@ -1638,6 +1641,29 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 }
 
 
+static struct pathname *extract_add_path(struct pathname *paths, int type, char *target,
+						int match_type)
+{
+	static int extract_all = FALSE;
+	/*
+	 * If pathnames contain trailing "." and ".." elements or symbolic links
+	 * they may resolve to the root directory or otherwise an empty
+	 * pathname.
+	 *
+	 * This means a pathname can resolve to mean extract everything, or an
+	 * empty extract tree, and which stays empty.
+	 */
+	if(extract_all)
+		return NULL;
+	else if(target[0] == '\0') {
+		free_path(paths);
+		extract_all = TRUE;
+		return NULL;
+	} else
+		return add_path(paths, type, target, target, match_type);
+}
+
+
 static void add_extract(char *target)
 {
 	int type;
@@ -1649,13 +1675,13 @@ static void add_extract(char *target)
 	else
 		type = MATCH_WILDCARD;
 
-	extract = add_path(extract, PATH_TYPE_EXTRACT, target, target, type);
+	extract = extract_add_path(extract, PATH_TYPE_EXTRACT, target, type);
 }
 
 
 static void add_extract_exact(char *target)
 {
-	extract = add_path(extract, PATH_TYPE_EXTRACT, target, target, MATCH_EXACT);
+	extract = extract_add_path(extract, PATH_TYPE_EXTRACT, target, MATCH_EXACT);
 }
 
 
