@@ -42,7 +42,7 @@
 static char *unsquashfs_options[]={
 	/* extraction options */
 	"", "", "-dest", "-max-depth", "-excludes", "-exclude-list",
-	"-extract-file", "-exclude-file", "-match", "-follow-symlinks",
+	"-extract-file", "-exclude-file", "-match", "-follow-paths",
 	"-missing-symlinks", "-no-wildcards", "-regex", "-all-time",
 	"-cat", "-force", "-pf", "", "", "",
 	/* information options */
@@ -130,8 +130,8 @@ static char *unsquashfs_text[]={
 		"per line\n",
 	"\t-match\t\t\tabort if any extract file does not match on anything, "
 		"and can not be resolved.  Implies -missing-symlinks\n",
-	"\t-follow[-symlinks]\tfollow symlinks in extract files, and add all "
-		"files/symlinks needed to resolve extract file\n",
+	"\t-follow[-paths]\t\tfollow/walk extract pathnames, and add all "
+		"files/symlinks needed to resolve them.  This is now default\n",
 	"\t-missing[-symlinks]\tUnsquashfs will abort if any symlink can't be "
 		"resolved in -follow-symlinks\n",
 	"\t-no-wild[cards]\t\tdo not use wildcard matching in extract and "
