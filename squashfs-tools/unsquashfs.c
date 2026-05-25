@@ -88,7 +88,7 @@ int ignore_errors = FALSE;
 int strict_errors = FALSE;
 int use_localtime = TRUE;
 int max_depth = -1; /* unlimited */
-int missing_symlinks = FALSE;
+int missing_paths = FALSE;
 int no_wildcards = FALSE;
 int set_exit_code = TRUE;
 int treat_as_excludes = FALSE;
@@ -2448,7 +2448,7 @@ static void walk_extract_path(char *path)
 		"", SQUASHFS_DIR_TYPE));
 
 	if(!found) {
-		if(missing_symlinks)
+		if(missing_paths)
 			EXIT_UNSQUASH("Some matches in extract pathname %s could not be resolved or followed\n", path);
 
 		add_extract(".");
@@ -4490,7 +4490,7 @@ static int parse_options(int argc, char *argv[])
 				strcmp(argv[i], "-missing") == 0 ||
 				strcmp(argv[i], "-match") == 0 ||
 				strcmp(argv[i], "-missing-symlinks") == 0)
-			missing_symlinks = TRUE;
+			missing_paths = TRUE;
 		else if(strcmp(argv[i], "-no-wildcards") == 0 ||
 				strcmp(argv[i], "-no-wild") == 0)
 			no_wildcards = TRUE;
