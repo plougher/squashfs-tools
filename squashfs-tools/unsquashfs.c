@@ -4486,9 +4486,10 @@ static int parse_options(int argc, char *argv[])
 				strcmp(argv[i], "-L") == 0 ||
 				strcmp(argv[i], "-follow-symlinks") == 0) {
 			; // now default, option retained for backwards compatibility
-		} else if(strcmp(argv[i], "missing-symlinks") == 0 ||
+		} else if(strcmp(argv[i], "missing-paths") == 0 ||
 				strcmp(argv[i], "-missing") == 0 ||
-				strcmp(argv[i], "-match") == 0)
+				strcmp(argv[i], "-match") == 0 ||
+				strcmp(argv[i], "-missing-symlinks") == 0)
 			missing_symlinks = TRUE;
 		else if(strcmp(argv[i], "-no-wildcards") == 0 ||
 				strcmp(argv[i], "-no-wild") == 0)
