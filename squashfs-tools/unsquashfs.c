@@ -1538,6 +1538,12 @@ static inline int no_more_extracts(struct pathname *extracts, struct path_entry 
 }
 
 
+static inline struct path_entry *first_extract(struct pathname *extract)
+{
+	return extract ? extract->name : NULL;
+}
+
+
 static struct pathname *add_path(struct pathname *paths, int type, char *target,
 						char *alltarget, int match_type)
 {
@@ -1721,13 +1727,10 @@ static int extract_matches(struct pathname *path, struct path_entry **ent, char 
 	struct path_entry *entry;
 
 	/* nothing to match, extract */
-	if(path == NULL) {
+	if(path == NULL || *ent == NULL) {
 		*new = NULL;
 		return TRUE;
 	}
-
-	if(*ent == NULL)
-		*ent = path->name;
 
 	while((entry = *ent)) {
 		int res = strcmp(name, entry->name);
@@ -2478,7 +2481,7 @@ static int pre_scan(char *parent_name, unsigned int start_block, unsigned int of
 	char *name;
 	struct pathname *newt;
 	struct pathnames *newc = NULL;
-	struct path_entry *entry = NULL;
+	struct path_entry *entry = first_extract(extract);
 	struct inode *i;
 	struct dir *dir;
 
@@ -2499,35 +2502,32 @@ static int pre_scan(char *parent_name, unsigned int start_block, unsigned int of
 		TRACE("pre_scan: name %s, start_block %d, offset %d, type %d\n",
 			name, start_block, offset, type);
 
-		if(!extract_matches(extract, &entry, name, &newt))
-			goto no_match;
+		if(extract_matches(extract, &entry, name, &newt) &&
+					!exclude_matches(excludes, name, &newc)) {
+			ASPRINTF(&pathname, "%s/%s", parent_name, name);
 
-		if(exclude_matches(excludes, name, &newc))
-			continue;
-
-		ASPRINTF(&pathname, "%s/%s", parent_name, name);
-
-		if(type == SQUASHFS_DIR_TYPE) {
-			int res = pre_scan(parent_name, start_block, offset, newt,
-							newc, depth + 1);
-			if(res == FALSE)
-				scan_res = FALSE;
-		} else if(newt == NULL) {
-			if(type == SQUASHFS_FILE_TYPE) {
-				i = s_ops->read_inode(start_block, offset);
-				if(lookup(i->inode_number) == NULL) {
-					insert_lookup(i->inode_number, (char *) i);
-					total_blocks += (i->data +
-						(block_size - 1)) >> block_log;
+			if(type == SQUASHFS_DIR_TYPE) {
+				int res = pre_scan(parent_name, start_block, offset, newt,
+								newc, depth + 1);
+				if(res == FALSE)
+					scan_res = FALSE;
+			} else if(newt == NULL) {
+				if(type == SQUASHFS_FILE_TYPE) {
+					i = s_ops->read_inode(start_block, offset);
+					if(lookup(i->inode_number) == NULL) {
+						insert_lookup(i->inode_number, (char *) i);
+						total_blocks += (i->data +
+							(block_size - 1)) >> block_log;
+					}
+					total_files ++;
 				}
-				total_files ++;
+				total_inodes ++;
 			}
-			total_inodes ++;
+
+			free_subdir(newc);
+			free(pathname);
 		}
 
-		free_subdir(newc);
-		free(pathname);
-no_match:
 		if(no_more_extracts(extract, entry)) /* end of list */
 			break;
 	}
@@ -2546,7 +2546,7 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 	char *name;
 	struct pathname *newt;
 	struct pathnames *newc = NULL;
-	struct path_entry *entry = NULL;
+	struct path_entry *entry = first_extract(extract);
 	struct inode *i;
 	struct dir *dir = s_ops->opendir(start_block, offset, &i);
 
@@ -2607,47 +2607,44 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 			TRACE("dir_scan: name %s, start_block %d, offset %d,"
 				" type %d\n", name, start_block, offset, type);
 
-			if(!extract_matches(extract, &entry, name, &newt))
-				goto no_match;
+			if(extract_matches(extract, &entry, name, &newt) &&
+						!exclude_matches(excludes, name, &newc)) {
+				ASPRINTF(&pathname, "%s/%s", parent_name, name);
 
-			if(exclude_matches(excludes, name, &newc))
-				continue;
-
-			ASPRINTF(&pathname, "%s/%s", parent_name, name);
-
-			if(type == SQUASHFS_DIR_TYPE) {
-				int res = dir_scan(pathname, start_block, offset,
-							newt, newc, depth + 1);
-				if(res == FALSE)
-					scan_res = FALSE;
-				free(pathname);
-			} else if(newt == NULL) {
-				update_info(pathname);
-
-				i = s_ops->read_inode(start_block, offset);
-
-				if(lsonly || info)
-					print_filename(pathname, i);
-
-				if(!lsonly) {
-					int res = create_inode(pathname, i);
+				if(type == SQUASHFS_DIR_TYPE) {
+					int res = dir_scan(pathname, start_block, offset,
+								newt, newc, depth + 1);
 					if(res == FALSE)
 						scan_res = FALSE;
+					free(pathname);
+				} else if(newt == NULL) {
+					update_info(pathname);
+
+					i = s_ops->read_inode(start_block, offset);
+
+					if(lsonly || info)
+						print_filename(pathname, i);
+
+					if(!lsonly) {
+						int res = create_inode(pathname, i);
+						if(res == FALSE)
+							scan_res = FALSE;
+					}
+
+					if(i->type == SQUASHFS_SYMLINK_TYPE ||
+							i->type == SQUASHFS_LSYMLINK_TYPE)
+						free(i->symlink);
+				} else {
+					free(pathname);
+
+					if(i->type == SQUASHFS_SYMLINK_TYPE ||
+							i->type == SQUASHFS_LSYMLINK_TYPE)
+						free(i->symlink);
 				}
 
-				if(i->type == SQUASHFS_SYMLINK_TYPE ||
-						i->type == SQUASHFS_LSYMLINK_TYPE)
-					free(i->symlink);
-			} else {
-				free(pathname);
-
-				if(i->type == SQUASHFS_SYMLINK_TYPE ||
-						i->type == SQUASHFS_LSYMLINK_TYPE)
-					free(i->symlink);
+				free_subdir(newc);
 			}
 
-			free_subdir(newc);
-no_match:
 			if(no_more_extracts(extract, entry)) /* end of list */
 				break;
 		}
