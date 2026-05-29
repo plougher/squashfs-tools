@@ -28,6 +28,7 @@ extern unsigned int inswap_le32(unsigned int);
 
 #define SQUASHFS_INSWAP_COMP_OPTS(s) { \
 	(s)->compression_level = inswap_le32((s)->compression_level); \
+	(s)->rsyncable = inswap_le32((s)->rsyncable); \
 }
 #else
 #define SQUASHFS_INSWAP_COMP_OPTS(s)
@@ -38,5 +39,6 @@ extern unsigned int inswap_le32(unsigned int);
 
 struct zstd_comp_opts {
 	int compression_level;
+	int rsyncable;
 };
 #endif
