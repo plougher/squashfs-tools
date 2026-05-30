@@ -99,7 +99,6 @@ int cat_files = FALSE;
 int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
 int data_buffer_size = DATA_BUFFER_DEFAULT;
 char *dest = "squashfs-root";
-struct pathnames *excludes = NULL;
 struct pathname *extract = NULL, *exclude = NULL, *stickypath = NULL;
 int writer_fd = 1;
 int pseudo_file = FALSE;
@@ -1538,7 +1537,7 @@ static inline int no_more_extracts(struct pathname *extracts, struct path_entry 
 }
 
 
-static inline struct path_entry *first_extract(struct pathname *extract)
+static inline struct path_entry *first_path(struct pathname *extract)
 {
 	return extract ? extract->name : NULL;
 }
@@ -1671,6 +1670,24 @@ static struct pathname *extract_add_path(struct pathname *paths, int type, char 
 }
 
 
+static struct pathname *exclude_add_path(struct pathname *paths, int type, char *target,
+						int match_type)
+{
+	/*
+	 * If pathnames contain trailing "." and ".." elements they may resolve
+	 * to the root directory or otherwise an empty pathname.
+	 *
+	 * This means a pathname can resolve to mean exclude everything, or a
+	 * exclude tree with matches everything.
+	 */
+	if(target[0] == '\0') {
+		paths = add_path(stickypath, type, "*", "*", MATCH_WILDCARD);
+		return add_path(stickypath, type, ".*", ".*", MATCH_WILDCARD);
+	} else
+		return add_path(paths, type, target, target, MATCH_EXACT);
+}
+
+
 static void add_extract(char *target)
 {
 	extract = extract_add_path(extract, PATH_TYPE_EXTRACT, target, MATCH_EXACT);
@@ -1679,19 +1696,7 @@ static void add_extract(char *target)
 
 static void add_exclude(char *str)
 {
-	int type;
-
-	if(no_wildcards)
-		type = MATCH_EXACT;
-	else if(use_regex)
-		type = MATCH_REGEX;
-	else
-		type = MATCH_WILDCARD;
-
-	if(strncmp(str, "... ", 4) == 0)
-		stickypath = add_path(stickypath, PATH_TYPE_EXCLUDE, str + 4, str + 4, type);
-	else
-		exclude = add_path(exclude, PATH_TYPE_EXCLUDE, str, str, type);
+	exclude = exclude_add_path(exclude, PATH_TYPE_EXCLUDE, str, MATCH_EXACT);
 }
 
 
@@ -1807,42 +1812,63 @@ static int exclude_match(struct pathname *path, char *name, struct pathnames **n
 }
 
 
-static int exclude_matches(struct pathnames *paths, char *name, struct pathnames **new)
+static int exclude_matches(struct pathname *path, struct pathnames *sticky,
+		struct path_entry **ent, char *name, struct pathname **new,
+		struct pathnames **new_sticky)
 {
 	int n;
+	struct path_entry *entry;
 
 	/* nothing to match, don't exclude */
-	if(paths == NULL && stickypath == NULL) {
+	if(path == NULL && stickypath == NULL) {
 		*new = NULL;
+		*new_sticky = NULL;
 		return FALSE;
 	}
 
-	*new = init_subdir();
+	while((entry = *ent)) {
+		int res = strcmp(name, entry->name);
 
-	if(stickypath && exclude_match(stickypath, name, new))
+		if(res < 0) {
+			/* no exclude name, fall through to handle sticky paths */
+			*new = NULL;
+			break;
+		} else if(res == 0) {
+			if(entry->type == PATH_TYPE_EXCLUDE) {
+				/* * match on a leaf component, return TRUE */
+				*ent = entry->next;
+				return TRUE;
+			} else {
+				/*
+				 * match on a non-leaf component, fall through
+				 * to handle sticky paths
+				 */
+				*new = entry->paths;
+				*ent = entry->next;
+				break;
+			}
+		} else
+			EXIT_UNSQUASH("Bug in exclude_matches()\n");
+	}
+
+       *new_sticky = init_subdir();
+
+	if(stickypath && exclude_match(stickypath, name, new_sticky))
 		return TRUE;
 
-	for(n = 0; paths && n < paths->count; n++) {
-		int res = exclude_match(paths->path[n], name, new);
+	for(n = 0; sticky && n < sticky->count; n++) {
+		int res = exclude_match(sticky->path[n], name, new_sticky);
 
 		if(res)
 			return TRUE;
 	}
 
-	if((*new)->count == 0) {
-		/*
-		 * no matching names found, don't exclude.  Delete empty search
-		 * set, and return FALSE
-		 */
-		free_subdir(*new);
-		*new = NULL;
-		return FALSE;
+	if((*new_sticky)->count == 0) {
+		/* no matching sticky names found.  Delete empty search set */
+		free_subdir(*new_sticky);
+		*new_sticky = NULL;
 	}
 
-	/*
-	 * one or more matches with sub-directories found (no leaf matches),
-	 * return new search set and return FALSE
-	 */
 	return FALSE;
 }
 
@@ -2193,6 +2219,24 @@ static void add_to_stack_extracts(struct directory_stack *stack)
 }
 
 
+static void add_to_excludes(struct directory_stack *stack, char *name)
+{
+	char *pathname = stack_pathname(stack, name);
+
+	add_exclude(pathname);
+	free(pathname);
+}
+
+
+static void add_to_stack_excludes(struct directory_stack *stack)
+{
+	char *pathname = stack_path(stack);
+
+	add_exclude(pathname);
+	free(pathname);
+}
+
+
 static char *new_pathname(char *path, char *name)
 {
 	char *newpath;
@@ -2473,15 +2517,280 @@ static void walk_extract_paths(int argc, char *argv[])
 }
 
 
+/*
+ * Walk the supplied pathname.  If any symlinks are encountered whilst walking
+ * the pathname, then recursively walk those, to obtain the fully dereferenced
+ * canonicalised pathnames.  Add pathnames to the exclude tree by calling
+ * add_to_excludes().
+ *
+ * If follow_exclude_paths fails to walk a pathname either because a component
+ * doesn't exist, it is a non directory component when a directory component is
+ * expected, a symlink with an absolute path is encountered, or a symlink is
+ * encountered which cannot be recursively walked due to the above failures,
+ * then an error is printed, and follow_exclude_paths() will continue walking
+ * other paths (wildcard expansion can create many different paths), but
+ * follow_exclude_paths() will return FALSE indicating one or paths could not be
+ * resolved or followed.
+ */
+static int follow_exclude_paths(char *path, char *newpath, int symlinks,
+		struct directory_stack *stack)
+{
+	char *name;
+	unsigned int start_block = stack_start_block(stack);
+	unsigned int offset = stack_offset(stack);
+	struct inode *i;
+	struct dir *dir;
+	char *target, *symlink, *addpath;
+	unsigned int type;
+	int matched = FALSE, traversed = TRUE;
+	int match, res;
+	unsigned int entry_start, entry_offset;
+	regex_t preg;
+	struct directory_stack *new;
+
+	while((path = get_component(path, &target))) {
+		if(strcmp(target, ".") != 0)
+			break;
+
+		newpath = add_pathname(newpath, ".");
+		free(target);
+	}
+
+	if(path == NULL)
+		return TRUE;
+
+	if(strcmp(target, "..") == 0) {
+		if(stack_depth(stack) > 1) {
+			new = clone_stack(stack);
+			traversed = follow_exclude_paths(path, new_pathname(newpath, ".."), symlinks, pop_stack(new));
+			free_stack(new);
+		}
+
+		free(target);
+		return traversed;
+	}
+
+	dir = s_ops->opendir(start_block, offset, &i);
+	if(dir == NULL) {
+		free(newpath);
+		free(target);
+		return FALSE;
+	}
+
+	if(use_regex) {
+		res = regcomp(&preg, target, REG_EXTENDED|REG_NOSUB);
+		if(res) {
+			char str[1024]; /* overflow safe */
+
+			regerror(res, &preg, str, 1024);
+			ERROR("follow_exclude_paths: invalid regex %s because %s\n", target, str);
+			free(target);
+			squashfs_closedir(dir);
+			return FALSE;
+		}
+	}
+
+	while(squashfs_readdir(dir, &name, &entry_start, &entry_offset, &type)) {
+		if(no_wildcards)
+			match = strcmp(name, target) == 0;
+		else if(use_regex)
+			match = regexec(&preg, name, (size_t) 0, NULL, 0) == 0;
+		else
+			match = fnmatch(target, name, FNM_PATHNAME|FNM_PERIOD|FNM_EXTMATCH) == 0;
+
+		if(match) {
+			matched = TRUE;
+
+			switch(type) {
+			case SQUASHFS_SYMLINK_TYPE:
+				i = s_ops->read_inode(entry_start, entry_offset);
+				symlink = i->symlink;
+
+				/* Symlink must be relative to current
+				 * directory and not be absolute, otherwise
+				 * we can't follow it, as it is probably
+				 * outside the Squashfs filesystem */
+				if(symlink[0] == '/') {
+					addpath = new_pathname(newpath, name);
+					ERROR("follow_exclude_paths: %s failed to resolve symbolic link\n", addpath);
+					free(addpath);
+					traversed = FALSE;
+					free(symlink);
+					break;
+				}
+
+				/* Detect circular symlinks */
+				if(symlinks >= MAX_FOLLOW_SYMLINKS) {
+					addpath = new_pathname(newpath, name);
+					ERROR("follow_exclude_paths: %s too many levels of symbolic links\n", addpath);
+					free(addpath);
+					traversed = FALSE;
+					free(symlink);
+					break;
+				}
+
+				/*
+				 * Do not walk the symbolic link if it is the
+				 * leaf (this matches the behaviour of 'rm'),
+				 * and so exclude the symbolic link rather than
+				 * what it points to
+				 */
+				if(path[0] == '\0') {
+					add_to_excludes(stack, name);
+					traversed = TRUE;
+					break;
+				}
+
+				new = clone_stack(stack);
+
+				res = follow_symlink(symlink, symlinks + 1, FALSE, new);
+
+				free(symlink);
+
+				if(res == FALSE) {
+					addpath = new_pathname(newpath, name);
+					ERROR("follow_exclude_paths: %s failed to resolve symbolic link\n", addpath);
+					free(addpath);
+					free_stack(new);
+					traversed = FALSE;
+					continue;
+				}
+
+				/* If we still have some path to
+				 * walk, then walk it from where
+				 * the symlink traversal left us
+				 *
+				 * Obviously symlink traversal must
+				 * have left us at a directory to do
+				 * this */
+				if(path[0] != '\0') {
+					if(stack_type(new) != SQUASHFS_DIR_TYPE) {
+						addpath = new_pathname(newpath, name);
+						ERROR("follow_exclude_paths: %s symbolic link does not resolve to a directory\n", addpath);
+						free(addpath);
+						free_stack(new);
+						traversed = FALSE;
+						continue;
+					}
+
+					/* continue following path */
+					res = follow_exclude_paths(path, new_pathname(newpath, name), symlinks, new);
+					if(res == FALSE)
+						traversed = FALSE;
+					free_stack(new);
+					continue;
+				} else {
+					add_to_stack_excludes(new);
+					free_stack(new);
+					traversed = TRUE;
+				}
+
+				break;
+			case SQUASHFS_DIR_TYPE:
+				/* if at end of path, traversed OK */
+				if(path[0] == '\0') {
+					add_to_excludes(stack, name);
+					traversed = TRUE;
+				} else { /* follow the path */
+					res = follow_exclude_paths(path, new_pathname(newpath, name), symlinks,
+						push_stack(stack, entry_start, entry_offset, name, type));
+					if(res == FALSE)
+						traversed = FALSE;
+					pop_stack(stack);
+				}
+				break;
+			default:
+				/* leaf directory entry, can't go any further,
+				 * and so path must not continue */
+				if(path[0] == '\0') {
+					add_to_excludes(stack, name);
+					traversed = TRUE;
+				} else {
+					addpath = new_pathname(newpath, name);
+					ERROR("follow_exclude_paths: %s is not a directory\n", addpath);
+					free(addpath);
+					traversed = FALSE;
+				}
+			}
+		}
+	}
+
+	if(matched == FALSE) {
+		newpath = add_pathname(newpath, target);
+		ERROR("follow_exclude_paths: no matches for %s\n", newpath);
+		traversed = FALSE;
+	}
+
+	free(target);
+	squashfs_closedir(dir);
+
+	return traversed;
+}
+
+
+static void walk_exclude_path(char *path)
+{
+	if(strncmp(path, "... ", 4) == 0) {
+		int type;
+
+		if(no_wildcards)
+			type = MATCH_EXACT;
+		else if(use_regex)
+			type = MATCH_REGEX;
+		else
+			type = MATCH_WILDCARD;
+
+		stickypath = add_path(stickypath, PATH_TYPE_EXCLUDE, path + 4, path + 4, type);
+
+	} else {
+		int found;
+		struct directory_stack *stack;
+
+		/*
+		 * Try to follow the exclude file pathname and return all the matches.
+		 * If symbolic links are encountered then walk the symbolic links and
+		 * return the canonicalised pathnames.
+		 */
+		stack = create_stack();
+
+		found = follow_exclude_paths(path, new_pathname("/", ""), 0, push_stack(stack,
+			SQUASHFS_INODE_BLK(sBlk.s.root_inode),
+			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
+			"", SQUASHFS_DIR_TYPE));
+
+		if(!found) {
+			if(missing_paths)
+				EXIT_UNSQUASH("Some matches in exclude pathname %s could not be resolved or followed\n", path);
+
+		}
+
+		free_stack(stack);
+	}
+}
+
+
+static void walk_exclude_paths(int argc, char *argv[])
+{
+	int n;
+
+	for(n = 0; n < argc; n++)
+		walk_exclude_path(argv[n]);
+
+	if(exclude)
+		sort_paths(exclude);
+}
+
+
 static int pre_scan(char *parent_name, unsigned int start_block, unsigned int offset,
-	struct pathname *extract, struct pathnames *excludes, int depth)
+	struct pathname *extract, struct pathname *exclude, struct pathnames *sticky,
+	int depth)
 {
 	unsigned int type;
 	int scan_res = TRUE;
 	char *name;
-	struct pathname *newt;
-	struct pathnames *newc = NULL;
-	struct path_entry *entry = first_extract(extract);
+	struct pathname *newt, *newc;
+	struct pathnames *new_sticky = NULL;
+	struct path_entry *entryt = first_path(extract), *entryc = first_path(exclude);
 	struct inode *i;
 	struct dir *dir;
 
@@ -2502,13 +2811,13 @@ static int pre_scan(char *parent_name, unsigned int start_block, unsigned int of
 		TRACE("pre_scan: name %s, start_block %d, offset %d, type %d\n",
 			name, start_block, offset, type);
 
-		if(extract_matches(extract, &entry, name, &newt) &&
-					!exclude_matches(excludes, name, &newc)) {
+		if(extract_matches(extract, &entryt, name, &newt) &&
+					!exclude_matches(exclude, sticky, &entryc, name, &newc, &new_sticky)) {
 			ASPRINTF(&pathname, "%s/%s", parent_name, name);
 
 			if(type == SQUASHFS_DIR_TYPE) {
 				int res = pre_scan(parent_name, start_block, offset, newt,
-								newc, depth + 1);
+								newc, new_sticky, depth + 1);
 				if(res == FALSE)
 					scan_res = FALSE;
 			} else if(newt == NULL) {
@@ -2524,11 +2833,11 @@ static int pre_scan(char *parent_name, unsigned int start_block, unsigned int of
 				total_inodes ++;
 			}
 
-			free_subdir(newc);
+			free_subdir(new_sticky);
 			free(pathname);
 		}
 
-		if(no_more_extracts(extract, entry)) /* end of list */
+		if(no_more_extracts(extract, entryt)) /* end of list */
 			break;
 	}
 
@@ -2539,14 +2848,15 @@ static int pre_scan(char *parent_name, unsigned int start_block, unsigned int of
 
 
 static int dir_scan(char *parent_name, unsigned int start_block, unsigned int offset,
-	struct pathname *extract, struct pathnames *excludes, int depth)
+	struct pathname *extract, struct pathname *exclude, struct pathnames *sticky,
+	int depth)
 {
 	unsigned int type;
 	int scan_res = TRUE;
 	char *name;
-	struct pathname *newt;
-	struct pathnames *newc = NULL;
-	struct path_entry *entry = first_extract(extract);
+	struct pathname *newt, *newc;
+	struct pathnames *new_sticky = NULL;
+	struct path_entry *entryt = first_path(extract), *entryc = first_path(exclude);
 	struct inode *i;
 	struct dir *dir = s_ops->opendir(start_block, offset, &i);
 
@@ -2607,13 +2917,13 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 			TRACE("dir_scan: name %s, start_block %d, offset %d,"
 				" type %d\n", name, start_block, offset, type);
 
-			if(extract_matches(extract, &entry, name, &newt) &&
-						!exclude_matches(excludes, name, &newc)) {
+			if(extract_matches(extract, &entryt, name, &newt) &&
+						!exclude_matches(exclude, sticky, &entryc, name, &newc, &new_sticky)) {
 				ASPRINTF(&pathname, "%s/%s", parent_name, name);
 
 				if(type == SQUASHFS_DIR_TYPE) {
-					int res = dir_scan(pathname, start_block, offset,
-								newt, newc, depth + 1);
+					int res = dir_scan(pathname, start_block, offset, newt,
+								newc, new_sticky, depth + 1);
 					if(res == FALSE)
 						scan_res = FALSE;
 					free(pathname);
@@ -2642,10 +2952,10 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 						free(i->symlink);
 				}
 
-				free_subdir(newc);
+				free_subdir(new_sticky);
 			}
 
-			if(no_more_extracts(extract, entry)) /* end of list */
+			if(no_more_extracts(extract, entryt)) /* end of list */
 				break;
 		}
 	}
@@ -2822,7 +3132,7 @@ static void process_exclude_files(char *filename)
 		if(*name == '\0')
 			continue;
 
-		add_exclude(name);
+		walk_exclude_path(name);
 	}
 
 	if(ferror(fd))
@@ -3915,13 +4225,14 @@ static void pseudo_print(char *pathname, struct inode *inode, char *link, long l
 
 
 static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned int offset,
-	struct pathname *extract, struct pathnames *excludes, int depth)
+	struct pathname *extract, struct pathname *exclude, struct pathnames *sticky,
+	int depth)
 {
 	unsigned int type;
 	char *name;
-	struct pathname *newt;
-	struct pathnames *newc = NULL;
-	struct path_entry *entry = first_extract(extract);
+	struct pathname *newt, *newc;
+	struct pathnames *new_sticky = NULL;
+	struct path_entry *entryt = first_path(extract), *entryc = first_path(exclude);
 	struct inode *i;
 	struct dir *dir;
 	static long long byte_offset = 0;
@@ -3947,15 +4258,15 @@ static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned in
 		TRACE("pseudo_scan1: name %s, start_block %d, offset %d, type %d\n",
 			name, start_block, offset, type);
 
-		if(extract_matches(extract, &entry, name, &newt) &&
-					!exclude_matches(excludes, name, &newc)) {
+		if(extract_matches(extract, &entryt, name, &newt) &&
+					!exclude_matches(exclude, sticky, &entryc, name, &newc, &new_sticky)) {
 			ASPRINTF(&pathname, "%s/%s", parent_name, name);
 
 			if(type == SQUASHFS_DIR_TYPE) {
 				int res = pseudo_scan1(pathname, start_block, offset, newt,
-								newc, depth + 1);
+								newc, new_sticky, depth + 1);
 				if(res == FALSE) {
-					free_subdir(newc);
+					free_subdir(new_sticky);
 					free(pathname);
 					return FALSE;
 				}
@@ -3979,11 +4290,11 @@ static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned in
 					free(i->symlink);
 			}
 
-			free_subdir(newc);
+			free_subdir(new_sticky);
 			free(pathname);
 		}
 
-		if(no_more_extracts(extract, entry)) /* end of list */
+		if(no_more_extracts(extract, entryt)) /* end of list */
 			break;
 	}
 
@@ -3994,13 +4305,14 @@ static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned in
 
 
 static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned int offset,
-	struct pathname *extract, struct pathnames *excludes, int depth)
+	struct pathname *extract, struct pathname *exclude, struct pathnames *sticky,
+	int depth)
 {
 	unsigned int type;
 	char *name;
-	struct pathname *newt;
-	struct pathnames *newc = NULL;
-	struct path_entry *entry = first_extract(extract);
+	struct pathname *newt, *newc;
+	struct pathnames *new_sticky = NULL;
+	struct path_entry *entryt = first_path(extract), *entryc = first_path(exclude);
 	struct inode *i;
 	struct dir *dir = s_ops->opendir(start_block, offset, &i);
 
@@ -4020,16 +4332,16 @@ static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned in
 			TRACE("pseudo_scan2: name %s, start_block %d, offset %d,"
 				" type %d\n", name, start_block, offset, type);
 
-			if(extract_matches(extract, &entry, name, &newt) &&
-					!exclude_matches(excludes, name, &newc)) {
+			if(extract_matches(extract, &entryc, name, &newt) &&
+					!exclude_matches(exclude, sticky, &entryc, name, &newc, &new_sticky)) {
 				ASPRINTF(&pathname, "%s/%s", parent_name, name);
 
 				if(type == SQUASHFS_DIR_TYPE) {
 					res = pseudo_scan2(pathname, start_block, offset,
-								newt, newc, depth + 1);
+								newt, newc, new_sticky, depth + 1);
 					free(pathname);
 					if(res == FALSE) {
-						free_subdir(newc);
+						free_subdir(new_sticky);
 						return FALSE;
 					}
 				} else if(newt == NULL && type == SQUASHFS_FILE_TYPE) {
@@ -4040,7 +4352,7 @@ static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned in
 
 						res = cat_file(i, pathname);
 						if(res == FALSE) {
-							free_subdir(newc);
+							free_subdir(new_sticky);
 							return FALSE;
 						}
 
@@ -4050,10 +4362,10 @@ static int pseudo_scan2(char *parent_name, unsigned int start_block, unsigned in
 				} else
 					free(pathname);
 
-				free_subdir(newc);
+				free_subdir(new_sticky);
 			}
 
-			if(no_more_extracts(extract, entry)) /* end of list */
+			if(no_more_extracts(extract, entryt)) /* end of list */
 				break;
 		}
 	}
@@ -4080,7 +4392,7 @@ static int generate_pseudo(char *pseudo_file)
 	}
 
 	res = pseudo_scan1("/", SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extract, excludes, 1);
+		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extract, exclude, NULL, 1);
 	if(res == FALSE)
 		goto failed;
 
@@ -4095,7 +4407,7 @@ static int generate_pseudo(char *pseudo_file)
 	enable_progress_bar();
 
 	res = pseudo_scan2("/", SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extract, excludes, 1);
+		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extract, exclude, NULL, 1);
 	if(res == FALSE)
 		goto failed;
 
@@ -4127,8 +4439,20 @@ static int parse_excludes(int argc, char *argv[])
 	for(i = 0; i < argc; i ++) {
 		if(strcmp(argv[i], ";") == 0)
 			break;
-		add_exclude(argv[i]);
+		walk_exclude_path(argv[i]);
 	}
+
+	return (i == argc) ? 0 : i;
+}
+
+
+static int skip_excludes(int argc, char *argv[])
+{
+	int i;
+
+	for(i = 0; i < argc; i ++)
+		if(strcmp(argv[i], ";") == 0)
+			break;
 
 	return (i == argc) ? 0 : i;
 }
@@ -4464,7 +4788,7 @@ static int parse_options(int argc, char *argv[])
 			treat_as_excludes = TRUE;
 		else if(strcmp(argv[i], "-exclude-list") == 0 ||
 				strcmp(argv[i], "-ex") == 0) {
-			res = parse_excludes(argc - i - 1, argv + i + 1);
+			res = skip_excludes(argc - i - 1, argv + i + 1);
 			if(res == 0)
 				unsquashfs_option_help("-exclude-list", "unsquashfs: -exclude-list missing filenames or no ';' terminator\n");
 			i += res + 1;
@@ -4704,7 +5028,6 @@ static int parse_options(int argc, char *argv[])
 				strcmp(argv[i], "-exc") == 0) {
 			if(++i == argc)
 				unsquashfs_option_help("-exclude-file", "unsquashfs: -exclude-file missing filename\n");
-			process_exclude_files(argv[i]);
 		} else if(strcmp(argv[i], "-regex") == 0 ||
 				strcmp(argv[i], "-r") == 0)
 			use_regex = TRUE;
@@ -4782,19 +5105,26 @@ static int parse_options(int argc, char *argv[])
 }
 
 
-static void parse_exclude_options(int argc, char *argv[])
+static void parse_filter_options(int argc, char *argv[])
 {
 	int i;
 
-	/* Scan the command line for any -extract-file option.  This needs to be
-	 * parsed after the filesystem tables have been read and the threads
-	 * created and initialised.
+	/* Scan the command line for any extract and exclude options.  These
+	 * need to be parsed after the filesystem tables have been read and the
+	 * threads created and initialised.
 	 */
 	for(i = 1; i < argc && *argv[i] == '-'; i++) {
 		if(strcmp(argv[i], "-extract-file") == 0 ||
 				strcmp(argv[i], "-ef") == 0 ||
 				strcmp(argv[i], "-e") == 0)
 			process_extract_files(argv[++i]);
+		else if(strcmp(argv[i], "-exclude-file") == 0 ||
+				strcmp(argv[i], "-excf") == 0 ||
+				strcmp(argv[i], "-exc") == 0)
+			process_exclude_files(argv[i]);
+		else if(strcmp(argv[i], "-exclude-list") == 0 ||
+				strcmp(argv[i], "-ex") == 0)
+			i += parse_excludes(argc - i - 1, argv + i + 1) + 1;
 		else if(option_with_arg(argv[i], option_table))
 			i++;
 	}
@@ -4803,7 +5133,7 @@ static void parse_exclude_options(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-	int i, n;
+	int i;
 	long res;
 	int exit_code = 0;
 	char *command;
@@ -4914,18 +5244,12 @@ int main(int argc, char *argv[])
 	if(cat_files)
 		return cat_path(argc - i - 1, argv + i + 1);
 
-	parse_exclude_options(argc, argv);
+	parse_filter_options(argc, argv);
 
 	if(treat_as_excludes)
-		for(n = i + 1; n < argc; n++)
-			add_exclude(argv[n]);
+		walk_exclude_paths(argc - i - 1, argv + i + 1);
 	else
 		walk_extract_paths(argc - i - 1, argv + i + 1);
-
-	if(exclude) {
-		excludes = init_subdir();
-		excludes = add_subdir(excludes, exclude);
-	}
 
 	if(pseudo_file)
 		return generate_pseudo(pseudo_name);
@@ -4933,7 +5257,7 @@ int main(int argc, char *argv[])
 	if(!quiet || progress) {
 		res = pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
 			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extract,
-			excludes, 1);
+			exclude, NULL, 1);
 		if(res == FALSE && set_exit_code)
 			exit_code = 2;
 
@@ -4953,7 +5277,7 @@ int main(int argc, char *argv[])
 	}
 
 	res = dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extract, excludes, 1);
+		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extract, exclude, NULL, 1);
 	if(res == FALSE && set_exit_code)
 		exit_code = 2;
 
