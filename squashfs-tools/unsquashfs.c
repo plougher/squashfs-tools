@@ -1537,9 +1537,9 @@ static inline int no_more_extracts(struct pathname *extracts, struct path_entry 
 }
 
 
-static inline struct path_entry *first_path(struct pathname *extract)
+static inline struct path_entry *first_path(struct pathname *path)
 {
-	return extract ? extract->name : NULL;
+	return path ? path->name : NULL;
 }
 
 
