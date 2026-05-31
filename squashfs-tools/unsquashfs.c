@@ -1557,13 +1557,6 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 
 	target = get_component(target, &targname);
 
-	if(target == NULL) {
-		if(type == PATH_TYPE_EXTRACT)
-			EXIT_UNSQUASH("Invalid extract file %s\n", alltarget);
-		else
-			EXIT_UNSQUASH("Invalid exclude file %s\n", alltarget);
-	}
-
 	if(paths == NULL)
 		paths = create_path();
 
