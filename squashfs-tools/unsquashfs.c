@@ -2052,8 +2052,6 @@ static char *stack_path(struct directory_stack *stack)
 		strcat(pathname, "/");
 	}
 
-	pathname[strlen(pathname)] = '\0';
-
 	return pathname;
 }
 
