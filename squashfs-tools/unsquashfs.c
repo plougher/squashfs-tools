@@ -1670,8 +1670,7 @@ static struct pathname *extract_add_path(struct pathname *paths, int type, char 
 }
 
 
-static struct pathname *exclude_add_path(struct pathname *paths, int type, char *target,
-						int match_type)
+static void exclude_add_path(int type, char *target, int match_type)
 {
 	/*
 	 * If pathnames contain trailing "." and ".." elements they may resolve
@@ -1683,9 +1682,8 @@ static struct pathname *exclude_add_path(struct pathname *paths, int type, char 
 	if(target[0] == '\0') {
 		stickypath = add_path(stickypath, type, "*", "*", MATCH_WILDCARD);
 		stickypath = add_path(stickypath, type, ".*", ".*", MATCH_WILDCARD);
-		return paths;
 	} else
-		return add_path(paths, type, target, target, MATCH_EXACT);
+		exclude = add_path(exclude, type, target, target, MATCH_EXACT);
 }
 
 
@@ -1697,7 +1695,7 @@ static void add_extract(char *target)
 
 static void add_exclude(char *str)
 {
-	exclude = exclude_add_path(exclude, PATH_TYPE_EXCLUDE, str, MATCH_EXACT);
+	exclude_add_path(PATH_TYPE_EXCLUDE, str, MATCH_EXACT);
 }
 
 
