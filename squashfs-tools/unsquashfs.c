@@ -1669,8 +1669,10 @@ static void extract_add_path(int type, char *target, int match_type)
 }
 
 
-static void exclude_add_path(int type, char *target, int match_type)
+static void exclude_add_path(int sticky, int type, char *target, int match_type)
 {
+	static int exclude_all = FALSE;
+
 	/*
 	 * If pathnames contain trailing "." and ".." elements they may resolve
 	 * to the root directory or otherwise an empty pathname.
@@ -1678,11 +1680,19 @@ static void exclude_add_path(int type, char *target, int match_type)
 	 * This means a pathname can resolve to mean exclude everything, or a
 	 * exclude tree with matches everything.
 	 */
-	if(target[0] == '\0') {
-		stickypath = add_path(stickypath, type, "*", "*", MATCH_WILDCARD);
+	if(exclude_all)
+		return;
+	else if(target[0] == '\0') {
+		free_path(exclude);
+		free_path(stickypath);
+		stickypath = add_path(NULL, type, "*", "*", MATCH_WILDCARD);
 		stickypath = add_path(stickypath, type, ".*", ".*", MATCH_WILDCARD);
-	} else
-		exclude = add_path(exclude, type, target, target, MATCH_EXACT);
+		exclude = NULL;
+		exclude_all = TRUE;
+	} else if(sticky)
+		stickypath = add_path(stickypath, type, target, target, match_type);
+	else
+		exclude = add_path(exclude, type, target, target, match_type);
 }
 
 
@@ -1694,7 +1704,7 @@ static void add_extract(char *target)
 
 static void add_exclude(char *str)
 {
-	exclude_add_path(PATH_TYPE_EXCLUDE, str, MATCH_EXACT);
+	exclude_add_path(FALSE, PATH_TYPE_EXCLUDE, str, MATCH_EXACT);
 }
 
 
@@ -2740,8 +2750,7 @@ static void walk_exclude_path(char *path)
 		else
 			type = MATCH_WILDCARD;
 
-		stickypath = add_path(stickypath, PATH_TYPE_EXCLUDE, path + 4, path + 4, type);
-
+		exclude_add_path(TRUE, PATH_TYPE_EXCLUDE, path + 4, type);
 	} else {
 		int found;
 		struct directory_stack *stack;
