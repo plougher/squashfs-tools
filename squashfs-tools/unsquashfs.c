@@ -1388,7 +1388,7 @@ failed:
 
 
 static int squashfs_readdir(struct dir *dir, char **name, unsigned int *start_block,
-unsigned int *offset, unsigned int *type)
+				unsigned int *offset, unsigned int *type)
 {
 	if(dir->cur_entry == NULL)
 		dir->cur_entry = dir->dirs;
@@ -1728,7 +1728,8 @@ static void free_subdir(struct pathnames *paths)
 }
 
 
-static int extract_matches(struct pathname *path, struct path_entry **ent, char *name, struct pathname **new)
+static int extract_matches(struct pathname *path, struct path_entry **ent,
+		char *name, struct pathname **new)
 {
 	struct path_entry *entry;
 
@@ -1889,8 +1890,8 @@ static struct directory_stack *create_stack()
 }
 
 
-static struct directory_stack *push_stack(struct directory_stack *stack, unsigned int start_block,
-	unsigned int offset, char *name, int type)
+static struct directory_stack *push_stack(struct directory_stack *stack,
+		unsigned int start_block, unsigned int offset, char *name, int type)
 {
 	int depth = ++ stack->size;
 
