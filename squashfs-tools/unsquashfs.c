@@ -2783,8 +2783,11 @@ static void walk_exclude_paths(int argc, char *argv[])
 {
 	int n;
 
-	for(n = 0; n < argc; n++)
+	for(n = 0; n < argc; n++) {
+		if(argv[n][0] == '\0')
+			EXIT_UNSQUASH("Empty exclude pathname on command line\n");
 		walk_exclude_path(argv[n]);
+	}
 
 	if(exclude)
 		sort_paths(exclude);
@@ -4449,6 +4452,8 @@ static int parse_excludes(int argc, char *argv[])
 	for(i = 0; i < argc; i ++) {
 		if(strcmp(argv[i], ";") == 0)
 			break;
+		if(argv[i][0] == '\0')
+			EXIT_UNSQUASH("Empty exclude pathname on command line\n");
 		walk_exclude_path(argv[i]);
 	}
 
