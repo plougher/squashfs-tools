@@ -1647,8 +1647,7 @@ static struct pathname *add_path(struct pathname *paths, int type, char *target,
 }
 
 
-static struct pathname *extract_add_path(struct pathname *paths, int type, char *target,
-						int match_type)
+static void extract_add_path(int type, char *target, int match_type)
 {
 	static int extract_all = FALSE;
 	/*
@@ -1660,13 +1659,13 @@ static struct pathname *extract_add_path(struct pathname *paths, int type, char 
 	 * empty extract tree, and which stays empty.
 	 */
 	if(extract_all)
-		return NULL;
+		return;
 	else if(target[0] == '\0') {
-		free_path(paths);
+		free_path(extract);
+		extract = NULL;
 		extract_all = TRUE;
-		return NULL;
 	} else
-		return add_path(paths, type, target, target, match_type);
+		extract = add_path(extract, type, target, target, match_type);
 }
 
 
@@ -1689,7 +1688,7 @@ static void exclude_add_path(int type, char *target, int match_type)
 
 static void add_extract(char *target)
 {
-	extract = extract_add_path(extract, PATH_TYPE_EXTRACT, target, MATCH_EXACT);
+	extract_add_path(PATH_TYPE_EXTRACT, target, MATCH_EXACT);
 }
 
 
