@@ -2518,8 +2518,11 @@ static void walk_extract_paths(int argc, char *argv[])
 {
 	int n;
 
-	for(n = 0; n < argc; n++)
+	for(n = 0; n < argc; n++) {
+		if(argv[n][0] == '\0')
+			EXIT_UNSQUASH("Empty extract pathname on command line\n");
 		walk_extract_path(argv[n]);
+	}
 
 	if(extract)
 		sort_paths(extract);
