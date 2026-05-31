@@ -1681,8 +1681,9 @@ static struct pathname *exclude_add_path(struct pathname *paths, int type, char 
 	 * exclude tree with matches everything.
 	 */
 	if(target[0] == '\0') {
-		paths = add_path(stickypath, type, "*", "*", MATCH_WILDCARD);
-		return add_path(stickypath, type, ".*", ".*", MATCH_WILDCARD);
+		stickypath = add_path(stickypath, type, "*", "*", MATCH_WILDCARD);
+		stickypath = add_path(stickypath, type, ".*", ".*", MATCH_WILDCARD);
+		return paths;
 	} else
 		return add_path(paths, type, target, target, MATCH_EXACT);
 }
