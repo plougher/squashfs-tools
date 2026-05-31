@@ -1834,6 +1834,9 @@ static int exclude_matches(struct pathname *path, struct pathnames *sticky,
 		return FALSE;
 	}
 
+	if(*ent == NULL)
+		*new = NULL;
+
 	while((entry = *ent)) {
 		int res = strcmp(name, entry->name);
 
