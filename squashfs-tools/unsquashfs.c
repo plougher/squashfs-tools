@@ -1853,7 +1853,11 @@ static int exclude_matches(struct pathname *path, struct pathnames *sticky,
 				break;
 			}
 		} else
-			EXIT_UNSQUASH("Bug in exclude_matches()\n");
+			/*
+			 * exclude can have matched on files which have not
+			 * been extracted due to extract pathnames
+			 */
+			*ent = entry->next;
 	}
 
        *new_sticky = init_subdir();
