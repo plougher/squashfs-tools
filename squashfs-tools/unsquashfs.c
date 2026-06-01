@@ -2785,9 +2785,6 @@ static void walk_exclude_paths(int argc, char *argv[])
 			EXIT_UNSQUASH("Empty exclude pathname on command line\n");
 		walk_exclude_path(argv[n]);
 	}
-
-	if(exclude)
-		sort_paths(exclude);
 }
 
 
@@ -5262,6 +5259,9 @@ int main(int argc, char *argv[])
 		walk_exclude_paths(argc - i - 1, argv + i + 1);
 	else
 		walk_extract_paths(argc - i - 1, argv + i + 1);
+
+	if(exclude)
+		sort_paths(exclude);
 
 	if(pseudo_file)
 		return generate_pseudo(pseudo_name);
