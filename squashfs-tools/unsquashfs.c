@@ -2517,9 +2517,6 @@ static void walk_extract_paths(int argc, char *argv[])
 			EXIT_UNSQUASH("Empty extract pathname on command line\n");
 		walk_extract_path(argv[n]);
 	}
-
-	if(extract)
-		sort_paths(extract);
 }
 
 
@@ -5259,6 +5256,9 @@ int main(int argc, char *argv[])
 		walk_exclude_paths(argc - i - 1, argv + i + 1);
 	else
 		walk_extract_paths(argc - i - 1, argv + i + 1);
+
+	if(extract)
+		sort_paths(extract);
 
 	if(exclude)
 		sort_paths(exclude);
