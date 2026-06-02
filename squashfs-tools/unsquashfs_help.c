@@ -226,7 +226,7 @@ static char *unsquashfs_text[]={
 	"\t-fstime\t\t\tsynonym for -mkfs-time\n",
 	"\t-e[f] <extract file>\tsynonym for -extract-file\n",
 	"\t-exc[f] <exclude file>\tsynonym for -exclude-file\n",
-	"\t-L\t\t\tsynonym for -follow-symlinks\n",
+	"\t-L\t\t\tsynonym for -follow-paths\n",
 	"\t-pseudo-file <file>\talternative name for -pf\n",
 	"\n", "Environment:", "\n",
 	"\tSQFS_CMDLINE \t\tIf set, this is used as the directory to write the "
