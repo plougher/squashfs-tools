@@ -5131,7 +5131,7 @@ static void parse_filter_options(int argc, char *argv[])
 		else if(strcmp(argv[i], "-exclude-file") == 0 ||
 				strcmp(argv[i], "-excf") == 0 ||
 				strcmp(argv[i], "-exc") == 0)
-			process_exclude_files(argv[i]);
+			process_exclude_files(argv[++i]);
 		else if(strcmp(argv[i], "-exclude-list") == 0 ||
 				strcmp(argv[i], "-ex") == 0)
 			i += parse_excludes(argc - i - 1, argv + i + 1) + 1;
