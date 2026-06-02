@@ -158,7 +158,7 @@ static struct test table[] = {
 
 /* list of options that have an argument */
 static char *option_table[] = { "d", "dest", "max", "max-depth", "extract-file",
-	"exclude_file", "all", "all-time", "pf", "xattrs-exclude",
+	"exclude-file", "all", "all-time", "pf", "xattrs-exclude",
 	"xattrs-include", "p", "processors", "mem", "mem-percent", "h", "help",
 	"help-option", "help-section", "ho", "hs", "o", "offset", "e", "ef",
 	"exc", "excf", "pseudo-file", "cols", NULL
