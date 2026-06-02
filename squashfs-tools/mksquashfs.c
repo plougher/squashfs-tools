@@ -5589,7 +5589,7 @@ static int old_add_exclude(char *path, int follow)
 
 	for(i = 0; i < source; i++) {
 		ASPRINTF(&filename, "%s/%s", source_path[i], path);
-		res = follow ? stat(path, &buf) : lstat(path, &buf);
+		res = follow ? stat(filename, &buf) : lstat(filename, &buf);
 		if(res == -1) {
 			if(!(errno == ENOENT || errno == ENOTDIR)) {
 				ERROR_START("Cannot stat exclude dir/file %s "
