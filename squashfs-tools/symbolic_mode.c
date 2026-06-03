@@ -65,6 +65,8 @@ int parse_octal_mode_args(char *source, char *cur_ptr, int args, char **argv,
 	mode_data = MALLOC(sizeof(struct mode_data));
 	mode_data->operation = SYMBOLIC_MODE_OCT;
 	mode_data->mode = mode;
+	mode_data->mask = 0;
+	mode_data->X = 0;
 	mode_data->next = NULL;
 	*data = mode_data;
 
