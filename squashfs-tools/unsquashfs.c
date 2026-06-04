@@ -96,8 +96,8 @@ int stat_sys = FALSE;
 int version = FALSE;
 int mkfs_time_opt = FALSE;
 int cat_files = FALSE;
-int fragment_buffer_size = FRAGMENT_BUFFER_DEFAULT;
-int data_buffer_size = DATA_BUFFER_DEFAULT;
+int fragment_buffer_size;
+int data_buffer_size;
 char *dest = "squashfs-root";
 struct pathname *extract = NULL, *exclude = NULL, *stickypath = NULL;
 int writer_fd = 1;
@@ -5141,6 +5141,22 @@ static void parse_filter_options(int argc, char *argv[])
 }
 
 
+/* default size of fragment buffer and data buffer in Mbytes */
+static int default_buffers()
+{
+	int mem = get_physical_memory();
+
+	/*
+	 * Use 256Mbytes unless total memory is less than 2G, in which case
+	 * use 12.5% of total memory
+	 */
+	if(mem < 2048)
+		return mem >> 3 ? mem >> 3 : 1;
+	else
+		return 256;
+}
+
+
 int main(int argc, char *argv[])
 {
 	int i;
@@ -5148,6 +5164,8 @@ int main(int argc, char *argv[])
 	int exit_code = 0;
 	char *command;
 
+	fragment_buffer_size = default_buffers();
+	data_buffer_size = default_buffers();
 	check_sqfs_cmdline(argc, argv);
 	check_pager();
 
