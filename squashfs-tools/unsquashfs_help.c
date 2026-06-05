@@ -130,8 +130,9 @@ static char *unsquashfs_text[]={
 		"per line\n",
 	"\t-match\t\t\tabort if any extract file does not match on anything, "
 		"and can not be resolved.  Implies -missing-symlinks\n",
-	"\t-follow[-paths]\t\tfollow/walk extract pathnames, and add all "
-		"files/symlinks needed to resolve them.  This is now default\n",
+	"\t-follow[-paths]\t\tfollow/walk extract and exclude pathnames, and add
+		"all files (directories and symlinks) needed to resolve them.  "
+		"This is now default\n",
 	"\t-missing[-paths]\tunsquashfs will abort if any pathname can't be resolved in "
 		"-follow-paths\n",
 	"\t-no-wild[cards]\t\tdo not use wildcard matching in extract and "
