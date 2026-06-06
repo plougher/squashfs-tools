@@ -2392,6 +2392,17 @@ static int follow_extract_paths(char *path, char *newpath, int symlinks,
 					break;
 				}
 
+				/*
+				 * Do not walk the symbolic link if it is the
+				 * leaf and so extract the symbolic link rather
+				 * than what it points to
+				 */
+				if(path[0] == '\0') {
+					add_to_extracts(stack, name);
+					traversed = TRUE;
+					break;
+				}
+
 				new = clone_stack(stack);
 
 				/* Add symlink to list of symlinks found
