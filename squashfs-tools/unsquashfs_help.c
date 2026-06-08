@@ -121,9 +121,10 @@ static char *unsquashfs_text[]={
 		"when listing the filesystem\n",
 	"\t-max[-depth] <levels>\tdescend at most <levels> of directories when "
 		"extracting\n",
-	"\t-excludes\t\ttreat files on command line as exclude files\n",
-	"\t-ex[clude-list]\t\tlist of files to be excluded, terminated with "
-		"; e.g. file1 file2 ;\n",
+	"\t-excludes\t\ttreat files on command line as exclude pathnames\n",
+	"\t-ex[clude-list]\t\tlist of pathnames to be excluded, terminated "
+		"with ; e.g. -exclude-list a/b/c/file1 a/*.[ch] \\; (the ; "
+		"should be backslashed on most shells)\n",
 	"\t-extract-file <file>\tlist of directories or files to extract.  One "
 		"per line\n",
 	"\t-exclude-file <file>\tlist of directories or files to exclude.  One "
