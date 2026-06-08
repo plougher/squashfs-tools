@@ -53,12 +53,12 @@ This will extract everything except for files that match *.gz anywhere
 in the image.   The "..." means this is a non-anchored exclude which
 matches anywhere.
 .TP
-unsquashfs -ex "test/*data*.gz" \; IMAGE.SQFS test
+unsquashfs -ex "test/*data*.gz" \\; IMAGE.SQFS test
 This uses both extract and exclude options, to tell Unsquashfs to only
 extract the "test" directory, and to exclude any files within it that
 match *data*.gz.
 .TP
-unsquashfs -ex "... *.gz" IMAGE.SQFS test
+unsquashfs -ex "... *.gz" \\; IMAGE.SQFS test
 This uses both extract and exclude options, to tell Unsquashfs to only
 extract the "test" directory, and to exclude files which match "*.gz"
 anywhere within "test" directory or sub-directories.
