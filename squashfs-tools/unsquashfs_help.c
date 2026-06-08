@@ -270,7 +270,7 @@ static char *sqfscat_text[]={
 		"use the number of processors available\n",
 	"\t-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or "
 		"G to specify Kbytes, Mbytes or Gbytes respectively.  Default "
-		"512 Mbytes\n",
+		"512 Mbytes if physical memory >= 2Gbytes, or 25% if less\n",
 	"\t-mem-percent <percent>\tuse <percent> physical memory for caches.\n",
 	"\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  Optionally "
 		"a suffix of K, M or G can be given to specify Kbytes, Mbytes "
