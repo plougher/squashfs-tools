@@ -128,7 +128,7 @@ ${SED} -i "s/<[^>]*>/\U&/g" $tmp/sqfscat.help
 # Remove the "<" and ">" around options operands to make it conform
 # more to man page standards
 
-${SED} -i -e "s/<//g" -e "s/>//g" $tmp/sqfscat.help
+${SED} -i "s/<\([^>][^>]*\)>/\1/g" $tmp/sqfscat.help
 
 # help2man doesn't deal well with the list of supported compressors.
 # So concatenate them onto one line with commas
