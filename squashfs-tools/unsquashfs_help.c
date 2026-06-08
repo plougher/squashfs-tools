@@ -135,9 +135,10 @@ static char *unsquashfs_text[]={
 		"and extract the files they point to, in addition to the "
 		"symbolic link itself.\n",
 	"\t-no-wild[cards]\t\tdo not use wildcard matching in extract and "
-		"exclude names\n",
-	"\t-r[egex]\t\ttreat extract names as POSIX regular expressions rather "
-		"than use the default shell wildcard expansion (globbing)\n",
+		"exclude pathnames\n",
+	"\t-r[egex]\t\ttreat extract and exclude pathnames as POSIX regular "
+		"expressions rather than use the default shell wildcard "
+		"expansion (globbing)\n",
 	"\t-all[-time] <time>\tset all file timestamps to <time>, rather than "
 		"the time stored in the filesystem inode.  <time> can be an "
 		"unsigned 32-bit int indicating seconds since the epoch "
