@@ -128,8 +128,8 @@ static char *unsquashfs_text[]={
 		"per line\n",
 	"\t-exclude-file <file>\tlist of directories or files to exclude.  One "
 		"per line\n",
-	"\t-match\t\t\tabort if any extract file does not match on anything, "
-		"and can not be resolved.  Implies -missing-symlinks\n",
+	"\t-match\t\t\tabort if any extract or exclude pathname does not match "
+		"on anything, and can not be resolved\n",
 	"\t-follow[-symlinks]\tfollow symbolic links in extract pathnames, "
 		"and extract the files they point to, in addition to the "
 		"symbolic link itself.\n",
