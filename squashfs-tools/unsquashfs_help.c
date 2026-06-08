@@ -43,8 +43,8 @@ static char *unsquashfs_options[]={
 	/* extraction options */
 	"", "", "-dest", "-max-depth", "-excludes", "-exclude-list",
 	"-extract-file", "-exclude-file", "-match", "-follow-symlinks",
-	"-missing-paths", "-no-wildcards", "-regex", "-all-time",
-	"-cat", "-force", "-pf", "", "", "",
+	"-no-wildcards", "-regex", "-all-time", "-cat", "-force", "-pf", "", "",
+	"",
 	/* information options */
 	"-stat", "-max-depth", "-info", "-linfo", "-ls", "-lls", "-llnumeric",
 	"-lc", "-llc", "-full-precision", "-UTC", "-mkfs-time", "", "", "",
@@ -76,8 +76,8 @@ static char *sqfscat_options[]={
 
 static char *unsquashfs_args[]={
 	/* extraction options */
-	"", "", "", "", "", "", "<file>", "<file>", "", "", "", "", "",
-	"<time>", "", "", "<file>", "", "", "",
+	"", "", "", "", "", "", "<file>", "<file>", "", "", "", "", "<time>",
+	"", "", "<file>", "", "", "",
 	/* information options */
 	"", "<levels>", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	/* xattrs options */
@@ -133,8 +133,6 @@ static char *unsquashfs_text[]={
 	"\t-follow[-symlinks]\tfollow symbolic links in extract pathnames, "
 		"and extract the files they point to, in addition to the "
 		"symbolic link itself.\n",
-	"\t-missing[-paths]\tunsquashfs will abort if any extract or exclude "
-		"pathname does not match on anything and cannot be resolved.\n",
 	"\t-no-wild[cards]\t\tdo not use wildcard matching in extract and "
 		"exclude names\n",
 	"\t-r[egex]\t\ttreat extract names as POSIX regular expressions rather "
