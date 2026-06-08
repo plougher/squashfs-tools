@@ -42,7 +42,7 @@
 static char *unsquashfs_options[]={
 	/* extraction options */
 	"", "", "-dest", "-max-depth", "-excludes", "-exclude-list",
-	"-extract-file", "-exclude-file", "-match", "-follow-paths",
+	"-extract-file", "-exclude-file", "-match", "-follow-symlinks",
 	"-missing-paths", "-no-wildcards", "-regex", "-all-time",
 	"-cat", "-force", "-pf", "", "", "",
 	/* information options */
@@ -130,8 +130,9 @@ static char *unsquashfs_text[]={
 		"per line\n",
 	"\t-match\t\t\tabort if any extract file does not match on anything, "
 		"and can not be resolved.  Implies -missing-symlinks\n",
-	"\t-follow[-paths]\t\tfollow/walk extract and exclude pathnames, and "
-		"add all files needed to resolve them.  This is now default\n",
+	"\t-follow[-symlinks]\tfollow symbolic links in extract pathnames, "
+		"and extract the files they point to, in addition to the "
+		"symbolic link itself.\n",
 	"\t-missing[-paths]\tunsquashfs will abort if any extract or exclude "
 		"pathname does not match on anything and cannot be resolved.\n",
 	"\t-no-wild[cards]\t\tdo not use wildcard matching in extract and "
@@ -226,7 +227,7 @@ static char *unsquashfs_text[]={
 	"\t-fstime\t\t\tsynonym for -mkfs-time\n",
 	"\t-e[f] <extract file>\tsynonym for -extract-file\n",
 	"\t-exc[f] <exclude file>\tsynonym for -exclude-file\n",
-	"\t-L\t\t\tsynonym for -follow-paths\n",
+	"\t-L\t\t\tsynonym for -follow-symlinks\n",
 	"\t-pseudo-file <file>\talternative name for -pf\n",
 	"\n", "Environment:", "\n",
 	"\tSQFS_CMDLINE \t\tIf set, this is used as the directory to write the "
