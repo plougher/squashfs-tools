@@ -137,6 +137,7 @@ ${SED} -i -e "s/<D MODE UID GID>/\"d mode uid gid\"/" -e "s/<D TIME MODE U G>/\"
 # more to man page standards
 
 ${SED} -i -e "s/<//g" -e "s/>//g" $tmp/sqfstar.help
+${SED} -i "s/<\([^>][^>]*\)>/\1/g" $tmp/sqfstar.help
 
 # help2man doesn't deal well with the list of supported compressors.
 # So concatenate them onto one line with commas
