@@ -65,8 +65,9 @@ static char *unsquashfs_options[]={
 
 static char *sqfscat_options[]={
 	/* runtime options */
-	"", "", "-version", "-processors", "-mem", "-mem-percent", "-offset",
-	"-ignore-errors", "-strict-errors", "-no-exit-code", "", "", "",
+	"", "", "-version", "-processors", "-mem", "-mem-percent",
+	"mem-default", "-offset", "-ignore-errors", "-strict-errors",
+	"-no-exit-code", "", "", "",
 	/* filter options */
 	"-no-wildcards", "-regex", "", "", "",
 	/* help options */
@@ -95,8 +96,8 @@ static char *unsquashfs_args[]={
 
 static char *sqfscat_args[]={
 	/* runtime options */
-	"", "", "", "<number>", "<size>", "<percent>", "<bytes>", "", "", "",
-	"", "", "",
+	"", "", "", "<number>", "<size>", "<percent>", "", "<bytes>", "", "",
+	"", "", "", "",
 	/* filter options */
 	"", "", "", "", "",
 	/* help options */
@@ -273,6 +274,7 @@ static char *sqfscat_text[]={
 		"G to specify Kbytes, Mbytes or Gbytes respectively.  Default "
 		"512 Mbytes if physical memory >= 2Gbytes, or 25% if less\n",
 	"\t-mem-percent <percent>\tuse <percent> physical memory for caches.\n",
+	"\t-mem-default\t\tprint default memory usage in Mbytes\n",
 	"\t-o[ffset] <bytes>\tskip <bytes> at start of FILESYSTEM.  Optionally "
 		"a suffix of K, M or G can be given to specify Kbytes, Mbytes "
 		"or Gbytes respectively (default 0 bytes).\n",
