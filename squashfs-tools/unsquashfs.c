@@ -4788,16 +4788,7 @@ static int parse_options(int argc, char *argv[])
 				strcmp(argv[i], "--version") == 0) {
 			print_version("unsquashfs");
 			exit(0);
-		} else if(option_with_arg(argv[i], option_table))
-			i++;
-	}
-
-	for(i = 1; i < argc && *argv[i] == '-'; i++) {
-		if(strcmp(argv[i], "-no-pager") == 0)
-			; /* ignore, already parsed */
-		else if(strcmp(argv[i], "-cols") == 0)
-			i++; /* already parsed */
-		else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
+		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			unsquashfs_help(NULL);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
 			unsquashfs_help_all();
@@ -4809,7 +4800,16 @@ static int parse_options(int argc, char *argv[])
 			if(++i == argc)
 				unsquashfs_option_help(argv[i - 1], "unsquashfs: %s missing section\n", argv[i - 1]);
 			unsquashfs_section(argv[i - 1], argv[i]);
-		} else if(strcmp(argv[i], "-pseudo-file") == 0 ||
+		} else if(option_with_arg(argv[i], option_table))
+			i++;
+	}
+
+	for(i = 1; i < argc && *argv[i] == '-'; i++) {
+		if(strcmp(argv[i], "-no-pager") == 0)
+			; /* ignore, already parsed */
+		else if(strcmp(argv[i], "-cols") == 0)
+			i++; /* already parsed */
+		else if(strcmp(argv[i], "-pseudo-file") == 0 ||
 				strcmp(argv[i], "-pf") == 0) {
 			if(++i == argc)
 				unsquashfs_option_help(argv[i - 1], "unsquashfs: -pf missing filename\n");
