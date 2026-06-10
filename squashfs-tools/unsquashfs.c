@@ -4781,6 +4781,17 @@ static int parse_options(int argc, char *argv[])
 			i++;
 	}
 
+	/* Scan the command line for options that will immediately quit afterwards */
+	for(i = 1; i < argc && *argv[i] == '-'; i++) {
+		if(strcmp(argv[i], "-version") == 0 ||
+				strcmp(argv[i], "-v") == 0 ||
+				strcmp(argv[i], "--version") == 0) {
+			print_version("unsquashfs");
+			exit(0);
+		} else if(option_with_arg(argv[i], option_table))
+			i++;
+	}
+
 	for(i = 1; i < argc && *argv[i] == '-'; i++) {
 		if(strcmp(argv[i], "-no-pager") == 0)
 			; /* ignore, already parsed */
@@ -4842,12 +4853,7 @@ static int parse_options(int argc, char *argv[])
 		else if(strcmp(argv[i], "-quiet") == 0 ||
 				strcmp(argv[i], "-q") == 0)
 			quiet = TRUE;
-		else if(strcmp(argv[i], "-version") == 0 ||
-				strcmp(argv[i], "-v") == 0 ||
-				strcmp(argv[i], "--version") == 0) {
-			print_version("unsquashfs");
-			version = TRUE;
-		} else if(strcmp(argv[i], "-info") == 0 ||
+		else if(strcmp(argv[i], "-info") == 0 ||
 				strcmp(argv[i], "-i") == 0)
 			info = TRUE;
 		else if(strcmp(argv[i], "-ls") == 0 ||
@@ -5117,12 +5123,8 @@ static int parse_options(int argc, char *argv[])
 	progress = FALSE;
 #endif
 
-	if(i == argc) {
-		if(!version)
-			unsquashfs_help("unsquashfs: fatal error: no input filesystem specified on command line\n\n");
-		else
-			exit(1);
-	}
+	if(i == argc)
+		unsquashfs_help("unsquashfs: fatal error: no input filesystem specified on command line\n\n");
 
 	return i;
 }
