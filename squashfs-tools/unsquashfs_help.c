@@ -52,9 +52,9 @@ static char *unsquashfs_options[]={
 	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include", "", "",
 	"",
 	/* runtime options */
-	"-version", "-processors", "-mem", "-mem-percent", "-quiet",
-	"-no-progress", "-percentage", "-ignore-errors", "-strict-errors",
-	"-no-exit-code", "", "", "",
+	"-version", "-processors", "-mem", "-mem-percent", "-mem-default",
+	"-quiet", "-no-progress", "-percentage", "-ignore-errors",
+	"-strict-errors", "-no-exit-code", "", "", "",
 	/* help options */
 	"-help", "-help-option", "-help-section", "-help-all", "-ho", "-hs",
 	"-ha", "-no-pager", "-cols", "", "", "",
@@ -84,7 +84,7 @@ static char *unsquashfs_args[]={
 	"", "", "<regex>", "<regex>", "", "", "",
 	/* runtime options */
 	"", "<number>", "<size>", "<percent>", "", "", "", "", "", "", "", "",
-	"",
+	"", "",
 	/* help options */
 	"", "<regex>", "<section>", "", "<regex>", "<section>", "", "",
 	"<width>", "", "", "",
@@ -192,6 +192,7 @@ static char *unsquashfs_text[]={
 		"G to specify Kbytes, Mbytes or Gbytes respectively.  Default "
 		"512 Mbytes if physical memory >= 2Gbytes, or 25% if less\n",
 	"\t-mem-percent <percent>\tuse <percent> physical memory for caches.\n",
+	"\t-mem-default\t\tprint default memory usage in Mbytes\n",
 	"\t-q[uiet]\t\tno verbose output\n",
 	"\t-n[o-progress]\t\tdo not display the progress bar\n",
 	"\t-percentage\t\tdisplay a percentage rather than the full progress "
