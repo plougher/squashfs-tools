@@ -4800,6 +4800,9 @@ static int parse_options(int argc, char *argv[])
 			if(++i == argc)
 				unsquashfs_option_help(argv[i - 1], "unsquashfs: %s missing section\n", argv[i - 1]);
 			unsquashfs_section(argv[i - 1], argv[i]);
+		} else if(strcmp(argv[i], "-mem-default") == 0) {
+			printf("%d\n", fragment_buffer_size + data_buffer_size);
+			exit(0);
 		} else if(option_with_arg(argv[i], option_table))
 			i++;
 	}
