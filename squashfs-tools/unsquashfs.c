@@ -94,7 +94,6 @@ int no_wildcards = FALSE;
 int set_exit_code = TRUE;
 int treat_as_excludes = FALSE;
 int stat_sys = FALSE;
-int version = FALSE;
 int mkfs_time_opt = FALSE;
 int cat_files = FALSE;
 int fragment_buffer_size;
@@ -4602,12 +4601,14 @@ static int parse_cat_options(int argc, char *argv[])
 			i++;
 	}
 
+	/* Scan the command line for options that will immediately quit afterwards */
 	for(i = 1; i < argc && *argv[i] == '-'; i++) {
-		if(strcmp(argv[i], "-no-pager") == 0)
-			; /* ignore, already parsed */
-		else if(strcmp(argv[i], "-cols") == 0)
-			i++; /* already parsed */
-		else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
+		if(strcmp(argv[i], "-version") == 0 ||
+				strcmp(argv[i], "-v") == 0 ||
+				strcmp(argv[i], "--version") == 0) {
+			print_version("sqfscat");
+			exit(0);
+		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			sqfscat_help(NULL);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
 			sqfscat_help_all();
@@ -4617,9 +4618,20 @@ static int parse_cat_options(int argc, char *argv[])
 			sqfscat_option(argv[i - 1], argv[i]);
 		} else if(strcmp(argv[i], "-help-section") == 0 || strcmp(argv[i], "-hs") == 0) {
 			if(++i == argc)
-				sqfscat_option_help(argv[i - 1], "sqfscat %s missing section\n", argv[i - 1]);
+				sqfscat_option_help(argv[i - 1], "sqfscat: %s missing section\n", argv[i - 1]);
 			sqfscat_section(argv[i - 1], argv[i]);
-		} else if(strcmp(argv[i], "-no-exit-code") == 0 ||
+		} else if(strcmp(argv[i], "-mem-default") == 0) {
+			printf("%d\n", fragment_buffer_size + data_buffer_size);
+			exit(0);
+		} else if(option_with_arg(argv[i], option_table))
+			i++;
+	}
+	for(i = 1; i < argc && *argv[i] == '-'; i++) {
+		if(strcmp(argv[i], "-no-pager") == 0)
+			; /* ignore, already parsed */
+		else if(strcmp(argv[i], "-cols") == 0)
+			i++; /* already parsed */
+		else if(strcmp(argv[i], "-no-exit-code") == 0 ||
 				strcmp(argv[i], "-no-exit") == 0)
 			set_exit_code = FALSE;
 		else if(strcmp(argv[i], "-no-wildcards") == 0 ||
@@ -4631,12 +4643,7 @@ static int parse_cat_options(int argc, char *argv[])
 		else if(strcmp(argv[i], "-ignore-errors") == 0 ||
 				strcmp(argv[i], "-ig") == 0)
 			ignore_errors = TRUE;
-		else if(strcmp(argv[i], "-version") == 0 ||
-				strcmp(argv[i], "-v") == 0 ||
-				strcmp(argv[i], "--version") == 0) {
-			print_version("sqfscat");
-			version = TRUE;
-		} else if(strcmp(argv[i], "-processors") == 0 ||
+		else if(strcmp(argv[i], "-processors") == 0 ||
 				strcmp(argv[i], "-p") == 0) {
 			if((++i == argc) ||
 					!parse_number(argv[i],
@@ -4750,12 +4757,9 @@ static int parse_cat_options(int argc, char *argv[])
 	if(no_wildcards && use_regex)
 		EXIT_UNSQUASH("Both -no-wildcards and -regex should not be "
 								"set\n");
-	if(i == argc) {
-		if(!version)
-			sqfscat_help("sqfscat: fatal error: no input filesystem specified on command line\n\n");
-		else
-			exit(1);
-	} else if(i + 1 == argc)
+	if(i == argc)
+		sqfscat_help("sqfscat: fatal error: no input filesystem specified on command line\n\n");
+	else if(i + 1 == argc)
 		sqfscat_help("sqfscat: fatal error: no files specified on command line\n\n");
 
 	return i;
