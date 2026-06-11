@@ -4562,6 +4562,7 @@ static void print_version(char *string)
 	printf("but WITHOUT ANY WARRANTY; without even the implied warranty of\n");
 	printf("MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n");
 	printf("GNU General Public License for more details.\n");
+	exit(0);
 }
 
 
@@ -4605,10 +4606,9 @@ static int parse_cat_options(int argc, char *argv[])
 	for(i = 1; i < argc && *argv[i] == '-'; i++) {
 		if(strcmp(argv[i], "-version") == 0 ||
 				strcmp(argv[i], "-v") == 0 ||
-				strcmp(argv[i], "--version") == 0) {
+				strcmp(argv[i], "--version") == 0)
 			print_version("sqfscat");
-			exit(0);
-		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
+		else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			sqfscat_help(NULL);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
 			sqfscat_help_all();
@@ -4789,10 +4789,9 @@ static int parse_options(int argc, char *argv[])
 	for(i = 1; i < argc && *argv[i] == '-'; i++) {
 		if(strcmp(argv[i], "-version") == 0 ||
 				strcmp(argv[i], "-v") == 0 ||
-				strcmp(argv[i], "--version") == 0) {
+				strcmp(argv[i], "--version") == 0)
 			print_version("unsquashfs");
-			exit(0);
-		} else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
+		else if(strcmp(argv[i], "-help") == 0 || strcmp(argv[i], "-h") == 0)
 			unsquashfs_help(NULL);
 		else if(strcmp(argv[i], "-help-all") == 0 || strcmp(argv[i], "-ha") == 0)
 			unsquashfs_help_all();
