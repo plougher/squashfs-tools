@@ -2898,10 +2898,14 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 		 * write/execute permission.  These are fixed up later in
 		 * set_attributes().
 		 */
-		int res = mkdir(parent_name, S_IRUSR|S_IWUSR|S_IXUSR);
-		if(res == -1) {
+		while(1) {
+			struct stat buf;
+			int res = mkdir(parent_name, S_IRUSR|S_IWUSR|S_IXUSR);
+			if(res != -1)
+				break;
+
 			/*
-			 * Skip directory if mkdir fails, unless we're
+			 * Skip directory because mkdir failed, unless we're
 			 * forcing and the error is -EEXIST
 			 */
 			if((depth != 1 && !force) || errno != EEXIST) {
@@ -2912,18 +2916,41 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 				return FALSE;
 			} 
 
-			/*
-			 * Try to change permissions of existing directory so
-			 * that we can write to it
-			 */
-			res = chmod(parent_name, S_IRUSR|S_IWUSR|S_IXUSR);
-			if (res == -1) {
+			res = lstat(parent_name, &buf);
+			if(res == -1) {
 				EXIT_UNSQUASH_IGNORE("dir_scan: failed to "
-					"change permissions for directory %s,"
+					"lstat existing directory %s,"
 					" because %s\n", parent_name,
 					strerror(errno));
 				squashfs_closedir(dir);
 				return FALSE;
+			}
+
+			if(S_ISDIR(buf.st_mode)) {
+				/*
+				 * Try to change permissions of existing directory so
+				 * that we can write to it
+				 */
+				res = chmod(parent_name, S_IRUSR|S_IWUSR|S_IXUSR);
+				if (res == -1) {
+					EXIT_UNSQUASH_IGNORE("dir_scan: failed to "
+						"change permissions for directory %s,"
+						" because %s\n", parent_name,
+						strerror(errno));
+					squashfs_closedir(dir);
+					return FALSE;
+				}
+				break;
+			} else {
+				/* Try to delete existing non-directory */
+				res = unlink(parent_name);
+				if(res == -1) {
+					EXIT_UNSQUASH_IGNORE("dir_scan: failed to delete "
+						"existing file %s, because %s\n",
+						parent_name, strerror(errno));
+					squashfs_closedir(dir);
+					return FALSE;
+				}
 			}
 		}
 	}
