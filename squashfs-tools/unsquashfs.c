@@ -110,6 +110,8 @@ int time_opt = FALSE;
 int full_precision = FALSE;
 int global_uid_opt = FALSE;
 uid_t global_uid;
+int global_gid_opt = FALSE;
+gid_t global_gid;
 
 /* extended attribute flags */
 int no_xattrs = XATTR_DEF;
@@ -164,7 +166,7 @@ static char *option_table[] = { "d", "dest", "max", "max-depth", "extract-file",
 	"exclude-file", "all", "all-time", "pf", "xattrs-exclude",
 	"xattrs-include", "p", "processors", "mem", "mem-percent", "h", "help",
 	"help-option", "help-section", "ho", "hs", "o", "offset", "e", "ef",
-	"exc", "excf", "pseudo-file", "cols", "force-uid", NULL
+	"exc", "excf", "pseudo-file", "cols", "force-uid", "force-gid", NULL
 };
 
 static char *sqfscat_option_table[] = { "p", "processors", "mem", "mem-percent",
@@ -854,10 +856,11 @@ int read_directory_data(void *buffer, long long *blk, unsigned int *off, int len
 }
 
 
-static int set_attributes(char *pathname, int mode, uid_t _uid, gid_t guid, time_t time,
+static int set_attributes(char *pathname, int mode, uid_t _uid, gid_t _gid, time_t time,
 	unsigned int xattr, unsigned int set_mode)
 {
 	uid_t uid = global_uid_opt ? global_uid : _uid;
+	gid_t gid = global_gid_opt ? global_gid : _gid;
 	struct utimbuf times = { time, time };
 	int failed = FALSE;
 
@@ -868,7 +871,7 @@ static int set_attributes(char *pathname, int mode, uid_t _uid, gid_t guid, time
 	}
 
 	if(root_process) {
-		if(chown(pathname, uid, guid) == -1) {
+		if(chown(pathname, uid, gid) == -1) {
 			EXIT_UNSQUASH_STRICT("set_attributes: failed to change"
 				" uid and gids on %s, because %s\n", pathname,
 				strerror(errno));
@@ -1259,8 +1262,9 @@ static int create_inode(char *pathname, struct inode *i)
 
 			if(root_process) {
 				uid_t uid = global_uid_opt ? global_uid: i->uid;
+				gid_t gid = global_gid_opt ? global_gid: i->gid;
 
-				res = lchown(pathname, uid, i->gid);
+				res = lchown(pathname, uid, gid);
 				if(res == -1) {
 					EXIT_UNSQUASH_STRICT("create_inode: "
 						"failed to change uid and "
@@ -4867,6 +4871,19 @@ static int parse_options(int argc, char *argv[])
 					unsquashfs_option_help("-force-uid", "unsquashfs: -force-uid invalid uid or unknown user name\n");
 			}
 			global_uid_opt = TRUE;
+		} else if(strcmp(argv[i], "-force-gid") == 0) {
+			if(!root_process)
+				unsquashfs_option_help("-force-gid", "unsquashfs: force-gid can only be used running as superuser\n");
+			if(++i == argc)
+				unsquashfs_option_help("-force-gid", "unsquashfs: force-gid missing gid or group name\n");
+			res = get_gid_from_arg(argv[i], &global_gid);
+			if(res) {
+				if(res == -2)
+					unsquashfs_option_help("-force-gid", "unsquashfs: -force-gid gid out of range\n");
+				else
+					unsquashfs_option_help("-force-gid", "unsquashfs: -force-gid invalid gid or unknown group name\n");
+			}
+			global_gid_opt = TRUE;
 		} else if(strcmp(argv[i], "-cat") == 0)
 			cat_files = TRUE;
 		else if(strcmp(argv[i], "-excludes") == 0)
