@@ -253,7 +253,7 @@ MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
 	caches-queues-lists.o reader.o tar.o date.o memory.o mksquashfs_help.o \
 	print_pager.o symbolic_mode.o thread.o nprocessors_compat.o limit.o \
-	virt_disk_pos.o
+	virt_disk_pos.o uid_gid.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o unsquash-123.o unsquash-34.o unsquash-1234.o unsquash-12.o \
@@ -553,6 +553,8 @@ thread.o: thread.c thread.h
 nprocessors_compat.o: nprocessors_compat.c nprocessors_compat.h
 
 virt_disk_pos.o: virt_disk_pos.c virt_disk_pos.h
+
+uid_gid.o: uid_gid.c uid_gid.h
 
 unsquashfs_help.o: unsquashfs_help.c unsquashfs_help.h
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DDECOMPRESSORS="\"$(subst @(default),,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
