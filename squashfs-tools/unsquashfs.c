@@ -41,6 +41,7 @@
 #include "alloc.h"
 #include "crc16.h"
 #include "merge_sort.h"
+#include "uid_gid.h"
 
 #ifdef __linux__
 #include <sys/sysmacros.h>
@@ -107,6 +108,8 @@ char *pseudo_name;
 unsigned int timeval;
 int time_opt = FALSE;
 int full_precision = FALSE;
+int global_uid_opt = FALSE;
+uid_t global_uid;
 
 /* extended attribute flags */
 int no_xattrs = XATTR_DEF;
@@ -161,7 +164,7 @@ static char *option_table[] = { "d", "dest", "max", "max-depth", "extract-file",
 	"exclude-file", "all", "all-time", "pf", "xattrs-exclude",
 	"xattrs-include", "p", "processors", "mem", "mem-percent", "h", "help",
 	"help-option", "help-section", "ho", "hs", "o", "offset", "e", "ef",
-	"exc", "excf", "pseudo-file", "cols", NULL
+	"exc", "excf", "pseudo-file", "cols", "force-uid", NULL
 };
 
 static char *sqfscat_option_table[] = { "p", "processors", "mem", "mem-percent",
@@ -851,9 +854,10 @@ int read_directory_data(void *buffer, long long *blk, unsigned int *off, int len
 }
 
 
-static int set_attributes(char *pathname, int mode, uid_t uid, gid_t guid, time_t time,
+static int set_attributes(char *pathname, int mode, uid_t _uid, gid_t guid, time_t time,
 	unsigned int xattr, unsigned int set_mode)
 {
+	uid_t uid = global_uid_opt ? global_uid : _uid;
 	struct utimbuf times = { time, time };
 	int failed = FALSE;
 
@@ -1254,7 +1258,9 @@ static int create_inode(char *pathname, struct inode *i)
 			}
 
 			if(root_process) {
-				res = lchown(pathname, i->uid, i->gid);
+				uid_t uid = global_uid_opt ? global_uid: i->uid;
+
+				res = lchown(pathname, uid, i->gid);
 				if(res == -1) {
 					EXIT_UNSQUASH_STRICT("create_inode: "
 						"failed to change uid and "
@@ -4848,6 +4854,19 @@ static int parse_options(int argc, char *argv[])
 				unsquashfs_option_help(argv[i - 1], "unsquashfs: -pf missing filename\n");
 			pseudo_name = argv[i];
 			pseudo_file = TRUE;
+		} else if(strcmp(argv[i], "-force-uid") == 0) {
+			if(!root_process)
+				unsquashfs_option_help("-force-uid", "unsquashfs: force-uid can only be used running as superuser\n");
+			if(++i == argc)
+				unsquashfs_option_help("-force-uid", "unsquashfs: force-uid missing uid or user name\n");
+			res = get_uid_from_arg(argv[i], &global_uid);
+			if(res) {
+				if(res == -2)
+					unsquashfs_option_help("-force-uid", "unsquashfs: -force-uid uid out of range\n");
+				else
+					unsquashfs_option_help("-force-uid", "unsquashfs: -force-uid invalid uid or unknown user name\n");
+			}
+			global_uid_opt = TRUE;
 		} else if(strcmp(argv[i], "-cat") == 0)
 			cat_files = TRUE;
 		else if(strcmp(argv[i], "-excludes") == 0)
