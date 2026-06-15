@@ -46,7 +46,7 @@ static char *unsquashfs_options[]={
 	"-no-wildcards", "-regex", "-all-time", "-cat", "-force", "-pf", "", "",
 	"",
 	/* permissions */
-	"-force-uid", "", "", "",
+	"-force-uid", "-force-gid", "", "", "",
 	/* information options */
 	"-stat", "-max-depth", "-info", "-linfo", "-ls", "-lls", "-llnumeric",
 	"-lc", "-llc", "-full-precision", "-UTC", "-mkfs-time", "", "", "",
@@ -82,7 +82,7 @@ static char *unsquashfs_args[]={
 	"", "", "<pathname>", "<levels>", "", "", "<file>", "<file>", "", "",
 	"", "", "<time>", "", "", "<file>", "", "", "",
 	/* permissions */
-	"<user>", "", "", "",
+	"<user>", "group>", "", "", "",
 	/* information options */
 	"", "<levels>", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	/* xattrs options */
@@ -160,6 +160,8 @@ static char *unsquashfs_text[]={
 	"\n", "Filesystem permissions options:", "\n",
 	"\t-force-uid <user>\tset all file and directory uids to specified "
 		"<user>, <user> can be either an integer uid or user name\n",
+	"\t-force-gid <group>\tset all file and directory gids to specified "
+		"<group>, <group> can be either an integer gid or group name\n",
 	"\n", "Filesystem information and listing options:", "\n",
 	"\t-s[tat]\t\t\tdisplay filesystem superblock information\n",
 	"\t-max[-depth] <levels>\tdescend at most <levels> of directories when "
