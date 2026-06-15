@@ -124,7 +124,7 @@ static char *unsquashfs_text[]={
 		"extracting\n",
 	"\t-excludes\t\ttreat files on command line as exclude pathnames\n",
 	"\t-ex[clude-list]\t\tlist of pathnames to be excluded, terminated "
-		"with ; e.g. -exclude-list a/b/c/file1 a/*.[ch] \\; (the ; "
+		"with ; e.g. -exclude-list a/b/c/file1 \"a/*.[ch]\" \\; (the ; "
 		"should be backslashed on most shells)\n",
 	"\t-extract-file <file>\t<file> contains a list of pathnames to "
 		"extract.  One per line\n",
