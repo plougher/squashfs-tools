@@ -45,6 +45,8 @@ static char *unsquashfs_options[]={
 	"-extract-file", "-exclude-file", "-match", "-follow-symlinks",
 	"-no-wildcards", "-regex", "-all-time", "-cat", "-force", "-pf", "", "",
 	"",
+	/* permissions */
+	"", "", "",
 	/* information options */
 	"-stat", "-max-depth", "-info", "-linfo", "-ls", "-lls", "-llnumeric",
 	"-lc", "-llc", "-full-precision", "-UTC", "-mkfs-time", "", "", "",
@@ -79,6 +81,8 @@ static char *unsquashfs_args[]={
 	/* extraction options */
 	"", "", "<pathname>", "<levels>", "", "", "<file>", "<file>", "", "",
 	"", "", "<time>", "", "", "<file>", "", "", "",
+	/* permissions */
+	"", "", "",
 	/* information options */
 	"", "<levels>", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	/* xattrs options */
@@ -106,8 +110,8 @@ static char *sqfscat_args[]={
 };
 
 static char *unsquashfs_sections[]={
-	"extraction", "information", "xattrs", "runtime", "help", "misc",
-	"environment", "exit", "extra", "decompressors", NULL
+	"extraction", "permissions", "information", "xattrs", "runtime", "help",
+	"misc", "environment", "exit", "extra", "decompressors", NULL
 };
 
 static char *sqfscat_sections[]={
@@ -153,6 +157,7 @@ static char *unsquashfs_text[]={
 		"already exist before extracting to them\n",
 	"\t-pf <file>\t\toutput a pseudo file equivalent of the input Squashfs "
 		"filesystem, use - for stdout\n",
+	"\n", "Filesystem permissions options:", "\n",
 	"\n", "Filesystem information and listing options:", "\n",
 	"\t-s[tat]\t\t\tdisplay filesystem superblock information\n",
 	"\t-max[-depth] <levels>\tdescend at most <levels> of directories when "
