@@ -77,8 +77,8 @@ static char *sqfscat_options[]={
 
 static char *unsquashfs_args[]={
 	/* extraction options */
-	"", "", "<pathname>", "", "", "", "<file>", "<file>", "", "", "", "",
-	"<time>", "", "", "<file>", "", "", "",
+	"", "", "<pathname>", "<levels>", "", "", "<file>", "<file>", "", "",
+	"", "", "<time>", "", "", "<file>", "", "", "",
 	/* information options */
 	"", "<levels>", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	/* xattrs options */
