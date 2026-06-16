@@ -3337,7 +3337,7 @@ static void *writer(void *arg)
 
 			res = set_attributes(file->pathname, file->mode,
 				file->uid, file->gid, file->time, file->xattr,
-				force || set);
+				set);
 			if(res == FALSE)
 				exit_code = TRUE;
 		} else
