@@ -46,7 +46,7 @@ static char *unsquashfs_options[]={
 	"-no-wildcards", "-regex", "-all-time", "-cat", "-force", "-pf", "", "",
 	"",
 	/* permissions */
-	"-force-uid", "-force-gid", "", "", "",
+	"-force-uid", "-force-gid", "-force-file-mode", "", "", "",
 	/* information options */
 	"-stat", "-max-depth", "-info", "-linfo", "-ls", "-lls", "-llnumeric",
 	"-lc", "-llc", "-full-precision", "-UTC", "-mkfs-time", "", "", "",
@@ -82,7 +82,7 @@ static char *unsquashfs_args[]={
 	"", "", "<pathname>", "<levels>", "", "", "<file>", "<file>", "", "",
 	"", "", "<time>", "", "", "<file>", "", "", "",
 	/* permissions */
-	"<user>", "group>", "", "", "",
+	"<user>", "group>", "<mode>", "", "", "",
 	/* information options */
 	"", "<levels>", "", "", "", "", "", "", "", "", "", "", "", "", "",
 	/* xattrs options */
@@ -162,6 +162,9 @@ static char *unsquashfs_text[]={
 		"<user>, <user> can be either an integer uid or user name\n",
 	"\t-force-gid <group>\tset all file and directory gids to specified "
 		"<group>, <group> can be either an integer gid or group name\n",
+	"\t-force-file-mode <mode>\tset all file (non-directory) permissions "
+		"to <mode>.  <Mode> can be symbolic or octal (see section "
+		"Symbolic mode specification)\n",
 	"\n", "Filesystem information and listing options:", "\n",
 	"\t-s[tat]\t\t\tdisplay filesystem superblock information\n",
 	"\t-max[-depth] <levels>\tdescend at most <levels> of directories when "
