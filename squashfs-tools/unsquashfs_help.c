@@ -160,9 +160,11 @@ static char *unsquashfs_text[]={
 		"filesystem, use - for stdout\n",
 	"\n", "Filesystem permissions options:", "\n",
 	"\t-force-uid <user>\tset all file and directory uids to specified "
-		"<user>, <user> can be either an integer uid or user name\n",
+		"<user>, <user> can be either an integer uid or user name "
+		"(superuser only)\n",
 	"\t-force-gid <group>\tset all file and directory gids to specified "
-		"<group>, <group> can be either an integer gid or group name\n",
+		"<group>, <group> can be either an integer gid or group "
+		"name (superuser only)\n",
 	"\t-force-file-mode <mode>\tset all file (non-directory) permissions "
 		"to <mode>.  <Mode> can be symbolic or octal (see section "
 		"Symbolic mode specification)\n",
