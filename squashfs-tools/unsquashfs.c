@@ -115,6 +115,8 @@ int global_gid_opt = FALSE;
 gid_t global_gid;
 int global_file_mode_opt = FALSE;
 struct mode_data *global_file_mode;
+int global_dir_mode_opt = FALSE;
+struct mode_data *global_dir_mode;
 
 /* extended attribute flags */
 int no_xattrs = XATTR_DEF;
@@ -170,7 +172,7 @@ static char *option_table[] = { "d", "dest", "max", "max-depth", "extract-file",
 	"xattrs-include", "p", "processors", "mem", "mem-percent", "h", "help",
 	"help-option", "help-section", "ho", "hs", "o", "offset", "e", "ef",
 	"exc", "excf", "pseudo-file", "cols", "force-uid", "force-gid",
-	"force-file-mode", NULL
+	"force-file-mode", "force-dir-mode", NULL
 };
 
 static char *sqfscat_option_table[] = { "p", "processors", "mem", "mem-percent",
@@ -1076,6 +1078,12 @@ static void unlink_file(char *pathname, struct stat *stat_buf)
 static inline int process_file_mode(int mode)
 {
 	return global_file_mode_opt ? mode_execute(global_file_mode, mode) : mode;
+}
+
+
+static inline int process_dir_mode(int mode)
+{
+	return global_dir_mode_opt ? mode_execute(global_dir_mode, mode) : mode;
 }
 
 
@@ -3262,7 +3270,7 @@ static void *writer(void *arg)
 			continue;
 		} else if(file->fd == -1) {
 			/* write attributes for directory file->pathname */
-			res = set_attributes(file->pathname, file->mode,
+			res = set_attributes(file->pathname, process_dir_mode(file->mode),
 				file->uid, file->gid, file->time, file->xattr,
 				TRUE);
 			if(res == FALSE)
@@ -4903,6 +4911,14 @@ static int parse_options(int argc, char *argv[])
 			else if(!parse_mode(argv[i], &global_file_mode, &error))
 				unsquashfs_option_help("-force-file-mode", "%sunsquashfs: -force-file-mode invalid mode, symbolic mode or octal number expected\n", error);
 			global_file_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-force-dir-mode") == 0) {
+			char *error;
+
+			if(++i == argc)
+				unsquashfs_option_help("-force-dir-mode", "unsquashfs: -force-dir-mode missing mode, symbolic mode or octal number expected\n");
+			else if(!parse_mode(argv[i], &global_dir_mode, &error))
+				unsquashfs_option_help("-force-dir-mode", "%sunsquashfs: -force-dir-mode invalid mode, symbolic mode or octal number expected\n", error);
+			global_dir_mode_opt = TRUE;
 		} else if(strcmp(argv[i], "-cat") == 0)
 			cat_files = TRUE;
 		else if(strcmp(argv[i], "-excludes") == 0)
