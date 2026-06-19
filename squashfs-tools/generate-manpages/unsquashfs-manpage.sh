@@ -231,6 +231,10 @@ ${SED} -i "s/\(See also\):/*\1*/" $tmp/unsquashfs.help
 
 ${SED} -i "s/\(Environment\):/*\1*/" $tmp/unsquashfs.help
 
+# Make Symbolic mode specification header into a manpage section
+
+${SED} -i "s/\(Symbolic mode specification\):/*\1*/" $tmp/unsquashfs.help
+
 if ! help2man -Ni unsquashfs.h2m -o $2 $tmp/unsquashfs.sh; then
 	error "$0: help2man returned error.  Aborting"
 	exit 1
