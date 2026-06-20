@@ -23,7 +23,9 @@ The top-level directory contains the following files:
 * **CHANGES.md** - the above file in markdown format.
 * **COPYING** - GNU general public license file.
 * **INSTALL** - where to get the INSTALL file for your version of squashfs-tools.
-* **README** - where to get the README for you version of squashfs-tools.
+* **README** - where to get the README for your version of squashfs-tools.
+* **README.md** - The file displayed here.
+* **SECURITY.md** - Where to report security issues.
 * **USAGE** - where to get the USAGE files for your version of squashfs-tools.
 
 The top-level directory has the following directories:
