@@ -2899,7 +2899,7 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 	int depth)
 {
 	unsigned int type;
-	int scan_res = TRUE;
+	int scan_res = TRUE, update = TRUE;
 	char *name;
 	struct pathname *newt, *newc;
 	struct pathnames *new_sticky = NULL;
@@ -2956,17 +2956,47 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 
 			if(S_ISDIR(buf.st_mode)) {
 				/*
-				 * Try to change permissions of existing directory so
-				 * that we can write to it
+				 * We have an existing directory.  Check the ownership because
+				 * what to do next depends on whether we own it.
 				 */
-				res = chmod(parent_name, S_IRUSR|S_IWUSR|S_IXUSR);
-				if (res == -1) {
-					EXIT_UNSQUASH_IGNORE("dir_scan: failed to "
-						"change permissions for directory %s,"
-						" because %s\n", parent_name,
-						strerror(errno));
-					squashfs_closedir(dir);
-					return FALSE;
+				if(buf.st_uid == getuid()) {
+					/*
+					 * This directory is owned by us, which  means we can
+					 * change the permissions if necessary
+					 */
+					res = access(parent_name, F_OK|R_OK|W_OK|X_OK);
+					if(res == -1) {
+						/* Have not got permissions, so try to change them.  */
+						res = chmod(parent_name, S_IRUSR|S_IWUSR|S_IXUSR);
+						if (res == -1) {
+							EXIT_UNSQUASH_IGNORE("dir_scan: failed to "
+								"change permissions for directory %s,"
+								" because %s\n", parent_name,
+								strerror(errno));
+							squashfs_closedir(dir);
+							return FALSE;
+						}
+					}
+				} else {
+					/*
+					 * Don't own this directory, and so can't change the
+					 * permissions, but we may have the necessary permission
+					 */
+					res = access(parent_name, F_OK|R_OK|W_OK|X_OK);
+					if(res == -1) {
+						EXIT_UNSQUASH_IGNORE("dir_scan: don't have "
+							"permissions for directory %s,"
+							" because %s\n", parent_name,
+							strerror(errno));
+						squashfs_closedir(dir);
+						return FALSE;
+					}
+
+					/*
+					 * don't try to update the directory using set_attributes later
+					 * because we don't own it
+					 */
+					update = FALSE;
 				}
 				break;
 			} else {
@@ -3034,7 +3064,7 @@ static int dir_scan(char *parent_name, unsigned int start_block, unsigned int of
 		}
 	}
 
-	if(!lsonly)
+	if(!lsonly && update)
 		queue_dir(parent_name, dir);
 
 	squashfs_closedir(dir);
