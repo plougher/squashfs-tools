@@ -14,6 +14,7 @@ block device/memory systems (e.g. embedded systems) where low overhead is
 needed.
 
 [Examples]
+.SS Creating filesystems, compression and excluding files
 .TP
 mksquashfs DIRECTORY IMAGE.SQFS
 Create a Squashfs filesystem from the contents of DIRECTORY, writing the output
@@ -25,18 +26,11 @@ Create a Squashfs filesystem containing DIRECTORY and FILE1 and FILE2.  If
 multiple sources are specified on the command line they will be combined into
 a single directory.
 .TP
-mksquashfs DIRECTORY IMAGE.SQFS -b 1M -comp zstd
-Use a block size of 1 Mbyte and Zstandard compression to create the filesystem. 
+mksquashfs DIRECTORY IMAGE.SQFS -b 1M -comp xz
+Use a block size of 1 Mbyte and XZ compression to create the filesystem.
 .TP
-mksquashfs DIRECTORY IMAGE.SQFS -all-time now
-Set all file and directory timestamps to "now" (current time) in the filesystem.
-.TP
-mksquashfs DIRECTORY IMAGE.SQFS -force-uid phillip -force-gid phillip
-Make all files and directories in the filesystem owned by "phillip".
-.TP
-mksquashfs DIRECTORY IMAGE.SQFS -force-file-mode ugo+r,go-w
-Make all files readable by everyone, but only writable by user, all other
-permission bits are unaffected.
+mksquashfs DIRECTORY IMAGE.SQFS -b 1M -comp zstd -Xcompression-level 22
+Use a block size of 1 Mbyte and Zstandard compression at level 22 to create the filesystem.
 .TP
 mksquashfs DIRECTORY IMAGE.SQFS -e file1 file2
 Exclude file1 and file2 from DIRECTORY when creating filesystem.  No wildcard
@@ -52,7 +46,26 @@ and its sub-directories.  The initial "..." indicates the wildcard pattern is
 .PP
 Note: when passing wildcarded names to Mksquashfs, they should be quoted (as in
 the above examples), to ensure that they are not processed by the shell.
-
+.SS Changing permissions and time
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -force-uid phillip -force-gid phillip
+Make all files and directories in the filesystem owned by "phillip".
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -force-file-mode ugo+r,go-w,u+w
+Make all files readable by everyone, but only writable by user, all other
+permission bits are unaffected.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -force-dir-mode a+rx,go-w,u+w
+Make all directories readable and searchable by everyone, but only writable by
+user, all other permission bits are unaffected.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -inode-time now
+Set all file and directory timestamps to "now" (current time) in the filesystem.
+This does not affect the filesystem creation time.
+.TP
+mksquashfs DIRECTORY IMAGE.SQFS -repro-time "1 jan"
+Set all file and directory timestamps, and filesystem creation time to 1st
+January.
 .SS Using pseudo file definitions
 .TP
 mksquashfs DIRECTORY IMAGE.SQFS -p "build_dir d 0644 0 0"
