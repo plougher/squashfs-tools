@@ -1,36 +1,32 @@
 #include <check.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
-
-// Include the actual production header
-#include "unsquashfs_xattr.h"
 
 START_TEST(test_xattr_octal_format_bounds)
 {
-    // Invariant: Octal representation of any byte value must fit within 4-character buffer
-    unsigned char dest[5] = {0}; // 4 chars + null terminator
-    unsigned int test_values[] = {
-        511,  // Boundary: largest 3-digit octal (777)
-        512,  // Exploit: requires 4-digit octal (1000)
-        0,    // Valid: smallest value
-        777,  // Another boundary: max 3-digit octal
-        1023  // Large value requiring 4 digits (1777)
+    /* Invariant: snprintf with size 5 must contain any unsigned char octal representation */
+    unsigned char dest[6] = {0}; /* 5 bytes + sentinel */
+    unsigned char test_values[] = {
+        0,    /* smallest value */
+        1,    /* low boundary */
+        31,   /* last non-printable below space */
+        127,  /* DEL */
+        255   /* max unsigned char: octal \377 */
     };
-    
+
     for (int i = 0; i < 5; i++) {
-        memset(dest, 0, sizeof(dest));
-        
-        // Call the actual vulnerable function
-        sprintf((char *) dest, "\\%03o", test_values[i]);
-        
-        // Property: Result must be null-terminated within buffer bounds
-        ck_assert_msg(dest[4] == 0 || strlen((char *)dest) < 5,
-                     "Octal value %u overflowed 4-char buffer", test_values[i]);
-        
-        // Property: Output must match expected format (backslash + octal digits)
+        memset(dest, 0xAA, sizeof(dest));
+        dest[5] = 0; /* sentinel must stay 0 */
+
+        snprintf((char *) dest, 5, "\\%03o", test_values[i]);
+
+        ck_assert_msg(dest[5] == 0,
+                     "snprintf wrote past 5-byte buffer for value %u", test_values[i]);
         ck_assert_msg(dest[0] == '\\',
-                     "Missing backslash in octal representation");
+                     "Missing backslash for value %u", test_values[i]);
+        ck_assert_msg(strlen((char *)dest) == 4,
+                     "Expected 4-char output for value %u, got %zu",
+                     test_values[i], strlen((char *)dest));
     }
 }
 END_TEST

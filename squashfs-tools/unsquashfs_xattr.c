@@ -63,7 +63,7 @@ static void print_xattr_name_value(struct xattr_list *xattr, int writer_fd)
 
 		for(dest = new + 2, i = 0; i < xattr->vsize; i++) {
 			if(value[i] < 32 || value[i] > 126 || value[i] == '\\') {
-				sprintf((char *) dest, "\\%03o", value[i]);
+				snprintf((char *) dest, 5, "\\%03o", value[i]);
 				dest += 4;
 			} else
 				*dest ++ = value[i];
