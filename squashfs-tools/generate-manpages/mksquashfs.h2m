@@ -46,7 +46,7 @@ and its sub-directories.  The initial "..." indicates the wildcard pattern is
 .PP
 Note: when passing wildcarded names to Mksquashfs, they should be quoted (as in
 the above examples), to ensure that they are not processed by the shell.
-.SS Changing permissions and time
+.SS Changing permissions, ownership and time
 .TP
 mksquashfs DIRECTORY IMAGE.SQFS -force-uid phillip -force-gid phillip
 Make all files and directories in the filesystem owned by "phillip".
