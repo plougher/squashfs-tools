@@ -87,6 +87,26 @@ but do not extract them.
 .PP
 Note: when passing wildcarded names to Unsquashfs, they should be quoted (as in
 the above examples), to ensure that they are not processed by the shell.
+.SS Changing permissions, ownership and time
+.TP
+unsquashfs -force-uid phillip -force-gid phillip
+When running as superuser (root) over-ride the ownership in the filesystem, and
+make all extracted files and directories owned by "phillip".
+.TP
+unsquashfs -force-file-mode ugo+r,go-w,u+w IMAGE.SQFS
+Make all extracted files readable by everyone, but only writable by user, all other permission bits are unaffected.
+.TP
+unsquashfs -force-dir-mode a+rx,go-w,u+w IMAGE.SQFS
+Make all extracted directories readable and searchable by everyone, but only writable by user, all other permission bits are unaffected.
+.TP
+unsquashfs -force-dir-mode u=rwx,go=rx IMAGE.SQFS
+Alternative to make all extracted directories readable and searchable by everyone, but only writable by user, where all other permission bits are removed.
+.TP
+unsquashfs -force-dir-mode 0755  IMAGE.SQFS
+Alternative to make all extracted directories readable and searchable by everyone, but only writable by user, where all other permission bits are removed.
+.TP
+unsquashfs -all-time "now" IMAGE.SQFS
+Set all extracted file and directory timestamps to "now" (current time).
 .SS Using extended attribute options
 .TP
 unsquashfs -no-xattrs IMAGE.SQFS
