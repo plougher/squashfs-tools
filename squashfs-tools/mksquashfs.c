@@ -550,14 +550,6 @@ static inline void put_write_buffer_hash(struct file_buffer *buffer)
 }
 
 
-static inline void put_write_buffer(struct file_buffer *buffer)
-{
-	buffer->block = get_and_inc_vpos(buffer->size);
-	buffer->sequence = get_sequence();
-	order_queue_put(to_order, buffer);
-}
-
-
 void restorefs()
 {
 	int i, res;
