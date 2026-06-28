@@ -416,21 +416,21 @@ space := $(subst ,, )
 include version.mk
 
 ifdef RELEASE_VERSION
-VERSION := $(RELEASE_VERSION)
+FULL_VERSION := $(VERSION)
 DATE := $(RELEASE_DATE)
 else
 ifeq ($(HASH),$Format:%h$)
-VERSION := 4.7.5-$(shell git show -s --pretty=format:%h)
+FULL_VERSION := $(VERSION)-$(shell git show -s --pretty=format:%h)
 DATE := $(firstword $(subst -,/,$(shell git show -s --pretty=format:%ci)))
 else
-VERSION := 4.7.5-$(HASH)
+FULL_VERSION := $(VERSION)-$(HASH)
 DATE := $(firstword $(subst -,/,$(FULLDATE)))
 endif
 endif
 
 YEAR := $(firstword $(subst /, , $(DATE)))
 
-CFLAGS += -DVERSION=\"$(VERSION)\" -DDATE=\"$(DATE)\" -DYEAR=\"$(YEAR)\"
+CFLAGS += -DVERSION=\"$(FULL_VERSION)\" -DDATE=\"$(DATE)\" -DYEAR=\"$(YEAR)\"
 
 .PHONY: all
 all: mksquashfs unsquashfs
