@@ -2000,12 +2000,6 @@ static void free_stack(struct directory_stack *stack)
 }
 
 
-static inline char *stack_name(struct directory_stack *stack)
-{
-	return stack->stack[stack->size - 1].name;
-}
-
-
 static inline int stack_depth(struct directory_stack *stack)
 {
 	return stack->size;
