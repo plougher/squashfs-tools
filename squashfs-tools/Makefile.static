@@ -1,0 +1,114 @@
+# Automatically generated pre-built dependencies used if compiler doesn't
+# support -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d options
+
+action.o: action.c squashfs_fs.h mksquashfs.h action.h alloc.h error.h \
+ mksquashfs_error.h fnmatch_compat.h xattr.h symbolic_mode.h
+caches-queues-lists.o: caches-queues-lists.c mksquashfs_error.h error.h \
+ caches-queues-lists.h thread.h alloc.h
+compressor.o: compressor.c compressor.h squashfs_fs.h print_pager.h
+crc16.o: crc16.c
+date.o: date.c date.h error.h alloc.h
+gzip_wrapper.o: gzip_wrapper.c squashfs_fs.h gzip_wrapper.h \
+ endian_compat.h compressor.h print_pager.h alloc.h error.h
+info.o: info.c squashfs_fs.h mksquashfs.h mksquashfs_error.h error.h \
+ progressbar.h caches-queues-lists.h signals.h reader.h thread.h
+limit.o: limit.c error.h limit.h
+lz4_wrapper.o: lz4_wrapper.c squashfs_fs.h lz4_wrapper.h endian_compat.h \
+ compressor.h print_pager.h
+lzma_xz_wrapper.o: lzma_xz_wrapper.c squashfs_fs.h compressor.h \
+ print_pager.h
+lzo_wrapper.o: lzo_wrapper.c squashfs_fs.h lzo_wrapper.h endian_compat.h \
+ compressor.h print_pager.h alloc.h error.h
+memory.o: memory.c error.h memory_compat.h memory.h
+mksquashfs.o: mksquashfs.c squashfs_fs.h squashfs_swap.h endian_compat.h \
+ mksquashfs.h sort.h pseudo.h compressor.h xattr.h action.h alloc.h \
+ error.h mksquashfs_error.h progressbar.h info.h caches-queues-lists.h \
+ read_fs.h restore.h process_fragments.h fnmatch_compat.h tar.h \
+ merge_sort.h nprocessors_compat.h memory_compat.h memory.h \
+ mksquashfs_help.h print_pager.h symbolic_mode.h thread.h reader.h \
+ limit.h virt_disk_pos.h uid_gid.h
+mksquashfs_help.o: mksquashfs_help.c mksquashfs_error.h error.h \
+ mksquashfs_help.h print_pager.h compressor.h alloc.h thread.h
+nprocessors_compat.o: nprocessors_compat.c
+print_pager.o: print_pager.c error.h print_pager.h alloc.h
+process_fragments.o: process_fragments.c squashfs_fs.h mksquashfs.h \
+ mksquashfs_error.h error.h progressbar.h info.h compressor.h \
+ process_fragments.h caches-queues-lists.h alloc.h
+progressbar.o: progressbar.c mksquashfs_error.h error.h
+pseudo.o: pseudo.c pseudo.h mksquashfs_error.h error.h progressbar.h \
+ squashfs_fs.h mksquashfs.h xattr.h alloc.h
+pseudo_xattr.o: pseudo_xattr.c pseudo.h mksquashfs_error.h error.h \
+ squashfs_fs.h xattr.h alloc.h
+read_fs.o: read_fs.c squashfs_fs.h squashfs_swap.h endian_compat.h \
+ compressor.h mksquashfs.h xattr.h mksquashfs_error.h error.h \
+ mksquashfs_help.h alloc.h caches-queues-lists.h virt_disk_pos.h
+read_xattrs.o: read_xattrs.c squashfs_fs.h squashfs_swap.h \
+ endian_compat.h xattr.h error.h alloc.h
+reader.o: reader.c squashfs_fs.h mksquashfs.h progressbar.h \
+ mksquashfs_error.h error.h pseudo.h sort.h tar.h reader.h atomic_swap.h \
+ caches-queues-lists.h alloc.h lseek.h
+restore.o: restore.c squashfs_fs.h mksquashfs.h mksquashfs_error.h \
+ error.h progressbar.h info.h reader.h caches-queues-lists.h
+sort.o: sort.c squashfs_fs.h mksquashfs.h sort.h mksquashfs_error.h \
+ error.h progressbar.h alloc.h
+swap.o: swap.c endian_compat.h
+symbolic_mode.o: symbolic_mode.c mksquashfs_error.h error.h \
+ symbolic_mode.h alloc.h
+tar.o: tar.c squashfs_fs.h mksquashfs.h mksquashfs_error.h error.h \
+ xattr.h tar.h progressbar.h info.h symbolic_mode.h alloc.h reader.h \
+ caches-queues-lists.h
+tar_xattr.o: tar_xattr.c squashfs_fs.h mksquashfs.h mksquashfs_error.h \
+ error.h tar.h xattr.h alloc.h
+thread.o: thread.c mksquashfs_error.h error.h thread.h alloc.h
+uid_gid.o: uid_gid.c
+unsquash-1.o: unsquash-1.c unsquashfs.h endian_compat.h squashfs_fs.h \
+ unsquashfs_error.h error.h unsquashfs_help.h squashfs_compat.h \
+ compressor.h alloc.h
+unsquash-12.o: unsquash-12.c unsquashfs.h endian_compat.h squashfs_fs.h \
+ unsquashfs_error.h error.h unsquashfs_help.h merge_sort.h
+unsquash-123.o: unsquash-123.c unsquashfs.h endian_compat.h squashfs_fs.h \
+ unsquashfs_error.h error.h unsquashfs_help.h squashfs_compat.h alloc.h
+unsquash-1234.o: unsquash-1234.c unsquashfs.h endian_compat.h \
+ squashfs_fs.h unsquashfs_error.h error.h unsquashfs_help.h
+unsquash-2.o: unsquash-2.c unsquashfs.h endian_compat.h squashfs_fs.h \
+ unsquashfs_error.h error.h unsquashfs_help.h squashfs_compat.h \
+ compressor.h alloc.h
+unsquash-3.o: unsquash-3.c unsquashfs.h endian_compat.h squashfs_fs.h \
+ unsquashfs_error.h error.h unsquashfs_help.h squashfs_compat.h \
+ compressor.h alloc.h
+unsquash-34.o: unsquash-34.c unsquashfs.h endian_compat.h squashfs_fs.h \
+ unsquashfs_error.h error.h unsquashfs_help.h alloc.h
+unsquash-4.o: unsquash-4.c unsquashfs.h endian_compat.h squashfs_fs.h \
+ unsquashfs_error.h error.h unsquashfs_help.h squashfs_swap.h xattr.h \
+ compressor.h alloc.h
+unsquashfs.o: unsquashfs.c unsquashfs.h endian_compat.h squashfs_fs.h \
+ unsquashfs_error.h error.h unsquashfs_help.h squashfs_compat.h \
+ squashfs_swap.h compressor.h xattr.h unsquashfs_info.h fnmatch_compat.h \
+ time_compat.h nprocessors_compat.h memory_compat.h memory.h \
+ print_pager.h limit.h alloc.h crc16.h merge_sort.h uid_gid.h \
+ symbolic_mode.h
+unsquashfs_help.o: unsquashfs_help.c unsquashfs_help.h unsquashfs_error.h \
+ error.h print_pager.h compressor.h alloc.h
+unsquashfs_info.o: unsquashfs_info.c squashfs_fs.h unsquashfs.h \
+ endian_compat.h unsquashfs_error.h error.h unsquashfs_help.h signals.h
+unsquashfs_xattr.o: unsquashfs_xattr.c unsquashfs.h endian_compat.h \
+ squashfs_fs.h unsquashfs_error.h error.h unsquashfs_help.h xattr.h \
+ alloc.h
+unsquashfs_xattr_system.o: unsquashfs_xattr_system.c unsquashfs.h \
+ endian_compat.h squashfs_fs.h unsquashfs_error.h error.h \
+ unsquashfs_help.h xattr.h xattr_compat.h
+virt_disk_pos.o: virt_disk_pos.c squashfs_fs.h mksquashfs_error.h error.h \
+ caches-queues-lists.h virt_disk_pos.h alloc.h
+xattr.o: xattr.c endian_compat.h squashfs_fs.h squashfs_swap.h \
+ mksquashfs.h xattr.h mksquashfs_xattr.h mksquashfs_error.h error.h \
+ progressbar.h pseudo.h tar.h action.h alloc.h merge_sort.h \
+ caches-queues-lists.h virt_disk_pos.h
+xattr_system.o: xattr_system.c squashfs_fs.h mksquashfs.h xattr.h \
+ mksquashfs_error.h error.h progressbar.h pseudo.h tar.h action.h alloc.h \
+ xattr_compat.h
+xz_wrapper.o: xz_wrapper.c squashfs_fs.h xz_wrapper.h endian_compat.h \
+ compressor.h print_pager.h alloc.h error.h
+xz_wrapper_extended.o: xz_wrapper_extended.c squashfs_fs.h xz_wrapper.h \
+ endian_compat.h compressor.h print_pager.h alloc.h error.h
+zstd_wrapper.o: zstd_wrapper.c squashfs_fs.h zstd_wrapper.h \
+ endian_compat.h compressor.h print_pager.h

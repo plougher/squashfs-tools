@@ -250,6 +250,7 @@ UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquashfs_help.o nprocessors_compat.o limit.o crc16.o uid_gid.o \
 	symbolic_mode.o
 
+DEPDIR := deps
 CFLAGS ?= -O2
 CFLAGS += $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 \
 	-D_LARGEFILE_SOURCE -D_GNU_SOURCE -DCOMP_DEFAULT=\"$(COMP_DEFAULT)\" \
@@ -435,123 +436,49 @@ CFLAGS += -DVERSION=\"$(FULL_VERSION)\" -DDATE=\"$(DATE)\" -DYEAR=\"$(YEAR)\"
 .PHONY: all
 all: mksquashfs unsquashfs
 
+.PHONY: clean
+clean:
+	-rm -f *.o mksquashfs unsquashfs sqfstar sqfscat *.1
+
+.PHONY: distclean
+distclean:
+	-rm -f *.o mksquashfs unsquashfs sqfstar sqfscat *.1 static_deps $(DEPDIR)/*
+
+static_deps: test.c
+	echo "STATIC_DEPS := N" > static_deps
+	$(CC) -c -MT $@ -MMD -MP -MF test.d $< || echo "STATIC_DEPS := Y" > static_deps
+	-rm test.d test.o
+
+include static_deps
+
+ifeq ($(STATIC_DEPS),N)
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
+
+%.o : %.c
+
+%.o : %.c $(DEPDIR)/%.d | $(DEPDIR)
+	$(CC) -c $(CPPFLAGS) $(DEPFLAGS) $(CFLAGS) $<
+
+mksquashfs_help.o: mksquashfs_help.c $(DEPDIR)/mksquashfs_help.d | $(DEPDIR)
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(DEPFLAGS) -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
+
+unsquashfs_help.o: unsquashfs_help.c $(DEPDIR)/unsquashfs_help.d | $(DEPDIR)
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $(DEPFLAGS) -DDECOMPRESSORS="\"$(subst @(default),,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
+else
+mksquashfs_help.o: mksquashfs_help.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
+
+unsquashfs_help.o: unsquashfs_help.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DDECOMPRESSORS="\"$(subst @(default),,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
+endif
+
 mksquashfs: $(MKSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(MKSQUASHFS_OBJS) $(LIBS) -o $@
 	ln -sf mksquashfs sqfstar
 
-mksquashfs.o: Makefile mksquashfs.c squashfs_fs.h squashfs_swap.h mksquashfs.h \
-	sort.h pseudo.h compressor.h xattr.h action.h mksquashfs_error.h progressbar.h \
-	info.h caches-queues-lists.h read_fs.h restore.h process_fragments.h
-
-reader.o: squashfs_fs.h mksquashfs.h caches-queues-lists.h progressbar.h \
-	mksquashfs_error.h pseudo.h sort.h
-
-read_fs.o: read_fs.c squashfs_fs.h squashfs_swap.h compressor.h xattr.h \
-	mksquashfs_error.h mksquashfs.h
-
-sort.o: sort.c squashfs_fs.h mksquashfs.h sort.h mksquashfs_error.h progressbar.h
-
-swap.o: swap.c
-
-pseudo.o: pseudo.c pseudo.h mksquashfs_error.h progressbar.h
-
-pseudo_xattr.o: pseudo_xattr.c xattr.h mksquashfs_error.h progressbar.h
-
-compressor.o: Makefile compressor.c compressor.h squashfs_fs.h
-
-xattr.o: xattr.c squashfs_fs.h squashfs_swap.h mksquashfs.h xattr.h mksquashfs_error.h \
-	progressbar.h
-
-read_xattrs.o: read_xattrs.c squashfs_fs.h squashfs_swap.h xattr.h error.h
-
-action.o: action.c squashfs_fs.h mksquashfs.h action.h mksquashfs_error.h
-
-progressbar.o: progressbar.c mksquashfs_error.h
-
-info.o: info.c squashfs_fs.h mksquashfs.h mksquashfs_error.h progressbar.h \
-	caches-queues-lists.h
-
-restore.o: restore.c caches-queues-lists.h squashfs_fs.h mksquashfs.h mksquashfs_error.h \
-	progressbar.h info.h
-
-process_fragments.o: process_fragments.c process_fragments.h
-
-caches-queues-lists.o: caches-queues-lists.c mksquashfs_error.h caches-queues-lists.h
-
-tar.o: tar.h
-
-tar_xattr.o: tar.h xattr.h
-
-date.o: date.h error.h
-
-memory.o: error.h memory_compat.h memory.h
-
-symbolic_mode.o: symbolic_mode.h symbolic_mode.c
-
-gzip_wrapper.o: gzip_wrapper.c squashfs_fs.h gzip_wrapper.h compressor.h
-
-lzma_xz_wrapper.o: lzma_xz_wrapper.c compressor.h squashfs_fs.h
-
-lzo_wrapper.o: lzo_wrapper.c squashfs_fs.h lzo_wrapper.h compressor.h
-
-lz4_wrapper.o: lz4_wrapper.c squashfs_fs.h lz4_wrapper.h compressor.h
-
-xz_wrapper.o: xz_wrapper.c squashfs_fs.h xz_wrapper.h compressor.h
-
-xz_wrapper_extended.o: xz_wrapper_extended.c squashfs_fs.h xz_wrapper.h compressor.h
-
-mksquashfs_help.o: mksquashfs_help.c mksquashfs_help.h Makefile
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DCOMPRESSORS="\"$(subst @, ,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
-
-print_pager.o: print_pager.c print_pager.h
-
-thread.o: thread.c thread.h
-
-nprocessors_compat.o: nprocessors_compat.c nprocessors_compat.h
-
-virt_disk_pos.o: virt_disk_pos.c virt_disk_pos.h
-
-uid_gid.o: uid_gid.c uid_gid.h
-
-unsquashfs_help.o: unsquashfs_help.c unsquashfs_help.h
-	$(CC) -c $(CFLAGS) $(CPPFLAGS) -DDECOMPRESSORS="\"$(subst @(default),,$(subst $(space),\n,$(COMPRESSORS)))\"" $<
-
-limit.o: limit.h error.h
-
-crc16.o: crc16.h
-
 unsquashfs: $(UNSQUASHFS_OBJS)
 	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(UNSQUASHFS_OBJS) $(LIBS) -o $@
 	ln -sf unsquashfs sqfscat
-
-unsquashfs.o: unsquashfs.h unsquashfs.c squashfs_fs.h squashfs_swap.h \
-	squashfs_compat.h xattr.h read_fs.h compressor.h unsquashfs_error.h \
-	crc16.h
-
-unsquash-1.o: unsquashfs.h unsquash-1.c squashfs_fs.h squashfs_compat.h unsquashfs_error.h
-
-unsquash-2.o: unsquashfs.h unsquash-2.c squashfs_fs.h squashfs_compat.h unsquashfs_error.h
-
-unsquash-3.o: unsquashfs.h unsquash-3.c squashfs_fs.h squashfs_compat.h unsquashfs_error.h
-
-unsquash-4.o: unsquashfs.h unsquash-4.c squashfs_fs.h squashfs_swap.h \
-	read_fs.h unsquashfs_error.h
-
-unsquash-123.o: unsquashfs.h unsquash-123.c squashfs_fs.h squashfs_compat.h unsquashfs_error.h
-
-unsquash-34.o: unsquashfs.h unsquash-34.c unsquashfs_error.h
-
-unsquash-1234.o: unsquash-1234.c unsquashfs_error.h
-
-unsquash-12.o: unsquash-12.c unsquashfs.h
-
-unsquashfs_xattr.o: unsquashfs_xattr.c unsquashfs.h squashfs_fs.h xattr.h unsquashfs_error.h
-
-unsquashfs_info.o: unsquashfs.h squashfs_fs.h unsquashfs_error.h
-
-.PHONY: clean
-clean:
-	-rm -f *.o mksquashfs unsquashfs sqfstar sqfscat *.1
 
 .PHONY: install
 install: mksquashfs unsquashfs
@@ -561,3 +488,39 @@ install: mksquashfs unsquashfs
 	ln -fs unsquashfs $(DESTDIR)$(INSTALL_DIR)/sqfscat
 	ln -fs mksquashfs $(DESTDIR)$(INSTALL_DIR)/sqfstar
 	generate-manpages/install-manpages.sh $(shell pwd)/.. "$(DESTDIR)$(INSTALL_MANPAGES_DIR)" "$(USE_PREBUILT_MANPAGES)"
+
+OBJECTS := action.o caches-queues-lists.o compressor.o crc16.o date.o \
+	gzip_wrapper.o info.o limit.o lz4_wrapper.o lzma_xz_wrapper.o \
+	lzo_wrapper.o memory.o mksquashfs.o mksquashfs_help.o \
+	nprocessors_compat.o print_pager.o process_fragments.o progressbar.o \
+	pseudo.o pseudo_xattr.o reader.o read_fs.o read_xattrs.o restore.o \
+	sort.o swap.o symbolic_mode.o tar.o tar_xattr.o thread.o uid_gid.o \
+	unsquash-1234.o unsquash-123.o unsquash-12.o unsquash-1.o unsquash-2.o \
+	unsquash-34.o unsquash-3.o unsquash-4.o unsquashfs.o unsquashfs_help.o \
+	unsquashfs_info.o unsquashfs_xattr.o unsquashfs_xattr_system.o \
+	virt_disk_pos.o xattr.o xattr_system.o xz_wrapper.o \
+	xz_wrapper_extended.o zstd_wrapper.o
+
+.PHONY: objects
+objects: DEPFLAGS = -MT $@ -MMD -MF $(DEPDIR)/$*.d
+objects: $(OBJECTS) all
+
+.PHONY: depends
+depends: distclean static_deps objects
+	echo "# Automatically generated pre-built dependencies used if compiler doesn't" > Makefile.static
+	echo "# support -MT \$$@ -MMD -MP -MF \$$(DEPDIR)/\$$*.d options" >> Makefile.static
+	echo >> Makefile.static
+	cat $(DEPDIR)/*.d >> Makefile.static
+	rm $(DEPDIR)/*.d
+
+ifeq ($(STATIC_DEPS),N)
+DEPFILES := $(OBJECTS:%.o=$(DEPDIR)/%.d)
+
+$(DEPDIR): ; @mkdir -p $@
+
+$(DEPFILES):
+
+include $(wildcard $(DEPFILES))
+else
+include Makefile.static
+endif
