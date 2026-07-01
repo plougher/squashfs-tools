@@ -117,6 +117,7 @@ int global_file_mode_opt = FALSE;
 struct mode_data *global_file_mode;
 int global_dir_mode_opt = FALSE;
 struct mode_data *global_dir_mode;
+int user_max = 0;
 
 /* extended attribute flags */
 int no_xattrs = XATTR_DEF;
@@ -172,7 +173,7 @@ static char *option_table[] = { "d", "dest", "max", "max-depth", "extract-file",
 	"xattrs-include", "p", "processors", "mem", "mem-percent", "h", "help",
 	"help-option", "help-section", "ho", "hs", "o", "offset", "e", "ef",
 	"exc", "excf", "pseudo-file", "cols", "force-uid", "force-gid",
-	"force-file-mode", "force-dir-mode", NULL
+	"force-file-mode", "force-dir-mode", "max-files", NULL
 };
 
 static char *sqfscat_option_table[] = { "p", "processors", "mem", "mem-percent",
@@ -3636,7 +3637,7 @@ static void initialise_threads(int fragment_buffer_size, int data_buffer_size, i
 	 */
 
 	/* set amount of available files for use by open_wait and close_wake */
-	max_files = file_limit();
+	max_files = user_max && file_limit() > user_max ? user_max : file_limit();
 	open_init(max_files);
 
 	/*
@@ -4943,6 +4944,9 @@ static int parse_options(int argc, char *argv[])
 			else if(!parse_mode(argv[i], &global_dir_mode, &error))
 				unsquashfs_option_help("-force-dir-mode", "%sunsquashfs: -force-dir-mode invalid mode, symbolic mode or octal number expected\n", error);
 			global_dir_mode_opt = TRUE;
+		} else if(strcmp(argv[i], "-max-files") == 0) {
+			if((++i == argc) || !parse_number(argv[i], &user_max) || user_max == 0)
+				unsquashfs_option_help("-max-files", "unsquashfs: -max-files missing or invalid value\n");
 		} else if(strcmp(argv[i], "-cat") == 0)
 			cat_files = TRUE;
 		else if(strcmp(argv[i], "-excludes") == 0)
