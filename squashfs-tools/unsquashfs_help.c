@@ -55,9 +55,9 @@ static char *unsquashfs_options[]={
 	"-no-xattrs", "-xattrs", "-xattrs-exclude", "-xattrs-include", "", "",
 	"",
 	/* runtime options */
-	"-version", "-processors", "-mem", "-mem-percent", "-mem-default",
-	"-quiet", "-no-progress", "-percentage", "-ignore-errors",
-	"-strict-errors", "-no-exit-code", "", "", "",
+	"-version", "-processors", "-max-files", "-mem", "-mem-percent",
+	"-mem-default", "-quiet", "-no-progress", "-percentage",
+	"-ignore-errors", "-strict-errors", "-no-exit-code", "", "", "",
 	/* help options */
 	"-help", "-help-option", "-help-section", "-help-all", "-ho", "-hs",
 	"-ha", "-no-pager", "-cols", "", "", "",
@@ -89,8 +89,8 @@ static char *unsquashfs_args[]={
 	/* xattrs options */
 	"", "", "<regex>", "<regex>", "", "", "",
 	/* runtime options */
-	"", "<number>", "<size>", "<percent>", "", "", "", "", "", "", "", "",
-	"", "",
+	"", "<number>", "<number>", "<size>", "<percent>", "", "", "", "", "",
+	"", "", "", "", "",
 	/* help options */
 	"", "<regex>", "<section>", "", "<regex>", "<section>", "", "",
 	"<width>", "", "", "",
@@ -208,6 +208,13 @@ static char *unsquashfs_text[]={
 	"\t-v[ersion]\t\tprint version, licence and copyright information\n",
 	"\t-p[rocessors] <number>\tuse <number> processors.  By default will "
 		"use the number of processors available\n",
+	"\t-max-files <number>\tlimit how many files Unsquashfs opens and "
+		"writes to at the same time to <number>, or the process's "
+		"maximum fd limit (less a margin of 10) if less.  Normally "
+		"Unquashfs will try to maximise file writing performance by "
+		"using the process's maximum fd limit (less a margin of 10). "
+		"But this can sometimes cause CPU starvation due to heavy I/O "
+		"load\n",
 	"\t-mem <size>\t\tuse <size> physical memory for caches.  Use K, M or "
 		"G to specify Kbytes, Mbytes or Gbytes respectively.  Default "
 		"512 Mbytes if physical memory >= 2Gbytes, or 25% if less\n",
