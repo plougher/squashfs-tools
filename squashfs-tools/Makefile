@@ -442,7 +442,8 @@ clean:
 
 .PHONY: distclean
 distclean:
-	-rm -f *.o mksquashfs unsquashfs sqfstar sqfscat *.1 static_deps $(DEPDIR)/*
+	-rm -f *.o mksquashfs unsquashfs sqfstar sqfscat *.1 static_deps $(DEPDIR)/*.d
+	-rmdir $(DEPDIR)
 
 static_deps: test.c
 	echo "STATIC_DEPS := N" > static_deps
