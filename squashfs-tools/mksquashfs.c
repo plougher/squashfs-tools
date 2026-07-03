@@ -553,17 +553,14 @@ static inline void put_write_buffer_hash(struct file_buffer *buffer)
 /*
  * Truncate the output file to length, discarding any bytes past the end of the
  * filesystem. Some filesystems do not implement ftruncate() and fail with
- * EOPNOTSUPP/ENOTSUP; treat that as non-fatal. The bytes_used field in the
- * super block is authoritative and readers ignore anything beyond it, so
- * leaving the trailing bytes in place still yields a valid filesystem.
+ * EOPNOTSUPP/ENOTSUP; treat that as non-fatal.
  */
 static void truncate_filesystem(int fd, long long length, char *filename)
 {
 	if(ftruncate(fd, length) != 0) {
 		if(errno == EOPNOTSUPP || errno == ENOTSUP)
-			ERROR("Warning: could not truncate %s because %s. Leaving "
-				"trailing bytes in place; the filesystem is still valid "
-				"(bytes_used in the super block is authoritative)\n",
+			ERROR("Warning: could not truncate %s because %s. "
+				"Leaving trailing bytes in place\n",
 				filename ? filename : "output filesystem",
 				strerror(errno));
 		else
