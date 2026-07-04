@@ -557,16 +557,24 @@ static inline void put_write_buffer_hash(struct file_buffer *buffer)
  */
 static void truncate_filesystem(int fd, long long length, char *filename)
 {
-	if(ftruncate(fd, length) != 0) {
-		if(errno == EOPNOTSUPP || errno == ENOTSUP)
-			ERROR("Warning: could not truncate %s because %s. "
-				"Leaving trailing bytes in place\n",
-				filename ? filename : "output filesystem",
-				strerror(errno));
-		else
-			BAD_ERROR("Failed to truncate %s because %s\n",
-				filename ? filename : "output filesystem",
-				strerror(errno));
+	long long end = lseek(fd, 0, SEEK_END);
+
+	if(end == -1)
+		BAD_ERROR("Failed to lseek to end of %s\n", filename ?
+			filename : "output filesystem");
+
+	if(end > length) {
+		if(ftruncate(fd, length) != 0) {
+			if(errno == EOPNOTSUPP || errno == ENOTSUP)
+				ERROR("Warning: could not truncate %s because "
+					"%s. Leaving trailing bytes in place\n",
+					filename ? filename : "output "
+					"filesystem", strerror(errno));
+			else
+				BAD_ERROR("Failed to truncate %s because %s\n",
+					filename ? filename : "output "
+					"filesystem", strerror(errno));
+		}
 	}
 }
 
