@@ -612,7 +612,7 @@ void restorefs()
 	write_filesystem_tables(&sBlk);
 
 	if(!block_device)
-		truncate_filesystem(fd, get_dpos(), NULL);
+		truncate_filesystem(fd, start_offset + get_dpos(), NULL);
 
 	if(!nopad && (i = get_dpos() & (4096 - 1))) {
 		char temp[4096] = {0};
