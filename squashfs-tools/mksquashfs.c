@@ -614,7 +614,7 @@ void restorefs()
 	if(!block_device)
 		truncate_filesystem(fd, start_offset + get_dpos(), NULL);
 
-	if(!nopad && (i = get_dpos() & (4096 - 1))) {
+	if(!nopad && (i = (start_offset + get_dpos()) & (4096 - 1))) {
 		char temp[4096] = {0};
 		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
@@ -7720,7 +7720,7 @@ static int sqfstar(int argc, char *argv[])
 	if(!block_device && !streaming)
 		truncate_filesystem(fd, start_offset + get_dpos(), NULL);
 
-	if(!nopad && (i = get_dpos() & (4096 - 1))) {
+	if(!nopad && (i = (start_offset + get_dpos()) & (4096 - 1))) {
 		char temp[4096] = {0};
 		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
@@ -9208,7 +9208,7 @@ int main(int argc, char *argv[])
 	if(!block_device && !streaming)
 		truncate_filesystem(fd, start_offset + get_dpos(), NULL);
 
-	if(!nopad && (i = get_dpos() & (4096 - 1))) {
+	if(!nopad && (i = (start_offset + get_dpos()) & (4096 - 1))) {
 		char temp[4096] = {0};
 		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
