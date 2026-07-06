@@ -596,7 +596,7 @@ static void prep_destination()
 
 void restorefs()
 {
-	int i, res;
+	int res;
 
 	ERROR("Exiting - restoring original filesystem!\n\n");
 
