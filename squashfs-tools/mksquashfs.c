@@ -553,23 +553,28 @@ static inline void put_write_buffer_hash(struct file_buffer *buffer)
 /*
  * Truncate the output file to length, discarding any bytes past the end of the
  * filesystem. Some filesystems do not implement ftruncate() and fail with
- * EOPNOTSUPP/ENOTSUP; treat that as non-fatal. The bytes_used field in the
- * super block is authoritative and readers ignore anything beyond it, so
- * leaving the trailing bytes in place still yields a valid filesystem.
+ * EOPNOTSUPP/ENOTSUP; treat that as non-fatal.
  */
 static void truncate_filesystem(int fd, long long length, char *filename)
 {
-	if(ftruncate(fd, length) != 0) {
-		if(errno == EOPNOTSUPP || errno == ENOTSUP)
-			ERROR("Warning: could not truncate %s because %s. Leaving "
-				"trailing bytes in place; the filesystem is still valid "
-				"(bytes_used in the super block is authoritative)\n",
-				filename ? filename : "output filesystem",
-				strerror(errno));
-		else
-			BAD_ERROR("Failed to truncate %s because %s\n",
-				filename ? filename : "output filesystem",
-				strerror(errno));
+	long long end = lseek(fd, 0, SEEK_END);
+
+	if(end == -1)
+		BAD_ERROR("Failed to lseek to end of %s\n", filename ?
+			filename : "output filesystem");
+
+	if(end > length) {
+		if(ftruncate(fd, length) != 0) {
+			if(errno == EOPNOTSUPP || errno == ENOTSUP)
+				ERROR("Warning: could not truncate %s because "
+					"%s. Leaving trailing bytes in place\n",
+					filename ? filename : "output "
+					"filesystem", strerror(errno));
+			else
+				BAD_ERROR("Failed to truncate %s because %s\n",
+					filename ? filename : "output "
+					"filesystem", strerror(errno));
+		}
 	}
 }
 
@@ -607,9 +612,9 @@ void restorefs()
 	write_filesystem_tables(&sBlk);
 
 	if(!block_device)
-		truncate_filesystem(fd, get_dpos(), NULL);
+		truncate_filesystem(fd, start_offset + get_dpos(), NULL);
 
-	if(!nopad && (i = get_dpos() & (4096 - 1))) {
+	if(!nopad && (i = (start_offset + get_dpos()) & (4096 - 1))) {
 		char temp[4096] = {0};
 		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
@@ -7796,7 +7801,7 @@ static int sqfstar(int argc, char *argv[])
 	if(!block_device && !streaming)
 		truncate_filesystem(fd, start_offset + get_dpos(), NULL);
 
-	if(!nopad && (i = get_dpos() & (4096 - 1))) {
+	if(!nopad && (i = (start_offset + get_dpos()) & (4096 - 1))) {
 		char temp[4096] = {0};
 		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
@@ -9283,7 +9288,7 @@ int main(int argc, char *argv[])
 	if(!block_device && !streaming)
 		truncate_filesystem(fd, start_offset + get_dpos(), NULL);
 
-	if(!nopad && (i = get_dpos() & (4096 - 1))) {
+	if(!nopad && (i = (start_offset + get_dpos()) & (4096 - 1))) {
 		char temp[4096] = {0};
 		write_destination(fd, get_dpos(), 4096 - i, temp);
 	}
