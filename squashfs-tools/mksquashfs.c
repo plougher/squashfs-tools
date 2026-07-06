@@ -6724,12 +6724,29 @@ FILE *open_info_file(char *filename)
 }
 
 
-static void fix_file(char *filename)
+#define FIX_COPY_BUFFER_SIZE 65536
+
+/*
+ * Fix up a filesystem generated using the -stream option.  Such a filesystem
+ * has a placeholder super block at the start and the real super block appended
+ * at the end (Mksquashfs cannot seek backwards on a stream to write the real
+ * super block in place).
+ *
+ * If output is NULL and to_stdout is FALSE the fix is done in place, which
+ * needs write access to filename.  Otherwise the fixed filesystem is written
+ * to a new output file, or to stdout, leaving the original file untouched.
+ * This allows a filesystem to be fixed up when the user does not have write
+ * access to the original file, or does not have space to rewrite it in place.
+ */
+static void fix_file(char *filename, char *output, int to_stdout)
 {
 	struct squashfs_super_block sblk;
-	long long res, offset;
-	int fd = open(filename, O_RDWR);
+	long long res, offset, remaining;
+	int in_place = output == NULL && to_stdout == FALSE;
+	int fd, outfd;
+	void *buffer;
 
+	fd = open(filename, in_place ? O_RDWR : O_RDONLY);
 	if(fd == -1)
 		BAD_ERROR("Failed to open file \"%s\" because %s\n", filename, strerror(errno));
 
@@ -6758,15 +6775,80 @@ static void fix_file(char *filename)
 	if(sblk.s_magic != SQUASHFS_MAGIC && sblk.s_magic != SQUASHFS_MAGIC_SWAP)
 		BAD_ERROR("File \"%s\" is not a streamed Squashfs file, incorrect magic found!\n", filename);
 
-	res = lseek(fd, SQUASHFS_START, SEEK_SET);
-	if(res == -1)
-		BAD_ERROR("Failed to lseek to start of file \"%s\"\n", filename);
+	if(in_place) {
+		res = lseek(fd, SQUASHFS_START, SEEK_SET);
+		if(res == -1)
+			BAD_ERROR("Failed to lseek to start of file \"%s\"\n", filename);
 
-	res = write_bytes(fd, &sblk, sizeof(struct squashfs_super_block));
-	if(res == -1)
-		BAD_ERROR("Failed to write file \"%s\"\n", filename);
+		res = write_bytes(fd, &sblk, sizeof(struct squashfs_super_block));
+		if(res == -1)
+			BAD_ERROR("Failed to write file \"%s\"\n", filename);
 
-	truncate_filesystem(fd, offset, filename);
+		truncate_filesystem(fd, offset, filename);
+
+		close(fd);
+		return;
+	}
+
+	/*
+	 * Write the fixed filesystem elsewhere: the real super block first,
+	 * followed by the filesystem body (everything between the placeholder
+	 * super block and the trailing real super block).
+	 */
+	if(to_stdout)
+		outfd = STDOUT_FILENO;
+	else {
+		outfd = open(output, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		if(outfd == -1)
+			BAD_ERROR("Failed to create file \"%s\" because %s\n", output, strerror(errno));
+	}
+
+	res = write_bytes(outfd, &sblk, sizeof(struct squashfs_super_block));
+	if(res == -1)
+		BAD_ERROR("Failed to write fixed filesystem\n");
+
+	res = lseek(fd, SQUASHFS_START + sizeof(struct squashfs_super_block), SEEK_SET);
+	if(res == -1)
+		BAD_ERROR("Failed to lseek in file \"%s\"\n", filename);
+
+	buffer = MALLOC(FIX_COPY_BUFFER_SIZE);
+
+	for(remaining = offset - sizeof(struct squashfs_super_block); remaining > 0; remaining -= res) {
+		long long count = remaining > FIX_COPY_BUFFER_SIZE ? FIX_COPY_BUFFER_SIZE : remaining;
+
+		res = read_bytes(fd, buffer, count);
+		if(res < count)
+			BAD_ERROR("Failed to read file \"%s\"\n", filename);
+
+		if(write_bytes(outfd, buffer, count) == -1)
+			BAD_ERROR("Failed to write fixed filesystem\n");
+	}
+
+	free(buffer);
+
+	if(!to_stdout && close(outfd) == -1)
+		BAD_ERROR("Failed to close file \"%s\" because %s\n", output, strerror(errno));
+
+	close(fd);
+}
+
+
+/*
+ * Fix the streamed filesystem "filename" and exit.  The optional trailing
+ * "output" argument selects where the fixed filesystem is written: NULL means
+ * fix in place, "-" or "-stream" means write to stdout, anything else is the
+ * name of an output file to create.
+ */
+static void fix_and_exit(char *filename, char *output)
+{
+	if(output == NULL)
+		fix_file(filename, NULL, FALSE);
+	else if(strcmp(output, "-") == 0 || strcmp(output, "-stream") == 0)
+		fix_file(filename, NULL, TRUE);
+	else
+		fix_file(filename, output, FALSE);
+
+	exit(0);
 }
 
 
@@ -6851,8 +6933,7 @@ static int sqfstar(int argc, char *argv[])
 		} else if(strcmp(argv[i], "-fix") == 0) {
 			if(++i == argc)
 				sqfstar_option_help(argv[i - 1], "sqfstar: -fix missing filename\n");
-			fix_file(argv[i]);
-			exit(0);
+			fix_and_exit(argv[i], (i + 1 < argc) ? argv[i + 1] : NULL);
 		} else if(argv[i][0] != '-')
 			break;
 		else if(option_with_arg(argv[i], sqfstar_option_table))
@@ -7834,8 +7915,7 @@ int main(int argc, char *argv[])
 		} else if(strcmp(argv[j], "-fix") == 0) {
 			if(++j == argc)
 				mksquashfs_option_help(argv[j - 1], "mksquashfs: -fix missing filename\n");
-			fix_file(argv[j]);
-			exit(0);
+			fix_and_exit(argv[j], (j + 1 < argc) ? argv[j + 1] : NULL);
 		} else if(strcmp(argv[j], "-version") == 0 || strcmp(argv[j], "--version") == 0) {
 			print_version("mksquashfs");
 			exit(0);
