@@ -553,7 +553,6 @@ static inline void put_write_buffer_hash(struct file_buffer *buffer)
 /* Truncate file to length.  Some filesystems do not implement
  * ftruncate() and fail with EOPNOTSUPP/ENOTSUP, treat that as
  * non-fatal. */
-
 static void truncate_file(int fd, long long length, char *filename)
 {
 	if(ftruncate(fd, length) != 0) {
@@ -568,18 +567,28 @@ static void truncate_file(int fd, long long length, char *filename)
 }
 
 
-static void truncate_destination(long long length)
+/* If necessary:
+ *    truncate output destination to filesystem end
+ *    pad to 4Kbyte multiple */
+static void prep_destination()
 {
-	if(!block_device && !streaming) {
-		long long end = lseek(fd, 0, SEEK_END);
+	long long end = start_offset + get_dpos();
+	int tail = end & (4096 - 1);
 
-		if(end == -1)
+	if(!block_device && !streaming) {
+		long long file_end = lseek(fd, 0, SEEK_END);
+
+		if(file_end == -1)
 			BAD_ERROR("Failed to lseek to end of output filesystem\n");
-		else if(end > length)
-			truncate_file(fd, length, "output filesystem");
+		else if(file_end > end)
+			truncate_file(fd, end, "output filesystem");
+	}
+
+	if(!nopad && tail) {
+		char temp[4096] = {0};
+		write_destination(fd, get_dpos(), 4096 - tail, temp);
 	}
 }
-
 
 void restorefs()
 {
@@ -612,13 +621,7 @@ void restorefs()
 	id_count = sid_count;
 	restore_xattrs();
 	write_filesystem_tables(&sBlk);
-	truncate_destination(start_offset + get_dpos());
-
-	if(!nopad && (i = (start_offset + get_dpos()) & (4096 - 1))) {
-		char temp[4096] = {0};
-		write_destination(fd, get_dpos(), 4096 - i, temp);
-	}
-
+	prep_destination();
 	write_superblock(&sBlk);
 
 	res = close(fd);
@@ -7717,13 +7720,7 @@ static int sqfstar(int argc, char *argv[])
 
 	progressbar_finish();
 
-	truncate_destination(start_offset + get_dpos());
-
-	if(!nopad && (i = (start_offset + get_dpos()) & (4096 - 1))) {
-		char temp[4096] = {0};
-		write_destination(fd, get_dpos(), 4096 - i, temp);
-	}
-
+	prep_destination();
 	write_superblock(&sBlk);
 
 	res = close(fd);
@@ -9204,13 +9201,7 @@ int main(int argc, char *argv[])
 
 	progressbar_finish();
 
-	truncate_destination(start_offset + get_dpos());
-
-	if(!nopad && (i = (start_offset + get_dpos()) & (4096 - 1))) {
-		char temp[4096] = {0};
-		write_destination(fd, get_dpos(), 4096 - i, temp);
-	}
-
+	prep_destination();
 	write_superblock(&sBlk);
 
 	res = close(fd);
