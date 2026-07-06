@@ -477,8 +477,14 @@ static char *mksquashfs_text[]={
 		"filesystems directly.  Use - for the output FILESYSTEM on the "
 		"command line.  Duplicate detection is disabled using the "
 		"-stream " "option\n",
-	"-fix <filesystem>\tfix <filesystem> generated using the -stream "
-		"option\n",
+	"-fix <filesystem> [OUTPUT]\tfix <filesystem> generated using the "
+		"-stream option.  By default <filesystem> is fixed in place, "
+		"which needs write access to it.  If OUTPUT is given the fixed "
+		"filesystem is written there instead, leaving <filesystem> "
+		"unchanged: use a filename to write to a file, or - (or -stream) "
+		"to write to STDOUT.  This allows a filesystem to be fixed up "
+		"without write access to the original file, or space to rewrite "
+		"it in place\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
 	"-offset <offset>\tskip <offset> bytes at the beginning of FILESYSTEM."
 		"  Optionally a suffix of K, M or G can be given to specify "
@@ -797,8 +803,14 @@ static char *sqfstar_text[]={
 		"Unsquashfs 4.7.3 and later can read streamed unfixed up "
 		"filesystems directly.  Duplicate detection is disabled using "
 		"the -stream option\n",
-	"-fix <filesystem>\tfix <filesystem> generated using the -stream "
-		"option\n",
+	"-fix <filesystem> [OUTPUT]\tfix <filesystem> generated using the "
+		"-stream option.  By default <filesystem> is fixed in place, "
+		"which needs write access to it.  If OUTPUT is given the fixed "
+		"filesystem is written there instead, leaving <filesystem> "
+		"unchanged: use a filename to write to a file, or - (or -stream) "
+		"to write to STDOUT.  This allows a filesystem to be fixed up "
+		"without write access to the original file, or space to rewrite "
+		"it in place\n",
 	"-nopad\t\t\tdo not pad filesystem to a multiple of 4K\n",
 	"-offset <offset>\tskip <offset> bytes at the beginning of "
 		"FILESYSTEM.  Optionally a suffix of K, M or G can be given to "
