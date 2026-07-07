@@ -1,3 +1,6 @@
 VERSION := 4.7.5
 HASH := $Format:%h$
 FULLDATE := $Format:%ci$
+RELEASE := N
+RELEASE_DATE :=
+RELEASE_VERSION := ${VERSION}
