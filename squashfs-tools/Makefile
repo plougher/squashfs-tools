@@ -416,8 +416,8 @@ space := $(subst ,, )
 #
 include version.mk
 
-ifdef RELEASE_VERSION
-FULL_VERSION := $(VERSION)
+ifeq ($(RELEASE),Y)
+FULL_VERSION := $(RELEASE_VERSION)
 DATE := $(RELEASE_DATE)
 else
 ifeq ($(HASH),$Format:%h$)
