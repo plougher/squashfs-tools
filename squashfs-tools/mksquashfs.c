@@ -70,6 +70,7 @@
 #include "process_fragments.h"
 #include "fnmatch_compat.h"
 #include "tar.h"
+#include "zipfile.h"
 #include "merge_sort.h"
 #include "nprocessors_compat.h"
 #include "memory_compat.h"
@@ -168,6 +169,9 @@ dev_t cur_dev;
 
 /* Is Mksquashfs processing a tarfile? */
 int tarfile = FALSE;
+
+/* Is Mksquashfs processing zip file(s)? */
+int zipfile = FALSE;
 
 /* Is Mksquashfs reading a pseudo file from stdin? */
 int pseudo_stdin = FALSE;
@@ -8530,6 +8534,8 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-cpiostyle0") == 0 ||
 				strcmp(argv[i], "-tar") == 0) {
 			/* parsed previously */
+		} else if(strcmp(argv[i], "-zip") == 0) {
+			zipfile = TRUE;
 		} else if(strcmp(argv[i], "-comp") == 0) {
 			/* parsed previously */
 			i++;
@@ -8686,6 +8692,20 @@ int main(int argc, char *argv[])
 		BAD_ERROR("Sources on the command line should be - when using "
 			"-tar option, i.e. mksquashfs - image.sqfs -tar\n");
 
+	/* The -zip option reads seekable archives named on the command line,
+	 * so it is incompatible with the stdin-reading input options and needs
+	 * at least one source archive */
+	if(zipfile && (tarfile || cpiostyle || pseudo_stdin))
+		BAD_ERROR("-zip cannot be combined with -tar, -cpiostyle[0] or "
+			"a pseudo file read from stdin\n");
+
+	if(zipfile && !source)
+		BAD_ERROR("No zip files specified on the command line, i.e. "
+			"mksquashfs file1.zip file2.zip image.sqfs -zip\n");
+
+	if(zipfile && any_actions())
+		BAD_ERROR("Actions are unsupported when reading zip files\n");
+
 	/* If -tar option is set, then check that actions have not been
 	 * specified, which are unsupported with tar file reading
 	 */
@@ -8701,6 +8721,12 @@ int main(int argc, char *argv[])
 	 * cannot be used with tar files */
 	if(tarfile && exclude_option && old_exclude)
 		BAD_ERROR("-wildcards must be specified with tar files and -ef/-e\n");
+
+	/* If -zip option is set and there are exclude files (either -ef or -e),
+	 * then -wildcards or -regex must be set too.  The older legacy exclude
+	 * code cannot be used with zip files */
+	if(zipfile && exclude_option && old_exclude)
+		BAD_ERROR("-wildcards must be specified with zip files and -ef/-e\n");
 
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset
@@ -9162,6 +9188,8 @@ int main(int argc, char *argv[])
 
 		if(tarfile)
 			inode = process_tar_file(progress);
+		else if(zipfile)
+			inode = process_zip_file(progress);
 		else if(tarstyle || cpiostyle)
 			inode = process_source(progress, deref, deref_keep);
 		else if(!source)

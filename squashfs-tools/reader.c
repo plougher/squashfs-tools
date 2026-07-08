@@ -48,6 +48,7 @@
 #include "pseudo.h"
 #include "sort.h"
 #include "tar.h"
+#include "zipfile.h"
 #include "reader.h"
 #include "atomic_swap.h"
 #include "caches-queues-lists.h"
@@ -978,6 +979,10 @@ void *initial_reader(void *arg)
 		create_resources();
 		reader[0].type = "combined";
 		file_count = read_tar_file();
+		single_thread(queue_get(to_reader));
+	} else if(zipfile) {
+		create_resources();
+		file_count = read_zip_file();
 		single_thread(queue_get(to_reader));
 	} else if(!sleep_time && reader_threads > 1)
 		multi_thread(dir);

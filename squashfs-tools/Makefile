@@ -240,9 +240,9 @@ INCLUDEDIR = -I.
 
 MKSQUASHFS_OBJS = mksquashfs.o read_fs.o action.o swap.o pseudo.o compressor.o \
 	sort.o progressbar.o info.o restore.o process_fragments.o \
-	caches-queues-lists.o reader.o tar.o date.o memory.o mksquashfs_help.o \
-	print_pager.o symbolic_mode.o thread.o nprocessors_compat.o limit.o \
-	virt_disk_pos.o uid_gid.o
+	caches-queues-lists.o reader.o tar.o zipfile.o date.o memory.o \
+	mksquashfs_help.o print_pager.o symbolic_mode.o thread.o \
+	nprocessors_compat.o limit.o virt_disk_pos.o uid_gid.o
 
 UNSQUASHFS_OBJS = unsquashfs.o unsquash-1.o unsquash-2.o unsquash-3.o \
 	unsquash-4.o unsquash-123.o unsquash-34.o unsquash-1234.o unsquash-12.o \
@@ -257,6 +257,9 @@ CFLAGS += $(EXTRA_CFLAGS) $(INCLUDEDIR) -D_FILE_OFFSET_BITS=64 \
 	-Wall
 
 LIBS = -lpthread -lm
+# The zipfile input reader (zipfile.o) inflates deflate-compressed zip entries
+# using zlib, so mksquashfs always needs to be linked against it
+MKSQUASHFS_LIBS = -lz
 ifeq ($(GZIP_SUPPORT),1)
 CFLAGS += -DGZIP_SUPPORT
 MKSQUASHFS_OBJS += gzip_wrapper.o
@@ -474,7 +477,7 @@ unsquashfs_help.o: unsquashfs_help.c
 endif
 
 mksquashfs: $(MKSQUASHFS_OBJS)
-	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(MKSQUASHFS_OBJS) $(LIBS) -o $@
+	$(CC) $(LDFLAGS) $(EXTRA_LDFLAGS) $(MKSQUASHFS_OBJS) $(LIBS) $(MKSQUASHFS_LIBS) -o $@
 	ln -sf mksquashfs sqfstar
 
 unsquashfs: $(UNSQUASHFS_OBJS)
@@ -500,7 +503,7 @@ OBJECTS := action.o caches-queues-lists.o compressor.o crc16.o date.o \
 	unsquash-34.o unsquash-3.o unsquash-4.o unsquashfs.o unsquashfs_help.o \
 	unsquashfs_info.o unsquashfs_xattr.o unsquashfs_xattr_system.o \
 	virt_disk_pos.o xattr.o xattr_system.o xz_wrapper.o \
-	xz_wrapper_extended.o zstd_wrapper.o
+	xz_wrapper_extended.o zipfile.o zstd_wrapper.o
 
 .PHONY: objects
 objects: DEPFLAGS = -MT $@ -MMD -MF $(DEPDIR)/$*.d
