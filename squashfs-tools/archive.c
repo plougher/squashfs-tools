@@ -313,7 +313,7 @@ int is_fragment(long long file_size)
 }
 
 
-void put_file_buffer(struct file_buffer *file_buffer)
+void put_file_buffer(struct file_buffer *file_buffer, int id)
 {
 	/*
 	 * Decide where to send the file buffer:
@@ -321,7 +321,7 @@ void put_file_buffer(struct file_buffer *file_buffer)
 	 * - fragments go to the process fragment threads,
 	 */
 	if(file_buffer->fragment)
-		read_queue_put(to_process_frag, 0, file_buffer);
+		read_queue_put(to_process_frag, id, file_buffer);
 	else
-		queue_cache_put(to_deflate, 0, file_buffer);
+		queue_cache_put(to_deflate, id, file_buffer);
 }

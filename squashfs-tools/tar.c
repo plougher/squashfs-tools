@@ -475,7 +475,7 @@ static void read_tar_data(struct tar_file *tar_file)
 			bytes += file_buffer->size;
 
 			file_buffer->fragment = FALSE;
-			put_file_buffer(file_buffer);
+			put_file_buffer(file_buffer, 0);
 		} else {
 			/* The remaining bytes will be rounded up to 512 bytes */
 			int expected = (read_size + 511 - bytes) & ~511;
@@ -489,7 +489,7 @@ static void read_tar_data(struct tar_file *tar_file)
 	} while(++ block < blocks);
 
 	file_buffer->fragment = is_fragment(read_size);
-	put_file_buffer(file_buffer);
+	put_file_buffer(file_buffer, 0);
 
 	return;
 }

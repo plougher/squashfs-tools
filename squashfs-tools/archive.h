@@ -27,7 +27,7 @@ extern struct dir_info *add_archive_file(struct dir_info *sdir, char *source,
 		char *subpath, struct tar_file *tarfile, struct pathnames *paths,
 		int depth, struct dir_ent **dir_ent, struct inode_info *link,
 		char *type);
-extern void put_file_buffer(struct file_buffer *file_buffer);
+extern void put_file_buffer(struct file_buffer *file_buffer, int id);
 
 static inline int is_fragment(long long file_size)
 {
