@@ -6050,7 +6050,7 @@ static void process_exclude_file(char *argv, int follow)
 			continue;
 
 		if(old_exclude)
-			old_add_exclude(filename, FALSE);
+			old_add_exclude(filename, follow);
 		else
 			add_exclude(filename);
 	}
