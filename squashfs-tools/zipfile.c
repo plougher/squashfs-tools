@@ -49,6 +49,7 @@
 #include "reader.h"
 #include "caches-queues-lists.h"
 #include "alloc.h"
+#include "archive.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -197,247 +198,6 @@ static time_t dos_to_unix(unsigned int dostime, unsigned int dosdate)
 
 
 /*
- * Generic tree-building helpers.  These mirror the tar reader; the metadata is
- * carried in a struct tar_file and the created inodes are flagged as "tarfile"
- * inodes so that the normal filesystem-scanning reader skips them (their data
- * is provided by the zip reader threads instead).
- */
-static struct inode_info *new_inode(struct tar_file *file)
-{
-	static int warned = FALSE;
-	struct inode_info *inode;
-	int bytes = file->link ? strlen(file->link) + 1 : 0;
-
-	inode = MALLOC(sizeof(struct inode_info));
-
-	if(bytes) {
-		inode->symlink = MALLOC(bytes);
-		memcpy(inode->symlink, file->link, bytes);
-	} else
-		inode->symlink = NULL;
-
-	if(file->buf.st_mtime < 0) {
-		/* Squashfs cannot store timestamps before the epoch */
-		if(!warned) {
-			ERROR("\nWARNING: File has timestamp before the epoch of "
-				"1970-01-01, this cannot be\nstored in "
-				"Squashfs.  Rounding to 1970-01-01.\nFurther "
-				"messages are supressed.\n\n");
-			warned = TRUE;
-		}
-
-		file->buf.st_mtime = 0;
-	}
-
-	memcpy(&inode->buf, &file->buf, sizeof(struct stat));
-	inode->read = FALSE;
-	inode->root_entry = FALSE;
-	inode->tar_file = file;
-	inode->inode = SQUASHFS_INVALID_BLK;
-	inode->nlink = 1;
-	inode->inode_number = 0;
-	inode->pseudo = NULL;
-	inode->dummy_root_dir = FALSE;
-	inode->xattr = NULL;
-	inode->tarfile = TRUE;
-
-	inode->no_fragments = no_fragments;
-	inode->always_use_fragments = always_use_fragments;
-	inode->noD = noD;
-	inode->noF = noF;
-
-	inode->next = inode_info[0];
-	inode_info[0] = inode;
-
-	return inode;
-}
-
-
-static void fixup_tree(struct dir_info *dir)
-{
-	struct dir_ent *entry;
-
-	for(entry = dir->list; entry; entry = entry->next) {
-		if(entry->dir && entry->inode == NULL) {
-			/* An intermediate directory that no archive entry
-			 * described, create a default definition for it */
-			struct stat buf;
-
-			memset(&buf, 0, sizeof(buf));
-			buf.st_mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH |
-				S_IXOTH | S_IFDIR;
-			if(default_mode_opt)
-				buf.st_mode = mode_execute(default_mode, buf.st_mode);
-			if(default_uid_opt)
-				buf.st_uid = default_uid;
-			else
-				buf.st_uid = getuid();
-			if(default_gid_opt)
-				buf.st_gid = default_gid;
-			else
-				buf.st_gid = getgid();
-			buf.st_dev = 0;
-			buf.st_ino = 0;
-			entry->inode = lookup_inode_flag(&buf, FALSE);
-			entry->inode->tar_file = NULL;
-			entry->inode->tarfile = TRUE;
-		}
-
-		if(entry->dir == NULL && S_ISDIR(entry->inode->buf.st_mode)) {
-			/* Directory with no children, create an empty one */
-			char *subpath = subpathname(entry);
-
-			entry->dir = create_dir("", subpath, dir->depth + 1);
-			entry->dir->dir_ent = entry;
-		}
-
-		if(entry->dir)
-			fixup_tree(entry->dir);
-	}
-}
-
-
-static char *get_component(char *target, char **targname)
-{
-	char *start = target;
-
-	while(*target != '/' && *target != '\0')
-		target++;
-
-	*targname = STRNDUP(start, target - start);
-
-	while(*target == '/')
-		target++;
-
-	return target;
-}
-
-
-/*
- * Add an entry to the in-memory directory tree.  Path collisions across the
- * input archives have already been resolved (last wins) during the merge, so
- * the only "existing entry" cases reached here are legitimate directory /
- * child reconciliations.
- */
-static struct dir_info *add_zipfile(struct dir_info *sdir, char *source,
-	char *subpath, struct tar_file *zfile, struct pathnames *paths,
-	int depth, struct dir_ent **dir_ent)
-{
-	struct dir_info *sub;
-	struct dir_ent *entry;
-	struct pathnames *new = NULL;
-	struct dir_info *dir = sdir;
-	char *name;
-
-	if(dir == NULL)
-		dir = create_dir("", subpath, depth);
-
-	source = get_component(source, &name);
-
-	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0)
-		BAD_ERROR("Error: Zip pathname can't have '.' or '..' in it\n");
-
-	entry = lookup_name(dir, name);
-
-	if(entry) {
-		/* existing matching entry */
-		if(entry->dir == NULL) {
-			/* leaf component of a pre-existing entry */
-			if(source[0] != '\0') {
-				subpath = subpathname(entry);
-				if(S_ISDIR(entry->inode->buf.st_mode)) {
-					excluded(name, paths, &new);
-					entry->dir = add_zipfile(NULL, source,
-						subpath, zfile, new, depth + 1,
-						dir_ent);
-					if(entry->dir == NULL)
-						goto failed_early;
-					entry->dir->dir_ent = entry;
-				} else
-					BAD_ERROR("%s exists in the zip file as"
-						" a non-directory, cannot add"
-						" zip pathname %s!\n",
-						subpath, zfile->pathname);
-			} else {
-				ERROR("%s already exists in the zip file,"
-					" ignoring\n", zfile->pathname);
-				goto failed_early;
-			}
-		} else {
-			if(source[0] == '\0') {
-				/* adding a directory that already exists as an
-				 * implicitly created parent */
-				if(S_ISDIR(zfile->buf.st_mode)) {
-					if(entry->inode == NULL)
-						entry->inode = new_inode(zfile);
-					else {
-						ERROR("%s already exists in the"
-							" zip file, ignoring!\n",
-							zfile->pathname);
-						goto failed_early;
-					}
-				} else
-					BAD_ERROR("%s exists in the zip file as"
-						" both a directory and"
-						" non-directory!\n",
-						zfile->pathname);
-			} else {
-				excluded(name, paths, &new);
-				subpath = subpathname(entry);
-				sub = add_zipfile(entry->dir, source, subpath,
-					zfile, new, depth + 1, dir_ent);
-				if(sub == NULL)
-					goto failed_early;
-			}
-		}
-
-		free(name);
-	} else {
-		if(old_exclude == FALSE && excluded(name, paths, &new))
-			goto failed_early;
-
-		entry = create_dir_entry(name, NULL, NULL, dir);
-
-		if(source[0] == '\0') {
-			if(S_ISDIR(zfile->buf.st_mode)) {
-				add_dir_entry(entry, NULL, new_inode(zfile));
-				dir->directory_count++;
-			} else {
-				add_dir_entry(entry, NULL, new_inode(zfile));
-				if(S_ISREG(zfile->buf.st_mode))
-					*dir_ent = entry;
-			}
-		} else {
-			subpath = subpathname(entry);
-			sub = add_zipfile(NULL, source, subpath, zfile, new,
-				depth + 1, dir_ent);
-			if(sub == NULL)
-				goto failed_entry;
-			add_dir_entry(entry, sub, NULL);
-			dir->directory_count++;
-		}
-	}
-
-	free(new);
-	return dir;
-
-failed_early:
-	free(new);
-	free(name);
-	if(sdir == NULL)
-		free_dir(dir);
-	return NULL;
-
-failed_entry:
-	free(new);
-	free_dir_entry(entry);
-	if(sdir == NULL)
-		free_dir(dir);
-	return NULL;
-}
-
-
-/*
  * Streaming decompressor for a single entry's data.
  */
 struct unz {
@@ -553,22 +313,6 @@ static int unz_read(struct unz *unz, char *dest, int want)
 	}
 
 	return want - unz->strm.avail_out;
-}
-
-
-static inline int is_fragment(long long file_size)
-{
-	return !no_fragments && file_size && (file_size < block_size ||
-		(always_use_fragments && file_size & (block_size - 1)));
-}
-
-
-static void put_file_buffer(struct file_buffer *file_buffer, int id)
-{
-	if(file_buffer->fragment)
-		read_queue_put(to_process_frag, id, file_buffer);
-	else
-		queue_cache_put(to_deflate, id, file_buffer);
 }
 
 
@@ -1298,8 +1042,8 @@ squashfs_inode process_zip_file(int progress)
 		if(entry->excluded)
 			continue;
 
-		new = add_zipfile(root_dir, file->pathname, "", file, paths, 1,
-			&dir_ent);
+		new = add_archive_file(root_dir, file->pathname, "", file,
+			paths, 1, &dir_ent, NULL, "zipfile");
 
 		if(new) {
 			int duplicate_file;
