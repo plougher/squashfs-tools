@@ -118,7 +118,7 @@ void fixup_tree(struct dir_info *dir)
 
 	for(entry = dir->list; entry; entry = entry->next) {
 		if(entry->dir && entry->inode == NULL) {
-			/* Tar file didn't create this directory, and so it lacks
+			/* Archive didn't create this directory, and so it lacks
 			 * an inode with metadata.  Create a default definition ... */
 			struct stat buf;
 
@@ -142,7 +142,7 @@ void fixup_tree(struct dir_info *dir)
 		}
 
 		if(entry->dir == NULL && S_ISDIR(entry->inode->buf.st_mode)) {
-			/* Tar file created this directory, but, never created
+			/* Archive created this directory, but, never created
 			 * anything in it.  This will leave a NULL sub-directory,
 			 * where the scanning code expects to find an empty
 			 * directory.  Create an empty directory in this case ... */
