@@ -170,9 +170,10 @@ static struct inode_info *copy_inode(struct inode_info *source)
 }
 
 
-struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
+struct dir_info *add_archive_file(struct dir_info *sdir, char *source,
 		char *subpath, struct tar_file *tarfile, struct pathnames *paths,
-		int depth, struct dir_ent **dir_ent, struct inode_info *link)
+		int depth, struct dir_ent **dir_ent, struct inode_info *link,
+		char *type)
 {
 	struct dir_info *sub;
 	struct dir_ent *entry;
@@ -186,7 +187,8 @@ struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 	source = get_component(source, &name);
 
 	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0)
-		BAD_ERROR("Error: Tar pathname can't have '.' or '..' in it\n");
+		BAD_ERROR("Error: %s pathname can't have '.' or '..' in it\n",
+				type);
 
 	entry = lookup_name(dir, name);
 
@@ -201,17 +203,20 @@ struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 				if(S_ISDIR(entry->inode->buf.st_mode)) {
 					/* recurse adding child components */
 					excluded(name, paths, &new);
-					entry->dir = add_tarfile(NULL, source, subpath, tarfile, new, depth + 1, dir_ent, link);
+					entry->dir = add_archive_file(NULL,
+						source, subpath, tarfile, new,
+						depth + 1, dir_ent, link, type);
 					if(entry->dir == NULL)
 						goto failed_early;
 					entry->dir->dir_ent = entry;
 				} else
-					BAD_ERROR("%s exists in the tar file as"
-						" a non-directory, cannot add"
-						" tar pathname %s!\n",
-						subpath, tarfile->pathname);
+					BAD_ERROR("%s exists in the %s as a "
+						"non-directory, cannot add %s "
+						"pathname %s!\n", subpath, type,
+						type, tarfile->pathname);
 			} else {
-				ERROR("%s already exists in the tar file, ignoring\n", tarfile->pathname);
+				ERROR("%s already exists in the %s, ignoring\n",
+						tarfile->pathname, type);
 				goto failed_early;
 			}
 		} else {
@@ -223,19 +228,22 @@ struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 					if(entry->inode == NULL)
 						entry->inode = new_inode(tarfile);
 					else {
-						ERROR("%s already exists in the tar file, ignoring!\n", tarfile->pathname);
+						ERROR("%s already exists in "
+							"the %s, ignoring!\n",
+							tarfile->pathname, type);
 						goto failed_early;
 					}
 				} else
-					BAD_ERROR("%s exists in the tar file as"
-						" both a directory and"
-						" non-directory!\n",
-						tarfile->pathname);
+					BAD_ERROR("%s exists in the %s as both "
+						"a directory and non-directory!\n",
+						tarfile->pathname, type);
 			} else {
 				/* recurse adding child components */
 				excluded(name, paths, &new);
 				subpath = subpathname(entry);
-				sub = add_tarfile(entry->dir, source, subpath, tarfile, new, depth + 1, dir_ent, link);
+				sub = add_archive_file(entry->dir, source,
+					subpath, tarfile, new, depth + 1,
+					dir_ent, link, type);
 				if(sub == NULL)
 					goto failed_early;
 			}
@@ -270,7 +278,8 @@ struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
 				add_dir_entry(entry, NULL, link);
 		} else {
 			subpath = subpathname(entry);
-			sub = add_tarfile(NULL, source, subpath, tarfile, new, depth + 1, dir_ent, link);
+			sub = add_archive_file(NULL, source, subpath, tarfile,
+				new, depth + 1, dir_ent, link, type);
 			if(sub == NULL)
 				goto failed_entry;
 			add_dir_entry(entry, sub, NULL);

@@ -23,9 +23,10 @@
 extern char *get_component(char *target, char **targname);
 extern struct inode_info *new_inode(struct tar_file *tar_file);
 extern void fixup_tree(struct dir_info *dir);
-extern struct dir_info *add_tarfile(struct dir_info *sdir, char *source,
+extern struct dir_info *add_archive_file(struct dir_info *sdir, char *source,
 		char *subpath, struct tar_file *tarfile, struct pathnames *paths,
-		int depth, struct dir_ent **dir_ent, struct inode_info *link);
+		int depth, struct dir_ent **dir_ent, struct inode_info *link,
+		char *type);
 extern void put_file_buffer(struct file_buffer *file_buffer);
 
 static inline int is_fragment(long long file_size)

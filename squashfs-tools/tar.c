@@ -1481,8 +1481,8 @@ squashfs_inode process_tar_file(int progress)
 			tar_file->link = NULL;
 		}
 
-		new = add_tarfile(root_dir, tar_file->pathname, "",
-			tar_file, paths, 1, &dir_ent, link);
+		new = add_archive_file(root_dir, tar_file->pathname, "",
+			tar_file, paths, 1, &dir_ent, link, "tarfile");
 
 		if(new) {
 			int duplicate_file;
