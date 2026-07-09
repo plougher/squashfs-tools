@@ -10,4 +10,4 @@ and are in the pipeline being worked on it priority order, or there are reasons
 for why it has not been done.
 
 Unsolicited Pull requests can cause problems and grievances when they are
-rejected.  If refusal will offend then please do not do it.
+**rejected.  If refusal will offend then please do not do it.**
