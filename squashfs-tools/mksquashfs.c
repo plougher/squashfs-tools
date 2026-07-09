@@ -3521,16 +3521,92 @@ struct dir_info *create_dir(char *pathname, char *subpath, unsigned int depth)
 	dir->list = NULL;
 	dir->depth = depth;
 	dir->excluded = 0;
+	dir->name_hash = NULL;
+	dir->name_hash_size = 0;
 
 	return dir;
 }
 
 
+/* Small directories stay on the cheap linear scan; larger ones get a name hash. */
+#define DIR_HASH_THRESHOLD 16
+
+static unsigned int name_hash_bucket(char *name, unsigned int size)
+{
+	/* djb2 string hash, masked to the (power-of-two) table size */
+	unsigned long hash = 5381;
+	unsigned char *p = (unsigned char *) name;
+
+	while(*p)
+		hash = ((hash << 5) + hash) + *p++;
+
+	return (unsigned int) (hash & (size - 1));
+}
+
+
+/* (Re)build dir's name hash at the given size from its current entry list. */
+static void dir_name_hash_build(struct dir_info *dir, unsigned int size)
+{
+	struct dir_ent *dir_ent;
+
+	if(dir->name_hash)
+		free(dir->name_hash);
+	dir->name_hash = MALLOC(size * sizeof(struct dir_ent *));
+	memset(dir->name_hash, 0, size * sizeof(struct dir_ent *));
+	dir->name_hash_size = size;
+
+	for(dir_ent = dir->list; dir_ent; dir_ent = dir_ent->next) {
+		unsigned int bucket = name_hash_bucket(dir_ent->name, size);
+		dir_ent->name_hash_next = dir->name_hash[bucket];
+		dir->name_hash[bucket] = dir_ent;
+	}
+}
+
+
+/*
+ * Maintain a per-directory hash of entries by name.  lookup_name() is called
+ * once per path component while building the in-memory tree from an archive;
+ * scanning dir->list linearly makes that O(entries^2) per directory, which
+ * dominates for archives with very many files.  The hash keeps lookups O(1)
+ * amortized.  It is built lazily once a directory grows past
+ * DIR_HASH_THRESHOLD, and doubled when the load factor exceeds one.
+ */
+static void dir_name_hash_add(struct dir_info *dir, struct dir_ent *dir_ent)
+{
+	unsigned int bucket;
+
+	if(dir->name_hash == NULL) {
+		if(dir->count >= DIR_HASH_THRESHOLD)
+			dir_name_hash_build(dir, 64);
+		return;
+	}
+
+	if(dir->count > dir->name_hash_size) {
+		dir_name_hash_build(dir, dir->name_hash_size * 2);
+		return;
+	}
+
+	bucket = name_hash_bucket(dir_ent->name, dir->name_hash_size);
+	dir_ent->name_hash_next = dir->name_hash[bucket];
+	dir->name_hash[bucket] = dir_ent;
+}
+
+
 struct dir_ent *lookup_name(struct dir_info *dir, char *name)
 {
-	struct dir_ent *dir_ent = dir->list;
+	struct dir_ent *dir_ent;
 
-	for(; dir_ent && strcmp(dir_ent->name, name) != 0;
+	if(dir->name_hash) {
+		unsigned int bucket = name_hash_bucket(name, dir->name_hash_size);
+
+		for(dir_ent = dir->name_hash[bucket];
+				dir_ent && strcmp(dir_ent->name, name) != 0;
+				dir_ent = dir_ent->name_hash_next);
+
+		return dir_ent;
+	}
+
+	for(dir_ent = dir->list; dir_ent && strcmp(dir_ent->name, name) != 0;
 					dir_ent = dir_ent->next);
 
 	return dir_ent;
@@ -3548,6 +3624,7 @@ struct dir_ent *create_dir_entry(char *name, char *source_name,
 	dir_ent->our_dir = dir;
 	dir_ent->inode = NULL;
 	dir_ent->next = NULL;
+	dir_ent->name_hash_next = NULL;
 
 	return dir_ent;
 }
@@ -3566,6 +3643,8 @@ void add_dir_entry(struct dir_ent *dir_ent, struct dir_info *sub_dir,
 	dir_ent->next = dir->list;
 	dir->list = dir_ent;
 	dir->count++;
+
+	dir_name_hash_add(dir, dir_ent);
 }
 
 
@@ -3583,6 +3662,21 @@ static inline void add_dir_entry2(char *name, char *source_name,
 
 void free_dir_entry(struct dir_ent *dir_ent)
 {
+	struct dir_info *dir = dir_ent->our_dir;
+
+	/* Keep the owning directory's name hash consistent by unlinking this
+	 * entry from its bucket chain before it is freed. */
+	if(dir != NULL && dir->name_hash != NULL) {
+		unsigned int bucket = name_hash_bucket(dir_ent->name,
+			dir->name_hash_size);
+		struct dir_ent **pp = &dir->name_hash[bucket];
+
+		while(*pp != NULL && *pp != dir_ent)
+			pp = &(*pp)->name_hash_next;
+		if(*pp != NULL)
+			*pp = dir_ent->name_hash_next;
+	}
+
 	if(dir_ent->name)
 		free(dir_ent->name);
 
@@ -3863,6 +3957,8 @@ struct dir_info *scan1_opendir(char *pathname, char *subpath, unsigned int depth
 	dir->list = NULL;
 	dir->depth = depth;
 	dir->excluded = 0;
+	dir->name_hash = NULL;
+	dir->name_hash_size = 0;
 
 	return dir;
 }
@@ -4602,6 +4698,14 @@ static void dir_scan3(struct dir_info *dir)
 void free_dir(struct dir_info *dir)
 {
 	struct dir_ent *dir_ent = dir->list;
+
+	/* Drop the name hash first so free_dir_entry() below skips the per-entry
+	 * unlink while the whole directory is being torn down. */
+	if(dir->name_hash != NULL) {
+		free(dir->name_hash);
+		dir->name_hash = NULL;
+		dir->name_hash_size = 0;
+	}
 
 	while(dir_ent) {
 		struct dir_ent *tmp = dir_ent;
