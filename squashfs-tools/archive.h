@@ -28,6 +28,7 @@ extern struct dir_info *add_archive_file(struct dir_info *sdir, char *source,
 		int depth, struct dir_ent **dir_ent, struct inode_info *link,
 		char *type);
 extern void put_file_buffer(struct file_buffer *file_buffer, int id);
+extern squashfs_inode create_root_scan(int progress);
 
 static inline int is_fragment(long long file_size)
 {

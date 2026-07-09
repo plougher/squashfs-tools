@@ -1436,7 +1436,6 @@ long long read_tar_file()
 
 squashfs_inode process_tar_file(int progress)
 {
-	struct stat buf;
 	struct dir_info *new;
 	struct dir_ent *dir_ent;
 	struct tar_file *tar_file;
@@ -1513,43 +1512,5 @@ squashfs_inode process_tar_file(int progress)
 
 	free(file_buffer);
 
-	if(root_dir)
-		fixup_tree(root_dir);
-	else
-		root_dir = scan1_opendir("", "", 1);
-
-	/* Create root directory dir_ent and associated inode, and connect
-	 * it to the root directory dir_info structure */
-	dir_ent = create_dir_entry("", NULL, "", scan1_opendir("", "", 0));
-
-	memset(&buf, 0, sizeof(buf));
-	buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-	if(global_dir_mode_opt) {
-		if(pseudo_override)
-			buf.st_mode = mode_execute(global_dir_mode, buf.st_mode);
-	} else if(root_mode_opt)
-		buf.st_mode = mode_execute(root_mode, buf.st_mode);
-	if(root_uid_opt)
-		buf.st_uid = root_uid;
-	else
-		buf.st_uid = getuid();
-	if(root_gid_opt)
-		buf.st_gid = root_gid;
-	else
-		buf.st_gid = getgid();
-	if(root_time_opt)
-		buf.st_mtime = root_time;
-	if(pseudo_override && global_uid_opt)
-		buf.st_uid = global_uid;
-
-	if(pseudo_override && global_gid_opt)
-		buf.st_gid = global_gid;
-	buf.st_dev = 0;
-	buf.st_ino = 0;
-	dir_ent->inode = lookup_inode_flag(&buf, root_time_opt);
-	dir_ent->inode->dummy_root_dir = TRUE;
-	dir_ent->dir = root_dir;
-	root_dir->dir_ent = dir_ent;
-
-	return do_directory_scans(dir_ent, progress);
+	return create_root_scan(progress);
 }
