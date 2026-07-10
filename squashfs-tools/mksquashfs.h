@@ -74,7 +74,7 @@ struct inode_info {
 	char			always_use_fragments;
 	char			noD;
 	char			noF;
-	char			tarfile;
+	char			archive;
 	char			read;
 	char			scanned;
 	char			alignment;

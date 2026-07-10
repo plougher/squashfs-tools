@@ -475,7 +475,7 @@ static void read_tar_data(struct tar_file *tar_file)
 			bytes += file_buffer->size;
 
 			file_buffer->fragment = FALSE;
-			put_file_buffer(file_buffer, 0);
+			put_file_buff(file_buffer, 0);
 		} else {
 			/* The remaining bytes will be rounded up to 512 bytes */
 			int expected = (read_size + 511 - bytes) & ~511;
@@ -488,8 +488,8 @@ static void read_tar_data(struct tar_file *tar_file)
 		}
 	} while(++ block < blocks);
 
-	file_buffer->fragment = is_fragment(read_size);
-	put_file_buffer(file_buffer, 0);
+	file_buffer->fragment = is_frag(read_size);
+	put_file_buff(file_buffer, 0);
 
 	return;
 }
@@ -1481,7 +1481,7 @@ squashfs_inode process_tar_file(int progress)
 		}
 
 		new = add_archive_file(root_dir, tar_file->pathname, "",
-			tar_file, paths, 1, &dir_ent, link, "tarfile");
+			tar_file, paths, 1, &dir_ent, link, TARFILE);
 
 		if(new) {
 			int duplicate_file;
@@ -1512,5 +1512,5 @@ squashfs_inode process_tar_file(int progress)
 
 	free(file_buffer);
 
-	return create_root_scan(progress);
+	return create_root_scan(progress, TARFILE);
 }

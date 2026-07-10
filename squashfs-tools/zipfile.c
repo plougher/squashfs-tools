@@ -61,23 +61,6 @@
 extern int source;
 extern char **source_path;
 
-/*
- * A single surviving entry from the merged set of all input archives.  The
- * staging metadata (pathname, stat, symlink target, xattrs) lives in a
- * struct tar_file, which is reused verbatim from the tar reader so that the
- * generic tree-building, write_file() and xattr machinery can be shared.
- */
-struct zip_entry {
-	struct tar_file	*file;		/* parsed metadata (reused from tar) */
-	int		zip;		/* index into zip_fd[] / zip_name[] */
-	long long	offset;		/* local file header offset */
-	long long	comp_size;	/* compressed size */
-	long long	uncomp_size;	/* uncompressed size */
-	long long	data_seq;	/* pre-assigned file_count of first block */
-	int		method;		/* ZIP_STORED or ZIP_DEFLATE */
-	int		excluded;	/* matched an -e/-ef pattern, drop it */
-};
-
 /* Populated by the central-directory parse, consumed by the reader threads */
 static struct zip_entry *entries = NULL;
 static int nentries = 0;
@@ -360,7 +343,7 @@ static void read_zip_data(struct reader *reader, struct zip_entry *entry)
 
 			bytes += file_buffer->size;
 			file_buffer->fragment = FALSE;
-			put_file_buffer(file_buffer, reader->id);
+			put_file_buff(file_buffer, reader->id);
 		} else {
 			int expected = read_size - bytes;
 			int size = unz_read(&unz, file_buffer->data, expected);
@@ -374,8 +357,8 @@ static void read_zip_data(struct reader *reader, struct zip_entry *entry)
 		}
 	} while(++block < blocks);
 
-	file_buffer->fragment = is_fragment(read_size);
-	put_file_buffer(file_buffer, reader->id);
+	file_buffer->fragment = is_frag(read_size);
+	put_file_buff(file_buffer, reader->id);
 
 	unz_end(&unz);
 }
@@ -625,6 +608,7 @@ static long long parse_central_record(unsigned char *cd, long long avail,
 
 	name = normalise_pathname((char *) (cd + ZIP_CENTRAL_SIZE), name_len);
 
+	file->zipfile = entry;
 	entry->file = file;
 	entry->zip = zip;
 	entry->offset = offset;
@@ -1042,7 +1026,7 @@ squashfs_inode process_zip_file(int progress)
 			continue;
 
 		new = add_archive_file(root_dir, file->pathname, "", file,
-			paths, 1, &dir_ent, NULL, "zipfile");
+			paths, 1, &dir_ent, NULL, ZIPFILE);
 
 		if(new) {
 			int duplicate_file;
@@ -1069,5 +1053,5 @@ squashfs_inode process_zip_file(int progress)
 				file->pathname);
 	}
 
-	return create_root_scan(progress);
+	return create_root_scan(progress, ZIPFILE);
 }

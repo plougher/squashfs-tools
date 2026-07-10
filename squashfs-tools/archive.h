@@ -20,17 +20,36 @@
  *
  * archive.h
  */
+
+#define TARFILE	1
+#define ZIPFILE 2
+
+static inline int tar_archive(int type)
+{
+	return type == TARFILE;
+}
+
+
+static inline int zip_archive(int type)
+{
+	return type == ZIPFILE;
+}
+
+static inline char *archive(int type)
+{
+	return tar_archive(type) ? "tarfile" : "zipfile";
+}
+
 extern char *get_component(char *target, char **targname);
-extern struct inode_info *new_inode(struct tar_file *tar_file);
-extern void fixup_tree(struct dir_info *dir);
+extern struct inode_info *new_inode(struct tar_file *tar_file, int type);
 extern struct dir_info *add_archive_file(struct dir_info *sdir, char *source,
 		char *subpath, struct tar_file *tarfile, struct pathnames *paths,
 		int depth, struct dir_ent **dir_ent, struct inode_info *link,
-		char *type);
-extern void put_file_buffer(struct file_buffer *file_buffer, int id);
-extern squashfs_inode create_root_scan(int progress);
+		int type);
+extern void put_file_buff(struct file_buffer *file_buffer, int id);
+extern squashfs_inode create_root_scan(int progress, int type);
 
-static inline int is_fragment(long long file_size)
+static inline int is_frag(long long file_size)
 {
 	return !no_fragments && file_size && (file_size < block_size ||
 		(always_use_fragments && file_size & (block_size - 1)));

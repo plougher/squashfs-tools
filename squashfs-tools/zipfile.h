@@ -72,6 +72,23 @@
  */
 #define ZIP_EXTRA_XATTR		0x7378	/* 'xs' - squashfs xattr record */
 
+/*
+ * A single surviving entry from the merged set of all input archives.  The
+ * staging metadata (pathname, stat, symlink target, xattrs) lives in a
+ * struct tar_file, which is reused verbatim from the tar reader so that the
+ * generic tree-building, write_file() and xattr machinery can be shared.
+ */
+struct zip_entry {
+	struct tar_file	*file;		/* parsed metadata (reused from tar) */
+	int		zip;		/* index into zip_fd[] / zip_name[] */
+	long long	offset;		/* local file header offset */
+	long long	comp_size;	/* compressed size */
+	long long	uncomp_size;	/* uncompressed size */
+	long long	data_seq;	/* pre-assigned file_count of first block */
+	int		method;		/* ZIP_STORED or ZIP_DEFLATE */
+	int		excluded;	/* matched an -e/-ef pattern, drop it */
+};
+
 extern long long read_zip_file();
 extern squashfs_inode process_zip_file(int progress);
 

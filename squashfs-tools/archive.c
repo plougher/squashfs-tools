@@ -34,6 +34,7 @@
 #include "symbolic_mode.h"
 #include "caches-queues-lists.h"
 #include "alloc.h"
+#include "archive.h"
 
 char *get_component(char *target, char **targname)
 {
@@ -52,7 +53,7 @@ char *get_component(char *target, char **targname)
 }
 
 
-struct inode_info *new_inode(struct tar_file *tar_file)
+struct inode_info *new_inode(struct tar_file *tar_file, int type)
 {
 	static int warned = FALSE;
 	struct inode_info *inode;
@@ -92,7 +93,7 @@ struct inode_info *new_inode(struct tar_file *tar_file)
 	inode->pseudo = NULL;
 	inode->dummy_root_dir = FALSE;
 	inode->xattr = NULL;
-	inode->tarfile = TRUE;
+	inode->archive = type;
 
 	/*
 	 * Copy filesystem wide defaults into inode, these filesystem
@@ -112,7 +113,7 @@ struct inode_info *new_inode(struct tar_file *tar_file)
 }
 
 
-void fixup_tree(struct dir_info *dir)
+static void fixup_tree(struct dir_info *dir, int type)
 {
 	struct dir_ent *entry;
 
@@ -138,7 +139,7 @@ void fixup_tree(struct dir_info *dir)
 			buf.st_ino = 0;
 			entry->inode = lookup_inode_flag(&buf, FALSE);
 			entry->inode->tar_file = NULL;
-			entry->inode->tarfile = TRUE;
+			entry->inode->archive = type;
 		}
 
 		if(entry->dir == NULL && S_ISDIR(entry->inode->buf.st_mode)) {
@@ -153,7 +154,7 @@ void fixup_tree(struct dir_info *dir)
 		}
 
 		if(entry->dir)
-			fixup_tree(entry->dir);
+			fixup_tree(entry->dir, type);
 	}
 }
 
@@ -173,7 +174,7 @@ static struct inode_info *copy_inode(struct inode_info *source)
 struct dir_info *add_archive_file(struct dir_info *sdir, char *source,
 		char *subpath, struct tar_file *tarfile, struct pathnames *paths,
 		int depth, struct dir_ent **dir_ent, struct inode_info *link,
-		char *type)
+		int type)
 {
 	struct dir_info *sub;
 	struct dir_ent *entry;
@@ -188,7 +189,7 @@ struct dir_info *add_archive_file(struct dir_info *sdir, char *source,
 
 	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0)
 		BAD_ERROR("Error: %s pathname can't have '.' or '..' in it\n",
-				type);
+				archive(type));
 
 	entry = lookup_name(dir, name);
 
@@ -212,11 +213,11 @@ struct dir_info *add_archive_file(struct dir_info *sdir, char *source,
 				} else
 					BAD_ERROR("%s exists in the %s as a "
 						"non-directory, cannot add %s "
-						"pathname %s!\n", subpath, type,
-						type, tarfile->pathname);
+						"pathname %s!\n", subpath, archive(type),
+						archive(type), tarfile->pathname);
 			} else {
 				ERROR("%s already exists in the %s, ignoring\n",
-						tarfile->pathname, type);
+						tarfile->pathname, archive(type));
 				goto failed_early;
 			}
 		} else {
@@ -226,17 +227,17 @@ struct dir_info *add_archive_file(struct dir_info *sdir, char *source,
 				 * definition for this directory */
 				if(S_ISDIR(tarfile->buf.st_mode)) {
 					if(entry->inode == NULL)
-						entry->inode = new_inode(tarfile);
+						entry->inode = new_inode(tarfile, type);
 					else {
 						ERROR("%s already exists in "
 							"the %s, ignoring!\n",
-							tarfile->pathname, type);
+							tarfile->pathname, archive(type));
 						goto failed_early;
 					}
 				} else
 					BAD_ERROR("%s exists in the %s as both "
 						"a directory and non-directory!\n",
-						tarfile->pathname, type);
+						tarfile->pathname, archive(type));
 			} else {
 				/* recurse adding child components */
 				excluded(name, paths, &new);
@@ -266,10 +267,10 @@ struct dir_info *add_archive_file(struct dir_info *sdir, char *source,
 
 		if(source[0] == '\0') {
 			if(S_ISDIR(tarfile->buf.st_mode)) {
-				add_dir_entry(entry, NULL, new_inode(tarfile));
+				add_dir_entry(entry, NULL, new_inode(tarfile, type));
 				dir->directory_count ++;
 			} else if (link == FALSE) {
-				add_dir_entry(entry, NULL, new_inode(tarfile));
+				add_dir_entry(entry, NULL, new_inode(tarfile, type));
 				if(S_ISREG(tarfile->buf.st_mode))
 					*dir_ent = entry;
 			} else if(no_hardlinks)
@@ -306,14 +307,7 @@ failed_entry:
 }
 
 
-int is_fragment(long long file_size)
-{
-	return !no_fragments && file_size && (file_size < block_size ||
-		(always_use_fragments && file_size & (block_size - 1)));
-}
-
-
-void put_file_buffer(struct file_buffer *file_buffer, int id)
+void put_file_buff(struct file_buffer *file_buffer, int id)
 {
 	/*
 	 * Decide where to send the file buffer:
@@ -327,13 +321,13 @@ void put_file_buffer(struct file_buffer *file_buffer, int id)
 }
 
 
-squashfs_inode create_root_scan(int progress)
+squashfs_inode create_root_scan(int progress, int type)
 {
 	struct stat buf;
 	struct dir_ent *dir_ent;
 
 	if(root_dir)
-		fixup_tree(root_dir);
+		fixup_tree(root_dir, type);
 	else
 		root_dir = scan1_opendir("", "", 1);
 

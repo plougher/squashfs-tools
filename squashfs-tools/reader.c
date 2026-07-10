@@ -48,12 +48,13 @@
 #include "pseudo.h"
 #include "sort.h"
 #include "tar.h"
-#include "zipfile.h"
 #include "reader.h"
 #include "atomic_swap.h"
 #include "caches-queues-lists.h"
 #include "alloc.h"
 #include "lseek.h"
+#include "archive.h"
+#include "zipfile.h"
 
 #define READER_ALLOC 1024
 
@@ -766,7 +767,7 @@ static void reader_scan(struct dir_info *dir)
 	struct dir_ent *dir_ent = dir->list;
 
 	for(; dir_ent; dir_ent = dir_ent->next) {
-		if(dir_ent->inode->root_entry || IS_TARFILE(dir_ent->inode) || dir_ent->inode->scanned)
+		if(dir_ent->inode->root_entry || tar_archive(dir_ent->inode->archive) || zip_archive(dir_ent->inode->archive) || dir_ent->inode->scanned)
 			continue;
 
 		if(IS_PSEUDO_PROCESS(dir_ent->inode) ||
@@ -916,7 +917,9 @@ static void single_reader_scan(struct dir_info *dir)
 			single_reader_scan(dir_ent->dir);
 			continue;
 		}
-		if(IS_TARFILE(dir_ent->inode))
+		if(tar_archive(dir_ent->inode->archive))
+			continue;
+		if(zip_archive(dir_ent->inode->archive))
 			continue;
 
 		if(IS_PSEUDO_PROCESS(dir_ent->inode) ||
