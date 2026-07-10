@@ -76,4 +76,7 @@ extern void set_single_threaded();
 extern int get_reader_num();
 extern void set_sleep_time(int);
 extern void check_min_memory(int, int, int);
+extern void put_file_buffer(int id, struct file_buffer *file_buffer, int next_state);
+extern struct file_buffer *get_buffer(struct reader *reader, struct read_entry *entry,
+	long long file_size, long long block, int version);
 #endif

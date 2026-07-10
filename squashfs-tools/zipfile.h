@@ -84,12 +84,11 @@ struct zip_entry {
 	long long	offset;		/* local file header offset */
 	long long	comp_size;	/* compressed size */
 	long long	uncomp_size;	/* uncompressed size */
-	long long	data_seq;	/* pre-assigned file_count of first block */
 	int		method;		/* ZIP_STORED or ZIP_DEFLATE */
 	int		excluded;	/* matched an -e/-ef pattern, drop it */
 };
 
-extern long long read_zip_file();
+extern void read_zip_data(struct reader *reader, struct read_entry *ent);
 extern squashfs_inode process_zip_file(int progress);
 
 #endif

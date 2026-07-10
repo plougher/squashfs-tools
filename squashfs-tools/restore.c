@@ -42,8 +42,8 @@
 #include "mksquashfs_error.h"
 #include "progressbar.h"
 #include "info.h"
-#include "reader.h"
 #include "caches-queues-lists.h"
+#include "reader.h"
 
 #define FALSE 0
 #define TRUE 1

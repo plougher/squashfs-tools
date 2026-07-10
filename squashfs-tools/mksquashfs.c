@@ -70,7 +70,6 @@
 #include "process_fragments.h"
 #include "fnmatch_compat.h"
 #include "tar.h"
-#include "zipfile.h"
 #include "merge_sort.h"
 #include "nprocessors_compat.h"
 #include "memory_compat.h"
@@ -80,6 +79,7 @@
 #include "symbolic_mode.h"
 #include "thread.h"
 #include "reader.h"
+#include "zipfile.h"
 #include "limit.h"
 #include "alloc.h"
 #include "virt_disk_pos.h"
@@ -4861,7 +4861,7 @@ static void dir_scan8(squashfs_inode *inode, struct dir_info *dir_info)
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
 			switch(buf->st_mode & S_IFMT) {
 				case S_IFREG:
-					if(tar_archive(dir_ent->inode->archive) || zip_archive(dir_ent->inode->archive))
+					if(tar_archive(dir_ent->inode->archive))
 						file = dir_ent->inode->tar_file->file;
 					else
 						file = dir_ent->inode->file;

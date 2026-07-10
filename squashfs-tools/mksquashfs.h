@@ -55,10 +55,8 @@ struct inode_info {
 	struct stat		buf;
 	struct inode_info	*next;
 	struct pseudo_dev	*pseudo;
-	union {
-		struct tar_file		*tar_file;
-		struct file_info	*file;
-	};
+	struct tar_file		*tar_file;
+	struct file_info	*file;
 	struct pseudo_xattr	*xattr;
 	union {
 		char			*symlink;

@@ -44,8 +44,8 @@
 #include "progressbar.h"
 #include "info.h"
 #include "symbolic_mode.h"
-#include "reader.h"
 #include "caches-queues-lists.h"
+#include "reader.h"
 #include "alloc.h"
 #include "archive.h"
 

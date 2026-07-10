@@ -60,6 +60,7 @@ struct inode_info *new_inode(struct tar_file *tar_file, int type)
 	int bytes = tar_file->link ? strlen(tar_file->link) + 1 : 0;
 
 	inode = MALLOC(sizeof(struct inode_info));
+	memset(inode, 0, sizeof(struct inode_info));
 
 	if(bytes) {
 		inode->symlink = MALLOC(bytes);
@@ -84,15 +85,9 @@ struct inode_info *new_inode(struct tar_file *tar_file, int type)
 	}
 
 	memcpy(&inode->buf, &tar_file->buf, sizeof(struct stat));
-	inode->read = FALSE;
-	inode->root_entry = FALSE;
 	inode->tar_file = tar_file;
 	inode->inode = SQUASHFS_INVALID_BLK;
 	inode->nlink = 1;
-	inode->inode_number = 0;
-	inode->pseudo = NULL;
-	inode->dummy_root_dir = FALSE;
-	inode->xattr = NULL;
 	inode->archive = type;
 
 	/*
