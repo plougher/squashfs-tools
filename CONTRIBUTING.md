@@ -1,4 +1,4 @@
-If you have think you have found a bug or problem with Squashfs-tools, then
+If you think you have found a bug or problem with Squashfs-tools, then
 please raise an issue.
 
 If you want some extra features added to Squashfs-tools, then please raise an
