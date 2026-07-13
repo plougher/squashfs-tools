@@ -861,8 +861,12 @@ squashfs_inode process_zip_file(int progress)
 
 		new = add_archive_file(root_dir, entries[i].file->pathname, "",
 			entries[i].file, paths, 1, &dir_ent, NULL, ZIPFILE);
-		if(new)
+		if(new) {
 			root_dir = new;
+			if((entries[i].file->buf.st_mode & S_IFMT) == S_IFREG)
+				progress_bar_size((dir_ent->inode->buf.st_size +
+						block_size - 1) >> block_log);
+		}
 	}
 
 	return create_root_scan(progress, ZIPFILE);
