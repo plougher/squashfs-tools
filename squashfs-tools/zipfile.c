@@ -42,13 +42,14 @@
 #include "mksquashfs_error.h"
 #include "xattr.h"
 #include "tar.h"
-#include "zipfile.h"
 #include "progressbar.h"
 #include "info.h"
 #include "symbolic_mode.h"
-#include "reader.h"
 #include "caches-queues-lists.h"
+#include "reader.h"
+#include "zipfile.h"
 #include "alloc.h"
+#include "archive.h"
 
 #define TRUE 1
 #define FALSE 0
@@ -60,23 +61,6 @@
 extern int source;
 extern char **source_path;
 
-/*
- * A single surviving entry from the merged set of all input archives.  The
- * staging metadata (pathname, stat, symlink target, xattrs) lives in a
- * struct tar_file, which is reused verbatim from the tar reader so that the
- * generic tree-building, write_file() and xattr machinery can be shared.
- */
-struct zip_entry {
-	struct tar_file	*file;		/* parsed metadata (reused from tar) */
-	int		zip;		/* index into zip_fd[] / zip_name[] */
-	long long	offset;		/* local file header offset */
-	long long	comp_size;	/* compressed size */
-	long long	uncomp_size;	/* uncompressed size */
-	long long	data_seq;	/* pre-assigned file_count of first block */
-	int		method;		/* ZIP_STORED or ZIP_DEFLATE */
-	int		excluded;	/* matched an -e/-ef pattern, drop it */
-};
-
 /* Populated by the central-directory parse, consumed by the reader threads */
 static struct zip_entry *entries = NULL;
 static int nentries = 0;
@@ -84,14 +68,6 @@ static int nentries = 0;
 static int *zip_fd = NULL;
 static char **zip_name = NULL;
 static int nzips = 0;
-
-/* Total number of data buffers (== total file_count span) */
-static long long total_seq = 0;
-
-/* Shared work counter handed out to the parallel reader threads */
-static int next_entry = 0;
-static pthread_mutex_t entry_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 
 /*
  * Little-endian accessors for the (untrusted) archive bytes.
@@ -193,247 +169,6 @@ static time_t dos_to_unix(unsigned int dostime, unsigned int dosdate)
 	tm.tm_isdst = 0;
 
 	return timegm(&tm);
-}
-
-
-/*
- * Generic tree-building helpers.  These mirror the tar reader; the metadata is
- * carried in a struct tar_file and the created inodes are flagged as "tarfile"
- * inodes so that the normal filesystem-scanning reader skips them (their data
- * is provided by the zip reader threads instead).
- */
-static struct inode_info *new_inode(struct tar_file *file)
-{
-	static int warned = FALSE;
-	struct inode_info *inode;
-	int bytes = file->link ? strlen(file->link) + 1 : 0;
-
-	inode = MALLOC(sizeof(struct inode_info));
-
-	if(bytes) {
-		inode->symlink = MALLOC(bytes);
-		memcpy(inode->symlink, file->link, bytes);
-	} else
-		inode->symlink = NULL;
-
-	if(file->buf.st_mtime < 0) {
-		/* Squashfs cannot store timestamps before the epoch */
-		if(!warned) {
-			ERROR("\nWARNING: File has timestamp before the epoch of "
-				"1970-01-01, this cannot be\nstored in "
-				"Squashfs.  Rounding to 1970-01-01.\nFurther "
-				"messages are supressed.\n\n");
-			warned = TRUE;
-		}
-
-		file->buf.st_mtime = 0;
-	}
-
-	memcpy(&inode->buf, &file->buf, sizeof(struct stat));
-	inode->read = FALSE;
-	inode->root_entry = FALSE;
-	inode->tar_file = file;
-	inode->inode = SQUASHFS_INVALID_BLK;
-	inode->nlink = 1;
-	inode->inode_number = 0;
-	inode->pseudo = NULL;
-	inode->dummy_root_dir = FALSE;
-	inode->xattr = NULL;
-	inode->tarfile = TRUE;
-
-	inode->no_fragments = no_fragments;
-	inode->always_use_fragments = always_use_fragments;
-	inode->noD = noD;
-	inode->noF = noF;
-
-	inode->next = inode_info[0];
-	inode_info[0] = inode;
-
-	return inode;
-}
-
-
-static void fixup_tree(struct dir_info *dir)
-{
-	struct dir_ent *entry;
-
-	for(entry = dir->list; entry; entry = entry->next) {
-		if(entry->dir && entry->inode == NULL) {
-			/* An intermediate directory that no archive entry
-			 * described, create a default definition for it */
-			struct stat buf;
-
-			memset(&buf, 0, sizeof(buf));
-			buf.st_mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH |
-				S_IXOTH | S_IFDIR;
-			if(default_mode_opt)
-				buf.st_mode = mode_execute(default_mode, buf.st_mode);
-			if(default_uid_opt)
-				buf.st_uid = default_uid;
-			else
-				buf.st_uid = getuid();
-			if(default_gid_opt)
-				buf.st_gid = default_gid;
-			else
-				buf.st_gid = getgid();
-			buf.st_dev = 0;
-			buf.st_ino = 0;
-			entry->inode = lookup_inode_flag(&buf, FALSE);
-			entry->inode->tar_file = NULL;
-			entry->inode->tarfile = TRUE;
-		}
-
-		if(entry->dir == NULL && S_ISDIR(entry->inode->buf.st_mode)) {
-			/* Directory with no children, create an empty one */
-			char *subpath = subpathname(entry);
-
-			entry->dir = create_dir("", subpath, dir->depth + 1);
-			entry->dir->dir_ent = entry;
-		}
-
-		if(entry->dir)
-			fixup_tree(entry->dir);
-	}
-}
-
-
-static char *get_component(char *target, char **targname)
-{
-	char *start = target;
-
-	while(*target != '/' && *target != '\0')
-		target++;
-
-	*targname = STRNDUP(start, target - start);
-
-	while(*target == '/')
-		target++;
-
-	return target;
-}
-
-
-/*
- * Add an entry to the in-memory directory tree.  Path collisions across the
- * input archives have already been resolved (last wins) during the merge, so
- * the only "existing entry" cases reached here are legitimate directory /
- * child reconciliations.
- */
-static struct dir_info *add_zipfile(struct dir_info *sdir, char *source,
-	char *subpath, struct tar_file *zfile, struct pathnames *paths,
-	int depth, struct dir_ent **dir_ent)
-{
-	struct dir_info *sub;
-	struct dir_ent *entry;
-	struct pathnames *new = NULL;
-	struct dir_info *dir = sdir;
-	char *name;
-
-	if(dir == NULL)
-		dir = create_dir("", subpath, depth);
-
-	source = get_component(source, &name);
-
-	if((strcmp(name, ".") == 0) || strcmp(name, "..") == 0)
-		BAD_ERROR("Error: Zip pathname can't have '.' or '..' in it\n");
-
-	entry = lookup_name(dir, name);
-
-	if(entry) {
-		/* existing matching entry */
-		if(entry->dir == NULL) {
-			/* leaf component of a pre-existing entry */
-			if(source[0] != '\0') {
-				subpath = subpathname(entry);
-				if(S_ISDIR(entry->inode->buf.st_mode)) {
-					excluded(name, paths, &new);
-					entry->dir = add_zipfile(NULL, source,
-						subpath, zfile, new, depth + 1,
-						dir_ent);
-					if(entry->dir == NULL)
-						goto failed_early;
-					entry->dir->dir_ent = entry;
-				} else
-					BAD_ERROR("%s exists in the zip file as"
-						" a non-directory, cannot add"
-						" zip pathname %s!\n",
-						subpath, zfile->pathname);
-			} else {
-				ERROR("%s already exists in the zip file,"
-					" ignoring\n", zfile->pathname);
-				goto failed_early;
-			}
-		} else {
-			if(source[0] == '\0') {
-				/* adding a directory that already exists as an
-				 * implicitly created parent */
-				if(S_ISDIR(zfile->buf.st_mode)) {
-					if(entry->inode == NULL)
-						entry->inode = new_inode(zfile);
-					else {
-						ERROR("%s already exists in the"
-							" zip file, ignoring!\n",
-							zfile->pathname);
-						goto failed_early;
-					}
-				} else
-					BAD_ERROR("%s exists in the zip file as"
-						" both a directory and"
-						" non-directory!\n",
-						zfile->pathname);
-			} else {
-				excluded(name, paths, &new);
-				subpath = subpathname(entry);
-				sub = add_zipfile(entry->dir, source, subpath,
-					zfile, new, depth + 1, dir_ent);
-				if(sub == NULL)
-					goto failed_early;
-			}
-		}
-
-		free(name);
-	} else {
-		if(old_exclude == FALSE && excluded(name, paths, &new))
-			goto failed_early;
-
-		entry = create_dir_entry(name, NULL, NULL, dir);
-
-		if(source[0] == '\0') {
-			if(S_ISDIR(zfile->buf.st_mode)) {
-				add_dir_entry(entry, NULL, new_inode(zfile));
-				dir->directory_count++;
-			} else {
-				add_dir_entry(entry, NULL, new_inode(zfile));
-				if(S_ISREG(zfile->buf.st_mode))
-					*dir_ent = entry;
-			}
-		} else {
-			subpath = subpathname(entry);
-			sub = add_zipfile(NULL, source, subpath, zfile, new,
-				depth + 1, dir_ent);
-			if(sub == NULL)
-				goto failed_entry;
-			add_dir_entry(entry, sub, NULL);
-			dir->directory_count++;
-		}
-	}
-
-	free(new);
-	return dir;
-
-failed_early:
-	free(new);
-	free(name);
-	if(sdir == NULL)
-		free_dir(dir);
-	return NULL;
-
-failed_entry:
-	free(new);
-	free_dir_entry(entry);
-	if(sdir == NULL)
-		free_dir(dir);
-	return NULL;
 }
 
 
@@ -556,34 +291,19 @@ static int unz_read(struct unz *unz, char *dest, int want)
 }
 
 
-static inline int is_fragment(long long file_size)
-{
-	return !no_fragments && file_size && (file_size < block_size ||
-		(always_use_fragments && file_size & (block_size - 1)));
-}
-
-
-static void put_file_buffer(struct file_buffer *file_buffer, int id)
-{
-	if(file_buffer->fragment)
-		read_queue_put(to_process_frag, id, file_buffer);
-	else
-		queue_cache_put(to_deflate, id, file_buffer);
-}
-
-
 /*
  * Read and decompress one regular file's data, feeding it into the compression
  * pipeline.  Data buffers use the pre-assigned dense file_count so that the
  * sequenced to_main queue reassembles them in order regardless of which reader
  * thread produced them, or in what order.
  */
-static void read_zip_data(struct reader *reader, struct zip_entry *entry)
+void read_zip_data(struct reader *reader, struct read_entry *ent)
 {
+	struct zip_entry *entry = ent->dir_ent->inode->tar_file->zipfile;
 	struct tar_file *file = entry->file;
 	struct file_buffer *file_buffer;
 	long long read_size = entry->uncomp_size;
-	long long bytes = 0, seq = entry->data_seq;
+	long long bytes = 0;
 	int blocks = (read_size + block_size - 1) >> block_log, block = 0;
 	struct unz unz;
 
@@ -593,17 +313,7 @@ static void read_zip_data(struct reader *reader, struct zip_entry *entry)
 			zip_name[entry->zip]);
 
 	do {
-		file_buffer = cache_get_nohash(reader->buffer);
-		file_buffer->file_size = read_size;
-		file_buffer->tar_file = file;
-		file_buffer->file_count = seq++;
-		file_buffer->block = 0;
-		file_buffer->version = 0;
-		file_buffer->noD = noD;
-		file_buffer->error = FALSE;
-		file_buffer->next_state = NEXT_FILE;
-		file_buffer->alignment = 0;
-		file_buffer->thread = reader->id;
+		file_buffer = get_buffer(reader, ent, read_size, block, 0);
 
 		if((block + 1) < blocks) {
 			/* non-tail block should be exactly block_size */
@@ -616,7 +326,7 @@ static void read_zip_data(struct reader *reader, struct zip_entry *entry)
 
 			bytes += file_buffer->size;
 			file_buffer->fragment = FALSE;
-			put_file_buffer(file_buffer, reader->id);
+			put_file_buffer(reader->id, file_buffer, NEXT_BLOCK);
 		} else {
 			int expected = read_size - bytes;
 			int size = unz_read(&unz, file_buffer->data, expected);
@@ -630,73 +340,10 @@ static void read_zip_data(struct reader *reader, struct zip_entry *entry)
 		}
 	} while(++block < blocks);
 
-	file_buffer->fragment = is_fragment(read_size);
-	put_file_buffer(file_buffer, reader->id);
+	file_buffer->fragment = is_frag(read_size);
+	put_file_buffer(reader->id, file_buffer, NEXT_FILE);
 
 	unz_end(&unz);
-}
-
-
-static int next_work()
-{
-	int idx;
-
-	pthread_mutex_lock(&entry_mutex);
-	idx = next_entry++;
-	pthread_mutex_unlock(&entry_mutex);
-
-	return idx;
-}
-
-
-static void *zip_worker(void *arg)
-{
-	struct reader *reader = arg;
-
-	while(1) {
-		int idx = next_work();
-		struct zip_entry *entry;
-
-		if(idx >= nentries)
-			break;
-
-		entry = &entries[idx];
-		if(S_ISREG(entry->file->buf.st_mode) && !entry->excluded)
-			read_zip_data(reader, entry);
-	}
-
-	return NULL;
-}
-
-
-/*
- * Reader-thread entry point.  The central directories have already been parsed
- * by process_zip_file() (running on the main thread), so all we do here is fan
- * out the entry list over the available reader threads.
- */
-long long read_zip_file()
-{
-	int nreaders, i;
-	struct reader *reader = get_readers(&nreaders);
-	pthread_t *threads;
-
-	if(nreaders < 1)
-		nreaders = 1;
-
-	threads = MALLOC(nreaders * sizeof(pthread_t));
-
-	for(i = 1; i < nreaders; i++)
-		pthread_create(&threads[i], NULL, zip_worker, &reader[i]);
-
-	/* Use the current (reader) thread as worker 0 */
-	zip_worker(&reader[0]);
-
-	for(i = 1; i < nreaders; i++)
-		pthread_join(threads[i], NULL);
-
-	free(threads);
-
-	return total_seq;
 }
 
 
@@ -887,7 +534,6 @@ static long long parse_central_record(unsigned char *cd, long long avail,
 	entry->comp_size = comp_size;
 	entry->uncomp_size = uncomp_size;
 	entry->method = method;
-	entry->data_seq = 0;
 
 	size32 = uncomp_size == 0xffffffff;
 	csize32 = comp_size == 0xffffffff;
@@ -1171,80 +817,6 @@ static void resolve_collisions()
 }
 
 
-/*
- * Determine up front whether an entry's pathname is excluded by the -e/-ef
- * patterns, walking the path components through excluded() exactly as
- * add_zipfile() does when it builds the tree.  excluded() is a pure function of
- * (component name, search set), independent of tree state, so the verdict here
- * matches what add_zipfile() would decide.  Because the central directory gives
- * us every pathname before any data is read, excluded entries can be dropped
- * from the sequence entirely - they are never inflated, sequenced or drained.
- */
-static int zip_excluded(char *source)
-{
-	struct pathnames *cur = paths;
-	struct pathnames *new, *prev = NULL;
-	char *name;
-	int res;
-
-	/* The legacy dev/inode exclude code cannot be used with zip files, and
-	 * option parsing forbids that combination, so there is nothing to test
-	 * unless the wildcard/regex matcher is active */
-	if(old_exclude)
-		return FALSE;
-
-	while(1) {
-		source = get_component(source, &name);
-		new = NULL;
-		res = excluded(name, cur, &new);
-		free(name);
-		free(prev);		/* container from the previous level */
-		if(res) {
-			free(new);
-			return TRUE;
-		}
-		if(source[0] == '\0') {
-			free(new);
-			return FALSE;
-		}
-		prev = cur = new;	/* search set for the next component */
-	}
-}
-
-
-/*
- * Assign each regular file a dense range of file_count values, matching the
- * order in which the main thread will consume the data via write_file().
- * Excluded entries are marked here and left out of the sequence.
- */
-static void assign_sequence()
-{
-	int i;
-	long long seq = 0;
-
-	for(i = 0; i < nentries; i++) {
-		struct zip_entry *entry = &entries[i];
-
-		entry->excluded = zip_excluded(entry->file->pathname);
-
-		if(!S_ISREG(entry->file->buf.st_mode) || entry->excluded)
-			continue;
-
-		entry->data_seq = seq;
-
-		if(entry->uncomp_size == 0)
-			seq += 1;
-		else
-			seq += (entry->uncomp_size + block_size - 1) >> block_log;
-
-		progress_bar_size((entry->uncomp_size + block_size - 1)
-								>> block_log);
-	}
-
-	total_seq = seq;
-}
-
-
 static void parse_all_zips()
 {
 	int i;
@@ -1268,99 +840,34 @@ static void parse_all_zips()
 		parse_one_zip(i);
 
 	resolve_collisions();
-	assign_sequence();
 }
 
 
 squashfs_inode process_zip_file(int progress)
 {
-	struct stat buf;
 	struct dir_info *new;
 	struct dir_ent *dir_ent;
-	struct zip_entry *entry;
 	int i;
 
-	/* Parse every archive's central directory before starting the readers */
 	parse_all_zips();
 
-	/* Release the reader thread, which now fans out over entries[] */
-	queue_put(to_reader, NULL);
-	set_progressbar_state(progress);
-
 	for(i = 0; i < nentries; i++) {
-		struct tar_file *file;
-
-		entry = &entries[i];
-		file = entry->file;
-
 		/* Excluded entries were never inflated or sequenced, so there is
 		 * no data to consume - skip them without touching the pipeline */
-		if(entry->excluded)
+		if(entries[i].excluded)
 			continue;
 
-		new = add_zipfile(root_dir, file->pathname, "", file, paths, 1,
-			&dir_ent);
+		entries[i].file->zipfile = &entries[i];
 
+		new = add_archive_file(root_dir, entries[i].file->pathname, "",
+			entries[i].file, paths, 1, &dir_ent, NULL, ZIPFILE);
 		if(new) {
-			int duplicate_file;
 			root_dir = new;
-
-			if(S_ISREG(file->buf.st_mode) &&
-						dir_ent->inode->read == FALSE) {
-				update_info(dir_ent);
-				file->file = write_file(dir_ent, &duplicate_file);
-				dir_ent->inode->read = TRUE;
-				INFO("file %s, uncompressed size %lld bytes %s\n",
-					file->pathname,
-					(long long) file->buf.st_size,
-					duplicate_file ? "DUPLICATE" : "");
-			}
-		} else if(S_ISREG(file->buf.st_mode))
-			/* Path collisions are resolved before sequencing, so the
-			 * only reason add_zipfile() drops a regular file is
-			 * exclusion, which is handled above.  Reaching here means
-			 * a file's data was inflated but never written, which
-			 * would desync the sequenced pipeline */
-			BAD_ERROR("Internal error: zip entry %s was inflated but "
-				"not added to the filesystem tree\n",
-				file->pathname);
+			if((entries[i].file->buf.st_mode & S_IFMT) == S_IFREG)
+				progress_bar_size((dir_ent->inode->buf.st_size +
+						block_size - 1) >> block_log);
+		}
 	}
 
-	if(root_dir)
-		fixup_tree(root_dir);
-	else
-		root_dir = scan1_opendir("", "", 1);
-
-	/* Create the root directory dir_ent / inode */
-	dir_ent = create_dir_entry("", NULL, "", scan1_opendir("", "", 0));
-
-	memset(&buf, 0, sizeof(buf));
-	buf.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
-	if(global_dir_mode_opt) {
-		if(pseudo_override)
-			buf.st_mode = mode_execute(global_dir_mode, buf.st_mode);
-	} else if(root_mode_opt)
-		buf.st_mode = mode_execute(root_mode, buf.st_mode);
-	if(root_uid_opt)
-		buf.st_uid = root_uid;
-	else
-		buf.st_uid = getuid();
-	if(root_gid_opt)
-		buf.st_gid = root_gid;
-	else
-		buf.st_gid = getgid();
-	if(root_time_opt)
-		buf.st_mtime = root_time;
-	if(pseudo_override && global_uid_opt)
-		buf.st_uid = global_uid;
-	if(pseudo_override && global_gid_opt)
-		buf.st_gid = global_gid;
-	buf.st_dev = 0;
-	buf.st_ino = 0;
-	dir_ent->inode = lookup_inode_flag(&buf, root_time_opt);
-	dir_ent->inode->dummy_root_dir = TRUE;
-	dir_ent->dir = root_dir;
-	root_dir->dir_ent = dir_ent;
-
-	return do_directory_scans(dir_ent, progress);
+	return create_root_scan(progress, ZIPFILE);
 }

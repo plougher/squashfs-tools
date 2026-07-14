@@ -70,7 +70,6 @@
 #include "process_fragments.h"
 #include "fnmatch_compat.h"
 #include "tar.h"
-#include "zipfile.h"
 #include "merge_sort.h"
 #include "nprocessors_compat.h"
 #include "memory_compat.h"
@@ -80,10 +79,12 @@
 #include "symbolic_mode.h"
 #include "thread.h"
 #include "reader.h"
+#include "zipfile.h"
 #include "limit.h"
 #include "alloc.h"
 #include "virt_disk_pos.h"
 #include "uid_gid.h"
+#include "archive.h"
 
 /* Compression options */
 int noF = FALSE;
@@ -3453,7 +3454,7 @@ static struct inode_info *lookup_inode4(struct stat *buf, struct pseudo_dev *pse
 	inode->inode_number = 0;
 	inode->dummy_root_dir = FALSE;
 	inode->xattr = NULL;
-	inode->tarfile = FALSE;
+	inode->archive = FALSE;
 	inode->alignment = 0;
 	inode->deref = FALSE;
 
@@ -4964,7 +4965,7 @@ static void dir_scan8(squashfs_inode *inode, struct dir_info *dir_info)
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
 			switch(buf->st_mode & S_IFMT) {
 				case S_IFREG:
-					if(dir_ent->inode->tarfile)
+					if(tar_archive(dir_ent->inode->archive))
 						file = dir_ent->inode->tar_file->file;
 					else
 						file = dir_ent->inode->file;
@@ -5920,7 +5921,7 @@ skip_inode_hash_table:
 }
 
 
-static char *get_component(char *target, char **targname)
+static char *get_comp(char *target, char **targname)
 {
 	char *start;
 
@@ -5963,7 +5964,7 @@ static struct pathname *add_path(struct pathname *paths, char *target, char *all
 	char *targname;
 	int i, error;
 
-	target = get_component(target, &targname);
+	target = get_comp(target, &targname);
 
 	if(paths == NULL) {
 		paths = MALLOC(sizeof(struct pathname));
