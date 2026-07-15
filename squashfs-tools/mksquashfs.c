@@ -83,6 +83,7 @@
 #include "alloc.h"
 #include "virt_disk_pos.h"
 #include "uid_gid.h"
+#include "fd_pos.h"
 
 /* Compression options */
 int noF = FALSE;
@@ -305,7 +306,6 @@ pthread_t reader_thread1, writer_thread, main_thread;
 pthread_t *deflator_thread, *frag_deflator_thread, *frag_thread;
 pthread_t *restore_thread = NULL;
 pthread_mutex_t	fragment_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t	lseek_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t	dup_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t	pos_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -332,9 +332,6 @@ int logging=FALSE;
 
 /* file descriptor of the output filesystem */
 int fd;
-
-/* Current file position in output filesystem */
-off_t fd_pos = 0;
 
 /* Variables used for appending */
 int appending = TRUE;
@@ -751,38 +748,34 @@ bytes_read:
 int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 {
 	off_t off = byte + start_offset;
-	int res = 1;
+	long long res, count;
 
 	TRACE("read_fs_bytes: reading from position 0x%llx, bytes %lld\n",
 		byte, bytes);
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &lseek_mutex);
-	pthread_mutex_lock(&lseek_mutex);
+	for(count = 0; count < bytes; count += res, off += res) {
+		int len = (bytes - count) > MAXIMUM_READ_SIZE ?
+					MAXIMUM_READ_SIZE : bytes - count;
 
-	if(fd_pos != off) {
-		if(lseek(fd, off, SEEK_SET) == -1) {
-			ERROR("read_fs_bytes: Lseek on destination failed "
-				"because %s, offset=0x%llx\n", strerror(errno),
-				(long long) off);
-			fd_pos = LLONG_MAX;
-			res = FALSE;
-			goto unlock;
+		res = pread(fd, buff + count, len, off);
+		if(res < 1) {
+			if(res == 0)
+				break;
+			else if(errno != EINTR) {
+				ERROR("Read on destination failed because %s\n",
+						strerror(errno));
+				return FALSE;
+			} else
+				res = 0;
 		}
 	}
 
-	if(read_bytes(fd, buff, bytes) < bytes) {
+	if(count < bytes) {
 		ERROR("Read on destination failed\n");
-		fd_pos = LLONG_MAX;
-		res = FALSE;
-		goto unlock;
+		return FALSE;
 	}
 
-	fd_pos = off + bytes;
-
-unlock:
-	pthread_cleanup_pop(1);
-
-	return res;
+	return TRUE;
 }
 
 
@@ -812,38 +805,31 @@ static int write_bytes(int fd, void *buff, long long bytes)
 void write_destination(int fd, long long byte, long long bytes, void *buff)
 {
 	off_t off = start_offset + byte;
+	long long res, count;
 
-	pthread_cleanup_push((void *) pthread_mutex_unlock, &lseek_mutex);
-	pthread_mutex_lock(&lseek_mutex);
+	if(streaming) {
+		check_fd_pos(off);
+		update_fd_pos(off + bytes);
+	}
 
-	if(fd_pos != off) {
-		if(streaming)
-			/*
-			 * We cannot seek on the output filesystem, and this
-			 * situation is a bug - with no duplicate checking,
-			 * no seeking on the output filesystem should be
-			 * necessary.
-			 */
-			BAD_ERROR("BUG: trying to seek on stdout when streaming!\n");
+	for(count = 0; count < bytes; count += res, off += res) {
+		int len = (bytes - count) > MAXIMUM_READ_SIZE ?
+					MAXIMUM_READ_SIZE : bytes - count;
 
-		if(lseek(fd, off, SEEK_SET) == -1) {
-			ERROR("write_destination: Lseek on destination failed "
-				"because %s, offset=0x%llx\n", strerror(errno),
-				(long long) off);
-			BAD_ERROR("Probably out of space on output %s\n",
-				block_device ? "block device" : "filesystem");
+		res = streaming ? write(fd, buff + count, len) :
+				pwrite(fd, buff + count, len, off);
+		if(res == -1) {
+			if(errno != EINTR) {
+				ERROR("Write failed because %s\n",
+						strerror(errno));
+				ERROR("Failed to write to output %s\n",
+					block_device ? "block device" : "filesystem");
+				BAD_ERROR("Probably out of space on output %s\n",
+					block_device ? "block device" : "filesystem");
+			}
+			res = 0;
 		}
 	}
-
-	if(write_bytes(fd, buff, bytes) == -1) {
-		ERROR("Failed to write to output %s\n",
-			block_device ? "block device" : "filesystem");
-		BAD_ERROR("Probably out of space on output %s\n",
-			block_device ? "block device" : "filesystem");
-	}
-
-	fd_pos = off + bytes;
-	pthread_cleanup_pop(1);
 }
 
 
@@ -2684,6 +2670,7 @@ static void *writer(void *arg)
 {
 	while(1) {
 		struct file_buffer *file_buffer = queue_get(to_writer);
+		long long res, count, bytes;
 		off_t off;
 
 		if(file_buffer == NULL) {
@@ -2692,31 +2679,31 @@ static void *writer(void *arg)
 		}
 
 		off = start_offset + file_buffer->block;
+		bytes = file_buffer->size;
 
-		pthread_cleanup_push((void *) pthread_mutex_unlock, &lseek_mutex);
-		pthread_mutex_lock(&lseek_mutex);
+		if(streaming) {
+			check_fd_pos(off);
+			update_fd_pos(off + bytes);
+		}
 
-		if(fd_pos != off) {
-			if(lseek(fd, off, SEEK_SET) == -1) {
-				ERROR("writer: Lseek on destination failed "
-					"because %s, offset=0x%llx\n",
-					strerror(errno), (long long) off);
-				BAD_ERROR("Probably out of space on output "
-					"%s\n", block_device ? "block device" :
-					"filesystem");
+		for(count = 0; count < bytes; count += res, off += res) {
+			int len = (bytes - count) > MAXIMUM_READ_SIZE ?
+						MAXIMUM_READ_SIZE : bytes - count;
+
+			res = streaming ? write(fd, file_buffer->data + count, len) :
+						pwrite(fd, file_buffer->data + count, len, off);
+			if(res == -1) {
+				if(errno != EINTR) {
+					ERROR("Write failed because %s\n",
+							strerror(errno));
+					ERROR("Failed to write to output %s\n",
+						block_device ? "block device" : "filesystem");
+					BAD_ERROR("Probably out of space on output %s\n",
+						block_device ? "block device" : "filesystem");
+				}
+				res = 0;
 			}
-
 		}
-
-		if(write_bytes(fd, file_buffer->data, file_buffer->size) == -1) {
-			ERROR("Failed to write to output %s\n",
-				block_device ? "block device" : "filesystem");
-			BAD_ERROR("Probably out of space on output %s\n",
-				block_device ? "block device" : "filesystem");
-		}
-
-		fd_pos = off + file_buffer->size;
-		pthread_cleanup_pop(1);
 
 		gen_cache_block_put(file_buffer);
 	}
