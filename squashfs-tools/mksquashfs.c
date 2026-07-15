@@ -509,17 +509,17 @@ static inline void send_orderer_reset(long long vpos)
 }
 
 
-static inline void  sync_writer_thread()
+static inline void  kill_writer_thread()
 {
 	struct file_buffer *buffer = MALLOC(sizeof(struct file_buffer));
 
 	buffer->cache = NULL;
 	buffer->sequence = get_sequence();
-	buffer->buffer_type = WSYNC_CMD;
+	buffer->buffer_type = WKILL_CMD;
 
 	order_queue_put(to_order, buffer);
 	if(queue_get(from_writer) != 0)
-		BAD_ERROR("Got unexpected response in sync_writer_thread\n");
+		BAD_ERROR("Got unexpected response in kill_writer_thread\n");
 }
 
 
@@ -2675,7 +2675,7 @@ static void *writer(void *arg)
 
 		if(file_buffer == NULL) {
 			queue_put(from_writer, NULL);
-			continue;
+			pthread_exit(NULL);
 		}
 
 		off = start_offset + file_buffer->block;
@@ -2823,7 +2823,7 @@ static void *orderer(void *arg)
 			write_buffer->block = get_and_inc_dpos_aligned(write_buffer);
 			add_virt_disk(block, write_buffer->block);
 			queue_put(to_writer, write_buffer);
-		} else if(write_buffer->buffer_type == WSYNC_CMD) {
+		} else if(write_buffer->buffer_type == WKILL_CMD) {
 			free(write_buffer);
 			queue_put(to_writer, NULL);
 		} else if(write_buffer->buffer_type == RESET_CMD) {
@@ -7697,8 +7697,7 @@ static int sqfstar(int argc, char *argv[])
 	while((fragment = get_frag_action(fragment)))
 		write_fragment(*fragment);
 
-	sync_writer_thread();
-	pthread_cancel(writer_thread);
+	kill_writer_thread();
 
 	if(!check_id_table_offset())
 		BAD_ERROR("id entry out of range after applying -uid-gid-offset offset\n");
@@ -9178,8 +9177,7 @@ int main(int argc, char *argv[])
 	while((fragment = get_frag_action(fragment)))
 		write_fragment(*fragment);
 
-	sync_writer_thread();
-	pthread_cancel(writer_thread);
+	kill_writer_thread();
 
 	if(!check_id_table_offset())
 		BAD_ERROR("id entry out of range after applying -uid-gid-offset offset\n");
