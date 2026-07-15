@@ -1617,6 +1617,11 @@ again:
 		if(locked)
 			/* got a buffer being filled in.  Wait for it */
 			cache_wait_unlock(buffer);
+		if(buffer->error) {
+			ERROR("Failed to read fragment from output"
+				" filesystem\n");
+			BAD_ERROR("Output filesystem corrupted?\n");
+		}
 		goto finished;
 	}
 
@@ -1627,6 +1632,11 @@ again:
 		if(locked)
 			/* got a buffer being filled in.  Wait for it */
 			cache_wait_unlock(buffer);
+		if(buffer->error) {
+			ERROR("Failed to read fragment from output"
+				" filesystem\n");
+			BAD_ERROR("Output filesystem corrupted?\n");
+		}
 		goto finished;
 	}
 
