@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2013, 2014
+ * Copyright (c) 2013, 2014, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -25,4 +25,29 @@
  */
 
 extern pthread_t *init_restore_thread();
+
+#ifndef __ANDROID__
+static inline int kill_orderer()
+{
+	return 0;
+}
+
+static inline int kill_writer()
+{
+	return 0;
+}
+#else
+extern int orderer_die;
+extern int writer_die;
+
+static inline int kill_orderer()
+{
+	return __atomic_exchange_n(&orderer_die, FALSE, __ATOMIC_SEQ_CST);
+}
+
+static inline int kill_writer()
+{
+	return __atomic_exchange_n(&writer_die, FALSE, __ATOMIC_SEQ_CST);
+}
+#endif
 #endif

@@ -344,6 +344,11 @@ struct file_buffer *order_queue_get(struct seq_queue *queue)
 	pthread_mutex_lock(&queue->mutex);
 
 	while(1) {
+		if(queue->die) {
+			entry = NULL;
+			break;
+		}
+
 		for(entry = queue->hash_table[hash]; entry;
 						entry = entry->seq_next)
 			if(entry->sequence == queue->sequence)
@@ -373,6 +378,18 @@ struct file_buffer *order_queue_get(struct seq_queue *queue)
 	pthread_cleanup_pop(1);
 
 	return entry;
+}
+
+
+void order_queue_die(struct seq_queue *queue)
+{
+	pthread_cleanup_push((void *) pthread_mutex_unlock, &queue->mutex);
+	pthread_mutex_lock(&queue->mutex);
+
+	queue->die = TRUE;
+	pthread_cond_signal(&queue->wait);
+
+	pthread_cleanup_pop(1);
 }
 
 

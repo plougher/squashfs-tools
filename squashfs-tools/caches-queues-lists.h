@@ -163,6 +163,7 @@ struct queue {
  */
 struct seq_queue {
 	unsigned short		version;
+	short			die;
 	int			fragment_count;
 	int			block_count;
 	long long		sequence;
@@ -255,6 +256,7 @@ extern struct seq_queue *seq_queue_init();
 extern void dump_seq_queue(struct seq_queue *, int);
 extern void seq_queue_flush(struct seq_queue *);
 extern void main_queue_put(struct seq_queue *, struct file_buffer *);
+extern void order_queue_die(struct seq_queue *);
 extern void order_queue_put(struct seq_queue *, struct file_buffer *);
 extern struct file_buffer *main_queue_get(struct seq_queue *);
 extern struct file_buffer *order_queue_get(struct seq_queue *);

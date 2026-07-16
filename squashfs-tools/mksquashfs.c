@@ -2683,6 +2683,9 @@ static void *writer(void *arg)
 		long long res, count, bytes;
 		off_t off;
 
+		if(kill_writer())
+			pthread_exit(NULL);
+
 		if(file_buffer == NULL) {
 			queue_put(from_writer, NULL);
 			pthread_exit(NULL);
@@ -2819,9 +2822,13 @@ static void *orderer(void *arg)
 
 	while(1) {
 		struct file_buffer *write_buffer = order_queue_get(to_order);
-		long long block = write_buffer->block;
+
+		if(kill_orderer() || write_buffer == NULL)
+			pthread_exit(NULL);
 
 		if(write_buffer->buffer_type == GEN_CACHE) {
+			long long block = write_buffer->block;
+
 			pthread_mutex_lock(&fragment_mutex);
 			write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
 			fragment_table[block].start_block = write_buffer->block;
@@ -2830,6 +2837,8 @@ static void *orderer(void *arg)
 			log_fragment(block, write_buffer->block);
 			queue_put(to_writer, write_buffer);
 		} else if(write_buffer->buffer_type == QUEUE_CACHE) {
+			long long block = write_buffer->block;
+
 			write_buffer->block = get_and_inc_dpos_aligned(write_buffer);
 			add_virt_disk(block, write_buffer->block);
 			queue_put(to_writer, write_buffer);
@@ -2840,7 +2849,7 @@ static void *orderer(void *arg)
 			set_dpos(get_virt_disk(write_buffer->block));
 			free(write_buffer);
 		} else if(write_buffer->buffer_type == MAP_CMD) {
-			add_virt_disk(block, get_dpos());
+			add_virt_disk(write_buffer->block, get_dpos());
 			free(write_buffer);
 		} else
 
@@ -5696,13 +5705,12 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	 * allowing the user to press ^C twice to restore the existing
 	 * filesystem.
 	 *
-	 * SIGUSR1 is an internal signal, which is used by the sub-threads
-	 * to tell the main thread to terminate, deleting the destination file,
-	 * or if necessary restoring the filesystem on appending
+	 * SIGUSR1 and SIGUSR2 are internal signals.
 	 */
 	signal(SIGTERM, sighandler);
 	signal(SIGINT, sighandler);
 	signal(SIGUSR1, sighandler);
+	signal(SIGUSR2, sighandler);
 
 	/* block SIGQUIT and SIGHUP, these are handled by the info thread */
 	sigemptyset(&sigmask);
@@ -5719,6 +5727,7 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	sigaddset(&sigmask, SIGINT);
 	sigaddset(&sigmask, SIGTERM);
 	sigaddset(&sigmask, SIGUSR1);
+	sigaddset(&sigmask, SIGUSR2);
 	if(pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask) != 0)
 		BAD_ERROR("Failed to set signal mask in initialise_threads\n");
 
