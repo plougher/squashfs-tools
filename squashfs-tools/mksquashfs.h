@@ -241,8 +241,7 @@ static inline int get_pathmax()
 extern struct cache *fragment_buffer, *reserve_cache;
 extern struct cache *fwriter_buffer;
 extern struct queue_cache *bwriter_buffer;
-extern struct queue *to_reader, *to_writer, *from_writer, *to_frag,
-       *locked_fragment;
+extern struct queue *to_reader, *to_writer, *to_frag, *locked_fragment;
 extern struct queue_cache *to_deflate;
 extern struct read_queue *to_process_frag;
 extern struct append_file **file_mapping;

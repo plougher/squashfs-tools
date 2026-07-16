@@ -296,7 +296,7 @@ unsigned int sid_count = 0, suid_count = 0, sguid_count = 0;
 struct cache *fragment_buffer, *reserve_cache;
 struct cache *fwriter_buffer;
 struct queue_cache *bwriter_buffer;
-struct queue *to_reader, *to_writer, *from_writer, *to_frag, *from_order;
+struct queue *to_reader, *to_writer, *to_frag, *from_order;
 struct queue_cache *to_deflate;
 struct read_queue *to_process_frag;
 struct seq_queue *to_main;
@@ -509,7 +509,7 @@ static inline void send_orderer_reset(long long vpos)
 }
 
 
-static inline void  kill_writer_thread()
+static inline void kill_writer_thread()
 {
 	struct file_buffer *buffer = MALLOC(sizeof(struct file_buffer));
 
@@ -518,8 +518,7 @@ static inline void  kill_writer_thread()
 	buffer->buffer_type = WKILL_CMD;
 
 	order_queue_put(to_order, buffer);
-	if(queue_get(from_writer) != 0)
-		BAD_ERROR("Got unexpected response in kill_writer_thread\n");
+	pthread_join(writer_thread, NULL);
 }
 
 
@@ -2683,13 +2682,8 @@ static void *writer(void *arg)
 		long long res, count, bytes;
 		off_t off;
 
-		if(kill_writer())
+		if(kill_writer() || file_buffer == NULL)
 			pthread_exit(NULL);
-
-		if(file_buffer == NULL) {
-			queue_put(from_writer, NULL);
-			pthread_exit(NULL);
-		}
 
 		off = start_offset + file_buffer->block;
 		bytes = file_buffer->size;
@@ -5743,7 +5737,6 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 	bwriter_buffer = to_deflate = queue_cache_init(&thread_mutex, block_size, freelst);
 	to_process_frag = read_queue_init();
 	to_writer = queue_init(bwriter_size + fwriter_size, NULL);
-	from_writer = queue_init(1, NULL);
 	from_order = queue_init(1, NULL);
 	to_frag = queue_init(fragment_size, &thread_mutex);
 	to_main = seq_queue_init();
