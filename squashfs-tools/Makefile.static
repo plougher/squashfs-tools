@@ -26,7 +26,7 @@ mksquashfs.o: mksquashfs.c squashfs_fs.h squashfs_swap.h endian_compat.h \
  read_fs.h restore.h process_fragments.h fnmatch_compat.h tar.h \
  merge_sort.h nprocessors_compat.h memory_compat.h memory.h \
  mksquashfs_help.h print_pager.h symbolic_mode.h thread.h reader.h \
- limit.h virt_disk_pos.h uid_gid.h
+ limit.h virt_disk_pos.h uid_gid.h fd_pos.h
 mksquashfs_help.o: mksquashfs_help.c mksquashfs_error.h error.h \
  mksquashfs_help.h print_pager.h compressor.h alloc.h thread.h
 nprocessors_compat.o: nprocessors_compat.c
@@ -48,7 +48,7 @@ reader.o: reader.c squashfs_fs.h mksquashfs.h progressbar.h \
  mksquashfs_error.h error.h pseudo.h sort.h tar.h reader.h atomic_swap.h \
  caches-queues-lists.h alloc.h lseek.h
 restore.o: restore.c squashfs_fs.h mksquashfs.h mksquashfs_error.h \
- error.h progressbar.h info.h reader.h caches-queues-lists.h
+ error.h progressbar.h info.h reader.h caches-queues-lists.h restore.h
 sort.o: sort.c squashfs_fs.h mksquashfs.h sort.h mksquashfs_error.h \
  error.h progressbar.h alloc.h
 swap.o: swap.c endian_compat.h
