@@ -80,26 +80,6 @@ static int checksum_sparse(struct file_buffer *file_buffer)
 }
 
 
-static int read_filesystem(int fd, long long byte, int bytes, void *buff)
-{
-	off_t off = byte;
-
-	TRACE("read_filesystem: reading from position 0x%llx, bytes %d\n",
-		byte, bytes);
-
-	if(lseek(fd, start_offset + off, SEEK_SET) == -1) {
-		ERROR("read_filesystem: Lseek on destination failed because %s, "
-			"offset=0x%llx\n", strerror(errno), start_offset + off);
-		return 0;
-	} else if(read_bytes(fd, buff, bytes) < bytes) {
-		ERROR("Read on destination failed\n");
-		return 0;
-	}
-
-	return 1;
-}
-
-
 static struct file_buffer *get_fragment(struct fragment *fragment,
 	char *data_buffer, int fd)
 {
@@ -189,7 +169,7 @@ again:
 		if(compressed_buffer)
 			data = compressed_buffer->data;
 		else {
-			res = read_filesystem(fd, start_block, size, data_buffer);
+			res = read_fs_bytes(fd, start_block, size, data_buffer);
 			if(res == 0) {
 				buffer->error = TRUE;
 				goto unlock;
@@ -204,7 +184,7 @@ again:
 	} else if(compressed_buffer)
 		memcpy(buffer->data, compressed_buffer->data, size);
 	else {
-		res = read_filesystem(fd, start_block, size, buffer->data);
+		res = read_fs_bytes(fd, start_block, size, buffer->data);
 		if(res == 0)
 			buffer->error = TRUE;
 	}
@@ -263,7 +243,6 @@ void *frag_thrd(void *destination_file)
 {
 	sigset_t sigmask, old_mask;
 	char *data_buffer;
-	int fd;
 
 	sigemptyset(&sigmask);
 	sigaddset(&sigmask, SIGINT);
@@ -271,13 +250,8 @@ void *frag_thrd(void *destination_file)
 	sigaddset(&sigmask, SIGUSR1);
 	pthread_sigmask(SIG_BLOCK, &sigmask, &old_mask);
 
-	if(duplicate_checking) {
-		fd = open(destination_file, O_RDONLY);
-		if(fd == -1)
-			BAD_ERROR("frag_thrd: can't open destination for reading\n");
-
+	if(duplicate_checking)
 		data_buffer = MALLOC(SQUASHFS_FILE_MAX_SIZE);
-	}
 
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &dup_mutex);
 
