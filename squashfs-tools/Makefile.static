@@ -110,5 +110,8 @@ xz_wrapper.o: xz_wrapper.c squashfs_fs.h xz_wrapper.h endian_compat.h \
  compressor.h print_pager.h alloc.h error.h
 xz_wrapper_extended.o: xz_wrapper_extended.c squashfs_fs.h xz_wrapper.h \
  endian_compat.h compressor.h print_pager.h alloc.h error.h
+zipfile.o: zipfile.c squashfs_fs.h mksquashfs.h mksquashfs_error.h error.h \
+ xattr.h tar.h zipfile.h progressbar.h info.h symbolic_mode.h reader.h \
+ caches-queues-lists.h alloc.h
 zstd_wrapper.o: zstd_wrapper.c squashfs_fs.h zstd_wrapper.h \
  endian_compat.h compressor.h print_pager.h

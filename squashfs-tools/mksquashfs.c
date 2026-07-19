@@ -79,11 +79,13 @@
 #include "symbolic_mode.h"
 #include "thread.h"
 #include "reader.h"
+#include "zipfile.h"
 #include "limit.h"
 #include "alloc.h"
 #include "virt_disk_pos.h"
 #include "uid_gid.h"
 #include "fd_pos.h"
+#include "archive.h"
 
 /* Compression options */
 int noF = FALSE;
@@ -169,6 +171,9 @@ dev_t cur_dev;
 
 /* Is Mksquashfs processing a tarfile? */
 int tarfile = FALSE;
+
+/* Is Mksquashfs processing zip file(s)? */
+int zipfile = FALSE;
 
 /* Is Mksquashfs reading a pseudo file from stdin? */
 int pseudo_stdin = FALSE;
@@ -3449,7 +3454,7 @@ static struct inode_info *lookup_inode4(struct stat *buf, struct pseudo_dev *pse
 	inode->inode_number = 0;
 	inode->dummy_root_dir = FALSE;
 	inode->xattr = NULL;
-	inode->tarfile = FALSE;
+	inode->archive = FALSE;
 	inode->alignment = 0;
 	inode->deref = FALSE;
 
@@ -4856,7 +4861,7 @@ static void dir_scan8(squashfs_inode *inode, struct dir_info *dir_info)
 		if(dir_ent->inode->inode == SQUASHFS_INVALID_BLK) {
 			switch(buf->st_mode & S_IFMT) {
 				case S_IFREG:
-					if(dir_ent->inode->tarfile)
+					if(tar_archive(dir_ent->inode->archive))
 						file = dir_ent->inode->tar_file->file;
 					else
 						file = dir_ent->inode->file;
@@ -5811,7 +5816,7 @@ skip_inode_hash_table:
 }
 
 
-static char *get_component(char *target, char **targname)
+static char *get_comp(char *target, char **targname)
 {
 	char *start;
 
@@ -5854,7 +5859,7 @@ static struct pathname *add_path(struct pathname *paths, char *target, char *all
 	char *targname;
 	int i, error;
 
-	target = get_component(target, &targname);
+	target = get_comp(target, &targname);
 
 	if(paths == NULL) {
 		paths = MALLOC(sizeof(struct pathname));
@@ -8528,6 +8533,8 @@ int main(int argc, char *argv[])
 				strcmp(argv[i], "-cpiostyle0") == 0 ||
 				strcmp(argv[i], "-tar") == 0) {
 			/* parsed previously */
+		} else if(strcmp(argv[i], "-zip") == 0) {
+			zipfile = TRUE;
 		} else if(strcmp(argv[i], "-comp") == 0) {
 			/* parsed previously */
 			i++;
@@ -8684,6 +8691,20 @@ int main(int argc, char *argv[])
 		BAD_ERROR("Sources on the command line should be - when using "
 			"-tar option, i.e. mksquashfs - image.sqfs -tar\n");
 
+	/* The -zip option reads seekable archives named on the command line,
+	 * so it is incompatible with the stdin-reading input options and needs
+	 * at least one source archive */
+	if(zipfile && (tarfile || cpiostyle || pseudo_stdin))
+		BAD_ERROR("-zip cannot be combined with -tar, -cpiostyle[0] or "
+			"a pseudo file read from stdin\n");
+
+	if(zipfile && !source)
+		BAD_ERROR("No zip files specified on the command line, i.e. "
+			"mksquashfs file1.zip file2.zip image.sqfs -zip\n");
+
+	if(zipfile && any_actions())
+		BAD_ERROR("Actions are unsupported when reading zip files\n");
+
 	/* If -tar option is set, then check that actions have not been
 	 * specified, which are unsupported with tar file reading
 	 */
@@ -8699,6 +8720,12 @@ int main(int argc, char *argv[])
 	 * cannot be used with tar files */
 	if(tarfile && exclude_option && old_exclude)
 		BAD_ERROR("-wildcards must be specified with tar files and -ef/-e\n");
+
+	/* If -zip option is set and there are exclude files (either -ef or -e),
+	 * then -wildcards or -regex must be set too.  The older legacy exclude
+	 * code cannot be used with zip files */
+	if(zipfile && exclude_option && old_exclude)
+		BAD_ERROR("-wildcards must be specified with zip files and -ef/-e\n");
 
 	/*
 	 * The -noI option implies -noId for backwards compatibility, so reset
@@ -9160,6 +9187,8 @@ int main(int argc, char *argv[])
 
 		if(tarfile)
 			inode = process_tar_file(progress);
+		else if(zipfile)
+			inode = process_zip_file(progress);
 		else if(tarstyle || cpiostyle)
 			inode = process_source(progress, deref, deref_keep);
 		else if(!source)

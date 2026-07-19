@@ -54,6 +54,7 @@
 #include "alloc.h"
 #include "caches-queues-lists.h"
 #include "virt_disk_pos.h"
+#include "archive.h"
 
 /* compressed xattr table */
 static char *xattr_table = NULL;
@@ -548,7 +549,7 @@ int read_xattrs(void *d, int type)
 	if(no_xattrs || inode->root_entry)
 		return SQUASHFS_INVALID_XATTR;
 
-	if(IS_TARFILE(inode))
+	if(tar_archive(inode->archive) || zip_archive(inode->archive))
 		i = read_xattrs_from_tarfile(inode, &xattr_list);
 	else if(!inode->dummy_root_dir && !IS_PSEUDO(inode))
 		i = read_xattrs_from_system(dir_ent, filename, &xattr_list);

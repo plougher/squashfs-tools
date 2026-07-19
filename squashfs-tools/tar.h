@@ -81,7 +81,10 @@ struct tar_file {
 	struct stat		buf;
 	struct file_info	*file;
 	struct xattr_list	*xattr_list;
-	struct file_map		*map;
+	union {
+		struct file_map		*map;
+		struct zip_entry	*zipfile;
+	};
 	char			*pathname;
 	char			*link;
 	char			*uname;
@@ -95,7 +98,6 @@ struct tar_file {
 	char			sparse_pax;
 };
 
-#define IS_TARFILE(a)	(a->tarfile)
 #define TAR_NORMAL1	'0'
 #define TAR_NORMAL2	'\0'
 #define TAR_HARD	'1'

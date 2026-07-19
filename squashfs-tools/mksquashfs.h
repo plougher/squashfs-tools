@@ -55,10 +55,8 @@ struct inode_info {
 	struct stat		buf;
 	struct inode_info	*next;
 	struct pseudo_dev	*pseudo;
-	union {
-		struct tar_file		*tar_file;
-		struct file_info	*file;
-	};
+	struct tar_file		*tar_file;
+	struct file_info	*file;
 	struct pseudo_xattr	*xattr;
 	union {
 		char			*symlink;
@@ -74,7 +72,7 @@ struct inode_info {
 	char			always_use_fragments;
 	char			noD;
 	char			noF;
-	char			tarfile;
+	char			archive;
 	char			read;
 	char			scanned;
 	char			alignment;
@@ -263,6 +261,7 @@ extern int no_hardlinks;
 extern struct dir_info *root_dir;
 extern struct pathnames *paths;
 extern int tarfile;
+extern int zipfile;
 extern int root_mode_opt;
 extern struct mode_data *root_mode;
 extern int root_time_opt;

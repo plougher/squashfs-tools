@@ -48,11 +48,13 @@
 #include "pseudo.h"
 #include "sort.h"
 #include "tar.h"
-#include "reader.h"
 #include "atomic_swap.h"
 #include "caches-queues-lists.h"
+#include "reader.h"
 #include "alloc.h"
 #include "lseek.h"
+#include "archive.h"
+#include "zipfile.h"
 
 #define READER_ALLOC 1024
 
@@ -170,7 +172,7 @@ static inline int is_large(struct inode_info *inode)
 }
 
 
-static void put_file_buffer(int id, struct file_buffer *file_buffer, int next_state)
+void put_file_buffer(int id, struct file_buffer *file_buffer, int next_state)
 {
 	file_buffer->next_state = next_state;
 
@@ -194,7 +196,7 @@ static void put_file_buffer(int id, struct file_buffer *file_buffer, int next_st
 }
 
 
-static struct file_buffer *get_buffer(struct reader *reader, struct read_entry *entry,
+struct file_buffer *get_buffer(struct reader *reader, struct read_entry *entry,
 	long long file_size, long long block, int version)
 {
 	struct file_buffer *file_buffer = cache_get_nohash(reader->buffer);
@@ -765,7 +767,7 @@ static void reader_scan(struct dir_info *dir)
 	struct dir_ent *dir_ent = dir->list;
 
 	for(; dir_ent; dir_ent = dir_ent->next) {
-		if(dir_ent->inode->root_entry || IS_TARFILE(dir_ent->inode) || dir_ent->inode->scanned)
+		if(dir_ent->inode->root_entry || tar_archive(dir_ent->inode->archive) || dir_ent->inode->scanned)
 			continue;
 
 		if(IS_PSEUDO_PROCESS(dir_ent->inode) ||
@@ -820,6 +822,8 @@ static void *block_reader(void *arg)
 
 		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
 			reader_read_process(reader, entry);
+		if(zip_archive(entry->dir_ent->inode->archive))
+			read_zip_data(&reader[0], entry);
 		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
 			reader_read_file(reader, entry, BLOCK_READER);
 		else
@@ -843,6 +847,8 @@ static void *fragment_reader(void *arg)
 
 		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
 			reader_read_process(reader, entry);
+		if(zip_archive(entry->dir_ent->inode->archive))
+			read_zip_data(&reader[0], entry);
 		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
 			reader_read_file(reader, entry, FRAGMENT_READER);
 		else
@@ -915,7 +921,7 @@ static void single_reader_scan(struct dir_info *dir)
 			single_reader_scan(dir_ent->dir);
 			continue;
 		}
-		if(IS_TARFILE(dir_ent->inode))
+		if(tar_archive(dir_ent->inode->archive))
 			continue;
 
 		if(IS_PSEUDO_PROCESS(dir_ent->inode) ||
@@ -930,6 +936,8 @@ static void single_reader_scan(struct dir_info *dir)
 			reader_read_process(&reader[0], &entry);
 		else if(IS_PSEUDO_DATA(dir_ent->inode))
 			reader_read_data(&reader[0], &entry);
+		else if(zip_archive(dir_ent->inode->archive))
+			read_zip_data(&reader[0], &entry);
 		else if(S_ISREG(dir_ent->inode->buf.st_mode))
 			reader_read_file(&reader[0], &entry, COMBINED_READER);
 	}

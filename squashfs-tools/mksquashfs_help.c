@@ -44,7 +44,7 @@ static char *mksquashfs_options[]={
 	"", "", "-b", "-comp", "-noI", "-noId", "-noD", "-noF", "-noX",
 	"-no-compression", "", "", "",
 	/* build options */
-	"-tar", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
+	"-tar", "-zip", "-no-strip", "-tarstyle", "-cpiostyle", "-cpiostyle0",
 	"-no-exports", "-exports", "-no-sparse", "-no-tailends", "-tailends",
 	"-no-fragments", "-no-duplicates", "-no-hardlinks",
 	"-keep-as-directory", "", "", "",
@@ -132,7 +132,7 @@ static char *mksquashfs_args[]={
 	/* compression options */
 	"", "", "<block-size>", "<comp>", "", "", "", "", "", "", "", "", "",
 	/* build options */
-	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "","", "",
+	"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "","", "",
 	/* time options */
 	"<time>", "<time>", "<time>", "", "<time>", "", "", "",
 	/* permissions options */
@@ -226,6 +226,12 @@ static char *mksquashfs_text[]={
 		"This is equivalent to specifying -noI -noD -noF and -noX\n",
 	"\n", "Filesystem build options:", "\n",
 	"-tar\t\t\tread uncompressed tar file from standard in (stdin)\n",
+	"-zip\t\t\tread the source zip file(s) named on the command line, "
+		"using their central directory index to read and inflate "
+		"entries with parallel reader threads.  Files with the same "
+		"pathname in more than one archive are reported, and the last "
+		"one on the command line is used.  To exclude entries with "
+		"-e/-ef, -wildcards or -regex must also be specified\n",
 	"-no-strip\t\tact like tar, and do not strip leading directories from "
 		"source files\n",
 	"-tarstyle\t\talternative name for -no-strip\n",
