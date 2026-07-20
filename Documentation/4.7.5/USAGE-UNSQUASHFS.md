@@ -1,4 +1,4 @@
-# UNSQUASHFS 4.7.4 - a tool to extract and list Squashfs filesystems
+# UNSQUASHFS 4.7.5 - a tool to extract and list Squashfs filesystems
 
 This file describes how to use Unsquashfs, and it has the following sections:
 
