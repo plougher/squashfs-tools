@@ -1,4 +1,4 @@
-# INSTALLING SQUASHFS-TOOLS 4.7.5
+# INSTALLING SQUASHFS-TOOLS 4.7.6
 
 ## Building squashfs tools
 

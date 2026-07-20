@@ -1,10 +1,10 @@
 	SQUASHFS - A squashed read-only filesystem for Linux
 
-	Copyright 2002-2025 Phillip Lougher <phillip@squashfs.org.uk>
+	Copyright 2002-2026 Phillip Lougher <phillip@squashfs.org.uk>
 
 	Released under the GPL licence (version 2 or later).
 
-Welcome to Squashfs-tools 4.7.5.  Please read the CHANGES and README files for
+Welcome to Squashfs-tools 4.7.6.  Please read the CHANGES and README files for
 the added features and improvements.
 
 Squashfs is a highly compressed read-only filesystem for Linux.

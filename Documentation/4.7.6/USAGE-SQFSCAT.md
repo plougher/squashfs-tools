@@ -1,4 +1,4 @@
-# SQFSCAT 4.7.5 - A tool to output files to stdout
+# SQFSCAT 4.7.6 - A tool to output files to stdout
 
 This file describes how to use Sqfscat, and it has the following sections:
 
