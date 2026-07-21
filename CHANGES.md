@@ -1,8 +1,50 @@
 # SQUASHFS CHANGE LOG
 
+### 4.7.6 (26 JUL 2026):
+
+1. Mksquashfs symbolic link handling improvements
+
+    1. New -dereference option that follows symbolic links, and archives the files or directories they point to.
+    2. New -deref \<response\> option that follows symbolic links like -dereference, but where \<response\> determines what happens if the symbolic link can't be dereferenced, response can be "keep" or "delete".
+    3. New -deref \<path\> option, which follows the symbolic link \<path\> and archives the file or directory it points to.  This is an alternative to the above blanket options which apply to all symbolic links.
+    4. New dereference(response) action, which follows the symbolic link where the action tests return TRUE.  Again, this is an alternative to the above blanket options which apply to all symbolic links.
+
+2. New LZ4 compressor options
+
+    1. -Xacceleration \<acceleration\>, accelerate compression by value between 1 .. 65537
+    2. -Xcompression-level \<compression-level\>, use compression level 1 .. 12.
+
+3. New Mksquashfs -zip option which reads zip archives.
+
+4. Unsquashfs symbolic link handling improvements
+
+    1. Unsquashfs by default now follows intermediate symbolic links in extract/exclude pathnames, and extracts both the symbolic links and the files and directories they point to.
+    2. The -follow-symlinks option now follows leaf symbolic links (i.e. the pathname ends in a symbolic link) which by default are not followed.  -follow-symlinks no longer implies -no-wildcards, and wildcards are enabled by default, and regular expressions can be used with -regex.
+
+5. Other Unsquashfs improvements
+
+    1. New -force-uid \<user\> option which sets all file and directory uids to specified \<user\>.  \<user\> can be either an integer uid or user name (superuser only),
+    2. New -force-guid \<gid\> option which sets all file and directory gid to specified \<group\>.  \<group\> can be either an integet gid or group name (superuser only)
+    3. New -force-file-mode \<mode\> option which sets all file (non-directory) permissions to \<mode\>.  <\Mode\> can be symbolic or octal.
+    4. New -force-dir-mode \<mode\> option which sets all directory permissions to \<mode\>.  \<Mode\> can be symbolic or octal.
+    5. New -max-files \<number\> option which limits how many giles Unsquashfs opes and writes to at the same time.
+    6. New -mem-default option which prints default memory usages in Mbytes.
+
+6. Other improvements
+
+    1. Automatic Makefile dependency generation
+    2. Use prebuilt manpages if GNU sed isn't available at build time.
+    2. Remove obsolete and deprecated lzma_wrapper.
+
+7.  Major bug fixes
+
+    1. Fix data race when reading fragments in duplicate checking (caused by elimination of "fragment block stall" in 4.7).
+    2. Fix data race when spilling blocks to disk in duplicate checking (caused by sparse file reading optimisation in 4.7.3).
+
 ### 4.7.5 (01 MAR 2026): Bug fix release (mostly)
 
 1. New options & improvements
+
     1. Mksquashfs/Sqfstar: new -numeric-owner option which uses the numeric uid and gid in the tarfile rather than the user name or the group name.
     2. Error messages produced by the date command and symbolic mode parser printed by the pager rather than to stderr.
 
