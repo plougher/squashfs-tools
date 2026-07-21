@@ -19,20 +19,21 @@
 4. Unsquashfs symbolic link handling improvements
 
     1. Unsquashfs by default now follows intermediate symbolic links in extract/exclude pathnames, and extracts both the symbolic links and the files and directories they point to.
-    2. The -follow-symlinks option now follows leaf symbolic links (i.e. the pathname ends in a symbolic link) which by default are not followed.  -follow-symlinks no longer implies -no-wildcards, and wildcards are enabled by default, and regular expressions can be used with -regex.
+    2. The -follow-symlinks option now follows leaf symbolic links (i.e. the pathname ends in a symbolic link) which by default are not followed.
+    3. -follow-symlinks no longer implies -no-wildcards, and wildcards are enabled by default, and regular expressions can be used with -regex.
 
 5. Other Unsquashfs improvements
 
     1. New -force-uid \<user\> option which sets all file and directory uids to specified \<user\>.  \<user\> can be either an integer uid or user name (superuser only),
-    2. New -force-guid \<gid\> option which sets all file and directory gid to specified \<group\>.  \<group\> can be either an integet gid or group name (superuser only)
-    3. New -force-file-mode \<mode\> option which sets all file (non-directory) permissions to \<mode\>.  <\Mode\> can be symbolic or octal.
+    2. New -force-gid \<gid\> option which sets all file and directory gids to specified \<group\>.  \<group\> can be either an integer gid or group name (superuser only)
+    3. New -force-file-mode \<mode\> option which sets all file (non-directory) permissions to \<mode\>.  \<Mode\> can be symbolic or octal.
     4. New -force-dir-mode \<mode\> option which sets all directory permissions to \<mode\>.  \<Mode\> can be symbolic or octal.
-    5. New -max-files \<number\> option which limits how many giles Unsquashfs opes and writes to at the same time.
-    6. New -mem-default option which prints default memory usages in Mbytes.
+    5. New -max-files \<number\> option which limits how many files Unsquashfs opens and writes to at the same time.
+    6. New -mem-default option which prints default memory usage in Mbytes.
 
 6. Other improvements
 
-    1. Automatic Makefile dependency generation
+    1. Automatic Makefile dependencies.
     2. Use prebuilt manpages if GNU sed isn't available at build time.
     2. Remove obsolete and deprecated lzma_wrapper.
 
