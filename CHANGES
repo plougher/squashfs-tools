@@ -23,8 +23,8 @@
 
 		2.1 -Xacceleration <acceleration>, accelerate compression by
 		    value between 1 .. 65537
-		2.2 -Xcompression-level \<compression-level\>, use compression
-		    level 1 .. 12.
+		2.2 -Xcompression-level <compression-level>, use compression level
+		    1 .. 12.
 
 	3. New Mksquashfs -zip option which reads zip archives.
 
