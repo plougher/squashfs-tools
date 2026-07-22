@@ -1,6 +1,6 @@
-# SQUASHFS-TOOLS 4.7.5 - A squashed read-only filesystem for Linux
+# SQUASHFS-TOOLS 4.7.6 - A squashed read-only filesystem for Linux
 
-Welcome to Squashfs-Tools 4.7.5.  This is a bug fix and minor improvements release, and it is the fifth update to the 4.7 release last year.
+Welcome to Squashfs-Tools 4.7.6.  This release adds symbolic link improvements, new LZ4 compression options, new Unsquashfs permissions options, zip archive reading and other improvements.  This is the sixth update to the 4.7 release last year.
 
 The 4.7 release brought substantial improvements to the tools, in particular Mksquashfs can now be 20% to more than ten times faster (dependant on source media and input files).  The help system has also been completely rewritten and improved for Mksquashfs, Unsquashfs, Sqfstar and Sqfscat.  There are also new options for building reproducible images, and a lot of other improvements.
 
@@ -10,6 +10,7 @@ usage files for [Mksquashfs](USAGE-MKSQUASHFS.md), [Unsquashfs](USAGE-UNSQUASHFS
 
 This README has the following sections:
 
+1. [Improvements in 4.7.6]
 1. [Improvements and bug fixes in 4.7.5](#1-improvements-and-bug-fixes-in-475)
 2. [Improvements and bug fixes in 4.7.3 and 4.7.4](#2-improvements-and-bug-fixes-in-473-and-474)
 3. [Improvements and bug fixes in 4.7.1 and 4.7.2](#3-improvements-and-bug-fixes-in-471-and-472)
@@ -20,6 +21,48 @@ This README has the following sections:
 8. [Help system and options](#8-help-system-and-options)
 9. [Reproducible filesystem images and new options](#9-reproducible-filesystem-images-and-new-options)
 10. [Author info](#10-author-info)
+
+## 1. IMPROVEMENTS IN 4.7.6
+
+1. Mksquashfs symbolic link handling improvements
+
+    1. New -dereference option that follows symbolic links, and archives the files or directories they point to.
+    2. New -deref \<response\> option that follows symbolic links like -dereference, but where \<response\> determines what happens if the symbolic link can't be dereferenced, response can be "keep" or "delete".
+    3. New -deref \<path\> option, which follows the symbolic link \<path\> and archives the file or directory it points to.  This is an alternative to the above blanket options which apply to all symbolic links.
+    4. New dereference(response) action, which follows the symbolic link where the action tests return TRUE.  Again, this is an alternative to the above blanket options which apply to all symbolic links.
+
+2. New LZ4 compressor options
+
+    1. -Xacceleration \<acceleration\>, accelerate compression by value between 1 .. 65537
+    2. -Xcompression-level \<compression-level\>, use compression level 1 .. 12.
+
+3. New Mksquashfs -zip option which reads zip archives.
+
+4. Unsquashfs symbolic link handling improvements
+
+    1. Unsquashfs by default now follows intermediate symbolic links in extract/exclude pathnames, and extracts both the symbolic links and the files and directories they point to.
+    2. The -follow-symlinks option now follows leaf symbolic links (i.e. the pathname ends in a symbolic link) which by default are not followed.
+    3. -follow-symlinks no longer implies -no-wildcards, and wildcards are enabled by default, and regular expressions can be used with -regex.
+
+5. Other Unsquashfs improvements
+
+    1. New -force-uid \<user\> option which sets all file and directory uids to specified \<user\>.  \<user\> can be either an integer uid or user name (superuser only),
+    2. New -force-gid \<gid\> option which sets all file and directory gids to specified \<group\>.  \<group\> can be either an integer gid or group name (superuser only)
+    3. New -force-file-mode \<mode\> option which sets all file (non-directory) permissions to \<mode\>.  \<Mode\> can be symbolic or octal.
+    4. New -force-dir-mode \<mode\> option which sets all directory permissions to \<mode\>.  \<Mode\> can be symbolic or octal.
+    5. New -max-files \<number\> option which limits how many files Unsquashfs opens and writes to at the same time.
+    6. New -mem-default option which prints default memory usage in Mbytes.
+
+6. Other improvements
+
+    1. Automatic Makefile dependencies.
+    2. Use prebuilt manpages if GNU sed isn't available at build time.
+    2. Remove obsolete and deprecated lzma_wrapper.
+
+7.  Major bug fixes
+
+    1. Fix data race when reading fragments in duplicate checking (caused by elimination of "fragment block stall" in 4.7).
+    2. Fix data race when spilling blocks to disk in duplicate checking (caused by sparse file reading optimisation in 4.7.3).
 
 ## 1. IMPROVEMENTS AND BUG FIXES IN 4.7.5
 
