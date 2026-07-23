@@ -207,17 +207,17 @@ When Mksquashfs encounters a symbolic link when archiving a directory, it stores
 
 This release has added a number of options to dereference all or some symbolic links.
 
--dereference
-: This is a blanket option and it behaves in a similar fashion to the GNU Tar --dereference (-h) option.  All symbolic links are followed and replaced with what they point to.  If a symbolic link cannot be followed it is deleted, and not stored in the filesystem.
+#### -dereference
+This is a blanket option and it behaves in a similar fashion to the GNU Tar --dereference (-h) option.  All symbolic links are followed and replaced with what they point to.  If a symbolic link cannot be followed it is deleted, and not stored in the filesystem.
 
--deref \<response\>
+#### -deref \<response\>
 : This is similar to the -dereference option except you can choose what happens if the symbolic link is unresolvable and can't be followed, the response ```delete``` will delete the symbolic link, and the response ```keep``` will keep the symbolic link.
 
--deref-path \<pathname\>
+#### deref-path \<pathname\>
 : The previous options apply to all symbolic links, whereas this option allows you to selectively choose which symbolic links to dereference based on the pathname.  If the symbolic link can't be followed, it is deleted.
 
-A new action dereference(response)
-: This action will dereference the symbolic link where the action tests return TRUE.  There are a large number of action tests available for example ```name```, ```pathname```, ```user``` etc. but the most useful and interesting in this context is ```exists```.
+#### A new action dereference(response)
+This action will dereference the symbolic link where the action tests return TRUE.  There are a large number of action tests available for example ```name```, ```pathname```, ```user``` etc. but the most useful and interesting in this context is ```exists```.
 
 The following examples will illustrate how the different options can be used.
 
