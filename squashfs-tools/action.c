@@ -2424,6 +2424,10 @@ static int count_components(char *path)
 {
 	int count;
 
+	/* skip leading slash */
+	while (*path == '/')
+		path ++;
+
 	for (count = 0; *path != '\0'; count ++) {
 		while (*path == '/')
 			path ++;
@@ -2440,6 +2444,10 @@ static char *get_start(char *s, int n)
 {
 	int count;
 	char *path = s;
+
+	/* skip leading slash */
+	while (*path == '/')
+		path ++;
 
 	for (count = 0; *path != '\0' && count < n; count ++) {
 		while (*path == '/')
