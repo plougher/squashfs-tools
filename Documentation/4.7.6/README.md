@@ -4,8 +4,7 @@ Welcome to Squashfs-Tools 4.7.6.  This release adds symbolic link improvements, 
 
 The 4.7 release brought substantial improvements to the tools, in particular Mksquashfs can now be 20% to more than ten times faster (dependant on source media and input files).  The help system has also been completely rewritten and improved for Mksquashfs, Unsquashfs, Sqfstar and Sqfscat.  There are also new options for building reproducible images, and a lot of other improvements.
 
-Please see the [INSTALL.md](INSTALL.md) file for instructions on installing the tools, and the
-[USAGE.md](USAGE.md) file for an introduction to the various tools, and the
+Please see the [INSTALL.md](INSTALL.md) file for instructions on installing the tools, and the [USAGE.md](USAGE.md) file for an introduction to the various tools, and the
 usage files for [Mksquashfs](USAGE-MKSQUASHFS.md), [Unsquashfs](USAGE-UNSQUASHFS.md), [Sqfstar](USAGE-SQFSTAR.md) and [Sqfscat](USAGE-SQFSCAT.md).
 
 This README has the following sections:
@@ -15,6 +14,7 @@ This README has the following sections:
 2. [Improvements and bug fixes in 4.7.3 and 4.7.4](#2-improvements-and-bug-fixes-in-473-and-474)
 3. [Improvements and bug fixes in 4.7.1 and 4.7.2](#3-improvements-and-bug-fixes-in-471-and-472)
 4. [Improvements in 4.7](#4-improvements-in-47)
+6. [Mksquashfs symbolic link handling improvements]
 5. [Streaming filesystem to STDOUT](#5-streaming-filesystem-to-stdout)
 6. [Align(value) action](#6-alignvalue-action)
 7. [Parallel file reading and options](#7-parallel-file-reading-and-options)
@@ -200,6 +200,143 @@ This README has the following sections:
 7. New environment variable SQFS_CMDLINE (Mksquashfs/Unsquashfs)
 
 	If set, this is used as the directory to write the file sqfs_cmdline which contains the command line arguments given to Mksquashfs etc.  Intended to be used to debug scripts/discover what is being passed to Mksquashfs.
+
+## 6. MKSQUASHFS SYMBOLIC LINK HANDLING IMPROVEMENTS
+
+When Mksquashfs encounters a symbolic link when archiving a directory, it stores the symbolic link "as is" in the filesystem.  If the symbolic link points outside of the directories being archived this will produce a dangling symbolic link.  Obviously the symbolic link will also become dangling if the file or directory it points to is excluded.
+
+This release has added a number of options to dereference all or some symbolic links.
+
+1. -dereference
+    This is a blanket option and it behaves in a similar fashion to the GNU Tar --dereference (-h) option.  All symbolic links are followed and replaced with what they point to.  If a symbolic link cannot be followed it is deleted, and not stored in the filesystem.
+2. -deref \<response\>
+    This is similar to the -dereference option except you can choose what happens if the symbolic link is unresolvable and can't be followed, the response ```delete``` will delete the symbolic link, and the response ```keep``` will keep the symbolic link.
+3. -deref-path \<pathname\>
+    The previous options apply to all symbolic links, whereas this option allows you to selectively choose which symbolic links to dereference based on the pathname.  If the symbolic link can't be followed, it is deleted.
+4. A new action dereference(response)
+    This action will dereference the symbolic link where the action tests return TRUE.  There are a large number of action tests available for example ```name```, ```pathname```, ```user``` etc. but the most useful and interesting in this context is ```exists```.
+
+The following examples will illustrate how the different options can be used.
+
+First imagine a directory called test, with the following contents:
+
+```
+drwxrwxr-x phillip/phillip          83 2026-07-23 02:36 /test
+lrwxrwxrwx phillip/phillip           9 2026-07-23 02:34 /test/goodbye_sym -> ./goodbye
+-rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 /test/hello
+lrwxrwxrwx phillip/phillip           7 2026-07-23 02:34 /test/hello_sym -> ./hello
+lrwxrwxrwx phillip/phillip          19 2026-07-23 02:36 /test/outside_sym -> /home/phillip/hello
+```
+
+There are three symbolic links and one file.  One of the symbolic links (hello_sym) points to the file ```hello``` in the same directory using a relative path.  Another symbolic link (outside_sym) points to a file outside the ```test``` directory using an absolute path.  Finally the last symbolic link (goodbye_sym) points to a non-existent file ````goodbye``` using a relative path.
+
+Obviously if you run Mksquashfs without any of the above options, you'll get a filesystem exactly matching the above.
+
+Example 1, using -dereference
+
+```
+phillip@avalon:/tmp $ mksquashfs test test.sqsh -dereference -quiet -no-progress
+Cannot dereference test/goodbye_sym, ignoring
+
+phillip@avalon:/tmp $ unsquashfs -lls -d test test.sqsh
+drwxrwxr-x phillip/phillip          64 2026-07-23 02:36 test
+-rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 test/hello
+-rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 test/hello_sym
+-rw-r--r-- phillip/phillip           6 2026-05-24 19:05 test/outside_sym
+```
+
+The dangling symbolic link ```goodbye_sym``` has been deleted, and all other symbolic links have been dereferenced to the file that they point to.  In the case of ```hello``` and ```hello_sym``` they are both hard-linked to the same file (or inode).
+
+
+Example 2, using -deref keep
+
+```
+phillip@avalon:/tmp $ mksquashfs test test.sqsh -deref keep -quiet -no-progress
+Cannot dereference test/goodbye_sym, keeping as symbolic link
+
+phillip@avalon:/tmp $ unsquashfs -lls -d test test.sqsh
+drwxrwxr-x phillip/phillip          83 2026-07-23 02:36 test
+lrwxrwxrwx phillip/phillip           9 2026-07-23 02:34 test/goodbye_sym -> ./goodbye
+-rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 test/hello
+-rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 test/hello_sym
+-rw-r--r-- phillip/phillip           6 2026-05-24 19:05 test/outside_sym
+```
+
+Here Mksquashfs has been told to retain any symbolic link that can't be followed, and as such ```goodbye_sym``` still appears in the output filesystem as a symbolic link.   This can useful when the symbolic link is unresolvable at build time, but it will point to a valid file when the filesystem is mounted, and so you don't want it to be deleted.
+
+
+Example 3, using -deref-path
+
+Often you do not want the blanket approach of the previous options, where **every** symbolic link in the output filesystem is dereferenced.  In the above example ```test``` directory there is no need to dereference ```hello_sym``` because this points to a file in the same directory using a relative path.  The only symbolic link which needs to be dereferenced is ```outside_sym``` because this points outside of the directory being archived.  In this case you can use the ```-deref-path``` option to selectively dereference only the symbolic links that need dereferencing.
+
+```
+phillip@avalon:/tmp $ mksquashfs test test.sqsh -deref-path outside_sym -quiet -no-progress
+phillip@avalon:/tmp $ unsquashfs -lls -d test test.sqsh
+drwxrwxr-x phillip/phillip          83 2026-07-23 02:36 test
+lrwxrwxrwx phillip/phillip           9 2026-07-23 02:34 test/goodbye_sym -> ./goodbye
+-rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 test/hello
+lrwxrwxrwx phillip/phillip           7 2026-07-23 02:34 test/hello_sym -> ./hello
+-rw-r--r-- phillip/phillip           6 2026-05-24 19:05 test/outside_sym
+```
+
+Here Mksquashfs has only dereferenced ```outside_sym``` leaving all the other symbolic links "as is".
+
+
+Example 4, dereferencing using the Actions system
+
+The Actions system allows symbolic link dereferencing to be selectively performed, where a symbolic link will only be dereferenced if a test (or series of tests) return TRUE.
+
+For example, the above example 3 can be re-expressed as follows (in fact -deref-path is internally implemented as this, so people don't need to understand actions to do that).
+
+```
+phillip@avalon:/tmp $ mksquashfs test test.sqsh -action "dereference@pathname(outside_sym)" -quiet -no-progress
+phillip@avalon:/tmp $ unsquashfs -lls -d test test.sqsh
+drwxrwxr-x phillip/phillip          83 2026-07-23 02:36 test
+lrwxrwxrwx phillip/phillip           9 2026-07-23 02:34 test/goodbye_sym -> ./goodbye
+-rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 test/hello
+lrwxrwxrwx phillip/phillip           7 2026-07-23 02:34 test/hello_sym -> ./hello
+-rw-r--r-- phillip/phillip           6 2026-05-24 19:05 test/outside_sym
+```
+
+The Action is **dereference @ pathname(outside_sym)** which means if a file matches on the pathname ```outside_sym``` then run the ```dereference``` action on it.
+
+Example 5, more dereferencing using the Actions system
+
+Now it should be clear that if you have a directory hierarchy of symbolic links that you want dereferenced, it is clumsy to have to dereference each symbolic link separately.  The Actions system has a test which matches on a directory and everything within it (and sub-directories) called ```subpathname```, and so to dereference everything within the ```lib``` directory you would use ```subpathname(lib)```.
+
+For example to dereference everything in the root directory and below:
+
+```
+phillip@avalon:/tmp $ mksquashfs test test.sqsh -action "dereference@subpathname(/)" -quiet -no-progress
+Cannot dereference test/goodbye_sym, keeping as symbolic link
+
+phillip@avalon:/tmp $ unsquashfs -lls -d test test.sqsh
+drwxrwxr-x phillip/phillip          83 2026-07-23 02:36 test
+lrwxrwxrwx phillip/phillip           9 2026-07-23 02:34 test/goodbye_sym -> ./goodbye
+-rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 test/hello
+-rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 test/hello_sym
+-rw-r--r-- phillip/phillip           6 2026-05-24 19:05 test/outside_sym
+```
+
+From the above it should be clear running the dereference action on a non-symbolic link does nothing, it is a no-op.  It should also be clear that the default behaviour of the dereference action is to keep symbolic links that can't be followed, to make the action delete a symbolic link you can use ```dereference(delete)```.
+
+Example 6, advanced dereferencing using the Actions system
+
+The above Actions use the pathname of a symbolic link to determine whether to dereference it or not.  But it would be better if we could directly ask Mksquashfs whether a symbolic link will be followable in the archived filesystem, and if it won't be, then dereference it at build time.  This takes the guess work out of which symbolic links to dereference.  The Action test that does this is called ```exists```.
+
+```
+phillip@avalon:/tmp $ mksquashfs test test.sqsh -action "dereference@ ! exists" -quiet -no-progress
+Cannot dereference test/goodbye_sym, keeping as symbolic link
+
+phillip@avalon:/tmp $ unsquashfs -lls -d test test.sqsh
+drwxrwxr-x phillip/phillip          83 2026-07-23 02:36 test
+lrwxrwxrwx phillip/phillip           9 2026-07-23 02:34 test/goodbye_sym -> ./goodbye
+-rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 test/hello
+lrwxrwxrwx phillip/phillip           7 2026-07-23 02:34 test/hello_sym -> ./hello
+-rw-r--r-- phillip/phillip           6 2026-05-24 19:05 test/outside_sym
+```
+
+Because we want to dereference the symbolic links where the file or directory pointed to doesn't exist in the output filesystem, the output from ```exists``` is negated with the unary ! operator.
 
 ## 5. STREAMING FILESYSTEM TO STDOUT
 
