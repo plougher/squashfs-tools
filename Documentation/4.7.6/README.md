@@ -231,7 +231,7 @@ lrwxrwxrwx phillip/phillip           7 2026-07-23 02:34 /test/hello_sym -> ./hel
 lrwxrwxrwx phillip/phillip          19 2026-07-23 02:36 /test/outside_sym -> /home/phillip/hello
 ```
 
-There are three symbolic links and one file.  One of the symbolic links (hello_sym) points to the file ```hello``` in the same directory using a relative path.  Another symbolic link (outside_sym) points to a file outside the ```test``` directory using an absolute path.  Finally the last symbolic link (goodbye_sym) points to a non-existent file ````goodbye``` using a relative path.
+There are three symbolic links and one file.  One of the symbolic links (hello_sym) points to the file ```hello``` in the same directory using a relative path.  Another symbolic link (outside_sym) points to a file outside the ```test``` directory using an absolute path.  Finally the last symbolic link (goodbye_sym) points to a non-existent file ```goodbye``` using a relative path.
 
 Obviously if you run Mksquashfs without any of the above options, you'll get a filesystem exactly matching the above.
 
@@ -325,12 +325,11 @@ From the above it should be clear running the dereference action on a non-symbol
 The above Actions use the pathname of a symbolic link to determine whether to dereference it or not.  But it would be better if we could directly ask Mksquashfs whether a symbolic link will be followable in the archived filesystem, and if it won't be, then dereference it at build time.  This takes the guess work out of which symbolic links to dereference.  The Action test that does this is called ```exists```.
 
 ```
-phillip@avalon:/tmp $ mksquashfs test test.sqsh -action "dereference@ ! exists" -quiet -no-progress
-Cannot dereference test/goodbye_sym, keeping as symbolic link
+phillip@avalon:/tmp $ mksquashfs test test.sqsh -action "dereference(delete)@ ! exists" -quiet -no-progress
+Cannot dereference test/goodbye_sym, deleting
 
 phillip@avalon:/tmp $ unsquashfs -lls -d test test.sqsh
-drwxrwxr-x phillip/phillip          83 2026-07-23 02:36 test
-lrwxrwxrwx phillip/phillip           9 2026-07-23 02:34 test/goodbye_sym -> ./goodbye
+drwxrwxr-x phillip/phillip          64 2026-07-23 02:36 test
 -rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 test/hello
 lrwxrwxrwx phillip/phillip           7 2026-07-23 02:34 test/hello_sym -> ./hello
 -rw-r--r-- phillip/phillip           6 2026-05-24 19:05 test/outside_sym
