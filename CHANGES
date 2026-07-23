@@ -4,8 +4,8 @@
 
 	1. Mksquashfs symbolic link handling improvements
 
-		1.1  New -dereference option that follows symbolic links, and
-		     archives the files or directories they point to.
+		1.1 New -dereference option that follows symbolic links, and
+		    archives the files or directories they point to.
 		1.2 New -deref <response> option that follows symbolic links
 		    like -dereference, but where <response> determines what
 		    happens if the symbolic link can't be dereferenced, response
