@@ -1,6 +1,6 @@
 # SQUASHFS CHANGE LOG
 
-### 4.7.6 (26 JUL 2026):
+### 4.7.6 (26 JUL 2026): Symbolic link improvements, new LZ4 compression options, new Unsquashfs permissions options, zip archive reading and other improvements.
 
 1. Mksquashfs symbolic link handling improvements
 
