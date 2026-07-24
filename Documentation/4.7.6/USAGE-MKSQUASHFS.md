@@ -11,17 +11,17 @@ This file describes how to use Mksquashfs, and it has the following sections:
 7. [CPIO style handling of source pathnames in Mksquashfs](#7-cpio-style-handling-of-source-pathnames-in-mksquashfs)
 8. [Specifying the UIDs/GIDs used in the filesystem](#8-specifying-the-uidsgids-used-in-the-filesystem)
 9. [Specifying the file permissions used in the filesystem](#9-specifying-the-file-permissions-used-in-the-filesystem)
-10. [Symbolic link handling and dereferencing]
-10. [Excluding files from the filesystem](#10-excluding-files-from-the-filesystem)
-11. [Parallel file reading and options](#11-parallel-file-reading-and-options)
-12. [Reducing CPU and I/O usage](#12-reducing-cpu-and-io-usage)
-13. [Filtering and adding extended attributes (xattrs)](#13-filtering-and-adding-extended-attributes-xattrs)
-14. [Pseudo file support](#14-pseudo-file-support)
-15. [Extended pseudo file definitions with timestamps](#15-extended-pseudo-file-definitions-with-timestamps)
-16. [Appending to Squashfs filesystems](#16-appending-to-squashfs-filesystems)
-17. [Appending recovery file feature](#17-appending-recovery-file-feature)
-18. [Mksquashfs Actions introduction](#18-mksquashfs-actions-introduction)
-19. [Miscellaneous options](#19-miscellaneous-options)
+10. [Symbolic link handling and dereferencing](#10-symbolic-link-handling-and-dereferencing)
+11. [Excluding files from the filesystem](#11-excluding-files-from-the-filesystem)
+12. [Parallel file reading and options](#12-parallel-file-reading-and-options)
+13. [Reducing CPU and I/O usage](#13-reducing-cpu-and-io-usage)
+14. [Filtering and adding extended attributes (xattrs)](#14-filtering-and-adding-extended-attributes-xattrs)
+15. [Pseudo file support](#15-pseudo-file-support)
+16. [Extended pseudo file definitions with timestamps](#16-extended-pseudo-file-definitions-with-timestamps)
+17. [Appending to Squashfs filesystems](#17-appending-to-squashfs-filesystems)
+18. [Appending recovery file feature](#18-appending-recovery-file-feature)
+19. [Mksquashfs Actions introduction](#19-mksquashfs-actions-introduction)
+20. [Miscellaneous options](#20-miscellaneous-options)
 
 ## 1. INTRODUCTION AND BASIC USAGE
 
@@ -37,7 +37,7 @@ mksquashfs source1 source2 ...  FILESYSTEM [OPTIONS] [-e list of exclude files]
 Where source1 source2 are the directories or files you want to be put into the
 filesystem, and FILESYSTEM is the name of the output filesystem.  This can be a
 file or a block device.  If the file already exists or it is a block device
-Mksquashfs will try append to it (see [section 16](#16-appending-to-squashfs-filesystems)) unless the -noappend option is
+Mksquashfs will try append to it (see [section 17](#17-appending-to-squashfs-filesystems)) unless the -noappend option is
 given.
 
 Most simple usage is a single source directory:
@@ -826,7 +826,7 @@ extended wildcard matching.  Basic exclude matching is a legacy feature
 retained for backwards compatibility with earlier versions of Mksquashfs.
 Extended wildcard matching should be used in preference.
 
-### 10.1 BASIC EXCLUDE MATCHING
+### 11.1 BASIC EXCLUDE MATCHING
 
 Each exclude file is treated as an exact match of a file/directory in
 the source directories.  If an exclude file/directory is absolute (i.e.
@@ -841,7 +841,7 @@ the sources in turn, i.e.
 Will generate exclude files /tmp/source1/ex2, /tmp/source1/ex1, source2/ex1,
 /tmp/source1/out/ex3 and source2/out/ex3.
 
-### 10.2 EXTENDED EXCLUDE FILE HANDLING
+### 11.2 EXTENDED EXCLUDE FILE HANDLING
 
 Extended exclude file matching treats each exclude file as a wildcard or
 regex expression.  To enable wildcard matching specify the ```-wildcards```
@@ -917,7 +917,7 @@ Exclude all files matching "*.gz" anywhere in the source directories,
 except those with "data" in the name.
 
 
-## 11. PARALLEL FILE READING AND OPTIONS
+## 12. PARALLEL FILE READING AND OPTIONS
 
 Modern computers can have 16 cores/32 threads or more [^2], and systems with 8
 cores/16 threads are becoming standard.   What this increase in computational
@@ -1040,7 +1040,7 @@ between different input files/media and performance.  If you think Mksquashfs
 is I/O bound then you should experiment with larger reader threads which may
 increase performance.
 
-### 11.1 SPECIALISED SMALL READER AND BLOCK READER THREADS
+### 12.1 SPECIALISED SMALL READER AND BLOCK READER THREADS
 
 The amount of reader threads you need to maximise I/O when reading small files,
 is often different to the amount of reader threads you need when reading larger
@@ -1072,7 +1072,7 @@ Unix machines around since the early 1990s (such as the Sequent Symmetry),
 but these were multi-user systems typically supporting 50 or more users.
 
 
-## 12. REDUCING CPU AND I/O USAGE
+## 13. REDUCING CPU AND I/O USAGE
 
 By default Mksquashfs will use all the CPUs available to compress and create the
 filesystem, and will read from the source files and write to the output
@@ -1102,7 +1102,7 @@ with -processors set to the minimum of 1.  In this case you can use -throttle
 in addition to -processors or on its own.
 
 
-## 13. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
+## 14. FILTERING AND ADDING EXTENDED ATTRIBUTES (XATTRs)
 
 Mksquashfs has a number of options which allow extended attributes (xattrs) to
 be filtered from the source files or added to the created Squashfs filesystem.
@@ -1160,7 +1160,7 @@ mksquashfs dir image.sqfs -xattrs-add "user.comment=0saGVsbG8Ad29ybGQ="
 mksquashfs dir image.sqfs -xattrs-add "user.comment=0x68656c6c6f00776f726c64"
 ```
 
-## 14. PSEUDO FILE SUPPORT
+## 15. PSEUDO FILE SUPPORT
 
 Mksquashfs supports pseudo files, these allow files, directories, character
 devices, block devices, fifos, symbolic links, hard links and extended
@@ -1179,7 +1179,7 @@ Two Mksquashfs options are supported, ```-p``` allows one pseudo file to be spec
 on the command line, and ```-pf``` allows a pseudo file to be specified containing a
 list of pseduo definitions, one per line.
 
-### 14.1 CREATING A DYNAMIC FILE
+### 15.1 CREATING A DYNAMIC FILE
 
 Pseudo definition
 
@@ -1239,7 +1239,7 @@ given a device, fifo, or named socket will place that special file within the
 Squashfs filesystem, the above allows input from these special files to be
 captured and placed in the Squashfs filesystem.
 
-### 14.2 CREATING A BLOCK OR CHARACTER DEVICE
+### 15.2 CREATING A BLOCK OR CHARACTER DEVICE
 
 Pseudo definition
 
@@ -1266,7 +1266,7 @@ creates a character device "/dev/chr_dev" with major:minor 100:1 and a block
 device "/dev/blk_dev" with major:minor 200:200, both with root uid/gid and a
 mode of rw-rw-rw.
 
-### 14.3 CREATING A DIRECTORY
+### 15.3 CREATING A DIRECTORY
 
 Pseudo definition
 
@@ -1286,7 +1286,7 @@ For example:
 
 creates a directory "/pseudo_dir" with root uid/gid and mode of rw-rw-rw.
 
-### 14.4 CREATING A SYMBOLIC LINK
+### 15.4 CREATING A SYMBOLIC LINK
 
 Pseudo definition
 
@@ -1306,7 +1306,7 @@ symlink s 0 root root example
 
 Creates a symlink "symlink" to file "example" with root uid/gid.
 
-### 14.5 CREATING REFERENCES TO FILES
+### 15.5 CREATING REFERENCES TO FILES
 
 The "f" Pseudo definition allows a regular file to be created from the output of
 a command (or shell).  Often this is used to reference a file outside the source
@@ -1371,7 +1371,7 @@ link L char-dev
 Will create a Hard Link named "link" to the character device called "char-dev"
 created by the previous Pseudo definition.
 
-### 14.6 CREATING SOCKETS/FIFOS
+### 15.6 CREATING SOCKETS/FIFOS
 
 Pseudo definition
 
@@ -1402,7 +1402,7 @@ filename x name=val
 Will add the extended attribute <name\> to <filename\> with <val\> contents.  See
 [Section 13](#13-filtering-and-adding-extended-attributes-xattrs) for a description of the <val\> formats supported.
 
-### 14.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
+### 15.8 MODIFYING ATTRIBUTES OF AN EXISTING FILE
 
 Pseudo definition
 
@@ -1456,7 +1456,7 @@ automatically create the leading directories:
 % mksquashfs - image.sqfs -pd "d 0777 0 0" -p "/dir1/dir2/file f 0777 0 0 echo hello world"
 ```
 
-## 15. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
+## 16. EXTENDED PSEUDO FILE DEFINITIONS WITH TIMESTAMPS
 
 The Pseudo file definitions described above do not allow the timestamp of the
 created file to be specified, and the files will be timestamped with the current
@@ -1494,7 +1494,7 @@ shell by backslashes, i.e.
 Obviously anything "date" accepts as a valid string can be used, such as
 "yesterday", "last week" etc.
 
-## 15.1 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION WITH TIMESTAMP
+## 16.1 SPECIFYING A DEFAULT PSEUDO DIRECTORY DEFINITION WITH TIMESTAMP
 
 The option
 
@@ -1511,7 +1511,7 @@ a <time\> timestamp.  <time\> can be either an unsigned decimal integer or a
 "date" command.
 
 
-## 16. APPENDING TO SQUASHFS FILESYSTEMS
+## 17. APPENDING TO SQUASHFS FILESYSTEMS
 
 Running Mksquashfs with the output file containing an existing Squashfs
 filesystem will add the source items to the existing filesystem.  By default,
@@ -1557,7 +1557,7 @@ will create a filesystem with the two source trees, but only the changed files
 will take extra room, the unchanged files will be detected as duplicates.
 
 
-## 17. APPENDING RECOVERY FILE FEATURE
+## 18. APPENDING RECOVERY FILE FEATURE
 
 Recovery files are created when appending to existing Squashfs filesystems.
 This allows the original filesystem to be recovered if Mksquashfs aborts
@@ -1580,7 +1580,7 @@ The writing of the recovery file can be disabled by specifying the
 ```-no-recovery``` option.
 
 
-## 18. MKSQUASHFS ACTIONS INTRODUCTION
+## 19. MKSQUASHFS ACTIONS INTRODUCTION
 
 The Mksquashfs Actions code allows an "action" to be executed on a file if one
 or more "tests" succeed.  If you're familiar with the "find" command, then an
@@ -1629,7 +1629,7 @@ operators && (and), || (or) and ! (not), and can be bracketed.
 Please see the ACTIONS-README file for syntax and extra information.
 
 
-## 19. MISCELLANEOUS OPTIONS
+## 20. MISCELLANEOUS OPTIONS
 
 The ```-info``` option displays the files/directories as they are compressed and
 added to the filesystem.  The original uncompressed size of each file is
