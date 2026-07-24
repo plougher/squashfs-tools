@@ -695,7 +695,7 @@ The previous options apply to all symbolic links, whereas this option allows you
 #### A new action dereference(response)
 This action will dereference the symbolic link where the action tests return TRUE.  There are a large number of action tests available for example ```name```, ```pathname```, ```user``` etc. but the most useful and interesting in this context is ```exists```.
 
-### 1. The following examples will illustrate how the different options can be used.
+### 10.1. The following examples will illustrate how the different options can be used.
 
 First imagine a directory called test, with the following contents:
 
@@ -813,7 +813,7 @@ lrwxrwxrwx phillip/phillip           7 2026-07-23 02:34 test/hello_sym -> ./hell
 
 Because we want to dereference the symbolic links where the file or directory pointed to doesn't exist in the output filesystem, the output from ```exists``` is negated with the unary ! operator.
 
-## 10. EXCLUDING FILES FROM THE FILESYSTEM
+## 11. EXCLUDING FILES FROM THE FILESYSTEM
 
 The ```-e``` and ```-ef``` options allow files/directories to be specified which are
 excluded from the output filesystem.  The ```-e``` option takes the exclude
