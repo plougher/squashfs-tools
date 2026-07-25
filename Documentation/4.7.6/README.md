@@ -220,7 +220,7 @@ The previous options apply to all symbolic links, whereas this option allows you
 #### A new action dereference(response)
 This action will dereference the symbolic link where the action tests return TRUE.  There are a large number of action tests available for example ```name```, ```pathname```, ```user``` etc. but the most useful and interesting in this context is ```exists```.
 
-### 1. The following examples will illustrate how the different options can be used.
+### 6.1 The following examples will illustrate how the different options can be used.
 
 First imagine a directory called test, with the following contents:
 
@@ -342,9 +342,9 @@ Because we want to dereference the symbolic links where the file or directory po
 
 ### 7.1 Symbolic links are traversed in extract/exclude paths
 
-Previously if an extract pathname traversed a symbolic link, then the symbolic link would not be followed, and extraction would stop at that point (this is because a symbolic link not being a directory you can't be descended into it).
+Previously if an extract pathname traversed a symbolic link, then the symbolic link would not be followed, and extraction would stop at that point (this is because a symbolic link is not a directory and so you can't descended into it).
 
-For example consider a filesystem has the following contents:
+For example imagine a filesystem that has the following contents:
 
 ```
 phillip@avalon:/tmp $ unsquashfs -lls -d "" test.sqsh
@@ -361,7 +361,6 @@ In previous versions of Unsquashfs, it you specified the extract path "sym/goodb
 
 ```
 phillip@avalon:/tmp $ unsquashfs-4.7.5 -n -q test.sqsh sym/goodbye
-
 phillip@avalon:/tmp $ ls -laR squashfs-root
 squashfs-root:
 total 0
@@ -369,9 +368,9 @@ drwxrwxr-x  2 phillip phillip  40 Jul 24 22:35 .
 drwxrwxrwt 13 root    root    560 Jul 24 22:55 ..
 ```
 
-A completely empty directory because ```sym`` was not a directory.
+A completely empty directory because ```sym``` was not a directory.
 
-In this new release extract pathnames are always evaluated and symbolic links are followed and resolved before the filesystem output is generated.  This means all the directories and files neeed to walk the extract pathname are extracted, including the symbolic link and the directory it points to.
+In this new release extract pathnames are always evaluated and symbolic links are followed and resolved before the output is generated.  This means all the directories and files needed to walk the extract pathname are extracted, including the symbolic link and the directory it points to.
 
 For example, with Unsquashfs 4.7.6
 
