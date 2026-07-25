@@ -342,7 +342,7 @@ Because we want to dereference the symbolic links where the file or directory po
 
 ### 7.1 Symbolic links are traversed in extract/exclude paths
 
-Previously if an extract pathname traversed a symbolic link, then the symbolic link would not be followed, and extraction would stop at that point (this is because a symbolic link is not a directory and so you can't descended into it).
+Previously if an extract pathname traversed a symbolic link, then the symbolic link would not be followed, and extraction would stop at that point (this is because a symbolic link is not a directory and so you can't descend into it).
 
 For example imagine a filesystem that has the following contents:
 

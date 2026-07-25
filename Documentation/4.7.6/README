@@ -24,6 +24,7 @@ This README has the following sections:
 3. Improvements and bug fixes in 4.7.1 and 4.7.2
 4. Improvements in 4.7
 6. Mksquashfs symbolic link handling improvements
+6. Unquashfs symbolic link handling improvements
 5. Streaming filesystem to STDOUT
 6. Align(value) action
 7. Parallel file reading and options
@@ -501,6 +502,130 @@ Because we want to dereference the symbolic links where the file or directory
 pointed to doesn't exist in the output filesystem, the output from "exists" is
 negated with the unary ! operator.
 
+7. UNSQUASHFS SYMBOLIC LINK HANDLING IMPROVEMENTS
+-------------------------------------------------
+
+7.1 Symbolic links are traversed in extract/exclude paths
+---------------------------------------------------------
+
+Previously if an extract pathname traversed a symbolic link, then the symbolic
+link would not be followed, and extraction would stop at that point (this is
+because a symbolic link is not a directory and so you can't descend into it).
+
+For example imagine a filesystem that has the following contents:
+
+phillip@avalon:/tmp $ unsquashfs -lls -d "" test.sqsh
+drwxrwxr-x phillip/phillip          50 2026-07-24 22:35
+drwxrwxr-x phillip/phillip          30 2026-07-24 22:35 /dir
+-rw-rw-r-- phillip/phillip           8 2026-07-24 22:35 /dir/goodbye
+-rw-rw-r-- phillip/phillip           6 2026-07-23 02:34 /hello
+lrwxrwxrwx phillip/phillip           3 2026-07-24 22:35 /sym -> dir
+
+In particular in the above filesystem there are two paths to the file "goodbye",
+via the directory "dir" and via the symbolic link "sym".
+
+In previous versions of Unsquashfs, it you specified the extract path
+"sym/goodbye", it would produce the following:
+
+phillip@avalon:/tmp $ unsquashfs-4.7.5 -n -q test.sqsh sym/goodbye
+phillip@avalon:/tmp $ ls -laR squashfs-root
+squashfs-root:
+total 0
+drwxrwxr-x  2 phillip phillip  40 Jul 24 22:35 .
+drwxrwxrwt 13 root    root    560 Jul 24 22:55 ..
+
+A completely empty directory because "sym" was not a directory.
+
+In this new release extract pathnames are always evaluated and symbolic links
+are followed and resolved before the output is generated.  This means all the
+directories and files needed to walk the extract pathname are extracted,
+including the symbolic link and the directory it points to.
+
+For example, with Unsquashfs 4.7.6
+
+phillip@avalon:/tmp $ unsquashfs -n -q test.sqsh sym/goodbye
+phillip@avalon:/tmp $ ls -laR squashfs-root
+squashfs-root:
+total 0
+drwxrwxr-x  3 phillip phillip  80 Jul 24 22:35 .
+drwxrwxrwt 13 root    root    560 Jul 24 23:07 ..
+drwxrwxr-x  2 phillip phillip  60 Jul 24 22:35 dir
+lrwxrwxrwx  1 phillip phillip   3 Jul 24 22:35 sym -> dir
+
+squashfs-root/dir:
+total 16
+drwxrwxr-x 2 phillip phillip 60 Jul 24 22:35 .
+drwxrwxr-x 3 phillip phillip 80 Jul 24 22:35 ..
+-rw-rw-r-- 1 phillip phillip  8 Jul 24 22:35 goodbye
+
+"sym" is extracted and followed, which descends into "dir" and extracts
+"goodbye".
+
+7.2 -follow-symlinks option now follows leaf symbolic links
+-----------------------------------------------------------
+
+By default intermediate symbolic links are now followed, but leaf symbolic links
+(the pathname ends in a symbolic link) are not followed by default.  This
+conforms to the behaviour that most people expect.  To make Unsquashfs follow a
+leaf symbolic link you can use the "-follow-symlinks" option.
+
+For example, without "-follow-symlinks"
+
+phillip@avalon:/tmp $ unsquashfs -n -q test.sqsh sym
+phillip@avalon:/tmp $ ls -laR squashfs-root
+squashfs-root:
+total 0
+drwxrwxr-x  2 phillip phillip  60 Jul 24 22:35 .
+drwxrwxrwt 13 root    root    560 Jul 24 23:43 ..
+lrwxrwxrwx  1 phillip phillip   3 Jul 24 22:35 sym -> dir
+
+For example, with "-follow-symlinks"
+
+phillip@avalon:/tmp $ unsquashfs -n -q -follow-symlinks test.sqsh sym
+phillip@avalon:/tmp $ ls -laR squashfs-root
+squashfs-root:
+total 0
+drwxrwxr-x  3 phillip phillip  80 Jul 24 22:35 .
+drwxrwxrwt 13 root    root    560 Jul 24 23:46 ..
+drwxrwxr-x  2 phillip phillip  60 Jul 24 22:35 dir
+lrwxrwxrwx  1 phillip phillip   3 Jul 24 22:35 sym -> dir
+
+squashfs-root/dir:
+total 16
+drwxrwxr-x 2 phillip phillip 60 Jul 24 22:35 .
+drwxrwxr-x 3 phillip phillip 80 Jul 24 22:35 ..
+-rw-rw-r-- 1 phillip phillip  8 Jul 24 22:35 goodbye
+
+7.3 -follow-symlinks no longer implies -no-wildcards
+----------------------------------------------------
+
+In previous releases, if -follow-symlinks was used to make Unsquashfs follow
+symbolic links in extract files, then wildcard matching would be disabled, and
+filenames would be matched exactly.
+
+For example in Unsquashfs 4.7.5, if -follow-symlinks was used in conjunction with the "*" wildcard.
+
+phillip@avalon:/tmp $ unsquashfs-4.7.5 -n -q -follow-symlinks test.sqsh "*"
+Extract filename * can't be resolved
+
+In Unsquashfs 4.7.6, the wildcard works correctly:
+
+phillip@avalon:/tmp $ unsquashfs -n -q -follow-symlinks test.sqsh "*"
+phillip@avalon:/tmp $ ls -laR squashfs-root
+squashfs-root:
+total 16
+drwxrwxr-x  3 phillip phillip 100 Jul 24 22:35 .
+drwxrwxrwt 13 root    root    560 Jul 25 00:07 ..
+drwxrwxr-x  2 phillip phillip  60 Jul 24 22:35 dir
+-rw-rw-r--  1 phillip phillip   6 Jul 23 02:34 hello
+lrwxrwxrwx  1 phillip phillip   3 Jul 24 22:35 sym -> dir
+
+squashfs-root/dir:
+total 16
+drwxrwxr-x 2 phillip phillip  60 Jul 24 22:35 .
+drwxrwxr-x 3 phillip phillip 100 Jul 24 22:35 ..
+-rw-rw-r-- 1 phillip phillip   8 Jul 24 22:35 goodbye
+```
 
 5. STREAMING FILESYSTEM TO STDOUT
 ---------------------------------
