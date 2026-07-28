@@ -1421,7 +1421,7 @@ long long read_tar_file()
 		file_buffer->version = 0;
 		file_buffer->error = FALSE;
 		file_buffer->next_state = NEXT_FILE;
-		isreg = S_ISREG(tar_file->buf.st_mode);
+		isreg = tar_file ? S_ISREG(tar_file->buf.st_mode) : FALSE;
 		main_queue_put(to_main, file_buffer);
 
 		if(status == TAR_EOF)
