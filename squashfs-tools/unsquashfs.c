@@ -461,7 +461,7 @@ static struct cache_entry *cache_get(struct cache *cache, long long block, int s
 }
 
 	
-static void cache_block_ready(struct cache_entry *entry, int error)
+static void cache_block_ready(struct cache_entry *entry, int error, int uncomp_size)
 {
 	/*
 	 * mark cache entry as being complete, reading and (if necessary)
@@ -472,6 +472,7 @@ static void cache_block_ready(struct cache_entry *entry, int error)
 	pthread_mutex_lock(&entry->cache->mutex);
 	entry->pending = FALSE;
 	entry->error = error;
+	entry->uncomp_size = uncomp_size;
 
 	/*
 	 * if the wait_pending flag is set, one or more threads may be waiting
@@ -1155,6 +1156,16 @@ static int write_file(struct inode *inode, char *pathname)
 
 		s_ops->read_fragment(inode->fragment, &start, &size);
 		block->buffer = cache_get(fragment_cache, start, size);
+
+		if(inode->offset < 0 || inode->offset >= block_size)
+			EXIT_UNSQUASH("File system corrupted - fragment offset "
+				"%d in inode negative or too large (%s)\n",
+				inode->offset, pathname);
+		if(inode->frag_bytes <= 0 || inode->frag_bytes >= block_size)
+			EXIT_UNSQUASH("File system corrupted - fragment bytes "
+				"%d in inode negative, zero  or too large (%s)\n",
+				inode->frag_bytes, pathname);
+
 		block->offset = inode->offset;
 		block->size = inode->frag_bytes;
 		queue_put(to_writer, block);
@@ -3267,7 +3278,7 @@ static void *reader(void *arg)
 			 * flag, set error appropriately, and wake up any
 			 * threads waiting on this buffer
 			 */
-			cache_block_ready(entry, !res);
+			cache_block_ready(entry, !res, SQUASHFS_COMPRESSED_SIZE_BLOCK(entry->size));
 	}
 
 	return NULL;
@@ -3326,6 +3337,13 @@ static void *writer(void *arg)
 					file->pathname);
 				exit_code = local_fail = TRUE;
 			}
+
+			if((block->offset + block->size) > block->buffer->uncomp_size)
+				EXIT_UNSQUASH("File system corrupted - trying to "
+					"read beyond data block (block size "
+					"%d, offset %d, size %d)\n",
+					block->buffer->uncomp_size,
+					block->offset, block->size);
 
 			if(local_fail == FALSE) {
 				res = write_block(file_fd,
@@ -3498,7 +3516,7 @@ static void *inflator(void *arg)
  		 * occurred, clear pending flag, set error appropriately and
  		 * wake up any threads waiting on this block
  		 */ 
-		cache_block_ready(entry, res == -1);
+		cache_block_ready(entry, res == -1, res);
 	}
 
 	return NULL;

@@ -139,6 +139,7 @@ struct cache_entry {
 	struct cache		*cache;
 	long long		block;
 	int			size;
+	int			uncomp_size;
 	int			used;
 	int			error;
 	int			pending;
