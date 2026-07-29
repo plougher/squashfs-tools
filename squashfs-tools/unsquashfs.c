@@ -1097,6 +1097,7 @@ static int write_file(struct inode *inode, char *pathname)
 	long long start = inode->start;
 	mode_t mode = process_file_mode(inode->mode);
 	struct stat buf;
+	struct file_entry *block;
 
 	TRACE("write_file: regular file, blocks %d\n", inode->blocks);
 
@@ -1134,8 +1135,13 @@ static int write_file(struct inode *inode, char *pathname)
 
 	for(i = 0; i < inode->blocks; i++) {
 		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
-		struct file_entry *block = MALLOC(sizeof(struct file_entry));
 
+		if(c_byte < 0 || c_byte > block_size)
+			EXIT_UNSQUASH("File system corrupted - block size "
+				"%d in block list negative or too large "
+				"(%s)\n", c_byte, pathname);
+
+		block = MALLOC(sizeof(struct file_entry));
 		block->offset = 0;
 		block->size = i == file_end ? inode->data & (block_size - 1) :
 			block_size;
@@ -1150,11 +1156,18 @@ static int write_file(struct inode *inode, char *pathname)
 	}
 
 	if(inode->frag_bytes) {
-		int size;
+		int size, c_byte;
 		long long start;
-		struct file_entry *block = MALLOC(sizeof(struct file_entry));
 
 		s_ops->read_fragment(inode->fragment, &start, &size);
+		c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(size);
+
+		if(c_byte < 0 || c_byte > block_size)
+			EXIT_UNSQUASH("File system corrupted - fragment size "
+				"%d in fragment table negative or too large "
+				"(%s)\n", c_byte, pathname);
+
+		block = MALLOC(sizeof(struct file_entry));
 		block->buffer = cache_get(fragment_cache, start, size);
 
 		if(inode->offset < 0 || inode->offset >= block_size)
