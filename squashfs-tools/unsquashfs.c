@@ -1222,6 +1222,16 @@ static int cat_file(struct inode *inode, char *pathname)
 
 		s_ops->read_fragment(inode->fragment, &start, &size);
 		block->buffer = cache_get(fragment_cache, start, size);
+
+		if(inode->offset < 0 || inode->offset >= block_size)
+			EXIT_UNSQUASH("File system corrupted - fragment offset "
+				"%d in inode negative or too large (%s)\n",
+				inode->offset, pathname);
+		if(inode->frag_bytes <= 0 || inode->frag_bytes >= block_size)
+			EXIT_UNSQUASH("File system corrupted - fragment bytes "
+				"%d in inode negative, zero  or too large (%s)\n",
+				inode->frag_bytes, pathname);
+
 		block->offset = inode->offset;
 		block->size = inode->frag_bytes;
 		queue_put(to_writer, block);
@@ -3448,6 +3458,13 @@ static void *cat_writer(void *arg)
 					file->pathname);
 				exit_code = local_fail = TRUE;
 			}
+
+			if((block->offset + block->size) > block->buffer->uncomp_size)
+				EXIT_UNSQUASH("File system corrupted - trying to "
+					"read beyond data block (block size "
+					"%d, offset %d, size %d)\n",
+					block->buffer->uncomp_size,
+					block->offset, block->size);
 
 			if(local_fail == FALSE) {
 				res = write_block(writer_fd,
