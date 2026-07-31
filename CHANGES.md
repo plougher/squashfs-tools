@@ -1,6 +1,6 @@
 # SQUASHFS CHANGE LOG
 
-### 4.7.6 (26 JUL 2026): Symbolic link improvements, new LZ4 compression options, new Unsquashfs permissions options, zip archive reading and other improvements.
+### 4.7.6 (xx XXX 2026): Symbolic link improvements, new LZ4 compression options, new Unsquashfs permissions options, zip archive reading and other improvements.
 
 1. Mksquashfs symbolic link handling improvements
 
@@ -41,6 +41,7 @@
 
     1. Fix data race when reading fragments in duplicate checking (caused by elimination of "fragment block stall" in 4.7).
     2. Fix data race when spilling blocks to disk in duplicate checking (caused by sparse file reading optimisation in 4.7.3).
+	3. Fix race condition with tar hardlinks, when reading tar archives (introduced in 4.5.1 deleting tar file structure).
 
 ### 4.7.5 (01 MAR 2026): Bug fix release (mostly)
 
