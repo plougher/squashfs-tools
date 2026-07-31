@@ -21,6 +21,7 @@ The top-level directory contains the following files:
 * **ACKNOWLEDGEMENTS** - This contains some historical acknowlegements, this file has mostly been replaced by the Github issues tracker.
 * **CHANGES** - a reverse chronological list of changes from the latest release to the earliest release.
 * **CHANGES.md** - the above file in markdown format.
+* **CONTRIBUTING.md** - how to ask for features (feature requests), and the way to do Pull requests.
 * **COPYING** - GNU general public license file.
 * **INSTALL** - where to get the INSTALL file for your version of squashfs-tools.
 * **README** - where to get the README for your version of squashfs-tools.
