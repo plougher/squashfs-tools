@@ -235,7 +235,7 @@ Pattern can have wildcards.
 ### 4.4 filesize(value)
 
 Return TRUE if the size of the file is smaller, larger or equal to ```<value>```,
-where ```<value>``` can be ```<number```, ```<=number```, ```number```, ```>=number```, ```>number```
+where ```<value>``` can be ```<number```, ```<=number```, ```number```, ```>=number```, ```>number```.
 Returns FALSE on anything not a file.
 
 ### 4.5 tailsize(value)
