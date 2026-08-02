@@ -1,6 +1,6 @@
 /*
  *
- * Copyright (c) 2009, 2010, 2011, 2012, 2013, 2021, 2022, 2024
+ * Copyright (c) 2009, 2010, 2011, 2012, 2013, 2021, 2022, 2024, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -28,58 +28,48 @@
 #include "squashfs_fs.h"
 #include "print_pager.h"
 
+#define COMPRESSOR_DEF(NAME, TYPE) \
+	static struct compressor NAME##_comp_ops = { \
+		TYPE, #NAME \
+	};
+
 #ifndef GZIP_SUPPORT
-static struct compressor gzip_comp_ops =  {
-	ZLIB_COMPRESSION, "gzip"
-};
+COMPRESSOR_DEF(gzip, ZLIB_COMPRESSION);
 #else
 extern struct compressor gzip_comp_ops;
 #endif
 
 #ifndef LZMA_SUPPORT
-static struct compressor lzma_comp_ops = {
-	LZMA_COMPRESSION, "lzma"
-};
+COMPRESSOR_DEF(lzma, LZMA_COMPRESSION);
 #else
 extern struct compressor lzma_comp_ops;
 #endif
 
 #ifndef LZO_SUPPORT
-static struct compressor lzo_comp_ops = {
-	LZO_COMPRESSION, "lzo"
-};
+COMPRESSOR_DEF(lzo, LZO_COMPRESSION);
 #else
 extern struct compressor lzo_comp_ops;
 #endif
 
 #ifndef LZ4_SUPPORT
-static struct compressor lz4_comp_ops = {
-	LZ4_COMPRESSION, "lz4"
-};
+COMPRESSOR_DEF(lz4, LZ4_COMPRESSION);
 #else
 extern struct compressor lz4_comp_ops;
 #endif
 
 #ifndef XZ_SUPPORT
-static struct compressor xz_comp_ops = {
-	XZ_COMPRESSION, "xz"
-};
+COMPRESSOR_DEF(XZ_COMPRESSION, xz);
 #else
 extern struct compressor xz_comp_ops;
 #endif
 
 #ifndef ZSTD_SUPPORT
-static struct compressor zstd_comp_ops = {
-	ZSTD_COMPRESSION, "zstd"
-};
+COMPRESSOR_DEF(zstd, ZSTD_COMPRESSION);
 #else
 extern struct compressor zstd_comp_ops;
 #endif
 
-static struct compressor unknown_comp_ops = {
-	0, "unknown"
-};
-
+COMPRESSOR_DEF(unknown, 0);
 
 struct compressor *compressor[] = {
 	&gzip_comp_ops,
