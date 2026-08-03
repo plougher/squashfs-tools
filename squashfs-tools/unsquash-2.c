@@ -152,7 +152,12 @@ static void read_fragment(unsigned int fragment, long long *start_block, int *si
 {
 	TRACE("read_fragment: reading fragment %d\n", fragment);
 
-	squashfs_fragment_entry_2 *fragment_entry = &fragment_table[fragment];
+	squashfs_fragment_entry_2 *fragment_entry;
+
+	if(fragment > sBlk.s.fragments)
+		EXIT_UNSQUASH("File system corrupted - fragment index in inode too large (fragment: %u)\n", fragment);
+
+	fragment_entry = &fragment_table[fragment];
 	*start_block = fragment_entry->start_block;
 	*size = fragment_entry->size;
 }
