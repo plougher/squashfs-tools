@@ -1174,10 +1174,6 @@ static int write_file(struct inode *inode, char *pathname)
 			EXIT_UNSQUASH("File system corrupted - fragment offset "
 				"%d in inode negative or too large (%s)\n",
 				inode->offset, pathname);
-		if(inode->frag_bytes <= 0 || inode->frag_bytes >= block_size)
-			EXIT_UNSQUASH("File system corrupted - fragment bytes "
-				"%d in inode negative, zero  or too large (%s)\n",
-				inode->frag_bytes, pathname);
 
 		block->offset = inode->offset;
 		block->size = inode->frag_bytes;
