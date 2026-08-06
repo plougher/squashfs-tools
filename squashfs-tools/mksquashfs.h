@@ -38,6 +38,8 @@ struct dir_info {
 	struct dir_ent		*dir_ent;
 	struct dir_ent		*list;
 	DIR			*linuxdir;
+	struct dir_ent		**name_hash;	/* entries hashed by name; NULL until built */
+	unsigned int		name_hash_size;	/* number of buckets (power of two) */
 };
 
 struct dir_ent {
@@ -49,6 +51,7 @@ struct dir_ent {
 	struct dir_info		*our_dir;
 	struct dir_ent		*next;
 	struct dir_ent		*reader_next;
+	struct dir_ent		*name_hash_next;	/* next entry in same name-hash bucket */
 };
 
 struct inode_info {
