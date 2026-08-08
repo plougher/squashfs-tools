@@ -34,6 +34,7 @@ extern unsigned int inswap_le32(unsigned int);
 	(s)->compression_level = inswap_le32((s)->compression_level); \
 	(s)->window_size = inswap_le16((s)->window_size); \
 	(s)->strategy = inswap_le16((s)->strategy); \
+	(s)->rsyncable = inswap_le32((s)->rsyncable); \
 }
 #else
 #define SQUASHFS_INSWAP_COMP_OPTS(s)
@@ -47,6 +48,7 @@ struct gzip_comp_opts {
 	int compression_level;
 	short window_size;
 	short strategy;
+	int rsyncable;
 };
 
 struct strategy {
