@@ -58,10 +58,7 @@ struct inode_info {
 	struct tar_file		*tar_file;
 	struct file_info	*file;
 	struct pseudo_xattr	*xattr;
-	union {
-		char			*symlink;
-		struct dir_info		*clone_dir;
-	};
+	char			*symlink;
 	squashfs_inode		inode;
 	unsigned int		inode_number;
 	unsigned int		nlink;
@@ -230,11 +227,6 @@ static inline int get_pathmax()
 
 	return path_max;
 }
-
-/* Keep track of dereferencing symbolic link where it resolves to a directory */
-#define DEREF_FIRST	1
-#define DEREF_MULTIPLE	2
-#define DEREF_BAD	3
 
 extern struct cache *fragment_buffer, *reserve_cache;
 extern struct cache *fwriter_buffer;

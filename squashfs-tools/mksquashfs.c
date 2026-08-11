@@ -4222,46 +4222,6 @@ static int dir_scan_deref(struct dir_info *dir)
 }
 
 
-struct dir_info *dir_clone(char *filename, char *subpath, struct dir_info *dir, int depth)
-{
-	struct dir_info *clone_dir = MALLOC(sizeof(struct dir_info));
-	struct dir_ent *dir_ent, *clone_ent, *clone_pre;
-
-	clone_dir->pathname = STRDUP(filename);
-	clone_dir->subpath = STRDUP(subpath);
-	clone_dir->depth = depth;
-	clone_dir->count = dir->count;
-	clone_dir->directory_count = dir->directory_count;
-	clone_dir->dir_is_ldir = TRUE;
-	clone_dir->excluded = 0;
-	clone_dir->list = NULL;
-
-	for(dir_ent = dir->list, clone_pre = NULL; dir_ent; dir_ent = dir_ent->next, clone_pre = clone_ent) {
-		clone_ent = MALLOC(sizeof(struct dir_ent));
-		clone_ent->name = STRDUP(dir_ent->name);
-		clone_ent->our_dir = clone_dir;
-		clone_ent->dir = NULL;
-		clone_ent->source_name = NULL;
-		clone_ent->nonstandard_pathname = NULL;
-		clone_ent->next = NULL;
-
-		if(clone_pre)
-			clone_pre->next = clone_ent;
-		else
-			clone_dir->list = clone_ent;
-
-		if(S_ISDIR(dir_ent->inode->buf.st_mode)) {
-			clone_ent->dir = dir_clone(pathname(clone_ent), subpathname(clone_ent), dir_ent->dir, depth + 1);
-			clone_ent->dir->dir_ent = clone_ent;
-		}
-
-		clone_ent->inode = lookup_inode(&dir_ent->inode->buf);
-	}
-
-	return clone_dir;
-}
-
-
 static struct dir_ent *delete_file(struct dir_info *dir, struct dir_ent *dir_ent, struct dir_ent *prev)
 {
 	struct dir_ent *next_ent = dir_ent->next;
@@ -4291,12 +4251,8 @@ static void dir_deref(struct dir_info *dir, unsigned int depth)
 	while(dir_ent) {
 		if(dir_ent->inode->deref) {
 			filename = pathname(dir_ent);
-			if(dir_ent->inode->deref == DEREF_BAD)
-				res = -1;
-			else
-				res = stat(filename, &buf);
+			res = stat(filename, &buf);
 			if(res == -1) {
-				dir_ent->inode->deref = DEREF_BAD;
 				if(dir_ent->inode->keep) {
 					ERROR("Cannot dereference %s, keeping as symbolic link\n", filename);
 					prev = dir_ent;
@@ -4311,47 +4267,31 @@ static void dir_deref(struct dir_info *dir, unsigned int depth)
 
 			if(!S_ISDIR(buf.st_mode)) {
 				/*
-				 * Symbolic links which don't resolve to a directory can simply be
-				 * updated as a non-directory can have multiple hard links
+				 * Symbolic links which don't resolve to a directory can be
+				 * replaced with what it points to.  The lookup_inode() will increment
+				 * the hard link count as necessary.  But, we also need to decrement
+				 * the hard link count on the symbolic link
 				 */
-				free(dir_ent->inode->symlink);
-				dir_ent->inode->symlink = NULL;
-				memcpy(&dir_ent->inode->buf, &buf, sizeof(struct stat));
-				dir_ent->inode->deref = FALSE;
+				dec_nlink_inode(dir_ent);
+				dir_ent->inode = lookup_inode(&buf);
 			} else {
 				/*
 				 * Symbolic links which resolve to a directory need to do a
 				 * directory scan to add it to the dir_entry.  If the symbolic link
 				 * has multiple hard links, this directory hierarchy needs to be
-				 * cloned for each hard link because directories can't be hard
-				 * linked
+				 * created for each hard link because each may resolve differently
 				 */
+				int keep = dir_ent->inode->keep;
+
 				subpath = subpathname(dir_ent);
+				dec_nlink_inode(dir_ent);
+				dir_ent->inode = lookup_inode(&buf);
 
-				if(dir_ent->inode->deref == DEREF_FIRST) {
-					dir_ent->dir = dir_scan1(filename, subpath, NULL, scan1_readdir,
-								TRUE, dir_ent->inode->keep, FALSE, FALSE, depth + 1);
-					if(dir_ent->dir == NULL) {
-						dir_ent->inode->deref = DEREF_BAD;
-						if(dir_ent->inode->keep) {
-							ERROR("Cannot dereference %s, keeping as symbolic link\n", filename);
-							prev = dir_ent;
-							dir_ent = dir_ent->next;
-						} else {
-							ERROR("Cannot dereference %s, deleting\n", filename);
-							dir_ent = delete_file(dir, dir_ent, prev);
-						}
-
-						continue;
-					}
-
-					free(dir_ent->inode->symlink);
-					dir_ent->inode->clone_dir = dir_ent->dir;
-					memcpy(&dir_ent->inode->buf, &buf, sizeof(struct stat));
-					dir_ent->inode->deref = DEREF_MULTIPLE;
-				} else {
-					dir_ent->dir = dir_clone(filename, subpath, dir_ent->inode->clone_dir, depth + 1);
-					dir_ent->inode = lookup_inode(&dir_ent->inode->buf);
+				dir_ent->dir = dir_scan1(filename, subpath, NULL, scan1_readdir,
+						TRUE, keep, FALSE, FALSE, depth + 1);
+				if(dir_ent->dir == NULL) {
+					dir_ent = delete_file(dir, dir_ent, prev);
+					continue;
 				}
 
 				dir_ent->dir->dir_ent = dir_ent;
