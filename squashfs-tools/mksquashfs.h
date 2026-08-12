@@ -228,6 +228,12 @@ static inline int get_pathmax()
 	return path_max;
 }
 
+struct tree {
+	dev_t		st_dev;
+	ino_t		st_ino;
+	struct tree	*parent;
+};
+
 extern struct cache *fragment_buffer, *reserve_cache;
 extern struct cache *fwriter_buffer;
 extern struct queue_cache *bwriter_buffer;
