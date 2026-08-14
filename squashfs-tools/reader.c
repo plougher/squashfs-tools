@@ -822,7 +822,7 @@ static void *block_reader(void *arg)
 
 		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
 			reader_read_process(reader, entry);
-		if(zip_archive(entry->dir_ent->inode->archive))
+		else if(zip_archive(entry->dir_ent->inode->archive))
 			read_zip_data(&reader[0], entry);
 		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
 			reader_read_file(reader, entry, BLOCK_READER);
@@ -847,7 +847,7 @@ static void *fragment_reader(void *arg)
 
 		if(IS_PSEUDO_PROCESS(entry->dir_ent->inode))
 			reader_read_process(reader, entry);
-		if(zip_archive(entry->dir_ent->inode->archive))
+		else if(zip_archive(entry->dir_ent->inode->archive))
 			read_zip_data(&reader[0], entry);
 		else if(S_ISREG(entry->dir_ent->inode->buf.st_mode))
 			reader_read_file(reader, entry, FRAGMENT_READER);
