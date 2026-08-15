@@ -587,7 +587,8 @@ static int read_filesystem_tables()
 			goto corrupted;
 		}
 
-		if(sBlk.s.xattr_id_table_start >= sBlk.s.bytes_used) {
+		if((sBlk.s.xattr_id_table_start >= sBlk.s.bytes_used) ||
+				(sBlk.s.bytes_used - sBlk.s.xattr_id_table_start < sizeof(struct squashfs_xattr_table))) {
 			ERROR("read_filesystem_tables: xattr id table start too large in super block\n");
 			goto corrupted;
 		}
