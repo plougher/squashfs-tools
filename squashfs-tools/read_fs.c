@@ -587,6 +587,7 @@ corrupted2:
 
 struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *source)
 {
+	long long table_start;
 	int res, bytes = 0;
 	char buffer[SQUASHFS_METADATA_SIZE] __attribute__ ((aligned));
 
@@ -637,6 +638,90 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 		ERROR("Compressors available:\n");
 		display_compressors();
 		goto failed_mount;
+	}
+
+	/* Sanity check bytes used */
+	if(sBlk->bytes_used < 0) {
+		ERROR("read_super: bytes used is negative in super block\n");
+		goto corrupted;
+	}
+
+	/* Sanity check xattr id table start */
+	if(sBlk->xattr_id_table_start != SQUASHFS_INVALID_BLK) {
+		if(sBlk->xattr_id_table_start < 0) {
+			ERROR("read_super: xattr id table start is negative in super block\n");
+			goto corrupted;
+		}
+
+		if((sBlk->xattr_id_table_start >= sBlk->bytes_used) ||
+				(sBlk->bytes_used - sBlk->xattr_id_table_start < sizeof(struct squashfs_xattr_table))) {
+			ERROR("read_super: xattr id table start too large in super block\n");
+			goto corrupted;
+		}
+		table_start = sBlk->xattr_id_table_start;
+	} else
+		table_start = sBlk->bytes_used;
+
+	/* Sanity check id table start */
+	if(sBlk->id_table_start < 0) {
+		ERROR("read_super: id table start is negative in super block\n");
+		goto corrupted;
+	}
+
+	if(sBlk->id_table_start >= table_start) {
+		ERROR("read_super: id table start too large in super block\n");
+		goto corrupted;
+	}
+
+	/* Sanity check lookup table start */
+	if(sBlk->lookup_table_start != SQUASHFS_INVALID_BLK) {
+		if(sBlk->lookup_table_start < 0) {
+			ERROR("read_super: lookup table start is negative in super block\n");
+			goto corrupted;
+		}
+
+		if(sBlk->lookup_table_start >= sBlk->id_table_start) {
+			ERROR("read_super: lookup table start too large in super block\n");
+			goto corrupted;
+		}
+		table_start = sBlk->lookup_table_start;
+	} else
+		table_start = sBlk->id_table_start;
+
+	/* Sanity check fragment table */
+	if(sBlk->fragments != 0) {
+		if(sBlk->fragment_table_start < 0) {
+			ERROR("read_super: fragment table start is negative in super block\n");
+			goto corrupted;
+		}
+
+		if(sBlk->fragment_table_start >= table_start) {
+			ERROR("read_super: fragment table start too large in super block\n");
+			goto corrupted;
+		}
+		table_start = sBlk->fragment_table_start;
+	}
+
+	/* Sanity check directory table */
+	if(sBlk->directory_table_start < 0) {
+		ERROR("read_super: directory table start is negative in super block\n");
+		goto corrupted;
+	}
+
+	if(sBlk->directory_table_start >= table_start) {
+		ERROR("read_super: directory table start too large in super block\n");
+		goto corrupted;
+	}
+
+	/* Sanity check inode table */
+	if(sBlk->inode_table_start < 0) {
+		ERROR("read_super: inode table start is negative in super block\n");
+		goto corrupted;
+	}
+
+	if(sBlk->inode_table_start >= sBlk->directory_table_start) {
+		ERROR("read_super: inode table start too large in super block\n");
+		goto corrupted;
 	}
 
 	/*
@@ -710,6 +795,9 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 	printf("\n");
 
 	return comp;
+
+corrupted:
+	ERROR("read_super: Filesystem is corrupted!\n");
 
 failed_mount:
 	return NULL;
