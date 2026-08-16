@@ -1017,7 +1017,7 @@ static squashfs_inode *read_inode_lookup_table(int fd, struct squashfs_super_blo
 	 */
 	long long lookup_bytes = SQUASHFS_LOOKUP_BYTES(sBlk->inodes);
 	int indexes = SQUASHFS_LOOKUP_BLOCKS(sBlk->inodes);
-	long long index[indexes];
+	long long *index = MALLOC(indexes * sizeof(long long));
 	int res, i;
 	squashfs_inode *inode_lookup_table = MALLOC(lookup_bytes);
 
@@ -1027,6 +1027,7 @@ static squashfs_inode *read_inode_lookup_table(int fd, struct squashfs_super_blo
 		ERROR("Failed to read inode lookup table index\n");
 		ERROR("Filesystem corrupted?\n");
 		free(inode_lookup_table);
+		free(index);
 		return NULL;
 	}
 
@@ -1046,11 +1047,13 @@ static squashfs_inode *read_inode_lookup_table(int fd, struct squashfs_super_blo
 				length);
 			ERROR("Filesystem corrupted?\n");
 			free(inode_lookup_table);
+			free(index);
 			return NULL;
 		}
 	}
 
 	SQUASHFS_INSWAP_LONG_LONGS(inode_lookup_table, sBlk->inodes);
+	free(index);
 
 	return inode_lookup_table;
 }
