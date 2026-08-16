@@ -175,7 +175,7 @@
 #define SQUASHFS_MODE(a)		((a) & 0xfff)
 
 /* fragment and fragment table defines */
-#define SQUASHFS_FRAGMENT_BYTES(A)	((A) * \
+#define SQUASHFS_FRAGMENT_BYTES(A)	((long long)(A) * \
 					sizeof(struct squashfs_fragment_entry))
 
 #define SQUASHFS_FRAGMENT_INDEX(A)	(SQUASHFS_FRAGMENT_BYTES(A) / \

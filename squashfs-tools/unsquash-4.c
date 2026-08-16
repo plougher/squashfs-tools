@@ -60,9 +60,9 @@ static int read_fragment_table(long long *table_start)
 	 */
 	int res;
 	unsigned int i;
-	long long bytes = SQUASHFS_FRAGMENT_BYTES((long long) sBlk.s.fragments);
-	int indexes = SQUASHFS_FRAGMENT_INDEXES((long long) sBlk.s.fragments);
-	int length = SQUASHFS_FRAGMENT_INDEX_BYTES((long long) sBlk.s.fragments);
+	long long bytes = SQUASHFS_FRAGMENT_BYTES(sBlk.s.fragments);
+	int indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk.s.fragments);
+	int length = SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk.s.fragments);
 	long long *fragment_table_index;
 
 	/*

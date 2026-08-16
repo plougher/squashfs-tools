@@ -947,6 +947,13 @@ static unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 
 static struct squashfs_fragment_entry *read_fragment_table(int fd, struct squashfs_super_block *sBlk)
 {
+	/*
+	 * Note on overflow limits:
+	 * Size of SBlk->fragments is 2^32 (unsigned int)
+	 * Max size of bytes is 2^32*16 or 2^36
+	 * Max indexes is (2^32*16)/8K or 2^23
+	 * Max length is ((2^32*16)/8K)*8 or 2^26 or 64M
+	 */
 	int res;
 	unsigned int i;
 	long long bytes = SQUASHFS_FRAGMENT_BYTES(sBlk->fragments);
