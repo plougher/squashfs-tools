@@ -958,7 +958,7 @@ static struct squashfs_fragment_entry *read_fragment_table(int fd, struct squash
 	unsigned int i;
 	long long bytes = SQUASHFS_FRAGMENT_BYTES(sBlk->fragments);
 	int indexes = SQUASHFS_FRAGMENT_INDEXES(sBlk->fragments);
-	long long fragment_table_index[indexes];
+	long long *fragment_table_index = MALLOC(indexes * sizeof(long long));
 	struct squashfs_fragment_entry *fragment_table = MALLOC(bytes);
 
 	TRACE("read_fragment_table: %u fragments, reading %d fragment indexes "
@@ -972,6 +972,7 @@ static struct squashfs_fragment_entry *read_fragment_table(int fd, struct squash
 		ERROR("Failed to read fragment table index\n");
 		ERROR("Filesystem corrupted?\n");
 		free(fragment_table);
+		free(fragment_table_index);
 		return NULL;
 	}
 
@@ -991,12 +992,15 @@ static struct squashfs_fragment_entry *read_fragment_table(int fd, struct squash
 				fragment_table_index[i], length);
 			ERROR("Filesystem corrupted?\n");
 			free(fragment_table);
+			free(fragment_table_index);
 			return NULL;
 		}
 	}
 
 	for(i = 0; i < sBlk->fragments; i++)
 		SQUASHFS_INSWAP_FRAGMENT_ENTRY(&fragment_table[i]);
+
+	free(fragment_table_index);
 
 	return fragment_table;
 }
