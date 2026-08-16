@@ -900,9 +900,16 @@ read_error:
 
 static unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 {
+	/*
+	 * Note on overflow limits:
+	 * Size of SBlk->no_ids is 2^16 (unsigned short)
+	 * Max size of bytes is 2^16*4 or 256K
+	 * Max indexes is (2^16*4)/8K or 32
+	 * Max length is ((2^16*4)/8K)*8 or 256
+	 */
+	int bytes = SQUASHFS_ID_BYTES(sBlk->no_ids);
 	int indexes = SQUASHFS_ID_BLOCKS(sBlk->no_ids);
 	long long index[indexes];
-	int bytes = SQUASHFS_ID_BYTES(sBlk->no_ids);
 	unsigned int *id_table = MALLOC(bytes);
 	int res, i;
 

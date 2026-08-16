@@ -208,7 +208,7 @@
 					sizeof(long long))
 
 /* uid lookup table defines */
-#define SQUASHFS_ID_BYTES(A)	((A) * sizeof(unsigned int))
+#define SQUASHFS_ID_BYTES(A)	((unsigned int)(A) * sizeof(unsigned int))
 
 #define SQUASHFS_ID_BLOCK(A)		(SQUASHFS_ID_BYTES(A) / \
 						SQUASHFS_METADATA_SIZE)
