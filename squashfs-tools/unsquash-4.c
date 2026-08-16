@@ -535,8 +535,8 @@ static int parse_exports_table(long long *table_start)
 	 * Max length is ((2^32*8)/8K)*8 or 2^25
 	 */
 	int res;
-	int indexes = SQUASHFS_LOOKUP_BLOCKS((long long) sBlk.s.inodes);
-	int length = SQUASHFS_LOOKUP_BLOCK_BYTES((long long) sBlk.s.inodes);
+	int indexes = SQUASHFS_LOOKUP_BLOCKS(sBlk.s.inodes);
+	int length = SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk.s.inodes);
 	long long *export_index_table;
 
 	/*

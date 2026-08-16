@@ -192,7 +192,7 @@
 						sizeof(long long))
 
 /* inode lookup table defines */
-#define SQUASHFS_LOOKUP_BYTES(A)	((A) * sizeof(squashfs_inode))
+#define SQUASHFS_LOOKUP_BYTES(A)	((long long)(A) * sizeof(squashfs_inode))
 
 #define SQUASHFS_LOOKUP_BLOCK(A)		(SQUASHFS_LOOKUP_BYTES(A) / \
 						SQUASHFS_METADATA_SIZE)

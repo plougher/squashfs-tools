@@ -1008,7 +1008,14 @@ static struct squashfs_fragment_entry *read_fragment_table(int fd, struct squash
 
 static squashfs_inode *read_inode_lookup_table(int fd, struct squashfs_super_block *sBlk)
 {
-	int lookup_bytes = SQUASHFS_LOOKUP_BYTES(sBlk->inodes);
+	/*
+	 * Note on overflow limits:
+	 * Size of SBlk->inodes is 2^32 (unsigned int)
+	 * Max lookup_bytes 2^32*8 = 2^35
+	 * Max indexes is (2^32*8)/8K or 2^22
+	 * Max length is ((2^32*8)/8K)*8 or 2^25
+	 */
+	long long lookup_bytes = SQUASHFS_LOOKUP_BYTES(sBlk->inodes);
 	int indexes = SQUASHFS_LOOKUP_BLOCKS(sBlk->inodes);
 	long long index[indexes];
 	int res, i;

@@ -5780,7 +5780,13 @@ static void initialise_threads(int readq, int fragq, int bwriteq, int fwriteq,
 
 static long long write_inode_lookup_table()
 {
-	int i, lookup_bytes = SQUASHFS_LOOKUP_BYTES(inode_count);
+	/*
+	 * Note on overflow limits:
+	 * Size of inode_count is 2^32 (unsigned int)
+	 * Size of lookup_bytes = 2^32*8 = 2^35
+	 */
+	int i;
+	long long lookup_bytes = SQUASHFS_LOOKUP_BYTES(inode_count);
 	unsigned int inode_number;
 
 	if(inode_count == sinode_count)
