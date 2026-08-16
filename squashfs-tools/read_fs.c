@@ -909,7 +909,7 @@ static unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 	 */
 	int bytes = SQUASHFS_ID_BYTES(sBlk->no_ids);
 	int indexes = SQUASHFS_ID_BLOCKS(sBlk->no_ids);
-	long long index[indexes];
+	long long *index = MALLOC(indexes * sizeof(long long));
 	unsigned int *id_table = MALLOC(bytes);
 	int res, i;
 
@@ -919,6 +919,7 @@ static unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 		ERROR("Failed to read id table index\n");
 		ERROR("Filesystem corrupted?\n");
 		free(id_table);
+		free(index);
 		return NULL;
 	}
 
@@ -937,6 +938,7 @@ static unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 				"length %d\n", i, index[i], length);
 			ERROR("Filesystem corrupted?\n");
 			free(id_table);
+			free(index);
 			return NULL;
 		}
 	}
@@ -947,6 +949,8 @@ static unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 		TRACE("Adding id %d to id tables\n", id_table[i]);
 		create_id(id_table[i]);
 	}
+
+	free(index);
 
 	return id_table;
 }
