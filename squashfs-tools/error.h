@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2012, 2013, 2014, 2019, 2021, 2025
+ * Copyright (c) 2012, 2013, 2014, 2019, 2021, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -48,6 +48,14 @@ extern void pre_exit_squashfs();
 #define MEM_ERROR(func) \
 	do {\
 		progressbar_error("FATAL ERROR: Out of memory (%s)\n", \
+								func); \
+		pre_exit_squashfs();\
+		exit(1); \
+	} while(0)
+
+#define OVERFLOW_ERROR(func) \
+	do {\
+		progressbar_error("FATAL ERROR: arithmetic overflow (%s).  File system is corrupted\n", \
 								func); \
 		pre_exit_squashfs();\
 		exit(1); \
