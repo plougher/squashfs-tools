@@ -1035,8 +1035,21 @@ static struct squashfs_fragment_entry *read_fragment_table(int fd, struct squash
 		}
 	}
 
-	for(i = 0; i < sBlk->fragments; i++)
+	for(i = 0; i < sBlk->fragments; i++) {
+		unsigned int size;
+
 		SQUASHFS_INSWAP_FRAGMENT_ENTRY(&fragment_table[i]);
+		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(fragment_table[i].size);
+
+		if(size == 0 || size > block_size) {
+			ERROR("File system corrupted - fragment size "
+				"%u in fragment table zero or too large\n",
+				size);
+			free(fragment_table);
+			free(fragment_table_index);
+			return NULL;
+		}
+	}
 
 	free(fragment_table_index);
 
