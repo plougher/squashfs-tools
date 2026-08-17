@@ -588,7 +588,7 @@ corrupted2:
 struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *source)
 {
 	long long table_start;
-	int res, bytes = 0;
+	int res, bytes = 0, block_size, block_log;
 	char buffer[SQUASHFS_METADATA_SIZE] __attribute__ ((aligned));
 
 	res = read_fs_bytes(fd, SQUASHFS_START, sizeof(struct squashfs_super_block),
@@ -638,6 +638,33 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 		ERROR("Compressors available:\n");
 		display_compressors();
 		goto failed_mount;
+	}
+
+	/*
+	 * Sanity check block size and block log.
+	 *
+	 * Check they're within correct limits
+	 */
+	block_size = sBlk->block_size;
+	block_log = sBlk->block_log;
+
+	if(block_size > SQUASHFS_FILE_MAX_SIZE ||
+					block_log > SQUASHFS_FILE_MAX_LOG) {
+		ERROR("read_super: Block size or block_log too large\n");
+		goto corrupted;
+	}
+
+	if(block_size < 4096) {
+		ERROR("read_super: Block size too small\n");
+		goto corrupted;
+	}
+
+	/*
+	 * Check block_size and block_log match
+	 */
+	if(block_size != (1 << block_log)) {
+		ERROR("read_super: Block size and block_log do not match\n");
+		goto corrupted;
 	}
 
 	/* Sanity check bytes used */
