@@ -212,15 +212,13 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 
 			SQUASHFS_INSWAP_REG_INODE_HEADER(inode);
 
+			i.frag_bytes = squashfs_file_frag(inode->file_size,
+				inode->fragment, &sBlk.s);
+			i.blocks = squashfs_file_blocks(inode->file_size,
+				inode->fragment, &sBlk.s);
 			i.data = inode->file_size;
-			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG
-				?  0 : inode->file_size % sBlk.s.block_size;
 			i.fragment = inode->fragment;
 			i.offset = inode->offset;
-			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(i.data + sBlk.s.block_size - 1) >>
-				sBlk.s.block_log :
-				i.data >> sBlk.s.block_log;
 			i.start = inode->start_block;
 			i.block_start = start;
 			i.block_offset = offset;
@@ -241,15 +239,13 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 			if(inode->file_size < 0)
 				EXIT_UNSQUASH("File system corrupted - negative file size in inode\n");
 
+			i.frag_bytes = squashfs_file_frag(inode->file_size,
+				inode->fragment, &sBlk.s);
+			i.blocks = squashfs_file_blocks(inode->file_size,
+				inode->fragment, &sBlk.s);
 			i.data = inode->file_size;
-			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG
-				?  0 : inode->file_size % sBlk.s.block_size;
 			i.fragment = inode->fragment;
 			i.offset = inode->offset;
-			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(inode->file_size + sBlk.s.block_size - 1) >>
-				sBlk.s.block_log :
-				inode->file_size >> sBlk.s.block_log;
 			i.start = inode->start_block;
 			i.block_start = start;
 			i.block_offset = offset;
