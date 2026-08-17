@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2012,
- * 2013, 2014, 2019, 2021, 2022, 2023, 2024, 2025
+ * 2013, 2014, 2019, 2021, 2022, 2023, 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -47,6 +47,7 @@
 #include "alloc.h"
 #include "caches-queues-lists.h"
 #include "virt_disk_pos.h"
+#include "overflow.h"
 
 int read_block(int fd, long long start, long long *next, int expected,
 								void *block)
@@ -76,7 +77,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 		char buffer[c_byte];
 		int error;
 
-		res = read_fs_bytes(fd, start + 2, c_byte, buffer);
+		res = read_fs_bytes(fd, ADD_OVERFLOW(start, 2), c_byte, buffer);
 		if(res == 0)
 			return 0;
 
@@ -88,14 +89,14 @@ int read_block(int fd, long long start, long long *next, int expected,
 			return 0;
 		}
 	} else {
-		res = read_fs_bytes(fd, start + 2, c_byte, block);
+		res = read_fs_bytes(fd, ADD_OVERFLOW(start, 2), c_byte, block);
 		if(res == 0)
 			return 0;
 		res = c_byte;
 	}
 
 	if(next)
-		*next = start + 2 + c_byte;
+		*next = ADD_OVERFLOW(start, c_byte + 2);
 
 	/*
 	 * if expected, then check the (uncompressed) return data
@@ -143,7 +144,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 	 *
 	 * Always round to a multiple of SQUASHFS_METADATA_SIZE
 	 */
-	alloc_size = ((end - start) + SQUASHFS_METADATA_SIZE) & ~(SQUASHFS_METADATA_SIZE - 1);
+	alloc_size = ADD_OVERFLOW(end - start, SQUASHFS_METADATA_SIZE) & ~(SQUASHFS_METADATA_SIZE - 1);
 
 	/* Rogue value used to check if it was found */
 	*root_inode_block = -1LL;
@@ -842,7 +843,7 @@ static unsigned char *squashfs_readdir(int fd, int root_entries,
 	struct squashfs_dir_entry *dire = (struct squashfs_dir_entry *) buffer;
 	unsigned char *directory_table = NULL;
 	int dir_count;
-	long long start = sBlk->directory_table_start + directory_start_block;
+	long long start = ADD_OVERFLOW(sBlk->directory_table_start, directory_start_block);
 	long long last_start_block = start, size = dir_size, bytes = 0;
 
 	size += offset;
@@ -913,8 +914,8 @@ static unsigned char *squashfs_readdir(int fd, int root_entries,
 	}
 
 all_done:
-	*last_directory_block = (unsigned int) last_start_block -
-		sBlk->directory_table_start;
+	*last_directory_block = (unsigned int) (last_start_block -
+		sBlk->directory_table_start);
 	return directory_table;
 
 read_error:
@@ -1127,8 +1128,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 	unsigned char *inode_table = NULL, *directory_table = NULL;
 	long long start = sBlk->inode_table_start;
 	long long end = sBlk->directory_table_start;
-	long long root_inode_start = start +
-		SQUASHFS_INODE_BLK(sBlk->root_inode);
+	long long root_inode_start = ADD_OVERFLOW(start, SQUASHFS_INODE_BLK(sBlk->root_inode));
 	unsigned int root_inode_offset =
 		SQUASHFS_INODE_OFFSET(sBlk->root_inode);
 	long long root_inode_block;
