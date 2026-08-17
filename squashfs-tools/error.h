@@ -53,10 +53,10 @@ extern void pre_exit_squashfs();
 		exit(1); \
 	} while(0)
 
-#define OVERFLOW_ERROR(func) \
+#define MATHS_ERROR(message, func) \
 	do {\
-		progressbar_error("FATAL ERROR: arithmetic overflow (%s).  File system is corrupted\n", \
-								func); \
+		progressbar_error("FATAL ERROR: %s (%s).  File system is corrupted\n", \
+							message, func); \
 		pre_exit_squashfs();\
 		exit(1); \
 	} while(0)

@@ -47,7 +47,7 @@
 #include "alloc.h"
 #include "caches-queues-lists.h"
 #include "virt_disk_pos.h"
-#include "overflow.h"
+#include "maths.h"
 
 int read_block(int fd, long long start, long long *next, int expected,
 								void *block)
@@ -1173,13 +1173,13 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 		if(inode.base.inode_type == SQUASHFS_DIR_TYPE) {
 			*inode_dir_start_block = inode.dir.start_block;
 			*inode_dir_offset = inode.dir.offset;
-			*inode_dir_file_size = inode.dir.file_size - 3;
+			*inode_dir_file_size = SUB_POS(inode.dir.file_size, 3);
 			*inode_dir_inode_number = inode.dir.inode_number;
 			*inode_dir_parent_inode = inode.dir.parent_inode;
 		} else {
 			*inode_dir_start_block = inode.ldir.start_block;
 			*inode_dir_offset = inode.ldir.offset;
-			*inode_dir_file_size = inode.ldir.file_size - 3;
+			*inode_dir_file_size = SUB_POS(inode.ldir.file_size, 3);
 			*inode_dir_inode_number = inode.ldir.inode_number;
 			*inode_dir_parent_inode = inode.ldir.parent_inode;
 		}
