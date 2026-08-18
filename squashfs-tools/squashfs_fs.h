@@ -517,6 +517,6 @@ static inline int squashfs_file_frag(long long size, unsigned int fragment,
 	if(fragment == SQUASHFS_INVALID_FRAG)
 		return 0;
 	else
-		return size & (sBlk->block_log - 1);
+		return size & (sBlk->block_size - 1);
 }
 #endif
