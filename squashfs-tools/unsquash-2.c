@@ -2,7 +2,7 @@
  * Unsquash a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2009, 2010, 2012, 2013, 2019, 2021, 2022, 2023, 2025
+ * Copyright (c) 2009, 2010, 2012, 2013, 2019, 2021, 2022, 2023, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -274,19 +274,17 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 				EXIT_UNSQUASH("read_inode: failed to read "
 					"inode %lld:%d\n", start, offset);
 
+			i.frag_bytes = squashfs_file_frag(inode->file_size,
+				inode->fragment, &sBlk.s);
+			i.blocks = squashfs_file_blocks(inode->file_size,
+				inode->fragment, &sBlk.s);
 			i.data = inode->file_size;
 			if(time_opt)
 				i.time = timeval;
 			else
 				i.time = inode->mtime;
-			i.frag_bytes = inode->fragment == SQUASHFS_INVALID_FRAG
-				?  0 : inode->file_size % sBlk.s.block_size;
 			i.fragment = inode->fragment;
 			i.offset = inode->offset;
-			i.blocks = inode->fragment == SQUASHFS_INVALID_FRAG ?
-				(i.data + sBlk.s.block_size - 1) >>
-				sBlk.s.block_log : i.data >>
-				sBlk.s.block_log;
 			i.start = inode->start_block;
 			i.block_start = start;
 			i.block_offset = offset;
