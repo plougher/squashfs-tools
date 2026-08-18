@@ -102,8 +102,8 @@ typedef struct squashfs_operations {
 		unsigned int offset, struct inode **i);
 	void (*read_fragment)(unsigned int fragment, long long *start_block,
 		int *size);
-	void (*read_block_list)(unsigned int *block_list, long long start,
-		unsigned int offset, int blocks);
+	void (*init_block_list)(long long start, unsigned int offset);
+	int (*next_block_list)();
 	struct inode *(*read_inode)(unsigned int start_block,
 		unsigned int offset);
 	int (*read_filesystem_tables)();

@@ -32,20 +32,27 @@
 static struct squashfs_fragment_entry *fragment_table;
 static unsigned int *id_table;
 static squashfs_operations ops;
+static long long block_start;
+static unsigned int block_offset;
 
-static void read_block_list(unsigned int *block_list, long long start,
-					unsigned int offset, int blocks)
+static void init_block_list(long long start, unsigned int offset)
+{
+	block_start = start;
+	block_offset = offset;
+}
+
+
+static int next_block_list()
 {
 	int res;
+	unsigned int block_size;
 
-	TRACE("read_block_list: blocks %d\n", blocks);
-
-	res = read_inode_data(block_list, &start, &offset, blocks * sizeof(unsigned int));
+	res = read_inode_data(&block_size, &block_start, &block_offset, sizeof(unsigned int));
 	if(res == FALSE)
-		EXIT_UNSQUASH("read_block_list: failed to read "
-			"inode index %lld:%d\n", start, offset);
+		EXIT_UNSQUASH("next_block_list: failed to read "
+			"inode index %lld:%d\n", block_start, block_offset);
 
-	SQUASHFS_INSWAP_INTS(block_list, blocks);
+	return (int) SQUASHFS_INSWAP_INT(block_size);
 }
 
 
@@ -869,7 +876,8 @@ static void squashfs_stat(char *source)
 static squashfs_operations ops = {
 	.opendir = squashfs_opendir,
 	.read_fragment = read_fragment,
-	.read_block_list = read_block_list,
+	.init_block_list = init_block_list,
+	.next_block_list = next_block_list,
 	.read_inode = read_inode,
 	.read_filesystem_tables = read_filesystem_tables,
 	.stat = squashfs_stat

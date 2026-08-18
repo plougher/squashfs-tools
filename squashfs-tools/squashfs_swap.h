@@ -3,7 +3,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2008, 2009, 2010, 2012, 2013, 2014, 2019, 2021
+ * Copyright (c) 2008, 2009, 2010, 2012, 2013, 2014, 2019, 2021, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -342,6 +342,7 @@ extern void inswap_le64_num(long long *, int);
 #define SQUASHFS_INSWAP_SHORTS(s, n) inswap_le16_num(s, n)
 #define SQUASHFS_INSWAP_INTS(s, n) inswap_le32_num(s, n)
 #define SQUASHFS_INSWAP_LONG_LONGS(s, n) inswap_le64_num(s, n)
+#define SQUASHFS_INSWAP_INT(s) inswap_le32(s)
 #else
 /* little endian architecture, just copy */
 #define SQUASHFS_SWAP_SUPER_BLOCK(s, d)	\
@@ -421,5 +422,6 @@ extern void inswap_le64_num(long long *, int);
 #define SQUASHFS_INSWAP_SHORTS(s, n)
 #define SQUASHFS_INSWAP_INTS(s, n)
 #define SQUASHFS_INSWAP_LONG_LONGS(s, n)
+#define SQUASHFS_INSWAP_INT(s) s
 #endif
 #endif

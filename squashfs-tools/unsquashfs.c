@@ -1092,7 +1092,6 @@ static inline int process_dir_mode(int mode)
 static int write_file(struct inode *inode, char *pathname)
 {
 	unsigned int file_fd, i;
-	unsigned int *block_list = NULL;
 	int file_end = inode->data / block_size, res;
 	long long start = inode->start;
 	mode_t mode = process_file_mode(inode->mode);
@@ -1120,11 +1119,8 @@ static int write_file(struct inode *inode, char *pathname)
 		return FALSE;
 	}
 
-	if(inode->blocks) {
-		block_list = MALLOC(inode->blocks * sizeof(unsigned int));
-		s_ops->read_block_list(block_list, inode->block_start,
-					inode->block_offset, inode->blocks);
-	}
+	if(inode->blocks)
+		s_ops->init_block_list(inode->block_start, inode->block_offset);
 
 	/*
 	 * the writer thread is queued a squashfs_file structure describing the
@@ -1134,7 +1130,8 @@ static int write_file(struct inode *inode, char *pathname)
 	queue_file(pathname, file_fd, inode);
 
 	for(i = 0; i < inode->blocks; i++) {
-		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
+		int block_list = s_ops->next_block_list();
+		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list);
 
 		if(c_byte < 0 || c_byte > block_size)
 			EXIT_UNSQUASH("File system corrupted - block size "
@@ -1145,11 +1142,10 @@ static int write_file(struct inode *inode, char *pathname)
 		block->offset = 0;
 		block->size = i == file_end ? inode->data & (block_size - 1) :
 			block_size;
-		if(block_list[i] == 0) /* sparse block */
+		if(block_list == 0) /* sparse block */
 			block->buffer = NULL;
 		else {
-			block->buffer = cache_get(data_cache, start,
-				block_list[i]);
+			block->buffer = cache_get(data_cache, start, block_list);
 			start += c_byte;
 		}
 		queue_put(to_writer, block);
@@ -1180,7 +1176,6 @@ static int write_file(struct inode *inode, char *pathname)
 		queue_put(to_writer, block);
 	}
 
-	free(block_list);
 	return TRUE;
 }
 
@@ -1188,18 +1183,14 @@ static int write_file(struct inode *inode, char *pathname)
 static int cat_file(struct inode *inode, char *pathname)
 {
 	unsigned int i;
-	unsigned int *block_list = NULL;
 	int file_end = inode->data / block_size;
 	long long start = inode->start;
 	struct file_entry *block;
 
 	TRACE("cat_file: regular file, blocks %d\n", inode->blocks);
 
-	if(inode->blocks) {
-		block_list = MALLOC(inode->blocks * sizeof(unsigned int));
-		s_ops->read_block_list(block_list, inode->block_start,
-					inode->block_offset, inode->blocks);
-	}
+	if(inode->blocks)
+		s_ops->init_block_list(inode->block_start, inode->block_offset);
 
 	/*
 	 * the writer thread is queued a squashfs_file structure describing the
@@ -1209,7 +1200,8 @@ static int cat_file(struct inode *inode, char *pathname)
 	queue_file(pathname, 0, inode);
 
 	for(i = 0; i < inode->blocks; i++) {
-		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[i]);
+		int block_list = s_ops->next_block_list();
+		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list);
 
 		if(c_byte < 0 || c_byte > block_size)
 			EXIT_UNSQUASH("File system corrupted - block size "
@@ -1220,11 +1212,10 @@ static int cat_file(struct inode *inode, char *pathname)
 		block->offset = 0;
 		block->size = i == file_end ? inode->data & (block_size - 1) :
 			block_size;
-		if(block_list[i] == 0) /* sparse block */
+		if(block_list == 0) /* sparse block */
 			block->buffer = NULL;
 		else {
-			block->buffer = cache_get(data_cache, start,
-				block_list[i]);
+			block->buffer = cache_get(data_cache, start, block_list);
 			start += c_byte;
 		}
 		queue_put(to_writer, block);
@@ -1255,7 +1246,6 @@ static int cat_file(struct inode *inode, char *pathname)
 		queue_put(to_writer, block);
 	}
 
-	free(block_list);
 	return TRUE;
 }
 
