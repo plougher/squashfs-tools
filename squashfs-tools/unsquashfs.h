@@ -78,7 +78,7 @@ struct hash_table_entry {
 };
 
 struct inode {
-	int		blocks;
+	long long	blocks;
 	long long	block_start;
 	unsigned int	block_offset;
 	long long	data;
