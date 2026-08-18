@@ -288,12 +288,8 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 
 			SQUASHFS_SWAP_REG_INODE_HEADER(cur_ptr, &inode);
 
-			frag_bytes = inode.fragment == SQUASHFS_INVALID_FRAG ?
-				0 : inode.file_size % sBlk->block_size;
-			blocks = inode.fragment == SQUASHFS_INVALID_FRAG ?
-				(inode.file_size + sBlk->block_size - 1) >>
-				sBlk->block_log : inode.file_size >>
-				sBlk->block_log;
+			frag_bytes = squashfs_file_frag(inode.file_size, inode.fragment, sBlk);
+			blocks = squashfs_file_blocks(inode.file_size, inode.fragment, sBlk);
 			start = inode.start_block;
 
 			TRACE("scan_inode_table: regular file, file_size %d, "
@@ -333,8 +329,8 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 		}	
 		case SQUASHFS_LREG_TYPE: {
 			struct squashfs_lreg_inode_header inode;
-			int frag_bytes, blocks, i;
-			long long start, file_bytes = 0;
+			int frag_bytes;
+			long long blocks, i, start, file_bytes = 0;
 			unsigned int *block_list;
 
 			/*
@@ -352,16 +348,12 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 				goto corrupted2;
 			}
 
-			frag_bytes = inode.fragment == SQUASHFS_INVALID_FRAG ?
-				0 : inode.file_size % sBlk->block_size;
-			blocks = inode.fragment == SQUASHFS_INVALID_FRAG ?
-				(inode.file_size + sBlk->block_size - 1) >>
-				sBlk->block_log : inode.file_size >>
-				sBlk->block_log;
+			frag_bytes = squashfs_file_frag(inode.file_size, inode.fragment, sBlk);
+			blocks = squashfs_file_blocks(inode.file_size, inode.fragment, sBlk);
 			start = inode.start_block;
 
 			TRACE("scan_inode_table: extended regular "
-				"file, file_size %lld, blocks %d\n",
+				"file, file_size %lld, blocks %lld\n",
 				inode.file_size, blocks);
 
 			cur_ptr += sizeof(inode);
