@@ -4,7 +4,7 @@
  * Squashfs
  *
  * Copyright (c) 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2012,
- * 2013, 2014, 2017, 2019, 2022, 2023
+ * 2013, 2014, 2017, 2019, 2022, 2023, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -501,4 +501,22 @@ struct squashfs_xattr_table {
 	unsigned int		unused;
 };
 
+static inline long long squashfs_file_blocks(long long size, unsigned int fragment,
+			struct squashfs_super_block *sBlk) {
+	if(fragment == SQUASHFS_INVALID_FRAG) {
+		if(size & (sBlk->block_size - 1))
+			return (size >> sBlk->block_log) + 1;
+		else
+			return size >> sBlk->block_log;
+	} else
+		return size >> sBlk->block_log;
+}
+
+static inline int squashfs_file_frag(long long size, unsigned int fragment,
+			struct squashfs_super_block *sBlk) {
+	if(fragment == SQUASHFS_INVALID_FRAG)
+		return 0;
+	else
+		return size & (sBlk->block_log - 1);
+}
 #endif
