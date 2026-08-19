@@ -1183,12 +1183,11 @@ static int write_file(struct inode *inode, char *pathname)
 
 static int cat_file(struct inode *inode, char *pathname)
 {
-	unsigned int i;
-	int file_end = inode->data / block_size;
+	long long i, file_end = inode->data / block_size;
 	long long start = inode->start;
 	struct file_entry *block;
 
-	TRACE("cat_file: regular file, blocks %d\n", inode->blocks);
+	TRACE("cat_file: regular file, blocks %lld\n", inode->blocks);
 
 	if(inode->blocks)
 		s_ops->init_block_list(inode->block_start, inode->block_offset);
