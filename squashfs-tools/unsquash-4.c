@@ -697,6 +697,12 @@ static int read_filesystem_tables()
 		goto corrupted;
 	}
 
+	/* Sanity check root inode */
+	if(sBlk.s.root_inode < 0) {
+		ERROR("read_filesystem_tables: root inode start is negative in super block\n");
+		goto corrupted;
+	}
+
 	if(no_xattrs)
 		sBlk.s.xattr_id_table_start = SQUASHFS_INVALID_BLK;
 
