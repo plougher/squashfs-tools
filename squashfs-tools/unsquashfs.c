@@ -43,6 +43,7 @@
 #include "merge_sort.h"
 #include "uid_gid.h"
 #include "symbolic_mode.h"
+#include "maths.h"
 
 #ifdef __linux__
 #include <sys/sysmacros.h>
@@ -741,7 +742,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 		if(buffer == NULL)
 			buffer = MALLOC(SQUASHFS_METADATA_SIZE);
 
-		res = read_fs_bytes(fd, start + offset, c_byte, buffer);
+		res = read_fs_bytes(fd, ADD_OVERFLOW(start, offset), c_byte, buffer);
 		if(res == FALSE)
 			goto failed;
 
@@ -754,14 +755,14 @@ int read_block(int fd, long long start, long long *next, int expected,
 			goto failed;
 		}
 	} else {
-		res = read_fs_bytes(fd, start + offset, c_byte, block);
+		res = read_fs_bytes(fd, ADD_OVERFLOW(start, offset), c_byte, block);
 		if(res == FALSE)
 			goto failed;
 		res = c_byte;
 	}
 
 	if(next)
-		*next = start + offset + c_byte;
+		*next = ADD_OVERFLOW(start + offset, c_byte);
 
 	/*
 	 * if expected, then check the (uncompressed) return data
