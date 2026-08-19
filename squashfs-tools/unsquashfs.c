@@ -1091,14 +1091,15 @@ static inline int process_dir_mode(int mode)
 
 static int write_file(struct inode *inode, char *pathname)
 {
-	unsigned int file_fd, i;
-	int file_end = inode->data / block_size, res;
+	unsigned int file_fd;
+	int res;
+	long long i, file_end = inode->data / block_size;
 	long long start = inode->start;
 	mode_t mode = process_file_mode(inode->mode);
 	struct stat buf;
 	struct file_entry *block;
 
-	TRACE("write_file: regular file, blocks %d\n", inode->blocks);
+	TRACE("write_file: regular file, blocks %lld\n", inode->blocks);
 
 	if(!root_process && !(mode & S_IWUSR) && has_xattrs(inode->xattr))
 		mode |= S_IWUSR;
