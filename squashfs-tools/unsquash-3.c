@@ -27,6 +27,7 @@
 #include "squashfs_compat.h"
 #include "compressor.h"
 #include "alloc.h"
+#include "maths.h"
 
 static squashfs_fragment_entry_3 *fragment_table;
 static unsigned int *uid_table, *guid_table;
@@ -184,7 +185,7 @@ static void read_fragment(unsigned int fragment, long long *start_block, int *si
 static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 {
 	static union squashfs_inode_header_3 header;
-	long long start = sBlk.s.inode_table_start + start_block;
+	long long start = ADD_OVERFLOW(sBlk.s.inode_table_start, start_block);
 	long long st = start;
 	unsigned int off = offset;
 	static struct inode i;
@@ -435,7 +436,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 		 */
 		return dir;
 
-	start = sBlk.s.directory_table_start + (*i)->start;
+	start = ADD_OVERFLOW(sBlk.s.directory_table_start, (*i)->start);
 	offset = (*i)->offset;
 	size = (*i)->data + bytes - 3;
 
