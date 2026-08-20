@@ -387,7 +387,7 @@ static struct dir *squashfs_opendir(unsigned int block_start, unsigned int offse
 
 	start = ADD_OVERFLOW(sBlk.s.directory_table_start, (*i)->start);
 	offset = (*i)->offset;
-	size = (*i)->data + bytes - 3;
+	size = SUB_POS((*i)->data, 3);
 
 	while(bytes < size) {			
 		res = read_directory_data(&dirh, &start, &offset, sizeof(dirh));
