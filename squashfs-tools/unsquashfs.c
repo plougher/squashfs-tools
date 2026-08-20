@@ -74,6 +74,7 @@ int fd;
 unsigned int cached_frag = SQUASHFS_INVALID_FRAG;
 unsigned int block_size;
 unsigned int block_log;
+long long bytes_used = sizeof(struct squashfs_super_block) + SQUASHFS_METADATA_SIZE;
 int lsonly = FALSE, info = FALSE, force = FALSE, short_ls = TRUE;
 int concise = FALSE, quiet = FALSE, numeric = FALSE;
 int use_regex = FALSE;
@@ -678,6 +679,21 @@ int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 	TRACE("read_bytes: reading from position 0x%llx, bytes %lld\n", byte,
 		bytes);
 
+	if(byte < 0) {
+		ERROR("read_fs_bytes: trying to read from a negative position\n");
+		goto corrupted;
+	}
+
+	if(ADD_OVERFLOW(byte, bytes) > bytes_used) {
+		ERROR("read_fs_bytes: trying to read beyond filesystem end\n");
+		goto corrupted;
+	}
+
+	if(bytes < 0) {
+		ERROR("read_fs_bytes: trying to read a negative amount of bytes\n");
+		goto corrupted;
+	}
+
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &pos_mutex);
 	pthread_mutex_lock(&pos_mutex);
 	if(lseek(fd, start_offset + off, SEEK_SET) == -1) {
@@ -696,6 +712,10 @@ int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 done:
 	pthread_cleanup_pop(1);
 	return res;
+
+corrupted:
+	ERROR("read_fs_bytes: the filesystem appears to be corrupted\n");
+	return FALSE;
 }
 
 
@@ -5399,6 +5419,7 @@ int main(int argc, char *argv[])
 
 	block_size = sBlk.s.block_size;
 	block_log = sBlk.s.block_log;
+	bytes_used = sBlk.s.bytes_used;
 
 	/*
 	 * Sanity check block size and block log.
