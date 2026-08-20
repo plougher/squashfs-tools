@@ -519,4 +519,11 @@ static inline int squashfs_file_frag(long long size, unsigned int fragment,
 	else
 		return size & (sBlk->block_size - 1);
 }
+
+static inline long long squashfs_all_blocks(long long size, struct squashfs_super_block *sBlk) {
+	if(size & (sBlk->block_size - 1))
+		return (size >> sBlk->block_log) + 1;
+	else
+		return size >> sBlk->block_log;
+}
 #endif

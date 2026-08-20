@@ -954,13 +954,11 @@ static int write_block(int file_fd, char *buffer, int size, long long hole, int 
 		}
 
 		if(sparse == FALSE || lseek_broken) {
-			int blocks = (hole + block_size -1) / block_size;
-			int avail_bytes, i;
+			long long blocks = squashfs_all_blocks(hole, &sBlk.s), i;
+			int avail_bytes;
 			for(i = 0; i < blocks; i++, hole -= avail_bytes) {
-				avail_bytes = hole > block_size ? block_size :
-					hole;
-				if(write_bytes(file_fd, zero_data, avail_bytes)
-						== -1)
+				avail_bytes = hole > block_size ? block_size : hole;
+				if(write_bytes(file_fd, zero_data, avail_bytes) == -1)
 					goto failure;
 			}
 		}
@@ -2897,8 +2895,7 @@ static int pre_scan(char *parent_name, unsigned int start_block, unsigned int of
 					i = s_ops->read_inode(start_block, offset);
 					if(lookup(i->inode_number) == NULL) {
 						insert_lookup(i->inode_number, (char *) i);
-						total_blocks += (i->data +
-							(block_size - 1)) >> block_log;
+						total_blocks += squashfs_all_blocks(i->data, &sBlk.s);
 					}
 					total_files ++;
 				}
@@ -4424,7 +4421,7 @@ static int pseudo_scan1(char *parent_name, unsigned int start_block, unsigned in
 					pseudo_print(pathname, i, NULL, byte_offset);
 					if(type == SQUASHFS_FILE_TYPE) {
 						byte_offset += i->data;
-						total_blocks += (i->data + (block_size - 1)) >> block_log;
+						total_blocks += squashfs_all_blocks(i->data, &sBlk.s);
 					}
 					insert_lookup(i->inode_number, STRDUP(pathname));
 				} else

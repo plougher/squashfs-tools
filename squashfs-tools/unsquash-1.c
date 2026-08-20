@@ -188,8 +188,7 @@ static struct inode *read_inode(unsigned int start_block, unsigned int offset)
 				i.time = timeval;
 			else
 				i.time = inode->mtime;
-			i.blocks = (i.data + sBlk.s.block_size - 1) >>
-				sBlk.s.block_log;
+			i.blocks = squashfs_all_blocks(i.data, &sBlk.s);
 			i.start = inode->start_block;
 			i.block_start = start;
 			i.block_offset = offset;
