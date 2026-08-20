@@ -29,6 +29,9 @@
 
 static inline long long _add_overflow(long long a, long long b, const char *func)
 {
+	if(a < 0 || b < 0)
+		MATHS_ERROR("negative number in arithmetic\n", func);
+
 	if(LLONG_MAX - a < b)
 		MATHS_ERROR("arithmetic overflow", func);
 
@@ -37,6 +40,9 @@ static inline long long _add_overflow(long long a, long long b, const char *func
 
 static inline long long _sub_pos(long long a, long long b, const char *func)
 {
+	if(a < 0 || b < 0)
+		MATHS_ERROR("negative number in arithmetic\n", func);
+
 	if(a < b)
 		MATHS_ERROR("arithmetic negative result", func);
 
