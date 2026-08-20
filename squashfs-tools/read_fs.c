@@ -49,6 +49,29 @@
 #include "virt_disk_pos.h"
 #include "maths.h"
 
+static long long bytes_used;
+
+static int read_fs_data(int fd, long long byte, long long bytes, void *buff)
+{
+	if(byte < 0) {
+		ERROR("read_fs_data: trying to read from a negative position\n");
+		return FALSE;
+	}
+
+	if(ADD_OVERFLOW(byte, bytes) > bytes_used) {
+		ERROR("read_fs_data: trying to read beyond filesystem end\n");
+		return FALSE;
+	}
+
+	if(bytes < 0) {
+		ERROR("read_fs_data: trying to read a negative amount of bytes\n");
+		return FALSE;
+	}
+
+	return read_fs_bytes(fd, byte, bytes, buff);
+}
+
+
 int read_block(int fd, long long start, long long *next, int expected,
 								void *block)
 {
@@ -57,7 +80,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 	int outlen = expected ? expected : SQUASHFS_METADATA_SIZE;
 	
 	/* Read block size */
-	res = read_fs_bytes(fd, start, 2, &c_byte);
+	res = read_fs_data(fd, start, 2, &c_byte);
 	if(res == 0)
 		return 0;
 
@@ -77,7 +100,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 		char buffer[c_byte];
 		int error;
 
-		res = read_fs_bytes(fd, ADD_OVERFLOW(start, 2), c_byte, buffer);
+		res = read_fs_data(fd, ADD_OVERFLOW(start, 2), c_byte, buffer);
 		if(res == 0)
 			return 0;
 
@@ -89,7 +112,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 			return 0;
 		}
 	} else {
-		res = read_fs_bytes(fd, ADD_OVERFLOW(start, 2), c_byte, block);
+		res = read_fs_data(fd, ADD_OVERFLOW(start, 2), c_byte, block);
 		if(res == 0)
 			return 0;
 		res = c_byte;
@@ -744,6 +767,8 @@ struct compressor *read_super(int fd, struct squashfs_super_block *sBlk, char *s
 		goto corrupted;
 	}
 
+	bytes_used = sBlk->bytes_used;
+
 	/*
 	 * Read extended superblock information from disk.
 	 *
@@ -933,7 +958,7 @@ static unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 	unsigned int *id_table = MALLOC(bytes);
 	int res, i;
 
-	res = read_fs_bytes(fd, sBlk->id_table_start,
+	res = read_fs_data(fd, sBlk->id_table_start,
 		SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), index);
 	if(res == 0) {
 		ERROR("Failed to read id table index\n");
@@ -996,7 +1021,7 @@ static struct squashfs_fragment_entry *read_fragment_table(int fd, struct squash
 		"from 0x%llx\n", sBlk->fragments, indexes,
 		sBlk->fragment_table_start);
 
-	res = read_fs_bytes(fd, sBlk->fragment_table_start,
+	res = read_fs_data(fd, sBlk->fragment_table_start,
 		SQUASHFS_FRAGMENT_INDEX_BYTES(sBlk->fragments),
 		fragment_table_index);
 	if(res == 0) {
@@ -1065,7 +1090,7 @@ static squashfs_inode *read_inode_lookup_table(int fd, struct squashfs_super_blo
 	int res, i;
 	squashfs_inode *inode_lookup_table = MALLOC(lookup_bytes);
 
-	res = read_fs_bytes(fd, sBlk->lookup_table_start,
+	res = read_fs_data(fd, sBlk->lookup_table_start,
 		SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), index);
 	if(res == 0) {
 		ERROR("Failed to read inode lookup table index\n");
@@ -1185,7 +1210,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 
 		root_inode_start -= start;
 		*cinode_table = MALLOC(root_inode_start);
-	       	res = read_fs_bytes(fd, start, root_inode_start, *cinode_table);
+		res = read_fs_data(fd, start, root_inode_start, *cinode_table);
 		if(res == 0) {
 			ERROR("Failed to read inode table\n");
 			ERROR("Filesystem corrupted?\n");
@@ -1193,7 +1218,7 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 		}
 
 		*cdirectory_table = MALLOC(*last_directory_block);
-		res = read_fs_bytes(fd, sBlk->directory_table_start,
+		res = read_fs_data(fd, sBlk->directory_table_start,
 			*last_directory_block, *cdirectory_table);
 		if(res == 0) {
 			ERROR("Failed to read directory table\n");
