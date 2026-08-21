@@ -34,9 +34,9 @@
 extern void swap_le16(void *, void *);
 extern void swap_le32(void *, void *);
 extern void swap_le64(void *, void *);
-extern void swap_le16_num(void *, void *, int);
-extern void swap_le32_num(void *, void *, int);
-extern void swap_le64_num(void *, void *, int);
+extern void swap_le16_num(void *, void *, long long);
+extern void swap_le32_num(void *, void *, long long);
+extern void swap_le64_num(void *, void *, long long);
 extern unsigned short inswap_le16(unsigned short);
 extern unsigned int inswap_le32(unsigned int);
 extern long long inswap_le64(long long);

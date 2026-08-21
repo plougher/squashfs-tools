@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2010, 2012, 2021
+ * Copyright (c) 2009, 2010, 2012, 2021, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -104,9 +104,9 @@ SWAP_LE_NUM(32)
 SWAP_LE_NUM(64)
 
 #define INSWAP_LE_NUM(BITS, TYPE) \
-void inswap_le##BITS##_num(TYPE *s, int n) \
+void inswap_le##BITS##_num(TYPE *s, long long n) \
 {\
-	int i;\
+	long long i;\
 	for(i = 0; i < n; i++)\
 		s[i] = inswap_le##BITS(s[i]);\
 }
