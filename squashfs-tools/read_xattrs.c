@@ -40,7 +40,7 @@
 
 #include <stdlib.h>
 
-extern int read_fs_bytes(int, long long, long long, void *);
+extern int read_fs_data(int, long long, long long, void *);
 extern int read_block(int, long long, long long *, int, void *);
 
 static struct hash_entry {
@@ -161,7 +161,7 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	 * Read xattr id table, containing start of xattr metadata and the
 	 * number of xattrs in the file system
 	 */
-	res = read_fs_bytes(fd, sBlk->xattr_id_table_start, sizeof(id_table),
+	res = read_fs_data(fd, sBlk->xattr_id_table_start, sizeof(id_table),
 		&id_table);
 	if(res == 0)
 		goto failed;
@@ -212,7 +212,7 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	 * blocks
 	 */
 	index = MALLOC(index_bytes);
-	res = read_fs_bytes(fd, sBlk->xattr_id_table_start + sizeof(id_table),
+	res = read_fs_data(fd, sBlk->xattr_id_table_start + sizeof(id_table),
 		index_bytes, index);
 	if(res ==0)
 		goto failed1;

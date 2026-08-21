@@ -88,7 +88,7 @@ static int read_fragment_table(long long *table_start)
 
 	fragment_table_index = alloc_index_table(indexes);
 	fragment_table = MALLOC(bytes);
-	res = read_fs_bytes(fd, sBlk.s.fragment_table_start, length,
+	res = read_fs_data(fd, sBlk.s.fragment_table_start, length,
 							fragment_table_index);
 	if(res == FALSE) {
 		ERROR("read_fragment_table: failed to read fragment table "
@@ -497,7 +497,7 @@ static int read_id_table(long long *table_start)
 
 	id_index_table = alloc_index_table(indexes);
 	id_table = MALLOC(bytes);
-	res = read_fs_bytes(fd, sBlk.s.id_table_start, length, id_index_table);
+	res = read_fs_data(fd, sBlk.s.id_table_start, length, id_index_table);
 	if(res == FALSE) {
 		ERROR("read_id_table: failed to read id index table\n");
 		return FALSE;
@@ -554,7 +554,7 @@ static int parse_exports_table(long long *table_start)
 
 	export_index_table = alloc_index_table(indexes);
 
-	res = read_fs_bytes(fd, sBlk.s.lookup_table_start, length,
+	res = read_fs_data(fd, sBlk.s.lookup_table_start, length,
 							export_index_table);
 	if(res == FALSE) {
 		ERROR("parse_exports_table: failed to read export index table\n");
@@ -725,7 +725,7 @@ int read_super_4(squashfs_operations **s_ops)
 	/*
 	 * Try to read a Squashfs 4 superblock
 	 */
-	int res = read_fs_bytes(fd, SQUASHFS_START,
+	int res = read_fs_data(fd, SQUASHFS_START,
 			sizeof(struct squashfs_super_block), &sBlk_4);
 
 	if(res == FALSE)
@@ -786,7 +786,7 @@ static long long read_xattr_ids()
 	 * Read xattr id table, containing start of xattr metadata and the
 	 * number of xattrs in the file system
 	 */
-	res = read_fs_bytes(fd, sBlk.s.xattr_id_table_start, sizeof(id_table),
+	res = read_fs_data(fd, sBlk.s.xattr_id_table_start, sizeof(id_table),
 		&id_table);
 	if(res == FALSE)
 		return -1;

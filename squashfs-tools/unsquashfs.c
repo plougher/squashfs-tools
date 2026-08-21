@@ -671,7 +671,7 @@ long long read_bytes(int fd, void *buff, long long bytes)
 }
 
 
-int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
+int read_fs_data(int fd, long long byte, long long bytes, void *buff)
 {
 	off_t off = byte;
 	long long res;
@@ -680,17 +680,17 @@ int read_fs_bytes(int fd, long long byte, long long bytes, void *buff)
 		bytes);
 
 	if(byte < 0) {
-		ERROR("read_fs_bytes: trying to read from a negative position\n");
+		ERROR("read_fs_data: trying to read from a negative position\n");
 		goto corrupted;
 	}
 
 	if(ADD_OVERFLOW(byte, bytes) > bytes_used) {
-		ERROR("read_fs_bytes: trying to read beyond filesystem end\n");
+		ERROR("read_fs_data: trying to read beyond filesystem end\n");
 		goto corrupted;
 	}
 
 	if(bytes < 0) {
-		ERROR("read_fs_bytes: trying to read a negative amount of bytes\n");
+		ERROR("read_fs_data: trying to read a negative amount of bytes\n");
 		goto corrupted;
 	}
 
@@ -714,7 +714,7 @@ done:
 	return res;
 
 corrupted:
-	ERROR("read_fs_bytes: the filesystem appears to be corrupted\n");
+	ERROR("read_fs_data: the filesystem appears to be corrupted\n");
 	return FALSE;
 }
 
@@ -731,11 +731,11 @@ int read_block(int fd, long long start, long long *next, int expected,
 		return FALSE;
 
 	if(swap) {
-		if(read_fs_bytes(fd, start, 2, &c_byte) == FALSE)
+		if(read_fs_data(fd, start, 2, &c_byte) == FALSE)
 			goto failed;
 		c_byte = (c_byte >> 8) | ((c_byte & 0xff) << 8);
 	} else 
-		if(read_fs_bytes(fd, start, 2, &c_byte) == FALSE)
+		if(read_fs_data(fd, start, 2, &c_byte) == FALSE)
 			goto failed;
 
 	TRACE("read_block: block @0x%llx, %d %s bytes\n", start,
@@ -762,7 +762,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 		if(buffer == NULL)
 			buffer = MALLOC(SQUASHFS_METADATA_SIZE);
 
-		res = read_fs_bytes(fd, ADD_OVERFLOW(start, offset), c_byte, buffer);
+		res = read_fs_data(fd, ADD_OVERFLOW(start, offset), c_byte, buffer);
 		if(res == FALSE)
 			goto failed;
 
@@ -775,7 +775,7 @@ int read_block(int fd, long long start, long long *next, int expected,
 			goto failed;
 		}
 	} else {
-		res = read_fs_bytes(fd, ADD_OVERFLOW(start, offset), c_byte, block);
+		res = read_fs_data(fd, ADD_OVERFLOW(start, offset), c_byte, block);
 		if(res == FALSE)
 			goto failed;
 		res = c_byte;
@@ -3297,7 +3297,7 @@ static void *reader(void *arg)
 {
 	while(1) {
 		struct cache_entry *entry = queue_get(to_reader);
-		int res = read_fs_bytes(fd, entry->block,
+		int res = read_fs_data(fd, entry->block,
 			SQUASHFS_COMPRESSED_SIZE_BLOCK(entry->size),
 			entry->data);
 

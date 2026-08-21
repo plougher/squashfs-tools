@@ -51,7 +51,7 @@
 
 static long long bytes_used;
 
-static int read_fs_data(int fd, long long byte, long long bytes, void *buff)
+int read_fs_data(int fd, long long byte, long long bytes, void *buff)
 {
 	if(byte < 0) {
 		ERROR("read_fs_data: trying to read from a negative position\n");

@@ -53,7 +53,7 @@ int read_ids(int ids, long long start, long long end, unsigned int **id_table)
 	if(swap) {
 		unsigned int *sid_table = MALLOC(length);
 
-		res = read_fs_bytes(fd, start, length, sid_table);
+		res = read_fs_data(fd, start, length, sid_table);
 		if(res == FALSE) {
 			ERROR("read_ids: failed to read uid/gid table"
 				"\n");
@@ -63,7 +63,7 @@ int read_ids(int ids, long long start, long long end, unsigned int **id_table)
 		SQUASHFS_SWAP_INTS_3((*id_table), sid_table, ids);
 		free(sid_table);
 	} else {
-		res = read_fs_bytes(fd, start, length, *id_table);
+		res = read_fs_data(fd, start, length, *id_table);
 		if(res == FALSE) {
 			ERROR("read_ids: failed to read uid/gid table"
 				"\n");

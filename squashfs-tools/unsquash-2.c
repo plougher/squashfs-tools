@@ -98,7 +98,7 @@ static int read_fragment_table(long long *table_start)
 	if(swap) {
 		 unsigned int *sfragment_table_index = MALLOC(length);
 
-		 res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
+		 res = read_fs_data(fd, sBlk.s.fragment_table_start,
 			length, sfragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
@@ -110,7 +110,7 @@ static int read_fragment_table(long long *table_start)
 			sfragment_table_index, indexes);
 		free(sfragment_table_index);
 	} else {
-		res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
+		res = read_fs_data(fd, sBlk.s.fragment_table_start,
 			length, fragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "

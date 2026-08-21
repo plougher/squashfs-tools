@@ -310,7 +310,7 @@ extern int time_opt;
 /* unsquashfs.c */
 extern int read_inode_data(void *, long long *, unsigned int *, int);
 extern int read_directory_data(void *, long long *, unsigned int *, int);
-extern int read_fs_bytes(int fd, long long, long long, void *);
+extern int read_fs_data(int fd, long long, long long, void *);
 extern int read_block(int, long long, long long *, int, void *);
 extern void enable_progress_bar();
 extern void disable_progress_bar();

@@ -118,7 +118,7 @@ static int read_fragment_table(long long *table_start)
 	if(swap) {
 		long long *sfragment_table_index = salloc_index_table(indexes);
 
-		res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
+		res = read_fs_data(fd, sBlk.s.fragment_table_start,
 			length, sfragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
@@ -128,7 +128,7 @@ static int read_fragment_table(long long *table_start)
 		SQUASHFS_SWAP_FRAGMENT_INDEXES_3(fragment_table_index,
 			sfragment_table_index, indexes);
 	} else {
-		res = read_fs_bytes(fd, sBlk.s.fragment_table_start,
+		res = read_fs_data(fd, sBlk.s.fragment_table_start,
 			length, fragment_table_index);
 		if(res == FALSE) {
 			ERROR("read_fragment_table: failed to read fragment "
@@ -560,7 +560,7 @@ static int parse_exports_table(long long *table_start)
 	if(swap) {
 		long long *sexport_index_table = salloc_index_table(indexes);
 
-		res = read_fs_bytes(fd, sBlk.s.lookup_table_start,
+		res = read_fs_data(fd, sBlk.s.lookup_table_start,
 			length, sexport_index_table);
 		if(res == FALSE) {
 			ERROR("parse_exorts_table: failed to read export "
@@ -570,7 +570,7 @@ static int parse_exports_table(long long *table_start)
 		SQUASHFS_SWAP_LOOKUP_BLOCKS_3(export_index_table,
 			sexport_index_table, indexes);
 	} else {
-		res = read_fs_bytes(fd, sBlk.s.lookup_table_start, length,
+		res = read_fs_data(fd, sBlk.s.lookup_table_start, length,
 							export_index_table);
 		if(res == FALSE) {
 			ERROR("parse_exorts_table: failed to read export "
@@ -748,7 +748,7 @@ int read_super_3(char *source, squashfs_operations **s_ops, void *s)
 	/*
 	 * Try to read a squashfs 3 superblock (compatible with 1 and 2 filesystems)
 	 */
-	int res = read_fs_bytes(fd, SQUASHFS_START, sizeof(*sBlk_3), sBlk_3);
+	int res = read_fs_data(fd, SQUASHFS_START, sizeof(*sBlk_3), sBlk_3);
 
 	if(res == FALSE)
 		return res;
