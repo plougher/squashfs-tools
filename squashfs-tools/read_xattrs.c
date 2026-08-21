@@ -2,7 +2,7 @@
  * Read a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2013, 2019, 2021, 2022, 2023, 2025
+ * Copyright (c) 2010, 2012, 2013, 2019, 2021, 2022, 2023, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -37,6 +37,7 @@
 #include "xattr.h"
 #include "error.h"
 #include "alloc.h"
+#include "maths.h"
 
 #include <stdlib.h>
 
@@ -149,10 +150,10 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	 * Max indexes is (2^32*16)/8K or 2^23
 	 * Max index_bytes is ((2^32*16)/8K)*8 or 2^26 or 64M
 	 */
-	int res, i, indexes, index_bytes;
+	int res, indexes, index_bytes;
 	unsigned int ids;
 	long long bytes;
-	long long *index, start, end;
+	long long *index, start, end, i;
 	struct squashfs_xattr_table id_table;
 
 	TRACE("read_xattrs_from_disk\n");
@@ -212,7 +213,7 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	 * blocks
 	 */
 	index = MALLOC(index_bytes);
-	res = read_fs_data(fd, sBlk->xattr_id_table_start + sizeof(id_table),
+	res = read_fs_data(fd, ADD_OVERFLOW(sBlk->xattr_id_table_start, sizeof(id_table)),
 		index_bytes, index);
 	if(res ==0)
 		goto failed1;
@@ -231,11 +232,11 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 					bytes & (SQUASHFS_METADATA_SIZE - 1);
 		int length = read_block(fd, index[i], NULL, expected,
 			((unsigned char *) xattr_ids) +
-			((long long) i * SQUASHFS_METADATA_SIZE));
-		TRACE("Read xattr id table block %d, from 0x%llx, length "
+			(i * SQUASHFS_METADATA_SIZE));
+		TRACE("Read xattr id table block %lld, from 0x%llx, length "
 			"%d\n", i, index[i], length);
 		if(length == 0) {
-			ERROR("FATAL ERROR - Failed to read xattr id table block %d, "
+			ERROR("FATAL ERROR - Failed to read xattr id table block %lld, "
 				"from 0x%llx, length %d.  File system corrupted?\n", i, index[i],
 				length);
 			goto failed2;
@@ -267,9 +268,9 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 		length = read_block(fd, start, &start, 0,
 			((unsigned char *) xattrs) +
 			(i * SQUASHFS_METADATA_SIZE));
-		TRACE("Read xattr block %d, length %d\n", i, length);
+		TRACE("Read xattr block %lld, length %d\n", i, length);
 		if(length == 0) {
-			ERROR("FATAL ERROR - Failed to read xattr block %d.  File system corrupted?\n", i);
+			ERROR("FATAL ERROR - Failed to read xattr block %lld.  File system corrupted?\n", i);
 			goto failed3;
 		}
 
@@ -281,13 +282,13 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 		 * after reading.
 		 */
 		if(start != end && length != SQUASHFS_METADATA_SIZE) {
-			ERROR("FATAL ERROR: Xattr block %d should be %d bytes in length, "
+			ERROR("FATAL ERROR: Xattr block %lld should be %d bytes in length, "
 				"it is %d bytes.  File system corrupted?\n", i, SQUASHFS_METADATA_SIZE,
 				length);
 			goto failed3;
 		}
 
-		xattr_table_length += length;
+		xattr_table_length = ADD_OVERFLOW(xattr_table_length, length);
 	}
 
 	/* swap if necessary the xattr id entries */
@@ -343,11 +344,11 @@ void free_xattr(struct xattr_list *xattr_list, int count)
  */
 struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 {
-	long long start, xptr_offset;
+	long long start, xptr_offset, j, n;
 	struct xattr_list *xattr_list = NULL;
 	unsigned int offset;
 	void *xptr;
-	int j, n, res = 1;
+	int res = 1;
 
 	TRACE("get_xattr\n");
 
@@ -359,14 +360,14 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 	} else
 		*failed = FALSE;
 
-	start = SQUASHFS_XATTR_BLK(xattr_ids[i].xattr) + xattr_table_start;
+	start = ADD_OVERFLOW(xattr_table_start, SQUASHFS_XATTR_BLK(xattr_ids[i].xattr));
 	offset = SQUASHFS_XATTR_OFFSET(xattr_ids[i].xattr);
 	xptr_offset = get_xattr_block(start);
 
 	if(xptr_offset == -1)
 		goto corrupted;
 
-	if(xptr_offset + offset > xattr_table_length)
+	if(ADD_OVERFLOW(xptr_offset, offset) > xattr_table_length)
 		goto corrupted;
 
 	xptr = xattrs + xptr_offset + offset;
@@ -382,13 +383,13 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 			xattr_list = REALLOC(xattr_list, (j + 1) *
 						sizeof(struct xattr_list));
 
-		if((xptr - xattrs + sizeof(entry)) > xattr_table_length)
+		if(ADD_OVERFLOW(xptr - xattrs, sizeof(entry)) > xattr_table_length)
 			goto corrupted;
 
 		SQUASHFS_SWAP_XATTR_ENTRY(xptr, &entry);
 		xptr += sizeof(entry);
 
-		if((xptr - xattrs + entry.size) > xattr_table_length)
+		if(ADD_OVERFLOW(xptr - xattrs, entry.size) > xattr_table_length)
 			goto corrupted;
 
 		res = read_xattr_entry(&xattr_list[j], &entry, xptr);
@@ -396,13 +397,13 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 			/* unknown type, skip, and set error flag */
 			xptr += entry.size;
 
-			if((xptr - xattrs + sizeof(val)) > xattr_table_length)
+			if(ADD_OVERFLOW(xptr - xattrs, sizeof(val)) > xattr_table_length)
 				goto corrupted;
 
 			SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
 			xptr += sizeof(val);
 
-			if((xptr - xattrs + val.vsize) > xattr_table_length)
+			if(ADD_OVERFLOW(xptr - xattrs, val.vsize) > xattr_table_length)
 				goto corrupted;
 
 			xptr += val.vsize;
@@ -412,14 +413,14 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 
 		xptr += entry.size;
 			
-		TRACE("get_xattr: xattr %d, type %d, size %d, name %s\n", j,
+		TRACE("get_xattr: xattr %lld, type %d, size %d, name %s\n", j,
 			entry.type, entry.size, xattr_list[j].full_name); 
 
 		if(entry.type & SQUASHFS_XATTR_VALUE_OOL) {
-			long long xattr;
+			long long xattr, ool_offset;
 			void *ool_xptr;
 
-			if((xptr - xattrs + sizeof(val)) > xattr_table_length)
+			if(ADD_OVERFLOW(xptr - xattrs, sizeof(val)) > xattr_table_length)
 				goto corrupted;
 
 			SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
@@ -431,26 +432,43 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 			SQUASHFS_SWAP_LONG_LONGS(xptr, &xattr, 1);
 			xptr += sizeof(xattr);	
 
-			start = SQUASHFS_XATTR_BLK(xattr) + xattr_table_start;
+			start = ADD_OVERFLOW(xattr_table_start, SQUASHFS_XATTR_BLK(xattr));
 			offset = SQUASHFS_XATTR_OFFSET(xattr);
-			ool_xptr = xattrs + get_xattr_block(start) + offset;
+			ool_offset = get_xattr_block(start);
+
+			if(ool_offset == -1)
+				goto corrupted;
+
+			ool_offset = ADD_OVERFLOW(ool_offset, offset);
+			if(ool_offset > xattr_table_length)
+				goto corrupted;
+
+			if(ADD_OVERFLOW(ool_offset, sizeof(val)) > xattr_table_length)
+				goto corrupted;
+
+			ool_xptr = xattrs + ool_offset;
 			SQUASHFS_SWAP_XATTR_VAL(ool_xptr, &val);
-			xattr_list[j].value = ool_xptr + sizeof(val);
+			ool_xptr += sizeof(val);
+
+			if(ADD_OVERFLOW(ool_xptr - xattrs, val.vsize) > xattr_table_length)
+				goto corrupted;
+
+			xattr_list[j].value = ool_xptr;
 		} else {
-			if((xptr - xattrs + sizeof(val)) > xattr_table_length)
+			if(ADD_OVERFLOW(xptr - xattrs, sizeof(val)) > xattr_table_length)
 				goto corrupted;
 
 			SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
 			xptr += sizeof(val);
 
-			if((xptr - xattrs + val.vsize) > xattr_table_length)
+			if(ADD_OVERFLOW(xptr - xattrs, val.vsize) > xattr_table_length)
 				goto corrupted;
 
 			xattr_list[j].value = xptr;
 			xptr += val.vsize;
 		}
 
-		TRACE("get_xattr: xattr %d, vsize %d\n", j, val.vsize);
+		TRACE("get_xattr: xattr %lld, vsize %d\n", j, val.vsize);
 
 		xattr_list[j++].vsize = val.vsize;
 	}
