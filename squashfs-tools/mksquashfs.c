@@ -9060,9 +9060,9 @@ int main(int argc, char *argv[])
 				compressed_data, inode_dir_inode_number,
 				inode_dir_parent_inode;
 			unsigned int root_inode_start =
-				SQUASHFS_INODE_BLK(sBlk.root_inode),
+				squashfs_inode_blk(sBlk.root_inode),
 				root_inode_offset =
-				SQUASHFS_INODE_OFFSET(sBlk.root_inode);
+				squashfs_inode_offset(sBlk.root_inode);
 			int inode_dir_offset, uncompressed_data;
 			long long bytes = read_filesystem(root_name, fd, &sBlk, &inode_table,
 					&data_cache, &directory_table,

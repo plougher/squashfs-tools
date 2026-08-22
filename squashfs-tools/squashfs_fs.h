@@ -173,12 +173,20 @@ static inline bool squashfs_compressed_block(uint32_t size)
  * Inode number ops.  Inodes consist of a compressed block number, and an
  * uncompressed  offset within that block
  */
-#define SQUASHFS_INODE_BLK(a)		((unsigned int) ((a) >> 16))
+static inline uint32_t squashfs_inode_blk(int64_t inode)
+{
+	return inode >> 16;
+}
 
-#define SQUASHFS_INODE_OFFSET(a)	((unsigned int) ((a) & 0xffff))
+static inline uint16_t squashfs_inode_offset(int64_t inode)
+{
+	return inode & 0xffff;
+}
 
-#define SQUASHFS_MKINODE(A, B)		((squashfs_inode)(((squashfs_inode) (A)\
-					<< 16) + (B)))
+static inline int32_t squashfs_mkinode(uint32_t start, uint16_t offset)
+{
+	return (start << 16) | offset;
+}
 
 /* Translate between VFS mode and squashfs mode */
 #define SQUASHFS_MODE(a)		((a) & 0xfff)

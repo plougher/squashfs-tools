@@ -923,7 +923,7 @@ static unsigned char *squashfs_readdir(int fd, int root_entries,
 				"inode %x:%x, type 0x%x\n", dire->name,
 				dirh.start_block, dire->offset, dire->type);
 			push_directory_entry(dire->name,
-				SQUASHFS_MKINODE(dirh.start_block,
+				squashfs_mkinode(dirh.start_block,
 				dire->offset), dirh.inode_number +
 				dire->inode_number, dire->type);
 			bytes += dire->size + 1;
@@ -1145,9 +1145,9 @@ long long read_filesystem(char *root_name, int fd, struct squashfs_super_block *
 	unsigned char *inode_table = NULL, *directory_table = NULL;
 	long long start = sBlk->inode_table_start;
 	long long end = sBlk->directory_table_start;
-	long long root_inode_start = ADD_OVERFLOW(start, SQUASHFS_INODE_BLK(sBlk->root_inode));
+	long long root_inode_start = ADD_OVERFLOW(start, squashfs_inode_blk(sBlk->root_inode));
 	unsigned int root_inode_offset =
-		SQUASHFS_INODE_OFFSET(sBlk->root_inode);
+		squashfs_inode_offset(sBlk->root_inode);
 	long long root_inode_block;
 	union squashfs_inode_header inode;
 	unsigned int *id_table = NULL;

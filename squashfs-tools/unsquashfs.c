@@ -2579,8 +2579,8 @@ static void walk_extract_path(char *path)
 	stack = create_stack();
 
 	found = follow_extract_paths(path, new_pathname("/", ""), 0, push_stack(stack,
-		SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
+		squashfs_inode_blk(sBlk.s.root_inode),
+		squashfs_inode_offset(sBlk.s.root_inode),
 		"", SQUASHFS_DIR_TYPE));
 
 	if(!found) {
@@ -2844,8 +2844,8 @@ static void walk_exclude_path(char *path)
 		stack = create_stack();
 
 		found = follow_exclude_paths(path, new_pathname("/", ""), 0, push_stack(stack,
-			SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
+			squashfs_inode_blk(sBlk.s.root_inode),
+			squashfs_inode_offset(sBlk.s.root_inode),
 			"", SQUASHFS_DIR_TYPE));
 
 		if(!found) {
@@ -4267,8 +4267,8 @@ static int cat_path(int argc, char *argv[])
 		stack = create_stack();
 
 		res = cat_scan(argv[n], new_pathname("/", ""), push_stack(stack,
-			SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode),
+			squashfs_inode_blk(sBlk.s.root_inode),
+			squashfs_inode_offset(sBlk.s.root_inode),
 			"", SQUASHFS_DIR_TYPE));
 
 		if(res == FALSE)
@@ -4552,8 +4552,8 @@ static int generate_pseudo(char *pseudo_file)
 				strerror(errno));
 	}
 
-	res = pseudo_scan1("/", SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extract, exclude, NULL, 1);
+	res = pseudo_scan1("/", squashfs_inode_blk(sBlk.s.root_inode),
+		squashfs_inode_offset(sBlk.s.root_inode), extract, exclude, NULL, 1);
 	if(res == FALSE)
 		goto failed;
 
@@ -4567,8 +4567,8 @@ static int generate_pseudo(char *pseudo_file)
 
 	enable_progress_bar();
 
-	res = pseudo_scan2("/", SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extract, exclude, NULL, 1);
+	res = pseudo_scan2("/", squashfs_inode_blk(sBlk.s.root_inode),
+		squashfs_inode_offset(sBlk.s.root_inode), extract, exclude, NULL, 1);
 	if(res == FALSE)
 		goto failed;
 
@@ -5498,8 +5498,8 @@ int main(int argc, char *argv[])
 		return generate_pseudo(pseudo_name);
 
 	if(!quiet || progress) {
-		res = pre_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-			SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extract,
+		res = pre_scan(dest, squashfs_inode_blk(sBlk.s.root_inode),
+			squashfs_inode_offset(sBlk.s.root_inode), extract,
 			exclude, NULL, 1);
 		if(res == FALSE && set_exit_code)
 			exit_code = 2;
@@ -5519,8 +5519,8 @@ int main(int argc, char *argv[])
 		enable_progress_bar();
 	}
 
-	res = dir_scan(dest, SQUASHFS_INODE_BLK(sBlk.s.root_inode),
-		SQUASHFS_INODE_OFFSET(sBlk.s.root_inode), extract, exclude, NULL, 1);
+	res = dir_scan(dest, squashfs_inode_blk(sBlk.s.root_inode),
+		squashfs_inode_offset(sBlk.s.root_inode), extract, exclude, NULL, 1);
 	if(res == FALSE && set_exit_code)
 		exit_code = 2;
 
