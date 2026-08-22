@@ -180,10 +180,6 @@ static inline bool squashfs_compressed_block(uint32_t size)
 #define SQUASHFS_MKINODE(A, B)		((squashfs_inode)(((squashfs_inode) (A)\
 					<< 16) + (B)))
 
-/* Compute 32 bit VFS inode number from squashfs inode number */
-#define SQUASHFS_MK_VFS_INODE(a, b)	((unsigned int) (((a) << 8) + \
-					((b) >> 2) + 1))
-
 /* Translate between VFS mode and squashfs mode */
 #define SQUASHFS_MODE(a)		((a) & 0xfff)
 
