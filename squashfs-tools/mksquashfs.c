@@ -696,7 +696,7 @@ static void *get_inode(int req_size)
 			SQUASHFS_METADATA_SIZE, SQUASHFS_METADATA_SIZE, noI, 0);
 		TRACE("Inode block @ 0x%x, size %d\n", inode_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, inode_table + inode_bytes, 1);
-		inode_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
+		inode_bytes += squashfs_compressed_size(c_byte) + BLOCK_OFFSET;
 		total_inode_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
 		cur += SQUASHFS_METADATA_SIZE;
 		cache_bytes -= SQUASHFS_METADATA_SIZE;
@@ -857,7 +857,7 @@ static long long write_inodes()
 			avail_bytes, SQUASHFS_METADATA_SIZE, noI, 0);
 		TRACE("Inode block @ 0x%x, size %d\n", inode_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, inode_table + inode_bytes, 1); 
-		inode_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
+		inode_bytes += squashfs_compressed_size(c_byte) + BLOCK_OFFSET;
 		total_inode_bytes += avail_bytes + BLOCK_OFFSET;
 		datap += avail_bytes;
 		cache_bytes -= avail_bytes;
@@ -894,7 +894,7 @@ static long long write_directories()
 			c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte,
 			directory_table + directory_bytes, 1);
-		directory_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) +
+		directory_bytes += squashfs_compressed_size(c_byte) +
 			BLOCK_OFFSET;
 		total_directory_bytes += avail_bytes + BLOCK_OFFSET;
 		directoryp += avail_bytes;
@@ -1523,7 +1523,7 @@ static squashfs_inode write_dir(struct dir_info *dir_info,
 			c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte,
 			directory_table + directory_bytes, 1);
-		directory_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) +
+		directory_bytes += squashfs_compressed_size(c_byte) +
 			BLOCK_OFFSET;
 		total_directory_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
 		directory_cache_bytes -= SQUASHFS_METADATA_SIZE;
@@ -1664,14 +1664,14 @@ again:
 
 	compressed_buffer = cache_lookup(fwriter_buffer, index);
 	if(compressed_buffer) {
-		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(compressed_buffer->c_byte);
-		compressed = SQUASHFS_COMPRESSED_BLOCK(compressed_buffer->c_byte);
+		size = squashfs_compressed_size_block(compressed_buffer->c_byte);
+		compressed = squashfs_compressed_block(compressed_buffer->c_byte);
 	} else {
 		pthread_cleanup_push((void *) pthread_mutex_unlock, &fragment_mutex);
 		pthread_mutex_lock(&fragment_mutex);
 		disk_fragment = &fragment_table[index];
-		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(disk_fragment->size);
-		compressed = SQUASHFS_COMPRESSED_BLOCK(disk_fragment->size);
+		size = squashfs_compressed_size_block(disk_fragment->size);
+		compressed = squashfs_compressed_block(disk_fragment->size);
 		start_block = disk_fragment->start_block;
 		pthread_cleanup_pop(1);
 	}
@@ -1867,7 +1867,7 @@ long long generic_write_table(long long length, void *buffer, int length2,
 			SQUASHFS_METADATA_SIZE , avail_bytes,
 			SQUASHFS_METADATA_SIZE, uncompressed, 0);
 		SQUASHFS_SWAP_SHORTS(&c_byte, cbuffer, 1);
-		compressed_size = SQUASHFS_COMPRESSED_SIZE(c_byte) +
+		compressed_size = squashfs_compressed_size(c_byte) +
 			BLOCK_OFFSET;
 		bytes = get_and_inc_dpos(compressed_size);
 		write_destination(fd, bytes, compressed_size, cbuffer);
@@ -1959,7 +1959,7 @@ static unsigned short get_checksum_disk(long long start, long long l,
 	int i;
 
 	for(i = 0; l; i++)  {
-		bytes = SQUASHFS_COMPRESSED_SIZE_BLOCK(blocks[i]);
+		bytes = squashfs_compressed_size_block(blocks[i]);
 		if(bytes == 0) /* sparse block */
 			continue;
 		write_buffer = queue_cache_lookup(bwriter_buffer, start);
@@ -2002,7 +2002,7 @@ static unsigned short get_checksum_buffers(long long start, long long l,
 	int i;
 
 	for(i = 0; l; i++)  {
-		bytes = SQUASHFS_COMPRESSED_SIZE_BLOCK(blocks[i]);
+		bytes = squashfs_compressed_size_block(blocks[i]);
 		if(bytes == 0) /* sparse block */
 			continue;
 		if(buffers[i])
@@ -2378,7 +2378,7 @@ static struct file_info *duplicate(int *dupf, int *block_dup,
 			 * comparison
 			 */
 			for(block = 0; block < blocks; block ++) {
-				int size = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list[block]);
+				int size = squashfs_compressed_size_block(block_list[block]);
 				struct file_buffer *dup_buffer = NULL, *target_buffer = NULL;
 				char *target_data, *dup_data;
 				int res;
@@ -2769,7 +2769,7 @@ static void *deflator(void *arg)
 			write_buffer->block = file_buffer->block;
 			write_buffer->version = file_buffer->version;
 			write_buffer->next_state = file_buffer->next_state;
-			write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK
+			write_buffer->size = squashfs_compressed_size_block
 				(write_buffer->c_byte);
 			write_buffer->fragment = FALSE;
 			write_buffer->error = FALSE;
@@ -2804,12 +2804,12 @@ static void *frag_deflator(void *arg)
 		write_buffer->block = file_buffer->block;
 		write_buffer->sequence = file_buffer->sequence;
 		write_buffer->c_byte = c_byte;
-		write_buffer->size = SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte);
+		write_buffer->size = squashfs_compressed_size_block(c_byte);
 		write_buffer->fragment = FALSE;
 		order_queue_put(to_order, write_buffer);
 		TRACE("Writing fragment %lld, uncompressed size %d, "
 			"compressed size %d\n", file_buffer->block,
-			file_buffer->size, SQUASHFS_COMPRESSED_SIZE_BLOCK(c_byte));
+			file_buffer->size, squashfs_compressed_size_block(c_byte));
 		gen_cache_block_put(file_buffer);
 	}
 }
@@ -2829,7 +2829,7 @@ static void *orderer(void *arg)
 			long long block = write_buffer->block;
 
 			pthread_mutex_lock(&fragment_mutex);
-			write_buffer->block = get_and_inc_dpos(SQUASHFS_COMPRESSED_SIZE_BLOCK(write_buffer->size));
+			write_buffer->block = get_and_inc_dpos(squashfs_compressed_size_block(write_buffer->size));
 			fragment_table[block].start_block = write_buffer->block;
 			fragment_table[block].size = write_buffer->c_byte;
 			pthread_mutex_unlock(&fragment_mutex);

@@ -739,14 +739,14 @@ int read_block(int fd, long long start, long long *next, int expected,
 			goto failed;
 
 	TRACE("read_block: block @0x%llx, %d %s bytes\n", start,
-		SQUASHFS_COMPRESSED_SIZE(c_byte), SQUASHFS_COMPRESSED(c_byte) ?
+		squashfs_compressed_size(c_byte), squashfs_compressed(c_byte) ?
 		"compressed" : "uncompressed");
 
 	if(SQUASHFS_CHECK_DATA(sBlk.s.flags))
 		offset = 3;
 
-	compressed = SQUASHFS_COMPRESSED(c_byte);
-	c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
+	compressed = squashfs_compressed(c_byte);
+	c_byte = squashfs_compressed_size(c_byte);
 
 	/*
 	 * The block size should not be larger than
@@ -1151,7 +1151,7 @@ static int write_file(struct inode *inode, char *pathname)
 
 	for(i = 0; i < inode->blocks; i++) {
 		int block_list = s_ops->next_block_list();
-		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list);
+		int c_byte = squashfs_compressed_size_block(block_list);
 
 		if(c_byte < 0 || c_byte > block_size)
 			EXIT_UNSQUASH("File system corrupted - block size "
@@ -1176,7 +1176,7 @@ static int write_file(struct inode *inode, char *pathname)
 		long long start;
 
 		s_ops->read_fragment(inode->fragment, &start, &size);
-		c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(size);
+		c_byte = squashfs_compressed_size_block(size);
 
 		if(c_byte < 0 || c_byte > block_size)
 			EXIT_UNSQUASH("File system corrupted - fragment size "
@@ -1220,7 +1220,7 @@ static int cat_file(struct inode *inode, char *pathname)
 
 	for(i = 0; i < inode->blocks; i++) {
 		int block_list = s_ops->next_block_list();
-		int c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(block_list);
+		int c_byte = squashfs_compressed_size_block(block_list);
 
 		if(c_byte < 0 || c_byte > block_size)
 			EXIT_UNSQUASH("File system corrupted - block size "
@@ -1245,7 +1245,7 @@ static int cat_file(struct inode *inode, char *pathname)
 		long long start;
 
 		s_ops->read_fragment(inode->fragment, &start, &size);
-		c_byte = SQUASHFS_COMPRESSED_SIZE_BLOCK(size);
+		c_byte = squashfs_compressed_size_block(size);
 
 		if(c_byte < 0 || c_byte > block_size)
 			EXIT_UNSQUASH("File system corrupted - fragment size "
@@ -3298,10 +3298,10 @@ static void *reader(void *arg)
 	while(1) {
 		struct cache_entry *entry = queue_get(to_reader);
 		int res = read_fs_data(fd, entry->block,
-			SQUASHFS_COMPRESSED_SIZE_BLOCK(entry->size),
+			squashfs_compressed_size_block(entry->size),
 			entry->data);
 
-		if(res && SQUASHFS_COMPRESSED_BLOCK(entry->size))
+		if(res && squashfs_compressed_block(entry->size))
 			/*
 			 * queue successfully read block to the inflate
 			 * thread(s) for further processing
@@ -3314,7 +3314,7 @@ static void *reader(void *arg)
 			 * flag, set error appropriately, and wake up any
 			 * threads waiting on this buffer
 			 */
-			cache_block_ready(entry, !res, SQUASHFS_COMPRESSED_SIZE_BLOCK(entry->size));
+			cache_block_ready(entry, !res, squashfs_compressed_size_block(entry->size));
 	}
 
 	return NULL;
@@ -3545,7 +3545,7 @@ static void *inflator(void *arg)
 		int error, res;
 
 		res = compressor_uncompress(comp, tmp, entry->data,
-			SQUASHFS_COMPRESSED_SIZE_BLOCK(entry->size), block_size,
+			squashfs_compressed_size_block(entry->size), block_size,
 			&error);
 
 		if(res == -1)

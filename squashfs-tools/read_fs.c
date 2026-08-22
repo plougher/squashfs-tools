@@ -85,8 +85,8 @@ int read_block(int fd, long long start, long long *next, int expected,
 		return 0;
 
 	SQUASHFS_INSWAP_SHORTS(&c_byte, 1);
-	compressed = SQUASHFS_COMPRESSED(c_byte);
-	c_byte = SQUASHFS_COMPRESSED_SIZE(c_byte);
+	compressed = squashfs_compressed(c_byte);
+	c_byte = squashfs_compressed_size(c_byte);
 
 	/*
 	 * The block size should not be larger than
@@ -332,7 +332,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 
 			for(i = 0; i < blocks; i++)
 				file_bytes +=
-					SQUASHFS_COMPRESSED_SIZE_BLOCK
+					squashfs_compressed_size_block
 								(block_list[i]);
 
 			if(inode.fragment != SQUASHFS_INVALID_FRAG &&
@@ -393,7 +393,7 @@ unsigned char *scan_inode_table(int fd, long long start, long long end,
 
 			for(i = 0; i < blocks; i++)
 				file_bytes +=
-					SQUASHFS_COMPRESSED_SIZE_BLOCK
+					squashfs_compressed_size_block
 								(block_list[i]);
 
 			if(inode.fragment != SQUASHFS_INVALID_FRAG &&
@@ -1057,7 +1057,7 @@ static struct squashfs_fragment_entry *read_fragment_table(int fd, struct squash
 		unsigned int size;
 
 		SQUASHFS_INSWAP_FRAGMENT_ENTRY(&fragment_table[i]);
-		size = SQUASHFS_COMPRESSED_SIZE_BLOCK(fragment_table[i].size);
+		size = squashfs_compressed_size_block(fragment_table[i].size);
 
 		if(size == 0 || size > block_size) {
 			ERROR("File system corrupted - fragment size "

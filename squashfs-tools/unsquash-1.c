@@ -60,8 +60,8 @@ static int next_block_list()
 				"inode index %lld:%d\n", block_start, block_offset);
 	}
 
-	return SQUASHFS_COMPRESSED_SIZE(block_size) |
-			(SQUASHFS_COMPRESSED(block_size) ? 0 :
+	return squashfs_compressed_size(block_size) |
+			(squashfs_compressed(block_size) ? 0 :
 			SQUASHFS_COMPRESSED_BIT_BLOCK);
 }
 

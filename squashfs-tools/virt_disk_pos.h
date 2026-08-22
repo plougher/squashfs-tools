@@ -55,7 +55,7 @@ static inline long long get_and_inc_dpos_aligned(struct file_buffer *buffer)
 	long long bytes = 1 << buffer->alignment;
 	long long tmp = (dpos + bytes - 1) & ~(bytes - 1);
 
-	dpos = tmp + SQUASHFS_COMPRESSED_SIZE_BLOCK(buffer->size);
+	dpos = tmp + squashfs_compressed_size_block(buffer->size);
 	return tmp;
 }
 

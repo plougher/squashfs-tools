@@ -176,7 +176,7 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 			SQUASHFS_METADATA_SIZE, SQUASHFS_METADATA_SIZE, noX, 0);
 		TRACE("Xattr block @ 0x%x, size %d\n", xattr_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, xattr_table + xattr_bytes, 1);
-		xattr_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
+		xattr_bytes += squashfs_compressed_size(c_byte) + BLOCK_OFFSET;
 		cur += SQUASHFS_METADATA_SIZE;
 		cache_bytes -= SQUASHFS_METADATA_SIZE;
 	}
@@ -354,7 +354,7 @@ long long write_xattrs()
 			avail_bytes, SQUASHFS_METADATA_SIZE, noX, 0);
 		TRACE("Xattr block @ 0x%x, size %d\n", xattr_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, xattr_table + xattr_bytes, 1);
-		xattr_bytes += SQUASHFS_COMPRESSED_SIZE(c_byte) + BLOCK_OFFSET;
+		xattr_bytes += squashfs_compressed_size(c_byte) + BLOCK_OFFSET;
 		datap += avail_bytes;
 		cache_bytes -= avail_bytes;
 	}

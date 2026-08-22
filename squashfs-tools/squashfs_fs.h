@@ -24,6 +24,9 @@
  * squashfs_fs.h
  */
 
+#include <stdint.h>
+#include <stdbool.h>
+
 #define SQUASHFS_CACHED_FRAGMENTS	CONFIG_SQUASHFS_FRAGMENT_CACHE_SIZE	
 #define SQUASHFS_MAJOR			4
 #define SQUASHFS_MINOR			0
@@ -144,17 +147,27 @@
  * uncompressed */
 #define SQUASHFS_COMPRESSED_BIT		(1 << 15)
 
-#define SQUASHFS_COMPRESSED_SIZE(B)	(((B) & ~SQUASHFS_COMPRESSED_BIT) ? \
-		(B) & ~SQUASHFS_COMPRESSED_BIT :  SQUASHFS_COMPRESSED_BIT)
+static inline uint16_t squashfs_compressed_size(uint16_t size)
+{
+	return size & ~SQUASHFS_COMPRESSED_BIT;
+}
 
-#define SQUASHFS_COMPRESSED(B)		(!((B) & SQUASHFS_COMPRESSED_BIT))
+static inline bool squashfs_compressed(uint16_t size)
+{
+	return (size & SQUASHFS_COMPRESSED_BIT) == 0;
+}
 
 #define SQUASHFS_COMPRESSED_BIT_BLOCK		(1 << 24)
 
-#define SQUASHFS_COMPRESSED_SIZE_BLOCK(B)	((B) & \
-	~SQUASHFS_COMPRESSED_BIT_BLOCK)
+static inline uint32_t squashfs_compressed_size_block(uint32_t size)
+{
+	return size & ~SQUASHFS_COMPRESSED_BIT_BLOCK;
+}
 
-#define SQUASHFS_COMPRESSED_BLOCK(B)	(!((B) & SQUASHFS_COMPRESSED_BIT_BLOCK))
+static inline bool squashfs_compressed_block(uint32_t size)
+{
+	return (size & SQUASHFS_COMPRESSED_BIT_BLOCK) == 0;
+}
 
 /*
  * Inode number ops.  Inodes consist of a compressed block number, and an
