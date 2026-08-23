@@ -447,21 +447,31 @@ static inline int32_t squashfs_mkinode(uint32_t start, uint16_t offset)
 }
 
 /* fragment and fragment table defines */
-#define SQUASHFS_FRAGMENT_BYTES(A)	((long long)(A) * \
-					sizeof(struct squashfs_fragment_entry))
+static inline int64_t squashfs_fragment_bytes(uint32_t fragments)
+{
+	return (int64_t) fragments * sizeof(struct squashfs_fragment_entry);
+}
 
-#define SQUASHFS_FRAGMENT_INDEX(A)	(SQUASHFS_FRAGMENT_BYTES(A) / \
-					SQUASHFS_METADATA_SIZE)
+static inline int32_t squashfs_fragment_index(uint32_t fragments)
+{
+	return squashfs_fragment_bytes(fragments) / SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_FRAGMENT_INDEX_OFFSET(A)	(SQUASHFS_FRAGMENT_BYTES(A) % \
-						SQUASHFS_METADATA_SIZE)
+static inline int16_t squashfs_fragment_index_offset(uint32_t fragments)
+{
+	return squashfs_fragment_bytes(fragments) % SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_FRAGMENT_INDEXES(A)	((SQUASHFS_FRAGMENT_BYTES(A) + \
-					SQUASHFS_METADATA_SIZE - 1) / \
-					SQUASHFS_METADATA_SIZE)
+static inline int32_t squashfs_fragment_indexes(uint32_t fragments)
+{
+	return (squashfs_fragment_bytes(fragments) + (SQUASHFS_METADATA_SIZE - 1)) /
+		SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_FRAGMENT_INDEX_BYTES(A)	(SQUASHFS_FRAGMENT_INDEXES(A) *\
-						sizeof(long long))
+static inline int32_t squashfs_fragment_index_bytes(uint32_t fragments)
+{
+	return squashfs_fragment_indexes(fragments) * sizeof(long long);
+}
 
 /* inode lookup table defines */
 #define SQUASHFS_LOOKUP_BYTES(A)	((long long)(A) * sizeof(squashfs_inode))

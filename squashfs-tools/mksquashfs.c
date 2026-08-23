@@ -1900,7 +1900,7 @@ long long generic_write_table(long long length, void *buffer, int length2,
 
 static long long write_fragment_table()
 {
-	long long frag_bytes = SQUASHFS_FRAGMENT_BYTES(fragments);
+	long long frag_bytes = squashfs_fragment_bytes(fragments);
 	unsigned int i;
 
 	TRACE("write_fragment_table: fragments %u, frag_bytes %d\n", fragments,
