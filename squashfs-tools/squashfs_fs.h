@@ -446,9 +446,6 @@ static inline int32_t squashfs_mkinode(uint32_t start, uint16_t offset)
 	return (start << 16) | offset;
 }
 
-/* Translate between VFS mode and squashfs mode */
-#define SQUASHFS_MODE(a)		((a) & 0xfff)
-
 /* fragment and fragment table defines */
 #define SQUASHFS_FRAGMENT_BYTES(A)	((long long)(A) * \
 					sizeof(struct squashfs_fragment_entry))

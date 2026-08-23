@@ -1186,7 +1186,7 @@ squashfs_inode create_inode(struct dir_info *dir_info,
 	else
 		gid = buf->st_gid;
 
-	base->mode = SQUASHFS_MODE(mode);
+	base->mode = mode & 0xfff; /* only include the file mode bits, and not file type */
 	base->inode_type = type;
 	base->uid = get_uid(uid);
 	base->guid = get_guid(gid);
