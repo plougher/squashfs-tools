@@ -143,123 +143,6 @@
 #define SQUASHFS_XATTR_VALUE_OOL	256
 #define SQUASHFS_XATTR_PREFIX_MASK	0xff
 
-/* Flag whether block is compressed or uncompressed, bit is set if block is
- * uncompressed */
-#define SQUASHFS_COMPRESSED_BIT		(1 << 15)
-
-static inline uint16_t squashfs_compressed_size(uint16_t size)
-{
-	return size & ~SQUASHFS_COMPRESSED_BIT;
-}
-
-static inline bool squashfs_compressed(uint16_t size)
-{
-	return (size & SQUASHFS_COMPRESSED_BIT) == 0;
-}
-
-#define SQUASHFS_COMPRESSED_BIT_BLOCK		(1 << 24)
-
-static inline uint32_t squashfs_compressed_size_block(uint32_t size)
-{
-	return size & ~SQUASHFS_COMPRESSED_BIT_BLOCK;
-}
-
-static inline bool squashfs_compressed_block(uint32_t size)
-{
-	return (size & SQUASHFS_COMPRESSED_BIT_BLOCK) == 0;
-}
-
-/*
- * Inode number ops.  Inodes consist of a compressed block number, and an
- * uncompressed  offset within that block
- */
-static inline uint32_t squashfs_inode_blk(int64_t inode)
-{
-	return inode >> 16;
-}
-
-static inline uint16_t squashfs_inode_offset(int64_t inode)
-{
-	return inode & 0xffff;
-}
-
-static inline int32_t squashfs_mkinode(uint32_t start, uint16_t offset)
-{
-	return (start << 16) | offset;
-}
-
-/* Translate between VFS mode and squashfs mode */
-#define SQUASHFS_MODE(a)		((a) & 0xfff)
-
-/* fragment and fragment table defines */
-#define SQUASHFS_FRAGMENT_BYTES(A)	((long long)(A) * \
-					sizeof(struct squashfs_fragment_entry))
-
-#define SQUASHFS_FRAGMENT_INDEX(A)	(SQUASHFS_FRAGMENT_BYTES(A) / \
-					SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_FRAGMENT_INDEX_OFFSET(A)	(SQUASHFS_FRAGMENT_BYTES(A) % \
-						SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_FRAGMENT_INDEXES(A)	((SQUASHFS_FRAGMENT_BYTES(A) + \
-					SQUASHFS_METADATA_SIZE - 1) / \
-					SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_FRAGMENT_INDEX_BYTES(A)	(SQUASHFS_FRAGMENT_INDEXES(A) *\
-						sizeof(long long))
-
-/* inode lookup table defines */
-#define SQUASHFS_LOOKUP_BYTES(A)	((long long)(A) * sizeof(squashfs_inode))
-
-#define SQUASHFS_LOOKUP_BLOCK(A)		(SQUASHFS_LOOKUP_BYTES(A) / \
-						SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_LOOKUP_BLOCK_OFFSET(A)		(SQUASHFS_LOOKUP_BYTES(A) % \
-						SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_LOOKUP_BLOCKS(A)	((SQUASHFS_LOOKUP_BYTES(A) + \
-					SQUASHFS_METADATA_SIZE - 1) / \
-					SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_LOOKUP_BLOCK_BYTES(A)	(SQUASHFS_LOOKUP_BLOCKS(A) *\
-					sizeof(long long))
-
-/* uid lookup table defines */
-#define SQUASHFS_ID_BYTES(A)	((unsigned int)(A) * sizeof(unsigned int))
-
-#define SQUASHFS_ID_BLOCK(A)		(SQUASHFS_ID_BYTES(A) / \
-						SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_ID_BLOCK_OFFSET(A)		(SQUASHFS_ID_BYTES(A) % \
-						SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_ID_BLOCKS(A)	((SQUASHFS_ID_BYTES(A) + \
-					SQUASHFS_METADATA_SIZE - 1) / \
-					SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_ID_BLOCK_BYTES(A)	(SQUASHFS_ID_BLOCKS(A) *\
-					sizeof(long long))
-
-/* xattr id lookup table defines */
-#define SQUASHFS_XATTR_BYTES(A)		(((long long) (A)) * sizeof(struct squashfs_xattr_id))
-
-#define SQUASHFS_XATTR_BLOCK(A)		(SQUASHFS_XATTR_BYTES(A) / \
-					SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_XATTR_BLOCK_OFFSET(A)	(SQUASHFS_XATTR_BYTES(A) % \
-					SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_XATTR_BLOCKS(A)	((SQUASHFS_XATTR_BYTES(A) + \
-					SQUASHFS_METADATA_SIZE - 1) / \
-					SQUASHFS_METADATA_SIZE)
-
-#define SQUASHFS_XATTR_BLOCK_BYTES(A)	(SQUASHFS_XATTR_BLOCKS(A) *\
-					sizeof(long long))
-
-#define SQUASHFS_XATTR_BLK(A)		((unsigned int) ((A) >> 16))
-
-#define SQUASHFS_XATTR_OFFSET(A)	((unsigned int) ((A) & 0xffff))
-
 /* cached data constants for filesystem */
 #define SQUASHFS_CACHED_BLKS		8
 
@@ -517,6 +400,123 @@ struct squashfs_xattr_table {
 	unsigned int		xattr_ids;
 	unsigned int		unused;
 };
+
+/* Flag whether block is compressed or uncompressed, bit is set if block is
+ * uncompressed */
+#define SQUASHFS_COMPRESSED_BIT		(1 << 15)
+
+static inline uint16_t squashfs_compressed_size(uint16_t size)
+{
+	return size & ~SQUASHFS_COMPRESSED_BIT;
+}
+
+static inline bool squashfs_compressed(uint16_t size)
+{
+	return (size & SQUASHFS_COMPRESSED_BIT) == 0;
+}
+
+#define SQUASHFS_COMPRESSED_BIT_BLOCK		(1 << 24)
+
+static inline uint32_t squashfs_compressed_size_block(uint32_t size)
+{
+	return size & ~SQUASHFS_COMPRESSED_BIT_BLOCK;
+}
+
+static inline bool squashfs_compressed_block(uint32_t size)
+{
+	return (size & SQUASHFS_COMPRESSED_BIT_BLOCK) == 0;
+}
+
+/*
+ * Inode number ops.  Inodes consist of a compressed block number, and an
+ * uncompressed  offset within that block
+ */
+static inline uint32_t squashfs_inode_blk(int64_t inode)
+{
+	return inode >> 16;
+}
+
+static inline uint16_t squashfs_inode_offset(int64_t inode)
+{
+	return inode & 0xffff;
+}
+
+static inline int32_t squashfs_mkinode(uint32_t start, uint16_t offset)
+{
+	return (start << 16) | offset;
+}
+
+/* Translate between VFS mode and squashfs mode */
+#define SQUASHFS_MODE(a)		((a) & 0xfff)
+
+/* fragment and fragment table defines */
+#define SQUASHFS_FRAGMENT_BYTES(A)	((long long)(A) * \
+					sizeof(struct squashfs_fragment_entry))
+
+#define SQUASHFS_FRAGMENT_INDEX(A)	(SQUASHFS_FRAGMENT_BYTES(A) / \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_FRAGMENT_INDEX_OFFSET(A)	(SQUASHFS_FRAGMENT_BYTES(A) % \
+						SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_FRAGMENT_INDEXES(A)	((SQUASHFS_FRAGMENT_BYTES(A) + \
+					SQUASHFS_METADATA_SIZE - 1) / \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_FRAGMENT_INDEX_BYTES(A)	(SQUASHFS_FRAGMENT_INDEXES(A) *\
+						sizeof(long long))
+
+/* inode lookup table defines */
+#define SQUASHFS_LOOKUP_BYTES(A)	((long long)(A) * sizeof(squashfs_inode))
+
+#define SQUASHFS_LOOKUP_BLOCK(A)		(SQUASHFS_LOOKUP_BYTES(A) / \
+						SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_LOOKUP_BLOCK_OFFSET(A)		(SQUASHFS_LOOKUP_BYTES(A) % \
+						SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_LOOKUP_BLOCKS(A)	((SQUASHFS_LOOKUP_BYTES(A) + \
+					SQUASHFS_METADATA_SIZE - 1) / \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_LOOKUP_BLOCK_BYTES(A)	(SQUASHFS_LOOKUP_BLOCKS(A) *\
+					sizeof(long long))
+
+/* uid lookup table defines */
+#define SQUASHFS_ID_BYTES(A)	((unsigned int)(A) * sizeof(unsigned int))
+
+#define SQUASHFS_ID_BLOCK(A)		(SQUASHFS_ID_BYTES(A) / \
+						SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_ID_BLOCK_OFFSET(A)		(SQUASHFS_ID_BYTES(A) % \
+						SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_ID_BLOCKS(A)	((SQUASHFS_ID_BYTES(A) + \
+					SQUASHFS_METADATA_SIZE - 1) / \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_ID_BLOCK_BYTES(A)	(SQUASHFS_ID_BLOCKS(A) *\
+					sizeof(long long))
+
+/* xattr id lookup table defines */
+#define SQUASHFS_XATTR_BYTES(A)		(((long long) (A)) * sizeof(struct squashfs_xattr_id))
+
+#define SQUASHFS_XATTR_BLOCK(A)		(SQUASHFS_XATTR_BYTES(A) / \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_XATTR_BLOCK_OFFSET(A)	(SQUASHFS_XATTR_BYTES(A) % \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_XATTR_BLOCKS(A)	((SQUASHFS_XATTR_BYTES(A) + \
+					SQUASHFS_METADATA_SIZE - 1) / \
+					SQUASHFS_METADATA_SIZE)
+
+#define SQUASHFS_XATTR_BLOCK_BYTES(A)	(SQUASHFS_XATTR_BLOCKS(A) *\
+					sizeof(long long))
+
+#define SQUASHFS_XATTR_BLK(A)		((unsigned int) ((A) >> 16))
+
+#define SQUASHFS_XATTR_OFFSET(A)	((unsigned int) ((A) & 0xffff))
 
 static inline long long squashfs_file_blocks(long long size, unsigned int fragment,
 			struct squashfs_super_block *sBlk) {
