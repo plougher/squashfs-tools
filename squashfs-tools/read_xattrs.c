@@ -179,8 +179,8 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	}
 
 	xattr_table_start = id_table.xattr_table_start;
-	index_bytes = SQUASHFS_XATTR_BLOCK_BYTES(ids);
-	indexes = SQUASHFS_XATTR_BLOCKS(ids);
+	index_bytes = squashfs_xattr_block_bytes(ids);
+	indexes = squashfs_xattr_blocks(ids);
 
 	/*
 	 * The size of the index table (index_bytes) should match the
@@ -224,7 +224,7 @@ unsigned int read_xattrs_from_disk(int fd, struct squashfs_super_block *sBlk, in
 	 * Allocate enough space for the uncompressed xattr id table, and
 	 * read and decompress it
 	 */
-	bytes = SQUASHFS_XATTR_BYTES(ids);
+	bytes = squashfs_xattr_bytes(ids);
 	xattr_ids = MALLOC(bytes);
 
 	for(i = 0; i < indexes; i++) {
@@ -360,8 +360,8 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 	} else
 		*failed = FALSE;
 
-	start = ADD_OVERFLOW(xattr_table_start, SQUASHFS_XATTR_BLK(xattr_ids[i].xattr));
-	offset = SQUASHFS_XATTR_OFFSET(xattr_ids[i].xattr);
+	start = ADD_OVERFLOW(xattr_table_start, squashfs_xattr_blk(xattr_ids[i].xattr));
+	offset = squashfs_xattr_offset(xattr_ids[i].xattr);
 	xptr_offset = get_xattr_block(start);
 
 	if(xptr_offset == -1)
@@ -432,8 +432,8 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 			SQUASHFS_SWAP_LONG_LONGS(xptr, &xattr, 1);
 			xptr += sizeof(xattr);	
 
-			start = ADD_OVERFLOW(xattr_table_start, SQUASHFS_XATTR_BLK(xattr));
-			offset = SQUASHFS_XATTR_OFFSET(xattr);
+			start = ADD_OVERFLOW(xattr_table_start, squashfs_xattr_blk(xattr));
+			offset = squashfs_xattr_offset(xattr);
 			ool_offset = get_xattr_block(start);
 
 			if(ool_offset == -1)

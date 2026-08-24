@@ -528,24 +528,41 @@ static inline int16_t squashfs_id_block_bytes(uint16_t ids)
 }
 
 /* xattr id lookup table defines */
-#define SQUASHFS_XATTR_BYTES(A)		(((long long) (A)) * sizeof(struct squashfs_xattr_id))
+static inline int64_t squashfs_xattr_bytes(uint32_t xattrs)
+{
+	return (int64_t) xattrs * sizeof(struct squashfs_xattr_id);
+}
 
-#define SQUASHFS_XATTR_BLOCK(A)		(SQUASHFS_XATTR_BYTES(A) / \
-					SQUASHFS_METADATA_SIZE)
+static inline int32_t squashfs_xattr_block(uint32_t xattrs)
+{
+	return squashfs_xattr_bytes(xattrs) / SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_XATTR_BLOCK_OFFSET(A)	(SQUASHFS_XATTR_BYTES(A) % \
-					SQUASHFS_METADATA_SIZE)
+static inline int16_t squashfs_xattr_block_offset(uint32_t xattrs)
+{
+	return squashfs_xattr_bytes(xattrs) % SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_XATTR_BLOCKS(A)	((SQUASHFS_XATTR_BYTES(A) + \
-					SQUASHFS_METADATA_SIZE - 1) / \
-					SQUASHFS_METADATA_SIZE)
+static inline int32_t squashfs_xattr_blocks(uint32_t xattrs)
+{
+	return (squashfs_xattr_bytes(xattrs) + SQUASHFS_METADATA_SIZE - 1) /
+		SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_XATTR_BLOCK_BYTES(A)	(SQUASHFS_XATTR_BLOCKS(A) *\
-					sizeof(long long))
+static inline int32_t squashfs_xattr_block_bytes(uint32_t xattrs)
+{
+	return squashfs_xattr_blocks(xattrs) * sizeof(long long);
+}
 
-#define SQUASHFS_XATTR_BLK(A)		((unsigned int) ((A) >> 16))
+static inline uint32_t squashfs_xattr_blk(int64_t xattr)
+{
+	return xattr >> 16;
+}
 
-#define SQUASHFS_XATTR_OFFSET(A)	((unsigned int) ((A) & 0xffff))
+static inline int16_t squashfs_xattr_offset(int64_t xattr)
+{
+	return xattr & 0xffff;
+}
 
 static inline long long squashfs_file_blocks(long long size, unsigned int fragment,
 			struct squashfs_super_block *sBlk) {
