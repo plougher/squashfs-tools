@@ -5786,7 +5786,7 @@ static long long write_inode_lookup_table()
 	 * Size of lookup_bytes = 2^32*8 = 2^35
 	 */
 	int i;
-	long long lookup_bytes = SQUASHFS_LOOKUP_BYTES(inode_count);
+	long long lookup_bytes = squashfs_lookup_bytes(inode_count);
 	unsigned int inode_number;
 
 	if(inode_count == sinode_count)

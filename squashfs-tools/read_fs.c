@@ -1084,14 +1084,14 @@ static squashfs_inode *read_inode_lookup_table(int fd, struct squashfs_super_blo
 	 * Max indexes is (2^32*8)/8K or 2^22
 	 * Max length is ((2^32*8)/8K)*8 or 2^25
 	 */
-	long long lookup_bytes = SQUASHFS_LOOKUP_BYTES(sBlk->inodes);
-	int indexes = SQUASHFS_LOOKUP_BLOCKS(sBlk->inodes);
+	long long lookup_bytes = squashfs_lookup_bytes(sBlk->inodes);
+	int indexes = squashfs_lookup_blocks(sBlk->inodes);
 	long long *index = MALLOC(indexes * sizeof(long long));
 	int res, i;
 	squashfs_inode *inode_lookup_table = MALLOC(lookup_bytes);
 
 	res = read_fs_data(fd, sBlk->lookup_table_start,
-		SQUASHFS_LOOKUP_BLOCK_BYTES(sBlk->inodes), index);
+		squashfs_lookup_block_bytes(sBlk->inodes), index);
 	if(res == 0) {
 		ERROR("Failed to read inode lookup table index\n");
 		ERROR("Filesystem corrupted?\n");

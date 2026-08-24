@@ -474,20 +474,31 @@ static inline int32_t squashfs_fragment_index_bytes(uint32_t fragments)
 }
 
 /* inode lookup table defines */
-#define SQUASHFS_LOOKUP_BYTES(A)	((long long)(A) * sizeof(squashfs_inode))
+static inline int64_t squashfs_lookup_bytes(uint32_t inodes)
+{
+	return (int64_t) inodes * sizeof(squashfs_inode);
+}
 
-#define SQUASHFS_LOOKUP_BLOCK(A)		(SQUASHFS_LOOKUP_BYTES(A) / \
-						SQUASHFS_METADATA_SIZE)
+static inline int32_t squashfs_lookup_block(uint32_t inodes)
+{
+	return squashfs_lookup_bytes(inodes) / SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_LOOKUP_BLOCK_OFFSET(A)		(SQUASHFS_LOOKUP_BYTES(A) % \
-						SQUASHFS_METADATA_SIZE)
+static inline int16_t squashfs_lookup_block_offset(uint32_t inodes)
+{
+	return squashfs_lookup_bytes(inodes) % SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_LOOKUP_BLOCKS(A)	((SQUASHFS_LOOKUP_BYTES(A) + \
-					SQUASHFS_METADATA_SIZE - 1) / \
-					SQUASHFS_METADATA_SIZE)
+static inline int32_t squashfs_lookup_blocks(uint32_t inodes)
+{
+	return (squashfs_lookup_bytes(inodes) + (SQUASHFS_METADATA_SIZE - 1)) /
+		SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_LOOKUP_BLOCK_BYTES(A)	(SQUASHFS_LOOKUP_BLOCKS(A) *\
-					sizeof(long long))
+static inline int32_t squashfs_lookup_block_bytes(uint32_t inodes)
+{
+	return squashfs_lookup_blocks(inodes) * sizeof(long long);
+}
 
 /* uid lookup table defines */
 #define SQUASHFS_ID_BYTES(A)	((unsigned int)(A) * sizeof(unsigned int))
