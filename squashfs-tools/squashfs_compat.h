@@ -450,7 +450,7 @@ typedef struct squashfs_fragment_entry_3 squashfs_fragment_entry_3;
 					SQUASHFS_METADATA_SIZE - 1) / \
 					SQUASHFS_METADATA_SIZE)
 
-#define SQUASHFS_LOOKUP_BLOCK_BYTES_3(A)	(SQUASHFS_LOOKUP_BLOCKS(A) *\
+#define SQUASHFS_LOOKUP_BLOCK_BYTES_3(A)	(SQUASHFS_LOOKUP_BLOCKS_3(A) *\
 					sizeof(long long))
 
 /*
