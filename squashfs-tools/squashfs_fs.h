@@ -501,20 +501,31 @@ static inline int32_t squashfs_lookup_block_bytes(uint32_t inodes)
 }
 
 /* uid lookup table defines */
-#define SQUASHFS_ID_BYTES(A)	((unsigned int)(A) * sizeof(unsigned int))
+static inline int32_t squashfs_id_bytes(uint16_t ids)
+{
+	return (int32_t) ids * sizeof(unsigned int);
+}
 
-#define SQUASHFS_ID_BLOCK(A)		(SQUASHFS_ID_BYTES(A) / \
-						SQUASHFS_METADATA_SIZE)
+static inline int32_t SQUASHFS_ID_BLOCK(uint16_t ids)
+{
+	return squashfs_id_bytes(ids) / SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_ID_BLOCK_OFFSET(A)		(SQUASHFS_ID_BYTES(A) % \
-						SQUASHFS_METADATA_SIZE)
+static inline int16_t squashfs_id_block_offset(uint16_t ids)
+{
+	return squashfs_id_bytes(ids) % SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_ID_BLOCKS(A)	((SQUASHFS_ID_BYTES(A) + \
-					SQUASHFS_METADATA_SIZE - 1) / \
-					SQUASHFS_METADATA_SIZE)
+static inline int8_t squashfs_id_blocks(uint16_t ids)
+{
+	return (squashfs_id_bytes(ids) + (SQUASHFS_METADATA_SIZE - 1)) /
+		SQUASHFS_METADATA_SIZE;
+}
 
-#define SQUASHFS_ID_BLOCK_BYTES(A)	(SQUASHFS_ID_BLOCKS(A) *\
-					sizeof(long long))
+static inline int16_t squashfs_id_block_bytes(uint16_t ids)
+{
+	return squashfs_id_blocks(ids) * sizeof(long long);
+}
 
 /* xattr id lookup table defines */
 #define SQUASHFS_XATTR_BYTES(A)		(((long long) (A)) * sizeof(struct squashfs_xattr_id))

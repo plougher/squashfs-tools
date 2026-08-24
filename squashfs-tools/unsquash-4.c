@@ -479,9 +479,9 @@ static int read_id_table(long long *table_start)
 	 * Max length is ((2^16*4)/8K)*8 or 256
 	 */
 	int res, i;
-	int bytes = SQUASHFS_ID_BYTES(sBlk.s.no_ids);
-	int indexes = SQUASHFS_ID_BLOCKS(sBlk.s.no_ids);
-	int length = SQUASHFS_ID_BLOCK_BYTES(sBlk.s.no_ids);
+	int bytes = squashfs_id_bytes(sBlk.s.no_ids);
+	int indexes = squashfs_id_blocks(sBlk.s.no_ids);
+	int length = squashfs_id_block_bytes(sBlk.s.no_ids);
 	long long *id_index_table;
 
 	/*

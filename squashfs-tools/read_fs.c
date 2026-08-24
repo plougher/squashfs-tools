@@ -952,14 +952,14 @@ static unsigned int *read_id_table(int fd, struct squashfs_super_block *sBlk)
 	 * Max indexes is (2^16*4)/8K or 32
 	 * Max length is ((2^16*4)/8K)*8 or 256
 	 */
-	int bytes = SQUASHFS_ID_BYTES(sBlk->no_ids);
-	int indexes = SQUASHFS_ID_BLOCKS(sBlk->no_ids);
+	int bytes = squashfs_id_bytes(sBlk->no_ids);
+	int indexes = squashfs_id_blocks(sBlk->no_ids);
 	long long *index = MALLOC(indexes * sizeof(long long));
 	unsigned int *id_table = MALLOC(bytes);
 	int res, i;
 
 	res = read_fs_data(fd, sBlk->id_table_start,
-		SQUASHFS_ID_BLOCK_BYTES(sBlk->no_ids), index);
+		squashfs_id_block_bytes(sBlk->no_ids), index);
 	if(res == 0) {
 		ERROR("Failed to read id table index\n");
 		ERROR("Filesystem corrupted?\n");

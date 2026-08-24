@@ -932,7 +932,7 @@ static int check_id_table_offset()
 
 static long long write_id_table()
 {
-	unsigned int id_bytes = SQUASHFS_ID_BYTES(id_count);
+	unsigned int id_bytes = squashfs_id_bytes(id_count);
 	unsigned int p[id_count];
 	int i;
 
