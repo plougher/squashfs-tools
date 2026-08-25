@@ -405,24 +405,24 @@ struct squashfs_xattr_table {
  * uncompressed */
 #define SQUASHFS_COMPRESSED_BIT		(1 << 15)
 
-static inline uint16_t squashfs_compressed_size(uint16_t size)
+static inline int16_t squashfs_compressed_size(int16_t size)
 {
 	return size & ~SQUASHFS_COMPRESSED_BIT;
 }
 
-static inline bool squashfs_compressed(uint16_t size)
+static inline bool squashfs_compressed(int16_t size)
 {
 	return (size & SQUASHFS_COMPRESSED_BIT) == 0;
 }
 
 #define SQUASHFS_COMPRESSED_BIT_BLOCK		(1 << 24)
 
-static inline uint32_t squashfs_compressed_size_block(uint32_t size)
+static inline int32_t squashfs_compressed_size_block(int32_t size)
 {
 	return size & ~SQUASHFS_COMPRESSED_BIT_BLOCK;
 }
 
-static inline bool squashfs_compressed_block(uint32_t size)
+static inline bool squashfs_compressed_block(int32_t size)
 {
 	return (size & SQUASHFS_COMPRESSED_BIT_BLOCK) == 0;
 }
