@@ -4,7 +4,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2021, 2022, 2024, 2025
+ * Copyright (c) 2021, 2022, 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -145,7 +145,7 @@ extern int numeric_owner;
 
 #ifdef XATTR_SUPPORT
 extern int xattr_get_prefix(struct xattr_list *, char *);
-extern void read_tar_xattr(char *, char *, int, int, struct tar_file *);
+extern void read_tar_xattr(char *, char *, unsigned int, int, struct tar_file *);
 extern void free_tar_xattrs(struct tar_file *);
 extern int read_xattrs_from_tarfile(struct inode_info *, struct xattr_list **);
 #else

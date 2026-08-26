@@ -3,7 +3,7 @@
  * filesystem.
  *
  * Copyright (c) 2008, 2009, 2010, 2012, 2013, 2014, 2019, 2021, 2022, 2023,
- * 2024, 2025
+ * 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -58,25 +58,25 @@
 
 /* compressed xattr table */
 static char *xattr_table = NULL;
-static unsigned int xattr_size = 0;
+static long long xattr_size = 0;
 
 /* cached uncompressed xattr data */
 static char *data_cache = NULL;
-static int cache_bytes = 0, cache_size = 0;
+static long long cache_bytes = 0, cache_size = 0;
 
 /* cached uncompressed xattr id table */
 static struct squashfs_xattr_id *xattr_id_table = NULL;
-static int xattr_ids = 0;
+static unsigned int xattr_ids = 0;
 
 /* saved compressed xattr table */
-unsigned int sxattr_bytes = 0, stotal_xattr_bytes = 0;
+unsigned long long sxattr_bytes = 0, stotal_xattr_bytes = 0;
 
 /* saved cached uncompressed xattr data */
 static char *sdata_cache = NULL;
-static int scache_bytes = 0;
+static long long scache_bytes = 0;
 
 /* saved cached uncompressed xattr id table */
-static int sxattr_ids = 0;
+static unsigned int sxattr_ids = 0;
 
 /* xattr hash table for value duplicate detection */
 static struct xattr_list *dupl_value[65536];
@@ -91,7 +91,7 @@ static int xattr_add_count = 0;
 /* file system globals from mksquashfs.c */
 extern int no_xattrs, noX;
 extern int fd;
-extern unsigned int xattr_bytes, total_xattr_bytes;
+extern long long xattr_bytes, total_xattr_bytes;
 extern regex_t *xattr_exclude_preg;
 extern regex_t *xattr_include_preg;
 
@@ -141,9 +141,9 @@ int xattr_get_prefix(struct xattr_list *xattr, char *name)
 }
 
 
-static int get_xattr_size(struct xattr_list *xattr)
+static long long get_xattr_size(struct xattr_list *xattr)
 {
-	int size = sizeof(struct squashfs_xattr_entry) +
+	long long size = sizeof(struct squashfs_xattr_entry) +
 		sizeof(struct squashfs_xattr_val) + xattr->size;
 
 	if(xattr->type & XATTR_VALUE_OOL)
@@ -155,9 +155,9 @@ static int get_xattr_size(struct xattr_list *xattr)
 }
 
 
-static void *get_xattr_space(unsigned int req_size, long long *disk)
+static void *get_xattr_space(long long req_size, long long *disk)
 {
-	int data_space;
+	long long data_space;
 	unsigned short c_byte;
 	char *cur = data_cache;
 
@@ -174,7 +174,7 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 
 		c_byte = mangle(xattr_table + xattr_bytes + BLOCK_OFFSET, cur,
 			SQUASHFS_METADATA_SIZE, SQUASHFS_METADATA_SIZE, noX, 0);
-		TRACE("Xattr block @ 0x%x, size %d\n", xattr_bytes, c_byte);
+		TRACE("Xattr block @ 0x%llx, size %d\n", xattr_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, xattr_table + xattr_bytes, 1);
 		xattr_bytes += squashfs_compressed_size(c_byte) + BLOCK_OFFSET;
 		cur += SQUASHFS_METADATA_SIZE;
@@ -189,23 +189,23 @@ static void *get_xattr_space(unsigned int req_size, long long *disk)
 	 */
 	data_space = cache_size - cache_bytes;
 	if(data_space < req_size) {
-			int realloc_size = req_size - data_space;
+			long long realloc_size = req_size - data_space;
 			data_cache = REALLOC(data_cache, cache_size +
 				realloc_size);
 			cache_size += realloc_size;
 	}
 
 	if(disk)
-		*disk = ((long long) xattr_bytes << 16) | cache_bytes;
+		*disk = (xattr_bytes << 16) | cache_bytes;
 	cache_bytes += req_size;
 	return data_cache + cache_bytes - req_size;
 }
 
 
-static struct dupl_id *check_id_dupl(struct xattr_list *xattr_list, int xattrs)
+static struct dupl_id *check_id_dupl(struct xattr_list *xattr_list, unsigned int xattrs)
 {
 	struct dupl_id *entry;
-	int i;
+	unsigned int i;
 	unsigned short checksum = 0;
 
 	/* compute checksum over all xattrs */
@@ -296,19 +296,27 @@ static void check_value_dupl(struct xattr_list *xattr)
 }
 
 
-static int get_xattr_id(int xattrs, struct xattr_list *xattr_list,
+static unsigned int get_xattr_id(unsigned int xattrs, struct xattr_list *xattr_list,
 		long long xattr_disk, struct dupl_id *xattr_dupl)
 {
-	int i, size = 0;
+	unsigned int i;
+	long long size = 0;
 	struct squashfs_xattr_id *xattr_id;
+
+	if(xattr_ids == UINT32_MAX)
+		BAD_ERROR("Maximum number of xattr ids exceeded!\n");
 
 	xattr_id_table = REALLOC(xattr_id_table, (xattr_ids + 1) *
 		sizeof(struct squashfs_xattr_id));
 
 	/* get total uncompressed size of xattr data, needed for stat */
-	for(i = 0; i < xattrs; i++)
+	for(i = 0; i < xattrs; i++) {
 		size += strlen(xattr_list[i].full_name) + 1 +
 			xattr_list[i].vsize;
+
+		if(size > UINT32_MAX)
+			BAD_ERROR("Maximum size of xattr id exceeded!\n");
+	}
 
 	xattr_id = &xattr_id_table[xattr_ids];
 	xattr_id->xattr = xattr_disk;
@@ -329,7 +337,8 @@ static int get_xattr_id(int xattrs, struct xattr_list *xattr_list,
 long long write_xattrs()
 {
 	unsigned short c_byte;
-	int i, avail_bytes;
+	unsigned int i;
+	int avail_bytes;
 	char *datap = data_cache;
 	long long start_bytes;
 	struct squashfs_xattr_table header = {};
@@ -375,14 +384,14 @@ long long write_xattrs()
 	header.xattr_table_start = start_bytes;
 	SQUASHFS_INSWAP_XATTR_TABLE(&header);
 
-	return generic_write_table(xattr_ids * sizeof(struct squashfs_xattr_id),
+	return generic_write_table((long long) xattr_ids * sizeof(struct squashfs_xattr_id),
 		xattr_id_table, sizeof(header), &header, noX);
 }
 
 
-static void free_xattr_list(int xattrs, struct xattr_list *xattr_list)
+static void free_xattr_list(unsigned int xattrs, struct xattr_list *xattr_list)
 {
-	int i;
+	unsigned int i;
 
 	for(i = 0; i < xattrs; i++) {
 		free(xattr_list[i].full_name);
@@ -393,9 +402,10 @@ static void free_xattr_list(int xattrs, struct xattr_list *xattr_list)
 }
 
 
-static int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
+static unsigned int generate_xattrs(unsigned int xattrs, struct xattr_list *xattr_list)
 {
-	int total_size, i;
+	long long total_size;
+	unsigned int i;
 	int xattr_value_max;
 	void *xp;
 	long long xattr_disk;
@@ -483,7 +493,7 @@ static int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 		if((xattr->type & XATTR_VALUE_OOL) &&
 				(xattr->ool_value == SQUASHFS_INVALID_BLK)) {
 			struct squashfs_xattr_val val;
-			int size = sizeof(val) + xattr->vsize;
+			long long size = sizeof(val) + xattr->vsize;
 			xp = get_xattr_space(size, &xattr->ool_value);
 			val.vsize = xattr->vsize;
 			SQUASHFS_SWAP_XATTR_VAL(&val, xp);
@@ -514,7 +524,7 @@ static int generate_xattrs(int xattrs, struct xattr_list *xattr_list)
 			SQUASHFS_SWAP_LONG_LONGS(&xattr->ool_value, xp +
 				sizeof(val), 1);
 		} else {
-			int size = sizeof(val) + xattr->vsize;
+			long long size = sizeof(val) + xattr->vsize;
 			xp = get_xattr_space(size, &xattr->ool_value);
 			val.vsize = xattr->vsize;
 			SQUASHFS_SWAP_XATTR_VAL(&val, xp);
@@ -536,13 +546,14 @@ SORT(sort_list, xattr_add, name, next);
 SORT(sort_xattr_list, xattr_list, full_name, vnext);
 
 
-int read_xattrs(void *d, int type)
+unsigned int read_xattrs(void *d, int type)
 {
 	struct dir_ent *dir_ent = d;
 	struct inode_info *inode = dir_ent->inode;
 	char *filename = pathname(dir_ent);
 	struct xattr_list *xattr_list = NULL, *head;
-	int count, i = 0, j;
+	int count;
+	unsigned int i = 0, j;
 	struct xattr_add *l1 = xattr_add_list, *l2 = NULL, *l3 = NULL;
 	struct xattr_add *action_add_list;
 
@@ -647,7 +658,10 @@ int read_xattrs(void *d, int type)
 				 type != SQUASHFS_DIR_TYPE))
 			continue;
 
-		xattr_list = REALLOC(xattr_list, (i + 1) * sizeof(struct xattr_list));
+		if(i == UINT32_MAX)
+			BAD_ERROR("Too many Xattrs for filename %s\n", filename);
+
+		xattr_list = REALLOC(xattr_list, ((long long) i + 1) * sizeof(struct xattr_list));
 		xattr_list[i].type = entry->type;
 		xattr_copy_prefix(&xattr_list[i], entry->type, entry->name);
 
@@ -695,8 +709,8 @@ skip_dup_check:
  */
 int get_xattrs(int fd, struct squashfs_super_block *sBlk)
 {
-	int res, i, id;
-	unsigned int count, ids;
+	int res;
+	unsigned int count, i, id, ids;
 
 	TRACE("get_xattrs\n");
 
@@ -797,13 +811,13 @@ regex_t *xattr_regex(char *pattern, char *option)
 }
 
 
-char *base64_decode(char *source, int size, int *bytes)
+char *base64_decode(char *source, long long size, unsigned int *bytes)
 {
 	char *dest;
 	unsigned char *dest_ptr, *source_ptr = (unsigned char *) source;
 	int bit_pos = 0;
 	int output = 0;
-	int count;
+	long long count;
 
 	if(size % 4 == 0) {
 		/* Check for and ignore any end padding */
@@ -815,6 +829,11 @@ char *base64_decode(char *source, int size, int *bytes)
 
 	/* Calculate number of bytes the base64 encoding represents */
 	count = size * 3 / 4;
+
+	if(count > UINT32_MAX) {
+		ERROR("Xattr value too large!\n");
+		return NULL;
+	}
 
 	dest = MALLOC(count);
 
@@ -870,7 +889,7 @@ failed:
 }
 
 
-static char *hex_decode(char *source, int size, int *bytes)
+static char *hex_decode(char *source, long long size, unsigned int *bytes)
 {
 	char *dest;
 	unsigned char *dest_ptr, *source_ptr = (unsigned char *) source;
@@ -878,6 +897,11 @@ static char *hex_decode(char *source, int size, int *bytes)
 
 	if(size % 2 != 0)
 		return NULL;
+
+	if((size >> 2) > UINT32_MAX) {
+		ERROR("Xattr value too large!\n");
+		return NULL;
+	}
 
 	dest = MALLOC(size >> 2);
 
@@ -926,10 +950,10 @@ static int decode_octal(unsigned char *ptr)
 }
 
 
-static char *text_decode(char *source, int *bytes)
+static char *text_decode(char *source, unsigned int *bytes)
 {
 	unsigned char *dest, *dest_ptr, *ptr = (unsigned char *) source;
-	int size = 0;
+	long long size = 0;
 
 	for(; *ptr; size ++, ptr ++) {
 		if(*ptr == '\\') {
@@ -938,6 +962,11 @@ static char *text_decode(char *source, int *bytes)
 			else
 				return NULL;
 		}
+	}
+
+	if(size > UINT32_MAX) {
+		ERROR("Xattr value too large!\n");
+		return NULL;
 	}
 
 	dest = MALLOC(size);
@@ -968,7 +997,8 @@ struct xattr_add *xattr_parse(char *str, char *pre, char *option)
 {
 	struct xattr_add *entry;
 	char *value;
-	int prefix, size;
+	int prefix;
+	unsigned int size;
 
 	/*
 	 * Look for the "=" separating the xattr name from the value
@@ -1087,7 +1117,13 @@ struct xattr_add *xattr_parse(char *str, char *pre, char *option)
 
 		/* fall through */
 	default:
-		entry->vsize = strlen(value);
+		size = strlen(value);
+		if(size > UINT32_MAX) {
+			ERROR("Xattr value too large!\n");
+			goto failed2;
+		}
+
+		entry->vsize = size;
 		entry->value = MALLOC(entry->vsize);
 		memcpy(entry->value, value, entry->vsize);
 	}

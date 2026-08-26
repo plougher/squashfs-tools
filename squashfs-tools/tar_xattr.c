@@ -1,7 +1,7 @@
 /*
  * Squashfs
  *
- * Copyright (c) 2021, 2022, 2023, 2025
+ * Copyright (c) 2021, 2022, 2023, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -42,7 +42,7 @@ extern regex_t *xattr_exclude_preg;
 extern regex_t *xattr_include_preg;
 
 
-void read_tar_xattr(char *name, char *value, int size, int encoding, struct tar_file *file)
+void read_tar_xattr(char *name, char *value, unsigned int size, int encoding, struct tar_file *file)
 {
 	char *data;
 	struct xattr_list *xattr;

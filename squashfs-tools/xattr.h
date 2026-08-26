@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2010, 2012, 2013, 2014, 2019, 2021, 2022, 2023, 2024
+ * Copyright (c) 2010, 2012, 2013, 2014, 2019, 2021, 2022, 2023, 2024, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -52,7 +52,7 @@ struct xattr_list {
 	char			*name;
 	char			*full_name;
 	int			size;
-	int			vsize;
+	unsigned int		vsize;
 	void			*value;
 	int			type;
 	long long		ool_value;
@@ -62,8 +62,8 @@ struct xattr_list {
 
 struct dupl_id {
 	struct xattr_list	*xattr_list;
-	int			xattrs;
-	int			xattr_id;
+	unsigned int		xattrs;
+	unsigned int		xattr_id;
 	struct dupl_id		*next;
 };
 
@@ -90,18 +90,18 @@ static inline int write_xattr(char *pathname, unsigned int xattr)
 }
 #endif
 extern int get_xattrs(int, struct squashfs_super_block *);
-extern int read_xattrs(void *, int type);
+extern unsigned int read_xattrs(void *, int type);
 extern long long write_xattrs();
 extern void save_xattrs();
 extern void restore_xattrs();
-extern unsigned int xattr_bytes, total_xattr_bytes;
+extern long long xattr_bytes, total_xattr_bytes;
 extern unsigned int read_xattrs_from_disk(int, struct squashfs_super_block *, int, long long *);
 extern struct xattr_list *get_xattr(int, unsigned int *, int *);
 extern void free_xattr(struct xattr_list *, int);
 extern regex_t *xattr_regex(char *pattern, char *option);
 extern void xattrs_add(char *str);
 extern void sort_xattr_add_list(void);
-extern char *base64_decode(char *source, int size, int *bytes);
+extern char *base64_decode(char *source, long long size, unsigned int *bytes);
 extern int add_xattrs(void);
 extern struct xattr_add *xattr_parse(char *, char *, char *);
 extern struct xattr_add *read_pseudo_xattr(char *def);

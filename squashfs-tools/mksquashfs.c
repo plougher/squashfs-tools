@@ -184,7 +184,7 @@ struct pseudo_dev *pseudo_dir = NULL;
 
 /* Is Mksquashfs storing Xattrs, or excluding/including xattrs using regexs? */
 int no_xattrs = XATTR_DEF;
-unsigned int xattr_bytes = 0, total_xattr_bytes = 0;
+long long xattr_bytes = 0, total_xattr_bytes = 0;
 regex_t *xattr_exclude_preg = NULL;
 regex_t *xattr_include_preg = NULL;
 
@@ -6636,9 +6636,9 @@ static void print_summary()
 		printf("\t100%% of uncompressed directory table size"
 			" (%lld bytes)\n", total_directory_bytes);
 	if(total_xattr_bytes) {
-		printf("Xattr table size %d bytes (%.2f Kbytes)\n",
+		printf("Xattr table size %lld bytes (%.2f Kbytes)\n",
 			xattr_bytes, xattr_bytes / 1024.0);
-		printf("\t%.2f%% of uncompressed xattr table size (%d bytes)\n",
+		printf("\t%.2f%% of uncompressed xattr table size (%lld bytes)\n",
 			((float) xattr_bytes / total_xattr_bytes) * 100.0,
 			total_xattr_bytes);
 	}
