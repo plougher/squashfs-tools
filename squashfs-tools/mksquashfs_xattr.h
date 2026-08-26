@@ -4,7 +4,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2023
+ * Copyright (c) 2023, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -26,10 +26,10 @@
 
 #ifdef XATTR_SUPPORT
 #ifdef XATTR_OS_SUPPORT
-extern int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
+extern unsigned int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 						struct xattr_list **xattrs);
 #else
-static inline int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
+static inline unsigned int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 						struct xattr_list **xattrs)
 {
 	return 0;

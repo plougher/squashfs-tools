@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (C) 2023, 2024, 2025
+ * Copyright (C) 2023, 2024, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -45,12 +45,12 @@
 extern regex_t *xattr_exclude_preg;
 extern regex_t *xattr_include_preg;
 
-int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
+unsigned int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 						struct xattr_list **xattrs)
 {
 	ssize_t size, vsize;
 	char *xattr_names, *p;
-	int i = 0;
+	unsigned int i = 0;
 	struct xattr_list *xattr_list = NULL;
 	struct xattr_data *xattr_exc_list;
 	struct xattr_data *xattr_inc_list;
@@ -60,8 +60,8 @@ int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 		if(size <= 0) {
 			if(size < 0 && errno != ENOTSUP) {
 				ERROR_START("llistxattr for %s failed in "
-					"read_attrs, because %s", filename,
-					strerror(errno));
+					"read_xattrs_from_system, because %s",
+					filename, strerror(errno));
 				ERROR_EXIT(".  Ignoring\n");
 			}
 			return 0;
@@ -76,8 +76,8 @@ int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 				continue;
 			else {
 				ERROR_START("llistxattr for %s failed in "
-					"read_attrs, because %s", filename,
-					strerror(errno));
+					"read_xattrs_from_system, because %s",
+					filename, strerror(errno));
 				ERROR_EXIT(".  Ignoring\n");
 				return 0;
 			}
@@ -120,7 +120,10 @@ int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 			}
 		}
 
-		xattr_list = REALLOC(xattr_list, (i + 1) * sizeof(struct xattr_list));
+		if(i == UINT32_MAX)
+			BAD_ERROR("Too many Xattrs for filename %s\n", filename);
+
+		xattr_list = REALLOC(xattr_list, ((long long) i + 1) * sizeof(struct xattr_list));
 		xattr_list[i].type = xattr_get_prefix(&xattr_list[i], p);
 
 		if(xattr_list[i].type == -1) {
@@ -136,8 +139,17 @@ int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 								NULL, 0);
 			if(vsize < 0) {
 				ERROR_START("lgetxattr failed for %s in "
-					"read_attrs, because %s", filename,
-					strerror(errno));
+					"read_xattrs_from_system, because %s",
+					filename, strerror(errno));
+				ERROR_EXIT(".  Ignoring\n");
+				free(xattr_list[i].full_name);
+				goto failed;
+			}
+
+			if(vsize > UINT32_MAX) {
+				ERROR_START("lgetxattr returned an Xattr value "
+					"too large for %s in read_xattrs_from_"
+					"system", filename);
 				ERROR_EXIT(".  Ignoring\n");
 				free(xattr_list[i].full_name);
 				goto failed;
@@ -167,7 +179,7 @@ int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 		xattr_list[i].vsize = vsize;
 
 		TRACE("read_xattrs_from_system: filename %s, xattr name %s,"
-			" vsize %d\n", filename, xattr_list[i].full_name,
+			" vsize %u\n", filename, xattr_list[i].full_name,
 			xattr_list[i].vsize);
 		i++;
 	}
