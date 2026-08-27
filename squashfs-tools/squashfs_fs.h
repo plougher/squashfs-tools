@@ -441,7 +441,7 @@ static inline uint16_t squashfs_inode_offset(int64_t inode)
 	return inode & 0xffff;
 }
 
-static inline int32_t squashfs_mkinode(uint32_t start, uint16_t offset)
+static inline int64_t squashfs_mkinode(uint32_t start, uint16_t offset)
 {
 	return (start << 16) | offset;
 }
