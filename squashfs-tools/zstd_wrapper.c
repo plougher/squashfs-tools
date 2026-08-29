@@ -30,6 +30,8 @@
 
 static int compression_level = ZSTD_DEFAULT_COMPRESSION_LEVEL;
 
+static int rsyncable = 0;
+
 /*
  * This function is called by the options parsing code in mksquashfs.c
  * to parse any -X compressor option.
@@ -78,6 +80,14 @@ static int zstd_options(char *argv[], int argc)
 		}
 
 		return 1;
+	} else if(strcmp(argv[0], "-Xrsyncable") == 0) {
+#ifdef ZSTD_c_rsyncable
+		rsyncable = 1;
+		return 0;
+#else
+		fprintf(stderr, "zstd: -Xrsyncable requires rsyncable support\n");
+		goto failed;
+#endif
 	}
 
 	return -1;
@@ -100,10 +110,11 @@ static void *zstd_dump_options(int block_size, int *size)
 	static struct zstd_comp_opts comp_opts;
 
 	/* don't return anything if the options are all default */
-	if (compression_level == ZSTD_DEFAULT_COMPRESSION_LEVEL)
+	if (compression_level == ZSTD_DEFAULT_COMPRESSION_LEVEL && rsyncable == 0)
 		return NULL;
 
 	comp_opts.compression_level = compression_level;
+	comp_opts.rsyncable = rsyncable;
 
 	SQUASHFS_INSWAP_COMP_OPTS(&comp_opts);
 
@@ -137,6 +148,7 @@ static int zstd_extract_options(int block_size, void *buffer, int size)
 	if (size == 0) {
 		/* Set default values */
 		compression_level = ZSTD_DEFAULT_COMPRESSION_LEVEL;
+		rsyncable = 0;
 		return 0;
 	}
 
@@ -155,6 +167,7 @@ static int zstd_extract_options(int block_size, void *buffer, int size)
 	}
 
 	compression_level = comp_opts->compression_level;
+	rsyncable = comp_opts->rsyncable;
 
 	return 0;
 
@@ -184,6 +197,7 @@ static void zstd_display_options(void *buffer, int size)
 	}
 
 	printf("\tcompression-level %d\n", comp_opts->compression_level);
+	printf("\trsyncable %d\n", comp_opts->rsyncable);
 
 	return;
 
@@ -207,6 +221,14 @@ static int zstd_init(void **strm, int block_size, int datablock)
 			"context!\n");
 		return -1;
 	}
+
+#ifdef ZSTD_c_rsyncable
+	const size_t res = ZSTD_CCtx_setParameter(cctx, ZSTD_c_rsyncable, rsyncable);
+	if (ZSTD_isError(res)) {
+		fprintf(stderr, "zstd: failed to set rsyncable\n");
+		return -1;
+	}
+#endif
 
 	*strm = cctx;
 	return 0;
@@ -256,12 +278,15 @@ static void zstd_usage(FILE *stream, int cols)
 		"-1 or 1 .. %d (default %d).  Negative compression levels "
 		"correspond to the zstd --fast option.\n", ZSTD_minCLevel(),
 		ZSTD_maxCLevel(), ZSTD_DEFAULT_COMPRESSION_LEVEL);
+	autowrap_print(stream, "\t  -Xrsyncable\n", cols);
+	autowrap_print(stream, "\t\tCompress rsync-friendly\n", cols);
 }
 
 
 static int option_args(char *option)
 {
-	if(strcmp(option, "-Xcompression-level") == 0)
+	if(strcmp(option, "-Xcompression-level") == 0 ||
+			strcmp(option, "-Xrsyncable") == 0)
 		return 1;
 
 	return 0;
