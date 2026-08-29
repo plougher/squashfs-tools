@@ -146,7 +146,7 @@ unsigned int read_xattrs_from_system(struct dir_ent *dir_ent, char *filename,
 				goto failed;
 			}
 
-			if(vsize > UINT32_MAX) {
+			if(vsize > INT32_MAX) {
 				ERROR_START("lgetxattr returned an Xattr value "
 					"too large for %s in read_xattrs_from_"
 					"system", filename);

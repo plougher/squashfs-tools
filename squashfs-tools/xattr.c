@@ -830,7 +830,7 @@ char *base64_decode(char *source, long long size, unsigned int *bytes)
 	/* Calculate number of bytes the base64 encoding represents */
 	count = size * 3 / 4;
 
-	if(count > UINT32_MAX) {
+	if(count > INT32_MAX) {
 		ERROR("Xattr value too large!\n");
 		return NULL;
 	}
@@ -898,7 +898,7 @@ static char *hex_decode(char *source, long long size, unsigned int *bytes)
 	if(size % 2 != 0)
 		return NULL;
 
-	if((size >> 2) > UINT32_MAX) {
+	if((size >> 2) > INT32_MAX) {
 		ERROR("Xattr value too large!\n");
 		return NULL;
 	}
@@ -964,7 +964,7 @@ static char *text_decode(char *source, unsigned int *bytes)
 		}
 	}
 
-	if(size > UINT32_MAX) {
+	if(size > INT32_MAX) {
 		ERROR("Xattr value too large!\n");
 		return NULL;
 	}
@@ -1118,7 +1118,7 @@ struct xattr_add *xattr_parse(char *str, char *pre, char *option)
 		/* fall through */
 	default:
 		size = strlen(value);
-		if(size > UINT32_MAX) {
+		if(size > INT32_MAX) {
 			ERROR("Xattr value too large!\n");
 			goto failed2;
 		}

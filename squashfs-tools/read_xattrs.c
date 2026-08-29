@@ -403,6 +403,9 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 			SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
 			xptr += sizeof(val);
 
+			if(val.vsize > INT32_MAX)
+				goto corrupted;
+
 			if(ADD_OVERFLOW(xptr - xattrs, val.vsize) > xattr_table_length)
 				goto corrupted;
 
@@ -448,6 +451,10 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 
 			ool_xptr = xattrs + ool_offset;
 			SQUASHFS_SWAP_XATTR_VAL(ool_xptr, &val);
+
+			if(val.vsize > INT32_MAX)
+				goto corrupted;
+
 			ool_xptr += sizeof(val);
 
 			if(ADD_OVERFLOW(ool_xptr - xattrs, val.vsize) > xattr_table_length)
@@ -459,6 +466,10 @@ struct xattr_list *get_xattr(int i, unsigned int *count, int *failed)
 				goto corrupted;
 
 			SQUASHFS_SWAP_XATTR_VAL(xptr, &val);
+
+			if(val.vsize > INT32_MAX)
+				goto corrupted;
+
 			xptr += sizeof(val);
 
 			if(ADD_OVERFLOW(xptr - xattrs, val.vsize) > xattr_table_length)
