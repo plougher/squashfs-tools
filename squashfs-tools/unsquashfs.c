@@ -5409,6 +5409,8 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
+	bytes_used = sBlk.s.bytes_used;
+
 	if(stat_sys) {
 		s_ops->stat(argv[i]);
 		exit(0);
@@ -5419,7 +5421,6 @@ int main(int argc, char *argv[])
 
 	block_size = sBlk.s.block_size;
 	block_log = sBlk.s.block_log;
-	bytes_used = sBlk.s.bytes_used;
 
 	/*
 	 * Sanity check block size and block log.
