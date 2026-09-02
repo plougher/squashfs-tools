@@ -503,11 +503,6 @@ static inline int64_t squashfs_xattr_bytes(uint32_t xattrs)
 	return (int64_t) xattrs * sizeof(struct squashfs_xattr_id);
 }
 
-static inline int16_t squashfs_xattr_block_offset(uint32_t xattrs)
-{
-	return squashfs_xattr_bytes(xattrs) % SQUASHFS_METADATA_SIZE;
-}
-
 static inline int32_t squashfs_xattr_blocks(uint32_t xattrs)
 {
 	return (squashfs_xattr_bytes(xattrs) + SQUASHFS_METADATA_SIZE - 1) /
