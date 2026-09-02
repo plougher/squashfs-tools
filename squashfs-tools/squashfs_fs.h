@@ -469,11 +469,6 @@ static inline int64_t squashfs_lookup_bytes(uint32_t inodes)
 	return (int64_t) inodes * sizeof(squashfs_inode);
 }
 
-static inline int16_t squashfs_lookup_block_offset(uint32_t inodes)
-{
-	return squashfs_lookup_bytes(inodes) % SQUASHFS_METADATA_SIZE;
-}
-
 static inline int32_t squashfs_lookup_blocks(uint32_t inodes)
 {
 	return (squashfs_lookup_bytes(inodes) + (SQUASHFS_METADATA_SIZE - 1)) /
