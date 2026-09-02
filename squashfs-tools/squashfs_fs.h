@@ -506,11 +506,6 @@ static inline int32_t squashfs_id_bytes(uint16_t ids)
 	return (int32_t) ids * sizeof(unsigned int);
 }
 
-static inline int32_t SQUASHFS_ID_BLOCK(uint16_t ids)
-{
-	return squashfs_id_bytes(ids) / SQUASHFS_METADATA_SIZE;
-}
-
 static inline int16_t squashfs_id_block_offset(uint16_t ids)
 {
 	return squashfs_id_bytes(ids) % SQUASHFS_METADATA_SIZE;
