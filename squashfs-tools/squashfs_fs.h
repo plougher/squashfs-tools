@@ -452,11 +452,6 @@ static inline int64_t squashfs_fragment_bytes(uint32_t fragments)
 	return (int64_t) fragments * sizeof(struct squashfs_fragment_entry);
 }
 
-static inline int16_t squashfs_fragment_index_offset(uint32_t fragments)
-{
-	return squashfs_fragment_bytes(fragments) % SQUASHFS_METADATA_SIZE;
-}
-
 static inline int32_t squashfs_fragment_indexes(uint32_t fragments)
 {
 	return (squashfs_fragment_bytes(fragments) + (SQUASHFS_METADATA_SIZE - 1)) /
