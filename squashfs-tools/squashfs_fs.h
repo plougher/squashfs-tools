@@ -47,7 +47,7 @@
 #define SQUASHFS_FILE_MAX_LOG		20
 
 /* Max number of uids and gids */
-#define SQUASHFS_IDS			65536
+#define SQUASHFS_IDS			65535
 
 /* Max length of filename (not 255) */
 #define SQUASHFS_NAME_LEN		256
