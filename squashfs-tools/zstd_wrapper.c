@@ -267,6 +267,11 @@ static int option_args(char *option)
 	return 0;
 }
 
+static int zstd_magic_check(unsigned char *magic, int len)
+{
+	return len >= 4 && magic[0] == 0x28 && magic[1] == 0xb5 &&
+		magic[2] == 0x2f && magic[3] == 0xfd;
+}
 
 struct compressor zstd_comp_ops = {
 	.init = zstd_init,
@@ -278,6 +283,7 @@ struct compressor zstd_comp_ops = {
 	.display_options = zstd_display_options,
 	.usage = zstd_usage,
 	.option_args = option_args,
+	.magic_check = zstd_magic_check,
 	.id = ZSTD_COMPRESSION,
 	.name = "zstd",
 	.supported = 1

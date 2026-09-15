@@ -486,6 +486,10 @@ static int option_args(char *option)
 	return 0;
 }
 
+static int gzip_magic_check(unsigned char *magic, int len)
+{
+	return len >= 2 && magic[0] == 0x1f && magic[1] == 0x8b;
+}
 
 struct compressor gzip_comp_ops = {
 	.init = gzip_init,
@@ -498,6 +502,7 @@ struct compressor gzip_comp_ops = {
 	.display_options = gzip_display_options,
 	.usage = gzip_usage,
 	.option_args = option_args,
+	.magic_check = gzip_magic_check,
 	.id = ZLIB_COMPRESSION,
 	.name = "gzip",
 	.supported = 1

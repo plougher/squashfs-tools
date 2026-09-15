@@ -37,10 +37,12 @@ struct compressor {
 	void (*display_options)(void *, int);
 	void (*usage)(FILE *, int cols);
 	int (*option_args)(char *);
+	int (*magic_check)(unsigned char *magic_bytes, int len);
 };
 
 extern struct compressor *lookup_compressor(char *);
 extern struct compressor *lookup_compressor_id(int);
+extern struct compressor *lookup_compressor_magic(unsigned char *magic, int len);
 extern void display_compressor_usage(FILE *stream, char *, int cols);
 extern void print_selected_comp_options(FILE *stream, struct compressor *comp, char *prog_name);
 extern void print_comp_options(FILE *stream, int cols, char *comp_name, char *prog_name);

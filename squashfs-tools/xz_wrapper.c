@@ -560,6 +560,12 @@ static int option_args(char *option)
 	return 0;
 }
 
+static int xz_magic_check(unsigned char *magic, int len)
+{
+	return len >= 6 && magic[0] == 0xfd && magic[1] == 0x37 &&
+		magic[2] == 0x7a && magic[3] == 0x58 &&
+		magic[4] == 0x5a && magic[5] == 0x00;
+}
 
 struct compressor xz_comp_ops = {
 	.init = xz_init,
@@ -572,6 +578,7 @@ struct compressor xz_comp_ops = {
 	.display_options = xz_display_options,
 	.usage = xz_usage,
 	.option_args = option_args,
+	.magic_check = xz_magic_check,
 	.id = XZ_COMPRESSION,
 	.name = "xz",
 	.supported = 1

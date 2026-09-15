@@ -430,6 +430,11 @@ static void lz4_usage(FILE *stream, int cols)
 		LZ4_COMP_DEFAULT);
 }
 
+static int lz4_magic_check(unsigned char *magic, int len)
+{
+	return len >= 4 && magic[0] == 0x04 && magic[1] == 0x22 &&
+		magic[2] == 0x4d && magic[3] == 0x18;
+}
 
 struct compressor lz4_comp_ops = {
 	.compress = lz4_compress,
@@ -441,6 +446,7 @@ struct compressor lz4_comp_ops = {
 	.check_options = lz4_check_options,
 	.display_options = lz4_display_options,
 	.usage = lz4_usage,
+	.magic_check = lz4_magic_check,
 	.id = LZ4_COMPRESSION,
 	.name = "lz4",
 	.supported = 1

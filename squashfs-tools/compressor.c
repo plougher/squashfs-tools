@@ -106,6 +106,19 @@ struct compressor *lookup_compressor_id(int id)
 }
 
 
+struct compressor *lookup_compressor_magic(unsigned char *magic, int len)
+{
+	int i;
+
+	for(i = 0; compressor[i]->id; i++)
+		if(compressor[i]->magic_check && compressor[i]->supported)
+			if(compressor[i]->magic_check(magic, len))
+				return compressor[i];
+
+	return NULL;
+}
+
+
 int valid_compressor(char *name)
 {
 	return lookup_compressor(name)->supported;
