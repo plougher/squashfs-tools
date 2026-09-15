@@ -43,6 +43,7 @@
 
 #include "squashfs_fs.h"
 #include "mksquashfs.h"
+#include "compressor.h"
 #include "progressbar.h"
 #include "mksquashfs_error.h"
 #include "pseudo.h"
@@ -57,6 +58,71 @@
 #include "zipfile.h"
 
 #define READER_ALLOC 1024
+
+/*
+ * Decompress tar stream from stdin using the appropriate compressor.
+ * Reads compressed data, decompresses it, and writes to pipe for tar reader.
+ */
+static void *decompress_tar_stream(void *arg)
+{
+	int *pipefd = (int *)arg;
+	struct compressor *comp;
+	void *stream = NULL;
+	int error, bytes;
+	int read_eof = FALSE;
+	char inbuf[8192];
+	char outbuf[8192];
+
+	/* Read first 8 bytes for magic detection */
+	lseek(STDIN_FILENO, 0, SEEK_SET);
+	if(read_bytes(STDIN_FILENO, inbuf, 8) < 8) {
+		close(pipefd[1]);
+		return NULL;
+	}
+
+	/* Detect compression */
+	lseek(STDIN_FILENO, 0, SEEK_SET);
+	comp = lookup_compressor_magic((unsigned char *)inbuf, 8);
+	if(comp == NULL) {
+		/* No compression, just pipe stdin to output */
+		close(pipefd[1]);
+		return NULL;
+	}
+
+	/* Initialize decompressor */
+	if(compressor_init(comp, &stream, 8192, 0) < 0) {
+		ERROR("Failed to initialize decompressor\n");
+		close(pipefd[1]);
+		return NULL;
+	}
+
+	/* Decompress and pipe to stdout */
+	while(!read_eof) {
+		bytes = read(STDIN_FILENO, inbuf, sizeof(inbuf));
+		if(bytes < 0) {
+			if(errno == EINTR)
+				continue;
+			ERROR("Read error: %s\n", strerror(errno));
+			return NULL;
+		}
+		if(bytes == 0)
+			read_eof = TRUE;
+
+		int out_len = compressor_uncompress(comp, outbuf, inbuf, bytes, sizeof(outbuf), &error);
+		if(out_len < 0) {
+			ERROR("Decompression failed: error %d\n", error);
+			return NULL;
+		}
+
+		if(write(pipefd[1], outbuf, out_len) != out_len) {
+			ERROR("Write error: %s\n", strerror(errno));
+			return NULL;
+		}
+	}
+
+	close(pipefd[1]);
+	return NULL;
+}
 
 static struct reader *reader = NULL;
 static struct readahead **readahead_table = NULL;
@@ -983,10 +1049,53 @@ void *initial_reader(void *arg)
 	}
 
 	if(tarfile) {
+		struct compressor *comp;
+		int pipefd[2];
+		pthread_t decompress_thread;
+
+		/* Detect compression */
+		comp = NULL;
+		if(STDIN_FILENO >= 0) {
+			unsigned char magic[8];
+			int res;
+
+			/* Peek at first 8 bytes to detect compression */
+			res = read_bytes(STDIN_FILENO, magic, 8);
+			if(res == 8) {
+				comp = lookup_compressor_magic(magic, 8);
+			}
+
+			/* Seek back to beginning for tar reader */
+			if(res >= 8 || res > 0)
+				lseek(STDIN_FILENO, 0, SEEK_SET);
+		}
+
+		/* If compression detected, setup decompression pipe and thread */
+		if(comp && pipe(pipefd) == 0) {
+			/* Create decompression thread */
+			if(pthread_create(&decompress_thread, NULL, decompress_tar_stream,
+					(void *)pipefd) == 0) {
+				/* Replace stdin with decompression pipe read end */
+				dup2(pipefd[0], STDIN_FILENO);
+				close(pipefd[0]);
+				close(pipefd[1]);
+				/* Thread will clean up pipe when done */
+			} else {
+				close(pipefd[0]);
+				close(pipefd[1]);
+			}
+		}
+
 		create_resources();
 		reader[0].type = "combined";
 		file_count = read_tar_file();
 		single_thread(queue_get(to_reader));
+
+		/* Wait for decompression thread if active */
+		if(comp) {
+			/* Give the thread time to finish */
+			pthread_join(decompress_thread, NULL);
+		}
 	} else if(!sleep_time && reader_threads > 1)
 		multi_thread(dir);
 	else {
