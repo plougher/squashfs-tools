@@ -304,8 +304,8 @@ static void reader_read_file(struct reader *reader, struct read_entry *entry, in
 {
 	struct stat *buf = &entry->dir_ent->inode->buf, buf2;
 	struct file_buffer *file_buffer;
-	int blocks, file, res, sparse;
-	long long bytes = 0, block = 0, read_size, data_pos = -1;
+	int file, res, sparse;
+	long long bytes = 0, block = 0, blocks, read_size, data_pos = -1;
 	struct inode_info *inode = entry->dir_ent->inode;
 	unsigned short version = 0;
 
@@ -356,14 +356,11 @@ again:
 		 */
 		if(sparse && (data_pos - bytes) >= block_size) {
 			long long count = (data_pos - bytes) / block_size;
-			int res = set_sparse(file_buffer, count);
-
-			if(res == FALSE)
-				BAD_ERROR("Unexpectedly large sparse region in file\n");
+			long long res = set_sparse(file_buffer, count);
 
 			file_buffer->size = block_size;
-			bytes += count * block_size;
-			blocks -= count;
+			bytes += res * block_size;
+			blocks -= res;
 		} else if(sparse && (data_pos - bytes)) {
 			int count = data_pos - bytes;
 

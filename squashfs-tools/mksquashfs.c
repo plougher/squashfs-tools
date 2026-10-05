@@ -418,7 +418,7 @@ static struct dir_ent *scan1_readdir(struct dir_info *dir);
 static struct dir_ent *scan1_single_readdir(struct dir_info *dir);
 static struct dir_ent *scan1_encomp_readdir(struct dir_info *dir);
 static struct file_info *add_non_dup(long long file_size, long long bytes,
-	unsigned int blocks, long long sparse, unsigned int *block_list,
+	long long blocks, long long sparse, unsigned int *block_list,
 	long long start, struct fragment *fragment, unsigned short checksum,
 	unsigned short fragment_checksum, int checksum_flag,
 	int checksum_frag_flag, int blocks_dup, int frag_dup, int bl_hash);
@@ -2179,7 +2179,7 @@ static int pre_duplicate(long long file_size, struct inode_info *inode,
 
 
 static struct file_info *create_non_dup(long long file_size, long long bytes,
-	unsigned int blocks, long long sparse, unsigned int *block_list,
+	long long blocks, long long sparse, unsigned int *block_list,
 	long long start,struct fragment *fragment,unsigned short checksum,
 	unsigned short fragment_checksum, int checksum_flag,
 	int checksum_frag_flag)
@@ -2206,7 +2206,7 @@ static struct file_info *create_non_dup(long long file_size, long long bytes,
 
 
 static struct file_info *add_non_dup(long long file_size, long long bytes,
-	unsigned int blocks, long long sparse, unsigned int *block_list,
+	long long blocks, long long sparse, unsigned int *block_list,
 	long long start,struct fragment *fragment,unsigned short checksum,
 	unsigned short fragment_checksum, int checksum_flag,
 	int checksum_frag_flag, int blocks_dup, int frag_dup, int bl_hash)
@@ -3126,8 +3126,8 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 	long long file_bytes;
 	struct fragment *fragment;
 	unsigned int *block_list;
-	int block;
-	int blocks = (read_size + block_size - 1) >> block_log;
+	long long block;
+	long long blocks = (read_size + block_size - 1) >> block_log;
 	long long sparse = 0;
 	struct file_buffer *fragment_buffer = NULL;
 	struct file_info *file;
@@ -4789,6 +4789,7 @@ static void dir_scan7(struct dir_info *dir)
 		} else if(S_ISREG(inode->buf.st_mode) && inode->read)
 			INFO("file %s, uncompressed size %lld bytes LINK\n",
 				subpathname(dir_ent), (long long) inode->buf.st_size);
+		}
 		else if(S_ISDIR(inode->buf.st_mode))
 			dir_scan7(dir_ent->dir);
 	}

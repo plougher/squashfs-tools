@@ -324,10 +324,10 @@ static inline int is_sparse(struct file_buffer *entry)
 static inline int set_sparse(struct file_buffer *entry, long long sparse)
 {
 	if(sparse > INT_MAX)
-		return FALSE;
+		sparse = INT_MAX;
 
 	entry->c_byte = -sparse;
-	return TRUE;
+	return sparse;
 }
 
 

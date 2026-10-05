@@ -89,7 +89,7 @@ struct file_info {
 	struct file_info	*block_next;
 	struct fragment		*fragment;
 	struct dup_info		*dup;
-	unsigned int		blocks;
+	long long		blocks;
 	unsigned short		checksum;
 	unsigned short		fragment_checksum;
 	char			have_frag_checksum;
