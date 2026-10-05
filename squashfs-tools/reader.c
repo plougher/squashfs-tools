@@ -311,7 +311,7 @@ static void reader_read_file(struct reader *reader, struct read_entry *entry, in
 
 again:
 	read_size = buf->st_size;
-	blocks = (read_size + block_size - 1) >> block_log;
+	blocks = ((uint64_t)read_size + block_size - 1) >> block_log;
 	sparse = sparse_files && ((long long) buf->st_blocks * 512) < read_size;
 
 	while(1) {

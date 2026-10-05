@@ -3127,7 +3127,7 @@ static struct file_info *write_file_blocks(int *status, struct dir_ent *dir_ent,
 	struct fragment *fragment;
 	unsigned int *block_list;
 	long long block;
-	long long blocks = (read_size + block_size - 1) >> block_log;
+	long long blocks = ((uint64_t)read_size + block_size - 1) >> block_log;
 	long long sparse = 0;
 	struct file_buffer *fragment_buffer = NULL;
 	struct file_info *file;
