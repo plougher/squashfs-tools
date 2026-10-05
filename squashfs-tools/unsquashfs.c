@@ -3327,7 +3327,7 @@ static void *reader(void *arg)
  */
 static void *writer(void *arg)
 {
-	int i;
+	long long i;
 	long exit_code = FALSE;
 
 	while(1) {
@@ -3451,7 +3451,7 @@ static void *writer(void *arg)
 
 static void *cat_writer(void *arg)
 {
-	int i;
+	long long i;
 	long exit_code = FALSE;
 
 	while(1) {

@@ -191,7 +191,7 @@ struct file_entry {
 
 struct squashfs_file {
 	int		fd;
-	int		blocks;
+	long long	blocks;
 	long long	file_size;
 	int		mode;
 	uid_t		uid;
