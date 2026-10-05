@@ -2,7 +2,7 @@
  * Create a squashfs filesystem.  This is a highly compressed read only
  * filesystem.
  *
- * Copyright (c) 2012, 2013, 2014, 2021, 2022, 2025
+ * Copyright (c) 2012, 2013, 2014, 2021, 2022, 2025, 2026
  * Phillip Lougher <phillip@squashfs.org.uk>
  *
  * This program is free software; you can redistribute it and/or
@@ -88,13 +88,13 @@ void inc_progress_bar()
 }
 
 
-void dec_progress_bar(int count)
+void dec_progress_bar(long long count)
 {
 	cur_uncompressed -= count;
 }
 
 
-void progress_bar_size(int count)
+void progress_bar_size(long long count)
 {
 	pthread_cleanup_push((void *) pthread_mutex_unlock, &size_mutex);
 	pthread_mutex_lock(&size_mutex);
