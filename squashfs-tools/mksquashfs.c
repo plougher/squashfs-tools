@@ -242,7 +242,8 @@ long long inode_bytes = 0, inode_size = 0, total_inode_bytes = 0;
 
 /* cached inode table */
 char *data_cache = NULL;
-unsigned int cache_bytes = 0, cache_size = 0, inode_count = 0;
+unsigned int inode_count = 0;
+long long cache_bytes = 0, cache_size = 0;
 
 /* inode lookup table */
 squashfs_inode *inode_lookup_table = NULL;
@@ -678,9 +679,9 @@ int mangle(char *d, char *s, int size, int block_size,
 }
 
 
-static void *get_inode(int req_size)
+static void *get_inode(long long req_size)
 {
-	int data_space;
+	long long data_space;
 	unsigned short c_byte;
 	char *cur = data_cache;
 
@@ -694,7 +695,7 @@ static void *get_inode(int req_size)
 
 		c_byte = mangle(inode_table + inode_bytes + BLOCK_OFFSET, cur,
 			SQUASHFS_METADATA_SIZE, SQUASHFS_METADATA_SIZE, noI, 0);
-		TRACE("Inode block @ 0x%x, size %d\n", inode_bytes, c_byte);
+		TRACE("Inode block @ 0x%llx, size %d\n", inode_bytes, c_byte);
 		SQUASHFS_SWAP_SHORTS(&c_byte, inode_table + inode_bytes, 1);
 		inode_bytes += squashfs_compressed_size(c_byte) + BLOCK_OFFSET;
 		total_inode_bytes += SQUASHFS_METADATA_SIZE + BLOCK_OFFSET;
@@ -707,7 +708,7 @@ static void *get_inode(int req_size)
 
 	data_space = (cache_size - cache_bytes);
 	if(data_space < req_size) {
-			int realloc_size = cache_size == 0 ?
+			long long realloc_size = cache_size == 0 ?
 				((req_size + SQUASHFS_METADATA_SIZE) &
 				~(SQUASHFS_METADATA_SIZE - 1)) : req_size -
 				data_space;
@@ -4789,7 +4790,6 @@ static void dir_scan7(struct dir_info *dir)
 		} else if(S_ISREG(inode->buf.st_mode) && inode->read)
 			INFO("file %s, uncompressed size %lld bytes LINK\n",
 				subpathname(dir_ent), (long long) inode->buf.st_size);
-		}
 		else if(S_ISDIR(inode->buf.st_mode))
 			dir_scan7(dir_ent->dir);
 	}
