@@ -379,8 +379,14 @@ static int sparse_reader(struct tar_file *file, long long cur_offset, char *dest
 
 	if(number == 0) {
 		cur ++;
-		offset = file->map[cur].offset;
-		number = (file->map[cur].number + 511) & ~511;
+		if(cur < file->map_entries) {
+			offset = file->map[cur].offset;
+			number = (file->map[cur].number + 511) & ~511;
+		} else {
+			/* past the last map entry: the rest is a hole */
+			offset = LLONG_MAX;
+			number = 0;
+		}
 	}
 
 	*off = offset;
