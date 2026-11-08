@@ -443,7 +443,7 @@ static inline uint16_t squashfs_inode_offset(int64_t inode)
 
 static inline int64_t squashfs_mkinode(uint32_t start, uint16_t offset)
 {
-	return (start << 16) | offset;
+	return ((int64_t)start << 16) | offset;
 }
 
 /* fragment and fragment table defines */
